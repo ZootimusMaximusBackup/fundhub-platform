@@ -373,7 +373,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
       <span class="crumb">Marketing</span><h1>Creative Factory</h1>
       <div class="spacer"></div>
       <span class="chip" id="scopeChip"><span class="cd" style="background:var(--info)"></span><span id="scopeChipTxt">one partner</span></span>
-      <span class="chip"><span class="cd" style="background:var(--gray2)"></span>Read only</span>
+      <span class="chip" id="cfWriteChip"><span class="cd" id="cfWriteDot" style="background:var(--gray2)"></span><span id="cfWriteChipTxt">Read only</span></span>
     </div>
 
     <div class="content fh-maxw">
@@ -602,8 +602,8 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
             <div class="selwrap" style="min-width:180px"><label for="genIdem">Unique key</label>
               <input id="genIdem" placeholder="unique-key-per-batch" style="width:180px">
             </div>
-            <button class="btn dark mono" type="button" id="genBtn">Enqueue generation</button>
-            <button class="btn mono" type="button" id="runJobsBtn">Run queued jobs now</button>
+            <button class="btn dark mono" type="button" id="genBtn" disabled>Enqueue generation</button>
+            <button class="btn mono" type="button" id="runJobsBtn" disabled>Run queued jobs now</button>
             <span class="hint mono" id="genMsg" style="font-size:var(--fs-caption);color:var(--gray2)"></span>
           </div>
         </div>
@@ -616,10 +616,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
             <div class="selwrap" style="min-width:320px"><label for="actAsset">Creative</label>
               <select id="actAsset" class="mono" style="width:320px;min-height:40px"></select>
             </div>
-            <button class="btn mono" type="button" data-cact="approve" style="min-height:44px">Approve</button>
+            <button class="btn mono" type="button" data-cact="approve" style="min-height:44px" disabled>Approve</button>
             <span style="width:32px"></span>
-            <button class="btn mono" type="button" data-cact="reject" style="min-height:44px">Reject</button>
-            <button class="btn mono" type="button" data-cact="archive" style="min-height:44px">Archive</button>
+            <button class="btn mono" type="button" data-cact="reject" style="min-height:44px" disabled>Reject</button>
+            <button class="btn mono" type="button" data-cact="archive" style="min-height:44px" disabled>Archive</button>
             <span class="hint mono" id="actMsg" style="font-size:var(--fs-caption);color:var(--gray2)"></span>
           </div>
         </div>
@@ -1043,6 +1043,7 @@ function loadCfUsage(){
     return;
   }
   body.innerHTML = '<div class="unwired"><div class="uh"><span>◉</span><span>Loading writing budget…</span></div></div>';
+  setWriteControls(false);
   var tok = '';
   try { tok = localStorage.getItem('fh_token') || ''; } catch (e) { tok = ''; }
   fetch('/api/partner-marketing/usage?partner_id=' + encodeURIComponent(pid), {
@@ -1091,7 +1092,19 @@ function setWriteControls(enabled){
   var ids = ['genBtn','runJobsBtn'];
   document.querySelectorAll('[data-cact]').forEach(function(b){ b.disabled = !enabled; });
   ids.forEach(function(id){ var b = document.getElementById(id); if(b) b.disabled = !enabled; });
-  if(enabled) return;
+  var chipTxt = document.getElementById('cfWriteChipTxt');
+  var chipDot = document.getElementById('cfWriteDot');
+  if (chipTxt) chipTxt.textContent = enabled ? 'Writes on' : 'Read only';
+  if (chipDot) chipDot.style.background = enabled ? 'var(--ok)' : 'var(--gray2)';
+  if(enabled) {
+    ['genMsg','actMsg'].forEach(function(id){
+      var m = document.getElementById(id);
+      if (m && /budget loads|No partner selected|has not turned this on/i.test(m.textContent || '')) {
+        m.textContent = '';
+      }
+    });
+    return;
+  }
   var reason = !currentPartner()
     ? 'No partner selected.'
     : (CF_SUITE.error
@@ -2138,6 +2151,7 @@ document.getElementById('partnerSel').addEventListener('change', function(){
     else url.searchParams.delete('partner_id');
     history.replaceState({}, '', url.pathname + url.search + url.hash);
   } catch (e) {}
+  renderScope();
   wireCreative();
   loadCfUsage();
 });

@@ -8,7 +8,8 @@ import { withPartnerScope } from "../../src/partners/rls.mjs";
 import { canAccessPartnerMarketing, SUITE_OFF, recordUsage, assertSuiteEnabled } from "../../src/brand/meter.mjs";
 import { wordmarkDataUrl } from "../../src/brand/wordmark.mjs";
 
-export default async function handler(req, res) {
+export default async function handler(req, res, deps = {}) {
+  const scoped = deps.withPartnerScope || withPartnerScope;
   if (req.method !== "POST") {
     res.setHeader("allow", "POST");
     return res.status(405).json({ ok: false, error: "method_not_allowed" });
@@ -24,7 +25,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const out = await withPartnerScope(
+    const out = await scoped(
       principal.kind === "partner"
         ? { kind: "partner", partnerId: principal.partnerId }
         : { kind: "staff" },

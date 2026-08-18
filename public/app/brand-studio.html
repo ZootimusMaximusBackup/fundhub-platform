@@ -684,6 +684,28 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     $("pvHint").textContent = MODE === "org"
       ? "These tokens theme the CRM you are looking at — sidebar, type, logo."
       : "These tokens theme this partner's funnels only — not the Fundhub CRM.";
+    if (LIVE_PAGES && LIVE_PAGES.length) paintPagePreview(LIVE_PAGES);
+  }
+
+  function paintPagePreview(items) {
+    var h1 = $("pvH1");
+    var sub = $("pvSub");
+    if (!h1) return;
+    var page = items && items[0];
+    var sections = page && page.body_json && page.body_json.sections;
+    var hero = null;
+    if (Array.isArray(sections)) {
+      for (var i = 0; i < sections.length; i++) {
+        if (sections[i] && (sections[i].id === "hero" || sections[i].type === "hero")) {
+          hero = sections[i];
+          break;
+        }
+      }
+    }
+    if (hero && hero.headline) {
+      h1.textContent = hero.headline;
+      if (sub && hero.sub) sub.textContent = hero.sub;
+    }
   }
 
   function hash(s){ var h=0; for (var i=0;i<s.length;i++){ h=(h<<5)-h+s.charCodeAt(i); h|=0; } return h; }

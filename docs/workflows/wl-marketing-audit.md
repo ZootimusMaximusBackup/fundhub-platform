@@ -53,8 +53,10 @@
 
 ## Left for a named fix pass
 
-Do not start Fixer from this file. Chris names the rows.
+Fixer started 2026-08-17 after Chris said to get the CRITICAL rows done.
 
-Not clicked this pass (write guard): Turn on / Turn off, Write page copy (already done at 23:33), Write 3 posts (already done), Enqueue generation, Submit for approval, Publish, Verify domain.
+Code landed in this pass for: wordmark upsert, Social “no partner” lie, Queue shows drafts, Creative Factory budget/enqueue/picker race, Turn on hidden when On, preview hero from first page.
 
-Partner role was **not** walked (email locked 15 minutes). Journey rule “the partner does not see a Connect button that will refuse them” is **unverified** on live this pass.
+Live prove (Playwright 100/100 + human click) is next. Rows stay CRITICAL/HIGH until that evidence is in.
+
+Not in this pass: owner nav, phone overflow, type sizes, `BS-00` codes, Connect still looking live after 503, OPEN-QUESTION rows.

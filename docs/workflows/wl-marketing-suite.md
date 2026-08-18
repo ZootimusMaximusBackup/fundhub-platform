@@ -58,3 +58,19 @@ Content Admin is not a task — leave the client-portal tile screen alone.
 ## Blockers
 
 none
+
+## Fix pass (2026-08-17, after audit)
+
+Named rows from `docs/workflows/wl-marketing-audit.md` — the four CRITICAL plus the Social queue drafts HIGH.
+
+**Files touched**
+- `api/partner-marketing/generate-logo.mjs` — upsert `partner_brand` when the row is missing
+- `src/http/partner-marketing-logo.test.mjs` — unit test for that upsert
+- `public/app/brand-studio.html` — hide Turn on when already On; preview uses the first page hero; wordmark errors in plain words
+- `public/app/social-studio.html` — clear “no partner” once one is picked; Queue includes `draft`
+- `public/app/creative-factory.html` — Enqueue off until the budget loads; banner matches the picker; header chip matches write state
+
+**Not touched**
+- `public/app/content-admin.html`
+- owner nav (33 tabs)
+- OPEN-QUESTION rows (Brand Studio under Admin, beta banner)
