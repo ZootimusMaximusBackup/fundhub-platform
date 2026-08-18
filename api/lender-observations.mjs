@@ -19,7 +19,7 @@ export default async function handler(req, res, deps = {}) {
 
   const staff = await requireAuth(req, res, { db: database });
   if (!staff) return;
-  if (!requireRole(res, staff, ROLE_SETS.STAFF)) return;
+  if (!requireRole(res, staff, ROLE_SETS.LENDERS)) return;
 
   const orgId = staff.org_id;
   if (!isUuid(orgId)) {

@@ -1,7 +1,8 @@
 // GET /api/read/lenders — list / filter the lender database.
 //
 // Empty until CSV import. Never invents lender rows.
-// ROLE_SETS.STAFF — funding advisors and closers both need the list.
+// ROLE_SETS.LENDERS — owner, admin and the funding advisor only. Chris's call,
+// 2026-08-17: the lender book is not for the rest of the floor.
 
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
@@ -20,7 +21,7 @@ export default async function handler(req, res, deps = {}) {
 
   const staff = await requireAuth(req, res, { db: database });
   if (!staff) return;
-  if (!requireRole(res, staff, ROLE_SETS.STAFF)) return;
+  if (!requireRole(res, staff, ROLE_SETS.LENDERS)) return;
 
   const orgId = staff.org_id;
   if (!isUuid(orgId)) {

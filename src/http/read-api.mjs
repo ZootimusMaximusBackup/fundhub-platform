@@ -143,7 +143,24 @@ export const ROLE_SETS = {
   // PII and the scoring trail of an automated employment decision tool, which is
   // material a closer has no reason to see and real exposure if it circulates.
   // Widen this only by naming a recruiting role, never by reusing STAFF.
-  HIRING: new Set(["owner", "admin"])
+  HIRING: new Set(["owner", "admin"]),
+  /* The lender database. Chris's call, 2026-08-17: the Lenders list is
+     commercial relationship data the funding advisor maintains — who each
+     lender is, what they pull, the terms and the insider notes — and it is not
+     something the rest of the floor needs to do its job. It was on STAFF, which
+     meant a closer could read the whole lender book with one request.
+
+     `admin` is in alongside `owner` because every other set here pairs them.
+     Cutting admin is one word out of this line.
+
+     Worth revisiting if a second role ever takes over maintaining lender
+     records, or if a screen outside the Lenders list needs the raw rows.
+
+     NOT the whole story: `read/lender-matches` is deliberately still on STAFF.
+     It is a different feature — the "which lenders fit this client" box on the
+     closer dashboard — and Chris did not name it. Locking it here would break a
+     closer's daily screen. Leave it alone unless Chris says otherwise. */
+  LENDERS: new Set(["owner", "admin", "funding_advisor"])
 };
 
 export function allowsRole(roleSet, role) {
