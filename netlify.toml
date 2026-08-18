@@ -35,7 +35,10 @@
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
-  included_files = ["assets/ebooks/fundhub-ebook-placeholder.pdf"]
+  included_files = [
+    "assets/ebooks/fundhub-ebook-placeholder.pdf",
+    "assets/gifts/message-blaster.dmg"
+  ]
   # letter-generator.js require()s this at load time. esbuild leaves it
   # external, which 502s the whole /api/* function (login included).
   external_node_modules = ["@pdf-lib/fontkit"]
