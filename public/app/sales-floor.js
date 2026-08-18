@@ -34,7 +34,167 @@
     }
   }
 
-  var state = { data: null };
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  /* Offer stack cells. A null cents value is an UNKNOWN, never a zero — the
+     endpoint sends a sentence saying why, and that sentence is what a person
+     reads. Reasons are collected once per table and printed under it, because
+     a whole sentence does not fit in a right-aligned money column. */
+  function stackAmount(display, cents, reason, unknowns) {
+    if (display) return esc(display);
+    if (cents != null && Number.isFinite(Number(cents))) return money(cents);
+    var why = reason || "";
+    if (why && unknowns.indexOf(why) === -1) unknowns.push(why);
+    return '<em class="unk"' + (why ? ' title="' + esc(why) + '"' : "") + ">Not recorded</em>";
+  }
+
+  function stackCount(units, reason, unknowns) {
+    if (units != null && Number.isFinite(Number(units))) return String(Number(units));
+    var why = reason || "";
+    if (why && unknowns.indexOf(why) === -1) unknowns.push(why);
+    return '<em class="unk">Not recorded</em>';
+  }
+
+  function stackTable(stack, missingNote) {
+    if (!stack) return '<p class="note">' + esc(missingNote) + "</p>";
+    if (stack.available === false) {
+      return '<p class="note">' + esc(stack.reason || missingNote) + "</p>";
+    }
+    var items = stack.items || [];
+    if (!items.length) return '<p class="note">' + esc(stack.reason || missingNote) + "</p>";
+    var unknowns = [];
+    var rows = items.map(function (it) {
+      return '<div class="rrow">' +
+        '<span class="nm"><b>' + esc(it.name || it.code || "Offer") + "</b><em>" +
+        esc(it.code || "") + (it.active === false ? " · retired" : "") + "</em></span>" +
+        '<span class="num">' + stackCount(it.units, stack.reason, unknowns) + "</span>" +
+        '<span class="num">' + stackAmount(it.sold_display, it.sold_cents, it.sold_reason || stack.reason, unknowns) + "</span>" +
+        '<span class="num">' + stackAmount(it.collected_display, it.collected_cents, it.collected_reason || stack.reason, unknowns) + "</span>" +
+        "</div>";
+    }).join("");
+    var t = stack.totals || {};
+    rows += '<div class="rrow tot"><span class="nm"><b>All offers</b></span>' +
+      '<span class="num">' + stackCount(t.units, stack.reason, unknowns) + "</span>" +
+      '<span class="num">' + stackAmount(t.sold_display, t.sold_cents, t.sold_reason || stack.reason, unknowns) + "</span>" +
+      '<span class="num">' + stackAmount(t.collected_display, t.collected_cents, t.collected_reason || stack.reason, unknowns) + "</span></div>";
+    var why = unknowns.length
+      ? '<p class="say"><b>Why some numbers say Not recorded.</b> ' +
+        unknowns.map(esc).join(" ") + "</p>"
+      : "";
+    return '<div class="ostack"><div class="rhead">' +
+      '<span>Offer</span><span class="num">Units</span><span class="num">Sold</span>' +
+      '<span class="num">Collected</span></div>' + rows + "</div>" + why;
+  }
+
+  /* The whole floor's stack, plus the sales no closer can be credited for.
+     The unattributed block is why the floor total can beat the closers added
+     up. It is shown on its own, never spread across people. */
+  function paintOfferStack(d) {
+    var body = $("#fh-offer-stack .ostbody");
+    if (!body) return;
+    var html = stackTable(d.offer_stack, "The offer stack is not in this response yet.");
+    var un = d.offer_stack_unattributed;
+    if (un && (un.items || []).length) {
+      html += '<div class="sech" style="margin-top:24px"><span class="eyebrow">' +
+        "Sold, but not credited to any closer</span></div>" +
+        (un.reason
+          ? '<div class="flagbox" style="background:rgba(245,206,143,.14);' +
+            'border-left-color:var(--warn);margin-top:0;margin-bottom:12px">' +
+            esc(un.reason) + "</div>"
+          : "") +
+        stackTable(un, "Not credited to a closer.");
+    }
+    body.innerHTML = html;
+  }
+
+  var state = { data: null, closer: 0 };
+
+  /* One closer at a time. Everything here comes out of closers[i] on the floor
+     response that is already loaded — picking a name makes no second request. */
+  function paintCloserFocus() {
+    var body = $("#fh-closer-focus .focusbody");
+    if (!body) return;
+    var list = (state.data && state.data.closers) || [];
+    if (!list.length) {
+      body.innerHTML = '<p class="note">No closers on this board yet.</p>';
+      return;
+    }
+    if (state.closer >= list.length) state.closer = 0;
+    if (state.closer < 0) state.closer = list.length - 1;
+    var c = list[state.closer];
+
+    var picks = list.map(function (p, i) {
+      return '<button type="button" class="pickb' + (i === state.closer ? " on" : "") +
+        '" data-fh-closer="' + i + '">' + esc(p.name || "Closer") + "</button>";
+    }).join("");
+
+    var cash = c.cash_display
+      ? esc(c.cash_display)
+      : (c.cash_cents != null && Number.isFinite(Number(c.cash_cents))
+        ? money(c.cash_cents)
+        : '<span class="unk">Not recorded</span>');
+
+    // Four tiles, not five — fundhub-brand.css pins .funnel to four columns.
+    var tiles =
+      '<div class="f"><div class="lb">Deposits</div><div class="vl">' +
+        (c.deposits != null ? esc(c.deposits) : '<span class="unk">Not recorded</span>') +
+        '</div><div class="cv">' +
+        (c.calls != null ? ("Off " + esc(c.calls) + " calls") : "Calls not recorded") +
+        "</div></div>" +
+      '<div class="f"><div class="lb">Close rate</div><div class="vl">' + pct(c.close_rate) +
+        '</div><div class="cv">Of calls held</div></div>' +
+      '<div class="f"><div class="lb">Funded rate</div><div class="vl">' + pct(c.funded_rate) +
+        '</div><div class="cv">Of deposits taken</div></div>' +
+      '<div class="f"><div class="lb">Cash</div><div class="vl">' + cash +
+        '</div><div class="cv">This month</div></div>';
+
+    body.innerHTML =
+      '<div class="picks">' +
+      '<button type="button" class="pickb" id="fh-closer-prev" aria-label="Previous closer">‹</button>' +
+      picks +
+      '<button type="button" class="pickb" id="fh-closer-next" aria-label="Next closer">›</button>' +
+      "</div>" +
+      '<div class="picks" style="justify-content:space-between"><span class="pickwho">' +
+      esc(c.name || "Closer") + "<em>" +
+      (c.on_shift ? ("On shift · " + esc(elapsed(c.shift_elapsed_ms))) : "Off shift") +
+      '</em></span><span class="note">Closer ' + (state.closer + 1) + " of " + list.length +
+      "</span></div>" +
+      '<div class="funnel">' + tiles + "</div>" +
+      '<p class="say"><b>Do this.</b> ' + esc(c.action || "Nothing assigned") + "</p>" +
+      '<div style="margin-top:16px">' +
+      stackTable(c.offer_stack, "This closer's offer stack is not in this response yet.") +
+      "</div>";
+
+    var prev = $("#fh-closer-prev");
+    if (prev) prev.addEventListener("click", function () { selectCloser(state.closer - 1); });
+    var next = $("#fh-closer-next");
+    if (next) next.addEventListener("click", function () { selectCloser(state.closer + 1); });
+    body.querySelectorAll(".pickb[data-fh-closer]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        selectCloser(Number(b.getAttribute("data-fh-closer")));
+      });
+    });
+
+    document.querySelectorAll(".rost .rrow.pick").forEach(function (row) {
+      row.classList.toggle("on", Number(row.getAttribute("data-fh-closer")) === state.closer);
+    });
+  }
+
+  function selectCloser(i, scroll) {
+    var list = (state.data && state.data.closers) || [];
+    if (!list.length) return;
+    state.closer = ((i % list.length) + list.length) % list.length;
+    paintCloserFocus();
+    // Picking from the roster answers back by moving to the panel it filled.
+    // Picking inside the panel does not, or the page would jump under the click.
+    if (!scroll) return;
+    var sec = document.getElementById("fh-closer-focus");
+    if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   function paint(d) {
     state.data = d;
@@ -105,8 +265,9 @@
     var rost = $(".rost");
     if (rost) {
       var head = rost.querySelector(".rhead");
-      var rows = (d.closers || []).map(function (c) {
-        return '<div class="rrow">' +
+      var rows = (d.closers || []).map(function (c, i) {
+        return '<div class="rrow pick" data-fh-closer="' + i + '" role="button" tabindex="0" ' +
+          'title="Show this closer on their own">' +
           '<span class="nm"><b>' + (c.name || "Closer") + "</b><em>" +
           (c.on_shift ? ("On shift · " + elapsed(c.shift_elapsed_ms)) : "Off shift") +
           "</em></span>" +
@@ -118,7 +279,25 @@
       }).join("") || '<div class="rrow"><span class="nm"><b>No closers on this board</b><em>Live staff only</em></span></div>';
       rost.querySelectorAll(".rrow").forEach(function (n) { n.remove(); });
       if (head) head.insertAdjacentHTML("afterend", rows);
+      // Delegated once — paint() rebuilds the rows but never the container.
+      if (!rost.getAttribute("data-fh-pick")) {
+        rost.setAttribute("data-fh-pick", "1");
+        rost.addEventListener("click", function (e) {
+          var row = e.target && e.target.closest && e.target.closest(".rrow.pick");
+          if (row) selectCloser(Number(row.getAttribute("data-fh-closer")), true);
+        });
+        rost.addEventListener("keydown", function (e) {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          var row = e.target && e.target.closest && e.target.closest(".rrow.pick");
+          if (!row) return;
+          e.preventDefault();
+          selectCloser(Number(row.getAttribute("data-fh-closer")), true);
+        });
+      }
     }
+
+    paintOfferStack(d);
+    paintCloserFocus();
 
     // Beliefs
     var beliefs = (d.beliefs && d.beliefs.beliefs) || [];

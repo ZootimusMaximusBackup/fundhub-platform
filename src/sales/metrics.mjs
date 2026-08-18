@@ -7,6 +7,7 @@ import { countUnlogged, listUnloggedCalls } from "./call-outcomes.mjs";
 import { isDemoEmail } from "../auth/demo-logins.mjs";
 import { demoClause, orgDemoModeEnabled } from "../demo/exclude-demo.mjs";
 import { listRecentRecordings } from "./recordings.mjs";
+import { closerOfferStack, floorOfferStack, zeroStackFrom } from "./offer-stack.mjs";
 
 function monthWindow(now = new Date()) {
   const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
@@ -191,7 +192,7 @@ export async function closerMyNumbers(db, { orgId, staffId, now = new Date() } =
   const window = monthWindow(now);
   const prior = priorWindow(window);
 
-  const [cur, prev, d2f, commissions, target, shift, unlogged, unloggedList, team] = await Promise.all([
+  const [cur, prev, d2f, commissions, target, shift, unlogged, unloggedList, team, offerStack] = await Promise.all([
     staffCashCents(db, { orgId, staffId, ...window }),
     staffCashCents(db, { orgId, staffId, ...prior }),
     depositToFunded(db, { orgId, staffId, ...window }),
@@ -200,7 +201,8 @@ export async function closerMyNumbers(db, { orgId, staffId, now = new Date() } =
     openShift(db, { orgId, staffId }),
     countUnlogged(db, { orgId, staffId }),
     listUnloggedCalls(db, { orgId, staffId, limit: 10 }),
-    teamLeaderboard(db, { orgId, ...window })
+    teamLeaderboard(db, { orgId, ...window }),
+    closerOfferStack(db, { orgId, staffId, ...window })
   ]);
 
   const cashCents = Number(cur.cents || 0);
@@ -215,6 +217,11 @@ export async function closerMyNumbers(db, { orgId, staffId, now = new Date() } =
   return {
     period: { start: window.start.toISOString(), end: window.end.toISOString(), label: "this month" },
     staff_id: staffId,
+    offer_stack: offerStack,
+    offer_stack_scope: {
+      basis: "commission_ledger",
+      note: "A sale only counts for a closer once it has a commission row."
+    },
     shift: shift
       ? {
           on_shift: true,
@@ -416,7 +423,7 @@ export async function salesFloor(db, { orgId, now = new Date(), env = process.en
   const window = monthWindow(now);
 
   const todayYmd = nyDateString(now);
-  const [cash, funnel, todayFunnel, d2f, closers, beliefs, unlogged, cold, shiftsLate, recordings] = await Promise.all([
+  const [cash, funnel, todayFunnel, d2f, closers, beliefs, unlogged, cold, shiftsLate, recordings, offer] = await Promise.all([
     db.query(
       `SELECT COALESCE(SUM(cash_collected_cents), 0)::bigint AS cents
          FROM call_outcomes
@@ -431,8 +438,17 @@ export async function salesFloor(db, { orgId, now = new Date(), env = process.en
     countUnlogged(db, { orgId }),
     coldDeals(db, { orgId }),
     lateShifts(db, { orgId, now }),
-    listRecentRecordings(db, { orgId, now, env })
+    listRecentRecordings(db, { orgId, now, env }),
+    floorOfferStack(db, { orgId, ...window })
   ]);
+
+  // Each closer carries their own stack so the floor's closer picker needs no
+  // second request. A closer with no sale gets a full zero stack, not a blank.
+  const closersWithStack = closers.map((c) => ({
+    ...c,
+    offer_stack: offer.byCloser?.get(c.staff_id)
+      ?? zeroStackFrom(offer.products, { start: window.start, end: window.end })
+  }));
 
   const cashCents = Number(cash.rows[0]?.cents || 0);
   const target = await db.query(
@@ -468,7 +484,9 @@ export async function salesFloor(db, { orgId, now = new Date(), env = process.en
       target_cents: null,
       target_reason: "No daily sales_manager target in staff_targets"
     },
-    closers,
+    offer_stack: offer.stack,
+    offer_stack_unattributed: offer.unattributed,
+    closers: closersWithStack,
     beliefs,
     recordings,
     compliance: {
@@ -664,6 +682,7 @@ async function closerRoster(db, { orgId, start, end, now }) {
         ? Math.max(0, now.getTime() - new Date(row.shift_started).getTime())
         : null,
       calls: held,
+      deposits,
       close_rate: closeRate,
       funded_rate: d2f.rate,
       cash_cents: hasLive ? cashCents : null,

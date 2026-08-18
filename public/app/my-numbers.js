@@ -22,6 +22,73 @@
     return h ? (h + "h " + m + "m") : (m + "m");
   }
 
+  function esc(v) {
+    return String(v == null ? "" : v)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  // A count or a cent value that comes back null means NOT KNOWN. The endpoint
+  // sends a sentence saying why — show the sentence. Never a $0 stand-in for an
+  // unknown, never a bare dash with nothing next to it. A real zero is a zero.
+  function known(v) { return v != null && Number.isFinite(Number(v)); }
+  function why(reason, label) {
+    return '<span class="why" data-l="' + label + '">' +
+      esc(reason || "Not known — no reason was given.") + "</span>";
+  }
+  function cash(cents, display, reason, label) {
+    if (!known(cents)) return why(reason, label);
+    return '<span class="num" data-l="' + label + '">' + esc(display || money(cents)) + "</span>";
+  }
+
+  function stackRow(row, reason, isTotal) {
+    var first = isTotal
+      ? "<span><b>All products</b></span>"
+      : "<span><b>" + esc(row.name || row.code || "—") + "</b>" +
+        (row.active === false ? "<em>retired product</em>" : "") + "</span>";
+    var units = known(row.units)
+      ? '<span class="num" data-l="Units sold">' + Number(row.units) + "</span>"
+      : why(row.units_reason || reason, "Units sold");
+    var collected = cash(row.collected_cents, row.collected_display,
+      row.collected_reason || reason, "Cash collected");
+    if (known(row.collected_cents) && known(row.refunded_cents) && Number(row.refunded_cents) > 0) {
+      collected = collected.replace("</span>",
+        "<em>after " + esc(money(row.refunded_cents)) + " refunded</em></span>");
+    }
+    return '<div class="st-row' + (isTotal ? " tot" : "") + '">' + first + units +
+      cash(row.sold_cents, row.sold_display, row.sold_reason || reason, "Amount sold") +
+      collected + "</div>";
+  }
+
+  function paintOfferStack(d) {
+    var body = document.getElementById("stackBody");
+    if (!body) return;
+    var periodNote = document.getElementById("stackPeriod");
+    var scopeNote = document.getElementById("stackScope");
+    var head = '<div class="st-row hd"><span>Product</span><span class="num">Units sold</span>' +
+      '<span class="num">Amount sold</span><span class="num">Cash collected</span></div>';
+    var os = d.offer_stack;
+
+    if (scopeNote) {
+      scopeNote.textContent = (d.offer_stack_scope && d.offer_stack_scope.note) || "";
+    }
+    if (!os) {
+      body.innerHTML = head +
+        '<div class="st-msg">The offer stack did not come back from /api/read/my-numbers.</div>';
+      return;
+    }
+    if (periodNote && os.period && os.period.label) {
+      periodNote.textContent = "every product you sell · " + os.period.label;
+    }
+    if (os.available === false || !Array.isArray(os.items) || !os.items.length) {
+      body.innerHTML = head + '<div class="st-msg">' +
+        esc(os.reason || "The offer stack could not be read.") + "</div>";
+      return;
+    }
+    var rows = os.items.map(function (it) { return stackRow(it, os.reason, false); }).join("");
+    body.innerHTML = head + rows + (os.totals ? stackRow(os.totals, os.reason, true) : "");
+  }
+
   function paint(d) {
     var shiftChip = $("#shiftChip") || $("header .hl .chip");
     if (shiftChip) {
@@ -54,6 +121,8 @@
     } else if (bar) {
       bar.style.width = "0%";
     }
+
+    paintOfferStack(d);
 
     var month = d.month || {};
     var cells = document.querySelectorAll(".grid .m");
