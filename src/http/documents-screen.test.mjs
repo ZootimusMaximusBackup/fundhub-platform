@@ -124,4 +124,23 @@ describe("the Documents screen — sent contracts (moved here from Contracts)", 
   test("a document that is not a contract gets no contract controls", () => {
     assert.match(DOCS, /byDoc\[/, "rows are decorated by lookup, so a miss leaves them plain");
   });
+
+  /* Owner split, 2026-08-17: Documents watches four classes. A fifth kind
+     (client_upload) and a blank uploaded template must not be invented into
+     one of those four. */
+  test("it watches the four named classes and does not invent a fifth", () => {
+    assert.match(DOCS, /n:'Soft-pull authorizations'/);
+    assert.match(DOCS, /n:'Contracts'/);
+    assert.match(DOCS, /n:'Invoices'/);
+    assert.match(DOCS, /n:'UnderwriteIQ deliverables'/);
+    assert.match(DOCS, /subtype === "template_source"/,
+      "blank uploaded templates must leave this list — they are not sent or received");
+    assert.equal(/cls = "auth"; unmapped\+\+/.test(DOCS), false,
+      "an unknown kind must not be filed as a soft-pull authorization");
+  });
+
+  test("it never paints a sample banner over real rows", () => {
+    assert.match(DOCS, /return "live documents · " \+ mapped\.length/);
+    assert.equal(/if \(!rows\.length\) return null/.test(DOCS), false);
+  });
 });

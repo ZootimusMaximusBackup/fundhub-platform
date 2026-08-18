@@ -629,12 +629,14 @@ renderTabs(); renderClassbar(); render();
 
       var CLS = { authorization: "auth", contract: "contract",
                   invoice_document: "invoice", deliverable: "deliverable" };
-      var unmapped = 0;
+      var skipped = 0;
       var DAY = 86400000;
 
       var mapped = rows.map(function (r) {
         var cls = CLS[r.kind];
-        if (!cls) { cls = "auth"; unmapped++; }   // counted, not hidden
+        /* Four classes only. A blank uploaded template is not sent or received
+           paper, and a kind we do not name is not filed as a soft-pull. */
+        if (!cls || r.subtype === "template_source") { skipped++; return null; }
 
         /* delivery_status is a CHECK-constrained vocabulary, not free text:
            not_delivered | pending | sent | delivered | failed | bounced.
@@ -668,16 +670,16 @@ renderTabs(); renderClassbar(); render();
           sig: sig,
           age: Math.max(0, Math.floor((Date.now() - born.getTime()) / DAY))
         };
-      });
+      }).filter(Boolean);
 
       DOCS.length = 0;
       Array.prototype.push.apply(DOCS, mapped);
       try { redraw(); } catch (e) { return null; }   // class cards + table + tiles, all from DOCS
       decorateContracts();                           // one extra call, then the badges appear
 
-      return "live documents · " + rows.length + " records" +
+      return "live documents · " + mapped.length + " records" +
              (data.hasMore ? " (first 200)" : "") +
-             (unmapped ? " · " + unmapped + " of an unmapped kind shown under Soft-pull auth" : "");
+             (skipped ? " · " + skipped + " not in this list" : "");
     });
   });
 })();
