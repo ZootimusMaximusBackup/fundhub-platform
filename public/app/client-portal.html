@@ -367,14 +367,36 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
   <main>
     <div class="page fh-maxw">
 
-      <div class="welcome" id="greeting">Open this from a client file</div>
-      <div class="welcome-sub precall-only" id="greeting-sub-pre">Open this from a client file.</div>
+      <div class="welcome" id="greeting">Welcome to your Fundhub portal</div>
+      <div class="welcome-sub precall-only" id="greeting-sub-pre">We could not load your file. Use the link we sent you, or sign in again.</div>
       <div class="welcome-sub funding-only" id="greeting-sub">Here's where things stand on your funding.</div>
 
-      <!-- ══ SIGN TO AUTHORIZE DISPUTE LETTERS — onboarding, above the fold ══
-           The welcome video is ~410px. This card sat under it, so a 900px
-           fold scan never saw "Sign to authorize". It is the one action this
-           screen needs from an unsigned client, so it loads first. -->
+      <!-- ══ 1 · WELCOME VIDEO (hero) ════════════════════════════════════ -->
+      <section class="card video-card" aria-labelledby="video-title">
+        <div class="player" id="player">
+          <div class="ghost"><div class="logo" role="presentation"></div></div>
+          <p class="video-empty" id="video-empty">Welcome video is not available</p>
+        </div>
+        <div class="video-meta">
+          <div class="sec-hd" style="margin-bottom:7px">
+            <div class="eyebrow">CP-01 <span class="sep">/</span> START HERE</div>
+            <span class="tier-tag" id="tier-tag">Fundhub portal</span>
+          </div>
+          <div class="video-title" id="video-title">Welcome to the Fundhub portal</div>
+          <div class="video-copy">A short hello: what this page is, what happens on your call, and how to
+            use this portal so you are not guessing.</div>
+          <div class="vrow">
+            <span class="vtime" id="vnow">—</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══ SIGN TO AUTHORIZE DISPUTE LETTERS ═══════════════════════
+           Owner call 2026-08-17: the welcome leads this page and this card
+           comes directly after it. That reverses ae91faa, which had lifted
+           this card above the video so a 900px fold scan would catch it.
+           It is still the one action an unsigned client must take, so it
+           sits second — above the Facebook card and everything below. -->
       <section class="card sign-auth-card" id="dispute-auth-card" aria-labelledby="dispute-auth-title">
         <div class="card-title" id="dispute-auth-title">Sign to authorize dispute letters</div>
         <p class="sign-auth-lede">
@@ -414,26 +436,6 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
         </div>
         <span class="fb-go">Join on Facebook</span>
       </a>
-
-      <!-- ══ 1 · WELCOME VIDEO (hero) ════════════════════════════════════ -->
-      <section class="card video-card" aria-labelledby="video-title">
-        <div class="player" id="player">
-          <div class="ghost"><div class="logo" role="presentation"></div></div>
-          <p class="video-empty" id="video-empty">Welcome video is not available</p>
-        </div>
-        <div class="video-meta">
-          <div class="sec-hd" style="margin-bottom:7px">
-            <div class="eyebrow">CP-01 <span class="sep">/</span> START HERE</div>
-            <span class="tier-tag" id="tier-tag">Fundhub portal</span>
-          </div>
-          <div class="video-title" id="video-title">Welcome to the Fundhub portal</div>
-          <div class="video-copy">A short hello: what this page is, what happens on your call, and how to
-            use this portal so you are not guessing.</div>
-          <div class="vrow">
-            <span class="vtime" id="vnow">—</span>
-          </div>
-        </div>
-      </section>
 
       <!-- ══ AGREEMENTS — contracts sent for signature ═════════════════ -->
       <section class="card" id="agreements-card" aria-labelledby="agreements-title" hidden>
@@ -1458,8 +1460,8 @@ var PRODUCTS = {
     setText("who-name", "—");
     var av = document.getElementById("who-av");
     if (av) av.textContent = "—";
-    setText("greeting", "Open this from a client file");
-    setText("greeting-sub-pre", "Open this from a client file.");
+    setText("greeting", "Welcome to your Fundhub portal");
+    setText("greeting-sub-pre", "We could not load your file. Use the link we sent you, or sign in again.");
     setAdvisor("");
   }
   function advisorFromClient(c) {
@@ -1610,7 +1612,7 @@ var PRODUCTS = {
     paintAgreements([]);
     paintMessages([]);
     paintPays([]);
-    FHData.banner("sample", "Open this from a client file");
+    FHData.banner("sample", "We could not load your file. Use the link we sent you, or sign in again.");
     return;
   }
 
@@ -1898,7 +1900,7 @@ var PRODUCTS = {
   function load() {
     if (!clientId) {
       $("cpDisclosure").textContent =
-        "Sign in as a client, or open this page with ?id=<client id>, to load the legal wording and record a signature.";
+        "Sign in to load the legal wording and record your signature.";
       ensurePadSized();
       return;
     }
@@ -1925,7 +1927,7 @@ var PRODUCTS = {
   function submit() {
     if (busy) return;
     if (!clientId) {
-      say("err", "Sign in as a client, or open this page with your client id, to record a signature.");
+      say("err", "Sign in to record your signature.");
       return;
     }
     var name = $("cpSignName").value.trim();
