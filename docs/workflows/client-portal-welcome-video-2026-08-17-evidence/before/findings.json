@@ -1,0 +1,430 @@
+{
+  "batch": "client-portal-welcome-video-2026-08-17",
+  "workflow": "C — live 'before' capture",
+  "capturedAt": "2026-08-18T03:45:35.492Z",
+  "target": "https://fundhub.ai/app/client-portal.html",
+  "headline": "No welcome video exists on the client portal at all — the card is an empty grey strip that says 'Welcome video is not available'. The 'Sign to authorize dispute letters' card is the first card on the page and fills the whole first screen. Both staff strings the owner wants gone are still shipped.",
+  "signedInCapture": {
+    "achieved": false,
+    "whyNot": "Sign-in is down on the live site for every role.",
+    "endpoint": "POST https://fundhub.ai/api/auth/login",
+    "httpStatus": 500,
+    "responseBody": {
+      "ok": false,
+      "error": "internal_error",
+      "message": "cannot execute INSERT in a read-only transaction"
+    },
+    "rolesTried": [
+      "client@fundhub.ai",
+      "owner@fundhub.ai"
+    ],
+    "attempts": 3,
+    "whatTheClientSeesOnScreen": "fundhub Sign in to your account Server error, not a wrong password — cannot execute INSERT in a read-only transaction. Check Netlify function logs for /api/auth/login. Sign in Need help? support@fundhub.ai Forgot your password? ← Back to fundhub.ai",
+    "tokenStored": false,
+    "siteHealthAtTheSameMoment": {
+      "endpoint": "GET https://fundhub.ai/api/health",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "db": "up",
+        "state": "up",
+        "migrations": 159,
+        "expected": 156,
+        "pending": 0
+      },
+      "plainEnglish": "Reading from the database works. Writing to it does not. Signing in has to write a session row, so signing in fails. This is a live outage, not a wrong password."
+    },
+    "envVarNamesLookedFor": [
+      "STAFF_E2E_PASSWORD"
+    ],
+    "envVarResult": "STAFF_E2E_PASSWORD is present in the gitignored .env and was read by the same loader the UI audit harness uses. Its value was never printed. The password is not the problem.",
+    "noSessionBehaviour": {
+      "openedUrl": "/app/client-portal.html",
+      "redirectedTo": "/login.html?next=/app/client-portal.html",
+      "apiCalls": [
+        {
+          "m": "GET",
+          "url": "/api/auth/session",
+          "status": 401
+        },
+        {
+          "m": "GET",
+          "url": "/api/auth/login",
+          "status": 200
+        }
+      ],
+      "consoleErrors": [
+        "pageerror: FHData is not defined",
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ]
+    },
+    "idParamState": "Also blocked. /app/client-portal.html?id=8556bedc-46e1-4d85-b0cd-a24adfee1521 redirects to /login.html the same way — the page shell demands a session before any ?id= handling runs. Both states were tried.",
+    "harnessReuse": "docs/workflows/ui-audit-evidence/_tools/ui-audit.mjs was read first and its login flow and write-guard were copied. It was not run as-is: it writes to a different evidence folder, does a click sweep this capture does not want, and produces no page text or top-DOM dump."
+  },
+  "evidenceSource": {
+    "method": "Live files downloaded over HTTP, then rendered in Chromium with JavaScript disabled.",
+    "files": [
+      {
+        "url": "https://fundhub.ai/app/client-portal.html",
+        "sha256": "0d2e432732ea2e7e5bae7bc7ce0b59684b95e00e6afadffb7ca3afd3d23431c7",
+        "matchesWorkingTree": true
+      },
+      {
+        "url": "https://fundhub.ai/app/fundhub-brand.css",
+        "sha256": "45e2309770a4b8a5d02c386a4f07f29bd535f97e2d004933cac6e86fc140b03a",
+        "matchesWorkingTree": true
+      }
+    ],
+    "whatIsTrustworthy": "Which elements exist, their order, their CSS layout and their pixel positions.",
+    "whatIsUnverified": "Anything JavaScript decides from live data: which cards a real client ends up seeing, the client's real name in the greeting, and the server-loaded legal wording.",
+    "note": "Offsets are measured from the top of the scrolling area, which is <main>. The page does NOT scroll the window — it scrolls an inner container, so document.scrollHeight reads 900 and a naive fullPage screenshot only captures the first screen. The full-page shots here were taken at a tall viewport instead."
+  },
+  "checks": {
+    "a_welcomeVideo": {
+      "question": "Is there a welcome video (any <video>, <iframe> embed, or video player) anywhere on the client portal?",
+      "answer": false,
+      "confidence": "HIGH — this does not depend on being signed in",
+      "evidence": [
+        "Zero <video>, <iframe>, <embed>, <object>, <source>, [data-video], .video-js, .plyr elements anywhere in the shipped page. The query returned an empty list.",
+        "No YouTube, Vimeo, Wistia, Loom, Mux, .mp4 or HLS reference anywhere in the file.",
+        "No JavaScript creates one either — no createElement('video'), no createElement('iframe'), no .src = assignment in the whole file."
+      ],
+      "whatIsThereInstead": {
+        "element": "section.card.video-card at public/app/client-portal.html:419",
+        "innerBox": "div.player#player — holds a faded logo and the sentence 'Welcome video is not available'",
+        "renderedSize": "730px wide by 53px tall",
+        "looksLike": "A thin light-grey strip with grey centred text. NOT a 16:9 hero box. The CSS asks for aspect-ratio 16/9 (about 410px tall), but .video-card is a column flexbox, so the .player flex item collapses to the height of its one line of text.",
+        "theJavaScriptThatEmptiesIt": "public/app/client-portal.html:981-989 — deletes the play button (#playbtn), sets the timer #vnow to an em dash, and writes 'Welcome video is not available' into #video-empty. Its comment reads: 'welcome video: honest empty. Do not pretend a video played.'",
+        "cardTextBelowTheStrip": "'CP-01 / START HERE', tag 'Fundhub portal', title 'Welcome to the Fundhub portal', copy 'A short hello: what this page is, what happens on your call, and how to use this portal so you are not guessing.', then an em dash where the running time would be."
+      },
+      "position": {
+        "childIndexInMain": 5,
+        "ofHowManyChildren": 15,
+        "desktopTopPx": 763,
+        "desktopCardHeightPx": 222,
+        "mobileTopPx": 920,
+        "aboveOrBelowTheFold": "The 1440x900 first screen shows about 848px of the scroller. The video strip starts at 764px, so only the grey strip itself peeks in at the very bottom; the title and copy are below the fold. On a 390x844 phone it starts at 920px — fully below the first screen."
+      }
+    },
+    "b_signToAuthorizeCard": {
+      "question": "Is there a card or section with the text 'Sign to authorize dispute letters'?",
+      "answer": true,
+      "confidence": "HIGH",
+      "element": "section#dispute-auth-card.card.sign-auth-card",
+      "sourceLines": "public/app/client-portal.html:378-405",
+      "isItFirst": "It is the FIRST card on the page and it is the hero. Only three one-line greeting <div>s sit above it, and one of those is display:none. Nothing else is visible before it.",
+      "verticalPosition": {
+        "childIndexInMain": 3,
+        "desktopTopPx": 94,
+        "desktopHeightPx": 566,
+        "mobileTopPx": -52,
+        "mobileHeightPx": 0,
+        "fillsTheFirstScreen": "Yes. At 1440x900 it runs from 94px to 660px inside a roughly 848px-tall viewport, so it is essentially the whole first screen."
+      },
+      "whatComesBefore": [
+        "div#greeting.welcome — the headline, top of the page at 26px, reading 'Open this from a client file'",
+        "div#greeting-sub-pre.welcome-sub.precall-only — sub-line at 51px, reading 'Open this from a client file.'",
+        "div#greeting-sub.welcome-sub.funding-only — present in the markup but display:none in this state"
+      ],
+      "whatComesAfter": [
+        "a#fb-wins.card.fb-wins — 'Join the Fundhub wins group' at 676px",
+        "section.card.video-card — the empty welcome-video strip at 763px"
+      ],
+      "cardContents": "Title, a lede ('This lets Fundhub prepare dispute letters for you. It is not a credit pull...'), the grey legal-wording slot #cpDisclosure, a 'Your legal name' text input, a 640x160 signature canvas, a Clear button, and a black button reading 'I sign to authorize Fundhub to prepare my dispute letters'.",
+      "whyItSitsThere": "public/app/client-portal.html:373-376 says it outright: 'The welcome video is ~410px. This card sat under it, so a 900px fold scan never saw \"Sign to authorize\". It is the one action this screen needs from an unsigned client, so it loads first.' The card was deliberately moved above the video card. Undoing that is exactly what the owner is asking for, so whoever edits it should expect a fold-position argument in the code comment and in any UI-standards check that reads it.",
+      "complianceNote": "COMPLIANCE REVIEW REQUIRED on any change to this card — it is dispute logic and consent capture (CLAUDE.md §7)."
+    },
+    "c_openThisFromAClientFile": {
+      "question": "Does the visible text contain 'Open this from a client file'?",
+      "answer": true,
+      "confidence": "HIGH that it ships and is the default rendered text. UNVERIFIED whether a signed-in client still reads it — see stateDependent.",
+      "whereOnScreen": "Top-left, the biggest line on the page, at 26px — it is the page headline. The sub-line repeats it with a full stop at 51px. Both sit directly above the 'Sign to authorize dispute letters' card.",
+      "surroundingText": "The page reads, in order: 'Open this from a client file' / 'Open this from a client file.' / 'Sign to authorize dispute letters'.",
+      "occurrencesInTheLiveFile": [
+        {
+          "line": 370,
+          "kind": "rendered markup — the headline",
+          "text": "<div class=\"welcome\" id=\"greeting\">Open this from a client file</div>"
+        },
+        {
+          "line": 371,
+          "kind": "rendered markup — the sub-line",
+          "text": "<div class=\"welcome-sub precall-only\" id=\"greeting-sub-pre\">Open this from a client file.</div>"
+        },
+        {
+          "line": 1461,
+          "kind": "JavaScript — paintEmptyIdentity() writes it into the headline",
+          "text": "setText(\"greeting\", \"Open this from a client file\");"
+        },
+        {
+          "line": 1462,
+          "kind": "JavaScript — paintEmptyIdentity() writes it into the sub-line",
+          "text": "setText(\"greeting-sub-pre\", \"Open this from a client file.\");"
+        },
+        {
+          "line": 1613,
+          "kind": "JavaScript — a page banner",
+          "text": "FHData.banner(\"sample\", \"Open this from a client file\");"
+        },
+        {
+          "line": 1307,
+          "kind": "code comment only, never rendered",
+          "text": "'this page stays empty: \"Open this from a client file.\" It does not invent people.'"
+        }
+      ],
+      "stateDependent": {
+        "rule": "These lines are the NO-CLIENT-ID fallback. See public/app/client-portal.html:1589-1616. clientId comes from ?id= / ?client_id=, else from localStorage fh_account.clientId. With no clientId, paintEmptyIdentity() runs, both lines read 'Open this from a client file', and FHData.banner('sample', ...) fires.",
+        "ifClientIdIsPresent": "paintIdentity() runs instead (lines 1426-1436): the headline becomes 'Welcome back, <first name>' — or plain 'Welcome' when the session carries no name — and the sub-line becomes 'Welcome to your Fundhub portal. Your call is next.'",
+        "unverified": "Whether the live client account's session actually carries a clientId could not be tested, because sign-in is down. Workflow D must confirm this on a real client session."
+      }
+    },
+    "d_openThisPageWith_idParam_yourClientId": {
+      "question": "Does the visible text contain 'open this page with', '?id=' or 'your client id'?",
+      "answer": true,
+      "confidence": "HIGH that they ship. UNVERIFIED whether a signed-in client reads them — see stateDependent.",
+      "whereOnScreen": "Both rendered strings live INSIDE the 'Sign to authorize dispute letters' card, which is the hero. The first replaces the grey legal-wording paragraph at roughly 200-235px down, between the lede and the 'Your legal name' input. The second appears in the message strip at the bottom of the same card, only after the client presses the sign button.",
+      "occurrencesInTheLiveFile": [
+        {
+          "line": 1901,
+          "kind": "JavaScript — written into #cpDisclosure, the legal-wording slot",
+          "text": "\"Sign in as a client, or open this page with ?id=<client id>, to load the legal wording and record a signature.\""
+        },
+        {
+          "line": 1928,
+          "kind": "JavaScript — error shown after pressing the sign button",
+          "text": "say(\"err\", \"Sign in as a client, or open this page with your client id, to record a signature.\")"
+        },
+        {
+          "line": 1113,
+          "kind": "code comment only, never rendered",
+          "text": "'... down this file does: ?id= first, the signed-in client's own account'"
+        },
+        {
+          "line": 1306,
+          "kind": "code comment only, never rendered",
+          "text": "'Requires ?id= or ?client_id= (or a signed-in client account). Without an id'"
+        },
+        {
+          "line": 1682,
+          "kind": "code comment only, never rendered",
+          "text": "'driven by hand: staff opening the portal with ?id= keep the ordinary'"
+        }
+      ],
+      "defaultTextInThatSlot": "The card ships with 'The legal wording loads from the server. It is not stored in this page.' in #cpDisclosure. That is what the styled capture shows, because JavaScript is off.",
+      "stateDependent": {
+        "rule": "Both strings are the no-clientId branch of the same check as (c). With a clientId, the disclosure text is fetched from GET /api/consent/capture instead.",
+        "unverified": "Same reason as (c) — sign-in is down."
+      }
+    },
+    "e_sectionOrderTopToBottom": {
+      "question": "In top-to-bottom order, the major sections and cards on the client portal.",
+      "confidence": "HIGH for order and layout. Which of them a real client ends up seeing is partly JavaScript-decided; the ones hidden by default are listed separately.",
+      "measuredAt": "1440px wide, live HTML + live CSS, JavaScript disabled",
+      "plainEnglishOrder": [
+        "1. Headline — 'Open this from a client file' (26px)",
+        "2. Sub-line — 'Open this from a client file.' (51px)",
+        "3. CARD: Sign to authorize dispute letters — lede, grey legal-wording box, 'Your legal name' input, signature pad, Clear, and the sign button (94px, 566px tall — the whole first screen)",
+        "4. CARD: Join the Fundhub wins group — one-line Facebook link row (676px)",
+        "5. CARD: Welcome video — a thin grey strip reading 'Welcome video is not available', then 'CP-01 / START HERE', 'Welcome to the Fundhub portal' and a short paragraph (763px, 222px tall)",
+        "6. CARD: Before your call — black status bar plus the 8-step stepper: Booked, Diagnostic Paid, Docs Received, Round Started, Round Submitted, Round Approved, Round Funded, File Finalized (1000px)",
+        "7. CARD: What You Own — 'Nothing to download yet' (1217px)",
+        "8. CARD: Unlock More — six locked product tiles, $32 soft pull through the $5,000 course (1425px)",
+        "9. Account & history — a collapsed drop-down: Payments, Agreements, Documents, Activity, Messages (2041px)",
+        "10. Bottom rail — 'Your Funding Advisor' (name shows as an em dash) beside 'Want more funding? — Ask for a call' (2110px)"
+      ],
+      "visibleOrder": [
+        {
+          "position": 1,
+          "element": "div#greeting.welcome",
+          "label": "Open this from a client file",
+          "desktopTopPx": 26,
+          "desktopHeightPx": 21
+        },
+        {
+          "position": 2,
+          "element": "div#greeting-sub-pre.welcome-sub.precall-only",
+          "label": "Open this from a client file.",
+          "desktopTopPx": 51,
+          "desktopHeightPx": 21
+        },
+        {
+          "position": 3,
+          "element": "section#dispute-auth-card.card.sign-auth-card",
+          "label": "Sign to authorize dispute letters",
+          "desktopTopPx": 94,
+          "desktopHeightPx": 566
+        },
+        {
+          "position": 4,
+          "element": "a#fb-wins.card.fb-wins",
+          "label": "Join the Fundhub wins group",
+          "desktopTopPx": 676,
+          "desktopHeightPx": 71
+        },
+        {
+          "position": 5,
+          "element": "section.card.video-card",
+          "label": "Welcome to the Fundhub portal",
+          "desktopTopPx": 763,
+          "desktopHeightPx": 222
+        },
+        {
+          "position": 6,
+          "element": "section.card.prog-card.precall-only",
+          "label": "Your file is open. Watch the welcome, join the wins group, and bring questions. Funding steps show up after we talk.",
+          "desktopTopPx": 1000,
+          "desktopHeightPx": 201
+        },
+        {
+          "position": 7,
+          "element": "section.card",
+          "label": "What You Own",
+          "desktopTopPx": 1217,
+          "desktopHeightPx": 192
+        },
+        {
+          "position": 8,
+          "element": "section.card",
+          "label": "Unlock More",
+          "desktopTopPx": 1425,
+          "desktopHeightPx": 600
+        },
+        {
+          "position": 9,
+          "element": "details#acct.acct",
+          "label": "› Account & history Payments · Agreements · Documents · Acti",
+          "desktopTopPx": 2041,
+          "desktopHeightPx": 53
+        },
+        {
+          "position": 10,
+          "element": "div.rail",
+          "label": "Your Funding Advisor",
+          "desktopTopPx": 2110,
+          "desktopHeightPx": 216
+        }
+      ],
+      "mobileOrder": [
+        {
+          "position": 1,
+          "element": "div#greeting.welcome",
+          "mobileTopPx": 26,
+          "mobileHeightPx": 21
+        },
+        {
+          "position": 2,
+          "element": "div#greeting-sub-pre.welcome-sub.precall-only",
+          "mobileTopPx": 51,
+          "mobileHeightPx": 21
+        },
+        {
+          "position": 3,
+          "element": "section#dispute-auth-card.card.sign-auth-card",
+          "mobileTopPx": 94,
+          "mobileHeightPx": 704
+        },
+        {
+          "position": 4,
+          "element": "a#fb-wins.card.fb-wins",
+          "mobileTopPx": 814,
+          "mobileHeightPx": 90
+        },
+        {
+          "position": 5,
+          "element": "section.card.video-card",
+          "mobileTopPx": 920,
+          "mobileHeightPx": 270
+        },
+        {
+          "position": 6,
+          "element": "section.card.prog-card.precall-only",
+          "mobileTopPx": 1207,
+          "mobileHeightPx": 221
+        },
+        {
+          "position": 7,
+          "element": "section.card",
+          "mobileTopPx": 1444,
+          "mobileHeightPx": 288
+        },
+        {
+          "position": 8,
+          "element": "section.card",
+          "mobileTopPx": 1748,
+          "mobileHeightPx": 1464
+        },
+        {
+          "position": 9,
+          "element": "details#acct.acct",
+          "mobileTopPx": 3228,
+          "mobileHeightPx": 95
+        },
+        {
+          "position": 10,
+          "element": "div.rail",
+          "mobileTopPx": 3339,
+          "mobileHeightPx": 427
+        }
+      ],
+      "hiddenByDefaultInThisState": [
+        {
+          "element": "div#greeting-sub.welcome-sub.funding-only",
+          "label": "Here's where things stand on your funding.",
+          "hiddenBy": "CSS gate — body carries 'no-funding no-docs no-own', which hides .funding-only, the upload card and the promo"
+        },
+        {
+          "element": "section#agreements-card.card",
+          "label": "Your agreements",
+          "hiddenBy": "hidden attribute"
+        },
+        {
+          "element": "section.card.prog-card.funding-only",
+          "label": "Your funding file is open. Amounts show here when a round is approved on your file.",
+          "hiddenBy": "CSS gate — body carries 'no-funding no-docs no-own', which hides .funding-only, the upload card and the promo"
+        },
+        {
+          "element": "section#promo.promo.funding-only",
+          "label": "CP-00 / RECOMMENDED NEXT Credit repair, done-for-you Your ro",
+          "hiddenBy": "CSS gate — body carries 'no-funding no-docs no-own', which hides .funding-only, the upload card and the promo"
+        },
+        {
+          "element": "section#action-card.action-card",
+          "label": "Send a file Nothing is waiting on this page until we ask. No",
+          "hiddenBy": "CSS gate — body carries 'no-funding no-docs no-own', which hides .funding-only, the upload card and the promo"
+        }
+      ],
+      "geometry": {
+        "contentColumnWidthPx": 780,
+        "desktopTotalScrollHeightPx": 2522,
+        "mobileTotalScrollHeightPx": 3766,
+        "mobileHorizontalOverflow": false
+      },
+      "whatThisMeansForTheOwnerAsk": "Both complaints check out. The sign card is the hero and takes the whole first screen. The welcome video sits two cards below it at 763px, and there is no video in it — just a grey strip that says so."
+    },
+    "f_consoleErrors": {
+      "question": "Any console errors on the page?",
+      "signedInPage": "UNVERIFIED — could not sign in.",
+      "onVisitingTheClientPortalWithNoSession": [
+        "pageerror: FHData is not defined",
+        "Failed to load resource: the server responded with a status of 401 ()"
+      ],
+      "onAttemptingToSignIn": [
+        "Failed to load resource: the server responded with a status of 500 ()"
+      ],
+      "notable": "'pageerror: FHData is not defined' fires on /app/client-portal.html before the shell redirects to the login page. That is the portal's own script running before, or without, its data library. Worth a look, but it happens on the redirect path — it is not proof of anything on the signed-in path."
+    }
+  },
+  "filesInThisFolder": {
+    "findings.json": "This file.",
+    "client-portal-text.txt": "Full page text of the live-served page with the live stylesheet, JavaScript disabled. A header at the top states the limits.",
+    "client-portal-top-dom.txt": "outerHTML of the first 6 top-level children of 'main .page', in order, with pixel offsets and hidden/display state.",
+    "client-portal-STATIC-MARKUP-nojs-desktop-full.png": "Whole page, 1440px wide, live markup + live CSS, JavaScript off.",
+    "client-portal-STATIC-MARKUP-nojs-desktop-fold.png": "The first screen only, 1440x900.",
+    "client-portal-STATIC-MARKUP-nojs-mobile-full.png": "Whole page, 390px wide.",
+    "client-portal-STATIC-MARKUP-nojs-mobile-fold.png": "The first screen only, 390x844.",
+    "BLOCKED-no-session-desktop.png": "What /app/client-portal.html actually returns with no session — it redirects to the login page.",
+    "BLOCKED-login-error-desktop.png": "The login page after signing in as client@fundhub.ai. Shows the server error on screen.",
+    "BLOCKED-login-error-mobile.png": "The same at 390x844.",
+    "DELIBERATELY ABSENT: client-portal-desktop.png, client-portal-mobile.png": "Those names promise a signed-in client render and no such render exists right now. Filling them with a login screenshot would make the before/after comparison lie. Workflow D should create them once sign-in is back."
+  }
+}

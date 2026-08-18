@@ -1,0 +1,107 @@
+{
+  "batch": "client-portal-welcome-video-2026-08-17",
+  "workflow": "D — live 'after' capture",
+  "capturedAt": "2026-08-18T03:55:33.499Z",
+  "target": "https://fundhub.ai/app/client-portal.html",
+  "commit": "dd79cd1",
+  "technique": "Live HTML + live CSS from fundhub.ai, JavaScript disabled. Same method as the 'before' capture, so the two compare directly. A signed-in render was not possible — see signedInCapture.",
+  "signedInCapture": {
+    "achieved": false,
+    "whyNot": "Sign-in is down on the live site for every role — the database is accepting reads but refusing writes.",
+    "endpoint": "POST https://fundhub.ai/api/auth/login",
+    "httpStatus": 500,
+    "responseBody": {
+      "ok": false,
+      "error": "internal_error",
+      "message": "cannot execute INSERT in a read-only transaction"
+    }
+  },
+  "staffStringsVisibleToClient": {
+    "openFromClientFile": false,
+    "openPageWithId": false,
+    "yourClientId": false
+  },
+  "hasRealVideoElement": false,
+  "orderTopToBottom": [
+    {
+      "tag": "div",
+      "id": "greeting",
+      "cls": "welcome",
+      "top": 78,
+      "height": 21,
+      "text": "Welcome to your Fundhub portal"
+    },
+    {
+      "tag": "div",
+      "id": "greeting-sub-pre",
+      "cls": "welcome-sub precall-only",
+      "top": 103,
+      "height": 21,
+      "text": "We could not load your file. Use the link we sent you, or sign in again."
+    },
+    {
+      "tag": "section",
+      "id": null,
+      "cls": "card video-card",
+      "top": 146,
+      "height": 222,
+      "text": "Welcome video is not available CP-01 / START HERE FUNDHUB PORTAL Welcome to the Fundhub p"
+    },
+    {
+      "tag": "section",
+      "id": "dispute-auth-card",
+      "cls": "card sign-auth-card",
+      "top": 384,
+      "height": 566,
+      "text": "Sign to authorize dispute letters This lets Fundhub prepare dispute letters for you. It i"
+    },
+    {
+      "tag": "a",
+      "id": "fb-wins",
+      "cls": "card fb-wins",
+      "top": 966,
+      "height": 71,
+      "text": "f Join the Fundhub wins group This is where we post wins. Come say hi before your call. Jo"
+    },
+    {
+      "tag": "section",
+      "id": null,
+      "cls": "card prog-card precall-only",
+      "top": 1052,
+      "height": 201,
+      "text": "BEFORE YOUR CALL Your file is open. Watch the welcome, join the wins group, and bring ques"
+    },
+    {
+      "tag": "section",
+      "id": null,
+      "cls": "card",
+      "top": 1269,
+      "height": 192,
+      "text": "WHAT YOU OWN Yours to keep — always here, always downloadable Nothing to download yet Your"
+    },
+    {
+      "tag": "section",
+      "id": null,
+      "cls": "card",
+      "top": 1477,
+      "height": 600,
+      "text": "UNLOCK MORE List prices — final amount is set on your call, except the $32 soft pull 🔒 LO"
+    },
+    {
+      "tag": "details",
+      "id": "acct",
+      "cls": "acct",
+      "top": 2093,
+      "height": 53,
+      "text": "› Account & history Payments · Agreements · Documents · Activity · Messages"
+    },
+    {
+      "tag": "div",
+      "id": null,
+      "cls": "rail",
+      "top": 2162,
+      "height": 216,
+      "text": "YOUR FUNDING ADVISOR — — Looks after your file Your round, your documents, a payment — you"
+    }
+  ]
+}
