@@ -283,7 +283,6 @@
         <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
         <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
         <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
-        <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Demo Mode</span></a>
         <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
 </div></div>
 
@@ -339,24 +338,6 @@
           <div class="kpi-sub"><span data-kpi="show">—</span> show rate</div></div>
         <div class="kpi-tile"><div class="kpi-label">Cost / Funded</div><div class="kpi-value" data-kpi="cpf">—</div></div>
         <div class="kpi-tile"><div class="kpi-label">New Clients</div><div class="kpi-value" data-kpi="clients">—</div></div>
-      </div>
-    </div>
-
-    <!-- Demo Mode sits under the numbers. Top-left is cash / funded / close rate. -->
-    <div class="section" id="fh-demo-mode-panel" style="margin-bottom:18px">
-      <div class="card" style="padding:14px 16px;border:2px solid #9A3412;background:#FFF7ED">
-        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
-          <div style="min-width:220px;max-width:52ch">
-            <div style="font-size:var(--fs-caption);font-weight:700;letter-spacing:.06em;color:#9A3412;margin-bottom:4px">DEMO MODE</div>
-            <div id="fhDemoModeStatus" style="font-size:var(--fs-body);line-height:1.45;color:#7C2D12">Checking…</div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <button type="button" id="fhDemoModeOn" style="display:none;background:#9A3412;color:#FFF7ED;border:0;padding:10px 14px;border-radius:6px;cursor:pointer;font-weight:700;font-size:var(--fs-body)">Turn ON</button>
-            <button type="button" id="fhDemoModeOff" style="display:none;background:transparent;border:1px solid #9A3412;color:#9A3412;padding:10px 14px;border-radius:6px;cursor:pointer;font-weight:700;font-size:var(--fs-body)">Turn OFF</button>
-            <a href="sample-data.html" style="font-size:var(--fs-body);font-weight:700;color:#9A3412;text-decoration:underline">Open Demo Mode screen →</a>
-          </div>
-        </div>
-        <div id="fhDemoModeMsg" style="margin-top:8px;font-size:var(--fs-body);color:#7C2D12"></div>
       </div>
     </div>
 
@@ -1045,88 +1026,6 @@
       return rows.length ? ("live staff · " + rows.length) : "No staff rows.";
     });
   }
-})();
-</script>
-<script>
-(function () {
-  var statusEl = document.getElementById("fhDemoModeStatus");
-  var msgEl = document.getElementById("fhDemoModeMsg");
-  var panel = document.getElementById("fh-demo-mode-panel");
-  if (!statusEl || !panel) return;
-  function headers() {
-    var h = { Accept: "application/json", "Content-Type": "application/json" };
-    var t = localStorage.getItem("fh_token");
-    if (t) h.Authorization = "Bearer " + t;
-    return h;
-  }
-  function say(t, bad) {
-    if (!msgEl) return;
-    msgEl.textContent = t || "";
-    msgEl.style.color = bad ? "#B91C1C" : "#7C2D12";
-  }
-  function paint(d) {
-    var on = !!(d && d.demo_mode_enabled);
-    var c = (d && d.counts) || {};
-    statusEl.textContent = on
-      ? "ON — CRM shows seeded demo data (banner on every screen). Clients: " + (c.clients || 0) + ", lenders: " + (c.lenders || 0) + "."
-      : "OFF — demo rows are hidden. Turn on to seed fictional clients for demos and training.";
-    /* Offer only the action that changes state. "Turn OFF" used to sit here
-       enabled while the org was already OFF and posted {enabled:false} to no
-       effect — a live-looking control that did nothing. */
-    var onBtnEl = document.getElementById("fhDemoModeOn");
-    var offBtnEl = document.getElementById("fhDemoModeOff");
-    if (onBtnEl) onBtnEl.style.display = on ? "none" : "";
-    if (offBtnEl) offBtnEl.style.display = on ? "" : "none";
-  }
-  function load() {
-    /* api/demo/mode.mjs is owner/admin only. Hide the panel up front for every
-       other role instead of asking and eating a 403 (Fable audit ticket 1). */
-    var role = "";
-    try { role = String(localStorage.getItem("fh_role") || "").trim().toLowerCase(); } catch (e) { role = ""; }
-    if (role !== "owner" && role !== "admin") {
-      panel.style.display = "none";
-      return Promise.resolve();
-    }
-    return fetch("/api/demo/mode", { credentials: "same-origin", headers: headers() })
-      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, status: r.status, j: j }; }); })
-      .then(function (x) {
-        if (x.status === 403 || x.status === 401) {
-          panel.style.display = "none";
-          return;
-        }
-        if (!x.ok) { say((x.j && (x.j.message || x.j.error)) || "Could not load Demo Mode.", true); return; }
-        paint(x.j);
-      })
-      .catch(function (e) { say(String(e), true); });
-  }
-  function post(enabled) {
-    say(enabled ? "Seeding demo data…" : "Hiding demo data…");
-    return fetch("/api/demo/mode", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: headers(),
-      body: JSON.stringify({ enabled: !!enabled })
-    })
-      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-      .then(function (x) {
-        if (!x.ok) { say((x.j && (x.j.message || x.j.error)) || "Failed", true); return; }
-        paint(x.j);
-        say(enabled ? "Demo Mode is ON." : "Demo Mode is OFF.", false);
-      })
-      .catch(function (e) { say(String(e), true); });
-  }
-  var onBtn = document.getElementById("fhDemoModeOn");
-  var offBtn = document.getElementById("fhDemoModeOff");
-  if (onBtn) onBtn.onclick = function () {
-    // Turning this on writes fictional people into the live org. Name that.
-    if (!window.confirm(
-      "Turn Demo Mode ON? This seeds fictional clients and lenders into this live org, " +
-      "and every screen shows them until you turn it back off."
-    )) return;
-    post(true);
-  };
-  if (offBtn) offBtn.onclick = function () { post(false); };
-  load();
 })();
 </script>
 <script>

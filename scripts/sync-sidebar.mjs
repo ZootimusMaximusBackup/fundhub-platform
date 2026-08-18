@@ -44,7 +44,8 @@ for (const file of readdirSync(APP).filter((f) => f.endsWith(".html")).sort()) {
 
   /* Match the CRM rail only — it always ends with side-foot then </aside>.
      A bare [\s\S]*?<\/aside> can stop on an </aside> inside a <script> string
-     (sample-data.html) and delete half the page. */
+     and delete half the page. The screen that proved it (sample-data.html) is
+     gone, but keep the specific match — any screen can grow such a string. */
   const next = text.replace(
     /<aside\s+class="side"[^>]*>[\s\S]*?<div class="side-foot"[\s\S]*?<\/aside>/,
     aside.trim()

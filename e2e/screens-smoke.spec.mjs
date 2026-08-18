@@ -37,7 +37,6 @@ const SCREENS = [
   "/app/galaxy.html",
   "/app/partner-galaxy.html",
   "/app/affiliate.html",
-  "/app/sample-data.html",
   "/app/consent-capture.html",
   "/app/client-portal.html"
 ];

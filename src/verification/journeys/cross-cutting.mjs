@@ -1,5 +1,5 @@
 // PART 4 — Cross-cutting: template keys, compliance gate, canonical orphans,
-// money hand-calcs, sample-data screens.
+// money hand-calcs, fabricated-figure screens.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -278,14 +278,6 @@ export async function runCrossCutting(db, ctx, collector) {
     const sampleHits = [];
     if (/\$\s*12,?450/.test(combined)) {
       sampleHits.push("fabricated $12,450 dollar figure");
-    }
-    if (f === "sample-data.html") {
-      collector.pass({
-        section, journey, role, id: `x-sample-${f}`,
-        claim: "sample-data.html is an explicit demo screen (allowed)",
-        file: `public/app/${f}`
-      });
-      continue;
     }
     if (sampleHits.length) {
       collector.fail({

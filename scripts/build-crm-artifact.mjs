@@ -34,7 +34,6 @@ const SCREENS = [
   ["staff-teams.html", "Staff & Teams"],
   ["brand-studio.html", "Brand Studio"],
   ["content-admin.html", "Content"],
-  ["sample-data.html", "Sample Data"],
   ["affiliate.html", "Affiliate"],
   ["client-portal.html", "Client Portal"],
   ["partner-galaxy.html", "Partner Galaxy"],
