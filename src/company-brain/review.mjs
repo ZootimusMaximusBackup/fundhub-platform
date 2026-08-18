@@ -2,6 +2,12 @@
 // Live access_tier stays `owner` until auto-assigned or owner-approved (fail closed).
 // Step 7: approving `affiliate` also upserts brain_affiliate_allowlist;
 // reject / non-affiliate approve removes any allowlist row.
+//
+// Upload approval (2026-08-17, board §3.6): a staff-uploaded file is written
+// with brain_files.approval_status = 'pending' and cannot be retrieved at all
+// until an owner approves it. Approve sets it to 'approved'; reject sets it to
+// 'rejected' and leaves the tier at owner, so a rejected document is refused
+// twice over. Only the `owner` role decides — owner-set H-3, 2026-08-02.
 
 import {
   classifyHeuristic,
@@ -27,15 +33,28 @@ export async function setFileAccessTier(db, { fileId, orgId, tier } = {}) {
   );
 }
 
+/**
+ * Queue a review row.
+ *
+ * kind = 'classification' (default) is the Drive path: only `owner` and
+ * `affiliate` may be queued, because public/sales/staff auto-assign there.
+ * That rule is unchanged.
+ *
+ * kind = 'upload' is a staff-uploaded document (board §3.6). It is held
+ * unanswerable until the owner approves it, so ANY of the five tiers may be
+ * queued — including public/sales/staff, which would auto-assign on Drive.
+ */
 export async function enqueueClassificationReview(db, {
   orgId,
   fileId,
   driveFileId,
   proposedTier,
-  rationale = ""
+  rationale = "",
+  kind = "classification"
 } = {}) {
   const tier = normalizeProposedTier(proposedTier);
-  if (!REVIEW_TIERS.has(tier)) {
+  const reviewKind = kind === "upload" ? "upload" : "classification";
+  if (reviewKind !== "upload" && !REVIEW_TIERS.has(tier)) {
     return { ok: false, reason: "not_a_review_tier" };
   }
 
@@ -49,10 +68,10 @@ export async function enqueueClassificationReview(db, {
 
   const ins = await db.query(
     `INSERT INTO brain_classification_reviews
-       (org_id, file_id, drive_file_id, proposed_tier, rationale, status)
-     VALUES ($1, $2, $3, $4, $5, 'pending')
+       (org_id, file_id, drive_file_id, proposed_tier, rationale, status, kind)
+     VALUES ($1, $2, $3, $4, $5, 'pending', $6)
      RETURNING id`,
-    [orgId, fileId, driveFileId, tier, String(rationale || "").slice(0, 1000)]
+    [orgId, fileId, driveFileId, tier, String(rationale || "").slice(0, 1000), reviewKind]
   );
   const reviewId = ins.rows?.[0]?.id;
   if (!reviewId) return { ok: false, reason: "enqueue_failed" };
@@ -73,6 +92,10 @@ export async function enqueueClassificationReview(db, {
 /**
  * Classify a stored file and either auto-assign or enqueue review.
  * Always leaves live tier at owner when not auto-assigning.
+ *
+ * kind = 'upload' (board §3.6) NEVER auto-assigns, whatever tier was proposed.
+ * A staff upload is unanswerable until an owner approves it, so a proposal of
+ * `sales` — which would auto-assign on the Drive path — still queues here.
  */
 export async function classifyAndApply(db, {
   orgId,
@@ -82,10 +105,12 @@ export async function classifyAndApply(db, {
   path,
   text,
   parentNames,
+  kind = "classification",
   env = process.env,
   fetchImpl,
   classify = null
 } = {}) {
+  const reviewKind = kind === "upload" ? "upload" : "classification";
   const result = classify
     ? await classify({ name, path, text, parentNames })
     : await classifyWithModel({ name, path, text, parentNames }, { env, fetchImpl });
@@ -93,7 +118,7 @@ export async function classifyAndApply(db, {
   const proposedTier = normalizeProposedTier(result.proposedTier);
   const rationale = result.rationale || "";
 
-  if (result.autoAssignable && AUTO_TIERS.has(proposedTier)) {
+  if (reviewKind !== "upload" && result.autoAssignable && AUTO_TIERS.has(proposedTier)) {
     await setFileAccessTier(db, { fileId, orgId, tier: proposedTier });
     await db.query(
       `UPDATE brain_files SET
@@ -127,13 +152,19 @@ export async function classifyAndApply(db, {
     orgId,
     fileId,
     driveFileId,
-    proposedTier: REVIEW_TIERS.has(proposedTier) ? proposedTier : "owner",
-    rationale
+    // An upload queues at exactly the tier proposed — the owner decides it.
+    // The Drive path still only ever queues owner/affiliate.
+    proposedTier: reviewKind === "upload"
+      ? proposedTier
+      : (REVIEW_TIERS.has(proposedTier) ? proposedTier : "owner"),
+    rationale,
+    kind: reviewKind
   });
 
   return {
     ok: true,
     mode: "queued",
+    kind: reviewKind,
     accessTier: "owner",
     proposedTier: queued.proposedTier || "owner",
     reviewId: queued.reviewId || null,
@@ -142,12 +173,18 @@ export async function classifyAndApply(db, {
   };
 }
 
+/**
+ * Pending reviews for the owner queue — Drive classifications AND uploads.
+ * Every column the screen already reads is still here; the upload columns
+ * (kind, source, approval_status, size_bytes, original_name) are additions.
+ */
 export async function listPendingReviews(db, { orgId, limit = 50 } = {}) {
   const lim = Math.max(1, Math.min(200, Number(limit) || 50));
   const res = await db.query(
     `SELECT r.id, r.org_id, r.file_id, r.drive_file_id, r.proposed_tier,
-            r.rationale, r.status, r.created_at,
-            f.name AS file_name, f.web_view_link, f.mime_type, f.access_tier
+            r.rationale, r.status, r.created_at, r.kind,
+            f.name AS file_name, f.web_view_link, f.mime_type, f.access_tier,
+            f.source, f.approval_status, f.size_bytes, f.original_name
        FROM brain_classification_reviews r
        JOIN brain_files f ON f.id = r.file_id
       WHERE r.org_id = $1 AND r.status = 'pending'
@@ -177,7 +214,7 @@ export async function decideClassificationReview(db, {
   }
 
   const found = await db.query(
-    `SELECT r.id, r.file_id, r.proposed_tier, r.status, f.drive_file_id
+    `SELECT r.id, r.file_id, r.proposed_tier, r.status, r.kind, f.drive_file_id
        FROM brain_classification_reviews r
        JOIN brain_files f ON f.id = r.file_id
       WHERE r.id = $1 AND r.org_id = $2`,
@@ -196,6 +233,7 @@ export async function decideClassificationReview(db, {
     await db.query(
       `UPDATE brain_files SET
          classification_status = 'approved',
+         approval_status = 'approved',
          proposed_tier = $3,
          updated_at = now()
        WHERE id = $1 AND org_id = $2`,
@@ -233,6 +271,8 @@ export async function decideClassificationReview(db, {
       ok: true,
       decision: "approved",
       accessTier: row.proposed_tier,
+      approvalStatus: "approved",
+      kind: row.kind || "classification",
       fileId: row.file_id,
       affiliateAllowlisted: row.proposed_tier === "affiliate"
     };
@@ -243,6 +283,7 @@ export async function decideClassificationReview(db, {
   await db.query(
     `UPDATE brain_files SET
        classification_status = 'rejected',
+       approval_status = 'rejected',
        proposed_tier = 'owner',
        updated_at = now()
      WHERE id = $1 AND org_id = $2`,
@@ -263,6 +304,8 @@ export async function decideClassificationReview(db, {
     ok: true,
     decision: "rejected",
     accessTier: "owner",
+    approvalStatus: "rejected",
+    kind: row.kind || "classification",
     fileId: row.file_id,
     affiliateAllowlisted: false
   };

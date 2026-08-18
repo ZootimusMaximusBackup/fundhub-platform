@@ -1,6 +1,10 @@
 // /api/company-brain/reviews
-// GET  — list pending classification reviews (owner only, H-3)
+// GET  — list pending reviews (owner only, H-3): Drive tier classifications
+//        AND staff uploads waiting for approval (board §3.6).
 // POST — { review_id, decision: 'approve'|'reject' } (owner only)
+//
+// Owner-set H-3 (2026-08-02): ONLY the `owner` role decides. Admin is
+// deliberately excluded and stays excluded.
 
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
@@ -30,7 +34,33 @@ export default async function handler(req, res, deps = {}) {
   if (req.method === "GET") {
     const list = deps.listPendingReviews || listPendingReviews;
     const out = await list(database, { orgId, limit: 100 });
-    return res.status(200).json({ ok: true, reviews: out.reviews || [] });
+    const rows = out.reviews || [];
+    // Every field already on the row is kept exactly as it was — a screen is
+    // built against them. The camelCase keys below are additions only.
+    const reviews = rows.map((row) => {
+      const kind = row.kind === "upload" ? "upload" : "classification";
+      const size = row.size_bytes == null ? null : Number(row.size_bytes);
+      return {
+        ...row,
+        kind,
+        isUpload: kind === "upload",
+        source: row.source || "drive",
+        fileName: row.file_name || row.original_name || "",
+        originalName: row.original_name || null,
+        proposedTier: row.proposed_tier || null,
+        accessTier: row.access_tier || null,
+        approvalStatus: row.approval_status || null,
+        sizeBytes: Number.isFinite(size) ? size : null,
+        mimeType: row.mime_type || null,
+        webViewLink: row.web_view_link || null,
+        createdAt: row.created_at || null
+      };
+    });
+    return res.status(200).json({
+      ok: true,
+      reviews,
+      uploadCount: reviews.filter((r) => r.isUpload).length
+    });
   }
 
   if (req.method === "POST") {

@@ -89,6 +89,8 @@ import readCompanyBrain from "../../api/read/company-brain.mjs";
 import readCompanyBrainAffiliate from "../../api/read/company-brain-affiliate.mjs";
 import companyBrainReviews from "../../api/company-brain/reviews.mjs";
 import companyBrainSync from "../../api/company-brain/sync.mjs";
+import companyBrainUpload from "../../api/company-brain/upload.mjs";
+import companyBrainThreads from "../../api/company-brain/threads.mjs";
 import readWorkflows from "../../api/read/workflows.mjs";
 import readTransactions from "../../api/read/transactions.mjs";
 import readCloserCall from "../../api/read/closer-call.mjs";
@@ -405,9 +407,18 @@ export const ROUTES = {
   // tier filter. Step 7 of COMPANY-BRAIN-BUILD-SPEC.
   "read/company-brain-affiliate": readCompanyBrainAffiliate,
 
-  // Owner-only classification review queue (H-3).
+  // Owner-only classification review queue (H-3). Also carries staff uploads
+  // waiting for approval — same queue, same owner-only decision.
   "company-brain/reviews": companyBrainReviews,
   "company-brain/sync": companyBrainSync,
+
+  // Staff document upload. POST sends one file up; GET lists what has been sent
+  // and whether it is still waiting. An upload is NOT answerable until the owner
+  // approves it — retrieve.mjs filters on approval_status before ranking.
+  "company-brain/upload": companyBrainUpload,
+
+  // Saved conversations, scoped to one org AND one staff member.
+  "company-brain/threads": companyBrainThreads,
 
   // read/workflows introspects the live src/workflows/index.mjs `functions`
   // array — the actual Inngest registry — rather than a hand-authored list, so

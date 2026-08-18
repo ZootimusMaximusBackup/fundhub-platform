@@ -20,85 +20,115 @@ button,input,select,textarea{font:inherit;color:inherit}
 .logo{width:118px;height:24px;flex:0 0 118px}
 .eyebrow{display:block}
 .eyebrow .sep{color:var(--line);margin:0 6px}
-.app{display:flex;min-height:100vh}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-.main{flex:1;min-width:0;display:flex;flex-direction:column}
+/* The page is one full-height app frame: nothing scrolls but the message list
+   and the two side panels. That is what keeps the composer pinned. */
+.app{display:flex;height:100vh;height:calc(100dvh - var(--fh-statusbar,0px));overflow:hidden}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0}
 .topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
 .topbar h1{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
 .topbar .crumb{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
-.content{padding:22px 24px 40px;flex:1}
-.card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.card+.card{margin-top:14px}
-.card-hd{padding:13px 16px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.card-bd{padding:16px}
 .hair{height:2px;background:var(--spectrum);border-radius:1px}
+
 .btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:var(--fs-body);font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
 .btn:hover{background:var(--soft);border-color:var(--gray2)}
 .btn.dark{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .btn.dark:hover{background:var(--ink2)}
-.btn.sm{padding:5px 10px;font-size:var(--fs-caption)}
-.btn.mono{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.08em;text-transform:uppercase}
-.tabs{display:flex;border-bottom:1px solid var(--line);padding:0 16px;background:#fff;overflow-x:auto}
-.tab{background:transparent;border:0;border-bottom:2px solid transparent;cursor:pointer;padding:11px 13px;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-bottom:-1px;white-space:nowrap}
-.tab:hover{color:var(--ink)}.tab.on{color:var(--ink);border-bottom-color:var(--ink)}
+.btn.sm{padding:5px 10px}
+.btn:disabled,.iconbtn:disabled{opacity:.45;cursor:not-allowed}
+.btn:disabled:hover{background:#fff;border-color:var(--line)}
+.btn.dark:disabled:hover{background:var(--ink)}
+
 .badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:var(--fs-caption);font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
+.badge[hidden]{display:none}
 .b-ok{background:rgba(168,216,176,.24);border-color:var(--ok);color:#2C5138}
 .b-warn{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
 .b-alert{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
 .b-info{background:rgba(169,198,232,.26);border-color:var(--info);color:#22415F}
-.b-accent{background:rgba(196,179,229,.26);border-color:var(--accent);color:#3F2F63}
 .b-butter{background:rgba(242,227,155,.32);border-color:var(--butter);color:#5E5310}
 .b-gray{background:var(--soft);border-color:var(--line);color:var(--gray)}
-table.grid{width:100%;border-collapse:collapse}
-table.grid th{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);white-space:nowrap;font-weight:500;background:var(--soft);cursor:pointer;user-select:none}
-table.grid th:hover{color:var(--ink)}
-table.grid td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:var(--fs-body);vertical-align:middle}
-table.grid tr:last-child td{border-bottom:0}
-table.grid tbody tr:hover{background:var(--soft)}
-table.grid tr.stale td{background:rgba(242,166,155,.09)}
-table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
-.age{font-family:var(--mono);font-size:var(--fs-body);font-variant-numeric:tabular-nums}
-.age.hot{color:#6E2A22;font-weight:600}
-.age.warm{color:#6B4A12}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
-.stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
-.stat .sv{font-family:var(--mono);font-size:var(--fs-metric);font-weight:600;margin-top:8px;letter-spacing:-.02em}
-.stat .sd{font-size:var(--fs-caption);color:var(--gray);margin-top:2px}
-.classbar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
-.classcard{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .12s;position:relative;overflow:hidden}
-.classcard:hover{border-color:var(--ink)}
-.classcard::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum);opacity:0;transition:opacity .12s}
-.classcard:hover::before,.classcard.on::before{opacity:1}
-.classcard.on{border-color:var(--ink)}
-.classcard .cn{font-size:var(--fs-body);font-weight:600;margin-top:7px;letter-spacing:-.01em}
-.classcard .cc{font-family:var(--mono);font-size:var(--fs-metric);font-weight:600;margin-top:6px}
-.classcard .cs{font-size:var(--fs-caption);color:var(--gray);margin-top:2px}
-.bar{height:5px;border-radius:3px;background:var(--soft);overflow:hidden;display:flex;margin-top:9px}
-.bar i{display:block;height:100%}
-.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
-.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
-.empty{padding:26px 16px;text-align:center;color:var(--gray2);font-size:var(--fs-body)}
-.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:var(--fs-caption);color:var(--gray);padding:12px 16px;border-top:1px solid var(--line);background:var(--soft)}
-@media(max-width:1000px){.stats,.classbar{grid-template-columns:repeat(2,1fr)}}
+
+/* ── three panes: chats · conversation · documents ─────────────────────── */
+.chat{flex:1;min-height:0;display:flex;position:relative;overflow:hidden}
+
+.rail{width:264px;flex:0 0 264px;border-right:1px solid var(--line);background:var(--soft);display:flex;flex-direction:column;min-height:0}
+.rail-hd{padding:16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px;flex:0 0 auto}
+.rail-list{flex:1;min-height:0;overflow-y:auto;padding:8px}
+.rail-msg{padding:16px 8px;color:var(--gray)}
+.threadbtn{display:block;width:100%;text-align:left;border:1px solid transparent;background:transparent;border-radius:8px;padding:8px 10px;cursor:pointer}
+.threadbtn:hover{background:#fff;border-color:var(--line)}
+.threadbtn.on{background:#fff;border-color:var(--ink)}
+.threadbtn .tt{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.threadbtn .tm{color:var(--gray);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.convo{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;background:var(--paper)}
+.convo-hd{flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:8px 24px;border-bottom:1px solid var(--line);background:var(--paper)}
+.convo-hd .ct{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.convo-hd .railtoggle{display:none}
+
+.msgs{flex:1;min-height:0;overflow-y:auto;padding:24px 24px 8px}
+.measure{max-width:76ch;margin-inline:auto}
+.turn{margin-bottom:24px}
+.turn:last-child{margin-bottom:8px}
+.turn.user .measure{display:flex;justify-content:flex-end}
+.bubble{background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:12px 16px;white-space:pre-wrap;overflow-wrap:anywhere;max-width:88%}
+.answer{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}
+.thinline{color:var(--gray);display:flex;align-items:center;gap:8px}
+.thinline .pulse{background:var(--warn)}
+.notebox{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:12px 16px;color:var(--gray)}
+.notebox.bad{background:rgba(242,166,155,.16);border-color:var(--alert);color:#6E2A22}
+.thinnote{color:var(--gray);margin-top:8px}
+
+.srcs{margin-top:16px;border-top:1px solid var(--line);padding-top:8px}
+.srcs .srchd{color:var(--gray);padding:8px 0}
+.src{padding:8px 0;border-top:1px solid var(--line)}
+.src .sname{font-weight:600;overflow-wrap:anywhere}
+.src .smeta{color:var(--gray);margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.src .sexc{color:var(--gray);margin-top:6px;overflow-wrap:anywhere}
+.lnk{text-decoration:underline;text-underline-offset:2px}
+
+.emptywrap{padding:32px 0}
+.emptywrap h2{font-weight:600;margin:8px 0}
+.emptywrap p{color:var(--gray);margin-top:8px}
+.sk{height:12px;border-radius:6px;background:linear-gradient(90deg,var(--soft),#EDEDEF,var(--soft));background-size:200% 100%;animation:sk 1.2s linear infinite;margin-bottom:8px}
+.sk.short{width:52%}
+@keyframes sk{to{background-position:-200% 0}}
+
+.composer{flex:0 0 auto;border-top:1px solid var(--line);background:var(--paper);padding:16px 24px}
+.cbox{display:flex;align-items:flex-end;gap:8px;border:1px solid var(--line);border-radius:14px;background:#fff;padding:8px}
+.cbox:focus-within{border-color:var(--ink)}
+.cbox textarea{flex:1;min-width:0;border:0;outline:none;resize:none;background:transparent;padding:8px;max-height:200px;line-height:1.5;font-family:var(--sans)}
+.iconbtn{border:1px solid var(--line);background:#fff;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+.iconbtn:hover{background:var(--soft)}
+.cmphint{color:var(--gray);margin-top:8px}
+
+.docs{width:340px;flex:0 0 340px;border-left:1px solid var(--line);background:var(--soft);display:none;flex-direction:column;min-height:0}
+.chat.docs-open .docs{display:flex}
+.docs-hd{padding:16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.docs-bd{flex:1;min-height:0;overflow-y:auto;padding:16px}
+.panel+.panel{margin-top:24px}
+.panel-hd{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.panel-hd .pt{font-weight:600;flex:1;min-width:0}
+.docrow{border:1px solid var(--line);background:#fff;border-radius:10px;padding:12px}
+.docrow+.docrow{margin-top:8px}
+.docrow .dn{font-weight:600;overflow-wrap:anywhere}
+.docrow .dm{color:var(--gray);margin-top:4px}
+.docrow .dsay{color:var(--gray);margin-top:6px}
+.docrow .drow{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.muted{color:var(--gray)}
+
+@media (max-width:1200px){
+  .docs{position:absolute;right:0;top:0;bottom:0;z-index:30;width:min(340px,92vw);flex-basis:auto;box-shadow:-8px 0 24px rgba(0,0,0,.10)}
+}
+@media (max-width:900px){
+  .rail{display:none;position:absolute;left:0;top:0;bottom:0;z-index:30;width:min(280px,86vw);flex-basis:auto;box-shadow:8px 0 24px rgba(0,0,0,.10)}
+  .chat.rail-open .rail{display:flex}
+  .convo-hd .railtoggle{display:inline-flex}
+  .msgs{padding:16px 16px 8px}
+  .composer{padding:12px 16px}
+  .convo-hd{padding:8px 16px}
+}
 </style>
 <script defer src="shell.js"></script>
 </head>
@@ -181,51 +211,67 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
       <div class="spacer"></div>
     </div>
 
-    <div class="content fh-maxw">
-      <div class="card">
-        <div class="hair"></div>
-        <div class="card-hd">
-          <div>
-            <div class="mono" style="font-size:var(--fs-caption);letter-spacing:.14em;text-transform:uppercase;color:var(--gray)">Search</div>
-            <div style="font-size:var(--fs-title);font-weight:600;margin-top:2px">Ask the company docs</div>
-          </div>
-          <div class="spacer"></div>
+    <div class="chat" id="chat">
+
+      <aside class="rail" id="rail" data-brain-thread-list aria-label="Past chats">
+        <div class="rail-hd">
+          <button class="btn" type="button" id="newChat">New chat</button>
+          <div class="eyebrow">Your chats</div>
+        </div>
+        <div class="rail-list" id="threadList"></div>
+      </aside>
+
+      <section class="convo" data-brain-conversation>
+        <div class="convo-hd">
+          <button class="iconbtn railtoggle" type="button" id="railToggle" title="Show your chats" aria-label="Show your chats">☰</button>
+          <div class="ct" id="chatTitle">New chat</div>
           <span class="badge b-info" id="rolePill">staff</span>
+          <button class="btn sm" type="button" id="docsBtn">Documents <span class="badge b-warn" id="pendPill" hidden>0</span></button>
         </div>
-        <div class="card-bd">
-          <form id="askForm" style="display:flex;gap:10px;flex-wrap:wrap;align-items:stretch">
-            <input id="q" name="q" autocomplete="off" placeholder="e.g. What is our closer objection script for rate objections?"
-              style="flex:1;min-width:220px;border:1px solid var(--line);border-radius:7px;padding:10px 12px;font-size:var(--fs-body)">
-            <button class="btn dark" type="submit" id="askBtn">Ask</button>
-          </form>
-          <p id="status" class="mono" style="margin-top:10px;font-size:var(--fs-caption);color:var(--gray);letter-spacing:.06em"></p>
-          <div id="answerBox" style="display:none;margin-top:16px;padding:14px 16px;background:var(--soft);border:1px solid var(--line);border-radius:8px;white-space:pre-wrap;line-height:1.55"></div>
-        </div>
-      </div>
 
-      <div class="card">
-        <div class="card-hd">
-          <div style="font-weight:600">Sources</div>
-          <div class="spacer"></div>
-          <span class="badge b-gray" id="srcCount">0</span>
-        </div>
-        <div class="card-bd" id="sources" style="color:var(--gray)">Ask a question to see matching Drive files.</div>
-      </div>
+        <div class="msgs" id="msgs" aria-live="polite"></div>
 
-      <div class="card" id="reviewCard" style="display:none">
-        <div class="card-hd">
-          <div>
-            <div class="mono" style="font-size:var(--fs-caption);letter-spacing:.14em;text-transform:uppercase;color:var(--gray)">Owner only</div>
-            <div style="font-weight:600">Classification review queue</div>
+        <form class="composer" id="composer">
+          <div class="measure">
+            <div class="cbox">
+              <button class="iconbtn" type="button" id="attachBtn" title="Add a document" aria-label="Add a document">＋</button>
+              <textarea id="q" rows="1" placeholder="Ask about your company documents…" aria-label="Your question"></textarea>
+              <button class="btn dark" type="submit" id="askBtn">Send</button>
+            </div>
+            <div class="cmphint mono">Enter sends · Shift + Enter makes a new line · answers only use files your role can open</div>
           </div>
-          <div class="spacer"></div>
-          <button class="btn sm" type="button" id="refreshReviews">Refresh</button>
-        </div>
-        <div class="card-bd" id="reviewList" style="color:var(--gray)">No pending reviews.</div>
-      </div>
-    </div>
+          <input type="file" id="fileInput" style="display:none"
+            accept=".pdf,.txt,.md,.docx,.xlsx,.pptx,application/pdf,text/plain,text/markdown,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.presentationml.presentation">
+        </form>
+      </section>
 
-    <div class="foot"><span class="pulse"></span><span>company brain · fundhub.ai</span></div>
+      <aside class="docs" id="docs" aria-label="Documents">
+        <div class="docs-hd">
+          <div class="pt" style="font-weight:600;flex:1">Documents</div>
+          <button class="btn sm" type="button" id="docsClose" aria-label="Close documents">Close</button>
+        </div>
+        <div class="docs-bd">
+          <div class="panel">
+            <div class="panel-hd">
+              <div class="pt">Files you added</div>
+              <span class="badge b-warn" id="pendPill2" hidden>0</span>
+              <button class="btn sm" type="button" id="refreshDocs">Refresh</button>
+            </div>
+            <div class="mono muted" style="margin-bottom:8px">An owner has to approve a file before Company Brain can use it in answers.</div>
+            <div id="docList"></div>
+          </div>
+
+          <div class="panel" id="reviewPanel" hidden>
+            <div class="panel-hd">
+              <div class="pt">Waiting for your approval</div>
+              <button class="btn sm" type="button" id="refreshReviews">Refresh</button>
+            </div>
+            <div id="reviewList"></div>
+          </div>
+        </div>
+      </aside>
+
+    </div>
   </div>
 </div>
 
@@ -242,20 +288,33 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
 <script>
 (function () {
   "use strict";
+
+  /* ── escaping ───────────────────────────────────────────────────────────
+     Every value that comes back from the API goes through esc() before it
+     touches innerHTML. No exceptions. */
   var esc = function (v) {
     return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
       return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]; });
   };
-  var statusEl = document.getElementById("status");
-  var answerBox = document.getElementById("answerBox");
-  var sourcesEl = document.getElementById("sources");
-  var srcCount = document.getElementById("srcCount");
-  var rolePill = document.getElementById("rolePill");
-  var reviewCard = document.getElementById("reviewCard");
-  var reviewList = document.getElementById("reviewList");
-  var askBtn = document.getElementById("askBtn");
 
-  function setStatus(msg) { if (statusEl) statusEl.textContent = msg || ""; }
+  var chatEl      = document.getElementById("chat");
+  var railEl      = document.getElementById("rail");
+  var threadList  = document.getElementById("threadList");
+  var msgsEl      = document.getElementById("msgs");
+  var chatTitle   = document.getElementById("chatTitle");
+  var rolePill    = document.getElementById("rolePill");
+  var docsEl      = document.getElementById("docs");
+  var docList     = document.getElementById("docList");
+  var reviewPanel = document.getElementById("reviewPanel");
+  var reviewList  = document.getElementById("reviewList");
+  var pendPill    = document.getElementById("pendPill");
+  var pendPill2   = document.getElementById("pendPill2");
+  var ta          = document.getElementById("q");
+  var askBtn      = document.getElementById("askBtn");
+  var attachBtn   = document.getElementById("attachBtn");
+  var fileInput   = document.getElementById("fileInput");
+
+  /* ── session, exactly as this screen already did it ─────────────────── */
   function token() { try { return localStorage.getItem("fh_token") || ""; } catch (e) { return ""; } }
   function isDemo() { try { return localStorage.getItem("fh_demo") === "1"; } catch (e) { return false; } }
   function role() {
@@ -265,116 +324,561 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     } catch (e) { return ""; }
   }
 
-  var r = String(role() || "").toLowerCase();
-  if (rolePill) rolePill.textContent = r || "staff";
-  if (r === "owner" && reviewCard) { reviewCard.style.display = ""; loadReviews(); }
+  var myRole = String(role() || "").toLowerCase();
+  if (rolePill) rolePill.textContent = myRole || "staff";
+  var isOwner = myRole === "owner";
 
-  function postJson(path, body) {
-    if (isDemo()) return Promise.resolve({ ok: false, error: "demo session", demo: true });
+  /* ── plain-English errors. A person never sees a status code. ───────── */
+  var WORDS = {
+    forbidden_role: "Your role is not allowed to use Company Brain.",
+    no_org_scope: "Your account is not tied to a company yet, so there is nothing to search.",
+    method_not_allowed: "That action is not allowed here.",
+    no_file: "No file was picked.",
+    empty_file: "That file has nothing in it.",
+    file_too_large: "That file is too big. Files have to be under 25 MB.",
+    unsupported_file_type: "Company Brain cannot read that kind of file. Use a PDF, Word, Excel, PowerPoint, or a plain text file.",
+    embed_failed: "The file went up, but Company Brain could not read it. Try again in a minute.",
+    invalid_thread_id: "That chat link is broken.",
+    thread_not_found: "That chat is gone.",
+    not_found: "We could not find that.",
+    not_pending: "Someone already decided on this one."
+  };
+  function friendly(j) {
+    if (j && j.demo) return "Demo mode is on, so Company Brain is not answering. Turn demo mode off to use it.";
+    var e = j && j.error;
+    if (e && WORDS[e]) return WORDS[e];
+    var s = j && j._status;
+    if (s === 401) return "You are signed out. Sign in again and try once more.";
+    if (s === 403) return "Your role is not allowed to do that.";
+    if (s === 404) return "This part of Company Brain is not switched on yet.";
+    if (s === 413) return "That file is too big. Files have to be under 25 MB.";
+    if (s === 409) return "Someone already decided on this one.";
+    if (s && s >= 500) return "Something went wrong on our side. Try again in a minute.";
+    if (j && j.offline) return "We could not reach the server. Check your internet and try again.";
+    return "Something went wrong. Try again.";
+  }
+
+  function readBody(res) {
+    return res.json().catch(function () { return {}; }).then(function (j) {
+      j = j || {}; j._status = res.status; return j;
+    });
+  }
+  function apiGet(path) {
+    if (isDemo()) return Promise.resolve({ ok: false, demo: true });
+    var t = token();
+    return fetch(path, { headers: { accept: "application/json", authorization: t ? ("Bearer " + t) : "" } })
+      .then(readBody)
+      .catch(function () { return { ok: false, offline: true }; });
+  }
+  function apiPost(path, body) {
+    if (isDemo()) return Promise.resolve({ ok: false, demo: true });
     var t = token();
     return fetch(path, {
       method: "POST",
       headers: { "content-type": "application/json", accept: "application/json", authorization: t ? ("Bearer " + t) : "" },
       body: JSON.stringify(body || {})
-    }).then(function (res) {
-      return res.json().catch(function () { return {}; }).then(function (j) { j._status = res.status; return j; });
-    }).catch(function (e) { return { ok: false, error: (e && e.message) || "offline" }; });
+    }).then(readBody).catch(function () { return { ok: false, offline: true }; });
   }
-  function getJson(path) {
-    if (isDemo()) return Promise.resolve({ ok: false, error: "demo", demo: true });
+  function apiUpload(path, form) {
+    if (isDemo()) return Promise.resolve({ ok: false, demo: true });
     var t = token();
+    /* No content-type header on purpose — the browser has to set the
+       multipart boundary itself or the server cannot split the parts. */
     return fetch(path, {
-      headers: { accept: "application/json", authorization: t ? ("Bearer " + t) : "" }
-    }).then(function (res) {
-      return res.json().catch(function () { return {}; }).then(function (j) { j._status = res.status; return j; });
-    }).catch(function (e) { return { ok: false, error: (e && e.message) || "offline" }; });
+      method: "POST",
+      headers: { accept: "application/json", authorization: t ? ("Bearer " + t) : "" },
+      body: form
+    }).then(readBody).catch(function () { return { ok: false, offline: true }; });
   }
 
-  function renderSources(sources) {
-    srcCount.textContent = String((sources && sources.length) || 0);
-    if (!sources || !sources.length) {
-      sourcesEl.style.color = "var(--gray)";
-      sourcesEl.textContent = "No matching sources in your clearance.";
+  /* ── small helpers ──────────────────────────────────────────────────── */
+  function when(iso) {
+    if (!iso) return "";
+    var t = new Date(iso);
+    if (isNaN(t.getTime())) return "";
+    var diff = Date.now() - t.getTime();
+    if (diff < 0) diff = 0;
+    if (diff < 60000) return "just now";
+    if (diff < 3600000) return Math.floor(diff / 60000) + "m ago";
+    if (diff < 86400000) return Math.floor(diff / 3600000) + "h ago";
+    return t.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + ", " +
+      t.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  }
+  function fullTime(iso) {
+    if (!iso) return "";
+    var t = new Date(iso);
+    return isNaN(t.getTime()) ? "" : t.toLocaleString();
+  }
+  function sizeWords(bytes) {
+    var n = Number(bytes);
+    if (!isFinite(n) || n <= 0) return "";
+    if (n < 1024) return n + " bytes";
+    if (n < 1048576) return Math.round(n / 1024) + " KB";
+    return (n / 1048576).toFixed(1) + " MB";
+  }
+
+  /* ── state ──────────────────────────────────────────────────────────── */
+  var state = {
+    threadId: null,
+    title: "New chat",
+    messages: [],
+    loadingThread: false,
+    threadError: "",
+    busy: false,
+    threads: [],
+    threadsState: "loading",
+    threadsError: "",
+    uploads: [],
+    pendingCount: 0,
+    uploadsState: "loading",
+    uploadsError: "",
+    reviews: [],
+    reviewsState: "loading",
+    reviewsError: ""
+  };
+
+  /* ── conversation ───────────────────────────────────────────────────── */
+  function setTitle(t) {
+    state.title = t || "New chat";
+    chatTitle.textContent = state.title;
+    chatTitle.title = state.title;
+  }
+
+  function sourcesHtml(list) {
+    if (!list || !list.length) return "";
+    var rows = list.map(function (s) {
+      var bits = [];
+      if (s.accessTier) bits.push('<span class="badge b-gray">' + esc(s.accessTier) + "</span>");
+      /* An uploaded file has no Drive link. Show the name on its own —
+         never the word "null". */
+      if (s.webViewLink) {
+        bits.push('<a class="lnk" href="' + esc(s.webViewLink) + '" target="_blank" rel="noopener">Open in Drive</a>');
+      }
+      if (s.clientId) {
+        bits.push('<a class="lnk" href="client-control-panel.html?client_id=' +
+          esc(encodeURIComponent(s.clientId)) + '">Client record</a>');
+      }
+      if (s.mimeType && /^(audio|video)\//.test(String(s.mimeType))) {
+        bits.push('<span class="badge b-butter">recording</span>');
+      }
+      var num = (s.n === 0 || s.n) ? "[" + esc(s.n) + "] " : "";
+      return '<div class="src">' +
+        '<div class="sname">' + num + esc(s.fileName || "Untitled file") + "</div>" +
+        (bits.length ? '<div class="smeta mono">' + bits.join("") + "</div>" : "") +
+        (s.excerpt ? '<div class="sexc">' + esc(s.excerpt) + "</div>" : "") +
+        "</div>";
+    }).join("");
+    return '<div class="srcs"><div class="srchd mono">Files used · ' + esc(list.length) + "</div>" + rows + "</div>";
+  }
+
+  function thinWords(m) {
+    if (!m.thin) return "";
+    if (m.answerSource === "none") return "Nothing in your files matched this question.";
+    return "This is copied straight out of the files. No writing helper was used.";
+  }
+
+  function turnHtml(m) {
+    if (m.kind === "user") {
+      return '<div class="turn user"><div class="measure"><div class="bubble">' + esc(m.text) + "</div></div></div>";
+    }
+    if (m.kind === "pending") {
+      return '<div class="turn assistant"><div class="measure">' +
+        '<div class="eyebrow">Company Brain</div>' +
+        '<div class="thinline"><span class="pulse"></span><span>Reading your files…</span></div>' +
+        "</div></div>";
+    }
+    if (m.kind === "note") {
+      return '<div class="turn sysnote"><div class="measure"><div class="notebox' + (m.bad ? " bad" : "") + '">' +
+        esc(m.text) + "</div></div></div>";
+    }
+    var tw = thinWords(m);
+    return '<div class="turn assistant"><div class="measure">' +
+      '<div class="eyebrow">Company Brain</div>' +
+      '<div class="answer">' + esc(m.text || "") + "</div>" +
+      (tw ? '<div class="thinnote mono">' + esc(tw) + "</div>" : "") +
+      sourcesHtml(m.sources) +
+      "</div></div>";
+  }
+
+  function emptyHtml() {
+    return '<div class="measure emptywrap">' +
+      '<div class="eyebrow">Company Brain</div>' +
+      "<h2>Ask about your company files</h2>" +
+      "<p>Type a question below. The answer comes from files your role is allowed to open, and every answer lists the files it used.</p>" +
+      "<p>Add a file with the + button. An owner has to approve it before it can be used in answers.</p>" +
+      "<p>Nothing has been asked in this chat yet.</p>" +
+      "</div>";
+  }
+
+  function renderMessages() {
+    if (state.loadingThread) {
+      msgsEl.innerHTML = '<div class="measure"><div class="sk"></div><div class="sk"></div><div class="sk short"></div></div>';
       return;
     }
-    sourcesEl.style.color = "inherit";
-    sourcesEl.innerHTML = sources.map(function (s) {
-      var link = s.webViewLink
-        ? ('<a href="' + esc(s.webViewLink) + '" target="_blank" rel="noopener">Open in Drive</a>')
-        : '<span class="mono" style="color:var(--gray)">no Drive link</span>';
-      var client = s.clientId
-        ? (' · <a href="client-control-panel.html?client_id=' + esc(s.clientId) + '">client record</a>')
-        : "";
-      var av = (s.mimeType && /^(audio|video)\//.test(s.mimeType))
-        ? ' · <span class="badge b-butter">recording</span>' : "";
-      return '<div style="padding:10px 0;border-bottom:1px solid var(--line)">' +
-        '<div style="font-weight:600">[' + esc(s.n) + '] ' + esc(s.fileName) + av + '</div>' +
-        '<div class="mono" style="font-size:var(--fs-caption);color:var(--gray);margin-top:3px">' +
-          esc(s.accessTier || "") + " · " + link + client + '</div>' +
-        '<div style="margin-top:6px;font-size:var(--fs-body)">' + esc(s.excerpt || "") + '</div></div>';
+    if (state.threadError) {
+      msgsEl.innerHTML = '<div class="measure"><div class="notebox bad">' + esc(state.threadError) + "</div></div>";
+      return;
+    }
+    if (!state.messages.length) { msgsEl.innerHTML = emptyHtml(); return; }
+    msgsEl.innerHTML = state.messages.map(turnHtml).join("");
+    scrollToEnd();
+  }
+
+  function scrollToEnd() {
+    // after paint, so scrollHeight is the new height
+    window.requestAnimationFrame(function () { msgsEl.scrollTop = msgsEl.scrollHeight; });
+  }
+
+  function setBusy(v) {
+    state.busy = !!v;
+    askBtn.disabled = state.busy;
+    attachBtn.disabled = state.busy;
+    askBtn.textContent = state.busy ? "Sending…" : "Send";
+  }
+
+  function dropPending() {
+    state.messages = state.messages.filter(function (m) { return m.kind !== "pending"; });
+  }
+
+  function send() {
+    if (state.busy) return;
+    var text = String(ta.value || "").trim();
+    if (!text) { ta.focus(); return; }
+    var firstTurn = !state.messages.length;
+    state.messages.push({ kind: "user", text: text });
+    state.messages.push({ kind: "pending" });
+    ta.value = "";
+    grow();
+    setBusy(true);
+    renderMessages();
+
+    var body = { question: text };
+    if (state.threadId) body.thread_id = state.threadId;
+
+    apiPost("/api/read/company-brain", body).then(function (j) {
+      setBusy(false);
+      dropPending();
+      if (!j || !j.ok) {
+        state.messages.push({ kind: "note", bad: true, text: friendly(j) });
+        renderMessages();
+        return;
+      }
+      if (j.thread_id) state.threadId = j.thread_id;
+      state.messages.push({
+        kind: "assistant",
+        text: (j.answer && j.answer.text) || "",
+        sources: j.sources || [],
+        answerSource: (j.answer && j.answer.source) || "",
+        thin: !!(j.answer && j.answer.thin)
+      });
+      if (j.history_saved === false) {
+        state.messages.push({ kind: "note", text: "This chat was not saved to your history." });
+      }
+      if (j.role) { rolePill.textContent = j.role; }
+      if (firstTurn) setTitle(text.length > 60 ? text.slice(0, 60) : text);
+      renderMessages();
+      loadThreads();
+    });
+  }
+
+  /* ── composer ───────────────────────────────────────────────────────── */
+  function grow() {
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight, 200) + "px";
+  }
+  ta.addEventListener("input", grow);
+  ta.addEventListener("keydown", function (ev) {
+    if (ev.key === "Enter" && !ev.shiftKey) { ev.preventDefault(); send(); }
+  });
+  document.getElementById("composer").addEventListener("submit", function (ev) {
+    ev.preventDefault(); send();
+  });
+
+  /* ── upload ─────────────────────────────────────────────────────────── */
+  attachBtn.addEventListener("click", function () { if (!state.busy) fileInput.click(); });
+  fileInput.addEventListener("change", function () {
+    var f = fileInput.files && fileInput.files[0];
+    fileInput.value = "";
+    if (f) doUpload(f);
+  });
+
+  function doUpload(file) {
+    if (state.busy) return;
+    var form = new FormData();
+    form.append("file", file);
+    if (state.threadId) form.append("thread_id", state.threadId);
+    setBusy(true);
+    state.messages.push({ kind: "note", up: true, text: "Sending " + file.name + "…" });
+    renderMessages();
+
+    apiUpload("/api/company-brain/upload", form).then(function (j) {
+      setBusy(false);
+      state.messages = state.messages.filter(function (m) { return !m.up; });
+      if (!j || !j.ok) {
+        state.messages.push({ kind: "note", bad: true, text: friendly(j) });
+        renderMessages();
+        return;
+      }
+      var f = j.file || {};
+      var name = f.name || file.name;
+      var msg = f.approvalStatus === "approved"
+        ? "Uploaded " + name + ". It is approved, so it can be used in answers now."
+        : "Uploaded " + name + ". An owner has to approve it before it can be used in answers.";
+      state.messages.push({ kind: "note", text: msg });
+      renderMessages();
+      loadUploads();
+      if (isOwner) loadReviews();
+      openDocs(true);
+    });
+  }
+
+  /* ── left rail: past chats ──────────────────────────────────────────── */
+  function renderThreads() {
+    if (state.threadsState === "loading") {
+      threadList.innerHTML = '<div class="rail-msg"><div class="sk"></div><div class="sk"></div><div class="sk short"></div></div>';
+      return;
+    }
+    if (state.threadsState === "error") {
+      threadList.innerHTML = '<div class="rail-msg">' + esc(state.threadsError) + "</div>";
+      return;
+    }
+    if (!state.threads.length) {
+      threadList.innerHTML = '<div class="rail-msg">No past chats yet. Ask your first question and it will show up here.</div>';
+      return;
+    }
+    threadList.innerHTML = state.threads.map(function (t) {
+      var count = Number(t.messageCount);
+      var meta = (isFinite(count) && count > 0 ? (count + (count === 1 ? " message" : " messages")) : "no messages");
+      var stamp = when(t.updatedAt || t.createdAt);
+      if (stamp) meta += " · " + stamp;
+      return '<button class="threadbtn' + (t.id === state.threadId ? " on" : "") + '" type="button" data-thread="' +
+        esc(t.id) + '" title="' + esc(fullTime(t.updatedAt || t.createdAt)) + '">' +
+        '<div class="tt">' + esc(t.title || "Untitled chat") + "</div>" +
+        '<div class="tm mono">' + esc(meta) + "</div></button>";
     }).join("");
   }
 
-  document.getElementById("askForm").addEventListener("submit", function (ev) {
-    ev.preventDefault();
-    var q = String(document.getElementById("q").value || "").trim();
-    if (!q) { setStatus("Type a question first."); return; }
-    askBtn.disabled = true;
-    setStatus("Searching…");
-    answerBox.style.display = "none";
-    postJson("/api/read/company-brain", { question: q }).then(function (j) {
-      askBtn.disabled = false;
-      if (!j.ok) { setStatus("Could not answer — " + (j.error || ("HTTP " + j._status))); return; }
-      setStatus("Answer ready (" + ((j.answer && j.answer.source) || "ok") + ")");
-      answerBox.style.display = "";
-      answerBox.textContent = (j.answer && j.answer.text) || "";
-      renderSources(j.sources || []);
-      if (rolePill && j.role) rolePill.textContent = j.role;
-    });
-  });
-
-  function loadReviews() {
-    getJson("/api/company-brain/reviews").then(function (j) {
-      if (!j.ok) {
-        reviewList.textContent = j.demo ? "Demo session — review queue not loaded." :
-          ("Could not load reviews — " + (j.error || j._status));
+  function loadThreads() {
+    if (state.threadsState !== "ok") { state.threadsState = "loading"; renderThreads(); }
+    apiGet("/api/company-brain/threads").then(function (j) {
+      if (!j || !j.ok) {
+        state.threadsState = "error";
+        state.threadsError = friendly(j);
+        renderThreads();
         return;
       }
-      var rows = j.reviews || [];
-      if (!rows.length) { reviewList.style.color = "var(--gray)"; reviewList.textContent = "No pending reviews."; return; }
-      reviewList.style.color = "inherit";
-      reviewList.innerHTML = rows.map(function (row) {
-        var open = row.web_view_link
-          ? ('<a href="' + esc(row.web_view_link) + '" target="_blank" rel="noopener">Drive</a>') : "";
-        return '<div style="padding:12px 0;border-bottom:1px solid var(--line);display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">' +
-          '<div style="flex:1;min-width:180px">' +
-            '<div style="font-weight:600">' + esc(row.file_name || row.drive_file_id) + '</div>' +
-            '<div class="mono" style="font-size:var(--fs-caption);color:var(--gray);margin-top:3px">proposed ' +
-              esc(row.proposed_tier) + " · live " + esc(row.access_tier) + (open ? (" · " + open) : "") + '</div>' +
-            '<div style="margin-top:6px;font-size:var(--fs-body)">' + esc(row.rationale || "") + '</div></div>' +
-          '<div style="display:flex;gap:8px">' +
-            '<button class="btn sm dark" data-decide="approve" data-id="' + esc(row.id) + '">Approve</button>' +
-            '<button class="btn sm" data-decide="reject" data-id="' + esc(row.id) + '">Reject</button>' +
-          '</div></div>';
-      }).join("");
+      state.threads = j.threads || [];
+      state.threadsState = "ok";
+      renderThreads();
     });
   }
 
-  var refresh = document.getElementById("refreshReviews");
-  if (refresh) refresh.addEventListener("click", loadReviews);
+  threadList.addEventListener("click", function (ev) {
+    var btn = ev.target.closest("[data-thread]");
+    if (!btn) return;
+    openThread(btn.getAttribute("data-thread"));
+    if (window.innerWidth <= 900) chatEl.classList.remove("rail-open");
+  });
+
+  function openThread(id) {
+    if (!id) return;
+    state.threadId = id;
+    state.messages = [];
+    state.threadError = "";
+    state.loadingThread = true;
+    setTitle("Loading…");
+    renderThreads();
+    renderMessages();
+    apiGet("/api/company-brain/threads?thread_id=" + encodeURIComponent(id)).then(function (j) {
+      state.loadingThread = false;
+      if (!j || !j.ok) {
+        state.threadError = friendly(j);
+        setTitle("Chat");
+        renderMessages();
+        return;
+      }
+      setTitle((j.thread && j.thread.title) || "Chat");
+      state.messages = (j.messages || []).map(function (m) {
+        if (m.role === "user") return { kind: "user", text: m.text || "" };
+        return {
+          kind: "assistant",
+          text: m.text || "",
+          sources: m.sources || [],
+          answerSource: m.answerSource || "",
+          thin: !!m.thin
+        };
+      });
+      renderMessages();
+    });
+  }
+
+  document.getElementById("newChat").addEventListener("click", function () {
+    state.threadId = null;
+    state.messages = [];
+    state.threadError = "";
+    state.loadingThread = false;
+    setTitle("New chat");
+    renderThreads();
+    renderMessages();
+    if (window.innerWidth <= 900) chatEl.classList.remove("rail-open");
+    ta.focus();
+  });
+
+  document.getElementById("railToggle").addEventListener("click", function () {
+    chatEl.classList.toggle("rail-open");
+  });
+
+  /* ── right panel: uploaded files + owner approvals ──────────────────── */
+  function openDocs(v) {
+    if (v) chatEl.classList.add("docs-open");
+    else chatEl.classList.remove("docs-open");
+  }
+  document.getElementById("docsBtn").addEventListener("click", function () {
+    chatEl.classList.toggle("docs-open");
+  });
+  document.getElementById("docsClose").addEventListener("click", function () { openDocs(false); });
+  document.getElementById("refreshDocs").addEventListener("click", loadUploads);
+
+  function setPending(n) {
+    var count = Number(n) || 0;
+    state.pendingCount = count;
+    [pendPill, pendPill2].forEach(function (el) {
+      if (!el) return;
+      el.textContent = String(count) + " waiting";
+      el.hidden = count === 0;
+    });
+  }
+
+  var APPROVAL = {
+    pending: { badge: "b-warn", word: "waiting", say: "An owner has to approve this before it can be used in answers." },
+    approved: { badge: "b-ok", word: "approved", say: "Company Brain can use this in answers." },
+    rejected: { badge: "b-alert", word: "turned down", say: "This will not be used in answers." }
+  };
+
+  function renderUploads() {
+    if (state.uploadsState === "loading") {
+      docList.innerHTML = '<div class="sk"></div><div class="sk"></div><div class="sk short"></div>';
+      return;
+    }
+    if (state.uploadsState === "error") {
+      docList.innerHTML = '<div class="notebox bad">' + esc(state.uploadsError) + "</div>";
+      return;
+    }
+    if (!state.uploads.length) {
+      docList.innerHTML = '<div class="muted">No files added yet. Use the + button next to the message box.</div>';
+      return;
+    }
+    docList.innerHTML = state.uploads.map(function (u) {
+      var key = String(u.approvalStatus || "").toLowerCase();
+      var look = APPROVAL[key] || { badge: "b-gray", word: "unknown", say: "" };
+      var meta = [];
+      var sz = sizeWords(u.sizeBytes);
+      if (sz) meta.push(sz);
+      if (u.accessTier) meta.push("seen by " + u.accessTier);
+      if (u.uploadedByName) meta.push("added by " + u.uploadedByName);
+      var stamp = when(u.uploadedAt);
+      if (stamp) meta.push(stamp);
+      return '<div class="docrow" title="' + esc(fullTime(u.uploadedAt)) + '">' +
+        '<div class="dn">' + esc(u.name || "Untitled file") + "</div>" +
+        '<div class="drow"><span class="badge ' + look.badge + '">' + esc(look.word) + "</span></div>" +
+        (meta.length ? '<div class="dm mono">' + esc(meta.join(" · ")) + "</div>" : "") +
+        (look.say ? '<div class="dsay mono">' + esc(look.say) + "</div>" : "") +
+        "</div>";
+    }).join("");
+  }
+
+  function loadUploads() {
+    if (state.uploadsState !== "ok") { state.uploadsState = "loading"; renderUploads(); }
+    apiGet("/api/company-brain/upload").then(function (j) {
+      if (!j || !j.ok) {
+        state.uploadsState = "error";
+        state.uploadsError = friendly(j);
+        setPending(0);
+        renderUploads();
+        return;
+      }
+      state.uploads = j.uploads || [];
+      state.uploadsState = "ok";
+      setPending(j.pendingCount);
+      renderUploads();
+    });
+  }
+
+  /* Owner-only approval queue — same endpoint and same shape this screen
+     already used, moved into the documents panel. */
+  function renderReviews() {
+    if (state.reviewsState === "loading") {
+      reviewList.innerHTML = '<div class="sk"></div><div class="sk short"></div>';
+      return;
+    }
+    if (state.reviewsState === "error") {
+      reviewList.innerHTML = '<div class="notebox bad">' + esc(state.reviewsError) + "</div>";
+      return;
+    }
+    if (!state.reviews.length) {
+      reviewList.innerHTML = '<div class="muted">Nothing is waiting for you.</div>';
+      return;
+    }
+    reviewList.innerHTML = state.reviews.map(function (row) {
+      var open = row.web_view_link
+        ? ('<a class="lnk" href="' + esc(row.web_view_link) + '" target="_blank" rel="noopener">Open in Drive</a>') : "";
+      return '<div class="docrow">' +
+        '<div class="dn">' + esc(row.file_name || row.drive_file_id || "Untitled file") + "</div>" +
+        '<div class="dm mono">asked for ' + esc(row.proposed_tier) + " · now " + esc(row.access_tier) +
+          (open ? " · " : "") + open + "</div>" +
+        (row.rationale ? '<div class="dsay">' + esc(row.rationale) + "</div>" : "") +
+        '<div class="drow">' +
+          '<button class="btn sm dark" type="button" data-decide="approve" data-id="' + esc(row.id) + '">Approve</button>' +
+          '<button class="btn sm" type="button" data-decide="reject" data-id="' + esc(row.id) + '">Turn down</button>' +
+        "</div></div>";
+    }).join("");
+  }
+
+  function loadReviews() {
+    if (!isOwner) return;
+    if (state.reviewsState !== "ok") { state.reviewsState = "loading"; renderReviews(); }
+    apiGet("/api/company-brain/reviews").then(function (j) {
+      if (!j || !j.ok) {
+        state.reviewsState = "error";
+        state.reviewsError = friendly(j);
+        renderReviews();
+        return;
+      }
+      state.reviews = j.reviews || [];
+      state.reviewsState = "ok";
+      renderReviews();
+    });
+  }
+
   reviewList.addEventListener("click", function (ev) {
     var btn = ev.target.closest("[data-decide]");
     if (!btn) return;
     btn.disabled = true;
-    postJson("/api/company-brain/reviews", {
+    apiPost("/api/company-brain/reviews", {
       review_id: btn.getAttribute("data-id"),
       decision: btn.getAttribute("data-decide")
     }).then(function (j) {
-      if (!j.ok) { setStatus("Review failed — " + (j.error || j._status)); btn.disabled = false; return; }
-      setStatus("Review saved.");
+      if (!j || !j.ok) {
+        btn.disabled = false;
+        state.reviewsState = "error";
+        state.reviewsError = friendly(j);
+        renderReviews();
+        return;
+      }
       loadReviews();
+      loadUploads();
     });
   });
+  document.getElementById("refreshReviews").addEventListener("click", loadReviews);
+
+  /* ── start ──────────────────────────────────────────────────────────── */
+  if (isOwner && reviewPanel) reviewPanel.hidden = false;
+  setTitle("New chat");
+  renderMessages();
+  grow();
+  loadThreads();
+  loadUploads();
+  if (isOwner) loadReviews();
 })();
 </script>
 </body>

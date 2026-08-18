@@ -3,6 +3,12 @@
 // Staff path: ROLE_SETS tiers via assertBrainAccess — never affiliate.
 // External path: ONLY affiliate tier AND brain_affiliate_allowlist membership.
 // Role comes from the session, never the request body.
+//
+// Approval gate (2026-08-17, board §3.6): both queries also require
+// brain_files.approval_status = 'approved'. An uploaded document sits at
+// 'pending' until the owner approves it, so it can never reach the model —
+// the filter runs before ranking, not after generation. Drive rows are
+// 'approved' by default (migration 174), so Drive behaviour is unchanged.
 
 import {
   assertBrainAccess,
@@ -72,6 +78,7 @@ export async function retrieveChunks(db, {
      WHERE c.org_id = $1
        AND c.access_tier = ANY($2::brain_access_tier[])
        AND c.access_tier <> 'affiliate'
+       AND f.approval_status = 'approved'
        AND c.embedding IS NOT NULL
      ORDER BY c.embedding <=> $3::vector
      LIMIT $4`,
@@ -118,6 +125,7 @@ export async function retrieveAffiliateChunks(db, {
      WHERE c.org_id = $1
        AND c.access_tier = 'affiliate'
        AND c.access_tier = ANY($2::brain_access_tier[])
+       AND f.approval_status = 'approved'
        AND c.embedding IS NOT NULL
      ORDER BY c.embedding <=> $3::vector
      LIMIT $4`,

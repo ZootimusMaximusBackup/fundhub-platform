@@ -181,3 +181,148 @@ test("staff company-brain endpoint refuses affiliate role via ROLE_SETS.STAFF", 
   );
   assert.equal(res.statusCode, 403);
 });
+
+/* Board §3.4 — the ask endpoint now writes the turn to chat history.
+   These cases are additions; nothing above them changed. */
+
+const HIST_ORG = "11111111-1111-4111-8111-111111111111";
+const HIST_STAFF = "22222222-2222-4222-8222-222222222222";
+const HIST_THREAD = "44444444-4444-4444-8444-444444444444";
+
+function askDeps(over = {}) {
+  const written = [];
+  const created = [];
+  return {
+    written,
+    created,
+    deps: {
+      requireAuth: async () => ({ id: HIST_STAFF, org_id: HIST_ORG, role: "closer" }),
+      db: { query: async () => ({ rows: [] }) },
+      retrieveChunks: async () => ({
+        ok: true,
+        chunks: [{
+          fileName: "Closer Script v4.pdf",
+          content: "Ask what they compared it to",
+          accessTier: "sales",
+          webViewLink: null
+        }]
+      }),
+      synthesizeAnswer: async () => ({
+        ok: true,
+        text: "Ask what they compared it to [1]",
+        thin: false,
+        source: "model",
+        citations: [{ n: 1, fileName: "Closer Script v4.pdf" }]
+      }),
+      createThread: async (_db, args) => {
+        created.push(args);
+        return { ok: true, thread: { id: HIST_THREAD, title: args.title } };
+      },
+      getThread: async (_db, args) => (
+        args.threadId === HIST_THREAD && args.staffId === HIST_STAFF
+          ? { ok: true, thread: { id: HIST_THREAD, title: "Rate objections" }, messages: [] }
+          : { ok: false, reason: "not_found" }
+      ),
+      appendMessage: async (_db, args) => {
+        written.push(args);
+        return { ok: true, message: { id: "m" + written.length } };
+      },
+      env: {},
+      ...over
+    }
+  };
+}
+
+test("§3.4 ask with no thread_id opens a thread and keeps every existing key", async () => {
+  const res = mockRes();
+  const { deps, written, created } = askDeps();
+  await handler(
+    { method: "POST", body: { question: "What is our rate objection script?" } },
+    res,
+    deps
+  );
+
+  assert.equal(res.statusCode, 200);
+  // Every key the screens already read is still exactly where it was.
+  assert.equal(res.body.ok, true);
+  assert.equal(res.body.question, "What is our rate objection script?");
+  assert.equal(res.body.answer.text, "Ask what they compared it to [1]");
+  assert.equal(res.body.answer.thin, false);
+  assert.equal(res.body.answer.source, "model");
+  assert.equal(res.body.sources.length, 1);
+  assert.equal(res.body.role, "closer");
+  // Plus the new one.
+  assert.equal(res.body.thread_id, HIST_THREAD);
+  assert.equal(res.body.history_saved, undefined);
+
+  assert.equal(created.length, 1);
+  assert.equal(created[0].title, "What is our rate objection script?");
+  assert.equal(created[0].staffId, HIST_STAFF);
+
+  assert.equal(written.length, 2);
+  assert.equal(written[0].role, "user");
+  assert.equal(written[0].text, "What is our rate objection script?");
+  assert.equal(written[1].role, "assistant");
+  assert.equal(written[1].answerSource, "model");
+  assert.equal(written[1].sources[0].fileName, "Closer Script v4.pdf");
+});
+
+test("§3.4 ask with a thread_id appends to that thread instead of opening one", async () => {
+  const res = mockRes();
+  const { deps, written, created } = askDeps();
+  await handler(
+    { method: "POST", body: { question: "and the follow up?", thread_id: HIST_THREAD } },
+    res,
+    deps
+  );
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.thread_id, HIST_THREAD);
+  assert.equal(created.length, 0);
+  assert.equal(written.length, 2);
+  assert.ok(written.every((w) => w.threadId === HIST_THREAD));
+});
+
+test("§3.4 ask never writes into a thread the session does not own", async () => {
+  const res = mockRes();
+  const { deps, written, created } = askDeps();
+  const theirs = "99999999-9999-4999-8999-999999999999";
+  await handler(
+    { method: "POST", body: { question: "show me theirs", thread_id: theirs } },
+    res,
+    deps
+  );
+
+  assert.equal(res.statusCode, 200);
+  // A fresh thread of our own, never theirs.
+  assert.equal(created.length, 1);
+  assert.equal(res.body.thread_id, HIST_THREAD);
+  assert.ok(written.every((w) => w.threadId !== theirs));
+});
+
+test("§3.4 a failed history write still returns the answer", async () => {
+  const res = mockRes();
+  const { deps } = askDeps({
+    createThread: async () => { throw new Error("brain_threads is missing"); }
+  });
+  await handler({ method: "POST", body: { question: "still answer me" } }, res, deps);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.ok, true);
+  assert.equal(res.body.answer.text, "Ask what they compared it to [1]");
+  assert.equal(res.body.history_saved, false);
+  assert.equal(res.body.thread_id, null);
+});
+
+test("§3.4 a failed message write keeps the answer and the thread id", async () => {
+  const res = mockRes();
+  const { deps } = askDeps({
+    appendMessage: async () => ({ ok: false, reason: "insert_failed" })
+  });
+  await handler({ method: "POST", body: { question: "half saved" } }, res, deps);
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.answer.text, "Ask what they compared it to [1]");
+  assert.equal(res.body.thread_id, HIST_THREAD);
+  assert.equal(res.body.history_saved, false);
+});
