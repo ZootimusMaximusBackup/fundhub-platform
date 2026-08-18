@@ -57,8 +57,8 @@ export function parseSurveySubmitBody(body) {
   const byId =
     body.answers_by_id && typeof body.answers_by_id === "object" ? body.answers_by_id : null;
 
-  if (!name || !isEmail(email) || !phone) {
-    return { ok: false, error: "name_email_phone_required" };
+  if (!name || !isEmail(email)) {
+    return { ok: false, error: "name_email_required" };
   }
 
   // Prefer title-keyed answers (CF attribute = None assumption in cf-question-map).

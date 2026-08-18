@@ -73,12 +73,11 @@ export function parsePartnerApplyBody(body) {
   const kind = TRACKS[trackRaw] || null;
   const sms = !!body.sms_consent;
 
-  if (!name || !isEmail(email) || !tenDigits(phone)) {
-    return { ok: false, error: "name_email_phone_required" };
+  if (!name || !isEmail(email)) {
+    return { ok: false, error: "name_email_required" };
   }
   if (!kind) return { ok: false, error: "track_required" };
   if (!audience) return { ok: false, error: "audience_required" };
-  if (!sms) return { ok: false, error: "sms_consent_required" };
 
   return {
     ok: true,
@@ -88,7 +87,7 @@ export function parsePartnerApplyBody(body) {
     company,
     audience,
     kind,
-    sms_consent: true
+    sms_consent: sms
   };
 }
 
@@ -193,7 +192,7 @@ export async function runPartnerApply(parsed, deps = {}) {
       const note = [
         `phone=${parsed.phone}`,
         `audience=${parsed.audience}`,
-        `sms_consent=true`
+        `sms_consent=${parsed.sms_consent}`
       ].join("\n");
       const row = (await client.query(
         `INSERT INTO partners (org_id, name, brand_name, slug, status, contact_email, notes)

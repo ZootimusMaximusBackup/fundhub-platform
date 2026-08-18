@@ -46,6 +46,10 @@
   .err{display:none;margin-top:6px;font-size:13px;color:#B91C1C}
   .field.bad input,.field.bad select{border-color:#B91C1C}
   .field.bad .err{display:block}
+  .consent{display:flex;gap:11px;align-items:flex-start;margin:6px 0 18px;padding:14px;background:var(--soft);border-radius:8px}
+  .consent input{margin-top:3px;width:16px;height:16px;flex:0 0 auto;accent-color:var(--ink)}
+  .consent label{font-size:12.5px;color:var(--gray);line-height:1.5}
+  .consent a{color:var(--ink);text-decoration:underline}
   .assure{margin:8px 0 18px;font-size:14px;color:var(--gray)}
   .assure div{margin:6px 0}
   .btn{display:inline-block;width:100%;background:var(--ink);color:#fff;font-family:var(--sans);font-size:15px;font-weight:600;padding:13px;border:1px solid var(--ink);border-radius:7px;cursor:pointer;text-align:center}
@@ -96,9 +100,12 @@
         <div class="err">That address doesn't look complete — check for a typo.</div>
       </div>
       <div class="field" id="f-phone">
-        <label for="phone">Mobile phone</label>
-        <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="(555) 555-5555" required>
-        <div class="err">We need 10 digits, including area code.</div>
+        <label for="phone">Mobile (for text updates) <span style="text-transform:none;letter-spacing:0;color:var(--gray2)">(optional)</span></label>
+        <input type="tel" id="phone" name="phone" autocomplete="tel" placeholder="(555) 555-5555">
+      </div>
+      <div class="consent">
+        <input type="checkbox" id="sms" name="sms_consent">
+        <label for="sms">I agree to receive SMS from Fundhub.ai about my funding application. Msg &amp; data rates may apply. Msg frequency varies. Reply STOP to opt out, HELP for help. See our <a href="/privacy/">Privacy Policy</a> and <a href="/terms/">Terms</a>.</label>
       </div>
       <div class="assure">
         <div>— Full refund within 14 days of purchase, provided you have accessed less than 20% of the program content.</div>
@@ -133,7 +140,6 @@
   var sel = document.getElementById('program');
   if (prog === 'credit-mastery' || prog === 'capital-strategy') sel.value = prog;
 
-  function digits(v) { return String(v || '').replace(/\D/g, ''); }
   function emailOk(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 
   document.getElementById('enroll-form').addEventListener('submit', function (e) {
@@ -154,7 +160,6 @@
     if (!program) { fields.program.classList.add('bad'); ok = false; }
     if (!name) { fields.name.classList.add('bad'); ok = false; }
     if (!emailOk(email)) { fields.email.classList.add('bad'); ok = false; }
-    if (digits(phone).length < 10) { fields.phone.classList.add('bad'); ok = false; }
     if (!ok) return;
 
     var btn = document.getElementById('submit-btn');
@@ -166,6 +171,7 @@
       full_name: name,
       email: email,
       phone: phone,
+      sms_consent: !!(document.getElementById('sms') || {}).checked,
       page_url: location.href,
       submitted_at: new Date().toISOString()
     };

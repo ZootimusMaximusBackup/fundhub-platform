@@ -19,20 +19,28 @@ function mockRes() {
   };
 }
 
-test("parsePartnerApplyBody requires name, email, 10-digit phone, track, audience, sms", () => {
+test("parsePartnerApplyBody requires name, email, track, audience; phone and SMS are optional", () => {
   assert.equal(parsePartnerApplyBody({}).ok, false);
   assert.equal(parsePartnerApplyBody({
-    name: "Sam Rivera", email: "sam@example.com", phone: "555", track: "affiliate",
+    name: "Sam Rivera", email: "bad", phone: "555", track: "affiliate",
     audience: "list", sms_consent: true
-  }).error, "name_email_phone_required");
+  }).error, "name_email_required");
   assert.equal(parsePartnerApplyBody({
     name: "Sam Rivera", email: "sam@example.com", phone: "5551234567", track: "nope",
     audience: "list", sms_consent: true
   }).error, "track_required");
-  assert.equal(parsePartnerApplyBody({
+  const noSms = parsePartnerApplyBody({
     name: "Sam Rivera", email: "sam@example.com", phone: "5551234567", track: "affiliate",
     audience: "list", sms_consent: false
-  }).error, "sms_consent_required");
+  });
+  assert.equal(noSms.ok, true);
+  assert.equal(noSms.sms_consent, false);
+  const noPhone = parsePartnerApplyBody({
+    name: "Sam Rivera", email: "sam@example.com", track: "affiliate",
+    audience: "list", sms_consent: false
+  });
+  assert.equal(noPhone.ok, true);
+  assert.equal(noPhone.phone, "");
 
   const ok = parsePartnerApplyBody({
     full_name: "Sam Rivera",

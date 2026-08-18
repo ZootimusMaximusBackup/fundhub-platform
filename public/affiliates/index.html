@@ -506,13 +506,13 @@
         <form class="appform" id="pform" novalidate>
           <div class="field"><label for="p-name">Full name</label><input type="text" id="p-name" autocomplete="name" placeholder="First and last" required></div>
           <div class="field"><label for="p-email">Email address</label><input type="email" id="p-email" autocomplete="email" placeholder="you@company.com" required></div>
-          <div class="field"><label for="p-phone">Mobile phone</label><input type="tel" id="p-phone" autocomplete="tel" placeholder="(555) 555-5555" required></div>
+          <div class="field"><label for="p-phone">Mobile (for text updates) <span style="text-transform:none;letter-spacing:0;color:var(--gray)">(optional)</span></label><input type="tel" id="p-phone" autocomplete="tel" placeholder="(555) 555-5555"></div>
           <div class="field"><label for="p-co">Business name <span style="text-transform:none;letter-spacing:0;color:var(--gray)">(optional)</span></label><input type="text" id="p-co" autocomplete="organization" placeholder="As registered"></div>
           <div class="field"><label for="p-track">Track</label><select id="p-track" required><option value="">Select a track</option><option value="affiliate">Affiliate</option><option value="white_label">White-Label Partner</option></select></div>
           <div class="field"><label for="p-aud">How will you refer clients?</label><input type="text" id="p-aud" placeholder="Audience, list, community, book of clients…" required></div>
           <div class="consent">
             <input type="checkbox" id="p-sms">
-            <label for="p-sms">I expressly consent to receive transactional SMS messages from FUNDHUB LLC about my partner application and account status at the number provided, including messages sent using automated technology. Checking this box constitutes my electronic signature. Message and data rates may apply. Message frequency varies. Reply STOP to opt out, HELP for help. Consent is not a condition of any purchase or service. See our <a href="/privacy/">Privacy Policy</a> and <a href="/terms/#sms">SMS Terms</a>.</label>
+            <label for="p-sms">I agree to receive SMS from Fundhub.ai about my funding application. Msg &amp; data rates may apply. Msg frequency varies. Reply STOP to opt out, HELP for help. See our <a href="/privacy/">Privacy Policy</a> and <a href="/terms/">Terms</a>.</label>
           </div>
           <button type="submit" class="btn">Submit partner application</button>
           <p class="disclaim">By submitting, you confirm the information provided is accurate. Partner approval is at Fundhub's discretion, and no commission or revenue share is earned until a partner agreement is signed.</p>
@@ -650,13 +650,10 @@
     var email=document.getElementById('p-email').value.trim();
     var phone=document.getElementById('p-phone').value.trim();
     var track=document.getElementById('p-track').value;
+    var audience=document.getElementById('p-aud').value.trim();
     var sms=document.getElementById('p-sms').checked;
-    if(!name||!email||!phone||!track){alert('We need this one to continue.');return;}
+    if(!name||!email||!track||!audience){alert('We need this one to continue.');return;}
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){alert("That address doesn't look complete — check for a typo.");return;}
-    var digits=phone.replace(/\D/g,'');
-    if(digits.length===11&&digits.charAt(0)==='1')digits=digits.slice(1);
-    if(digits.length!==10){alert('We need 10 digits, including area code.');return;}
-    if(!sms){alert('Check the box so we can text you application updates.');return;}
     var b=this.querySelector('button[type=submit]');
     var err=document.getElementById('apply-err');
     if(err){err.style.display='none';err.textContent='';}
@@ -695,8 +692,7 @@
       if(!res.ok||!d.ok){
         b.disabled=false;b.textContent='Submit partner application';
         var msg='Could not create the login. Try again.';
-        if(d.error==='sms_consent_required') msg='Check the box so we can text you application updates.';
-        else if(d.error==='name_email_phone_required') msg='We need this one to continue.';
+        if(d.error==='name_email_required'||d.error==='name_email_phone_required') msg='We need this one to continue.';
         if(err){err.textContent=msg;err.style.display='block';}
         return;
       }

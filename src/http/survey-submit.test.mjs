@@ -26,9 +26,17 @@ function mockRes() {
   };
 }
 
-test("parseSurveySubmitBody requires name email phone", () => {
+test("parseSurveySubmitBody requires name and email; phone and SMS are optional", () => {
   assert.equal(parseSurveySubmitBody({}).ok, false);
-  assert.equal(parseSurveySubmitBody({ name: "A", email: "bad", phone: "1" }).error, "name_email_phone_required");
+  assert.equal(parseSurveySubmitBody({ name: "A", email: "bad", phone: "1" }).error, "name_email_required");
+  const noPhone = parseSurveySubmitBody({
+    name: "Ada Lovelace",
+    email: "Ada@Example.COM",
+    sms_consent: false,
+  });
+  assert.equal(noPhone.ok, true);
+  assert.equal(noPhone.phone, "");
+  assert.equal(noPhone.sms_consent, false);
   const ok = parseSurveySubmitBody({
     name: "Ada Lovelace",
     email: "Ada@Example.COM",
@@ -126,5 +134,5 @@ test("handler rejects incomplete body", async () => {
   const res = mockRes();
   await handler({ method: "POST", body: { name: "Only" } }, res);
   assert.equal(res.out.statusCode, 400);
-  assert.equal(res.out.body.error, "name_email_phone_required");
+  assert.equal(res.out.body.error, "name_email_required");
 });

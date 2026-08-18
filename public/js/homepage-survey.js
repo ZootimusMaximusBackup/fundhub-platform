@@ -220,10 +220,10 @@
           '<input type="text" id="sv-business" name="business" autocomplete="organization" placeholder="As registered"></div>' +
           '<div class="field"><label for="sv-email">Email address</label>' +
           '<input type="email" id="sv-email" name="email" autocomplete="email" placeholder="you@company.com" required></div>' +
-          '<div class="field"><label for="sv-phone">Mobile phone</label>' +
-          '<input type="tel" id="sv-phone" name="phone" autocomplete="tel" placeholder="(555) 555-5555" required></div>' +
+          '<div class="field"><label for="sv-phone">Mobile (for text updates) <span style="text-transform:none;letter-spacing:0;color:var(--gray2)">(optional)</span></label>' +
+          '<input type="tel" id="sv-phone" name="phone" autocomplete="tel" placeholder="(555) 555-5555"></div>' +
           '<div class="consent"><input type="checkbox" id="sv-sms" name="sms_consent">' +
-          '<label for="sv-sms">I expressly consent to receive transactional SMS messages from FUNDHUB LLC about my application and account status at the number provided, including messages sent using automated technology. Checking this box constitutes my electronic signature. Message and data rates may apply. Message frequency varies. Reply STOP to opt out, HELP for help. Consent is not a condition of any purchase or service. See our <a href="/privacy/">Privacy Policy</a> and <a href="/terms/#sms">SMS Terms</a>.</label></div>' +
+          '<label for="sv-sms">I agree to receive SMS from Fundhub.ai about my funding application. Msg &amp; data rates may apply. Msg frequency varies. Reply STOP to opt out, HELP for help. See our <a href="/privacy/">Privacy Policy</a> and <a href="/terms/">Terms</a>.</label></div>' +
           '<p class="sv-err" role="alert"></p>' +
           '<div class="sv-nav">' +
           (idx > 0
@@ -364,16 +364,6 @@
       }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         setErr("That address doesn't look complete — check for a typo.");
-        return;
-      }
-      if (!phone) {
-        setErr("We need this one to continue.");
-        return;
-      }
-      var digits = phone.replace(/\D/g, "");
-      if (digits.length === 11 && digits.charAt(0) === "1") digits = digits.slice(1);
-      if (digits.length !== 10) {
-        setErr("We need 10 digits, including area code.");
         return;
       }
       btn.disabled = true;
