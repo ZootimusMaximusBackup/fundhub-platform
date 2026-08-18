@@ -1,0 +1,73 @@
+{
+  "when": "2026-08-18T00:11:06.791Z",
+  "site": "https://fundhub.ai",
+  "role": "owner",
+  "email": "owner@fundhub.ai",
+  "partner_id": "9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+  "checks": {
+    "wordmark": {
+      "api": [
+        {
+          "method": "POST",
+          "status": 200
+        }
+      ],
+      "genMsg": "Wordmark saved from the brand name.",
+      "suiteOnBtnDisplay": "none",
+      "pvH1": "See what funding options may be available",
+      "shot": "docs/workflows/build-evidence/wl-marketing/live-prove/brand-studio-wordmark.png",
+      "pass": true
+    },
+    "social": {
+      "ui": {
+        "notice": "Showing TEST — White-Label Partner Role.",
+        "oauthMsg": "Connecting opens that channel's own sign-in page. If a channel is not set up yet, this line will say so and nothing is sent.",
+        "queueMsg": "",
+        "kQueued": "3",
+        "nQueued": "3",
+        "queueEmpty": "CHANNEL CAPTION OFFER TYPE SCHEDULED_FOR ATTEMPT DISPOSITION — DERIVED, NOT A COLUMN ▸— Looking for funding options? The Partner connects you with potential lenders who may be able to help. No guarant",
+        "picker": "TEST — White-Label Partner Role"
+      },
+      "postsApi": {
+        "status": 200,
+        "count": 3,
+        "statuses": {
+          "draft": 3
+        }
+      },
+      "shot": "docs/workflows/build-evidence/wl-marketing/live-prove/social-studio-queue.png",
+      "shotConnect": "docs/workflows/build-evidence/wl-marketing/live-prove/social-studio-connect.png",
+      "pass": true
+    },
+    "creative": {
+      "firstPaint": {
+        "genDisabled": true,
+        "genMsg": "",
+        "writeChip": "Read only",
+        "banner": "one partner"
+      },
+      "shotFirst": "docs/workflows/build-evidence/wl-marketing/live-prove/creative-factory-first-paint.png",
+      "settled": {
+        "genDisabled": false,
+        "genMsg": "",
+        "writeChip": "Writes on",
+        "useBody": "ON? Yes USED THIS MONTH 1458 LEFT 248542 CAP 250000",
+        "picker": "TEST — White-Label Partner Role",
+        "banner": "TEST — White-Label Partner Role"
+      },
+      "shotSettled": "docs/workflows/build-evidence/wl-marketing/live-prove/creative-factory-settled.png",
+      "pickerImmediate": {
+        "picker": "DEMO Partner — Northlight Capital",
+        "banner": "DEMO Partner — Northlight Capital",
+        "genDisabled": true,
+        "writeChip": "Read only"
+      },
+      "shotPicker": "docs/workflows/build-evidence/wl-marketing/live-prove/creative-factory-picker.png",
+      "pass": true
+    }
+  },
+  "login": {
+    "ok": true,
+    "landed": "/app/command-center.html"
+  }
+}
