@@ -75,8 +75,8 @@ export const DEMO_PASSWORD = "demo-portal-2026";
  *  the shared staff tabs, which would silently hide the very thing being
  *  reviewed. */
 export const DEMO_STAFF = Object.freeze([
-  { email: `owner@${DEMO_EMAIL_DOMAIN}`,   role: "owner",              name: "DEMO Owner",              lands: "command-center.html",   label: "Owner",             portal: "Command Center" },
-  { email: `admin@${DEMO_EMAIL_DOMAIN}`,   role: "admin",              name: "DEMO Admin",              lands: "command-center.html",   label: "Admin",             portal: "Command Center" },
+  { email: `owner@${DEMO_EMAIL_DOMAIN}`,   role: "owner",              name: "DEMO Owner",              lands: "pipeline.html",         label: "Owner",             portal: "Pipeline" },
+  { email: `admin@${DEMO_EMAIL_DOMAIN}`,   role: "admin",              name: "DEMO Admin",              lands: "pipeline.html",         label: "Admin",             portal: "Pipeline" },
   { email: `advisor@${DEMO_EMAIL_DOMAIN}`, role: "funding_advisor",    name: "DEMO Funding Advisor",    lands: "client-control-panel.html", label: "Funding advisor",   portal: "Client Control Panel" },
   { email: `closer@${DEMO_EMAIL_DOMAIN}`,  role: "closer",             name: "DEMO Closer",             lands: "closer-dashboard.html", label: "Closer",            portal: "Closer Dashboard" },
   { email: `inquiry@${DEMO_EMAIL_DOMAIN}`, role: "inquiry_specialist", name: "DEMO Specialist", lands: "inquiry-remover.html",  label: "Specialist", portal: "Inquiries and repair" },

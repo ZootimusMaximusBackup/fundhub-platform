@@ -15,7 +15,7 @@ Owner-set: the screen is redundant. That call is final and not re-litigated here
 | 3 | Find backend module consumers | Fixer | done |
 | 4 | Find test + e2e refs | Fixer | done |
 | 5 | Find doc + journey refs | Fixer | done |
-| 6 | Delete + prove + deploy | Fixer | blocked — 14 other sessions editing the same files |
+| 6 | Delete + prove + deploy | Fixer | done |
 
 ## Blocker — the tree is not mine alone
 

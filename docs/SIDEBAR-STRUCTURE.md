@@ -27,7 +27,7 @@ Ordered by how a Fundhub day actually runs: sell → fund → serve the client �
 | **Sales** | Pipeline → Closer Dashboard → Call cockpit → My numbers → Sales floor → Calendar | Desk work starts on the board; closers then open a call, check personal numbers; managers open the floor; calendar closes the booking loop. |
 | **Funding** | Lenders → Finance OS → Contracts | Match a lender, read money, send the agreement. |
 | **Client ops** | Client Control Panel → Messaging → Documents → Inquiry Remover → Company Brain | One client, talk to them, file, clear inquiries, firm knowledge. |
-| **Watch** | Command Center → Galaxy → Ops & Admin | Roll-up KPIs, relationship graph, then platform health. |
+| **Watch** | Galaxy → Ops & Admin | Relationship graph, then platform health. |
 | **Automation** | Agent Editor → Workflows → Journeys → Message Copy | Who speaks → what runs → drip journeys → the words themselves. |
 | **Marketing** | Campaigns → Social Studio → Creative Factory → Content | Paid → organic → asset production → content library. |
 | **Admin** | Staff & Teams → Hiring → Products & Commissions → Demo Mode → Brand Studio | People, then recruiting, then what we sell, then demo toggle, then partner brand. |
@@ -56,7 +56,7 @@ Read every `public/app/*.html` screen. Pairs that look similar and the call made
 | Pair / group | Same job? | Call |
 |---|---|---|
 | `closer-dashboard.html` vs `my-numbers.html` | Related, not the same. Dashboard = legacy closer home + calculators. My numbers = live personal metrics API. | **Keep both.** Nav lists Dashboard then My numbers (workflow: land → check pace). Reversible: drop My numbers from Sales if the dashboard absorbs the API later. |
-| `sales-floor.html` vs `command-center.html` | No. Floor = sales-team roll-up; Command Center = whole-book KPIs. | Keep both. |
+| `sales-floor.html` vs `command-center.html` | No. Floor = sales-team roll-up; Command Center was whole-book KPIs. | **Delete Command Center.** Owner 2026-08-17: owner/admin land on Pipeline. Command Center is gone. |
 | `automations.html` vs `journeys.html` | No. Workflows = Inngest/ops automations; Journeys = SMS/email journey editor. | Keep both. |
 | `agent-editor.html` vs `template-editor.html` | No. Agents vs message copy. | Keep both. |
 | `content-admin.html` vs `creative-factory.html` vs `social-studio.html` | No. Library vs creative production vs social publishing. | Keep all three; Content moved under Marketing. |

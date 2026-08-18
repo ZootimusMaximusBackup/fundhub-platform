@@ -81,7 +81,7 @@ test.describe("direct-URL isolation (UI)", () => {
 
 test.describe("viewport console clean", () => {
   for (const width of [1280, 390]) {
-    test(`command-center at ${width}px has no console errors`, async ({ page }) => {
+    test(`pipeline at ${width}px has no console errors`, async ({ page }) => {
       const errors = trackErrors(page);
       await page.setViewportSize({ width, height: 800 });
       await withSession(page, OWNER);
@@ -90,16 +90,16 @@ test.describe("viewport console clean", () => {
         if (url.includes("/api/auth/session")) return json(route, OWNER);
         return json(route, { ok: true, items: [], kpis: {}, stages: [] });
       });
-      await gotoScreen(page, "command-center.html");
+      await gotoScreen(page, "pipeline.html");
       await expect(page.locator("body")).toBeVisible();
       const real = errors.filter((e) => !EXTERNAL_RESOURCE.test(e));
       pushAssert({
         section: "UI", journey: "VIEWPORT", role: "owner",
         status: real.length ? "FAIL" : "PASS",
         id: `ui-viewport-${width}`,
-        claim: `command-center console-clean at ${width}px`,
+        claim: `pipeline console-clean at ${width}px`,
         detail: real.slice(0, 3).join(" | "),
-        file: "public/app/command-center.html"
+        file: "public/app/pipeline.html"
       });
     });
   }

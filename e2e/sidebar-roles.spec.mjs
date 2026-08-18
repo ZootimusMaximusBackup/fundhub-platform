@@ -118,7 +118,7 @@ test.describe("sidebar role visibility", () => {
   test("funding_advisor sees the lender database, not closer desk, sales floor, portals, or hiring", async ({ page }) => {
     await openScreen(page, "/app/pipeline.html", FUNDING_ADVISOR);
     const hrefs = await visibleNavHrefs(page);
-    expectIncludes(hrefs, ["pipeline.html", "command-center.html", ...ADVISOR_ONLY]);
+    expectIncludes(hrefs, ["pipeline.html", ...ADVISOR_ONLY]);
     expectExcludes(hrefs, [...CLOSER_DESK, ...SALES_FLOOR, ...OWNER_ADMIN_ONLY, ...HIRING_ONLY, ...PORTAL_ONLY]);
     for (const h of hrefs) expect(SCREENS.has(h), `broken nav link ${h}`).toBe(true);
   });
@@ -143,8 +143,8 @@ test.describe("sidebar fixed geometry", () => {
     expect(a.width).toBeLessThanOrEqual(250);
 
     // Navigate via a real sidebar link — geometry must not jump.
-    await page.locator('aside.side a.navitem[href*="command-center.html"], aside.side a.navitem[data-fh-href*="command-center.html"]').first().click();
-    await page.waitForURL(/command-center\.html/);
+    await page.locator('aside.side a.navitem[href*="galaxy.html"], aside.side a.navitem[data-fh-href*="galaxy.html"]').first().click();
+    await page.waitForURL(/galaxy\.html/);
     await waitForGate(page);
     const b = await sideBox(page);
     expect(b).toEqual(a);

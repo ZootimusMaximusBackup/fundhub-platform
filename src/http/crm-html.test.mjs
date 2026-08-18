@@ -57,7 +57,12 @@ test("client-control-panel.html binds the live URL client and does not fake a pu
   assert.ok(!/data-act/.test(html), "must not keep simulated action buttons");
   assert.ok(!/dataset\.fail/.test(html), "must not pretend a bureau pull failed");
   assert.ok(!/Funding Round #2/.test(html));
-  assert.ok(!/Pull Equifax/.test(html));
+  assert.ok(/Pull TransUnion/.test(html), "must show the TransUnion pull");
+  assert.ok(/Pull Experian/.test(html), "must show the Experian pull");
+  assert.ok(/Pull Equifax/.test(html), "must show the Equifax pull");
+  assert.ok(/Generate Apps/.test(html), "must show Generate Apps");
+  assert.ok(html.includes("/api/finance/crs-pull"), "bureau pulls must call the real CRS run endpoint");
+  assert.ok(html.includes("/api/read/lender-matches"), "Generate Apps must refresh the live lender match list");
 });
 
 test("sales-floor.html does not ship a hardcoded manager name or fake cash", () => {
@@ -79,7 +84,6 @@ test("closer-call Join stays off until a meeting link exists", () => {
 
 test("app clocks are not frozen on Jul 26", () => {
   const files = [
-    "command-center.html",
     "inquiry-remover.html",
     "messaging.html",
     "pipeline.html",

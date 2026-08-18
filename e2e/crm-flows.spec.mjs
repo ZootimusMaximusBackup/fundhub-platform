@@ -269,8 +269,8 @@ test.describe("persist edge cases", () => {
     await expect(page).toHaveURL(/finance-os\.html/);
   });
 
-  test("command center agent badges still wire", async ({ page }) => {
-    await openScreen(page, "/app/command-center.html", OWNER, {
+  test("galaxy agent badges still wire", async ({ page }) => {
+    await openScreen(page, "/app/galaxy.html", OWNER, {
       "/api/read/agents": {
         ok: true, items: [{
           code: "AG-04", name: "Setter Josh", status: "live",

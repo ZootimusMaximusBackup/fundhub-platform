@@ -13,7 +13,6 @@ export const ROLE_ROUTES: Record<Role, string[]> = {
     'app/campaign-manager.html',
     'app/social-studio.html',
     'app/creative-factory.html',
-    'app/command-center.html',
     'app/ops-admin.html',
     'app/galaxy.html',
     'app/automations.html',
@@ -40,7 +39,6 @@ export const ROLE_ROUTES: Record<Role, string[]> = {
     'app/campaign-manager.html',
     'app/social-studio.html',
     'app/creative-factory.html',
-    'app/command-center.html',
     'app/galaxy.html',
     'app/automations.html',
     'app/agent-editor.html',
@@ -80,7 +78,6 @@ export const NAV_ITEMS: Record<string, string> = {
   'app/campaign-manager.html': 'Campaigns',
   'app/social-studio.html': 'Social Studio',
   'app/creative-factory.html': 'Creative Factory',
-  'app/command-center.html': 'Command center',
   'app/ops-admin.html': 'Ops admin',
   'app/galaxy.html': 'Galaxy',
   'app/automations.html': 'Automations',
@@ -127,8 +124,7 @@ export const NAV_GROUPS = [
   {
     name: 'Operations',
     items: [
-      'app/command-center.html',
-      'app/ops-admin.html',
+        'app/ops-admin.html',
       'app/galaxy.html',
       'app/automations.html',
       'app/agent-editor.html',
@@ -168,7 +164,7 @@ export function getNavForRole(role: Role) {
 
 /* Default landing page for each role. */
 export const ROLE_DEFAULTS: Record<Role, string> = {
-  admin: 'app/command-center.html',
+  admin: 'app/pipeline.html',
   staff: 'app/closer-dashboard.html',
   partner: 'app/partner-galaxy.html',
   affiliate: 'app/affiliate.html',

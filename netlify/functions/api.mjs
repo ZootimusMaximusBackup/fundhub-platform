@@ -159,6 +159,7 @@ import hiringDecisions from "../../api/hiring/decisions.mjs";
 import hiringFunnel from "../../api/hiring/funnel.mjs";
 import hiringBench from "../../api/hiring/bench.mjs";
 import financeSoftPull from "../../api/finance/soft-pull.mjs";
+import financeCrsPull from "../../api/finance/crs-pull.mjs";
 import bankingRevoke from "../../api/banking/revoke.mjs";
 import privacyErasure from "../../api/privacy/erasure.mjs";
 import financeSubscriptions from "../../api/finance/subscriptions.mjs";
@@ -556,6 +557,7 @@ export const ROUTES = {
   // than ROLE_SETS.STAFF and is spelled out in api/finance/soft-pull.mjs.
   // Nothing behind it transmits.
   "finance/soft-pull": financeSoftPull,
+  "finance/crs-pull": financeCrsPull,
 
   // Banking and privacy. Both are DESTRUCTIVE and both gate on {owner, admin},
   // which is narrower than ROLE_SETS.STAFF and spelled out in each handler rather

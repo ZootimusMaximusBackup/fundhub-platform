@@ -7,7 +7,6 @@ import { openScreen, OWNER, CLOSER, CLIENT_ID } from "./harness.mjs";
 
 const SCREENS = [
   "/app/index.html",
-  "/app/command-center.html",
   "/app/pipeline.html",
   "/app/calendar.html",
   "/app/messaging.html",
@@ -59,8 +58,8 @@ for (const path of SCREENS) {
   });
 }
 
-test("command center shows honest empty KPIs, not sample dollars", async ({ page }) => {
-  await openScreen(page, "/app/command-center.html", OWNER);
+test("ops admin shows honest empty KPIs, not sample dollars", async ({ page }) => {
+  await openScreen(page, "/app/ops-admin.html", OWNER);
   const kpis = page.locator(".kpi-value");
   const n = await kpis.count();
   expect(n).toBeGreaterThan(0);

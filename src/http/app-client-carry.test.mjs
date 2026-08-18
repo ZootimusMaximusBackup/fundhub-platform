@@ -231,10 +231,10 @@ describe("shell.js — the open client rides along", () => {
     // Putting ?client_id= on a link to Hiring is noise on a URL that means
     // nothing to the page receiving it.
     const a = anchor("hiring.html");
-    const b = anchor("command-center.html");
+    const b = anchor("ops-admin.html");
     await runShell({ links: [a, b], search: "?client_id=" + CID });
     assert.equal(a.href, "hiring.html");
-    assert.equal(b.href, "command-center.html");
+    assert.equal(b.href, "ops-admin.html");
   });
 
   test("the control panel gets ?id=, because that is what it calls the same thing", async () => {
@@ -291,16 +291,16 @@ describe("shell.js — the open client rides along", () => {
 
 describe("shell.js — remembering the client across a screen that has none", () => {
 
-  test("a detour through the Command Center does not lose who you were working on", async () => {
+  test("a detour through Ops Admin does not lose who you were working on", async () => {
     // Page 1: the hub, with a client. That is what puts it in the memory.
-    const onHub = anchor("command-center.html");
+    const onHub = anchor("ops-admin.html");
     const hub = await runShell({ links: [onHub], search: "?client_id=" + CID });
     assert.equal(hub.store.fh_client, CID, "the open client was not remembered");
 
-    // Page 2: the Command Center itself, no client in the bar. Its sidebar rows
+    // Page 2: Ops Admin itself, no client in the bar. Its sidebar rows
     // still have to point back at the client's file.
     const a = anchor("finance-os.html");
-    await runShell({ links: [a], page: "command-center.html", search: "", remembered: CID });
+    await runShell({ links: [a], page: "ops-admin.html", search: "", remembered: CID });
     assert.equal(a.href, "finance-os.html?client_id=" + CID);
   });
 
@@ -313,7 +313,7 @@ describe("shell.js — remembering the client across a screen that has none", ()
 
   test("a remembered value that is not a uuid is ignored, not propagated", async () => {
     const a = anchor("finance-os.html");
-    await runShell({ links: [a], page: "command-center.html", search: "", remembered: "wat" });
+    await runShell({ links: [a], page: "ops-admin.html", search: "", remembered: "wat" });
     assert.equal(a.href, "finance-os.html");
   });
 

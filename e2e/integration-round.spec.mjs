@@ -95,7 +95,7 @@ test.describe("Agent context + chat widget", () => {
 
 test.describe("Mobile smoke — key screens", () => {
   const MOBILE = [
-    "command-center.html",
+    "pipeline.html",
     "calendar.html",
     "lenders.html",
     "social-studio.html",
@@ -147,7 +147,7 @@ test.describe("Calendar coverage roster", () => {
   });
 });
 
-test.describe("Command Center live KPIs", () => {
+test.describe("Ops Admin live KPIs", () => {
   test("KPI tiles paint from dashboard/kpis", async ({ page }) => {
     await wireApi(page, {
       session: OWNER,
@@ -162,7 +162,7 @@ test.describe("Command Center live KPIs", () => {
         })
       }
     });
-    await gotoScreen(page, "command-center.html");
+    await gotoScreen(page, "ops-admin.html");
     await expect(page.locator(".kpi-value").first()).toHaveText("$32", { timeout: 10_000 });
   });
 });

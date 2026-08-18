@@ -24,7 +24,6 @@ const DEMO_OFF = { ok: true, demo_mode_enabled: false, counts: { clients: 0, len
 
 /* sample-data.html is gone — the seven surviving screens from the original list. */
 const SCREENS = [
-  "/app/command-center.html",
   "/app/pipeline.html",
   "/app/closer-dashboard.html",
   "/app/sales-floor.html",
@@ -52,6 +51,6 @@ test("Demo Mode OFF also shows no banner", async ({ page }) => {
 });
 
 test("the Demo Mode nav row is gone from the rail", async ({ page }) => {
-  await openScreen(page, "/app/command-center.html", OWNER);
+  await openScreen(page, "/app/galaxy.html", OWNER);
   await expect(page.locator('a.navitem[href="sample-data.html"]')).toHaveCount(0);
 });

@@ -323,7 +323,7 @@
 <body>
 <div class="app">
   <aside class="side" id="side">
-  <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
+  <div class="side-top"><a class="logo inv" href="pipeline.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
   <nav class="side-scroll" id="fh-side-nav">
 
 <div class="navgroup" data-fh-section="home"><button class="navhead" type="button">Home<span class="chev">▾</span></button><div class="navlist">
@@ -353,7 +353,6 @@
 </div></div>
 
 <div class="navgroup" data-fh-section="watch"><button class="navhead" type="button">Watch<span class="chev">▾</span></button><div class="navlist">
-        <a class="navitem" href="command-center.html"><span class="ico">⌘</span><span class="lbl">Command Center</span></a>
         <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
         <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
 </div></div>
@@ -458,7 +457,11 @@
 
       <div class="group">
         <div class="group-title">Actions</div>
-        <p id="ccp-actions-desk-note" style="font-size:var(--fs-body);line-height:1.45;color:var(--text);margin:0 0 10px;">Bureau pulls run from the closer deck. This button opens a removal case. It does not pull a bureau.</p>
+        <p id="ccp-actions-desk-note" style="font-size:var(--fs-body);line-height:1.45;color:var(--text);margin:0 0 10px;">Pull one bureau at a time. Generate Apps refreshes the lender apply list for this file.</p>
+        <button type="button" class="action-btn" id="ccp-pull-tu" style="cursor:pointer;">Pull TransUnion <span class="arrow">→</span></button>
+        <button type="button" class="action-btn" id="ccp-pull-ex" style="cursor:pointer;">Pull Experian <span class="arrow">→</span></button>
+        <button type="button" class="action-btn" id="ccp-pull-eq" style="cursor:pointer;">Pull Equifax <span class="arrow">→</span></button>
+        <button type="button" class="action-btn" id="ccp-generate-apps" style="cursor:pointer;">Generate Apps <span class="arrow">→</span></button>
         <button type="button" class="action-btn" id="ccp-issue-ir" style="cursor:pointer;">Issue Inquiry Removal <span class="arrow">→</span></button>
         <p id="ccp-issue-ir-status" style="font-size:var(--fs-body);color:var(--text-dim);margin:8px 0 0;"></p>
       </div>
@@ -883,11 +886,68 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   })();
 
-  (function wireIssueRemoval() {
-    var btn = $("ccp-issue-ir");
+  (function wireDeskActions() {
     var status = $("ccp-issue-ir-status");
-    if (!btn) return;
     function say(t) { if (status) status.textContent = t || ""; }
+    var pullBtns = [
+      { id: "ccp-pull-tu", bureau: "TU", label: "TransUnion" },
+      { id: "ccp-pull-ex", bureau: "EX", label: "Experian" },
+      { id: "ccp-pull-eq", bureau: "EQ", label: "Equifax" }
+    ];
+    function tokenHeaders() {
+      var headers = { accept: "application/json", "content-type": "application/json" };
+      try {
+        var t = localStorage.getItem("fh_token") || "";
+        if (t) headers.authorization = "Bearer " + t;
+      } catch (e) {}
+      return headers;
+    }
+    pullBtns.forEach(function (spec) {
+      var btn = $(spec.id);
+      if (!btn) return;
+      if (!id) {
+        btn.disabled = true;
+        return;
+      }
+      btn.addEventListener("click", function () {
+        btn.disabled = true;
+        say("Pulling " + spec.label + "…");
+        fetch("/api/finance/crs-pull", {
+          method: "POST",
+          headers: tokenHeaders(),
+          body: JSON.stringify({ client_id: id, bureau: spec.bureau })
+        }).then(function (r) { return r.json().then(function (d) { return { status: r.status, data: d }; }); })
+          .then(function (out) {
+            btn.disabled = false;
+            var d = out.data || {};
+            if (!d.ok) {
+              say(d.error || ("Could not pull " + spec.label + "."));
+              return;
+            }
+            say(spec.label + " pull finished. Refresh the file to see the stored report.");
+          })
+          .catch(function () {
+            btn.disabled = false;
+            say("Could not reach the pull service.");
+          });
+      });
+    });
+    var gen = $("ccp-generate-apps");
+    if (gen) {
+      if (!id) gen.disabled = true;
+      else gen.addEventListener("click", function () {
+        if (typeof window.fhRefreshFundingApply === "function") {
+          say("Building the apply list…");
+          window.fhRefreshFundingApply("Apps ready — use Apply on each lender").then(function (msg) {
+            say(msg || "Apps ready — use Apply on each lender");
+          });
+        } else {
+          say("Apply list is not on this page.");
+        }
+      });
+    }
+    var btn = $("ccp-issue-ir");
+    if (!btn) return;
     if (!id) {
       btn.disabled = true;
       say("Pick a client first.");
@@ -1047,60 +1107,73 @@ document.addEventListener("DOMContentLoaded", function () {
   var statusEl = document.getElementById("fh-funding-apply-status");
   var listEl = document.getElementById("fh-funding-apply-list");
   if (!statusEl || !listEl) return;
-  if (!clientId) return;
-  statusEl.textContent = "Loading matching lenders…";
-  var t = "";
-  try { t = localStorage.getItem("fh_token") || ""; } catch (e) {}
-  var headers = { accept: "application/json" };
-  if (t) headers.authorization = "Bearer " + t;
-  fetch("/api/read/lender-matches?client_id=" + encodeURIComponent(clientId), { headers: headers })
-    .then(function (r) { return r.json(); })
-    .then(function (d) {
-      if (!d || !d.ok) {
-        statusEl.textContent = "Could not load lender matches.";
-        return;
-      }
-      var n = d.match_count || 0;
-      if (n === 0) {
-        statusEl.textContent = (d.summary && d.summary.lender_count === 0)
-          ? "Lender list is empty — import CSV on Lenders."
-          : "No lenders fit this client's state / inquiry profile.";
-        return;
-      }
-      statusEl.textContent = n + " fit. Click Apply to verify exit IP, then open the bank URL.";
-      listEl.innerHTML = "";
-      (d.matches || []).slice(0, 12).forEach(function (m) {
-        var row = document.createElement("div");
-        row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px";
-        var label = document.createElement("span");
-        label.style.cssText = "font-size:var(--fs-body);min-width:0";
-        label.textContent = (m.name || "?") + (m.bureaus_pulled ? (" · " + m.bureaus_pulled) : "");
-        row.appendChild(label);
-        if (m.id && m.application_url && window.FHProxyApply) {
-          var btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "action-btn";
-          btn.style.cssText = "margin:0;padding:6px 10px;font-size:var(--fs-caption)";
-          btn.textContent = "Apply";
-          btn.setAttribute("data-fh-apply", "1");
-          btn.addEventListener("click", function () {
-            window.FHProxyApply.applyToLender({
-              clientId: clientId,
-              lenderId: m.id,
-              lenderName: m.name || "Lender"
-            });
-          });
-          row.appendChild(btn);
-        } else {
-          var miss = document.createElement("span");
-          miss.style.cssText = "font-size:var(--fs-caption);color:var(--gray2,#A1A1AA)";
-          miss.textContent = "No URL";
-          row.appendChild(miss);
+  function loadMatches(readyCopy) {
+    if (!clientId) {
+      statusEl.textContent = "Pick a client first.";
+      return Promise.resolve("Pick a client first.");
+    }
+    statusEl.textContent = "Loading matching lenders…";
+    var t = "";
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) {}
+    var headers = { accept: "application/json" };
+    if (t) headers.authorization = "Bearer " + t;
+    return fetch("/api/read/lender-matches?client_id=" + encodeURIComponent(clientId), { headers: headers })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || !d.ok) {
+          statusEl.textContent = "Could not load lender matches.";
+          return "Could not load lender matches.";
         }
-        listEl.appendChild(row);
+        var n = d.match_count || 0;
+        if (n === 0) {
+          var empty = (d.summary && d.summary.lender_count === 0)
+            ? "Lender list is empty — import CSV on Lenders."
+            : "No lenders fit this client's state / inquiry profile.";
+          statusEl.textContent = empty;
+          listEl.innerHTML = "";
+          return empty;
+        }
+        statusEl.textContent = readyCopy || (n + " fit. Click Apply to verify exit IP, then open the bank URL.");
+        listEl.innerHTML = "";
+        (d.matches || []).slice(0, 12).forEach(function (m) {
+          var row = document.createElement("div");
+          row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px";
+          var label = document.createElement("span");
+          label.style.cssText = "font-size:var(--fs-body);min-width:0";
+          label.textContent = (m.name || "?") + (m.bureaus_pulled ? (" · " + m.bureaus_pulled) : "");
+          row.appendChild(label);
+          if (m.id && m.application_url && window.FHProxyApply) {
+            var btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "action-btn";
+            btn.style.cssText = "margin:0;padding:6px 10px;font-size:var(--fs-caption)";
+            btn.textContent = "Apply";
+            btn.setAttribute("data-fh-apply", "1");
+            btn.addEventListener("click", function () {
+              window.FHProxyApply.applyToLender({
+                clientId: clientId,
+                lenderId: m.id,
+                lenderName: m.name || "Lender"
+              });
+            });
+            row.appendChild(btn);
+          } else {
+            var miss = document.createElement("span");
+            miss.style.cssText = "font-size:var(--fs-caption);color:var(--gray2,#A1A1AA)";
+            miss.textContent = "No URL";
+            row.appendChild(miss);
+          }
+          listEl.appendChild(row);
+        });
+        return readyCopy || (n + " lenders ready.");
+      })
+      .catch(function () {
+        statusEl.textContent = "Could not load lender matches.";
+        return "Could not load lender matches.";
       });
-    })
-    .catch(function () { statusEl.textContent = "Could not load lender matches."; });
+  }
+  window.fhRefreshFundingApply = loadMatches;
+  loadMatches();
 })();
 </script>
 </body>
