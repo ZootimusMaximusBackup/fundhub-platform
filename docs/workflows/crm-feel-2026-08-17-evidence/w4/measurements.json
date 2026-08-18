@@ -1,72 +1,5 @@
 {
-  "manifest": [
-    {
-      "file": "pipeline.html",
-      "liveSha": "54cdc93cee0cbf2c4293b50c429ea1a8b91e28f298828dfdf7fbceee66869759",
-      "localSha": "54cdc93cee0cbf2c4293b50c429ea1a8b91e28f298828dfdf7fbceee66869759",
-      "same": true
-    },
-    {
-      "file": "command-center.html",
-      "liveSha": "93d31fc36060b032fb086056f1c575738d2bf38f75e3e098ca4295c348113444",
-      "localSha": "14d9d0d21bc83bdf5dbf676c51b7dca354720e0231a5fe0f7021974d86c19516",
-      "same": false
-    },
-    {
-      "file": "closer-dashboard.html",
-      "liveSha": "0cd4b18844af3c5bfd3c24ae5c16a2dd53b04412201f0423b4aa6702bf7f3cdf",
-      "localSha": "0cd4b18844af3c5bfd3c24ae5c16a2dd53b04412201f0423b4aa6702bf7f3cdf",
-      "same": true
-    },
-    {
-      "file": "messaging.html",
-      "liveSha": "bbc9e2af82dc0803f257c0354e6d8cfc0315231da592d777827312ce479942c5",
-      "localSha": "61ef40ddd45d0961fd5dcd9651675c6b200153b6cb35810e6fc0186e42a63e18",
-      "same": false
-    },
-    {
-      "file": "staff-teams.html",
-      "liveSha": "b4937e348352981c3509f902f37cc18bd332ca91f25863828d56a4ea6d78c170",
-      "localSha": "5161d33020e5bea2457656244a4ea0f56da46149cad674b5ddb6494d2987a877",
-      "same": false
-    },
-    {
-      "file": "finance-os.html",
-      "liveSha": "b7a98cac64b97f7083ff8568e3a76e0b3ca0b066dda3db6c096b5defe03dff15",
-      "localSha": "80535718074a9b350b16f44e5af182a556ac2bf83ec2b6b9e34aa9da800d2420",
-      "same": false
-    },
-    {
-      "file": "shell.js",
-      "liveSha": "57ae77b9a78bf5bf73aa1aa056cdb82526fa79aa0ccc8aede733a773f4d6f03a",
-      "localSha": "57ae77b9a78bf5bf73aa1aa056cdb82526fa79aa0ccc8aede733a773f4d6f03a",
-      "same": true
-    },
-    {
-      "file": "data.js",
-      "liveSha": "a5b14cfffa514318ba77c96547bfad87a7da9835cda6b49328b54f890ae47a83",
-      "localSha": "a5b14cfffa514318ba77c96547bfad87a7da9835cda6b49328b54f890ae47a83",
-      "same": true
-    },
-    {
-      "file": "fundhub-brand.css",
-      "liveSha": "45e2309770a4b8a5d02c386a4f07f29bd535f97e2d004933cac6e86fc140b03a",
-      "localSha": "aa2ffec3c3df80c4ba343a81e97f4f57970e6e8cc05aebfa4775b7ac694d1af1",
-      "same": false
-    },
-    {
-      "file": "crm-sidebar.css",
-      "liveSha": "fd4fcf0616860fa5257441b2d3638baca2301e138fa0472116136ce6fad18e1b",
-      "localSha": "45d0af97a17efdf6c1f776331b522c91f5a802ffdbdbd082a6f72b521c95cf28",
-      "same": false
-    },
-    {
-      "file": "finance-os.css",
-      "liveSha": "69600633db267b595a209a28292beef72e435a1028485f7500f7f80616393a0c",
-      "localSha": "69600633db267b595a209a28292beef72e435a1028485f7500f7f80616393a0c",
-      "same": true
-    }
-  ],
+  "manifest": [],
   "before": [
     {
       "variant": "before",
@@ -74,15 +7,15 @@
       "screen": "pipeline",
       "rootFont": "16px",
       "bodyFont": "16px",
-      "appDisplay": "block",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
       "contentW": 1212,
       "sideW": 228,
       "distinctSizes": [
-        "11px",
-        "14px",
-        "18px"
+        "13px",
+        "16px",
+        "20px"
       ],
       "docW": 1440
     },
@@ -92,14 +25,14 @@
       "screen": "command-center",
       "rootFont": "16px",
       "bodyFont": "16px",
-      "appDisplay": "block",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
       "contentW": 1212,
       "sideW": 228,
       "distinctSizes": [
-        "11px",
-        "14px"
+        "13px",
+        "16px"
       ],
       "docW": 1440
     },
@@ -109,15 +42,15 @@
       "screen": "closer-dashboard",
       "rootFont": "16px",
       "bodyFont": "16px",
-      "appDisplay": "block",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
       "contentW": null,
       "sideW": 228,
       "distinctSizes": [
-        "11px",
-        "14px",
-        "28px"
+        "13px",
+        "16px",
+        "32px"
       ],
       "docW": 1440
     },
@@ -127,14 +60,14 @@
       "screen": "messaging",
       "rootFont": "16px",
       "bodyFont": "16px",
-      "appDisplay": "block",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
       "contentW": 1212,
       "sideW": 228,
       "distinctSizes": [
-        "11px",
-        "14px"
+        "13px",
+        "16px"
       ],
       "docW": 1440
     },
@@ -143,17 +76,17 @@
       "width": 1440,
       "screen": "staff-teams",
       "rootFont": "16px",
-      "bodyFont": "14px",
-      "appDisplay": "block",
+      "bodyFont": "16px",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "29px",
       "contentW": 1212,
       "sideW": 228,
       "distinctSizes": [
-        "11px",
-        "14px",
-        "18px",
-        "28px"
+        "13px",
+        "16px",
+        "20px",
+        "32px"
       ],
       "docW": 1440
     },
@@ -162,15 +95,15 @@
       "width": 1440,
       "screen": "finance-os",
       "rootFont": "16px",
-      "bodyFont": "14px",
-      "appDisplay": "block",
+      "bodyFont": "16px",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
-      "bodyPadBottom": "0px",
+      "bodyPadBottom": "32px",
       "contentW": 1164,
       "sideW": 228,
       "distinctSizes": [
-        "14px",
-        "18px"
+        "16px",
+        "20px"
       ],
       "docW": 1440
     },
@@ -180,15 +113,15 @@
       "screen": "pipeline",
       "rootFont": "16px",
       "bodyFont": "16px",
-      "appDisplay": "block",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
-      "contentW": 1280,
+      "contentW": 1692,
       "sideW": 228,
       "distinctSizes": [
-        "11px",
-        "14px",
-        "18px"
+        "13px",
+        "16px",
+        "20px"
       ],
       "docW": 1920
     },
@@ -198,14 +131,14 @@
       "screen": "command-center",
       "rootFont": "16px",
       "bodyFont": "16px",
-      "appDisplay": "block",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
-      "contentW": 1280,
+      "contentW": 1692,
       "sideW": 228,
       "distinctSizes": [
-        "11px",
-        "14px"
+        "13px",
+        "16px"
       ],
       "docW": 1920
     },
@@ -215,15 +148,15 @@
       "screen": "closer-dashboard",
       "rootFont": "16px",
       "bodyFont": "16px",
-      "appDisplay": "block",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
       "contentW": null,
       "sideW": 228,
       "distinctSizes": [
-        "11px",
-        "14px",
-        "28px"
+        "13px",
+        "16px",
+        "32px"
       ],
       "docW": 1920
     },
@@ -233,14 +166,14 @@
       "screen": "messaging",
       "rootFont": "16px",
       "bodyFont": "16px",
-      "appDisplay": "block",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
-      "contentW": 1280,
+      "contentW": 1692,
       "sideW": 228,
       "distinctSizes": [
-        "11px",
-        "14px"
+        "13px",
+        "16px"
       ],
       "docW": 1920
     },
@@ -249,17 +182,17 @@
       "width": 1920,
       "screen": "staff-teams",
       "rootFont": "16px",
-      "bodyFont": "14px",
-      "appDisplay": "block",
+      "bodyFont": "16px",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "29px",
-      "contentW": 1280,
+      "contentW": 1692,
       "sideW": 228,
       "distinctSizes": [
-        "11px",
-        "14px",
-        "18px",
-        "28px"
+        "13px",
+        "16px",
+        "20px",
+        "32px"
       ],
       "docW": 1920
     },
@@ -268,15 +201,15 @@
       "width": 1920,
       "screen": "finance-os",
       "rootFont": "16px",
-      "bodyFont": "14px",
-      "appDisplay": "block",
+      "bodyFont": "16px",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
-      "bodyPadBottom": "0px",
-      "contentW": 1280,
+      "bodyPadBottom": "32px",
+      "contentW": 1644,
       "sideW": 228,
       "distinctSizes": [
-        "14px",
-        "18px"
+        "16px",
+        "20px"
       ],
       "docW": 1920
     },
@@ -286,15 +219,15 @@
       "screen": "pipeline",
       "rootFont": "16px",
       "bodyFont": "16px",
-      "appDisplay": "block",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
-      "contentW": 1280,
+      "contentW": 1800,
       "sideW": 228,
       "distinctSizes": [
-        "11px",
-        "14px",
-        "18px"
+        "13px",
+        "16px",
+        "20px"
       ],
       "docW": 2560
     },
@@ -304,14 +237,14 @@
       "screen": "command-center",
       "rootFont": "16px",
       "bodyFont": "16px",
-      "appDisplay": "block",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
-      "contentW": 1280,
+      "contentW": 1754,
       "sideW": 228,
       "distinctSizes": [
-        "11px",
-        "14px"
+        "13px",
+        "16px"
       ],
       "docW": 2560
     },
@@ -321,15 +254,15 @@
       "screen": "closer-dashboard",
       "rootFont": "16px",
       "bodyFont": "16px",
-      "appDisplay": "block",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
       "contentW": null,
       "sideW": 228,
       "distinctSizes": [
-        "11px",
-        "14px",
-        "28px"
+        "13px",
+        "16px",
+        "32px"
       ],
       "docW": 2560
     },
@@ -339,14 +272,14 @@
       "screen": "messaging",
       "rootFont": "16px",
       "bodyFont": "16px",
-      "appDisplay": "block",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
-      "contentW": 1280,
+      "contentW": 1800,
       "sideW": 228,
       "distinctSizes": [
-        "11px",
-        "14px"
+        "13px",
+        "16px"
       ],
       "docW": 2560
     },
@@ -355,17 +288,17 @@
       "width": 2560,
       "screen": "staff-teams",
       "rootFont": "16px",
-      "bodyFont": "14px",
-      "appDisplay": "block",
+      "bodyFont": "16px",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "29px",
-      "contentW": 1280,
+      "contentW": 1800,
       "sideW": 228,
       "distinctSizes": [
-        "11px",
-        "14px",
-        "18px",
-        "28px"
+        "13px",
+        "16px",
+        "20px",
+        "32px"
       ],
       "docW": 2560
     },
@@ -374,15 +307,15 @@
       "width": 2560,
       "screen": "finance-os",
       "rootFont": "16px",
-      "bodyFont": "14px",
-      "appDisplay": "block",
+      "bodyFont": "16px",
+      "appDisplay": "flex",
       "appPadLeft": "228px",
-      "bodyPadBottom": "0px",
-      "contentW": 1280,
+      "bodyPadBottom": "32px",
+      "contentW": 1800,
       "sideW": 228,
       "distinctSizes": [
-        "14px",
-        "18px"
+        "16px",
+        "20px"
       ],
       "docW": 2560
     }
@@ -503,7 +436,7 @@
       "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
-      "contentW": 1280,
+      "contentW": 1692,
       "sideW": 228,
       "distinctSizes": [
         "13px",
@@ -521,7 +454,7 @@
       "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
-      "contentW": 1280,
+      "contentW": 1692,
       "sideW": 228,
       "distinctSizes": [
         "13px",
@@ -556,7 +489,7 @@
       "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
-      "contentW": 1280,
+      "contentW": 1692,
       "sideW": 228,
       "distinctSizes": [
         "13px",
@@ -573,7 +506,7 @@
       "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "29px",
-      "contentW": 1280,
+      "contentW": 1692,
       "sideW": 228,
       "distinctSizes": [
         "13px",
@@ -592,7 +525,7 @@
       "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "32px",
-      "contentW": 1280,
+      "contentW": 1644,
       "sideW": 228,
       "distinctSizes": [
         "16px",
@@ -609,7 +542,7 @@
       "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
-      "contentW": 1280,
+      "contentW": 1800,
       "sideW": 228,
       "distinctSizes": [
         "13px",
@@ -627,7 +560,7 @@
       "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
-      "contentW": 1280,
+      "contentW": 1754,
       "sideW": 228,
       "distinctSizes": [
         "13px",
@@ -662,7 +595,7 @@
       "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "0px",
-      "contentW": 1280,
+      "contentW": 1800,
       "sideW": 228,
       "distinctSizes": [
         "13px",
@@ -679,7 +612,7 @@
       "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "29px",
-      "contentW": 1280,
+      "contentW": 1800,
       "sideW": 228,
       "distinctSizes": [
         "13px",
@@ -698,7 +631,7 @@
       "appDisplay": "flex",
       "appPadLeft": "228px",
       "bodyPadBottom": "32px",
-      "contentW": 1280,
+      "contentW": 1800,
       "sideW": 228,
       "distinctSizes": [
         "16px",

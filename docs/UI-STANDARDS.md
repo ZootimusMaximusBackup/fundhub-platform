@@ -9,7 +9,7 @@ Read before building ANY screen. Brand (colors, fonts, spectrum) lives in fundhu
 - **One job per screen.** Every screen answers one question or enables one task. If you can't say the job in one sentence, it's two screens.
 - **One primary action per screen.** Exactly one filled/prominent button. Everything else is secondary (outline) or tertiary (text link). Two primary buttons = a decision the designer refused to make.
 - **Top-left is the most important thing.** Eyes land there first (F-pattern). The number or status the role cares about most goes top-left, largest. Never a logo, never a filter.
-- **Max content width 1280px, centered.** Full-bleed dashboards read as unfinished. Tables may go wider inside their own scroll container.
+- **Max content width 1800px, centered.** Full-bleed dashboards read as unfinished. Tables may go wider inside their own scroll container. *(Owner-set 2026-08-17, raised from 1280px. The owner works zoomed out on a 2560px screen; with the fixed 228px rail, a 1280px cap left 1052px — 41% of the monitor — empty, and no breakpoint above 1201px existed anywhere in the app. Raised rather than removed: the cap exists to stop lines of text growing too long to read. The token is `--fh-maxw` in `public/app/fundhub-brand.css`. Do not revert it to 1280.)*
 - **The fold matters.** The screen's job must be doable without scrolling on a 13" laptop (900px viewport height). Below the fold is for detail, never for the primary action.
 
 ## 2. LAYOUT GRID

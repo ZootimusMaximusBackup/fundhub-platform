@@ -10,15 +10,35 @@
   --dark-line: var(--cardline);
 }
 
-/* Layout shells: content always clears the fixed rail. */
+/* Layout shells: content always clears the fixed rail.
+
+   NO `display` DECLARATION HERE — ON PURPOSE. Do not put one back.
+   shell.js:599 guards its runtime <link> injection on id="fh-crm-sidebar-css",
+   but the copy each page links in its own <head> carries no id, so the guard
+   never matches and this file is fetched and applied a SECOND time, after the
+   page's own <style>. Six screens set `.app{display:flex}` inline
+   (pipeline:57, command-center:67, closer-dashboard:51, messaging:43,
+   staff-teams:24, finance-os:34). With a `display:block` here, that late second
+   copy overrode them and flipped the whole layout flex -> block about 9ms after
+   first paint — a measured 362px jump on staff-teams, on every load, on all six
+   screens.
+   Declaring no display at all makes the double load a no-op: `.app` is a div,
+   so it is block by default, and a page that wants flex keeps flex both before
+   and after the second copy lands. This fixes the jump from the stylesheet side
+   without touching shell.js, which three other batches are editing today.
+
+   padding-left transitions in step with the rail's own width transition
+   (.18s ease, line ~46). Before this the rail slid over 182ms while the content
+   snapped across in 7ms, so the rail visibly covered ~168px of content the
+   whole way. */
 .app,
 .app-shell {
-  display: block;
   min-height: 100vh;
   margin: 0;
   padding-left: var(--fh-side-w);
   box-sizing: border-box;
-  background: var(--paper, #FCFCFC);
+  background: var(--field, #F4F4F5);
+  transition: padding-left .18s ease;
 }
 .app-shell .stage,
 .app .stage,
@@ -334,6 +354,7 @@ html.fh-side-mini .app-shell {
 
 @media (prefers-reduced-motion: reduce) {
   aside.side, .side { transition: none; }
+  .app, .app-shell { transition: none; }
 }
 
 /* ---------------------------------------------------------------------------

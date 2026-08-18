@@ -58,49 +58,108 @@
     linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
   background-size:56px 56px}
 
-/* UI-STANDARDS.md §3 TYPE SCALE — the only four text sizes a screen may use. */
+/* UI-STANDARDS.md §3 TYPE SCALE — the only four text sizes a screen may use.
+   Stated in rem, not px. Measured 2026-08-17: before this change the app held
+   zero rem, zero em, zero %, zero clamp and zero vw across all ten stylesheets
+   — every length was an absolute px, so the root size below was decorative and
+   nothing responded to the reader's browser text setting. rem makes the whole
+   scale move from one place.
+   Sizes raised one step: body 14px -> 16px, caption 11px -> 13px. The owner
+   works zoomed out; at 67% browser zoom the old 11px floor painted 6 real
+   pixels on his screen. */
+html{ font-size:100%; }        /* = the reader's browser default, normally 16px */
 :root{
-  --fs-metric:28px;   /* big number - the one thing the role came for */
-  --fs-title:18px;    /* section title */
-  --fs-body:14px;     /* body text - never smaller */
-  --fs-caption:11px;  /* caption / label / eyebrow - the floor, never smaller */
+  --fs-metric:2rem;      /* 32px - big number, the one thing the role came for */
+  --fs-title:1.25rem;    /* 20px - section title */
+  --fs-body:1rem;        /* 16px - body text - never smaller */
+  --fs-caption:.8125rem; /* 13px - caption / label / eyebrow - the floor */
 }
 
-/* UI-STANDARDS.md §1 MAX CONTENT WIDTH — 1280px, centered. */
-:root{ --fh-maxw:1280px; --fh-statusbar:0px; }
+/* UI-STANDARDS.md §1 MAX CONTENT WIDTH — 1800px, centered.
+   Owner-set 2026-08-17, and UI-STANDARDS §1 updated in the same commit.
+   Was 1280px. Measured on the owner's 2560px working screen: the rail takes a
+   fixed 228px, so 228 + 1280 left 1052px (41.1%) of the monitor empty, and no
+   breakpoint above 1201px existed anywhere in the app. 1800px was chosen over
+   full-bleed on purpose — the cap exists to stop lines of text growing too long
+   to read, so it is raised, not removed. */
+/* --fh-statusbar reserves room for the fixed status strip at the bottom of the
+   page. It used to start at 0px and be overwritten at runtime by data.js:497
+   with the strip's measured height, which grew the page ~29px AFTER first paint
+   on every single load. Reserving the space up front removes that reflow; the
+   strip is position:fixed so this only ever reserves, never pushes twice. */
+:root{ --fh-maxw:1800px; --fh-statusbar:32px; }
+
+/* ── SURFACE — panels sit ON the page, on purpose (owner-set 2026-08-17) ─────
+   Measured before this change: panels were #FFFFFF on a #FCFCFC page. That is
+   a 9-point step out of 255, contrast 1.03:1, on 41 elements across six
+   screens — too small to read as deliberate layering, too large to be
+   invisible, so every panel edge looked like a smudge rather than an edge.
+   There was also no resting shadow anywhere in the app: every box-shadow in
+   the screen files fires only on hover, focus or the mobile drawer.
+   Fix is two parts and needs no screen file touched: put the page on the
+   existing --soft token (#F4F4F5, an 11-point step under white) and give the
+   panels one soft resting shadow. --paper is deliberately NOT changed: the
+   sidebar uses it for text (crm-sidebar.css --dark-text), so moving it would
+   tint the rail. */
+:root{
+  --field:var(--soft,#F4F4F5);        /* the page BEHIND the panels */
+  --panel-shadow:0 1px 2px rgba(10,10,10,.04), 0 2px 8px rgba(10,10,10,.06);
+}
+/* Conservative on purpose, and MEASURED rather than guessed: each class below
+   was found by rendering the screens and collecting every sizeable block that
+   paints its own light background and carries a border or a radius. Buttons,
+   inputs, avatars, chat bubbles and table rows are white too and are
+   deliberately excluded — a resting shadow on those reads as broken, not
+   expensive. Naming screen-level classes here follows what this file already
+   does elsewhere (.kpi .vl, .band .bv, .fos-value, .un-mins). */
+:is(.app, .app-shell) :is(
+  .card, .stat, .panel, .tabs, .editor, .fos-panel,   /* staff-teams, finance-os */
+  .kpi-tile,                                          /* command-center */
+  .big-tile, .calc-panel,                             /* closer-dashboard */
+  .compose, .ctx-card                                 /* messaging */
+){
+  box-shadow:var(--panel-shadow);
+}
 /* Put .fh-maxw on the content column only, never on a table or its scroll wrapper — tables stay wider inside their own overflow-x container (§1). */
 .fh-maxw{max-width:var(--fh-maxw);margin-inline:auto}
 
 /* ── UI-STANDARDS.md §3 TYPE SNAP ──────────────────────────────────────────
    Screen CSS loads AFTER this file, so leftover 7.5–13px sizes win unless we
    force the four tokens. Scoped to the CRM shells so a client-facing deck
-   (present.html) keeps its own type. */
-.app, .shell, .main, .fh-maxw{
+   (present.html) keeps its own type.
+
+   2026-08-17: `.app-shell` was missing from every selector below. It is a real
+   wrapper — my-numbers.html:122 roots on it — and CSS `.app` does NOT match
+   `class="app-shell"`. That screen therefore got no snap at all: its sidebar
+   text measured 11px against 14px everywhere else, its nav rows 27.19px against
+   30.8px, and its whole nav block 119px shorter. The rail is on every screen,
+   so it is the ruler the eye uses, and that mismatch is what read as the app
+   "zooming in and out" between screens.
+   Written with :is() so a wrapper can never again be added to one list and
+   forgotten in the other four. All arguments are single classes, so specificity
+   is unchanged from the long-hand form this replaces. */
+:is(.app, .app-shell, .shell, .main, .fh-maxw){
   font-size:var(--fs-body);
 }
-.app *, .shell *, .main *, .fh-maxw *{
+:is(.app, .app-shell, .shell, .main, .fh-maxw) *{
   font-size:inherit !important;
 }
-.app h1, .shell h1, .main h1, .fh-maxw h1,
-.app h2, .shell h2, .main h2, .fh-maxw h2{
+:is(.app, .app-shell, .shell, .main, .fh-maxw) :is(h1, h2){
   font-size:var(--fs-title) !important;
 }
-.app .sv, .shell .sv, .main .sv, .fh-maxw .sv,
-.app .vl, .shell .vl, .main .vl, .fh-maxw .vl,
-.app .big, .shell .big, .main .big,
-.app .big-tile .val, .app .kpi .vl, .app .band .bv,
-.app .un-mins, .app .fh-num, .app .fos-value{
+:is(.app, .app-shell, .shell, .main, .fh-maxw) :is(.sv, .vl, .big),
+:is(.app, .app-shell) :is(.big-tile .val, .kpi .vl, .band .bv,
+  .un-mins, .fh-num, .fos-value){
   font-size:var(--fs-metric) !important;
   font-variant-numeric:tabular-nums;
 }
-.app .chip, .shell .chip, .main .chip,
-.app .eyebrow, .shell .eyebrow, .main .eyebrow,
-.app .badge, .app .tag, .app .av, .app .stat-label,
-.app .kpi .lb, .app .kpi .sb, .app .band .bl,
-.app .sd, .app .cmp, .app .note, .app .hint,
-.app .statusline, .app .statusbar, .app .mono,
-.app label, .app th, .app .caption, .app .sub,
-.app .card-title, .app .rail-code{
+:is(.app, .app-shell, .shell, .main, .fh-maxw) :is(.chip, .eyebrow),
+:is(.app, .app-shell) :is(.badge, .tag, .av, .stat-label,
+  .kpi .lb, .kpi .sb, .band .bl,
+  .sd, .cmp, .note, .hint,
+  .statusline, .statusbar, .mono,
+  label, th, .caption, .sub,
+  .card-title, .rail-code){
   font-size:var(--fs-caption) !important;
 }
 
