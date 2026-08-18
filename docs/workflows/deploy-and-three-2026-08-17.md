@@ -15,7 +15,7 @@ Chris: deploy everything, double-check, then build the three prompts, then check
 | 0 | main | Stretch Pipeline columns; commit; push; one Netlify deploy | claimed |
 | 1 | main | Live prove: hashes, Pipeline hole gone, sixteen smoke | pending |
 | 2 | agent | Contracts vs Documents — finish the named split | done |
-| 3 | agent | Finance OS — restore company money dashboard (Plaid + subscriptions inside it) | pending |
+| 3 | agent | Finance OS — restore company money dashboard (Plaid + subscriptions inside it) | done |
 | 4 | agent | Funding advisor fulfillment — CCP + Inquiry Remover queue | pending |
 
 ## File ownership after deploy
@@ -74,3 +74,46 @@ Both now leave the list. The count on screen matches the four named classes. The
 4. **Not deployed. Not pushed.** Live click is the next person's job.
 
 Nothing committed, pushed, or deployed until the commit this row asked for.
+
+---
+
+## W3 — Finance OS, company money
+
+Owner call: this screen is Chris's company money, not a client's credit file. Plaid buckets are personal, business, and investment. Subscriptions here are recurring charges on those accounts, not client billing. Honest empty if the bank is not connected. No made-up balances.
+
+The handover file (`docs/FINANCE-OS-REBUILD-HANDOVER.md`) asked this screen to pick up client plans, client cards, and payment links. That is a different job. Left alone. Payment-link create is still without a screen.
+
+### Files touched this pass
+
+| File | What |
+|---|---|
+| `public/app/finance-os.html` | Rebuild toward company money. Wire GET `/api/finance/bank-accounts` and GET `/api/finance/bills`. |
+| `docs/workflows/deploy-and-three-2026-08-17.md` | This manifest |
+
+Not touched: `public/app/contracts.html`, `documents.html`, `inquiry-remover.html`, `client-control-panel.html`, `pipeline.html`, `sidebar.fragment.html`, `shell.js`. No finance API file. No new route. No new field. No journey path changed, so `docs/journeys/*-actual.md` and `CHANGELOG.md` were left alone. No payment writer.
+
+### What it used to be
+
+A client's whole money picture. Pick a client, then credit scores, cash-flow bars, funding capacity, deal calculator, ask-it, soft pull, and "Load simulated data". Empty meant "pick a client" or invent a demo file.
+
+### What this pass closed
+
+The first thing on the page is now company money. Three account piles (personal / business / investment) and a Subscriptions list (recurring charges from `/api/finance/bills`). If the bank is not linked, the big line says **Not connected** and every pile is empty on purpose. No dollar figure is drawn unless the server sent one. Simulated data, soft pull, bureau scores, the deal box, and ask-it are off this screen.
+
+The existing reads still need a `client_id` in the address bar. Without one, the page stays honestly empty. With one, it reads those two endpoints and groups what they return. Typed-in rows are labeled as typed-in, not as a live bank link. Plaid's connect functions are still empty seams (`src/banking/plaid.mjs`).
+
+### Proof
+
+- `npm run lint`
+- `src/http/app-client-carry.test.mjs` — the "no invented money" lock on this file
+- Finance API tests not edited this pass
+
+### Left over (not built)
+
+1. **Plaid still does not connect.** `linkAccount` / `getAccounts` return not implemented. No Connect button — a button that does nothing is not allowed.
+2. **No org-wide account list.** Bank-accounts and bills still require a client id. Company Plaid has nowhere to land except a named file.
+3. **Client billing is still without a screen.** Start / change / cancel a client's plan, attach a card, and create a payment link were not put here. Owner said those are not this dashboard.
+4. **Help text is stale.** `src/chat/platform-help.mjs` still tells people to use Soft pull and Load simulated data on this screen. Not this file.
+5. **Not deployed. Not pushed.**
+
+Nothing pushed or deployed. Commit is this row's commit.
