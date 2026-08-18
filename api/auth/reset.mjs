@@ -6,16 +6,9 @@
 // a branch a journey generator has to guess at.
 //
 //   { action: "request", email }
-//     ALWAYS replies { ok:true } — never confirms whether the address exists
-//     (src/auth/invite.mjs:requestPasswordReset already works this way). A
-//     token IS created in the database when the address is real, but it is not
-//     returned here: nothing in this repo sends outbound mail (src/mail/ is
-//     deliberately inert — CLAUDE.md §12), so handing an anonymous caller a
-//     live reset token would BE the entire security model of "forgot
-//     password" with no delivery step in between. This is the honest version
-//     of that gap, not a bypass of it — the working path today is
-//     api/auth/admin-reset.mjs, which an owner or admin uses from the Staff
-//     screen to hand someone a real link.
+//     ALWAYS replies { ok:true }. When the address is a live staff login,
+//     Resend sends the reset link to that same address. mailed is true only
+//     when Resend accepted the send. The token is never returned here.
 //
 //   { action: "confirm", token, password }
 //     The token IS the credential. Sets the new password and revokes every
@@ -25,6 +18,9 @@
 
 import { db } from "../../src/db.mjs";
 import { requestPasswordReset, setPasswordWithToken } from "../../src/auth/invite.mjs";
+import {
+  credentialLink, resetMailCopy, sendStaffCredentialEmail
+} from "../../src/auth/staff-mail.mjs";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -36,12 +32,23 @@ export default async function handler(req, res) {
   const action = String(body.action || "").trim().toLowerCase();
 
   if (action === "request") {
-    await requestPasswordReset(db, { email: body.email });
+    const result = await requestPasswordReset(db, { email: body.email });
+    let mailed = false;
+    if (result && result.token) {
+      const resetPath = "/reset-password.html?token=" + encodeURIComponent(result.token);
+      const copy = resetMailCopy({
+        loginEmail: String(body.email || "").trim().toLowerCase(),
+        link: credentialLink(resetPath)
+      });
+      const sent = await sendStaffCredentialEmail({ to: body.email, ...copy });
+      mailed = sent.mailed;
+    }
     return res.status(200).json({
       ok: true,
-      message: "If that email has a staff account, a reset request was created. " +
-        "This system does not send email — ask an owner or admin to reset it for " +
-        "you from the Staff screen."
+      mailed,
+      message: mailed
+        ? "Check that inbox. The reset link lasts 1 hour."
+        : "Nothing was sent. Ask an owner or admin for a reset link."
     });
   }
 

@@ -19,7 +19,14 @@ test("invite and suspend are owner/admin gates and use the existing auth module"
   assert.ok(suspend.includes("suspendStaff"));
   assert.ok(suspend.includes("staff.org_id") || suspend.includes("actor: staff"));
   assert.ok(routes.includes('"auth/invite"'));
+  assert.ok(routes.includes('"auth/staff-role"'));
   assert.ok(routes.includes('"auth/suspend"'));
+});
+
+test("staff-role is owner/admin and uses setStaffRole", () => {
+  const role = fs.readFileSync(path.join(ROOT, "api/auth/staff-role.mjs"), "utf8");
+  assert.ok(role.includes('requireRole("owner", "admin")'));
+  assert.ok(role.includes("setStaffRole"));
 });
 
 test("reset confirm accepts invite tokens so the copy-link works", () => {
@@ -31,4 +38,36 @@ test("staff roster hides seed furniture", () => {
   const src = fs.readFileSync(path.join(ROOT, "api/read/staff.mjs"), "utf8");
   assert.ok(src.includes("SEED_FURNITURE_EMAILS"));
   assert.ok(src.includes("DEMO %"));
+  assert.ok(src.includes("hiddenCount"));
+});
+
+test("staff-teams persists a role change and tells how many people are hidden", () => {
+  const html = fs.readFileSync(path.join(ROOT, "public/app/staff-teams.html"), "utf8");
+  assert.ok(html.includes("/api/auth/staff-role"));
+  assert.ok(html.includes("hiddenLine"));
+  assert.ok(html.includes("notify_email"));
+  assert.ok(html.includes("7 days"));
+  assert.ok(html.includes("1 hour"));
+});
+
+test("invite and reset send through Resend and keep the copy-link", () => {
+  const invite = fs.readFileSync(path.join(ROOT, "api/auth/invite.mjs"), "utf8");
+  const reset = fs.readFileSync(path.join(ROOT, "api/auth/reset.mjs"), "utf8");
+  assert.ok(invite.includes("sendStaffCredentialEmail"));
+  assert.ok(invite.includes("mailed"));
+  assert.ok(reset.includes("sendStaffCredentialEmail"));
+  assert.ok(reset.includes("mailed"));
+});
+
+test("login forgot-password does not claim a link is on its way", () => {
+  const html = fs.readFileSync(path.join(ROOT, "public/login.html"), "utf8");
+  assert.ok(!/on its way/.test(html));
+  assert.ok(html.includes("Nothing was sent. Ask an owner or admin for a reset link."));
+  assert.ok(html.includes("Reset links last 1 hour"));
+});
+
+test("reset-password page names both link lifetimes", () => {
+  const html = fs.readFileSync(path.join(ROOT, "public/reset-password.html"), "utf8");
+  assert.ok(html.includes("Invite links last 7 days"));
+  assert.ok(html.includes("Reset links last 1 hour"));
 });

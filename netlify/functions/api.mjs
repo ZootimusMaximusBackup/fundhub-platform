@@ -36,6 +36,7 @@ import authSession from "../../api/auth/session.mjs";
 import authReset from "../../api/auth/reset.mjs";
 import authAdminReset from "../../api/auth/admin-reset.mjs";
 import authInvite from "../../api/auth/invite.mjs";
+import authStaffRole from "../../api/auth/staff-role.mjs";
 import authSuspend from "../../api/auth/suspend.mjs";
 import authMagicLink from "../../api/auth/magic-link.mjs";
 import authMagicLinkVerify from "../../api/auth/magic-link-verify.mjs";
@@ -212,6 +213,7 @@ export const ROUTES = {
   "auth/reset": authReset,
   "auth/admin-reset": authAdminReset,
   "auth/invite": authInvite,
+  "auth/staff-role": authStaffRole,
   "auth/suspend": authSuspend,
 
   /* Portal sign-in by emailed link. Routed in the same commit as the handlers,

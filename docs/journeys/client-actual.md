@@ -27,8 +27,8 @@ flowchart TD
     CAN --> A_read[Reading data — 3 routes]
     CAN --> A_top_level[Everything else — 6 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 142 routes]
-    CANT --> B_auth[Signing in and out — 3 blocked]
+    WHO -->|Yes| CANT[Blocked — 143 routes]
+    CANT --> B_auth[Signing in and out — 4 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_campaigns[Campaigns — 8 blocked]
     CANT --> B_chat[chat — 3 blocked]
@@ -49,11 +49,12 @@ flowchart TD
     CANT --> B_social[social — 5 blocked]
     CANT --> B_staff[staff — 2 blocked]
     CANT --> B_top_level[Everything else — 25 blocked]
+    WHO -->|Yes| UNV[UNVERIFIED — 1 route whose gate could not be traced]
 ```
 
 ## What they can reach
 
-**26 of 168 routes.**
+**26 of 170 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -91,7 +92,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**142 of 168 routes.**
+**143 of 170 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -100,6 +101,7 @@ flowchart TD
 | `/api/applications` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/auth/admin-reset` | POST | owner, admin |
 | `/api/auth/invite` | POST | owner, admin |
+| `/api/auth/staff-role` | POST | owner, admin |
 | `/api/auth/suspend` | POST | owner, admin |
 | `/api/banking/accounts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/banking/revoke` | GET, POST | owner, admin |
@@ -240,7 +242,12 @@ flowchart TD
 
 ## UNVERIFIED
 
-_None — every route's gate was traced to its source._
+The gate on these could not be traced from the code, so this page does not claim
+either way whether this journey reaches them. Each one is a question for a human.
+
+| Route | Methods | Who the code lets in |
+|---|---|---|
+| `/api/gifts/message-blaster` | GET, HEAD | — |
 
 ## How to check this yourself
 

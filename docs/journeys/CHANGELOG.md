@@ -1,3 +1,5 @@
+2026-08-17 | role-owner (+ all actuals regen) | Owner/admin can change a staff job (`POST /api/auth/staff-role`). Invite and forgot-password send through Resend. Gift download `/api/gifts/message-blaster` is UNVERIFIED (gate not traced). Intended still says 7 sign-in routes; actual is 10. | Named staff-accounts fix | (this commit)
+
 2026-08-17 | role-inquiry-remover | Specialist desk: same login (`inquiry_specialist`), badge name Specialist, one page with Inquiries / Repair toggle. New `GET /api/read/repair-cases`. Stuck-file path opened to Specialist. COMPLIANCE REVIEW REQUIRED — dispute letters, human send only. | Owner: GO on repair screen as inquiry role, renamed Specialist, toggle not a new sidebar row | (pending commit)
 
 

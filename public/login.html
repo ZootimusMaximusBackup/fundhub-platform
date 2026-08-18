@@ -61,18 +61,11 @@
     </form>
     <p class="note" style="margin-top:14px">Need help? <a href="mailto:support@fundhub.ai">support@fundhub.ai</a></p>
 
-    <!-- Forgot password. This system sends no outbound email (CLAUDE.md §12 —
-         src/mail/ is deliberately inert), so this cannot deliver a reset link
-         to an inbox. What it does today: create a reset token server-side and
-         say so, honestly, without pretending an email is on its way. The
-         working reset path right now is an owner or admin resetting a person
-         from the Staff screen, which hands back a real link to relay by hand —
-         see api/auth/reset.mjs. -->
     <p class="note" id="fh-forgot-note" style="margin-top:6px">
       <a href="#" id="fh-forgot-link" style="text-decoration:underline">Forgot your password?</a>
     </p>
     <div id="fh-forgot-box" style="display:none;margin-top:8px">
-      <p class="note" style="margin:0 0 8px">Enter your email and we'll send a reset link.</p>
+      <p class="note" style="margin:0 0 8px">Enter your login email. Reset links last 1 hour.</p>
       <input id="fh-forgot-email" type="email" placeholder="Email address" autocomplete="username">
       <button class="btn" id="fh-forgot-go" type="button">Send reset link</button>
       <p class="note" id="fh-forgot-msg"></p>
@@ -304,15 +297,22 @@ document.getElementById("fh-forgot-go").addEventListener("click", async function
   const btn = this;
   if (!email) { msg.textContent = "Enter your email first."; return; }
   btn.disabled = true; btn.textContent = "Sending…";
+  var mailed = false;
   try {
-    await fetch("/api/auth/reset", {
+    var r = await fetch("/api/auth/reset", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ action: "request", email: email })
     });
-  } catch (e) { /* the message below is accurate either way — never reveal a backend detail */ }
+    try {
+      var d = await r.json();
+      mailed = !!(d && d.mailed);
+    } catch (e2) { mailed = false; }
+  } catch (e) { mailed = false; }
   btn.disabled = false; btn.textContent = "Send reset link";
-  msg.textContent = "If an account exists for that address, a reset link is on its way.";
+  msg.textContent = mailed
+    ? "Check that inbox. The reset link lasts 1 hour."
+    : "Nothing was sent. Ask an owner or admin for a reset link.";
 });
 
 /* ───────────────────────────────────────────────────────────────────────────

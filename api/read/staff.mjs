@@ -1,8 +1,8 @@
 // GET /api/read/staff — staff directory — password_hash is stripped by redact() and never selected
 //
 // Read-only. Auth + role gate + pagination + redaction all come from
-// src/http/read-api.mjs; this file is its SQL and nothing else. See that module
-// for why the role default is deny and what redact() strips.
+// src/http/read-api.mjs. hiddenCount is how many rows this list keeps off
+// screen (owner, seeded test logins, TEST — names, and demo rows when demo is off).
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { readHandler, ROLE_SETS } from "../../src/http/read-api.mjs";
@@ -18,15 +18,59 @@ import { orgDemoModeEnabled } from "../../src/demo/exclude-demo.mjs";
    unimplemented in ten endpoints while the comment stayed. */
 const orgOf = (staff) => (staff && staff.org_id) || null;
 
-const run = readHandler({
-  roles: ROLE_SETS.FINANCE,
-  fetch: async (db, { limit, offset, query, staff }) => {
-    const demoOn = await orgDemoModeEnabled(db, orgOf(staff));
-    const demoHide = demoOn ? "" : `
+const seedEmails = () => SEED_FURNITURE_EMAILS.map((e) => e.toLowerCase());
+
+function demoHideSql(demoOn) {
+  return demoOn ? "" : `
        AND s.name NOT ILIKE 'DEMO %'
        AND s.email NOT LIKE '%@demo.fundhub.local'
        AND s.email NOT LIKE '%@example.com'`;
-    return db.query(`SELECT s.id, s.name, s.email, s.role, s.status, s.assignment_order,
+}
+
+function demoHiddenSql(demoOn) {
+  return demoOn ? "FALSE" : `(
+         s.name ILIKE 'DEMO %'
+         OR s.email LIKE '%@demo.fundhub.local'
+         OR s.email LIKE '%@example.com'
+       )`;
+}
+
+async function hiddenCountFor(database, staff) {
+  const orgId = orgOf(staff);
+  if (!orgId) return 0;
+  const demoOn = await orgDemoModeEnabled(database, orgId);
+  const row = (await database.query(
+    `SELECT count(*)::int AS n
+       FROM staff s
+      WHERE s.org_id = $1::uuid
+        AND (
+          s.role = 'owner'
+          OR lower(s.email) = ANY($2::text[])
+          OR s.name ILIKE 'TEST —%'
+          OR ${demoHiddenSql(demoOn)}
+        )`,
+    [orgId, seedEmails()]
+  )).rows[0];
+  return row ? row.n : 0;
+}
+
+export default async function handler(req, res) {
+  let hiddenCount = 0;
+  const origJson = typeof res.json === "function" ? res.json.bind(res) : null;
+  if (origJson) {
+    res.json = (body) => {
+      if (body && body.ok === true) body.hiddenCount = hiddenCount;
+      return origJson(body);
+    };
+  }
+
+  const run = readHandler({
+    roles: ROLE_SETS.FINANCE,
+    fetch: async (database, { limit, offset, query, staff }) => {
+      hiddenCount = await hiddenCountFor(database, staff);
+      const demoOn = await orgDemoModeEnabled(database, orgOf(staff));
+      const demoHide = demoHideSql(demoOn);
+      return database.query(`SELECT s.id, s.name, s.email, s.role, s.status, s.assignment_order,
            s.last_assigned_at, s.created_at,
            s.monitoring_consent_at, s.hubstaff_user_id,
            (SELECT count(*)::int FROM tasks t
@@ -46,10 +90,11 @@ const run = readHandler({
        ${demoHide}
      ORDER BY s.name
      LIMIT $1 OFFSET $2`, [
-      limit + 1, offset, query.role || null, orgOf(staff),
-      SEED_FURNITURE_EMAILS.map((e) => e.toLowerCase())
-    ]).then((r) => r.rows);
-  }
-});
+        limit + 1, offset, query.role || null, orgOf(staff),
+        seedEmails()
+      ]).then((r) => r.rows);
+    }
+  });
 
-export default (req, res) => run(req, res, { db, requireAuth });
+  return run(req, res, { db, requireAuth });
+}

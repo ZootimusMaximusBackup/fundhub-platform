@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert";
 import {
   inviteStaff, acceptInvite, resetPassword, requestPasswordReset,
-  setPasswordWithToken, suspendStaff, roleIsKnown, INVITER_ROLES
+  setPasswordWithToken, suspendStaff, setStaffRole, roleIsKnown, INVITER_ROLES
 } from "./invite.mjs";
 import { hashToken } from "./session.mjs";
 import { verifyPassword } from "./hash.mjs";
@@ -21,8 +21,15 @@ function fakeDb({ existingStaff = null, catalogShape = true, roleKnown = true, c
       if (/FROM orgs/.test(sql)) return { rows: [{ id: "org-1" }] };
       if (/information_schema\.columns/.test(sql)) return { rows: [{ ok: catalogShape }] };
       if (/FROM staff_roles/.test(sql)) return { rows: roleKnown ? [{ "?column?": 1 }] : [] };
+      if (/SELECT id, role FROM staff/.test(sql)) {
+        return { rows: existingStaff ? [{ id: existingStaff.id, role: existingStaff.role || "closer" }] : [] };
+      }
       if (/SELECT id, status, name, role FROM staff/.test(sql)) return { rows: existingStaff ? [existingStaff] : [] };
       if (/SELECT id, status FROM staff/.test(sql)) return { rows: existingStaff ? [existingStaff] : [] };
+      if (/UPDATE staff SET role =/.test(sql)) {
+        if (!existingStaff) return { rows: [] };
+        return { rows: [{ id: existingStaff.id, email: "a@b.c", name: "A", role: params[1], status: "invited" }] };
+      }
       if (/INSERT INTO staff /.test(sql)) {
         return { rows: [{ id: "staff-new", email: params[3], name: params[1], role: params[2], status: "invited" }] };
       }
@@ -232,5 +239,33 @@ test("suspendStaff requires owner/admin, refuses self, and kills sessions", asyn
   assert.ok(db.stmts().some((s) => /UPDATE sessions SET revoked_at/.test(s)), "live sessions die with the account");
 
   const missing = await suspendStaff(fakeDb({ existingStaff: null }), { actor: OWNER, staffId: "nope" });
+  assert.equal(missing.status, 404);
+});
+
+test("setStaffRole requires owner/admin, refuses owner rows, and writes the new job", async () => {
+  const denied = await setStaffRole(fakeDb(), { actor: { role: "closer" }, staffId: "x", role: "admin" });
+  assert.equal(denied.status, 403);
+
+  const mintOwner = await setStaffRole(fakeDb({ existingStaff: { id: "staff-9", role: "closer" } }), {
+    actor: OWNER, staffId: "staff-9", role: "owner"
+  });
+  assert.equal(mintOwner.status, 400);
+  assert.equal(mintOwner.error, "cannot_assign_owner");
+
+  const changeOwner = await setStaffRole(fakeDb({ existingStaff: { id: "own", role: "owner" } }), {
+    actor: OWNER, staffId: "own", role: "closer"
+  });
+  assert.equal(changeOwner.status, 400);
+  assert.equal(changeOwner.error, "cannot_change_owner");
+
+  const db = fakeDb({ existingStaff: { id: "staff-9", role: "closer" } });
+  const out = await setStaffRole(db, { actor: OWNER, staffId: "staff-9", role: "funding_advisor" });
+  assert.equal(out.ok, true);
+  assert.equal(out.staff.role, "funding_advisor");
+  assert.ok(db.stmts().some((s) => /UPDATE staff SET role =/.test(s)));
+
+  const missing = await setStaffRole(fakeDb({ existingStaff: null }), {
+    actor: OWNER, staffId: "nope", role: "closer"
+  });
   assert.equal(missing.status, 404);
 });

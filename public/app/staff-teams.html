@@ -267,6 +267,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
               <tbody id="rosterBody"></tbody>
             </table>
           </div>
+          <div id="hiddenLine" style="padding:12px 16px;font-size:var(--fs-body);color:var(--gray);border-top:1px solid var(--line)">Hidden from this list: —</div>
         </div>
 
         <div class="tabpane" id="tab-perms">
@@ -569,7 +570,7 @@ function openNew(){
   document.getElementById('ed_code').value='—';
   document.getElementById('ed_role').value='Closer';
   document.getElementById('ed_start').value='';
-  document.getElementById('ed_email').placeholder='made for you as name@fundhub.ai';
+  document.getElementById('ed_email').placeholder='inbox for the invite — login is name@fundhub.ai';
   setSw('ed_active',false); setSw('ed_consent',false); setSw('ed_clock',false);
   document.getElementById('edReset').style.display='none';   // no account exists yet
   document.getElementById('edDeact').style.display='none';   // nothing to revoke yet
@@ -598,18 +599,38 @@ document.getElementById('edSave').addEventListener('click',function(){
     active:getSw('ed_active'), consent:getSw('ed_consent'), clock:getSw('ed_clock')};
   if(selId){
     var p=PEOPLE.filter(function(x){return String(x.id)===String(selId)})[0];
-    if(p && p.staffId && typeof window.FHMonitoringConsent === 'function' && window.__FH_IS_OWNER){
-      var want = !!rec.consent;
-      var had = !!p.consent;
-      if(want !== had){
-        window.FHMonitoringConsent(p.staffId, want ? 'grant' : 'revoke').then(function(){
-          Object.keys(rec).forEach(function(k){ if(k!=='consent'&&k!=='consentAt') p[k]=rec[k]; });
-          closeEditor(); renderAll();
-        });
-        return;
+    function finishEdit(){
+      if(p && p.staffId && typeof window.FHMonitoringConsent === 'function' && window.__FH_IS_OWNER){
+        var want = !!rec.consent;
+        var had = !!p.consent;
+        if(want !== had){
+          window.FHMonitoringConsent(p.staffId, want ? 'grant' : 'revoke').then(function(){
+            Object.keys(rec).forEach(function(k){ if(k!=='consent'&&k!=='consentAt') p[k]=rec[k]; });
+            closeEditor(); renderAll();
+          });
+          return;
+        }
       }
+      closeEditor(); renderAll();
     }
-    closeEditor(); renderAll();
+    var nextRole=ROLE_KEY[rec.role];
+    if(p && p.staffId && nextRole && rec.role !== p.role){
+      if(typeof FHData==='undefined'||!FHData.write){alert('Not available — the data layer has not loaded.');return}
+      var saveBtn=document.getElementById('edSave');
+      saveBtn.disabled=true; saveBtn.textContent='Saving…';
+      FHData.write('/api/auth/staff-role',{staff_id:p.staffId,role:nextRole}).then(function(res){
+        saveBtn.disabled=false; saveBtn.textContent='Save';
+        if(!res.ok){
+          alert('Could not save the job: '+(res.error||'unknown error')+
+            (res.source==='unauthorized'?' — sign in as owner.':''));
+          return;
+        }
+        p.role=rec.role;
+        finishEdit();
+      });
+      return;
+    }
+    finishEdit();
     return;
   }
   var roleKey=ROLE_KEY[rec.role];
@@ -617,7 +638,8 @@ document.getElementById('edSave').addEventListener('click',function(){
   if(typeof FHData==='undefined'||!FHData.write){alert('Not available — the data layer has not loaded.');return}
   var btn=document.getElementById('edSave');
   btn.disabled=true; btn.textContent='Creating…';
-  FHData.write('/api/auth/invite',{name:first+' '+last,role:roleKey}).then(function(res){
+  var notify=rec.email||'';
+  FHData.write('/api/auth/invite',{name:first+' '+last,role:roleKey,notify_email:notify}).then(function(res){
     btn.disabled=false; btn.textContent='Save';
     if(!res.ok){
       alert('Could not create them: '+(res.error||'unknown error')+
@@ -627,7 +649,13 @@ document.getElementById('edSave').addEventListener('click',function(){
     var email=(res.data&&res.data.email)||'';
     var path=(res.data&&res.data.invitePath)||'';
     var link=location.origin+path;
-    prompt('Login made: '+email+' — copy this link and send it. They set their own password (7 days):',link);
+    var mailed=!!(res.data&&res.data.mailed);
+    prompt(
+      mailed
+        ? 'Invite emailed. Login: '+email+' — the link lasts 7 days. Copy it if they need a backup:'
+        : 'Mail did not send. Login: '+email+' — copy this link (7 days) and send it yourself:',
+      link
+    );
     closeEditor();
     location.reload();
   });
@@ -672,7 +700,7 @@ document.getElementById('edReset').addEventListener('click', async function(){
     return;
   }
   var link = location.origin + res.data.resetPath;
-  prompt('Reset link for '+p.email+' — copy this and send it to them (expires in 1 hour):', link);
+  prompt('Reset link for '+p.email+' — copy this and send it to them. Reset links last 1 hour:', link);
 });
 document.getElementById('roleFilter').addEventListener('change',renderRoster);
 document.getElementById('qFilter').addEventListener('input',renderRoster);
@@ -897,12 +925,24 @@ renderAll();
   } catch (e) {}
   FHData.wire(FHData.staff({ limit: 200 }), "roster", function (data) {
     var rows = data.items || [];
+    function showHidden(n) {
+      var el = document.getElementById("hiddenLine");
+      if (!el) return;
+      var count = Number(n) || 0;
+      el.textContent = count === 1
+        ? "1 person is hidden from this list (owner and seeded test logins)."
+        : count + " people are hidden from this list (owner and seeded test logins).";
+    }
+    showHidden(data.hiddenCount);
     if (!rows.length) {
       if (typeof PEOPLE !== "undefined") {
         PEOPLE.length = 0;
         if (typeof renderAll === "function") try { renderAll(); } catch (e) {}
       }
-      return "no staff on the roster yet";
+      var hidden = Number(data.hiddenCount) || 0;
+      return hidden
+        ? "no staff on the roster yet · " + hidden + " hidden"
+        : "no staff on the roster yet";
     }
     if (typeof PEOPLE === "undefined" || typeof renderAll !== "function") return null;
 

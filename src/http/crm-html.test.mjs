@@ -185,6 +185,7 @@ test("staff-teams.html does not seed Alvin or other fake people", () => {
   assert.ok(/var PEOPLE=\[\]/.test(html));
   assert.ok(!/Alvin Torres/.test(html));
   assert.ok(html.includes("/api/auth/invite"));
+  assert.ok(html.includes("/api/auth/staff-role"));
   assert.ok(html.includes("/api/auth/suspend"));
 });
 

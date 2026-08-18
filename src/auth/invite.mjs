@@ -213,3 +213,35 @@ export async function suspendStaff(db, { actor, staffId } = {}) {
   const revoked = await revokeAllForStaff(db, staffId);
   return { ok: true, staff, sessionsRevoked: revoked };
 }
+
+// setStaffRole — owner/admin changes a job on an existing row. Does not mint
+// owner. Does not rewrite an owner row. Revoking stays a separate action.
+export async function setStaffRole(db, { actor, staffId, role } = {}) {
+  if (!actor || !INVITER_ROLES.includes(String(actor.role || "").toLowerCase())) {
+    return { ok: false, status: 403, error: "forbidden" };
+  }
+  if (!actor.org_id) return { ok: false, status: 403, error: "forbidden" };
+  const next = String(role || "").trim().toLowerCase();
+  if (!next) return { ok: false, status: 400, error: "role_required" };
+  if (next === "owner") return { ok: false, status: 400, error: "cannot_assign_owner" };
+  if ((await roleIsKnown(db, actor.org_id, next)) === false) {
+    return { ok: false, status: 400, error: "unknown_role" };
+  }
+
+  const current = (await db.query(
+    `SELECT id, role FROM staff WHERE id = $1 AND org_id = $2`,
+    [staffId, actor.org_id]
+  )).rows[0];
+  if (!current) return { ok: false, status: 404, error: "staff_not_found" };
+  if (String(current.role || "").toLowerCase() === "owner") {
+    return { ok: false, status: 400, error: "cannot_change_owner" };
+  }
+
+  const staff = (await db.query(
+    `UPDATE staff SET role = $2 WHERE id = $1 AND org_id = $3
+     RETURNING id, email, name, role, status`,
+    [staffId, next, actor.org_id]
+  )).rows[0];
+  if (!staff) return { ok: false, status: 404, error: "staff_not_found" };
+  return { ok: true, staff };
+}
