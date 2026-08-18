@@ -15,9 +15,9 @@ seeing. Do not invent data. Empty states stay honest.
 
 | # | Task | Owner | Status |
 |---|------|-------|--------|
-| W1 | Copy strip + layout refresh in `campaign-manager.html` | Fixer (main thread) | claimed |
-| W2 | Live capture rig + BEFORE shot, partner selected | agent | claimed |
-| W3 | Copy brief — every doc paragraph and db/file reference, keep/cut/rewrite | agent | claimed |
+| W1 | Copy strip + layout refresh in `campaign-manager.html` | Fixer (main thread) | done |
+| W2 | Live capture rig + BEFORE shot, partner selected | agent | blocked — live sign-in outage |
+| W3 | Copy brief — every doc paragraph and db/file reference, keep/cut/rewrite | agent | done |
 | W4 | Baseline lint / types / tests on clean main | agent | done |
 
 **File ownership:** W1 is the ONLY workflow that may edit `public/app/campaign-manager.html`.
@@ -465,3 +465,57 @@ the numbers above.
   the owner's call keeps a single visible line so a failure is noticed without reading each
   panel. Owner's call stands. W1 implements: cut the card and its Panel/Status/Rows table,
   keep the footer count, keep every per-panel sentence, add the one quiet line.
+
+
+### W1 — the screen (commit `6805f75`, pushed to `main` 2026-08-17)
+
+**File touched:** `public/app/campaign-manager.html` only. No route, no endpoint, no
+schema, no test, no config. No journey changed — `docs/journeys/*` describe the eight
+campaign routes, and none of them moved, so no `-actual.md` edit and no changelog line.
+
+**What changed**
+
+1. **The SCOPE & SOURCES card is gone**, with its "Did each panel load?" Panel/Status/Rows
+   table and the `SOURCE_WORD` code map that fed it. Replaced by two things at the top of
+   the page: the partner name and one plain sentence, plus a warning line that is **hidden
+   whenever every panel is loading or loaded** and appears only when a panel is actually
+   turned down, naming which panels and repeating that panel's own sentence. `renderSources()`
+   keeps its name and all nine call sites; it now paints that one line.
+2. **Sixteen grey explanation blocks became six** — one per card. Two dead CSS rules that
+   only styled the removed table were deleted.
+3. **The database's own words no longer reach the reader.** One shared `WORDS` map plus a
+   `words()` helper that opens underscores for anything unlisted, so a new state is never
+   swallowed. Applied to the campaign list, connections, action log, the drawer, the filter
+   chips and the dropdown labels. **Stored values and every filter value are untouched** —
+   `data-v` on a chip and `value=` on an option still carry the raw word.
+4. **38 wordy strings in the JavaScript shortened**, including every panel failure sentence
+   and every empty state. Every empty state still says it is empty; none was replaced with
+   filler and none invents a number.
+5. Two false or stale claims removed rather than restated: the "each tile is a real filter"
+   badge (W3 finding F1 — two of the four only scroll), and the drawer line pointing readers
+   at the panel table that no longer exists.
+
+**Proof so far:** `npm run lint` clean (1296 files). `routes.test.mjs` + `auth-gate.test.mjs`
+18/18 pass. Inline script parses. Every `getElementById` target exists in the markup.
+**Live capture is NOT done** — see the outage below.
+
+**Not fixed, on purpose (owner-scope):** W3 findings F2–F6 all live outside the named file
+or outside the named ask. They are recorded in W3's section above and untouched.
+
+## Incidents during this batch
+
+**I1 — Another session stashed this work mid-flight.** Stages A–D of the W1 edit were
+swept into `stash@{0}` ("WIP on main: 8659d5f") by a concurrent session, and four commits
+landed on `main` from other batches while W1 was editing. `ListAgents` shows **15 peer
+sessions live in this same folder**. W1's edit was fully scripted, so it was replayed from
+the scripts rather than recovered from the stash, then committed immediately. W4 hit the
+same thing independently and warned that no baseline can be read out of the live folder.
+**Nothing was lost. But any agent working uncommitted in this folder is at risk — commit early.**
+
+**I2 — fundhub.ai could not sign anyone in, 03:33–04:15 UTC.** The database was in
+read-only mode: `POST /api/auth/login` returned 500 `cannot execute INSERT in a read-only
+transaction`, and every signed-in page load returned 503 `auth_unavailable`. `/api/health`
+said `db: up` throughout, because it only reads. Full write-up and the bounced-to-login
+screenshot are in `campaigns-readable-2026-08-17-evidence/before/OUTAGE-2026-08-17.md`.
+Re-checked at 03:59 UTC: reads are healthy again (401, not 503). Whether sign-in writes
+recovered is unconfirmed. **This blocked the BEFORE capture and is blocking the AFTER capture.**
