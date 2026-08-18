@@ -43,7 +43,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 .topbar h1{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
 .topbar .crumb{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
-.content{padding:22px 24px 40px;flex:1}
+/* width:100% matters. .fh-maxw sets margin-inline:auto, and an auto cross-axis
+   margin cancels flex stretch — so without it this column is sized to its own
+   max-content, which the 11-column board makes wider than the page. */
+.content{padding:22px 24px 40px;flex:1;width:100%}
 
 .card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .card+.card{margin-top:14px}
