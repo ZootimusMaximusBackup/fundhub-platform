@@ -43,7 +43,13 @@ button,input,select,textarea{font:inherit;color:inherit}
 .topbar h1{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
 .topbar .crumb{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
-.content{padding:22px 24px 40px;flex:1}
+/* §11 — .content is a flex item inside .main, and .fh-maxw gives it
+   margin-inline:auto. An auto side margin cancels flex stretch, so without an
+   explicit width the column sizes itself to its widest table and the phone
+   scrolls sideways. width:100% restores the stretch; max-width:1280px on
+   .fh-maxw still caps it, and the auto margins still centre it, on a wide
+   monitor. */
+.content{padding:22px 24px 40px;flex:1;width:100%;min-width:0}
 
 .card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .card+.card{margin-top:14px}
@@ -94,16 +100,8 @@ table.grid tr:last-child td{border-bottom:0}
 .stat .sv.bad{color:#6E2A22}
 .stat .sv.warn{color:#6B4A12}
 
-/* derivation strip — every number on this screen can show its working */
-.deriv{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:var(--soft);padding:12px 15px;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:8px 22px}
-.deriv .dk{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.14em;text-transform:uppercase;color:var(--gray);margin-bottom:3px}
-.deriv .formula{font-family:var(--mono);font-size:var(--fs-caption);color:var(--ink);line-height:1.6;word-break:break-word}
-.deriv .inputs{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray);line-height:1.7}
-.deriv .inputs b{color:var(--ink);font-weight:600}
-.deriv .src{grid-column:1/-1;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.05em;border-top:1px dashed var(--line);padding-top:8px;line-height:1.6}
-
 .note{font-size:var(--fs-body);color:var(--gray);line-height:1.55}
-.note code,.mono.k,code{font-family:var(--mono);font-size:var(--fs-caption);background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+.note code,.mono.k,code{font-family:var(--mono);font-size:var(--fs-caption);background:var(--soft);border:1px solid var(--line);border-radius:4px;padding:1px 5px;overflow-wrap:anywhere}
 .cap{padding:10px 16px;border-top:1px solid var(--line);background:var(--soft);font-size:var(--fs-body);color:var(--gray);line-height:1.5}
 .cap b{color:var(--ink);font-weight:600}
 .cap+.cap{border-top:1px dashed var(--line)}
@@ -117,15 +115,12 @@ table.grid tr:last-child td{border-bottom:0}
 .rail button.on{background:transparent;color:var(--ink);border-color:var(--ink);font-weight:700}
 .rail button .n{font-weight:700;margin-left:5px;opacity:.75}
 .rail .rl{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-right:2px}
-.selwrap{display:inline-flex;align-items:center;gap:6px}
+.selwrap{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%}
 .selwrap label{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
 .selwrap select{border:1px solid var(--line);border-radius:6px;background:#fff;padding:4px 7px;font-size:var(--fs-body);font-family:var(--mono);max-width:220px}
 .selwrap select:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
-
-/* the request line each surface would issue */
-.req{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.04em;padding:8px 16px;border-top:1px dashed var(--line);background:var(--soft);word-break:break-all;display:none}
-.req.on{display:block}
-.req b{color:var(--ink);font-weight:600}
+/* §11 — a field never sets a pixel width the phone cannot honour */
+.selwrap input,.selwrap select.wide{width:100%;max-width:100%;min-width:0}
 
 /* attention tiles */
 .attn{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
@@ -166,7 +161,6 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 .detfull{flex:1 1 100%;min-width:0}
 
 .errbox{font-family:var(--mono);font-size:var(--fs-body);line-height:1.6;color:#6E2A22;background:rgba(242,166,155,.16);border:1px solid var(--alert);border-radius:7px;padding:8px 10px;word-break:break-word}
-.jsonbox{font-family:var(--mono);font-size:var(--fs-caption);line-height:1.6;color:var(--gray);background:var(--soft);border:1px solid var(--line);border-radius:7px;padding:8px 10px;white-space:pre-wrap;word-break:break-word;max-height:210px;overflow:auto}
 .pager{display:flex;align-items:center;gap:10px;padding:11px 16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.06em;flex-wrap:wrap}
 
 /* reason cards — a blocked_reasons element */
@@ -242,63 +236,64 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 .kv .v{font-size:var(--fs-body);font-weight:600;margin-top:2px;word-break:break-word}
 .kv .v.mono{font-family:var(--mono);font-size:var(--fs-caption);font-weight:500}
 
-.tblscroll{overflow-x:auto}
+/* §11 — a table that must stay a table scrolls inside its own box and never
+   widens the page. max-width caps the box; min-width:max-content keeps the
+   table itself from being squeezed into unreadable columns. */
+.tblscroll{overflow-x:auto;max-width:100%}
+.tblscroll>table{min-width:max-content}
 .tblscroll::-webkit-scrollbar{height:7px}
 .tblscroll::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:4px}
+
+/* Reference material, closed by default — the same disclosure used on the
+   affiliate screen. §9: the daily 20% is open, everything else is one click. */
+.scopebar{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+.scopebar+.scopebar{margin-top:8px}
+.scopebar summary{cursor:pointer;font-size:var(--fs-body);color:var(--ink);font-weight:600;list-style:none}
+.scopebar summary::-webkit-details-marker{display:none}
+.scopebar[open] summary{margin-bottom:8px}
+.scopebar .st{font-size:var(--fs-body);color:var(--gray);display:block;line-height:1.55}
+.scopebar .st+.st,.scopebar .tblscroll{margin-top:8px}
 
 #stateLegend{grid-template-columns:repeat(5,1fr)}
 .card-hd .rail{flex:0 1 auto}
 
 @media(max-width:1280px){.stats{grid-template-columns:repeat(3,1fr)}.attn,#stateLegend{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.deriv{grid-template-columns:1fr}.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.kv{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* §11 — one column on a phone. No KPI row squeezed to a letter per line. */
+@media(max-width:640px){
+  .stats,.attn,#stateLegend,.kv{grid-template-columns:1fr}
+  .lib,.kits{grid-template-columns:1fr}
+  .drawer{width:100vw}
+  /* The top bar is a single flex row of title + two chips; at 390px its
+     contents are wider than the phone and the whole page scrolls sideways.
+     Let it wrap onto a second line instead. */
+  .topbar{height:auto;min-height:57px;flex:0 0 auto;flex-wrap:wrap;padding:8px 16px;gap:8px}
+  .topbar h1{min-width:0}
+  .topbar .spacer{flex:0 0 100%;height:0}
+}
 </style>
 <script defer src="shell.js"></script>
 <script defer src="data.js"></script>
 </head>
 <body>
-<!-- CREATIVE FACTORY (CF) — generation jobs, the asset library, the review queue and
-     brand kits, for ONE partner's book.
+<!-- CREATIVE FACTORY — make creative for ONE partner, then decide on it.
+     Jobs, the library, the review queue and brand kits, all for that one partner.
 
-     BUILT FROM
-       db/migrations/045_creative_factory.sql  brand_kits, brand_kit_sources, creative_assets,
-                                               generation_jobs, generation_job_assets, the RLS
-                                               policies, trg_creative_asset_lineage,
-                                               fundhub_no_delete()
-       db/migrations/046_ad_platforms.sql      campaigns (approval_state, strategy_key,
-                                               budget_cents), partner_module_settings
-       db/migrations/047_compliance_rules.sql  compliance_rules + the 12 seeded rows,
-                                               compliance_screenings, the CROA disclosure gate
-       db/migrations/048_campaign_config.sql   creative_providers (asset_kind, provider_key,
-                                               priority), v_creative_config_gaps
-       db/migrations/050_creative_metering.sql creative_usage_events, creative_billing_rates,
-                                               v_partner_creative_usage
-       db/migrations/052_config_defaults.sql   the two PLACEHOLDER billing rates, gaps view rewrite
-       api/creative/jobs.mjs  library.mjs  approvals.mjs  brand-kits.mjs   the four read shapes
-       src/creative/generate.mjs               enqueue/claim/run/fail — the job state machine
-       src/creative/providers/*.mjs            the five provider keys and their disclosure rules
-       src/compliance/screen.mjs               the verdict states and every engine reason code
-       src/http/partner-read-api.mjs           requirePrincipal + resolvePartnerId + withPartnerScope
-       src/http/read-api.mjs                   pageParams / page() / redact()
+     ORDER OF THE PAGE. The day's work first, reference material last and closed:
+     summary → partner → writing budget → generate and decide → jobs → library →
+     review queue → brand kits → reference. UI-STANDARDS §1 and §9.
 
-     READ-ONLY BY CONSTRUCTION. All four api/creative/* files are partnerReadHandler, which
-     answers any non-GET with 405. There is no route to enqueue, retry, cancel, approve,
-     reject, archive, re-screen, edit a brand kit or trigger a scrape — so this screen
-     carries no control that claims to write. Nothing calls enqueue(), claim() or run()
-     anywhere in the repo either; see CF-12.
+     NO PREVIEWS. The file itself never reaches this screen, and the screen cannot
+     even tell whether one was saved, so every tile is the same placeholder.
 
-     NO PREVIEWS, AND NO FLAG EITHER. storage_key is never selected, the provider's CDN url
-     is thrown away by storeAsset(), and the derived has_storage_key boolean does not survive
-     redact() — FORBIDDEN_KEY (read-api.mjs:18) matches `storage_key` as an unanchored
-     substring, so page() strips it out of every row. Every tile below is the same
-     placeholder, because the screen has nothing to tell one from another.
+     NO SAMPLE FALLBACK. Every panel is fed by the four creative read endpoints,
+     scoped to the one partner named in this page's address. When a read fails,
+     when the session is a demo one, or when no partner is named, the panel shows
+     its empty or error state and nothing is requested — UI-STANDARDS §6.
 
-     WIRED to all four api/creative/* endpoints (wireCreative(), near the bottom of
-     the page script), each read scoped to the one partner_id named in this page's
-     address. THERE IS NO SAMPLE FALLBACK. No partner roster, no sample jobs, assets,
-     kits or campaigns live in this file: when a read fails, when the session is a
-     demo one, or when no partner is named, each panel shows its empty or error state
-     and nothing is requested — UI-STANDARDS §6. CF-12's ledger reports which of the
-     four actually answered on the last check, rather than asserting it. -->
+     STATUTE CITATIONS DO NOT LIVE HERE. The block-reason list on this screen is
+     plain words only. The full table, with the law behind each reason, is
+     docs/compliance/creative-block-reasons.md. -->
 <div class="app">
   <aside class="side" id="side">
   <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
@@ -378,197 +373,36 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 
     <div class="content fh-maxw">
 
-      <!-- ══ CF-00 · SUMMARY ═══════════════════════════════════════════════ -->
+      <!-- Summary — the five numbers this screen is for. -->
       <div class="stats" id="stats"></div>
 
-      <!-- ══ CF-01 · PARTNER SCOPE ═════════════════════════════════════════ -->
+      <!-- Partner scope — everything below is this one partner's book. -->
       <div class="card">
         <div class="card-hd">
           <div class="eyebrow">Partner scope</div>
           <div class="spacer"></div>
           <span class="badge b-gray mono" id="scopeBadge">One partner</span>
         </div>
-        <div class="card-bd" style="display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:20px;align-items:start">
+        <div class="card-bd fh-stack" style="display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:24px;align-items:start">
           <div>
             <div class="field">
               <label for="partnerSel">Partner</label>
               <select id="partnerSel"></select>
             </div>
-            <div class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.05em;margin-top:10px" id="scopePid">—</div>
-            <div style="margin-top:9px" id="scopeOffers"></div>
+            <div class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.05em;margin-top:8px;overflow-wrap:anywhere" id="scopePid">—</div>
+            <div style="margin-top:8px" id="scopeOffers"></div>
           </div>
           <div>
             <p class="note" id="scopeHow"></p>
-            <p class="note" style="margin-top:9px">This screen shows one partner at a time.</p>
+            <p class="note" style="margin-top:8px">This screen shows one partner at a time.</p>
           </div>
         </div>
       </div>
 
-      <!-- ══ CF-02 · GENERATION JOBS ═══════════════════════════════════════ -->
+      <!-- Writing budget — whether this partner may generate at all, and how much is left. -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">Generation jobs</div>
-          <div class="spacer"></div>
-          <div class="rail" id="jobRail"></div>
-          <span class="selwrap"><label for="jobLimit">limit</label>
-            <select id="jobLimit"><option>5</option><option selected>10</option><option>25</option><option>50</option><option>200</option></select></span>
-        </div>
-        <div class="tblscroll">
-          <table class="grid" id="jobTable">
-            <thead><tr>
-              <th>Job</th><th>Status</th><th>Asset kind</th><th>Formats</th><th>Variants</th>
-              <th>Attempt</th><th>Assets</th><th>Provider</th><th>Created</th><th>Finished</th>
-            </tr></thead>
-            <tbody id="jobBody"></tbody>
-          </table>
-        </div>
-        <div class="pager" id="jobPager"></div>
-        <div class="req" id="jobReq"></div>
-        <div class="cap">Newest first. Cost per job is not shown here.</div>
-      </div>
-
-      <!-- ══ CF-03 · JOB STATES & RETRY ════════════════════════════════════ -->
-      <div class="card">
-        <div class="card-hd">
-          <div class="eyebrow">Job states</div>
-          <div class="spacer"></div>
-          <span class="badge b-gray mono">Four statuses</span>
-        </div>
-        <div class="card-bd">
-          <div class="attn" id="stateLegend"></div>
-        </div>
-        <div class="cap">A job is tried up to three times. Attempt is how many tries so far.</div>
-      </div>
-
-      <!-- ══ CF-04 · CREATIVE LIBRARY ══════════════════════════════════════ -->
-      <div class="card">
-        <div class="card-hd">
-          <div class="eyebrow">Creative library</div>
-          <div class="spacer"></div>
-          <span class="badge b-gray mono" id="libCount">—</span>
-        </div>
-        <div class="card-bd" style="padding-bottom:12px;display:flex;flex-direction:column;gap:8px">
-          <div class="rail" id="libStateRail"></div>
-          <div class="rail" id="libKindRail"></div>
-          <div class="rail" id="libFormatRail"></div>
-          <div class="rail" style="gap:14px">
-            <span class="selwrap"><label for="libKit">Brand kit</label><select id="libKit"></select></span>
-            <span class="selwrap"><label for="libArch">Include archived</label>
-              <select id="libArch"><option value="">No</option><option value="1">Yes</option></select></span>
-            <span class="selwrap"><label for="libLimit">limit</label>
-              <select id="libLimit"><option>6</option><option selected>12</option><option>50</option><option>200</option></select></span>
-          </div>
-        </div>
-        <div class="lib" id="libGrid"></div>
-        <div class="pager" id="libPager"></div>
-        <div class="req" id="libReq"></div>
-        <div class="cap">No previews. The file is not sent to this screen.</div>
-      </div>
-
-      <!-- ══ CF-05 · AI DISCLOSURE FLAGS ═══════════════════════════════════ -->
-      <div class="card">
-        <div class="card-hd">
-          <div class="eyebrow">AI disclosure flags</div>
-          <div class="spacer"></div>
-          <span class="badge b-accent mono">AI-generated</span>
-          <span class="badge b-warn mono">Synthetic performer</span>
-        </div>
-        <div class="card-bd">
-          <div class="tblscroll">
-            <table class="grid">
-              <thead><tr><th>Provider</th><th>AI-generated</th><th>Synthetic performer</th><th>How it is decided</th></tr></thead>
-              <tbody id="flagBody"></tbody>
-            </table>
-          </div>
-        </div>
-        <div class="cap">A synthetic performer is always also marked AI-generated.</div>
-      </div>
-
-      <!-- ══ CF-06 · REVIEW &amp; APPROVAL QUEUE ═══════════════════════════ -->
-      <div class="card">
-        <div class="card-hd">
-          <div class="eyebrow">Review queue</div>
-          <div class="spacer"></div>
-          <div class="rail" id="apprRail"></div>
-          <span class="selwrap"><label for="apprLimit">limit</label>
-            <select id="apprLimit"><option>5</option><option selected>10</option><option>50</option></select></span>
-        </div>
-        <div class="tblscroll">
-          <table class="grid" id="apprTable">
-            <thead><tr>
-              <th>Item</th><th>State</th><th>Subtype</th><th>Detail</th><th>Reasons</th>
-              <th>Budget</th><th>Offer</th><th>Platform</th><th>Flags</th><th>Updated</th>
-            </tr></thead>
-            <tbody id="apprBody"></tbody>
-          </table>
-        </div>
-        <div class="pager" id="apprPager"></div>
-        <div class="req" id="apprReq"></div>
-        <div class="cap">Creatives and campaigns share this list. Blank means it does not apply.</div>
-      </div>
-
-      <!-- ══ CF-07 · BLOCK REASON CATALOGUE ════════════════════════════════ -->
-      <div class="card">
-        <div class="card-hd">
-          <div class="eyebrow">Block reasons</div>
-          <div class="spacer"></div>
-          <div class="rail" id="ruleRail"></div>
-        </div>
-        <div class="tblscroll">
-          <table class="grid" id="ruleTable">
-            <thead><tr><th>Code</th><th>Rule set</th><th>Match</th><th>Severity</th><th>Applies to</th><th>Citation</th></tr></thead>
-            <tbody id="ruleBody"></tbody>
-          </table>
-        </div>
-        <div class="cap">Each reason stops the work. Credit-repair creative always needs a person, and credit-repair ads cannot run on TikTok.</div>
-      </div>
-
-      <!-- ══ CF-08 · BRAND KITS ════════════════════════════════════════════ -->
-      <div class="card">
-        <div class="card-hd">
-          <div class="eyebrow">Brand kits</div>
-          <div class="spacer"></div>
-          <div class="rail" id="kitRail"></div>
-        </div>
-        <div class="kits" id="kitGrid"></div>
-        <div class="pager" id="kitPager"></div>
-        <div class="req" id="kitReq"></div>
-        <div class="cap">Brand kits are read-only here.</div>
-      </div>
-
-      <!-- ══ CF-10 · READINESS &amp; CONFIG GAPS ═══════════════════════════ -->
-      <div class="card">
-        <div class="card-hd">
-          <div class="eyebrow">Readiness</div>
-          <div class="spacer"></div>
-          <span class="badge b-gray mono">Company-wide</span>
-        </div>
-        <div class="card-bd">
-          <div class="unwired" style="margin-bottom:16px">
-            <div class="uh"><span>⚠</span><span>not a live reading</span></div>
-            <div class="ub">
-              These are the settings the creative engine ships with, shown so they can be reviewed.
-              They are not read back from the running system, so this table will not change when
-              somebody changes a setting.
-            </div>
-          </div>
-          <div class="tblscroll">
-            <table class="grid">
-              <thead><tr><th>Setting</th><th>Detail</th><th>Rows set</th><th>Status</th><th>What happens</th></tr></thead>
-              <tbody id="gapsBody"></tbody>
-            </table>
-          </div>
-        </div>
-        <div class="cap">
-          <b>Nothing can be generated until a vendor is switched on.</b> Until then a job fails
-          straight away, and trying again will not help. Vendor names and keys are never shown here.
-        </div>
-      </div>
-
-      <!-- ══ CF-11 · USAGE &amp; METERING ════════════════════════════════════ -->
-      <div class="card">
-        <div class="card-hd">
-          <div class="eyebrow">Usage</div>
+          <div class="eyebrow">Writing budget</div>
           <div class="spacer"></div>
           <span class="badge b-gray mono" id="cfUseBadge">meter only</span>
         </div>
@@ -578,48 +412,48 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </div>
         </div>
         <div class="cap">
-          This counts writing-robot tokens for this partner this month. It does not charge money.
+          This counts writing-robot words used for this partner this month. It does not charge money.
         </div>
       </div>
 
-      <!-- ══ CF-12 · GENERATE &amp; DECIDE ═══════════════════════════════════ -->
+      <!-- Generate and decide — the primary action, above the fold (§1). -->
       <div class="card">
         <div class="card-hd">
           <div class="eyebrow">Generate and decide</div>
         </div>
         <div class="cap">
-          <b>Ask for new creative.</b> Queued work is picked up automatically every couple of
-          minutes; "Run queued jobs now" starts it straight away.
+          <b>Ask for new creative.</b> Queued work is picked up on its own every couple of
+          minutes. "Run queued jobs now" starts it straight away.
         </div>
         <div class="card-bd" style="padding:16px;border-top:1px solid var(--line)">
           <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:end">
             <div class="selwrap"><label for="genKind">Kind</label>
               <select id="genKind"><option>static</option><option>copy</option><option>video</option><option>resize</option></select>
             </div>
-            <div class="selwrap" style="min-width:220px"><label for="genPrompt">Prompt</label>
-              <input id="genPrompt" placeholder="Working capital for owners…" style="width:220px">
+            <div class="selwrap" style="flex:1 1 220px"><label for="genPrompt">What to make</label>
+              <input id="genPrompt" placeholder="Working capital for owners…">
             </div>
-            <div class="selwrap" style="min-width:180px"><label for="genIdem">Unique key</label>
-              <input id="genIdem" placeholder="unique-key-per-batch" style="width:180px">
+            <div class="selwrap" style="flex:1 1 180px"><label for="genIdem">Name this batch</label>
+              <input id="genIdem" placeholder="a short name you have not used before">
             </div>
-            <button class="btn dark mono" type="button" id="genBtn" disabled>Enqueue generation</button>
-            <button class="btn mono" type="button" id="runJobsBtn" disabled>Run queued jobs now</button>
+            <button class="btn dark mono fh-tap" type="button" id="genBtn" disabled>Enqueue generation</button>
+            <button class="btn mono fh-tap" type="button" id="runJobsBtn" disabled>Run queued jobs now</button>
             <span class="hint mono" id="genMsg" style="font-size:var(--fs-caption);color:var(--gray2)"></span>
           </div>
         </div>
         <div class="cap">
-          <b>Decide on one creative.</b> Pick it from the library above, then approve, reject or
+          <b>Decide on one creative.</b> Pick it from the library below, then approve, reject or
           archive it. Each of the three asks you to confirm first.
         </div>
         <div class="card-bd" style="padding:16px;border-top:1px solid var(--line)">
           <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:end">
-            <div class="selwrap" style="min-width:320px"><label for="actAsset">Creative</label>
-              <select id="actAsset" class="mono" style="width:320px;min-height:40px"></select>
+            <div class="selwrap" style="flex:1 1 320px"><label for="actAsset">Creative</label>
+              <select id="actAsset" class="mono wide" style="min-height:40px"></select>
             </div>
-            <button class="btn mono" type="button" data-cact="approve" style="min-height:44px" disabled>Approve</button>
+            <button class="btn mono fh-tap" type="button" data-cact="approve" style="min-height:44px" disabled>Approve</button>
             <span style="width:32px"></span>
-            <button class="btn mono" type="button" data-cact="reject" style="min-height:44px" disabled>Reject</button>
-            <button class="btn mono" type="button" data-cact="archive" style="min-height:44px" disabled>Archive</button>
+            <button class="btn mono fh-tap" type="button" data-cact="reject" style="min-height:44px" disabled>Reject</button>
+            <button class="btn mono fh-tap" type="button" data-cact="archive" style="min-height:44px" disabled>Archive</button>
             <span class="hint mono" id="actMsg" style="font-size:var(--fs-caption);color:var(--gray2)"></span>
           </div>
         </div>
@@ -630,6 +464,146 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         </div>
       </div>
 
+      <!-- Generation jobs — what has been asked for and how it went. -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">Generation jobs</div>
+          <div class="spacer"></div>
+          <div class="rail" id="jobRail"></div>
+          <span class="selwrap"><label for="jobLimit">show</label>
+            <select id="jobLimit"><option>5</option><option selected>10</option><option>25</option><option>50</option><option>200</option></select></span>
+        </div>
+        <div class="tblscroll">
+          <table class="grid" id="jobTable">
+            <thead><tr>
+              <th>Job</th><th>Status</th><th>Kind</th><th>Shapes</th><th>Versions</th>
+              <th>Tries</th><th>Made</th><th>Made by</th><th>Started</th><th>Finished</th>
+            </tr></thead>
+            <tbody id="jobBody"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="jobPager"></div>
+        <div class="cap">Newest first. Cost per job is not shown here.</div>
+      </div>
+
+      <!-- Creative library — everything made for this partner. -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">Creative library</div>
+          <div class="spacer"></div>
+          <span class="badge b-gray mono" id="libCount">—</span>
+        </div>
+        <div class="card-bd" style="padding-bottom:8px;display:flex;flex-direction:column;gap:8px">
+          <div class="rail" id="libStateRail"></div>
+          <div class="rail" id="libKindRail"></div>
+          <div class="rail" id="libFormatRail"></div>
+          <div class="rail" style="gap:16px">
+            <span class="selwrap"><label for="libKit">Brand kit</label><select id="libKit"></select></span>
+            <span class="selwrap"><label for="libArch">Include archived</label>
+              <select id="libArch"><option value="">No</option><option value="1">Yes</option></select></span>
+            <span class="selwrap"><label for="libLimit">show</label>
+              <select id="libLimit"><option>6</option><option selected>12</option><option>50</option><option>200</option></select></span>
+          </div>
+        </div>
+        <div class="lib" id="libGrid"></div>
+        <div class="pager" id="libPager"></div>
+        <div class="cap">No previews. The file itself is not sent to this screen.</div>
+      </div>
+
+      <!-- Review queue — creatives and campaigns waiting on a decision. -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">Review queue</div>
+          <div class="spacer"></div>
+          <div class="rail" id="apprRail"></div>
+          <span class="selwrap"><label for="apprLimit">show</label>
+            <select id="apprLimit"><option>5</option><option selected>10</option><option>50</option></select></span>
+        </div>
+        <div class="tblscroll">
+          <table class="grid" id="apprTable">
+            <thead><tr>
+              <th>Item</th><th>State</th><th>Kind</th><th>Detail</th><th>Reasons</th>
+              <th>Budget</th><th>Offer</th><th>Where</th><th>Labels</th><th>Updated</th>
+            </tr></thead>
+            <tbody id="apprBody"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="apprPager"></div>
+        <div class="cap">Creatives and campaigns share this list. Blank means it does not apply.</div>
+      </div>
+
+      <!-- Brand kits — the colours, fonts and voice a job is made from. -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">Brand kits</div>
+          <div class="spacer"></div>
+          <div class="rail" id="kitRail"></div>
+        </div>
+        <div class="kits" id="kitGrid"></div>
+        <div class="pager" id="kitPager"></div>
+        <div class="cap">Brand kits are read-only here.</div>
+      </div>
+
+      <!-- Reference — read once, then leave closed. §9: the daily 20% is above,
+           everything else is one click deeper. -->
+      <div class="card">
+        <div class="card-hd">
+          <div class="eyebrow">Reference</div>
+          <div class="spacer"></div>
+          <span class="badge b-gray mono">Read once</span>
+        </div>
+        <div class="card-bd">
+
+          <details class="scopebar">
+            <summary>What each job state means</summary>
+            <div class="attn" id="stateLegend"></div>
+            <span class="st">A job is tried up to three times. "Tries" in the jobs table is how many
+              tries it has had so far.</span>
+          </details>
+
+          <details class="scopebar">
+            <summary>How the AI labels are decided</summary>
+            <div class="tblscroll">
+              <table class="grid">
+                <thead><tr><th>Made by</th><th>AI-generated</th><th>Synthetic performer</th><th>How it is decided</th></tr></thead>
+                <tbody id="flagBody"></tbody>
+              </table>
+            </div>
+            <span class="st">A synthetic performer is always also marked AI-generated.</span>
+          </details>
+
+          <details class="scopebar">
+            <summary>Why creative gets stopped</summary>
+            <span class="st">There are 29 reasons. 27 of them stop the work outright. The other two do
+              not stop it — they hold it for a person to decide. Credit-repair creative always needs a
+              person, and credit-repair ads cannot run on TikTok at all.</span>
+            <span class="st">The full list, with the law behind each reason, is kept with the
+              company compliance rules. It is not shown on this screen.</span>
+            <div class="tblscroll">
+              <table class="grid" id="ruleTable">
+                <thead><tr><th>Applies to</th><th>What it stops</th><th>Who sets it</th></tr></thead>
+                <tbody id="ruleBody"></tbody>
+              </table>
+            </div>
+          </details>
+
+          <details class="scopebar">
+            <summary>Settings the creative engine ships with</summary>
+            <span class="st">These are not read back from the running system, so this table will not
+              change when somebody changes a setting.</span>
+            <div class="tblscroll">
+              <table class="grid">
+                <thead><tr><th>Setting</th><th>Detail</th><th>Set by hand</th><th>Status</th><th>What happens</th></tr></thead>
+                <tbody id="gapsBody"></tbody>
+              </table>
+            </div>
+            <span class="st"><b>Nothing can be generated until a vendor is switched on.</b> Until then a
+              job fails straight away, and trying again will not help. Vendor names and keys are never
+              shown here.</span>
+          </details>
+
+        </div>
+      </div>
     </div>
 
     <div class="foot">
@@ -720,91 +694,74 @@ var ASSETS = [];
    SCOPE. The nine targeting codes reach a CAMPAIGN screening only. An asset is
    screened by generate.mjs:216 with no `targeting` key at all, so screen.mjs skips
    screenTargeting for it and none of these can ever appear in
-   creative_assets.blocked_reasons. Every message and citation below is verbatim;
-   templated messages keep the engine's placeholders.
+   creative_assets.blocked_reasons. Every message below is verbatim; templated
+   messages keep the engine's placeholders.
+
+   NO CITATIONS HERE. The statute behind each reason is deliberately not carried
+   on this screen — it lives in docs/compliance/creative-block-reasons.md.
    ════════════════════════════════════════════════════════════════════════ */
 var RULES = [
   {code:'guaranteed-score-increase', rule_set:'croa', match_type:'regex', severity:'block',
    offers:['credit_repair'], platforms:[], src:'seeded',
-   message:'Promising a specific or guaranteed credit-score increase is prohibited. State what the service does, not what the score will do.',
-   citation:'CROA 15 U.S.C. 1679b(a)(3)'},
+   message:'Promising a specific or guaranteed credit-score increase is prohibited. State what the service does, not what the score will do.'},
   {code:'promise-to-remove-accurate-info', rule_set:'croa', match_type:'regex', severity:'block',
    offers:['credit_repair'], platforms:[], src:'seeded',
-   message:'Claiming to remove accurate or verifiable negative information is prohibited. Only inaccurate or unverifiable items may be disputed.',
-   citation:'CROA 15 U.S.C. 1679b(a)(3)'},
+   message:'Claiming to remove accurate or verifiable negative information is prohibited. Only inaccurate or unverifiable items may be disputed.'},
   {code:'remove-late-payments-collections', rule_set:'croa', match_type:'regex', severity:'block',
    offers:['credit_repair'], platforms:[], src:'seeded',
-   message:'Claiming to remove late payments, collections or similar accurate tradelines is prohibited.',
-   citation:'CROA 15 U.S.C. 1679b(a)(3)'},
+   message:'Claiming to remove late payments, collections or similar accurate tradelines is prohibited.'},
   {code:'advance-fee', rule_set:'croa', match_type:'regex', severity:'block',
    offers:['credit_repair'], platforms:[], src:'seeded',
-   message:'Charging or advertising a fee before credit-repair services are fully performed is prohibited.',
-   citation:'CROA 15 U.S.C. 1679b(b)'},
+   message:'Charging or advertising a fee before credit-repair services are fully performed is prohibited.'},
   {code:'file-segregation-cpn', rule_set:'croa', match_type:'regex', severity:'block',
    offers:['credit_repair'], platforms:[], src:'seeded',
-   message:'File segregation, CPNs and new-credit-identity offers are federal fraud. This copy cannot run.',
-   citation:'CROA 15 U.S.C. 1679b(a)(1)-(2)'},
+   message:'File segregation, CPNs and new-credit-identity offers are federal fraud. This copy cannot run.'},
   {code:'guaranteed-timeline', rule_set:'croa', match_type:'regex', severity:'block',
    offers:['credit_repair'], platforms:[], src:'seeded',
-   message:'Guaranteeing a timeframe for credit-repair results is prohibited. Outcomes and timing vary by file.',
-   citation:'CROA 15 U.S.C. 1679b(a)(3)'},
+   message:'Guaranteeing a timeframe for credit-repair results is prohibited. Outcomes and timing vary by file.'},
   {code:'guaranteed-approval', rule_set:'claims', match_type:'regex', severity:'block',
    offers:[], platforms:[], src:'seeded',
-   message:'Guaranteed approval cannot be advertised. Approval depends on underwriting.',
-   citation:'FTC Act 15 U.S.C. 45'},
+   message:'Guaranteed approval cannot be advertised. Approval depends on underwriting.'},
   {code:'guaranteed-funding-amount', rule_set:'claims', match_type:'regex', severity:'block',
    offers:[], platforms:[], src:'seeded',
-   message:'Guaranteeing a specific funding amount is prohibited. Use "up to" with qualifying conditions stated.',
-   citation:'FTC Act 15 U.S.C. 45'},
+   message:'Guaranteeing a specific funding amount is prohibited. Use "up to" with qualifying conditions stated.'},
   {code:'fabricated-testimonial', rule_set:'claims', match_type:'regex', severity:'block',
    offers:[], platforms:[], src:'seeded',
-   message:'Testimonials must be genuine and results disclaimed as atypical. "Results are typical" cannot be claimed.',
-   citation:'FTC Endorsement Guides 16 CFR 255'},
+   message:'Testimonials must be genuine and results disclaimed as atypical. "Results are typical" cannot be claimed.'},
   {code:'income-wealth-targeting-cue', rule_set:'claims', match_type:'regex', severity:'block',
    offers:[], platforms:[], src:'seeded',
-   message:"Copy that targets or implies the viewer's income or financial distress is prohibited in this vertical.",
-   citation:'Meta special ad category / ECOA'},
+   message:"Copy that targets or implies the viewer's income or financial distress is prohibited in this vertical."},
   {code:'croa-consumer-rights', rule_set:'disclosure', match_type:'required', severity:'block',
    offers:['credit_repair'], platforms:[], src:'seeded',
-   message:'Credit-repair funnels must carry the "Consumer Credit File Rights Under State and Federal Law" disclosure, linked to the campaign before launch.',
-   citation:'CROA 15 U.S.C. 1679c(a)'},
+   message:'Credit-repair funnels must carry the "Consumer Credit File Rights Under State and Federal Law" disclosure, linked to the campaign before launch.'},
   {code:'tiktok-credit-repair-prohibited', rule_set:'platform', match_type:'regex', severity:'block',
    offers:['credit_repair'], platforms:['tiktok'], src:'seeded',
-   message:'TikTok prohibits credit repair and debt relief advertising outright. This offer cannot run on TikTok on any account, with any creative.',
-   citation:'TikTok Advertising Policies — Prohibited Industries'},
+   message:'TikTok prohibits credit repair and debt relief advertising outright. This offer cannot run on TikTok on any account, with any creative.'},
 
   {code:'screen_error', rule_set:'engine', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:[], src:'engine',
-   message:'Compliance screening could not complete, so this is blocked. Try again; if it persists this is a platform fault, not your copy.',
-   citation:null},
+   message:'Compliance screening could not complete, so this is blocked. Try again; if it persists this is a platform fault, not your copy.'},
   {code:'offer_type_missing', rule_set:'engine', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:[], src:'engine',
-   message:'offer_type must be one of funding, credit_cards, credit_repair; got <the value>.',
-   citation:null},
+   message:'offer_type must be one of funding, credit_cards, credit_repair; got <the value>.'},
   {code:'platform_unknown', rule_set:'engine', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:[], src:'engine',
-   message:'platform must be one of meta, tiktok, google or null; got <the value>.',
-   citation:null},
+   message:'platform must be one of meta, tiktok, google or null; got <the value>.'},
   {code:'tiktok_credit_repair_prohibited', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
    offers:['credit_repair'], platforms:['tiktok'], src:'engine',
-   message:'TikTok prohibits credit repair and debt relief advertising outright. This offer cannot run on TikTok on any account, with any creative. There is no override.',
-   citation:null},
+   message:'TikTok prohibits credit repair and debt relief advertising outright. This offer cannot run on TikTok on any account, with any creative. There is no override.'},
   {code:'special_ad_category_unset', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:['meta'], src:'engine',
-   message:'No special_ad_category is configured for meta/<offer_type>. Populate ad_platform_category_map before any Meta launch.',
-   citation:null},
+   message:'No special_ad_category is configured for meta/<offer_type>. Populate ad_platform_category_map before any Meta launch.'},
   {code:'synthetic_without_ai_flag', rule_set:'disclosure', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:[], src:'engine',
-   message:'An asset with a synthetic performer must also be marked ai_generated.',
-   citation:null},
+   message:'An asset with a synthetic performer must also be marked ai_generated.'},
   {code:'human_approval_required_credit_repair', rule_set:'approval', match_type:'—', severity:null, verdict:'needs_approval',
    offers:['credit_repair'], platforms:[], src:'engine',
-   message:'Credit-repair creative always requires human approval before launch. This gate cannot be turned off.',
-   citation:null},
+   message:'Credit-repair creative always requires human approval before launch. This gate cannot be turned off.'},
   {code:'human_approval_required_setting', rule_set:'approval', match_type:'—', severity:null, verdict:'needs_approval',
    offers:[], platforms:[], src:'engine',
-   message:'This partner has approve_before_launch enabled, so a human must approve before launch.',
-   citation:null},
+   message:'This partner has approve_before_launch enabled, so a human must approve before launch.'},
 
   /* src/compliance/targeting.mjs — the Meta special-ad-category restrictions, spliced
      into a campaign screening by screen.mjs:154-157. rule_set is 'platform' on all
@@ -814,40 +771,31 @@ var RULES = [
      rather than editing the partner's spend. */
   {code:'targeting_missing', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:['meta'], src:'targeting',
-   message:'A targeting payload is required. An empty spec cannot be certified against the special ad category rules.',
-   citation:null},
+   message:'A targeting payload is required. An empty spec cannot be certified against the special ad category rules.'},
   {code:'targeting_malformed', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:['meta'], src:'targeting',
-   message:'Targeting must be an object.',
-   citation:null},
+   message:'Targeting must be an object.'},
   {code:'zip_targeting', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:['meta'], src:'targeting',
-   message:'ZIP/postal-code targeting is not permitted for credit offers. Target by city, state or country.',
-   citation:null},
+   message:'ZIP/postal-code targeting is not permitted for credit offers. Target by city, state or country.'},
   {code:'radius_too_small', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:['meta'], src:'targeting',
-   message:'A <n>-mile radius is below the 15-mile minimum for credit offers (<where>).',
-   citation:null},
+   message:'A <n>-mile radius is below the 15-mile minimum for credit offers (<where>).'},
   {code:'location_exclusion', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:['meta'], src:'targeting',
-   message:'Location exclusions are not permitted for credit offers.',
-   citation:null},
+   message:'Location exclusions are not permitted for credit offers.'},
   {code:'age_range', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:['meta'], src:'targeting',
-   message:'age_min must be 18 for credit offers; got <the value>. (age_max must be 65, "65+", by the same rule.)',
-   citation:null},
+   message:'age_min must be 18 for credit offers; got <the value>. (age_max must be 65, "65+", by the same rule.)'},
   {code:'gender_restriction', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:['meta'], src:'targeting',
-   message:'Gender restrictions are not permitted for credit offers.',
-   citation:null},
+   message:'Gender restrictions are not permitted for credit offers.'},
   {code:'lookalike_audience', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:['meta'], src:'targeting',
-   message:'Lookalike audiences are not permitted for credit offers.',
-   citation:null},
+   message:'Lookalike audiences are not permitted for credit offers.'},
   {code:'detailed_targeting_expansion', rule_set:'platform', match_type:'—', severity:null, verdict:'blocked',
    offers:[], platforms:['meta'], src:'targeting',
-   message:'Detailed-targeting expansion must be off for credit offers.',
-   citation:null}
+   message:'Detailed-targeting expansion must be off for credit offers.'}
 ];
 
 /* ══ PROVIDER DISCLOSURE BEHAVIOUR (CF-05) ═══════════════════════════════ */
@@ -872,10 +820,10 @@ var GAPS = [
   {config:'Creative vendors', detail:'Which vendor makes each kind of creative', rows_set:0,
    status:'Not set — generation cannot run', tone:'bad',
    consequence:'Nothing can be generated until a vendor is switched on'},
-  {config:'Generation markup', detail:'rate = 100', rows_set:0,
+  {config:'Generation markup', detail:'Marked up 100%', rows_set:0,
    status:'Placeholder — not signed off', tone:'warn',
    consequence:'Do not put this on an invoice until someone approves it'},
-  {config:'Managed spend rate', detail:'rate = 10', rows_set:0,
+  {config:'Managed spend rate', detail:'10% of spend', rows_set:0,
    status:'Placeholder — not signed off', tone:'warn',
    consequence:'Do not put this on an invoice until someone approves it'},
   {config:'Kill ads with no conversions',
@@ -931,7 +879,7 @@ function panelState(key){
     return 'No partner selected. Nothing is loaded.';
   var res = CF_ENDPOINT_RES[key];
   if(!res) return 'Loading…';
-  if(!res.ok) return 'This could not be read just now — ' + esc(res.error || res.source) + '. Nothing is shown rather than a stale or made-up figure.';
+  if(!res.ok) return 'This could not be loaded just now — ' + esc(res.error || res.source) + '. Nothing is shown, rather than an old or made-up number.';
   return null;
 }
 function kitName(id){
@@ -957,9 +905,7 @@ var S = {
   libState: 'all', libKind: '', libFormat: '', libKit: '', libArchived: '',
   libLimit: 12, libOffset: 0,
   apprState: 'all', apprLimit: 10, apprOffset: 0,
-  kitState: 'all', kitOffset: 0, kitLimit: 6,
-  ruleSet: 'all',
-  showReq: false
+  kitState: 'all', kitOffset: 0, kitLimit: 6
 };
 
 /* ══ CF-01 · PARTNER SCOPE ═══════════════════════════════════════════════ */
@@ -1194,10 +1140,6 @@ function renderPager(el, pg, onMove){
     b.addEventListener('click', function(){ onMove(parseInt(b.dataset.mv,10)); });
   });
 }
-function setReq(el){
-  var host = document.getElementById(el);
-  if(host){ host.className = 'req'; host.innerHTML = ''; }
-}
 
 /* ══ CF-02 · GENERATION JOBS ═════════════════════════════════════════════ */
 function jobStateParam(){ return S.jobStates.length ? S.jobStates.join(',') : 'all'; }
@@ -1252,12 +1194,12 @@ function renderJobs(){
         '<td><span class="badge ' + JOB_BADGE[j.status] + '">' + esc(j.status) + '</span>' +
           (retry ? '<span class="sub">retrying · attempt ' + j.attempt + '</span>' : '') + '</td>' +
         '<td><span class="mono">' + esc(j.asset_kind) + '</span>' +
-          (j.asset_kind==='resize' ? '<span class="sub">derives, not a kind</span>' : '') + '</td>' +
-        '<td class="mono">' + (j.formats ? esc(j.formats.join(' ')) : nul('null')) + '</td>' +
-        '<td class="mnum">' + (j.variants==null ? nul('null') : j.variants) + '</td>' +
+          (j.asset_kind==='resize' ? '<span class="sub">a new shape of an existing creative</span>' : '') + '</td>' +
+        '<td class="mono">' + (j.formats ? esc(j.formats.join(' ')) : nul('—')) + '</td>' +
+        '<td class="mnum">' + (j.variants==null ? nul('—') : j.variants) + '</td>' +
         '<td class="mnum">' + j.attempt + '</td>' +
         '<td class="mnum">' + j.asset_count + '</td>' +
-        '<td class="mono">' + (j.provider ? esc(j.provider) : nul('null')) + '</td>' +
+        '<td class="mono">' + (j.provider ? esc(j.provider) : nul('—')) + '</td>' +
         '<td class="mono">' + esc(fmt(j.created_at)) + '</td>' +
         '<td class="mono">' + (j.finished_at ? esc(fmt(j.finished_at)) : nul('—')) + '</td>' +
       '</tr>';
@@ -1268,26 +1210,22 @@ function renderJobs(){
   renderPager('jobPager', pg, function(d){
     S.jobOffset = Math.max(0, S.jobOffset + d * S.jobLimit); renderJobs();
   });
-  setReq('jobReq', '/api/creative/jobs', {
-    partner_id: currentPartnerId(), state: jobStateParam(),
-    limit: S.jobLimit, offset: S.jobOffset
-  });
 }
 function jobById(id){ for(var i=0;i<JOBS.length;i++){ if(JOBS[i].id===id) return JOBS[i]; } return null; }
 
 function jobDetail(j){
   var cols = [
-    ['id', j.id, 1], ['idempotency_key', j.idempotency_key, 1],
-    ['brand_kit_id', j.brand_kit_id, 1],
-    ['started_at', j.started_at || '—', 1], ['finished_at', j.finished_at || '—', 1],
-    ['asset_count', j.asset_count + ' · via generation_job_assets', 0]
+    ['Job reference', j.id, 1], ['Batch name', j.idempotency_key, 1],
+    ['Brand kit', kitName(j.brand_kit_id) || '—', 0],
+    ['Started', fmt(j.started_at) || '—', 1], ['Finished', fmt(j.finished_at) || '—', 1],
+    ['Creatives made', String(j.asset_count), 0]
   ];
   var out = '<div class="detwrap">' + cols.map(function(c){
     return '<div class="detcol"><div class="dk">' + esc(c[0]) + '</div><div class="dv' + (c[2]?' mono':'') + '">' + esc(c[1]) + '</div></div>';
   }).join('');
 
   if(j.error){
-    out += '<div class="detfull" style="margin-top:4px"><div class="dk" style="font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:5px">error</div>' +
+    out += '<div class="detfull" style="margin-top:4px"><div class="dk" style="font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:5px">What went wrong</div>' +
       '<div class="errbox">' + esc(j.error) + '</div></div>';
   }
   out += '<div class="detfull"><p class="note" style="margin-top:6px">' + jobExplain(j) + '</p></div>';
@@ -1479,14 +1417,9 @@ function renderLibrary(){
       b.addEventListener('click', function(){ openAsset(assetById(b.dataset.asset)); });
     });
   }
-  document.getElementById('libCount').textContent = blocked ? 'not read' : pg.count + ' on this page';
+  document.getElementById('libCount').textContent = blocked ? 'not loaded' : pg.count + ' on this page';
   renderPager('libPager', pg, function(d){
     S.libOffset = Math.max(0, S.libOffset + d * S.libLimit); renderLibrary();
-  });
-  setReq('libReq', '/api/creative/library', {
-    partner_id: currentPartnerId(), state: S.libState,
-    kind: S.libKind, format: S.libFormat, brand_kit_id: S.libKit,
-    include_archived: S.libArchived, limit: S.libLimit, offset: S.libOffset
   });
   renderActionPicker();
 }
@@ -1615,138 +1548,114 @@ function renderApprovals(){
   renderPager('apprPager', pg, function(d){
     S.apprOffset = Math.max(0, S.apprOffset + d * S.apprLimit); renderApprovals();
   });
-  setReq('apprReq', '/api/creative/approvals', {
-    partner_id: currentPartnerId(), state: S.apprState,
-    limit: S.apprLimit, offset: S.apprOffset
-  });
 }
 
-/* a blocked_reasons element, rendered as itself */
+/* One reason, in plain words. The statute behind it is NOT shown here — it lives
+   in docs/compliance/creative-block-reasons.md. The reason code stays as a small
+   muted reference so a person can look the reason up in that file. */
 function reasonCard(rz){
   var cls = 'rz' + (rz.rule_set==='approval' ? ' set-approval' : (rz.rule_set==='engine' ? ' set-engine' : ''));
   return '<div class="' + cls + '">' +
-    '<div class="rzh">' +
-      '<span class="rzc">' + esc(rz.code) + '</span>' +
-      '<span class="badge b-gray">' + esc(rz.rule_set) + '</span>' +
-      (rz.severity ? '<span class="badge b-gray">' + esc(rz.severity) + '</span>' : '') +
-    '</div>' +
     '<div class="rzm">' + esc(rz.message) + '</div>' +
-    (rz.citation ? '<div class="rzq">' + esc(rz.citation) + '</div>' : '') +
-    (rz.detail ? '<div class="rzd">detail: ' + esc(rz.detail) + '</div>' : '') +
+    '<div class="rzq">reference: ' + esc(rz.code) + '</div>' +
+    (rz.detail ? '<div class="rzd">More detail: ' + esc(rz.detail) + '</div>' : '') +
   '</div>';
 }
 
-function apprDetail(r){
-  var out = '<div class="detwrap">';
-  out += '<div class="detcol"><div class="dk">item_type</div><div class="dv mono">' + esc(r.item_type) + '</div></div>';
-  out += '<div class="detcol"><div class="dk">id</div><div class="dv mono">' + esc(r.id) + '</div></div>';
-  out += '<div class="detcol"><div class="dk">subtype</div><div class="dv mono">' +
-    (r.subtype ? esc(r.subtype) : '<span class="nul">null</span>') +
-    '</div><div class="ad" style="font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);margin-top:3px">' +
-    (r.item_type==='campaign' ? 'strategy_key (nullable)' : 'creative_assets.kind') + '</div></div>';
-  out += '<div class="detcol"><div class="dk">detail</div><div class="dv">' + esc(r.detail) +
-    '</div><div class="ad" style="font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);margin-top:3px">' +
-    (r.item_type==='campaign' ? 'campaigns.name' : 'creative_assets.format') + '</div></div>';
+var SCREEN_STATE_WORDS = {
+  blocked: 'Stopped',
+  needs_approval: 'Waiting for a person',
+  passed: 'Cleared'
+};
 
-  if(r.item_type==='campaign'){
-    out += '<div class="detcol"><div class="dk">budget_cents</div><div class="dv mono">' + r.budget_cents + ' · ' + esc(money(r.budget_cents)) + '</div></div>';
-    out += '<div class="detcol"><div class="dk">offer_type / platform</div><div class="dv mono">' + esc(r.offer_type) + ' · ' + esc(r.platform || 'null') + '</div></div>';
-    out += '<div class="detfull"><p class="note" style="margin:8px 0 4px"><b>Screening history</b>, unwrapped. ' +
-      'Each element is <code>{code: &lt;screening state&gt;, message: &lt;reasons ARRAY&gt;}</code> — <code>message</code> ' +
-      'is a nested array, not a string.</p>';
+function apprDetail(r){
+  var isCampaign = r.item_type === 'campaign';
+  var out = '<div class="detwrap">';
+  out += '<div class="detcol"><div class="dk">Item</div><div class="dv">' +
+    (isCampaign ? 'Campaign' : 'Creative') + '</div></div>';
+  out += '<div class="detcol"><div class="dk">Reference</div><div class="dv mono">' + esc(r.id) + '</div></div>';
+  out += '<div class="detcol"><div class="dk">' + (isCampaign ? 'Strategy' : 'Kind') + '</div><div class="dv mono">' +
+    (r.subtype ? esc(r.subtype) : nul('—')) + '</div></div>';
+  out += '<div class="detcol"><div class="dk">' + (isCampaign ? 'Name' : 'Shape') + '</div><div class="dv">' +
+    esc(r.detail) + '</div></div>';
+
+  if(isCampaign){
+    out += '<div class="detcol"><div class="dk">Budget</div><div class="dv mono">' +
+      (r.budget_cents==null ? nul('—') : esc(money(r.budget_cents))) + '</div></div>';
+    out += '<div class="detcol"><div class="dk">Offer</div><div class="dv mono">' + esc(r.offer_type) + '</div></div>';
+    out += '<div class="detcol"><div class="dk">Where it runs</div><div class="dv mono">' +
+      (r.platform ? esc(r.platform) : nul('anywhere')) + '</div></div>';
+    out += '<div class="detfull"><p class="note" style="margin:8px 0 4px"><b>Every check this campaign has been through</b>, newest last.</p>';
     out += (r.reasons||[]).map(function(s){
       var inner = (s.message||[]);
-      return '<div style="margin-bottom:9px">' +
-        '<div class="badge ' + (s.code==='blocked'?'b-alert':(s.code==='needs_approval'?'b-info':'b-ok')) + '" style="margin-bottom:6px">state: ' + esc(s.code) + '</div>' +
+      return '<div style="margin-bottom:8px">' +
+        '<div class="badge ' + (s.code==='blocked'?'b-alert':(s.code==='needs_approval'?'b-info':'b-ok')) + '" style="margin-bottom:6px">' +
+          esc(SCREEN_STATE_WORDS[s.code] || s.code) + '</div>' +
         (inner.length ? '<div class="reasons">' + inner.map(reasonCard).join('') + '</div>'
-                      : '<div class="note">reasons: <code>[]</code> — a passed screening carries none.</div>') +
+                      : '<div class="note">Nothing was flagged in this check.</div>') +
       '</div>';
-    }).join('') || '<div class="note">No screening rows for this campaign.</div>';
+    }).join('') || '<div class="note">This campaign has not been checked yet.</div>';
     out += '</div>';
-    if(r.platform==='tiktok' && r.offer_type==='credit_repair'){
-      out += '<div class="detfull"><div class="errbox">Impossible row: TikTok + credit_repair is blocked by CHECK campaigns_tiktok_credit_repair_ck.</div></div>';
-    }
     if(r.offer_type==='credit_repair'){
-      out += '<div class="detfull"><p class="note"><b>Structural, no override.</b> A credit-repair campaign needs ' +
-        '<code>approved_by</code> before it can reach approved or live (CHECK campaigns_credit_repair_approver_ck), ' +
-        'and it cannot go live at all without <code>disclosure_asset_id</code> ' +
-        '(trg_campaign_disclosure_gate).</p></div>';
+      out += '<div class="detfull"><p class="note"><b>This one cannot be waved through.</b> A credit-repair ' +
+        'campaign needs a named person to approve it before it can go live, and it cannot go live at all ' +
+        'until the required consumer-rights notice is attached to it.</p></div>';
     }
   } else {
-    out += '<div class="detcol"><div class="dk">ai_generated</div><div class="dv mono">' + (r.ai_generated ? 'true' : 'false') + '</div></div>';
-    out += '<div class="detcol"><div class="dk">synthetic_performer</div><div class="dv mono">' + (r.synthetic_performer ? 'true' : 'false') + '</div></div>';
+    out += '<div class="detcol"><div class="dk">AI-generated</div><div class="dv">' + (r.ai_generated ? 'Yes' : 'No') + '</div></div>';
+    out += '<div class="detcol"><div class="dk">Synthetic performer</div><div class="dv">' + (r.synthetic_performer ? 'Yes' : 'No') + '</div></div>';
     out += '<div class="detfull" style="margin-top:6px">';
     out += (r.reasons||[]).length
       ? '<div class="reasons">' + r.reasons.map(reasonCard).join('') + '</div>'
-      : '<p class="note">A pending asset carries <code>blocked_reasons = []</code>. It is not blocked and not ' +
-        'publishable — pending is the safe resting state an asset is inserted at, before screening, so a crash ' +
-        'leaves a visible row rather than an unscreened one.</p>';
+      : '<p class="note">Nothing is flagged on this creative. It is waiting to be checked — it is not ' +
+        'stopped, and it is not ready to use either.</p>';
     out += '</div>';
-    out += '<div class="detfull"><button class="btn sm mono" data-open-asset="' + esc(r.id) + '">Open in library detail</button></div>';
+    out += '<div class="detfull"><button class="btn sm mono" data-open-asset="' + esc(r.id) + '">Open the full creative</button></div>';
   }
-  out += '<div class="detfull"><p class="note" style="color:var(--gray2)"><b>Blank, not false:</b> ' +
-    (r.item_type==='campaign'
-      ? '<code>ai_generated</code> and <code>synthetic_performer</code> are NULL on every campaign row.'
-      : '<code>budget_cents</code>, <code>offer_type</code> and <code>platform</code> are NULL on every asset row.') +
+  out += '<div class="detfull"><p class="note" style="color:var(--gray2)">' +
+    (isCampaign
+      ? 'A campaign carries no AI labels — those belong to a single creative.'
+      : 'A creative carries no budget, offer or platform — those belong to a campaign.') +
     '</p></div>';
   return out + '</div>';
 }
 
-/* ══ CF-07 · RULE CATALOGUE ══════════════════════════════════════════════ */
-function renderRules(){
-  var sets = ['all','croa','claims','disclosure','platform','approval','engine'];
-  var host = document.getElementById('ruleRail');
-  host.innerHTML = '<span class="rl">Rule set</span>' + sets.map(function(s){
-    var n = s==='all' ? RULES.length : RULES.filter(function(r){ return r.rule_set===s; }).length;
-    return '<button data-rs="' + s + '" class="' + (S.ruleSet===s?'on':'') + '">' + s + '<span class="n">' + n + '</span></button>';
-  }).join('');
-  host.querySelectorAll('[data-rs]').forEach(function(b){
-    b.addEventListener('click', function(){ S.ruleSet = b.dataset.rs; renderRules(); });
-  });
+/* ══ WHY CREATIVE GETS STOPPED ═══════════════════════════════════════════
+   Plain words only. No statute numbers, no rule-set names, no match type and no
+   severity column — that table now lives in docs/compliance/creative-block-reasons.md.
+   Every message below is still verbatim from the code that enforces it. */
+var OFFER_WORDS    = { credit_repair:'Credit repair', credit_cards:'Credit cards', funding:'Funding' };
+var PLATFORM_WORDS = { tiktok:'TikTok', meta:'Meta ads', google:'Google ads' };
 
-  var rows = RULES.filter(function(r){ return S.ruleSet==='all' || r.rule_set===S.ruleSet; });
-  document.getElementById('ruleBody').innerHTML = rows.map(function(r){
-    /* The stripe follows the VERDICT the code produces, not a severity string:
-       only compliance_rules rows have a severity at all. */
-    var gate = r.verdict === 'needs_approval';
-    var stripe = gate ? 'stripe-info' : 'stripe-bad';
-    var origin = r.src==='seeded' ? 'editable rule'
-               : (r.src==='targeting' ? 'platform term · not editable' : 'built in · not editable');
-    /* severity is NULL for every non-row code — r() and reason() never set it. */
-    var sevCell = r.severity
-      ? '<span class="badge b-alert">' + esc(r.severity) + '</span>'
-      : '<span class="nul">—</span><span class="sub">' +
-        (gate ? 'needs a person to approve' : 'counts as a hard block') +
-        '</span>';
-    return '<tr class="rowbtn ' + stripe + '" data-rule="' + esc(r.code) + '" tabindex="0" aria-expanded="false">' +
-      '<td><span class="chev">▸</span><span class="mono">' + esc(r.code) + '</span>' +
-        '<span class="sub">' + origin + '</span></td>' +
-      '<td><span class="badge b-gray">' + esc(r.rule_set) + '</span></td>' +
-      '<td class="mono">' + esc(r.match_type) + '</td>' +
-      '<td>' + sevCell + '</td>' +
-      '<td class="mono">' + esc((r.offers.length ? r.offers.join(' ') : 'all offers') +
-        (r.platforms.length ? ' · ' + r.platforms.join(' ') : '')) + '</td>' +
-      '<td class="mono" style="font-size:var(--fs-caption)">' + (r.citation ? esc(r.citation) : nul('—')) + '</td>' +
+function appliesTo(r){
+  var who = r.offers.length
+    ? r.offers.map(function(o){ return OFFER_WORDS[o] || o; }).join(', ')
+    : 'Any offer';
+  if(r.platforms.length){
+    who += ' · ' + r.platforms.map(function(p){ return PLATFORM_WORDS[p] || p; }).join(', ');
+  }
+  return who;
+}
+
+function whoSetsIt(r){
+  if(r.src === 'seeded')    return 'Set by us — can be changed';
+  if(r.src === 'targeting') return "Meta's own rule — cannot be changed";
+  return 'Built in — cannot be changed';
+}
+
+function renderRules(){
+  document.getElementById('ruleBody').innerHTML = RULES.map(function(r){
+    /* The stripe follows the answer the code actually produces: two of these hold
+       the work for a person, the other twenty-seven stop it. */
+    var holds = r.verdict === 'needs_approval';
+    return '<tr class="' + (holds ? 'stripe-info' : 'stripe-bad') + '">' +
+      '<td>' + esc(appliesTo(r)) + '</td>' +
+      '<td>' + esc(r.message) +
+        (holds ? '<span class="sub">Holds the work for a person. Does not stop it.</span>' : '') +
+        '<span class="sub">' + esc(r.code) + '</span></td>' +
+      '<td>' + esc(whoSetsIt(r)) + '</td>' +
     '</tr>';
   }).join('');
-  wireExpand(document.getElementById('ruleBody'), '[data-rule]', function(r){
-    return '<div class="detwrap"><div class="detfull">' + reasonCard(r) +
-      '<p class="note" style="margin-top:8px">' +
-      (r.src==='seeded'
-        ? 'A rule someone can edit. A change takes effect within a minute.'
-        : (r.src==='targeting'
-          ? 'A Meta advertising term, not a fundhub preference. It cannot be edited or overridden, and it ' +
-            'only ever applies to a campaign, never to a single creative.'
-          : 'Built into the compliance engine. It cannot be edited, switched off or re-worded.')) +
-      (r.verdict==='needs_approval'
-        ? ' <b>This is an approval gate, not a block</b> — the work waits for a person rather than being ' +
-          'stopped outright.'
-        : '') +
-      '</p></div></div>';
-  }, function(tr){
-    for(var i=0;i<RULES.length;i++){ if(RULES[i].code===tr.dataset.rule) return RULES[i]; }
-    return null;
-  });
 }
 
 /* ══ CF-08 · BRAND KITS ══════════════════════════════════════════════════ */
@@ -1813,9 +1722,6 @@ function renderKits(){
   renderPager('kitPager', pg, function(d){
     S.kitOffset = Math.max(0, S.kitOffset + d * S.kitLimit); renderKits();
   });
-  setReq('kitReq', '/api/creative/brand-kits', {
-    partner_id: currentPartnerId(), state: S.kitState, limit: S.kitLimit, offset: S.kitOffset
-  });
 }
 
 /* ══ STATIC REFERENCE TABLES ═════════════════════════════════════════════ */
@@ -1843,7 +1749,7 @@ function renderStaticTables(){
     ratesBody.innerHTML = RATES.map(function(r){
       return '<tr class="stripe-warn"><td class="mono">' + esc(r.rate_key) + '</td>' +
         '<td class="mnum">' + esc(r.rate) + '</td>' +
-        '<td class="mono">' + nul('null') + '</td>' +
+        '<td class="mono">' + nul('—') + '</td>' +
         '<td><span class="badge b-warn" style="white-space:normal">' + esc(r.status) + '</span></td></tr>';
     }).join('');
   }
@@ -1871,20 +1777,22 @@ var DW = {
 function kv(pairs){
   return '<div class="kv">' + pairs.map(function(p){
     return '<div><div class="k">' + esc(p[0]) + '</div><div class="v' + (p[2]?' mono':'') + '">' +
-      (p[1]==null || p[1]==='' ? '<span class="nul">null</span>' : esc(p[1])) + '</div></div>';
+      (p[1]==null || p[1]==='' ? '<span class="nul">—</span>' : esc(p[1])) + '</div></div>';
   }).join('') + '</div>';
 }
 
 function openAsset(a){
   if(!a) return;
-  var html = '<div class="dw-sec"><h3>Row, as the endpoint returns it</h3>' + kv([
-    ['id', a.id, 1], ['kind', a.kind, 1], ['format', a.format, 1],
-    ['provider', a.provider, 1], ['compliance_state', a.compliance_state, 1],
-    ['duration_sec', a.duration_sec, 1],
-    ['ai_generated', String(a.ai_generated), 1], ['synthetic_performer', String(a.synthetic_performer), 1],
-    ['brand_kit_id', a.brand_kit_id, 1], ['brand_kit_name', kitName(a.brand_kit_id), 0],
-    ['parent_asset_id', a.parent_asset_id, 1],
-    ['archived_at', a.archived_at, 1], ['created_at', a.created_at, 1]
+  var html = '<div class="dw-sec"><h3>The basics</h3>' + kv([
+    ['Kind', a.kind, 1], ['Shape', a.format, 1],
+    ['Made by', a.provider, 1], ['Review state', a.compliance_state, 1],
+    ['Length', a.duration_sec == null ? null : a.duration_sec + 's', 1],
+    ['AI-generated', a.ai_generated ? 'Yes' : 'No', 0],
+    ['Synthetic performer', a.synthetic_performer ? 'Yes' : 'No', 0],
+    ['Brand kit', kitName(a.brand_kit_id), 0],
+    ['Made from', a.parent_asset_id ? shortId(a.parent_asset_id) : null, 1],
+    ['Archived', fmt(a.archived_at), 1], ['Created', fmt(a.created_at), 1],
+    ['Reference', a.id, 1]
   ]) + '</div>';
 
   html += '<div class="dw-sec"><h3>Preview</h3>' +
@@ -1910,17 +1818,13 @@ function openAsset(a){
     '</div>' +
     '<p class="note" style="margin-top:9px">' + flagExplain(a) + '</p></div>';
 
-  html += '<div class="dw-sec"><h3>Block reasons</h3>' +
+  html += '<div class="dw-sec"><h3>Why it was stopped</h3>' +
     (a.blocked_reasons.length
       ? '<div class="reasons">' + a.blocked_reasons.map(reasonCard).join('') + '</div>' +
-        '<p class="note" style="margin-top:9px">A blocked creative always says why. There is no score or risk ' +
-        'level, only the reasons listed above.</p>'
-      : '<p class="note">None. This creative is not blocked.</p>') +
+        '<p class="note" style="margin-top:9px">A stopped creative always says why. There is no score and no ' +
+        'risk level, only the reasons listed above.</p>'
+      : '<p class="note">None. This creative is not stopped.</p>') +
   '</div>';
-
-  html += '<div class="dw-sec"><h3>What this screen is not told</h3>' +
-    '<p class="note">How the advert performed — impressions, clicks, spend — is never sent here. Neither is any ' +
-    'review history: there is no record of who checked this creative, or when.</p></div>';
 
   DW.open('Creative detail', a.kind + ' · ' + a.format + ' · ' + shortId(a.id), html);
 }
@@ -1940,42 +1844,60 @@ function flagExplain(a){
     'performer" varies with what was asked for.';
 }
 
+/* A plain list of whatever the kit actually holds. No raw JSON is shown at a
+   person — but nothing is added either: an empty kit says it is empty. */
+function plainPairs(obj){
+  var keys = Object.keys(obj || {});
+  if(!keys.length) return '<p class="note">Nothing set.</p>';
+  return '<div class="kv">' + keys.map(function(k){
+    var v = obj[k];
+    if(v && typeof v === 'object') v = Array.isArray(v) ? v.join(', ') : JSON.stringify(v);
+    return '<div><div class="k">' + esc(k) + '</div><div class="v">' +
+      (v == null || v === '' ? '<span class="nul">—</span>' : esc(String(v))) + '</div></div>';
+  }).join('') + '</div>';
+}
+function plainList(items){
+  if(!(items || []).length) return '<p class="note">None.</p>';
+  return '<div class="kv">' + items.map(function(it, i){
+    var v = (it && typeof it === 'object') ? (it.name || it.title || JSON.stringify(it)) : String(it);
+    return '<div><div class="k">' + (i + 1) + '</div><div class="v">' + esc(v) + '</div></div>';
+  }).join('') + '</div>';
+}
+
 function openKit(k){
   var sw = swatches(k.palette);
-  var html = '<div class="dw-sec"><h3>Row, as the endpoint returns it</h3>' + kv([
-    ['id', k.id, 1], ['name', k.name, 0], ['status', k.status, 1],
-    ['asset_count', String(k.asset_count), 1],
-    ['source_url', k.source_url, 1], ['scraped_at', k.scraped_at, 1],
-    ['logo_asset_id', k.logo_asset_id, 1],
-    ['created_at', k.created_at, 1], ['updated_at', k.updated_at, 1]
+  var html = '<div class="dw-sec"><h3>The basics</h3>' + kv([
+    ['Name', k.name, 0], ['Status', k.status, 1],
+    ['Creatives using it', String(k.asset_count), 1],
+    ['Website it came from', k.source_url, 1], ['Last read', fmt(k.scraped_at), 1],
+    ['Logo', k.logo_asset_id ? shortId(k.logo_asset_id) + ' (a reference, not a picture)' : null, 1],
+    ['Created', fmt(k.created_at), 1], ['Updated', fmt(k.updated_at), 1],
+    ['Reference', k.id, 1]
   ]) + '</div>';
 
-  html += '<div class="dw-sec"><h3>Colors</h3>' +
+  html += '<div class="dw-sec"><h3>Colours</h3>' +
     (sw.length ? '<div class="sw" style="margin-top:0">' + sw.map(function(s){
-        return '<i style="background:' + esc(s.v) + '" title="' + esc(s.k) + '"></i>';
+        return '<i style="background:' + esc(s.v) + '" title="' + esc(s.k + ' ' + s.v) + '"></i>';
       }).join('') + '</div>' : '') +
-    '<div class="jsonbox" style="margin-top:9px">' + esc(JSON.stringify(k.palette, null, 2)) + '</div></div>';
+    plainPairs(k.palette) + '</div>';
 
-  html += '<div class="dw-sec"><h3>Fonts</h3><div class="jsonbox">' + esc(JSON.stringify(k.fonts, null, 2)) + '</div></div>';
+  html += '<div class="dw-sec"><h3>Fonts</h3>' + plainPairs(k.fonts) + '</div>';
 
-  html += '<div class="dw-sec"><h3>Voice</h3><div class="jsonbox">' + esc(JSON.stringify(k.voice_profile, null, 2)) + '</div>' +
-    '<p class="note" style="margin-top:8px">Only the tone is used when creative is generated.</p></div>';
+  html += '<div class="dw-sec"><h3>Voice</h3>' + plainPairs(k.voice_profile) +
+    '<p class="note" style="margin-top:8px">Only the tone is used when creative is made.</p></div>';
 
-  html += '<div class="dw-sec"><h3>Products</h3><div class="jsonbox">' + esc(JSON.stringify(k.products, null, 2)) + '</div></div>';
+  html += '<div class="dw-sec"><h3>Products</h3>' + plainList(k.products) + '</div>';
 
-  html += '<div class="dw-sec"><h3>Sources</h3>' +
-    '<div class="unwired"><div class="uh"><span>⚠</span><span>no crawl history</span></div>' +
-    '<div class="ub">Nothing crawls a partner\'s website today, so there is no source list, no freshness date, ' +
-    'no version history and no restore.</div></div></div>';
+  html += '<div class="dw-sec"><h3>Where this came from</h3>' +
+    '<div class="unwired"><div class="uh"><span>⚠</span><span>no history</span></div>' +
+    '<div class="ub">Nothing reads a partner\'s website today, so there is no source list, no freshness ' +
+    'date, no version history and no undo.</div></div></div>';
 
-  html += '<div class="dw-sec"><h3>Counting</h3><p class="note"><code>asset_count = ' + k.asset_count +
-    '</code> is a correlated subquery over every <b>non-archived</b> asset with this <code>brand_kit_id</code>. ' +
-    'It is a full count; the library grid is a page. Filtering the library by this kit will show at most ' +
-    '<code>limit</code> of them, and a count taken with <code>?include_archived=1</code> would not match either. ' +
-    'The name is unique per partner (<code>brand_kits_partner_name_uniq</code>) and there is no global or ' +
-    'fundhub-owned kit.</p></div>';
+  html += '<div class="dw-sec"><h3>About the count</h3><p class="note">"Creatives using it" counts every ' +
+    'creative on this kit that has not been archived. It is the full count. The library grid above only ' +
+    'shows one page at a time, so filtering the library by this kit will usually show fewer.</p></div>';
 
-  DW.open('BRAND KIT', k.name, html);
+  DW.open('Brand kit', k.name, html);
 }
 
 /* ══ WIRING ══════════════════════════════════════════════════════════════ */
@@ -2034,21 +1956,21 @@ function renderAll(){
 function apiGet(path){
   var demo = false, tok = '';
   try { demo = localStorage.getItem('fh_demo') === '1'; tok = localStorage.getItem('fh_token') || ''; } catch(e){}
-  if(demo) return Promise.resolve({ ok:false, source:'demo', data:null, error:'demo session — no backend read attempted' });
+  if(demo) return Promise.resolve({ ok:false, source:'demo', data:null, error:'this is a demo session, so nothing was requested' });
   var started;
   try {
     started = fetch(path, { headers: tok ? { accept:'application/json', authorization:'Bearer '+tok } : { accept:'application/json' } });
   } catch(e){
-    return Promise.resolve({ ok:false, source:'offline', data:null, error:(e && e.message) || 'fetch unavailable' });
+    return Promise.resolve({ ok:false, source:'offline', data:null, error:'this computer could not reach fundhub' });
   }
   return Promise.resolve(started).then(function(r){
-    if(r.status === 401 || r.status === 403) return { ok:false, source:'unauthorized', data:null, error:'not signed in, or role is not staff/partner' };
+    if(r.status === 401 || r.status === 403) return { ok:false, source:'unauthorized', data:null, error:'this sign-in is not allowed to see this partner' };
     if(r.status === 404){
       return r.json().then(function(d){
         return (d && d.error === 'not_found' && typeof d.path === 'string')
-          ? { ok:false, source:'offline', data:null, error:'/api/* not deployed' }
-          : { ok:false, source:'notfound', data:null, error:'no such record' };
-      }).catch(function(){ return { ok:false, source:'offline', data:null, error:'/api/* not deployed' }; });
+          ? { ok:false, source:'offline', data:null, error:'this part of fundhub is not switched on yet' }
+          : { ok:false, source:'notfound', data:null, error:'there is nothing on file for this' };
+      }).catch(function(){ return { ok:false, source:'offline', data:null, error:'this part of fundhub is not switched on yet' }; });
     }
     if(r.status === 400){
       return r.json().then(function(d){
@@ -2059,9 +1981,9 @@ function apiGet(path){
       if(r.status === 503 || (d && d.db === 'down')) return { ok:false, source:'nodb', data:null, error:(d && d.message) || 'The database is not reachable right now.' };
       if(!d || d.ok !== true) return { ok:false, source:'server', data:null, error:(d && d.message) || 'Something went wrong. Try again in a moment.' };
       return { ok:true, source:'api', data:d, error:null };
-    }).catch(function(){ return { ok:false, source:'offline', data:null, error:'response was not JSON' }; });
+    }).catch(function(){ return { ok:false, source:'offline', data:null, error:'the answer came back in a form this screen could not read' }; });
   }).catch(function(e){
-    return { ok:false, source:'offline', data:null, error:(e && e.message) || 'network error' };
+    return { ok:false, source:'offline', data:null, error:'the connection dropped' };
   });
 }
 
@@ -2082,13 +2004,13 @@ function wireCreative(){
        real one, so the panels show their empty state and say why (§6). */
     KITS=[]; JOBS=[]; ASSETS=[]; APPROVALS_LIVE=null;
     CF_ENDPOINT_RES = {
-      jobs:{ok:false, source:'demo', data:null, error:'demo session — the creative endpoints were not queried'},
-      assets:{ok:false, source:'demo', data:null, error:'demo session — the creative endpoints were not queried'},
-      kits:{ok:false, source:'demo', data:null, error:'demo session — the creative endpoints were not queried'},
-      approvals:{ok:false, source:'demo', data:null, error:'demo session — the creative endpoints were not queried'}
+      jobs:{ok:false, source:'demo', data:null, error:'this is a demo sign-in, so nothing was loaded'},
+      assets:{ok:false, source:'demo', data:null, error:'this is a demo sign-in, so nothing was loaded'},
+      kits:{ok:false, source:'demo', data:null, error:'this is a demo sign-in, so nothing was loaded'},
+      approvals:{ok:false, source:'demo', data:null, error:'this is a demo sign-in, so nothing was loaded'}
     };
     CF_SRC = ['demo session — nothing read'];
-    if(window.FHData) FHData.banner('sample','creative factory — demo session, the backend was not queried and nothing is shown','creative');
+    if(window.FHData) FHData.banner('sample','creative factory — this is a demo sign-in, so nothing was loaded','creative');
     renderAll();
     return;
   }
@@ -2100,7 +2022,7 @@ function wireCreative(){
     CF_ENDPOINT_RES = {};
     CF_SRC = ['no partner selected — nothing requested'];
     renderAll();
-    if(window.FHData) FHData.banner('sample','creative factory · no partner selected — no request was sent','creative');
+    if(window.FHData) FHData.banner('sample','creative factory · pick a partner to load anything','creative');
     return;
   }
   Promise.all([
@@ -2121,11 +2043,15 @@ function wireCreative(){
       if(res.ok){ LIVE_CF.approvals=true; APPROVALS_LIVE=tagPartner(res.data.items); } else { APPROVALS_LIVE=null; }
     })
   ]).then(function(){
+    /* The banner names the panels that did not load, in words. It never claims
+       everything is fine when one of the four did not answer. */
+    var PANEL_WORDS = {jobs:'jobs', assets:'library', kits:'brand kits', approvals:'review queue'};
+    var missing = [];
     CF_SRC = [];
     ['jobs','assets','kits','approvals'].forEach(function(k){
       var res=CF_ENDPOINT_RES[k];
       if(res && res.ok) CF_SRC.push(k+':api');
-      else if(res) CF_SRC.push(k+':'+res.source);
+      else if(res){ CF_SRC.push(k+':'+res.source); missing.push(PANEL_WORDS[k]); }
     });
     renderAll();
     var worst='real';
@@ -2134,7 +2060,9 @@ function wireCreative(){
       if(!res || res.ok) return;
       worst = (res.source==='nodb'||res.source==='server'||res.source==='offline') ? 'error' : (worst==='error'?'error':'sample');
     });
-    if(window.FHData) FHData.banner(worst, 'creative factory · '+CF_SRC.join(' · '), 'creative');
+    if(window.FHData) FHData.banner(worst, missing.length
+      ? 'creative factory · could not load: ' + missing.join(', ')
+      : 'creative factory · everything loaded', 'creative');
   });
 }
 
@@ -2179,7 +2107,7 @@ document.getElementById('genBtn').addEventListener('click', function () {
   var prompt = document.getElementById('genPrompt').value.trim();
   var idem = document.getElementById('genIdem').value.trim();
   if (!partnerId) { msg.textContent = 'Need a partner first.'; return; }
-  if (!idem) { msg.textContent = 'Need a unique key first.'; return; }
+  if (!idem) { msg.textContent = 'Give this batch a name first.'; return; }
   msg.textContent = 'Enqueueing…';
   var t = '';
   try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
@@ -2200,11 +2128,12 @@ document.getElementById('genBtn').addEventListener('click', function () {
   }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
     .then(function (res) {
       if (!res.ok) {
-        msg.textContent = 'Failed: ' + (res.message || res.error || 'error');
+        msg.textContent = 'Could not add it: ' + (res.message || res.error || 'something went wrong');
         return;
       }
-      msg.textContent = (res.created ? 'Created' : 'Deduped') + ' job ' +
-        ((res.job && res.job.id) || '') + '. Runner cron picks it up, or click Run queued jobs now.';
+      msg.textContent = res.created
+        ? 'Added to the queue. It starts on its own in a few minutes, or click "Run queued jobs now".'
+        : 'That batch name was already used, so nothing new was added.';
       if (typeof wireCreative === 'function') wireCreative();
     });
 });
@@ -2240,8 +2169,9 @@ document.getElementById('runJobsBtn').addEventListener('click', function () {
     body: JSON.stringify({ partner_id: partnerId, max_jobs: 3 })
   }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
     .then(function (res) {
-      if (!res.ok) { msg.textContent = 'Run failed: ' + (res.message || res.error || 'error'); return; }
-      msg.textContent = 'Ran ' + (res.ran || 0) + ' job(s).' + (res.note ? ' ' + res.note : '');
+      if (!res.ok) { msg.textContent = 'Could not run: ' + (res.message || res.error || 'something went wrong'); return; }
+      var ran = res.ran || 0;
+      msg.textContent = 'Ran ' + ran + (ran === 1 ? ' job.' : ' jobs.') + (res.note ? ' ' + res.note : '');
       if (typeof wireCreative === 'function') wireCreative();
     });
 });
@@ -2263,9 +2193,10 @@ document.querySelectorAll('[data-cact]').forEach(function (btn) {
       body: JSON.stringify({ partner_id: partnerId, asset_id: assetId, action: action })
     }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
       .then(function (res) {
-        if (!res.ok) { msg.textContent = 'Failed: ' + (res.message || res.error || 'error'); return; }
-        msg.textContent = action + ' ok · state=' + ((res.asset && res.asset.compliance_state) || '') +
-          (res.asset && res.asset.archived_at ? ' · archived' : '');
+        if (!res.ok) { msg.textContent = 'Could not ' + action + ': ' + (res.message || res.error || 'something went wrong'); return; }
+        var st = (res.asset && res.asset.compliance_state) || '';
+        msg.textContent = 'Done. This creative is now ' + st +
+          (res.asset && res.asset.archived_at ? ' and archived' : '') + '.';
         if (typeof wireCreative === 'function') wireCreative();
       });
   });
