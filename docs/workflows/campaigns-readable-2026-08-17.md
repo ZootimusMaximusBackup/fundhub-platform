@@ -641,10 +641,47 @@ recovered is unconfirmed. **This blocked the BEFORE capture and is blocking the 
 **I2 update, from W2 (04:00–04:12 UTC): it is over. Nothing is blocked any more.**
 The site started working again at **04:00:15 UTC**, 27 minutes after it broke. W2 was
 polling every 30 seconds and caught the exact moment. The BEFORE capture ran straight
-away and finished at 04:00:22 UTC — and it caught the OLD screen with about ten minutes
-to spare, proof in
+away and finished at 04:00:22 UTC — and it caught the OLD screen with about **95 seconds**
+to spare. The AFTER capture at 04:01:57 UTC already shows the new one. Proof in
 `campaigns-readable-2026-08-17-evidence/before/WHICH-VERSION.md`.
-By 04:12 UTC the live site was serving W1's new version (the file at
-`https://fundhub.ai/app/campaign-manager.html` now hashes the same as commit `6805f75`).
-**The AFTER capture can be taken right now.** Run the same script with
-`OUT_DIR=<full path to an "after" folder>` set, or the BEFORE shots get written over.
+The live file at `https://fundhub.ai/app/campaign-manager.html` now hashes the same as
+commit `6805f75`, so what is live is W1's new version. **Nothing is blocked.**
+
+
+## W1 findings from the live capture (reported, not fixed)
+
+**L1 — There is no campaigns data in the live database, for any partner.** All eight
+partners return **0 rows in all five panels** (campaigns, spend, fatigue, connections,
+action log) — probed read-only through the same GET endpoints the screen uses. So the
+live capture shows a screen made entirely of empty states. That is the screen's true
+state, not a capture problem, and no data was invented to dress it up. The screen's
+plumbing is proven working by the footer: `5 of 5 panels loaded`, zero API failures,
+zero console errors.
+
+**L2 — Campaigns scrolls sideways at 1440 wide; this is NOT from this change.** The page
+measures **1818px wide in a 1440px window (378px of overflow)**, which clips the fifth
+stat tile, the fourth attention tile and the FLAGS column out of view. Cause: `aside.drawer`
+(`.drawer`, line 185 — `position:fixed; width:min(760px,94vw); transform:translateX(102%)`)
+parks the campaign-detail drawer off the right edge and it still counts toward the
+document width. `#fh-shell-out` / `#fh-shell-src` from `shell.js` sit inside that
+overflow too.
+
+Evidence it predates this change: the W1 diff contains **no** width, grid, overflow,
+position or `.drawer` rule; none of the elements W1 added appear among the overflowing
+elements; and `.drawer`'s CSS is untouched. `pipeline.html`, which W1 never opened,
+measures `scrollWidth 1440` = zero overflow — so this is specific to Campaigns, not the
+shell. Left alone under owner-scope: the owner named the wordy copy, not the drawer.
+Worth its own small task.
+
+## Evidence
+
+`campaigns-readable-2026-08-17-evidence/after/` — live, signed in as owner, partner
+**DEMO Partner — Northlight Capital** selected, captured after deploy:
+`1440-full.png`, `1440-fold.png`, `390-full.png`, `390-fold.png`,
+`1440-visible-text.txt`, `390-visible-text.txt`, `capture.json`.
+
+The rendered page text contains **zero** raw database words and **zero** hits for
+endpoint / `/api/` / `.mjs` / "database" / "on purpose" / "by construction" / "read-only".
+
+No BEFORE capture exists — incident I2 (the sign-in outage) ran through the whole window
+before the deploy. The before state is readable from the diff of commit `6805f75`.

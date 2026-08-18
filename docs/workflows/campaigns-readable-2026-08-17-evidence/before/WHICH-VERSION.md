@@ -11,7 +11,12 @@ It got the old one. Two proofs:
 2. `capture.json` lists six rows read out of `srcRows` — the table's row holder.
    The new file has no `srcRows` in it at all.
 
-About ten minutes later the live site was serving W1's new version:
+**It was close.** The AFTER capture, run from the same script at **04:01:57 UTC** — 95
+seconds later — already got the new version: 7 grey blocks instead of 16, and a page
+2,568 pixels tall instead of 3,628. So the live site swapped over somewhere inside that
+95-second gap.
+
+Later, the live site was confirmed as serving W1's new version:
 
 ```
 sha256 of https://fundhub.ai/app/campaign-manager.html   = 9a715bf4…95e8c1ef
@@ -19,5 +24,4 @@ sha256 of the file at commit 6805f75                     = 9a715bf4…95e8c1ef  
 sha256 of the file at the commit before it               = c827b08c…0d840b8    (different)
 ```
 
-So the BEFORE was caught with about ten minutes to spare. The AFTER can be taken
-any time now — the new version is live.
+So the BEFORE was caught with about a minute and a half to spare.
