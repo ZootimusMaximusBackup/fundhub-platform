@@ -1,0 +1,14 @@
+{
+  "optimize_is_ad_spend": true,
+  "optimize_rules_fired_on_credit_file": [],
+  "simulate_seeded_letters": false,
+  "designed_violation_bureaus": [],
+  "designed_pack_ok": true,
+  "designed_letter_count": 0,
+  "sample_files": [
+    "samples/01-START-HERE-instructions.pdf.txt",
+    "samples/02-decision-tree.pdf.txt",
+    "samples/08-round-tracker.pdf.txt"
+  ],
+  "persist": false
+}

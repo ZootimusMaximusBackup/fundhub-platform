@@ -1,0 +1,13 @@
+{
+  "status": 200,
+  "ok": true,
+  "error": null,
+  "message": "Sent. Copy the link below and give it to the client.",
+  "template_key": "FUNDING-AGREEMENT",
+  "contract_id": "82f9232a-3c6d-4cd5-85eb-b4995e4f539a",
+  "contract_status": "sent",
+  "has_link": true,
+  "link_is_absolute": true,
+  "resent": false,
+  "used_test_inbox_override": true
+}

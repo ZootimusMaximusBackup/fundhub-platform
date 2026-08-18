@@ -1,0 +1,41 @@
+{
+  "document_columns": [
+    "id",
+    "org_id",
+    "client_id",
+    "document_key",
+    "kind",
+    "subtype",
+    "title",
+    "invoice_id",
+    "current_version",
+    "current_version_id",
+    "storage_key",
+    "mime_type",
+    "byte_size",
+    "checksum",
+    "generated_by",
+    "generated_at",
+    "delivered_at",
+    "delivery_channel",
+    "delivery_status",
+    "signature_required",
+    "signed_at",
+    "signer_name",
+    "signature_ref",
+    "expires_at",
+    "source_event_id",
+    "metadata",
+    "created_at",
+    "updated_at",
+    "is_demo"
+  ],
+  "documents_this_client": 1,
+  "documents_compare": 2,
+  "letters_generated_stages": [
+    {
+      "pipeline": "optimization",
+      "stage": "letters_generated"
+    }
+  ]
+}

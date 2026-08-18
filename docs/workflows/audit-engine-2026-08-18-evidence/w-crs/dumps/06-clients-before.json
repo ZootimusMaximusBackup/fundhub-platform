@@ -1,0 +1,91 @@
+{
+  "clients_columns_matching_score_util_estimate": [
+    {
+      "column_name": "custom_fields",
+      "data_type": "jsonb"
+    },
+    {
+      "column_name": "days_to_fund",
+      "data_type": "integer"
+    },
+    {
+      "column_name": "funded",
+      "data_type": "boolean"
+    },
+    {
+      "column_name": "funded_amount",
+      "data_type": "numeric"
+    },
+    {
+      "column_name": "outcome_tier",
+      "data_type": "text"
+    },
+    {
+      "column_name": "tags",
+      "data_type": "ARRAY"
+    }
+  ],
+  "events_table_columns": [
+    "id",
+    "org_id",
+    "name",
+    "version",
+    "idempotency_key",
+    "client_id",
+    "payload",
+    "replayed_at",
+    "created_at",
+    "updated_at",
+    "is_demo"
+  ],
+  "default_org": {
+    "id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+    "slug": "fundhub"
+  },
+  "client": {
+    "id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+    "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+    "email": "sim+1787079946953@demo.fundhub.local",
+    "is_demo": true,
+    "outcome_tier": "FULL_FUNDING",
+    "tags": [
+      "is_demo",
+      "simulated"
+    ],
+    "funded": false,
+    "funded_amount": null,
+    "updated_at": "2026-08-18T19:05:47.504Z",
+    "custom_fields_keys": [],
+    "score_util_estimate_fields": {
+      "total_funding_estimate": null,
+      "analyzer_prequal_amount": null,
+      "crs_fico_score": null,
+      "crs_utilization_percent": null,
+      "credit_score": null,
+      "utilization_pct": null,
+      "primary_fico_score": null,
+      "primary_utilization_percent": null,
+      "analyzer_score": null,
+      "utilization": null,
+      "funding_letters_delivered_event_id": null
+    }
+  },
+  "cards": [
+    {
+      "id": "0a8e8863-5094-4fbc-af0f-c37e5a457c97",
+      "stage_id": "7c7d399e-cfd5-4270-9292-8505dee9356a",
+      "stage_key": "new_lead",
+      "pipeline_key": "sales"
+    }
+  ],
+  "events_before": [
+    {
+      "id": "b9ee35c4-08ab-47c8-86e2-613f4c731715",
+      "name": "docs.received",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+      "idempotency_key": null,
+      "created_at": "2026-08-18T19:10:58.905Z"
+    }
+  ]
+}

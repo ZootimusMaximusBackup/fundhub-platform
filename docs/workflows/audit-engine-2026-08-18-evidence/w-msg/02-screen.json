@@ -1,0 +1,50 @@
+{
+  "url": "https://fundhub.ai/app/messaging.html?client_id=41a3199f-1835-4ac8-91c0-d4f37bd92037",
+  "title": "Fundhub — Messaging",
+  "thName": "Simulated Client",
+  "thSub": "SMS · no thread yet",
+  "composeChannel": "Text",
+  "composePlaceholder": "Write to Simulated Client…",
+  "composeDisabled": false,
+  "sendDisabled": false,
+  "sendStatus": "\n          Your name is saved on anything you send from here. Every message is checked before it goes out.\n        ",
+  "ctxName": "Simulated Client",
+  "ctxHasEmailRow": true,
+  "ctxEmail": null,
+  "ctxEmail_note": "parser missed the address (Email label + value are separate nodes). Screenshot and GET /api/dashboard/client show sim+1787079946953@demo.fundhub.local.",
+  "ctxHasPhoneRow": true,
+  "to_field_count": 0,
+  "compose_html_has_to_input": false,
+  "ctxPhone": "present_on_screen_masked_in_dump",
+  "FUNDHUB_TEST_INBOX_set": true,
+  "FUNDHUB_TEST_PHONE_set": true,
+  "email_equals_FUNDHUB_TEST_INBOX": false,
+  "phone_equals_FUNDHUB_TEST_PHONE": false,
+  "network": [
+    {
+      "status": 200,
+      "path": "/api/read/inbox?limit=200&needs_reply=1",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/read/conversations?client_id=41a3199f-1835-4ac8-91c0-d4f37bd92037&limit=50",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/dashboard/client?id=41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/read/conversations?client_id=41a3199f-1835-4ac8-91c0-d4f37bd92037&limit=50",
+      "method": "GET"
+    },
+    {
+      "status": 200,
+      "path": "/api/dashboard/client?id=41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "method": "GET"
+    }
+  ]
+}

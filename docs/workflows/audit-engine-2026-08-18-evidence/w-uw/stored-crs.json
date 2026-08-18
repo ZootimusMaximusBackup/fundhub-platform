@@ -1,0 +1,57 @@
+{
+  "count": 1,
+  "expected_crs_id": "c1f83e6b-a624-4f28-a32a-531a530b3ad4",
+  "rows": [
+    {
+      "id": "c1f83e6b-a624-4f28-a32a-531a530b3ad4",
+      "outcome_tier": "FULL_FUNDING",
+      "created_at": "2026-08-18T19:05:47.113Z",
+      "result_keys": [
+        "outcome",
+        "tradelines",
+        "crm_payload",
+        "preapprovals",
+        "reason_codes",
+        "consumerSignals"
+      ],
+      "score_paths": {
+        "top_level_scores": null,
+        "nested": {
+          "consumerSignals_scores": {
+            "perBureau": {
+              "eq": 724,
+              "ex": 718,
+              "tu": 731
+            }
+          },
+          "consumerSignals_scores_perBureau": {
+            "eq": 724,
+            "ex": 718,
+            "tu": 731
+          },
+          "crm_payload_scores": {
+            "eq": 724,
+            "ex": 718,
+            "tu": 731
+          },
+          "outcome": "FULL_FUNDING",
+          "reason_codes": [
+            "sim_demo",
+            "low_util"
+          ],
+          "preapprovals": {
+            "totalCombined": 125000
+          },
+          "crm_payload_outcome": "FULL_FUNDING",
+          "crm_payload_customFields": {
+            "crs_utilization": 18,
+            "total_funding_estimate": 125000
+          },
+          "consumerSignals_utilization": {
+            "pct": 18
+          }
+        }
+      }
+    }
+  ]
+}

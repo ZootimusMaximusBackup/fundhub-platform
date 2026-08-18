@@ -1,0 +1,26 @@
+{
+  "afterUi": {
+    "done": "This document is signed. Nothing else is needed from you.",
+    "msg": "",
+    "badge": "SIGNED",
+    "doneVisible": true
+  },
+  "signHttp": {
+    "status": 200,
+    "method": "POST"
+  },
+  "afterSign": {
+    "contract": {
+      "id": "003b3da3-0467-46ac-be78-b4b1d2fdcd31",
+      "status": "signed",
+      "viewed_at": "2026-08-18T20:11:42.155Z",
+      "view_count": 1
+    },
+    "signer": {
+      "id": "22059c91-c4fb-45dc-90f3-703801033523",
+      "status": "signed",
+      "viewed_at": "2026-08-18T20:11:42.155Z",
+      "view_count": 1
+    }
+  }
+}

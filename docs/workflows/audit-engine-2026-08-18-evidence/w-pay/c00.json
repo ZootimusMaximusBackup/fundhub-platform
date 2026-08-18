@@ -1,0 +1,18 @@
+{
+  "inngest": {
+    "key_present": true,
+    "enabled_this_run": false,
+    "skipInngest_passed": true,
+    "listens_to": "diagnostic.paid",
+    "result": "would-run_if_key_used — skipped because skipInngest and we did not send"
+  },
+  "local_handle": {
+    "result": "ran",
+    "returned": {
+      "done": true,
+      "scope": "consumer_only",
+      "pulled": false,
+      "reason": "no_account_for_attribution"
+    }
+  }
+}

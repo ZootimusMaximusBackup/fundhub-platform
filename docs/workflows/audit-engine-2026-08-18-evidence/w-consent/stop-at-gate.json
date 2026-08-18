@@ -1,0 +1,36 @@
+{
+  "pressed_pull_after_consent": false,
+  "next_route": "POST /api/finance/crs-pull",
+  "next_functions": [
+    "api/finance/crs-pull.mjs handler",
+    "requestSoftPull (consent gate — would now accept)",
+    "runCrsPull in src/finance/crs-pull.mjs",
+    "createCrsClient → crs.orderPrequal → requestCrsSandbox"
+  ],
+  "why_stopped": "After a valid consent row, the CCP Pull TransUnion button posts /api/finance/crs-pull. That handler calls requestSoftPull then runCrsPull. On the live site CRS_API_HOST is the production host and CRS_ALLOW_LIVE is an on value, so the next hop is a live bureau order. Owner 2026-08-16 E1006: no live TransUnion. Did not press.",
+  "sandbox_mode_exists": true,
+  "would_sandbox_run_on_live": false,
+  "would_live_bureau_run_on_live": true,
+  "live_this_client_has_pii_identity": false,
+  "likely_fail_if_pressed_anyway": "identity_required — simulate did not write pii_identity. Still would enter the live path and write a soft_pull_requests row first. Not pressed.",
+  "local_env_class": {
+    "source": "local .env names only",
+    "CRS_API_HOST": { "present": true, "host_class": "sandbox" },
+    "CRS_ALLOW_LIVE": { "present": true, "live_allowed": false },
+    "CRS_ACTIVE_BUREAUS": { "present": true, "parsed": ["EX", "EQ"] },
+    "ADAPTERS_DRY_RUN": { "present": false, "transmit_allowed": false }
+  },
+  "live_netlify_class": {
+    "source": "netlify env:list --context production — names and class only",
+    "CRS_API_HOST": { "present": true, "host_class": "production" },
+    "CRS_ALLOW_LIVE": { "present": true, "live_allowed": true },
+    "CRS_ACTIVE_BUREAUS": { "present": true, "parsed": ["EX", "EQ"] },
+    "ADAPTERS_DRY_RUN": { "present": true, "transmit_allowed": true }
+  },
+  "notes": [
+    "Sandbox mode exists in code (api-sandbox.stitchcredit.com + canned identities). Live CRS_API_HOST is production, so sandbox would not run if pull is pressed on fundhub.ai.",
+    "CCP button sends bureau=TU even if CRS_ACTIVE_BUREAUS is EX,EQ.",
+    "This client has 0 soft_pull_requests after the refuse click (gate threw before insert) and after capture (pull not pressed).",
+    "crs_results count 1 is the W-INTAKE simulate seed, not a bureau pull from this unit."
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "at": "2026-08-18T21:40:58.482Z",
+  "phase": "before",
+  "env_names": {
+    "DATABASE_URL": true,
+    "CALCOM_WEBHOOK_SECRET": false,
+    "FUNDHUB_TEST_INBOX": true
+  },
+  "bookings_table": {
+    "ok": true,
+    "n": 0,
+    "rows": []
+  },
+  "booking_events": {
+    "ok": true,
+    "n": 6,
+    "rows": [
+      {
+        "name": "booking.cancelled",
+        "source": "gauntlet-more",
+        "n": 1,
+        "last_at": "2026-08-13T07:32:51.844Z"
+      },
+      {
+        "name": "booking.created",
+        "source": "clickfunnels",
+        "n": 26,
+        "last_at": "2026-08-18T06:53:33.712Z"
+      },
+      {
+        "name": "booking.created",
+        "source": "gauntlet-all",
+        "n": 2,
+        "last_at": "2026-08-13T07:22:42.217Z"
+      },
+      {
+        "name": "booking.created",
+        "source": "gauntlet",
+        "n": 1,
+        "last_at": "2026-08-13T00:17:21.417Z"
+      },
+      {
+        "name": "booking.created",
+        "source": "sim",
+        "n": 1,
+        "last_at": "2026-08-13T00:39:43.595Z"
+      },
+      {
+        "name": "booking.noshow",
+        "source": "gauntlet-all",
+        "n": 1,
+        "last_at": "2026-08-13T07:22:37.894Z"
+      }
+    ]
+  },
+  "booking_created_today": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "n": 1
+      }
+    ]
+  },
+  "cf_clients_today": {
+    "ok": false,
+    "error": "column \"source\" does not exist"
+  },
+  "entry_captured_today": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "n": 32
+      }
+    ]
+  },
+  "survey_submitted_today": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "n": 16
+      }
+    ]
+  },
+  "strategy_tasks": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "n": 15,
+        "dated": 15,
+        "due_today": 1,
+        "due_future": 0
+      }
+    ]
+  },
+  "webhook_captures": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "provider": "clickfunnels",
+        "n": 430,
+        "last_at": "2026-08-18T21:23:21.982Z"
+      }
+    ]
+  }
+}

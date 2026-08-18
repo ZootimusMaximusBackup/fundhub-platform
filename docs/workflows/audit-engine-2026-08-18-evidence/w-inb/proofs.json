@@ -1,0 +1,159 @@
+[
+  {
+    "id": "inb-1-payload-shape",
+    "result": "PASS",
+    "expected": "Document metro2 inbound event/payload from handler + tests",
+    "observed": "No bureau-response bus event. handleInboundResponse(db, { orgId, clientId, caseId, ocrText, items }). Returns repair.parse.low_confidence or repair.response.parsed. Does not emit.",
+    "evidence": "w-inb/01-inbound-payload-shape.json"
+  },
+  {
+    "id": "inb-2-safe-inject",
+    "result": "UNVERIFIED",
+    "expected": "Safe constructor injects a simulated bureau-response for THIS client and proves a row/event",
+    "observed": {
+      "constructor": "handleInboundResponse + inbound.test.mjs inline args",
+      "bus_event": false,
+      "held_null_db": {
+        "status": "held",
+        "event": "repair.parse.low_confidence",
+        "parseResult": {
+          "outcomes": [
+            {
+              "itemId": "1",
+              "outcome": "unaddressed",
+              "evidence": null
+            }
+          ],
+          "confidence": 0.35,
+          "needsConfirm": true,
+          "rawPreview": "Thank you for contacting us."
+        }
+      },
+      "high_real_db": {
+        "error": {
+          "name": "error",
+          "message": "new row violates row-level security policy for table \"repair_decision_log\"",
+          "code": "42501"
+        }
+      },
+      "inquiry_case_id_as_caseId": {
+        "error": {
+          "name": "error",
+          "message": "new row violates row-level security policy for table \"repair_decision_log\"",
+          "code": "42501"
+        }
+      },
+      "decision_log_after": []
+    },
+    "evidence": "w-inb/03-inbound-inject.json"
+  },
+  {
+    "id": "inb-3-mail-docs-emit",
+    "result": "PASS",
+    "expected": "Safely emit mail.response and docs.received for THIS client without a real mail vendor; dump what changed",
+    "observed": {
+      "mail_emit_id": "9e56ad39-eced-4cdb-a88e-1645a7b00a22",
+      "docs_emit_id": "03d3666c-158a-47eb-8e2b-c0df70c4548e",
+      "bank_inbox_delta": 1,
+      "inquiry_case_still": "Queued",
+      "f06_mail": {
+        "result": "ran",
+        "returned": {
+          "done": false,
+          "reason": "not_missing_docs"
+        }
+      },
+      "f09_mail": {
+        "result": "ran",
+        "returned": {
+          "done": false,
+          "reason": "not_denied"
+        }
+      },
+      "f11_mail": {
+        "result": "ran",
+        "returned": {
+          "done": true,
+          "classification": "APPROVED",
+          "task": {
+            "created": true
+          },
+          "card": {
+            "moved": true,
+            "created": true,
+            "fundedAmount": null,
+            "roundEvent": {
+              "emitted": true,
+              "eventName": "round.approved",
+              "roundNumber": 1,
+              "payload": {
+                "applicationId": null,
+                "stage": "approved",
+                "lendflowStatus": null,
+                "approvedAmount": null,
+                "fundedAmount": null,
+                "offerCount": null,
+                "rail": "card_stacking",
+                "source": "card_stacking",
+                "product": "card_stacking",
+                "roundNumber": 1
+              },
+              "id": "dc16b5e0-9b93-4ea4-ba05-ed94eb8225fc",
+              "deduped": false,
+              "idempotencyKey": "card_stacking:41a3199f-1835-4ac8-91c0-d4f37bd92037:1:approved:round.approved"
+            }
+          }
+        }
+      },
+      "f06_docs": {
+        "result": "ran",
+        "returned": {
+          "done": true,
+          "branch": "docs_received",
+          "round": {
+            "updated": false,
+            "reason": "hold_reason_not_ours"
+          }
+        }
+      },
+      "f06_missing_docs": {
+        "result": "skipped",
+        "reason": "Would call sendTemplated (queue email+sms). Not a provider, but next hop is the dispatcher. Did not queue.",
+        "next_call": "sendTemplated(EMAIL-F06-MISSING-DOCS / SMS-F06-MISSING-DOCS) → messages status=queued. Dispatcher not scheduled."
+      }
+    },
+    "evidence": "w-inb/05-after-mail.json, w-inb/06-after-docs.json, w-inb/07-inngest-handle-local.json"
+  },
+  {
+    "id": "inb-4-c03",
+    "result": "PASS",
+    "expected": "c-03 fires on inquiry.removed; say if THIS file has a path; invoke handle() locally; do not claim Inngest ran",
+    "observed": {
+      "trigger": "inquiry.removed (Inngest only; no register-all handler)",
+      "path_on_this_file": {
+        "inquiry_case_status": "Queued",
+        "inquiry_case_sent": false,
+        "metro2_inbound_emits_inquiry_removed": false,
+        "completed_inquiry_case": false,
+        "register_all_handler": [],
+        "would_fire_if": [
+          "POST /api/inquiry-cases action=mark_cleared or close with Completed (did not press)",
+          "POST /api/inquiry-cases action=clear_inquiry when case empties (did not press)",
+          "IRA webhook inquiry.cleared (did not call live bureau / IRA)"
+        ]
+      },
+      "local_handle": {
+        "result": "ran",
+        "returned": {
+          "done": true,
+          "branch": "resume",
+          "task": {
+            "created": true
+          }
+        }
+      },
+      "inngest_live": false
+    },
+    "evidence": "w-inb/09-c03.json"
+  }
+]

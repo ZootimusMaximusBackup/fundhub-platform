@@ -1,0 +1,15 @@
+{
+  "id": "699fa8588b2479ca9799e2a7",
+  "priority": 0,
+  "description": "F-10R-IN Bank Inbox → Netlify CRM",
+  "expression_redacted": "catch_all()",
+  "expression_is_catch_all": true,
+  "expression_mentions_mg_fundhub": false,
+  "expression_mentions_fundhub_ai": false,
+  "mx_fundhub_ai": "cloudflare",
+  "mx_mg_fundhub_ai": "mailgun",
+  "actions_redacted": [
+    "forward(\"https://fundhub.ai/api/webhooks/mailgun\")",
+    "stop()"
+  ]
+}

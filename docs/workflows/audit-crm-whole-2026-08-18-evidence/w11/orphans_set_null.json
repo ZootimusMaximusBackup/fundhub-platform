@@ -1,0 +1,227 @@
+[
+  {
+    "child_table": "accounts",
+    "child_column": "invited_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "accounts_invited_by_fkey",
+    "null_count": 5
+  },
+  {
+    "child_table": "agents",
+    "child_column": "owner_staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "agents_owner_staff_id_fkey",
+    "null_count": 22
+  },
+  {
+    "child_table": "bank_transactions",
+    "child_column": "bank_account_id",
+    "parent_table": "bank_accounts",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "bank_transactions_account_fk",
+    "null_count": 18
+  },
+  {
+    "child_table": "bank_transactions",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "bank_transactions_client_id_fkey",
+    "null_count": 18
+  },
+  {
+    "child_table": "call_outcomes",
+    "child_column": "task_id",
+    "parent_table": "tasks",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "call_outcomes_task_id_fkey",
+    "null_count": 6
+  },
+  {
+    "child_table": "call_outcomes",
+    "child_column": "transaction_id",
+    "parent_table": "transactions",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "call_outcomes_transaction_id_fkey",
+    "null_count": 1
+  },
+  {
+    "child_table": "candidate_applications",
+    "child_column": "resume_document_id",
+    "parent_table": "documents",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "candidate_applications_resume_document_id_fkey",
+    "null_count": 3
+  },
+  {
+    "child_table": "candidates",
+    "child_column": "referred_by_staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "candidates_referred_by_staff_id_fkey",
+    "null_count": 3
+  },
+  {
+    "child_table": "client_consents",
+    "child_column": "document_id",
+    "parent_table": "documents",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "client_consents_document_id_fkey",
+    "null_count": 3
+  },
+  {
+    "child_table": "entitlements",
+    "child_column": "granted_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "entitlements_granted_by_fkey",
+    "null_count": 2
+  },
+  {
+    "child_table": "entitlements",
+    "child_column": "revoked_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "entitlements_revoked_by_fkey",
+    "null_count": 2
+  },
+  {
+    "child_table": "entitlements",
+    "child_column": "source_event_id",
+    "parent_table": "events",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "entitlements_source_event_id_fkey",
+    "null_count": 2
+  },
+  {
+    "child_table": "entitlements",
+    "child_column": "source_transaction_id",
+    "parent_table": "transactions",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "entitlements_source_transaction_id_fkey",
+    "null_count": 2
+  },
+  {
+    "child_table": "failed_events",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "failed_events_client_id_fkey",
+    "null_count": 2
+  },
+  {
+    "child_table": "failed_events",
+    "child_column": "resolved_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "failed_events_resolved_by_fkey",
+    "null_count": 2
+  },
+  {
+    "child_table": "hiring_roles",
+    "child_column": "hiring_manager_staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "hiring_roles_hiring_manager_staff_id_fkey",
+    "null_count": 3
+  },
+  {
+    "child_table": "inquiry_removal_cases",
+    "child_column": "draft_letter_document_id",
+    "parent_table": "documents",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "inquiry_removal_cases_draft_letter_document_id_fkey",
+    "null_count": 3
+  },
+  {
+    "child_table": "inquiry_removal_cases",
+    "child_column": "funding_round_id",
+    "parent_table": "funding_rounds",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "inquiry_removal_cases_funding_round_id_fkey",
+    "null_count": 3
+  },
+  {
+    "child_table": "inquiry_removal_cases",
+    "child_column": "gate_override_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "inquiry_removal_cases_gate_override_by_fkey",
+    "null_count": 3
+  },
+  {
+    "child_table": "messages",
+    "child_column": "conversation_id",
+    "parent_table": "conversations",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "fk_messages_convo",
+    "null_count": 40
+  },
+  {
+    "child_table": "messages",
+    "child_column": "sender_staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "messages_sender_staff_id_fkey",
+    "null_count": 52
+  },
+  {
+    "child_table": "partner_brand",
+    "child_column": "approved_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "partner_brand_approved_by_fkey",
+    "null_count": 4
+  },
+  {
+    "child_table": "soft_pull_requests",
+    "child_column": "crs_result_id",
+    "parent_table": "crs_results",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "soft_pull_requests_crs_result_id_fkey",
+    "null_count": 1
+  },
+  {
+    "child_table": "staff_events",
+    "child_column": "shift_id",
+    "parent_table": "shifts",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "staff_events_shift_id_fkey",
+    "null_count": 12
+  },
+  {
+    "child_table": "tasks",
+    "child_column": "assignee_staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "tasks_assignee_staff_fk",
+    "null_count": 66
+  }
+]

@@ -1,0 +1,192 @@
+{
+  "orphans": [
+    {
+      "table": "bank_accounts",
+      "count": 1
+    },
+    {
+      "table": "bank_inbox",
+      "count": 1
+    },
+    {
+      "table": "cards",
+      "count": 2
+    },
+    {
+      "table": "client_consents",
+      "count": 1
+    },
+    {
+      "table": "contract_signers",
+      "count": 1
+    },
+    {
+      "table": "contracts",
+      "count": 1
+    },
+    {
+      "table": "crs_results",
+      "count": 1
+    },
+    {
+      "table": "documents",
+      "count": 3
+    },
+    {
+      "table": "events",
+      "count": 11
+    },
+    {
+      "table": "inquiry_removal_cases",
+      "count": 1
+    },
+    {
+      "table": "messages",
+      "count": 1
+    },
+    {
+      "table": "sales",
+      "count": 1
+    },
+    {
+      "table": "tasks",
+      "count": 2
+    },
+    {
+      "table": "tradelines",
+      "count": 4
+    },
+    {
+      "table": "transactions",
+      "count": 2
+    },
+    {
+      "table": "v_sale_balance",
+      "count": 1
+    }
+  ],
+  "known_ids_left": [
+    {
+      "key": "inquiry_removal_cases:d1635579-eda9-4961-8ca8-50abe7151ecf",
+      "count": 1
+    },
+    {
+      "key": "documents:bf55375a-b4c7-48aa-8241-9b818bc60c82",
+      "count": 1
+    },
+    {
+      "key": "documents:864fd394-7ba8-43e3-b7c5-77befaa51540",
+      "count": 1
+    },
+    {
+      "key": "client_consents:7057e732-9411-4512-98b9-23a7a1fe7d77",
+      "count": 1
+    },
+    {
+      "key": "contracts:82f9232a-3c6d-4cd5-85eb-b4995e4f539a",
+      "count": 1
+    },
+    {
+      "key": "sales:75429aa0-2105-4e4d-858a-1b57b605f4ed",
+      "count": 1
+    }
+  ],
+  "contracts_left": [
+    {
+      "id": "82f9232a-3c6d-4cd5-85eb-b4995e4f539a",
+      "status": "signed"
+    }
+  ],
+  "documents_left": [
+    {
+      "id": "bf55375a-b4c7-48aa-8241-9b818bc60c82",
+      "subtype": "additional_fraud_docs"
+    },
+    {
+      "id": "864fd394-7ba8-43e3-b7c5-77befaa51540",
+      "subtype": "funding_agreement"
+    },
+    {
+      "id": "9e11d5b1-47c2-4ea7-bebc-a59de2927c6e",
+      "subtype": "funding_agreement"
+    }
+  ],
+  "events_left": [
+    {
+      "name": "analysis.completed",
+      "n": 1
+    },
+    {
+      "name": "contract.sent",
+      "n": 1
+    },
+    {
+      "name": "contract.signed",
+      "n": 1
+    },
+    {
+      "name": "decision.rendered",
+      "n": 1
+    },
+    {
+      "name": "diagnostic.paid",
+      "n": 1
+    },
+    {
+      "name": "docs.received",
+      "n": 2
+    },
+    {
+      "name": "inquiry.removed",
+      "n": 1
+    },
+    {
+      "name": "mail.response",
+      "n": 1
+    },
+    {
+      "name": "payment.received",
+      "n": 1
+    },
+    {
+      "name": "round.approved",
+      "n": 1
+    }
+  ],
+  "before_tables": {
+    "bank_accounts": 1,
+    "bank_inbox": 1,
+    "cards": 2,
+    "client_consents": 1,
+    "contract_signers": 1,
+    "contracts": 1,
+    "crs_results": 1,
+    "documents": 3,
+    "events": 11,
+    "inquiry_removal_cases": 1,
+    "messages": 1,
+    "sales": 1,
+    "tasks": 2,
+    "tradelines": 4,
+    "transactions": 2,
+    "v_sale_balance": 1
+  },
+  "after_tables": {
+    "bank_accounts": 1,
+    "bank_inbox": 1,
+    "cards": 2,
+    "client_consents": 1,
+    "contract_signers": 1,
+    "contracts": 1,
+    "crs_results": 1,
+    "documents": 3,
+    "events": 11,
+    "inquiry_removal_cases": 1,
+    "messages": 1,
+    "sales": 1,
+    "tasks": 2,
+    "tradelines": 4,
+    "transactions": 2,
+    "v_sale_balance": 1
+  }
+}

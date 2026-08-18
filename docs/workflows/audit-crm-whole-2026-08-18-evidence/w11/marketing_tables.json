@@ -1,0 +1,61 @@
+{
+  "tables": [
+    {
+      "schema": "marketing",
+      "name": "business_loan_totals",
+      "relkind": "v"
+    },
+    {
+      "schema": "marketing",
+      "name": "business_sources",
+      "relkind": "r"
+    },
+    {
+      "schema": "marketing",
+      "name": "businesses",
+      "relkind": "r"
+    },
+    {
+      "schema": "marketing",
+      "name": "ingest_runs",
+      "relkind": "r"
+    },
+    {
+      "schema": "marketing",
+      "name": "mailable_businesses",
+      "relkind": "v"
+    },
+    {
+      "schema": "marketing",
+      "name": "source_coverage",
+      "relkind": "v"
+    },
+    {
+      "schema": "marketing",
+      "name": "sources",
+      "relkind": "r"
+    }
+  ],
+  "counts": [
+    {
+      "table": "marketing.business_sources",
+      "readable": false,
+      "error": "permission denied for schema marketing"
+    },
+    {
+      "table": "marketing.businesses",
+      "readable": false,
+      "error": "permission denied for schema marketing"
+    },
+    {
+      "table": "marketing.ingest_runs",
+      "readable": false,
+      "error": "permission denied for schema marketing"
+    },
+    {
+      "table": "marketing.sources",
+      "readable": false,
+      "error": "permission denied for schema marketing"
+    }
+  ]
+}

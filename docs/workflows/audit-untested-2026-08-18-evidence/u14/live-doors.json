@@ -1,0 +1,182 @@
+{
+  "inngestGet": {
+    "method": "GET",
+    "path": "/api/inngest",
+    "status": 401,
+    "keys": [
+      "message"
+    ],
+    "message": "Unauthorized",
+    "error": null,
+    "bodyPreview": "{\"message\":\"Unauthorized\"}"
+  },
+  "inngestHead": {
+    "method": "HEAD",
+    "path": "/api/inngest",
+    "status": 401,
+    "keys": [],
+    "message": null,
+    "error": null,
+    "bodyPreview": ""
+  },
+  "inngestPut": {
+    "skipped": true,
+    "reason": "PUT is the Inngest sync. Did not PUT. Did not demo-mode."
+  },
+  "login": {
+    "status": 200,
+    "ok": true,
+    "hasToken": true
+  },
+  "workflows": {
+    "status": 200,
+    "count": 51,
+    "engine_active_values": [
+      true
+    ],
+    "status_counts": {
+      "live": 44,
+      "never_triggered": 7
+    },
+    "sample": [
+      {
+        "id": "af-02-referral-ownership-capture",
+        "engine_active": true,
+        "status": "live",
+        "last_triggered_at": "2026-08-18T21:21:12.311Z",
+        "events": [
+          "entry.captured",
+          "diagnostic.paid",
+          "analysis.completed"
+        ],
+        "crons": []
+      },
+      {
+        "id": "ai-set-03-no-answer-cadence",
+        "engine_active": true,
+        "status": "live",
+        "last_triggered_at": "2026-08-15T02:00:45.506Z",
+        "events": [
+          "call.completed"
+        ],
+        "crons": []
+      },
+      {
+        "id": "ai-set-04-3way-handoff",
+        "engine_active": true,
+        "status": "live",
+        "last_triggered_at": "2026-08-18T06:53:33.712Z",
+        "events": [
+          "booking.created"
+        ],
+        "crons": []
+      },
+      {
+        "id": "at-01-first-touch-capture",
+        "engine_active": true,
+        "status": "live",
+        "last_triggered_at": "2026-08-18T21:21:12.311Z",
+        "events": [
+          "entry.captured"
+        ],
+        "crons": []
+      },
+      {
+        "id": "bc-01-customer-responsiveness",
+        "engine_active": true,
+        "status": "live",
+        "last_triggered_at": "2026-08-16T10:13:35.483Z",
+        "events": [
+          "round.started"
+        ],
+        "crons": []
+      },
+      {
+        "id": "bc-02-customer-friction",
+        "engine_active": true,
+        "status": "live",
+        "last_triggered_at": "2026-08-16T10:13:35.483Z",
+        "events": [
+          "round.started"
+        ],
+        "crons": []
+      },
+      {
+        "id": "bs-01-precall-launcher",
+        "engine_active": true,
+        "status": "live",
+        "last_triggered_at": "2026-08-18T06:53:33.712Z",
+        "events": [
+          "booking.created"
+        ],
+        "crons": []
+      },
+      {
+        "id": "c-00-crs-soft-pull-request",
+        "engine_active": true,
+        "status": "live",
+        "last_triggered_at": "2026-08-18T20:50:18.891Z",
+        "events": [
+          "diagnostic.paid"
+        ],
+        "crons": []
+      }
+    ],
+    "never_triggered": [
+      "c-03-inquiry-removed-resume-or-hold",
+      "contract-chaser",
+      "dpc-03-inbound-reply-router",
+      "f-06-funding-conditions-missing-docs",
+      "f-09-funding-declined-no-path",
+      "f-11-bank-email-event-router",
+      "message-dispatch-sweeper"
+    ],
+    "live": [
+      "af-02-referral-ownership-capture",
+      "ai-set-03-no-answer-cadence",
+      "ai-set-04-3way-handoff",
+      "at-01-first-touch-capture",
+      "bc-01-customer-responsiveness",
+      "bc-02-customer-friction",
+      "bs-01-precall-launcher",
+      "c-00-crs-soft-pull-request",
+      "c-02-inquiry-created",
+      "c-02b-inquiry-removal-requested",
+      "c-05-pre-funding-review",
+      "c-06-crs-results-router",
+      "dpc-01-analyzer-lock",
+      "dpc-02-call-outcome-enforcement",
+      "dpc-05-no-progress-escalation",
+      "ds-01-repair-referral",
+      "ds-02-diy-letters",
+      "f-01-funding-intake",
+      "f-02-portal-id-missing",
+      "f-03-round-submitted",
+      "f-04-round-approvals",
+      "f-05-inquiry-cleanup-gate",
+      "f-07-funding-locked",
+      "f-08-post-funding-monitoring",
+      "f-10-client-funding-inbox-provisioner",
+      "n-01-cold-nurture",
+      "n-02-warm-nurture",
+      "n-03-hot-nurture",
+      "n-04-post-funding-nurture",
+      "n-06-renewal-second-wave",
+      "round-started-client-notify",
+      "s-01-new-lead-intake",
+      "s-04-call-booked",
+      "s-04b-booking-reminders",
+      "s-05a-no-show-recovery",
+      "s-06-post-call-funding-purchased",
+      "s-08-post-call-funding-declined",
+      "s-nobook-chase",
+      "sys-01-client-value-calculator",
+      "sys-01-ltv-calculator",
+      "u-02-analyzer-complete-delivery",
+      "u-03-crs-snapshot-sync",
+      "u-04-promote-crs-primary",
+      "u-05-data-health-monitor"
+    ],
+    "note": "status live/never_triggered is from events table + INNGEST_EVENT_KEY being set. Not an Inngest run row."
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "columns": [
+    "id",
+    "org_id",
+    "client_id",
+    "requested_by_kind",
+    "requested_by_staff_id",
+    "requested_by_account_id",
+    "reason",
+    "cost_cents",
+    "subscription_id",
+    "crs_result_id",
+    "status",
+    "state_reason",
+    "provider",
+    "idempotency_key",
+    "requested_at",
+    "resolved_at",
+    "created_at",
+    "updated_at"
+  ],
+  "soft_pull_requests": []
+}

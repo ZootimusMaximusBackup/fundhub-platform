@@ -1,0 +1,629 @@
+{
+  "at": "2026-08-18T21:18:04.184Z",
+  "groundTruth": "MISSING intended funnel journey — scored against board claim",
+  "emailUsed": "e2e+aff-u9-1787087874512@fundhub.ai",
+  "nameUsed": "E2e AffU9",
+  "phoneUsed": "5550100199",
+  "headlessFirst": true,
+  "headedRetry": false,
+  "stoppedForSsn": false,
+  "finishedStep2": false,
+  "finishReason": "no_more_safe_controls",
+  "booked": false,
+  "paid": false,
+  "finalUrl": "https://apply.fundhub.ai/apply",
+  "finalFacts": {
+    "href": "https://apply.fundhub.ai/apply",
+    "title": "Apply",
+    "text": "APPLICATION · STEP 1 OF 2 Let's See What You Qualify For A few quick questions, then pick a time for your call. Soft pull only. Zero score impact. Let's Start With Your Info Required to continue. First Name First Name Last Name Last Name Email Email Phone Number United States +1 Phone Number Next TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA FUNDING DISCLAIMER: Fundhub LLC is not a bank or a lender. We are a funding advisory and application service. Funding amounts shown are maximum potential amounts and are not an offer of credit. NOT AFFILIATED WITH META: This site is not part of Facebook, Instagram, or Meta Platforms, Inc., and is not endorsed by Meta in any way. Facebook™ and Instagram™ are trademarks of Meta Platforms, Inc. © 2026 FUNDHUB LLC. All rights reserved. · Privacy Policy · Terms of Service systems nominal · fundhub.ai",
+    "stepCopy": "STEP 1 OF 2",
+    "fields": [
+      {
+        "tag": "input",
+        "type": "text",
+        "name": "Xmepao",
+        "placeholder": "First Name",
+        "aria": "",
+        "required": false,
+        "valueLen": 3
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "name": "dARDpR",
+        "placeholder": "Last Name",
+        "aria": "",
+        "required": false,
+        "valueLen": 5
+      },
+      {
+        "tag": "input",
+        "type": "email",
+        "name": "qOvVpw",
+        "placeholder": "Email",
+        "aria": "",
+        "required": false,
+        "valueLen": 35
+      },
+      {
+        "tag": "input",
+        "type": "tel",
+        "name": "LKRzGl",
+        "placeholder": "(201) 555-0123",
+        "aria": "",
+        "required": false,
+        "valueLen": 14
+      }
+    ],
+    "options": [
+      "First Name",
+      "Last Name",
+      "Email",
+      "United States +1",
+      "Phone Number",
+      "Next"
+    ],
+    "visitor": "92b46315-8525-4e8d-9a32-32ac4eb7502b",
+    "visitorLooksBot": false
+  },
+  "log": [
+    {
+      "id": "watch",
+      "requested": "https://apply.fundhub.ai/watch",
+      "status": 200,
+      "navError": null,
+      "finalUrl": "https://apply.fundhub.ai/watch",
+      "facts": {
+        "href": "https://apply.fundhub.ai/watch",
+        "title": "VSL",
+        "text": "FOR BUSINESS OWNERS WHO NEED REAL, HIGH VOLUME FUNDING Get $50,000 to $1,000,000 in Funding in 14 Days or Less Find out exactly what your business qualifies for in one call TAP FOR SOUND Get Started 10-SECOND APPLICATION · SOFT PULL · ZERO SCORE IMPACT TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA FUNDING DISCLAIMER: Fundhub LLC is not a bank or a lender. We are a funding advisory and application service. Funding amounts shown are maximum potential amounts and are not an offer of credit. NOT AFFILIATED WITH META: This site is not part of Facebook, Instagram, or Meta Platforms, Inc., and is not endorsed by Meta in any way. Facebook™ and Instagram™ are trademarks of Meta Platforms, Inc. © 2026 FUNDHUB LLC. All rights reserved. · Privacy Policy · Terms of Service systems nominal · fundhub.ai",
+        "stepCopy": null,
+        "fields": [],
+        "options": [],
+        "visitor": "92b46315-8525-4e8d-9a32-32ac4eb7502b",
+        "visitorLooksBot": false
+      },
+      "bot": []
+    },
+    {
+      "id": "apply-step1",
+      "requested": "https://apply.fundhub.ai/apply",
+      "status": 200,
+      "navError": null,
+      "finalUrl": "https://apply.fundhub.ai/apply",
+      "facts": {
+        "href": "https://apply.fundhub.ai/apply",
+        "title": "Apply",
+        "text": "APPLICATION · STEP 1 OF 2 Let's See What You Qualify For A few quick questions, then pick a time for your call. Soft pull only. Zero score impact. Let's Start With Your Info Required to continue. First Name First Name Last Name Last Name Email Email Phone Number United States +1 Phone Number Next TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA FUNDING DISCLAIMER: Fundhub LLC is not a bank or a lender. We are a funding advisory and application service. Funding amounts shown are maximum potential amounts and are not an offer of credit. NOT AFFILIATED WITH META: This site is not part of Facebook, Instagram, or Meta Platforms, Inc., and is not endorsed by Meta in any way. Facebook™ and Instagram™ are trademarks of Meta Platforms, Inc. © 2026 FUNDHUB LLC. All rights reserved. · Privacy Policy · Terms of Service systems nominal · fundhub.ai",
+        "stepCopy": "STEP 1 OF 2",
+        "fields": [
+          {
+            "tag": "input",
+            "type": "text",
+            "name": "Xmepao",
+            "placeholder": "First Name",
+            "aria": "",
+            "required": false,
+            "valueLen": 0
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": "dARDpR",
+            "placeholder": "Last Name",
+            "aria": "",
+            "required": false,
+            "valueLen": 0
+          },
+          {
+            "tag": "input",
+            "type": "email",
+            "name": "qOvVpw",
+            "placeholder": "Email",
+            "aria": "",
+            "required": false,
+            "valueLen": 0
+          },
+          {
+            "tag": "input",
+            "type": "tel",
+            "name": "LKRzGl",
+            "placeholder": "(201) 555-0123",
+            "aria": "",
+            "required": false,
+            "valueLen": 0
+          }
+        ],
+        "options": [
+          "First Name",
+          "Last Name",
+          "Email",
+          "United States +1",
+          "Phone Number",
+          "Next"
+        ],
+        "visitor": "92b46315-8525-4e8d-9a32-32ac4eb7502b",
+        "visitorLooksBot": false
+      },
+      "bot": []
+    },
+    {
+      "id": "fill",
+      "label": "first",
+      "sel": "input[placeholder*=\"First Name\" i]",
+      "ok": true,
+      "value": "(set)"
+    },
+    {
+      "id": "fill",
+      "label": "last",
+      "sel": "input[placeholder*=\"Last Name\" i]",
+      "ok": true,
+      "value": "(set)"
+    },
+    {
+      "id": "fill",
+      "label": "email",
+      "sel": "input[type=\"email\"]",
+      "ok": true,
+      "value": "e2e+aff-u9-1787087874512@fundhub.ai"
+    },
+    {
+      "id": "fill",
+      "label": "phone",
+      "sel": "input[type=\"tel\"]",
+      "ok": true,
+      "value": "(set)"
+    },
+    {
+      "id": "apply-step1-filled",
+      "href": "https://apply.fundhub.ai/apply",
+      "facts": {
+        "href": "https://apply.fundhub.ai/apply",
+        "title": "Apply",
+        "text": "APPLICATION · STEP 1 OF 2 Let's See What You Qualify For A few quick questions, then pick a time for your call. Soft pull only. Zero score impact. Let's Start With Your Info Required to continue. First Name First Name Last Name Last Name Email Email Phone Number United States +1 Phone Number Next TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA FUNDING DISCLAIMER: Fundhub LLC is not a bank or a lender. We are a funding advisory and application service. Funding amounts shown are maximum potential amounts and are not an offer of credit. NOT AFFILIATED WITH META: This site is not part of Facebook, Instagram, or Meta Platforms, Inc., and is not endorsed by Meta in any way. Facebook™ and Instagram™ are trademarks of Meta Platforms, Inc. © 2026 FUNDHUB LLC. All rights reserved. · Privacy Policy · Terms of Service systems nominal · fundhub.ai",
+        "stepCopy": "STEP 1 OF 2",
+        "fields": [
+          {
+            "tag": "input",
+            "type": "text",
+            "name": "Xmepao",
+            "placeholder": "First Name",
+            "aria": "",
+            "required": false,
+            "valueLen": 3
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": "dARDpR",
+            "placeholder": "Last Name",
+            "aria": "",
+            "required": false,
+            "valueLen": 5
+          },
+          {
+            "tag": "input",
+            "type": "email",
+            "name": "qOvVpw",
+            "placeholder": "Email",
+            "aria": "",
+            "required": false,
+            "valueLen": 35
+          },
+          {
+            "tag": "input",
+            "type": "tel",
+            "name": "LKRzGl",
+            "placeholder": "(201) 555-0123",
+            "aria": "",
+            "required": false,
+            "valueLen": 14
+          }
+        ],
+        "options": [
+          "First Name",
+          "Last Name",
+          "Email",
+          "United States +1",
+          "Phone Number",
+          "Next"
+        ],
+        "visitor": "92b46315-8525-4e8d-9a32-32ac4eb7502b",
+        "visitorLooksBot": false
+      },
+      "emailUsed": "e2e+aff-u9-1787087874512@fundhub.ai"
+    },
+    {
+      "id": "next-button",
+      "visible": false
+    },
+    {
+      "id": "after-next",
+      "href": "https://apply.fundhub.ai/apply",
+      "facts": {
+        "href": "https://apply.fundhub.ai/apply",
+        "title": "Apply",
+        "text": "APPLICATION · STEP 1 OF 2 Let's See What You Qualify For A few quick questions, then pick a time for your call. Soft pull only. Zero score impact. Let's Start With Your Info Required to continue. First Name First Name Last Name Last Name Email Email Phone Number United States +1 Phone Number Next TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA FUNDING DISCLAIMER: Fundhub LLC is not a bank or a lender. We are a funding advisory and application service. Funding amounts shown are maximum potential amounts and are not an offer of credit. NOT AFFILIATED WITH META: This site is not part of Facebook, Instagram, or Meta Platforms, Inc., and is not endorsed by Meta in any way. Facebook™ and Instagram™ are trademarks of Meta Platforms, Inc. © 2026 FUNDHUB LLC. All rights reserved. · Privacy Policy · Terms of Service systems nominal · fundhub.ai",
+        "stepCopy": "STEP 1 OF 2",
+        "fields": [
+          {
+            "tag": "input",
+            "type": "text",
+            "name": "Xmepao",
+            "placeholder": "First Name",
+            "aria": "",
+            "required": false,
+            "valueLen": 3
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": "dARDpR",
+            "placeholder": "Last Name",
+            "aria": "",
+            "required": false,
+            "valueLen": 5
+          },
+          {
+            "tag": "input",
+            "type": "email",
+            "name": "qOvVpw",
+            "placeholder": "Email",
+            "aria": "",
+            "required": false,
+            "valueLen": 35
+          },
+          {
+            "tag": "input",
+            "type": "tel",
+            "name": "LKRzGl",
+            "placeholder": "(201) 555-0123",
+            "aria": "",
+            "required": false,
+            "valueLen": 14
+          }
+        ],
+        "options": [
+          "First Name",
+          "Last Name",
+          "Email",
+          "United States +1",
+          "Phone Number",
+          "Next"
+        ],
+        "visitor": "92b46315-8525-4e8d-9a32-32ac4eb7502b",
+        "visitorLooksBot": false
+      },
+      "ssnAsked": false
+    },
+    {
+      "id": "stuck",
+      "i": 0,
+      "facts": {
+        "href": "https://apply.fundhub.ai/apply",
+        "title": "Apply",
+        "text": "APPLICATION · STEP 1 OF 2 Let's See What You Qualify For A few quick questions, then pick a time for your call. Soft pull only. Zero score impact. Let's Start With Your Info Required to continue. First Name First Name Last Name Last Name Email Email Phone Number United States +1 Phone Number Next TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA FUNDING DISCLAIMER: Fundhub LLC is not a bank or a lender. We are a funding advisory and application service. Funding amounts shown are maximum potential amounts and are not an offer of credit. NOT AFFILIATED WITH META: This site is not part of Facebook, Instagram, or Meta Platforms, Inc., and is not endorsed by Meta in any way. Facebook™ and Instagram™ are trademarks of Meta Platforms, Inc. © 2026 FUNDHUB LLC. All rights reserved. · Privacy Policy · Terms of Service systems nominal · fundhub.ai",
+        "stepCopy": "STEP 1 OF 2",
+        "fields": [
+          {
+            "tag": "input",
+            "type": "text",
+            "name": "Xmepao",
+            "placeholder": "First Name",
+            "aria": "",
+            "required": false,
+            "valueLen": 3
+          },
+          {
+            "tag": "input",
+            "type": "text",
+            "name": "dARDpR",
+            "placeholder": "Last Name",
+            "aria": "",
+            "required": false,
+            "valueLen": 5
+          },
+          {
+            "tag": "input",
+            "type": "email",
+            "name": "qOvVpw",
+            "placeholder": "Email",
+            "aria": "",
+            "required": false,
+            "valueLen": 35
+          },
+          {
+            "tag": "input",
+            "type": "tel",
+            "name": "LKRzGl",
+            "placeholder": "(201) 555-0123",
+            "aria": "",
+            "required": false,
+            "valueLen": 14
+          }
+        ],
+        "options": [
+          "First Name",
+          "Last Name",
+          "Email",
+          "United States +1",
+          "Phone Number",
+          "Next"
+        ],
+        "visitor": "92b46315-8525-4e8d-9a32-32ac4eb7502b",
+        "visitorLooksBot": false
+      }
+    }
+  ],
+  "shots": [
+    "docs/workflows/audit-untested-2026-08-18-evidence/u9/u9-watch.png",
+    "docs/workflows/audit-untested-2026-08-18-evidence/u9/u9-apply-step1.png",
+    "docs/workflows/audit-untested-2026-08-18-evidence/u9/u9-apply-step1-filled.png",
+    "docs/workflows/audit-untested-2026-08-18-evidence/u9/u9-no-next.png",
+    "docs/workflows/audit-untested-2026-08-18-evidence/u9/u9-after-next.png",
+    "docs/workflows/audit-untested-2026-08-18-evidence/u9/u9-step2-fields.png",
+    "docs/workflows/audit-untested-2026-08-18-evidence/u9/u9-step2-stuck.png",
+    "docs/workflows/audit-untested-2026-08-18-evidence/u9/u9-final.png"
+  ],
+  "net": [
+    {
+      "at": "2026-08-18T21:17:55.525Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/watch"
+    },
+    {
+      "at": "2026-08-18T21:17:55.633Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-5NUE6T5P.js"
+    },
+    {
+      "at": "2026-08-18T21:17:55.637Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-TWAA7YIK.js"
+    },
+    {
+      "at": "2026-08-18T21:17:55.638Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/user_pages-PAPX24HT.js"
+    },
+    {
+      "at": "2026-08-18T21:17:55.643Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-R4YB6JIA.js"
+    },
+    {
+      "at": "2026-08-18T21:17:55.643Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-RVGXNBF6.js"
+    },
+    {
+      "at": "2026-08-18T21:17:55.644Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-MO2D3CXO.js"
+    },
+    {
+      "at": "2026-08-18T21:17:55.644Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-Q6RFXGRD.js"
+    },
+    {
+      "at": "2026-08-18T21:17:55.644Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-7HBS56XK.js"
+    },
+    {
+      "at": "2026-08-18T21:17:55.644Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-Y32E43UA.js"
+    },
+    {
+      "at": "2026-08-18T21:17:55.645Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-NQUHJ6NR.js"
+    },
+    {
+      "at": "2026-08-18T21:17:55.645Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-NXH5VC2T.js"
+    },
+    {
+      "at": "2026-08-18T21:17:55.645Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-KIZY5IRN.js"
+    },
+    {
+      "at": "2026-08-18T21:17:55.645Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-RFSPGZ3L.js"
+    },
+    {
+      "at": "2026-08-18T21:17:55.672Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-BY72GGKB.js"
+    },
+    {
+      "at": "2026-08-18T21:17:56.212Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://connect.facebook.net/signals/config/2403674420141513?v=2.9.380&r=stable&domain=apply.fundhub.ai&hme=c50c23a73e1ec4606e74678f41b5d8ea0d42064a6916ad288a18c9a04f0ffe88&ex_m=113%2C218%2C164%2C25%2C78%2C79%2C156%2C74%2C73%2C11%2C174%2C98"
+    },
+    {
+      "at": "2026-08-18T21:17:56.561Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://www.facebook.com/tr/?id=2403674420141513&ev=PageView&dl=https%3A%2F%2Fapply.fundhub.ai%2Fwatch&rl=&if=false&ts=1787087876224&iw=false&sw=1440&sh=980&v=2.9.380&r=stable&ec=0&o=12316&aems=0%3B0&fbp=fb.1.1787087876222.74415690652446881"
+    },
+    {
+      "at": "2026-08-18T21:17:56.917Z",
+      "status": 204,
+      "method": "POST",
+      "url": "https://apply.fundhub.ai/_cf/s"
+    },
+    {
+      "at": "2026-08-18T21:17:57.330Z",
+      "status": 200,
+      "method": "POST",
+      "url": "https://bam.nr-data.net/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=1930&ck=0&s=09cd0c0f7d9c2817&ref=https://apply.fundhub.ai/watch&af=err,xhr,stn,ins,spa&be=464&fe=1042&dc=364&perf=%7B%22timing%22:%7B"
+    },
+    {
+      "at": "2026-08-18T21:17:57.470Z",
+      "status": 200,
+      "method": "POST",
+      "url": "https://bam.nr-data.net/events/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=2275&ck=0&s=09cd0c0f7d9c2817&ref=https://apply.fundhub.ai/watch"
+    },
+    {
+      "at": "2026-08-18T21:17:59.541Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/apply"
+    },
+    {
+      "at": "2026-08-18T21:17:59.552Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-MO2D3CXO.js"
+    },
+    {
+      "at": "2026-08-18T21:17:59.552Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-TWAA7YIK.js"
+    },
+    {
+      "at": "2026-08-18T21:17:59.552Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-RVGXNBF6.js"
+    },
+    {
+      "at": "2026-08-18T21:17:59.552Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-R4YB6JIA.js"
+    },
+    {
+      "at": "2026-08-18T21:17:59.552Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-NXH5VC2T.js"
+    },
+    {
+      "at": "2026-08-18T21:17:59.552Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-Q6RFXGRD.js"
+    },
+    {
+      "at": "2026-08-18T21:17:59.552Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-BY72GGKB.js"
+    },
+    {
+      "at": "2026-08-18T21:17:59.552Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-Y32E43UA.js"
+    },
+    {
+      "at": "2026-08-18T21:17:59.552Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-7HBS56XK.js"
+    },
+    {
+      "at": "2026-08-18T21:17:59.552Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-KIZY5IRN.js"
+    },
+    {
+      "at": "2026-08-18T21:17:59.552Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-5NUE6T5P.js"
+    },
+    {
+      "at": "2026-08-18T21:17:59.552Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-NQUHJ6NR.js"
+    },
+    {
+      "at": "2026-08-18T21:17:59.553Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-RFSPGZ3L.js"
+    },
+    {
+      "at": "2026-08-18T21:17:59.598Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/user_pages-PAPX24HT.js"
+    },
+    {
+      "at": "2026-08-18T21:17:59.778Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://connect.facebook.net/signals/config/2403674420141513?v=2.9.380&r=stable&domain=apply.fundhub.ai&hme=c50c23a73e1ec4606e74678f41b5d8ea0d42064a6916ad288a18c9a04f0ffe88&ex_m=113%2C218%2C164%2C25%2C78%2C79%2C156%2C74%2C73%2C11%2C174%2C98"
+    },
+    {
+      "at": "2026-08-18T21:17:59.778Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/chunk-4AIF3XZW.js"
+    },
+    {
+      "at": "2026-08-18T21:17:59.832Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/assets/projects/user_pages/survey-v1-GQL7JGGU.js"
+    },
+    {
+      "at": "2026-08-18T21:17:59.844Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://www.facebook.com/tr/?id=2403674420141513&ev=PageView&dl=https%3A%2F%2Fapply.fundhub.ai%2Fapply&rl=&if=false&ts=1787087879785&iw=false&sw=1440&sh=980&v=2.9.380&r=stable&ec=0&o=12316&aems=0%3B0&fbp=fb.1.1787087876222.74415690652446881"
+    },
+    {
+      "at": "2026-08-18T21:17:59.958Z",
+      "status": 200,
+      "method": "POST",
+      "url": "https://bam.nr-data.net/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=609&ck=0&s=09cd0c0f7d9c2817&ref=https://apply.fundhub.ai/apply&af=err,xhr,stn,ins,spa&be=302&fe=305&dc=294&perf=%7B%22timing%22:%7B%2"
+    },
+    {
+      "at": "2026-08-18T21:18:00.018Z",
+      "status": 204,
+      "method": "POST",
+      "url": "https://apply.fundhub.ai/_cf/a"
+    },
+    {
+      "at": "2026-08-18T21:18:00.053Z",
+      "status": 200,
+      "method": "POST",
+      "url": "https://bam.nr-data.net/events/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=722&ck=0&s=09cd0c0f7d9c2817&ref=https://apply.fundhub.ai/apply"
+    },
+    {
+      "at": "2026-08-18T21:18:00.100Z",
+      "status": 200,
+      "method": "GET",
+      "url": "https://apply.fundhub.ai/apply/cf_survey?workflow_id=1924936"
+    }
+  ]
+}

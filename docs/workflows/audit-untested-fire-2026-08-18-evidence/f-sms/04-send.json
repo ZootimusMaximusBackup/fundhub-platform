@@ -1,0 +1,13 @@
+{
+  "attempted": true,
+  "http": 200,
+  "outcome": "sent",
+  "detail": "SMdcd1d6c6f74b7b0235effae11c8276ee",
+  "message_id": "8755f790-64d1-4cf5-b3bf-e12a113601de",
+  "conversation_id": "2bbb340b-cd2f-472d-af67-8a7ebe020bd9",
+  "deduped": false,
+  "error": null,
+  "sent_count": 1,
+  "ok": true,
+  "api_error": null
+}

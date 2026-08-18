@@ -1,0 +1,25 @@
+{
+  "FUNDHUB_TEST_INBOX_set": true,
+  "FUNDHUB_TEST_PHONE_set": true,
+  "DATABASE_URL_set": true,
+  "RESEND_API_KEY_set": true,
+  "RESEND_FROM_set": true,
+  "RESEND_FROM_kind": {
+    "present": true,
+    "kind": "plain",
+    "domain": "fundhub.ai",
+    "local_has_plus": false,
+    "is_mg_domain": false,
+    "is_fundhub_domain": true,
+    "is_gmail": false
+  },
+  "MAILGUN_SEND_API_KEY_set": true,
+  "MAILGUN_SEND_DOMAIN": "mg.fundhub.ai",
+  "MAILGUN_SEND_FROM_set": false,
+  "MAILGUN_SEND_FROM_kind": {
+    "present": false,
+    "kind": "empty"
+  },
+  "MAILGUN_SIGNING_KEY_set": true,
+  "STAFF_E2E_PASSWORD_set": true
+}

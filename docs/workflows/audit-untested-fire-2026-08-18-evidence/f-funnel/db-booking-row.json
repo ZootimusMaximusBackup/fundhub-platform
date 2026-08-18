@@ -1,0 +1,62 @@
+{
+  "at": "2026-08-18T21:46:59.474Z",
+  "ev": [
+    {
+      "id": "f370a046-46a4-4d8a-a58e-d0d421a73d98",
+      "name": "booking.created",
+      "created_at": "2026-08-18T21:46:13.047Z",
+      "has_client": false,
+      "source": "clickfunnels",
+      "mentions_fire": true,
+      "mentions_800": false
+    }
+  ],
+  "evKeys": [
+    {
+      "k": "name"
+    },
+    {
+      "k": "email"
+    },
+    {
+      "k": "phone"
+    },
+    {
+      "k": "source"
+    },
+    {
+      "k": "endTime"
+    },
+    {
+      "k": "startTime"
+    },
+    {
+      "k": "bookingUid"
+    },
+    {
+      "k": "meetingUrl"
+    },
+    {
+      "k": "rescheduleUid"
+    }
+  ],
+  "task": [
+    {
+      "id": "d5300a31-7620-4abf-8ca7-c9295d1ebbaf",
+      "title": "Strategy session booked",
+      "created_at": "2026-08-18T21:46:13.391Z",
+      "has_due": true,
+      "due_at": "2026-08-19T03:00:00.000Z",
+      "has_client": true,
+      "source_workflow": "calcom"
+    }
+  ],
+  "clientLink": [
+    {
+      "id": "edca0767-88e9-4cf4-8837-47382049503a",
+      "channel_source": "clickfunnels",
+      "has_available_capital": true,
+      "has_target": true
+    }
+  ]
+}

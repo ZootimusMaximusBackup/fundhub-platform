@@ -1,0 +1,73 @@
+{
+  "at": "2026-08-18T16:00:59.568Z",
+  "findings": [
+    {
+      "id": "closer-math",
+      "ok": false,
+      "note": "Live file opened. Credit still blank.",
+      "before": {
+        "credit": "—",
+        "net": "—",
+        "monthly": "—",
+        "draw": "0"
+      },
+      "after": {
+        "credit": "—",
+        "net": "—",
+        "monthly": "—",
+        "funded": "—",
+        "drawn": "—",
+        "draw": "5000"
+      },
+      "shot": "docs/workflows/audit-sixteen-prove4-2026-08-18-evidence/01-closer-math-draw.png",
+      "shots": [
+        "docs/workflows/audit-sixteen-prove4-2026-08-18-evidence/01-closer-math-open.png",
+        "docs/workflows/audit-sixteen-prove4-2026-08-18-evidence/01-closer-math-draw.png"
+      ]
+    },
+    {
+      "id": "contract-send",
+      "ok": false,
+      "note": "no Send contract on deck",
+      "msg": null,
+      "path": "present",
+      "callWhy": "hidden",
+      "shot": "docs/workflows/audit-sixteen-prove4-2026-08-18-evidence/02-present-no-send.png"
+    },
+    {
+      "id": "social-post",
+      "ok": false,
+      "note": "Pick an account to post to first.",
+      "channels": 1,
+      "shot": "docs/workflows/audit-sixteen-prove4-2026-08-18-evidence/03-social-queue.png"
+    },
+    {
+      "id": "creative-job",
+      "ok": false,
+      "note": "Writing tools stay off until the budget loads.",
+      "genEnabled": false,
+      "shot": "docs/workflows/audit-sixteen-prove4-2026-08-18-evidence/04-creative-enqueue.png"
+    },
+    {
+      "id": "portal-request-link",
+      "ok": false,
+      "note": "Form did not confirm.",
+      "passwordFields": 0,
+      "shot": "docs/workflows/audit-sixteen-prove4-2026-08-18-evidence/05-portal-link-requested.png"
+    },
+    {
+      "id": "portal-signin",
+      "ok": true,
+      "note": "Client session started from the emailed link. No password field.",
+      "path": "/app/client-portal.html",
+      "title": "Sign to authorize dispute letters",
+      "shot": "docs/workflows/audit-sixteen-prove4-2026-08-18-evidence/05-portal-signed-in.png"
+    },
+    {
+      "id": "dispute-sign",
+      "ok": false,
+      "note": "Sign in to record your signature.",
+      "shot": "docs/workflows/audit-sixteen-prove4-2026-08-18-evidence/06-dispute-after.png"
+    }
+  ]
+}

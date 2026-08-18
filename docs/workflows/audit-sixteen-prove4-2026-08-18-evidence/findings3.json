@@ -1,0 +1,36 @@
+{
+  "at": "2026-08-18T16:07:52.550Z",
+  "findings": [
+    {
+      "id": "closer-math",
+      "ok": false,
+      "note": "Screen asked, still blank.",
+      "boot": {
+        "hasFHData": true,
+        "hasView": true,
+        "hrefHasClient": true,
+        "credit": "—",
+        "banner": "",
+        "live": false
+      },
+      "apiAfter": {
+        "ok": true,
+        "source": "api",
+        "error": null,
+        "keys": [
+          "ok",
+          "data",
+          "funding"
+        ],
+        "drawCount": null
+      },
+      "apiHits": [
+        {
+          "status": 200,
+          "path": "/api/read/tradelines"
+        }
+      ],
+      "shot": "docs/workflows/audit-sixteen-prove4-2026-08-18-evidence/01c-math-after.png"
+    }
+  ]
+}

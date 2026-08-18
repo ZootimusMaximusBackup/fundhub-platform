@@ -1,0 +1,16 @@
+{
+  "fundhub.ai": {
+    "host": "fundhub.ai",
+    "kind": "cloudflare",
+    "record_count": 3,
+    "mentions_mailgun": false,
+    "mentions_cloudflare": true
+  },
+  "mg.fundhub.ai": {
+    "host": "mg.fundhub.ai",
+    "kind": "mailgun",
+    "record_count": 2,
+    "mentions_mailgun": true,
+    "mentions_cloudflare": false
+  }
+}

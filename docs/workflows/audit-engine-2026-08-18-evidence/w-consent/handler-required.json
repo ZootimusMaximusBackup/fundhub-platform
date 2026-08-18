@@ -1,0 +1,28 @@
+{
+  "id": "consent.handler",
+  "route": "POST /api/consent/capture",
+  "file": "api/consent/capture.mjs",
+  "writes_table": "client_consents",
+  "does_not_pull_credit": true,
+  "default_kind": "soft_pull_consent",
+  "allowed_kinds": ["soft_pull_consent", "dispute_authorization"],
+  "required_body_for_soft_pull_grant": {
+    "client_id": "uuid — required",
+    "action": "grant — optional, defaults to grant",
+    "kind": "soft_pull_consent — optional, defaults if omitted; typo is refused",
+    "capture_method": "typed | checkbox | signature — required, no default",
+    "granted_name": "required when capture_method is typed or signature; not required for checkbox",
+    "consent_version": "optional; empty uses current soft-pull-v1; unknown version is 400",
+    "expires_at": "optional date or null",
+    "document_id": "optional uuid"
+  },
+  "never_read_from_body": [
+    "consent_text — server copies words from src/consent/disclosures.mjs",
+    "org_id — session principal.orgId only",
+    "granted_by — session staff or client id only",
+    "captured_ip — request headers only",
+    "captured_user_agent — request headers only"
+  ],
+  "roles_who_may_record": ["owner", "admin", "closer", "funding_advisor"],
+  "client_principal": "may grant only for their own client_id"
+}

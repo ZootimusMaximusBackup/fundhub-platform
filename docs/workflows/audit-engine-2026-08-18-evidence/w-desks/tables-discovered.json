@@ -1,0 +1,15 @@
+{
+  "tables": [
+    "dispute_cases",
+    "dispute_items",
+    "dispute_letters",
+    "dispute_responses",
+    "document_versions",
+    "documents",
+    "inquiry_attempts",
+    "inquiry_log",
+    "inquiry_prep",
+    "inquiry_removal_cases",
+    "repair_decision_log"
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "emit": {
+    "shape": "docs.received documents-upload shape for W-DESKS FTC id",
+    "name": "docs.received",
+    "emit_id": "03d3666c-158a-47eb-8e2b-c0df70c4548e",
+    "deduped": false,
+    "dispatched": {
+      "handlers": 1,
+      "failed": 0,
+      "recorded": 0
+    },
+    "stored_client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+    "stored_client_id_is_this_file": true,
+    "payload_keys": [
+      "kind",
+      "subtype",
+      "version",
+      "checksum",
+      "byte_size",
+      "client_id",
+      "mime_type",
+      "version_id",
+      "document_id",
+      "uploaded_by",
+      "original_filename"
+    ],
+    "stored": {
+      "id": "03d3666c-158a-47eb-8e2b-c0df70c4548e",
+      "name": "docs.received",
+      "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "idempotency_key": "w-inb:2026-08-18:docs.received",
+      "created_at": "2026-08-18T19:22:31.310Z",
+      "payload": {
+        "document_id": "bf55375a-b4c7-48aa-8241-9b818bc60c82",
+        "version_id": null,
+        "version": 1,
+        "kind": "client_upload",
+        "subtype": "additional_fraud_docs",
+        "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+        "uploaded_by": {
+          "kind": "w-inb-audit"
+        },
+        "mime_type": "application/pdf",
+        "byte_size": 0,
+        "checksum": null,
+        "original_filename": "w-inb-replay.pdf"
+      }
+    }
+  },
+  "inquiry_case": {
+    "id": "d1635579-eda9-4961-8ca8-50abe7151ecf",
+    "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+    "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+    "case_status": "Queued",
+    "selected_bureaus_raw": "EX",
+    "request_source": "w-desks-audit",
+    "is_demo": false,
+    "updated_at": "2026-08-18T19:10:57.247Z"
+  },
+  "events": [
+    {
+      "id": "b9ee35c4-08ab-47c8-86e2-613f4c731715",
+      "name": "docs.received",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "idempotency_key": null,
+      "created_at": "2026-08-18T19:10:58.905Z"
+    },
+    {
+      "id": "03d3666c-158a-47eb-8e2b-c0df70c4548e",
+      "name": "docs.received",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "idempotency_key": "w-inb:2026-08-18:docs.received",
+      "created_at": "2026-08-18T19:22:31.310Z"
+    }
+  ]
+}

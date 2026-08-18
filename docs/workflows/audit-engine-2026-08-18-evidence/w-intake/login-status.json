@@ -1,0 +1,7 @@
+{
+  "status": 200,
+  "ok": true,
+  "has_token": true,
+  "has_set_cookie": true,
+  "staff_role": "owner"
+}

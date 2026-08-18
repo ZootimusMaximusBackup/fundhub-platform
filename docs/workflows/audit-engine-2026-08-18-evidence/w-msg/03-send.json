@@ -1,0 +1,8 @@
+{
+  "attempted": false,
+  "reason": "screen_does_not_resolve_FUNDHUB_TEST_star",
+  "channel": null,
+  "would_hit_demo_fundhub_local": true,
+  "would_hit_stored_phone_not_test": true,
+  "note": "No staff To field. API takes client_id + channel only. Did not send to the unmonitored demo address. Did not text a non-test phone."
+}

@@ -1,0 +1,21 @@
+{
+  "note": "Built against tests. THIS file has no ready letters. Dummy letter_id is not a live send.",
+  "live_letters": [],
+  "payload": {
+    "method": "POST",
+    "path": "/api/repair/send",
+    "body": {
+      "mail": true,
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "letters": [
+        {
+          "bureau": "EX",
+          "html": "<p>W-DESKS dry-run — do not send</p>",
+          "letter_id": "00000000-0000-4000-8000-000000000001"
+        }
+      ]
+    }
+  },
+  "error": null,
+  "sent": false
+}

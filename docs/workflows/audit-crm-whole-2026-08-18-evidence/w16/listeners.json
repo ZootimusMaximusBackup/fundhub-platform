@@ -1,0 +1,48 @@
+{
+  "registerAll": true,
+  "bureauRisk": {
+    "has_client_account": true,
+    "has_soft_pull_consent": false,
+    "would_reach_requestSoftPull": false
+  },
+  "listeners": {
+    "payment.received": [
+      "onPaymentReceived",
+      "onPaymentReceivedForLink",
+      "onPaymentReceivedMoney"
+    ],
+    "diagnostic.paid": [
+      "onDiagnosticPaid",
+      "onDiagnosticPaidMoney",
+      "onDiagnosticPaidSoftPull"
+    ],
+    "deposit.paid": [
+      "onDepositPaid",
+      "onDepositPaidMoney",
+      "onPaidMidCheckin",
+      "onDepositPaidGate"
+    ],
+    "sale.closed": [
+      "onSaleClosed",
+      "onSaleClosedMoney",
+      "onPaidMidCheckin"
+    ],
+    "contract.signed": [],
+    "contract.sent": []
+  },
+  "inngest_workflows_that_listen": {
+    "diagnostic.paid": [
+      "c-00-crs-soft-pull-request",
+      "af-02-referral-ownership-capture"
+    ],
+    "deposit.paid": [
+      "c-02b-inquiry-removal-requested",
+      "s-06-post-call-funding-purchased"
+    ],
+    "payment.received": [
+      "ds-02-diy-letters"
+    ],
+    "sale.closed": []
+  },
+  "inngest_sent_this_run": false
+}

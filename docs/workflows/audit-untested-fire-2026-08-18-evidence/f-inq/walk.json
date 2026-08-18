@@ -1,0 +1,172 @@
+{
+  "at": "2026-08-18T21:42:20.060Z",
+  "signed_in_as": "inquiry@fundhub.ai",
+  "target_case_id": "f872cc9d-d0fb-484b-a0a5-fb90e031b45d",
+  "target_case_status_before": "Queued",
+  "pressed_send": false,
+  "mailed_bureau": false,
+  "opened_forbidden": false,
+  "posts": [
+    {
+      "url": "/api/inquiry-cases",
+      "status": 200,
+      "request_action": "mark_cleared",
+      "request_id": "f872cc9d-d0fb-484b-a0a5-fb90e031b45d",
+      "ok": true,
+      "case_status": "Completed",
+      "event_id": "41c26b69-ccd9-4e15-bf91-cf917852d78c",
+      "event_deduped": false
+    }
+  ],
+  "dialogs": [],
+  "ui_before": {
+    "path": "/app/inquiry-remover.html",
+    "forbidden": false,
+    "has_mark_cleared_detail": true,
+    "mark_cleared_detail_text": "MARK CLEARED",
+    "has_mark_cleared_panel": false,
+    "mark_cleared_panel_text": "",
+    "has_send": true,
+    "detail_open": true,
+    "rows": [
+      "▶TEST Client Role — 0 Queued complete LETTER — —",
+      "▶TEST Client Role — 0 Queued complete LETTER — —",
+      "▶TEST Client Role — 0 Queued complete LETTER — —"
+    ],
+    "targetId": "f872cc9d-d0fb-484b-a0a5-fb90e031b45d"
+  },
+  "ui_after": {
+    "path": "/app/inquiry-remover.html",
+    "forbidden": false,
+    "detail_open": false,
+    "banner": "",
+    "pills": [
+      "Queued",
+      "Queued"
+    ],
+    "body_snip": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 5:42:31 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out Inquiries Repair T— TEST — Inquiry Specialist Role Specialist NEED ME — WORKED — CALLS — CONFIRMED — QUEUE BY BUREAU EQUIFAX 0 none in queue T"
+  },
+  "pressed": "data-act=cleared",
+  "press_count": 1,
+  "after_wait_ms": 25000,
+  "inquiry_removed_before": {
+    "n": 0,
+    "last": null
+  },
+  "inquiry_removed_after": {
+    "n": 1,
+    "last": "2026-08-18T21:42:28.865Z"
+  },
+  "cases_before": [
+    {
+      "id": "f872cc9d-d0fb-484b-a0a5-fb90e031b45d",
+      "case_id": "IRC-1787072070546",
+      "case_status": "Queued",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "funding_round_id": null,
+      "call_fired": false,
+      "delivered": false,
+      "closed_at": null,
+      "completed_at": null,
+      "created_at": "2026-08-18T16:54:30.580Z",
+      "updated_at": "2026-08-18T16:54:30.580Z"
+    },
+    {
+      "id": "e235efc2-2223-4d31-9a24-2a57313fce34",
+      "case_id": "IRC-1787069712644",
+      "case_status": "Queued",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "funding_round_id": null,
+      "call_fired": false,
+      "delivered": false,
+      "closed_at": null,
+      "completed_at": null,
+      "created_at": "2026-08-18T16:15:12.670Z",
+      "updated_at": "2026-08-18T16:15:12.670Z"
+    },
+    {
+      "id": "1d212e99-a7f7-4947-920c-4f55904b512e",
+      "case_id": "IRC-1787069591409",
+      "case_status": "Queued",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "funding_round_id": null,
+      "call_fired": false,
+      "delivered": false,
+      "closed_at": null,
+      "completed_at": null,
+      "created_at": "2026-08-18T16:13:11.440Z",
+      "updated_at": "2026-08-18T16:13:11.440Z"
+    }
+  ],
+  "cases_after": [
+    {
+      "id": "f872cc9d-d0fb-484b-a0a5-fb90e031b45d",
+      "case_id": "IRC-1787072070546",
+      "case_status": "Completed",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "funding_round_id": null,
+      "call_fired": false,
+      "delivered": false,
+      "closed_at": "2026-08-18T21:42:28.802Z",
+      "completed_at": "2026-08-18T21:42:28.802Z",
+      "created_at": "2026-08-18T16:54:30.580Z",
+      "updated_at": "2026-08-18T21:42:28.802Z"
+    },
+    {
+      "id": "e235efc2-2223-4d31-9a24-2a57313fce34",
+      "case_id": "IRC-1787069712644",
+      "case_status": "Queued",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "funding_round_id": null,
+      "call_fired": false,
+      "delivered": false,
+      "closed_at": null,
+      "completed_at": null,
+      "created_at": "2026-08-18T16:15:12.670Z",
+      "updated_at": "2026-08-18T16:15:12.670Z"
+    },
+    {
+      "id": "1d212e99-a7f7-4947-920c-4f55904b512e",
+      "case_id": "IRC-1787069591409",
+      "case_status": "Queued",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "funding_round_id": null,
+      "call_fired": false,
+      "delivered": false,
+      "closed_at": null,
+      "completed_at": null,
+      "created_at": "2026-08-18T16:13:11.440Z",
+      "updated_at": "2026-08-18T16:13:11.440Z"
+    }
+  ],
+  "rounds_before_n": 0,
+  "rounds_after_n": 0,
+  "tasks_c03_test_before_n": 0,
+  "tasks_c03_test_after_n": 1,
+  "client_next_before": {
+    "ready_for_next_round": null,
+    "employee_next_action": null,
+    "tags": []
+  },
+  "client_next_after": {
+    "ready_for_next_round": "true",
+    "employee_next_action": "Apply for Funding",
+    "tags": [
+      "inquiry:completed"
+    ]
+  },
+  "new_event_rows": [
+    {
+      "id": "41c26b69-ccd9-4e15-bf91-cf917852d78c",
+      "name": "inquiry.removed",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "created_at": "2026-08-18T21:42:28.865Z",
+      "idempotency_key": "inquiry.removed:case:f872cc9d-d0fb-484b-a0a5-fb90e031b45d",
+      "payload": {
+        "caseId": "IRC-1787072070546",
+        "inquiryRemovalCaseId": "f872cc9d-d0fb-484b-a0a5-fb90e031b45d",
+        "source": "inquiry_removal_case"
+      }
+    }
+  ]
+}

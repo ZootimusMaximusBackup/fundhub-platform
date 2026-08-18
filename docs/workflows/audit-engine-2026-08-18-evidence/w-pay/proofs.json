@@ -1,0 +1,72 @@
+[
+  {
+    "id": "pay.ground_truth",
+    "result": "MISSING",
+    "expected": "Written intended journey names payment unlock (stage / crs_paid / entitlement 0/6 → n/6)",
+    "observed": "Chris 2026-08-18 board is the checklist. docs/journeys/*-intended.md do not name payment unlock.",
+    "evidence": "docs/workflows/audit-engine-2026-08-18.md"
+  },
+  {
+    "id": "pay.resolve_path",
+    "result": "PASS",
+    "expected": "Show how payment.received and diagnostic.paid get a client_id (emit opts + resolveClient + production commas)",
+    "observed": "emit() stores only opts.clientId. Handlers then resolveClient: event.clientId, else payload email+org, else null. Commas sweeper code passes orgId+idempotencyKey only (no clientId). Live visible payment rows all have events.client_id null.",
+    "evidence": "w-pay/resolve-path.json"
+  },
+  {
+    "id": "pay.before_dump",
+    "result": "PASS",
+    "expected": "Dump this file’s stage / crs_paid / entitlement columns before emit. Discover real names. Do not invent.",
+    "observed": "No clients.stage, no clients.crs_paid, no clients entitlement column. Stage lives on cards → pipeline_stages.key = decision_rendered. crs_paid lives in clients.custom_fields (was null). Catalog 5 codes all locked (portal paints 6 tiles). client_custom_fields.crs_paid column exists but no row.",
+    "evidence": "w-pay/before.json"
+  },
+  {
+    "id": "pay.live_null_client_id",
+    "result": "PASS",
+    "expected": "Sample other clients’ payment.received / diagnostic.paid for null client_id (read-only). Cross-check W10.",
+    "observed": "All historic visible rows have client_id null (3 diagnostic.paid, 4 payment.received before our emit). W10 ‘no email’ is not true on those rows: email key present on all 7. Five emails match no client. Two emails match the forbidden live file (read only; no write). 8556 has 0 of these events.",
+    "evidence": "w-pay/live-payment-events.json"
+  },
+  {
+    "id": "pay.emit_both_shapes",
+    "result": "PASS",
+    "expected": "Emit both events on THIS client. With clientId, and without if safe. Save event ids + stored events.client_id.",
+    "observed": "Without clientId + with this email: stored client_id null, handlers still found this file (2 transactions). With clientId: stored client_id = 41a3199f-1835-4ac8-91c0-d4f37bd92037. resolveClient with no clientId and no email returns null (W10 handler no-op shape).",
+    "evidence": "w-pay/events-fired.json"
+  },
+  {
+    "id": "pay.crs_paid_stamp",
+    "result": "PASS",
+    "expected": "onDiagnosticPaid stamps crs_paid on THIS file",
+    "observed": "clients.custom_fields.crs_paid null → true. clients.crs_paid column MISSING. client_custom_fields.crs_paid exists as a typed column but no row was written (still null).",
+    "evidence": "w-pay/before-after-delta.json"
+  },
+  {
+    "id": "pay.stage_move",
+    "result": "FAIL",
+    "expected": "onDiagnosticPaid moves the sales card to diagnostic_paid (code). Journey does not name this (MISSING).",
+    "observed": "Card stayed sales / decision_rendered. diagnostic_paid sort_order=5, decision_rendered=6. advanceCardToStage will not move backward (already_at_or_past). Card updated_at stayed 2026-08-18T19:12:05Z.",
+    "evidence": "w-pay/before-after-delta.json"
+  },
+  {
+    "id": "pay.entitlement_unlock",
+    "result": "FAIL",
+    "expected": "Entitlement 0/6 → n/6 for THIS file after diagnostic money (board ask). Journey does not name this (MISSING).",
+    "observed": "Held 0 / catalog 5 locked before and after. Portal paints 6 tiles (FUNDING_MASTERY maps to null). product_entitlements has 0 rows so grantFromTransaction is unmapped. Sale row was written; no entitlement row was.",
+    "evidence": "w-pay/before-after-delta.json"
+  },
+  {
+    "id": "pay.soft_pull_bureau",
+    "result": "PASS",
+    "expected": "If diagnostic-soft-pull would call a bureau, stop and record the next function",
+    "observed": "Consent exists. No portal account. Handler ran and stopped at no_account_for_attribution. pulled=false. Next call if an account existed: requestSoftPull then runCrsPull. CRS_ALLOW_LIVE not on. No bureau call.",
+    "evidence": "w-pay/soft-pull.json"
+  },
+  {
+    "id": "pay.c00_inngest",
+    "result": "PASS",
+    "expected": "Do not enable Inngest. Record would-run / skip / error for c-00",
+    "observed": "INNGEST_EVENT_KEY is present in env; this run passed skipInngest and did not send. Local handle() ran: done=true pulled=false reason=no_account_for_attribution. Inngest c-00 would-run if emit sent.",
+    "evidence": "w-pay/c00.json"
+  }
+]

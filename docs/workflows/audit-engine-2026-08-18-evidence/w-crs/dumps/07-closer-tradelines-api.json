@@ -1,0 +1,22 @@
+{
+  "status": 200,
+  "ok": true,
+  "top_keys": [
+    "data",
+    "funding",
+    "ok"
+  ],
+  "tradeline_count": 0,
+  "funding_keys": [
+    "allocation",
+    "guardrail",
+    "lenderMatchCount",
+    "lenderMatchSummary",
+    "lenderMatches",
+    "payMethodComparison",
+    "totalAvailableCredit"
+  ],
+  "totalAvailableCredit": 37150,
+  "allocation": null,
+  "guardrail": null
+}

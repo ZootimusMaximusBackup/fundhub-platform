@@ -1,0 +1,48 @@
+{
+  "broken_hop": "front-end quit",
+  "not": [
+    "session missing",
+    "wrong id",
+    "API 401",
+    "API 200 empty"
+  ],
+  "why_not_session_missing": {
+    "verify_status": 200,
+    "verify_ok": true,
+    "verify_has_token": true,
+    "fh_token_present": true,
+    "session_status": 200,
+    "session_ok": true,
+    "session_principal": "client",
+    "header_name": "TEST — Client Role"
+  },
+  "why_not_wrong_id": {
+    "verify_account_clientId": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+    "verify_account_clientId_is_test": true,
+    "verify_account_clientId_is_live": false,
+    "url_has_id": false,
+    "opened_live": false
+  },
+  "why_not_api_401": {
+    "probe_portal_summary_status": 200,
+    "probe_portal_contracts_status": 200
+  },
+  "why_not_api_200_empty": {
+    "note": "05-portal.json labeled API 200 empty because the response listener also saw the auditor probe. Those 200s were the probe, not the page. The page never asked for entitlements (it would have, if it had a file id). portal-summary keys were ok/prequal_amount/prequal_display/soft_pull_complete. portal-contracts keys were ok/count/items with count 1.",
+    "page_called_entitlements": false,
+    "page_early_return_when_no_clientId": true
+  },
+  "why_front_end_quit": {
+    "url_has_id": false,
+    "fh_account_present": false,
+    "fh_account_clientId": null,
+    "portal_login_stores_fh_account": false,
+    "login_html_stores_fh_account": true,
+    "verify_returned_account_with_clientId": true,
+    "portal_reads_id_from_url_or_fh_account_only": true,
+    "saw_could_not_load": true,
+    "hero_empty": true,
+    "entitlements_line": null,
+    "did_not_press_sign": true
+  }
+}

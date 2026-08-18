@@ -1,0 +1,30 @@
+{
+  "hard_stop": "one POST only; no retry; no bank URL open; no Oxylabs past missing-cred / last safe error",
+  "stop_reason": "No match. Used designed dummy lender_id (same as W6/G5). Expect oxylabs_credentials_missing or lender_not_found.",
+  "oxylabs_names": {
+    "OXYLABS_USERNAME": {
+      "present": false
+    },
+    "OXYLABS_PASSWORD": {
+      "present": false
+    },
+    "ready": false
+  },
+  "used_matched_lender": false,
+  "body": {
+    "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+    "lender_id": "00000000-0000-4000-8000-000000000001",
+    "lender_id_class": "dummy-00000000-0000-4000-8000-000000000001"
+  },
+  "status": 503,
+  "ok": false,
+  "error": "oxylabs_credentials_missing",
+  "message": "Oxylabs credentials are not set (OXYLABS_USERNAME, OXYLABS_PASSWORD). See docs/STILL-MISSING.md.",
+  "session_id": null,
+  "body_redacted": {
+    "ok": false,
+    "error": "oxylabs_credentials_missing",
+    "message": "Oxylabs credentials are not set (OXYLABS_USERNAME, OXYLABS_PASSWORD). See docs/STILL-MISSING.md.",
+    "session_id": null
+  }
+}

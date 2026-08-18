@@ -1,0 +1,23 @@
+{
+  "at": "2026-08-18T21:44:33.507Z",
+  "crm_door": {
+    "get_cases": {
+      "status": 503,
+      "error": "not_configured",
+      "message": "Inquiry phone runtime is not configured"
+    },
+    "post_launch": {
+      "status": 503,
+      "error": "not_configured",
+      "message": "Inquiry phone runtime is not configured",
+      "has_call_id": false
+    }
+  },
+  "used_crm_launch": false,
+  "used_bland_api": true,
+  "phone_masked": "***0865",
+  "call_id": "70a094ce-77f5-4cca-a9f2-5d75d899cdff",
+  "error": null,
+  "bland_http": 200,
+  "bland_status": "success"
+}

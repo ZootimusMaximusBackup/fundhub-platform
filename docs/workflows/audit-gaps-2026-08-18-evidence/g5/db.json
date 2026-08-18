@@ -1,0 +1,1038 @@
+{
+  "at": "2026-08-18T17:46:34.656Z",
+  "tables": [
+    {
+      "table_schema": "public",
+      "table_name": "call_compliance_flags"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "call_outcomes"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "events"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "failed_events"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "outbound_calls"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "proxy_sessions"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "shifts"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "tasks"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "v_partner_book"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "webhook_captures"
+    }
+  ],
+  "eventCounts": [
+    {
+      "name": "entry.captured",
+      "n": 400,
+      "first_at": "2026-08-12T16:37:22.741Z",
+      "last_at": "2026-08-18T06:53:33.813Z"
+    },
+    {
+      "name": "survey.submitted",
+      "n": 267,
+      "first_at": "2026-08-12T16:37:24.869Z",
+      "last_at": "2026-08-18T06:53:34.337Z"
+    },
+    {
+      "name": "booking.created",
+      "n": 30,
+      "first_at": "2026-08-12T23:22:27.558Z",
+      "last_at": "2026-08-18T06:53:33.712Z"
+    },
+    {
+      "name": "message.queued",
+      "n": 22,
+      "first_at": "2026-08-13T07:33:02.262Z",
+      "last_at": "2026-08-18T16:15:07.151Z"
+    },
+    {
+      "name": "analysis.completed",
+      "n": 9,
+      "first_at": "2026-08-14T18:07:59.504Z",
+      "last_at": "2026-08-16T10:14:50.089Z"
+    },
+    {
+      "name": "decision.rendered",
+      "n": 9,
+      "first_at": "2026-08-14T18:07:59.867Z",
+      "last_at": "2026-08-16T10:14:50.210Z"
+    },
+    {
+      "name": "contract.sent",
+      "n": 5,
+      "first_at": "2026-08-16T17:06:41.253Z",
+      "last_at": "2026-08-18T16:07:54.317Z"
+    },
+    {
+      "name": "round.approved",
+      "n": 5,
+      "first_at": "2026-08-16T10:00:16.449Z",
+      "last_at": "2026-08-16T10:13:36.907Z"
+    },
+    {
+      "name": "round.submitted",
+      "n": 5,
+      "first_at": "2026-08-16T10:00:16.164Z",
+      "last_at": "2026-08-16T10:13:36.618Z"
+    },
+    {
+      "name": "round.started",
+      "n": 5,
+      "first_at": "2026-08-16T10:00:14.999Z",
+      "last_at": "2026-08-16T10:13:35.483Z"
+    },
+    {
+      "name": "inquiry.gate.clear",
+      "n": 4,
+      "first_at": "2026-08-13T07:32:56.369Z",
+      "last_at": "2026-08-16T10:13:38.523Z"
+    },
+    {
+      "name": "payment.received",
+      "n": 4,
+      "first_at": "2026-08-12T14:24:11.062Z",
+      "last_at": "2026-08-16T05:10:15.244Z"
+    },
+    {
+      "name": "round.closeout",
+      "n": 4,
+      "first_at": "2026-08-13T07:32:57.118Z",
+      "last_at": "2026-08-16T10:13:38.233Z"
+    },
+    {
+      "name": "diagnostic.paid",
+      "n": 3,
+      "first_at": "2026-08-12T14:30:38.523Z",
+      "last_at": "2026-08-16T05:10:16.333Z"
+    },
+    {
+      "name": "round.funded",
+      "n": 3,
+      "first_at": "2026-08-16T10:04:31.244Z",
+      "last_at": "2026-08-16T10:13:37.513Z"
+    },
+    {
+      "name": "contract.signed",
+      "n": 2,
+      "first_at": "2026-08-18T16:12:38.818Z",
+      "last_at": "2026-08-18T16:55:19.226Z"
+    },
+    {
+      "name": "payment.refunded",
+      "n": 1,
+      "first_at": "2026-08-13T07:32:54.419Z",
+      "last_at": "2026-08-13T07:32:54.419Z"
+    },
+    {
+      "name": "repair.analysis.complete",
+      "n": 1,
+      "first_at": "2026-08-13T07:33:00.514Z",
+      "last_at": "2026-08-13T07:33:00.514Z"
+    },
+    {
+      "name": "diy.package.ready",
+      "n": 1,
+      "first_at": "2026-08-13T07:33:01.251Z",
+      "last_at": "2026-08-13T07:33:01.251Z"
+    },
+    {
+      "name": "booking.cancelled",
+      "n": 1,
+      "first_at": "2026-08-13T07:32:51.844Z",
+      "last_at": "2026-08-13T07:32:51.844Z"
+    },
+    {
+      "name": "repair.docs.complete",
+      "n": 1,
+      "first_at": "2026-08-13T07:32:59.768Z",
+      "last_at": "2026-08-13T07:32:59.768Z"
+    },
+    {
+      "name": "commission.earned",
+      "n": 1,
+      "first_at": "2026-08-13T07:32:58.219Z",
+      "last_at": "2026-08-13T07:32:58.219Z"
+    },
+    {
+      "name": "payment.canceled",
+      "n": 1,
+      "first_at": "2026-08-13T07:32:53.672Z",
+      "last_at": "2026-08-13T07:32:53.672Z"
+    },
+    {
+      "name": "invoice.paid",
+      "n": 1,
+      "first_at": "2026-08-13T07:32:59.023Z",
+      "last_at": "2026-08-13T07:32:59.023Z"
+    },
+    {
+      "name": "call.completed",
+      "n": 1,
+      "first_at": "2026-08-15T02:00:45.506Z",
+      "last_at": "2026-08-15T02:00:45.506Z"
+    },
+    {
+      "name": "payment.disputed",
+      "n": 1,
+      "first_at": "2026-08-13T07:32:55.366Z",
+      "last_at": "2026-08-13T07:32:55.366Z"
+    },
+    {
+      "name": "payment.failed",
+      "n": 1,
+      "first_at": "2026-08-13T07:22:43.652Z",
+      "last_at": "2026-08-13T07:22:43.652Z"
+    },
+    {
+      "name": "booking.noshow",
+      "n": 1,
+      "first_at": "2026-08-13T07:22:37.894Z",
+      "last_at": "2026-08-13T07:22:37.894Z"
+    },
+    {
+      "name": "payment.expired",
+      "n": 1,
+      "first_at": "2026-08-13T07:32:52.882Z",
+      "last_at": "2026-08-13T07:32:52.882Z"
+    }
+  ],
+  "listenCounts": [
+    {
+      "name": "analysis.completed",
+      "n": 9,
+      "first_at": "2026-08-14T18:07:59.504Z",
+      "last_at": "2026-08-16T10:14:50.089Z"
+    },
+    {
+      "name": "booking.created",
+      "n": 30,
+      "first_at": "2026-08-12T23:22:27.558Z",
+      "last_at": "2026-08-18T06:53:33.712Z"
+    },
+    {
+      "name": "booking.noshow",
+      "n": 1,
+      "first_at": "2026-08-13T07:22:37.894Z",
+      "last_at": "2026-08-13T07:22:37.894Z"
+    },
+    {
+      "name": "call.completed",
+      "n": 1,
+      "first_at": "2026-08-15T02:00:45.506Z",
+      "last_at": "2026-08-15T02:00:45.506Z"
+    },
+    {
+      "name": "deposit.paid",
+      "n": 0,
+      "first_at": null,
+      "last_at": null
+    },
+    {
+      "name": "diagnostic.paid",
+      "n": 3,
+      "first_at": "2026-08-12T14:30:38.523Z",
+      "last_at": "2026-08-16T05:10:16.333Z"
+    },
+    {
+      "name": "docs.received",
+      "n": 0,
+      "first_at": null,
+      "last_at": null
+    },
+    {
+      "name": "entry.captured",
+      "n": 400,
+      "first_at": "2026-08-12T16:37:22.741Z",
+      "last_at": "2026-08-18T06:53:33.813Z"
+    },
+    {
+      "name": "inquiry.removed",
+      "n": 0,
+      "first_at": null,
+      "last_at": null
+    },
+    {
+      "name": "mail.response",
+      "n": 0,
+      "first_at": null,
+      "last_at": null
+    },
+    {
+      "name": "message.inbound",
+      "n": 0,
+      "first_at": null,
+      "last_at": null
+    },
+    {
+      "name": "payment.received",
+      "n": 4,
+      "first_at": "2026-08-12T14:24:11.062Z",
+      "last_at": "2026-08-16T05:10:15.244Z"
+    },
+    {
+      "name": "round.approved",
+      "n": 5,
+      "first_at": "2026-08-16T10:00:16.449Z",
+      "last_at": "2026-08-16T10:13:36.907Z"
+    },
+    {
+      "name": "round.funded",
+      "n": 3,
+      "first_at": "2026-08-16T10:04:31.244Z",
+      "last_at": "2026-08-16T10:13:37.513Z"
+    },
+    {
+      "name": "round.started",
+      "n": 5,
+      "first_at": "2026-08-16T10:00:14.999Z",
+      "last_at": "2026-08-16T10:13:35.483Z"
+    },
+    {
+      "name": "round.submitted",
+      "n": 5,
+      "first_at": "2026-08-16T10:00:16.164Z",
+      "last_at": "2026-08-16T10:13:36.618Z"
+    },
+    {
+      "name": "survey.submitted",
+      "n": 267,
+      "first_at": "2026-08-12T16:37:24.869Z",
+      "last_at": "2026-08-18T06:53:34.337Z"
+    }
+  ],
+  "neverSeenFunctions": [
+    "c-02b-inquiry-removal-requested",
+    "c-03-inquiry-removed-resume-or-hold",
+    "dpc-03-inbound-reply-router",
+    "f-06-funding-conditions-missing-docs",
+    "f-09-funding-declined-no-path",
+    "f-11-bank-email-event-router",
+    "s-06-post-call-funding-purchased"
+  ],
+  "neverSeen": [
+    {
+      "id": "af-02-referral-ownership-capture",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "entry.captured",
+          "n": 400
+        },
+        {
+          "name": "diagnostic.paid",
+          "n": 3
+        },
+        {
+          "name": "analysis.completed",
+          "n": 9
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "ai-set-03-no-answer-cadence",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "call.completed",
+          "n": 1
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "ai-set-04-3way-handoff",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "booking.created",
+          "n": 30
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "at-01-first-touch-capture",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "entry.captured",
+          "n": 400
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "bc-01-customer-responsiveness",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "round.started",
+          "n": 5
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "bc-02-customer-friction",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "round.started",
+          "n": 5
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "bs-01-precall-launcher",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "booking.created",
+          "n": 30
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "c-00-crs-soft-pull-request",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "diagnostic.paid",
+          "n": 3
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "c-02-inquiry-created",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "analysis.completed",
+          "n": 9
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "c-02b-inquiry-removal-requested",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "deposit.paid",
+          "n": 0
+        }
+      ],
+      "neverSeenEvent": true
+    },
+    {
+      "id": "c-03-inquiry-removed-resume-or-hold",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "inquiry.removed",
+          "n": 0
+        }
+      ],
+      "neverSeenEvent": true
+    },
+    {
+      "id": "c-05-pre-funding-review",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "round.started",
+          "n": 5
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "c-06-crs-results-router",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "analysis.completed",
+          "n": 9
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "contract-chaser",
+      "trigger": "cron",
+      "eventCounts": [],
+      "neverSeenEvent": null
+    },
+    {
+      "id": "dpc-01-analyzer-lock",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "analysis.completed",
+          "n": 9
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "dpc-02-call-outcome-enforcement",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "booking.created",
+          "n": 30
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "dpc-03-inbound-reply-router",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "message.inbound",
+          "n": 0
+        }
+      ],
+      "neverSeenEvent": true
+    },
+    {
+      "id": "dpc-05-no-progress-escalation",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "booking.created",
+          "n": 30
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "ds-01-repair-referral",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "call.completed",
+          "n": 1
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "ds-02-diy-letters",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "payment.received",
+          "n": 4
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "f-01-funding-intake",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "round.started",
+          "n": 5
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "f-02-portal-id-missing",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "round.started",
+          "n": 5
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "f-03-round-submitted",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "round.submitted",
+          "n": 5
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "f-04-round-approvals",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "round.approved",
+          "n": 5
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "f-05-inquiry-cleanup-gate",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "round.approved",
+          "n": 5
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "f-06-funding-conditions-missing-docs",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "mail.response",
+          "n": 0
+        },
+        {
+          "name": "docs.received",
+          "n": 0
+        }
+      ],
+      "neverSeenEvent": true
+    },
+    {
+      "id": "f-07-funding-locked",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "round.funded",
+          "n": 3
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "f-08-post-funding-monitoring",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "round.funded",
+          "n": 3
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "f-09-funding-declined-no-path",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "mail.response",
+          "n": 0
+        }
+      ],
+      "neverSeenEvent": true
+    },
+    {
+      "id": "f-10-client-funding-inbox-provisioner",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "round.started",
+          "n": 5
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "f-11-bank-email-event-router",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "mail.response",
+          "n": 0
+        }
+      ],
+      "neverSeenEvent": true
+    },
+    {
+      "id": "inquiry-call-sweeper",
+      "trigger": "cron",
+      "eventCounts": [],
+      "neverSeenEvent": null
+    },
+    {
+      "id": "message-dispatch-sweeper",
+      "trigger": "cron",
+      "eventCounts": [],
+      "neverSeenEvent": null
+    },
+    {
+      "id": "n-01-cold-nurture",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "entry.captured",
+          "n": 400
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "n-02-warm-nurture",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "survey.submitted",
+          "n": 267
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "n-03-hot-nurture",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "booking.created",
+          "n": 30
+        },
+        {
+          "name": "call.completed",
+          "n": 1
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "n-04-post-funding-nurture",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "round.funded",
+          "n": 3
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "n-06-renewal-second-wave",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "round.funded",
+          "n": 3
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "round-started-client-notify",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "round.started",
+          "n": 5
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "s-01-new-lead-intake",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "entry.captured",
+          "n": 400
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "s-02-incomplete-survey-nudge",
+      "registered": false,
+      "eventCounts": [
+        {
+          "name": "entry.captured",
+          "n": 400
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "s-04-call-booked",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "booking.created",
+          "n": 30
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "s-04b-booking-reminders",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "booking.created",
+          "n": 30
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "s-05a-no-show-recovery",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "booking.noshow",
+          "n": 1
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "s-06-post-call-funding-purchased",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "deposit.paid",
+          "n": 0
+        }
+      ],
+      "neverSeenEvent": true
+    },
+    {
+      "id": "s-08-post-call-funding-declined",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "call.completed",
+          "n": 1
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "s-nobook-chase",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "survey.submitted",
+          "n": 267
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "sys-01-client-value-calculator",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "round.approved",
+          "n": 5
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "sys-01-ltv-calculator",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "round.funded",
+          "n": 3
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "u-02-analyzer-complete-delivery",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "analysis.completed",
+          "n": 9
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "u-03-crs-snapshot-sync",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "analysis.completed",
+          "n": 9
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "u-04-promote-crs-primary",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "analysis.completed",
+          "n": 9
+        }
+      ],
+      "neverSeenEvent": false
+    },
+    {
+      "id": "u-05-data-health-monitor",
+      "registered": true,
+      "eventCounts": [
+        {
+          "name": "analysis.completed",
+          "n": 9
+        }
+      ],
+      "neverSeenEvent": false
+    }
+  ],
+  "bookingSource": [
+    {
+      "name": "booking.cancelled",
+      "source": "gauntlet-more",
+      "n": 1
+    },
+    {
+      "name": "booking.created",
+      "source": "clickfunnels",
+      "n": 26
+    },
+    {
+      "name": "booking.created",
+      "source": "gauntlet-all",
+      "n": 2
+    },
+    {
+      "name": "booking.created",
+      "source": "gauntlet",
+      "n": 1
+    },
+    {
+      "name": "booking.created",
+      "source": "sim",
+      "n": 1
+    },
+    {
+      "name": "booking.noshow",
+      "source": "gauntlet-all",
+      "n": 1
+    }
+  ],
+  "bookingIdem": {
+    "n": 32,
+    "calcom_idem": 0,
+    "has_booking_uid": 32
+  },
+  "tasks": {
+    "n": 66,
+    "with_due_at": 15,
+    "open_dated": 15,
+    "due_future": 0
+  },
+  "tasksByWorkflow": [
+    {
+      "source_workflow": "calcom",
+      "n": 15,
+      "dated": 15
+    },
+    {
+      "source_workflow": "ai-set-04-3way-handoff",
+      "n": 13,
+      "dated": 0
+    },
+    {
+      "source_workflow": "c-05-pre-funding-review",
+      "n": 7,
+      "dated": 0
+    },
+    {
+      "source_workflow": "f-10-client-funding-inbox-provisioner",
+      "n": 7,
+      "dated": 0
+    },
+    {
+      "source_workflow": "f-01-funding-intake",
+      "n": 7,
+      "dated": 0
+    },
+    {
+      "source_workflow": "f-07-funding-locked-fee-not-ready",
+      "n": 5,
+      "dated": 0
+    },
+    {
+      "source_workflow": "f-08-post-funding-monitoring",
+      "n": 5,
+      "dated": 0
+    },
+    {
+      "source_workflow": "u-05-data-health-monitor",
+      "n": 3,
+      "dated": 0
+    },
+    {
+      "source_workflow": "customer-insights-post",
+      "n": 2,
+      "dated": 0
+    },
+    {
+      "source_workflow": "ds-02-diy-letters",
+      "n": 2,
+      "dated": 0
+    }
+  ],
+  "callOutcomes": {
+    "n": 6,
+    "with_booking_ref": 0
+  },
+  "webhookCaptures": [
+    {
+      "provider": "clickfunnels",
+      "n": 418,
+      "last_at": "2026-08-18T06:53:33.747Z"
+    }
+  ],
+  "failedEvents": [
+    {
+      "event_name": "survey.submitted",
+      "n": 2
+    }
+  ],
+  "proxy": {
+    "n": 0,
+    "test_client": 0,
+    "last_at": null
+  },
+  "proxyByStatus": []
+}

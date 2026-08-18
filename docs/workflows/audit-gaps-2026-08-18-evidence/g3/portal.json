@@ -1,0 +1,76 @@
+{
+  "at": "2026-08-18T17:51:48.955Z",
+  "findings": [
+    {
+      "id": "g3b-home",
+      "happened": "{\"path\":\"/app/client-portal.html\",\"name_ok\":true,\"greet\":\"Welcome back, TEST\",\"video\":\"Welcome video is not available\",\"title\":\"Sign to authorize dispute letters\",\"signed\":false,\"formVisible\":true,\"leaked_other\":false,\"has_test_id\":false,\"tiles\":[\"Welcome video\",\"letters\",\"letter",
+      "verdict": "WORKS"
+    },
+    {
+      "id": "g3b-sign",
+      "claim": "Pressed Sign once on test file",
+      "happened": "{\"title\":\"You already signed\",\"msg\":\"Signature recorded. We can prepare dispute letters. This is not a credit pull.\",\"signed\":true}",
+      "writes": [
+        {
+          "method": "POST",
+          "status": 200,
+          "path": "/api/consent/capture"
+        }
+      ],
+      "verdict": "WORKS"
+    },
+    {
+      "id": "g3b-unlocks",
+      "claim": "What unlocked after sign",
+      "happened": "{\"video\":\"Welcome video is not available\",\"videoMissing\":true,\"tiles\":[\"0 unlocked\",\"6 locked\"],\"scores\":true,\"letters\":true}",
+      "verdict": "OBSERVED"
+    }
+  ],
+  "writes": [
+    {
+      "method": "POST",
+      "status": 200,
+      "path": "/api/consent/capture"
+    }
+  ],
+  "before": {
+    "consents": [],
+    "entitlements": [],
+    "documents": [
+      {
+        "id": "f13993df-4ab3-4ce2-9196-cad390a90728",
+        "kind": "authorization",
+        "delivery_status": "not_delivered"
+      },
+      {
+        "id": "9cb7d591-23cd-40e0-94cc-2b02894c9e16",
+        "kind": "authorization",
+        "delivery_status": "sent"
+      }
+    ]
+  },
+  "after": {
+    "consents": [
+      {
+        "id": "d81a91d7-b81f-4d3f-9102-38186e9b4341",
+        "kind": "dispute_authorization",
+        "capture_method": "signature",
+        "revoked": false,
+        "granted_at": "2026-08-18T17:51:44.820Z"
+      }
+    ],
+    "entitlements": [],
+    "documents": [
+      {
+        "id": "f13993df-4ab3-4ce2-9196-cad390a90728",
+        "kind": "authorization",
+        "delivery_status": "not_delivered"
+      },
+      {
+        "id": "9cb7d591-23cd-40e0-94cc-2b02894c9e16",
+        "kind": "authorization",
+        "delivery_status": "sent"
+      }
+    ]
+  }
+}

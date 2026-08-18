@@ -1,0 +1,42 @@
+[
+  {
+    "id": "7fc5ff39-f3be-459e-b534-1ba08ca00029",
+    "status": "sent",
+    "provider": "resend",
+    "attempts": 1,
+    "to_address_eq_inbox": false,
+    "to_is_fundhub_ai": true,
+    "is_test_client": true,
+    "created_at": "2026-08-18T20:04:30.454Z"
+  },
+  {
+    "id": "b847c472-8802-4fef-bffe-7c8ba3f21935",
+    "status": "sent",
+    "provider": "resend",
+    "attempts": 1,
+    "to_address_eq_inbox": false,
+    "to_is_fundhub_ai": true,
+    "is_test_client": true,
+    "created_at": "2026-08-18T16:10:32.562Z"
+  },
+  {
+    "id": "c6a67a2d-444b-450e-bf64-23f6bfa5608a",
+    "status": "sent",
+    "provider": "resend",
+    "attempts": 1,
+    "to_address_eq_inbox": false,
+    "to_is_fundhub_ai": true,
+    "is_test_client": true,
+    "created_at": "2026-08-18T16:04:32.650Z"
+  },
+  {
+    "id": "52f39bbe-24a5-4164-a330-b49944311b47",
+    "status": "sent",
+    "provider": "resend",
+    "attempts": 1,
+    "to_address_eq_inbox": false,
+    "to_is_fundhub_ai": true,
+    "is_test_client": true,
+    "created_at": "2026-08-18T16:00:52.037Z"
+  }
+]

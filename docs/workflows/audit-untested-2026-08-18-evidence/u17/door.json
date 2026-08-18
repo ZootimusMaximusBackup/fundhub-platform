@@ -1,0 +1,25 @@
+{
+  "note": "GET only. Did not POST a fake webhook body.",
+  "postgrid_get": {
+    "method": "GET",
+    "path": "/api/webhooks/postgrid",
+    "status": 405,
+    "error": "Method not allowed",
+    "keys": [
+      "ok",
+      "error"
+    ],
+    "bodyPreview": "{\"ok\":false,\"error\":\"Method not allowed\"}"
+  },
+  "ghl_get": {
+    "method": "GET",
+    "path": "/api/webhooks/ghl",
+    "status": 405,
+    "error": "Method not allowed",
+    "keys": [
+      "ok",
+      "error"
+    ],
+    "bodyPreview": "{\"ok\":false,\"error\":\"Method not allowed\"}"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "live_portal_login_status_ok": true,
+  "live_portal_login_sets_fh_token": true,
+  "live_portal_login_sets_fh_account": false,
+  "live_portal_login_sets_fh_role": false,
+  "live_login_sets_fh_token": true,
+  "live_login_sets_fh_account": true,
+  "live_login_sets_fh_role": true,
+  "note": "W1: portal-login never stores fh_account; login.html does"
+}

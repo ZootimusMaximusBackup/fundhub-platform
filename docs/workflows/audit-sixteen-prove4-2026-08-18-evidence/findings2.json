@@ -1,0 +1,68 @@
+{
+  "at": "2026-08-18T16:04:38.478Z",
+  "findings": [
+    {
+      "id": "closer-math",
+      "ok": false,
+      "note": "Credit still blank. Banner: (none).",
+      "hrefHasClient": true,
+      "liveFlag": false,
+      "apiHits": [],
+      "after": {
+        "credit": "—",
+        "net": "—",
+        "monthly": "—",
+        "funded": "—",
+        "drawn": "—",
+        "draw": "5000",
+        "banner": ""
+      },
+      "shot": "docs/workflows/audit-sixteen-prove4-2026-08-18-evidence/01b-closer-math-draw.png"
+    },
+    {
+      "id": "contract-send",
+      "ok": false,
+      "note": "This contract still has blanks in it: Company name, Permission lasts (days), Withdrawal email address. Fill them in before sending.",
+      "path": "closer-call",
+      "shot": "docs/workflows/audit-sixteen-prove4-2026-08-18-evidence/02b-contract-sent.png"
+    },
+    {
+      "id": "creative-job",
+      "ok": false,
+      "note": "The owner has not turned this on for this partner.",
+      "picked": true,
+      "enabled": false,
+      "shot": "docs/workflows/audit-sixteen-prove4-2026-08-18-evidence/04b-creative-enqueue.png"
+    },
+    {
+      "id": "portal-request-link",
+      "ok": true,
+      "note": "If that email address has a Fundhub portal, a sign-in link is on its way. The link expires in 15 minutes.",
+      "passwordFields": 0,
+      "shot": "docs/workflows/audit-sixteen-prove4-2026-08-18-evidence/05b-portal-link-requested.png"
+    },
+    {
+      "id": "portal-signin",
+      "ok": true,
+      "note": "Client session started. Account was not stored, so the page does not know which file to open.",
+      "path": "/app/client-portal.html",
+      "hasAccount": false,
+      "shot": "docs/workflows/audit-sixteen-prove4-2026-08-18-evidence/05b-portal-signed-in.png"
+    },
+    {
+      "id": "dispute-on-default-landing",
+      "ok": false,
+      "note": "Signed in, but the sign card still says sign in. The page never stored the client id.",
+      "shot": "docs/workflows/audit-sixteen-prove4-2026-08-18-evidence/06b-dispute-default.png"
+    },
+    {
+      "id": "dispute-sign",
+      "ok": false,
+      "note": "Session did not name a client file.",
+      "recovered": {
+        "ok": false,
+        "status": 200
+      }
+    }
+  ]
+}

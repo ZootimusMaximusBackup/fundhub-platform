@@ -1,0 +1,17 @@
+{
+  "status": 200,
+  "ok": true,
+  "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+  "email": "sim+1787079946953@demo.fundhub.local",
+  "email_is_demo_fundhub_local": true,
+  "phone": {
+    "present": true,
+    "masked": "+1555…",
+    "digits": 11,
+    "starts_1555": true
+  },
+  "first_name": "Simulated",
+  "last_name": "Client",
+  "email_equals_FUNDHUB_TEST_INBOX": false,
+  "phone_equals_FUNDHUB_TEST_PHONE": false
+}

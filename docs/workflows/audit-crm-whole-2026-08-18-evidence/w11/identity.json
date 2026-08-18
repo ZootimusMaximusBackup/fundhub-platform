@@ -1,0 +1,24 @@
+{
+  "queried_at": "2026-08-18T17:15:22.186Z",
+  "database_url_meta": {
+    "username_role": "fundhub_app",
+    "username_has_project_suffix": true,
+    "via": "supabase_pooler",
+    "db_name": "postgres",
+    "port": "5432"
+  },
+  "session": {
+    "current_user": "fundhub_app",
+    "session_user": "fundhub_app",
+    "current_database": "postgres",
+    "current_rolsuper": false,
+    "current_rolbypassrls": false,
+    "current_rolcanlogin": true,
+    "fundhub_app_rolsuper": false,
+    "fundhub_app_rolbypassrls": false,
+    "fundhub_app_rolcanlogin": true,
+    "postgres_rolsuper": false,
+    "postgres_rolbypassrls": true
+  },
+  "note": "DATABASE_URL itself is not written. username_role is the login role prefix only."
+}

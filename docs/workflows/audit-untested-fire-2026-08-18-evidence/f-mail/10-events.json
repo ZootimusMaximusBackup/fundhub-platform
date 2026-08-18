@@ -1,0 +1,25 @@
+{
+  "test_client": [
+    {
+      "name": "message.inbound",
+      "n": 2,
+      "last_at": "2026-08-18T21:43:28.076Z"
+    }
+  ],
+  "recent": [
+    {
+      "name": "message.inbound",
+      "created_at": "2026-08-18T21:43:28.076Z",
+      "has_from": true,
+      "body_is_reply": false,
+      "body_is_stop": true
+    },
+    {
+      "name": "message.inbound",
+      "created_at": "2026-08-18T21:43:25.456Z",
+      "has_from": true,
+      "body_is_reply": true,
+      "body_is_stop": false
+    }
+  ]
+}

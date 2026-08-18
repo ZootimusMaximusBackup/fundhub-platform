@@ -1,0 +1,54 @@
+{
+  "ranAt": "2026-08-18T17:19:59.079Z",
+  "otherIdPrefix": "f9ae2a44",
+  "rows": [
+    {
+      "name": "portal-summary",
+      "ownStatus": 200,
+      "otherStatus": 200,
+      "sameHash": true,
+      "sameBytes": true,
+      "ownContainsOwnId": false,
+      "ownContainsOtherId": false,
+      "otherContainsOwnId": false,
+      "otherContainsOtherId": false,
+      "leakedForbidden": false
+    },
+    {
+      "name": "portal-contracts",
+      "ownStatus": 200,
+      "otherStatus": 200,
+      "sameHash": true,
+      "sameBytes": true,
+      "ownContainsOwnId": false,
+      "ownContainsOtherId": false,
+      "otherContainsOwnId": false,
+      "otherContainsOtherId": false,
+      "leakedForbidden": false
+    },
+    {
+      "name": "entitlements",
+      "ownStatus": 200,
+      "otherStatus": 200,
+      "sameHash": true,
+      "sameBytes": true,
+      "ownContainsOwnId": false,
+      "ownContainsOtherId": false,
+      "otherContainsOwnId": false,
+      "otherContainsOtherId": false,
+      "leakedForbidden": false
+    },
+    {
+      "name": "consent",
+      "ownStatus": 200,
+      "otherStatus": 403,
+      "sameHash": false,
+      "sameBytes": false,
+      "ownContainsOwnId": false,
+      "ownContainsOtherId": false,
+      "otherContainsOwnId": false,
+      "otherContainsOtherId": false,
+      "leakedForbidden": false
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "registered_on": "diagnostic.paid",
+  "handler": "onDiagnosticPaidSoftPull → c-00 handle()",
+  "bureauRisk": {
+    "has_client_account": false,
+    "account_id": null,
+    "has_valid_looking_soft_pull_consent": true,
+    "consent_id": "7057e732-9411-4512-98b9-23a7a1fe7d77",
+    "crs_allow_live_on": false,
+    "would_reach_requestSoftPull": false,
+    "next_function_if_consent_and_account": "requestSoftPull → runCrsPull (src/finance/crs-pull.mjs)"
+  },
+  "unsubscribed": false,
+  "refuse": {
+    "refused": false,
+    "why": "No client portal account and/or no consent path to runCrsPull. Handler was left registered. Next stop inside handle() is recorded in c00.json.",
+    "next_call": "handle() returns no_account_for_attribution after stamping crs_status; runCrsPull is not next"
+  }
+}

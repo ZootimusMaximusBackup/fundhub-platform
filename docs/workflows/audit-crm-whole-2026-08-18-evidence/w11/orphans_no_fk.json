@@ -1,0 +1,2263 @@
+[
+  {
+    "child_table": "account_magic_links",
+    "child_column": "account_id",
+    "guessed_parent": "accounts",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "account_magic_links",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "account_magic_links",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "account_sessions",
+    "child_column": "account_id",
+    "guessed_parent": "accounts",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "account_sessions",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "account_statement_cycles",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "account_statement_cycles",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "accounts",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "accounts",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "accounts",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "action_log",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "action_log",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "ad_metrics_daily",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "ad_metrics_daily",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "ad_platform_category_map",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "ad_platform_connections",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "ad_platform_connections",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "ad_sets",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "ad_sets",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "ads",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "ads",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "affiliate_commission_rules",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "affiliate_events",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "affiliate_events",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "affiliate_payout_lines",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "affiliate_payout_lines",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "affiliate_payouts",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "affiliate_referrals",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "affiliate_referrals",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "affiliates",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "agent_shadow_log",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "agent_shadow_log",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "agents",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "ai_bureau_config",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "alerts",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "alerts",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "application_decisions",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "application_scores",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "applications",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "applications",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "auth_attempts",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "bank_accounts",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "bank_accounts",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "bank_inbox",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "bank_inbox",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "bank_transactions",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "bank_transactions",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "behavior_scores",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "behavior_scores",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "brain_affiliate_allowlist",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "brain_chunks",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "brain_classification_reviews",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "brain_drive_sync",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "brain_files",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "brain_files",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "brain_messages",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "brain_threads",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "brain_threads",
+    "child_column": "staff_id",
+    "guessed_parent": "staff",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "brand_kit_sources",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "brand_kit_sources",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "brand_kits",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "brand_kits",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "business_tradelines",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "business_tradelines",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "businesses",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "businesses",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "call_compliance_flags",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "call_compliance_flags",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "call_compliance_flags",
+    "child_column": "staff_id",
+    "guessed_parent": "staff",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "call_outcomes",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "call_outcomes",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "call_outcomes",
+    "child_column": "staff_id",
+    "guessed_parent": "staff",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "campaign_strategies",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "campaigns",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "campaigns",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "candidate_applications",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "candidates",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "card_liabilities",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "card_liabilities",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "card_liability_history",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "card_liability_history",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "cards",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "cards",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "cashflow_reminders",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "cashflow_reminders",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "cashflow_settings",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "client_cards",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "client_cards",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "client_consents",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "client_consents",
+    "child_column": "document_id",
+    "guessed_parent": "documents",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "client_consents",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "client_custom_fields",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "client_custom_fields",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "clients",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "clients",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "commas_inbox",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "commission_ledger",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "commission_ledger",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "commission_ledger",
+    "child_column": "staff_id",
+    "guessed_parent": "staff",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "commission_rule_tiers",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "commission_rules",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "commission_rules",
+    "child_column": "staff_id",
+    "guessed_parent": "staff",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "compliance_rules",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "compliance_screenings",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "compliance_screenings",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "content_tier_map",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "content_videos",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "contract_signers",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "contract_signers",
+    "child_column": "contract_id",
+    "guessed_parent": "contracts",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "contract_signers",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "contract_templates",
+    "child_column": "document_id",
+    "guessed_parent": "documents",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "contract_templates",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "contracts",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "contracts",
+    "child_column": "document_id",
+    "guessed_parent": "documents",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "contracts",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "conversation_participants",
+    "child_column": "staff_id",
+    "guessed_parent": "staff",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "conversations",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "conversations",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "creative_assets",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "creative_assets",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "creative_billing_rates",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "creative_providers",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "creative_usage_events",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "creative_usage_events",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "crs_results",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "crs_results",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "customer_insights",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "customer_insights",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "dispute_cases",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "dispute_cases",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "dispute_items",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "dispute_items",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "dispute_letters",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "dispute_letters",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "dispute_responses",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "dispute_responses",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "document_versions",
+    "child_column": "document_id",
+    "guessed_parent": "documents",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "document_versions",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "documents",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "documents",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "eeo_responses",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "eeo_survey_invites",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "entities",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "entities",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "entitlement_catalog",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "entitlements",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "entitlements",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "erasure_requests",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "events",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "events",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "failed_events",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "failed_events",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "funding_closeout",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "funding_closeout_items",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "funding_round_sales",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "funding_rounds",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "funding_rounds",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "furnisher_mail_addresses",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "generation_job_assets",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "generation_job_assets",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "generation_jobs",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "generation_jobs",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "hiring_channel_connections",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "hiring_decisions",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "hiring_interview_attendees",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "hiring_interviews",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "hiring_job_postings",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "hiring_roles",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "hiring_rubrics",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "inquiry_attempts",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "inquiry_attempts",
+    "child_column": "staff_id",
+    "guessed_parent": "staff",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "inquiry_log",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "inquiry_log",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "inquiry_prep",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "inquiry_prep",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "inquiry_removal_cases",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "inquiry_removal_cases",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "investment_holdings",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "investment_holdings",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "invoice_line_items",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "invoice_payments",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "invoices",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "invoices",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "journeys",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "lender_bureau_observations",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "lender_bureau_observations",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "lenders",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "mail_campaigns",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "mail_responses",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "mail_responses",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "mail_tracked_numbers",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "mail_universe",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "marketing_content_queue",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "marketing_content_queue",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "marketing_flags",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "message_channel_routing",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "message_templates",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "messages",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "messages",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "messaging_settings",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "opt_outs",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "opt_outs",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "optimization_rules",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "org_brand",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "outbound_calls",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "outbound_calls",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "owner_notifications",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "owner_notifications",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_ai_usage",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_ai_usage",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_brand",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_brand",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_module_settings",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_module_settings",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_onboarding_tasks",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_onboarding_tasks",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_page_section_versions",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_page_section_versions",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_pages",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_pages",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_payout_lines",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_payout_lines",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_payouts",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_payouts",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_revenue",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_revenue",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partner_revenue",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "partners",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "password_resets",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "password_resets",
+    "child_column": "staff_id",
+    "guessed_parent": "staff",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "payment_links",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "payment_links",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "pii_access_log",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "pii_access_log",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "pii_identity",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "pii_identity",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "pipeline_stages",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "pipelines",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "plaid_items",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "plaid_items",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "product_aliases",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "product_entitlements",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "products",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "proxy_sessions",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "proxy_sessions",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "proxy_sessions",
+    "child_column": "staff_id",
+    "guessed_parent": "staff",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "recurring_bills",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "recurring_bills",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "repair_decision_log",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "repair_decision_log",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "retention_policy",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "sale_attributions",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "sale_attributions",
+    "child_column": "staff_id",
+    "guessed_parent": "staff",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "sale_payments",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "sales",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "sales",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "sessions",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "sessions",
+    "child_column": "staff_id",
+    "guessed_parent": "staff",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "shifts",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "shifts",
+    "child_column": "staff_id",
+    "guessed_parent": "staff",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "snapshots",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "snapshots",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "social_channels",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "social_channels",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "social_posts",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "social_posts",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "soft_pull_requests",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "soft_pull_requests",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "spend_ceilings",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "spend_ceilings",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "staff",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "staff_events",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "staff_events",
+    "child_column": "staff_id",
+    "guessed_parent": "staff",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "staff_roles",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "staff_targets",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "staff_targets",
+    "child_column": "staff_id",
+    "guessed_parent": "staff",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "subscriptions",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "subscriptions",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "tasks",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "tasks",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "tradelines",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "tradelines",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "transactions",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "transactions",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "upsell_triggers",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  },
+  {
+    "child_table": "v_affiliate_downline",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_affiliate_state",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_affiliate_state_drift",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_agents_live",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_cashflow_config_gaps",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_client_ar_balance",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_client_ar_balance",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_client_entitlements",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_client_entitlements",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_commission_statement",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_commission_statement",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_commission_statement",
+    "child_column": "staff_id",
+    "guessed_parent": "staff",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_creative_config_gaps",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_eeo_aggregate",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_failed_events_summary",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_hiring_bench",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_hiring_config_gaps",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_hiring_funnel",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_invoice_aging",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_invoice_aging",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_invoice_balance",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_invoice_balance",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_org_brand_effective",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_partner_balance",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_partner_balance",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_partner_book",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_partner_book",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_partner_brand_effective",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_partner_brand_effective",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_partner_creative_usage",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_partner_creative_usage",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_partner_spend_vs_ceiling",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_partner_spend_vs_ceiling",
+    "child_column": "partner_id",
+    "guessed_parent": "partners",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_retention_policy_gaps",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_sale_balance",
+    "child_column": "client_id",
+    "guessed_parent": "clients",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_sale_balance",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "v_task_queue_depth",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "skipped": "parent_or_child_table_missing",
+    "has_fk": false
+  },
+  {
+    "child_table": "webhook_captures",
+    "child_column": "org_id",
+    "guessed_parent": "orgs",
+    "has_fk": false,
+    "orphan_count": 0
+  }
+]

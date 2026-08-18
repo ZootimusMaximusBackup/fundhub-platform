@@ -1,0 +1,19 @@
+{
+  "client_present": true,
+  "is_demo": true,
+  "nonempty": {
+    "account_magic_links": 3,
+    "accounts": 1,
+    "bank_accounts": 1,
+    "cards": 1,
+    "contract_signers": 1,
+    "contracts": 1,
+    "conversations": 2,
+    "crs_results": 1,
+    "documents": 2,
+    "events": 5,
+    "messages": 8,
+    "tradelines": 4
+  },
+  "tables_checked": 68
+}

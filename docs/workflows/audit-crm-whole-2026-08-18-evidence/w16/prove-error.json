@@ -1,0 +1,4 @@
+{
+  "error": "Called end on pool more than once",
+  "stack": "Error: Called end on pool more than once\n    at BoundPool.end (/Users/zootimusmaximus/fundhub-platform/node_modules/pg-pool/index.js:491:19)\n    at main (file:///Users/zootimusmaximus/fundhub-platform/docs/workflows/audit-crm-whole-2026-08-18-evidence/w16/_prove.mjs:510:11)\n    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)"
+}

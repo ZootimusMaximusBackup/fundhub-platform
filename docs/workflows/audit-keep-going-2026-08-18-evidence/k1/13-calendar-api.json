@@ -1,0 +1,28 @@
+{
+  "booked": "—",
+  "foot": "tuesday, august 18",
+  "banner": "",
+  "hasFH": true,
+  "queue": {
+    "open": { "ok": true, "source": "api", "error": null, "n": 69 },
+    "closed": { "ok": true, "source": "api", "error": null, "n": 0 },
+    "has_task": true,
+    "strategy_n": 16,
+    "k1_task": {
+      "id": "d5300a31-7620-4abf-8ca7-c9295d1ebbaf",
+      "due_at": "2026-08-19T03:00:00.000Z",
+      "client_id": "edca0767-88e9-4cf4-8837-47382049503a",
+      "client_name": "E2e Fire",
+      "done": false
+    },
+    "other_strategy_names_redacted": 15
+  },
+  "raw": {
+    "status": 200,
+    "ok": true,
+    "n": 69,
+    "error": null,
+    "has_task": true
+  },
+  "note": "Other client names stripped from this file. Only the K1 fire hold is named."
+}

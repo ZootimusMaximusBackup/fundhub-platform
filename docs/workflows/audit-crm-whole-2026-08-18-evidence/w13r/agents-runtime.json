@@ -1,0 +1,232 @@
+{
+  "at": "2026-08-18T20:52:00.000Z",
+  "source": "live agents table + code trace + Bland GET (read only)",
+  "same_place": false,
+  "counts": { "total": 22, "live": 2, "shadow": 0, "draft": 12, "retired": 8 },
+  "agents": [
+    {
+      "code": "AG-04",
+      "name": "Setter Josh",
+      "class": "client_facing",
+      "status": "live",
+      "runtime": "bland",
+      "channel": "voice",
+      "who_reads_this_row": "Agent Editor paint. Messaging picker rejects bland + voice + empty prompt. Bland createCall does not read this row.",
+      "script_if_a_call_is_placed": "vendor/inquiry-remover/src/agents/setter-prompt.js SETTER_TASK (file, not this row)",
+      "can_fire_today_from_fundhub_ai": false,
+      "can_fire_today_if_vendor_or_local_one_shot_runs": true
+    },
+    {
+      "code": "AG-09",
+      "name": "Inquiry Removal AI",
+      "class": "client_facing",
+      "status": "live",
+      "runtime": "bland",
+      "channel": "voice",
+      "who_reads_this_row": "Agent Editor paint. Messaging picker rejects. Bland createCall does not read this row.",
+      "script_if_a_call_is_placed": "vendor bureau files (experian/equifax/transunion-prompt.js)",
+      "can_fire_today_from_fundhub_ai": false,
+      "can_fire_today_if_vendor_or_local_one_shot_runs": true
+    },
+    {
+      "code": "AG-01",
+      "name": "Agent 1 Lead Follow-up",
+      "class": "client_facing",
+      "status": "draft",
+      "runtime": null,
+      "channel": "sms",
+      "who_reads_this_row": "Agent Editor. Messaging runtime would read prompt if live/shadow — prompt empty, status draft.",
+      "can_fire_today": false
+    },
+    {
+      "code": "AG-02",
+      "name": "Agent 2 Billing",
+      "class": "client_facing",
+      "status": "draft",
+      "runtime": null,
+      "channel": "email",
+      "who_reads_this_row": "Agent Editor only (draft, empty prompt)",
+      "can_fire_today": false
+    },
+    {
+      "code": "AG-03",
+      "name": "Agent 3 Nurture",
+      "class": "client_facing",
+      "status": "draft",
+      "runtime": null,
+      "channel": "sms",
+      "who_reads_this_row": "Agent Editor only",
+      "can_fire_today": false
+    },
+    {
+      "code": "AG-05",
+      "name": "Agent 5 Onboarding",
+      "class": "client_facing",
+      "status": "draft",
+      "runtime": null,
+      "channel": "email",
+      "who_reads_this_row": "Agent Editor only",
+      "can_fire_today": false
+    },
+    {
+      "code": "AG-06",
+      "name": "Document Check",
+      "class": "client_facing",
+      "status": "draft",
+      "runtime": null,
+      "channel": "internal",
+      "who_reads_this_row": "Agent Editor only. Messaging runtime is sms|email only.",
+      "can_fire_today": false
+    },
+    {
+      "code": "AG-07",
+      "name": "Recon",
+      "class": "client_facing",
+      "status": "draft",
+      "runtime": null,
+      "channel": "internal",
+      "who_reads_this_row": "Agent Editor only",
+      "can_fire_today": false
+    },
+    {
+      "code": "AG-08",
+      "name": "Context Fetcher",
+      "class": "client_facing",
+      "status": "draft",
+      "runtime": null,
+      "channel": "internal",
+      "who_reads_this_row": "Agent Editor only",
+      "can_fire_today": false
+    },
+    {
+      "code": "OP-01",
+      "name": "Heartbeat",
+      "class": "ops",
+      "status": "draft",
+      "runtime": null,
+      "channel": "internal",
+      "who_reads_this_row": "Agent Editor. Messaging picker skips ops class.",
+      "can_fire_today": false
+    },
+    {
+      "code": "OP-02",
+      "name": "Fixer",
+      "class": "ops",
+      "status": "draft",
+      "runtime": null,
+      "channel": "internal",
+      "who_reads_this_row": "Agent Editor. Messaging picker skips ops class.",
+      "can_fire_today": false
+    },
+    {
+      "code": "OP-03",
+      "name": "Daily Brief",
+      "class": "ops",
+      "status": "draft",
+      "runtime": null,
+      "channel": "email",
+      "who_reads_this_row": "Agent Editor. Messaging picker skips ops class.",
+      "can_fire_today": false
+    },
+    {
+      "code": "OP-04",
+      "name": "Compliance Gate",
+      "class": "ops",
+      "status": "draft",
+      "runtime": null,
+      "channel": "internal",
+      "who_reads_this_row": "Agent Editor. Messaging picker skips ops class.",
+      "can_fire_today": false
+    },
+    {
+      "code": "OP-05",
+      "name": "Data + Models",
+      "class": "ops",
+      "status": "draft",
+      "runtime": null,
+      "channel": "internal",
+      "who_reads_this_row": "Agent Editor. Messaging picker skips ops class.",
+      "can_fire_today": false
+    },
+    {
+      "code": "GHL-A1",
+      "name": "Agent 1 — Lead Follow-up & Booking",
+      "class": "client_facing",
+      "status": "retired",
+      "runtime": "ghl",
+      "channel": "sms_email",
+      "who_reads_this_row": "Agent Editor paints retired as draft. Messaging picker rejects runtime=ghl and retired.",
+      "can_fire_today": false
+    },
+    {
+      "code": "GHL-A2",
+      "name": "Agent 2 — AR / Collections",
+      "class": "client_facing",
+      "status": "retired",
+      "runtime": "ghl",
+      "channel": "sms_email",
+      "who_reads_this_row": "same as GHL-A1",
+      "can_fire_today": false
+    },
+    {
+      "code": "GHL-A3",
+      "name": "Agent 3 — Non-Buyer & Nurture",
+      "class": "client_facing",
+      "status": "retired",
+      "runtime": "ghl",
+      "channel": "sms_email",
+      "who_reads_this_row": "same as GHL-A1",
+      "can_fire_today": false
+    },
+    {
+      "code": "GHL-A4",
+      "name": "Agent 4 — Backend Pre-Call (replies only)",
+      "class": "client_facing",
+      "status": "retired",
+      "runtime": "ghl",
+      "channel": "sms_email",
+      "who_reads_this_row": "same as GHL-A1",
+      "can_fire_today": false
+    },
+    {
+      "code": "GHL-A5",
+      "name": "Agent 5 — Onboarding & Doc-Chasing",
+      "class": "client_facing",
+      "status": "retired",
+      "runtime": "ghl",
+      "channel": "sms_email",
+      "who_reads_this_row": "same as GHL-A1",
+      "can_fire_today": false
+    },
+    {
+      "code": "GHL-A7",
+      "name": "Agent 7 — Affiliate Re-engagement",
+      "class": "client_facing",
+      "status": "retired",
+      "runtime": "ghl",
+      "channel": "sms_email",
+      "who_reads_this_row": "same as GHL-A1",
+      "can_fire_today": false
+    },
+    {
+      "code": "GHL-DOC",
+      "name": "Document Check",
+      "class": "client_facing",
+      "status": "retired",
+      "runtime": "ghl",
+      "channel": "internal",
+      "who_reads_this_row": "same as GHL-A1",
+      "can_fire_today": false
+    },
+    {
+      "code": "GHL-RECON",
+      "name": "Recon",
+      "class": "client_facing",
+      "status": "retired",
+      "runtime": "ghl",
+      "channel": "internal",
+      "who_reads_this_row": "same as GHL-A1",
+      "can_fire_today": false
+    }
+  ]
+}

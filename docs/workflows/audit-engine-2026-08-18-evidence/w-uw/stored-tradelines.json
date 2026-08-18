@@ -1,0 +1,63 @@
+{
+  "count": 4,
+  "rows": [
+    {
+      "id": "ddccb1c9-71ef-4a55-bd55-c1f93c35c27d",
+      "lender": "American Express Blue Business Cash",
+      "kind": "revolving",
+      "credit_limit_cents": "2500000",
+      "balance_cents": "480000",
+      "account_ref": "SIM-AMEX-001",
+      "opened_on": "2020-08-01T07:00:00.000Z",
+      "closed_at": null,
+      "source": "crs",
+      "source_ref": "c1f83e6b-a624-4f28-a32a-531a530b3ad4",
+      "raw_bureau": "EQ",
+      "raw_accountType": "revolving"
+    },
+    {
+      "id": "b2d83900-7113-4d06-bea5-aa9cf6df6fb2",
+      "lender": "Capital One Spark",
+      "kind": "revolving",
+      "credit_limit_cents": "800000",
+      "balance_cents": "95000",
+      "account_ref": "SIM-CAP1-001",
+      "opened_on": "2021-01-20T07:00:00.000Z",
+      "closed_at": null,
+      "source": "crs",
+      "source_ref": "c1f83e6b-a624-4f28-a32a-531a530b3ad4",
+      "raw_bureau": "TU",
+      "raw_accountType": "revolving"
+    },
+    {
+      "id": "a13d8794-b500-49e3-912d-bb11f69b92e6",
+      "lender": "Chase Sapphire Preferred",
+      "kind": "revolving",
+      "credit_limit_cents": "1200000",
+      "balance_cents": "210000",
+      "account_ref": "SIM-CHASE-001",
+      "opened_on": "2019-04-12T07:00:00.000Z",
+      "closed_at": null,
+      "source": "crs",
+      "source_ref": "c1f83e6b-a624-4f28-a32a-531a530b3ad4",
+      "raw_bureau": "EX",
+      "raw_accountType": "revolving"
+    },
+    {
+      "id": "1d98975e-8f8f-4158-98f1-fdebc9f5ae96",
+      "lender": "Toyota Motor Credit",
+      "kind": "installment",
+      "credit_limit_cents": "2800000",
+      "balance_cents": "1420000",
+      "account_ref": "SIM-TOYO-001",
+      "opened_on": "2022-06-15T07:00:00.000Z",
+      "closed_at": null,
+      "source": "crs",
+      "source_ref": "c1f83e6b-a624-4f28-a32a-531a530b3ad4",
+      "raw_bureau": "EX",
+      "raw_accountType": "installment"
+    }
+  ],
+  "liabilities_count": 0,
+  "liabilities_error": null
+}

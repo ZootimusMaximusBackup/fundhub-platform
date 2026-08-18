@@ -1,0 +1,18 @@
+{
+  "test_client_sms": [
+    {
+      "id": "0b1d9316-fad4-4851-ae10-3903cb205433",
+      "status": "failed",
+      "error_prefix": "the client has no phone to send to",
+      "blocked_reason": null
+    },
+    {
+      "id": "eb95733f-57fa-4efd-be28-ef0a21c1097e",
+      "status": "failed",
+      "error_prefix": "the client has no phone to send to",
+      "blocked_reason": null
+    }
+  ],
+  "sms_rows_to_fundhub_test_phone": 3,
+  "live_file_sms_rows": 3
+}

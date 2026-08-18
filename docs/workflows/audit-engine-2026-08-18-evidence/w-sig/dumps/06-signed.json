@@ -1,0 +1,44 @@
+{
+  "contract": {
+    "id": "82f9232a-3c6d-4cd5-85eb-b4995e4f539a",
+    "status": "signed",
+    "signed_at": "2026-08-18T19:16:51.119Z",
+    "template_key": "FUNDING-AGREEMENT",
+    "document_id": "9e11d5b1-47c2-4ea7-bebc-a59de2927c6e",
+    "signed_document_id": "864fd394-7ba8-43e3-b7c5-77befaa51540",
+    "signer_name_present": true
+  },
+  "event": {
+    "id": "98346e63-327c-4e9c-969e-42b76938dbfc",
+    "name": "contract.signed",
+    "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+    "idempotency_key": "contract.signed:82f9232a-3c6d-4cd5-85eb-b4995e4f539a",
+    "created_at": "2026-08-18T19:16:52.308Z",
+    "payload": {
+      "contract_id": "82f9232a-3c6d-4cd5-85eb-b4995e4f539a",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "template_key": "FUNDING-AGREEMENT",
+      "kind": "contract",
+      "subtype": "funding_agreement",
+      "status": "signed",
+      "document_id": "9e11d5b1-47c2-4ea7-bebc-a59de2927c6e",
+      "document_version_id": "7cde3384-529e-4e61-ab86-68f60888db55",
+      "signed_document_id": null
+    }
+  },
+  "sign_http": {
+    "status": 200
+  },
+  "opened": {
+    "title": "Funding Agreement",
+    "canSign": true,
+    "problem": "",
+    "done": ""
+  },
+  "after_ui": {
+    "done": "This document is signed. Nothing else is needed from you.",
+    "msg": "",
+    "badge": "SIGNED",
+    "doneVisible": true
+  }
+}

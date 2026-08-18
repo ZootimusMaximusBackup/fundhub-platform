@@ -1,0 +1,9 @@
+{
+  "FUNDHUB_TEST_INBOX_set": true,
+  "RESEND_API_KEY_set": true,
+  "MAILGUN_SIGNING_KEY_set": true,
+  "STAFF_E2E_PASSWORD_set": true,
+  "DATABASE_URL_set": true,
+  "plus_eq_bare_inbox": false,
+  "plus_has_e2e_fire_tag": true
+}

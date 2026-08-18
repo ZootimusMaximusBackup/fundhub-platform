@@ -1,0 +1,30 @@
+{
+  "unit": "W-SIG",
+  "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+  "contract_id": "82f9232a-3c6d-4cd5-85eb-b4995e4f539a",
+  "template_key": "FUNDING-AGREEMENT",
+  "emitted": [
+    {
+      "name": "contract.signed",
+      "id": "98346e63-327c-4e9c-969e-42b76938dbfc",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "contract_id": "82f9232a-3c6d-4cd5-85eb-b4995e4f539a"
+    }
+  ],
+  "events_table_rows": [
+    {
+      "id": "678a8671-c3d5-4f65-bac2-0d79ba8b548e",
+      "name": "contract.sent",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "idempotency_key": "contract.sent:82f9232a-3c6d-4cd5-85eb-b4995e4f539a",
+      "created_at": "2026-08-18T19:16:41.662Z"
+    },
+    {
+      "id": "98346e63-327c-4e9c-969e-42b76938dbfc",
+      "name": "contract.signed",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "idempotency_key": "contract.signed:82f9232a-3c6d-4cd5-85eb-b4995e4f539a",
+      "created_at": "2026-08-18T19:16:52.308Z"
+    }
+  ]
+}

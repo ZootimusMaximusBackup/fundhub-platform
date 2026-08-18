@@ -1,0 +1,6 @@
+{
+  "FUNDHUB_TEST_INBOX_set": true,
+  "live_file_present": true,
+  "live_email_equals_inbox": true,
+  "will_not_write_bare_inbox_to_any_client": true
+}

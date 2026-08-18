@@ -1,0 +1,35 @@
+{
+  "count": 3,
+  "rows": [
+    {
+      "id": "cece7146-97de-4f44-9f7e-1a4776425045",
+      "status": "sent",
+      "provider": "twilio",
+      "direction": "outbound",
+      "is_live_file": true,
+      "is_test_file": false,
+      "has_error": false,
+      "created_date": "2026-08-16"
+    },
+    {
+      "id": "89224591-5e55-440b-95ce-d53d13ceeec3",
+      "status": "sent",
+      "provider": "twilio",
+      "direction": "outbound",
+      "is_live_file": true,
+      "is_test_file": false,
+      "has_error": false,
+      "created_date": "2026-08-16"
+    },
+    {
+      "id": "dea02562-21e0-4bc8-a7ad-5554cfa2845b",
+      "status": "sent",
+      "provider": "twilio",
+      "direction": "outbound",
+      "is_live_file": true,
+      "is_test_file": false,
+      "has_error": false,
+      "created_date": "2026-08-16"
+    }
+  ]
+}

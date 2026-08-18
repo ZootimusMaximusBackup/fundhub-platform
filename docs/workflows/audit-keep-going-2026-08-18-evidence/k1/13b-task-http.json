@@ -1,0 +1,162 @@
+[
+  {
+    "url": "/api/dashboard/pipeline?key=sales",
+    "status": 200,
+    "ok": true,
+    "n": 0,
+    "error": null,
+    "has_k1_task": false
+  },
+  {
+    "url": "/api/me",
+    "status": 404,
+    "ok": false,
+    "n": 0,
+    "error": "not_found",
+    "has_k1_task": false
+  },
+  {
+    "url": "/api/tasks?done=false&limit=200",
+    "status": 200,
+    "ok": true,
+    "n": 69,
+    "error": null,
+    "has_k1_task": true
+  },
+  {
+    "url": "/api/tasks?done=true&limit=200",
+    "status": 200,
+    "ok": true,
+    "n": 0,
+    "error": null,
+    "has_k1_task": false
+  },
+  {
+    "url": "/api/tasks?done=false&limit=200",
+    "status": 200,
+    "ok": true,
+    "n": 69,
+    "error": null,
+    "has_k1_task": true
+  },
+  {
+    "url": "/api/read/inbox?limit=200&needs_reply=1",
+    "status": 200,
+    "ok": true,
+    "n": 0,
+    "error": null,
+    "has_k1_task": false
+  },
+  {
+    "url": "/api/read/conversations?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521&limit=50",
+    "status": 200,
+    "ok": true,
+    "n": 0,
+    "error": null,
+    "has_k1_task": false
+  },
+  {
+    "url": "/api/read/conversations?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521&limit=50",
+    "status": 200,
+    "ok": true,
+    "n": 0,
+    "error": null,
+    "has_k1_task": false
+  },
+  {
+    "url": "/api/read/messages?conversation_id=2bbb340b-cd2f-472d-af67-8a7ebe020bd9&limit=200",
+    "status": 200,
+    "ok": true,
+    "n": 0,
+    "error": null,
+    "has_k1_task": false
+  },
+  {
+    "url": "/api/read/conversations?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521&limit=50",
+    "status": 200,
+    "ok": true,
+    "n": 0,
+    "error": null,
+    "has_k1_task": false
+  },
+  {
+    "url": "/api/read/messages?conversation_id=a7afedb9-048c-4488-9900-68f44a620ff2&limit=200",
+    "status": 200,
+    "ok": true,
+    "n": 0,
+    "error": null,
+    "has_k1_task": false
+  },
+  {
+    "url": "/api/read/conversations?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+    "status": 200,
+    "ok": true,
+    "n": 0,
+    "error": null,
+    "has_k1_task": false
+  },
+  {
+    "url": "/api/read/messages?conversation_id=a7afedb9-048c-4488-9900-68f44a620ff2",
+    "status": 200,
+    "ok": true,
+    "n": 0,
+    "error": null,
+    "has_k1_task": false
+  },
+  {
+    "url": "/api/read/messages?conversation_id=2bbb340b-cd2f-472d-af67-8a7ebe020bd9",
+    "status": 200,
+    "ok": true,
+    "n": 0,
+    "error": null,
+    "has_k1_task": false
+  },
+  {
+    "url": "/api/read/documents?limit=200",
+    "status": 200,
+    "ok": true,
+    "n": 0,
+    "error": null,
+    "has_k1_task": false
+  },
+  {
+    "url": "/api/read/contracts?view=contracts&document_id=ad69a9a0-e99e-4b0b-9805-bb6f66539656%2Cbb457c84-cc19-4def-be78-642b0fa64108%2C5dfb4bde-c9d3-447c-8a1e-0036baf43f2",
+    "status": 200,
+    "ok": true,
+    "n": 0,
+    "error": null,
+    "has_k1_task": false
+  },
+  {
+    "url": "/api/read/documents?client_id=edca0767-88e9-4cf4-8837-47382049503a",
+    "status": 200,
+    "ok": true,
+    "n": 0,
+    "error": null,
+    "has_k1_task": false
+  },
+  {
+    "url": "/api/dashboard/pipeline-counts",
+    "status": 200,
+    "ok": true,
+    "n": 0,
+    "error": null,
+    "has_k1_task": false
+  },
+  {
+    "url": "/api/dashboard/pipeline?key=sales",
+    "status": 200,
+    "ok": true,
+    "n": 0,
+    "error": null,
+    "has_k1_task": false
+  },
+  {
+    "url": "/api/dashboard/pipeline",
+    "status": 200,
+    "ok": true,
+    "n": 0,
+    "error": null,
+    "has_k1_task": false
+  }
+]

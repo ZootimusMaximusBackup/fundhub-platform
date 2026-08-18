@@ -1,0 +1,25 @@
+{
+  "messages": [
+    {
+      "id": "836085e3-f559-43f5-b871-a92ef7974c24",
+      "template_key": "CONTRACT-SEND-EMAIL",
+      "channel": "email",
+      "status": "sent",
+      "provider": "resend",
+      "has_to": true,
+      "created_at": "2026-08-18T20:05:46.480Z"
+    }
+  ],
+  "signers": [
+    {
+      "id": "22059c91-c4fb-45dc-90f3-703801033523",
+      "status": "sent",
+      "viewed_at": null,
+      "view_count": 0,
+      "has_email": true,
+      "email_is_plus_tag": true
+    }
+  ],
+  "client_email_still_demo": true,
+  "live_email_still_inbox": true
+}

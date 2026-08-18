@@ -1,0 +1,76 @@
+{
+  "at": "2026-08-18T17:51:30.137Z",
+  "vslMeta": {
+    "status": 200,
+    "type": "video/mp4",
+    "len": "22212001"
+  },
+  "bounce": {
+    "httpStatus": 200,
+    "afterMs": 2728,
+    "finalUrl": "https://fundhub.ai/app/pipeline.html",
+    "title": "Fundhub — Pipeline",
+    "hops": [
+      {
+        "at": 1787075485371,
+        "url": "https://fundhub.ai/app/content-admin.html"
+      },
+      {
+        "at": 1787075485488,
+        "url": "https://fundhub.ai/app/pipeline.html"
+      }
+    ],
+    "bouncedToPipeline": true
+  },
+  "navLabels": [
+    "▤Pipeline",
+    "★Closer Dashboard",
+    "☎Call cockpit",
+    "＃My numbers",
+    "▣Sales floor",
+    "▦Calendar",
+    "⬡Lenders",
+    "▩Finance OSBETA",
+    "◎Client Control Panel",
+    "✉Messaging",
+    "▧Documents",
+    "⊘Specialist",
+    "◎Company BrainBETA",
+    "✷GalaxyBETA",
+    "⚙Ops & AdminBETA",
+    "◈Agent EditorBETA",
+    "⇄Workflows",
+    "⇝JourneysBETA",
+    "✎Message Copy",
+    "◇CampaignsBETA",
+    "◉Social StudioBETA",
+    "✳Creative FactoryBETA",
+    "⚇Staff & Teams",
+    "⊕HiringBETA",
+    "⛁Products & Commissions",
+    "✒Contract templates",
+    "◆Brand StudioBETA",
+    "◐Client Portal",
+    "⇗AffiliateBETA"
+  ],
+  "contentNav": [],
+  "marketingOpen": true,
+  "tilesApi": {
+    "status": 200,
+    "ok": true,
+    "videoCount": 0,
+    "tileCount": 5,
+    "tileCodes": [
+      "credit-analysis-report",
+      "credit-optimization-roadmap",
+      "funding-snapshot",
+      "bank-lender-match-list",
+      "metro2-letter-pack"
+    ],
+    "map": {},
+    "message": null
+  },
+  "uploadProbe": {
+    "status": 405
+  }
+}

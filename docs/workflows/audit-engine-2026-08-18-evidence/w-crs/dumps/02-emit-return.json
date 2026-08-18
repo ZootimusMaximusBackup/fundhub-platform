@@ -1,0 +1,28 @@
+{
+  "request_id": "72389cae-10fe-46c6-be2f-c2471bf8a3b1",
+  "inngest_event_key_set": false,
+  "crs_allow_live_set": false,
+  "registered_handlers": {
+    "analysis.completed": [
+      "onAnalysisCompleted"
+    ],
+    "decision.rendered": [
+      "onDecisionRendered"
+    ]
+  },
+  "emit": {
+    "ok": true,
+    "emitted": [
+      {
+        "name": "analysis.completed",
+        "id": "a091eafb-7af8-472e-94d5-bd89ccb54911",
+        "deduped": false
+      },
+      {
+        "name": "decision.rendered",
+        "id": "8bff4125-ee2d-41e5-b6bb-f24e6c897a2e",
+        "deduped": false
+      }
+    ]
+  }
+}

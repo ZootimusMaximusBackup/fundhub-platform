@@ -1,0 +1,6 @@
+{
+  "plus_tag_clients_not_live": 5,
+  "e2e_aff_or_wl_clients_not_live": 0,
+  "safe_openable_mailbox_without_writing_live_email": "unknown_plus_tag_exists",
+  "why": "A plus-tag client exists that is not the live file. Still cannot open Gmail without a session. Did not request a new link."
+}

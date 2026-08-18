@@ -1,0 +1,8 @@
+{
+  "src_api_bland_ai": [],
+  "vendor_api_bland_ai": [
+    "vendor/inquiry-remover/__tests__/bland-client.test.js",
+    "vendor/inquiry-remover/src/lib/bland-client.js"
+  ],
+  "note": "src/adapters/bland.mjs is webhook listen only. It does not POST /v1/calls."
+}

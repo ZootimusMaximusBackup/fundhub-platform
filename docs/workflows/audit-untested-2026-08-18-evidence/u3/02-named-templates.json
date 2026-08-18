@@ -1,0 +1,22 @@
+{
+  "rows": [
+    {
+      "template_key": "CONTRACT-REMIND-EMAIL",
+      "has_word": false,
+      "has_any_http": false,
+      "says_reply_to_this_email": true
+    },
+    {
+      "template_key": "CONTRACT-SEND-EMAIL",
+      "has_word": false,
+      "has_any_http": false,
+      "says_reply_to_this_email": true
+    },
+    {
+      "template_key": "EMAIL-PORTAL-MAGIC-LINK",
+      "has_word": false,
+      "has_any_http": false,
+      "says_reply_to_this_email": false
+    }
+  ]
+}

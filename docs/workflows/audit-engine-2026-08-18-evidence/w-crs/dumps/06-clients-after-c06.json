@@ -1,0 +1,46 @@
+{
+  "note": "c-06 handle() ran locally after emit; tags may have changed",
+  "c06": {
+    "invoked": true,
+    "inngest_enabled": false,
+    "event_used": {
+      "id": "a091eafb-7af8-472e-94d5-bd89ccb54911",
+      "name": "analysis.completed",
+      "payload_source": "crs"
+    },
+    "result": {
+      "done": true,
+      "branch": "funding",
+      "delivery": {
+        "delivered": false,
+        "letterCount": 0,
+        "files": [],
+        "persisted": false,
+        "reason": "audit_dry_run_no_persist",
+        "engineSkip": "rawResponsesFromMerged: no bureau reports to score",
+        "pack_reason": "empty_pack"
+      }
+    },
+    "tags_before": [
+      "is_demo",
+      "simulated"
+    ],
+    "tags_after": [
+      "simulated",
+      "is_demo",
+      "path:funding"
+    ],
+    "custom_fields_funding_letters_event": null,
+    "documents": [
+      {
+        "id": "bf55375a-b4c7-48aa-8241-9b818bc60c82",
+        "kind": "client_upload",
+        "subtype": "additional_fraud_docs",
+        "title": "Additional documentation — fraud / identity theft cases",
+        "generated_by": "staff:52bc675a-db0f-4e24-9b53-80f7fd077f72"
+      }
+    ],
+    "messages": [],
+    "tasks": []
+  }
+}

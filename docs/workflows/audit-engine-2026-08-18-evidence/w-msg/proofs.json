@@ -1,0 +1,44 @@
+[
+  {
+    "id": "msg.seed-contact",
+    "result": "PASS",
+    "expected": "simulate seeded email + phone on this client",
+    "observed": "email=sim+1787079946953@demo.fundhub.local phone=+1555… digits=11 starts_1555=true is_demo=true",
+    "evidence": "w-msg/01-contact-seed.json"
+  },
+  {
+    "id": "msg.screen-resolve",
+    "result": "PASS",
+    "expected": "Messaging shows this client's email/phone, or compose can set FUNDHUB_TEST_*",
+    "observed": "Right rail shows Email sim+1787079946953@demo.fundhub.local (truncated) and a +1555… phone. Channel=Text. No To field. FUNDHUB_TEST_INBOX set=yes but not this address. FUNDHUB_TEST_PHONE set=yes but not this phone. Send would hit the demo address / 555 number.",
+    "evidence": "w-msg/02-messaging.png"
+  },
+  {
+    "id": "msg.send",
+    "result": "FAIL",
+    "expected": "one message to FUNDHUB_TEST_INBOX (email preferred) or FUNDHUB_TEST_PHONE",
+    "observed": "blocked — screen/API resolve stored demo.fundhub.local email and +1555… phone, not FUNDHUB_TEST_*. No To field. Did not send.",
+    "evidence": "w-msg/03-send.json"
+  },
+  {
+    "id": "msg.inbox-landing",
+    "result": "UNVERIFIED",
+    "expected": "if To was FUNDHUB_TEST_INBOX, provider accept or honest queued/fail",
+    "observed": "not_proven",
+    "evidence": "w-msg/04-inbox-landing.json"
+  },
+  {
+    "id": "msg.sms",
+    "result": "UNVERIFIED",
+    "expected": "SMS only if FUNDHUB_TEST_PHONE is the resolved destination — one send or refuse/error",
+    "observed": "sms_skipped_stored_phone_is_not_FUNDHUB_TEST_PHONE",
+    "evidence": "w-msg/05-sms.json"
+  },
+  {
+    "id": "msg.events",
+    "result": "PASS",
+    "expected": "events-fired.json for message.* on this client from this unit",
+    "observed": "count=0 names=none",
+    "evidence": "w-msg/events-fired.json"
+  }
+]

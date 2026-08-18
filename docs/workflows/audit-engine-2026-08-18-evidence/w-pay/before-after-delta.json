@@ -1,0 +1,60 @@
+{
+  "stage": {
+    "before": {
+      "pipeline_key": "sales",
+      "stage_key": "decision_rendered",
+      "stage_name": "Decision Rendered"
+    },
+    "after": {
+      "pipeline_key": "sales",
+      "stage_key": "decision_rendered",
+      "stage_name": "Decision Rendered"
+    }
+  },
+  "crs_paid_custom_fields": {
+    "before": null,
+    "after": true
+  },
+  "client_custom_fields_crs_paid": {
+    "before": null,
+    "after": null
+  },
+  "entitlements": {
+    "before_held": 0,
+    "after_held": 0,
+    "catalog_count": 5,
+    "before_locked": 5,
+    "after_locked": 5,
+    "product_entitlements_rows": 0
+  },
+  "transactions_count": {
+    "before": 0,
+    "after": 2
+  },
+  "sales_count": {
+    "before": 0,
+    "after": 1
+  },
+  "custom_fields_pay_keys": {
+    "before": {
+      "crs_paid": null,
+      "deposit_paid": null,
+      "sale_closed": null,
+      "crs_status": null,
+      "crs_pull_scope": null,
+      "analyzer_path": null,
+      "round_hold_reason": null,
+      "lifecycle_status": null
+    },
+    "after": {
+      "crs_paid": true,
+      "deposit_paid": null,
+      "sale_closed": null,
+      "crs_status": "Requested",
+      "crs_pull_scope": "consumer_only",
+      "analyzer_path": "Funding",
+      "round_hold_reason": "Awaiting CRS",
+      "lifecycle_status": null
+    }
+  }
+}

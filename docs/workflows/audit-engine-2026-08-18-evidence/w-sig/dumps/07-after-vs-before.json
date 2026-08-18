@@ -1,0 +1,58 @@
+{
+  "stage_move": false,
+  "stage_before": "decision_rendered",
+  "stage_after": "decision_rendered",
+  "new_task": false,
+  "new_tasks": [],
+  "new_entitlement": false,
+  "new_entitlements": [],
+  "new_consent": false,
+  "new_consents": [],
+  "pull_gate_new_request": false,
+  "letter_send": false,
+  "followup_email_or_sms": false,
+  "followup_messages": [],
+  "send_email_rows": [],
+  "ghl": {
+    "before_has_ghl": true,
+    "after_has_ghl": true,
+    "changed": false
+  },
+  "client_updated_at_changed": false,
+  "client_updated_at_before": "2026-08-18T19:14:46.396Z",
+  "client_updated_at_after": "2026-08-18T19:14:46.396Z",
+  "compare_from": "after-send → after-sign (contract.signed window)",
+  "send_window_vs_before": {
+    "stage_moved": false,
+    "client_updated": false,
+    "new_message_keys": [
+      "CONTRACT-SEND-EMAIL"
+    ],
+    "new_event_names": [
+      "contract.sent"
+    ]
+  },
+  "new_events": [
+    {
+      "id": "98346e63-327c-4e9c-969e-42b76938dbfc",
+      "name": "contract.signed",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037"
+    }
+  ],
+    "new_documents": [
+      {
+        "id": "864fd394-7ba8-43e3-b7c5-77befaa51540",
+        "title": "Funding Agreement (signed)",
+        "status": null,
+        "delivery_status": "not_delivered",
+        "note": "written by sign() itself, not a contract.signed listener. First dump missed documents.status column; see 09-documents.json"
+      }
+    ],
+  "listeners": {
+    "canonical_comment": "src/events/canonical.mjs: NO HANDLER IS REGISTERED FOR contract.sent / contract.signed, deliberately",
+    "register_all": [],
+    "inngest_from_w_wf_inventory": [],
+    "grep_src_hits": "w-sig/dumps/listeners-grep.txt",
+    "empty": true
+  }
+}

@@ -1,0 +1,51 @@
+[
+  {
+    "ymd": "2026-08-16",
+    "happen": "label=Sunday, August 16; booked=—; nothing=true",
+    "nothingBooked": true,
+    "booked": "—",
+    "sawStrategy": false
+  },
+  {
+    "ymd": "2026-08-17",
+    "happen": "label=Monday, August 17; booked=—; nothing=true",
+    "nothingBooked": true,
+    "booked": "—",
+    "sawStrategy": false
+  },
+  {
+    "ymd": "2026-08-18",
+    "happen": "label=Tuesday, August 18; booked=—; nothing=true",
+    "nothingBooked": true,
+    "booked": "—",
+    "sawStrategy": false
+  },
+  {
+    "ymd": "2026-08-19",
+    "happen": "label=Wednesday, August 19; booked=—; nothing=true",
+    "nothingBooked": true,
+    "booked": "—",
+    "sawStrategy": false
+  },
+  {
+    "ymd": "2026-08-20",
+    "happen": "label=Thursday, August 20; booked=—; nothing=true",
+    "nothingBooked": true,
+    "booked": "—",
+    "sawStrategy": false
+  },
+  {
+    "ymd": "2026-08-21",
+    "happen": "label=Friday, August 21; booked=—; nothing=true",
+    "nothingBooked": true,
+    "booked": "—",
+    "sawStrategy": false
+  },
+  {
+    "ymd": "2026-08-22",
+    "happen": "label=Saturday, August 22; booked=—; nothing=true",
+    "nothingBooked": true,
+    "booked": "—",
+    "sawStrategy": false
+  }
+]

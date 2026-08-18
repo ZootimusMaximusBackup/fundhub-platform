@@ -1,0 +1,136 @@
+{
+  "seed": {
+    "revolving": [
+      {
+        "lender": "Chase Sapphire Preferred",
+        "limit": 12000,
+        "balance": 2100,
+        "id": "SIM-CHASE-001",
+        "bureau": "EX"
+      },
+      {
+        "lender": "Amex Blue Business Cash",
+        "limit": 25000,
+        "balance": 4800,
+        "id": "SIM-AMEX-001",
+        "bureau": "EQ"
+      },
+      {
+        "lender": "Capital One Spark",
+        "limit": 8000,
+        "balance": 950,
+        "id": "SIM-CAP1-001",
+        "bureau": "TU"
+      }
+    ],
+    "installment": [
+      {
+        "lender": "Toyota Motor Credit",
+        "limit": 28000,
+        "balance": 14200,
+        "id": "SIM-TOYO-001",
+        "bureau": "EX"
+      }
+    ],
+    "scores": {
+      "EX": 718,
+      "EQ": 724,
+      "TU": 731
+    },
+    "util_seed": 18,
+    "estimate": 125000,
+    "outcome": "FULL_FUNDING"
+  },
+  "stored_kinds": [
+    {
+      "lender": "American Express Blue Business Cash",
+      "kind": "revolving",
+      "account_ref": "SIM-AMEX-001",
+      "opened_on": "2020-08-01T07:00:00.000Z",
+      "raw_bureau": "EQ"
+    },
+    {
+      "lender": "Capital One Spark",
+      "kind": "revolving",
+      "account_ref": "SIM-CAP1-001",
+      "opened_on": "2021-01-20T07:00:00.000Z",
+      "raw_bureau": "TU"
+    },
+    {
+      "lender": "Chase Sapphire Preferred",
+      "kind": "revolving",
+      "account_ref": "SIM-CHASE-001",
+      "opened_on": "2019-04-12T07:00:00.000Z",
+      "raw_bureau": "EX"
+    },
+    {
+      "lender": "Toyota Motor Credit",
+      "kind": "installment",
+      "account_ref": "SIM-TOYO-001",
+      "opened_on": "2022-06-15T07:00:00.000Z",
+      "raw_bureau": "EX"
+    }
+  ],
+  "revolving_limit_sum": 45000,
+  "revolving_balance_sum": 7850,
+  "expected_util_pct_from_stored": 17.444444444444446,
+  "expected_util_pct_from_seed_math": 17.444444444444446,
+  "adapter_util_pct": 17.44,
+  "engine_util_pct": null,
+  "engine_totals": {
+    "total_personal_funding": 0,
+    "total_business_funding": 0,
+    "total_combined_funding": 0
+  },
+  "engine_personal": {
+    "highest_revolving_limit": 0,
+    "highest_installment_amount": 0,
+    "can_card_stack": false,
+    "can_loan_stack": false,
+    "can_dual_stack": false,
+    "card_funding": 0,
+    "loan_funding": 0,
+    "total_personal_funding": 0
+  },
+  "engine_fundable": false,
+  "engine_reads_seed_outcome": false,
+  "reads_seed_outcome_only": false,
+  "reads_stored_tradelines": false,
+  "flags": [
+    {
+      "id": "zero_on_125k_seed",
+      "severity": "fail",
+      "detail": "engine total_combined_funding=0; seed estimate is 125000"
+    },
+    {
+      "id": "engine_missed_seed_scores",
+      "severity": "fail",
+      "detail": "toBureaus found no bureau scores. Seed stores 718/724/731 under consumerSignals.scores.perBureau and crm_payload.scores, not result.scores. triMerge reads result.scores only."
+    },
+    {
+      "id": "engine_did_not_use_revolving_limits",
+      "severity": "fail",
+      "detail": "highest_revolving_limit=0; stored revolving limits exist. Possible cause: opened_on missing so lines read unseasoned, or no bureau was available so engine never saw the lines."
+    },
+    {
+      "id": "engine_does_not_read_seed_outcome",
+      "severity": "info",
+      "detail": "Engine does not read crs_results.outcome / FULL_FUNDING / preapprovals. It only reads bureau-shaped numbers from the adapter. Seed outcome stays on the client/crs row and is not an engine input."
+    },
+    {
+      "id": "engine_emits_no_reason_codes",
+      "severity": "fail",
+      "detail": "computeUnderwrite output has no reason_codes. Seed reason_codes live only on crs_results.result (sim_demo, low_util)."
+    },
+    {
+      "id": "engine_emits_no_preapprovals",
+      "severity": "fail",
+      "detail": "computeUnderwrite output has no preapprovals. Seed preapprovals.totalCombined=125000 lives only on crs_results.result."
+    },
+    {
+      "id": "fundable_false_vs_full_funding_seed",
+      "severity": "fail",
+      "detail": "Engine fundable=false while simulate stamped clients.outcome_tier=FULL_FUNDING. On this run the first cause is no available bureau (score painted 0). Seed 718/724/731 never reached the engine."
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "bank_inbox": {
+    "before": 0,
+    "after": 1
+  },
+  "repair_decision_log": {
+    "before": 0,
+    "after": 0
+  },
+  "tasks": {
+    "before": 0,
+    "after": 2
+  },
+  "cards": {
+    "before": [
+      {
+        "id": "0a8e8863-5094-4fbc-af0f-c37e5a457c97",
+        "pipeline_key": "sales",
+        "stage_key": "decision_rendered"
+      }
+    ],
+    "after": [
+      {
+        "id": "0a8e8863-5094-4fbc-af0f-c37e5a457c97",
+        "pipeline_key": "sales",
+        "stage_key": "decision_rendered"
+      },
+      {
+        "id": "aaa14525-844c-43b1-9865-4c04191ddedd",
+        "pipeline_key": "funding_card_stacking",
+        "stage_key": "approved"
+      }
+    ]
+  },
+  "tags": {
+    "before": [
+      "simulated",
+      "is_demo",
+      "path:funding"
+    ],
+    "after": [
+      "simulated",
+      "is_demo",
+      "inquiry:completed",
+      "path:funding"
+    ]
+  },
+  "custom_fields": {
+    "before": {
+      "crs_paid": true,
+      "crs_status": "Requested",
+      "analyzer_path": "Funding",
+      "crs_pull_scope": "consumer_only",
+      "ghl_link_dry_run": true,
+      "round_hold_reason": "Awaiting CRS",
+      "total_funding_estimate": 125000,
+      "analyzer_prequal_amount": 125000
+    },
+    "after": {
+      "crs_paid": true,
+      "crs_status": "Requested",
+      "analyzer_path": "Funding",
+      "crs_pull_scope": "consumer_only",
+      "ghl_link_dry_run": true,
+      "round_hold_reason": "Awaiting CRS",
+      "employee_next_action": "Apply for Funding",
+      "ready_for_next_round": true,
+      "total_funding_estimate": 125000,
+      "analyzer_prequal_amount": 125000
+    }
+  },
+  "inquiry_case_status": {
+    "before": "Queued",
+    "after": "Queued"
+  },
+  "events_this_client": {
+    "before": 1,
+    "after": 5
+  },
+  "messages": {
+    "before": 1,
+    "after": 1
+  },
+  "funding_rounds": {
+    "before": 0,
+    "after": 0
+  }
+}

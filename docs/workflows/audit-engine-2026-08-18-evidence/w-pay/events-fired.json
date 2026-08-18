@@ -1,0 +1,38 @@
+{
+  "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+  "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+  "events": [
+    {
+      "name": "payment.received",
+      "id": "ee763f7f-3aef-49a9-a308-0f69ca835934",
+      "client_id": null,
+      "client_id_null": true,
+      "client_id_is_this_file": false,
+      "shape": "payment.received without clientId, with email"
+    },
+    {
+      "name": "payment.received",
+      "id": "09889e94-8f08-40d2-8312-6616157bfa7f",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "client_id_null": false,
+      "client_id_is_this_file": true,
+      "shape": "payment.received with clientId"
+    },
+    {
+      "name": "diagnostic.paid",
+      "id": "0bc264a3-e1dc-42d0-ae87-18b96a4a7ad4",
+      "client_id": null,
+      "client_id_null": true,
+      "client_id_is_this_file": false,
+      "shape": "diagnostic.paid without clientId, with email"
+    },
+    {
+      "name": "diagnostic.paid",
+      "id": "81695ac8-f9ae-4a6f-b8fa-2c2044371c37",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "client_id_null": false,
+      "client_id_is_this_file": true,
+      "shape": "diagnostic.paid with clientId"
+    }
+  ]
+}

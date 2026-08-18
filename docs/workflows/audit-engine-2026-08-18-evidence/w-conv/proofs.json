@@ -1,0 +1,166 @@
+{
+  "generated_at": "2026-08-18T19:17:15.305Z",
+  "unit": "W-CONV",
+  "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+  "crs_id": "c1f83e6b-a624-4f28-a32a-531a530b3ad4",
+  "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+  "forbidden_untouched": "9af65808-a619-4e65-ae91-239766a006b7",
+  "compare_read_only": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "proofs": [
+    {
+      "id": "conv.1a.inquiries-removed",
+      "result": "EMPTY",
+      "expected": "inquiry.removed event or a completed inquiry case on THIS file (Chris 2026-08-18 conveyor hop). Intended journeys do not name this hop.",
+      "observed": {
+        "inquiry_removed_events_this_file": 0,
+        "inquiry_removed_events_org": 0,
+        "cases": [
+          {
+            "id": "d1635579-eda9-4961-8ca8-50abe7151ecf",
+            "case_status": "Queued",
+            "completed_at": null,
+            "cleared_at": null,
+            "closed_at": null
+          }
+        ],
+        "inquiry_log": 0,
+        "hop_class": "empty — one Queued case, not sent, not completed"
+      },
+      "evidence": "w-conv/01-hops-db.json"
+    },
+    {
+      "id": "conv.1b.file-optimized",
+      "result": "EMPTY",
+      "expected": "A credit-file optimizer change on THIS file (letters, utilization, metro2 pack). Intended journeys do not name this hop. W-OPT: src/optimize is ad-spend.",
+      "observed": {
+        "dispute_letters": 0,
+        "dispute_cases": 0,
+        "letters_generated_table": null,
+        "optimize_or_letter_events": 0,
+        "crs_has_bureaus": false,
+        "crs_has_inquiries": false,
+        "consumer_util": {
+          "pct": 18
+        },
+        "crm_util": "18",
+        "note": "No credit-file optimizer ran. Utilization is still the simulate seed (18). No letter rows."
+      },
+      "evidence": "w-conv/01-hops-db.json"
+    },
+    {
+      "id": "conv.1c.banks-populate",
+      "result": "EMPTY",
+      "expected": "Banks populate for THIS file (real bank link / import), not only the simulate mock row.",
+      "observed": {
+        "row_count": 1,
+        "names": [
+          "Simulated Checking"
+        ],
+        "raw": [
+          {
+            "is_demo": true,
+            "provider": "mock"
+          }
+        ],
+        "class": "simulate-mock-only",
+        "note": "One Simulated Checking row from src/demo/simulate-client.mjs (raw.provider=mock). That is seed, not populate."
+      },
+      "evidence": "w-conv/01-hops-db.json"
+    },
+    {
+      "id": "conv.1d.apply-via-proxy-path",
+      "result": "PASS",
+      "expected": "A proxy/apply path exists that can be aimed at THIS client_id.",
+      "observed": {
+        "route": "POST /api/proxy/launch",
+        "required_body": [
+          "client_id (uuid)",
+          "lender_id or application_id (uuid)"
+        ],
+        "ui": [
+          "public/app/proxy-apply.js",
+          "CCP #fh-funding-apply",
+          "lenders.html client-scoped Apply",
+          "pipeline.html matches"
+        ],
+        "applications_this_file": 0,
+        "funding_rounds_this_file": 0,
+        "proxy_sessions_this_file": 0,
+        "lenders_org": {
+          "n": 0,
+          "active_n": 0,
+          "demo_n": 0,
+          "with_url": 0
+        }
+      },
+      "evidence": "w-conv/01-hops-db.json"
+    },
+    {
+      "id": "conv.2.lender-matches",
+      "result": "EMPTY",
+      "expected": "GET /api/read/lender-matches?client_id=THIS returns rows if any lender fits this file",
+      "observed": {
+        "status": 200,
+        "match_count": 0,
+        "lender_count": 0,
+        "skipped_count": 0,
+        "compare_8556_match_count": 0,
+        "required_input": "client_id uuid only; this file has it. No round/id required."
+      },
+      "evidence": "w-conv/02-lender-matches.json"
+    },
+    {
+      "id": "conv.3.proxy-launch",
+      "result": "FAIL",
+      "expected": "POST /api/proxy/launch for THIS client stops at credential / validation error. Does not open a bank site.",
+      "observed": {
+        "status": 503,
+        "error": "oxylabs_credentials_missing",
+        "session_id": null,
+        "sessions_after": 0,
+        "used_matched_lender": false,
+        "cred_names_checked": [
+          "OXYLABS_USERNAME",
+          "OXYLABS_PASSWORD"
+        ]
+      },
+      "evidence": "w-conv/03-proxy-launch.json"
+    },
+    {
+      "id": "conv.4.extension-fallback",
+      "result": "MISSING",
+      "expected": "CRM detect-or-fallback renders the manual proxy string on THIS file (extension/ + proxy-apply.js).",
+      "observed": {
+        "detect_api": "none named detect-or-fallback — page postMessage ping in public/app/proxy-apply.js",
+        "extension_present": false,
+        "apply_buttons": [],
+        "status_copy": "Lender list is empty — import CSV on Lenders.",
+        "fallback_on_screen": false,
+        "live_string": "MISSING — launch never returned ok, so openManualUi never ran",
+        "designed_string_saved": "w-conv/04-designed-fallback-string.json"
+      },
+      "evidence": [
+        "w-conv/04-ccp-apply-door.png",
+        "w-conv/04-ccp-apply-ui.json",
+        "w-conv/04-designed-fallback-string.json"
+      ]
+    },
+    {
+      "id": "conv.ground-truth",
+      "result": "MISSING",
+      "expected": "Written intended journey names inquiries removed → file optimized → banks populate → apply via proxy",
+      "observed": "docs/journeys/*-intended.md do not name this conveyor. Chris 2026-08-18 board is the only written order. Did not invent missing steps.",
+      "evidence": "w-conv/NOTES.md"
+    },
+    {
+      "id": "conv.forbidden-untouched",
+      "result": "PASS",
+      "expected": "Never touch 9af65808-a619-4e65-ae91-239766a006b7. 8556 read-compare only.",
+      "observed": {
+        "forbidden_event_count_read": 26,
+        "note": "count only — no writes to forbidden or 8556"
+      },
+      "evidence": "w-conv/01-hops-db.json"
+    }
+  ]
+}

@@ -1,0 +1,3261 @@
+[
+  {
+    "table": "account_magic_links",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "account_magic_links_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "account_sessions",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "account_sessions_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "account_signup_policy",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "account_signup_policy_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "account_statement_cycles",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "account_statement_cycles_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "accounts",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "accounts_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "action_log",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "action_log_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "ad_metrics_daily",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "ad_metrics_daily_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "ad_platform_category_map",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "ad_platform_category_map_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "ad_platform_connections",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "ad_platform_connections_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "ad_sets",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "ad_sets_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "ads",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "ads_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "affiliate_commission_rules",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "affiliate_commission_rules_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "affiliate_events",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "affiliate_events_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "affiliate_payout_lines",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "affiliate_payout_lines_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "affiliate_payouts",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "affiliate_payouts_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "affiliate_referrals",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "affiliate_referrals_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "affiliates",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "affiliates_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "agent_shadow_log",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "agent_shadow_log_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "agents",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "agents_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "ai_bureau_config",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "ai_bureau_config_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "alerts",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "alerts_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "application_decisions",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "application_decisions_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "application_scores",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "application_scores_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "applications",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "applications_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "auth_attempts",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "auth_attempts_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "bank_accounts",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "bank_accounts_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "bank_inbox",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "bank_inbox_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "bank_transactions",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "bank_transactions_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "behavior_scores",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "behavior_scores_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "brain_affiliate_allowlist",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "brain_affiliate_allowlist_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "brain_chunks",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "brain_chunks_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "brain_classification_reviews",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "brain_classification_reviews_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "brain_drive_sync",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "brain_drive_sync_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "brain_files",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "brain_files_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "brain_messages",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "brain_messages_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "brain_threads",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "brain_threads_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "brand_kit_sources",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "brand_kit_sources_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "brand_kits",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "brand_kits_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "business_tradelines",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "business_tradelines_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "businesses",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "businesses_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "call_compliance_flags",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "call_compliance_flags_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "call_outcomes",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "call_outcomes_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "campaign_strategies",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "campaign_strategies_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "campaigns",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "campaigns_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "candidate_applications",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "candidate_applications_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "candidates",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "candidates_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "card_liabilities",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "card_liabilities_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "card_liability_history",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "card_liability_history_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "cards",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "cards_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "cashflow_reminders",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "cashflow_reminders_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "cashflow_settings",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "cashflow_settings_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "client_cards",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "client_cards_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "client_consents",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "client_consents_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "client_custom_fields",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "client_custom_fields_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "clients",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "clients_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "commas_inbox",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "commas_inbox_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "commission_ledger",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "commission_ledger_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "commission_rule_tiers",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "commission_rule_tiers_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "commission_rules",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "commission_rules_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "compliance_rules",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "compliance_rules_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "compliance_screenings",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "compliance_screenings_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "content_tier_map",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "content_tier_map_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "content_videos",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "content_videos_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "contract_signers",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "contract_signers_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "contract_templates",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "contract_templates_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "contracts",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "contracts_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "conversation_participants",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "conversation_participants_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "conversations",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "conversations_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "creative_assets",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "creative_assets_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "creative_billing_rates",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "creative_billing_rates_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "creative_providers",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "creative_providers_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "creative_usage_events",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "creative_usage_events_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "crs_results",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "crs_results_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "customer_insights",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "customer_insights_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "dispute_cases",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "kinds": [],
+    "policies": []
+  },
+  {
+    "table": "dispute_items",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "kinds": [],
+    "policies": []
+  },
+  {
+    "table": "dispute_letters",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "kinds": [],
+    "policies": []
+  },
+  {
+    "table": "dispute_responses",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "kinds": [],
+    "policies": []
+  },
+  {
+    "table": "document_versions",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "document_versions_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "documents",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "documents_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "eeo_responses",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "eeo_responses_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "eeo_survey_invites",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "eeo_survey_invites_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "entities",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "entities_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "entitlement_catalog",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "entitlement_catalog_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "entitlements",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "entitlements_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "erasure_requests",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "erasure_requests_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "events",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "events_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "failed_events",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "failed_events_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "funding_closeout",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "funding_closeout_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "funding_closeout_items",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "funding_closeout_items_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "funding_round_sales",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "funding_round_sales_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "funding_rounds",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "funding_rounds_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "furnisher_mail_addresses",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "kinds": [],
+    "policies": []
+  },
+  {
+    "table": "generation_job_assets",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "generation_job_assets_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "generation_jobs",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "generation_jobs_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "hiring_channel_connections",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "hiring_channel_connections_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "hiring_decisions",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "hiring_decisions_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "hiring_interview_attendees",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "hiring_interview_attendees_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "hiring_interviews",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "hiring_interviews_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "hiring_job_postings",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "hiring_job_postings_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "hiring_roles",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "hiring_roles_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "hiring_rubrics",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "hiring_rubrics_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "inquiry_attempts",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "inquiry_attempts_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "inquiry_log",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "inquiry_log_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "inquiry_prep",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "inquiry_prep_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "inquiry_removal_cases",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "inquiry_removal_cases_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "investment_holdings",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "investment_holdings_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "invoice_line_items",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "invoice_line_items_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "invoice_payments",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "invoice_payments_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "invoices",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "invoices_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "journeys",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "journeys_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "lender_bureau_observations",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "lender_bureau_observations_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "lenders",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "lenders_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "mail_campaigns",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "mail_campaigns_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "mail_responses",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "mail_responses_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "mail_tracked_numbers",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "mail_tracked_numbers_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "mail_universe",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "mail_universe_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "marketing_content_queue",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "marketing_content_queue_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "marketing_flags",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "marketing_flags_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "message_channel_routing",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "message_channel_routing_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "message_templates",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "message_templates_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "messages",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "messages_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "messaging_settings",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "messaging_settings_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "opt_outs",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "opt_outs_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "optimization_rules",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "optimization_rules_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "org_brand",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "org_brand_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "orgs",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_read"
+    ],
+    "policies": [
+      {
+        "name": "orgs_read",
+        "roles": "{public}",
+        "cmd": "SELECT",
+        "kind": "open_read",
+        "using": "true",
+        "with_check": null
+      }
+    ]
+  },
+  {
+    "table": "outbound_calls",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "outbound_calls_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "owner_notifications",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "owner_notifications_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "partner_ai_usage",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "partner_ai_usage_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "partner_brand",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "partner_brand_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "partner_module_settings",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "partner_module_settings_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "partner_onboarding_tasks",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "partner_onboarding_tasks_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "partner_page_section_versions",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "partner_page_section_versions_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "partner_pages",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "partner_pages_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "partner_payout_lines",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "partner_payout_lines_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "partner_payouts",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "partner_payouts_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "partner_revenue",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "partner_revenue_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "partners",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "partners_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "password_resets",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "password_resets_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "payment_links",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "payment_links_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "pii_access_log",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "pii_access_log_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "pii_identity",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "pii_identity_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "pipeline_stages",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "pipeline_stages_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "pipelines",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "pipelines_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "plaid_items",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "plaid_items_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "product_aliases",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "product_aliases_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "product_entitlements",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "product_entitlements_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "products",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "products_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "proxy_sessions",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "proxy_sessions_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "recurring_bill_transactions",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "recurring_bill_transactions_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "recurring_bills",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "recurring_bills_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "repair_decision_log",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 0,
+    "kinds": [],
+    "policies": []
+  },
+  {
+    "table": "retention_policy",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "retention_policy_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "sale_attributions",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "sale_attributions_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "sale_payments",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "sale_payments_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "sales",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "sales_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "schema_migrations",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "schema_migrations_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "sessions",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "sessions_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "shifts",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "shifts_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "snapshots",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "snapshots_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "social_channels",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "social_channels_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "social_posts",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "social_posts_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "soft_pull_requests",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "soft_pull_requests_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "spend_ceilings",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "partner_isolation"
+    ],
+    "policies": [
+      {
+        "name": "spend_ceilings_partner_isolation",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "partner_isolation",
+        "using": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())",
+        "with_check": "((partner_id = fundhub_current_partner()) OR fundhub_is_staff())"
+      }
+    ]
+  },
+  {
+    "table": "staff",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "staff_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "staff_events",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "staff_events_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "staff_roles",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "staff_roles_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "staff_targets",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "staff_targets_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "subscriptions",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "subscriptions_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "tasks",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "tasks_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "tradelines",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "tradelines_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "transactions",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "transactions_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "upsell_triggers",
+    "rls_enabled": true,
+    "rls_forced": false,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "upsell_triggers_app_all",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  },
+  {
+    "table": "webhook_captures",
+    "rls_enabled": true,
+    "rls_forced": true,
+    "policy_count": 1,
+    "kinds": [
+      "open_door"
+    ],
+    "policies": [
+      {
+        "name": "webhook_captures_no_bare_rls",
+        "roles": "{public}",
+        "cmd": "ALL",
+        "kind": "open_door",
+        "using": "true",
+        "with_check": "true"
+      }
+    ]
+  }
+]

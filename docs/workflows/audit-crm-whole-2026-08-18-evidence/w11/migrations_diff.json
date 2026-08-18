@@ -1,0 +1,49 @@
+{
+  "files_on_disk": 160,
+  "applied_rows": 162,
+  "on_disk_not_applied": [],
+  "applied_not_on_disk": [
+    {
+      "key": "migrations/090_app_role.sql",
+      "applied_at": "2026-08-01T02:58:01.107Z"
+    },
+    {
+      "key": "migrations/106_journeys.sql",
+      "applied_at": "2026-08-01T17:07:20.018Z"
+    }
+  ],
+  "latest_applied": [
+    {
+      "key": "migrations/169_contract_template_placeholders.sql",
+      "applied_at": "2026-08-17T00:39:59.833Z"
+    },
+    {
+      "key": "migrations/170_call_outcome_checklist.sql",
+      "applied_at": "2026-08-17T22:14:41.749Z"
+    },
+    {
+      "key": "migrations/171_content.sql",
+      "applied_at": "2026-08-17T22:14:42.061Z"
+    },
+    {
+      "key": "migrations/172_wl_marketing.sql",
+      "applied_at": "2026-08-17T23:27:04.693Z"
+    },
+    {
+      "key": "migrations/173_specialist_role_name.sql",
+      "applied_at": "2026-08-18T00:06:17.932Z"
+    },
+    {
+      "key": "migrations/174_company_brain_uploads.sql",
+      "applied_at": "2026-08-18T03:51:17.656Z"
+    },
+    {
+      "key": "migrations/175_company_brain_threads.sql",
+      "applied_at": "2026-08-18T03:51:17.951Z"
+    },
+    {
+      "key": "migrations/176_company_brain_upload_reviews.sql",
+      "applied_at": "2026-08-18T03:51:18.241Z"
+    }
+  ]
+}

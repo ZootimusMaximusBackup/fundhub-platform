@@ -1,0 +1,26 @@
+{
+  "rows": [
+    {
+      "is_live_file": true,
+      "is_test_file": false,
+      "has_phone": true
+    },
+    {
+      "is_live_file": false,
+      "is_test_file": true,
+      "has_phone": false
+    }
+  ],
+  "phone_eq_test_phone": [
+    {
+      "is_live_file": true,
+      "is_test_file": false,
+      "phone_eq_test_phone": true
+    },
+    {
+      "is_live_file": false,
+      "is_test_file": true,
+      "phone_eq_test_phone": false
+    }
+  ]
+}

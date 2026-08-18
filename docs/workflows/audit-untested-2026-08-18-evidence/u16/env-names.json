@@ -1,0 +1,17 @@
+{
+  "BLAND_API_KEY": {
+    "present": true
+  },
+  "BLAND_WEBHOOK_SECRET": {
+    "present": true
+  },
+  "INQUIRY_API_BASE": {
+    "present": false
+  },
+  "INQUIRY_API_SECRET": {
+    "present": true
+  },
+  "did_start_call": false,
+  "did_save_or_promote": false,
+  "did_sandbox": false
+}

@@ -1,0 +1,63 @@
+{
+  "note": "There is no bus event named bureau-response. src/metro2/inbound/handler.mjs is a function, not a bus listener.",
+  "function": "handleInboundResponse(db, opts)",
+  "file": "src/metro2/inbound/handler.mjs",
+  "opts": {
+    "orgId": "uuid",
+    "clientId": "uuid",
+    "caseId": "uuid | null — confirmParse writes repair_decision_log.case_id FK to dispute_cases, not inquiry_removal_cases",
+    "ocrText": "string — scanned bureau/furnisher letter",
+    "items": [
+      {
+        "id": "string",
+        "account_last4": "string?",
+        "creditor": "string?",
+        "status": "string?",
+        "round": "string?"
+      }
+    ],
+    "autoConfirmThreshold": "number default 0.85",
+    "confirmedBy": "string | null"
+  },
+  "parse_input": {
+    "function": "parseResponseText({ text, items })",
+    "file": "src/metro2/inbound/parse-response.mjs"
+  },
+  "confirm_input": {
+    "function": "confirmParse(db, { orgId, clientId, caseId, items, parseResult, confirmedOutcomes, confirmedBy, threshold })",
+    "file": "src/metro2/inbound/confirm.mjs"
+  },
+  "returned_event_names": [
+    "repair.parse.low_confidence",
+    "repair.response.parsed"
+  ],
+  "returned_event_note": "Those strings are return values. handleInboundResponse does not emit() them onto the bus.",
+  "test_constructor": {
+    "file": "src/metro2/inbound/inbound.test.mjs",
+    "fixture_file": "none",
+    "inline": {
+      "orgId": "o",
+      "clientId": "c",
+      "caseId": "k",
+      "ocrText": "Thank you for contacting us.",
+      "items": [
+        {
+          "id": "1",
+          "account_last4": "1111",
+          "creditor": "Bank"
+        }
+      ]
+    },
+    "db": "null in the unit test — no row written"
+  },
+  "high_confidence_inline_from_parse_test": {
+    "ocrText": "Regarding account ending 4521, the item has been deleted from your file.",
+    "items": [
+      {
+        "id": "a1",
+        "account_last4": "4521",
+        "creditor": "Midland"
+      }
+    ]
+  }
+}

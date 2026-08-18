@@ -1,0 +1,11 @@
+{
+  "INNGEST_EVENT_KEY": {
+    "present": true
+  },
+  "INNGEST_SIGNING_KEY": {
+    "present": true
+  },
+  "did_set_or_flip_key": false,
+  "did_send_test_event": false,
+  "did_demo_mode": false
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "claim": "contract.signed fired; nobody listened (no stage move, no task, no follow-up mail/SMS, client updated_at unchanged)",
+    "w10": "BROKEN — fired but nothing listened",
+    "this_file": "SAME",
+    "note": "empty listener list + no unlock row change"
+  },
+  {
+    "claim": "Soft-pull consent contract signed did not unlock soft pull (capture path is POST /api/consent/capture)",
+    "w10": "BROKEN",
+    "this_file": "N/A — this file signed FUNDING-AGREEMENT",
+    "note": "W-CONSENT already wrote client_consents via capture on this client before W-SIG"
+  },
+  {
+    "claim": "Dispute-letter sign never done in W10",
+    "w10": "MISSING",
+    "this_file": "SAME — still not signed",
+    "note": "Did not sign a dispute letter"
+  },
+  {
+    "claim": "Signed copy is generated and not sent",
+    "w10": "BROKEN — delivery_status=not_delivered",
+    "this_file": "SAME",
+    "note": "signed document 864fd394-… title Funding Agreement (signed); delivery_status=not_delivered"
+  }
+]

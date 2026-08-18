@@ -1,0 +1,17 @@
+{
+  "by_name": [
+    {
+      "name": "contract.sent",
+      "n": 1
+    },
+    {
+      "name": "contract.signed",
+      "n": 1
+    },
+    {
+      "name": "message.queued",
+      "n": 3
+    }
+  ],
+  "inbound_or_mail_response": []
+}

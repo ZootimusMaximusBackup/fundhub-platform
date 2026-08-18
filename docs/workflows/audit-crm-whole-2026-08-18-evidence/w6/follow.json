@@ -1,0 +1,66 @@
+{
+  "at": "2026-08-18T16:57:35.660Z",
+  "findings": [
+    {
+      "id": "ops-people-tab",
+      "happened": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ ✷ Galaxy BETA ⚙ Ops & Admin BETA AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Beta — under development. Data may be incomplete or inaccurate. Do not use for client decisions. Dismiss / Ops & Admin ORG: FUNDHUB Last 7 Days — Aug 12–18 ▾ Tue, Aug 18, 12:",
+      "verdict": "OBSERVED"
+    },
+    {
+      "id": "fire-void-api",
+      "happened": "status=500 ok=false err=write_failed",
+      "verdict": "BROKEN"
+    },
+    {
+      "id": "agent-pick",
+      "happened": "{\"n\":0,\"labels\":[]}",
+      "verdict": "UNVERIFIED"
+    },
+    {
+      "id": "fire-agent-save",
+      "happened": "withheld — editor still on Setter Josh",
+      "verdict": "WITHHELD"
+    },
+    {
+      "id": "fire-inquiry-send2",
+      "happened": "{\"has\":true,\"disabled\":false,\"text\":\"Send\",\"panel\":\"SEND MARK CLEARED CLOSE\"}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "id": "fire-hire-reject2",
+      "happened": "{\"buttons\":[\"‹‹\",\"Home▾\",\"SALES\\n▾\",\"FUNDING\\n▾\",\"CLIENT OPS\\n▾\",\"WATCH\\n▾\",\"AUTOMATION\\n▾\",\"MARKETING\\n▾\",\"ADMIN\\n▾\",\"PORTALS\\n▾\",\"✕\"],\"snippet\":\"\",\"hasDrawer\":true}",
+      "verdict": "OBSERVED"
+    },
+    {
+      "id": "oxylabs-launch2",
+      "happened": "status=503 ok=false err=oxylabs_credentials_missing",
+      "verdict": "BROKEN"
+    }
+  ],
+  "after": {
+    "draft": [
+      {
+        "id": "8988b582-d98a-44c8-9173-86de54fc5788",
+        "status": "draft",
+        "voided": false
+      }
+    ],
+    "agent": [
+      {
+        "code": "AG-01",
+        "status": "draft",
+        "updated_at": "2026-07-31T02:24:53.163Z"
+      }
+    ],
+    "cases": [
+      {
+        "n": 3
+      }
+    ],
+    "settings": [
+      {
+        "outbound_enabled": true
+      }
+    ]
+  }
+}

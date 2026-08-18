@@ -1,0 +1,652 @@
+{
+  "at": "2026-08-18T17:46:26.069Z",
+  "createFunctionCount": 53,
+  "registeredInIndexCount": 51,
+  "definedNotRegistered": [
+    {
+      "id": "inquiry-call-sweeper",
+      "file": "inquiry-call-sweeper.mjs",
+      "exportName": "inquiryCallSweeper"
+    },
+    {
+      "id": "s-02-incomplete-survey-nudge",
+      "file": "s-02-incomplete-survey-nudge.mjs",
+      "exportName": "s02IncompleteSurveyNudge"
+    }
+  ],
+  "messageDispatchSweeper": {
+    "file": "message-dispatch-sweeper.mjs",
+    "exportName": "messageDispatchSweeper",
+    "id": "message-dispatch-sweeper",
+    "name": "Message dispatch sweeper",
+    "listenEvents": [],
+    "cron": "SWEEP_CRON",
+    "registeredInIndex": true
+  },
+  "inquiryCallSweeper": {
+    "file": "inquiry-call-sweeper.mjs",
+    "exportName": "inquiryCallSweeper",
+    "id": "inquiry-call-sweeper",
+    "name": "Inquiry call sweeper (delivery + configured wait)",
+    "listenEvents": [],
+    "cron": "\"*/15 * * * *\"",
+    "registeredInIndex": false
+  },
+  "s02IncompleteSurveyNudge": {
+    "file": "s-02-incomplete-survey-nudge.mjs",
+    "exportName": "s02IncompleteSurveyNudge",
+    "id": "s-02-incomplete-survey-nudge",
+    "name": "S-02 — Incomplete App (Survey)",
+    "listenEvents": [
+      "entry.captured"
+    ],
+    "cron": null,
+    "registeredInIndex": false
+  },
+  "servePath": {
+    "apiInngestImportsFunctions": true,
+    "netlifyShortCircuit": true
+  },
+  "listenEvents": [
+    "analysis.completed",
+    "booking.created",
+    "booking.noshow",
+    "call.completed",
+    "deposit.paid",
+    "diagnostic.paid",
+    "docs.received",
+    "entry.captured",
+    "inquiry.removed",
+    "mail.response",
+    "message.inbound",
+    "payment.received",
+    "round.approved",
+    "round.funded",
+    "round.started",
+    "round.submitted",
+    "survey.submitted"
+  ],
+  "functions": [
+    {
+      "file": "af-02-referral-ownership-capture.mjs",
+      "exportName": "af02ReferralOwnershipCapture",
+      "id": "af-02-referral-ownership-capture",
+      "name": "AF-02 — Referral Ownership Capture",
+      "listenEvents": [
+        "entry.captured",
+        "diagnostic.paid",
+        "analysis.completed"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "ai-set-03-no-answer-cadence.mjs",
+      "exportName": "aiSet03NoAnswerCadence",
+      "id": "ai-set-03-no-answer-cadence",
+      "name": "AI-SET-03 — No-Answer SMS Cadence",
+      "listenEvents": [
+        "call.completed"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "ai-set-04-3way-handoff.mjs",
+      "exportName": "aiSet043WayHandoff",
+      "id": "ai-set-04-3way-handoff",
+      "name": "AI-SET-04 — 3-Way Text Handoff",
+      "listenEvents": [
+        "booking.created"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "at-01-first-touch-capture.mjs",
+      "exportName": "at01FirstTouchCapture",
+      "id": "at-01-first-touch-capture",
+      "name": "AT-01 — First Touch Capture",
+      "listenEvents": [
+        "entry.captured"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "bc-01-customer-responsiveness.mjs",
+      "exportName": "bc01CustomerResponsiveness",
+      "id": "bc-01-customer-responsiveness",
+      "name": "BC-01 — Customer Responsiveness Classifier",
+      "listenEvents": [
+        "round.started"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "bc-02-customer-friction.mjs",
+      "exportName": "bc02CustomerFriction",
+      "id": "bc-02-customer-friction",
+      "name": "BC-02 — Customer Friction Level Detector",
+      "listenEvents": [
+        "round.started"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "bs-01-precall-launcher.mjs",
+      "exportName": "bs01PrecallLauncher",
+      "id": "bs-01-precall-launcher",
+      "name": "BS-01 — Pre-Call Backend Launcher",
+      "listenEvents": [
+        "booking.created"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "c-00-crs-soft-pull-request.mjs",
+      "exportName": "c00CrsSoftPullRequest",
+      "id": "c-00-crs-soft-pull-request",
+      "name": "C-00 — CRS Soft Pull Request",
+      "listenEvents": [
+        "diagnostic.paid"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "c-02-inquiry-created.mjs",
+      "exportName": "c02InquiryCreated",
+      "id": "c-02-inquiry-created",
+      "name": "C-02 — Inquiry Created",
+      "listenEvents": [
+        "analysis.completed"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "c-02b-inquiry-removal-requested.mjs",
+      "exportName": "c02bInquiryRemovalRequested",
+      "id": "c-02b-inquiry-removal-requested",
+      "name": "C-02B — Inquiry Removal Requested",
+      "listenEvents": [
+        "deposit.paid"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "c-03-inquiry-removed-resume-or-hold.mjs",
+      "exportName": "c03InquiryRemovedResumeOrHold",
+      "id": "c-03-inquiry-removed-resume-or-hold",
+      "name": "C-03 — Inquiry Removed",
+      "listenEvents": [
+        "inquiry.removed"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "c-05-pre-funding-review.mjs",
+      "exportName": "c05PreFundingReview",
+      "id": "c-05-pre-funding-review",
+      "name": "C-05 — Pre-Funding Review Logic",
+      "listenEvents": [
+        "round.started"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "c-06-crs-results-router.mjs",
+      "exportName": "c06CrsResultsRouter",
+      "id": "c-06-crs-results-router",
+      "name": "C-06 — CRS Results Router",
+      "listenEvents": [
+        "analysis.completed"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "contract-chaser.mjs",
+      "exportName": "contractChaser",
+      "id": "contract-chaser",
+      "name": "Contracts — chase unsigned",
+      "listenEvents": [],
+      "cron": "CHASE_CRON",
+      "registeredInIndex": true
+    },
+    {
+      "file": "dpc-01-analyzer-lock.mjs",
+      "exportName": "dpc01AnalyzerLock",
+      "id": "dpc-01-analyzer-lock",
+      "name": "DPC-01 — Analyzer Lock",
+      "listenEvents": [
+        "analysis.completed"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "dpc-02-call-outcome-enforcement.mjs",
+      "exportName": "dpc02CallOutcomeEnforcement",
+      "id": "dpc-02-call-outcome-enforcement",
+      "name": "DPC-02 — Call Outcome Enforcement",
+      "listenEvents": [
+        "booking.created"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "dpc-03-inbound-reply-router.mjs",
+      "exportName": "dpc03InboundReplyRouter",
+      "id": "dpc-03-inbound-reply-router",
+      "name": "DPC-03 — Inbound Reply Router",
+      "listenEvents": [
+        "message.inbound"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "dpc-05-no-progress-escalation.mjs",
+      "exportName": "dpc05NoProgressEscalation",
+      "id": "dpc-05-no-progress-escalation",
+      "name": "DPC-05 — 72-Hour No-Progress Escalation",
+      "listenEvents": [
+        "booking.created"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "ds-01-repair-referral.mjs",
+      "exportName": "ds01RepairReferral",
+      "id": "ds-01-repair-referral",
+      "name": "DS-01 — Repair Referral",
+      "listenEvents": [
+        "call.completed"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "ds-02-diy-letters.mjs",
+      "exportName": "ds02DiyLetters",
+      "id": "ds-02-diy-letters",
+      "name": "DS-02 — DIY Letters",
+      "listenEvents": [
+        "payment.received"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "f-01-funding-intake.mjs",
+      "exportName": "f01FundingIntake",
+      "id": "f-01-funding-intake",
+      "name": "F-01 — Funding Intake",
+      "listenEvents": [
+        "round.started"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "f-02-portal-id-missing.mjs",
+      "exportName": "f02PortalIdMissing",
+      "id": "f-02-portal-id-missing",
+      "name": "F-02 — Portal / ID Missing",
+      "listenEvents": [
+        "round.started"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "f-03-round-submitted.mjs",
+      "exportName": "f03RoundSubmitted",
+      "id": "f-03-round-submitted",
+      "name": "F-03 — Round Submitted",
+      "listenEvents": [
+        "round.submitted"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "f-04-round-approvals.mjs",
+      "exportName": "f04RoundApprovals",
+      "id": "f-04-round-approvals",
+      "name": "F-04 — Round Approvals",
+      "listenEvents": [
+        "round.approved"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "f-05-inquiry-cleanup-gate.mjs",
+      "exportName": "f05InquiryCleanupGate",
+      "id": "f-05-inquiry-cleanup-gate",
+      "name": "F-05 — Inquiry Cleanup Gate",
+      "listenEvents": [
+        "round.approved"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "f-06-funding-conditions-missing-docs.mjs",
+      "exportName": "f06FundingConditionsMissingDocs",
+      "id": "f-06-funding-conditions-missing-docs",
+      "name": "F-06 — Funding Conditions / Missing Docs",
+      "listenEvents": [
+        "mail.response",
+        "docs.received"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "f-07-funding-locked.mjs",
+      "exportName": "f07FundingLocked",
+      "id": "f-07-funding-locked",
+      "name": "F-07 — Funding Locked",
+      "listenEvents": [
+        "round.funded"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "f-08-post-funding-monitoring.mjs",
+      "exportName": "f08PostFundingMonitoring",
+      "id": "f-08-post-funding-monitoring",
+      "name": "F-08 — Post-Funding Monitoring",
+      "listenEvents": [
+        "round.funded"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "f-09-funding-declined-no-path.mjs",
+      "exportName": "f09FundingDeclinedNoPath",
+      "id": "f-09-funding-declined-no-path",
+      "name": "F-09 — Funding Declined / No Path",
+      "listenEvents": [
+        "mail.response"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "f-10-client-funding-inbox-provisioner.mjs",
+      "exportName": "f10ClientFundingInboxProvisioner",
+      "id": "f-10-client-funding-inbox-provisioner",
+      "name": "F-10 — Client Funding Inbox Provisioner",
+      "listenEvents": [
+        "round.started"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "f-11-bank-email-event-router.mjs",
+      "exportName": "f11BankEmailEventRouter",
+      "id": "f-11-bank-email-event-router",
+      "name": "F-11 — Bank Email Event Router",
+      "listenEvents": [
+        "mail.response"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "inquiry-call-sweeper.mjs",
+      "exportName": "inquiryCallSweeper",
+      "id": "inquiry-call-sweeper",
+      "name": "Inquiry call sweeper (delivery + configured wait)",
+      "listenEvents": [],
+      "cron": "\"*/15 * * * *\"",
+      "registeredInIndex": false
+    },
+    {
+      "file": "message-dispatch-sweeper.mjs",
+      "exportName": "messageDispatchSweeper",
+      "id": "message-dispatch-sweeper",
+      "name": "Message dispatch sweeper",
+      "listenEvents": [],
+      "cron": "SWEEP_CRON",
+      "registeredInIndex": true
+    },
+    {
+      "file": "n-01-cold-nurture.mjs",
+      "exportName": "n01ColdNurture",
+      "id": "n-01-cold-nurture",
+      "name": "N-01 — Long-Term Cold Nurture",
+      "listenEvents": [
+        "entry.captured"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "n-02-warm-nurture.mjs",
+      "exportName": "n02WarmNurture",
+      "id": "n-02-warm-nurture",
+      "name": "N-02 — Long-Term Warm Nurture",
+      "listenEvents": [
+        "survey.submitted"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "n-03-hot-nurture.mjs",
+      "exportName": "n03HotNurture",
+      "id": "n-03-hot-nurture",
+      "name": "N-03 — Long-Term Hot Nurture",
+      "listenEvents": [
+        "booking.created",
+        "call.completed"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "n-04-post-funding-nurture.mjs",
+      "exportName": "n04PostFundingNurture",
+      "id": "n-04-post-funding-nurture",
+      "name": "N-04 — Post-Funding Nurture",
+      "listenEvents": [
+        "round.funded"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "n-06-renewal-second-wave.mjs",
+      "exportName": "n06RenewalSecondWave",
+      "id": "n-06-renewal-second-wave",
+      "name": "N-06 — Renewal / Second-Wave Funding",
+      "listenEvents": [
+        "round.funded"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "round-started-client-notify.mjs",
+      "exportName": "roundStartedClientNotify",
+      "id": "round-started-client-notify",
+      "name": "Round Started — Client Notify",
+      "listenEvents": [
+        "round.started"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "s-01-new-lead-intake.mjs",
+      "exportName": "s01NewLeadIntake",
+      "id": "s-01-new-lead-intake",
+      "name": "S-01 — New Lead / Intake",
+      "listenEvents": [
+        "entry.captured"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "s-02-incomplete-survey-nudge.mjs",
+      "exportName": "s02IncompleteSurveyNudge",
+      "id": "s-02-incomplete-survey-nudge",
+      "name": "S-02 — Incomplete App (Survey)",
+      "listenEvents": [
+        "entry.captured"
+      ],
+      "cron": null,
+      "registeredInIndex": false
+    },
+    {
+      "file": "s-04-call-booked.mjs",
+      "exportName": "s04CallBooked",
+      "id": "s-04-call-booked",
+      "name": "S-04 — Call Booked",
+      "listenEvents": [
+        "booking.created"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "s-04b-booking-reminders.mjs",
+      "exportName": "s04bBookingReminders",
+      "id": "s-04b-booking-reminders",
+      "name": "S-04B — Booking Confirm + Reminders",
+      "listenEvents": [
+        "booking.created"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "s-05a-no-show-recovery.mjs",
+      "exportName": "s05aNoShowRecovery",
+      "id": "s-05a-no-show-recovery",
+      "name": "S-05a — No-Show Recovery",
+      "listenEvents": [
+        "booking.noshow"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "s-06-post-call-funding-purchased.mjs",
+      "exportName": "s06PostCallFundingPurchased",
+      "id": "s-06-post-call-funding-purchased",
+      "name": "S-06 — Post-Call Outcome: Funding Purchased",
+      "listenEvents": [
+        "deposit.paid"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "s-08-post-call-funding-declined.mjs",
+      "exportName": "s08PostCallFundingDeclined",
+      "id": "s-08-post-call-funding-declined",
+      "name": "S-08 — Post-Call: Funding Didn't Buy",
+      "listenEvents": [
+        "call.completed"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "s-nobook-chase.mjs",
+      "exportName": "sNobookChase",
+      "id": "s-nobook-chase",
+      "name": "S-NOBOOK — Never Booked Chase",
+      "listenEvents": [
+        "survey.submitted"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "sys-01-client-value-calculator.mjs",
+      "exportName": "sys01ClientValueCalculator",
+      "id": "sys-01-client-value-calculator",
+      "name": "SYS-01 — Client Value Calculator",
+      "listenEvents": [
+        "round.approved"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "sys-01-ltv-calculator.mjs",
+      "exportName": "sys01LtvCalculator",
+      "id": "sys-01-ltv-calculator",
+      "name": "SYS-01-LTV — Lifetime Value Calculator",
+      "listenEvents": [
+        "round.funded"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "u-02-analyzer-complete-delivery.mjs",
+      "exportName": "u02AnalyzerCompleteDelivery",
+      "id": "u-02-analyzer-complete-delivery",
+      "name": "U-02 — Analyzer Complete Delivery",
+      "listenEvents": [
+        "analysis.completed"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "u-03-crs-snapshot-sync.mjs",
+      "exportName": "u03CrsSnapshotSync",
+      "id": "u-03-crs-snapshot-sync",
+      "name": "U-03 — CRS Snapshot Sync",
+      "listenEvents": [
+        "analysis.completed"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "u-04-promote-crs-primary.mjs",
+      "exportName": "u04PromoteCrsPrimary",
+      "id": "u-04-promote-crs-primary",
+      "name": "U-04 — Promote CRS as Primary Snapshot",
+      "listenEvents": [
+        "analysis.completed"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    },
+    {
+      "file": "u-05-data-health-monitor.mjs",
+      "exportName": "u05DataHealthMonitor",
+      "id": "u-05-data-health-monitor",
+      "name": "U-05 — UnderwriteIQ Data Health Monitor",
+      "listenEvents": [
+        "analysis.completed"
+      ],
+      "cron": null,
+      "registeredInIndex": true
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "href": "https://fundhub.ai/app/messaging.html?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "has_test": true,
+  "has_live": false,
+  "convos": [
+    {
+      "id": "a7afedb9-048c-4488-9900-68f44a620ff2",
+      "active": true,
+      "text": "TCTEST Client Role11mSTOPEMAILWaiting on us"
+    }
+  ],
+  "msgs": [
+    "CSEMAILChris Stanbridgee2e fire thread — ignoree2e fire thread — ignore. Test message only.11m",
+    "TCEMAILTEST Client Rolee2e fire reply — ignoree2e fire reply — ignore11m",
+    "TCEMAILTEST Client RoleSTOPSTOP11m",
+    "Ask how to use Fundhub — e.g. “how do I send a contract?” If I do not know from product help, I will say so."
+  ],
+  "saw_email_tag": true,
+  "saw_sms_tag": true,
+  "saw_reply": true,
+  "saw_stop": true,
+  "saw_ping": false,
+  "saw_fire_thread": true,
+  "thread_sub": "EMAIL · waiting on a reply from us",
+  "text": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain BETA WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Messaging ORG: FUNDHUB Tue, Aug 18, 5:54:38 PM EDT LIVE Search ⌘K Chris Stanbridge · owner · 30 tabs LIVE Sign out ⌕ All 1 Needs reply 1 TC TEST Client Role 11m STOP EMAIL WAITING ON US TC TEST Client Role EMAIL · waiting on a reply from us CS EMAIL Chris Stanbridge e2e fire thread — ignore e2e fire thread — ignore. Test message only. 11m TC EMAIL TEST Client Role e2e fire reply — ignore e2e fire reply — ignore 11m TC EMAIL TEST Client Role STOP STOP 11m Email A reply goes out on the same channel the conversation is on. Send Your name is saved on anything you send from here. Every message is checked before it goes out. TEST Client Role Talking to us on email. Last activity 11m ago Waiting on us yes Email [REDACTED_PLUS_TAG] Phone [REDACTED_PHONE] THEIR OTHER THREADS SMS 12m OPEN ELSEWHERE fundhub-messaging · v1 org: fundhub thread: test client role systems nominal · fundhub.ai live conversations · 1 Chat"
+}

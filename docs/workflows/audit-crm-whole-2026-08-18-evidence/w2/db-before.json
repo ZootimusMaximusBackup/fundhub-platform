@@ -1,0 +1,62 @@
+{
+  "contracts": [
+    {
+      "id": "16b29639-ac19-42ab-ba48-8789018b0e48",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "status": "sent",
+      "template_key": "SOFT-PULL-CONSENT",
+      "created_at": "2026-08-18T16:07:51.623Z"
+    },
+    {
+      "id": "8988b582-d98a-44c8-9173-86de54fc5788",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "status": "draft",
+      "template_key": "SOFT-PULL-CONSENT",
+      "created_at": "2026-08-18T16:04:05.676Z"
+    }
+  ],
+  "documents": [
+    {
+      "id": "9cb7d591-23cd-40e0-94cc-2b02894c9e16",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "document_key": "authorization|soft_pull_consent|8556bedc-46e1-4d85-b0cd-a24adfee1521|16b29639-ac19-42ab-ba48-8789018b0e48",
+      "kind": "authorization",
+      "subtype": "soft_pull_consent",
+      "created_at": "2026-08-18T16:07:52.527Z"
+    }
+  ],
+  "messages": [
+    {
+      "id": "b847c472-8802-4fef-bffe-7c8ba3f21935",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "channel": "email",
+      "template_key": "EMAIL-PORTAL-MAGIC-LINK",
+      "status": "queued",
+      "created_at": "2026-08-18T16:10:32.562Z"
+    },
+    {
+      "id": "934122c2-0e15-44d5-b706-deea5c3ce9dc",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "channel": "email",
+      "template_key": "CONTRACT-SEND-EMAIL",
+      "status": "sent",
+      "created_at": "2026-08-18T16:07:53.571Z"
+    },
+    {
+      "id": "c6a67a2d-444b-450e-bf64-23f6bfa5608a",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "channel": "email",
+      "template_key": "EMAIL-PORTAL-MAGIC-LINK",
+      "status": "sent",
+      "created_at": "2026-08-18T16:04:32.650Z"
+    },
+    {
+      "id": "52f39bbe-24a5-4164-a330-b49944311b47",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "channel": "email",
+      "template_key": "EMAIL-PORTAL-MAGIC-LINK",
+      "status": "sent",
+      "created_at": "2026-08-18T16:00:52.037Z"
+    }
+  ]
+}

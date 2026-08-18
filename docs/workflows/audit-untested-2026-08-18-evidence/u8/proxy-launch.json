@@ -1,0 +1,19 @@
+{
+  "route": "POST /api/proxy/launch",
+  "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "lender_id": "00000000-0000-4000-8000-000000000001",
+  "filed": false,
+  "bank_login_typed": false,
+  "oxylabs_put_in_sandbox": false,
+  "status": 503,
+  "ok": false,
+  "error": "oxylabs_credentials_missing",
+  "message": "Oxylabs credentials are not set (OXYLABS_USERNAME, OXYLABS_PASSWORD). See docs/STILL-MISSING.md.",
+  "session_id": null,
+  "keys": [
+    "ok",
+    "error",
+    "message",
+    "session_id"
+  ]
+}

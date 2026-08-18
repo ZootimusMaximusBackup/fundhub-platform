@@ -1,0 +1,74 @@
+{
+  "count": 3,
+  "names": [
+    "docs.received",
+    "analysis.completed",
+    "decision.rendered"
+  ],
+  "rows": [
+    {
+      "id": "b9ee35c4-08ab-47c8-86e2-613f4c731715",
+      "name": "docs.received",
+      "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "idempotency_key": null,
+      "created_at": "2026-08-18T19:10:58.905Z",
+      "payload": {
+        "kind": "client_upload",
+        "subtype": "additional_fraud_docs",
+        "version": 1,
+        "checksum": "sha256:3b91141e7e241c417f9661d77e2b3de66c2a7c76a694ca57e3453c68a3e30438",
+        "byte_size": "170",
+        "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+        "mime_type": "application/pdf",
+        "version_id": "3a92283d-1cbe-489e-83d0-1a98f208489a",
+        "document_id": "bf55375a-b4c7-48aa-8241-9b818bc60c82",
+        "uploaded_by": {
+          "id": "52bc675a-db0f-4e24-9b53-80f7fd077f72",
+          "kind": "staff"
+        },
+        "original_filename": "w-desks-ftc-audit.pdf"
+      }
+    },
+    {
+      "id": "a091eafb-7af8-472e-94d5-bd89ccb54911",
+      "name": "analysis.completed",
+      "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "idempotency_key": "crs-result:c1f83e6b-a624-4f28-a32a-531a530b3ad4:analysis.completed:v1",
+      "created_at": "2026-08-18T19:11:58.036Z",
+      "payload": {
+        "scores": {
+          "eq": 724,
+          "ex": 718,
+          "tu": 731
+        },
+        "source": "crs",
+        "requestId": "72389cae-10fe-46c6-be2f-c2471bf8a3b1",
+        "crsResultId": "c1f83e6b-a624-4f28-a32a-531a530b3ad4",
+        "outcomeTier": "FULL_FUNDING",
+        "reasonCodes": [
+          "sim_demo",
+          "low_util"
+        ],
+        "utilization": 18,
+        "newInquiries": []
+      }
+    },
+    {
+      "id": "8bff4125-ee2d-41e5-b6bb-f24e6c897a2e",
+      "name": "decision.rendered",
+      "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "idempotency_key": "crs-result:c1f83e6b-a624-4f28-a32a-531a530b3ad4:decision.rendered:v1",
+      "created_at": "2026-08-18T19:12:00.736Z",
+      "payload": {
+        "source": "crs",
+        "requestId": "72389cae-10fe-46c6-be2f-c2471bf8a3b1",
+        "crsResultId": "c1f83e6b-a624-4f28-a32a-531a530b3ad4",
+        "outcomeTier": "FULL_FUNDING",
+        "fundingEstimate": 125000
+      }
+    }
+  ]
+}

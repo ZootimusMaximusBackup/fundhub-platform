@@ -1,0 +1,32 @@
+{
+  "source": "local .env names only — not Netlify values printed",
+  "names_present": [
+    "CRS_ACTIVE_BUREAUS",
+    "CRS_ALLOW_LIVE",
+    "CRS_API_HOST",
+    "CRS_API_PASSWORD",
+    "CRS_API_USERNAME",
+    "CRS_LIVE_API_HOST",
+    "CRS_LIVE_API_PASSWORD",
+    "CRS_LIVE_API_USERNAME"
+  ],
+  "CRS_ALLOW_LIVE": {
+    "present": true,
+    "live_allowed": false
+  },
+  "CRS_API_HOST": {
+    "present": true,
+    "host_class": "sandbox"
+  },
+  "CRS_ACTIVE_BUREAUS": {
+    "present": true,
+    "parsed": [
+      "EX",
+      "EQ"
+    ]
+  },
+  "ADAPTERS_DRY_RUN": {
+    "present": false,
+    "transmit_allowed": false
+  }
+}

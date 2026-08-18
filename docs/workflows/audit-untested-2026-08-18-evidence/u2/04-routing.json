@@ -1,0 +1,14 @@
+{
+  "rows": [
+    {
+      "channel": "email",
+      "provider": "resend",
+      "enabled": true
+    },
+    {
+      "channel": "sms",
+      "provider": "twilio",
+      "enabled": true
+    }
+  ]
+}

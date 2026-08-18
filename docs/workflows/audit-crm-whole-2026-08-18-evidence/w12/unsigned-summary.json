@@ -1,0 +1,20 @@
+{
+  "ranAt": "2026-08-18T17:17:19.389Z",
+  "base": "https://fundhub.ai",
+  "routeCount": 171,
+  "unsignedStatusCounts": { "401": 114, "405": 52, "200": 4, "400": 2, "404": 2 },
+  "unsigned200": [
+    { "route": "/api/auth/login", "bytes": 67, "publicByDesign": true },
+    { "route": "/api/health", "bytes": 130, "publicByDesign": true },
+    { "route": "/api/climate", "bytes": 34313, "publicByDesign": true },
+    { "route": "/api/climate/config", "bytes": 64, "publicByDesign": true }
+  ],
+  "unsigned400or404": [
+    { "route": "/api/public/partner-page", "status": 400 },
+    { "route": "/api/soft-pull-approve", "status": 400 },
+    { "route": "/api/contracts/sign", "status": 404 },
+    { "route": "/api/documents/00000000-0000-4000-8000-000000000002", "status": 404 }
+  ],
+  "emptyPostWithoutSession": "all probed POST {} on gated writes → 401",
+  "newUnsignedDataDoors": []
+}

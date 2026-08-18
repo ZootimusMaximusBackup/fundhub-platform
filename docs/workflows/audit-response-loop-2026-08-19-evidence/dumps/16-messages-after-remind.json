@@ -1,0 +1,11 @@
+{
+  "messages": [
+    {
+      "id": "836085e3-f559-43f5-b871-a92ef7974c24",
+      "template_key": "CONTRACT-SEND-EMAIL",
+      "status": "sent",
+      "provider": "resend",
+      "created_at": "2026-08-18T20:05:46.480Z"
+    }
+  ]
+}

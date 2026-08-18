@@ -1,0 +1,10 @@
+{
+  "source": "local .env names only — values not printed",
+  "OXYLABS_USERNAME": {
+    "present": false
+  },
+  "OXYLABS_PASSWORD": {
+    "present": false
+  },
+  "ready": false
+}

@@ -1,0 +1,349 @@
+{
+  "at": "2026-08-18T20:50:30.432Z",
+  "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "client": {
+    "id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+    "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+    "email": "client@fundhub.ai",
+    "first_name": "TEST",
+    "is_demo": false,
+    "outcome_tier": null,
+    "updated_at": "2026-08-18T20:50:26.586Z"
+  },
+  "custom_fields_pay_keys": {
+    "crs_paid": true,
+    "deposit_paid": true,
+    "sale_closed": true,
+    "crs_status": "Requested",
+    "analyzer_status": null
+  },
+  "cards": [
+    {
+      "id": "5410b98b-4e78-47e4-9737-b662da097740",
+      "pipeline_key": "sales",
+      "stage_key": "diagnostic_paid",
+      "stage_name": "Diagnostic Paid",
+      "updated_at": "2026-08-18T20:50:19.306Z"
+    }
+  ],
+  "entitlements": {
+    "catalog_count": 5,
+    "catalog_codes": [
+      "credit-analysis-report",
+      "credit-optimization-roadmap",
+      "funding-snapshot",
+      "bank-lender-match-list",
+      "metro2-letter-pack"
+    ],
+    "held_count": 0,
+    "locked_count": 5,
+    "held_codes": [],
+    "locked_codes": [
+      "credit-analysis-report",
+      "credit-optimization-roadmap",
+      "funding-snapshot",
+      "bank-lender-match-list",
+      "metro2-letter-pack"
+    ],
+    "rows": []
+  },
+  "transactions": [
+    {
+      "id": "c6c29da0-d549-4f30-a095-4e270431e6da",
+      "product_name": "UnderwriteIQ soft-pull assessment",
+      "amount_paid": "32.00",
+      "status": "succeeded",
+      "provider": "w16-sim",
+      "provider_ref": "w16-sim-8556bedc-SOFT_PULL-live",
+      "created_at": "2026-08-18T20:50:18.451Z"
+    },
+    {
+      "id": "25c220a1-0fc2-4466-aee6-2d09b390c05d",
+      "product_name": "Funding, done-for-you",
+      "amount_paid": "3000.00",
+      "status": "succeeded",
+      "provider": "w16-sim",
+      "provider_ref": "w16-sim-8556bedc-FUNDING_DFY-live",
+      "created_at": "2026-08-18T20:50:20.792Z"
+    },
+    {
+      "id": "88e3a062-37ed-452f-a89a-2b712e025c15",
+      "product_name": "Credit repair, done-for-you",
+      "amount_paid": "1000.00",
+      "status": "succeeded",
+      "provider": "w16-sim",
+      "provider_ref": "w16-sim-8556bedc-REPAIR_DFY-live",
+      "created_at": "2026-08-18T20:50:23.047Z"
+    },
+    {
+      "id": "22f5dda2-6d04-4d72-a7f2-708e9843d2d6",
+      "product_name": "Repair test run (first round, done for you)",
+      "amount_paid": "200.00",
+      "status": "succeeded",
+      "provider": "w16-sim",
+      "provider_ref": "w16-sim-8556bedc-REPAIR_TRIAL-live",
+      "created_at": "2026-08-18T20:50:25.546Z"
+    },
+    {
+      "id": "5dbe9910-c135-4085-9762-65969adb143c",
+      "product_name": "UnderwriteIQ Deliverables Package",
+      "amount_paid": "1000.00",
+      "status": "succeeded",
+      "provider": "w16-sim",
+      "provider_ref": "w16-sim-8556bedc-UWIQ_DELIVERABLES-live",
+      "created_at": "2026-08-18T20:50:27.801Z"
+    },
+    {
+      "id": "f499f694-4571-49e2-97d5-866550361147",
+      "product_name": "Funding Mastery course (A to Z)",
+      "amount_paid": "5000.00",
+      "status": "succeeded",
+      "provider": "w16-sim",
+      "provider_ref": "w16-sim-8556bedc-FUNDING_MASTERY-live",
+      "created_at": "2026-08-18T20:50:28.836Z"
+    }
+  ],
+  "sales": [
+    {
+      "id": "39361bbe-8701-4529-a5be-77ec0f15923e",
+      "status": "active",
+      "sold_at": "2026-08-18T20:50:19.598Z",
+      "external_ref": "w16-sim-8556bedc-SOFT_PULL-unlock",
+      "agreed_price": "32.00",
+      "product_code": "diagnostic",
+      "product_name": "$32 Diagnostic"
+    },
+    {
+      "id": "c88d9172-78a2-4cc1-9c33-8d6bc93ae8ea",
+      "status": "active",
+      "sold_at": "2026-08-18T20:50:21.693Z",
+      "external_ref": "w16-sim-8556bedc-FUNDING_DFY-unlock",
+      "agreed_price": "3000.00",
+      "product_code": "card-stacking-dfy",
+      "product_name": "Card Stacking DFY"
+    },
+    {
+      "id": "ee7b9598-cda5-46ad-bd13-e38a52622e50",
+      "status": "active",
+      "sold_at": "2026-08-18T20:50:24.543Z",
+      "external_ref": "w16-sim-8556bedc-REPAIR_DFY-unlock",
+      "agreed_price": "1000.00",
+      "product_code": "consulting-package",
+      "product_name": "Consulting Services Package"
+    }
+  ],
+  "accounts": [
+    {
+      "id": "55d85886-0ca8-4e1e-825a-f9b218ed12c2",
+      "kind": "client",
+      "created_at": "2026-08-16T10:22:56.693Z"
+    }
+  ],
+  "consents": [
+    {
+      "id": "d81a91d7-b81f-4d3f-9102-38186e9b4341",
+      "kind": "dispute_authorization",
+      "granted_at": "2026-08-18T17:51:44.820Z",
+      "expires_at": null,
+      "revoked_at": null
+    }
+  ],
+  "contracts": [
+    {
+      "id": "8988b582-d98a-44c8-9173-86de54fc5788",
+      "template_key": "SOFT-PULL-CONSENT",
+      "status": "draft",
+      "sent_at": null,
+      "signed_at": null,
+      "created_at": "2026-08-18T16:04:05.676Z"
+    },
+    {
+      "id": "16b29639-ac19-42ab-ba48-8789018b0e48",
+      "template_key": "SOFT-PULL-CONSENT",
+      "status": "signed",
+      "sent_at": "2026-08-18T16:07:52.126Z",
+      "signed_at": "2026-08-18T16:12:37.597Z",
+      "created_at": "2026-08-18T16:07:51.623Z"
+    }
+  ],
+  "payment_links": [],
+  "call_outcomes": [
+    {
+      "id": "c54cc851-a49d-409b-a737-203d4962107a",
+      "outcome": "downsell",
+      "logged_at": "2026-08-18T16:21:10.261Z"
+    }
+  ],
+  "events": [
+    {
+      "id": "9ba097f3-bfc6-4090-9c48-c3bdc294b9da",
+      "name": "message.queued",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "idempotency_key": "message.queued:workflow:EMAIL-PORTAL-MAGIC-LINK:magic-link:32764b0b-fe2a-4ca8-b4a8-b0e396eba465",
+      "created_at": "2026-08-18T16:00:52.107Z",
+      "payload_product": null,
+      "payload_product_name": null,
+      "payload_source": null
+    },
+    {
+      "id": "afe9ed32-025c-4c59-8073-23566aab27a4",
+      "name": "message.queued",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "idempotency_key": "message.queued:workflow:EMAIL-PORTAL-MAGIC-LINK:magic-link:1bea73a3-da74-4888-87d1-4d1acb5d614c",
+      "created_at": "2026-08-18T16:04:32.715Z",
+      "payload_product": null,
+      "payload_product_name": null,
+      "payload_source": null
+    },
+    {
+      "id": "3e2f6d10-0578-4b82-8605-2b4e6b77ebfa",
+      "name": "contract.sent",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "idempotency_key": "contract.sent:16b29639-ac19-42ab-ba48-8789018b0e48",
+      "created_at": "2026-08-18T16:07:54.317Z",
+      "payload_product": null,
+      "payload_product_name": null,
+      "payload_source": null
+    },
+    {
+      "id": "17b49ecd-c698-4f22-a266-f655d93da208",
+      "name": "message.queued",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "idempotency_key": "message.queued:workflow:EMAIL-PORTAL-MAGIC-LINK:magic-link:afcf2a01-f3f9-497e-a7c7-9036c701d368",
+      "created_at": "2026-08-18T16:10:32.628Z",
+      "payload_product": null,
+      "payload_product_name": null,
+      "payload_source": null
+    },
+    {
+      "id": "13313d55-6138-45c8-9bde-90c1a1cb8733",
+      "name": "contract.signed",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "idempotency_key": "contract.signed:16b29639-ac19-42ab-ba48-8789018b0e48",
+      "created_at": "2026-08-18T16:12:38.818Z",
+      "payload_product": null,
+      "payload_product_name": null,
+      "payload_source": null
+    },
+    {
+      "id": "90ada2c7-fd04-4765-bdbb-62033524ebd0",
+      "name": "message.queued",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "idempotency_key": "message.queued:workflow:EMAIL-PORTAL-MAGIC-LINK:magic-link:6d440602-bbc7-43bc-876f-9be42c55ef6d",
+      "created_at": "2026-08-18T20:04:30.565Z",
+      "payload_product": null,
+      "payload_product_name": null,
+      "payload_source": null
+    },
+    {
+      "id": "41da5328-8e71-45b5-8e20-2a39e7b379fc",
+      "name": "payment.received",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "idempotency_key": "w16:2026-08-18:SOFT_PULL:pay-live",
+      "created_at": "2026-08-18T20:50:18.221Z",
+      "payload_product": "unmatched",
+      "payload_product_name": "UnderwriteIQ soft-pull assessment",
+      "payload_source": "w16-sim"
+    },
+    {
+      "id": "ac3352a1-d484-4927-bfe2-f55b9affe005",
+      "name": "diagnostic.paid",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "idempotency_key": "w16:2026-08-18:SOFT_PULL:diagnostic.paid:unlock",
+      "created_at": "2026-08-18T20:50:18.891Z",
+      "payload_product": "crs",
+      "payload_product_name": "UnderwriteIQ soft-pull assessment",
+      "payload_source": "w16-sim"
+    },
+    {
+      "id": "38bd8c82-1de3-40fc-b1d2-733c7d6f13b5",
+      "name": "payment.received",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "idempotency_key": "w16:2026-08-18:FUNDING_DFY:pay-live",
+      "created_at": "2026-08-18T20:50:20.672Z",
+      "payload_product": "unmatched",
+      "payload_product_name": "Funding, done-for-you",
+      "payload_source": "w16-sim"
+    },
+    {
+      "id": "5eba4879-cbc4-4e3f-ba4e-757b50c9ac20",
+      "name": "deposit.paid",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "idempotency_key": "w16:2026-08-18:FUNDING_DFY:deposit.paid:unlock",
+      "created_at": "2026-08-18T20:50:21.251Z",
+      "payload_product": "deposit",
+      "payload_product_name": "Funding, done-for-you",
+      "payload_source": "w16-sim"
+    },
+    {
+      "id": "d638be3c-7ee8-479b-9c3f-1277f1ceba64",
+      "name": "inquiry.gate.clear",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "idempotency_key": "inquiry.gate.clear:8556bedc-46e1-4d85-b0cd-a24adfee1521:pre:5eba4879-cbc4-4e3f-ba4e-757b50c9ac20",
+      "created_at": "2026-08-18T20:50:22.782Z",
+      "payload_product": null,
+      "payload_product_name": null,
+      "payload_source": null
+    },
+    {
+      "id": "03eccc8d-8f79-475e-9729-ff54dce74e1d",
+      "name": "payment.received",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "idempotency_key": "w16:2026-08-18:REPAIR_DFY:pay-live",
+      "created_at": "2026-08-18T20:50:22.908Z",
+      "payload_product": "unmatched",
+      "payload_product_name": "Credit repair, done-for-you",
+      "payload_source": "w16-sim"
+    },
+    {
+      "id": "257fcd7c-c974-4fe5-a05e-84e216c8c949",
+      "name": "sale.closed",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "idempotency_key": "w16:2026-08-18:REPAIR_DFY:sale.closed:unlock",
+      "created_at": "2026-08-18T20:50:24.097Z",
+      "payload_product": "diy",
+      "payload_product_name": "Credit repair, done-for-you",
+      "payload_source": "w16-sim"
+    },
+    {
+      "id": "d1d09471-1ed6-4aab-8a71-09ff0e922b74",
+      "name": "payment.received",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "idempotency_key": "w16:2026-08-18:REPAIR_TRIAL:pay-live",
+      "created_at": "2026-08-18T20:50:25.416Z",
+      "payload_product": "unmatched",
+      "payload_product_name": "Repair test run (first round, done for you)",
+      "payload_source": "w16-sim"
+    },
+    {
+      "id": "b6b606a6-160a-4579-a346-5dfcad079799",
+      "name": "sale.closed",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "idempotency_key": "w16:2026-08-18:REPAIR_TRIAL:sale.closed:unlock",
+      "created_at": "2026-08-18T20:50:26.466Z",
+      "payload_product": "diy",
+      "payload_product_name": "Repair test run (first round, done for you)",
+      "payload_source": "w16-sim"
+    },
+    {
+      "id": "dcb10b34-ec8c-437f-ab38-819b783907e8",
+      "name": "payment.received",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "idempotency_key": "w16:2026-08-18:UWIQ_DELIVERABLES:pay-live",
+      "created_at": "2026-08-18T20:50:27.671Z",
+      "payload_product": "unmatched",
+      "payload_product_name": "UnderwriteIQ Deliverables Package",
+      "payload_source": "w16-sim"
+    },
+    {
+      "id": "44eb6a4b-8834-4ba9-92e9-84e20d1b4b00",
+      "name": "payment.received",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "idempotency_key": "w16:2026-08-18:FUNDING_MASTERY:pay-live",
+      "created_at": "2026-08-18T20:50:28.711Z",
+      "payload_product": "unmatched",
+      "payload_product_name": "Funding Mastery course (A to Z)",
+      "payload_source": "w16-sim"
+    }
+  ]
+}

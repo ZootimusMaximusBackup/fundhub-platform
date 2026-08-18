@@ -1,0 +1,4970 @@
+[
+  {
+    "id": "db-consent-morning",
+    "claim": "W1 SOFT-PULL-CONSENT already sent this morning?",
+    "happened": "2 consent contracts today; 1 soft-pull docs today; 4 messages for the two named clients today",
+    "writes": [],
+    "verdict": "INFO",
+    "db": {
+      "contracts": [
+        {
+          "id": "16b29639-ac19-42ab-ba48-8789018b0e48",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "status": "sent",
+          "template_key": "SOFT-PULL-CONSENT",
+          "created_at": "2026-08-18T16:07:51.623Z"
+        },
+        {
+          "id": "8988b582-d98a-44c8-9173-86de54fc5788",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "status": "draft",
+          "template_key": "SOFT-PULL-CONSENT",
+          "created_at": "2026-08-18T16:04:05.676Z"
+        }
+      ],
+      "documents": [
+        {
+          "id": "9cb7d591-23cd-40e0-94cc-2b02894c9e16",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "document_key": "authorization|soft_pull_consent|8556bedc-46e1-4d85-b0cd-a24adfee1521|16b29639-ac19-42ab-ba48-8789018b0e48",
+          "kind": "authorization",
+          "subtype": "soft_pull_consent",
+          "created_at": "2026-08-18T16:07:52.527Z"
+        }
+      ],
+      "messages": [
+        {
+          "id": "b847c472-8802-4fef-bffe-7c8ba3f21935",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "channel": "email",
+          "template_key": "EMAIL-PORTAL-MAGIC-LINK",
+          "status": "queued",
+          "created_at": "2026-08-18T16:10:32.562Z"
+        },
+        {
+          "id": "934122c2-0e15-44d5-b706-deea5c3ce9dc",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "channel": "email",
+          "template_key": "CONTRACT-SEND-EMAIL",
+          "status": "sent",
+          "created_at": "2026-08-18T16:07:53.571Z"
+        },
+        {
+          "id": "c6a67a2d-444b-450e-bf64-23f6bfa5608a",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "channel": "email",
+          "template_key": "EMAIL-PORTAL-MAGIC-LINK",
+          "status": "sent",
+          "created_at": "2026-08-18T16:04:32.650Z"
+        },
+        {
+          "id": "52f39bbe-24a5-4164-a330-b49944311b47",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "channel": "email",
+          "template_key": "EMAIL-PORTAL-MAGIC-LINK",
+          "status": "sent",
+          "created_at": "2026-08-18T16:00:52.037Z"
+        }
+      ]
+    }
+  },
+  {
+    "id": "owner-login",
+    "role": "owner",
+    "claim": "Sign in as chris@fundhub.ai",
+    "happened": "landed https://fundhub.ai/app/pipeline.html",
+    "verdict": "WORKS"
+  },
+  {
+    "id": "owner-pipeline-search",
+    "role": "owner",
+    "screen": "Pipeline",
+    "claim": "Search name, phone, or email",
+    "happened": "typed test in search",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-pipeline.png"
+  },
+  {
+    "id": "owner-pipeline-filter",
+    "role": "owner",
+    "screen": "Pipeline",
+    "claim": "Filter the board",
+    "happened": "opened filter, touched owner if present, cleared",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "owner-pipeline-filter.png"
+  },
+  {
+    "id": "owner-pipeline-card",
+    "role": "owner",
+    "screen": "Pipeline",
+    "claim": "Open a card",
+    "happened": "clicked a card; drawer close if present",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "owner-pipeline-card.png"
+  },
+  {
+    "id": "owner-closer-math-draw",
+    "role": "owner",
+    "screen": "Closer Dashboard",
+    "claim": "Type a draw and see funded / net / monthly change",
+    "happened": "{\"before\":{\"credit\":\"—\",\"net\":\"—\",\"monthly\":\"—\"},\"after\":{\"credit\":\"—\",\"net\":\"—\",\"monthly\":\"—\",\"funded\":\"—\",\"draw\":\"5000\"}}",
+    "writes": [],
+    "db": "none — local math",
+    "verdict": "WORKS",
+    "shot": "owner-closer-dashboard-math.png"
+  },
+  {
+    "id": "owner-closer-breakdown",
+    "role": "owner",
+    "screen": "Closer Dashboard",
+    "claim": "Show breakdown",
+    "happened": "opened breakdown",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "owner-closer-dashboard-breakdown.png"
+  },
+  {
+    "id": "owner-call-join",
+    "role": "owner",
+    "screen": "Call cockpit",
+    "claim": "Join call",
+    "happened": "button disabled — no call link on this appointment",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-call.png"
+  },
+  {
+    "id": "owner-call-present-btn",
+    "role": "owner",
+    "screen": "Call cockpit",
+    "claim": "Present",
+    "happened": "Present button visible (not followed — Present walked as its own screen)",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-call.png"
+  },
+  {
+    "id": "owner-call-send-contract",
+    "role": "owner",
+    "screen": "Call cockpit",
+    "claim": "Send contract",
+    "happened": "button present — not clicked (no second SOFT-PULL-CONSENT; no send to live gmail file)",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-call.png"
+  },
+  {
+    "id": "owner-call-disclosures",
+    "role": "owner",
+    "screen": "Call cockpit",
+    "claim": "Check disclosure boxes",
+    "happened": "toggled d1–d4 if present",
+    "writes": [],
+    "db": "none observed",
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-call.png"
+  },
+  {
+    "id": "owner-call-other",
+    "role": "owner",
+    "screen": "Call cockpit",
+    "claim": "Outcome / objection buttons",
+    "happened": "clicked 1Deposit | 2Downsell | 3Callback | 4No show | 5Not a fit | pain | doubt | cost | desire | money | support | trust | None; skipped No call link on this appointment:disabled | Present:write-guard | Send contract:write-guard | Save · next call:write-guard | Search the CRM:CSS is not defined | Sign out:CSS is not defined",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-call-after.png"
+  },
+  {
+    "id": "owner-present-next",
+    "role": "owner",
+    "screen": "Present",
+    "claim": "Next screen",
+    "happened": "advanced one slide",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "owner-present-client-only",
+    "role": "owner",
+    "screen": "Present",
+    "claim": "Client screen only / Show cockpit",
+    "happened": "toggled cockpit hide/show",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "owner-present-other",
+    "role": "owner",
+    "screen": "Present",
+    "claim": "Deck / cockpit buttons",
+    "happened": "clicked Client screen only; skipped Back:disabled",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-present-after.png"
+  },
+  {
+    "id": "owner-my-numbers-open",
+    "role": "owner",
+    "screen": "My Numbers",
+    "claim": "Open My Numbers",
+    "happened": "http 200 final /app/my-numbers.html title My numbers · Fundhub",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "☎Call cockpit",
+      "＃My numbers",
+      "▣Sales floor",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-my-numbers.png"
+  },
+  {
+    "id": "owner-my-numbers-controls",
+    "role": "owner",
+    "screen": "My Numbers",
+    "claim": "Page controls / offer stack",
+    "happened": "body has offer stack=true; clicked none",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-my-numbers-full.png"
+  },
+  {
+    "id": "owner-sales-floor-open",
+    "role": "owner",
+    "screen": "Sales Floor",
+    "claim": "Open Sales Floor",
+    "happened": "http 200 final /app/sales-floor.html title Sales floor · Fundhub",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "☎Call cockpit",
+      "＃My numbers",
+      "▣Sales floor",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-recordings-jump",
+        "disabled": false,
+        "hidden": false,
+        "label": "Today's recordings"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-drive-refresh",
+        "disabled": false,
+        "hidden": false,
+        "label": "Refresh from Drive"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-sales-floor.png"
+  },
+  {
+    "id": "owner-sales-floor-arrows",
+    "role": "owner",
+    "screen": "Sales Floor",
+    "claim": "Move between closers",
+    "happened": "no closer arrows on screen",
+    "writes": [],
+    "verdict": "BROKEN",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-sales-floor-closers.png"
+  },
+  {
+    "id": "owner-sales-floor-other",
+    "role": "owner",
+    "screen": "Sales Floor",
+    "claim": "Floor buttons",
+    "happened": "clicked none; skipped Today's recordings:CSS is not defined | Refresh from Drive:CSS is not defined | Search the CRM:CSS is not defined | Sign out:CSS is not defined",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "owner-hiring-open",
+    "role": "owner",
+    "screen": "Hiring",
+    "claim": "Open Hiring",
+    "happened": "http 200 final /app/hiring.html title Fundhub — Hiring",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "⚇Staff & Teams",
+      "⊕HiringBETA",
+      "⛁Products & Commissions",
+      "✒Contract templates",
+      "◆Brand StudioBETA"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Dismiss"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "resetBtn",
+        "disabled": false,
+        "hidden": false,
+        "label": "RESET FILTERS"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "fRole",
+        "disabled": false,
+        "hidden": false,
+        "label": "all roles Closer Setter Sales Coordinator"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "fSource",
+        "disabled": false,
+        "hidden": false,
+        "label": "all sources referral client_base audience social job_board ads linkedin recruite"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fFlagged",
+        "disabled": false,
+        "hidden": false,
+        "label": "FLAGGED ONLY"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "fnRole",
+        "disabled": false,
+        "hidden": false,
+        "label": "fnRole"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "fnDays",
+        "disabled": false,
+        "hidden": false,
+        "label": "fnDays"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "dcRole",
+        "disabled": false,
+        "hidden": false,
+        "label": "dcRole"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "dcDays",
+        "disabled": false,
+        "hidden": false,
+        "label": "dcDays"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "dwClose",
+        "disabled": false,
+        "hidden": false,
+        "label": "Close application review"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-hiring.png"
+  },
+  {
+    "id": "owner-hiring-reset",
+    "role": "owner",
+    "screen": "Hiring",
+    "claim": "Reset filters",
+    "happened": "clicked Reset filters",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-hiring-reset.png"
+  },
+  {
+    "id": "owner-hiring-role",
+    "role": "owner",
+    "screen": "Hiring",
+    "claim": "Filter by role",
+    "happened": "changed role filter",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-hiring-role.png"
+  },
+  {
+    "id": "owner-hiring-other",
+    "role": "owner",
+    "screen": "Hiring",
+    "claim": "Other hiring controls",
+    "happened": "clicked Dismiss; skipped RESET FILTERS:CSS is not defined | Search the CRM:CSS is not defined | Sign out:CSS is not defined | FLAGGED ONLY:CSS is not defined | HIRED0:write-guard | Close application review:CSS is not defined",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "owner-lenders-open",
+    "role": "owner",
+    "screen": "Lenders",
+    "claim": "Open Lenders",
+    "happened": "http 200 final /app/lenders.html title Fundhub · Lenders",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "⬡Lenders",
+      "▩Finance OSBETA"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "LENDER LIST"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "BUREAU MISMATCH QUEUE"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "AI BUREAU CONFIG"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "fTable",
+        "disabled": false,
+        "hidden": false,
+        "label": "All OnlineBizCC InBranchBizCC BizLOC_Stated BizLOC_Documented PersonalCC Persona"
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "id": "fBureau",
+        "disabled": false,
+        "hidden": false,
+        "label": "EX / EQ / TU"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "fTier",
+        "disabled": false,
+        "hidden": false,
+        "label": "All 1 2 3"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "fActive",
+        "disabled": false,
+        "hidden": false,
+        "label": "All Active Inactive"
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "id": "fState",
+        "disabled": false,
+        "hidden": false,
+        "label": "e.g. AZ"
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "id": "fQ",
+        "disabled": false,
+        "hidden": false,
+        "label": "Name…"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "btnFilter",
+        "disabled": false,
+        "hidden": false,
+        "label": "Apply filters"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "btnExport",
+        "disabled": false,
+        "hidden": false,
+        "label": "Export CSV"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "btnImportToggle",
+        "disabled": false,
+        "hidden": false,
+        "label": "Import CSV"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "btnAdd",
+        "disabled": false,
+        "hidden": false,
+        "label": "Add blank row"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-lenders.png"
+  },
+  {
+    "id": "owner-lenders-tab-review",
+    "role": "owner",
+    "screen": "Lenders",
+    "claim": "Show review tab",
+    "happened": "clicked review",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "owner-lenders-tab-bureau",
+    "role": "owner",
+    "screen": "Lenders",
+    "claim": "Show bureau tab",
+    "happened": "clicked bureau",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "owner-lenders-tab-list",
+    "role": "owner",
+    "screen": "Lenders",
+    "claim": "Show list tab",
+    "happened": "clicked list",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "owner-lenders-filter",
+    "role": "owner",
+    "screen": "Lenders",
+    "claim": "Apply filters",
+    "happened": "typed test and applied",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-lenders-filter.png"
+  },
+  {
+    "id": "owner-lenders-export",
+    "role": "owner",
+    "screen": "Lenders",
+    "claim": "Export CSV",
+    "happened": "button present — clicked",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "owner-lenders-import-toggle",
+    "role": "owner",
+    "screen": "Lenders",
+    "claim": "Import CSV",
+    "happened": "opened import then cancelled — Import now not run",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "owner-documents-open",
+    "role": "owner",
+    "screen": "Documents",
+    "claim": "Open Documents",
+    "happened": "http 200 final /app/documents.html title Fundhub — Documents",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "◎Client Control Panel",
+      "✉Messaging",
+      "▧Documents",
+      "⊘Specialist",
+      "◎Company BrainBETA"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "pendingBtn",
+        "disabled": false,
+        "hidden": false,
+        "label": "PENDING ONLY"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": true,
+        "hidden": false,
+        "label": "ALL"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "SOFT-PULL AUTHORIZATIONS"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "CONTRACTS"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "INVOICES"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "UNDERWRITEIQ DELIVERABLES"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "statusFilter",
+        "disabled": false,
+        "hidden": false,
+        "label": "Any status Not generated Generation failed Not delivered Bounced Awaiting signat"
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "id": "q",
+        "disabled": false,
+        "hidden": false,
+        "label": "Filter client or document…"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open PDF"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Remind"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Void"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open PDF"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Remind"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Void"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open PDF"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Remind"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Void"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open PDF"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Remind"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Void"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open PDF"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Remind"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Void"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-documents.png"
+  },
+  {
+    "id": "owner-documents-pending",
+    "role": "owner",
+    "screen": "Documents",
+    "claim": "Pending only",
+    "happened": "clicked Pending only",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-documents-pending.png"
+  },
+  {
+    "id": "owner-documents-other",
+    "role": "owner",
+    "screen": "Documents",
+    "claim": "Filter / tabs / open PDF",
+    "happened": "clicked none; skipped SHOWING PENDING:CSS is not defined | Search the CRM:CSS is not defined | Sign out:CSS is not defined | ALL:disabled",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-documents-after.png"
+  },
+  {
+    "id": "owner-contracts-open",
+    "role": "owner",
+    "screen": "Contracts",
+    "claim": "Open Contracts",
+    "happened": "http 200 final /app/contracts.html title Fundhub — Contract templates",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "⚇Staff & Teams",
+      "⊕HiringBETA",
+      "⛁Products & Commissions",
+      "✒Contract templates",
+      "◆Brand StudioBETA"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "btnUpload",
+        "disabled": false,
+        "hidden": false,
+        "label": "Upload a PDF"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "btnNewTpl",
+        "disabled": false,
+        "hidden": false,
+        "label": "New wording"
+      },
+      {
+        "tag": "input",
+        "type": "file",
+        "id": "fileInput",
+        "disabled": false,
+        "hidden": true,
+        "label": "fileInput"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-contracts.png"
+  },
+  {
+    "id": "owner-contracts-new",
+    "role": "owner",
+    "screen": "Contracts",
+    "claim": "New wording",
+    "happened": "opened new wording form then cancelled — no save",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "owner-contracts-upload",
+    "role": "owner",
+    "screen": "Contracts",
+    "claim": "Upload a PDF",
+    "happened": "Upload a PDF control present — file picker not completed",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "owner-ccp-open",
+    "role": "owner",
+    "screen": "Client Control Panel",
+    "claim": "Open Client Control Panel",
+    "happened": "http 200 final /app/client-control-panel.html?id=8556bedc-46e1-4d85-b0cd-a24adfee1521 title Fundhub — Client Control Panel",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "◎Client Control Panel",
+      "✉Messaging",
+      "▧Documents",
+      "⊘Specialist",
+      "◎Company BrainBETA"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "ccp-pick",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pick a client"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-tu",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull TransUnion →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-ex",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull Experian →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-eq",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull Equifax →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-generate-apps",
+        "disabled": false,
+        "hidden": false,
+        "label": "Generate Apps →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-issue-ir",
+        "disabled": false,
+        "hidden": false,
+        "label": "Issue Inquiry Removal →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "AGENT CONTEXT collapsed by default ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "CREDIT & HOLD STATUS collapsed ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "DETAILS collapsed by default ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "DOCUMENTS collapsed by default ⌄"
+      },
+      {
+        "tag": "input",
+        "type": "file",
+        "id": "staff-file-input",
+        "disabled": false,
+        "hidden": true,
+        "label": "staff-file-input"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-pipeline",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Pipeline ↗"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-messaging",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Messaging ↗"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-ir",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Inquiry Remover ↗"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "SYSTEM FACTS collapsed ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-ccp.png"
+  },
+  {
+    "id": "owner-ccp-pick",
+    "role": "owner",
+    "screen": "Client Control Panel",
+    "claim": "Pick a client",
+    "happened": "selected test client 8556bedc",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/owner-ccp-picked.png"
+  },
+  {
+    "id": "owner-ccp-toggles",
+    "role": "owner",
+    "screen": "Client Control Panel",
+    "claim": "Expand groups",
+    "happened": "clicked 5 group titles",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "owner-ccp-ccp-pull-tu",
+    "role": "owner",
+    "screen": "Client Control Panel",
+    "claim": "Pull TransUnion →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "owner-ccp-ccp-pull-ex",
+    "role": "owner",
+    "screen": "Client Control Panel",
+    "claim": "Pull Experian →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "owner-ccp-ccp-pull-eq",
+    "role": "owner",
+    "screen": "Client Control Panel",
+    "claim": "Pull Equifax →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "owner-ccp-ccp-generate-apps",
+    "role": "owner",
+    "screen": "Client Control Panel",
+    "claim": "Generate Apps →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "owner-ccp-ccp-issue-ir",
+    "role": "owner",
+    "screen": "Client Control Panel",
+    "claim": "Issue Inquiry Removal →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "owner-ccp-dead-links",
+    "role": "owner",
+    "screen": "Client Control Panel",
+    "claim": "Open Bank Inbox / GHL Contact / Raw Report",
+    "happened": "3 disabled link buttons — they do nothing",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "owner-math-file-open",
+    "role": "owner",
+    "screen": "Closer Dashboard",
+    "claim": "Open live gmail credit file for read-only math",
+    "happened": "opened 9af65808 — no send / pull / mail clicked",
+    "verdict": "WORKS"
+  },
+  {
+    "id": "closer-login",
+    "role": "closer",
+    "claim": "Sign in as closer@fundhub.ai",
+    "happened": "landed https://fundhub.ai/app/closer-dashboard.html",
+    "verdict": "WORKS"
+  },
+  {
+    "id": "closer-pipeline-open",
+    "role": "closer",
+    "screen": "Pipeline",
+    "claim": "Open Pipeline",
+    "happened": "http 200 final /app/pipeline.html title Fundhub — Pipeline",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "☎Call cockpit",
+      "＃My numbers",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "id": "q",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search name, phone, or email"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "filterBtn",
+        "disabled": false,
+        "hidden": false,
+        "label": "⚟ Filter"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fhDrawerDel",
+        "disabled": false,
+        "hidden": false,
+        "label": "Archive"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fhDrawerClose",
+        "disabled": false,
+        "hidden": false,
+        "label": "Close"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/closer-pipeline.png"
+  },
+  {
+    "id": "closer-closer-dashboard-open",
+    "role": "closer",
+    "screen": "Closer Dashboard",
+    "claim": "Open Closer Dashboard",
+    "happened": "http 200 final /app/closer-dashboard.html title Fundhub — Closer Dashboard",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "☎Call cockpit",
+      "＃My numbers",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDraw",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDraw"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iGuard",
+        "disabled": false,
+        "hidden": false,
+        "label": "iGuard"
+      },
+      {
+        "tag": "input",
+        "type": "range",
+        "id": "iDrawRange",
+        "disabled": false,
+        "hidden": false,
+        "label": "Requested draw"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDeposit",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDeposit"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iFee",
+        "disabled": false,
+        "hidden": false,
+        "label": "iFee"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDebts",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDebts"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iMin",
+        "disabled": false,
+        "hidden": false,
+        "label": "iMin"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/closer-closer-dashboard.png"
+  },
+  {
+    "id": "closer-call-open",
+    "role": "closer",
+    "screen": "Call cockpit",
+    "claim": "Open Call cockpit",
+    "happened": "http 200 final /app/closer-call.html?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521 title Closer · Call cockpit",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "☎Call cockpit",
+      "＃My numbers",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-join",
+        "disabled": true,
+        "hidden": false,
+        "label": "No call link on this appointment"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-present",
+        "disabled": false,
+        "hidden": false,
+        "label": "Present"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-send-contract",
+        "disabled": false,
+        "hidden": false,
+        "label": "Send contract"
+      },
+      {
+        "tag": "input",
+        "type": "checkbox",
+        "id": "d1",
+        "disabled": false,
+        "hidden": false,
+        "label": "d1"
+      },
+      {
+        "tag": "input",
+        "type": "checkbox",
+        "id": "d2",
+        "disabled": false,
+        "hidden": false,
+        "label": "d2"
+      },
+      {
+        "tag": "input",
+        "type": "checkbox",
+        "id": "d3",
+        "disabled": false,
+        "hidden": false,
+        "label": "d3"
+      },
+      {
+        "tag": "input",
+        "type": "checkbox",
+        "id": "d4",
+        "disabled": false,
+        "hidden": false,
+        "label": "d4"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "1Deposit"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "2Downsell"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "3Callback"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "4No show"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "5Not a fit"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "pain"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "doubt"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "cost"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "desire"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "money"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "support"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "trust"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "None"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-save-next",
+        "disabled": false,
+        "hidden": false,
+        "label": "Save · next call"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/closer-call.png"
+  },
+  {
+    "id": "closer-present-open",
+    "role": "closer",
+    "screen": "Present",
+    "claim": "Open Present",
+    "happened": "http 200 final /app/present.html?contact=8556bedc-46e1-4d85-b0cd-a24adfee1521 title Closer · Present",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Client screen only"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "01"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "02"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "03"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "04"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "05"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "07"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": true,
+        "hidden": false,
+        "label": "Back"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Next screen"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/closer-present.png"
+  },
+  {
+    "id": "closer-my-numbers-open",
+    "role": "closer",
+    "screen": "My Numbers",
+    "claim": "Open My Numbers",
+    "happened": "http 200 final /app/my-numbers.html title My numbers · Fundhub",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "☎Call cockpit",
+      "＃My numbers",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/closer-my-numbers.png"
+  },
+  {
+    "id": "closer-my-numbers-controls",
+    "role": "closer",
+    "screen": "My Numbers",
+    "claim": "Page controls / offer stack",
+    "happened": "body has offer stack=true; clicked none",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/closer-my-numbers-full.png"
+  },
+  {
+    "id": "closer-sales-floor-open",
+    "role": "closer",
+    "screen": "Sales Floor",
+    "claim": "Open Sales Floor",
+    "happened": "http 200 final /app/closer-dashboard.html?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521 title Fundhub — Closer Dashboard",
+    "writes": [],
+    "errors": [],
+    "bounced": true,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "☎Call cockpit",
+      "＃My numbers",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDraw",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDraw"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iGuard",
+        "disabled": false,
+        "hidden": false,
+        "label": "iGuard"
+      },
+      {
+        "tag": "input",
+        "type": "range",
+        "id": "iDrawRange",
+        "disabled": false,
+        "hidden": false,
+        "label": "Requested draw"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDeposit",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDeposit"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iFee",
+        "disabled": false,
+        "hidden": false,
+        "label": "iFee"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDebts",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDebts"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iMin",
+        "disabled": false,
+        "hidden": false,
+        "label": "iMin"
+      }
+    ],
+    "verdict": "BOUNCE",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/closer-sales-floor.png"
+  },
+  {
+    "id": "closer-sales-floor-arrows",
+    "role": "closer",
+    "screen": "Sales Floor",
+    "claim": "Move between closers",
+    "happened": "no closer arrows on screen",
+    "writes": [],
+    "verdict": "BROKEN",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/closer-sales-floor-closers.png"
+  },
+  {
+    "id": "closer-sales-floor-other",
+    "role": "closer",
+    "screen": "Sales Floor",
+    "claim": "Floor buttons",
+    "happened": "clicked none; skipped ",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "closer-hiring-open",
+    "role": "closer",
+    "screen": "Hiring",
+    "claim": "Open Hiring",
+    "happened": "http 200 final /app/closer-dashboard.html?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521 title Fundhub — Closer Dashboard",
+    "writes": [],
+    "errors": [],
+    "bounced": true,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "☎Call cockpit",
+      "＃My numbers",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDraw",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDraw"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iGuard",
+        "disabled": false,
+        "hidden": false,
+        "label": "iGuard"
+      },
+      {
+        "tag": "input",
+        "type": "range",
+        "id": "iDrawRange",
+        "disabled": false,
+        "hidden": false,
+        "label": "Requested draw"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDeposit",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDeposit"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iFee",
+        "disabled": false,
+        "hidden": false,
+        "label": "iFee"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDebts",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDebts"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iMin",
+        "disabled": false,
+        "hidden": false,
+        "label": "iMin"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "BOUNCE",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/closer-hiring.png"
+  },
+  {
+    "id": "closer-hiring-other",
+    "role": "closer",
+    "screen": "Hiring",
+    "claim": "Other hiring controls",
+    "happened": "clicked none; skipped Search the CRM:CSS is not defined | Sign out:CSS is not defined",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "closer-lenders-open",
+    "role": "closer",
+    "screen": "Lenders",
+    "claim": "Open Lenders",
+    "happened": "http 200 final /app/closer-dashboard.html?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521 title Fundhub — Closer Dashboard",
+    "writes": [],
+    "errors": [],
+    "bounced": true,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "☎Call cockpit",
+      "＃My numbers",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDraw",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDraw"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iGuard",
+        "disabled": false,
+        "hidden": false,
+        "label": "iGuard"
+      },
+      {
+        "tag": "input",
+        "type": "range",
+        "id": "iDrawRange",
+        "disabled": false,
+        "hidden": false,
+        "label": "Requested draw"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDeposit",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDeposit"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iFee",
+        "disabled": false,
+        "hidden": false,
+        "label": "iFee"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDebts",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDebts"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iMin",
+        "disabled": false,
+        "hidden": false,
+        "label": "iMin"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "BOUNCE",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/closer-lenders.png"
+  },
+  {
+    "id": "closer-documents-open",
+    "role": "closer",
+    "screen": "Documents",
+    "claim": "Open Documents",
+    "happened": "http 200 final /app/documents.html title Fundhub — Documents",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "◎Client Control Panel",
+      "✉Messaging",
+      "▧Documents",
+      "⊘Specialist"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "pendingBtn",
+        "disabled": false,
+        "hidden": false,
+        "label": "PENDING ONLY"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": true,
+        "hidden": false,
+        "label": "ALL"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "SOFT-PULL AUTHORIZATIONS"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "CONTRACTS"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "INVOICES"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "UNDERWRITEIQ DELIVERABLES"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "statusFilter",
+        "disabled": false,
+        "hidden": false,
+        "label": "Any status Not generated Generation failed Not delivered Bounced Awaiting signat"
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "id": "q",
+        "disabled": false,
+        "hidden": false,
+        "label": "Filter client or document…"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/closer-documents.png"
+  },
+  {
+    "id": "closer-documents-pending",
+    "role": "closer",
+    "screen": "Documents",
+    "claim": "Pending only",
+    "happened": "clicked Pending only",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/closer-documents-pending.png"
+  },
+  {
+    "id": "closer-documents-other",
+    "role": "closer",
+    "screen": "Documents",
+    "claim": "Filter / tabs / open PDF",
+    "happened": "clicked none; skipped SHOWING PENDING:CSS is not defined | Search the CRM:CSS is not defined | Sign out:CSS is not defined | ALL:disabled",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/closer-documents-after.png"
+  },
+  {
+    "id": "closer-contracts-open",
+    "role": "closer",
+    "screen": "Contracts",
+    "claim": "Open Contracts",
+    "happened": "http 200 final /app/contracts.html title Fundhub — Contract templates",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "✒Contract templates"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "btnUpload",
+        "disabled": false,
+        "hidden": false,
+        "label": "Upload a PDF"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "btnNewTpl",
+        "disabled": false,
+        "hidden": false,
+        "label": "New wording"
+      },
+      {
+        "tag": "input",
+        "type": "file",
+        "id": "fileInput",
+        "disabled": false,
+        "hidden": true,
+        "label": "fileInput"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/closer-contracts.png"
+  },
+  {
+    "id": "closer-contracts-new",
+    "role": "closer",
+    "screen": "Contracts",
+    "claim": "New wording",
+    "happened": "opened new wording form then cancelled — no save",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "closer-contracts-upload",
+    "role": "closer",
+    "screen": "Contracts",
+    "claim": "Upload a PDF",
+    "happened": "Upload a PDF control present — file picker not completed",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "closer-ccp-open",
+    "role": "closer",
+    "screen": "Client Control Panel",
+    "claim": "Open Client Control Panel",
+    "happened": "http 200 final /app/client-control-panel.html?id=8556bedc-46e1-4d85-b0cd-a24adfee1521 title Fundhub — Client Control Panel",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "◎Client Control Panel",
+      "✉Messaging",
+      "▧Documents",
+      "⊘Specialist"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "ccp-pick",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pick a client"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-tu",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull TransUnion →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-ex",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull Experian →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-eq",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull Equifax →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-generate-apps",
+        "disabled": false,
+        "hidden": false,
+        "label": "Generate Apps →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-issue-ir",
+        "disabled": false,
+        "hidden": false,
+        "label": "Issue Inquiry Removal →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "AGENT CONTEXT collapsed by default ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "CREDIT & HOLD STATUS collapsed ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "DETAILS collapsed by default ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "DOCUMENTS collapsed by default ⌄"
+      },
+      {
+        "tag": "input",
+        "type": "file",
+        "id": "staff-file-input",
+        "disabled": false,
+        "hidden": true,
+        "label": "staff-file-input"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-pipeline",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Pipeline ↗"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-messaging",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Messaging ↗"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-ir",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Inquiry Remover ↗"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "SYSTEM FACTS collapsed ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/closer-ccp.png"
+  },
+  {
+    "id": "closer-ccp-pick",
+    "role": "closer",
+    "screen": "Client Control Panel",
+    "claim": "Pick a client",
+    "happened": "selected test client 8556bedc",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/closer-ccp-picked.png"
+  },
+  {
+    "id": "closer-ccp-toggles",
+    "role": "closer",
+    "screen": "Client Control Panel",
+    "claim": "Expand groups",
+    "happened": "clicked 5 group titles",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "closer-ccp-ccp-pull-tu",
+    "role": "closer",
+    "screen": "Client Control Panel",
+    "claim": "Pull TransUnion →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "closer-ccp-ccp-pull-ex",
+    "role": "closer",
+    "screen": "Client Control Panel",
+    "claim": "Pull Experian →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "closer-ccp-ccp-pull-eq",
+    "role": "closer",
+    "screen": "Client Control Panel",
+    "claim": "Pull Equifax →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "closer-ccp-ccp-generate-apps",
+    "role": "closer",
+    "screen": "Client Control Panel",
+    "claim": "Generate Apps →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "closer-ccp-ccp-issue-ir",
+    "role": "closer",
+    "screen": "Client Control Panel",
+    "claim": "Issue Inquiry Removal →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "closer-ccp-dead-links",
+    "role": "closer",
+    "screen": "Client Control Panel",
+    "claim": "Open Bank Inbox / GHL Contact / Raw Report",
+    "happened": "3 disabled link buttons — they do nothing",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "sales-login",
+    "role": "sales",
+    "claim": "Sign in as sales@fundhub.ai",
+    "happened": "landed https://fundhub.ai/app/sales-floor.html",
+    "verdict": "WORKS"
+  },
+  {
+    "id": "sales-pipeline-open",
+    "role": "sales",
+    "screen": "Pipeline",
+    "claim": "Open Pipeline",
+    "happened": "http 200 final /app/pipeline.html title Fundhub — Pipeline",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "▣Sales floor",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "id": "q",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search name, phone, or email"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "filterBtn",
+        "disabled": false,
+        "hidden": false,
+        "label": "⚟ Filter"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fhDrawerDel",
+        "disabled": false,
+        "hidden": false,
+        "label": "Archive"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fhDrawerClose",
+        "disabled": false,
+        "hidden": false,
+        "label": "Close"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/sales-pipeline.png"
+  },
+  {
+    "id": "sales-closer-dashboard-open",
+    "role": "sales",
+    "screen": "Closer Dashboard",
+    "claim": "Open Closer Dashboard",
+    "happened": "http 200 final /app/closer-dashboard.html title Fundhub — Closer Dashboard",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "▣Sales floor",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDraw",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDraw"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iGuard",
+        "disabled": false,
+        "hidden": false,
+        "label": "iGuard"
+      },
+      {
+        "tag": "input",
+        "type": "range",
+        "id": "iDrawRange",
+        "disabled": false,
+        "hidden": false,
+        "label": "Requested draw"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDeposit",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDeposit"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iFee",
+        "disabled": false,
+        "hidden": false,
+        "label": "iFee"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDebts",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDebts"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iMin",
+        "disabled": false,
+        "hidden": false,
+        "label": "iMin"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/sales-closer-dashboard.png"
+  },
+  {
+    "id": "sales-call-open",
+    "role": "sales",
+    "screen": "Call cockpit",
+    "claim": "Open Call cockpit",
+    "happened": "http 200 final /app/sales-floor.html title Sales floor · Fundhub",
+    "writes": [],
+    "errors": [],
+    "bounced": true,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "▣Sales floor",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Flag to marketing"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Today's recordings"
+      }
+    ],
+    "verdict": "BOUNCE",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/sales-call.png"
+  },
+  {
+    "id": "sales-present-open",
+    "role": "sales",
+    "screen": "Present",
+    "claim": "Open Present",
+    "happened": "http 200 final /app/present.html?contact=8556bedc-46e1-4d85-b0cd-a24adfee1521 title Closer · Present",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [],
+    "controls": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/sales-present.png"
+  },
+  {
+    "id": "sales-my-numbers-open",
+    "role": "sales",
+    "screen": "My Numbers",
+    "claim": "Open My Numbers",
+    "happened": "http 200 final /app/sales-floor.html title Sales floor · Fundhub",
+    "writes": [],
+    "errors": [],
+    "bounced": true,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "▣Sales floor",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-recordings-jump",
+        "disabled": false,
+        "hidden": false,
+        "label": "Today's recordings"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-drive-refresh",
+        "disabled": false,
+        "hidden": false,
+        "label": "Refresh from Drive"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "BOUNCE",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/sales-my-numbers.png"
+  },
+  {
+    "id": "sales-my-numbers-controls",
+    "role": "sales",
+    "screen": "My Numbers",
+    "claim": "Page controls / offer stack",
+    "happened": "body has offer stack=false; clicked none",
+    "writes": [],
+    "verdict": "BROKEN",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/sales-my-numbers-full.png"
+  },
+  {
+    "id": "sales-sales-floor-open",
+    "role": "sales",
+    "screen": "Sales Floor",
+    "claim": "Open Sales Floor",
+    "happened": "http 200 final /app/sales-floor.html title Sales floor · Fundhub",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "▣Sales floor",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-recordings-jump",
+        "disabled": false,
+        "hidden": false,
+        "label": "Today's recordings"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-drive-refresh",
+        "disabled": false,
+        "hidden": false,
+        "label": "Refresh from Drive"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/sales-sales-floor.png"
+  },
+  {
+    "id": "sales-sales-floor-arrows",
+    "role": "sales",
+    "screen": "Sales Floor",
+    "claim": "Move between closers",
+    "happened": "no closer arrows on screen",
+    "writes": [],
+    "verdict": "BROKEN",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/sales-sales-floor-closers.png"
+  },
+  {
+    "id": "sales-sales-floor-other",
+    "role": "sales",
+    "screen": "Sales Floor",
+    "claim": "Floor buttons",
+    "happened": "clicked none; skipped Today's recordings:CSS is not defined | Refresh from Drive:CSS is not defined | Search the CRM:CSS is not defined | Sign out:CSS is not defined",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "sales-hiring-open",
+    "role": "sales",
+    "screen": "Hiring",
+    "claim": "Open Hiring",
+    "happened": "http 200 final /app/sales-floor.html title Sales floor · Fundhub",
+    "writes": [],
+    "errors": [],
+    "bounced": true,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "▣Sales floor",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-recordings-jump",
+        "disabled": false,
+        "hidden": false,
+        "label": "Today's recordings"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-drive-refresh",
+        "disabled": false,
+        "hidden": false,
+        "label": "Refresh from Drive"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "BOUNCE",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/sales-hiring.png"
+  },
+  {
+    "id": "sales-hiring-other",
+    "role": "sales",
+    "screen": "Hiring",
+    "claim": "Other hiring controls",
+    "happened": "clicked none; skipped Today's recordings:CSS is not defined | Refresh from Drive:CSS is not defined | Search the CRM:CSS is not defined | Sign out:CSS is not defined",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "sales-lenders-open",
+    "role": "sales",
+    "screen": "Lenders",
+    "claim": "Open Lenders",
+    "happened": "http 200 final /app/sales-floor.html title Sales floor · Fundhub",
+    "writes": [],
+    "errors": [],
+    "bounced": true,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "▣Sales floor",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Flag to marketing"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "Today's recordings"
+      }
+    ],
+    "verdict": "BOUNCE",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/sales-lenders.png"
+  },
+  {
+    "id": "sales-documents-open",
+    "role": "sales",
+    "screen": "Documents",
+    "claim": "Open Documents",
+    "happened": "http 200 final /app/documents.html title Fundhub — Documents",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "◎Client Control Panel",
+      "✉Messaging",
+      "▧Documents",
+      "⊘Specialist"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "pendingBtn",
+        "disabled": false,
+        "hidden": false,
+        "label": "PENDING ONLY"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": true,
+        "hidden": false,
+        "label": "ALL"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "SOFT-PULL AUTHORIZATIONS"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "CONTRACTS"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "INVOICES"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "UNDERWRITEIQ DELIVERABLES"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "statusFilter",
+        "disabled": false,
+        "hidden": false,
+        "label": "Any status Not generated Generation failed Not delivered Bounced Awaiting signat"
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "id": "q",
+        "disabled": false,
+        "hidden": false,
+        "label": "Filter client or document…"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/sales-documents.png"
+  },
+  {
+    "id": "sales-documents-pending",
+    "role": "sales",
+    "screen": "Documents",
+    "claim": "Pending only",
+    "happened": "clicked Pending only",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/sales-documents-pending.png"
+  },
+  {
+    "id": "sales-documents-other",
+    "role": "sales",
+    "screen": "Documents",
+    "claim": "Filter / tabs / open PDF",
+    "happened": "clicked none; skipped SHOWING PENDING:CSS is not defined | ALL:disabled",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/sales-documents-after.png"
+  },
+  {
+    "id": "sales-contracts-open",
+    "role": "sales",
+    "screen": "Contracts",
+    "claim": "Open Contracts",
+    "happened": "http 200 final /app/contracts.html title Fundhub — Contract templates",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "⚇Staff & Teams",
+      "⛁Products & Commissions",
+      "✒Contract templates"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "btnUpload",
+        "disabled": false,
+        "hidden": false,
+        "label": "Upload a PDF"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "btnNewTpl",
+        "disabled": false,
+        "hidden": false,
+        "label": "New wording"
+      },
+      {
+        "tag": "input",
+        "type": "file",
+        "id": "fileInput",
+        "disabled": false,
+        "hidden": true,
+        "label": "fileInput"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/sales-contracts.png"
+  },
+  {
+    "id": "sales-contracts-new",
+    "role": "sales",
+    "screen": "Contracts",
+    "claim": "New wording",
+    "happened": "opened new wording form then cancelled — no save",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "sales-contracts-upload",
+    "role": "sales",
+    "screen": "Contracts",
+    "claim": "Upload a PDF",
+    "happened": "Upload a PDF control present — file picker not completed",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "sales-ccp-open",
+    "role": "sales",
+    "screen": "Client Control Panel",
+    "claim": "Open Client Control Panel",
+    "happened": "http 200 final /app/client-control-panel.html?id=8556bedc-46e1-4d85-b0cd-a24adfee1521 title Fundhub — Client Control Panel",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "◎Client Control Panel",
+      "✉Messaging",
+      "▧Documents",
+      "⊘Specialist"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "ccp-pick",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pick a client"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-tu",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull TransUnion →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-ex",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull Experian →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-eq",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull Equifax →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-generate-apps",
+        "disabled": false,
+        "hidden": false,
+        "label": "Generate Apps →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-issue-ir",
+        "disabled": false,
+        "hidden": false,
+        "label": "Issue Inquiry Removal →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "AGENT CONTEXT collapsed by default ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "CREDIT & HOLD STATUS collapsed ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "DETAILS collapsed by default ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "DOCUMENTS collapsed by default ⌄"
+      },
+      {
+        "tag": "input",
+        "type": "file",
+        "id": "staff-file-input",
+        "disabled": false,
+        "hidden": true,
+        "label": "staff-file-input"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-pipeline",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Pipeline ↗"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-messaging",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Messaging ↗"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-ir",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Inquiry Remover ↗"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "SYSTEM FACTS collapsed ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/sales-ccp.png"
+  },
+  {
+    "id": "sales-ccp-pick",
+    "role": "sales",
+    "screen": "Client Control Panel",
+    "claim": "Pick a client",
+    "happened": "selected test client 8556bedc",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/sales-ccp-picked.png"
+  },
+  {
+    "id": "sales-ccp-toggles",
+    "role": "sales",
+    "screen": "Client Control Panel",
+    "claim": "Expand groups",
+    "happened": "clicked 5 group titles",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "sales-ccp-ccp-pull-tu",
+    "role": "sales",
+    "screen": "Client Control Panel",
+    "claim": "Pull TransUnion →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "sales-ccp-ccp-pull-ex",
+    "role": "sales",
+    "screen": "Client Control Panel",
+    "claim": "Pull Experian →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "sales-ccp-ccp-pull-eq",
+    "role": "sales",
+    "screen": "Client Control Panel",
+    "claim": "Pull Equifax →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "sales-ccp-ccp-generate-apps",
+    "role": "sales",
+    "screen": "Client Control Panel",
+    "claim": "Generate Apps →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "sales-ccp-ccp-issue-ir",
+    "role": "sales",
+    "screen": "Client Control Panel",
+    "claim": "Issue Inquiry Removal →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "sales-ccp-dead-links",
+    "role": "sales",
+    "screen": "Client Control Panel",
+    "claim": "Open Bank Inbox / GHL Contact / Raw Report",
+    "happened": "3 disabled link buttons — they do nothing",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "advisor-login",
+    "role": "advisor",
+    "claim": "Sign in as advisor@fundhub.ai",
+    "happened": "landed https://fundhub.ai/app/client-control-panel.html",
+    "verdict": "WORKS"
+  },
+  {
+    "id": "advisor-pipeline-open",
+    "role": "advisor",
+    "screen": "Pipeline",
+    "claim": "Open Pipeline",
+    "happened": "http 200 final /app/pipeline.html title Fundhub — Pipeline",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "id": "q",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search name, phone, or email"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "filterBtn",
+        "disabled": false,
+        "hidden": false,
+        "label": "⚟ Filter"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fhDrawerDel",
+        "disabled": false,
+        "hidden": false,
+        "label": "Archive"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fhDrawerClose",
+        "disabled": false,
+        "hidden": false,
+        "label": "Close"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/advisor-pipeline.png"
+  },
+  {
+    "id": "advisor-closer-dashboard-open",
+    "role": "advisor",
+    "screen": "Closer Dashboard",
+    "claim": "Open Closer Dashboard",
+    "happened": "http 200 final /app/closer-dashboard.html title Fundhub — Closer Dashboard",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "▤Pipeline",
+      "★Closer Dashboard",
+      "▦Calendar"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDraw",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDraw"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iGuard",
+        "disabled": false,
+        "hidden": false,
+        "label": "iGuard"
+      },
+      {
+        "tag": "input",
+        "type": "range",
+        "id": "iDrawRange",
+        "disabled": false,
+        "hidden": false,
+        "label": "Requested draw"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDeposit",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDeposit"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iFee",
+        "disabled": false,
+        "hidden": false,
+        "label": "iFee"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iDebts",
+        "disabled": false,
+        "hidden": false,
+        "label": "iDebts"
+      },
+      {
+        "tag": "input",
+        "type": "number",
+        "id": "iMin",
+        "disabled": false,
+        "hidden": false,
+        "label": "iMin"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/advisor-closer-dashboard.png"
+  },
+  {
+    "id": "advisor-call-open",
+    "role": "advisor",
+    "screen": "Call cockpit",
+    "claim": "Open Call cockpit",
+    "happened": "http 200 final /app/client-control-panel.html?id=8556bedc-46e1-4d85-b0cd-a24adfee1521 title Fundhub — Client Control Panel",
+    "writes": [],
+    "errors": [],
+    "bounced": true,
+    "nav": [
+      "◎Client Control Panel",
+      "✉Messaging",
+      "▧Documents",
+      "⊘Specialist"
+    ],
+    "controls": [
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "ccp-pick",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pick a client"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-tu",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull TransUnion →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-ex",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull Experian →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-eq",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull Equifax →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-generate-apps",
+        "disabled": false,
+        "hidden": false,
+        "label": "Generate Apps →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-issue-ir",
+        "disabled": false,
+        "hidden": false,
+        "label": "Issue Inquiry Removal →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "AGENT CONTEXT collapsed by default ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "CREDIT & HOLD STATUS collapsed ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "DETAILS collapsed by default ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "DOCUMENTS collapsed by default ⌄"
+      },
+      {
+        "tag": "input",
+        "type": "file",
+        "id": "staff-file-input",
+        "disabled": false,
+        "hidden": true,
+        "label": "staff-file-input"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-pipeline",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Pipeline ↗"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-messaging",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Messaging ↗"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-ir",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Inquiry Remover ↗"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "SYSTEM FACTS collapsed ⌄"
+      }
+    ],
+    "verdict": "BOUNCE",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/advisor-call.png"
+  },
+  {
+    "id": "advisor-present-open",
+    "role": "advisor",
+    "screen": "Present",
+    "claim": "Open Present",
+    "happened": "http 200 final /login.html?next=%2Fapp%2Fpresent.html%3Fcontact%3D8556bedc-46e1-4d85-b0cd-a24adfee1521 title Sign in | fundhub",
+    "writes": [],
+    "errors": [
+      {
+        "method": "GET",
+        "status": 403,
+        "url": "/api/read/closer-deck?contact=8556bedc-46e1-4d85-b0cd-a24adfee1521"
+      }
+    ],
+    "bounced": false,
+    "nav": [],
+    "controls": [
+      {
+        "tag": "input",
+        "type": "email",
+        "id": "email",
+        "disabled": false,
+        "hidden": false,
+        "label": "Email address"
+      },
+      {
+        "tag": "input",
+        "type": "password",
+        "id": "pw",
+        "disabled": false,
+        "hidden": false,
+        "label": "Password"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "go",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign in"
+      }
+    ],
+    "verdict": "BROKEN",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/advisor-present.png"
+  },
+  {
+    "id": "advisor-my-numbers-open",
+    "role": "advisor",
+    "screen": "My Numbers",
+    "claim": "Open My Numbers",
+    "happened": "http 200 final /app/client-control-panel.html?id=8556bedc-46e1-4d85-b0cd-a24adfee1521 title Fundhub — Client Control Panel",
+    "writes": [],
+    "errors": [],
+    "bounced": true,
+    "nav": [
+      "◎Client Control Panel",
+      "✉Messaging",
+      "▧Documents",
+      "⊘Specialist"
+    ],
+    "controls": [
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "ccp-pick",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pick a client"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-tu",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull TransUnion →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-ex",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull Experian →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-eq",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull Equifax →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-generate-apps",
+        "disabled": false,
+        "hidden": false,
+        "label": "Generate Apps →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-issue-ir",
+        "disabled": false,
+        "hidden": false,
+        "label": "Issue Inquiry Removal →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "AGENT CONTEXT collapsed by default ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "CREDIT & HOLD STATUS collapsed ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "DETAILS collapsed by default ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "DOCUMENTS collapsed by default ⌄"
+      },
+      {
+        "tag": "input",
+        "type": "file",
+        "id": "staff-file-input",
+        "disabled": false,
+        "hidden": true,
+        "label": "staff-file-input"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-pipeline",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Pipeline ↗"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-messaging",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Messaging ↗"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-ir",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Inquiry Remover ↗"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "SYSTEM FACTS collapsed ⌄"
+      }
+    ],
+    "verdict": "BOUNCE",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/advisor-my-numbers.png"
+  },
+  {
+    "id": "advisor-my-numbers-controls",
+    "role": "advisor",
+    "screen": "My Numbers",
+    "claim": "Page controls / offer stack",
+    "happened": "body has offer stack=false; clicked none",
+    "writes": [],
+    "verdict": "BROKEN",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/advisor-my-numbers-full.png"
+  },
+  {
+    "id": "advisor-sales-floor-open",
+    "role": "advisor",
+    "screen": "Sales Floor",
+    "claim": "Open Sales Floor",
+    "happened": "http 200 final /app/client-control-panel.html?id=8556bedc-46e1-4d85-b0cd-a24adfee1521 title Fundhub — Client Control Panel",
+    "writes": [],
+    "errors": [],
+    "bounced": true,
+    "nav": [
+      "◎Client Control Panel",
+      "✉Messaging",
+      "▧Documents",
+      "⊘Specialist"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "ccp-pick",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pick a client"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-tu",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull TransUnion →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-ex",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull Experian →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-eq",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull Equifax →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-generate-apps",
+        "disabled": false,
+        "hidden": false,
+        "label": "Generate Apps →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-issue-ir",
+        "disabled": false,
+        "hidden": false,
+        "label": "Issue Inquiry Removal →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "AGENT CONTEXT collapsed by default ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "CREDIT & HOLD STATUS collapsed ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "DETAILS collapsed by default ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "DOCUMENTS collapsed by default ⌄"
+      },
+      {
+        "tag": "input",
+        "type": "file",
+        "id": "staff-file-input",
+        "disabled": false,
+        "hidden": true,
+        "label": "staff-file-input"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-pipeline",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Pipeline ↗"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-messaging",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Messaging ↗"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-ir",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Inquiry Remover ↗"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "SYSTEM FACTS collapsed ⌄"
+      }
+    ],
+    "verdict": "BOUNCE",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/advisor-sales-floor.png"
+  },
+  {
+    "id": "advisor-sales-floor-arrows",
+    "role": "advisor",
+    "screen": "Sales Floor",
+    "claim": "Move between closers",
+    "happened": "no closer arrows on screen",
+    "writes": [],
+    "verdict": "BROKEN",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/advisor-sales-floor-closers.png"
+  },
+  {
+    "id": "advisor-sales-floor-other",
+    "role": "advisor",
+    "screen": "Sales Floor",
+    "claim": "Floor buttons",
+    "happened": "clicked none; skipped Search the CRM:CSS is not defined | Sign out:CSS is not defined | Pull TransUnion →:write-guard | Pull Experian →:write-guard | Pull Equifax →:write-guard | Generate Apps →:write-guard | Issue Inquiry Removal →:write-guard",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "advisor-hiring-open",
+    "role": "advisor",
+    "screen": "Hiring",
+    "claim": "Open Hiring",
+    "happened": "http 200 final /app/client-control-panel.html?id=8556bedc-46e1-4d85-b0cd-a24adfee1521 title Fundhub — Client Control Panel",
+    "writes": [],
+    "errors": [],
+    "bounced": true,
+    "nav": [
+      "◎Client Control Panel",
+      "✉Messaging",
+      "▧Documents",
+      "⊘Specialist"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "ccp-pick",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pick a client"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-tu",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull TransUnion →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-ex",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull Experian →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-eq",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull Equifax →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-generate-apps",
+        "disabled": false,
+        "hidden": false,
+        "label": "Generate Apps →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-issue-ir",
+        "disabled": false,
+        "hidden": false,
+        "label": "Issue Inquiry Removal →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "AGENT CONTEXT collapsed by default ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "CREDIT & HOLD STATUS collapsed ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "DETAILS collapsed by default ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "DOCUMENTS collapsed by default ⌄"
+      },
+      {
+        "tag": "input",
+        "type": "file",
+        "id": "staff-file-input",
+        "disabled": false,
+        "hidden": true,
+        "label": "staff-file-input"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-pipeline",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Pipeline ↗"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-messaging",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Messaging ↗"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-ir",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Inquiry Remover ↗"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "SYSTEM FACTS collapsed ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "BOUNCE",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/advisor-hiring.png"
+  },
+  {
+    "id": "advisor-hiring-other",
+    "role": "advisor",
+    "screen": "Hiring",
+    "claim": "Other hiring controls",
+    "happened": "clicked none; skipped Search the CRM:CSS is not defined | Sign out:CSS is not defined | Pull TransUnion →:write-guard | Pull Experian →:write-guard | Pull Equifax →:write-guard | Generate Apps →:write-guard | Issue Inquiry Removal →:write-guard",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "advisor-lenders-open",
+    "role": "advisor",
+    "screen": "Lenders",
+    "claim": "Open Lenders",
+    "happened": "http 200 final /app/lenders.html title Fundhub · Lenders",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "⬡Lenders"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "LENDER LIST"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "BUREAU MISMATCH QUEUE"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "AI BUREAU CONFIG"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "fTable",
+        "disabled": false,
+        "hidden": false,
+        "label": "All OnlineBizCC InBranchBizCC BizLOC_Stated BizLOC_Documented PersonalCC Persona"
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "id": "fBureau",
+        "disabled": false,
+        "hidden": false,
+        "label": "EX / EQ / TU"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "fTier",
+        "disabled": false,
+        "hidden": false,
+        "label": "All 1 2 3"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "fActive",
+        "disabled": false,
+        "hidden": false,
+        "label": "All Active Inactive"
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "id": "fState",
+        "disabled": false,
+        "hidden": false,
+        "label": "e.g. AZ"
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "id": "fQ",
+        "disabled": false,
+        "hidden": false,
+        "label": "Name…"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "btnFilter",
+        "disabled": false,
+        "hidden": false,
+        "label": "Apply filters"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "btnExport",
+        "disabled": false,
+        "hidden": false,
+        "label": "Export CSV"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "btnImportToggle",
+        "disabled": false,
+        "hidden": false,
+        "label": "Import CSV"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "btnAdd",
+        "disabled": false,
+        "hidden": false,
+        "label": "Add blank row"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/advisor-lenders.png"
+  },
+  {
+    "id": "advisor-lenders-tab-review",
+    "role": "advisor",
+    "screen": "Lenders",
+    "claim": "Show review tab",
+    "happened": "clicked review",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "advisor-lenders-tab-bureau",
+    "role": "advisor",
+    "screen": "Lenders",
+    "claim": "Show bureau tab",
+    "happened": "clicked bureau",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "advisor-lenders-tab-list",
+    "role": "advisor",
+    "screen": "Lenders",
+    "claim": "Show list tab",
+    "happened": "clicked list",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "advisor-lenders-filter",
+    "role": "advisor",
+    "screen": "Lenders",
+    "claim": "Apply filters",
+    "happened": "typed test and applied",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/advisor-lenders-filter.png"
+  },
+  {
+    "id": "advisor-lenders-export",
+    "role": "advisor",
+    "screen": "Lenders",
+    "claim": "Export CSV",
+    "happened": "button present — clicked",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "advisor-lenders-import-toggle",
+    "role": "advisor",
+    "screen": "Lenders",
+    "claim": "Import CSV",
+    "happened": "opened import then cancelled — Import now not run",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "advisor-documents-open",
+    "role": "advisor",
+    "screen": "Documents",
+    "claim": "Open Documents",
+    "happened": "http 200 final /app/documents.html title Fundhub — Documents",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "◎Client Control Panel",
+      "✉Messaging",
+      "▧Documents",
+      "⊘Specialist"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "pendingBtn",
+        "disabled": false,
+        "hidden": false,
+        "label": "PENDING ONLY"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": true,
+        "hidden": false,
+        "label": "ALL"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "SOFT-PULL AUTHORIZATIONS"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "CONTRACTS"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "INVOICES"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "UNDERWRITEIQ DELIVERABLES"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "statusFilter",
+        "disabled": false,
+        "hidden": false,
+        "label": "Any status Not generated Generation failed Not delivered Bounced Awaiting signat"
+      },
+      {
+        "tag": "input",
+        "type": "text",
+        "id": "q",
+        "disabled": false,
+        "hidden": false,
+        "label": "Filter client or document…"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/advisor-documents.png"
+  },
+  {
+    "id": "advisor-documents-pending",
+    "role": "advisor",
+    "screen": "Documents",
+    "claim": "Pending only",
+    "happened": "clicked Pending only",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/advisor-documents-pending.png"
+  },
+  {
+    "id": "advisor-documents-other",
+    "role": "advisor",
+    "screen": "Documents",
+    "claim": "Filter / tabs / open PDF",
+    "happened": "clicked none; skipped SHOWING PENDING:CSS is not defined | ALL:disabled",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/advisor-documents-after.png"
+  },
+  {
+    "id": "advisor-contracts-open",
+    "role": "advisor",
+    "screen": "Contracts",
+    "claim": "Open Contracts",
+    "happened": "http 200 final /app/contracts.html title Fundhub — Contract templates",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "✒Contract templates"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "btnUpload",
+        "disabled": false,
+        "hidden": false,
+        "label": "Upload a PDF"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "btnNewTpl",
+        "disabled": false,
+        "hidden": false,
+        "label": "New wording"
+      },
+      {
+        "tag": "input",
+        "type": "file",
+        "id": "fileInput",
+        "disabled": false,
+        "hidden": true,
+        "label": "fileInput"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/advisor-contracts.png"
+  },
+  {
+    "id": "advisor-contracts-new",
+    "role": "advisor",
+    "screen": "Contracts",
+    "claim": "New wording",
+    "happened": "opened new wording form then cancelled — no save",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "advisor-contracts-upload",
+    "role": "advisor",
+    "screen": "Contracts",
+    "claim": "Upload a PDF",
+    "happened": "Upload a PDF control present — file picker not completed",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "advisor-ccp-open",
+    "role": "advisor",
+    "screen": "Client Control Panel",
+    "claim": "Open Client Control Panel",
+    "happened": "http 200 final /app/client-control-panel.html?id=8556bedc-46e1-4d85-b0cd-a24adfee1521 title Fundhub — Client Control Panel",
+    "writes": [],
+    "errors": [],
+    "bounced": false,
+    "nav": [
+      "◎Client Control Panel",
+      "✉Messaging",
+      "▧Documents",
+      "⊘Specialist"
+    ],
+    "controls": [
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-shell-search-btn",
+        "disabled": false,
+        "hidden": false,
+        "label": "Search the CRM"
+      },
+      {
+        "tag": "button",
+        "type": "submit",
+        "id": "fh-shell-out",
+        "disabled": false,
+        "hidden": false,
+        "label": "Sign out"
+      },
+      {
+        "tag": "select",
+        "type": "select-one",
+        "id": "ccp-pick",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pick a client"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-tu",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull TransUnion →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-ex",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull Experian →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-pull-eq",
+        "disabled": false,
+        "hidden": false,
+        "label": "Pull Equifax →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-generate-apps",
+        "disabled": false,
+        "hidden": false,
+        "label": "Generate Apps →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "ccp-issue-ir",
+        "disabled": false,
+        "hidden": false,
+        "label": "Issue Inquiry Removal →"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "AGENT CONTEXT collapsed by default ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "CREDIT & HOLD STATUS collapsed ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "DETAILS collapsed by default ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "DOCUMENTS collapsed by default ⌄"
+      },
+      {
+        "tag": "input",
+        "type": "file",
+        "id": "staff-file-input",
+        "disabled": false,
+        "hidden": true,
+        "label": "staff-file-input"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-pipeline",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Pipeline ↗"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-messaging",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Messaging ↗"
+      },
+      {
+        "tag": "a",
+        "type": "",
+        "id": "ccp-link-ir",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open Inquiry Remover ↗"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "",
+        "disabled": false,
+        "hidden": false,
+        "label": "SYSTEM FACTS collapsed ⌄"
+      },
+      {
+        "tag": "button",
+        "type": "button",
+        "id": "fh-chat-fab",
+        "disabled": false,
+        "hidden": false,
+        "label": "Open chat"
+      }
+    ],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/advisor-ccp.png"
+  },
+  {
+    "id": "advisor-ccp-pick",
+    "role": "advisor",
+    "screen": "Client Control Panel",
+    "claim": "Pick a client",
+    "happened": "selected test client 8556bedc",
+    "writes": [],
+    "verdict": "WORKS",
+    "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w2/advisor-ccp-picked.png"
+  },
+  {
+    "id": "advisor-ccp-toggles",
+    "role": "advisor",
+    "screen": "Client Control Panel",
+    "claim": "Expand groups",
+    "happened": "clicked 5 group titles",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "advisor-ccp-ccp-pull-tu",
+    "role": "advisor",
+    "screen": "Client Control Panel",
+    "claim": "Pull TransUnion →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "advisor-ccp-ccp-pull-ex",
+    "role": "advisor",
+    "screen": "Client Control Panel",
+    "claim": "Pull Experian →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "advisor-ccp-ccp-pull-eq",
+    "role": "advisor",
+    "screen": "Client Control Panel",
+    "claim": "Pull Equifax →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "advisor-ccp-ccp-generate-apps",
+    "role": "advisor",
+    "screen": "Client Control Panel",
+    "claim": "Generate Apps →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "advisor-ccp-ccp-issue-ir",
+    "role": "advisor",
+    "screen": "Client Control Panel",
+    "claim": "Issue Inquiry Removal →",
+    "happened": "not clicked — would POST a live bureau pull / case / app generate (W1 owns live pull; no pull on gmail file)",
+    "writes": [],
+    "verdict": "UNVERIFIED",
+    "db": "none — click withheld"
+  },
+  {
+    "id": "advisor-ccp-dead-links",
+    "role": "advisor",
+    "screen": "Client Control Panel",
+    "claim": "Open Bank Inbox / GHL Contact / Raw Report",
+    "happened": "3 disabled link buttons — they do nothing",
+    "writes": [],
+    "verdict": "WORKS"
+  },
+  {
+    "id": "db-after",
+    "claim": "DB after W2 walk",
+    "happened": "2 consent contracts today after walk",
+    "verdict": "INFO",
+    "db": {
+      "contracts": [
+        {
+          "id": "16b29639-ac19-42ab-ba48-8789018b0e48",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "status": "signed",
+          "template_key": "SOFT-PULL-CONSENT",
+          "created_at": "2026-08-18T16:07:51.623Z"
+        },
+        {
+          "id": "8988b582-d98a-44c8-9173-86de54fc5788",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "status": "draft",
+          "template_key": "SOFT-PULL-CONSENT",
+          "created_at": "2026-08-18T16:04:05.676Z"
+        }
+      ],
+      "documents": [
+        {
+          "id": "f13993df-4ab3-4ce2-9196-cad390a90728",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "document_key": "authorization|soft_pull_consent|8556bedc-46e1-4d85-b0cd-a24adfee1521|16b29639-ac19-42ab-ba48-8789018b0e48:signed",
+          "kind": "authorization",
+          "subtype": "soft_pull_consent",
+          "created_at": "2026-08-18T16:12:38.347Z"
+        },
+        {
+          "id": "9cb7d591-23cd-40e0-94cc-2b02894c9e16",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "document_key": "authorization|soft_pull_consent|8556bedc-46e1-4d85-b0cd-a24adfee1521|16b29639-ac19-42ab-ba48-8789018b0e48",
+          "kind": "authorization",
+          "subtype": "soft_pull_consent",
+          "created_at": "2026-08-18T16:07:52.527Z"
+        }
+      ],
+      "messages": [
+        {
+          "id": "b847c472-8802-4fef-bffe-7c8ba3f21935",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "channel": "email",
+          "template_key": "EMAIL-PORTAL-MAGIC-LINK",
+          "status": "queued",
+          "created_at": "2026-08-18T16:10:32.562Z"
+        },
+        {
+          "id": "934122c2-0e15-44d5-b706-deea5c3ce9dc",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "channel": "email",
+          "template_key": "CONTRACT-SEND-EMAIL",
+          "status": "sent",
+          "created_at": "2026-08-18T16:07:53.571Z"
+        },
+        {
+          "id": "c6a67a2d-444b-450e-bf64-23f6bfa5608a",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "channel": "email",
+          "template_key": "EMAIL-PORTAL-MAGIC-LINK",
+          "status": "sent",
+          "created_at": "2026-08-18T16:04:32.650Z"
+        },
+        {
+          "id": "52f39bbe-24a5-4164-a330-b49944311b47",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "channel": "email",
+          "template_key": "EMAIL-PORTAL-MAGIC-LINK",
+          "status": "sent",
+          "created_at": "2026-08-18T16:00:52.037Z"
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "post_api_messages_accepts_to_override": false,
+  "compose_reads_clients_phone_only": true,
+  "messaging_html_has_to_input": false,
+  "api_messages_mentions_body_to": false
+}

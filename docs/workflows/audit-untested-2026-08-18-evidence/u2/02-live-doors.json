@@ -1,0 +1,15 @@
+{
+  "get": {
+    "status": 405,
+    "ok": false
+  },
+  "head": {
+    "status": 405,
+    "ok": false
+  },
+  "post_empty": null,
+  "unsubscribe_get": {
+    "status": 404,
+    "ok": false
+  }
+}

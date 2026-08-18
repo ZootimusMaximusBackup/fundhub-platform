@@ -1,0 +1,79 @@
+[
+  {
+    "table": "affiliate_payouts",
+    "has_db_schema_write": true,
+    "has_db_schema_read": true,
+    "has_test_write": false,
+    "has_test_read": false
+  },
+  {
+    "table": "brand_kit_sources",
+    "has_db_schema_write": false,
+    "has_db_schema_read": false,
+    "has_test_write": true,
+    "has_test_read": false
+  },
+  {
+    "table": "campaign_strategies",
+    "has_db_schema_write": true,
+    "has_db_schema_read": true,
+    "has_test_write": false,
+    "has_test_read": false
+  },
+  {
+    "table": "creative_billing_rates",
+    "has_db_schema_write": true,
+    "has_db_schema_read": true,
+    "has_test_write": true,
+    "has_test_read": true
+  },
+  {
+    "table": "creative_usage_events",
+    "has_db_schema_write": true,
+    "has_db_schema_read": true,
+    "has_test_write": true,
+    "has_test_read": true
+  },
+  {
+    "table": "eeo_responses",
+    "has_db_schema_write": true,
+    "has_db_schema_read": true,
+    "has_test_write": false,
+    "has_test_read": false
+  },
+  {
+    "table": "eeo_survey_invites",
+    "has_db_schema_write": true,
+    "has_db_schema_read": true,
+    "has_test_write": false,
+    "has_test_read": false
+  },
+  {
+    "table": "partner_payout_lines",
+    "has_db_schema_write": false,
+    "has_db_schema_read": false,
+    "has_test_write": true,
+    "has_test_read": true
+  },
+  {
+    "table": "partner_payouts",
+    "has_db_schema_write": false,
+    "has_db_schema_read": true,
+    "has_test_write": true,
+    "has_test_read": true
+  },
+  {
+    "table": "partner_revenue",
+    "has_db_schema_write": false,
+    "has_db_schema_read": true,
+    "has_test_write": true,
+    "has_test_read": true
+  },
+  {
+    "table": "product_aliases",
+    "has_db_schema_write": true,
+    "has_db_schema_read": true,
+    "has_test_write": false,
+    "has_test_read": false
+  }
+]

@@ -1,0 +1,1698 @@
+{
+  "ranAt": "2026-08-18T17:48:44.920Z",
+  "live": "https://fundhub.ai",
+  "forbiddenClient": "9af65808-a619-4e65-ae91-239766a006b7",
+  "testClient": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "groundTruth": {
+    "admin": "MISSING intended file. README role sets: FINANCE, STAFF, OPS, HIRING, LENDERS.",
+    "setter": "MISSING intended file. README maps setter into STAFF only.",
+    "inquiry": "docs/journeys/role-inquiry-remover-intended.md specialist desk items 1–7."
+  },
+  "roles": {
+    "admin": {
+      "email": "admin@fundhub.ai",
+      "login": {
+        "ok": true
+      },
+      "landing": {
+        "pathname": "/app/pipeline.html",
+        "h1": "Pipeline",
+        "title": "Fundhub — Pipeline",
+        "roleChip": "fundhub"
+      },
+      "visibleNav": [
+        {
+          "label": "Pipeline",
+          "href": "pipeline.html"
+        },
+        {
+          "label": "Closer Dashboard",
+          "href": "closer-dashboard.html"
+        },
+        {
+          "label": "Call cockpit",
+          "href": "closer-call.html"
+        },
+        {
+          "label": "My numbers",
+          "href": "my-numbers.html"
+        },
+        {
+          "label": "Sales floor",
+          "href": "sales-floor.html"
+        },
+        {
+          "label": "Calendar",
+          "href": "calendar.html"
+        }
+      ],
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-00-landing.png",
+      "visibleNavExpanded": [
+        {
+          "label": "Pipeline",
+          "href": "pipeline.html"
+        },
+        {
+          "label": "Closer Dashboard",
+          "href": "closer-dashboard.html"
+        },
+        {
+          "label": "Call cockpit",
+          "href": "closer-call.html"
+        },
+        {
+          "label": "My numbers",
+          "href": "my-numbers.html"
+        },
+        {
+          "label": "Sales floor",
+          "href": "sales-floor.html"
+        },
+        {
+          "label": "Calendar",
+          "href": "calendar.html"
+        },
+        {
+          "label": "Lenders",
+          "href": "lenders.html"
+        },
+        {
+          "label": "Finance OS",
+          "href": "finance-os.html"
+        },
+        {
+          "label": "Client Control Panel",
+          "href": "client-control-panel.html"
+        },
+        {
+          "label": "Messaging",
+          "href": "messaging.html"
+        },
+        {
+          "label": "Documents",
+          "href": "documents.html"
+        },
+        {
+          "label": "Specialist",
+          "href": "inquiry-remover.html"
+        },
+        {
+          "label": "Company Brain",
+          "href": "company-brain.html"
+        },
+        {
+          "label": "Galaxy",
+          "href": "galaxy.html"
+        },
+        {
+          "label": "Ops & Admin",
+          "href": "ops-admin.html"
+        },
+        {
+          "label": "Agent Editor",
+          "href": "agent-editor.html"
+        },
+        {
+          "label": "Workflows",
+          "href": "automations.html"
+        },
+        {
+          "label": "Journeys",
+          "href": "journeys.html"
+        },
+        {
+          "label": "Message Copy",
+          "href": "template-editor.html"
+        },
+        {
+          "label": "Campaigns",
+          "href": "campaign-manager.html"
+        },
+        {
+          "label": "Social Studio",
+          "href": "social-studio.html"
+        },
+        {
+          "label": "Creative Factory",
+          "href": "creative-factory.html"
+        },
+        {
+          "label": "Staff & Teams",
+          "href": "staff-teams.html"
+        },
+        {
+          "label": "Hiring",
+          "href": "hiring.html"
+        },
+        {
+          "label": "Products & Commissions",
+          "href": "products-commissions.html"
+        },
+        {
+          "label": "Contract templates",
+          "href": "contracts.html"
+        },
+        {
+          "label": "Brand Studio",
+          "href": "brand-studio.html"
+        },
+        {
+          "label": "Client Portal",
+          "href": "client-portal.html"
+        },
+        {
+          "label": "Affiliate",
+          "href": "affiliate.html"
+        }
+      ],
+      "shotNavExpanded": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-00-nav-expanded.png",
+      "net4xx": [],
+      "pageErrors": []
+    },
+    "setter": {
+      "email": "setter@fundhub.ai",
+      "login": {
+        "ok": true
+      },
+      "landing": {
+        "pathname": "/app/pipeline.html",
+        "h1": "Pipeline",
+        "title": "Fundhub — Pipeline",
+        "roleChip": "fundhub"
+      },
+      "visibleNav": [
+        {
+          "label": "Pipeline",
+          "href": "pipeline.html"
+        },
+        {
+          "label": "Closer Dashboard",
+          "href": "closer-dashboard.html"
+        },
+        {
+          "label": "Calendar",
+          "href": "calendar.html"
+        }
+      ],
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-00-landing.png",
+      "visibleNavExpanded": [
+        {
+          "label": "Pipeline",
+          "href": "pipeline.html"
+        },
+        {
+          "label": "Closer Dashboard",
+          "href": "closer-dashboard.html"
+        },
+        {
+          "label": "Calendar",
+          "href": "calendar.html"
+        },
+        {
+          "label": "Client Control Panel",
+          "href": "client-control-panel.html"
+        },
+        {
+          "label": "Messaging",
+          "href": "messaging.html"
+        },
+        {
+          "label": "Documents",
+          "href": "documents.html"
+        },
+        {
+          "label": "Specialist",
+          "href": "inquiry-remover.html"
+        },
+        {
+          "label": "Workflows",
+          "href": "automations.html"
+        },
+        {
+          "label": "Message Copy",
+          "href": "template-editor.html"
+        },
+        {
+          "label": "Contract templates",
+          "href": "contracts.html"
+        }
+      ],
+      "shotNavExpanded": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-00-nav-expanded.png",
+      "net4xx": [],
+      "pageErrors": []
+    },
+    "inquiry": {
+      "email": "inquiry@fundhub.ai",
+      "login": {
+        "ok": true
+      },
+      "landing": {
+        "pathname": "/app/inquiry-remover.html",
+        "h1": "Specialist",
+        "title": "Fundhub — Specialist",
+        "roleChip": "fundhub"
+      },
+      "visibleNav": [
+        {
+          "label": "Client Control Panel",
+          "href": "client-control-panel.html"
+        },
+        {
+          "label": "Messaging",
+          "href": "messaging.html"
+        },
+        {
+          "label": "Documents",
+          "href": "documents.html"
+        },
+        {
+          "label": "Specialist",
+          "href": "inquiry-remover.html"
+        }
+      ],
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-00-landing.png",
+      "visibleNavExpanded": [
+        {
+          "label": "Pipeline",
+          "href": "pipeline.html"
+        },
+        {
+          "label": "Closer Dashboard",
+          "href": "closer-dashboard.html"
+        },
+        {
+          "label": "Calendar",
+          "href": "calendar.html"
+        },
+        {
+          "label": "Client Control Panel",
+          "href": "client-control-panel.html"
+        },
+        {
+          "label": "Messaging",
+          "href": "messaging.html"
+        },
+        {
+          "label": "Documents",
+          "href": "documents.html"
+        },
+        {
+          "label": "Specialist",
+          "href": "inquiry-remover.html"
+        },
+        {
+          "label": "Workflows",
+          "href": "automations.html"
+        },
+        {
+          "label": "Message Copy",
+          "href": "template-editor.html"
+        },
+        {
+          "label": "Contract templates",
+          "href": "contracts.html"
+        }
+      ],
+      "shotNavExpanded": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-00-nav-expanded.png",
+      "net4xx": [],
+      "pageErrors": []
+    }
+  },
+  "matrix": [
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Pipeline",
+      "href": "pipeline.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:48:50 PM EDT LIVE Search ⌘K TEST — Admin Role · admin · 3",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-pipeline.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Closer Dashboard",
+      "href": "closer-dashboard.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "closer-dashboard.html",
+      "h1": "Closer Dashboard",
+      "title": "Fundhub — Closer Dashboard",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Closer Dashboard Tue, Aug 18, 1:48:51 PM EDT Search ⌘K TEST — Admin Role · admin · 30 tabs LIV",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-closer-dashboard.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Call cockpit",
+      "href": "closer-call.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "closer-call.html",
+      "h1": "Kathleen Burleson",
+      "title": "Closer · Call cockpit",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub C-01 / CLOSER NO OPEN SHIFT TEST — ADMIN ROLE Kathleen Burleson Lost — Join call Present Send contract W",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-closer-call.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "My numbers",
+      "href": "my-numbers.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "my-numbers.html",
+      "h1": "No monthly deposits target in staff_targets",
+      "title": "My numbers · Fundhub",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub C-02 / MY NUMBERS OFF SHIFT TEST — ADMIN ROLE CASH COLLECTED · THIS MONTH $0 No monthly deposits target ",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-my-numbers.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Sales floor",
+      "href": "sales-floor.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "sales-floor.html",
+      "h1": "Booked 1 · Held 1 · No daily sales_manager target in staff_targets",
+      "title": "Sales floor · Fundhub",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub M-01 / SALES FLOOR 0 CLOSERS ON SHIFT TEST — ADMIN ROLE TODAY 0 Booked 1 · Held 1 · No daily sales_manag",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-sales-floor.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Calendar",
+      "href": "calendar.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "calendar.html",
+      "h1": "Calendar",
+      "title": "Fundhub — Calendar",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Calendar ORG: FUNDHUB Tue, Aug 18, 1:48:58 PM EDT LIVE Search ⌘K TEST — Admin Role · admin · 3",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-calendar.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Lenders",
+      "href": "lenders.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "lenders.html",
+      "h1": "Lenders",
+      "title": "Fundhub · Lenders",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ ⬡ Lenders ▩ Finance OS CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Lenders LIVE Tue, Aug 18, 1:49:00 PM EDT Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE Sign out The lender list starts empty on purpose. Export the s",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-lenders.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Finance OS",
+      "href": "finance-os.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "finance-os.html",
+      "h1": "Finance OS",
+      "title": "Fundhub — Finance OS",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ ⬡ Lenders ▩ Finance OS CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub FINANCE Finance OS Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE Sign out COMPANY MONEY Not connected The bank is not linked. Nothing here is a made-up balance",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-finance-os.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Client Control Panel",
+      "href": "client-control-panel.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "client-control-panel.html",
+      "h1": "Client Control Panel",
+      "title": "Fundhub — Client Control Panel",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Client Control Panel ORG: FUNDHUB Tue, Aug 18, 1:49:03 PM EDT LIVE Search ⌘K TEST — Admin Role · admin · 30 t",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-client-control-panel.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Messaging",
+      "href": "messaging.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "messaging.html",
+      "h1": "Messaging",
+      "title": "Fundhub — Messaging",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Messaging ORG: FUNDHUB Tue, Aug 18, 1:49:05 PM EDT LIVE Search ⌘K TEST — Admin Role · admin · 30 tabs",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-messaging.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Documents",
+      "href": "documents.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "documents.html",
+      "h1": "Documents",
+      "title": "Fundhub — Documents",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub WORK Documents 0 PAST 14 DAYS PENDING ONLY Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE Sign out DC-00 / ",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-documents.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Specialist",
+      "href": "inquiry-remover.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:49:08 PM EDT LIVE Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE S",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-inquiry-remover.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Company Brain",
+      "href": "company-brain.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "company-brain.html",
+      "h1": "Company Brain",
+      "title": "Fundhub — Company Brain",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub WORK · COMPANY BRAIN Company Brain Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE Sign out New chat YOUR CH",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-company-brain.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Galaxy",
+      "href": "galaxy.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "galaxy.html",
+      "h1": "Galaxy",
+      "title": "Fundhub — Galaxy",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ ✷ Galaxy ⚙ Ops & Admin AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Galaxy 12 workers · 2 working · 10 idle Tue, Aug 18, 1:49:11 PM EDT LIVE Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE Sign out LIVE Open shifts, rec",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-galaxy.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Ops & Admin",
+      "href": "ops-admin.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "ops-admin.html",
+      "h1": "Ops & Admin",
+      "title": "Fundhub — Ops & Admin",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ ✷ Galaxy ⚙ Ops & Admin AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Ops & Admin ORG: FUNDHUB Last 7 Days — Aug 12–18 ▾ Tue, Aug 18, 1:49:13 PM EDT Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE Sign out MoneyKPIs · AR · compli",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-ops-admin.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Agent Editor",
+      "href": "agent-editor.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "agent-editor.html",
+      "h1": "Agent Editor",
+      "title": "Fundhub — Agent Editor",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ ◈ Agent Editor ⇄ Workflows ⇝ Journeys ✎ Message Copy MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub AUTOMATION Agent Editor 2 LIVE · 0 SHADOW · 20 DRAFT + NEW AGENT Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE Sign out AGENTS 22",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-agent-editor.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Workflows",
+      "href": "automations.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "automations.html",
+      "h1": "Automations",
+      "title": "Fundhub — Automations",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ ◈ Agent Editor ⇄ Workflows ⇝ Journeys ✎ Message Copy MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Automations ORG: FUNDHUB Tue, Aug 18, 1:49:16 PM EDT LIVE Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE Sign out WORKFLOWS 51 E",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-automations.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Journeys",
+      "href": "journeys.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "journeys.html",
+      "h1": "Client",
+      "title": "Fundhub — Journeys",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ ◈ Agent Editor ⇄ Workflows ⇝ Journeys ✎ Message Copy MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub fundhub JOURNEYS UNDO SAVE VERSION TEST AGAINST THE CODE APPLY TO CODE JOURNEYS Client 13 Setter 6 Closer 9 Funding Advisor 5 Affiliat",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-journeys.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Message Copy",
+      "href": "template-editor.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "template-editor.html",
+      "h1": "Message Copy",
+      "title": "Fundhub — Message Copy",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ ◈ Agent Editor ⇄ Workflows ⇝ Journeys ✎ Message Copy MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub AUTOMATION Message Copy — LIVE Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE Sign out DRAFT TEMPLATES — WILL NOT SEND These keys ",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-template-editor.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Campaigns",
+      "href": "campaign-manager.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "campaign-manager.html",
+      "h1": "Campaigns",
+      "title": "Fundhub — Campaigns",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ◇ Campaigns ◉ Social Studio ✳ Creative Factory ADMIN ▾ PORTALS ▾ fundhub MARKETING Campaigns AMOUNTS · THE AD ACCOUNT'S OWN CURRENCY PARTNER Choose a partner DEMO Partner — Northlight Capital DEMO Partner — Quillc",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-campaign-manager.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Social Studio",
+      "href": "social-studio.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "social-studio.html",
+      "h1": "Social Studio",
+      "title": "Fundhub — Social Studio",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ◇ Campaigns ◉ Social Studio ✳ Creative Factory ADMIN ▾ PORTALS ▾ fundhub MARKETING Social Studio PARTNER DEMO Partner — Northlight Capital DEMO Partner — Quillcrest White Label E2E WL Book LLC E2E WL Click Co E2E ",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-social-studio.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Creative Factory",
+      "href": "creative-factory.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "creative-factory.html",
+      "h1": "Creative Factory",
+      "title": "Fundhub — Creative Factory",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ◇ Campaigns ◉ Social Studio ✳ Creative Factory ADMIN ▾ PORTALS ▾ fundhub MARKETING Creative Factory DEMO PARTNER — NORTHLIGHT CAPITAL READ ONLY Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE Sign out Loading… ",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-creative-factory.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Staff & Teams",
+      "href": "staff-teams.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "staff-teams.html",
+      "h1": "Staff & Teams",
+      "title": "Fundhub — Staff & Teams",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ ⚇ Staff & Teams ⊕ Hiring ⛁ Products & Commissions ✒ Contract templates ◆ Brand Studio PORTALS ▾ fundhub SETUP Staff & Teams — ON SHIFT + ADD PERSON Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE Sign o",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-staff-teams.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Hiring",
+      "href": "hiring.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "hiring.html",
+      "h1": "Hiring",
+      "title": "Fundhub — Hiring",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ ⚇ Staff & Teams ⊕ Hiring ⛁ Products & Commissions ✒ Contract templates ◆ Brand Studio PORTALS ▾ fundhub SETUP Hiring BENCH 0 / 12 RESET FILTERS Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE Sign out S",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-hiring.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Products & Commissions",
+      "href": "products-commissions.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "products-commissions.html",
+      "h1": "Products & Commissions",
+      "title": "Fundhub — Products & Commissions",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ ⚇ Staff & Teams ⊕ Hiring ⛁ Products & Commissions ✒ Contract templates ◆ Brand Studio PORTALS ▾ fundhub SETUP Products & Commissions VIEW PAYOUT LEDGER → + ADD PRODUCT Search ⌘K TEST — Admin Role · admin ·",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-products-commissions.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Contract templates",
+      "href": "contracts.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "contracts.html",
+      "h1": "Contract templates",
+      "title": "Fundhub — Contract templates",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ ⚇ Staff & Teams ⊕ Hiring ⛁ Products & Commissions ✒ Contract templates ◆ Brand Studio PORTALS ▾ fundhub SETUP Contract templates — LIVE Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE Sign out HOW THIS ",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-contracts.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Brand Studio",
+      "href": "brand-studio.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "brand-studio.html",
+      "h1": "Brand Studio",
+      "title": "Fundhub — Brand Studio",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ ⚇ Staff & Teams ⊕ Hiring ⛁ Products & Commissions ✒ Contract templates ◆ Brand Studio PORTALS ▾ fundhub SETUP Brand Studio DRAFT RESET Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE Sign out BS-00 / BR",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-brand-studio.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Client Portal",
+      "href": "client-portal.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "client-portal.html",
+      "h1": "Client Portal",
+      "title": "Fundhub — Client Portal",
+      "snippet": "Client Portal STATE BEFORE CALL IN PROGRESS JUST FUNDED — — Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE Sign out Welcome to your Fundhub portal We could not load your file. Use the link we sent you, or sign in again. Welcome video is not available CP-01 / START HERE FUNDHU",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-client-portal.png"
+    },
+    {
+      "role": "admin",
+      "source": "nav",
+      "screen": "Affiliate",
+      "href": "affiliate.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "affiliate.html",
+      "h1": "Affiliate",
+      "title": "Fundhub — Affiliate",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ ◐ Client Portal ⇗ Affiliate fundhub MY WORK Affiliate TEST — ADMIN ROLE Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE Sign out YOUR REFERRAL LINK COPY LINK COPY CODE CODE No code yet CLICKS ",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-nav-affiliate.png"
+    },
+    {
+      "role": "setter",
+      "source": "nav",
+      "screen": "Pipeline",
+      "href": "pipeline.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:49:46 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-nav-pipeline.png"
+    },
+    {
+      "role": "setter",
+      "source": "nav",
+      "screen": "Closer Dashboard",
+      "href": "closer-dashboard.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "closer-dashboard.html",
+      "h1": "Closer Dashboard",
+      "title": "Fundhub — Closer Dashboard",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Closer Dashboard Tue, Aug 18, 1:49:47 PM EDT Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out T— TEST — Setter Role setter DEAL CALCULATORS Deal Funding Calculator",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-nav-closer-dashboard.png"
+    },
+    {
+      "role": "setter",
+      "source": "nav",
+      "screen": "Calendar",
+      "href": "calendar.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "calendar.html",
+      "h1": "Calendar",
+      "title": "Fundhub — Calendar",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Calendar ORG: FUNDHUB Tue, Aug 18, 1:49:49 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out Day Week ‹ › Today Tuesday, August 18 BOOKED — DONE — NO-SH",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-nav-calendar.png"
+    },
+    {
+      "role": "setter",
+      "source": "nav",
+      "screen": "Client Control Panel",
+      "href": "client-control-panel.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "client-control-panel.html",
+      "h1": "Client Control Panel",
+      "title": "Fundhub — Client Control Panel",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Client Control Panel ORG: FUNDHUB Tue, Aug 18, 1:49:51 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out — No client open — pick one below. C",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-nav-client-control-panel.png"
+    },
+    {
+      "role": "setter",
+      "source": "nav",
+      "screen": "Messaging",
+      "href": "messaging.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "messaging.html",
+      "h1": "Messaging",
+      "title": "Fundhub — Messaging",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Messaging ORG: FUNDHUB Tue, Aug 18, 1:49:52 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out ⌕ All 0 Needs reply 0 Nothing is waitin",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-nav-messaging.png"
+    },
+    {
+      "role": "setter",
+      "source": "nav",
+      "screen": "Documents",
+      "href": "documents.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "documents.html",
+      "h1": "Documents",
+      "title": "Fundhub — Documents",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub WORK Documents 0 PAST 14 DAYS PENDING ONLY Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out DC-00 / TOTAL 7 across four classes DC-00 / AWAITING SIGNATURE",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-nav-documents.png"
+    },
+    {
+      "role": "setter",
+      "source": "nav",
+      "screen": "Specialist",
+      "href": "inquiry-remover.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:49:55 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out Inquiries Repair T— TEST — Setter Role setter ",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-nav-inquiry-remover.png"
+    },
+    {
+      "role": "setter",
+      "source": "nav",
+      "screen": "Workflows",
+      "href": "automations.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "automations.html",
+      "h1": "Automations",
+      "title": "Fundhub — Automations",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ AUTOMATION ▾ ⇄ Workflows ✎ Message Copy ADMIN ▾ fundhub / Automations ORG: FUNDHUB Tue, Aug 18, 1:49:57 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out WORKFLOWS 51 ENGINE ON EVER TRIGGERED 42 of 51 RAIL All rails AF AI-SET AT BC ",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-nav-automations.png"
+    },
+    {
+      "role": "setter",
+      "source": "nav",
+      "screen": "Message Copy",
+      "href": "template-editor.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "template-editor.html",
+      "h1": "Message Copy",
+      "title": "Fundhub — Message Copy",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ AUTOMATION ▾ ⇄ Workflows ✎ Message Copy ADMIN ▾ fundhub AUTOMATION Message Copy — LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out DRAFT TEMPLATES — WILL NOT SEND These keys still have [DRAFT] placeholder bodies. The dispatcher refuses th",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-nav-template-editor.png"
+    },
+    {
+      "role": "setter",
+      "source": "nav",
+      "screen": "Contract templates",
+      "href": "contracts.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "contracts.html",
+      "h1": "Contract templates",
+      "title": "Fundhub — Contract templates",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ ✒ Contract templates fundhub SETUP Contract templates — LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out HOW THIS WORKS Build a contract once. Use it many times. Upload a PDF, or type the words here. Add the blanks pe",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-nav-contracts.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "nav",
+      "screen": "Pipeline",
+      "href": "pipeline.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:55 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card St",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-nav-pipeline.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "nav",
+      "screen": "Closer Dashboard",
+      "href": "closer-dashboard.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "closer-dashboard.html",
+      "h1": "Closer Dashboard",
+      "title": "Fundhub — Closer Dashboard",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Closer Dashboard Tue, Aug 18, 1:50:57 PM EDT Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out T— TEST — Inquiry Specialist Role inquiry spe",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-nav-closer-dashboard.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "nav",
+      "screen": "Calendar",
+      "href": "calendar.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "calendar.html",
+      "h1": "Calendar",
+      "title": "Fundhub — Calendar",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Calendar ORG: FUNDHUB Tue, Aug 18, 1:50:58 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out Day Week ‹ › Today Tuesday, August ",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-nav-calendar.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "nav",
+      "screen": "Client Control Panel",
+      "href": "client-control-panel.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "client-control-panel.html",
+      "h1": "Client Control Panel",
+      "title": "Fundhub — Client Control Panel",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Client Control Panel ORG: FUNDHUB Tue, Aug 18, 1:51:00 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out — No client ",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-nav-client-control-panel.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "nav",
+      "screen": "Messaging",
+      "href": "messaging.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "messaging.html",
+      "h1": "Messaging",
+      "title": "Fundhub — Messaging",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Messaging ORG: FUNDHUB Tue, Aug 18, 1:51:02 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out ⌕ All 0 Needs r",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-nav-messaging.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "nav",
+      "screen": "Documents",
+      "href": "documents.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "documents.html",
+      "h1": "Documents",
+      "title": "Fundhub — Documents",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub WORK Documents 0 PAST 14 DAYS PENDING ONLY Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out DC-00 / TOTAL 7 across four classes DC",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-nav-documents.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "nav",
+      "screen": "Specialist",
+      "href": "inquiry-remover.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:05 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out Inquiries Repair T— TE",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-nav-inquiry-remover.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "nav",
+      "screen": "Workflows",
+      "href": "automations.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "automations.html",
+      "h1": "Automations",
+      "title": "Fundhub — Automations",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ AUTOMATION ▾ ⇄ Workflows ✎ Message Copy ADMIN ▾ fundhub / Automations ORG: FUNDHUB Tue, Aug 18, 1:51:07 PM EDT LIVE WORKFLOWS 51 ENGINE ON EVER TRIGGERED 42 of 51 RAIL All rails AF AI-SET AT BC BS C DPC DS F N OTHER S SYS U ✓ Engine is on. 42 of 51 workflo",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-nav-automations.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "nav",
+      "screen": "Message Copy",
+      "href": "template-editor.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "template-editor.html",
+      "h1": "Message Copy",
+      "title": "Fundhub — Message Copy",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ AUTOMATION ▾ ⇄ Workflows ✎ Message Copy ADMIN ▾ fundhub AUTOMATION Message Copy — LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out DRAFT TEMPLATES — WILL NOT SEND These keys still have [DRAFT] placeholder bodies. T",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-nav-template-editor.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "nav",
+      "screen": "Contract templates",
+      "href": "contracts.html",
+      "opened": true,
+      "bounced": false,
+      "landed": "contracts.html",
+      "h1": "Contract templates",
+      "title": "Fundhub — Contract templates",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ ✒ Contract templates fundhub SETUP Contract templates — LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out HOW THIS WORKS Build a contract once. Use it many times. Upload a PDF, or type the words",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-nav-contracts.png"
+    }
+  ],
+  "hidden": [
+    {
+      "role": "admin",
+      "source": "typed-hidden",
+      "screen": "Home",
+      "href": "partner-galaxy.html",
+      "wasInNav": false,
+      "opened": true,
+      "bounced": false,
+      "landed": "partner-galaxy.html",
+      "h1": "Galaxy",
+      "title": "Your Galaxy — Partner View",
+      "snippet": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Galaxy Your page · sign in to see your address 8 partners on file Tue, Aug 18, 1:49:37 PM EDT LIVE Search ⌘K TEST — Admin Role · admin · 30 tabs LIVE Sign out GX-01 / READING TH",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-typed-home.png"
+    },
+    {
+      "role": "admin",
+      "source": "typed-hidden",
+      "screen": "Present",
+      "href": "present.html",
+      "wasInNav": false,
+      "opened": true,
+      "bounced": false,
+      "landed": "present.html",
+      "h1": "Open Present from a contact. This page needs ?contact= on the URL.",
+      "title": "Closer · Present",
+      "snippet": "PRESENT Open Present from a contact. This page needs ?contact= on the URL. Back to the call cockpit",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-typed-present.png"
+    },
+    {
+      "role": "admin",
+      "source": "typed-hidden",
+      "screen": "Client Portal as a client",
+      "href": "/portal-login.html",
+      "wasInNav": false,
+      "opened": true,
+      "bounced": false,
+      "landed": "portal-login.html",
+      "h1": "fundhub portal",
+      "title": "Fundhub — Client portal sign-in",
+      "snippet": "fundhub portal Client sign-in Email me a sign-in link No password needed. Type the email address on your Fundhub file and we will send you a link that signs you in. The link works once and lasts 15 minutes. ← Back to fundhub.ai",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/admin-typed-client-portal-as-a-client.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Home",
+      "href": "partner-galaxy.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:02 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-home.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Call cockpit",
+      "href": "closer-call.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:04 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-call-cockpit.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "My numbers",
+      "href": "my-numbers.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:05 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-my-numbers.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Sales floor",
+      "href": "sales-floor.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:07 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-sales-floor.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Lenders",
+      "href": "lenders.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:09 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-lenders.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Finance OS",
+      "href": "finance-os.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:11 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-finance-os.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Company Brain",
+      "href": "company-brain.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:12 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-company-brain.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Galaxy",
+      "href": "galaxy.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:14 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-galaxy.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Ops & Admin",
+      "href": "ops-admin.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:16 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-ops-&-admin.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Agent Editor",
+      "href": "agent-editor.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:18 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-agent-editor.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Journeys",
+      "href": "journeys.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:19 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-journeys.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Campaigns",
+      "href": "campaign-manager.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:21 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-campaigns.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Social Studio",
+      "href": "social-studio.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:23 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-social-studio.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Creative Factory",
+      "href": "creative-factory.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:24 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-creative-factory.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Staff & Teams",
+      "href": "staff-teams.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:26 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-staff-&-teams.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Hiring",
+      "href": "hiring.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:28 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-hiring.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Products & Commissions",
+      "href": "products-commissions.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:30 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-products-&-commissions.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Brand Studio",
+      "href": "brand-studio.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:31 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-brand-studio.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Client Portal",
+      "href": "client-portal.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:33 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-client-portal.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Affiliate",
+      "href": "affiliate.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "pipeline.html",
+      "h1": "Pipeline",
+      "title": "Fundhub — Pipeline",
+      "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ▦ Calendar CLIENT OPS ▾ AUTOMATION ▾ ADMIN ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:50:35 PM EDT LIVE Search ⌘K TEST — Setter Role · setter · 10 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: A",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-affiliate.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Present",
+      "href": "present.html",
+      "wasInNav": false,
+      "opened": true,
+      "bounced": false,
+      "landed": "present.html",
+      "h1": "Open Present from a contact. This page needs ?contact= on the URL.",
+      "title": "Closer · Present",
+      "snippet": "PRESENT Open Present from a contact. This page needs ?contact= on the URL. Back to the call cockpit",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-present.png"
+    },
+    {
+      "role": "setter",
+      "source": "typed-hidden",
+      "screen": "Client Portal as a client",
+      "href": "/portal-login.html",
+      "wasInNav": false,
+      "opened": true,
+      "bounced": false,
+      "landed": "portal-login.html",
+      "h1": "fundhub portal",
+      "title": "Fundhub — Client portal sign-in",
+      "snippet": "fundhub portal Client sign-in Email me a sign-in link No password needed. Type the email address on your Fundhub file and we will send you a link that signs you in. The link works once and lasts 15 minutes. ← Back to fundhub.ai",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/setter-typed-client-portal-as-a-client.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Home",
+      "href": "partner-galaxy.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:12 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out Inquiries Repair T— TE",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-home.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Call cockpit",
+      "href": "closer-call.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:14 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out Inquiries Repair T— TE",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-call-cockpit.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "My numbers",
+      "href": "my-numbers.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:16 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out Inquiries Repair T— TE",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-my-numbers.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Sales floor",
+      "href": "sales-floor.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:17 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out Inquiries Repair T— TE",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-sales-floor.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Lenders",
+      "href": "lenders.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:19 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out Inquiries Repair T— TE",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-lenders.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Finance OS",
+      "href": "finance-os.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:21 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out Inquiries Repair T— TE",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-finance-os.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Company Brain",
+      "href": "company-brain.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:23 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out Inquiries Repair T— TE",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-company-brain.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Galaxy",
+      "href": "galaxy.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:24 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out Inquiries Repair T— TE",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-galaxy.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Ops & Admin",
+      "href": "ops-admin.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:26 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out Inquiries Repair T— TE",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-ops-&-admin.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Agent Editor",
+      "href": "agent-editor.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:28 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out Inquiries Repair T— TE",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-agent-editor.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Journeys",
+      "href": "journeys.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:29 PM EDT LIVE Inquiries Repair T— TEST — Inquiry Specialist Role Specialist NEED ME — WORKED — CALLS — CONFIRMED — QUEUE B",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-journeys.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Campaigns",
+      "href": "campaign-manager.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:31 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs ··· Sign out Inquiries Repair T— TES",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-campaigns.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Social Studio",
+      "href": "social-studio.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:33 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out Inquiries Repair T— TE",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-social-studio.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Creative Factory",
+      "href": "creative-factory.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:35 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out Inquiries Repair T— TE",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-creative-factory.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Staff & Teams",
+      "href": "staff-teams.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:36 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs ··· Sign out Inquiries Repair T— TES",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-staff-&-teams.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Hiring",
+      "href": "hiring.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:38 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs ··· Sign out Inquiries Repair T— TES",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-hiring.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Products & Commissions",
+      "href": "products-commissions.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:40 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out Inquiries Repair T— TE",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-products-&-commissions.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Brand Studio",
+      "href": "brand-studio.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:41 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs ··· Sign out Inquiries Repair T— TES",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-brand-studio.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Client Portal",
+      "href": "client-portal.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:43 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs LIVE Sign out Inquiries Repair T— TE",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-client-portal.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Affiliate",
+      "href": "affiliate.html",
+      "wasInNav": false,
+      "opened": false,
+      "bounced": true,
+      "landed": "inquiry-remover.html",
+      "h1": "Specialist",
+      "title": "Fundhub — Specialist",
+      "snippet": "‹‹ SALES ▾ CLIENT OPS ▾ ◎ Client Control Panel ✉ Messaging ▧ Documents ⊘ Specialist AUTOMATION ▾ ADMIN ▾ fundhub / Specialist ORG: FUNDHUB Tue, Aug 18, 1:51:45 PM EDT LIVE Search ⌘K TEST — Inquiry Specialist Role · inquiry_specialist · 10 tabs ··· Sign out Inquiries Repair T— TES",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-affiliate.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Present",
+      "href": "present.html",
+      "wasInNav": false,
+      "opened": true,
+      "bounced": false,
+      "landed": "present.html",
+      "h1": "Open Present from a contact. This page needs ?contact= on the URL.",
+      "title": "Closer · Present",
+      "snippet": "PRESENT Open Present from a contact. This page needs ?contact= on the URL. Back to the call cockpit",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-present.png"
+    },
+    {
+      "role": "inquiry",
+      "source": "typed-hidden",
+      "screen": "Client Portal as a client",
+      "href": "/portal-login.html",
+      "wasInNav": false,
+      "opened": true,
+      "bounced": false,
+      "landed": "portal-login.html",
+      "h1": "fundhub portal",
+      "title": "Fundhub — Client portal sign-in",
+      "snippet": "fundhub portal Client sign-in Email me a sign-in link No password needed. Type the email address on your Fundhub file and we will send you a link that signs you in. The link works once and lasts 15 minutes. ← Back to fundhub.ai",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-typed-client-portal-as-a-client.png"
+    }
+  ],
+  "desk": {
+    "landingPath": "/app/inquiry-remover.html",
+    "landedOnSpecialist": true,
+    "shotLanding": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-00-landing.png",
+    "shotInquiries": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-desk-inquiries.png",
+    "item1_sideMenuSpecialist": true,
+    "item2_toggle": {
+      "present": true,
+      "inquiriesOnFirst": true
+    },
+    "item3_needMe": {
+      "visible": true,
+      "value": "—"
+    },
+    "item4_inquiryQueue": {
+      "caseQueueText": "▶TEST Client Role — 0 Queued complete LETTER — — ▶TEST Client Role — 0 Queued complete LETTER — — ▶TEST Client Role — 0 Queued complete LETTER — —",
+      "caseQueueLoading": false,
+      "workQueueText": "Loading inquiry queue…",
+      "workQueueLoading": true,
+      "casesFromApi": [
+        {
+          "case_id": "f872cc9d-d0fb-484b-a0a5-fb90e031b45d",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "isTest": true,
+          "isForbidden": false
+        },
+        {
+          "case_id": "e235efc2-2223-4d31-9a24-2a57313fce34",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "isTest": true,
+          "isForbidden": false
+        },
+        {
+          "case_id": "1d212e99-a7f7-4947-920c-4f55904b512e",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "isTest": true,
+          "isForbidden": false
+        }
+      ]
+    },
+    "whoRole": "Specialist",
+    "testCase": {
+      "opened": true,
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "sendButtonsSeen": [
+        "SEND"
+      ],
+      "sendPressed": false,
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-desk-test-case.png"
+    },
+    "repair": {
+      "repairSelected": true,
+      "paneHidden": false,
+      "text": "No repair files yet. A client shows up here after they start repair. Open Pipeline",
+      "note": "Click a row to see letters. Nothing mails until you press Send letters.",
+      "err": "",
+      "empty": true,
+      "loading": false,
+      "needMe": "0",
+      "stuckHidden": true,
+      "stuckVisible": false,
+      "stuckText": "",
+      "confirmBureauVisible": false,
+      "filesFromApi": [],
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g2/inquiry-desk-repair.png",
+      "testRowOpened": false,
+      "testRowReason": "test client not in repair list"
+    },
+    "stuck": {
+      "hidden": true,
+      "visible": false,
+      "text": "",
+      "confirmBureauVisible": false,
+      "confirmPressed": false
+    },
+    "forbiddenListedInQueue": false
+  },
+  "notes": []
+}

@@ -1,0 +1,13 @@
+{
+  "http": 401,
+  "last_event": null,
+  "created_at": null,
+  "subject": null,
+  "from_kind": "other",
+  "to_is_plus_tag": false,
+  "reply_to_present": false,
+  "reply_to_kind": null,
+  "has_sign_link": false,
+  "has_unsubscribe_link": false,
+  "list_unsubscribe_header": false
+}

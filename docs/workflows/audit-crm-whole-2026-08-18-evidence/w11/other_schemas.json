@@ -1,0 +1,22 @@
+[
+  {
+    "schema": "auth",
+    "table_count_visible": 23,
+    "note": "names visible in pg_class; row counts not queried (PII risk / grants unknown)"
+  },
+  {
+    "schema": "storage",
+    "table_count_visible": 8,
+    "note": "names visible in pg_class; row counts not queried (PII risk / grants unknown)"
+  },
+  {
+    "schema": "realtime",
+    "table_count_visible": 2,
+    "note": "names visible in pg_class; row counts not queried (PII risk / grants unknown)"
+  },
+  {
+    "schema": "vault",
+    "table_count_visible": 1,
+    "note": "names visible in pg_class; row counts not queried (PII risk / grants unknown)"
+  }
+]

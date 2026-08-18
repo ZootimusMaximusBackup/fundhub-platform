@@ -1,0 +1,339 @@
+{
+  "label": "after",
+  "at": "2026-08-18T19:14:46.178Z",
+  "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+  "crs_id": "c1f83e6b-a624-4f28-a32a-531a530b3ad4",
+  "card_id": "0a8e8863-5094-4fbc-af0f-c37e5a457c97",
+  "discovered": {
+    "clients_has_stage_column": false,
+    "clients_has_crs_paid_column": false,
+    "clients_has_entitlement_column": false,
+    "payish_client_columns": [],
+    "crs_paid_lives_in": "clients.custom_fields.crs_paid (jsonb). clients.crs_paid column does not exist.",
+    "client_custom_fields_table": true,
+    "client_custom_fields_payish_columns": [
+      {
+        "column_name": "analyzer_issues_summary",
+        "data_type": "text"
+      },
+      {
+        "column_name": "analyzer_last_run_date",
+        "data_type": "date"
+      },
+      {
+        "column_name": "analyzer_path",
+        "data_type": "text"
+      },
+      {
+        "column_name": "analyzer_path_raw",
+        "data_type": "text"
+      },
+      {
+        "column_name": "analyzer_prequal_amount",
+        "data_type": "text"
+      },
+      {
+        "column_name": "analyzer_report_url",
+        "data_type": "text"
+      },
+      {
+        "column_name": "analyzer_result_type",
+        "data_type": "text"
+      },
+      {
+        "column_name": "analyzer_score",
+        "data_type": "numeric"
+      },
+      {
+        "column_name": "analyzer_status",
+        "data_type": "text"
+      },
+      {
+        "column_name": "cf_analyzer_cost_of_delay",
+        "data_type": "text"
+      },
+      {
+        "column_name": "cf_analyzer_recommendation",
+        "data_type": "text"
+      },
+      {
+        "column_name": "cf_crs_charge_amount",
+        "data_type": "text"
+      },
+      {
+        "column_name": "cf_crs_pull_scope",
+        "data_type": "text"
+      },
+      {
+        "column_name": "cf_crs_softpull_consent",
+        "data_type": "text"
+      },
+      {
+        "column_name": "cf_crs_softpull_consent_at",
+        "data_type": "date"
+      },
+      {
+        "column_name": "cf_diy_paid",
+        "data_type": "ARRAY"
+      },
+      {
+        "column_name": "cf_precall_deposit_paid_total",
+        "data_type": "text"
+      },
+      {
+        "column_name": "cf_reanalyzer_prequal_amount",
+        "data_type": "text"
+      },
+      {
+        "column_name": "cf_reanalyzer_report_url",
+        "data_type": "text"
+      },
+      {
+        "column_name": "crs_fico_score",
+        "data_type": "numeric"
+      },
+      {
+        "column_name": "crs_inquiries_eq",
+        "data_type": "numeric"
+      },
+      {
+        "column_name": "crs_inquiries_ex",
+        "data_type": "numeric"
+      },
+      {
+        "column_name": "crs_inquiries_tu",
+        "data_type": "numeric"
+      },
+      {
+        "column_name": "crs_late_payments_count",
+        "data_type": "numeric"
+      },
+      {
+        "column_name": "crs_negative_items_count",
+        "data_type": "numeric"
+      },
+      {
+        "column_name": "crs_paid",
+        "data_type": "ARRAY"
+      },
+      {
+        "column_name": "crs_snapshot_date",
+        "data_type": "date"
+      },
+      {
+        "column_name": "crs_status",
+        "data_type": "text"
+      },
+      {
+        "column_name": "crs_utilization_percent",
+        "data_type": "numeric"
+      },
+      {
+        "column_name": "repair_amount_paid",
+        "data_type": "text"
+      }
+    ]
+  },
+  "client": {
+    "id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+    "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+    "email": "sim+1787079946953@demo.fundhub.local",
+    "is_demo": true,
+    "outcome_tier": "FULL_FUNDING",
+    "ghl_contact_id_present": true,
+    "updated_at": "2026-08-18T19:14:45.155Z",
+    "created_at": "2026-08-18T19:05:46.982Z",
+    "custom_fields": {
+      "crs_paid": true,
+      "crs_status": "Requested",
+      "analyzer_path": "Funding",
+      "crs_pull_scope": "consumer_only",
+      "ghl_link_dry_run": true,
+      "round_hold_reason": "Awaiting CRS",
+      "total_funding_estimate": 125000,
+      "analyzer_prequal_amount": 125000
+    }
+  },
+  "custom_fields_pay_keys": {
+    "crs_paid": true,
+    "deposit_paid": null,
+    "sale_closed": null,
+    "crs_status": "Requested",
+    "crs_pull_scope": "consumer_only",
+    "analyzer_path": "Funding",
+    "round_hold_reason": "Awaiting CRS",
+    "lifecycle_status": null
+  },
+  "client_custom_fields_row": null,
+  "cards": [
+    {
+      "id": "0a8e8863-5094-4fbc-af0f-c37e5a457c97",
+      "pipeline_id": "1941084f-a432-477e-8638-f1245e79a1fe",
+      "stage_id": "157bfb4b-aa33-4ed4-a1ad-bb44777aebf4",
+      "entered_at": "2026-08-18T19:05:47.662Z",
+      "updated_at": "2026-08-18T19:12:05.082Z",
+      "pipeline_key": "sales",
+      "stage_key": "decision_rendered",
+      "stage_name": "Decision Rendered"
+    }
+  ],
+  "named_card": {
+    "id": "0a8e8863-5094-4fbc-af0f-c37e5a457c97",
+    "pipeline_id": "1941084f-a432-477e-8638-f1245e79a1fe",
+    "stage_id": "157bfb4b-aa33-4ed4-a1ad-bb44777aebf4",
+    "entered_at": "2026-08-18T19:05:47.662Z",
+    "updated_at": "2026-08-18T19:12:05.082Z",
+    "pipeline_key": "sales",
+    "stage_key": "decision_rendered",
+    "stage_name": "Decision Rendered"
+  },
+  "card_stage": {
+    "pipeline_key": "sales",
+    "stage_key": "decision_rendered",
+    "stage_name": "Decision Rendered"
+  },
+  "entitlements": {
+    "catalog_count": 5,
+    "catalog_codes": [
+      "credit-analysis-report",
+      "credit-optimization-roadmap",
+      "funding-snapshot",
+      "bank-lender-match-list",
+      "metro2-letter-pack"
+    ],
+    "held_count": 0,
+    "locked_count": 5,
+    "held_codes": [],
+    "locked_codes": [
+      "credit-analysis-report",
+      "credit-optimization-roadmap",
+      "funding-snapshot",
+      "bank-lender-match-list",
+      "metro2-letter-pack"
+    ],
+    "portal_tile_note": "client-portal.html paints 6 tiles; FUNDING_MASTERY maps to null so it stays locked",
+    "rows": [],
+    "product_entitlements": []
+  },
+  "transactions": [
+    {
+      "id": "291415d1-cc08-4c1e-8b1e-f54d86ce7888",
+      "product_name": "Business Financial Assessment",
+      "amount_paid": "32.00",
+      "status": "succeeded",
+      "provider": "commas",
+      "provider_ref": "wpay-sim-41a3199f-pay-noid",
+      "created_at": "2026-08-18T19:14:40.856Z"
+    },
+    {
+      "id": "c910b0be-4884-4f81-aff3-a9cba58b578a",
+      "product_name": "Business Financial Assessment",
+      "amount_paid": "32.00",
+      "status": "succeeded",
+      "provider": "commas",
+      "provider_ref": "wpay-sim-41a3199f-pay-withid",
+      "created_at": "2026-08-18T19:14:41.720Z"
+    }
+  ],
+  "sales": [
+    {
+      "id": "75429aa0-2105-4e4d-858a-1b57b605f4ed",
+      "status": "active",
+      "sold_at": "2026-08-18T19:14:42.967Z",
+      "external_ref": "wpay-sim-41a3199f-pay-noid",
+      "product_code": "diagnostic",
+      "product_name": "$32 Diagnostic"
+    }
+  ],
+  "sale_payments": [
+    {
+      "id": "214ac4e8-2f86-43d0-b9a4-6ccff39d708d",
+      "sale_id": "75429aa0-2105-4e4d-858a-1b57b605f4ed",
+      "kind": "deposit",
+      "amount": "32.00",
+      "created_at": "2026-08-18T19:14:43.260Z"
+    },
+    {
+      "id": "917c6441-9e89-4e0f-98c6-b44d24c8ff3c",
+      "sale_id": "75429aa0-2105-4e4d-858a-1b57b605f4ed",
+      "kind": "deposit",
+      "amount": "32.00",
+      "created_at": "2026-08-18T19:14:44.680Z"
+    }
+  ],
+  "accounts": [],
+  "consents": [
+    {
+      "id": "7057e732-9411-4512-98b9-23a7a1fe7d77",
+      "kind": "soft_pull_consent",
+      "granted_at": "2026-08-18T19:10:53.490Z",
+      "expires_at": null,
+      "revoked_at": null
+    }
+  ],
+  "events_for_this_email_or_id": [
+    {
+      "id": "b9ee35c4-08ab-47c8-86e2-613f4c731715",
+      "name": "docs.received",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "idempotency_key": null,
+      "created_at": "2026-08-18T19:10:58.905Z",
+      "payload_has_email_key": false,
+      "payload_email_nonempty": false
+    },
+    {
+      "id": "a091eafb-7af8-472e-94d5-bd89ccb54911",
+      "name": "analysis.completed",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "idempotency_key": "crs-result:c1f83e6b-a624-4f28-a32a-531a530b3ad4:analysis.completed:v1",
+      "created_at": "2026-08-18T19:11:58.036Z",
+      "payload_has_email_key": false,
+      "payload_email_nonempty": false
+    },
+    {
+      "id": "8bff4125-ee2d-41e5-b6bb-f24e6c897a2e",
+      "name": "decision.rendered",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "idempotency_key": "crs-result:c1f83e6b-a624-4f28-a32a-531a530b3ad4:decision.rendered:v1",
+      "created_at": "2026-08-18T19:12:00.736Z",
+      "payload_has_email_key": false,
+      "payload_email_nonempty": false
+    },
+    {
+      "id": "ee763f7f-3aef-49a9-a308-0f69ca835934",
+      "name": "payment.received",
+      "client_id": null,
+      "idempotency_key": "w-pay:2026-08-18:pay-noid",
+      "created_at": "2026-08-18T19:14:40.660Z",
+      "payload_has_email_key": true,
+      "payload_email_nonempty": true
+    },
+    {
+      "id": "09889e94-8f08-40d2-8312-6616157bfa7f",
+      "name": "payment.received",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "idempotency_key": "w-pay:2026-08-18:pay-withid",
+      "created_at": "2026-08-18T19:14:41.600Z",
+      "payload_has_email_key": true,
+      "payload_email_nonempty": true
+    },
+    {
+      "id": "0bc264a3-e1dc-42d0-ae87-18b96a4a7ad4",
+      "name": "diagnostic.paid",
+      "client_id": null,
+      "idempotency_key": "w-pay:2026-08-18:diag-noid",
+      "created_at": "2026-08-18T19:14:42.385Z",
+      "payload_has_email_key": true,
+      "payload_email_nonempty": true
+    },
+    {
+      "id": "81695ac8-f9ae-4a6f-b8fa-2c2044371c37",
+      "name": "diagnostic.paid",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "idempotency_key": "w-pay:2026-08-18:diag-withid",
+      "created_at": "2026-08-18T19:14:44.021Z",
+      "payload_has_email_key": true,
+      "payload_email_nonempty": true
+    }
+  ]
+}

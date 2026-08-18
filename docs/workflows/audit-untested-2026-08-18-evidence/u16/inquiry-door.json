@@ -1,0 +1,13 @@
+{
+  "route": "GET /api/inquiry?action=cases",
+  "status": 503,
+  "ok": false,
+  "error": "not_configured",
+  "message": "Inquiry phone runtime is not configured",
+  "keys": [
+    "ok",
+    "error",
+    "message"
+  ],
+  "did_post_launch": false
+}

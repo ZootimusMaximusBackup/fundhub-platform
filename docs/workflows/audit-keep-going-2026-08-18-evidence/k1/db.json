@@ -1,0 +1,430 @@
+{
+  "at": "2026-08-18T21:51:07.663Z",
+  "env_names": {
+    "DATABASE_URL": true,
+    "STAFF_E2E_PASSWORD": true
+  },
+  "ids": {
+    "test": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+    "funnel": "edca0767-88e9-4cf4-8837-47382049503a",
+    "task": "d5300a31-7620-4abf-8ca7-c9295d1ebbaf",
+    "booking": "f370a046-46a4-4d8a-a58e-d0d421a73d98"
+  },
+  "bookings_table": {
+    "ok": true,
+    "n": 0,
+    "rows": []
+  },
+  "booking_event": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "id": "f370a046-46a4-4d8a-a58e-d0d421a73d98",
+        "name": "booking.created",
+        "created_at": "2026-08-18T21:46:13.047Z",
+        "source": "clickfunnels",
+        "has_payload_client": false,
+        "has_start": true,
+        "has_end": true,
+        "has_meeting": true,
+        "has_uid": true,
+        "start_time": "2026-08-19T03:00:00.000Z",
+        "end_time": "2026-08-19T03:30:00.000Z"
+      }
+    ]
+  },
+  "booking_counts": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "created": 31,
+        "created_cf": 27,
+        "created_calcom": 0
+      }
+    ]
+  },
+  "task": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "id": "d5300a31-7620-4abf-8ca7-c9295d1ebbaf",
+        "title": "Strategy session booked",
+        "due_at": "2026-08-19T03:00:00.000Z",
+        "done": false,
+        "created_at": "2026-08-18T21:46:13.391Z",
+        "source_workflow": "calcom",
+        "has_client": true,
+        "client_id": "edca0767-88e9-4cf4-8837-47382049503a",
+        "has_meeting_url": false
+      }
+    ]
+  },
+  "task_due_zones": {
+    "utc": "2026-08-19T03:00:00.000Z",
+    "phoenix": {
+      "zone": "America/Phoenix",
+      "ymd": "2026-08-18",
+      "clock": "8:00 PM",
+      "weekday": "Tue"
+    },
+    "new_york": {
+      "zone": "America/New_York",
+      "ymd": "2026-08-18",
+      "clock": "11:00 PM",
+      "weekday": "Tue"
+    },
+    "utc_clock": {
+      "zone": "UTC",
+      "ymd": "2026-08-19",
+      "clock": "3:00 AM",
+      "weekday": "Wed"
+    }
+  },
+  "strategy_tasks": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "n": 16,
+        "dated": 16,
+        "due_aug18_phoenix": 2,
+        "due_aug18_ny": 2,
+        "due_future": 1
+      }
+    ]
+  },
+  "open_dated_tasks": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "n": 17
+      }
+    ]
+  },
+  "funnel_client": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "id": "edca0767-88e9-4cf4-8837-47382049503a",
+        "is_test": false,
+        "is_funnel": true,
+        "is_live_forbidden": false,
+        "name_len": 8,
+        "name_has_e2e": true,
+        "name_has_test": false,
+        "name_preview": "E2e Fire",
+        "channel_source": "clickfunnels",
+        "has_email": true,
+        "email_is_plus_tag": true,
+        "has_phone": true
+      }
+    ]
+  },
+  "test_client": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+        "is_test": true,
+        "is_funnel": false,
+        "is_live_forbidden": false,
+        "name_len": 16,
+        "name_has_e2e": false,
+        "name_has_test": true,
+        "name_preview": "TEST Client Role",
+        "channel_source": null,
+        "has_email": true,
+        "email_is_plus_tag": true,
+        "has_phone": true
+      }
+    ]
+  },
+  "test_conversations": {
+    "ok": true,
+    "n": 2,
+    "rows": [
+      {
+        "id": "a7afedb9-048c-4488-9900-68f44a620ff2",
+        "channel": "email",
+        "created_at": "2026-08-18T21:43:20.851Z",
+        "last_pulse_at": "2026-08-18T21:43:28.135Z",
+        "has_summary": false
+      },
+      {
+        "id": "2bbb340b-cd2f-472d-af67-8a7ebe020bd9",
+        "channel": "sms",
+        "created_at": "2026-08-18T16:54:42.286Z",
+        "last_pulse_at": "2026-08-18T21:42:25.653Z",
+        "has_summary": false
+      }
+    ]
+  },
+  "test_messages": {
+    "ok": true,
+    "n": 14,
+    "rows": [
+      {
+        "id": "d66aebb5-e908-475b-946f-b41c5bda7378",
+        "conversation_id": null,
+        "direction": "outbound",
+        "channel": "email",
+        "status": "queued",
+        "created_at": "2026-08-18T21:50:33.927Z",
+        "subject": "Your Fundhub sign-in link",
+        "body_is_reply": false,
+        "body_is_ping": false,
+        "body_mentions_stop": false,
+        "subject_is_reply": false,
+        "subject_is_fire": false
+      },
+      {
+        "id": "0b8390e1-71e0-4328-990c-2427c269e671",
+        "conversation_id": null,
+        "direction": "outbound",
+        "channel": "email",
+        "status": "sent",
+        "created_at": "2026-08-18T21:45:51.019Z",
+        "subject": "Your Fundhub sign-in link",
+        "body_is_reply": false,
+        "body_is_ping": false,
+        "body_mentions_stop": false,
+        "subject_is_reply": false,
+        "subject_is_fire": false
+      },
+      {
+        "id": "e9a17306-aa41-4a0d-ae1c-234c0be6b10e",
+        "conversation_id": "a7afedb9-048c-4488-9900-68f44a620ff2",
+        "direction": "inbound",
+        "channel": "email",
+        "status": "received",
+        "created_at": "2026-08-18T21:43:28.135Z",
+        "subject": "STOP",
+        "body_is_reply": false,
+        "body_is_ping": false,
+        "body_mentions_stop": true,
+        "subject_is_reply": false,
+        "subject_is_fire": false
+      },
+      {
+        "id": "00dd72b5-9dea-4159-b5d9-c948e991157b",
+        "conversation_id": "a7afedb9-048c-4488-9900-68f44a620ff2",
+        "direction": "inbound",
+        "channel": "email",
+        "status": "received",
+        "created_at": "2026-08-18T21:43:25.517Z",
+        "subject": "e2e fire reply — ignore",
+        "body_is_reply": true,
+        "body_is_ping": false,
+        "body_mentions_stop": false,
+        "subject_is_reply": true,
+        "subject_is_fire": true
+      },
+      {
+        "id": "acdac592-c427-4573-9ee6-7a2f936b8902",
+        "conversation_id": null,
+        "direction": "outbound",
+        "channel": "email",
+        "status": "sent",
+        "created_at": "2026-08-18T21:43:22.180Z",
+        "subject": "Your Fundhub sign-in link",
+        "body_is_reply": false,
+        "body_is_ping": false,
+        "body_mentions_stop": false,
+        "subject_is_reply": false,
+        "subject_is_fire": false
+      },
+      {
+        "id": "6db643c6-297f-4508-a9b2-d41cbbb80935",
+        "conversation_id": "a7afedb9-048c-4488-9900-68f44a620ff2",
+        "direction": "outbound",
+        "channel": "email",
+        "status": "sent",
+        "created_at": "2026-08-18T21:43:20.979Z",
+        "subject": "e2e fire thread — ignore",
+        "body_is_reply": false,
+        "body_is_ping": false,
+        "body_mentions_stop": false,
+        "subject_is_reply": false,
+        "subject_is_fire": true
+      },
+      {
+        "id": "8755f790-64d1-4cf5-b3bf-e12a113601de",
+        "conversation_id": "2bbb340b-cd2f-472d-af67-8a7ebe020bd9",
+        "direction": "outbound",
+        "channel": "sms",
+        "status": "sent",
+        "created_at": "2026-08-18T21:42:25.653Z",
+        "subject": "",
+        "body_is_reply": false,
+        "body_is_ping": true,
+        "body_mentions_stop": false,
+        "subject_is_reply": null,
+        "subject_is_fire": null
+      },
+      {
+        "id": "7fc5ff39-f3be-459e-b534-1ba08ca00029",
+        "conversation_id": null,
+        "direction": "outbound",
+        "channel": "email",
+        "status": "sent",
+        "created_at": "2026-08-18T20:04:30.454Z",
+        "subject": "Your Fundhub sign-in link",
+        "body_is_reply": false,
+        "body_is_ping": false,
+        "body_mentions_stop": false,
+        "subject_is_reply": false,
+        "subject_is_fire": false
+      },
+      {
+        "id": "0b1d9316-fad4-4851-ae10-3903cb205433",
+        "conversation_id": "2bbb340b-cd2f-472d-af67-8a7ebe020bd9",
+        "direction": "outbound",
+        "channel": "sms",
+        "status": "failed",
+        "created_at": "2026-08-18T17:51:26.803Z",
+        "subject": "",
+        "body_is_reply": false,
+        "body_is_ping": false,
+        "body_mentions_stop": false,
+        "subject_is_reply": null,
+        "subject_is_fire": null
+      },
+      {
+        "id": "eb95733f-57fa-4efd-be28-ef0a21c1097e",
+        "conversation_id": "2bbb340b-cd2f-472d-af67-8a7ebe020bd9",
+        "direction": "outbound",
+        "channel": "sms",
+        "status": "failed",
+        "created_at": "2026-08-18T16:54:42.420Z",
+        "subject": "",
+        "body_is_reply": false,
+        "body_is_ping": false,
+        "body_mentions_stop": false,
+        "subject_is_reply": null,
+        "subject_is_fire": null
+      },
+      {
+        "id": "b847c472-8802-4fef-bffe-7c8ba3f21935",
+        "conversation_id": null,
+        "direction": "outbound",
+        "channel": "email",
+        "status": "sent",
+        "created_at": "2026-08-18T16:10:32.562Z",
+        "subject": "Your Fundhub sign-in link",
+        "body_is_reply": false,
+        "body_is_ping": false,
+        "body_mentions_stop": false,
+        "subject_is_reply": false,
+        "subject_is_fire": false
+      },
+      {
+        "id": "934122c2-0e15-44d5-b706-deea5c3ce9dc",
+        "conversation_id": null,
+        "direction": "outbound",
+        "channel": "email",
+        "status": "sent",
+        "created_at": "2026-08-18T16:07:53.571Z",
+        "subject": "Please sign: Soft Pull Authorization",
+        "body_is_reply": false,
+        "body_is_ping": false,
+        "body_mentions_stop": false,
+        "subject_is_reply": false,
+        "subject_is_fire": false
+      },
+      {
+        "id": "c6a67a2d-444b-450e-bf64-23f6bfa5608a",
+        "conversation_id": null,
+        "direction": "outbound",
+        "channel": "email",
+        "status": "sent",
+        "created_at": "2026-08-18T16:04:32.650Z",
+        "subject": "Your Fundhub sign-in link",
+        "body_is_reply": false,
+        "body_is_ping": false,
+        "body_mentions_stop": false,
+        "subject_is_reply": false,
+        "subject_is_fire": false
+      },
+      {
+        "id": "52f39bbe-24a5-4164-a330-b49944311b47",
+        "conversation_id": null,
+        "direction": "outbound",
+        "channel": "email",
+        "status": "sent",
+        "created_at": "2026-08-18T16:00:52.037Z",
+        "subject": "Your Fundhub sign-in link",
+        "body_is_reply": false,
+        "body_is_ping": false,
+        "body_mentions_stop": false,
+        "subject_is_reply": false,
+        "subject_is_fire": false
+      }
+    ]
+  },
+  "funnel_messages": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "id": "283bcc4a-fe4f-4595-922b-34d896193b2f",
+        "direction": "outbound",
+        "channel": "sms",
+        "status": "sent",
+        "created_at": "2026-08-18T21:47:29.322Z",
+        "has_subject": false
+      }
+    ]
+  },
+  "funnel_documents": {
+    "ok": true,
+    "n": 0,
+    "rows": []
+  },
+  "funnel_cards": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "id": "2714d8c6-2e49-459b-9df4-fa2af3236c68",
+        "client_id": "edca0767-88e9-4cf4-8837-47382049503a",
+        "created_at": "2026-08-18T21:42:58.987Z",
+        "pipeline_key": "sales",
+        "pipeline_name": "Sales",
+        "stage_key": "booked",
+        "stage_name": "Booked"
+      }
+    ]
+  },
+  "test_cards": {
+    "ok": true,
+    "n": 0,
+    "rows": []
+  },
+  "funnel_events": {
+    "ok": true,
+    "n": 2,
+    "rows": [
+      {
+        "name": "message.queued",
+        "n": 1,
+        "last_at": "2026-08-18T21:47:29.384Z"
+      },
+      {
+        "name": "booking.created",
+        "n": 1,
+        "last_at": "2026-08-18T21:46:13.047Z"
+      }
+    ]
+  },
+  "live_touched": {
+    "test_has_live": false,
+    "funnel_is_live": false,
+    "task_client_is_live": false
+  }
+}

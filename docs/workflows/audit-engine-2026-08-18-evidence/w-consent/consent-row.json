@@ -1,0 +1,90 @@
+{
+  "table": "client_consents",
+  "gate_reads": {
+    "function": "requestSoftPull → consentStatus",
+    "file": "src/finance/soft-pulls.mjs",
+    "table": "client_consents",
+    "where": [
+      "org_id (session)",
+      "client_id",
+      "kind = soft_pull_consent"
+    ],
+    "validity_columns": [
+      "revoked_at IS NULL",
+      "expires_at IS NULL OR expires_at > now()",
+      "granted_at <= now()"
+    ],
+    "newest_valid_wins": true
+  },
+  "capture_writes": {
+    "handler": "POST /api/consent/capture → captureConsent",
+    "table": "client_consents",
+    "columns_written": [
+      "org_id",
+      "client_id",
+      "kind",
+      "consent_text",
+      "consent_version",
+      "granted_by_kind",
+      "granted_by_account_id",
+      "granted_by_staff_id",
+      "capture_method",
+      "granted_name",
+      "captured_ip",
+      "captured_user_agent",
+      "document_id",
+      "expires_at"
+    ]
+  },
+  "match": true,
+  "mismatch": [
+    "clients.consent_sms is stamped by simulate and is NOT read by the pull gate",
+    "custom-field soft-pull columns are NOT read by the pull gate",
+    "a signed SOFT-PULL-CONSENT document is NOT read by the pull gate"
+  ],
+  "after": {
+    "label": "after",
+    "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+    "email": "sim+1787079946953@demo.fundhub.local",
+    "clients_row": {
+      "id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+      "email": "sim+1787079946953@demo.fundhub.local",
+      "consent_sms": true,
+      "is_demo": true
+    },
+    "client_consents": [
+      {
+        "id": "7057e732-9411-4512-98b9-23a7a1fe7d77",
+        "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+        "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+        "kind": "soft_pull_consent",
+        "consent_version": "soft-pull-v1",
+        "capture_method": "checkbox",
+        "granted_name": null,
+        "granted_by_kind": "staff",
+        "granted_by_staff_id": "52bc675a-db0f-4e24-9b53-80f7fd077f72",
+        "granted_by_account_id": null,
+        "granted_at": "2026-08-18T19:10:53.490Z",
+        "expires_at": null,
+        "revoked_at": null,
+        "revoked_reason": null,
+        "document_id": null,
+        "created_at": "2026-08-18T19:10:53.490Z",
+        "updated_at": "2026-08-18T19:10:53.490Z",
+        "is_valid": true
+      }
+    ],
+    "custom_fields": [],
+    "soft_pull_documents": [],
+    "read_compare_8556_consents": [
+      {
+        "id": "d81a91d7-b81f-4d3f-9102-38186e9b4341",
+        "kind": "dispute_authorization",
+        "capture_method": "signature",
+        "consent_version": "dispute-auth-v1",
+        "is_valid": true
+      }
+    ]
+  }
+}

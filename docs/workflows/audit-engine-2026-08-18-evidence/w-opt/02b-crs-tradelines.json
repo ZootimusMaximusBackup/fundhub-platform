@@ -1,0 +1,38 @@
+[
+  {
+    "bureau": "EX",
+    "accountType": "revolving",
+    "creditorName": "Chase Sapphire Preferred",
+    "accountIdentifier": "SIM-CHASE-001",
+    "accountOpenedDate": "2019-04-12",
+    "creditLimitAmount": "12000",
+    "currentBalanceAmount": "2100"
+  },
+  {
+    "bureau": "EQ",
+    "accountType": "revolving",
+    "creditorName": "American Express Blue Business Cash",
+    "accountIdentifier": "SIM-AMEX-001",
+    "accountOpenedDate": "2020-08-01",
+    "creditLimitAmount": "25000",
+    "currentBalanceAmount": "4800"
+  },
+  {
+    "bureau": "TU",
+    "accountType": "revolving",
+    "creditorName": "Capital One Spark",
+    "accountIdentifier": "SIM-CAP1-001",
+    "accountOpenedDate": "2021-01-20",
+    "creditLimitAmount": "8000",
+    "currentBalanceAmount": "950"
+  },
+  {
+    "bureau": "EX",
+    "accountType": "installment",
+    "creditorName": "Toyota Motor Credit",
+    "accountIdentifier": "SIM-TOYO-001",
+    "accountOpenedDate": "2022-06-15",
+    "creditLimitAmount": "28000",
+    "currentBalanceAmount": "14200"
+  }
+]

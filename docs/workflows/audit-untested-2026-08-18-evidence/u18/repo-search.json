@@ -1,0 +1,15 @@
+{
+  "hits": {
+    "Plaid_create": [],
+    "link_token": [],
+    "Connect_bank": [],
+    "cdn_plaid": []
+  },
+  "gitHistory": {
+    "searched": "Plaid.create",
+    "commits": 0,
+    "sample": [
+      ""
+    ]
+  }
+}

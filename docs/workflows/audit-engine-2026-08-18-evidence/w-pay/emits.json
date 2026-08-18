@@ -1,0 +1,130 @@
+{
+  "handlers_after_registerAll": {
+    "payment.received": [
+      "onPaymentReceived",
+      "onPaymentReceivedForLink",
+      "onPaymentReceivedMoney"
+    ],
+    "diagnostic.paid": [
+      "onDiagnosticPaid",
+      "onDiagnosticPaidMoney",
+      "onDiagnosticPaidSoftPull"
+    ]
+  },
+  "soft_pull_unsubscribed_before_diagnostic_emit": false,
+  "handlers_at_emit": {
+    "payment.received": [
+      "onPaymentReceived",
+      "onPaymentReceivedForLink",
+      "onPaymentReceivedMoney"
+    ],
+    "diagnostic.paid": [
+      "onDiagnosticPaid",
+      "onDiagnosticPaidMoney",
+      "onDiagnosticPaidSoftPull"
+    ]
+  },
+  "bureauRisk": {
+    "has_client_account": false,
+    "account_id": null,
+    "has_valid_looking_soft_pull_consent": true,
+    "consent_id": "7057e732-9411-4512-98b9-23a7a1fe7d77",
+    "crs_allow_live_on": false,
+    "would_reach_requestSoftPull": false,
+    "next_function_if_consent_and_account": "requestSoftPull → runCrsPull (src/finance/crs-pull.mjs)"
+  },
+  "emitted": [
+    {
+      "shape": "payment.received without clientId, with email",
+      "name": "payment.received",
+      "emit_id": "ee763f7f-3aef-49a9-a308-0f69ca835934",
+      "deduped": false,
+      "dispatched": {
+        "handlers": 3,
+        "failed": 0,
+        "recorded": 0
+      },
+      "stored_client_id": null,
+      "stored_client_id_is_this_client": false,
+      "stored": {
+        "id": "ee763f7f-3aef-49a9-a308-0f69ca835934",
+        "name": "payment.received",
+        "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+        "client_id": null,
+        "idempotency_key": "w-pay:2026-08-18:pay-noid",
+        "created_at": "2026-08-18T19:14:40.660Z",
+        "payload_has_email_key": true,
+        "payload_email_nonempty": true
+      }
+    },
+    {
+      "shape": "payment.received with clientId",
+      "name": "payment.received",
+      "emit_id": "09889e94-8f08-40d2-8312-6616157bfa7f",
+      "deduped": false,
+      "dispatched": {
+        "handlers": 3,
+        "failed": 0,
+        "recorded": 0
+      },
+      "stored_client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "stored_client_id_is_this_client": true,
+      "stored": {
+        "id": "09889e94-8f08-40d2-8312-6616157bfa7f",
+        "name": "payment.received",
+        "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+        "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+        "idempotency_key": "w-pay:2026-08-18:pay-withid",
+        "created_at": "2026-08-18T19:14:41.600Z",
+        "payload_has_email_key": true,
+        "payload_email_nonempty": true
+      }
+    },
+    {
+      "shape": "diagnostic.paid without clientId, with email",
+      "name": "diagnostic.paid",
+      "emit_id": "0bc264a3-e1dc-42d0-ae87-18b96a4a7ad4",
+      "deduped": false,
+      "dispatched": {
+        "handlers": 3,
+        "failed": 0,
+        "recorded": 0
+      },
+      "stored_client_id": null,
+      "stored_client_id_is_this_client": false,
+      "stored": {
+        "id": "0bc264a3-e1dc-42d0-ae87-18b96a4a7ad4",
+        "name": "diagnostic.paid",
+        "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+        "client_id": null,
+        "idempotency_key": "w-pay:2026-08-18:diag-noid",
+        "created_at": "2026-08-18T19:14:42.385Z",
+        "payload_has_email_key": true,
+        "payload_email_nonempty": true
+      }
+    },
+    {
+      "shape": "diagnostic.paid with clientId",
+      "name": "diagnostic.paid",
+      "emit_id": "81695ac8-f9ae-4a6f-b8fa-2c2044371c37",
+      "deduped": false,
+      "dispatched": {
+        "handlers": 3,
+        "failed": 0,
+        "recorded": 0
+      },
+      "stored_client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "stored_client_id_is_this_client": true,
+      "stored": {
+        "id": "81695ac8-f9ae-4a6f-b8fa-2c2044371c37",
+        "name": "diagnostic.paid",
+        "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+        "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+        "idempotency_key": "w-pay:2026-08-18:diag-withid",
+        "created_at": "2026-08-18T19:14:44.021Z",
+        "payload_has_email_key": true,
+        "payload_email_nonempty": true
+      }
+    }
+  ]
+}

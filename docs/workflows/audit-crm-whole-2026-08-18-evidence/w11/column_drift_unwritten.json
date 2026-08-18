@@ -1,0 +1,814 @@
+[
+  {
+    "table": "account_sessions",
+    "column": "last_seen_at"
+  },
+  {
+    "table": "accounts",
+    "column": "invite_token_hash"
+  },
+  {
+    "table": "accounts",
+    "column": "invite_expires_at"
+  },
+  {
+    "table": "ad_metrics_daily",
+    "column": "reach"
+  },
+  {
+    "table": "ad_metrics_daily",
+    "column": "synced_at"
+  },
+  {
+    "table": "ad_platform_connections",
+    "column": "external_business_id"
+  },
+  {
+    "table": "ad_platform_connections",
+    "column": "encrypted_refresh_token"
+  },
+  {
+    "table": "ad_platform_connections",
+    "column": "token_expires_at"
+  },
+  {
+    "table": "ad_platform_connections",
+    "column": "scopes"
+  },
+  {
+    "table": "ad_sets",
+    "column": "targeting"
+  },
+  {
+    "table": "ad_sets",
+    "column": "strategy_key"
+  },
+  {
+    "table": "ad_sets",
+    "column": "learning_until"
+  },
+  {
+    "table": "ad_sets",
+    "column": "last_error"
+  },
+  {
+    "table": "ads",
+    "column": "asset_id"
+  },
+  {
+    "table": "ads",
+    "column": "ai_disclosure"
+  },
+  {
+    "table": "ads",
+    "column": "ai_disclosure_at"
+  },
+  {
+    "table": "ads",
+    "column": "last_error"
+  },
+  {
+    "table": "ads",
+    "column": "synced_at"
+  },
+  {
+    "table": "affiliate_commission_rules",
+    "column": "description"
+  },
+  {
+    "table": "affiliate_commission_rules",
+    "column": "product_id"
+  },
+  {
+    "table": "affiliate_commission_rules",
+    "column": "flat_amount"
+  },
+  {
+    "table": "affiliate_commission_rules",
+    "column": "min_amount"
+  },
+  {
+    "table": "affiliate_commission_rules",
+    "column": "max_amount"
+  },
+  {
+    "table": "affiliate_commission_rules",
+    "column": "notes"
+  },
+  {
+    "table": "affiliate_referrals",
+    "column": "currency"
+  },
+  {
+    "table": "affiliates",
+    "column": "recruited_at"
+  },
+  {
+    "table": "affiliates",
+    "column": "direct_downline_count"
+  },
+  {
+    "table": "affiliates",
+    "column": "balance_due"
+  },
+  {
+    "table": "affiliates",
+    "column": "payout_status"
+  },
+  {
+    "table": "affiliates",
+    "column": "partner_license_ref"
+  },
+  {
+    "table": "affiliates",
+    "column": "payout_method"
+  },
+  {
+    "table": "affiliates",
+    "column": "payout_method_ref"
+  },
+  {
+    "table": "agents",
+    "column": "owner_staff_id"
+  },
+  {
+    "table": "ai_bureau_config",
+    "column": "last_verified_at"
+  },
+  {
+    "table": "ai_bureau_config",
+    "column": "mail_address_line2"
+  },
+  {
+    "table": "alerts",
+    "column": "raised_at"
+  },
+  {
+    "table": "applications",
+    "column": "conditions"
+  },
+  {
+    "table": "applications",
+    "column": "application_url"
+  },
+  {
+    "table": "applications",
+    "column": "lender_row_url"
+  },
+  {
+    "table": "applications",
+    "column": "submitted_date"
+  },
+  {
+    "table": "applications",
+    "column": "status_updated_date"
+  },
+  {
+    "table": "applications",
+    "column": "condition_text"
+  },
+  {
+    "table": "behavior_scores",
+    "column": "motivation"
+  },
+  {
+    "table": "behavior_scores",
+    "column": "scored_at"
+  },
+  {
+    "table": "behavior_scores",
+    "column": "kind"
+  },
+  {
+    "table": "behavior_scores",
+    "column": "source_event_id"
+  },
+  {
+    "table": "brand_kit_sources",
+    "column": "content_type"
+  },
+  {
+    "table": "brand_kit_sources",
+    "column": "http_status"
+  },
+  {
+    "table": "brand_kit_sources",
+    "column": "payload"
+  },
+  {
+    "table": "brand_kit_sources",
+    "column": "payload_sha256"
+  },
+  {
+    "table": "brand_kit_sources",
+    "column": "fetched_at"
+  },
+  {
+    "table": "brand_kits",
+    "column": "source_url"
+  },
+  {
+    "table": "brand_kits",
+    "column": "scraped_at"
+  },
+  {
+    "table": "brand_kits",
+    "column": "palette"
+  },
+  {
+    "table": "brand_kits",
+    "column": "fonts"
+  },
+  {
+    "table": "brand_kits",
+    "column": "logo_asset_id"
+  },
+  {
+    "table": "brand_kits",
+    "column": "voice_profile"
+  },
+  {
+    "table": "brand_kits",
+    "column": "products"
+  },
+  {
+    "table": "call_outcomes",
+    "column": "checklist"
+  },
+  {
+    "table": "campaign_strategies",
+    "column": "active"
+  },
+  {
+    "table": "campaigns",
+    "column": "targeting"
+  },
+  {
+    "table": "campaigns",
+    "column": "strategy_key"
+  },
+  {
+    "table": "campaigns",
+    "column": "disclosure_asset_id"
+  },
+  {
+    "table": "candidate_applications",
+    "column": "resume_document_id"
+  },
+  {
+    "table": "candidate_applications",
+    "column": "applied_at"
+  },
+  {
+    "table": "candidates",
+    "column": "referred_by_staff_id"
+  },
+  {
+    "table": "candidates",
+    "column": "linkedin_profile_url"
+  },
+  {
+    "table": "cards",
+    "column": "entered_at"
+  },
+  {
+    "table": "clients",
+    "column": "pipeline_ids"
+  },
+  {
+    "table": "clients",
+    "column": "dnd_sms"
+  },
+  {
+    "table": "clients",
+    "column": "dnd_email"
+  },
+  {
+    "table": "clients",
+    "column": "dnd_voice"
+  },
+  {
+    "table": "commas_inbox",
+    "column": "received_at"
+  },
+  {
+    "table": "commission_ledger",
+    "column": "approved_at"
+  },
+  {
+    "table": "commission_ledger",
+    "column": "approved_by"
+  },
+  {
+    "table": "commission_ledger",
+    "column": "paid_at"
+  },
+  {
+    "table": "commission_ledger",
+    "column": "paid_by"
+  },
+  {
+    "table": "commission_ledger",
+    "column": "payout_ref"
+  },
+  {
+    "table": "commission_ledger",
+    "column": "void_reason"
+  },
+  {
+    "table": "commission_rules",
+    "column": "description"
+  },
+  {
+    "table": "commission_rules",
+    "column": "staff_id"
+  },
+  {
+    "table": "commission_rules",
+    "column": "per_unit_amount"
+  },
+  {
+    "table": "commission_rules",
+    "column": "tier_mode"
+  },
+  {
+    "table": "commission_rules",
+    "column": "min_amount"
+  },
+  {
+    "table": "commission_rules",
+    "column": "max_amount"
+  },
+  {
+    "table": "commission_rules",
+    "column": "notes"
+  },
+  {
+    "table": "compliance_screenings",
+    "column": "rules_version"
+  },
+  {
+    "table": "conversation_participants",
+    "column": "joined_at"
+  },
+  {
+    "table": "creative_providers",
+    "column": "priority"
+  },
+  {
+    "table": "dispute_cases",
+    "column": "status"
+  },
+  {
+    "table": "dispute_items",
+    "column": "status"
+  },
+  {
+    "table": "dispute_items",
+    "column": "outcome"
+  },
+  {
+    "table": "dispute_letters",
+    "column": "pdf_storage_key"
+  },
+  {
+    "table": "dispute_responses",
+    "column": "case_id"
+  },
+  {
+    "table": "dispute_responses",
+    "column": "org_id"
+  },
+  {
+    "table": "dispute_responses",
+    "column": "client_id"
+  },
+  {
+    "table": "dispute_responses",
+    "column": "raw_text"
+  },
+  {
+    "table": "dispute_responses",
+    "column": "parse_json"
+  },
+  {
+    "table": "dispute_responses",
+    "column": "confidence"
+  },
+  {
+    "table": "eeo_responses",
+    "column": "submitted_at"
+  },
+  {
+    "table": "eeo_survey_invites",
+    "column": "org_id"
+  },
+  {
+    "table": "eeo_survey_invites",
+    "column": "survey_token"
+  },
+  {
+    "table": "eeo_survey_invites",
+    "column": "invited_at_stage"
+  },
+  {
+    "table": "eeo_survey_invites",
+    "column": "sent_at"
+  },
+  {
+    "table": "erasure_requests",
+    "column": "failure_reason"
+  },
+  {
+    "table": "funding_round_sales",
+    "column": "linked_at"
+  },
+  {
+    "table": "furnisher_mail_addresses",
+    "column": "address_line2"
+  },
+  {
+    "table": "furnisher_mail_addresses",
+    "column": "country"
+  },
+  {
+    "table": "furnisher_mail_addresses",
+    "column": "active"
+  },
+  {
+    "table": "hiring_decisions",
+    "column": "candidate_notified_at"
+  },
+  {
+    "table": "hiring_interviews",
+    "column": "role_id"
+  },
+  {
+    "table": "hiring_interviews",
+    "column": "duration_min"
+  },
+  {
+    "table": "hiring_interviews",
+    "column": "host_staff_id"
+  },
+  {
+    "table": "hiring_interviews",
+    "column": "notes"
+  },
+  {
+    "table": "hiring_job_postings",
+    "column": "apply_url"
+  },
+  {
+    "table": "hiring_roles",
+    "column": "hiring_manager_staff_id"
+  },
+  {
+    "table": "hiring_roles",
+    "column": "active"
+  },
+  {
+    "table": "hiring_rubrics",
+    "column": "active"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "call_batch_id"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "last_attempt_at"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "hold_started_at"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "live_agent_reached_at"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "rep_handoff_at"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "voice_provider"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "voice_session_id"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "script_version"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "ivr_version"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "bureau_phone_number"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "transfer_target_number"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "packet_version"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "packet_generated_at"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "last_failure_reason"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "call_outcome_summary"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "ivr_last_step"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "last_dtmf_path"
+  },
+  {
+    "table": "inquiry_log",
+    "column": "waiting_for_rep_slot_since"
+  },
+  {
+    "table": "inquiry_removal_cases",
+    "column": "fraud_alert_after"
+  },
+  {
+    "table": "inquiry_removal_cases",
+    "column": "draft_letter_document_id"
+  },
+  {
+    "table": "investment_holdings",
+    "column": "raw"
+  },
+  {
+    "table": "invoices",
+    "column": "reminded_at"
+  },
+  {
+    "table": "invoices",
+    "column": "reminder_count"
+  },
+  {
+    "table": "invoices",
+    "column": "escalated_at"
+  },
+  {
+    "table": "invoices",
+    "column": "written_off_at"
+  },
+  {
+    "table": "invoices",
+    "column": "write_off_reason"
+  },
+  {
+    "table": "mail_campaigns",
+    "column": "batch_date"
+  },
+  {
+    "table": "mail_campaigns",
+    "column": "notes"
+  },
+  {
+    "table": "mail_responses",
+    "column": "tracked_number_id"
+  },
+  {
+    "table": "mail_responses",
+    "column": "client_id"
+  },
+  {
+    "table": "mail_responses",
+    "column": "provider_ref"
+  },
+  {
+    "table": "mail_responses",
+    "column": "raw"
+  },
+  {
+    "table": "mail_tracked_numbers",
+    "column": "provider"
+  },
+  {
+    "table": "mail_tracked_numbers",
+    "column": "provider_ref"
+  },
+  {
+    "table": "mail_tracked_numbers",
+    "column": "assigned_at"
+  },
+  {
+    "table": "mail_tracked_numbers",
+    "column": "released_at"
+  },
+  {
+    "table": "marketing_flags",
+    "column": "is_demo"
+  },
+  {
+    "table": "opt_outs",
+    "column": "opted_out_at"
+  },
+  {
+    "table": "outbound_calls",
+    "column": "status"
+  },
+  {
+    "table": "owner_notifications",
+    "column": "status"
+  },
+  {
+    "table": "owner_notifications",
+    "column": "sent_at"
+  },
+  {
+    "table": "partner_module_settings",
+    "column": "weekly_asset_target"
+  },
+  {
+    "table": "partner_module_settings",
+    "column": "ai_token_cap_monthly"
+  },
+  {
+    "table": "partner_payout_lines",
+    "column": "client_id"
+  },
+  {
+    "table": "partner_payouts",
+    "column": "amount"
+  },
+  {
+    "table": "partner_payouts",
+    "column": "currency"
+  },
+  {
+    "table": "partner_payouts",
+    "column": "hold_reason"
+  },
+  {
+    "table": "partner_payouts",
+    "column": "void_reason"
+  },
+  {
+    "table": "partner_payouts",
+    "column": "method"
+  },
+  {
+    "table": "partner_payouts",
+    "column": "external_ref"
+  },
+  {
+    "table": "partner_payouts",
+    "column": "initiated_at"
+  },
+  {
+    "table": "partner_payouts",
+    "column": "idempotency_key"
+  },
+  {
+    "table": "partner_payouts",
+    "column": "notes"
+  },
+  {
+    "table": "partner_revenue",
+    "column": "transaction_id"
+  },
+  {
+    "table": "partner_revenue",
+    "column": "currency"
+  },
+  {
+    "table": "partner_revenue",
+    "column": "occurred_at"
+  },
+  {
+    "table": "payment_links",
+    "column": "provider"
+  },
+  {
+    "table": "plaid_items",
+    "column": "plaid_institution_id"
+  },
+  {
+    "table": "plaid_items",
+    "column": "consent_granted_at"
+  },
+  {
+    "table": "plaid_items",
+    "column": "consent_scope"
+  },
+  {
+    "table": "plaid_items",
+    "column": "last_error_code"
+  },
+  {
+    "table": "plaid_items",
+    "column": "last_error_at"
+  },
+  {
+    "table": "products",
+    "column": "active"
+  },
+  {
+    "table": "proxy_sessions",
+    "column": "started_at"
+  },
+  {
+    "table": "repair_decision_log",
+    "column": "reversible"
+  },
+  {
+    "table": "repair_decision_log",
+    "column": "reversed_at"
+  },
+  {
+    "table": "retention_policy",
+    "column": "retain_days"
+  },
+  {
+    "table": "retention_policy",
+    "column": "signed_off_at"
+  },
+  {
+    "table": "retention_policy",
+    "column": "signed_off_by"
+  },
+  {
+    "table": "sale_attributions",
+    "column": "employee_code"
+  },
+  {
+    "table": "sale_attributions",
+    "column": "attributed_at"
+  },
+  {
+    "table": "sale_attributions",
+    "column": "notes"
+  },
+  {
+    "table": "schema_migrations",
+    "column": "applied_at"
+  },
+  {
+    "table": "snapshots",
+    "column": "data"
+  },
+  {
+    "table": "social_channels",
+    "column": "last_error"
+  },
+  {
+    "table": "social_channels",
+    "column": "best_times"
+  },
+  {
+    "table": "social_channels",
+    "column": "timezone"
+  },
+  {
+    "table": "soft_pull_requests",
+    "column": "requested_at"
+  },
+  {
+    "table": "spend_ceilings",
+    "column": "active"
+  },
+  {
+    "table": "staff",
+    "column": "comp"
+  },
+  {
+    "table": "staff",
+    "column": "assignment_order"
+  },
+  {
+    "table": "staff",
+    "column": "hubstaff_user_id"
+  },
+  {
+    "table": "staff_roles",
+    "column": "active"
+  },
+  {
+    "table": "staff_targets",
+    "column": "role"
+  },
+  {
+    "table": "webhook_captures",
+    "column": "org_id"
+  }
+]

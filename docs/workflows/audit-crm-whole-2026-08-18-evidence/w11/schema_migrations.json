@@ -1,0 +1,650 @@
+[
+  {
+    "key": "migrations/010_products.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/011_sales.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/012_attribution.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/013_commission_rules.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/014_commission_ledger.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/015_seed_products.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/016_ledger_no_delete.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/017_invoices.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/022_marketing_warehouse.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/030_documents.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/031_invoices.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/032_entitlements.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/033_affiliates.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/035_schema_gaps.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/036_partner_role.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/037_agent_registry.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/039_failed_events.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/041_task_routing.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/042_partners.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/043_partner_brand.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/044_accounts.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/045_creative_factory.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/046_ad_platforms.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/047_compliance_rules.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/048_campaign_config.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/049_social.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/050_creative_metering.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/051_hiring.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/052_config_defaults.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/053_eeo_selfid.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/054_tradelines.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/055_inquiry_work.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/056_pii_identity_unique.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "schema/001_init.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "schema/003_client_indexes.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "schema/004_comms_indexes.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "schema/005_client_custom_fields.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "schema/006_tasks_idempotency.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "schema/007_cards_unique.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "schema/008_opt_out.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "schema/009_staff_targets.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "schema/010_outbound_calls.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "schema/020_auth.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "seed/002_pipelines.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "seed/006_message_templates_source_doc.sql",
+    "applied_at": "2026-07-31T02:24:53.163Z"
+  },
+  {
+    "key": "migrations/057_conversations_unique_channel.sql",
+    "applied_at": "2026-07-31T03:34:25.561Z"
+  },
+  {
+    "key": "migrations/060_shifts_one_open.sql",
+    "applied_at": "2026-07-31T03:34:25.561Z"
+  },
+  {
+    "key": "migrations/065_mail_campaigns.sql",
+    "applied_at": "2026-07-31T03:34:25.561Z"
+  },
+  {
+    "key": "migrations/066_mail_suppression_indexes.sql",
+    "applied_at": "2026-07-31T03:34:25.561Z"
+  },
+  {
+    "key": "migrations/067_mail_response_idempotency.sql",
+    "applied_at": "2026-07-31T03:34:25.561Z"
+  },
+  {
+    "key": "migrations/068_shifts_close_reason.sql",
+    "applied_at": "2026-08-01T02:57:56.558Z"
+  },
+  {
+    "key": "migrations/075_subscriptions.sql",
+    "applied_at": "2026-08-01T02:57:56.838Z"
+  },
+  {
+    "key": "migrations/076_client_cards.sql",
+    "applied_at": "2026-08-01T02:57:57.162Z"
+  },
+  {
+    "key": "migrations/077_soft_pull_requests.sql",
+    "applied_at": "2026-08-01T02:57:57.437Z"
+  },
+  {
+    "key": "migrations/078_alerts.sql",
+    "applied_at": "2026-08-01T02:57:57.862Z"
+  },
+  {
+    "key": "migrations/079_upsell_triggers.sql",
+    "applied_at": "2026-08-01T02:57:58.137Z"
+  },
+  {
+    "key": "migrations/080_plaid_items.sql",
+    "applied_at": "2026-08-01T02:57:58.397Z"
+  },
+  {
+    "key": "migrations/081_bank_accounts.sql",
+    "applied_at": "2026-08-01T02:57:58.676Z"
+  },
+  {
+    "key": "migrations/082_bank_account_entity_kind.sql",
+    "applied_at": "2026-08-01T02:57:58.942Z"
+  },
+  {
+    "key": "migrations/083_card_liabilities.sql",
+    "applied_at": "2026-08-01T02:57:59.202Z"
+  },
+  {
+    "key": "migrations/084_card_liability_history.sql",
+    "applied_at": "2026-08-01T02:57:59.457Z"
+  },
+  {
+    "key": "migrations/085_bank_transactions.sql",
+    "applied_at": "2026-08-01T02:57:59.757Z"
+  },
+  {
+    "key": "migrations/086_recurring_bills.sql",
+    "applied_at": "2026-08-01T02:58:00.017Z"
+  },
+  {
+    "key": "migrations/087_cashflow_reminders.sql",
+    "applied_at": "2026-08-01T02:58:00.307Z"
+  },
+  {
+    "key": "migrations/088_cashflow_settings.sql",
+    "applied_at": "2026-08-01T02:58:00.557Z"
+  },
+  {
+    "key": "migrations/089_cashflow_confidence_floor.sql",
+    "applied_at": "2026-08-01T02:58:00.822Z"
+  },
+  {
+    "key": "migrations/090_app_role.sql",
+    "applied_at": "2026-08-01T02:58:01.107Z"
+  },
+  {
+    "key": "migrations/090_soft_pull_one_open_per_client.sql",
+    "applied_at": "2026-08-01T16:36:27.719Z"
+  },
+  {
+    "key": "migrations/091_recurring_bill_anchor_day.sql",
+    "applied_at": "2026-08-01T16:36:28.011Z"
+  },
+  {
+    "key": "migrations/092_bank_account_fk.sql",
+    "applied_at": "2026-08-01T16:36:28.265Z"
+  },
+  {
+    "key": "migrations/093_recurring_bills_org_index.sql",
+    "applied_at": "2026-08-01T16:36:28.523Z"
+  },
+  {
+    "key": "migrations/094_demo_logins.sql",
+    "applied_at": "2026-08-01T16:36:28.735Z"
+  },
+  {
+    "key": "migrations/095_tradeline_card_identity.sql",
+    "applied_at": "2026-08-01T16:36:29.069Z"
+  },
+  {
+    "key": "migrations/096_demo_client_entitlements.sql",
+    "applied_at": "2026-08-01T16:36:29.287Z"
+  },
+  {
+    "key": "migrations/097_account_statement_cycles.sql",
+    "applied_at": "2026-08-01T16:36:29.505Z"
+  },
+  {
+    "key": "migrations/098_investment_holdings.sql",
+    "applied_at": "2026-08-01T16:36:29.746Z"
+  },
+  {
+    "key": "migrations/099_client_consents.sql",
+    "applied_at": "2026-08-01T16:36:30.245Z"
+  },
+  {
+    "key": "migrations/100_retention_policy.sql",
+    "applied_at": "2026-08-01T16:36:30.482Z"
+  },
+  {
+    "key": "migrations/101_bank_transaction_subject_anchor.sql",
+    "applied_at": "2026-08-01T16:36:30.707Z"
+  },
+  {
+    "key": "migrations/102_erasure_requests.sql",
+    "applied_at": "2026-08-01T16:36:30.921Z"
+  },
+  {
+    "key": "migrations/103_bank_account_provider.sql",
+    "applied_at": "2026-08-01T16:36:31.151Z"
+  },
+  {
+    "key": "migrations/104_app_role.sql",
+    "applied_at": "2026-08-01T16:38:16.755Z"
+  },
+  {
+    "key": "migrations/105_login_path_grants.sql",
+    "applied_at": "2026-08-01T16:38:31.794Z"
+  },
+  {
+    "key": "migrations/106_entities.sql",
+    "applied_at": "2026-08-01T17:07:19.638Z"
+  },
+  {
+    "key": "migrations/106_journeys.sql",
+    "applied_at": "2026-08-01T17:07:20.018Z"
+  },
+  {
+    "key": "migrations/107_recurring_bills_manual.sql",
+    "applied_at": "2026-08-01T17:07:20.242Z"
+  },
+  {
+    "key": "migrations/108_owner_notifications.sql",
+    "applied_at": "2026-08-01T17:07:20.472Z"
+  },
+  {
+    "key": "migrations/110_messages_outbound.sql",
+    "applied_at": "2026-08-01T23:47:29.518Z"
+  },
+  {
+    "key": "migrations/111_messages_address.sql",
+    "applied_at": "2026-08-01T23:47:37.961Z"
+  },
+  {
+    "key": "migrations/112_sales_manager_role.sql",
+    "applied_at": "2026-08-01T23:47:45.340Z"
+  },
+  {
+    "key": "migrations/113_journeys.sql",
+    "applied_at": "2026-08-01T23:48:08.498Z"
+  },
+  {
+    "key": "migrations/114_ghl_agent_seed.sql",
+    "applied_at": "2026-08-02T03:40:16.427Z"
+  },
+  {
+    "key": "migrations/115_affiliates_white_label.sql",
+    "applied_at": "2026-08-02T03:41:02.287Z"
+  },
+  {
+    "key": "migrations/116_template_approval.sql",
+    "applied_at": "2026-08-02T03:41:34.767Z"
+  },
+  {
+    "key": "migrations/109_no_bare_rls.sql",
+    "applied_at": "2026-08-02T15:28:40.959Z"
+  },
+  {
+    "key": "migrations/117_account_magic_links.sql",
+    "applied_at": "2026-08-02T15:28:41.289Z"
+  },
+  {
+    "key": "migrations/118_client_uploads.sql",
+    "applied_at": "2026-08-02T15:28:41.649Z"
+  },
+  {
+    "key": "migrations/119_payment_links.sql",
+    "applied_at": "2026-08-02T15:28:41.969Z"
+  },
+  {
+    "key": "migrations/120_messages_sender.sql",
+    "applied_at": "2026-08-02T15:28:42.289Z"
+  },
+  {
+    "key": "migrations/121_sms_routing_twilio.sql",
+    "applied_at": "2026-08-02T15:28:42.609Z"
+  },
+  {
+    "key": "migrations/122_conversations_activity.sql",
+    "applied_at": "2026-08-02T15:28:42.929Z"
+  },
+  {
+    "key": "migrations/123_journey_copy_double_brace.sql",
+    "applied_at": "2026-08-02T15:28:43.234Z"
+  },
+  {
+    "key": "migrations/124_contracts.sql",
+    "applied_at": "2026-08-02T15:28:43.554Z"
+  },
+  {
+    "key": "migrations/125_contract_esign.sql",
+    "applied_at": "2026-08-02T15:28:43.899Z"
+  },
+  {
+    "key": "migrations/126_outbound_switch.sql",
+    "applied_at": "2026-08-02T15:28:44.254Z"
+  },
+  {
+    "key": "seed/007_contract_templates.sql",
+    "applied_at": "2026-08-02T15:28:44.579Z"
+  },
+  {
+    "key": "seed/007_payment_link_template.sql",
+    "applied_at": "2026-08-02T15:28:44.899Z"
+  },
+  {
+    "key": "seed/007_portal_magic_link_template.sql",
+    "applied_at": "2026-08-02T15:28:45.219Z"
+  },
+  {
+    "key": "seed/008_contract_messages.sql",
+    "applied_at": "2026-08-02T15:28:45.529Z"
+  },
+  {
+    "key": "migrations/127_retire_affiliates_hiring.sql",
+    "applied_at": "2026-08-02T19:53:49.183Z"
+  },
+  {
+    "key": "migrations/128_org_brand.sql",
+    "applied_at": "2026-08-02T19:53:49.523Z"
+  },
+  {
+    "key": "migrations/129_contract_template_write_repair.sql",
+    "applied_at": "2026-08-02T19:53:49.938Z"
+  },
+  {
+    "key": "migrations/130_company_brain.sql",
+    "applied_at": "2026-08-02T19:53:50.173Z"
+  },
+  {
+    "key": "migrations/131_company_brain_sync.sql",
+    "applied_at": "2026-08-02T19:53:50.737Z"
+  },
+  {
+    "key": "migrations/132_company_brain_classification.sql",
+    "applied_at": "2026-08-02T19:53:50.968Z"
+  },
+  {
+    "key": "migrations/133_company_brain_affiliate_allowlist.sql",
+    "applied_at": "2026-08-02T19:53:51.193Z"
+  },
+  {
+    "key": "migrations/134_chat_widget.sql",
+    "applied_at": "2026-08-02T20:41:34.209Z"
+  },
+  {
+    "key": "migrations/135_partner_pages.sql",
+    "applied_at": "2026-08-02T20:41:34.548Z"
+  },
+  {
+    "key": "migrations/136_partner_pages_live.sql",
+    "applied_at": "2026-08-04T22:14:41.023Z"
+  },
+  {
+    "key": "migrations/137_money_chain_idempotency.sql",
+    "applied_at": "2026-08-05T00:02:54.274Z"
+  },
+  {
+    "key": "migrations/138_lenders.sql",
+    "applied_at": "2026-08-05T00:02:54.602Z"
+  },
+  {
+    "key": "migrations/139_funding_ops.sql",
+    "applied_at": "2026-08-05T00:02:54.931Z"
+  },
+  {
+    "key": "migrations/140_inquiry_ops.sql",
+    "applied_at": "2026-08-05T00:02:55.231Z"
+  },
+  {
+    "key": "migrations/141_proxy_sessions.sql",
+    "applied_at": "2026-08-05T00:02:55.556Z"
+  },
+  {
+    "key": "migrations/142_staff_monitoring_consent.sql",
+    "applied_at": "2026-08-05T00:02:55.811Z"
+  },
+  {
+    "key": "migrations/143_inquiry_removal_bridge.sql",
+    "applied_at": "2026-08-05T00:02:56.051Z"
+  },
+  {
+    "key": "migrations/144_agent_runtime.sql",
+    "applied_at": "2026-08-05T00:51:25.838Z"
+  },
+  {
+    "key": "migrations/145_webhook_captures.sql",
+    "applied_at": "2026-08-05T00:51:26.192Z"
+  },
+  {
+    "key": "migrations/146_tasks_meeting_url.sql",
+    "applied_at": "2026-08-05T00:51:26.432Z"
+  },
+  {
+    "key": "migrations/147_call_outcomes.sql",
+    "applied_at": "2026-08-05T03:38:40.162Z"
+  },
+  {
+    "key": "migrations/148_demo_mode.sql",
+    "applied_at": "2026-08-05T04:33:41.669Z"
+  },
+  {
+    "key": "migrations/149_demo_pipeline_cards.sql",
+    "applied_at": "2026-08-05T04:33:42.058Z"
+  },
+  {
+    "key": "migrations/150_demo_wipe_allow.sql",
+    "applied_at": "2026-08-05T04:33:42.313Z"
+  },
+  {
+    "key": "migrations/151_demo_wipe_allow_more.sql",
+    "applied_at": "2026-08-05T04:33:42.578Z"
+  },
+  {
+    "key": "migrations/152_demo_wipe_by_client.sql",
+    "applied_at": "2026-08-05T04:33:42.812Z"
+  },
+  {
+    "key": "migrations/153_demo_ui_coverage.sql",
+    "applied_at": "2026-08-05T04:51:39.095Z"
+  },
+  {
+    "key": "migrations/154_no_bare_rls_again.sql",
+    "applied_at": "2026-08-05T04:56:03.401Z"
+  },
+  {
+    "key": "migrations/155_inquiry_gate.sql",
+    "applied_at": "2026-08-06T22:16:07.238Z"
+  },
+  {
+    "key": "migrations/156_commas_inbox.sql",
+    "applied_at": "2026-08-07T06:42:28.786Z"
+  },
+  {
+    "key": "migrations/157_crs_result_identity.sql",
+    "applied_at": "2026-08-07T18:36:05.909Z"
+  },
+  {
+    "key": "migrations/158_soft_pull_processing_resolved_ck.sql",
+    "applied_at": "2026-08-10T17:32:23.078Z"
+  },
+  {
+    "key": "migrations/159_soft_pull_processing_status_check.sql",
+    "applied_at": "2026-08-10T17:32:23.371Z"
+  },
+  {
+    "key": "migrations/162_commas_inbox_no_bare_rls.sql",
+    "applied_at": "2026-08-12T14:22:54.562Z"
+  },
+  {
+    "key": "migrations/160_metro2_dispute_engine.sql",
+    "applied_at": "2026-08-12T15:20:20.226Z"
+  },
+  {
+    "key": "migrations/161_optimization_repair_pipeline.sql",
+    "applied_at": "2026-08-12T15:20:20.226Z"
+  },
+  {
+    "key": "migrations/163_cf_svy_typed_columns.sql",
+    "applied_at": "2026-08-12T18:43:07.839Z"
+  },
+  {
+    "key": "migrations/164_resend_twilio_routing.sql",
+    "applied_at": "2026-08-14T19:22:24.816Z"
+  },
+  {
+    "key": "migrations/165_messages_attachments.sql",
+    "applied_at": "2026-08-14T19:22:24.816Z"
+  },
+  {
+    "key": "migrations/166_customer_insights.sql",
+    "applied_at": "2026-08-16T00:53:37.279Z"
+  },
+  {
+    "key": "migrations/167_dispute_authorization_consent.sql",
+    "applied_at": "2026-08-16T02:04:05.546Z"
+  },
+  {
+    "key": "seed/010_bs_sms_precall.sql",
+    "applied_at": "2026-08-16T03:09:25.729Z"
+  },
+  {
+    "key": "seed/009_u02_funding_delivery_template.sql",
+    "applied_at": "2026-08-16T03:09:56.542Z"
+  },
+  {
+    "key": "migrations/168_retire_ghl_agents.sql",
+    "applied_at": "2026-08-16T05:30:05.390Z"
+  },
+  {
+    "key": "seed/011_followup_sms_pack.sql",
+    "applied_at": "2026-08-16T05:30:16.184Z"
+  },
+  {
+    "key": "migrations/169_contract_template_placeholders.sql",
+    "applied_at": "2026-08-17T00:39:59.833Z"
+  },
+  {
+    "key": "migrations/170_call_outcome_checklist.sql",
+    "applied_at": "2026-08-17T22:14:41.749Z"
+  },
+  {
+    "key": "migrations/171_content.sql",
+    "applied_at": "2026-08-17T22:14:42.061Z"
+  },
+  {
+    "key": "migrations/172_wl_marketing.sql",
+    "applied_at": "2026-08-17T23:27:04.693Z"
+  },
+  {
+    "key": "migrations/173_specialist_role_name.sql",
+    "applied_at": "2026-08-18T00:06:17.932Z"
+  },
+  {
+    "key": "migrations/174_company_brain_uploads.sql",
+    "applied_at": "2026-08-18T03:51:17.656Z"
+  },
+  {
+    "key": "migrations/175_company_brain_threads.sql",
+    "applied_at": "2026-08-18T03:51:17.951Z"
+  },
+  {
+    "key": "migrations/176_company_brain_upload_reviews.sql",
+    "applied_at": "2026-08-18T03:51:18.241Z"
+  }
+]

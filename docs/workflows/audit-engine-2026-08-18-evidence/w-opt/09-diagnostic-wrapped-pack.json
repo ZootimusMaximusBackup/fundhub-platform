@@ -1,0 +1,37 @@
+{
+  "ok": false,
+  "reason": null,
+  "letterCount": 0,
+  "files": [],
+  "invented_derogatory": [],
+  "seeded_named": [
+    {
+      "creditor": "Chase Sapphire Preferred",
+      "bureau": "EX",
+      "id": "SIM-CHASE-001",
+      "name_in_pack": false,
+      "id_in_pack": false
+    },
+    {
+      "creditor": "American Express Blue Business Cash",
+      "bureau": "EQ",
+      "id": "SIM-AMEX-001",
+      "name_in_pack": false,
+      "id_in_pack": false
+    },
+    {
+      "creditor": "Capital One Spark",
+      "bureau": "TU",
+      "id": "SIM-CAP1-001",
+      "name_in_pack": false,
+      "id_in_pack": false
+    },
+    {
+      "creditor": "Toyota Motor Credit",
+      "bureau": "EX",
+      "id": "SIM-TOYO-001",
+      "name_in_pack": false,
+      "id_in_pack": false
+    }
+  ]
+}

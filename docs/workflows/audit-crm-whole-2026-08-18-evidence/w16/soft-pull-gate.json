@@ -1,0 +1,5 @@
+{
+  "refused_live_bureau": false,
+  "why": "No portal account and/or no consent, so c-00 stops before a bureau call.",
+  "next_stop": "requestSoftPull (consent gate)"
+}

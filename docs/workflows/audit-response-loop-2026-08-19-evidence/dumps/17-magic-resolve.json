@@ -1,0 +1,6 @@
+{
+  "plus_tag_resolves": false,
+  "bare_inbox_resolves_to_live": true,
+  "client_email_is_demo": true,
+  "will_request_magic_link_for": "sim_demo_email_not_inbox_not_plus_tag"
+}

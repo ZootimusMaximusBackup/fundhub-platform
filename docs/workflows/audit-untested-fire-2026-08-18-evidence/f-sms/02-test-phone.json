@@ -1,0 +1,14 @@
+{
+  "queried_live_file": false,
+  "wrote_live_file": false,
+  "test_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "patched_test_phone": true,
+  "before": {
+    "has_phone": false,
+    "phone_eq_fundhub_test_phone": false
+  },
+  "after": {
+    "has_phone": true,
+    "phone_eq_fundhub_test_phone": true
+  }
+}

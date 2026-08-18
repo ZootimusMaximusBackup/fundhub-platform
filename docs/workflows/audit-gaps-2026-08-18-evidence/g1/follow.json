@@ -1,0 +1,434 @@
+{
+  "when": "2026-08-18T17:51:19.181Z",
+  "nav": {
+    "afterExpandShot": "docs/workflows/audit-gaps-2026-08-18-evidence/g1/shots/80-nav-expanded.png",
+    "visible": [
+      {
+        "href": "partner-galaxy.html",
+        "label": "⌂Home",
+        "visible": true
+      },
+      {
+        "href": "social-studio.html",
+        "label": "◉Social Studio",
+        "visible": true
+      },
+      {
+        "href": "creative-factory.html",
+        "label": "✳Creative Factory",
+        "visible": true
+      },
+      {
+        "href": "brand-studio.html",
+        "label": "◆Brand Studio",
+        "visible": true
+      }
+    ],
+    "opens": [
+      {
+        "label": "⌂Home",
+        "asked": "/app/partner-galaxy.html",
+        "httpStatus": 200,
+        "finalUrl": "/app/partner-galaxy.html",
+        "bounced": false,
+        "verdict": "OPEN",
+        "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g1/shots/81-partner-galaxy.html.png"
+      },
+      {
+        "label": "◉Social Studio",
+        "asked": "/app/social-studio.html",
+        "httpStatus": 200,
+        "finalUrl": "/app/social-studio.html",
+        "bounced": false,
+        "verdict": "OPEN",
+        "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g1/shots/82-social-studio.html.png"
+      },
+      {
+        "label": "✳Creative Factory",
+        "asked": "/app/creative-factory.html",
+        "httpStatus": 200,
+        "finalUrl": "/app/creative-factory.html",
+        "bounced": false,
+        "verdict": "OPEN",
+        "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g1/shots/83-creative-factory.html.png"
+      },
+      {
+        "label": "◆Brand Studio",
+        "asked": "/app/brand-studio.html",
+        "httpStatus": 200,
+        "finalUrl": "/app/brand-studio.html",
+        "bounced": false,
+        "verdict": "OPEN",
+        "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g1/shots/84-brand-studio.html.png"
+      }
+    ]
+  },
+  "brand": {
+    "fields": {
+      "name": {
+        "value": "",
+        "placeholder": "Meridian Capital Partners"
+      },
+      "entity": {
+        "value": "",
+        "placeholder": "Meridian Capital Partners LLC"
+      },
+      "addr": {
+        "value": "",
+        "placeholder": "1200 Main St Suite 400, Phoenix, AZ 85004"
+      },
+      "email": {
+        "value": "",
+        "placeholder": "support@meridiancapital.com"
+      },
+      "domain": {
+        "value": "",
+        "placeholder": "meridiancapital.com"
+      },
+      "saveMsg": "",
+      "draftEntity": "",
+      "draftName": ""
+    },
+    "partnerBrandHttp": 200,
+    "partnerBrandOk": true,
+    "partnerBrandEntity": "E2E WL Click17 Co",
+    "partnerBrandError": null,
+    "saveMsg": "Legal entity is required — it goes into every disclosure.",
+    "saveApi": [],
+    "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g1/shots/85-brand-save-retry.png",
+    "generationShot": "docs/workflows/audit-gaps-2026-08-18-evidence/g1/shots/86-brand-generation.png",
+    "generationInView": "docs/workflows/audit-gaps-2026-08-18-evidence/g1/shots/87-brand-generation-inview.png",
+    "publishShot": "docs/workflows/audit-gaps-2026-08-18-evidence/g1/shots/88-brand-publish.png"
+  },
+  "social": {
+    "connectBox": "Connecting Facebook, Instagram, or LinkedIn is for the owner once those apps are set up. You can still write and queue posts here.",
+    "emptyAccounts": "No social accounts are connected yet. Once one is, it will show here.\nNothing can be written or queued until there is one. Connect Facebook, Instagram or LinkedIn just below.",
+    "queue": {
+      "waitingText": null,
+      "rows": [
+        "▸— Looking for funding options? The Partner connects you with potential lenders who may be able to help. No guarantees, but we make the search simpler. Learn more about how our rev",
+        "▸— Need to explore business financing? We review your information and match you with lenders in our network. Every situation is different, so results vary. Start your free review t",
+        "▸— The Partner helps you find lenders, not loans directly. We review your needs and connect you with possible funding sources. Simple process, no obligations. See if you qualify to"
+      ],
+      "discardLike": [],
+      "queueDisabled": false,
+      "channelValue": "",
+      "channelText": "— connect an account first —"
+    },
+    "composerShot": "docs/workflows/audit-gaps-2026-08-18-evidence/g1/shots/89-social-composer.png",
+    "queueMsg": "Pick an account to post to first.",
+    "queueApi": [],
+    "afterQueueShot": "docs/workflows/audit-gaps-2026-08-18-evidence/g1/shots/90-social-after-queue.png",
+    "connectShot": "docs/workflows/audit-gaps-2026-08-18-evidence/g1/shots/91-social-connect-box.png"
+  },
+  "creative": {
+    "generate": {
+      "btn": {
+        "text": "Enqueue generation",
+        "disabled": false,
+        "display": "block",
+        "visibility": "visible",
+        "w": 0,
+        "h": 0,
+        "y": 0
+      },
+      "run": {
+        "text": "Run queued jobs now",
+        "disabled": false,
+        "display": "block",
+        "visibility": "visible",
+        "w": 0,
+        "h": 0,
+        "y": 0
+      },
+      "cardDisplay": "none",
+      "cardH": 0,
+      "cardText": "Generate and decide Ask for new creative. Queued work is picked up on its own every couple of minutes. \"Run queued jobs now\" starts it straight away. Kind staticcopyvideoresize What to make Name this batch Enqueue generation Run queued jobs now Decide on one creative. Pick it from the library below,",
+      "usage": "ON?\nYes\nUSED THIS MONTH\n1458\nLEFT\n248542\nCAP\n250000"
+    },
+    "enqueueShot": "docs/workflows/audit-gaps-2026-08-18-evidence/g1/shots/92-creative-enqueue.png",
+    "didNotClickEnqueue": true
+  },
+  "http": [
+    {
+      "method": "GET",
+      "url": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "url": "/api/auth/login",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/read/partners?limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/org-brand",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/read/partners?limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/org-brand",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/read/partners?limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/org-brand",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/social/posts?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/campaigns/action-log?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&target_type=social_post&state=all&limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/partner-marketing/usage?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/read/partners?limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/org-brand",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/creative/library?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&state=all&include_archived=1&limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/creative/jobs?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&state=all&limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/creative/brand-kits?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&state=all&limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/partner-marketing/usage?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/creative/approvals?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&state=all&limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/partner-pages?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/partner-marketing/usage?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/org-brand",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/partner-marketing/copy-history?page_id=136297ef-e49a-421e-8e34-b2e99184cb8c",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/partner-pages?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/partner-marketing/usage?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/org-brand",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/partner-marketing/copy-history?page_id=136297ef-e49a-421e-8e34-b2e99184cb8c",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/read/partners?limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/org-brand",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/campaigns/action-log?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&target_type=social_post&state=all&limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/social/posts?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/partner-marketing/usage?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/read/partners?limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/org-brand",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/creative/approvals?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&state=all&limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/creative/library?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&state=all&include_archived=1&limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/creative/jobs?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&state=all&limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/creative/brand-kits?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&state=all&limit=200",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/partner-marketing/usage?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+      "status": 200
+    }
+  ]
+}

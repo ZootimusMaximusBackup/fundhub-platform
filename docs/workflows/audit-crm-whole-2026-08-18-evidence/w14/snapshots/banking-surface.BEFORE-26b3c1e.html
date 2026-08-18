@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fundhub — Banking Surface</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fundhub-brand.css">
+<style>
+/* ══ SHARED CHROME — identical across every internal surface ══════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--butter:#F2E39B}           /* spectrum stop @40% — the 6th status color */
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit}
+.logo{width:118px;height:24px;flex:0 0 118px}
+.eyebrow{display:block}
+.eyebrow .sep{color:var(--line);margin:0 6px}
+.app{display:flex;min-height:100vh}
+
+.side{width:230px;flex:0 0 230px;background:var(--ink);color:var(--paper);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;transition:width .18s ease,flex-basis .18s ease}
+.side::after{content:"";position:absolute;top:0;right:0;width:2px;height:100%;background:var(--spectrum);opacity:.9}
+.side.mini{width:60px;flex:0 0 60px}
+.side-top{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--cardline)}
+.side.mini .side-top{padding:0 12px}
+.side.mini .logo{display:none}
+.burger{margin-left:auto;width:26px;height:26px;flex:0 0 26px;border:1px solid var(--cardline);background:transparent;color:var(--gray2);border-radius:5px;cursor:pointer;font-family:var(--mono);font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center}
+.burger:hover{border-color:#3F3F46;color:var(--paper)}
+.side.mini .burger{margin:0 auto}
+.side-scroll{flex:1;overflow-y:auto;padding:12px 0 8px}
+.side-scroll::-webkit-scrollbar{width:6px}
+.side-scroll::-webkit-scrollbar-thumb{background:#27272A;border-radius:3px}
+.navgroup{margin-bottom:3px}
+.navhead{width:100%;background:transparent;border:0;cursor:pointer;text-align:left;display:flex;align-items:center;gap:8px;padding:9px 18px 6px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#71717A}
+.navhead:hover{color:var(--gray2)}
+.navhead .chev{margin-left:auto;font-size:9px;transition:transform .16s;color:#52525B}
+.navgroup.closed .chev{transform:rotate(-90deg)}
+.navgroup.closed .navlist{display:none}
+.side.mini .navhead{justify-content:center;padding:10px 0 6px;font-size:0;letter-spacing:0}
+.side.mini .navhead::after{content:"";display:block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;opacity:.5}
+.side.mini .navhead .chev{display:none}
+.navlist{display:flex;flex-direction:column}
+.navitem{display:flex;align-items:center;gap:11px;padding:7px 18px;font-size:12.5px;color:var(--gray2);position:relative;transition:color .12s,background .12s}
+.navitem:hover{color:var(--paper);background:#161619}
+.navitem .ico{font-family:var(--mono);font-size:12px;width:16px;flex:0 0 16px;text-align:center;opacity:.75}
+.navitem.on{color:var(--paper);background:#161619;font-weight:500}
+.navitem.on::before{content:"";position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--spectrum);border-radius:0 2px 2px 0}
+.navitem.on .ico{opacity:1}
+.side.mini .navitem{justify-content:center;padding:9px 0}
+.side.mini .navitem .lbl{display:none}
+.side-foot{padding:12px 16px;border-top:1px solid var(--cardline);font-family:var(--mono);font-size:10px;color:#52525B;letter-spacing:.08em;display:flex;align-items:center;gap:10px}
+.side.mini .side-foot .who{display:none}
+.side.mini .side-foot{justify-content:center;padding:12px 0}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+.topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+.topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+.spacer{flex:1}
+.content{padding:22px 24px 40px;flex:1}
+.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
+
+  :root{ --surface:#FFFFFF; --text:var(--ink2); --text-dim:var(--gray); --text-faint:var(--gray2); }
+
+  .bs-wrap{ max-width:960px; margin:0 auto; padding:28px 20px 64px; }
+  .bs-nav-back{ font:400 13px/1 'Inter',system-ui,sans-serif; color:var(--link); margin-bottom:12px; }
+  .bs-nav-back a{ cursor:pointer; text-decoration:underline; }
+  .bs-head{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:6px; }
+  .bs-title{ font:800 22px/1.2 'Inter',system-ui,sans-serif; color:var(--text); letter-spacing:-.01em; }
+  .bs-source{ font:600 10px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.09em; text-transform:uppercase;
+              color:var(--text-faint); border:1px solid currentColor; border-radius:3px; padding:4px 7px; }
+  .bs-sub{ font:400 13px/1.5 'Inter',system-ui,sans-serif; color:var(--text-dim); margin:0 0 18px; max-width:64ch; }
+
+  /* THE CALL TO ACTION. Unclassified accounts are the one thing on this screen
+     somebody is supposed to DO something about, so they get a banner of their
+     own rather than being a number in a row. */
+  .bs-todo{ display:none; margin:0 0 20px; padding:11px 14px; border-radius:6px;
+            background:var(--butter,#F2E39B); color:var(--ink2);
+            font:600 12px/1.5 'Inter',system-ui,sans-serif; }
+  .bs-todo.on{ display:block; }
+
+  /* ONE CARD PER GROUP, NEVER ONE TOTAL. The three groups are visually separate
+     because they are separate money. There is no summary strip across the top
+     and there must never be one — see the module header. */
+  .bs-group{ border:1px solid var(--soft); border-radius:8px; background:var(--surface);
+             margin:0 0 16px; overflow:hidden; }
+  .bs-group.is-unknown{ border-color:var(--ink2); }
+  .bs-ghead{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,auto); gap:12px;
+             align-items:baseline; padding:13px 16px; border-bottom:1px solid var(--soft); }
+  .bs-glabel{ font:700 13px/1.3 'Inter',system-ui,sans-serif; color:var(--text); }
+  .bs-gbasis{ display:block; margin-top:3px; font:500 10px/1.4 'JetBrains Mono',ui-monospace,monospace;
+              letter-spacing:.04em; color:var(--text-faint); }
+  .bs-gtotal{ font:700 17px/1.2 'JetBrains Mono',ui-monospace,monospace; color:var(--text); text-align:right; white-space:nowrap; }
+  .bs-gtotal.is-unknown{ color:var(--text-faint); font-weight:500; }
+  /* THE PLUS AND THE DASH MUST NEVER LAND ON THE SAME NUMBER (audit m16). Both
+     classes are written onto this one element by the wiring script below —
+     is-unknown from g.current.display === null, is-partial from
+     g.current.basis.partial — and src/finance/banking-surface.mjs sets both at
+     once through the shared sumKnown()/basisOf() pair in
+     src/finance/os-grid.mjs:79 and :86: a group whose open accounts all failed
+     to report a balance has total null AND unknown > 0. That group rendered as
+     the literal string "—+". The dash means "we have no number"; the plus means
+     "there is more than this". Together they say nothing and look like a bug.
+     :not(.is-unknown) suppresses only that pair, so a known-but-partial group
+     total still shows the plus and an unknown one still shows the dash, with
+     the basis line under it explaining which. */
+  .bs-gtotal.is-partial:not(.is-unknown)::after{ content:"+"; margin-left:2px; color:var(--text-faint); font-weight:500; }
+
+  .bs-acct{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,auto); gap:12px;
+            align-items:baseline; padding:11px 16px; border-bottom:1px solid var(--soft); }
+  .bs-acct:last-child{ border-bottom:0; }
+  .bs-aname{ font:500 12px/1.35 'Inter',system-ui,sans-serif; color:var(--text); }
+  .bs-ameta{ display:block; margin-top:2px; font:500 10px/1.4 'JetBrains Mono',ui-monospace,monospace;
+             letter-spacing:.03em; color:var(--text-faint); }
+  .bs-abal{ font:600 13px/1.2 'JetBrains Mono',ui-monospace,monospace; color:var(--text); text-align:right; white-space:nowrap; }
+  .bs-abal.is-unknown{ color:var(--text-faint); font-weight:500; }
+  /* An overdraft is the account somebody needs to look at. It is never hidden
+     and never clamped to zero. */
+  .bs-abal.is-over{ color:#B03A2E; }
+  .bs-empty{ padding:13px 16px; font:400 12px/1.4 'Inter',system-ui,sans-serif; color:var(--text-faint); }
+
+  .bs-note{ margin-top:18px; font:400 12px/1.6 'Inter',system-ui,sans-serif; color:var(--text-dim); max-width:70ch; }
+  .bs-note code{ font:500 11px/1 'JetBrains Mono',ui-monospace,monospace; }
+  @media (max-width:520px){
+    .bs-ghead,.bs-acct{ grid-template-columns:1fr; }
+    .bs-gtotal,.bs-abal{ text-align:left; }
+  }
+</style>
+<script src="shell.js"></script>
+</head>
+<body>
+<div class="app">
+  <aside class="side" id="side">
+    <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" title="Collapse sidebar">‹‹</button></div>
+    <nav class="side-scroll">
+      <div class="navgroup"><button class="navhead">Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
+        <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
+        <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
+        <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
+        <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Finance<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="money-map.html"><span class="ico">◪</span><span class="lbl">Money Map</span></a>
+        <a class="navitem" href="finance-os.html"><span class="ico">▩</span><span class="lbl">Finance OS</span></a>
+        <a class="navitem on" href="banking-surface.html"><span class="ico">◧</span><span class="lbl">Banking</span></a>
+        <a class="navitem" href="subscriptions.html"><span class="ico">◍</span><span class="lbl">Subscriptions</span></a>
+        <a class="navitem" href="card-stack.html"><span class="ico">▥</span><span class="lbl">Card Stack</span></a>
+        <a class="navitem" href="bank-accounts.html"><span class="ico">⊞</span><span class="lbl">Bank Accounts</span></a>
+        <a class="navitem" href="bills-cashflow.html"><span class="ico">∿</span><span class="lbl">Bills &amp; Cash Flow</span></a>
+        <a class="navitem" href="alerts.html"><span class="ico">⚠</span><span class="lbl">Alerts</span></a>
+        <a class="navitem" href="deal-model.html"><span class="ico">⌁</span><span class="lbl">Deal Model</span></a>
+        <a class="navitem" href="banking-entry.html"><span class="ico">✚</span><span class="lbl">Add Accounts</span></a>
+        <a class="navitem" href="finance-command.html"><span class="ico">Σ</span><span class="lbl">Finance Command</span></a>
+        <a class="navitem" href="finance-add.html"><span class="ico">+</span><span class="lbl">Add Anything</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Watch<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="command-center.html"><span class="ico">⌘</span><span class="lbl">Command Center</span></a>
+        <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
+        <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Automation<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+        <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
+        <a class="navitem" href="journeys.html"><span class="ico">⇝</span><span class="lbl">Journeys</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Marketing<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
+        <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
+        <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Setup<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+        <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
+        <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
+        <a class="navitem" href="content-admin.html"><span class="ico">▶</span><span class="lbl">Content</span></a>
+        <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Sample Data</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">My Work<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
+        <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Inquiry Specialist</span></a>
+        <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+      </div></div>
+      <div class="navgroup"><button class="navhead">Client<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
+      </div></div>
+    </nav>
+    <div class="side-foot"><span class="pulse"></span><span class="who">CS · EMP-000001</span></div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="crumb">Finance</span><h1>Banking</h1>
+      <div class="spacer"></div>
+    </div>
+
+    <div class="content">
+      <div class="bs-wrap">
+        <!-- A REAL HREF, NOT history.back(). This screen carries no sidebar, so this
+             is the only way off it. history.back() does nothing at all when the page
+             was opened from a pasted or bookmarked URL, which left the browser's own
+             Back button as the only exit (audit M20). Only owner and admin can open
+             this screen (shell.js OWNER_ADMIN_ONLY) and both land on the Command
+             Center, so that is where this goes. -->
+        <!-- The second link is the hub. This screen is about one named client, so
+             leaving it via the Command Center loses them; finance-os.html keeps them,
+             because shell.js appends ?client_id= to every link in CLIENT_SCREENS. -->
+        <div class="bs-nav-back"><a href="command-center.html">← Command Center</a>
+          <span aria-hidden="true"> · </span>
+          <a href="finance-os.html">← Client hub</a></div>
+        <div class="bs-head">
+          <h1 class="bs-title">Banking Surface</h1>
+          <span class="bs-source" id="bsSource">bank_accounts</span>
+        </div>
+        <p class="bs-sub">
+          Bank accounts on file, grouped by whose money it is.
+          <strong>Unclassified is not personal</strong> — an account nobody has placed yet is shown on its
+          own and is never added to the client's money.
+        </p>
+
+        <div class="bs-todo" id="bsTodo"></div>
+
+        <!-- SAMPLE MARKUP. The screen never blanks: if the read fails this stays and
+             the banner says where the numbers came from. -->
+        <div id="bsGroups">
+          <div class="bs-group">
+            <div class="bs-ghead"><div class="bs-glabel">Personal<span class="bs-gbasis">sample</span></div><div class="bs-gtotal">2,400.00</div></div>
+            <div class="bs-acct"><div class="bs-aname">Everyday Checking<span class="bs-ameta">sample</span></div><div class="bs-abal">2,400.00</div></div>
+          </div>
+          <div class="bs-group is-unknown">
+            <div class="bs-ghead"><div class="bs-glabel">Unclassified<span class="bs-gbasis">sample</span></div><div class="bs-gtotal">9,000.00</div></div>
+            <div class="bs-acct"><div class="bs-aname">Unnamed account<span class="bs-ameta">sample</span></div><div class="bs-abal">9,000.00</div></div>
+          </div>
+        </div>
+
+        <p class="bs-note">
+          Open with a client in the address bar — <code>banking-surface.html?client_id=&lt;id&gt;</code>.
+          There is deliberately no single total across the three groups: one number spanning
+          personal, business and unclassified money would be read as the client's, and for two
+          of those three that has not been established.
+        </p>
+      </div>
+    </div>
+
+    <div class="foot"><span class="pulse"></span><span>systems nominal · fundhub.ai</span></div>
+  </div>
+</div>
+
+<script data-chrome>
+/* ══ SHARED CHROME BEHAVIOUR ═════════════════════════════════════════════ */
+/* data-chrome IS LOAD-BEARING FOR THE TESTS, NOT DECORATION. This screen's
+   suite (src/http/banking-surface-screen.test.mjs, finance-os-screen.test.mjs)
+   lifts the page's wiring out by matching the first BARE script tag, on the
+   stated rule that the wiring block is the only one without attributes — the
+   src= blocks all carry them. This chrome block arrived on these two screens
+   later and sits AHEAD of the wiring, so untagged it was matched first: the
+   suite then evaluated the burger toggle instead of the screen, and every case
+   died on "Cannot read properties of null". The attribute keeps the rule true.
+   Do not quote that matcher literally in here — spelling the tags out in a
+   comment puts them back in the haystack and breaks the same tests again. */
+(function(){
+  var side=document.getElementById('side'),b=document.getElementById('burger');
+  b.addEventListener('click',function(){side.classList.toggle('mini');b.textContent=side.classList.contains('mini')?'››':'‹‹';});
+  document.querySelectorAll('.navhead').forEach(function(h){
+    h.addEventListener('click',function(){if(side.classList.contains('mini'))return;h.parentElement.classList.toggle('closed');});
+  });
+})();
+</script>
+
+<script src="data.js"></script>
+<script>
+/* THE GROUPING IS NOT DONE HERE. It arrives already formed from
+   /api/read/banking-surface, which calls src/finance/banking-surface.mjs. The
+   rule "unknown is not personal" lives in one place and is unit-tested there; a
+   second copy in a <script> block is a second answer that goes stale. This file
+   renders; it does not decide. */
+(function () {
+  if (!window.FHData) return;
+
+  var host = document.getElementById("bsGroups");
+  var todo = document.getElementById("bsTodo");
+  var clientId = FHData.param("client_id");
+
+  if (!clientId) {
+    FHData.banner("sample", "sample banking surface — open with ?client_id=<id> for a real client", "banking");
+    return;
+  }
+
+  /* ONCE THE URL NAMES A CLIENT, THE SAMPLE MONEY GOES. Immediately, before the
+     read resolves, and whatever the read does next. The sample block states
+     "Personal 2,400.00" and "Unclassified 9,000.00"; left under a real client's
+     name those are a balance nobody has, contradicted only by an 11px banner
+     along the bottom edge. Every ending — rows, no rows, or no answer at all —
+     now replaces it, because nothing in this repo writes bank_accounts yet and
+     "no answer" and "no rows" are the two endings a real client actually gets. */
+  function state(msg) {
+    host.innerHTML = '<div class="bs-group"><div class="bs-empty">' + esc(msg) + "</div></div>";
+  }
+  state("Loading bank accounts…");
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function group(s) {
+    if (s == null) return null;
+    var neg = String(s).charAt(0) === "-";
+    var body = neg ? String(s).slice(1) : String(s);
+    var parts = body.split(".");
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return (neg ? "-" : "") + parts.join(".");
+  }
+
+  function groupBasis(g) {
+    if (!g.open_count) {
+      return g.count ? g.count + " account(s), all closed" : "no accounts";
+    }
+    var b = g.current.basis;
+    if (g.current.value === null) return "no balance reported on any account";
+    if (b.partial) {
+      return "counted " + b.counted + " of " + b.lines + " open account(s) · " +
+             b.unknown + " did not report — this is a floor";
+    }
+    return g.open_count + " open account(s) · all reported";
+  }
+
+  function acctMeta(a) {
+    var bits = [];
+    if (a.mask) bits.push("••" + a.mask);
+    if (a.account_subtype || a.account_type) bits.push(a.account_subtype || a.account_type);
+    // How we know whose it is. On an unclassified account this reads "not
+    // established", which is the honest state and the thing to act on.
+    bits.push(a.entity_kind === "unknown"
+      ? "whose money: not established"
+      : "whose money: " + a.entity_kind + (a.entity_kind_source ? " (" + a.entity_kind_source + ")" : ""));
+    if (a.closed_at) bits.push("closed");
+    return bits.join(" · ");
+  }
+
+  FHData.wire(
+    /* A read that never reaches paint() still has to clear the sample. wire()
+       leaves the markup alone on failure by design — that is right for a screen
+       with nobody named on it, and wrong for this one. */
+    FHData.read("banking-surface", { client_id: clientId }).then(function (res) {
+      if (!res || !res.ok) {
+        state("Bank accounts for this client could not be read. The banner at the " +
+              "bottom of the screen says why. No balances are shown because none are known.");
+      }
+      return res;
+    }),
+    "banking",
+    function (data) {
+      var groups = (data && data.groups) || [];
+      if (!groups.length) {
+        // Answered, but with no groups to draw. Nothing is known, so nothing is shown.
+        state("No bank accounts on file for this client.");
+        return null;
+      }
+
+      document.getElementById("bsSource").textContent = data.source || "bank_accounts";
+
+      if (data.needs_classification) {
+        todo.className = "bs-todo on";
+        todo.textContent = data.unclassified + " account(s) have not been placed yet. " +
+          "Until somebody says whose money they are, they are NOT counted as the client's.";
+      } else {
+        todo.className = "bs-todo";
+        todo.textContent = "";
+      }
+
+      // Only groups with accounts are drawn. An empty "Business" card is noise;
+      // an unclassified card with rows in it is the point of the screen.
+      var shown = groups.filter(function (g) { return g.count > 0; });
+      if (!shown.length) {
+        // No real accounts — say so rather than leaving the sample figures up.
+        state("No bank accounts on file for this client.");
+        return null;
+      }
+
+      host.innerHTML = shown.map(function (g) {
+        var unknownTotal = g.current.display === null || g.current.display === undefined;
+        var accts = g.accounts.map(function (a) {
+          var noBal = a.current_display === null || a.current_display === undefined;
+          return '<div class="bs-acct">' +
+                   '<div class="bs-aname">' + esc(a.name || "Unnamed account") +
+                     '<span class="bs-ameta">' + esc(acctMeta(a)) + "</span></div>" +
+                   '<div class="bs-abal' + (noBal ? " is-unknown" : (a.overdrawn ? " is-over" : "")) + '">' +
+                     esc(noBal ? "—" : group(a.current_display)) + "</div>" +
+                 "</div>";
+        }).join("");
+
+        return '<div class="bs-group' + (g.key === "unknown" ? " is-unknown" : "") + '">' +
+                 '<div class="bs-ghead">' +
+                   '<div class="bs-glabel">' + esc(g.label) +
+                     '<span class="bs-gbasis">' + esc(groupBasis(g)) + "</span></div>" +
+                   '<div class="bs-gtotal' + (unknownTotal ? " is-unknown" : "") +
+                     (g.current.basis.partial ? " is-partial" : "") + '">' +
+                     esc(unknownTotal ? "—" : group(g.current.display)) + "</div>" +
+                 "</div>" + (accts || '<div class="bs-empty">no accounts</div>') +
+               "</div>";
+      }).join("");
+
+      return "live banking surface · " + data.accounts + " account(s) · source " +
+             (data.source || "?") +
+             (data.unclassified ? " · " + data.unclassified + " unclassified" : "");
+    }
+  );
+})();
+</script>
+</body>
+</html>

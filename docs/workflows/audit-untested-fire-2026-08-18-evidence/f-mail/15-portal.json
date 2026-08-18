@@ -1,0 +1,30 @@
+{
+  "opened_magic_link": true,
+  "staff_open": false,
+  "final_path": "/app/client-portal.html",
+  "verify": {
+    "status": 200,
+    "ok": false,
+    "principal": null,
+    "has_token": false,
+    "next": null
+  },
+  "session": {
+    "status": 200,
+    "ok": true,
+    "principal": "client",
+    "role": "client",
+    "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+    "name": "TEST — Client Role"
+  },
+  "is_test": true,
+  "is_live": false,
+  "is_client_kind": true,
+  "saw_welcome_back_test": false,
+  "saw_could_not_load": true,
+  "hero_empty": true,
+  "entitlements_line": null,
+  "dispute_sign_in_needed": true,
+  "dispute_already_signed": false,
+  "did_not_press_sign": true
+}

@@ -1,0 +1,15 @@
+{
+  "rows": 1,
+  "extracted_link": true,
+  "link_host": "fundhub.ai",
+  "link_path": "/portal-login.html",
+  "has_token_query": true,
+  "message_id": "63e6b3ea-bc86-43ec-ac1e-ece0c5cb1014",
+  "statuses": [
+    {
+      "id": "63e6b3ea-bc86-43ec-ac1e-ece0c5cb1014",
+      "status": "queued",
+      "provider": "internal"
+    }
+  ]
+}

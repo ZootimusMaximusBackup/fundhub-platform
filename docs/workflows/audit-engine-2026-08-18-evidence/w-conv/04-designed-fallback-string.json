@@ -1,0 +1,13 @@
+{
+  "file": "public/app/proxy-apply.js",
+  "detect": "FHProxyApply.detectExtension() via postMessage ping (1500ms). No API named detect-or-fallback.",
+  "fallback_copy": "Chrome extension not detected. Browser routing is NOT active. Use the copyable proxy settings below, or install the Fundhub Proxy extension (see extension/README.md).",
+  "manual_fields": [
+    "Host",
+    "Port",
+    "Username (includes city + sessid)",
+    "Password",
+    "Application URL"
+  ],
+  "renders_only_after": "POST /api/proxy/launch returns ok:true (connection + verification). Credential error modal does not show the manual string."
+}

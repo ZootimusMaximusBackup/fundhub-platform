@@ -1,0 +1,26 @@
+{
+  "editor": {
+    "path": "/app/agent-editor.html",
+    "title": "Fundhub — Agent Editor",
+    "dialLike": [],
+    "savePromote": [
+      "Promote to live",
+      "Save agent"
+    ]
+  },
+  "specialist": {
+    "path": "/app/inquiry-remover.html",
+    "title": "Fundhub — Specialist",
+    "dialLike": [],
+    "savePromote": []
+  },
+  "ccp": {
+    "path": "/app/client-control-panel.html?id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+    "title": "Fundhub — Client Control Panel",
+    "dialLike": [],
+    "savePromote": []
+  },
+  "clicked_start_call": false,
+  "clicked_save": false,
+  "clicked_promote": false
+}

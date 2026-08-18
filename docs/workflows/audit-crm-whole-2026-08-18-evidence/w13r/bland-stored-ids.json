@@ -1,0 +1,210 @@
+{
+  "at": "2026-08-18T20:50:59.124Z",
+  "idRows": [
+    {
+      "call_id": "5265c6e8-d68e-4427-996e-52936ffa28cc",
+      "created_at": "2026-08-16T03:46:15.097Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "f4626301-4f01-49ce-ac40-a8f78119e991",
+      "created_at": "2026-08-16T03:42:17.459Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "9b608e17-9c3d-43e6-bd75-b0e3d0437e5c",
+      "created_at": "2026-08-16T03:33:04.108Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "c40da235-51ff-4b77-a048-5b563811179f",
+      "created_at": "2026-08-16T03:31:32.706Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "b86a85ac-6bc0-4778-bed2-07757b336690",
+      "created_at": "2026-08-16T03:21:05.204Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "fc6405b4-f253-4caa-aae8-a8f05288207f",
+      "created_at": "2026-08-15T03:32:25.290Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "1e6fbe70-7600-4df7-8ec9-9546f3e2eae4",
+      "created_at": "2026-08-15T03:29:28.370Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "9c6db403-8153-43c7-91ff-7382f57ab192",
+      "created_at": "2026-08-15T01:53:06.882Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "823ec038-e86e-461a-b265-13009959eb8f",
+      "created_at": "2026-08-15T01:53:01.226Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "326e71c0-86f3-4c76-ba8e-de0627a9c30d",
+      "created_at": "2026-08-14T21:33:08.555Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "7c257743-f066-4209-810c-e9742095d616",
+      "created_at": "2026-04-13T16:19:21.974Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "8ba0d1c8-22dd-44a0-a1a4-555a31474e6a",
+      "created_at": "2026-04-13T15:58:26.285Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "20a49653-d148-427a-ae21-0a399b75b229",
+      "created_at": "2026-04-13T15:57:27.905Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "00be1b50-d5d9-40ce-9a78-ee533f0853ca",
+      "created_at": "2026-04-01T17:02:54.165Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "20cd4904-d0f5-4d0f-ac44-c7ea3a29b893",
+      "created_at": "2026-04-01T15:54:41.701Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "e50be9c9-7c71-4628-b0b0-66ebfa29312c",
+      "created_at": "2026-04-01T06:50:37.194Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "b8156339-df49-4e4e-b399-813b2d54a423",
+      "created_at": "2026-04-01T05:23:44.123Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "885b0f4c-2647-4034-9901-42fd63ce4bab",
+      "created_at": "2026-04-01T04:57:47.465Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "490b9fd4-6e02-4692-969b-edbb5f05ffd4",
+      "created_at": "2026-04-01T04:44:45.869Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    },
+    {
+      "call_id": "e845b1d2-7ef2-41e8-bed5-35fb55516c8e",
+      "created_at": "2026-03-31T20:18:32.537Z",
+      "pathway_id": null,
+      "agent_version_id": null,
+      "agent_experiment_id": null,
+      "persona_id": null,
+      "contact_id": null
+    }
+  ],
+  "uniqueVersions": [],
+  "versionLooks": [],
+  "extra": [
+    {
+      "path": "/agent",
+      "status": 404,
+      "top_keys": [],
+      "bytes_hint": 0
+    },
+    {
+      "path": "/conversational-pathways",
+      "status": 404,
+      "top_keys": [],
+      "bytes_hint": 0
+    },
+    {
+      "path": "/personas",
+      "status": 200,
+      "top_keys": [
+        "data",
+        "errors"
+      ],
+      "bytes_hint": 25
+    }
+  ]
+}

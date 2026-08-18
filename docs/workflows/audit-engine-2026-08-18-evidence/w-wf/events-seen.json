@@ -1,0 +1,147 @@
+{
+  "queried_at": "2026-08-18T19:23:49.597Z",
+  "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+  "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+  "inngest_live": false,
+  "inngest_invented": false,
+  "unique_names": [
+    "docs.received",
+    "analysis.completed",
+    "decision.rendered",
+    "payment.received",
+    "diagnostic.paid",
+    "contract.sent",
+    "contract.signed",
+    "mail.response",
+    "round.approved",
+    "inquiry.removed"
+  ],
+  "unique_name_count": 10,
+  "rows_this_client": 11,
+  "rows_null_client_claimed_by_w_pay": 2,
+  "failed_events": 0,
+  "rows": [
+    {
+      "id": "b9ee35c4-08ab-47c8-86e2-613f4c731715",
+      "name": "docs.received",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "created_at": "2026-08-18T19:10:58.905Z",
+      "source_unit": "W-DESKS",
+      "how": "live POST /api/documents-upload FTC file"
+    },
+    {
+      "id": "a091eafb-7af8-472e-94d5-bd89ccb54911",
+      "name": "analysis.completed",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "created_at": "2026-08-18T19:11:58.036Z",
+      "source_unit": "W-CRS",
+      "how": "local emitCrsResult"
+    },
+    {
+      "id": "8bff4125-ee2d-41e5-b6bb-f24e6c897a2e",
+      "name": "decision.rendered",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "created_at": "2026-08-18T19:12:00.736Z",
+      "source_unit": "W-CRS",
+      "how": "local emitCrsResult"
+    },
+    {
+      "id": "ee763f7f-3aef-49a9-a308-0f69ca835934",
+      "name": "payment.received",
+      "client_id": null,
+      "created_at": "2026-08-18T19:14:40.660Z",
+      "source_unit": "W-PAY",
+      "how": "local emit without clientId; payload email is this file"
+    },
+    {
+      "id": "09889e94-8f08-40d2-8312-6616157bfa7f",
+      "name": "payment.received",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "created_at": "2026-08-18T19:14:41.600Z",
+      "source_unit": "W-PAY",
+      "how": "local emit with clientId"
+    },
+    {
+      "id": "0bc264a3-e1dc-42d0-ae87-18b96a4a7ad4",
+      "name": "diagnostic.paid",
+      "client_id": null,
+      "created_at": "2026-08-18T19:14:42.385Z",
+      "source_unit": "W-PAY",
+      "how": "local emit without clientId; payload email is this file"
+    },
+    {
+      "id": "81695ac8-f9ae-4a6f-b8fa-2c2044371c37",
+      "name": "diagnostic.paid",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "created_at": "2026-08-18T19:14:44.021Z",
+      "source_unit": "W-PAY",
+      "how": "local emit with clientId"
+    },
+    {
+      "id": "678a8671-c3d5-4f65-bac2-0d79ba8b548e",
+      "name": "contract.sent",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "created_at": "2026-08-18T19:16:41.662Z",
+      "source_unit": "W-SIG",
+      "how": "live POST /api/contracts send"
+    },
+    {
+      "id": "98346e63-327c-4e9c-969e-42b76938dbfc",
+      "name": "contract.signed",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "created_at": "2026-08-18T19:16:52.308Z",
+      "source_unit": "W-SIG",
+      "how": "live in-app sign"
+    },
+    {
+      "id": "9e56ad39-eced-4cdb-a88e-1645a7b00a22",
+      "name": "mail.response",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "created_at": "2026-08-18T19:22:30.054Z",
+      "source_unit": "W-INB",
+      "how": "local emit skipInngest"
+    },
+    {
+      "id": "03d3666c-158a-47eb-8e2b-c0df70c4548e",
+      "name": "docs.received",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "created_at": "2026-08-18T19:22:31.310Z",
+      "source_unit": "W-INB",
+      "how": "local emit skipInngest (second docs.received; first was W-DESKS)"
+    },
+    {
+      "id": "dc16b5e0-9b93-4ea4-ba05-ed94eb8225fc",
+      "name": "round.approved",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "created_at": "2026-08-18T19:22:32.894Z",
+      "source_unit": "W-INB",
+      "how": "cascade from local f-11 handle() APPROVED"
+    },
+    {
+      "id": "e4eb4b3c-a222-4446-b028-f222b7e6c913",
+      "name": "inquiry.removed",
+      "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "created_at": "2026-08-18T19:22:34.049Z",
+      "source_unit": "W-INB",
+      "how": "local emit skipInngest; bus handlers=0"
+    }
+  ],
+  "unit_logs": {
+    "w-crs": "present",
+    "w-uw": "missing — no emit (engine in memory)",
+    "w-opt": "missing — no emit",
+    "w-desks": "missing — live upload still wrote docs.received in DB",
+    "w-consent": "missing — capture wrote client_consents, no events row",
+    "w-pay": "present",
+    "w-sig": "present",
+    "w-msg": "present — empty list",
+    "w-conv": "missing — no emit",
+    "w-inb": "present",
+    "w-intake": "missing — simulate wrote no events row"
+  },
+  "sig_inb_folder": {
+    "w-sig": "complete",
+    "w-inb": "complete",
+    "incomplete_note": null
+  }
+}

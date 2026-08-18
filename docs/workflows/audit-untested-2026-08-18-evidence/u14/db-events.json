@@ -1,0 +1,69 @@
+{
+  "run_or_inngest_tables": [
+    {
+      "table_schema": "public",
+      "table_name": "events"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "failed_events"
+    }
+  ],
+  "named_event_counts": [
+    {
+      "name": "deposit.paid",
+      "n": 1,
+      "first_at": "2026-08-18T20:50:21.251Z",
+      "last_at": "2026-08-18T20:50:21.251Z"
+    },
+    {
+      "name": "inquiry.removed",
+      "n": 0,
+      "first_at": null,
+      "last_at": null
+    },
+    {
+      "name": "message.inbound",
+      "n": 0,
+      "first_at": null,
+      "last_at": null
+    },
+    {
+      "name": "mail.response",
+      "n": 0,
+      "first_at": null,
+      "last_at": null
+    },
+    {
+      "name": "docs.received",
+      "n": 0,
+      "first_at": null,
+      "last_at": null
+    },
+    {
+      "name": "diagnostic.paid",
+      "n": 5,
+      "first_at": "2026-08-12T14:30:38.523Z",
+      "last_at": "2026-08-18T20:50:18.891Z"
+    },
+    {
+      "name": "payment.received",
+      "n": 11,
+      "first_at": "2026-08-12T14:24:11.062Z",
+      "last_at": "2026-08-18T20:50:28.711Z"
+    },
+    {
+      "name": "contract.signed",
+      "n": 3,
+      "first_at": "2026-08-18T16:12:38.818Z",
+      "last_at": "2026-08-18T20:11:46.633Z"
+    }
+  ],
+  "failed_events": [
+    {
+      "event_name": "survey.submitted",
+      "n": 2
+    }
+  ],
+  "note": "events rows are our own log. They are written even if Inngest never ran the job."
+}

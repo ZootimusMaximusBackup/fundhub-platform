@@ -1,0 +1,46 @@
+{
+  "at": "2026-08-18T20:52:00.000Z",
+  "claim": "Agent Editor Save writes the agents table",
+  "did_click_save_on_live_agents": false,
+  "human_save_today_on_AG04_or_AG09": "UNVERIFIED — did not click Save on LIVE rows; those rows still have updated_at = created_at",
+  "code": {
+    "ui": "public/app/agent-editor.html saveBtn → FHData.write('/api/agents', { action:'save', code, name, channel, agent_class, owner_label, prompt, guardrails })",
+    "api": "api/agents.mjs action===save",
+    "sql": "UPDATE agents SET name, channel, agent_class, owner_label, prompt, guardrails, updated_at=now() WHERE org_id AND code"
+  },
+  "prior_live_save_not_josh": {
+    "who": "W6 clicked Save on draft AG-01 only (2026-08-18)",
+    "http": "POST /api/agents → 200",
+    "db": {
+      "code": "AG-01",
+      "status": "draft",
+      "created_at": "2026-07-31T02:24:53.163Z",
+      "updated_at": "2026-08-18T16:58:31.954Z",
+      "prompt_empty": true,
+      "guardrails_empty": false
+    },
+    "evidence": [
+      "docs/workflows/audit-crm-whole-2026-08-18-evidence/w6/agent-save.json",
+      "docs/workflows/audit-crm-whole-2026-08-18-evidence/w13r/db.json"
+    ]
+  },
+  "live_rows_never_saved_in_editor": [
+    {
+      "code": "AG-04",
+      "name": "Setter Josh",
+      "created_at": "2026-07-31T02:24:53.163Z",
+      "updated_at": "2026-07-31T02:24:53.163Z",
+      "prompt_empty": true,
+      "guardrails_empty": true
+    },
+    {
+      "code": "AG-09",
+      "name": "Inquiry Removal AI",
+      "created_at": "2026-07-31T02:24:53.163Z",
+      "updated_at": "2026-07-31T02:24:53.163Z",
+      "prompt_empty": true,
+      "guardrails_empty": true
+    }
+  ],
+  "verdict": "Save does write agents. Bland does not read that write."
+}

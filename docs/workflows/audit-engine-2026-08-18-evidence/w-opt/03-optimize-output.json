@@ -1,0 +1,41 @@
+{
+  "module_is": "ad_spend_autopilot",
+  "entry": "src/optimize/run.mjs runDailyOptimization",
+  "requires": [
+    "orgId",
+    "partnerId"
+  ],
+  "does_not_accept": [
+    "client_id",
+    "crs_id",
+    "tradelines"
+  ],
+  "evaluate_on_credit_file": [],
+  "rules_keys": [
+    "scale_winner",
+    "cpa_over_target",
+    "frequency_bands",
+    "ctr_below_floor",
+    "kill_no_conversions"
+  ],
+  "capIncrease": {
+    "from_2100_cents_at_20": 252000,
+    "from_2100_cents_at_50_clamped": 273000
+  },
+  "runDailyOptimization": {
+    "ran": false,
+    "skipped": "autopilot_disabled",
+    "actions": []
+  },
+  "checkBudgetWrite": {
+    "allowed": false,
+    "reasons": [
+      {
+        "code": "no_ceiling_configured",
+        "message": "no active spend ceiling applies to this write — configure one before spending"
+      }
+    ],
+    "ceiling_count": 0,
+    "scopes": []
+  }
+}

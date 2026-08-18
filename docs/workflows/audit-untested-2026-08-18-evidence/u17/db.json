@@ -1,0 +1,24 @@
+{
+  "captures_by_provider": [
+    {
+      "provider": "clickfunnels",
+      "n": 430,
+      "last_at": "2026-08-18T21:23:21.982Z"
+    }
+  ],
+  "postgrid_captures": {
+    "n": 0
+  },
+  "letter_tables": [
+    {
+      "table": "dispute_letters",
+      "hasProvider": false,
+      "hasDelivery": false,
+      "n": 0
+    }
+  ],
+  "inquiry_cases": {
+    "cases": 3,
+    "with_first_delivery": 0
+  }
+}

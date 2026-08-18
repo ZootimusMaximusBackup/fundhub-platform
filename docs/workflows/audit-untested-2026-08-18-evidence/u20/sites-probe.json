@@ -1,0 +1,42 @@
+[
+  {
+    "partner_id": "94796e0e-d012-4987-8721-676093aaed79",
+    "slug": "apply",
+    "status": "draft",
+    "published": false,
+    "http": 404,
+    "preview": "Not found This page is not published."
+  },
+  {
+    "partner_id": "9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+    "slug": "apply",
+    "status": "draft",
+    "published": false,
+    "http": 404,
+    "preview": "Not found This page is not published."
+  },
+  {
+    "partner_id": "c28b0149-b0d2-42ef-9b27-f708afaed436",
+    "slug": "apply",
+    "status": "published",
+    "published": true,
+    "http": 200,
+    "preview": "E2E WL Book LLC apply :root { --ink:#0a0a0a; --paper:#f7f4ef; } * { box-sizing: border-box; } body { margin:0; font-family:\"Fraunces\", Georgia, serif; backgroun"
+  },
+  {
+    "partner_id": "068b933c-9f31-4b47-9499-857276d18c07",
+    "slug": "apply",
+    "status": "published",
+    "published": true,
+    "http": 200,
+    "preview": "E2E WL Click17 Co apply :root { --ink:#0A0A0A; --paper:#FCFCFC; --spectrum:linear-gradient(90deg,#F2A69B,#F5CE8F,#F2E39B,#A8D8B0,#A9C6E8,#C4B3E5); } * { box-siz"
+  },
+  {
+    "partner_id": "caf277ee-a7f4-4d96-985c-5579908a169b",
+    "slug": "apply",
+    "status": "published",
+    "published": true,
+    "http": 200,
+    "preview": "E2E WL Click Co apply :root { --ink:#0a0a0a; --paper:#f7f4ef; } * { box-sizing: border-box; } body { margin:0; font-family:\"Fraunces\", Georgia, serif; backgroun"
+  }
+]

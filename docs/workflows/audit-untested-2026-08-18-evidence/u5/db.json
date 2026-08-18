@@ -1,0 +1,55 @@
+{
+  "at": "2026-08-18T21:20:04.890Z",
+  "test_client": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "opened_forbidden": false,
+  "consents": {
+    "ok": false,
+    "error": "column \"valid\" does not exist"
+  },
+  "soft_pull_consent": {
+    "ok": false,
+    "error": "column \"valid\" does not exist"
+  },
+  "contracts_soft": {
+    "ok": true,
+    "n": 2,
+    "rows": [
+      {
+        "id": "16b29639-ac19-42ab-ba48-8789018b0e48",
+        "template_key": "SOFT-PULL-CONSENT",
+        "status": "signed",
+        "signed": true
+      },
+      {
+        "id": "8988b582-d98a-44c8-9173-86de54fc5788",
+        "template_key": "SOFT-PULL-CONSENT",
+        "status": "draft",
+        "signed": false
+      }
+    ]
+  },
+  "soft_pulls": {
+    "ok": true,
+    "n": 0,
+    "rows": []
+  },
+  "crs": {
+    "ok": true,
+    "n": 0,
+    "rows": []
+  },
+  "scores_present": {
+    "ok": false,
+    "error": "column \"experian_score\" does not exist"
+  },
+  "forbidden_opened": false,
+  "forbidden_exists": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "?column?": 1
+      }
+    ]
+  }
+}

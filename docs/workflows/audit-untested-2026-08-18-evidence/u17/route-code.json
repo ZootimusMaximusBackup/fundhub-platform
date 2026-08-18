@@ -1,0 +1,10 @@
+{
+  "live_url": "https://fundhub.ai/api/webhooks/postgrid",
+  "router_has_postgrid_branch": true,
+  "sendLetter_posts_postgrid": true,
+  "send_callers": [
+    "src/metro2/delivery/send.mjs → mailBureauLetter → sendLetter",
+    "api/repair/send.mjs → mailBureauLetter → sendLetter",
+    "src/inquiry-ops/call-scheduler.mjs imports mail-letter (onMailDelivered / send)"
+  ]
+}

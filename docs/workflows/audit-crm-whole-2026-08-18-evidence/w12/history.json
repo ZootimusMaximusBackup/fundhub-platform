@@ -1,0 +1,13 @@
+{
+  "ranAt": "2026-08-18T17:16:00Z",
+  "notes": "names only; no file contents; no PII printed",
+  "exact_env_file_in_history": false,
+  "credentials_dir_in_history": false,
+  "dump_named_files_in_history": false,
+  "tracked_secret_like_now": [
+    ".env.example",
+    "vendor/inquiry-remover/.env.example",
+    "vendor/underwriteiq-full/.env.example"
+  ],
+  "commits_touching_env_example_or_docs": "present (example files and docs only; no live .env blob)"
+}

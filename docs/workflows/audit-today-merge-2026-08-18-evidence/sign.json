@@ -1,0 +1,123 @@
+{
+  "at": "2026-08-18T22:05:47.090Z",
+  "opened_live": false,
+  "recent_signed": [
+    {
+      "id": "8dfa576f-5404-45fa-8f39-7d589d4e8a4a",
+      "who": "TEST",
+      "status": "signed",
+      "template_key": "CREDIT-REPAIR-AGREEMENT",
+      "signed_at": "2026-08-18T22:03:13.471Z",
+      "created_at": "2026-08-18T21:58:28.218Z"
+    },
+    {
+      "id": "003b3da3-0467-46ac-be78-b4b1d2fdcd31",
+      "who": "OTHER",
+      "status": "signed",
+      "template_key": "FUNDING-AGREEMENT",
+      "signed_at": "2026-08-18T20:11:45.303Z",
+      "created_at": "2026-08-18T20:05:43.706Z"
+    },
+    {
+      "id": "e2bd8fba-836d-4a29-a80f-6fb9a5eb97b2",
+      "who": "LIVE",
+      "status": "signed",
+      "template_key": "FUNDING-AGREEMENT",
+      "signed_at": "2026-08-18T16:55:17.829Z",
+      "created_at": "2026-08-16T23:03:35.018Z"
+    },
+    {
+      "id": "16b29639-ac19-42ab-ba48-8789018b0e48",
+      "who": "TEST",
+      "status": "signed",
+      "template_key": "SOFT-PULL-CONSENT",
+      "signed_at": "2026-08-18T16:12:37.597Z",
+      "created_at": "2026-08-18T16:07:51.623Z"
+    }
+  ],
+  "recent_events": [
+    {
+      "id": "4f042145-b480-42af-ad9a-4509c23a1550",
+      "who": "TEST",
+      "created_at": "2026-08-18T22:03:14.675Z"
+    },
+    {
+      "id": "a80dde69-0fb5-45e4-a5d2-3a208df6e4c7",
+      "who": "TEST",
+      "created_at": "2026-08-18T21:44:36.124Z"
+    },
+    {
+      "id": "1157d297-cebb-48ec-88c7-76b3cf215768",
+      "who": "OTHER",
+      "created_at": "2026-08-18T20:11:46.633Z"
+    },
+    {
+      "id": "99d08e51-0c79-4a13-9d8a-64a30b9d0968",
+      "who": "LIVE",
+      "created_at": "2026-08-18T16:55:19.226Z"
+    },
+    {
+      "id": "13313d55-6138-45c8-9bde-90c1a1cb8733",
+      "who": "TEST",
+      "created_at": "2026-08-18T16:12:38.818Z"
+    }
+  ],
+  "product_entitlements_total": {
+    "n": 0
+  },
+  "byClient": {
+    "TEST": {
+      "contracts_signed": [
+        {
+          "id": "8dfa576f-5404-45fa-8f39-7d589d4e8a4a",
+          "status": "signed",
+          "template_key": "CREDIT-REPAIR-AGREEMENT",
+          "signed_at": "2026-08-18T22:03:13.471Z"
+        },
+        {
+          "id": "16b29639-ac19-42ab-ba48-8789018b0e48",
+          "status": "signed",
+          "template_key": "SOFT-PULL-CONSENT",
+          "signed_at": "2026-08-18T16:12:37.597Z"
+        }
+      ],
+      "events_signed": [
+        {
+          "id": "4f042145-b480-42af-ad9a-4509c23a1550",
+          "created_at": "2026-08-18T22:03:14.675Z"
+        },
+        {
+          "id": "a80dde69-0fb5-45e4-a5d2-3a208df6e4c7",
+          "created_at": "2026-08-18T21:44:36.124Z"
+        },
+        {
+          "id": "13313d55-6138-45c8-9bde-90c1a1cb8733",
+          "created_at": "2026-08-18T16:12:38.818Z"
+        }
+      ],
+      "entitlements": []
+    },
+    "FUNNEL": {
+      "contracts_signed": [],
+      "events_signed": [],
+      "entitlements": []
+    },
+    "LIVE": {
+      "contracts_signed": [
+        {
+          "id": "e2bd8fba-836d-4a29-a80f-6fb9a5eb97b2",
+          "status": "signed",
+          "template_key": "FUNDING-AGREEMENT",
+          "signed_at": "2026-08-18T16:55:17.829Z"
+        }
+      ],
+      "events_signed": [
+        {
+          "id": "99d08e51-0c79-4a13-9d8a-64a30b9d0968",
+          "created_at": "2026-08-18T16:55:19.226Z"
+        }
+      ],
+      "entitlements": []
+    }
+  }
+}

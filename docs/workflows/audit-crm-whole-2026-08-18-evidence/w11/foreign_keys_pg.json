@@ -1,0 +1,3890 @@
+[
+  {
+    "child_table": "account_magic_links",
+    "child_column": "account_id",
+    "parent_table": "accounts",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "account_magic_links_account_id_fkey"
+  },
+  {
+    "child_table": "account_magic_links",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "account_magic_links_client_id_fkey"
+  },
+  {
+    "child_table": "account_magic_links",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "account_magic_links_org_id_fkey"
+  },
+  {
+    "child_table": "account_sessions",
+    "child_column": "account_id",
+    "parent_table": "accounts",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "account_sessions_account_id_fkey"
+  },
+  {
+    "child_table": "account_sessions",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "account_sessions_org_id_fkey"
+  },
+  {
+    "child_table": "account_statement_cycles",
+    "child_column": "bank_account_id",
+    "parent_table": "bank_accounts",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "account_statement_cycles_bank_account_id_fkey"
+  },
+  {
+    "child_table": "account_statement_cycles",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "account_statement_cycles_client_id_fkey"
+  },
+  {
+    "child_table": "account_statement_cycles",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "account_statement_cycles_org_id_fkey"
+  },
+  {
+    "child_table": "accounts",
+    "child_column": "affiliate_id",
+    "parent_table": "affiliates",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "accounts_affiliate_id_fkey"
+  },
+  {
+    "child_table": "accounts",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "accounts_client_id_fkey"
+  },
+  {
+    "child_table": "accounts",
+    "child_column": "invited_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "accounts_invited_by_fkey"
+  },
+  {
+    "child_table": "accounts",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "accounts_org_id_fkey"
+  },
+  {
+    "child_table": "accounts",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "accounts_partner_id_fkey"
+  },
+  {
+    "child_table": "action_log",
+    "child_column": "agent_id",
+    "parent_table": "agents",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "action_log_agent_id_fkey"
+  },
+  {
+    "child_table": "action_log",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "action_log_org_id_fkey"
+  },
+  {
+    "child_table": "action_log",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "action_log_partner_id_fkey"
+  },
+  {
+    "child_table": "action_log",
+    "child_column": "undone_by",
+    "parent_table": "accounts",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "action_log_undone_by_fkey"
+  },
+  {
+    "child_table": "action_log",
+    "child_column": "user_id",
+    "parent_table": "accounts",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "action_log_user_id_fkey"
+  },
+  {
+    "child_table": "ad_metrics_daily",
+    "child_column": "ad_id",
+    "parent_table": "ads",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "ad_metrics_daily_ad_id_fkey"
+  },
+  {
+    "child_table": "ad_metrics_daily",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "ad_metrics_daily_org_id_fkey"
+  },
+  {
+    "child_table": "ad_metrics_daily",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "ad_metrics_daily_partner_id_fkey"
+  },
+  {
+    "child_table": "ad_platform_category_map",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "ad_platform_category_map_org_id_fkey"
+  },
+  {
+    "child_table": "ad_platform_connections",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "ad_platform_connections_org_id_fkey"
+  },
+  {
+    "child_table": "ad_platform_connections",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "ad_platform_connections_partner_id_fkey"
+  },
+  {
+    "child_table": "ad_sets",
+    "child_column": "campaign_id",
+    "parent_table": "campaigns",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "ad_sets_campaign_id_fkey"
+  },
+  {
+    "child_table": "ad_sets",
+    "child_column": "connection_id",
+    "parent_table": "ad_platform_connections",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "ad_sets_connection_id_fkey"
+  },
+  {
+    "child_table": "ad_sets",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "ad_sets_org_id_fkey"
+  },
+  {
+    "child_table": "ad_sets",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "ad_sets_partner_id_fkey"
+  },
+  {
+    "child_table": "ads",
+    "child_column": "ad_set_id",
+    "parent_table": "ad_sets",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "ads_ad_set_id_fkey"
+  },
+  {
+    "child_table": "ads",
+    "child_column": "asset_id",
+    "parent_table": "creative_assets",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "ads_asset_id_fkey"
+  },
+  {
+    "child_table": "ads",
+    "child_column": "campaign_id",
+    "parent_table": "campaigns",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "ads_campaign_id_fkey"
+  },
+  {
+    "child_table": "ads",
+    "child_column": "connection_id",
+    "parent_table": "ad_platform_connections",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "ads_connection_id_fkey"
+  },
+  {
+    "child_table": "ads",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "ads_org_id_fkey"
+  },
+  {
+    "child_table": "ads",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "ads_partner_id_fkey"
+  },
+  {
+    "child_table": "affiliate_commission_rules",
+    "child_column": "affiliate_id",
+    "parent_table": "affiliates",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "affiliate_commission_rules_affiliate_id_fkey"
+  },
+  {
+    "child_table": "affiliate_commission_rules",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "affiliate_commission_rules_org_id_fkey"
+  },
+  {
+    "child_table": "affiliate_commission_rules",
+    "child_column": "product_id",
+    "parent_table": "products",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "affiliate_commission_rules_product_id_fkey"
+  },
+  {
+    "child_table": "affiliate_events",
+    "child_column": "affiliate_id",
+    "parent_table": "affiliates",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "affiliate_events_affiliate_id_fkey"
+  },
+  {
+    "child_table": "affiliate_events",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "affiliate_events_client_id_fkey"
+  },
+  {
+    "child_table": "affiliate_events",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "affiliate_events_org_id_fkey"
+  },
+  {
+    "child_table": "affiliate_payout_lines",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "affiliate_payout_lines_client_id_fkey"
+  },
+  {
+    "child_table": "affiliate_payout_lines",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "affiliate_payout_lines_org_id_fkey"
+  },
+  {
+    "child_table": "affiliate_payout_lines",
+    "child_column": "payout_id",
+    "parent_table": "affiliate_payouts",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "affiliate_payout_lines_payout_id_fkey"
+  },
+  {
+    "child_table": "affiliate_payout_lines",
+    "child_column": "referral_id",
+    "parent_table": "affiliate_referrals",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "affiliate_payout_lines_referral_id_fkey"
+  },
+  {
+    "child_table": "affiliate_payouts",
+    "child_column": "affiliate_id",
+    "parent_table": "affiliates",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "affiliate_payouts_affiliate_id_fkey"
+  },
+  {
+    "child_table": "affiliate_payouts",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "affiliate_payouts_org_id_fkey"
+  },
+  {
+    "child_table": "affiliate_referrals",
+    "child_column": "affiliate_id",
+    "parent_table": "affiliates",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "affiliate_referrals_affiliate_id_fkey"
+  },
+  {
+    "child_table": "affiliate_referrals",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "affiliate_referrals_client_id_fkey"
+  },
+  {
+    "child_table": "affiliate_referrals",
+    "child_column": "converting_sale_id",
+    "parent_table": "sales",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "affiliate_referrals_converting_sale_id_fkey"
+  },
+  {
+    "child_table": "affiliate_referrals",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "affiliate_referrals_org_id_fkey"
+  },
+  {
+    "child_table": "affiliate_referrals",
+    "child_column": "rule_id",
+    "parent_table": "affiliate_commission_rules",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "affiliate_referrals_rule_id_fkey"
+  },
+  {
+    "child_table": "affiliates",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "affiliates_org_id_fkey"
+  },
+  {
+    "child_table": "affiliates",
+    "child_column": "recruited_by",
+    "parent_table": "affiliates",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "affiliates_recruited_by_fkey"
+  },
+  {
+    "child_table": "agent_shadow_log",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "agent_shadow_log_client_id_fkey"
+  },
+  {
+    "child_table": "agent_shadow_log",
+    "child_column": "conversation_id",
+    "parent_table": "conversations",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "agent_shadow_log_conversation_id_fkey"
+  },
+  {
+    "child_table": "agent_shadow_log",
+    "child_column": "inbound_message_id",
+    "parent_table": "messages",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "agent_shadow_log_inbound_message_id_fkey"
+  },
+  {
+    "child_table": "agent_shadow_log",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "agent_shadow_log_org_id_fkey"
+  },
+  {
+    "child_table": "agents",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "agents_org_id_fkey"
+  },
+  {
+    "child_table": "agents",
+    "child_column": "owner_staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "agents_owner_staff_id_fkey"
+  },
+  {
+    "child_table": "ai_bureau_config",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "ai_bureau_config_org_id_fkey"
+  },
+  {
+    "child_table": "alerts",
+    "child_column": "acknowledged_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "alerts_acknowledged_by_fkey"
+  },
+  {
+    "child_table": "alerts",
+    "child_column": "assigned_to",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "alerts_assigned_to_fkey"
+  },
+  {
+    "child_table": "alerts",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "alerts_client_id_fkey"
+  },
+  {
+    "child_table": "alerts",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "alerts_org_id_fkey"
+  },
+  {
+    "child_table": "alerts",
+    "child_column": "resolved_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "alerts_resolved_by_fkey"
+  },
+  {
+    "child_table": "alerts",
+    "child_column": "tradeline_id",
+    "parent_table": "tradelines",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "alerts_tradeline_id_fkey"
+  },
+  {
+    "child_table": "alerts",
+    "child_column": "trigger_id",
+    "parent_table": "upsell_triggers",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "alerts_trigger_id_fkey"
+  },
+  {
+    "child_table": "application_decisions",
+    "child_column": "application_id",
+    "parent_table": "applications",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "application_decisions_application_id_fkey"
+  },
+  {
+    "child_table": "application_decisions",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "application_decisions_org_id_fkey"
+  },
+  {
+    "child_table": "application_scores",
+    "child_column": "application_id",
+    "parent_table": "candidate_applications",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "application_scores_application_id_fkey"
+  },
+  {
+    "child_table": "application_scores",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "application_scores_org_id_fkey"
+  },
+  {
+    "child_table": "application_scores",
+    "child_column": "rubric_id",
+    "parent_table": "hiring_rubrics",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "application_scores_rubric_id_fkey"
+  },
+  {
+    "child_table": "application_scores",
+    "child_column": "scored_by_staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "application_scores_scored_by_staff_id_fkey"
+  },
+  {
+    "child_table": "applications",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "applications_client_id_fkey"
+  },
+  {
+    "child_table": "applications",
+    "child_column": "funding_round_id",
+    "parent_table": "funding_rounds",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "applications_funding_round_id_fkey"
+  },
+  {
+    "child_table": "applications",
+    "child_column": "lender_id",
+    "parent_table": "lenders",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "applications_lender_id_fkey"
+  },
+  {
+    "child_table": "applications",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "applications_org_id_fkey"
+  },
+  {
+    "child_table": "auth_attempts",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "auth_attempts_org_id_fkey"
+  },
+  {
+    "child_table": "bank_accounts",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "bank_accounts_client_id_fkey"
+  },
+  {
+    "child_table": "bank_accounts",
+    "child_column": "entity_id",
+    "parent_table": "entities",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "bank_accounts_entity_id_fkey"
+  },
+  {
+    "child_table": "bank_accounts",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "bank_accounts_org_id_fkey"
+  },
+  {
+    "child_table": "bank_accounts",
+    "child_column": "plaid_item_id",
+    "parent_table": "plaid_items",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "bank_accounts_plaid_item_id_fkey"
+  },
+  {
+    "child_table": "bank_inbox",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "bank_inbox_client_id_fkey"
+  },
+  {
+    "child_table": "bank_inbox",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "bank_inbox_org_id_fkey"
+  },
+  {
+    "child_table": "bank_transactions",
+    "child_column": "bank_account_id",
+    "parent_table": "bank_accounts",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "bank_transactions_account_fk"
+  },
+  {
+    "child_table": "bank_transactions",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "bank_transactions_client_id_fkey"
+  },
+  {
+    "child_table": "bank_transactions",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "bank_transactions_org_id_fkey"
+  },
+  {
+    "child_table": "behavior_scores",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "behavior_scores_client_id_fkey"
+  },
+  {
+    "child_table": "behavior_scores",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "behavior_scores_org_id_fkey"
+  },
+  {
+    "child_table": "brain_affiliate_allowlist",
+    "child_column": "file_id",
+    "parent_table": "brain_files",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "brain_affiliate_allowlist_file_id_fkey"
+  },
+  {
+    "child_table": "brain_affiliate_allowlist",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "brain_affiliate_allowlist_org_id_fkey"
+  },
+  {
+    "child_table": "brain_affiliate_allowlist",
+    "child_column": "review_id",
+    "parent_table": "brain_classification_reviews",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "brain_affiliate_allowlist_review_id_fkey"
+  },
+  {
+    "child_table": "brain_chunks",
+    "child_column": "file_id",
+    "parent_table": "brain_files",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "brain_chunks_file_id_fkey"
+  },
+  {
+    "child_table": "brain_chunks",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "brain_chunks_org_id_fkey"
+  },
+  {
+    "child_table": "brain_classification_reviews",
+    "child_column": "file_id",
+    "parent_table": "brain_files",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "brain_classification_reviews_file_id_fkey"
+  },
+  {
+    "child_table": "brain_classification_reviews",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "brain_classification_reviews_org_id_fkey"
+  },
+  {
+    "child_table": "brain_drive_sync",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "brain_drive_sync_org_id_fkey"
+  },
+  {
+    "child_table": "brain_files",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "brain_files_org_id_fkey"
+  },
+  {
+    "child_table": "brain_messages",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "brain_messages_org_id_fkey"
+  },
+  {
+    "child_table": "brain_messages",
+    "child_column": "thread_id",
+    "parent_table": "brain_threads",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "brain_messages_thread_id_fkey"
+  },
+  {
+    "child_table": "brain_threads",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "brain_threads_org_id_fkey"
+  },
+  {
+    "child_table": "brand_kit_sources",
+    "child_column": "brand_kit_id",
+    "parent_table": "brand_kits",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "brand_kit_sources_brand_kit_id_fkey"
+  },
+  {
+    "child_table": "brand_kit_sources",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "brand_kit_sources_org_id_fkey"
+  },
+  {
+    "child_table": "brand_kit_sources",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "brand_kit_sources_partner_id_fkey"
+  },
+  {
+    "child_table": "brand_kits",
+    "child_column": "logo_asset_id",
+    "parent_table": "creative_assets",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "brand_kits_logo_fk"
+  },
+  {
+    "child_table": "brand_kits",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "brand_kits_org_id_fkey"
+  },
+  {
+    "child_table": "brand_kits",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "brand_kits_partner_id_fkey"
+  },
+  {
+    "child_table": "business_tradelines",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "business_tradelines_client_id_fkey"
+  },
+  {
+    "child_table": "business_tradelines",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "business_tradelines_org_id_fkey"
+  },
+  {
+    "child_table": "business_tradelines",
+    "child_column": "snapshot_id",
+    "parent_table": "snapshots",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "business_tradelines_snapshot_id_fkey"
+  },
+  {
+    "child_table": "business_tradelines",
+    "child_column": "source_ref",
+    "parent_table": "crs_results",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "business_tradelines_source_ref_fkey"
+  },
+  {
+    "child_table": "businesses",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "businesses_client_id_fkey"
+  },
+  {
+    "child_table": "businesses",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "businesses_org_id_fkey"
+  },
+  {
+    "child_table": "call_compliance_flags",
+    "child_column": "call_outcome_id",
+    "parent_table": "call_outcomes",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "call_compliance_flags_call_outcome_id_fkey"
+  },
+  {
+    "child_table": "call_compliance_flags",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "call_compliance_flags_client_id_fkey"
+  },
+  {
+    "child_table": "call_compliance_flags",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "call_compliance_flags_org_id_fkey"
+  },
+  {
+    "child_table": "call_compliance_flags",
+    "child_column": "staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "call_compliance_flags_staff_id_fkey"
+  },
+  {
+    "child_table": "call_outcomes",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "call_outcomes_client_id_fkey"
+  },
+  {
+    "child_table": "call_outcomes",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "call_outcomes_org_id_fkey"
+  },
+  {
+    "child_table": "call_outcomes",
+    "child_column": "staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "call_outcomes_staff_id_fkey"
+  },
+  {
+    "child_table": "call_outcomes",
+    "child_column": "task_id",
+    "parent_table": "tasks",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "call_outcomes_task_id_fkey"
+  },
+  {
+    "child_table": "call_outcomes",
+    "child_column": "transaction_id",
+    "parent_table": "transactions",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "call_outcomes_transaction_id_fkey"
+  },
+  {
+    "child_table": "campaign_strategies",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "campaign_strategies_org_id_fkey"
+  },
+  {
+    "child_table": "campaigns",
+    "child_column": "approved_by",
+    "parent_table": "accounts",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "campaigns_approved_by_fkey"
+  },
+  {
+    "child_table": "campaigns",
+    "child_column": "connection_id",
+    "parent_table": "ad_platform_connections",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "campaigns_connection_id_fkey"
+  },
+  {
+    "child_table": "campaigns",
+    "child_column": "disclosure_asset_id",
+    "parent_table": "creative_assets",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "campaigns_disclosure_fk"
+  },
+  {
+    "child_table": "campaigns",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "campaigns_org_id_fkey"
+  },
+  {
+    "child_table": "campaigns",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "campaigns_partner_id_fkey"
+  },
+  {
+    "child_table": "candidate_applications",
+    "child_column": "candidate_id",
+    "parent_table": "candidates",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "candidate_applications_candidate_id_fkey"
+  },
+  {
+    "child_table": "candidate_applications",
+    "child_column": "job_posting_id",
+    "parent_table": "hiring_job_postings",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "candidate_applications_job_posting_id_fkey"
+  },
+  {
+    "child_table": "candidate_applications",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "candidate_applications_org_id_fkey"
+  },
+  {
+    "child_table": "candidate_applications",
+    "child_column": "resume_document_id",
+    "parent_table": "documents",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "candidate_applications_resume_document_id_fkey"
+  },
+  {
+    "child_table": "candidate_applications",
+    "child_column": "role_id",
+    "parent_table": "hiring_roles",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "candidate_applications_role_id_fkey"
+  },
+  {
+    "child_table": "candidate_applications",
+    "child_column": "stage_id",
+    "parent_table": "pipeline_stages",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "candidate_applications_stage_id_fkey"
+  },
+  {
+    "child_table": "candidates",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "candidates_org_id_fkey"
+  },
+  {
+    "child_table": "candidates",
+    "child_column": "referred_by_staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "candidates_referred_by_staff_id_fkey"
+  },
+  {
+    "child_table": "card_liabilities",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "card_liabilities_client_id_fkey"
+  },
+  {
+    "child_table": "card_liabilities",
+    "child_column": "entity_id",
+    "parent_table": "entities",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "card_liabilities_entity_id_fkey"
+  },
+  {
+    "child_table": "card_liabilities",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "card_liabilities_org_id_fkey"
+  },
+  {
+    "child_table": "card_liabilities",
+    "child_column": "source_ref",
+    "parent_table": "crs_results",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "card_liabilities_source_ref_fkey"
+  },
+  {
+    "child_table": "card_liabilities",
+    "child_column": "tradeline_id",
+    "parent_table": "tradelines",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "card_liabilities_tradeline_id_fkey"
+  },
+  {
+    "child_table": "card_liability_history",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "card_liability_history_client_id_fkey"
+  },
+  {
+    "child_table": "card_liability_history",
+    "child_column": "liability_id",
+    "parent_table": "card_liabilities",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "card_liability_history_liability_id_fkey"
+  },
+  {
+    "child_table": "card_liability_history",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "card_liability_history_org_id_fkey"
+  },
+  {
+    "child_table": "card_liability_history",
+    "child_column": "source_ref",
+    "parent_table": "crs_results",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "card_liability_history_source_ref_fkey"
+  },
+  {
+    "child_table": "card_liability_history",
+    "child_column": "tradeline_id",
+    "parent_table": "tradelines",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "card_liability_history_tradeline_id_fkey"
+  },
+  {
+    "child_table": "cards",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "cards_client_id_fkey"
+  },
+  {
+    "child_table": "cards",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "cards_org_id_fkey"
+  },
+  {
+    "child_table": "cards",
+    "child_column": "pipeline_id",
+    "parent_table": "pipelines",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "cards_pipeline_id_fkey"
+  },
+  {
+    "child_table": "cards",
+    "child_column": "stage_id",
+    "parent_table": "pipeline_stages",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "cards_stage_id_fkey"
+  },
+  {
+    "child_table": "cashflow_reminders",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "cashflow_reminders_client_id_fkey"
+  },
+  {
+    "child_table": "cashflow_reminders",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "cashflow_reminders_org_id_fkey"
+  },
+  {
+    "child_table": "cashflow_settings",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "cashflow_settings_org_id_fkey"
+  },
+  {
+    "child_table": "client_cards",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "client_cards_client_id_fkey"
+  },
+  {
+    "child_table": "client_cards",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "client_cards_org_id_fkey"
+  },
+  {
+    "child_table": "client_consents",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "client_consents_client_id_fkey"
+  },
+  {
+    "child_table": "client_consents",
+    "child_column": "document_id",
+    "parent_table": "documents",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "client_consents_document_id_fkey"
+  },
+  {
+    "child_table": "client_consents",
+    "child_column": "granted_by_account_id",
+    "parent_table": "accounts",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "client_consents_granted_by_account_id_fkey"
+  },
+  {
+    "child_table": "client_consents",
+    "child_column": "granted_by_staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "client_consents_granted_by_staff_id_fkey"
+  },
+  {
+    "child_table": "client_consents",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "client_consents_org_id_fkey"
+  },
+  {
+    "child_table": "client_consents",
+    "child_column": "revoked_by_account_id",
+    "parent_table": "accounts",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "client_consents_revoked_by_account_id_fkey"
+  },
+  {
+    "child_table": "client_consents",
+    "child_column": "revoked_by_staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "client_consents_revoked_by_staff_id_fkey"
+  },
+  {
+    "child_table": "client_custom_fields",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "client_custom_fields_client_id_fkey"
+  },
+  {
+    "child_table": "client_custom_fields",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "client_custom_fields_org_id_fkey"
+  },
+  {
+    "child_table": "clients",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "clients_org_id_fkey"
+  },
+  {
+    "child_table": "clients",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "clients_partner_fk"
+  },
+  {
+    "child_table": "commas_inbox",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "commas_inbox_org_id_fkey"
+  },
+  {
+    "child_table": "commission_ledger",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "commission_ledger_client_id_fkey"
+  },
+  {
+    "child_table": "commission_ledger",
+    "child_column": "funding_round_id",
+    "parent_table": "funding_rounds",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "commission_ledger_funding_round_id_fkey"
+  },
+  {
+    "child_table": "commission_ledger",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "commission_ledger_org_id_fkey"
+  },
+  {
+    "child_table": "commission_ledger",
+    "child_column": "product_id",
+    "parent_table": "products",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "commission_ledger_product_id_fkey"
+  },
+  {
+    "child_table": "commission_ledger",
+    "child_column": "reverses_ledger_id",
+    "parent_table": "commission_ledger",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "commission_ledger_reverses_ledger_id_fkey"
+  },
+  {
+    "child_table": "commission_ledger",
+    "child_column": "rule_id",
+    "parent_table": "commission_rules",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "commission_ledger_rule_id_fkey"
+  },
+  {
+    "child_table": "commission_ledger",
+    "child_column": "sale_id",
+    "parent_table": "sales",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "commission_ledger_sale_id_fkey"
+  },
+  {
+    "child_table": "commission_ledger",
+    "child_column": "staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "commission_ledger_staff_id_fkey"
+  },
+  {
+    "child_table": "commission_rule_tiers",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "commission_rule_tiers_org_id_fkey"
+  },
+  {
+    "child_table": "commission_rule_tiers",
+    "child_column": "rule_id",
+    "parent_table": "commission_rules",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "commission_rule_tiers_rule_id_fkey"
+  },
+  {
+    "child_table": "commission_rules",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "commission_rules_org_id_fkey"
+  },
+  {
+    "child_table": "commission_rules",
+    "child_column": "product_id",
+    "parent_table": "products",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "commission_rules_product_id_fkey"
+  },
+  {
+    "child_table": "commission_rules",
+    "child_column": "staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "commission_rules_staff_id_fkey"
+  },
+  {
+    "child_table": "compliance_rules",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "compliance_rules_org_id_fkey"
+  },
+  {
+    "child_table": "compliance_screenings",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "compliance_screenings_org_id_fkey"
+  },
+  {
+    "child_table": "compliance_screenings",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "compliance_screenings_partner_id_fkey"
+  },
+  {
+    "child_table": "content_tier_map",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "content_tier_map_org_id_fkey"
+  },
+  {
+    "child_table": "content_tier_map",
+    "child_column": "video_id",
+    "parent_table": "content_videos",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "content_tier_map_video_id_fkey"
+  },
+  {
+    "child_table": "content_videos",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "content_videos_org_id_fkey"
+  },
+  {
+    "child_table": "content_videos",
+    "child_column": "uploaded_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "content_videos_uploaded_by_fkey"
+  },
+  {
+    "child_table": "contract_signers",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contract_signers_client_id_fkey"
+  },
+  {
+    "child_table": "contract_signers",
+    "child_column": "contract_id",
+    "parent_table": "contracts",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contract_signers_contract_id_fkey"
+  },
+  {
+    "child_table": "contract_signers",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contract_signers_org_id_fkey"
+  },
+  {
+    "child_table": "contract_templates",
+    "child_column": "created_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contract_templates_created_by_fkey"
+  },
+  {
+    "child_table": "contract_templates",
+    "child_column": "document_id",
+    "parent_table": "documents",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contract_templates_document_id_fkey"
+  },
+  {
+    "child_table": "contract_templates",
+    "child_column": "document_version_id",
+    "parent_table": "document_versions",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contract_templates_document_version_id_fkey"
+  },
+  {
+    "child_table": "contract_templates",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contract_templates_org_id_fkey"
+  },
+  {
+    "child_table": "contract_templates",
+    "child_column": "updated_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contract_templates_updated_by_fkey"
+  },
+  {
+    "child_table": "contracts",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contracts_client_id_fkey"
+  },
+  {
+    "child_table": "contracts",
+    "child_column": "created_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contracts_created_by_fkey"
+  },
+  {
+    "child_table": "contracts",
+    "child_column": "document_id",
+    "parent_table": "documents",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contracts_document_id_fkey"
+  },
+  {
+    "child_table": "contracts",
+    "child_column": "document_version_id",
+    "parent_table": "document_versions",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contracts_document_version_id_fkey"
+  },
+  {
+    "child_table": "contracts",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contracts_org_id_fkey"
+  },
+  {
+    "child_table": "contracts",
+    "child_column": "sent_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contracts_sent_by_fkey"
+  },
+  {
+    "child_table": "contracts",
+    "child_column": "signed_document_id",
+    "parent_table": "documents",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contracts_signed_document_id_fkey"
+  },
+  {
+    "child_table": "contracts",
+    "child_column": "signed_document_version_id",
+    "parent_table": "document_versions",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contracts_signed_document_version_id_fkey"
+  },
+  {
+    "child_table": "contracts",
+    "child_column": "source_document_id",
+    "parent_table": "documents",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contracts_source_document_id_fkey"
+  },
+  {
+    "child_table": "contracts",
+    "child_column": "source_document_version_id",
+    "parent_table": "document_versions",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contracts_source_document_version_id_fkey"
+  },
+  {
+    "child_table": "contracts",
+    "child_column": "template_id",
+    "parent_table": "contract_templates",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contracts_template_id_fkey"
+  },
+  {
+    "child_table": "contracts",
+    "child_column": "voided_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "contracts_voided_by_fkey"
+  },
+  {
+    "child_table": "conversation_participants",
+    "child_column": "conversation_id",
+    "parent_table": "conversations",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "conversation_participants_conversation_id_fkey"
+  },
+  {
+    "child_table": "conversation_participants",
+    "child_column": "staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "conversation_participants_staff_id_fkey"
+  },
+  {
+    "child_table": "conversations",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "conversations_client_id_fkey"
+  },
+  {
+    "child_table": "conversations",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "conversations_org_id_fkey"
+  },
+  {
+    "child_table": "creative_assets",
+    "child_column": "brand_kit_id",
+    "parent_table": "brand_kits",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "creative_assets_brand_kit_id_fkey"
+  },
+  {
+    "child_table": "creative_assets",
+    "child_column": "created_by_agent_id",
+    "parent_table": "agents",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "creative_assets_created_by_agent_id_fkey"
+  },
+  {
+    "child_table": "creative_assets",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "creative_assets_org_id_fkey"
+  },
+  {
+    "child_table": "creative_assets",
+    "child_column": "parent_asset_id",
+    "parent_table": "creative_assets",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "creative_assets_parent_asset_id_fkey"
+  },
+  {
+    "child_table": "creative_assets",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "creative_assets_partner_id_fkey"
+  },
+  {
+    "child_table": "creative_billing_rates",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "creative_billing_rates_org_id_fkey"
+  },
+  {
+    "child_table": "creative_providers",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "creative_providers_org_id_fkey"
+  },
+  {
+    "child_table": "creative_usage_events",
+    "child_column": "campaign_id",
+    "parent_table": "campaigns",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "creative_usage_events_campaign_id_fkey"
+  },
+  {
+    "child_table": "creative_usage_events",
+    "child_column": "generation_job_id",
+    "parent_table": "generation_jobs",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "creative_usage_events_generation_job_id_fkey"
+  },
+  {
+    "child_table": "creative_usage_events",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "creative_usage_events_org_id_fkey"
+  },
+  {
+    "child_table": "creative_usage_events",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "creative_usage_events_partner_id_fkey"
+  },
+  {
+    "child_table": "crs_results",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "crs_results_client_id_fkey"
+  },
+  {
+    "child_table": "crs_results",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "crs_results_org_id_fkey"
+  },
+  {
+    "child_table": "customer_insights",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "customer_insights_client_id_fkey"
+  },
+  {
+    "child_table": "customer_insights",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "customer_insights_org_id_fkey"
+  },
+  {
+    "child_table": "customer_insights",
+    "child_column": "product_id",
+    "parent_table": "products",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "customer_insights_product_id_fkey"
+  },
+  {
+    "child_table": "customer_insights",
+    "child_column": "recorded_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "customer_insights_recorded_by_fkey"
+  },
+  {
+    "child_table": "customer_insights",
+    "child_column": "task_id",
+    "parent_table": "tasks",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "customer_insights_task_id_fkey"
+  },
+  {
+    "child_table": "dispute_cases",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "dispute_cases_client_id_fkey"
+  },
+  {
+    "child_table": "dispute_cases",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "dispute_cases_org_id_fkey"
+  },
+  {
+    "child_table": "dispute_items",
+    "child_column": "case_id",
+    "parent_table": "dispute_cases",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "dispute_items_case_id_fkey"
+  },
+  {
+    "child_table": "dispute_items",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "dispute_items_client_id_fkey"
+  },
+  {
+    "child_table": "dispute_items",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "dispute_items_org_id_fkey"
+  },
+  {
+    "child_table": "dispute_letters",
+    "child_column": "case_id",
+    "parent_table": "dispute_cases",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "dispute_letters_case_id_fkey"
+  },
+  {
+    "child_table": "dispute_letters",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "dispute_letters_client_id_fkey"
+  },
+  {
+    "child_table": "dispute_letters",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "dispute_letters_org_id_fkey"
+  },
+  {
+    "child_table": "dispute_responses",
+    "child_column": "case_id",
+    "parent_table": "dispute_cases",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "dispute_responses_case_id_fkey"
+  },
+  {
+    "child_table": "dispute_responses",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "dispute_responses_client_id_fkey"
+  },
+  {
+    "child_table": "dispute_responses",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "dispute_responses_org_id_fkey"
+  },
+  {
+    "child_table": "document_versions",
+    "child_column": "document_id",
+    "parent_table": "documents",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "document_versions_document_id_fkey"
+  },
+  {
+    "child_table": "document_versions",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "document_versions_org_id_fkey"
+  },
+  {
+    "child_table": "documents",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "documents_client_id_fkey"
+  },
+  {
+    "child_table": "documents",
+    "child_column": "current_version_id",
+    "parent_table": "document_versions",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "fk_documents_current_version"
+  },
+  {
+    "child_table": "documents",
+    "child_column": "invoice_id",
+    "parent_table": "invoices",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "documents_invoice_id_fkey"
+  },
+  {
+    "child_table": "documents",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "documents_org_id_fkey"
+  },
+  {
+    "child_table": "eeo_responses",
+    "child_column": "invite_id",
+    "parent_table": "eeo_survey_invites",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "eeo_responses_invite_id_fkey"
+  },
+  {
+    "child_table": "eeo_responses",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "eeo_responses_org_id_fkey"
+  },
+  {
+    "child_table": "eeo_survey_invites",
+    "child_column": "application_id",
+    "parent_table": "candidate_applications",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "eeo_survey_invites_application_id_fkey"
+  },
+  {
+    "child_table": "eeo_survey_invites",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "eeo_survey_invites_org_id_fkey"
+  },
+  {
+    "child_table": "entities",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "entities_client_id_fkey"
+  },
+  {
+    "child_table": "entities",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "entities_org_id_fkey"
+  },
+  {
+    "child_table": "entitlement_catalog",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "entitlement_catalog_org_id_fkey"
+  },
+  {
+    "child_table": "entitlements",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "entitlements_client_id_fkey"
+  },
+  {
+    "child_table": "entitlements",
+    "child_column": "granted_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "entitlements_granted_by_fkey"
+  },
+  {
+    "child_table": "entitlements",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "entitlements_org_id_fkey"
+  },
+  {
+    "child_table": "entitlements",
+    "child_column": "revoked_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "entitlements_revoked_by_fkey"
+  },
+  {
+    "child_table": "entitlements",
+    "child_column": "source_event_id",
+    "parent_table": "events",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "entitlements_source_event_id_fkey"
+  },
+  {
+    "child_table": "entitlements",
+    "child_column": "source_transaction_id",
+    "parent_table": "transactions",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "entitlements_source_transaction_id_fkey"
+  },
+  {
+    "child_table": "erasure_requests",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "erasure_requests_org_id_fkey"
+  },
+  {
+    "child_table": "erasure_requests",
+    "child_column": "requested_by_staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "erasure_requests_requested_by_staff_id_fkey"
+  },
+  {
+    "child_table": "events",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "events_client_id_fkey"
+  },
+  {
+    "child_table": "events",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "events_org_id_fkey"
+  },
+  {
+    "child_table": "failed_events",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "failed_events_client_id_fkey"
+  },
+  {
+    "child_table": "failed_events",
+    "child_column": "event_id",
+    "parent_table": "events",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "failed_events_event_id_fkey"
+  },
+  {
+    "child_table": "failed_events",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "failed_events_org_id_fkey"
+  },
+  {
+    "child_table": "failed_events",
+    "child_column": "resolved_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "failed_events_resolved_by_fkey"
+  },
+  {
+    "child_table": "funding_closeout",
+    "child_column": "funding_round_id",
+    "parent_table": "funding_rounds",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "funding_closeout_funding_round_id_fkey"
+  },
+  {
+    "child_table": "funding_closeout",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "funding_closeout_org_id_fkey"
+  },
+  {
+    "child_table": "funding_closeout_items",
+    "child_column": "application_id",
+    "parent_table": "applications",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "funding_closeout_items_application_id_fkey"
+  },
+  {
+    "child_table": "funding_closeout_items",
+    "child_column": "funding_closeout_id",
+    "parent_table": "funding_closeout",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "funding_closeout_items_funding_closeout_id_fkey"
+  },
+  {
+    "child_table": "funding_closeout_items",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "funding_closeout_items_org_id_fkey"
+  },
+  {
+    "child_table": "funding_round_sales",
+    "child_column": "funding_round_id",
+    "parent_table": "funding_rounds",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "funding_round_sales_funding_round_id_fkey"
+  },
+  {
+    "child_table": "funding_round_sales",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "funding_round_sales_org_id_fkey"
+  },
+  {
+    "child_table": "funding_round_sales",
+    "child_column": "sale_id",
+    "parent_table": "sales",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "funding_round_sales_sale_id_fkey"
+  },
+  {
+    "child_table": "funding_rounds",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "funding_rounds_client_id_fkey"
+  },
+  {
+    "child_table": "funding_rounds",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "funding_rounds_org_id_fkey"
+  },
+  {
+    "child_table": "furnisher_mail_addresses",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "furnisher_mail_addresses_org_id_fkey"
+  },
+  {
+    "child_table": "generation_job_assets",
+    "child_column": "asset_id",
+    "parent_table": "creative_assets",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "generation_job_assets_asset_id_fkey"
+  },
+  {
+    "child_table": "generation_job_assets",
+    "child_column": "job_id",
+    "parent_table": "generation_jobs",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "generation_job_assets_job_id_fkey"
+  },
+  {
+    "child_table": "generation_job_assets",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "generation_job_assets_org_id_fkey"
+  },
+  {
+    "child_table": "generation_job_assets",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "generation_job_assets_partner_id_fkey"
+  },
+  {
+    "child_table": "generation_jobs",
+    "child_column": "brand_kit_id",
+    "parent_table": "brand_kits",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "generation_jobs_brand_kit_id_fkey"
+  },
+  {
+    "child_table": "generation_jobs",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "generation_jobs_org_id_fkey"
+  },
+  {
+    "child_table": "generation_jobs",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "generation_jobs_partner_id_fkey"
+  },
+  {
+    "child_table": "generation_jobs",
+    "child_column": "requested_by",
+    "parent_table": "accounts",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "generation_jobs_requested_by_fkey"
+  },
+  {
+    "child_table": "hiring_channel_connections",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "hiring_channel_connections_org_id_fkey"
+  },
+  {
+    "child_table": "hiring_decisions",
+    "child_column": "application_id",
+    "parent_table": "candidate_applications",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "hiring_decisions_application_id_fkey"
+  },
+  {
+    "child_table": "hiring_decisions",
+    "child_column": "decided_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "hiring_decisions_decided_by_fkey"
+  },
+  {
+    "child_table": "hiring_decisions",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "hiring_decisions_org_id_fkey"
+  },
+  {
+    "child_table": "hiring_decisions",
+    "child_column": "score_id",
+    "parent_table": "application_scores",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "hiring_decisions_score_id_fkey"
+  },
+  {
+    "child_table": "hiring_interview_attendees",
+    "child_column": "application_id",
+    "parent_table": "candidate_applications",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "hiring_interview_attendees_application_id_fkey"
+  },
+  {
+    "child_table": "hiring_interview_attendees",
+    "child_column": "interview_id",
+    "parent_table": "hiring_interviews",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "hiring_interview_attendees_interview_id_fkey"
+  },
+  {
+    "child_table": "hiring_interview_attendees",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "hiring_interview_attendees_org_id_fkey"
+  },
+  {
+    "child_table": "hiring_interviews",
+    "child_column": "host_staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "hiring_interviews_host_staff_id_fkey"
+  },
+  {
+    "child_table": "hiring_interviews",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "hiring_interviews_org_id_fkey"
+  },
+  {
+    "child_table": "hiring_interviews",
+    "child_column": "role_id",
+    "parent_table": "hiring_roles",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "hiring_interviews_role_id_fkey"
+  },
+  {
+    "child_table": "hiring_job_postings",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "hiring_job_postings_org_id_fkey"
+  },
+  {
+    "child_table": "hiring_job_postings",
+    "child_column": "role_id",
+    "parent_table": "hiring_roles",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "hiring_job_postings_role_id_fkey"
+  },
+  {
+    "child_table": "hiring_roles",
+    "child_column": "hiring_manager_staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "hiring_roles_hiring_manager_staff_id_fkey"
+  },
+  {
+    "child_table": "hiring_roles",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "hiring_roles_org_id_fkey"
+  },
+  {
+    "child_table": "hiring_rubrics",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "hiring_rubrics_org_id_fkey"
+  },
+  {
+    "child_table": "hiring_rubrics",
+    "child_column": "role_id",
+    "parent_table": "hiring_roles",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "hiring_rubrics_role_id_fkey"
+  },
+  {
+    "child_table": "inquiry_attempts",
+    "child_column": "inquiry_id",
+    "parent_table": "inquiry_log",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "inquiry_attempts_inquiry_id_fkey"
+  },
+  {
+    "child_table": "inquiry_attempts",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "inquiry_attempts_org_id_fkey"
+  },
+  {
+    "child_table": "inquiry_attempts",
+    "child_column": "staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "inquiry_attempts_staff_id_fkey"
+  },
+  {
+    "child_table": "inquiry_log",
+    "child_column": "case_id",
+    "parent_table": "inquiry_removal_cases",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "inquiry_log_case_id_fkey"
+  },
+  {
+    "child_table": "inquiry_log",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "inquiry_log_client_id_fkey"
+  },
+  {
+    "child_table": "inquiry_log",
+    "child_column": "inquiry_removal_case_id",
+    "parent_table": "inquiry_removal_cases",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "inquiry_log_inquiry_removal_case_id_fkey"
+  },
+  {
+    "child_table": "inquiry_log",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "inquiry_log_org_id_fkey"
+  },
+  {
+    "child_table": "inquiry_log",
+    "child_column": "worked_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "inquiry_log_worked_by_fkey"
+  },
+  {
+    "child_table": "inquiry_prep",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "inquiry_prep_client_id_fkey"
+  },
+  {
+    "child_table": "inquiry_prep",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "inquiry_prep_org_id_fkey"
+  },
+  {
+    "child_table": "inquiry_prep",
+    "child_column": "promoted_inquiry_record",
+    "parent_table": "inquiry_log",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "inquiry_prep_promoted_inquiry_record_fkey"
+  },
+  {
+    "child_table": "inquiry_removal_cases",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "inquiry_removal_cases_client_id_fkey"
+  },
+  {
+    "child_table": "inquiry_removal_cases",
+    "child_column": "draft_letter_document_id",
+    "parent_table": "documents",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "inquiry_removal_cases_draft_letter_document_id_fkey"
+  },
+  {
+    "child_table": "inquiry_removal_cases",
+    "child_column": "funding_round_id",
+    "parent_table": "funding_rounds",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "inquiry_removal_cases_funding_round_id_fkey"
+  },
+  {
+    "child_table": "inquiry_removal_cases",
+    "child_column": "gate_override_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "inquiry_removal_cases_gate_override_by_fkey"
+  },
+  {
+    "child_table": "inquiry_removal_cases",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "inquiry_removal_cases_org_id_fkey"
+  },
+  {
+    "child_table": "investment_holdings",
+    "child_column": "bank_account_id",
+    "parent_table": "bank_accounts",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "investment_holdings_bank_account_id_fkey"
+  },
+  {
+    "child_table": "investment_holdings",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "investment_holdings_client_id_fkey"
+  },
+  {
+    "child_table": "investment_holdings",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "investment_holdings_org_id_fkey"
+  },
+  {
+    "child_table": "invoice_line_items",
+    "child_column": "invoice_id",
+    "parent_table": "invoices",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "invoice_line_items_invoice_fk"
+  },
+  {
+    "child_table": "invoice_line_items",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "invoice_line_items_org_id_fkey"
+  },
+  {
+    "child_table": "invoice_line_items",
+    "child_column": "org_id",
+    "parent_table": "invoices",
+    "parent_column": "org_id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "invoice_line_items_invoice_fk"
+  },
+  {
+    "child_table": "invoice_line_items",
+    "child_column": "product_id",
+    "parent_table": "products",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "invoice_line_items_product_id_fkey"
+  },
+  {
+    "child_table": "invoice_payments",
+    "child_column": "invoice_id",
+    "parent_table": "invoices",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "invoice_payments_invoice_fk"
+  },
+  {
+    "child_table": "invoice_payments",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "invoice_payments_org_id_fkey"
+  },
+  {
+    "child_table": "invoice_payments",
+    "child_column": "org_id",
+    "parent_table": "invoices",
+    "parent_column": "org_id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "invoice_payments_invoice_fk"
+  },
+  {
+    "child_table": "invoice_payments",
+    "child_column": "sale_payment_id",
+    "parent_table": "sale_payments",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "invoice_payments_sale_payment_id_fkey"
+  },
+  {
+    "child_table": "invoice_payments",
+    "child_column": "transaction_id",
+    "parent_table": "transactions",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "invoice_payments_transaction_id_fkey"
+  },
+  {
+    "child_table": "invoices",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "invoices_client_id_fkey"
+  },
+  {
+    "child_table": "invoices",
+    "child_column": "email_message_id",
+    "parent_table": "messages",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "invoices_email_message_id_fkey"
+  },
+  {
+    "child_table": "invoices",
+    "child_column": "funding_round_id",
+    "parent_table": "funding_rounds",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "invoices_funding_round_id_fkey"
+  },
+  {
+    "child_table": "invoices",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "invoices_org_id_fkey"
+  },
+  {
+    "child_table": "invoices",
+    "child_column": "sale_id",
+    "parent_table": "sales",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "invoices_sale_id_fkey"
+  },
+  {
+    "child_table": "journeys",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "journeys_org_id_fkey"
+  },
+  {
+    "child_table": "journeys",
+    "child_column": "updated_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "journeys_updated_by_fkey"
+  },
+  {
+    "child_table": "lender_bureau_observations",
+    "child_column": "application_id",
+    "parent_table": "applications",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "lender_bureau_observations_application_id_fkey"
+  },
+  {
+    "child_table": "lender_bureau_observations",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "lender_bureau_observations_client_id_fkey"
+  },
+  {
+    "child_table": "lender_bureau_observations",
+    "child_column": "funding_round_id",
+    "parent_table": "funding_rounds",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "lender_bureau_observations_funding_round_id_fkey"
+  },
+  {
+    "child_table": "lender_bureau_observations",
+    "child_column": "lender_row_id",
+    "parent_table": "lenders",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "lender_bureau_observations_lender_row_id_fkey"
+  },
+  {
+    "child_table": "lender_bureau_observations",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "lender_bureau_observations_org_id_fkey"
+  },
+  {
+    "child_table": "lenders",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "lenders_org_id_fkey"
+  },
+  {
+    "child_table": "mail_campaigns",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "mail_campaigns_org_id_fkey"
+  },
+  {
+    "child_table": "mail_responses",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "mail_responses_client_id_fkey"
+  },
+  {
+    "child_table": "mail_responses",
+    "child_column": "mail_universe_id",
+    "parent_table": "mail_universe",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "mail_responses_mail_universe_id_fkey"
+  },
+  {
+    "child_table": "mail_responses",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "mail_responses_org_id_fkey"
+  },
+  {
+    "child_table": "mail_responses",
+    "child_column": "tracked_number_id",
+    "parent_table": "mail_tracked_numbers",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "mail_responses_tracked_number_id_fkey"
+  },
+  {
+    "child_table": "mail_tracked_numbers",
+    "child_column": "mail_campaign_id",
+    "parent_table": "mail_campaigns",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "mail_tracked_numbers_mail_campaign_id_fkey"
+  },
+  {
+    "child_table": "mail_tracked_numbers",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "mail_tracked_numbers_org_id_fkey"
+  },
+  {
+    "child_table": "mail_universe",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "mail_universe_org_id_fkey"
+  },
+  {
+    "child_table": "marketing_content_queue",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "marketing_content_queue_org_id_fkey"
+  },
+  {
+    "child_table": "marketing_content_queue",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "marketing_content_queue_partner_id_fkey"
+  },
+  {
+    "child_table": "marketing_content_queue",
+    "child_column": "social_post_id",
+    "parent_table": "social_posts",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "marketing_content_queue_social_post_id_fkey"
+  },
+  {
+    "child_table": "marketing_flags",
+    "child_column": "flagged_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "marketing_flags_flagged_by_fkey"
+  },
+  {
+    "child_table": "marketing_flags",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "marketing_flags_org_id_fkey"
+  },
+  {
+    "child_table": "message_channel_routing",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "message_channel_routing_org_id_fkey"
+  },
+  {
+    "child_table": "message_templates",
+    "child_column": "approved_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "message_templates_approved_by_fkey"
+  },
+  {
+    "child_table": "message_templates",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "message_templates_org_id_fkey"
+  },
+  {
+    "child_table": "messages",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "messages_client_id_fkey"
+  },
+  {
+    "child_table": "messages",
+    "child_column": "conversation_id",
+    "parent_table": "conversations",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "fk_messages_convo"
+  },
+  {
+    "child_table": "messages",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "messages_org_id_fkey"
+  },
+  {
+    "child_table": "messages",
+    "child_column": "sender_staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "messages_sender_staff_id_fkey"
+  },
+  {
+    "child_table": "messaging_settings",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "messaging_settings_org_id_fkey"
+  },
+  {
+    "child_table": "messaging_settings",
+    "child_column": "updated_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "messaging_settings_updated_by_fkey"
+  },
+  {
+    "child_table": "opt_outs",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "opt_outs_client_id_fkey"
+  },
+  {
+    "child_table": "optimization_rules",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "optimization_rules_org_id_fkey"
+  },
+  {
+    "child_table": "org_brand",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "org_brand_org_id_fkey"
+  },
+  {
+    "child_table": "outbound_calls",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "outbound_calls_client_id_fkey"
+  },
+  {
+    "child_table": "owner_notifications",
+    "child_column": "alert_id",
+    "parent_table": "alerts",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "owner_notifications_alert_id_fkey"
+  },
+  {
+    "child_table": "owner_notifications",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "owner_notifications_client_id_fkey"
+  },
+  {
+    "child_table": "owner_notifications",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "owner_notifications_org_id_fkey"
+  },
+  {
+    "child_table": "partner_ai_usage",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "partner_ai_usage_org_id_fkey"
+  },
+  {
+    "child_table": "partner_ai_usage",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "partner_ai_usage_partner_id_fkey"
+  },
+  {
+    "child_table": "partner_brand",
+    "child_column": "approved_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "partner_brand_approved_by_fkey"
+  },
+  {
+    "child_table": "partner_brand",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "partner_brand_org_id_fkey"
+  },
+  {
+    "child_table": "partner_brand",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "partner_brand_partner_id_fkey"
+  },
+  {
+    "child_table": "partner_module_settings",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "partner_module_settings_org_id_fkey"
+  },
+  {
+    "child_table": "partner_module_settings",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "partner_module_settings_partner_id_fkey"
+  },
+  {
+    "child_table": "partner_onboarding_tasks",
+    "child_column": "campaign_id",
+    "parent_table": "campaigns",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "partner_onboarding_tasks_campaign_id_fkey"
+  },
+  {
+    "child_table": "partner_onboarding_tasks",
+    "child_column": "connection_id",
+    "parent_table": "ad_platform_connections",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "partner_onboarding_tasks_connection_id_fkey"
+  },
+  {
+    "child_table": "partner_onboarding_tasks",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "partner_onboarding_tasks_org_id_fkey"
+  },
+  {
+    "child_table": "partner_onboarding_tasks",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "partner_onboarding_tasks_partner_id_fkey"
+  },
+  {
+    "child_table": "partner_page_section_versions",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "partner_page_section_versions_org_id_fkey"
+  },
+  {
+    "child_table": "partner_page_section_versions",
+    "child_column": "page_id",
+    "parent_table": "partner_pages",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "partner_page_section_versions_page_id_fkey"
+  },
+  {
+    "child_table": "partner_page_section_versions",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "partner_page_section_versions_partner_id_fkey"
+  },
+  {
+    "child_table": "partner_pages",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "partner_pages_org_id_fkey"
+  },
+  {
+    "child_table": "partner_pages",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "partner_pages_partner_id_fkey"
+  },
+  {
+    "child_table": "partner_payout_lines",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "partner_payout_lines_client_id_fkey"
+  },
+  {
+    "child_table": "partner_payout_lines",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "partner_payout_lines_org_id_fkey"
+  },
+  {
+    "child_table": "partner_payout_lines",
+    "child_column": "payout_id",
+    "parent_table": "partner_payouts",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "partner_payout_lines_payout_id_fkey"
+  },
+  {
+    "child_table": "partner_payout_lines",
+    "child_column": "revenue_id",
+    "parent_table": "partner_revenue",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "partner_payout_lines_revenue_id_fkey"
+  },
+  {
+    "child_table": "partner_payouts",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "partner_payouts_org_id_fkey"
+  },
+  {
+    "child_table": "partner_payouts",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "partner_payouts_partner_id_fkey"
+  },
+  {
+    "child_table": "partner_revenue",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "partner_revenue_client_id_fkey"
+  },
+  {
+    "child_table": "partner_revenue",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "partner_revenue_org_id_fkey"
+  },
+  {
+    "child_table": "partner_revenue",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "partner_revenue_partner_id_fkey"
+  },
+  {
+    "child_table": "partner_revenue",
+    "child_column": "source_event_id",
+    "parent_table": "events",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "partner_revenue_source_event_id_fkey"
+  },
+  {
+    "child_table": "partner_revenue",
+    "child_column": "transaction_id",
+    "parent_table": "transactions",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "partner_revenue_transaction_id_fkey"
+  },
+  {
+    "child_table": "partners",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "partners_org_id_fkey"
+  },
+  {
+    "child_table": "password_resets",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "password_resets_org_id_fkey"
+  },
+  {
+    "child_table": "password_resets",
+    "child_column": "staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "password_resets_staff_id_fkey"
+  },
+  {
+    "child_table": "payment_links",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "payment_links_client_id_fkey"
+  },
+  {
+    "child_table": "payment_links",
+    "child_column": "created_by_staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "payment_links_created_by_staff_id_fkey"
+  },
+  {
+    "child_table": "payment_links",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "payment_links_org_id_fkey"
+  },
+  {
+    "child_table": "pii_access_log",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "pii_access_log_client_id_fkey"
+  },
+  {
+    "child_table": "pii_access_log",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "pii_access_log_org_id_fkey"
+  },
+  {
+    "child_table": "pii_identity",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "pii_identity_client_id_fkey"
+  },
+  {
+    "child_table": "pii_identity",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "pii_identity_org_id_fkey"
+  },
+  {
+    "child_table": "pipeline_stages",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "pipeline_stages_org_id_fkey"
+  },
+  {
+    "child_table": "pipeline_stages",
+    "child_column": "pipeline_id",
+    "parent_table": "pipelines",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "pipeline_stages_pipeline_id_fkey"
+  },
+  {
+    "child_table": "pipelines",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "pipelines_org_id_fkey"
+  },
+  {
+    "child_table": "plaid_items",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "plaid_items_client_id_fkey"
+  },
+  {
+    "child_table": "plaid_items",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "plaid_items_org_id_fkey"
+  },
+  {
+    "child_table": "product_aliases",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "product_aliases_org_id_fkey"
+  },
+  {
+    "child_table": "product_aliases",
+    "child_column": "product_id",
+    "parent_table": "products",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "product_aliases_product_id_fkey"
+  },
+  {
+    "child_table": "product_entitlements",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "product_entitlements_org_id_fkey"
+  },
+  {
+    "child_table": "products",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "products_org_id_fkey"
+  },
+  {
+    "child_table": "proxy_sessions",
+    "child_column": "application_id",
+    "parent_table": "applications",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "proxy_sessions_application_id_fkey"
+  },
+  {
+    "child_table": "proxy_sessions",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "proxy_sessions_client_id_fkey"
+  },
+  {
+    "child_table": "proxy_sessions",
+    "child_column": "lender_id",
+    "parent_table": "lenders",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "proxy_sessions_lender_id_fkey"
+  },
+  {
+    "child_table": "proxy_sessions",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "proxy_sessions_org_id_fkey"
+  },
+  {
+    "child_table": "proxy_sessions",
+    "child_column": "staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "proxy_sessions_staff_id_fkey"
+  },
+  {
+    "child_table": "recurring_bill_transactions",
+    "child_column": "bank_transaction_id",
+    "parent_table": "bank_transactions",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "recurring_bill_transactions_bank_transaction_id_fkey"
+  },
+  {
+    "child_table": "recurring_bill_transactions",
+    "child_column": "recurring_bill_id",
+    "parent_table": "recurring_bills",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "recurring_bill_transactions_recurring_bill_id_fkey"
+  },
+  {
+    "child_table": "recurring_bills",
+    "child_column": "bank_account_id",
+    "parent_table": "bank_accounts",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "recurring_bills_account_fk"
+  },
+  {
+    "child_table": "recurring_bills",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "recurring_bills_client_id_fkey"
+  },
+  {
+    "child_table": "recurring_bills",
+    "child_column": "entity_id",
+    "parent_table": "entities",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "recurring_bills_entity_id_fkey"
+  },
+  {
+    "child_table": "recurring_bills",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "recurring_bills_org_id_fkey"
+  },
+  {
+    "child_table": "repair_decision_log",
+    "child_column": "case_id",
+    "parent_table": "dispute_cases",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "repair_decision_log_case_id_fkey"
+  },
+  {
+    "child_table": "repair_decision_log",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "repair_decision_log_client_id_fkey"
+  },
+  {
+    "child_table": "repair_decision_log",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "repair_decision_log_org_id_fkey"
+  },
+  {
+    "child_table": "retention_policy",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "retention_policy_org_id_fkey"
+  },
+  {
+    "child_table": "sale_attributions",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "sale_attributions_org_id_fkey"
+  },
+  {
+    "child_table": "sale_attributions",
+    "child_column": "sale_id",
+    "parent_table": "sales",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "sale_attributions_sale_id_fkey"
+  },
+  {
+    "child_table": "sale_attributions",
+    "child_column": "staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "sale_attributions_staff_id_fkey"
+  },
+  {
+    "child_table": "sale_payments",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "sale_payments_org_id_fkey"
+  },
+  {
+    "child_table": "sale_payments",
+    "child_column": "sale_id",
+    "parent_table": "sales",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "sale_payments_sale_id_fkey"
+  },
+  {
+    "child_table": "sale_payments",
+    "child_column": "transaction_id",
+    "parent_table": "transactions",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "sale_payments_transaction_id_fkey"
+  },
+  {
+    "child_table": "sales",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "sales_client_id_fkey"
+  },
+  {
+    "child_table": "sales",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "sales_org_id_fkey"
+  },
+  {
+    "child_table": "sales",
+    "child_column": "product_id",
+    "parent_table": "products",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "sales_product_id_fkey"
+  },
+  {
+    "child_table": "sessions",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "sessions_org_id_fkey"
+  },
+  {
+    "child_table": "sessions",
+    "child_column": "staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "sessions_staff_id_fkey"
+  },
+  {
+    "child_table": "shifts",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "shifts_org_id_fkey"
+  },
+  {
+    "child_table": "shifts",
+    "child_column": "staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "shifts_staff_id_fkey"
+  },
+  {
+    "child_table": "snapshots",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "snapshots_client_id_fkey"
+  },
+  {
+    "child_table": "snapshots",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "snapshots_org_id_fkey"
+  },
+  {
+    "child_table": "social_channels",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "social_channels_org_id_fkey"
+  },
+  {
+    "child_table": "social_channels",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "social_channels_partner_id_fkey"
+  },
+  {
+    "child_table": "social_posts",
+    "child_column": "asset_id",
+    "parent_table": "creative_assets",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "social_posts_asset_id_fkey"
+  },
+  {
+    "child_table": "social_posts",
+    "child_column": "channel_id",
+    "parent_table": "social_channels",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "social_posts_channel_id_fkey"
+  },
+  {
+    "child_table": "social_posts",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "social_posts_org_id_fkey"
+  },
+  {
+    "child_table": "social_posts",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "social_posts_partner_id_fkey"
+  },
+  {
+    "child_table": "soft_pull_requests",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "soft_pull_requests_client_id_fkey"
+  },
+  {
+    "child_table": "soft_pull_requests",
+    "child_column": "crs_result_id",
+    "parent_table": "crs_results",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "soft_pull_requests_crs_result_id_fkey"
+  },
+  {
+    "child_table": "soft_pull_requests",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "soft_pull_requests_org_id_fkey"
+  },
+  {
+    "child_table": "soft_pull_requests",
+    "child_column": "requested_by_account_id",
+    "parent_table": "accounts",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "soft_pull_requests_requested_by_account_id_fkey"
+  },
+  {
+    "child_table": "soft_pull_requests",
+    "child_column": "requested_by_staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "soft_pull_requests_requested_by_staff_id_fkey"
+  },
+  {
+    "child_table": "spend_ceilings",
+    "child_column": "campaign_id",
+    "parent_table": "campaigns",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "spend_ceilings_campaign_id_fkey"
+  },
+  {
+    "child_table": "spend_ceilings",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "spend_ceilings_org_id_fkey"
+  },
+  {
+    "child_table": "spend_ceilings",
+    "child_column": "partner_id",
+    "parent_table": "partners",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "spend_ceilings_partner_id_fkey"
+  },
+  {
+    "child_table": "staff",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "staff_org_id_fkey"
+  },
+  {
+    "child_table": "staff_events",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "staff_events_org_id_fkey"
+  },
+  {
+    "child_table": "staff_events",
+    "child_column": "shift_id",
+    "parent_table": "shifts",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "staff_events_shift_id_fkey"
+  },
+  {
+    "child_table": "staff_events",
+    "child_column": "staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "staff_events_staff_id_fkey"
+  },
+  {
+    "child_table": "staff_roles",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "staff_roles_org_id_fkey"
+  },
+  {
+    "child_table": "staff_targets",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "staff_targets_org_id_fkey"
+  },
+  {
+    "child_table": "staff_targets",
+    "child_column": "staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "staff_targets_staff_id_fkey"
+  },
+  {
+    "child_table": "subscriptions",
+    "child_column": "card_id",
+    "parent_table": "client_cards",
+    "parent_column": "id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "subscriptions_card_fk"
+  },
+  {
+    "child_table": "subscriptions",
+    "child_column": "client_id",
+    "parent_table": "client_cards",
+    "parent_column": "client_id",
+    "delete_rule": "RESTRICT",
+    "constraint_name": "subscriptions_card_fk"
+  },
+  {
+    "child_table": "subscriptions",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "subscriptions_client_id_fkey"
+  },
+  {
+    "child_table": "subscriptions",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "subscriptions_org_id_fkey"
+  },
+  {
+    "child_table": "tasks",
+    "child_column": "assignee_staff_id",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "tasks_assignee_staff_fk"
+  },
+  {
+    "child_table": "tasks",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "tasks_client_id_fkey"
+  },
+  {
+    "child_table": "tasks",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "tasks_org_id_fkey"
+  },
+  {
+    "child_table": "tradelines",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "CASCADE",
+    "constraint_name": "tradelines_client_id_fkey"
+  },
+  {
+    "child_table": "tradelines",
+    "child_column": "entity_id",
+    "parent_table": "entities",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "tradelines_entity_id_fkey"
+  },
+  {
+    "child_table": "tradelines",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "tradelines_org_id_fkey"
+  },
+  {
+    "child_table": "tradelines",
+    "child_column": "source_ref",
+    "parent_table": "crs_results",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "tradelines_source_ref_fkey"
+  },
+  {
+    "child_table": "transactions",
+    "child_column": "client_id",
+    "parent_table": "clients",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "transactions_client_id_fkey"
+  },
+  {
+    "child_table": "transactions",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "transactions_org_id_fkey"
+  },
+  {
+    "child_table": "upsell_triggers",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "upsell_triggers_org_id_fkey"
+  },
+  {
+    "child_table": "upsell_triggers",
+    "child_column": "signed_off_by",
+    "parent_table": "staff",
+    "parent_column": "id",
+    "delete_rule": "SET NULL",
+    "constraint_name": "upsell_triggers_signed_off_by_fkey"
+  },
+  {
+    "child_table": "webhook_captures",
+    "child_column": "org_id",
+    "parent_table": "orgs",
+    "parent_column": "id",
+    "delete_rule": "NO ACTION",
+    "constraint_name": "webhook_captures_org_id_fkey"
+  }
+]

@@ -1,0 +1,59 @@
+{
+  "columns": [
+    "attachments",
+    "attempts",
+    "blocked_at",
+    "blocked_reason",
+    "channel",
+    "client_id",
+    "compliance_check_passed",
+    "conversation_id",
+    "created_at",
+    "direction",
+    "id",
+    "is_demo",
+    "last_attempt_at",
+    "last_error",
+    "org_id",
+    "provider",
+    "provider_message_id",
+    "provider_ref",
+    "rendered_body",
+    "scheduled_at",
+    "sender_agent_code",
+    "sender_kind",
+    "sender_staff_id",
+    "status",
+    "subject",
+    "template_key",
+    "to_address",
+    "updated_at"
+  ],
+  "wanted": [
+    "channel",
+    "provider",
+    "provider_message_id",
+    "provider_ref",
+    "status",
+    "subject",
+    "template_key",
+    "to_address"
+  ],
+  "row": {
+    "channel": "email",
+    "provider": "resend",
+    "provider_message_id": "6f36d7f2-d90a-4cd0-98c5-36a041935fb3",
+    "provider_ref": "contract:003b3da3-0467-46ac-be78-b4b1d2fdcd31:22059c91-c4fb-45dc-90f3-703801033523:send",
+    "status": "sent",
+    "subject": "Please sign: Funding Agreement",
+    "template_key": "CONTRACT-SEND-EMAIL",
+    "to_address": {
+      "present": true,
+      "is_plus_tag": true,
+      "is_mg_domain": false,
+      "is_fundhub_domain": false,
+      "is_resend": false,
+      "kind": "plus_tag"
+    }
+  }
+}

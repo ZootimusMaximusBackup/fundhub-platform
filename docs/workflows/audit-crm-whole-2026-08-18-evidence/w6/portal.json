@@ -1,0 +1,62 @@
+{
+  "at": "2026-08-18T17:00:21.843Z",
+  "findings": [
+    {
+      "id": "portal-home",
+      "happened": "{\"path\":\"/app/client-portal.html\",\"name_len\":18,\"name_looks_self\":true,\"greet\":\"Welcome back, TEST\",\"greetSub\":\"Welcome to your Fundhub portal. Your call is next.\",\"video\":\"Welcome video is not available\",\"videoHidden\":false,\"dispute\":\"Sign to authorize dispute letters This lets ",
+      "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w6/03-portal-home.png",
+      "verdict": "WORKS"
+    },
+    {
+      "id": "portal-acct-drawer",
+      "happened": "opened Account & history",
+      "verdict": "WORKS"
+    },
+    {
+      "id": "portal-tab-pay",
+      "happened": "clicked pay",
+      "verdict": "WORKS"
+    },
+    {
+      "id": "portal-tab-agree",
+      "happened": "clicked agree",
+      "verdict": "WORKS"
+    },
+    {
+      "id": "portal-tab-docs",
+      "happened": "clicked docs",
+      "verdict": "WORKS"
+    },
+    {
+      "id": "portal-tab-act",
+      "happened": "clicked act",
+      "verdict": "WORKS"
+    },
+    {
+      "id": "portal-tab-msg",
+      "happened": "clicked msg",
+      "verdict": "WORKS"
+    },
+    {
+      "id": "portal-dispute",
+      "happened": "{\"visible\":true,\"words\":\"I authorize Fundhub to prepare credit dispute letters and complaint drafts from my credit file for my review. Letters and complaints are not mailed or filed until I send or file them, or until staff I\",\"formVisible\":true,\"msg\":\"\"}",
+      "verdict": "WORKS",
+      "note": "Observed only. Did not press Sign. COMPLIANCE REVIEW REQUIRED if this card is unsigned and someone later signs it."
+    },
+    {
+      "id": "portal-video",
+      "happened": "Welcome video is not available",
+      "verdict": "BROKEN"
+    },
+    {
+      "id": "portal-isolation",
+      "happened": "{\"path\":\"/app/client-portal.html?id=9af65808-a619-4e65-ae91-239766a006b7\",\"mentions_forbidden\":false,\"who\":\"—\",\"greetSub\":\"We could not load your file. Use the link we sent you, or sign in again.\"}",
+      "verdict": "WORKS"
+    },
+    {
+      "id": "portal-cannot-pipeline",
+      "happened": "https://fundhub.ai/app/client-portal.html",
+      "verdict": "WORKS"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "status": 200,
+  "ok": true,
+  "error": null,
+  "message": "Draft created.",
+  "template_key": "FUNDING-AGREEMENT",
+  "template_id": "a51dcfe2-c56c-411a-b4bc-2768f6ed78c4",
+  "contract_id": "82f9232a-3c6d-4cd5-85eb-b4995e4f539a",
+  "signer_count": 1,
+  "signer_has_email": [
+    true
+  ],
+  "used_test_inbox_override": true,
+  "override_reason": "designed create_draft.signers[] accepts email; default would be sim+…@demo.fundhub.local"
+}

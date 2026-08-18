@@ -1,0 +1,991 @@
+{
+  "at": "2026-08-18T17:48:00.515Z",
+  "groundTruth": {
+    "g4a": "MISSING intended funnel journey — scored against board walk",
+    "g4b": "MISSING as written step — scored against board",
+    "g4c": "MISSING — scored against board",
+    "g4d": "MISSING — scored against board"
+  },
+  "pages": [
+    {
+      "id": "g4a-watch",
+      "at": "2026-08-18T17:47:14.930Z",
+      "status": 200,
+      "finalUrl": "https://apply.fundhub.ai/watch",
+      "human": "FOR BUSINESS OWNERS WHO NEED REAL, HIGH VOLUME FUNDING Get $50,000 to $1,000,000 in Funding in 14 Days or Less Find out exactly what your business qualifies for in one call TAP FOR SOUND Get Started 10-SECOND APPLICATION · SOFT PULL · ZERO SCORE IMPACT TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA FUNDING DISCLAIMER: Fundhub LLC is not a bank or a lender. We are a funding advisory and application service. Funding amounts shown are maximum potential amounts and are not an offer of credit. NOT AFFILIATED WITH META: This site is not part of Facebook, Instagram, or Meta Platforms, Inc., and is not endorsed by Meta in any way. Facebook™ and Instagram™ are trademarks of Meta Platforms, Inc. © 2026 FUNDHUB LLC. All rights reserved. · Privacy Policy · Terms of Service systems nominal · fundhub.ai",
+      "bot": [],
+      "videoPlay": {
+        "attempted": true,
+        "clickError": "locator.click: Timeout 4000ms exceeded.\nCall log:\n  - waiting for locator('video, button:has-text(\\'Play\\'), [aria-label*=\\'Play\\' i], .play, .wistia_click_to_p",
+        "after": {
+          "paused": false,
+          "currentTime": 9.877959,
+          "readyState": 4,
+          "src": "https://fundhub.ai/funnel/vsl.mp4"
+        }
+      },
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4a-watch.png"
+    },
+    {
+      "id": "g4a-apply",
+      "at": "2026-08-18T17:47:19.054Z",
+      "status": 200,
+      "finalUrl": "https://apply.fundhub.ai/apply",
+      "human": "APPLICATION · STEP 1 OF 2 Let's See What You Qualify For A few quick questions, then pick a time for your call. Soft pull only. Zero score impact. Let's Start With Your Info Required to continue. First Name First Name Last Name Last Name Email Email Phone Number United States +1 Phone Number Next TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA FUNDING DISCLAIMER: Fundhub LLC is not a bank or a lender. We are a funding advisory and application service. Funding amounts shown are maximum potential amounts and are not an offer of credit. NOT AFFILIATED WITH META: This site is not part of Facebook, Instagram, or Meta Platforms, Inc., and is not endorsed by Meta in any way. Facebook™ and Instagram™ are trademarks of Meta Platforms, Inc. © 2026 FUNDHUB LLC. All rights reserved. · Privacy Policy · Terms of Service systems nominal · fundhub.ai",
+      "bot": [],
+      "fields": [
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "Xmepao",
+          "placeholder": "First Name",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "dARDpR",
+          "placeholder": "Last Name",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "email",
+          "name": "qOvVpw",
+          "placeholder": "Email",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "tel",
+          "name": "LKRzGl",
+          "placeholder": "(201) 555-0123",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "hidden",
+          "name": "page-data",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[name]",
+          "placeholder": "name",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[first_name]",
+          "placeholder": "first_name",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[last_name]",
+          "placeholder": "last_name",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[email]",
+          "placeholder": "email",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[phone_number]",
+          "placeholder": "phone_number",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[shipping_addresses_attributes][][physical_address_attributes][id]",
+          "placeholder": "shipping_id",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[shipping_addresses_attributes][][physical_address_attributes][address_one]",
+          "placeholder": "shipping_address",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[shipping_addresses_attributes][][physical_address_attributes][address_two]",
+          "placeholder": "shipping_address_2",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[shipping_addresses_attributes][][physical_address_attributes][city]",
+          "placeholder": "shipping_city",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[shipping_addresses_attributes][][physical_address_attributes][region_name]",
+          "placeholder": "shipping_state",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[shipping_addresses_attributes][][physical_address_attributes][country_id]",
+          "placeholder": "shipping_country",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[shipping_addresses_attributes][][physical_address_attributes][postal_code]",
+          "placeholder": "shipping_ZIP",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "shipping_set_default_address",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "billing_same_as_shipping",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "billing_address_attributes[id]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "billing_address_attributes[address_one]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "billing_address_attributes[address_two]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "billing_address_attributes[city]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "billing_address_attributes[region_name]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "billing_address_attributes[country_id]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "billing_address_attributes[postal_code]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[affiliate_id]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[cf_affiliate_id]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "cf_affiliate_id",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[aff_sub]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[aff_sub2]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "time_zone",
+          "placeholder": "time_zone",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "utm_source",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "utm_medium",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "utm_campaign",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "utm_term",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "utm_content",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "cf_uvid",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "hidden",
+          "name": "purchase[rebilly_token]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "hidden",
+          "name": "purchase[order_form]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "webinar_delay",
+          "placeholder": "Webinar Delay",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "cf_contact_number",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "cf_contact_month",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "cf_contact_year",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "cf_contact_cvc",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "hidden",
+          "name": "purchase[payment_method_nonce]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "hidden",
+          "name": "purchase[order_saas_url]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "submit",
+          "name": "",
+          "placeholder": "",
+          "required": false
+        }
+      ],
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4a-apply.png"
+    },
+    {
+      "id": "g4a-apply-filled",
+      "at": "2026-08-18T17:47:19.246Z",
+      "status": 200,
+      "finalUrl": "https://apply.fundhub.ai/apply",
+      "human": "APPLICATION · STEP 1 OF 2 Let's See What You Qualify For A few quick questions, then pick a time for your call. Soft pull only. Zero score impact. Let's Start With Your Info Required to continue. First Name First Name Last Name Last Name Email Email Phone Number United States +1 Phone Number Next TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA FUNDING DISCLAIMER: Fundhub LLC is not a bank or a lender. We are a funding advisory and application service. Funding amounts shown are maximum potential amounts and are not an offer of credit. NOT AFFILIATED WITH META: This site is not part of Facebook, Instagram, or Meta Platforms, Inc., and is not endorsed by Meta in any way. Facebook™ and Instagram™ are trademarks of Meta Platforms, Inc. © 2026 FUNDHUB LLC. All rights reserved. · Privacy Policy · Terms of Service systems nominal · fundhub.ai",
+      "fillLog": [
+        {
+          "label": "email",
+          "sel": "input[type=\"email\"]",
+          "value": "e2e+aff-g4-1787075239054@fundhub.ai",
+          "ok": true
+        },
+        {
+          "label": "first",
+          "sel": "input[placeholder*=\"first\" i]",
+          "value": "(set)",
+          "ok": true
+        },
+        {
+          "label": "last",
+          "sel": "input[placeholder*=\"last\" i]",
+          "value": "(set)",
+          "ok": true
+        },
+        {
+          "label": "phone",
+          "sel": "input[type=\"tel\"]",
+          "value": "(set)",
+          "ok": true
+        },
+        {
+          "label": "zip_fake",
+          "ok": false,
+          "reason": "no visible field"
+        }
+      ],
+      "identityAsk": [
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[shipping_addresses_attributes][][physical_address_attributes][id]",
+          "placeholder": "shipping_id",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[shipping_addresses_attributes][][physical_address_attributes][address_one]",
+          "placeholder": "shipping_address",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[shipping_addresses_attributes][][physical_address_attributes][address_two]",
+          "placeholder": "shipping_address_2",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[shipping_addresses_attributes][][physical_address_attributes][city]",
+          "placeholder": "shipping_city",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[shipping_addresses_attributes][][physical_address_attributes][region_name]",
+          "placeholder": "shipping_state",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[shipping_addresses_attributes][][physical_address_attributes][country_id]",
+          "placeholder": "shipping_country",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "contact[shipping_addresses_attributes][][physical_address_attributes][postal_code]",
+          "placeholder": "shipping_ZIP",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "shipping_set_default_address",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "billing_address_attributes[id]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "billing_address_attributes[address_one]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "billing_address_attributes[address_two]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "billing_address_attributes[city]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "billing_address_attributes[region_name]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "billing_address_attributes[country_id]",
+          "placeholder": "",
+          "required": false
+        },
+        {
+          "tag": "input",
+          "type": "text",
+          "name": "billing_address_attributes[postal_code]",
+          "placeholder": "",
+          "required": false
+        }
+      ],
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4a-apply-step1-filled.png"
+    },
+    {
+      "id": "g4a-funding-book-call",
+      "at": "2026-08-18T17:47:24.010Z",
+      "status": 200,
+      "finalUrl": "https://apply.fundhub.ai/funding-book-call",
+      "human": "QUALIFIED · FUNDING PATH You Are Qualified. Book Your Funding Call Below Find out exactly how much your business qualifies for. It's a live Google Meet, and we run a soft credit pull on the call — zero score impact. Funding Strategy Meeting Chris Stanbridge 30 minutes Google Meet Select a Date & Time: Time Zone: Phoenix Duration: 30 minutes August 2026 Sun Mon Tue Wed Thu Fri Sat 26 27 28 29 30 31 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 01 02 03 04 05 Tuesday 18th August Select time 12:00 PM - 12:30 PM (MST) Select time 12:30 PM - 1:00 PM (MST) Select time 1:00 PM - 1:30 PM (MST) Select time 1:30 PM - 2:00 PM (MST) Select time 2:00 PM - 2:30 PM (MST) Select time 2:30 PM - 3:00 PM (MST) Select time 3:00 PM - 3:30 PM (MST) Select time 3:30 PM - 4:00 PM (MST) Select time 4:00 PM - 4:30 PM (MST) Select time 4:30 PM - 5:00 PM (MST) Select time 5:00 PM - 5:30 PM (MST) Select time 5:30 PM - 6:00 PM (MST) Select time 6:00 PM - 6:30 PM (MST) Select time 6:30 PM - 7:00 PM (MST) Select time 7:00 PM - 7:30 PM (MST) Select time 7:30 PM - 8:00 PM (MST) Select time 8:00 PM - 8:30 PM (MST) Select time 8:30 PM - 9:00 PM (MST) TRI-BUREAU SOFT PULL",
+      "bot": [],
+      "calendarBits": {
+        "hasCal": false,
+        "iframeSrcs": [],
+        "slotsHint": true
+      },
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4a-funding-book-call.png"
+    },
+    {
+      "id": "g4a-thank-you",
+      "at": "2026-08-18T17:47:26.917Z",
+      "status": 200,
+      "finalUrl": "https://apply.fundhub.ai/thank-you",
+      "human": "CONFIRMED · FUNDING PATH You're All Set. Your Call Is Booked. We'll see you then. Here's what to expect. You took the first real step toward getting funded. Check your email for the confirmation and calendar invite. WHAT HAPPENS ON THE CALL 01 A live Google Meet with your funding advisor We go through your business and your file together. No pitch deck, no runaround. 02 We run your soft pull on the call Tri-bureau, and it does not touch your score. 03 You get your exact funding number You leave knowing exactly what you qualify for and the path to get it. BEFORE WE TALK Take the call somewhere quiet where you can share your screen. Have your business basics handy: entity name, time in business, average monthly revenue. Need to move it? Reschedule straight from the confirmation email. YOUR CALENDAR Your date and time are in your confirmation email. Add to Google Calendar COMMON QUESTIONS Is Fundhub a lender? What makes Fundhub different? Will this affect my credit score? Do I need a business to qualify? What if my credit isn't great? What does this cost? Do I have to go done-for-you? Can I make money referring people to Fundhub? How fast does funding move? We'll see you soon. TRI-BUR",
+      "bot": [],
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4a-thank-you.png"
+    },
+    {
+      "id": "g4a-book",
+      "at": "2026-08-18T17:47:28.888Z",
+      "status": 404,
+      "finalUrl": "https://apply.fundhub.ai/book",
+      "human": "Shop Blog About Us Sign In Page not found We tried everything to look for your requested page, but we weren't able to find it. :( Go Somewhere Else PAGES Home About Us Contact Us Products SOCIAL Facebook Twitter Instagram Pinterest",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4a-book-404.png"
+    },
+    {
+      "id": "g4b-affiliate-ref",
+      "at": "2026-08-18T17:47:37.017Z",
+      "status": 200,
+      "finalUrl": "https://apply.fundhub.ai/apply?a1=AFF-000001&ref=AFF-000001",
+      "human": "APPLICATION · STEP 1 OF 2 Let's See What You Qualify For A few quick questions, then pick a time for your call. Soft pull only. Zero score impact. Let's Start With Your Info Required to continue. First Name First Name Last Name Last Name Email Email Phone Number United States +1 Phone Number Next TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA TRI-BUREAU SOFT PULL NATIONWIDE LENDER MATRIX UP TO 12 FUNDING ROUNDS INQUIRIES CLEARED BETWEEN ROUNDS SOFT INQUIRY · NO SCORE IMPACT DEDICATED FUNDING ADVISOR WE NEVER SELL YOUR DATA FUNDING DISCLAIMER: Fundhub LLC is not a bank or a lender. We are a funding advisory and application service. Funding amounts shown are maximum potential amounts and are not an offer of credit. NOT AFFILIATED WITH META: This site is not part of Facebook, Instagram, or Meta Platforms, Inc., and is not endorsed by Meta in any way. Facebook™ and Instagram™ are trademarks of Meta Platforms, Inc. © 2026 FUNDHUB LLC. All rights reserved. · Privacy Policy · Terms of Service systems nominal · fundhub.ai",
+      "hops": [
+        {
+          "at": "2026-08-18T17:47:29.030Z",
+          "url": "https://fundhub.ai/start?ref=AFF-000001"
+        },
+        {
+          "at": "2026-08-18T17:47:29.276Z",
+          "url": "https://apply.fundhub.ai/apply?a1=AFF-000001&ref=AFF-000001"
+        },
+        {
+          "at": "2026-08-18T17:47:37.154Z",
+          "url": "https://fundhub.ai/education/"
+        },
+        {
+          "at": "2026-08-18T17:47:39.253Z",
+          "url": "https://fundhub.ai/education/enroll/"
+        },
+        {
+          "at": "2026-08-18T17:47:41.096Z",
+          "url": "https://fundhub.ai/education/terms/"
+        },
+        {
+          "at": "2026-08-18T17:47:42.898Z",
+          "url": "https://fundhub.ai/education/privacy/"
+        },
+        {
+          "at": "2026-08-18T17:47:44.683Z",
+          "url": "https://fundhub.ai/education/refund/"
+        },
+        {
+          "at": "2026-08-18T17:47:46.459Z",
+          "url": "https://fundhub.ai/terms/"
+        },
+        {
+          "at": "2026-08-18T17:47:48.438Z",
+          "url": "https://fundhub.ai/privacy/"
+        },
+        {
+          "at": "2026-08-18T17:47:50.303Z",
+          "url": "https://fundhub.ai/affiliates/"
+        },
+        {
+          "at": "2026-08-18T17:47:52.112Z",
+          "url": "https://fundhub.ai/login.html"
+        },
+        {
+          "at": "2026-08-18T17:47:53.850Z",
+          "url": "https://fundhub.ai/app/"
+        },
+        {
+          "at": "2026-08-18T17:47:54.017Z",
+          "url": "https://fundhub.ai/app/pipeline.html"
+        },
+        {
+          "at": "2026-08-18T17:47:54.500Z",
+          "url": "https://fundhub.ai/app/content-admin.html"
+        },
+        {
+          "at": "2026-08-18T17:47:54.623Z",
+          "url": "https://fundhub.ai/app/pipeline.html"
+        },
+        {
+          "at": "2026-08-18T17:47:57.905Z",
+          "url": "https://fundhub.ai/app/client-portal.html?id=8556bedc-46e1-4d85-b0cd-a24adfee1521"
+        }
+      ],
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4b-start-ref.png",
+      "landedApply": true
+    },
+    {
+      "id": "g4d/education/",
+      "at": "2026-08-18T17:47:39.037Z",
+      "path": "/education/",
+      "status": 200,
+      "finalUrl": "https://fundhub.ai/education/",
+      "title": "Fundhub Education | Credit and Capital, Taught Properly",
+      "h1": "Credit and capital, taught properly.",
+      "human": "EDUCATION FUNDING AFFILIATES LOG IN View programs SELF-PACED PROFESSIONAL EDUCATION Credit and capital, taught properly. Fundhub Education builds structured, self-paced programs that teach how consumer credit, business credit, and lending actually work. We teach the process, provide every template, and keep the material current. View the programs SEE THE CURRICULUM → STUDENT PORTAL / ENROLLMENT RUN ↻ $ enroll --credit-mastery > enrollment confirmed 09:41:02 > portal access granted 09:41:04 > CM-01 unlocked · reporting systems 09:41:06 > template library available 09:41:09 > progress autosaved 09:41:12 > self-paced · lifetime access CM Credit Mastery System 10 MODULES · SELF-PACED PROGRAM PROGRESS CM-04 · 40% SELF-PACED VIDEO CURRICULUM 40+ VIDEO LESSONS PER PROGRAM COMPLETE TEMPLATE LIBRARIES LIFETIME ACCESS WITH UPDATES NOT A LENDER · NO FINANCING PROVIDED BY US NO CREDIT REPAIR SERVICES PERFORMED SELF-PACED VIDEO CURRICULUM 40+ VIDEO LESSONS PER PROGRAM COMPLETE TEMPLATE LIBRARIES LIFETIME ACCESS WITH UPDATES NOT A LENDER · NO FINANCING PROVIDED BY US NO CREDIT REPAIR SERVICES PERFORMED FORMAT Self-paced, fully online DELIVERY Instant portal access TUITION $5,000 per program REFU",
+      "brokenImgs": [],
+      "forms": [],
+      "submitted": false,
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4d-education.png"
+    },
+    {
+      "id": "g4d/education/enroll/",
+      "at": "2026-08-18T17:47:40.908Z",
+      "path": "/education/enroll/",
+      "status": 200,
+      "finalUrl": "https://fundhub.ai/education/enroll/",
+      "title": "Enroll | Fundhub Education",
+      "h1": "Start your enrollment.",
+      "human": "EDUCATION BACK ENROLLMENT APPLICATION Start your enrollment. Tell us which program you want and how to reach you. We follow up with payment options and portal access. Education only — no financing arranged on this page. TUITION · $5,000 PER PROGRAM · REFUND POLICY PROGRAM Select a program Credit Mastery Capital Strategy FULL NAME EMAIL ADDRESS MOBILE PHONE — Full refund within 14 days of purchase, provided you have accessed less than 20% of the program content. — Programs are educational only and are not legal, financial, or tax advice. — We do not perform credit repair services or contact bureaus on your behalf. Submit enrollment application By submitting, you ask Fundhub Education to contact you about enrollment and payment for the selected program. This is not a completed purchase until payment is confirmed. Questions? support@fundhubeducation.com · Terms · Privacy",
+      "brokenImgs": [],
+      "forms": [
+        {
+          "action": "https://fundhub.ai/education/enroll/",
+          "method": "get",
+          "fields": [
+            "program",
+            "name",
+            "email",
+            "phone"
+          ]
+        }
+      ],
+      "submitted": false,
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4d-education-enroll.png"
+    },
+    {
+      "id": "g4d/education/terms/",
+      "at": "2026-08-18T17:47:42.770Z",
+      "path": "/education/terms/",
+      "status": 200,
+      "finalUrl": "https://fundhub.ai/education/terms/",
+      "title": "Terms of Service | Fundhub Education",
+      "h1": "Terms of Service",
+      "human": "EDUCATION ← Back to programs LEGAL Terms of Service Effective date: July 15, 2026 · FUNDHUB LLC · Fundhub Education 1. Agreement These Terms of Service govern your purchase and use of Fundhub Education programs offered by FUNDHUB LLC (\"we,\" \"us\"). By enrolling, you agree to these Terms. 2. What You Are Buying Fundhub Education programs are self-paced online educational programs: video curriculum, document templates, checklists, and updates. They are education only. We are not a lender, we provide no financing ourselves, and these programs are not credit repair services. We do not perform disputes, applications, or any services on your behalf within these programs. You do the work yourself. 3. No Outcome Claims We make no promises about credit scores, approvals, funding amounts, or financial results. Outcomes depend on your circumstances and your own actions. 4. Access and License Enrollment grants you a personal, non-transferable license to access the purchased program for your own use, including lifetime updates to that program. Sharing access, reselling, or redistributing program materials is prohibited. 5. Tuition and Financing Tuition is stated at checkout. Where 12-month finan",
+      "brokenImgs": [],
+      "forms": [],
+      "submitted": false,
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4d-education-terms.png"
+    },
+    {
+      "id": "g4d/education/privacy/",
+      "at": "2026-08-18T17:47:44.571Z",
+      "path": "/education/privacy/",
+      "status": 200,
+      "finalUrl": "https://fundhub.ai/education/privacy/",
+      "title": "Privacy Policy | Fundhub Education",
+      "h1": "Privacy Policy",
+      "human": "EDUCATION ← Back to programs LEGAL Privacy Policy Effective date: July 15, 2026 · FUNDHUB LLC · Fundhub Education 1. Scope This Privacy Policy covers information collected when you browse this site, enroll in a Fundhub Education program, or use the student portal. 2. Information We Collect Enrollment details: name, email, phone, and billing details processed by our checkout provider (we do not store full card numbers). Portal activity: login records and course progress, used to operate the portal and support you. Communications: messages you send to support. Log data: IP address, browser type, and pages viewed, for security and operations. 3. How We Use It To deliver the program you purchased, operate and secure the portal, provide support, send transactional messages about your enrollment, and meet legal obligations. 4. Sharing We do not sell your personal information and do not share it with third parties for their marketing. We share information only with service providers who operate the site, portal, checkout, and communications on our behalf under confidentiality obligations; when required by law; or in a business transaction subject to this Policy. 5. Security and Retention ",
+      "brokenImgs": [],
+      "forms": [],
+      "submitted": false,
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4d-education-privacy.png"
+    },
+    {
+      "id": "g4d/education/refund/",
+      "at": "2026-08-18T17:47:46.350Z",
+      "path": "/education/refund/",
+      "status": 200,
+      "finalUrl": "https://fundhub.ai/education/refund/",
+      "title": "Refund Policy | Fundhub Education",
+      "h1": "Refund Policy",
+      "human": "EDUCATION ← Back to programs LEGAL Refund Policy Effective date: July 15, 2026 · FUNDHUB LLC · Fundhub Education 1. The Short Version Full refund within 14 days of purchase, provided you have accessed less than 20% of the program content. After that window, tuition is non-refundable except as stated below or required by law. 2. Why This Policy These are digital programs with immediate full access. Once substantial content is consumed or templates are downloaded, the product has been delivered. 3. How to Request Email support@fundhubeducation.com from your enrollment email with the subject \"Refund Request\" and your order details. Eligible refunds are issued to the original payment method within 10 business days. 4. Financed Tuition If tuition was financed at checkout, an approved refund is applied against the financing balance per the checkout provider's process; their terms govern the mechanics of the reversal. 5. Duplicate or Erroneous Charges Duplicate or erroneous charges are corrected promptly. Contact us with the transaction details and we will correct it promptly. 6. Chargebacks If you believe a charge is incorrect, please contact us first. We resolve legitimate billing issue",
+      "brokenImgs": [],
+      "forms": [],
+      "submitted": false,
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4d-education-refund.png"
+    },
+    {
+      "id": "g4d/terms/",
+      "at": "2026-08-18T17:47:48.225Z",
+      "path": "/terms/",
+      "status": 200,
+      "finalUrl": "https://fundhub.ai/terms/",
+      "title": "Terms of Service | fundhub",
+      "h1": "Terms of Service",
+      "human": "← Back to fundhub.ai LEGAL Terms of Service Effective date: July 15, 2026 · FUNDHUB LLC 1. Agreement to These Terms These Terms of Service (\"Terms\") govern your use of the fundhub.ai website and the services provided by FUNDHUB LLC (\"Fundhub,\" \"we,\" \"us\"). By using the site or submitting an application, you agree to these Terms. If you do not agree, do not use the site. 2. What Fundhub Does Fundhub is a business financing advisory and referral service. We help business owners identify and apply for financing through a network of third-party funding partners. Fundhub is not a bank and is not a direct lender. We do not make credit decisions, set rates, or disburse funds. All financing decisions, amounts, rates, and terms are determined solely by funding partners based on their own criteria. 3. Eligibility Our services are available to U.S.-based businesses and their authorized representatives who are at least 18 years old. By applying, you represent that the information you provide is accurate and that you are authorized to act for the business named in the application. 4. The Application and Review Process Submitting an application is free and creates no obligation to proceed. The i",
+      "brokenImgs": [],
+      "forms": [],
+      "submitted": false,
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4d-terms.png"
+    },
+    {
+      "id": "g4d/privacy/",
+      "at": "2026-08-18T17:47:50.150Z",
+      "path": "/privacy/",
+      "status": 200,
+      "finalUrl": "https://fundhub.ai/privacy/",
+      "title": "Privacy Policy | fundhub",
+      "h1": "Privacy Policy",
+      "human": "← Back to fundhub.ai LEGAL Privacy Policy Effective date: July 15, 2026 · FUNDHUB LLC 1. Scope This Privacy Policy describes how FUNDHUB LLC (\"Fundhub,\" \"we,\" \"us\") collects, uses, and shares information when you visit fundhub.ai or use our services. By using the site, you agree to this Policy. 2. Information We Collect Information you provide Application details: your name, business name, email address, and mobile phone number when you submit an application. Engagement details: if you proceed with our services, information reasonably required to review financing options for your business, which may include business financials and, with your explicit authorization, credit report data obtained through a soft inquiry. Communications: the content of messages you send us, including email and SMS. Information collected automatically Standard log data such as IP address, browser type, pages viewed, and timestamps, used for security and site operation. 3. How We Use Information To process and follow up on your application. To review financing options with you and, with your consent, submit applications to funding partners. To send transactional updates about your application and account, ",
+      "brokenImgs": [],
+      "forms": [],
+      "submitted": false,
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4d-privacy.png"
+    },
+    {
+      "id": "g4d/affiliates/",
+      "at": "2026-08-18T17:47:52.059Z",
+      "path": "/affiliates/",
+      "status": 200,
+      "finalUrl": "https://fundhub.ai/affiliates/",
+      "title": "Partners | fundhub — Affiliate & White-Label",
+      "h1": "Two ways to build on fundhub.",
+      "human": "FUNDING EDUCATION LOG IN Apply to partner PARTNER PROGRAM Two ways to build on fundhub. Refer business owners as an affiliate, or run your own funding brand as a white-label partner. Either way, our team runs fulfillment — underwriting, funding operations, and compliance rails — end to end. Apply to partner SEE THE TRACKS → PARTNER PORTAL / ONBOARDING RUN ↻ $ partner --apply > application received 11:02:14 > track assigned 11:02:19 > tracking id issued 11:02:21 > portal access granted 11:02:24 > first referral attributed 11:02:31 > outcome tracking live WL Partner portal YOUR CLIENTS ONLY ATTRIBUTION First touch · sticky FIRST-TOUCH ATTRIBUTION PAID ON QUALIFIED OUTCOMES FULFILLMENT HANDLED BY FUNDHUB WHITE-LABEL · 50% REVENUE SHARE APPROVAL REQUIRED BEFORE LAUNCH FIRST-TOUCH ATTRIBUTION PAID ON QUALIFIED OUTCOMES FULFILLMENT HANDLED BY FUNDHUB WHITE-LABEL · 50% REVENUE SHARE APPROVAL REQUIRED BEFORE LAUNCH ATTRIBUTION First touch, sticky PAYOUTS On qualified outcomes WHITE-LABEL SHARE 50% revenue share FULFILLMENT Handled by fundhub THE TWO TRACKS Affiliate, or your own brand. Same engine underneath. The difference is whose name is on the front and how deep the economics go. AF-01",
+      "brokenImgs": [],
+      "forms": [
+        {
+          "action": "https://fundhub.ai/affiliates/",
+          "method": "get",
+          "fields": [
+            "p-name",
+            "p-email",
+            "p-phone",
+            "p-co",
+            "p-track",
+            "p-aud",
+            "p-sms"
+          ]
+        }
+      ],
+      "submitted": false,
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4d-affiliates.png"
+    },
+    {
+      "id": "g4c-login",
+      "at": "2026-08-18T17:47:54.289Z",
+      "status": 200,
+      "finalUrl": "https://fundhub.ai/app/pipeline.html",
+      "human": "signed in as owner",
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4c-01-after-login.png"
+    },
+    {
+      "id": "g4c-content-admin",
+      "at": "2026-08-18T17:47:57.856Z",
+      "status": 200,
+      "finalUrl": "https://fundhub.ai/app/pipeline.html",
+      "human": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:47:56 PM EDT LIVE Search ⌘K Chris Stanbridge · owner · 30 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: Alt-Fin (Lendflow) 0 R-04 Optimization (Repair) Rounds 0 R-05 Inquiry Removal 0 R-06 AR / Collections 0 R-08 Affiliates + White Label 0 R-09 Hiring 0 ⌕ ⚟ Filter 17 cards $50,000 est. — held New Lead 1 $0 est. FR Francis Rawlins MOVE DEL ⠿ — — 6d in stage Survey Complete 1 $0 est. MS Marisol scharon MOVE DEL ⠿ 750+ — 4d in stage Booked 1 $0 est. KS Kalaya Sirimitr MOVE DEL ⠿ 580-649 — 3d in stage Confirmed 0 $0 est. No cards in this stage Showed 0 $0 est. No cards in this stage Diagnostic Paid 0 $0 est. No cards in this stage Decision Rendered 1 $50,000 est. CP Chris ProveFunding MOVE DEL ⠿ 500-579 $50,000 est. 3d in stage Closed Won (deposit) 0 $0 est. No cards in this stage Downsell 0 $0 est. No cards in this stage Lost 13 $0 est. KB Kathleen Burleson MOVE DEL ⠿ 500-579 — 11h in stage KE Karl Elliott MOVE DEL ⠿ 750+ — 3d in stage BH Brandon Hives MOVE DEL ⠿ 500-579 — 3d in stage SM Selwyn Mcintosh MOVE DEL ⠿ 700-749 — 3d in stage RR Rick Rockwell MOVE DEL ⠿ 580-649 — 4d in stage MC Maurice Carter MOVE DEL ⠿ 650-699 — 4d in stage WB William Bolden MOVE DEL ⠿ 580-649 — 4d in stage SK Samone Kendrick MOVE DEL ⠿ 700-749 — 4d in stage AD Adam Denoto MOVE DEL ⠿ 650-699 — 4d in stage AK Anthony Kivesh MOVE DEL ⠿ 750+ — 5d in sta",
+      "ui": {
+        "notice": "",
+        "noticeOn": true,
+        "uploadHidden": null,
+        "chooseBtn": false,
+        "doUploadDisabled": null,
+        "saveHidden": null,
+        "saveTilesHidden": null,
+        "kVideos": "",
+        "kTiers": "",
+        "kTiles": "",
+        "kLast": "",
+        "libCount": "",
+        "vlist": "",
+        "tileWarn": "",
+        "pvVidTitle": "",
+        "liveTxt": "",
+        "canWrite": true,
+        "body": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Pipeline ORG: FUNDHUB Tue, Aug 18, 1:47:56 PM EDT LIVE Search ⌘K Chris Stanbridge · owner · 30 tabs LIVE Sign out R-01 Sales 17 R-02 Funding: Card Stacking 0 R-03 Funding: Alt-Fin (Lendflow) 0 R-04 Optimization (Repair) Rounds 0 R-05 Inquiry Removal 0 R-06 AR / Collections 0 R-08 Affiliates + White Label 0 R-09 Hiring 0 ⌕ ⚟ Filter 17 cards $50,000 est. — held New Lead 1 $0 est. FR Francis Rawlins MOVE DEL ⠿ — — 6d in stage Survey Complete 1 $0 est. MS Marisol scharon MOVE DEL ⠿ 750+ — 4d in stage Booked 1 $0 est. KS Kalaya Sirimitr MOVE DEL ⠿ 580-649 — 3d in stage Confirmed 0 $0 est. No cards in this stage Showed 0 $0 est. No cards in this stage Diagnostic Paid 0 $0 est. No cards in this stage Decision Rendered 1 $50,000 est. CP Chris ProveFunding MOVE DEL ⠿ 500-579 $50,000 est. 3d in stage Closed Won (deposit) 0 $0 est. No cards in this stage Downsell 0 $0 est. No cards in this stage Lost 13 $0 est. KB Kathleen Burleson MOVE DEL ⠿ 500-579 — 11h in stage KE Karl Elliott MOVE DEL ⠿ 750+ — 3d in stage BH Brandon Hives MOVE DEL ⠿ 500-579 — 3d in stage SM Selwyn Mcintosh MOVE DEL ⠿ 700-749 — 3d in stage RR Rick Rockwell MOVE DEL ⠿ 580-649 — 4d in stage MC Maurice Carter MOVE DEL ⠿ 650-699 — 4d in stage WB William Bolden MOVE DEL ⠿ 580-649 — 4d in stage SK Samone Kendrick MOVE DEL ⠿ 700-749 — 4d in stage AD Adam Denoto MOVE DEL ⠿ 650-699 — 4d in stage AK Anthony Kivesh MOVE DEL ⠿ 750+ — 5d in sta"
+      },
+      "tilesApi": {
+        "status": 200,
+        "ok": true,
+        "videos": 0,
+        "tiles": 5
+      },
+      "clicks": [
+        {
+          "label": "Choose file",
+          "visible": false
+        },
+        {
+          "label": "tile toggles on screen",
+          "count": 0,
+          "clicked": false,
+          "reason": "read-only audit — did not flip live tiles"
+        }
+      ],
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4c-content-admin.png"
+    },
+    {
+      "id": "g4c-test-portal",
+      "at": "2026-08-18T17:48:00.515Z",
+      "status": 200,
+      "finalUrl": "https://fundhub.ai/app/client-portal.html?id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "human": "Client Portal STATE BEFORE CALL IN PROGRESS JUST FUNDED TC TEST Client Role Search ⌘K Chris Stanbridge · owner · 30 tabs LIVE Sign out Welcome back, TEST Welcome to your Fundhub portal. Your call is next. Welcome video is not available CP-01 / START HERE FUNDHUB PORTAL Welcome to the Fundhub portal A short hello: what this page is, what happens on your call, and how to use this portal so you are not guessing. — Sign to authorize dispute letters This lets Fundhub prepare dispute letters for you. It is not a credit pull. Draw your signature, type your legal name, then press the button. I authorize Fundhub to prepare credit dispute letters and complaint drafts from my credit file for my review. Letters and complaints are not mailed or filed until I send or file them, or until staff I authoriz",
+      "portalUi": {
+        "videoEmpty": "Welcome video is not available",
+        "videoTitle": "Welcome to the Fundhub portal",
+        "greeting": "Welcome back, TEST",
+        "who": "TEST Client Role",
+        "playBtn": false,
+        "videos": [],
+        "body": "Client Portal STATE BEFORE CALL IN PROGRESS JUST FUNDED TC TEST Client Role Search ⌘K Chris Stanbridge · owner · 30 tabs LIVE Sign out Welcome back, TEST Welcome to your Fundhub portal. Your call is next. Welcome video is not available CP-01 / START HERE FUNDHUB PORTAL Welcome to the Fundhub portal A short hello: what this page is, what happens on your call, and how to use this portal so you are not guessing. — Sign to authorize dispute letters This lets Fundhub prepare dispute letters for you. It is not a credit pull. Draw your signature, type your legal name, then press the button. I authorize Fundhub to prepare credit dispute letters and complaint drafts from my credit file for my review. Letters and complaints are not mailed or filed until I send or file them, or until staff I authoriz"
+      },
+      "shot": "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4c-test-portal.png"
+    }
+  ],
+  "shots": [
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4a-watch.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4a-watch-after-play.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4a-apply.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4a-apply-step1-filled.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4a-funding-book-call.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4a-thank-you.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4a-book-404.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4b-start-ref.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4d-education.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4d-education-enroll.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4d-education-terms.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4d-education-privacy.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4d-education-refund.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4d-terms.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4d-privacy.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4d-affiliates.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4c-00-login.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4c-01-after-login.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4c-content-admin.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4c-content-admin-choose.png",
+    "docs/workflows/audit-gaps-2026-08-18-evidence/g4/g4c-test-portal.png"
+  ],
+  "funnelBrief": {
+    "watchStatus": 200,
+    "applyStatus": 200,
+    "bookCallStatus": 200,
+    "thankYouStatus": 200,
+    "bookStatus": 404,
+    "bot": {
+      "watch": [],
+      "apply": [],
+      "bookCall": [],
+      "thankYou": []
+    }
+  },
+  "affiliateBrief": {
+    "finalUrl": "https://apply.fundhub.ai/apply?a1=AFF-000001&ref=AFF-000001",
+    "landedApply": true,
+    "hops": [
+      {
+        "at": "2026-08-18T17:47:29.030Z",
+        "url": "https://fundhub.ai/start?ref=AFF-000001"
+      },
+      {
+        "at": "2026-08-18T17:47:29.276Z",
+        "url": "https://apply.fundhub.ai/apply?a1=AFF-000001&ref=AFF-000001"
+      },
+      {
+        "at": "2026-08-18T17:47:37.154Z",
+        "url": "https://fundhub.ai/education/"
+      },
+      {
+        "at": "2026-08-18T17:47:39.253Z",
+        "url": "https://fundhub.ai/education/enroll/"
+      },
+      {
+        "at": "2026-08-18T17:47:41.096Z",
+        "url": "https://fundhub.ai/education/terms/"
+      },
+      {
+        "at": "2026-08-18T17:47:42.898Z",
+        "url": "https://fundhub.ai/education/privacy/"
+      },
+      {
+        "at": "2026-08-18T17:47:44.683Z",
+        "url": "https://fundhub.ai/education/refund/"
+      },
+      {
+        "at": "2026-08-18T17:47:46.459Z",
+        "url": "https://fundhub.ai/terms/"
+      },
+      {
+        "at": "2026-08-18T17:47:48.438Z",
+        "url": "https://fundhub.ai/privacy/"
+      },
+      {
+        "at": "2026-08-18T17:47:50.303Z",
+        "url": "https://fundhub.ai/affiliates/"
+      },
+      {
+        "at": "2026-08-18T17:47:52.112Z",
+        "url": "https://fundhub.ai/login.html"
+      },
+      {
+        "at": "2026-08-18T17:47:53.850Z",
+        "url": "https://fundhub.ai/app/"
+      },
+      {
+        "at": "2026-08-18T17:47:54.017Z",
+        "url": "https://fundhub.ai/app/pipeline.html"
+      },
+      {
+        "at": "2026-08-18T17:47:54.500Z",
+        "url": "https://fundhub.ai/app/content-admin.html"
+      },
+      {
+        "at": "2026-08-18T17:47:54.623Z",
+        "url": "https://fundhub.ai/app/pipeline.html"
+      },
+      {
+        "at": "2026-08-18T17:47:57.905Z",
+        "url": "https://fundhub.ai/app/client-portal.html?id=8556bedc-46e1-4d85-b0cd-a24adfee1521"
+      }
+    ]
+  },
+  "contentBrief": {
+    "notice": "",
+    "uploadHidden": null,
+    "videos": "",
+    "portalEmpty": "Welcome video is not available"
+  },
+  "publicBrief": [
+    {
+      "path": "/education/",
+      "status": 200,
+      "broken": []
+    },
+    {
+      "path": "/education/enroll/",
+      "status": 200,
+      "broken": []
+    },
+    {
+      "path": "/education/terms/",
+      "status": 200,
+      "broken": []
+    },
+    {
+      "path": "/education/privacy/",
+      "status": 200,
+      "broken": []
+    },
+    {
+      "path": "/education/refund/",
+      "status": 200,
+      "broken": []
+    },
+    {
+      "path": "/terms/",
+      "status": 200,
+      "broken": []
+    },
+    {
+      "path": "/privacy/",
+      "status": 200,
+      "broken": []
+    },
+    {
+      "path": "/affiliates/",
+      "status": 200,
+      "broken": []
+    }
+  ]
+}

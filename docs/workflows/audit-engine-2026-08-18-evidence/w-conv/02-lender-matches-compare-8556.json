@@ -1,0 +1,14 @@
+{
+  "note": "read-compare only — 8556bedc. No writes.",
+  "status": 200,
+  "ok": true,
+  "match_count": 0,
+  "summary": {
+    "lender_count": 0,
+    "match_count": 0,
+    "skipped_count": 0,
+    "sensitive_bureaus": [],
+    "client_state": null
+  },
+  "skipped_count": 0
+}

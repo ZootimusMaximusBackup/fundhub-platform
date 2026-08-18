@@ -1,0 +1,15 @@
+[
+  "auth",
+  "extensions",
+  "graphql",
+  "graphql_public",
+  "information_schema",
+  "marketing",
+  "pg_catalog",
+  "pgbouncer",
+  "public",
+  "realtime",
+  "storage",
+  "supabase_migrations",
+  "vault"
+]

@@ -1,0 +1,167 @@
+{
+  "at": "2026-08-18T21:23:12.568Z",
+  "emails_used_count": 5,
+  "emails_are_e2e_aff": true,
+  "table_names_checked": [
+    "clients",
+    "events",
+    "cards",
+    "webhook_events",
+    "inbound_webhooks",
+    "clickfunnels_events"
+  ],
+  "forbidden_touched": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "?column?": 1
+      }
+    ]
+  },
+  "clients_by_email": {
+    "ok": true,
+    "n": 2,
+    "rows": [
+      {
+        "id": "f500ddf3-d508-4bf5-8f4b-3cb24ab840e1",
+        "created_at": "2026-08-18T21:21:10.424Z",
+        "channel_source": "clickfunnels",
+        "email_domain": "fundhub.ai",
+        "email_local_prefix": "e2e+aff-u9d-",
+        "has_custom_fields": true
+      },
+      {
+        "id": "4ab123c6-8da6-4393-948e-d2d811f1828a",
+        "created_at": "2026-08-18T21:20:09.329Z",
+        "channel_source": "clickfunnels",
+        "email_domain": "fundhub.ai",
+        "email_local_prefix": "e2e+aff-u9c-",
+        "has_custom_fields": true
+      }
+    ]
+  },
+  "recent_e2e_aff_clients": {
+    "ok": true,
+    "n": 2,
+    "rows": [
+      {
+        "id": "f500ddf3-d508-4bf5-8f4b-3cb24ab840e1",
+        "created_at": "2026-08-18T21:21:10.424Z",
+        "channel_source": "clickfunnels",
+        "email_local_prefix": "e2e+aff-u9d-1787",
+        "email_domain": "fundhub.ai"
+      },
+      {
+        "id": "4ab123c6-8da6-4393-948e-d2d811f1828a",
+        "created_at": "2026-08-18T21:20:09.329Z",
+        "channel_source": "clickfunnels",
+        "email_local_prefix": "e2e+aff-u9c-1787",
+        "email_domain": "fundhub.ai"
+      }
+    ]
+  },
+  "events_for_those_clients": {
+    "ok": true,
+    "n": 0,
+    "rows": []
+  },
+  "recent_entry_captured": {
+    "ok": true,
+    "n": 8,
+    "rows": [
+      {
+        "id": "8583b20a-b8e7-4da0-8cce-f90a19137b76",
+        "name": "entry.captured",
+        "created_at": "2026-08-18T21:21:12.311Z",
+        "client_id": null,
+        "has_email_key": true,
+        "is_e2e": true
+      },
+      {
+        "id": "b645b557-e678-4335-b04c-1aba20719316",
+        "name": "entry.captured",
+        "created_at": "2026-08-18T21:21:11.607Z",
+        "client_id": null,
+        "has_email_key": true,
+        "is_e2e": true
+      },
+      {
+        "id": "b17d209b-d996-4afd-83fc-4c1ae562276c",
+        "name": "entry.captured",
+        "created_at": "2026-08-18T21:21:11.433Z",
+        "client_id": null,
+        "has_email_key": true,
+        "is_e2e": true
+      },
+      {
+        "id": "10ba72f4-9b1b-48e0-85a3-b9d6c3503a31",
+        "name": "entry.captured",
+        "created_at": "2026-08-18T21:21:10.288Z",
+        "client_id": null,
+        "has_email_key": true,
+        "is_e2e": true
+      },
+      {
+        "id": "e5bbc04b-5570-42a0-8c84-ccc7b0b32067",
+        "name": "entry.captured",
+        "created_at": "2026-08-18T21:20:10.835Z",
+        "client_id": null,
+        "has_email_key": true,
+        "is_e2e": true
+      },
+      {
+        "id": "a44d97f9-2793-4d47-93a0-6df91c886f74",
+        "name": "entry.captured",
+        "created_at": "2026-08-18T21:20:10.800Z",
+        "client_id": null,
+        "has_email_key": true,
+        "is_e2e": true
+      },
+      {
+        "id": "f1e87354-e465-44ef-a738-7f0900ef1ef9",
+        "name": "entry.captured",
+        "created_at": "2026-08-18T21:20:09.783Z",
+        "client_id": null,
+        "has_email_key": true,
+        "is_e2e": true
+      },
+      {
+        "id": "1be9e345-a867-4659-a866-d23c03d4d2d6",
+        "name": "entry.captured",
+        "created_at": "2026-08-18T21:20:09.200Z",
+        "client_id": null,
+        "has_email_key": true,
+        "is_e2e": true
+      }
+    ]
+  },
+  "webhook_events": {
+    "missing_table": "webhook_events"
+  },
+  "inbound_webhooks": {
+    "missing_table": "inbound_webhooks"
+  },
+  "clickfunnels_events": {
+    "missing_table": "clickfunnels_events"
+  },
+  "webhook_deliveries": {
+    "missing_table": "webhook_deliveries"
+  },
+  "survey_submitted_2h": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "n": 0
+      }
+    ]
+  },
+  "tables_present": {
+    "clients": true,
+    "events": true,
+    "webhook_events": false,
+    "inbound_webhooks": false,
+    "clickfunnels_events": false
+  }
+}

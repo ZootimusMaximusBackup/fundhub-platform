@@ -1,0 +1,16 @@
+{
+  "path": "/app/finance-os.html",
+  "title": "Fundhub — Finance OS",
+  "hasConnectBank": false,
+  "connectLike": [],
+  "buckets": [
+    "Personal",
+    "Business",
+    "Investment",
+    "Subscriptions"
+  ],
+  "bodyHasNotLinked": true,
+  "bodyPreview": "‹‹\nSALES\n▾\nFUNDING\n▾\n⬡\nLenders\n▩\nFinance OS\nBETA\nCLIENT OPS\n▾\nWATCH\n▾\nAUTOMATION\n▾\nMARKETING\n▾\nADMIN\n▾\nPORTALS\n▾\nfundhub\nBeta — under development. Data may be incomplete or inaccurate. Do not use for client decisions.\nDismiss\nFINANCE\nFinance OS\nSearch\n⌘K\nChris Stanbridge · owner · 30 tabs\nLIVE\nSign out\nCOMPANY MONEY\nNot connected\nThe bank is not linked. Nothing here is a made-up balance.\nPersonal\nNONE\nPersonal accounts will show here once a bank is connected.\nBusiness\nNONE\nBusiness accounts will show here once a bank is connected.\nInvestment\nNONE\nInvestment accounts will show here once a bank is connected.\nSubscriptions\nCHARGES ON THESE ACCOUNTS\nRecurring charges will show here once connecte",
+  "clicked_connect": false,
+  "opened_plaid_link": false
+}

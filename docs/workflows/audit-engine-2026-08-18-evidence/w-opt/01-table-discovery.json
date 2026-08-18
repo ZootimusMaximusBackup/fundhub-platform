@@ -1,0 +1,66 @@
+{
+  "tables": [
+    {
+      "table_schema": "public",
+      "table_name": "dispute_cases"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "dispute_items"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "dispute_letters"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "dispute_responses"
+    },
+    {
+      "table_schema": "public",
+      "table_name": "documents"
+    }
+  ],
+  "columns": [
+    {
+      "table_name": "cards",
+      "column_name": "is_demo",
+      "data_type": "boolean"
+    },
+    {
+      "table_name": "clients",
+      "column_name": "custom_fields",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "clients",
+      "column_name": "is_demo",
+      "data_type": "boolean"
+    },
+    {
+      "table_name": "crs_results",
+      "column_name": "is_demo",
+      "data_type": "boolean"
+    },
+    {
+      "table_name": "crs_results",
+      "column_name": "result",
+      "data_type": "jsonb"
+    },
+    {
+      "table_name": "dispute_letters",
+      "column_name": "postgrid_letter_id",
+      "data_type": "text"
+    },
+    {
+      "table_name": "documents",
+      "column_name": "is_demo",
+      "data_type": "boolean"
+    },
+    {
+      "table_name": "tradelines",
+      "column_name": "is_demo",
+      "data_type": "boolean"
+    }
+  ]
+}

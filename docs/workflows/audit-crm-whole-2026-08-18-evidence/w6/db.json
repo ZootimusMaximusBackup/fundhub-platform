@@ -1,0 +1,2805 @@
+{
+  "at": "2026-08-18T16:49:21.013Z",
+  "destinations": {
+    "env_test_inbox": false,
+    "env_test_phone": false,
+    "note": "No TEST_INBOX / TEST_PHONE (or similar) in local .env. TWILIO_SEND_FROM is a send-from number, not a destination."
+  },
+  "forbidden_touched": false,
+  "tables": [
+    "account_magic_links",
+    "account_sessions",
+    "account_signup_policy",
+    "account_statement_cycles",
+    "accounts",
+    "action_log",
+    "ad_metrics_daily",
+    "ad_platform_category_map",
+    "ad_platform_connections",
+    "ad_sets",
+    "ads",
+    "affiliate_commission_rules",
+    "affiliate_events",
+    "affiliate_payout_lines",
+    "affiliate_payouts",
+    "affiliate_referrals",
+    "affiliates",
+    "agent_shadow_log",
+    "agents",
+    "ai_bureau_config",
+    "alerts",
+    "application_decisions",
+    "application_scores",
+    "applications",
+    "auth_attempts",
+    "bank_accounts",
+    "bank_inbox",
+    "bank_transactions",
+    "behavior_scores",
+    "brain_affiliate_allowlist",
+    "brain_chunks",
+    "brain_classification_reviews",
+    "brain_drive_sync",
+    "brain_files",
+    "brain_messages",
+    "brain_threads",
+    "brand_kit_sources",
+    "brand_kits",
+    "business_tradelines",
+    "businesses",
+    "call_compliance_flags",
+    "call_outcomes",
+    "campaign_strategies",
+    "campaigns",
+    "candidate_applications",
+    "candidates",
+    "card_liabilities",
+    "card_liability_history",
+    "cards",
+    "cashflow_reminders",
+    "cashflow_settings",
+    "client_cards",
+    "client_consents",
+    "client_custom_fields",
+    "clients",
+    "commas_inbox",
+    "commission_ledger",
+    "commission_rule_tiers",
+    "commission_rules",
+    "compliance_rules",
+    "compliance_screenings",
+    "content_tier_map",
+    "content_videos",
+    "contract_signers",
+    "contract_templates",
+    "contracts",
+    "conversation_participants",
+    "conversations",
+    "creative_assets",
+    "creative_billing_rates",
+    "creative_providers",
+    "creative_usage_events",
+    "crs_results",
+    "customer_insights",
+    "dispute_cases",
+    "dispute_items",
+    "dispute_letters",
+    "dispute_responses",
+    "document_versions",
+    "documents",
+    "eeo_responses",
+    "eeo_survey_invites",
+    "entities",
+    "entitlement_catalog",
+    "entitlements",
+    "erasure_requests",
+    "events",
+    "failed_events",
+    "funding_closeout",
+    "funding_closeout_items",
+    "funding_round_sales",
+    "funding_rounds",
+    "furnisher_mail_addresses",
+    "generation_job_assets",
+    "generation_jobs",
+    "hiring_channel_connections",
+    "hiring_decisions",
+    "hiring_interview_attendees",
+    "hiring_interviews",
+    "hiring_job_postings",
+    "hiring_roles",
+    "hiring_rubrics",
+    "inquiry_attempts",
+    "inquiry_log",
+    "inquiry_prep",
+    "inquiry_removal_cases",
+    "investment_holdings",
+    "invoice_line_items",
+    "invoice_payments",
+    "invoices",
+    "journeys",
+    "lender_bureau_observations",
+    "lenders",
+    "mail_campaigns",
+    "mail_responses",
+    "mail_tracked_numbers",
+    "mail_universe",
+    "marketing_content_queue",
+    "marketing_flags",
+    "message_channel_routing",
+    "message_templates",
+    "messages",
+    "messaging_settings",
+    "opt_outs",
+    "optimization_rules",
+    "org_brand",
+    "orgs",
+    "outbound_calls",
+    "owner_notifications",
+    "partner_ai_usage",
+    "partner_brand",
+    "partner_module_settings",
+    "partner_onboarding_tasks",
+    "partner_page_section_versions",
+    "partner_pages",
+    "partner_payout_lines",
+    "partner_payouts",
+    "partner_revenue",
+    "partners",
+    "password_resets",
+    "payment_links",
+    "pii_access_log",
+    "pii_identity",
+    "pipeline_stages",
+    "pipelines",
+    "plaid_items",
+    "product_aliases",
+    "product_entitlements",
+    "products",
+    "proxy_sessions",
+    "recurring_bill_transactions",
+    "recurring_bills",
+    "repair_decision_log",
+    "retention_policy",
+    "sale_attributions",
+    "sale_payments",
+    "sales",
+    "schema_migrations",
+    "sessions",
+    "shifts",
+    "snapshots",
+    "social_channels",
+    "social_posts",
+    "soft_pull_requests",
+    "spend_ceilings",
+    "staff",
+    "staff_events",
+    "staff_roles",
+    "staff_targets",
+    "subscriptions",
+    "tasks",
+    "tradelines",
+    "transactions",
+    "upsell_triggers",
+    "webhook_captures"
+  ],
+  "test_client": {
+    "ok": false,
+    "error": "column \"stage\" does not exist"
+  },
+  "forbidden_guard": {
+    "ok": true,
+    "rows": [
+      {
+        "id": "9af65808-a619-4e65-ae91-239766a006b7"
+      }
+    ],
+    "n": 1
+  },
+  "messages_by_status": {
+    "ok": true,
+    "rows": [
+      {
+        "status": "sent",
+        "channel": "email",
+        "n": 47
+      },
+      {
+        "status": "sent",
+        "channel": "sms",
+        "n": 21
+      },
+      {
+        "status": "failed",
+        "channel": "email",
+        "n": 13
+      },
+      {
+        "status": "completed",
+        "channel": "voice",
+        "n": 1
+      }
+    ],
+    "n": 4
+  },
+  "messages_queued_sample": {
+    "ok": false,
+    "error": "column \"sent_at\" does not exist"
+  },
+  "messaging_settings": {
+    "ok": false,
+    "error": "column \"daily_cap\" does not exist"
+  },
+  "channel_routing": {
+    "ok": true,
+    "rows": [
+      {
+        "channel": "email",
+        "provider": "resend",
+        "enabled": true
+      },
+      {
+        "channel": "sms",
+        "provider": "twilio",
+        "enabled": true
+      }
+    ],
+    "n": 2
+  },
+  "templates": {
+    "ok": true,
+    "rows": [
+      {
+        "template_key": "AF",
+        "channel": "email",
+        "subject": "AF1 – You’re Now an Affiliate",
+        "lorem": false,
+        "body_len": 1147,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "AF-06",
+        "channel": "email",
+        "subject": "Want to reactivate your affiliate stream?",
+        "lorem": false,
+        "body_len": 665,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "AF1",
+        "channel": "email",
+        "subject": "AF1 — Affiliate Activation",
+        "lorem": false,
+        "body_len": 873,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "AF2",
+        "channel": "email",
+        "subject": "AF2 — Affiliate Quickstart",
+        "lorem": false,
+        "body_len": 1107,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "AF3",
+        "channel": "email",
+        "subject": "AF3 – Commission Pending Review",
+        "lorem": false,
+        "body_len": 1023,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "AF4",
+        "channel": "email",
+        "subject": "AF4 – Affiliate Payout Sent",
+        "lorem": false,
+        "body_len": 1017,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "AR-PP1",
+        "channel": "email",
+        "subject": "AR-PP1 — Payment Plan Option",
+        "lorem": false,
+        "body_len": 526,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "AR-PP2",
+        "channel": "email",
+        "subject": "AR-PP2 — Payment Plan Confirmed",
+        "lorem": false,
+        "body_len": 429,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "AR-PP3",
+        "channel": "email",
+        "subject": "AR-PP3 — Upcoming Payment Reminder",
+        "lorem": false,
+        "body_len": 395,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "AR-PP4",
+        "channel": "email",
+        "subject": "AR-PP4 — Payment Failed",
+        "lorem": false,
+        "body_len": 476,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "AR-PP5",
+        "channel": "email",
+        "subject": "AR-PP5 — Partial Payment Receipt",
+        "lorem": false,
+        "body_len": 411,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "AR-PP6",
+        "channel": "email",
+        "subject": "AR-PP6 — Paid in Full",
+        "lorem": false,
+        "body_len": 655,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "AR1",
+        "channel": "email",
+        "subject": "AR1 — Invoice Sent",
+        "lorem": false,
+        "body_len": 382,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "AR2",
+        "channel": "email",
+        "subject": "AR2 — Friendly Reminder",
+        "lorem": false,
+        "body_len": 429,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "AR3",
+        "channel": "email",
+        "subject": "AR3 — Firm Reminder",
+        "lorem": false,
+        "body_len": 422,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "AR4",
+        "channel": "email",
+        "subject": "AR4 — Final Notice",
+        "lorem": false,
+        "body_len": 505,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "Begin LT-Cold-2",
+        "channel": "email",
+        "subject": "LT-Cold-2 – Cold Nurture Email #2",
+        "lorem": false,
+        "body_len": 998,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "Begin LT-Cold-3.",
+        "channel": "email",
+        "subject": "LT-Cold-3 – Cold Nurture #3",
+        "lorem": false,
+        "body_len": 1001,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-EMAIL-FUNDING-72HR",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-EMAIL-REPAIR-72HR",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D1-E1-morning",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D1-E2-midmorning",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D1-E3-lunch",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D1-E4-afternoon",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D1-E5-evening",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D1-E6-night",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D2-E1-morning",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D2-E2-midmorning",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D2-E3-lunch",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D2-E4-afternoon",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D2-E5-evening",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D2-E6-night",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D3-E1-morning",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D3-E2-midmorning",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D3-E3-lunch",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D3-E4-afternoon",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D3-E5-evening",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-FUND-D3-E6-night",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-REPAIR-D1-E1-morning",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-REPAIR-D1-E2-midmorning",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-REPAIR-D1-E3-lunch",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-REPAIR-D1-E4-afternoon",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-REPAIR-D1-E5-evening",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-REPAIR-D2-E6-night",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-REPAIR-D3-E1-morning",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-REPAIR-D3-E2-midmorning",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-REPAIR-D3-E3-lunch",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-REPAIR-D3-E4-afternoon",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-REPAIR-D3-E5-evening",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "BS-REPAIR-D3-E6-night",
+        "channel": "email",
+        "subject": "Discount Light",
+        "lorem": true,
+        "body_len": 1776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "C3",
+        "channel": "email",
+        "subject": "RC3 – 2-Hour Reminder (Repair Review)",
+        "lorem": false,
+        "body_len": 885,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "CONTRACT-REMIND-EMAIL",
+        "channel": "email",
+        "subject": "Still waiting on your signature: {{contract.title}}",
+        "lorem": false,
+        "body_len": 405,
+        "compliance_passed": true,
+        "approved": false
+      },
+      {
+        "template_key": "CONTRACT-SEND-EMAIL",
+        "channel": "email",
+        "subject": "Please sign: {{contract.title}}",
+        "lorem": false,
+        "body_len": 532,
+        "compliance_passed": true,
+        "approved": false
+      },
+      {
+        "template_key": "D1",
+        "channel": "email",
+        "subject": "D1 – Missing Documents (Initial Request)",
+        "lorem": false,
+        "body_len": 674,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "D2",
+        "channel": "email",
+        "subject": "D2 – Follow-Up Document Request",
+        "lorem": false,
+        "body_len": 899,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "D3",
+        "channel": "email",
+        "subject": "D3 – Urgent Reminder (File On Hold)",
+        "lorem": false,
+        "body_len": 828,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "D4",
+        "channel": "email",
+        "subject": "D4 – Final Document Request",
+        "lorem": false,
+        "body_len": 997,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "Default - Document Sent",
+        "channel": "email",
+        "subject": "96",
+        "lorem": false,
+        "body_len": 332,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "DPC-05",
+        "channel": "email",
+        "subject": "72-hour no-progress escalation",
+        "lorem": false,
+        "body_len": 669,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-AX07-FUNDING-PAUSED",
+        "channel": "email",
+        "subject": "Funding paused — action needed",
+        "lorem": false,
+        "body_len": 608,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-C06-DECLINE",
+        "channel": "email",
+        "subject": "Your Fundhub review — what we found",
+        "lorem": false,
+        "body_len": 1049,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-DPC05-NO-PROGRESS-72H",
+        "channel": "email",
+        "subject": "72-hour no-progress escalation",
+        "lorem": false,
+        "body_len": 669,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-DS01-REPAIR-REFERRAL",
+        "channel": "email",
+        "subject": "The step that unlocks your funding",
+        "lorem": false,
+        "body_len": 1149,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-DS02-DIY-LETTERS-READY",
+        "channel": "email",
+        "subject": "Your correction letters are ready",
+        "lorem": false,
+        "body_len": 1016,
+        "compliance_passed": true,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-F02-ID-PORTAL-NEEDED",
+        "channel": "email",
+        "subject": "One quick step before we can begin",
+        "lorem": false,
+        "body_len": 559,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-F02-ID-PORTAL-NEEDED-FOLLOWUP",
+        "channel": "email",
+        "subject": "P2 — ID / Portal Still Missing",
+        "lorem": false,
+        "body_len": 547,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-F03-ROUND-SUBMITTED",
+        "channel": "email",
+        "subject": "Funding Round {{custom_fields.funding_round_number}} has been submitted",
+        "lorem": false,
+        "body_len": 636,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-F04-ROUND-APPROVALS",
+        "channel": "email",
+        "subject": "Approvals are in for Funding Round {{custom_fields.funding_round_number}}",
+        "lorem": false,
+        "body_len": 707,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-F06-MISSING-DOCS",
+        "channel": "email",
+        "subject": "Funding is now locked — here’s what happens next",
+        "lorem": false,
+        "body_len": 787,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-F07-FUNDING-LOCKED",
+        "channel": "email",
+        "subject": "FR22 – Total Funding Locked",
+        "lorem": false,
+        "body_len": 1136,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-F10-INBOX-SETUP",
+        "channel": "email",
+        "subject": "Your funding inbox is ready",
+        "lorem": false,
+        "body_len": 838,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-N01-COLD-NURTURE",
+        "channel": "email",
+        "subject": "A quick insight most people miss",
+        "lorem": false,
+        "body_len": 678,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-N02-WARM-NURTURE",
+        "channel": "email",
+        "subject": "A small shift that makes a big difference",
+        "lorem": false,
+        "body_len": 722,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-N03-HOT-NURTURE",
+        "channel": "email",
+        "subject": "Knowing when to move forward",
+        "lorem": false,
+        "body_len": 809,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-N04-POST-FUNDING",
+        "channel": "email",
+        "subject": "What comes after funding",
+        "lorem": false,
+        "body_len": 628,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-N06-RENEWAL",
+        "channel": "email",
+        "subject": "When “second-wave” funding makes sense",
+        "lorem": false,
+        "body_len": 737,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-PORTAL-MAGIC-LINK",
+        "channel": "email",
+        "subject": "Your Fundhub sign-in link",
+        "lorem": false,
+        "body_len": 376,
+        "compliance_passed": true,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-S02-FINISH-APPLICATION",
+        "channel": "email",
+        "subject": "[DRAFT — KILLED] S-02 retired",
+        "lorem": false,
+        "body_len": 186,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-S05A-NOSHOW-RECOVERY",
+        "channel": "email",
+        "subject": "We missed you — your analysis is still here",
+        "lorem": false,
+        "body_len": 745,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-U02-ANALYZER-FUNDING-DELIVERY",
+        "channel": "email",
+        "subject": "Your Fundhub file is complete — audit, letters, roadmap, and portal access inside",
+        "lorem": false,
+        "body_len": 7902,
+        "compliance_passed": true,
+        "approved": false
+      },
+      {
+        "template_key": "EMAIL-U02-ANALYZER-REPAIR-DELIVERY",
+        "channel": "email",
+        "subject": "EMAIL — Analyzer Repair Delivery",
+        "lorem": false,
+        "body_len": 546,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "F-02",
+        "channel": "email",
+        "subject": "One quick step before we can begin",
+        "lorem": false,
+        "body_len": 559,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "F-03",
+        "channel": "email",
+        "subject": "Funding Round {{custom_fields.funding_round_number}} has been submitted",
+        "lorem": false,
+        "body_len": 636,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "F-04",
+        "channel": "email",
+        "subject": "Approvals are in for Funding Round {{custom_fields.funding_round_number}}",
+        "lorem": false,
+        "body_len": 707,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "F-06",
+        "channel": "email",
+        "subject": "Funding is now locked — here’s what happens next",
+        "lorem": false,
+        "body_len": 787,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "F-06--2",
+        "channel": "email",
+        "subject": "One item is required to continue",
+        "lorem": false,
+        "body_len": 480,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "F-10",
+        "channel": "email",
+        "subject": "Your funding inbox is ready",
+        "lorem": false,
+        "body_len": 838,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "F1",
+        "channel": "email",
+        "subject": "F1 – Fundable Roadmap",
+        "lorem": false,
+        "body_len": 1247,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "F2",
+        "channel": "email",
+        "subject": "F2 – How Much You Could Actually Get",
+        "lorem": false,
+        "body_len": 1013,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "F3",
+        "channel": "email",
+        "subject": "F3 – Roadmap Execution Push",
+        "lorem": false,
+        "body_len": 1165,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FC2",
+        "channel": "email",
+        "subject": "FC2 – 24-Hour Reminder",
+        "lorem": false,
+        "body_len": 1041,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FC3",
+        "channel": "email",
+        "subject": "FC3 – 2-Hour Reminder",
+        "lorem": false,
+        "body_len": 776,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR1",
+        "channel": "email",
+        "subject": "FR1 – Welcome To Funding Intake",
+        "lorem": false,
+        "body_len": 1057,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR10",
+        "channel": "email",
+        "subject": "FR10 – Round 5 Submitted",
+        "lorem": false,
+        "body_len": 1140,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR11 - Round 5 Approvals",
+        "channel": "email",
+        "subject": "FR11 – Round 5 Approvals",
+        "lorem": false,
+        "body_len": 1094,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR12 - Round 6 Submitted",
+        "channel": "email",
+        "subject": "FR12 – Round 6 Submitted",
+        "lorem": false,
+        "body_len": 1291,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR13",
+        "channel": "email",
+        "subject": "FR13 – Round 6 Approvals",
+        "lorem": false,
+        "body_len": 1166,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR14",
+        "channel": "email",
+        "subject": "FR14 – Round 7 Submitted",
+        "lorem": false,
+        "body_len": 1350,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR15",
+        "channel": "email",
+        "subject": "FR15 – Round 7 Approvals",
+        "lorem": false,
+        "body_len": 1230,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR16",
+        "channel": "email",
+        "subject": "FR16 – Round 8 Submitted",
+        "lorem": false,
+        "body_len": 1164,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR17",
+        "channel": "email",
+        "subject": "FR17 – Round 8 Approvals",
+        "lorem": false,
+        "body_len": 1273,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR18",
+        "channel": "email",
+        "subject": "FR18 – Round 9 Submitted",
+        "lorem": false,
+        "body_len": 1173,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR19",
+        "channel": "email",
+        "subject": "FR19 – Round 9 Approvals",
+        "lorem": false,
+        "body_len": 1249,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR2",
+        "channel": "email",
+        "subject": "FR2 – Round 1 Submitted",
+        "lorem": false,
+        "body_len": 890,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR20",
+        "channel": "email",
+        "subject": "FR20 – Round 10 Submitted",
+        "lorem": false,
+        "body_len": 1183,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR21",
+        "channel": "email",
+        "subject": "FR21 – Round 10 Approvals",
+        "lorem": false,
+        "body_len": 1341,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR22",
+        "channel": "email",
+        "subject": "FR22 – Total Funding Locked",
+        "lorem": false,
+        "body_len": 1136,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR23",
+        "channel": "email",
+        "subject": "FR23 – Post-Funding Monitoring",
+        "lorem": false,
+        "body_len": 1646,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR3",
+        "channel": "email",
+        "subject": "FR3 – Round 1 Approvals",
+        "lorem": false,
+        "body_len": 1049,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR4",
+        "channel": "email",
+        "subject": "FR4 – Round 2 Submitted",
+        "lorem": false,
+        "body_len": 890,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR5",
+        "channel": "email",
+        "subject": "FR5 – Round 2 Approvals",
+        "lorem": false,
+        "body_len": 1172,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR6",
+        "channel": "email",
+        "subject": "FR6 – Round 3 Submitted",
+        "lorem": false,
+        "body_len": 971,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR7",
+        "channel": "email",
+        "subject": "FR7 – Round 3 Approvals",
+        "lorem": false,
+        "body_len": 1061,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR8",
+        "channel": "email",
+        "subject": "FR8 – Round 4 Submitted",
+        "lorem": false,
+        "body_len": 1148,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "FR9",
+        "channel": "email",
+        "subject": "FR9 – Round 4 Approvals",
+        "lorem": false,
+        "body_len": 1186,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "Fundhub",
+        "channel": "email",
+        "subject": "Funding paused — action needed",
+        "lorem": false,
+        "body_len": 580,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "GE1",
+        "channel": "email",
+        "subject": "GE1 – Quick Check-In",
+        "lorem": false,
+        "body_len": 758,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "GE2",
+        "channel": "email",
+        "subject": "GE2 – A Lot Has Changed",
+        "lorem": false,
+        "body_len": 494,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "GE3",
+        "channel": "email",
+        "subject": "GE3 – Final Check-In",
+        "lorem": false,
+        "body_len": 797,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "INVOICE-SENT-EMAIL",
+        "channel": "email",
+        "subject": "Your invoice from {{invoice.company}} — {{invoice.amount}}",
+        "lorem": false,
+        "body_len": 354,
+        "compliance_passed": true,
+        "approved": false
+      },
+      {
+        "template_key": "LT-Cold- 2",
+        "channel": "email",
+        "subject": "LT-Cold-2 – Cold Nurture Email #2",
+        "lorem": false,
+        "body_len": 998,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "LT-Hot-2",
+        "channel": "email",
+        "subject": "LT-Hot-2 – Hot Nurture #2",
+        "lorem": false,
+        "body_len": 1043,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "LT-Hot-3",
+        "channel": "email",
+        "subject": "LT-Hot-3 – Last Call Before Calendar Purge",
+        "lorem": false,
+        "body_len": 1045,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "LT-Warm-1",
+        "channel": "email",
+        "subject": "LT-Warm-1 – Warm Nurture #1",
+        "lorem": false,
+        "body_len": 1245,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "LT-Warm-3",
+        "channel": "email",
+        "subject": "LT-Warm-3 – Warm Nurture #3",
+        "lorem": false,
+        "body_len": 1151,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "N-01",
+        "channel": "email",
+        "subject": "A quick insight most people miss",
+        "lorem": false,
+        "body_len": 678,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "N-02",
+        "channel": "email",
+        "subject": "A small shift that makes a big difference",
+        "lorem": false,
+        "body_len": 722,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "N-03",
+        "channel": "email",
+        "subject": "Knowing when to move forward",
+        "lorem": false,
+        "body_len": 809,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "N-04",
+        "channel": "email",
+        "subject": "What comes after funding",
+        "lorem": false,
+        "body_len": 628,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "N-05",
+        "channel": "email",
+        "subject": "Protect what you just built",
+        "lorem": false,
+        "body_len": 675,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "N-06",
+        "channel": "email",
+        "subject": "When “second-wave” funding makes sense",
+        "lorem": false,
+        "body_len": 737,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "N-07",
+        "channel": "email",
+        "subject": "Quick check-in",
+        "lorem": false,
+        "body_len": 580,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "N-08",
+        "channel": "email",
+        "subject": "Quick Analyzer refresh",
+        "lorem": false,
+        "body_len": 536,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "NS3",
+        "channel": "email",
+        "subject": "NS3 – Last Chance To Rebook",
+        "lorem": false,
+        "body_len": 860,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "OA1",
+        "channel": "email",
+        "subject": "OA1 – Your Approvals Are Sitting Here Waiting",
+        "lorem": false,
+        "body_len": 971,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "OA2",
+        "channel": "email",
+        "subject": "OA2 – You're Leaving Money On The Table",
+        "lorem": false,
+        "body_len": 1175,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "P1",
+        "channel": "email",
+        "subject": "P1 — ID Needed",
+        "lorem": false,
+        "body_len": 545,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "P2",
+        "channel": "email",
+        "subject": "P2 — ID / Portal Still Missing",
+        "lorem": false,
+        "body_len": 547,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "P3",
+        "channel": "email",
+        "subject": "P3 — Final Notice (ID / Portal)",
+        "lorem": false,
+        "body_len": 500,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "payment_link_notice",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 107,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "PC1",
+        "channel": "email",
+        "subject": "PC1 – Accepted Offer (Funding)",
+        "lorem": false,
+        "body_len": 1065,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "PC2",
+        "channel": "email",
+        "subject": "PC2 – Funding Intake Instructions",
+        "lorem": false,
+        "body_len": 1078,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "PC3",
+        "channel": "email",
+        "subject": "PC3 – Didn’t Buy Funding",
+        "lorem": false,
+        "body_len": 1101,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "PC4",
+        "channel": "email",
+        "subject": "PC4 – Funding Contract Not Signed",
+        "lorem": false,
+        "body_len": 801,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "PCR1",
+        "channel": "email",
+        "subject": "PCR1 – Accepted Repair Offer",
+        "lorem": false,
+        "body_len": 1059,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "PCR2",
+        "channel": "email",
+        "subject": "PCR2 – Repair Intake Instructions",
+        "lorem": false,
+        "body_len": 1195,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "PCR3",
+        "channel": "email",
+        "subject": "PCR3 – Didn’t Buy Repair",
+        "lorem": false,
+        "body_len": 1178,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "PCR4",
+        "channel": "email",
+        "subject": "PCR4 – Repair Contract Not Signed",
+        "lorem": false,
+        "body_len": 892,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "R-02",
+        "channel": "email",
+        "subject": "Repair Round {{custom_fields.repair_round_number}} is in motion",
+        "lorem": false,
+        "body_len": 563,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "R-03",
+        "channel": "email",
+        "subject": "Repair Round {{custom_fields.repair_round_number}} is underway",
+        "lorem": false,
+        "body_len": 620,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "R-05",
+        "channel": "email",
+        "subject": "Repair Round {{custom_fields.repair_round_number}} is underway",
+        "lorem": false,
+        "body_len": 672,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "R-06",
+        "channel": "email",
+        "subject": "Repair Round {{custom_fields.repair_round_number}} is underway",
+        "lorem": false,
+        "body_len": 643,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "R-07",
+        "channel": "email",
+        "subject": "Repair Round {{custom_fields.repair_round_number}} is underway",
+        "lorem": false,
+        "body_len": 629,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "R-09",
+        "channel": "email",
+        "subject": "Your file has entered legal review",
+        "lorem": false,
+        "body_len": 1037,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "R-10",
+        "channel": "email",
+        "subject": "Your legal case has concluded",
+        "lorem": false,
+        "body_len": 542,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "RC1",
+        "channel": "email",
+        "subject": "RC1 – Repair Call Confirmed",
+        "lorem": false,
+        "body_len": 705,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "RC2",
+        "channel": "email",
+        "subject": "RC2 – 24-Hour Reminder (Repair Review)",
+        "lorem": false,
+        "body_len": 874,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "RER1",
+        "channel": "email",
+        "subject": "RER1 – Analyzer Re-Run Required",
+        "lorem": false,
+        "body_len": 917,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "RER2",
+        "channel": "email",
+        "subject": "RER2 – A Lot Has Changed Since Your Last Analysis",
+        "lorem": false,
+        "body_len": 1174,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "RER3",
+        "channel": "email",
+        "subject": "RER3 – Final Notice Before Archive",
+        "lorem": false,
+        "body_len": 1044,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "RNS1",
+        "channel": "email",
+        "subject": "RNS1 – Missed Repair Strategy Call",
+        "lorem": false,
+        "body_len": 1032,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "RNS2",
+        "channel": "email",
+        "subject": "RNS2 – Your Credit File Can't Sit Like This",
+        "lorem": false,
+        "body_len": 1121,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "RNS3",
+        "channel": "email",
+        "subject": "RNS3 – Last Chance To Get Back On Track",
+        "lorem": false,
+        "body_len": 983,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "RP1",
+        "channel": "email",
+        "subject": "OA3 – Your File Is Expiring Soon",
+        "lorem": false,
+        "body_len": 1111,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "RP2",
+        "channel": "email",
+        "subject": "RP2 – What's Blocking Your Funding Right Now",
+        "lorem": false,
+        "body_len": 1197,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "RP3",
+        "channel": "email",
+        "subject": "RP3 – Fix This → Unlock Funding Faster",
+        "lorem": false,
+        "body_len": 843,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "S-01 New Lead Intake",
+        "channel": "email",
+        "subject": "S-01 – New Lead Intake",
+        "lorem": false,
+        "body_len": 915,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "S-02",
+        "channel": "email",
+        "subject": "[DRAFT — KILLED] S-02 retired",
+        "lorem": false,
+        "body_len": 186,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "S-03 Incomplete Booking",
+        "channel": "email",
+        "subject": "S-03 – Incomplete Booking",
+        "lorem": false,
+        "body_len": 886,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "S-04",
+        "channel": "email",
+        "subject": "S-04 – Appointment Confirmation",
+        "lorem": false,
+        "body_len": 752,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "S-04B Reminder Email",
+        "channel": "email",
+        "subject": "Reminder: Your call is coming up",
+        "lorem": false,
+        "body_len": 565,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "S-05 No-Show Recovery",
+        "channel": "email",
+        "subject": "S-05 – No-Show Recovery",
+        "lorem": false,
+        "body_len": 789,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "S-06 Application Push",
+        "channel": "email",
+        "subject": "S-06 – Application Push",
+        "lorem": false,
+        "body_len": 766,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "S-07 Sales Status Cleanup",
+        "channel": "email",
+        "subject": "S-07 – Not a Fit Right Now",
+        "lorem": false,
+        "body_len": 886,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "S-08",
+        "channel": "email",
+        "subject": "S-08 – Long-Term Nurture (Cold 1)",
+        "lorem": false,
+        "body_len": 707,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "S2",
+        "channel": "email",
+        "subject": "NS2 – Here’s Why You Can’t Ignore This",
+        "lorem": false,
+        "body_len": 1048,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SEND AX-07",
+        "channel": "email",
+        "subject": "Funding paused — action needed",
+        "lorem": false,
+        "body_len": 608,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-AISET03-MSG1",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 287,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-AISET03-MSG2",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 186,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-AISET03-MSG3",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 250,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-AISET04-HANDOFF",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 218,
+        "compliance_passed": true,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-AX07-FUNDING-PAUSED",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 203,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-BLK-01-NEW-NEGATIVE-PAUSED",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 265,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-BS01-01-BOOKED",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 152,
+        "compliance_passed": true,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-BS01-01-CONFIRMATION-HUB",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 284,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-BS01-02-PRECALL",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 172,
+        "compliance_passed": true,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-BS01-02-PRECALL-NUDGE",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 277,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-BS01-03-DAYOF",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 133,
+        "compliance_passed": true,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-C06-DECLINE",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 380,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-DPC04-RESCHEDULE-REBOOKING",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 203,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-DPC05-NO-PROGRESS-72H",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 203,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-DS01-REPAIR-REFERRAL",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 134,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-F02-01-PORTAL-ID",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 275,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-F02-02-PORTAL-ID-FOLLOWUP",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 296,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-F02-ID-PORTAL-NEEDED",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 275,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-F03-01-ROUND-SUBMITTED",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 404,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-F03-ROUND-SUBMITTED",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 404,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-F04-01-ROUND-MOVEMENT",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 323,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-F04-ROUND-APPROVALS",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 323,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-F06-01-MISSING-DOCS",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 310,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-F06-MISSING-DOCS",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 310,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-F07-01-LOC",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 269,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-F07-FUNDING-LOCKED",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 269,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-F10-01-INBOX-READY",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 441,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-F10-INBOX-SETUP",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 441,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-N01-COLD-NURTURE",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 265,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-N02-WARM-NURTURE",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 265,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-N03-HOT-NURTURE",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 263,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-N04-POST-FUNDING",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 259,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-N06-RENEWAL",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 263,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-NOBOOK-01",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 173,
+        "compliance_passed": true,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-NOBOOK-02",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 182,
+        "compliance_passed": true,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-NOBOOK-03",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 140,
+        "compliance_passed": true,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-R00-01-REPAIR-ROUND-SENT",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 386,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-R12-01-UPGRADE-INVITE",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 359,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-R13-01-WELCOME-TO-FUNDING",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 261,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-ROUND-STARTED-NOTIFY",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 161,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-S04-01-CONFIRM",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 190,
+        "compliance_passed": true,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-S04-02-REMIND-24H",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 196,
+        "compliance_passed": true,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-S04-03-REMIND-2H",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 191,
+        "compliance_passed": true,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-S05-01-NOSHOW",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 150,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-S05-02-NOSHOW-NUDGE",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 177,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-S05A-NOSHOW-RECOVERY",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 280,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-WF-AI-SET-03-NO-ANSWER-SMS-CADENCE-01",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 287,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-WF-AI-SET-03-NO-ANSWER-SMS-CADENCE-02",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 186,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-WF-AI-SET-03-NO-ANSWER-SMS-CADENCE-03",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 250,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-WF-AI-SET-04-3-WAY-TEXT-HANDOFF-01",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 378,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-WF-CLOSER-HIRING-INTERVIEW-BOOKED-01",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 204,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-WF-DS-01-REPAIR-REFERRAL-01",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 134,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-WF-ROUND-STARTED-CLIENT-NOTIFY-01",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 161,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "SMS-WF-U-06-ANALYZER-FOLLOW-UP-01",
+        "channel": "sms",
+        "subject": null,
+        "lorem": false,
+        "body_len": 130,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "T1",
+        "channel": "email",
+        "subject": "T1 – Testimonial Request",
+        "lorem": false,
+        "body_len": 721,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "T2",
+        "channel": "email",
+        "subject": "T2 – Your Story Matters",
+        "lorem": false,
+        "body_len": 1064,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "T3",
+        "channel": "email",
+        "subject": "T3 – Final Testimonial Nudge",
+        "lorem": false,
+        "body_len": 871,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "U-02",
+        "channel": "email",
+        "subject": "EMAIL — Analyzer Funding Delivery",
+        "lorem": false,
+        "body_len": 452,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "U-02--2",
+        "channel": "email",
+        "subject": "EMAIL — Analyzer Repair Delivery",
+        "lorem": false,
+        "body_len": 546,
+        "compliance_passed": false,
+        "approved": false
+      },
+      {
+        "template_key": "U-06",
+        "channel": "email",
+        "subject": "Quick action needed to finish your results",
+        "lorem": false,
+        "body_len": 464,
+        "compliance_passed": false,
+        "approved": false
+      }
+    ],
+    "n": 237
+  },
+  "template_count": 237,
+  "templates_lorem": [
+    "BS-EMAIL-FUNDING-72HR",
+    "BS-EMAIL-REPAIR-72HR",
+    "BS-FUND-D1-E1-morning",
+    "BS-FUND-D1-E2-midmorning",
+    "BS-FUND-D1-E3-lunch",
+    "BS-FUND-D1-E4-afternoon",
+    "BS-FUND-D1-E5-evening",
+    "BS-FUND-D1-E6-night",
+    "BS-FUND-D2-E1-morning",
+    "BS-FUND-D2-E2-midmorning",
+    "BS-FUND-D2-E3-lunch",
+    "BS-FUND-D2-E4-afternoon",
+    "BS-FUND-D2-E5-evening",
+    "BS-FUND-D2-E6-night",
+    "BS-FUND-D3-E1-morning",
+    "BS-FUND-D3-E2-midmorning",
+    "BS-FUND-D3-E3-lunch",
+    "BS-FUND-D3-E4-afternoon",
+    "BS-FUND-D3-E5-evening",
+    "BS-FUND-D3-E6-night",
+    "BS-REPAIR-D1-E1-morning",
+    "BS-REPAIR-D1-E2-midmorning",
+    "BS-REPAIR-D1-E3-lunch",
+    "BS-REPAIR-D1-E4-afternoon",
+    "BS-REPAIR-D1-E5-evening",
+    "BS-REPAIR-D2-E6-night",
+    "BS-REPAIR-D3-E1-morning",
+    "BS-REPAIR-D3-E2-midmorning",
+    "BS-REPAIR-D3-E3-lunch",
+    "BS-REPAIR-D3-E4-afternoon",
+    "BS-REPAIR-D3-E5-evening",
+    "BS-REPAIR-D3-E6-night"
+  ],
+  "template_categories": {
+    "other": 161,
+    "EMAIL-AX07": 1,
+    "EMAIL-C06": 1,
+    "EMAIL-DPC05": 1,
+    "EMAIL-DS01": 1,
+    "EMAIL-DS02": 1,
+    "EMAIL-F02": 2,
+    "EMAIL-F03": 1,
+    "EMAIL-F04": 1,
+    "EMAIL-F06": 1,
+    "EMAIL-F07": 1,
+    "EMAIL-F10": 1,
+    "EMAIL-N01": 1,
+    "EMAIL-N02": 1,
+    "EMAIL-N03": 1,
+    "EMAIL-N04": 1,
+    "EMAIL-N06": 1,
+    "EMAIL-PORTAL": 1,
+    "EMAIL-S02": 1,
+    "EMAIL-S05A": 1,
+    "EMAIL-U02": 2,
+    "SMS-AISET03": 3,
+    "SMS-AISET04": 1,
+    "SMS-AX07": 1,
+    "SMS-BLK": 1,
+    "SMS-BS01": 5,
+    "SMS-C06": 1,
+    "SMS-DPC04": 1,
+    "SMS-DPC05": 1,
+    "SMS-DS01": 1,
+    "SMS-F02": 3,
+    "SMS-F03": 2,
+    "SMS-F04": 2,
+    "SMS-F06": 2,
+    "SMS-F07": 2,
+    "SMS-F10": 2,
+    "SMS-N01": 1,
+    "SMS-N02": 1,
+    "SMS-N03": 1,
+    "SMS-N04": 1,
+    "SMS-N06": 1,
+    "SMS-NOBOOK": 3,
+    "SMS-R00": 1,
+    "SMS-R12": 1,
+    "SMS-R13": 1,
+    "SMS-ROUND": 1,
+    "SMS-S04": 3,
+    "SMS-S05": 2,
+    "SMS-S05A": 1,
+    "SMS-WF": 8
+  },
+  "test_contracts": {
+    "ok": true,
+    "rows": [
+      {
+        "id": "16b29639-ac19-42ab-ba48-8789018b0e48",
+        "status": "signed",
+        "template_key": "SOFT-PULL-CONSENT",
+        "sent_at": "2026-08-18T16:07:52.126Z",
+        "signed_at": "2026-08-18T16:12:37.597Z",
+        "voided_at": null
+      },
+      {
+        "id": "8988b582-d98a-44c8-9173-86de54fc5788",
+        "status": "draft",
+        "template_key": "SOFT-PULL-CONSENT",
+        "sent_at": null,
+        "signed_at": null,
+        "voided_at": null
+      }
+    ],
+    "n": 2
+  },
+  "test_inquiry_cases": {
+    "ok": true,
+    "rows": [
+      {
+        "id": "e235efc2-2223-4d31-9a24-2a57313fce34",
+        "case_status": "Queued",
+        "call_fired_at": null,
+        "call_due_at": null,
+        "selected_bureaus_raw": null,
+        "created_at": "2026-08-18T16:15:12.670Z"
+      },
+      {
+        "id": "1d212e99-a7f7-4947-920c-4f55904b512e",
+        "case_status": "Queued",
+        "call_fired_at": null,
+        "call_due_at": null,
+        "selected_bureaus_raw": null,
+        "created_at": "2026-08-18T16:13:11.440Z"
+      }
+    ],
+    "n": 2
+  },
+  "pipeline_cards": {
+    "ok": false,
+    "error": "column \"pipeline_key\" does not exist"
+  },
+  "pipeline_est": {
+    "ok": true,
+    "rows": [
+      {
+        "column_name": "funded"
+      },
+      {
+        "column_name": "funded_amount"
+      }
+    ],
+    "n": 2
+  },
+  "products": {
+    "ok": false,
+    "error": "column \"pricing_model\" does not exist"
+  },
+  "staff_counts": {
+    "ok": true,
+    "rows": [
+      {
+        "role": "admin",
+        "status": "active",
+        "n": 1
+      },
+      {
+        "role": "admin",
+        "status": "suspended",
+        "n": 2
+      },
+      {
+        "role": "closer",
+        "status": "active",
+        "n": 1
+      },
+      {
+        "role": "closer",
+        "status": "suspended",
+        "n": 4
+      },
+      {
+        "role": "funding_advisor",
+        "status": "active",
+        "n": 3
+      },
+      {
+        "role": "funding_advisor",
+        "status": "suspended",
+        "n": 2
+      },
+      {
+        "role": "inquiry_specialist",
+        "status": "active",
+        "n": 1
+      },
+      {
+        "role": "inquiry_specialist",
+        "status": "suspended",
+        "n": 2
+      },
+      {
+        "role": "owner",
+        "status": "active",
+        "n": 2
+      },
+      {
+        "role": "owner",
+        "status": "suspended",
+        "n": 1
+      },
+      {
+        "role": "sales_manager",
+        "status": "active",
+        "n": 1
+      },
+      {
+        "role": "sales_manager",
+        "status": "suspended",
+        "n": 1
+      },
+      {
+        "role": "setter",
+        "status": "active",
+        "n": 1
+      },
+      {
+        "role": "setter",
+        "status": "suspended",
+        "n": 1
+      }
+    ],
+    "n": 14
+  },
+  "closer_active": {
+    "ok": true,
+    "rows": [
+      {
+        "id": "086cfd3f-38d0-416b-bf3e-8e08e9eb596b",
+        "role": "closer",
+        "status": "suspended",
+        "looks_test": false
+      },
+      {
+        "id": "56180eae-8bdd-4e72-b53d-2e214d4d3f37",
+        "role": "closer",
+        "status": "suspended",
+        "looks_test": false
+      },
+      {
+        "id": "73386247-1f1c-42b4-b374-9fbfec4d79b8",
+        "role": "closer",
+        "status": "suspended",
+        "looks_test": false
+      },
+      {
+        "id": "34b656fa-5a4b-40cc-bb99-0e84213c6ecf",
+        "role": "closer",
+        "status": "active",
+        "looks_test": true
+      },
+      {
+        "id": "b86f4ac2-c385-4f86-b3f6-36df0c08c5f5",
+        "role": "closer",
+        "status": "suspended",
+        "looks_test": false
+      }
+    ],
+    "n": 5
+  },
+  "agents": {
+    "ok": false,
+    "error": "column \"mode\" does not exist"
+  },
+  "hiring_candidates": {
+    "ok": true,
+    "rows": [
+      {
+        "n": 3
+      }
+    ],
+    "n": 1
+  },
+  "hiring_applications": {
+    "missing_table": "hiring_applications"
+  },
+  "lenders": {
+    "ok": true,
+    "rows": [
+      {
+        "n": 0,
+        "active": 0
+      }
+    ],
+    "n": 1
+  },
+  "payment_links": {
+    "ok": true,
+    "rows": [],
+    "n": 0
+  },
+  "sales_test": {
+    "ok": true,
+    "rows": [],
+    "n": 0
+  },
+  "invoices_test": {
+    "ok": false,
+    "error": "column \"amount_cents\" does not exist"
+  },
+  "commas_inbox": {
+    "ok": false,
+    "error": "column \"created_at\" does not exist"
+  },
+  "inbound": {
+    "webhook_events": {
+      "missing_table": true
+    },
+    "webhook_deliveries": {
+      "missing_table": true
+    },
+    "inbound_webhooks": {
+      "missing_table": true
+    },
+    "bland_calls": {
+      "missing_table": true
+    },
+    "bland_webhooks": {
+      "missing_table": true
+    },
+    "call_logs": {
+      "missing_table": true
+    },
+    "voice_calls": {
+      "missing_table": true
+    },
+    "postgrid_events": {
+      "missing_table": true
+    },
+    "letter_mailings": {
+      "missing_table": true
+    },
+    "mail_letters": {
+      "missing_table": true
+    },
+    "plaid_items": {
+      "ok": true,
+      "rows": [
+        {
+          "n": 0,
+          "last_at": null
+        }
+      ],
+      "n": 1
+    },
+    "bank_accounts": {
+      "ok": true,
+      "rows": [
+        {
+          "n": 0,
+          "last_at": null
+        }
+      ],
+      "n": 1
+    },
+    "ghl_contacts": {
+      "missing_table": true
+    },
+    "ghl_webhooks": {
+      "missing_table": true
+    },
+    "clickfunnels_events": {
+      "missing_table": true
+    },
+    "calcom_bookings": {
+      "missing_table": true
+    },
+    "appointments": {
+      "missing_table": true
+    }
+  },
+  "events_by_type": {
+    "ok": false,
+    "error": "column \"type\" does not exist"
+  },
+  "failed_events": {
+    "ok": false,
+    "error": "column \"source\" does not exist"
+  },
+  "proxy_sessions": {
+    "ok": true,
+    "rows": [
+      {
+        "n": 0,
+        "last_at": null
+      }
+    ],
+    "n": 1
+  },
+  "test_account": {
+    "ok": true,
+    "rows": [
+      {
+        "id": "55d85886-0ca8-4e1e-825a-f9b218ed12c2",
+        "kind": "client",
+        "status": "active",
+        "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+        "email": {
+          "domain": "fundhub.ai",
+          "local_len": 6,
+          "is_test": true
+        }
+      }
+    ],
+    "n": 1
+  },
+  "e2e_clients": {
+    "ok": false,
+    "error": "column \"archived_at\" does not exist"
+  },
+  "dispatch_tasks": {
+    "ok": false,
+    "error": "column \"status\" does not exist"
+  }
+}

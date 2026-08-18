@@ -1,0 +1,43 @@
+{
+  "email_template_count": 182,
+  "with_unsubscribe_word": 173,
+  "with_http_unsub_url": [],
+  "with_api_unsub": [],
+  "with_site_unsub": [],
+  "with_list_unsub_text": [],
+  "with_opt_out_word": [],
+  "word_snippets": [
+    {
+      "template_key": "AF",
+      "snippet": "unding Intelligence for Entrepreneurs Unsubscribe"
+    },
+    {
+      "template_key": "AF-06",
+      "snippet": "unding Intelligence for Entrepreneurs Unsubscribe"
+    },
+    {
+      "template_key": "AF1",
+      "snippet": "b.ai FundHub.ai • Affiliate Program Unsubscribe"
+    },
+    {
+      "template_key": "AF2",
+      "snippet": "b.ai FundHub.ai • Affiliate Program Unsubscribe"
+    },
+    {
+      "template_key": "AF3",
+      "snippet": "unding Intelligence for Entrepreneurs Unsubscribe"
+    },
+    {
+      "template_key": "AF4",
+      "snippet": "unding Intelligence for Entrepreneurs Unsubscribe"
+    },
+    {
+      "template_key": "AR-PP1",
+      "snippet": "e}} FundHub.ai FundHub.ai • Billing Unsubscribe"
+    },
+    {
+      "template_key": "AR-PP2",
+      "snippet": "e}} FundHub.ai FundHub.ai • Billing Unsubscribe"
+    }
+  ]
+}

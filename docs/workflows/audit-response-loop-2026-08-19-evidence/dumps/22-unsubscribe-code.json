@@ -1,0 +1,42 @@
+{
+  "step": "e",
+  "sms_stop_tested": false,
+  "reason_sms_not_tested": "A2P pending. Board forbids SMS send and SMS STOP tests.",
+  "email_unsubscribe_link_in_our_contract_mail": false,
+  "template_keys_checked": ["CONTRACT-SEND-EMAIL", "CONTRACT-REMIND-EMAIL"],
+  "seed_file": "db/seed/008_contract_messages.sql",
+  "seed_has_unsubscribe_url": false,
+  "seed_has_reply_to_this_email": true,
+  "app_route_api_unsubscribe": false,
+  "public_unsubscribe_page": false,
+  "what_suppresses_email": [
+    {
+      "path": "Mailgun delivery event event=complained",
+      "file": "src/adapters/mailgun.mjs handleMailgunDeliveryEvent",
+      "table": "opt_outs",
+      "channel": "email",
+      "source": "provider_complaint",
+      "then": "src/messaging/gate.mjs isOptedOut blocks later email sends"
+    }
+  ],
+  "what_does_not_suppress_email": [
+    {
+      "path": "Mailgun delivery event event=unsubscribed",
+      "file": "src/adapters/mailgun.mjs IGNORED_DELIVERY_EVENTS",
+      "note": "unsubscribed is ignored. No opt_outs row."
+    },
+    {
+      "path": "Client email body STOP / UNSUBSCRIBE / CANCEL",
+      "file": "src/handlers/comms.mjs onMessageInbound",
+      "note": "STOP keywords only run when channel === sms. Email words are not opt-out keywords."
+    },
+    {
+      "path": "dpc-03-inbound-reply-router",
+      "file": "src/workflows/dpc-03-inbound-reply-router.mjs",
+      "note": "STOP is ignored here on purpose. It is not an email unsubscribe."
+    }
+  ],
+  "table": "opt_outs",
+  "writer": "src/lib/opt-out.mjs recordOptOut",
+  "safe_click": "No unsubscribe link in the contract mail we sent. No click performed."
+}

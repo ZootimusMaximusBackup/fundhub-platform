@@ -1,0 +1,198 @@
+{
+  "latest": [
+    {
+      "id": "0b1d9316-fad4-4851-ae10-3903cb205433",
+      "is_test_client": true,
+      "is_live_client": false,
+      "direction": "outbound",
+      "status": "failed",
+      "provider": "twilio",
+      "blocked_reason": null,
+      "has_error": true,
+      "has_to": false,
+      "created_at": "2026-08-18T17:51:26.803Z"
+    },
+    {
+      "id": "eb95733f-57fa-4efd-be28-ef0a21c1097e",
+      "is_test_client": true,
+      "is_live_client": false,
+      "direction": "outbound",
+      "status": "failed",
+      "provider": "twilio",
+      "blocked_reason": null,
+      "has_error": true,
+      "has_to": false,
+      "created_at": "2026-08-18T16:54:42.420Z"
+    },
+    {
+      "id": "b294067c-7055-4de4-9c28-1bce24eb509e",
+      "is_test_client": false,
+      "is_live_client": false,
+      "direction": "outbound",
+      "status": "sent",
+      "provider": "twilio",
+      "blocked_reason": null,
+      "has_error": false,
+      "has_to": true,
+      "created_at": "2026-08-18T16:15:07.092Z"
+    },
+    {
+      "id": "2c96d465-f53a-46d3-be28-82f4312a53ed",
+      "is_test_client": false,
+      "is_live_client": false,
+      "direction": "outbound",
+      "status": "sent",
+      "provider": "twilio",
+      "blocked_reason": null,
+      "has_error": false,
+      "has_to": true,
+      "created_at": "2026-08-18T06:53:51.317Z"
+    },
+    {
+      "id": "019a525a-ed9a-4273-810a-9f786905b35c",
+      "is_test_client": false,
+      "is_live_client": false,
+      "direction": "outbound",
+      "status": "sent",
+      "provider": "twilio",
+      "blocked_reason": null,
+      "has_error": false,
+      "has_to": true,
+      "created_at": "2026-08-17T16:45:04.857Z"
+    },
+    {
+      "id": "997d1edf-0187-4261-aa3c-26ad001efe8e",
+      "is_test_client": false,
+      "is_live_client": false,
+      "direction": "outbound",
+      "status": "sent",
+      "provider": "twilio",
+      "blocked_reason": null,
+      "has_error": false,
+      "has_to": true,
+      "created_at": "2026-08-16T20:45:03.421Z"
+    },
+    {
+      "id": "b7249f85-ce67-4d33-8801-e9892a4bc7c0",
+      "is_test_client": false,
+      "is_live_client": false,
+      "direction": "outbound",
+      "status": "sent",
+      "provider": "twilio",
+      "blocked_reason": null,
+      "has_error": false,
+      "has_to": true,
+      "created_at": "2026-08-16T18:45:02.094Z"
+    },
+    {
+      "id": "a671e7b6-3ff8-4ef1-8afb-8a60e19e2081",
+      "is_test_client": false,
+      "is_live_client": false,
+      "direction": "outbound",
+      "status": "sent",
+      "provider": "twilio",
+      "blocked_reason": null,
+      "has_error": false,
+      "has_to": true,
+      "created_at": "2026-08-16T18:05:47.227Z"
+    },
+    {
+      "id": "b9b92b6d-754a-4b6c-ac74-9ab3ca84c6a1",
+      "is_test_client": false,
+      "is_live_client": false,
+      "direction": "outbound",
+      "status": "sent",
+      "provider": "twilio",
+      "blocked_reason": null,
+      "has_error": false,
+      "has_to": true,
+      "created_at": "2026-08-16T18:05:44.955Z"
+    },
+    {
+      "id": "2d084361-e223-4ffc-85d4-f275d41c6c7f",
+      "is_test_client": false,
+      "is_live_client": false,
+      "direction": "outbound",
+      "status": "sent",
+      "provider": "twilio",
+      "blocked_reason": null,
+      "has_error": false,
+      "has_to": true,
+      "created_at": "2026-08-16T18:05:44.799Z"
+    },
+    {
+      "id": "e9f4ac54-ce04-46eb-9081-9ba277bd703d",
+      "is_test_client": false,
+      "is_live_client": false,
+      "direction": "outbound",
+      "status": "sent",
+      "provider": "twilio",
+      "blocked_reason": null,
+      "has_error": false,
+      "has_to": true,
+      "created_at": "2026-08-16T18:05:42.200Z"
+    },
+    {
+      "id": "4881bedf-3d7b-4b47-bc43-2514e320cf64",
+      "is_test_client": false,
+      "is_live_client": false,
+      "direction": "outbound",
+      "status": "sent",
+      "provider": "twilio",
+      "blocked_reason": null,
+      "has_error": false,
+      "has_to": true,
+      "created_at": "2026-08-16T18:05:02.520Z"
+    },
+    {
+      "id": "a11b1733-096a-42a5-b677-5d5bc4beefa1",
+      "is_test_client": false,
+      "is_live_client": false,
+      "direction": "outbound",
+      "status": "sent",
+      "provider": "twilio",
+      "blocked_reason": null,
+      "has_error": false,
+      "has_to": true,
+      "created_at": "2026-08-16T18:04:59.931Z"
+    },
+    {
+      "id": "94cc967f-5f18-4021-89f6-ff651c092705",
+      "is_test_client": false,
+      "is_live_client": false,
+      "direction": "outbound",
+      "status": "sent",
+      "provider": "twilio",
+      "blocked_reason": null,
+      "has_error": false,
+      "has_to": true,
+      "created_at": "2026-08-16T18:04:55.512Z"
+    },
+    {
+      "id": "e2265f80-7a00-4964-8ea8-1cd2ebcc3849",
+      "is_test_client": false,
+      "is_live_client": false,
+      "direction": "outbound",
+      "status": "sent",
+      "provider": "twilio",
+      "blocked_reason": null,
+      "has_error": false,
+      "has_to": true,
+      "created_at": "2026-08-16T18:04:53.074Z"
+    }
+  ],
+  "counts": [
+    {
+      "direction": "outbound",
+      "status": "failed",
+      "provider": "twilio",
+      "n": 2
+    },
+    {
+      "direction": "outbound",
+      "status": "sent",
+      "provider": "twilio",
+      "n": 21
+    }
+  ]
+}

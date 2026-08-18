@@ -1,0 +1,163 @@
+{
+  "entitlements_held": {
+    "before": 0,
+    "after": 0
+  },
+  "entitlements_held_codes": {
+    "before": [],
+    "after": []
+  },
+  "product_entitlements_count": 0,
+  "new_event_ids": [
+    {
+      "id": "41da5328-8e71-45b5-8e20-2a39e7b379fc",
+      "name": "payment.received",
+      "product": "unmatched",
+      "productName": "UnderwriteIQ soft-pull assessment"
+    },
+    {
+      "id": "ac3352a1-d484-4927-bfe2-f55b9affe005",
+      "name": "diagnostic.paid",
+      "product": "crs",
+      "productName": "UnderwriteIQ soft-pull assessment"
+    },
+    {
+      "id": "38bd8c82-1de3-40fc-b1d2-733c7d6f13b5",
+      "name": "payment.received",
+      "product": "unmatched",
+      "productName": "Funding, done-for-you"
+    },
+    {
+      "id": "5eba4879-cbc4-4e3f-ba4e-757b50c9ac20",
+      "name": "deposit.paid",
+      "product": "deposit",
+      "productName": "Funding, done-for-you"
+    },
+    {
+      "id": "d638be3c-7ee8-479b-9c3f-1277f1ceba64",
+      "name": "inquiry.gate.clear",
+      "product": null,
+      "productName": null
+    },
+    {
+      "id": "03eccc8d-8f79-475e-9729-ff54dce74e1d",
+      "name": "payment.received",
+      "product": "unmatched",
+      "productName": "Credit repair, done-for-you"
+    },
+    {
+      "id": "257fcd7c-c974-4fe5-a05e-84e216c8c949",
+      "name": "sale.closed",
+      "product": "diy",
+      "productName": "Credit repair, done-for-you"
+    },
+    {
+      "id": "d1d09471-1ed6-4aab-8a71-09ff0e922b74",
+      "name": "payment.received",
+      "product": "unmatched",
+      "productName": "Repair test run (first round, done for you)"
+    },
+    {
+      "id": "b6b606a6-160a-4579-a346-5dfcad079799",
+      "name": "sale.closed",
+      "product": "diy",
+      "productName": "Repair test run (first round, done for you)"
+    },
+    {
+      "id": "dcb10b34-ec8c-437f-ab38-819b783907e8",
+      "name": "payment.received",
+      "product": "unmatched",
+      "productName": "UnderwriteIQ Deliverables Package"
+    },
+    {
+      "id": "44eb6a4b-8834-4ba9-92e9-84e20d1b4b00",
+      "name": "payment.received",
+      "product": "unmatched",
+      "productName": "Funding Mastery course (A to Z)"
+    }
+  ],
+  "new_transaction_ids": [
+    {
+      "id": "c6c29da0-d549-4f30-a095-4e270431e6da",
+      "product_name": "UnderwriteIQ soft-pull assessment",
+      "provider_ref": "w16-sim-8556bedc-SOFT_PULL-live",
+      "amount_paid": "32.00"
+    },
+    {
+      "id": "25c220a1-0fc2-4466-aee6-2d09b390c05d",
+      "product_name": "Funding, done-for-you",
+      "provider_ref": "w16-sim-8556bedc-FUNDING_DFY-live",
+      "amount_paid": "3000.00"
+    },
+    {
+      "id": "88e3a062-37ed-452f-a89a-2b712e025c15",
+      "product_name": "Credit repair, done-for-you",
+      "provider_ref": "w16-sim-8556bedc-REPAIR_DFY-live",
+      "amount_paid": "1000.00"
+    },
+    {
+      "id": "22f5dda2-6d04-4d72-a7f2-708e9843d2d6",
+      "product_name": "Repair test run (first round, done for you)",
+      "provider_ref": "w16-sim-8556bedc-REPAIR_TRIAL-live",
+      "amount_paid": "200.00"
+    },
+    {
+      "id": "5dbe9910-c135-4085-9762-65969adb143c",
+      "product_name": "UnderwriteIQ Deliverables Package",
+      "provider_ref": "w16-sim-8556bedc-UWIQ_DELIVERABLES-live",
+      "amount_paid": "1000.00"
+    },
+    {
+      "id": "f499f694-4571-49e2-97d5-866550361147",
+      "product_name": "Funding Mastery course (A to Z)",
+      "provider_ref": "w16-sim-8556bedc-FUNDING_MASTERY-live",
+      "amount_paid": "5000.00"
+    }
+  ],
+  "new_sale_ids": [
+    {
+      "id": "39361bbe-8701-4529-a5be-77ec0f15923e",
+      "product_code": "diagnostic",
+      "status": "active"
+    },
+    {
+      "id": "c88d9172-78a2-4cc1-9c33-8d6bc93ae8ea",
+      "product_code": "card-stacking-dfy",
+      "status": "active"
+    },
+    {
+      "id": "ee7b9598-cda5-46ad-bd13-e38a52622e50",
+      "product_code": "consulting-package",
+      "status": "active"
+    }
+  ],
+  "new_entitlement_ids": [],
+  "custom_fields": {
+    "before": {
+      "crs_paid": null,
+      "deposit_paid": null,
+      "sale_closed": null,
+      "crs_status": null,
+      "analyzer_status": null
+    },
+    "after": {
+      "crs_paid": true,
+      "deposit_paid": true,
+      "sale_closed": true,
+      "crs_status": "Requested",
+      "analyzer_status": null
+    }
+  },
+  "cards": {
+    "before": [],
+    "after": [
+      {
+        "id": "5410b98b-4e78-47e4-9737-b662da097740",
+        "pipeline_key": "sales",
+        "stage_key": "diagnostic_paid",
+        "stage_name": "Diagnostic Paid",
+        "updated_at": "2026-08-18T20:50:19.306Z"
+      }
+    ]
+  }
+}

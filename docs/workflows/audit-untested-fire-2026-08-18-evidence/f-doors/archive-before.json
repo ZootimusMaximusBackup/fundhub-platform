@@ -1,0 +1,45 @@
+{
+  "at": "2026-08-18T21:44:57.220Z",
+  "test_cards": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "id": "5410b98b-4e78-47e4-9737-b662da097740",
+        "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+        "is_demo": false,
+        "stage": "decision_rendered",
+        "pipeline": "Sales"
+      }
+    ]
+  },
+  "named_card": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "id": "5410b98b-4e78-47e4-9737-b662da097740",
+        "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521"
+      }
+    ]
+  },
+  "client_row": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+        "crm_archived_at": null
+      }
+    ]
+  },
+  "live_cards": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "n": 22
+      }
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "outbound_has_unsubscribe_link": false,
+  "live_unsub_page": {
+    "/api/unsubscribe": {
+      "status": 404,
+      "ok": false
+    },
+    "/unsubscribe": {
+      "status": 404,
+      "ok": false
+    },
+    "/app/unsubscribe.html": {
+      "status": 404,
+      "ok": false
+    }
+  },
+  "email_STOP_writes_opt_outs": false,
+  "email_STOP_guard": "src/handlers/comms.mjs onMessageInbound — STOP keywords only when channel === sms",
+  "mailgun_unsubscribed_ignored": true,
+  "mailgun_unsubscribed_file": "src/adapters/mailgun.mjs IGNORED_DELIVERY_EVENTS",
+  "only_email_opt_out_path": "Mailgun event=complained → opt_outs channel=email source=provider_complaint",
+  "opt_outs_rows": 0,
+  "safe_click_exists": false,
+  "clicked": false,
+  "emailed_STOP": false,
+  "why_no_click_or_send": [
+    "No unsubscribe URL in live email templates or the last 20 sent bodies.",
+    "GET /api/unsubscribe and /unsubscribe are 404.",
+    "A STOP email from the bare inbox would match the live file. Forbidden.",
+    "A STOP email would also miss Mailgun (Resend From is fundhub.ai / Cloudflare).",
+    "Even if STOP landed as email inbound, the handler ignores STOP unless channel is sms."
+  ]
+}

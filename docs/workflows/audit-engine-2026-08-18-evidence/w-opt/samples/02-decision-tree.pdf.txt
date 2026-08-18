@@ -1,0 +1,7 @@
+DECISION TREE
+
+All items deleted → stop. Do not send Round 2 or 3. Celebrate and re-check your scores.
+Some deleted / some verified → send Round 2 only for the verified items (cross out the rest).
+All verified → send Round 2 MOV demand.
+No response after 30 days + mail time → Round 2 with late-response argument; keep your certified-mail receipt.
+Round 3 still on the report → file the CFPB complaint, then the state AG complaint. Sign the declaration on each. Do not file them with Round 1.

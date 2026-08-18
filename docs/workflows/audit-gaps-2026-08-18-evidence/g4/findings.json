@@ -1,0 +1,22 @@
+{
+  "workflow": "G4",
+  "at": "2026-08-18T17:51:30Z",
+  "groundTruth": {
+    "g4a": "MISSING intended funnel journey",
+    "g4b": "MISSING as a written step",
+    "g4c": "MISSING",
+    "g4d": "MISSING"
+  },
+  "botBounce": "none on /watch /apply /funding-book-call /thank-you",
+  "scores": {
+    "g4a-watch": "PASS",
+    "g4a-apply-step1": "PASS",
+    "g4a-book-call": "UNVERIFIED (page open, no slot booked)",
+    "g4a-thank-you": "PASS (reachable without paying)",
+    "g4a-book": "WONTFIX 404",
+    "g4b": "PASS",
+    "g4c-reach-content-admin": "FAIL",
+    "g4c-welcome-video-on-portal": "FAIL",
+    "g4d": "PASS (HTTP + first screen; forms not submitted)"
+  }
+}

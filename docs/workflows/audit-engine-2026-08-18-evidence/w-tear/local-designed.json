@@ -1,0 +1,24 @@
+{
+  "designed": {
+    "error": "update or delete on table \"clients\" violates foreign key constraint \"transactions_client_id_fkey\" on table \"transactions\""
+  },
+  "afterDesigned": {
+    "client": [
+      {
+        "id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+        "is_demo": true
+      }
+    ],
+    "tables": {
+      "bank_inbox": 1,
+      "client_consents": 1,
+      "contract_signers": 1,
+      "contracts": 1,
+      "documents": 3,
+      "events": 11,
+      "inquiry_removal_cases": 1,
+      "sales": 1,
+      "transactions": 2
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "when": "funding-letter-pdf.mjs against engine result",
+  "message": "No PDF/buffer/HTML rendered. Module persists or loads stored letter files. Engine result is not a letter file (isFundingLetterFile=false). loadFundingLetterPdf returned null for EX/EQ/TU.",
+  "renders_pdf": false,
+  "renders_html": false,
+  "renders_buffer": false
+}

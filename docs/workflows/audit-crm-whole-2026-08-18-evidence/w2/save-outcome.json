@@ -1,0 +1,11 @@
+{
+  "before": 0,
+  "after": [
+    {
+      "id": "c54cc851-a49d-409b-a737-203d4962107a",
+      "outcome": "downsell",
+      "logged_at": "2026-08-18T16:21:10.261Z"
+    }
+  ],
+  "url": "https://fundhub.ai/app/closer-call.html?client_id=44bcaf5f-ad35-4fc7-987f-5efcc72e54ed&task_id=c31d7a41-1c8d-4fc9-8771-784b82ed7a81"
+}

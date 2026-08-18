@@ -1,0 +1,116 @@
+
+> fundhub-platform@0.0.1 test:e2e:live
+> playwright test -c playwright.live.config.mjs
+
+
+Running 29 tests using 1 worker
+
+(node:78774) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 [chromium-live] › e2e/live-affiliate-onboard.spec.mjs:47:3 › live affiliate onboard › aff:website_entry homepage to affiliates (2.0s)
+  ✓   2 [chromium-live] › e2e/live-affiliate-onboard.spec.mjs:60:3 › live affiliate onboard › aff:apply_form fake identity shows received (2.3s)
+  ✓   3 [chromium-live] › e2e/live-affiliate-onboard.spec.mjs:78:3 › live affiliate onboard › aff:own_login dashboard and session (3.0s)
+  ✘   4 [chromium-live] › e2e/live-company-brain-chat.spec.mjs:47:3 › Company Brain — chat, upload, approval gating › the screen is a wide chat, not a tiny box (1.8s)
+(node:78848) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   5 [chromium-live] › e2e/live-company-brain-chat.spec.mjs:69:3 › Company Brain — chat, upload, approval gating › upload stays unanswerable until the owner approves it (1.2s)
+(node:78851) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   6 [chromium-live] › e2e/live-company-brain-chat.spec.mjs:122:3 › Company Brain — chat, upload, approval gating › a conversation survives a reload (1.3s)
+(node:78869) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   7 [chromium-live] › e2e/live-run4-pass.spec.mjs:8:3 › live auth › auth:staff_session chris (1.7s)
+  ✓   8 [chromium-live] › e2e/live-run4-pass.spec.mjs:14:3 › live auth › auth:staff_session owner (1.9s)
+  ✓   9 [chromium-live] › e2e/live-run4-pass.spec.mjs:19:3 › live auth › auth:staff_session admin (1.4s)
+  ✓  10 [chromium-live] › e2e/live-run4-pass.spec.mjs:24:3 › live auth › api:auth/login bad password (913ms)
+  ✓  11 [chromium-live] › e2e/live-run4-pass.spec.mjs:32:3 › live auth › api:auth/session anon (139ms)
+  ✓  12 [chromium-live] › e2e/live-run4-pass.spec.mjs:38:3 › live auth › api:auth/login demo off (163ms)
+  ✓  13 [chromium-live] › e2e/live-run4-pass.spec.mjs:48:3 › live CRM › CRM shells static 200 (533ms)
+  ✓  14 [chromium-live] › e2e/live-run4-pass.spec.mjs:56:3 › live CRM › CRM rows+filters / demo banner (5.5s)
+  ✓  15 [chromium-live] › e2e/live-run4-pass.spec.mjs:93:3 › live CRM › route:dirty_letter_artifact repair client visible (940ms)
+  ✓  16 [chromium-live] › e2e/live-run4-pass.spec.mjs:108:3 › live webhooks fail-closed › wh:clickfunnels fail-closed (145ms)
+  ✓  17 [chromium-live] › e2e/live-run4-pass.spec.mjs:116:3 › live webhooks fail-closed › wh:commas signature (139ms)
+  ✓  18 [chromium-live] › e2e/live-run4-pass.spec.mjs:126:3 › live dashboard authz › api:dashboard/* anonymous refuse (143ms)
+  ✓  19 [chromium-live] › e2e/live-run4-pass.spec.mjs:134:3 › live money read (staff) › api:read/products (950ms)
+  ✓  20 [chromium-live] › e2e/live-run4-pass.spec.mjs:148:3 › live money read (staff) › api:payment-links list (885ms)
+  ✓  21 [chromium-live] › e2e/live-run4-pass.spec.mjs:158:3 › live money read (staff) › api:read/commissions (981ms)
+  ✓  22 [chromium-live] › e2e/live-run4-pass.spec.mjs:180:3 › live funnel thank-you + grid › screen:thank-you calendar (3.0s)
+  ✓  23 [chromium-live] › e2e/live-run4-pass.spec.mjs:198:3 › live funnel thank-you + grid › screen:thank-you no booking (2.4s)
+  ✓  24 [chromium-live] › e2e/live-run4-pass.spec.mjs:212:3 › live funnel thank-you + grid › funnel:fixed-grid bg (1.2s)
+  ✓  25 [chromium-live] › e2e/live-run4-pass.spec.mjs:232:3 › live health › api:health up pending0 (212ms)
+  ✓  26 [chromium-live] › e2e/live-white-label-onboard.spec.mjs:40:3 › live white-label website entry › wl:website_entry affiliates door has white-label (1.7s)
+  ✓  27 [chromium-live] › e2e/live-white-label-onboard.spec.mjs:56:3 › live white-label website entry › wl:white_label_apply creates a login or says already in (3.3s)
+  ✓  28 [chromium-live] › e2e/live-white-label-onboard.spec.mjs:78:3 › live white-label own access and studio › wl:partner login, galaxy, own URL, funnel studio (2.2s)
+  ✓  29 [chromium-live] › e2e/live-white-label-onboard.spec.mjs:105:3 › live white-label public page › wl:public_partner_page unpublished is not live (493ms)
+
+
+  1) [chromium-live] › e2e/live-company-brain-chat.spec.mjs:47:3 › Company Brain — chat, upload, approval gating › the screen is a wide chat, not a tiny box 
+
+    Error: page.goto: net::ERR_ABORTED at https://fundhub.ai/app/company-brain.html
+    Call log:
+      - navigating to "https://fundhub.ai/app/company-brain.html", waiting until "domcontentloaded"
+
+
+      47 |   test("the screen is a wide chat, not a tiny box", async ({ page }) => {
+      48 |     await liveStaffLogin(page, OWNER);
+    > 49 |     await page.goto(`${BASE}/app/company-brain.html`, { waitUntil: "domcontentloaded" });
+         |                ^
+      50 |     await page.setViewportSize({ width: 1440, height: 900 });
+      51 |
+      52 |     const composer = page.locator("textarea").first();
+        at /Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs:49:16
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/live-company-brain-chat-Co-ae22f--a-wide-chat-not-a-tiny-box-chromium-live/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/live-company-brain-chat-Co-ae22f--a-wide-chat-not-a-tiny-box-chromium-live/error-context.md
+
+  2) [chromium-live] › e2e/live-company-brain-chat.spec.mjs:69:3 › Company Brain — chat, upload, approval gating › upload stays unanswerable until the owner approves it 
+
+    Error: upload failed: {"ok":false,"error":"embed_failed"}
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      82 |     });
+      83 |     const upBody = await up.json();
+    > 84 |     expect(up.status(), `upload failed: ${JSON.stringify(upBody)}`).toBe(200);
+         |                                                                     ^
+      85 |     expect(upBody.ok).toBe(true);
+      86 |     expect(upBody.file.approvalStatus, "a fresh upload must be pending").toBe("pending");
+      87 |     expect(upBody.file.chunkCount, "the document should have produced chunks").toBeGreaterThan(0);
+        at /Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs:84:69
+
+    Error Context: test-results/live-company-brain-chat-Co-6b892-until-the-owner-approves-it-chromium-live/error-context.md
+
+  3) [chromium-live] › e2e/live-company-brain-chat.spec.mjs:122:3 › Company Brain — chat, upload, approval gating › a conversation survives a reload 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 502
+
+      127 |     });
+      128 |     const askedBody = await asked.json();
+    > 129 |     expect(asked.status()).toBe(200);
+          |                            ^
+      130 |     const threadId = askedBody.thread_id;
+      131 |     expect(threadId, "asking should create a conversation").toBeTruthy();
+      132 |
+        at /Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs:129:28
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/live-company-brain-chat-Co-26e8a-versation-survives-a-reload-chromium-live/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/live-company-brain-chat-Co-26e8a-versation-survives-a-reload-chromium-live/error-context.md
+
+  3 failed
+    [chromium-live] › e2e/live-company-brain-chat.spec.mjs:47:3 › Company Brain — chat, upload, approval gating › the screen is a wide chat, not a tiny box 
+    [chromium-live] › e2e/live-company-brain-chat.spec.mjs:69:3 › Company Brain — chat, upload, approval gating › upload stays unanswerable until the owner approves it 
+    [chromium-live] › e2e/live-company-brain-chat.spec.mjs:122:3 › Company Brain — chat, upload, approval gating › a conversation survives a reload 
+  26 passed (44.7s)
+EXIT:1

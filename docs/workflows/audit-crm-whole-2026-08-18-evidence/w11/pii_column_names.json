@@ -1,0 +1,477 @@
+[
+  {
+    "table_name": "account_magic_links",
+    "column_name": "email",
+    "data_type": "text"
+  },
+  {
+    "table_name": "account_statement_cycles",
+    "column_name": "bank_account_id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "accounts",
+    "column_name": "email",
+    "data_type": "text"
+  },
+  {
+    "table_name": "accounts",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "ad_sets",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "ads",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "affiliate_commission_rules",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "affiliates",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "affiliates",
+    "column_name": "partner_license_ref",
+    "data_type": "text"
+  },
+  {
+    "table_name": "affiliates",
+    "column_name": "partner_license_signed_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "agents",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "ai_bureau_config",
+    "column_name": "mail_address_city",
+    "data_type": "text"
+  },
+  {
+    "table_name": "ai_bureau_config",
+    "column_name": "mail_address_country",
+    "data_type": "text"
+  },
+  {
+    "table_name": "ai_bureau_config",
+    "column_name": "mail_address_line1",
+    "data_type": "text"
+  },
+  {
+    "table_name": "ai_bureau_config",
+    "column_name": "mail_address_line2",
+    "data_type": "text"
+  },
+  {
+    "table_name": "ai_bureau_config",
+    "column_name": "mail_address_state",
+    "data_type": "text"
+  },
+  {
+    "table_name": "ai_bureau_config",
+    "column_name": "mail_address_zip",
+    "data_type": "text"
+  },
+  {
+    "table_name": "ai_bureau_config",
+    "column_name": "mail_company_name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "auth_attempts",
+    "column_name": "email",
+    "data_type": "text"
+  },
+  {
+    "table_name": "bank_accounts",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "bank_transactions",
+    "column_name": "bank_account_id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "brain_files",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "brand_kit_sources",
+    "column_name": "payload",
+    "data_type": "jsonb"
+  },
+  {
+    "table_name": "brand_kits",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "businesses",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "campaign_strategies",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "campaigns",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "candidates",
+    "column_name": "email",
+    "data_type": "text"
+  },
+  {
+    "table_name": "candidates",
+    "column_name": "full_name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "candidates",
+    "column_name": "phone",
+    "data_type": "text"
+  },
+  {
+    "table_name": "client_custom_fields",
+    "column_name": "business_city",
+    "data_type": "text"
+  },
+  {
+    "table_name": "client_custom_fields",
+    "column_name": "business_postal_code",
+    "data_type": "text"
+  },
+  {
+    "table_name": "client_custom_fields",
+    "column_name": "business_street_address",
+    "data_type": "text"
+  },
+  {
+    "table_name": "client_custom_fields",
+    "column_name": "cf_bs_email_last_sent_ts",
+    "data_type": "date"
+  },
+  {
+    "table_name": "client_custom_fields",
+    "column_name": "cf_full_legal_name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "client_custom_fields",
+    "column_name": "full_legal_name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "client_custom_fields",
+    "column_name": "funding_email_forwarding_address",
+    "data_type": "text"
+  },
+  {
+    "table_name": "clients",
+    "column_name": "dnd_email",
+    "data_type": "boolean"
+  },
+  {
+    "table_name": "clients",
+    "column_name": "email",
+    "data_type": "text"
+  },
+  {
+    "table_name": "clients",
+    "column_name": "first_name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "clients",
+    "column_name": "last_name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "clients",
+    "column_name": "phone",
+    "data_type": "text"
+  },
+  {
+    "table_name": "commission_rules",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "contract_signers",
+    "column_name": "email",
+    "data_type": "text"
+  },
+  {
+    "table_name": "contract_signers",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "contract_templates",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "eeo_responses",
+    "column_name": "race_ethnicity",
+    "data_type": "text"
+  },
+  {
+    "table_name": "entities",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "entitlement_catalog",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "events",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "events",
+    "column_name": "payload",
+    "data_type": "jsonb"
+  },
+  {
+    "table_name": "failed_events",
+    "column_name": "payload",
+    "data_type": "jsonb"
+  },
+  {
+    "table_name": "furnisher_mail_addresses",
+    "column_name": "address_line1",
+    "data_type": "text"
+  },
+  {
+    "table_name": "furnisher_mail_addresses",
+    "column_name": "address_line2",
+    "data_type": "text"
+  },
+  {
+    "table_name": "furnisher_mail_addresses",
+    "column_name": "city",
+    "data_type": "text"
+  },
+  {
+    "table_name": "furnisher_mail_addresses",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "furnisher_mail_addresses",
+    "column_name": "zip",
+    "data_type": "text"
+  },
+  {
+    "table_name": "hiring_roles",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "inquiry_log",
+    "column_name": "bureau_phone_number",
+    "data_type": "text"
+  },
+  {
+    "table_name": "inquiry_log",
+    "column_name": "waiting_for_rep_slot_since",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "investment_holdings",
+    "column_name": "bank_account_id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "invoices",
+    "column_name": "email_message_id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "invoices",
+    "column_name": "emailed_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "journeys",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "lenders",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "mail_campaigns",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "mail_tracked_numbers",
+    "column_name": "phone_number",
+    "data_type": "text"
+  },
+  {
+    "table_name": "messages",
+    "column_name": "to_address",
+    "data_type": "text"
+  },
+  {
+    "table_name": "messaging_settings",
+    "column_name": "alert_email",
+    "data_type": "text"
+  },
+  {
+    "table_name": "optimization_rules",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "orgs",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "partner_brand",
+    "column_name": "entity_address",
+    "data_type": "text"
+  },
+  {
+    "table_name": "partner_brand",
+    "column_name": "support_email",
+    "data_type": "text"
+  },
+  {
+    "table_name": "partners",
+    "column_name": "contact_email",
+    "data_type": "text"
+  },
+  {
+    "table_name": "partners",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "pii_identity",
+    "column_name": "addresses",
+    "data_type": "jsonb"
+  },
+  {
+    "table_name": "pii_identity",
+    "column_name": "dob",
+    "data_type": "date"
+  },
+  {
+    "table_name": "pii_identity",
+    "column_name": "ssn_enc",
+    "data_type": "bytea"
+  },
+  {
+    "table_name": "pipeline_stages",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "pipelines",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "products",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "proxy_sessions",
+    "column_name": "granted_city",
+    "data_type": "text"
+  },
+  {
+    "table_name": "proxy_sessions",
+    "column_name": "requested_city",
+    "data_type": "text"
+  },
+  {
+    "table_name": "recurring_bills",
+    "column_name": "bank_account_id",
+    "data_type": "uuid"
+  },
+  {
+    "table_name": "repair_decision_log",
+    "column_name": "payload",
+    "data_type": "jsonb"
+  },
+  {
+    "table_name": "staff",
+    "column_name": "email",
+    "data_type": "text"
+  },
+  {
+    "table_name": "staff",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "staff_roles",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "v_affiliate_downline",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "v_affiliate_state",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "v_affiliate_state",
+    "column_name": "partner_license_signed_at",
+    "data_type": "timestamp with time zone"
+  },
+  {
+    "table_name": "v_agents_live",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "v_eeo_aggregate",
+    "column_name": "race_ethnicity",
+    "data_type": "text"
+  },
+  {
+    "table_name": "v_partner_balance",
+    "column_name": "name",
+    "data_type": "text"
+  },
+  {
+    "table_name": "v_partner_brand_effective",
+    "column_name": "support_email",
+    "data_type": "text"
+  }
+]

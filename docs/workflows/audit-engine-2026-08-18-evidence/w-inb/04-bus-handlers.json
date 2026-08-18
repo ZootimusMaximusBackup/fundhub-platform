@@ -1,0 +1,13 @@
+{
+  "registerAll": true,
+  "handlers": {
+    "mail.response": [
+      "onMailResponse"
+    ],
+    "docs.received": [
+      "onDocsReceivedFlipInquiryGate"
+    ],
+    "inquiry.removed": []
+  },
+  "note": "c-03 / f-06 / f-09 / f-11 are Inngest, not register-all."
+}

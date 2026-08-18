@@ -1,0 +1,10 @@
+{
+  "designed_persist": "src/metro2/diy/persist.mjs persistDiyPackageFiles",
+  "writes_table": "documents (kind=deliverable), not letters_generated",
+  "letters_generated_is": "pipeline stage key on optimization pipeline, not a table",
+  "dispute_letters_writer": "src/metro2/rounds/store.mjs saveLetter — not the pack persist tests use",
+  "persist_mails": false,
+  "mail_path": "src/metro2/delivery/send.mjs sendLetter / PostGrid — not called",
+  "persisted": false,
+  "reason": "designed persist writes documents, not letters_generated; user said persist only if letters_generated"
+}

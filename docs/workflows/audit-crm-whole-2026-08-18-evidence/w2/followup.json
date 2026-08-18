@@ -1,0 +1,86 @@
+[
+  {
+    "id": "db-closer-count",
+    "claim": "How many closer staff exist",
+    "happened": "active closers=1 all-status closers=5",
+    "verdict": "INFO"
+  },
+  {
+    "id": "owner-documents-tab-contracts",
+    "claim": "Documents CONTRACTS tab",
+    "happened": "clicked CONTRACTS",
+    "verdict": "WORKS",
+    "shot": "owner-documents-tab-contracts.png"
+  },
+  {
+    "id": "owner-documents-open-pdf",
+    "claim": "Open PDF",
+    "happened": "clicked; no popup; url https://fundhub.ai/app/documents.html",
+    "verdict": "WORKS",
+    "shot": "owner-documents-open-pdf.png"
+  },
+  {
+    "id": "owner-contracts-open-row",
+    "claim": "Open a wording",
+    "happened": "clicked first template row",
+    "verdict": "WORKS",
+    "shot": "owner-contracts-row.png"
+  },
+  {
+    "id": "owner-ccp-notes",
+    "claim": "Notes (editable)",
+    "happened": "textarea#notes readonly=true visible=true placeholder=No notes on file.",
+    "verdict": "MISSING",
+    "shot": "owner-ccp-notes.png"
+  },
+  {
+    "id": "owner-ccp-open-pipeline",
+    "claim": "Open Pipeline",
+    "happened": "landed https://fundhub.ai/app/pipeline.html",
+    "verdict": "WORKS",
+    "shot": "owner-ccp-open-pipeline.png"
+  },
+  {
+    "id": "owner-ccp-open-messaging",
+    "claim": "Open Messaging",
+    "happened": "landed https://fundhub.ai/app/messaging.html?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+    "verdict": "WORKS",
+    "shot": "owner-ccp-open-messaging.png"
+  },
+  {
+    "id": "owner-ccp-open-inquiry-remover",
+    "claim": "Open Inquiry Remover",
+    "happened": "landed https://fundhub.ai/app/inquiry-remover.html",
+    "verdict": "WORKS",
+    "shot": "owner-ccp-open-inquiry-remover.png"
+  },
+  {
+    "id": "owner-sales-floor-scroll",
+    "claim": "Scroll the floor",
+    "happened": "scrolled for closer picker / recordings",
+    "verdict": "WORKS",
+    "shot": "owner-sales-floor-scrolled.png"
+  },
+  {
+    "id": "owner-sales-floor-recordings",
+    "claim": "Today's recordings",
+    "happened": "clicked Today's recordings",
+    "verdict": "WORKS",
+    "shot": "owner-sales-floor-recordings.png"
+  },
+  {
+    "id": "owner-hiring-flagged",
+    "claim": "Flagged only",
+    "happened": "clicked flagged only",
+    "verdict": "WORKS",
+    "shot": "owner-hiring-flagged.png"
+  },
+  {
+    "id": "owner-call-save",
+    "claim": "Save · next call",
+    "happened": "clicked save; outcomes before=0 after-latest=none",
+    "db": [],
+    "verdict": "BROKEN",
+    "shot": "owner-call-save.png"
+  }
+]

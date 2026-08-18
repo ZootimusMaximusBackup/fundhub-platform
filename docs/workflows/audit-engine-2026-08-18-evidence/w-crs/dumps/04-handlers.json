@@ -1,0 +1,67 @@
+{
+  "register_all_listeners": {
+    "analysis.completed": [
+      "onAnalysisCompleted"
+    ],
+    "decision.rendered": [
+      "onDecisionRendered"
+    ],
+    "other_register_all_modules_grep": {
+      "handlers/comms.mjs": "not registered",
+      "handlers/payment-links.mjs": "not registered",
+      "handlers/money-chain.mjs": "not registered",
+      "handlers/customer-insights.mjs": "not registered",
+      "handlers/inquiry-gate.mjs": "not registered",
+      "handlers/inquiry-docs.mjs": "not registered",
+      "handlers/commas-disputes.mjs": "not registered",
+      "handlers/diagnostic-soft-pull.mjs": "not registered",
+      "agents/runtime.mjs": "not registered"
+    }
+  },
+  "row_changes_after_emit": {
+    "onAnalysisCompleted": {
+      "registered": true,
+      "crs_results_result_shape_changed": true,
+      "crs_results_top_level_scores": {
+        "eq": 724,
+        "ex": 718,
+        "tu": 731
+      },
+      "crs_results_top_level_utilization": 18,
+      "crs_results_outcome_tier": "FULL_FUNDING"
+    },
+    "onDecisionRendered": {
+      "registered": true,
+      "clients_outcome_tier_before": "FULL_FUNDING",
+      "clients_outcome_tier_after": "FULL_FUNDING",
+      "custom_fields_before": {
+        "total_funding_estimate": null,
+        "analyzer_prequal_amount": null,
+        "crs_fico_score": null,
+        "crs_utilization_percent": null,
+        "credit_score": null,
+        "utilization_pct": null,
+        "primary_fico_score": null,
+        "primary_utilization_percent": null,
+        "analyzer_score": null,
+        "utilization": null,
+        "funding_letters_delivered_event_id": null
+      },
+      "custom_fields_after": {
+        "total_funding_estimate": 125000,
+        "analyzer_prequal_amount": 125000,
+        "crs_fico_score": null,
+        "crs_utilization_percent": null,
+        "credit_score": null,
+        "utilization_pct": null,
+        "primary_fico_score": null,
+        "primary_utilization_percent": null,
+        "analyzer_score": null,
+        "utilization": null,
+        "funding_letters_delivered_event_id": null
+      },
+      "card_stage_before": "new_lead",
+      "card_stage_after": "decision_rendered"
+    }
+  }
+}

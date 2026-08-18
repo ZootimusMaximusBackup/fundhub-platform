@@ -1,0 +1,28 @@
+{
+  "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+  "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+  "email": "sim+1787079946953@demo.fundhub.local",
+  "email_matches_shared": true,
+  "email_is_demo_fundhub_local": true,
+  "phone": {
+    "present": true,
+    "masked": "+1555…",
+    "digits": 11,
+    "starts_1555": true
+  },
+  "first_name": "Simulated",
+  "last_name": "Client",
+  "is_demo": true,
+  "tags": [
+    "simulated",
+    "is_demo",
+    "path:funding"
+  ],
+  "channel_source": "simulated",
+  "FUNDHUB_TEST_INBOX_set": true,
+  "FUNDHUB_TEST_PHONE_set": true,
+  "email_equals_FUNDHUB_TEST_INBOX": false,
+  "phone_equals_FUNDHUB_TEST_PHONE": false,
+  "compose_has_to_field": false,
+  "note": "destination is clients.email / clients.phone only — POST /api/messages has no to field"
+}

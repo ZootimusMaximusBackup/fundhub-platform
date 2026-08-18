@@ -1,0 +1,114 @@
+{
+  "at": "2026-08-18T20:52:00.000Z",
+  "question": "Where does Bland read its prompt, and does Agent Editor write there?",
+  "same_place": false,
+  "bland": {
+    "what_bland_is": "Bland is the phone-robot company that places the calls.",
+    "how_live_calls_get_a_script": "Per-call `task` posted to Bland POST /v1/calls. The task text is built in vendor JS files. Not from the agents table. Not from a Bland pathway id.",
+    "create_path_in_this_repo": "vendor/inquiry-remover/src/lib/bland-client.js createCall",
+    "prompt_builders": [
+      {
+        "file": "vendor/inquiry-remover/src/agents/setter-prompt.js",
+        "export": "SETTER_TASK / buildSetterCallConfig",
+        "used_by": [
+          "vendor/inquiry-remover/api/trigger-setter-call.js",
+          "vendor/inquiry-remover/api/setter-launch.js",
+          "vendor/inquiry-remover/src/lib/setter-outbound-cadence.js"
+        ],
+        "matches_agent_row": "AG-04 Setter Josh (name only — row is not read)"
+      },
+      {
+        "file": "vendor/inquiry-remover/src/agents/experian-prompt.js",
+        "export": "EXPERIAN_TASK / buildExperianCallConfig",
+        "used_by": [
+          "vendor/inquiry-remover/api/launch-call.js",
+          "vendor/inquiry-remover/api/schedule-call.js",
+          "vendor/inquiry-remover/api/dispatch-scheduled.js",
+          "vendor/inquiry-remover/api/test-call.js"
+        ],
+        "matches_agent_row": "AG-09 Inquiry Removal AI (name only — row is not read)"
+      },
+      {
+        "file": "vendor/inquiry-remover/src/agents/equifax-prompt.js",
+        "used_by": "same bureau launchers as Experian"
+      },
+      {
+        "file": "vendor/inquiry-remover/src/agents/transunion-prompt.js",
+        "used_by": "same bureau launchers as Experian"
+      },
+      {
+        "file": "vendor/inquiry-remover/src/agents/collections-prompt.js",
+        "used_by": "tests only — no api launcher"
+      },
+      {
+        "file": "vendor/inquiry-remover/src/agents/doc-chase-prompt.js",
+        "used_by": "tests only — no api launcher"
+      }
+    ],
+    "fundhub_src_dialer": "none. src/adapters/bland.mjs only receives a finished-call webhook. src/ has zero api.bland.ai calls.",
+    "fundhub_inquiry_proxy": {
+      "route": "/api/inquiry",
+      "INQUIRY_API_BASE": false,
+      "result": "503 not_configured — never calls vendor"
+    },
+    "bland_dashboard_store_2026-08-18": {
+      "GET /v1/pathway": { "ok": true, "count": 0 },
+      "GET /v1/pathways": { "ok": false, "status": 404 },
+      "GET /v1/agents": { "ok": true, "count": 0 },
+      "GET /v1/inbound": { "ok": true, "count": 0 },
+      "pathway_id_on_sampled_calls": 0,
+      "agent_version_id_on_sampled_calls": 0
+    },
+    "live_call_account": {
+      "key_name": "BLAND_API_KEY",
+      "key_present": true,
+      "total_calls": 30,
+      "newest_call_at": "2026-08-16T03:46:15.097Z",
+      "newest_call_id": "5265c6e8-d68e-4427-996e-52936ffa28cc",
+      "newest_metadata": ["roleplay", "test_call"],
+      "setter_shaped_example": {
+        "call_id": "b86a85ac-6bc0-4778-bed2-07757b336690",
+        "created_at": "2026-08-16T03:21:05.204Z",
+        "pathway_id": null,
+        "transcript_hint": "mentions_josh_fundhub",
+        "metadata_keys": [
+          "analyzer_recommendation",
+          "appointment_time",
+          "closer_name",
+          "first_name",
+          "ghl_contact_id",
+          "prequal_amount",
+          "primary_fico"
+        ]
+      },
+      "prove_calls_from_board": {
+        "326e71c0-86f3-4c76-ba8e-de0627a9c30d": { "created_at": "2026-08-14T21:33:08.555Z", "metadata": ["prove"] },
+        "823ec038-e86e-461a-b265-13009959eb8f": { "created_at": "2026-08-15T01:53:01.226Z", "note": "A2 setter one-shot" },
+        "9c6db403-8153-43c7-91ff-7382f57ab192": { "created_at": "2026-08-15T01:53:06.882Z", "metadata_bureau": "EX", "transcript_hint": "mentions_experian" }
+      },
+      "GET_call_echoes_task": false,
+      "task_text_on_GET": "UNVERIFIED — Bland GET /v1/calls/:id does not return task or prompt. Identity from metadata + transcript hint + prove docs + vendor code."
+    },
+    "does_not_read": [
+      "agents.prompt",
+      "agents.guardrails",
+      "Agent Editor Save payload",
+      "env prompt (BLAND_API_KEY is auth only)"
+    ]
+  },
+  "agent_editor": {
+    "screen": "public/app/agent-editor.html",
+    "save_posts": "POST /api/agents { action: save, code, name, channel, agent_class, owner_label, prompt, guardrails }",
+    "handler": "api/agents.mjs",
+    "writes_table": "agents",
+    "writes_columns": ["name", "channel", "agent_class", "owner_label", "prompt", "guardrails", "updated_at"],
+    "does_not_write_on_save": ["runtime", "runtime_ref", "status"],
+    "who_reads_agents_prompt": [
+      "api/read/agents.mjs (paints the editor)",
+      "src/agents/select.mjs + src/agents/runtime.mjs (SMS/email reply robot only)",
+      "src/journeys/runner/facts.mjs (journey facts)",
+      "src/galaxy/company-activity.mjs (name/status display, not prompt)"
+    ],
+    "bland_reads_agents_prompt": false
+  }
+}

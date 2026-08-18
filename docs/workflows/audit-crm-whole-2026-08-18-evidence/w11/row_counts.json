@@ -1,0 +1,702 @@
+[
+  {
+    "table": "account_magic_links",
+    "row_count": 4
+  },
+  {
+    "table": "account_sessions",
+    "row_count": 180
+  },
+  {
+    "table": "account_signup_policy",
+    "row_count": 3
+  },
+  {
+    "table": "account_statement_cycles",
+    "row_count": 0
+  },
+  {
+    "table": "accounts",
+    "row_count": 13
+  },
+  {
+    "table": "action_log",
+    "row_count": 0
+  },
+  {
+    "table": "ad_metrics_daily",
+    "row_count": 0
+  },
+  {
+    "table": "ad_platform_category_map",
+    "row_count": 3
+  },
+  {
+    "table": "ad_platform_connections",
+    "row_count": 0
+  },
+  {
+    "table": "ad_sets",
+    "row_count": 0
+  },
+  {
+    "table": "ads",
+    "row_count": 0
+  },
+  {
+    "table": "affiliate_commission_rules",
+    "row_count": 0
+  },
+  {
+    "table": "affiliate_events",
+    "row_count": 0
+  },
+  {
+    "table": "affiliate_payout_lines",
+    "row_count": 0
+  },
+  {
+    "table": "affiliate_payouts",
+    "row_count": 0
+  },
+  {
+    "table": "affiliate_referrals",
+    "row_count": 0
+  },
+  {
+    "table": "affiliates",
+    "row_count": 7
+  },
+  {
+    "table": "agent_shadow_log",
+    "row_count": 0
+  },
+  {
+    "table": "agents",
+    "row_count": 22
+  },
+  {
+    "table": "ai_bureau_config",
+    "row_count": 3
+  },
+  {
+    "table": "alerts",
+    "row_count": 0
+  },
+  {
+    "table": "application_decisions",
+    "row_count": 0
+  },
+  {
+    "table": "application_scores",
+    "row_count": 0
+  },
+  {
+    "table": "applications",
+    "row_count": 0
+  },
+  {
+    "table": "auth_attempts",
+    "row_count": 1280
+  },
+  {
+    "table": "bank_accounts",
+    "row_count": 0
+  },
+  {
+    "table": "bank_inbox",
+    "row_count": 0
+  },
+  {
+    "table": "bank_transactions",
+    "row_count": 18
+  },
+  {
+    "table": "behavior_scores",
+    "row_count": 7
+  },
+  {
+    "table": "brain_affiliate_allowlist",
+    "row_count": 0
+  },
+  {
+    "table": "brain_chunks",
+    "row_count": 0
+  },
+  {
+    "table": "brain_classification_reviews",
+    "row_count": 0
+  },
+  {
+    "table": "brain_drive_sync",
+    "row_count": 1
+  },
+  {
+    "table": "brain_files",
+    "row_count": 0
+  },
+  {
+    "table": "brain_messages",
+    "row_count": 0
+  },
+  {
+    "table": "brain_threads",
+    "row_count": 0
+  },
+  {
+    "table": "brand_kit_sources",
+    "row_count": 0
+  },
+  {
+    "table": "brand_kits",
+    "row_count": 0
+  },
+  {
+    "table": "business_tradelines",
+    "row_count": 0
+  },
+  {
+    "table": "businesses",
+    "row_count": 0
+  },
+  {
+    "table": "call_compliance_flags",
+    "row_count": 0
+  },
+  {
+    "table": "call_outcomes",
+    "row_count": 6
+  },
+  {
+    "table": "campaign_strategies",
+    "row_count": 6
+  },
+  {
+    "table": "campaigns",
+    "row_count": 0
+  },
+  {
+    "table": "candidate_applications",
+    "row_count": 3
+  },
+  {
+    "table": "candidates",
+    "row_count": 3
+  },
+  {
+    "table": "card_liabilities",
+    "row_count": 0
+  },
+  {
+    "table": "card_liability_history",
+    "row_count": 0
+  },
+  {
+    "table": "cards",
+    "row_count": 17
+  },
+  {
+    "table": "cashflow_reminders",
+    "row_count": 0
+  },
+  {
+    "table": "cashflow_settings",
+    "row_count": 1
+  },
+  {
+    "table": "client_cards",
+    "row_count": 0
+  },
+  {
+    "table": "client_consents",
+    "row_count": 3
+  },
+  {
+    "table": "client_custom_fields",
+    "row_count": 17
+  },
+  {
+    "table": "clients",
+    "row_count": 38
+  },
+  {
+    "table": "commas_inbox",
+    "row_count": 4
+  },
+  {
+    "table": "commission_ledger",
+    "row_count": 0
+  },
+  {
+    "table": "commission_rule_tiers",
+    "row_count": 0
+  },
+  {
+    "table": "commission_rules",
+    "row_count": 0
+  },
+  {
+    "table": "compliance_rules",
+    "row_count": 12
+  },
+  {
+    "table": "compliance_screenings",
+    "row_count": 0
+  },
+  {
+    "table": "content_tier_map",
+    "row_count": 0
+  },
+  {
+    "table": "content_videos",
+    "row_count": 0
+  },
+  {
+    "table": "contract_signers",
+    "row_count": 8
+  },
+  {
+    "table": "contract_templates",
+    "row_count": 5
+  },
+  {
+    "table": "contracts",
+    "row_count": 8
+  },
+  {
+    "table": "conversation_participants",
+    "row_count": 0
+  },
+  {
+    "table": "conversations",
+    "row_count": 9
+  },
+  {
+    "table": "creative_assets",
+    "row_count": 0
+  },
+  {
+    "table": "creative_billing_rates",
+    "row_count": 2
+  },
+  {
+    "table": "creative_providers",
+    "row_count": 0
+  },
+  {
+    "table": "creative_usage_events",
+    "row_count": 0
+  },
+  {
+    "table": "crs_results",
+    "row_count": 14
+  },
+  {
+    "table": "customer_insights",
+    "row_count": 0
+  },
+  {
+    "table": "dispute_cases",
+    "row_count": 0
+  },
+  {
+    "table": "dispute_items",
+    "row_count": 0
+  },
+  {
+    "table": "dispute_letters",
+    "row_count": 0
+  },
+  {
+    "table": "dispute_responses",
+    "row_count": 0
+  },
+  {
+    "table": "document_versions",
+    "row_count": 7
+  },
+  {
+    "table": "documents",
+    "row_count": 7
+  },
+  {
+    "table": "eeo_responses",
+    "row_count": 0
+  },
+  {
+    "table": "eeo_survey_invites",
+    "row_count": 0
+  },
+  {
+    "table": "entities",
+    "row_count": 0
+  },
+  {
+    "table": "entitlement_catalog",
+    "row_count": 5
+  },
+  {
+    "table": "entitlements",
+    "row_count": 2
+  },
+  {
+    "table": "erasure_requests",
+    "row_count": 0
+  },
+  {
+    "table": "events",
+    "row_count": 790
+  },
+  {
+    "table": "failed_events",
+    "row_count": 2
+  },
+  {
+    "table": "funding_closeout",
+    "row_count": 0
+  },
+  {
+    "table": "funding_closeout_items",
+    "row_count": 0
+  },
+  {
+    "table": "funding_round_sales",
+    "row_count": 0
+  },
+  {
+    "table": "funding_rounds",
+    "row_count": 0
+  },
+  {
+    "table": "furnisher_mail_addresses",
+    "row_count": 0
+  },
+  {
+    "table": "generation_job_assets",
+    "row_count": 0
+  },
+  {
+    "table": "generation_jobs",
+    "row_count": 0
+  },
+  {
+    "table": "hiring_channel_connections",
+    "row_count": 0
+  },
+  {
+    "table": "hiring_decisions",
+    "row_count": 0
+  },
+  {
+    "table": "hiring_interview_attendees",
+    "row_count": 0
+  },
+  {
+    "table": "hiring_interviews",
+    "row_count": 0
+  },
+  {
+    "table": "hiring_job_postings",
+    "row_count": 1
+  },
+  {
+    "table": "hiring_roles",
+    "row_count": 3
+  },
+  {
+    "table": "hiring_rubrics",
+    "row_count": 2
+  },
+  {
+    "table": "inquiry_attempts",
+    "row_count": 0
+  },
+  {
+    "table": "inquiry_log",
+    "row_count": 0
+  },
+  {
+    "table": "inquiry_prep",
+    "row_count": 0
+  },
+  {
+    "table": "inquiry_removal_cases",
+    "row_count": 3
+  },
+  {
+    "table": "investment_holdings",
+    "row_count": 0
+  },
+  {
+    "table": "invoice_line_items",
+    "row_count": 0
+  },
+  {
+    "table": "invoice_payments",
+    "row_count": 0
+  },
+  {
+    "table": "invoices",
+    "row_count": 2
+  },
+  {
+    "table": "journeys",
+    "row_count": 2
+  },
+  {
+    "table": "lender_bureau_observations",
+    "row_count": 0
+  },
+  {
+    "table": "lenders",
+    "row_count": 0
+  },
+  {
+    "table": "mail_campaigns",
+    "row_count": 0
+  },
+  {
+    "table": "mail_responses",
+    "row_count": 0
+  },
+  {
+    "table": "mail_tracked_numbers",
+    "row_count": 0
+  },
+  {
+    "table": "mail_universe",
+    "row_count": 0
+  },
+  {
+    "table": "marketing_content_queue",
+    "row_count": 0
+  },
+  {
+    "table": "marketing_flags",
+    "row_count": 1
+  },
+  {
+    "table": "message_channel_routing",
+    "row_count": 2
+  },
+  {
+    "table": "message_templates",
+    "row_count": 237
+  },
+  {
+    "table": "messages",
+    "row_count": 84
+  },
+  {
+    "table": "messaging_settings",
+    "row_count": 1
+  },
+  {
+    "table": "opt_outs",
+    "row_count": 0
+  },
+  {
+    "table": "optimization_rules",
+    "row_count": 7
+  },
+  {
+    "table": "org_brand",
+    "row_count": 1
+  },
+  {
+    "table": "orgs",
+    "row_count": 1
+  },
+  {
+    "table": "outbound_calls",
+    "row_count": 0
+  },
+  {
+    "table": "owner_notifications",
+    "row_count": 0
+  },
+  {
+    "table": "partner_ai_usage",
+    "row_count": 0
+  },
+  {
+    "table": "partner_brand",
+    "row_count": 5
+  },
+  {
+    "table": "partner_module_settings",
+    "row_count": 0
+  },
+  {
+    "table": "partner_onboarding_tasks",
+    "row_count": 0
+  },
+  {
+    "table": "partner_page_section_versions",
+    "row_count": 0
+  },
+  {
+    "table": "partner_pages",
+    "row_count": 5
+  },
+  {
+    "table": "partner_payout_lines",
+    "row_count": 0
+  },
+  {
+    "table": "partner_payouts",
+    "row_count": 0
+  },
+  {
+    "table": "partner_revenue",
+    "row_count": 0
+  },
+  {
+    "table": "partners",
+    "row_count": 8
+  },
+  {
+    "table": "password_resets",
+    "row_count": 3
+  },
+  {
+    "table": "payment_links",
+    "row_count": 40
+  },
+  {
+    "table": "pii_access_log",
+    "row_count": 7
+  },
+  {
+    "table": "pii_identity",
+    "row_count": 1
+  },
+  {
+    "table": "pipeline_stages",
+    "row_count": 69
+  },
+  {
+    "table": "pipelines",
+    "row_count": 8
+  },
+  {
+    "table": "plaid_items",
+    "row_count": 0
+  },
+  {
+    "table": "product_aliases",
+    "row_count": 14
+  },
+  {
+    "table": "product_entitlements",
+    "row_count": 0
+  },
+  {
+    "table": "products",
+    "row_count": 5
+  },
+  {
+    "table": "proxy_sessions",
+    "row_count": 0
+  },
+  {
+    "table": "recurring_bill_transactions",
+    "row_count": 0
+  },
+  {
+    "table": "recurring_bills",
+    "row_count": 0
+  },
+  {
+    "table": "repair_decision_log",
+    "row_count": 0
+  },
+  {
+    "table": "retention_policy",
+    "row_count": 5
+  },
+  {
+    "table": "sale_attributions",
+    "row_count": 0
+  },
+  {
+    "table": "sale_payments",
+    "row_count": 1
+  },
+  {
+    "table": "sales",
+    "row_count": 1
+  },
+  {
+    "table": "schema_migrations",
+    "row_count": 162
+  },
+  {
+    "table": "sessions",
+    "row_count": 978
+  },
+  {
+    "table": "shifts",
+    "row_count": 17
+  },
+  {
+    "table": "snapshots",
+    "row_count": 0
+  },
+  {
+    "table": "social_channels",
+    "row_count": 0
+  },
+  {
+    "table": "social_posts",
+    "row_count": 0
+  },
+  {
+    "table": "soft_pull_requests",
+    "row_count": 10
+  },
+  {
+    "table": "spend_ceilings",
+    "row_count": 0
+  },
+  {
+    "table": "staff",
+    "row_count": 23
+  },
+  {
+    "table": "staff_events",
+    "row_count": 59
+  },
+  {
+    "table": "staff_roles",
+    "row_count": 8
+  },
+  {
+    "table": "staff_targets",
+    "row_count": 6
+  },
+  {
+    "table": "subscriptions",
+    "row_count": 0
+  },
+  {
+    "table": "tasks",
+    "row_count": 66
+  },
+  {
+    "table": "tradelines",
+    "row_count": 45
+  },
+  {
+    "table": "transactions",
+    "row_count": 1
+  },
+  {
+    "table": "upsell_triggers",
+    "row_count": 0
+  },
+  {
+    "table": "webhook_captures",
+    "row_count": 418
+  }
+]

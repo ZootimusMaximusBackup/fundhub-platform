@@ -1,0 +1,26 @@
+{
+  "at": "2026-08-18T21:44:42.769Z",
+  "card": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "id": "5410b98b-4e78-47e4-9737-b662da097740",
+        "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+        "is_demo": false,
+        "stage": "decision_rendered",
+        "pipeline": "Sales"
+      }
+    ]
+  },
+  "client_archived": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+        "archived": false
+      }
+    ]
+  }
+}

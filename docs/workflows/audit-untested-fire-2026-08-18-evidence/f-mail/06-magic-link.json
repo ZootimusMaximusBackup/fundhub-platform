@@ -1,0 +1,71 @@
+{
+  "extracted": true,
+  "source": "messages.rendered_body",
+  "host": "fundhub.ai",
+  "path": "/portal-login.html",
+  "has_t": true,
+  "token_last4": "KPbg",
+  "resend": {
+    "attempted": true,
+    "listed": 0,
+    "extracted_link": false
+  },
+  "message_statuses": [
+    {
+      "id": "acdac592-c427-4573-9ee6-7a2f936b8902",
+      "status": "queued",
+      "provider": "internal",
+      "template_key": "EMAIL-PORTAL-MAGIC-LINK",
+      "has_body": true,
+      "created_at": "2026-08-18T21:43:22.180Z"
+    },
+    {
+      "id": "6db643c6-297f-4508-a9b2-d41cbbb80935",
+      "status": "sent",
+      "provider": "resend",
+      "template_key": null,
+      "has_body": true,
+      "created_at": "2026-08-18T21:43:20.979Z"
+    },
+    {
+      "id": "7fc5ff39-f3be-459e-b534-1ba08ca00029",
+      "status": "sent",
+      "provider": "resend",
+      "template_key": "EMAIL-PORTAL-MAGIC-LINK",
+      "has_body": true,
+      "created_at": "2026-08-18T20:04:30.454Z"
+    },
+    {
+      "id": "b847c472-8802-4fef-bffe-7c8ba3f21935",
+      "status": "sent",
+      "provider": "resend",
+      "template_key": "EMAIL-PORTAL-MAGIC-LINK",
+      "has_body": true,
+      "created_at": "2026-08-18T16:10:32.562Z"
+    },
+    {
+      "id": "934122c2-0e15-44d5-b706-deea5c3ce9dc",
+      "status": "sent",
+      "provider": "resend",
+      "template_key": "CONTRACT-SEND-EMAIL",
+      "has_body": true,
+      "created_at": "2026-08-18T16:07:53.571Z"
+    },
+    {
+      "id": "c6a67a2d-444b-450e-bf64-23f6bfa5608a",
+      "status": "sent",
+      "provider": "resend",
+      "template_key": "EMAIL-PORTAL-MAGIC-LINK",
+      "has_body": true,
+      "created_at": "2026-08-18T16:04:32.650Z"
+    },
+    {
+      "id": "52f39bbe-24a5-4164-a330-b49944311b47",
+      "status": "sent",
+      "provider": "resend",
+      "template_key": "EMAIL-PORTAL-MAGIC-LINK",
+      "has_body": true,
+      "created_at": "2026-08-18T16:00:52.037Z"
+    }
+  ]
+}

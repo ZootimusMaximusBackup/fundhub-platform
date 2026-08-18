@@ -1,0 +1,14 @@
+{
+  "/api/unsubscribe": {
+    "status": 404,
+    "ok": false
+  },
+  "/unsubscribe": {
+    "status": 404,
+    "ok": false
+  },
+  "/app/unsubscribe.html": {
+    "status": 404,
+    "ok": false
+  }
+}

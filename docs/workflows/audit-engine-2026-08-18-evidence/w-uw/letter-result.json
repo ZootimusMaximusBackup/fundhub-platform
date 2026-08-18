@@ -1,0 +1,48 @@
+{
+  "module": "src/underwrite/funding-letter-pdf.mjs",
+  "renders": false,
+  "note": "This file stores and loads funding-stack PDFs. It does not take an engine result and does not render PDF/buffer/HTML.",
+  "exports_called": [
+    {
+      "fn": "isFundingLetterFile(engineResult)",
+      "returned": false
+    },
+    {
+      "fn": "pickFundingLetterPdfBase64([engineResult], EX)",
+      "returned": null
+    },
+    {
+      "fn": "persistFundingLetterFiles(null,null,{files:[engineResult]})",
+      "returned": {
+        "stored": [],
+        "skipped": "missing_args"
+      }
+    },
+    {
+      "fn": "persistFundingLetterFiles(db,store,{files:[underwrite,report]})",
+      "returned": {
+        "stored": [],
+        "skipped": null
+      },
+      "wrote_documents": 0
+    },
+    {
+      "fn": "loadFundingLetterPdf EX/EQ/TU",
+      "returned": {
+        "EX": null,
+        "EQ": null,
+        "TU": null
+      },
+      "store_error": null
+    }
+  ],
+  "rendered_bytes": null,
+  "error_dump": {
+    "when": "funding-letter-pdf.mjs against engine result",
+    "message": "No PDF/buffer/HTML rendered. Module persists or loads stored letter files. Engine result is not a letter file (isFundingLetterFile=false). loadFundingLetterPdf returned null for EX/EQ/TU.",
+    "renders_pdf": false,
+    "renders_html": false,
+    "renders_buffer": false
+  },
+  "store_name": "memory"
+}

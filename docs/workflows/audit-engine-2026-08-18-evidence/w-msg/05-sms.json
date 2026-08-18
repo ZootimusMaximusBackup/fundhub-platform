@@ -1,0 +1,6 @@
+{
+  "attempted": false,
+  "FUNDHUB_TEST_PHONE_was_resolved_destination": false,
+  "reason": "sms_skipped_stored_phone_is_not_FUNDHUB_TEST_PHONE",
+  "a2p_note": "A2P pending fail is expected if a real SMS send is reached"
+}

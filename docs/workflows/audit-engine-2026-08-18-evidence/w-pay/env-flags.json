@@ -1,0 +1,27 @@
+{
+  "DATABASE_URL": {
+    "name": "DATABASE_URL",
+    "present": true
+  },
+  "INNGEST_EVENT_KEY": {
+    "name": "INNGEST_EVENT_KEY",
+    "present": true
+  },
+  "CRS_ALLOW_LIVE": {
+    "name": "CRS_ALLOW_LIVE",
+    "present": true,
+    "on": false
+  },
+  "GHL_API_KEY": {
+    "name": "GHL_API_KEY",
+    "present": false
+  },
+  "ADAPTERS_DRY_RUN": {
+    "name": "ADAPTERS_DRY_RUN",
+    "present": false
+  },
+  "CRS_API_HOST": {
+    "name": "CRS_API_HOST",
+    "present": true
+  }
+}

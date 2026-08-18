@@ -1,0 +1,36 @@
+{
+  "DATABASE_URL": {
+    "name": "DATABASE_URL",
+    "present": true
+  },
+  "INNGEST_EVENT_KEY": {
+    "name": "INNGEST_EVENT_KEY",
+    "present_in_env_file_before_delete": true,
+    "present_in_process_now": false,
+    "note": "Deleted from this process only. Did not write .env. Did not send Inngest."
+  },
+  "CRS_ALLOW_LIVE": {
+    "name": "CRS_ALLOW_LIVE",
+    "present": true
+  },
+  "ADAPTERS_DRY_RUN": {
+    "name": "ADAPTERS_DRY_RUN",
+    "present": false
+  },
+  "GHL_API_KEY": {
+    "name": "GHL_API_KEY",
+    "present": false
+  },
+  "MAILGUN_SIGNING_KEY": {
+    "name": "MAILGUN_SIGNING_KEY",
+    "present": true
+  },
+  "POSTGRID_WEBHOOK_SECRET": {
+    "name": "POSTGRID_WEBHOOK_SECRET",
+    "present": true
+  },
+  "BLAND_WEBHOOK_SECRET": {
+    "name": "BLAND_WEBHOOK_SECRET",
+    "present": true
+  }
+}

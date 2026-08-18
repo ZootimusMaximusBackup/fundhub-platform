@@ -1,0 +1,50 @@
+{
+  "at": "2026-08-18T17:50:06.718Z",
+  "loadState": {
+    "tokenOn": true,
+    "hasFH": true,
+    "queue": {
+      "ok": true,
+      "source": "api",
+      "error": null,
+      "n": 66,
+      "dated": 15
+    },
+    "banner": "",
+    "foot": "tuesday, august 18",
+    "booked": "—"
+  },
+  "factsToday": {
+    "url": "https://fundhub.ai/app/calendar.html",
+    "title": "Fundhub — Calendar",
+    "foot": "tuesday, august 18",
+    "booked": "—",
+    "demoOpen": false,
+    "demoLabel": "Demonstration states double-booking alert · empty day · open hour ▾",
+    "eventCountOnScreen": 0,
+    "openSlot": [
+      "Nothing booked.",
+      "Nothing booked this hour"
+    ],
+    "hasDemonstrationCopy": false
+  },
+  "facts14": {
+    "ymd": "2026-08-14",
+    "booked": "—",
+    "foot": "friday, august 14",
+    "eventCountOnScreen": 0,
+    "dayTitle": "Friday, August 14"
+  },
+  "factsDemo": {
+    "demoOpen": true,
+    "demoText": " Double-booking — the day-wide form of the alert now carried on the 4:30 rows ⚠ Two bookings sit in the same 4:30 slot. A setter put a second client into a time that was already taken. One of them has to move. Move one bookingReschedule the other Empty day — nothing booked, nobody scheduled on Sat1 — Nothing booked.Nobody scheduled on. Open hour — a gap in the timeline Nothing booked this hour "
+  },
+  "proxyAfter": {
+    "n": 0
+  },
+  "shots": [
+    "01-calendar-today.png",
+    "02-calendar-aug14.png",
+    "03-calendar-demo-drawer.png"
+  ]
+}

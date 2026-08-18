@@ -1,0 +1,27 @@
+{
+  "route": "GET /api/read/lender-matches?client_id=",
+  "required_input": {
+    "client_id": "uuid — required. 400 if missing.",
+    "lender_table": "optional filter",
+    "funding_round_id": "not required",
+    "application_id": "not required"
+  },
+  "this_file_has_client_id": true,
+  "status": 200,
+  "ok": true,
+  "error": null,
+  "client_id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+  "match_count": 0,
+  "summary": {
+    "lender_count": 0,
+    "match_count": 0,
+    "skipped_count": 0,
+    "sensitive_bureaus": [
+      "EX"
+    ],
+    "client_state": null
+  },
+  "skipped_count": 0,
+  "matches": [],
+  "skipped_sample": []
+}

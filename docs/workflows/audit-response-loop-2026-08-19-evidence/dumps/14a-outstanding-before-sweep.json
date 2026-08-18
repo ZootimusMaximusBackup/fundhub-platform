@@ -1,0 +1,54 @@
+{
+  "count": 4,
+  "old_enough_non_demo": 0,
+  "rows": [
+    {
+      "id": "0a3b154e-8bde-4d42-ba31-7bbbcf44e889",
+      "status": "viewed",
+      "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+      "is_demo": false,
+      "demo_email": false,
+      "old_enough": false,
+      "template_key": "SOFT-PULL-CONSENT",
+      "is_forbidden": true,
+      "is_p1": false,
+      "is_p3": false
+    },
+    {
+      "id": "b1503fd1-296a-4153-93ec-bd181096f66d",
+      "status": "sent",
+      "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+      "is_demo": false,
+      "demo_email": false,
+      "old_enough": false,
+      "template_key": "FUNDING-AGREEMENT",
+      "is_forbidden": true,
+      "is_p1": false,
+      "is_p3": false
+    },
+    {
+      "id": "f59d6197-9ff0-4910-b882-6af021cdb57e",
+      "status": "sent",
+      "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+      "is_demo": false,
+      "demo_email": false,
+      "old_enough": false,
+      "template_key": "SOFT-PULL-CONSENT",
+      "is_forbidden": true,
+      "is_p1": false,
+      "is_p3": false
+    },
+    {
+      "id": "003b3da3-0467-46ac-be78-b4b1d2fdcd31",
+      "status": "sent",
+      "client_id": "cb6f5839-2979-491d-9080-00ca51833b07",
+      "is_demo": true,
+      "demo_email": true,
+      "old_enough": false,
+      "template_key": "FUNDING-AGREEMENT",
+      "is_forbidden": false,
+      "is_p1": false,
+      "is_p3": true
+    }
+  ]
+}

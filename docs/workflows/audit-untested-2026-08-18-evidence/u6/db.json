@@ -1,0 +1,110 @@
+{
+  "at": "2026-08-18T21:22:48.132Z",
+  "test_client": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "opened_forbidden": false,
+  "env_names": {
+    "INQUIRY_API_BASE": false,
+    "INQUIRY_API_SECRET": true
+  },
+  "cases": {
+    "ok": true,
+    "n": 3,
+    "rows": [
+      {
+        "id": "f872cc9d-d0fb-484b-a0a5-fb90e031b45d",
+        "case_status": "Queued",
+        "call_fired": false,
+        "delivered": false,
+        "request_source": "client_control_panel",
+        "selected_bureaus_raw": null,
+        "created_at": "2026-08-18T16:54:30.580Z"
+      },
+      {
+        "id": "e235efc2-2223-4d31-9a24-2a57313fce34",
+        "case_status": "Queued",
+        "call_fired": false,
+        "delivered": false,
+        "request_source": "client_control_panel",
+        "selected_bureaus_raw": null,
+        "created_at": "2026-08-18T16:15:12.670Z"
+      },
+      {
+        "id": "1d212e99-a7f7-4947-920c-4f55904b512e",
+        "case_status": "Queued",
+        "call_fired": false,
+        "delivered": false,
+        "request_source": "client_control_panel",
+        "selected_bureaus_raw": null,
+        "created_at": "2026-08-18T16:13:11.440Z"
+      }
+    ]
+  },
+  "forbidden_cases": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "n": 0
+      }
+    ]
+  },
+  "events": {
+    "ok": true,
+    "n": 1,
+    "rows": [
+      {
+        "name": "inquiry.gate.clear",
+        "n": 1,
+        "last": "2026-08-18T20:50:22.782Z"
+      }
+    ]
+  },
+  "messages": {
+    "ok": true,
+    "n": 7,
+    "rows": [
+      {
+        "id": "7fc5ff39-f3be-459e-b534-1ba08ca00029",
+        "channel": "email",
+        "status": "sent",
+        "created_at": "2026-08-18T20:04:30.454Z"
+      },
+      {
+        "id": "0b1d9316-fad4-4851-ae10-3903cb205433",
+        "channel": "sms",
+        "status": "failed",
+        "created_at": "2026-08-18T17:51:26.803Z"
+      },
+      {
+        "id": "eb95733f-57fa-4efd-be28-ef0a21c1097e",
+        "channel": "sms",
+        "status": "failed",
+        "created_at": "2026-08-18T16:54:42.420Z"
+      },
+      {
+        "id": "b847c472-8802-4fef-bffe-7c8ba3f21935",
+        "channel": "email",
+        "status": "sent",
+        "created_at": "2026-08-18T16:10:32.562Z"
+      },
+      {
+        "id": "934122c2-0e15-44d5-b706-deea5c3ce9dc",
+        "channel": "email",
+        "status": "sent",
+        "created_at": "2026-08-18T16:07:53.571Z"
+      },
+      {
+        "id": "c6a67a2d-444b-450e-bf64-23f6bfa5608a",
+        "channel": "email",
+        "status": "sent",
+        "created_at": "2026-08-18T16:04:32.650Z"
+      },
+      {
+        "id": "52f39bbe-24a5-4164-a330-b49944311b47",
+        "channel": "email",
+        "status": "sent",
+        "created_at": "2026-08-18T16:00:52.037Z"
+      }
+    ]
+  }
+}

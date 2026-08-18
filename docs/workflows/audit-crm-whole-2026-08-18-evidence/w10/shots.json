@@ -1,0 +1,65 @@
+{
+  "at": "2026-08-18T17:16:43.739Z",
+  "notes": [
+    {
+      "step": "login",
+      "url": "https://fundhub.ai/app/pipeline.html"
+    },
+    {
+      "step": "documents",
+      "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w10/after-documents.png",
+      "hasSigned": true,
+      "hasFunding": true,
+      "hasSoft": true
+    },
+    {
+      "step": "pipeline",
+      "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w10/after-pipeline.png"
+    },
+    {
+      "step": "ccp-test",
+      "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w10/after-ccp-test.png",
+      "pullLabels": [
+        {
+          "text": "Pull TransUnion\n→",
+          "disabled": true
+        },
+        {
+          "text": "Pull Experian\n→",
+          "disabled": true
+        },
+        {
+          "text": "Pull Equifax\n→",
+          "disabled": true
+        },
+        {
+          "text": "Generate Apps\n→",
+          "disabled": true
+        },
+        {
+          "text": "Issue Inquiry Removal\n→",
+          "disabled": true
+        },
+        {
+          "text": "Open Inquiry Remover\n↗",
+          "disabled": false
+        }
+      ],
+      "mentionsConsent": true
+    },
+    {
+      "step": "ccp-protected-readonly",
+      "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w10/after-ccp-protected.png"
+    },
+    {
+      "step": "documents-contracts-tab",
+      "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w10/after-documents-contracts.png"
+    },
+    {
+      "step": "portal-test",
+      "shot": "docs/workflows/audit-crm-whole-2026-08-18-evidence/w10/after-portal-test.png",
+      "disputeCard": true,
+      "signIn": false
+    }
+  ]
+}

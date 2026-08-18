@@ -1,0 +1,47 @@
+{
+  "last_safe_step": "POST /api/repair/send with mail:false (gate only). Never mail:true. Never PostGrid.",
+  "requirements": {
+    "method": "POST",
+    "auth": "staff (ROLE_SETS.STAFF)",
+    "body": {
+      "mail": true,
+      "client_id": "uuid in session org",
+      "letters": [
+        {
+          "bureau": "required",
+          "html_or_pdf": "required"
+        }
+      ]
+    }
+  },
+  "next_call_if_mail_true": [
+    "sendRepairLetters()",
+    "mailBureauLetter()",
+    "sendLetter() → POST https://api.postgrid.com/print-mail/v1/letters"
+  ],
+  "never_calls": [
+    "inquiry-removal-ai-sigma.vercel.app",
+    "live bureau"
+  ],
+  "credential_names_present": {
+    "POSTGRID_API_KEY": true,
+    "POSTGRID_WEBHOOK_SECRET": true,
+    "POSTGRID_API_BASE": false,
+    "MESSAGING_DRY_RUN": false,
+    "DOCUMENT_STORE_PROVIDER": false,
+    "BLOB_READ_WRITE_TOKEN": false
+  },
+  "credential_names_missing": [
+    "POSTGRID_API_BASE",
+    "MESSAGING_DRY_RUN",
+    "DOCUMENT_STORE_PROVIDER",
+    "BLOB_READ_WRITE_TOKEN"
+  ],
+  "gate_status": 400,
+  "gate_body": {
+    "ok": false,
+    "error": "no_channel",
+    "message": "mail required — human must press send"
+  },
+  "mailed": false
+}

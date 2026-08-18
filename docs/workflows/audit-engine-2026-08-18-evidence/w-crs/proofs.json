@@ -1,0 +1,72 @@
+[
+  {
+    "id": "crs.1_load_payload",
+    "result": "PASS",
+    "expected": "crs_results.result for c1f83e6b-a624-4f28-a32a-531a530b3ad4 is the simulated FULL_FUNDING payload: scores EX 718 / EQ 724 / TU 731, util 18, estimate 125000, 4 tradelines",
+    "observed": "Row present. Nested scores EX 718 / EQ 724 / TU 731, util 18, preapprovals.totalCombined 125000, 4 tradelines. Top-level scores/utilization were null until emit merged them. outcome_tier FULL_FUNDING already set by simulate.",
+    "evidence": "w-crs/dumps/01-crs-result.json"
+  },
+  {
+    "id": "crs.2_emitCrsResult",
+    "result": "PASS",
+    "expected": "registerAll() then emitCrsResult({ clientId, crsResultId, requestId }) returns analysis.completed + decision.rendered with ids, not deduped",
+    "observed": "ok:true. analysis.completed id=a091eafb-7af8-472e-94d5-bd89ccb54911 deduped=false. decision.rendered id=8bff4125-ee2d-41e5-b6bb-f24e6c897a2e deduped=false. requestId=72389cae-10fe-46c6-be2f-c2471bf8a3b1. INNGEST_EVENT_KEY unset. CRS_ALLOW_LIVE unset.",
+    "evidence": "w-crs/dumps/02-emit-return.json"
+  },
+  {
+    "id": "crs.3_events_table",
+    "result": "PASS",
+    "expected": "events table has analysis.completed + decision.rendered for this client_id (mapToCanonical)",
+    "observed": "Both rows landed on client 41a3199f-1835-4ac8-91c0-d4f37bd92037. Payloads match mapToCanonical (scores/util/tier on analysis.completed; tier + fundingEstimate 125000 on decision.rendered). Also present: docs.received from another unit (W-DESKS FTC upload), not from emit.",
+    "evidence": "w-crs/dumps/03-events.json"
+  },
+  {
+    "id": "crs.4_handlers",
+    "result": "PASS",
+    "expected": "client-lifecycle onAnalysisCompleted / onDecisionRendered run with a row change. Other register-all modules: ran vs registered-but-no-row-change.",
+    "observed": "Only those two functions are registered for these events. onAnalysisCompleted ran: crs_results.result gained top-level scores {ex:718,eq:724,tu:731}, utilization 18, source crs. onDecisionRendered ran: custom_fields.total_funding_estimate=125000, analyzer_prequal_amount=125000; sales card new_lead → decision_rendered. Other register-all modules (comms, payment-links, money-chain, customer-insights, inquiry-gate, inquiry-docs, commas-disputes, diagnostic-soft-pull, agent-runtime) are not registered for these event names.",
+    "evidence": "w-crs/dumps/04-handlers.json"
+  },
+  {
+    "id": "crs.5_c06_inngest",
+    "result": "UNVERIFIED",
+    "expected": "c-06-crs-results-router would run on analysis.completed in production Inngest",
+    "observed": "INNGEST_EVENT_KEY is off. emit() does not send to Inngest. The live machine did not run c-06. handle() is a safe constructor (same as its test). Local invoke on the stored analysis.completed event: branch=funding, tagged path:funding, funding letters empty (engineSkip: rawResponsesFromMerged: no bureau reports to score). Letter persist was dry-run. No email/SMS/tasks.",
+    "evidence": "w-crs/dumps/05-c06.json"
+  },
+  {
+    "id": "crs.6_clients_scores_util",
+    "result": "FAIL",
+    "expected": "After emit, scores / utilization / funding-estimate land on the clients row (or named custom_fields). If simulate already set outcome_tier=FULL_FUNDING but left scores null, that is a finding.",
+    "observed": "clients has no score / utilization columns. Before emit: outcome_tier=FULL_FUNDING already, custom_fields empty, score/util/estimate keys all null. After emit: estimate landed (total_funding_estimate=125000, analyzer_prequal_amount=125000). Scores and utilization still null on the client (crs_fico_score, crs_utilization_percent, credit_score, utilization_pct, primary_fico_score, utilization). Scores/util live only on crs_results.result after the handler merge.",
+    "evidence": "w-crs/dumps/06-clients-before.json"
+  },
+  {
+    "id": "crs.6_clients_estimate",
+    "result": "PASS",
+    "expected": "funding-estimate stamped on the client after decision.rendered",
+    "observed": "custom_fields.total_funding_estimate=125000 and analyzer_prequal_amount=125000 after emit. Missing before emit.",
+    "evidence": "w-crs/dumps/06-clients-after-emit.json"
+  },
+  {
+    "id": "crs.7_ccp_paint_scores_estimate",
+    "result": "PASS",
+    "expected": "Live Client Control Panel for this client_id shows EX 718 / EQ 724 / TU 731 and estimate 125000",
+    "observed": "Owner login. CCP painted scores EX 718 · EQ 724 · TU 731, Prequal $125,000, Total Approved $125,000, tier FULL_FUNDING. Live GET /api/dashboard/client 200 with matching tri_merge + funding_estimate. Ground truth for this screen is MISSING (intended journeys + spec-client-control-panel.md).",
+    "evidence": "w-crs/07-ccp-scores.png"
+  },
+  {
+    "id": "crs.7_ccp_paint_util",
+    "result": "FAIL",
+    "expected": "Utilization 18 paints on Client Control Panel for this file",
+    "observed": "API utilisation is 18% (good) on GET /api/dashboard/client. CCP has no utilization tile. DOM paint only writes scores + prequal. Util is absent on the screen.",
+    "evidence": "w-crs/dumps/07-ccp-dom.json"
+  },
+  {
+    "id": "crs.7_closer_paint",
+    "result": "FAIL",
+    "expected": "Closer dashboard paints this file's numbers (scores and/or tradeline funding math)",
+    "observed": "GET /api/read/tradelines?client_id=… returns 200, 4 tradelines, totalAvailableCredit 37150. Live closer page stays dashes: oCredit=—, __fhCloserLive=false, no Chase, no 718/724/731, no 125000, no 37150. Closer does not paint FICO scores. Funding calculator did not take the live payload.",
+    "evidence": "w-crs/07-closer-dashboard.png"
+  }
+]

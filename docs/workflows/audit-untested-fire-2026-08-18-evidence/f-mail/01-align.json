@@ -1,0 +1,55 @@
+{
+  "already_plus_tag_of_inbox": false,
+  "would_write_plus": true,
+  "plus_on_other_clients": 0,
+  "plus_on_other_accounts": 0,
+  "live_eq_bare_inbox": true,
+  "live_eq_plus": false,
+  "test_before": {
+    "has_email": true,
+    "eq_bare_inbox": false,
+    "eq_plus": false,
+    "is_plus_tag_of_inbox": false,
+    "domain_fundhub_ai": true
+  },
+  "account_count": 1,
+  "accounts_before": [
+    {
+      "kind": "client",
+      "status": "active",
+      "shape": {
+        "has_email": true,
+        "eq_bare_inbox": false,
+        "eq_plus": false,
+        "is_plus_tag_of_inbox": false,
+        "domain_fundhub_ai": true
+      }
+    }
+  ],
+  "wrote": true,
+  "skipped_reason": null,
+  "test_after": {
+    "has_email": true,
+    "eq_bare_inbox": false,
+    "eq_plus": true,
+    "is_plus_tag_of_inbox": true,
+    "domain_fundhub_ai": false
+  },
+  "live_after_eq_before": true,
+  "live_still_eq_inbox": true,
+  "accounts_after": [
+    {
+      "kind": "client",
+      "status": "active",
+      "shape": {
+        "has_email": true,
+        "eq_bare_inbox": false,
+        "eq_plus": true,
+        "is_plus_tag_of_inbox": true,
+        "domain_fundhub_ai": false
+      }
+    }
+  ],
+  "used_is_plus_tag": true,
+  "used_eq_bare_inbox": false
+}

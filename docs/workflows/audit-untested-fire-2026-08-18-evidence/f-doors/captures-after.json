@@ -1,0 +1,19 @@
+{
+  "at": "2026-08-18T21:44:31.098Z",
+  "ok": true,
+  "n": 1,
+  "rows": [
+    {
+      "provider": "clickfunnels",
+      "n": 442
+    }
+  ],
+  "delta": [
+    {
+      "provider": "clickfunnels",
+      "before": 442,
+      "after": 442,
+      "delta": 0
+    }
+  ]
+}
