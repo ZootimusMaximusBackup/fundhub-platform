@@ -242,3 +242,28 @@ tracked file in this shared tree to HEAD mid-build. It captured W1's `metrics.mj
 `my-numbers.*` and W3's `sales-floor.*`. Nothing was lost — all of it is in `stash@{0}`.
 W1 recovered with `git checkout stash@{0} -- src/sales/metrics.mjs` and re-verified green.
 W2 and W3 were told to recover the same way, per-file, and to never run `git stash pop`.
+
+## Live proof status — 2026-08-17
+
+Shipped as commit `63a0241`, pushed to `main`, auto-deployed. Confirmed live:
+
+- `https://fundhub.ai/app/my-numbers.js` contains `paintOfferStack` — deployed.
+- `https://fundhub.ai/app/sales-floor.js` contains `paintCloserFocus` — deployed.
+- `GET /api/read/my-numbers` -> **401** (auth required), not 500. Handler loads, gate works.
+- `GET /api/read/sales-floor` -> **401**, same.
+- `GET /api/health` -> 200, `"db":"up"`, 0 pending migrations. `health` is in the SAME bundled
+  function as both endpoints, so the whole function loads — the metrics/offer-stack import
+  cycle does not break production. Also verified locally: `api.mjs` imports clean, and the
+  cycle resolves from both entry directions.
+
+**BLOCKED — live screenshots could not be taken.** `POST /api/auth/login` returns **500** on
+production for a real account. Not caused by this batch:
+
+- An empty POST to the same endpoint correctly returns `400 email_and_password_required`, so the
+  handler itself loads and validates. The 500 happens during actual authentication.
+- W3 hit the same login error BEFORE this batch was deployed, while live still ran the old code.
+- Nothing in this batch touches auth. The last commit to touch auth/staff was `6f41ca4`
+  ("Save staff role changes and send invite and reset mail"), which was already on `main`
+  before this work started.
+
+Nobody can sign in to fundhub.ai right now. Reported, not fixed — out of this task's scope.
