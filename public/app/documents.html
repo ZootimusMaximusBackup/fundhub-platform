@@ -406,84 +406,91 @@ renderTabs(); renderClassbar(); render();
     if (typeof render === "function") render();
   };
 
-  try {
-    var demo = false;
-    try { demo = localStorage.getItem("fh_demo") === "1"; } catch (e) {}
-    if (!demo && typeof DOCS !== "undefined") {
-      DOCS.length = 0;
-      try { redraw(); } catch (e) {}
-      FHData.banner("sample", "loading documents…", "documents");
-    }
-  } catch (e) {}
-
-  FHData.wire(FHData.documents({ limit: 200 }), "documents", function (data) {
-    var rows = data.items || [];
-    if (!rows.length) {
-      if (typeof DOCS !== "undefined") {
+  // data.js carries `defer` (see its tag above), so FHData does not exist yet
+  // while this script is being parsed — reading it here threw, and the throw
+  // killed the rest of this function before the documents were ever requested.
+  // Every deferred script runs before DOMContentLoaded, so the first read waits
+  // for that event.
+  document.addEventListener("DOMContentLoaded", function () {
+    try {
+      var demo = false;
+      try { demo = localStorage.getItem("fh_demo") === "1"; } catch (e) {}
+      if (!demo && typeof DOCS !== "undefined") {
         DOCS.length = 0;
         try { redraw(); } catch (e) {}
+        FHData.banner("sample", "loading documents…", "documents");
       }
-      return "no documents on file yet";
-    }
+    } catch (e) {}
 
-    /* Feed the screen's OWN model and renderer.
+    FHData.wire(FHData.documents({ limit: 200 }), "documents", function (data) {
+      var rows = data.items || [];
+      if (!rows.length) {
+        if (typeof DOCS !== "undefined") {
+          DOCS.length = 0;
+          try { redraw(); } catch (e) {}
+        }
+        return "no documents on file yet";
+      }
 
-       This wrote five <td>s into a SEVEN-column table and set the KPI tiles by
-       hand. Both were undone by the first interaction: render() rebuilds #body
-       from DOCS on every class-bar click, tab change, search keystroke and
-       column sort, and renderStats() recomputes the tiles from DOCS at the end
-       of it — so filtering put the sample documents back while the banner still
-       said "live documents". Replacing DOCS and calling render() keeps the
-       columns right and every control working on real rows. */
-    if (typeof DOCS === "undefined" || typeof render !== "function") return null;
+      /* Feed the screen's OWN model and renderer.
 
-    var CLS = { authorization: "auth", contract: "contract",
-                invoice_document: "invoice", deliverable: "deliverable" };
-    var unmapped = 0;
-    var DAY = 86400000;
+         This wrote five <td>s into a SEVEN-column table and set the KPI tiles by
+         hand. Both were undone by the first interaction: render() rebuilds #body
+         from DOCS on every class-bar click, tab change, search keystroke and
+         column sort, and renderStats() recomputes the tiles from DOCS at the end
+         of it — so filtering put the sample documents back while the banner still
+         said "live documents". Replacing DOCS and calling render() keeps the
+         columns right and every control working on real rows. */
+      if (typeof DOCS === "undefined" || typeof render !== "function") return null;
 
-    var mapped = rows.map(function (r) {
-      var cls = CLS[r.kind];
-      if (!cls) { cls = "auth"; unmapped++; }   // counted, not hidden
+      var CLS = { authorization: "auth", contract: "contract",
+                  invoice_document: "invoice", deliverable: "deliverable" };
+      var unmapped = 0;
+      var DAY = 86400000;
 
-      /* delivery_status is a CHECK-constrained vocabulary, not free text:
-         not_delivered | pending | sent | delivered | failed | bounced.
-         The screen's badges are na | not_sent | sent | opened | bounced.
+      var mapped = rows.map(function (r) {
+        var cls = CLS[r.kind];
+        if (!cls) { cls = "auth"; unmapped++; }   // counted, not hidden
 
-         Note what is NOT mapped: nothing becomes "opened". The database records
-         delivery, never an open — no column tracks it — so claiming a client
-         opened a document would be invented. 'delivered' maps to "Sent", which
-         is the strongest thing that is actually known. */
-      var d = String(r.delivery_status || "").toLowerCase();
-      var del = (d === "bounced" || d === "failed") ? "bounced"
-              : (d === "sent" || d === "delivered") ? "sent"
-              : "not_sent";                       // not_delivered, pending
+        /* delivery_status is a CHECK-constrained vocabulary, not free text:
+           not_delivered | pending | sent | delivered | failed | bounced.
+           The screen's badges are na | not_sent | sent | opened | bounced.
 
-      var sig = !r.signature_required ? "na"
-              : r.signed_at ? "signed"
-              : (r.expires_at && new Date(r.expires_at) < new Date()) ? "expired"
-              : "awaiting";
+           Note what is NOT mapped: nothing becomes "opened". The database records
+           delivery, never an open — no column tracks it — so claiming a client
+           opened a document would be invented. 'delivered' maps to "Sent", which
+           is the strongest thing that is actually known. */
+        var d = String(r.delivery_status || "").toLowerCase();
+        var del = (d === "bounced" || d === "failed") ? "bounced"
+                : (d === "sent" || d === "delivered") ? "sent"
+                : "not_sent";                       // not_delivered, pending
 
-      var born = new Date(r.generated_at || r.created_at || Date.now());
-      return {
-        doc: r.title || r.document_key || "—",
-        cls: cls,
-        sub: (r.subtype ? r.subtype + " · " : "") + "v" + (r.current_version || 1),
-        client: r.client_name || r.client_id || "—",
-        gen: r.generated_at ? "generated" : "queued",
-        del: del,
-        sig: sig,
-        age: Math.max(0, Math.floor((Date.now() - born.getTime()) / DAY))
-      };
+        var sig = !r.signature_required ? "na"
+                : r.signed_at ? "signed"
+                : (r.expires_at && new Date(r.expires_at) < new Date()) ? "expired"
+                : "awaiting";
+
+        var born = new Date(r.generated_at || r.created_at || Date.now());
+        return {
+          doc: r.title || r.document_key || "—",
+          cls: cls,
+          sub: (r.subtype ? r.subtype + " · " : "") + "v" + (r.current_version || 1),
+          client: r.client_name || r.client_id || "—",
+          gen: r.generated_at ? "generated" : "queued",
+          del: del,
+          sig: sig,
+          age: Math.max(0, Math.floor((Date.now() - born.getTime()) / DAY))
+        };
+      });
+
+      DOCS.length = 0;
+      Array.prototype.push.apply(DOCS, mapped);
+      try { redraw(); } catch (e) { return null; }   // class cards + table + tiles, all from DOCS
+
+      return "live documents · " + rows.length + " records" +
+             (data.hasMore ? " (first 200)" : "") +
+             (unmapped ? " · " + unmapped + " of an unmapped kind shown under Soft-pull auth" : "");
     });
-
-    DOCS.length = 0;
-    Array.prototype.push.apply(DOCS, mapped);
-    try { redraw(); } catch (e) { return null; }   // class cards + table + tiles, all from DOCS
-
-    return "live documents · " + rows.length + " records" +
-           (data.hasMore ? " (first 200)" : "") +
-           (unmapped ? " · " + unmapped + " of an unmapped kind shown under Soft-pull auth" : "");
   });
 })();
 </script>

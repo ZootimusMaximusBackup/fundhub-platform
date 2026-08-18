@@ -1312,7 +1312,15 @@ var PRODUCTS = {
    when the client has no funding-snapshot entitlement. The welcome video and
    Facebook wins group stay visible — portal access is granted before the call.
    What You Own paints from real deliverable entitlements, or a placeholder. */
-(function () {
+
+// data.js carries `defer` (see its tag above), so FHData does not exist yet
+// while this script is being parsed — the first thing this screen does after
+// working out the client id is call FHData, and that threw. The throw killed
+// the rest of the script, so the tiles, documents, agreements and payments
+// were never requested and sat empty. Every deferred script runs before
+// DOMContentLoaded, so the whole screen starts on that event instead. Nothing
+// here needs the page any earlier.
+document.addEventListener("DOMContentLoaded", function () {
   "use strict";
   // Screen tile keys (src/config/offers.mjs) → entitlement catalog codes (032).
   var MAP = {
@@ -1746,7 +1754,7 @@ var PRODUCTS = {
       if (!unlocked && !locked) return null;
       return "live entitlements · " + unlocked + " unlocked · " + locked + " locked";
     });
-})();
+});
 </script>
 <script>
 /* Dispute-letter authorization. Same capture as consent-capture.html with

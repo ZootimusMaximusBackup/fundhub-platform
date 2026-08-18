@@ -610,7 +610,12 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
 <script defer src="data.js"></script>
 <script src="proxy-apply.js"></script>
 <script>
-(function () {
+// data.js carries `defer` (see its tag above), so FHData does not exist yet
+// while this script is being parsed — reading the client id from it here threw,
+// and the throw killed the rest of this block before the client file was ever
+// requested, leaving every tile on "loading…". Every deferred script runs
+// before DOMContentLoaded, so this whole block waits for that event.
+document.addEventListener("DOMContentLoaded", function () {
   "use strict";
 
   function $(id) { return document.getElementById(id); }
@@ -856,7 +861,7 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
       }
     });
   })();
-})();
+});
 </script>
 
 <!-- ══ STAFF UPLOAD — upload on this client's behalf ═══════════════════════
@@ -864,7 +869,9 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
      a staff session is what makes it a "staff upload" server-side. Needs a
      real client id in the URL (?id=<uuid>). Without one, the drop zone says so. -->
 <script>
-(function () {
+// Same reason as the block above: data.js is deferred, so reading the client id
+// off FHData while this script parses threw and left the drop zone unwired.
+document.addEventListener("DOMContentLoaded", function () {
   "use strict";
   var zone   = document.getElementById("staff-dropzone"),
       input  = document.getElementById("staff-file-input"),
@@ -941,7 +948,7 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
   zone.addEventListener("drop", function (e) {
     if (clientId && e.dataTransfer && e.dataTransfer.files.length) upload(e.dataTransfer.files);
   });
-})();
+});
 </script>
 <script>
 /* Funding Apply — load matching lenders and wire the residential proxy door. */

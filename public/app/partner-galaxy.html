@@ -1744,23 +1744,30 @@ requestAnimationFrame(draw);
       }).catch(function () {});
   })();
 
-  FHData.wire(FHData.partners({ limit: 200 }), "partner census", function (data) {
-    var rows = data.items || [];
-    var census = document.getElementById("census");
-    if (!rows.length) {
-      if (census) census.textContent = "No partners on file";
-      return "No partners on file";
-    }
-    if (census) {
-      census.innerHTML = "<b>" + rows.length + "</b> partner" +
-        (rows.length === 1 ? "" : "s") + " on file";
-    }
-    var owed = rows.reduce(function (a, p) { return a + Number(p.balance_accrued || 0); }, 0);
-    var signed = rows.filter(function (p) { return p.agreement_signed; }).length;
-    var unsigned = rows.length - signed;
-    return "live partner census · " + rows.length + " partner(s) · $" +
-           Math.round(owed).toLocaleString("en-US") + " accrued · " +
-           (unsigned ? unsigned + " agreement(s) unsigned" : "all agreements signed");
+  // data.js carries `defer` (see its tag above), so FHData does not exist yet
+  // while this script is being parsed — calling it here threw, and the throw
+  // killed the rest of this IIFE before the census was ever requested, taking
+  // the Message Blaster button wiring below down with it. Every deferred script
+  // runs before DOMContentLoaded, so the first read waits for that event.
+  document.addEventListener("DOMContentLoaded", function () {
+    FHData.wire(FHData.partners({ limit: 200 }), "partner census", function (data) {
+      var rows = data.items || [];
+      var census = document.getElementById("census");
+      if (!rows.length) {
+        if (census) census.textContent = "No partners on file";
+        return "No partners on file";
+      }
+      if (census) {
+        census.innerHTML = "<b>" + rows.length + "</b> partner" +
+          (rows.length === 1 ? "" : "s") + " on file";
+      }
+      var owed = rows.reduce(function (a, p) { return a + Number(p.balance_accrued || 0); }, 0);
+      var signed = rows.filter(function (p) { return p.agreement_signed; }).length;
+      var unsigned = rows.length - signed;
+      return "live partner census · " + rows.length + " partner(s) · $" +
+             Math.round(owed).toLocaleString("en-US") + " accrued · " +
+             (unsigned ? unsigned + " agreement(s) unsigned" : "all agreements signed");
+    });
   });
 
   (function () {

@@ -1296,18 +1296,25 @@ document.querySelectorAll('.rail-toggle').forEach(function(t){
 
   /* One request, two readers: wire() owns the banner wording, and the second
      handler covers the failure case wire() deliberately does not paint. */
-  var agentsRead = FHData.read("agents", { limit: 200 });
+  // data.js carries `defer` (see its tag above), so FHData does not exist yet
+  // while this script is being parsed — reading the agent registry here threw,
+  // and the throw killed the rest of this script before the roster was ever
+  // requested. Every deferred script runs before DOMContentLoaded, so the read
+  // waits for that event.
+  document.addEventListener("DOMContentLoaded", function () {
+    var agentsRead = FHData.read("agents", { limit: 200 });
 
-  FHData.wire(agentsRead, "agent status", function (data) {
-    var rows = data.items || [];
-    var shown = renderRoster(rows);
-    if (!shown) return null;
-    var live = rows.filter(function (a) { return a.status === "live"; });
-    return "live agent registry · " + shown + " agent(s) listed · " +
-           live.length + " actually live";
+    FHData.wire(agentsRead, "agent status", function (data) {
+      var rows = data.items || [];
+      var shown = renderRoster(rows);
+      if (!shown) return null;
+      var live = rows.filter(function (a) { return a.status === "live"; });
+      return "live agent registry · " + shown + " agent(s) listed · " +
+             live.length + " actually live";
+    });
+
+    agentsRead.then(function (res) { if (!res || !res.ok) rosterUnavailable(); });
   });
-
-  agentsRead.then(function (res) { if (!res || !res.ok) rosterUnavailable(); });
 })();
 </script>
 </body>

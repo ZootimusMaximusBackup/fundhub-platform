@@ -773,15 +773,22 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 
   resolveRole();
 
-  FHData.wire(FHData.messageTemplates({ limit: 200 }), "message copy", function (data) {
-    rows = (data && data.items) || [];
-    if (!rows.length) return null;
-    renderList();
-    if (sel) { sel = rows.filter(function (r) { return r.id === sel.id; })[0] || null; }
-    renderEditor();
-    var off = rows.filter(function (r) { return !r.compliance_passed; }).length;
-    $("liveTxt").textContent = "— live";
-    return "live copy · " + rows.length + " messages · " + off + " switched off waiting on approval";
+  // data.js carries `defer` (see its tag above), so FHData does not exist yet
+  // while this script is being parsed — calling it here threw, and the throw
+  // killed the rest of this function before the template list was ever
+  // requested. Every deferred script runs before DOMContentLoaded, so the first
+  // read waits for that event.
+  document.addEventListener("DOMContentLoaded", function () {
+    FHData.wire(FHData.messageTemplates({ limit: 200 }), "message copy", function (data) {
+      rows = (data && data.items) || [];
+      if (!rows.length) return null;
+      renderList();
+      if (sel) { sel = rows.filter(function (r) { return r.id === sel.id; })[0] || null; }
+      renderEditor();
+      var off = rows.filter(function (r) { return !r.compliance_passed; }).length;
+      $("liveTxt").textContent = "— live";
+      return "live copy · " + rows.length + " messages · " + off + " switched off waiting on approval";
+    });
   });
 })();
 </script>

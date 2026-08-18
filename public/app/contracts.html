@@ -1066,8 +1066,16 @@ window.dispatchEvent(new Event("pdfjs-ready"));
   $("tBody").addEventListener("input", showTags);
 
   resolveRole();
-  loadTemplates();
-  loadContracts();
+
+  // data.js carries `defer` (see its tag above), so FHData does not exist yet
+  // while this script is being parsed — calling it here threw, and the throw
+  // killed the rest of this script before the wordings and the contract list
+  // were ever requested. Every deferred script runs before DOMContentLoaded, so
+  // the first read waits for that event.
+  document.addEventListener("DOMContentLoaded", function () {
+    loadTemplates();
+    loadContracts();
+  });
 })();
 </script>
 </body>
