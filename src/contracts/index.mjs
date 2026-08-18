@@ -27,6 +27,10 @@ export {
   loadForClient, verifyIntegrity, viewForSigning, sign, signedCopyHash, documentBytes
 } from "./sign.mjs";
 
+// Chasing one contract. The whole-org sweep stays behind
+// src/workflows/contract-chaser.mjs; this is the single-row half both use.
+export { remindContract } from "./notify.mjs";
+
 export {
   FIELD_TYPES, SIGNING_TYPES, FIELD_SOURCES, normaliseFields, applyAutoFill,
   fieldsForSigner, openFieldsForSigner, missingForSigner, mergeSignerValues, assertSignable

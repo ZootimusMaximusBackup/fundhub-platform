@@ -1,8 +1,16 @@
 // GET /api/read/contracts — what the Contracts screen reads.
 //
 //   ?view=templates             the contract copy library
-//   ?view=contracts[&client_id=][&status=]   the queue, newest first
+//   ?view=contracts[&client_id=][&status=][&document_id=]   the queue, newest first
 //   ?id=<uuid>                  one contract, INCLUDING its frozen wording
+//
+// `document_id` takes one uuid or a comma-separated list, and answers the one
+// question the Documents screen cannot answer for itself: WHICH CONTRACT DOES
+// THIS DOCUMENT ROW BELONG TO. contracts.document_id points at documents; there
+// is no column pointing back. Rather than give `documents` a contract column —
+// a schema change to serve one screen, and a second place for the same fact to
+// live — the Documents screen sends the ids it is showing and gets the owning
+// contracts back in a single request. See docs/workflows/contracts-dedup-2026-08-17.md.
 //
 // Read-only. Auth, role gate and redaction come from src/http/read-api.mjs;
 // the SQL is in src/contracts/. Hand-rolled rather than readHandler-based
@@ -143,9 +151,32 @@ export default async function handler(req, res) {
     if (q.client_id != null && q.client_id !== "" && !isUuid(q.client_id)) {
       return res.status(400).json({ ok: false, error: "invalid_client_id" });
     }
+
+    /* A list of document ids, capped. The cap is the same 200 the limit caps at,
+       because a caller asking about more rows than can come back is asking a
+       question this answer cannot fully answer — and silently truncating it
+       would leave a screen showing some contracts decorated and some not, with
+       nothing saying why. */
+    let documentIds = null;
+    if (q.document_id != null && String(q.document_id).trim() !== "") {
+      documentIds = String(q.document_id).split(",").map((s) => s.trim()).filter(Boolean);
+      if (!documentIds.length || !documentIds.every(isUuid)) {
+        return res.status(400).json({
+          ok: false, error: "invalid_document_id",
+          message: "document_id takes one document id, or several separated by commas."
+        });
+      }
+      if (documentIds.length > 200) {
+        return res.status(400).json({
+          ok: false, error: "invalid_document_id",
+          message: "Ask about 200 documents at a time or fewer."
+        });
+      }
+    }
+
     const status = q.status && STATUSES.has(String(q.status)) ? String(q.status) : null;
     const rows = await listContracts(db, {
-      orgId: staff.org_id, clientId: q.client_id || null, status, limit
+      orgId: staff.org_id, clientId: q.client_id || null, status, documentIds, limit
     });
     return res.status(200).json({
       ok: true, view: "contracts", count: rows.length, items: redact(rows)

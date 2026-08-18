@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fundhub — Contracts</title>
+<title>Fundhub — Contract templates</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -17,8 +17,6 @@ body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:
 a{color:inherit;text-decoration:none}
 button,input,select,textarea{font:inherit;color:inherit}
 .logo{width:118px;height:24px;flex:0 0 118px}
-.eyebrow{display:block}
-.eyebrow .sep{color:var(--line);margin:0 6px}
 .app{display:flex;min-height:100vh}
 
 
@@ -73,11 +71,6 @@ button,input,select,textarea{font:inherit;color:inherit}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
 .field .hint{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
-.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
-.stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
-.stat .sv{font-family:var(--mono);font-size:22px;font-weight:600;margin-top:8px;letter-spacing:-.02em}
-.stat .sd{font-size:11px;color:var(--gray);margin-top:2px}
 .layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
 table{width:100%;border-collapse:collapse}
 th{text-align:left;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);padding:9px 12px;border-bottom:1px solid var(--line);background:var(--soft)}
@@ -86,7 +79,6 @@ tr:last-child td{border-bottom:0}
 tr.sel td{background:rgba(169,198,232,.13)}
 .rowlink{cursor:pointer}
 .rowlink:hover td{background:var(--soft)}
-.doc{background:#fff;border:1px solid var(--line);border-radius:8px;padding:18px 20px;font-family:var(--mono);font-size:12px;line-height:1.75;white-space:pre-wrap;word-break:break-word;max-height:460px;overflow:auto}
 .linkbox{display:flex;gap:8px;align-items:center;margin-top:10px}
 .linkbox input{flex:1;min-width:0;font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-radius:7px;padding:8px 10px;background:var(--soft)}
 .note{font-size:12px;color:var(--gray);line-height:1.6}
@@ -125,7 +117,7 @@ tr.sel td{background:rgba(169,198,232,.13)}
 .chip2.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .mfrow .req{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--gray)}
 .foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em}
-@media(max-width:1180px){.layout{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
+@media(max-width:1180px){.layout{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}}
 </style>
 <script defer src="shell.js"></script>
 </head>
@@ -151,7 +143,6 @@ tr.sel td{background:rgba(169,198,232,.13)}
 <div class="navgroup" data-fh-section="funding"><button class="navhead" type="button">Funding<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="lenders.html"><span class="ico">⬡</span><span class="lbl">Lenders</span></a>
         <a class="navitem" href="finance-os.html"><span class="ico">▩</span><span class="lbl">Finance OS</span></a>
-        <a class="navitem on" href="contracts.html"><span class="ico">✒</span><span class="lbl">Contracts</span></a>
         <a class="navitem" href="subscriptions.html"><span class="ico">◍</span><span class="lbl">Subscriptions</span></a>
 </div></div>
 
@@ -186,6 +177,7 @@ tr.sel td{background:rgba(169,198,232,.13)}
         <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
         <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
         <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem on" href="contracts.html"><span class="ico">✒</span><span class="lbl">Contract templates</span></a>
         <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Demo Mode</span></a>
         <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
 </div></div>
@@ -201,59 +193,23 @@ tr.sel td{background:rgba(169,198,232,.13)}
 
   <div class="main">
     <div class="topbar">
-      <span class="crumb">Work</span><h1>Contracts</h1>
+      <span class="crumb">Setup</span><h1>Contract templates</h1>
       <div class="spacer"></div>
       <span class="chip on" id="liveChip"><span class="cd"></span><span id="liveTxt">— loading</span></span>
     </div>
 
     <div class="content">
-      <div class="stats">
-        <div class="stat"><div class="eyebrow">CT-00 <span class="sep">/</span> WAITING</div><div class="sv" id="kOut">—</div><div class="sd">sent, not signed yet</div></div>
-        <div class="stat"><div class="eyebrow">CT-00 <span class="sep">/</span> WORDINGS</div><div class="sv" id="kTpl">—</div><div class="sd">wordings in use</div></div>
-        <div class="stat"><div class="eyebrow">CT-00 <span class="sep">/</span> SIGNED</div><div class="sv" id="kSigned">—</div><div class="sd">signed and on file</div></div>
-        <div class="stat"><div class="eyebrow">CT-00 <span class="sep">/</span> DRAFTS</div><div class="sv" id="kDraft">—</div><div class="sd">started, not sent</div></div>
-      </div>
-
       <div class="card" id="explainCard">
         <div class="card-hd"><span class="badge b-info">How this works</span></div>
         <div class="card-bd note">
-          <p><strong>Send from the call.</strong> Open Present or the call cockpit for that person. Pick a wording, press Send, then copy the sign link. An email also goes if mail is on.</p>
-          <p style="margin-top:8px"><strong>The words lock when they go out.</strong> After that nobody can change them. If the stored copy is altered, the client's page refuses to accept a signature and says so.</p>
+          <p><strong>Build a contract once. Use it many times.</strong> Upload a PDF, or type the words here. Add the blanks people fill in. Say who has to sign.</p>
+          <p style="margin-top:8px"><strong>Staff pick it later.</strong> When they send a contract from a client’s screen, this one shows up in their list. They never have to write it again.</p>
+          <p style="margin-top:8px">To see contracts you already sent, and who has signed them, go to <a href="documents.html" style="text-decoration:underline">Documents</a>.</p>
         </div>
       </div>
 
-      <div>
-          <div class="card">
-            <div class="card-hd"><h2>Contracts</h2><div class="spacer"></div>
-              <!-- owner/admin only: run_reminders is in OWNER_ADMIN_ACTIONS (api/contracts.mjs) -->
-              <button class="btn sm" id="btnRemind" style="display:none" title="Email everyone who has not signed yet, and put it on the follow-up list">Send reminders</button>
-              <select id="selStatus" style="border:1px solid var(--line);border-radius:7px;padding:5px 8px;font-size:12px">
-                <option value="">All</option><option value="draft">Draft</option>
-                <option value="sent">Sent</option><option value="viewed">Opened</option>
-                <option value="signed">Signed</option><option value="void">Void</option>
-              </select>
-            </div>
-            <div style="overflow:auto;max-height:520px">
-              <table>
-                <thead><tr><th>Client</th><th>Contract</th><th>State</th><th>When</th></tr></thead>
-                <tbody id="listBody"><tr><td colspan="4" class="note">Loading…</td></tr></tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="card" id="detailCard" style="display:none">
-            <div class="card-hd"><h2 id="dTitle">Contract</h2><div class="spacer"></div><span class="badge b-gray" id="dState">—</span></div>
-            <div class="card-bd">
-              <div id="dFacts" class="note" style="margin-bottom:12px"></div>
-              <div class="doc" id="dBody"></div>
-              <div id="dActions" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"></div>
-              <div class="msg" id="dMsg"></div>
-            </div>
-          </div>
-      </div>
-
       <!-- ── the wording library: owner/admin only ──────────────────────── -->
-      <div class="card" id="tplCard" style="display:none;margin-top:14px">
+      <div class="card" id="tplCard" style="margin-top:14px">
         <div class="card-hd"><h2>Contract wording</h2><span class="badge b-accent">owner &amp; admin</span>
           <div class="spacer"></div>
           <button class="btn sm" id="btnUpload">Upload a PDF</button>
@@ -370,10 +326,8 @@ window.dispatchEvent(new Event("pdfjs-ready"));
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
     return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
-  function norm(v) { return String(v == null ? "" : v).trim().toLowerCase(); }
 
-  var templates = [], contracts = [], isAdmin = false;
-  var selContract = null, editing = null;
+  var templates = [], editing = null;
 
   /* The uploaded-PDF editor's own state. `boxes` is the working copy; nothing
      is written until Save boxes is pressed, so dragging things around cannot
@@ -399,175 +353,9 @@ window.dispatchEvent(new Event("pdfjs-ready"));
     { v: "today", label: "Today's date" }
   ];
 
-  /* Same role resolution finance-os.html and template-editor.html use, and for
-     the same reason: shell.js writes the role from an async session call, so
-     reading its cached value synchronously loses the race on a first load and
-     would hide the wording card from an owner until they reloaded. */
-  function resolveRole() {
-    var t;
-    try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
-    return fetch("/api/auth/session", { headers: t ? { authorization: "Bearer " + t } : {} })
-      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
-      .then(function (d) { if (d && d.ok && d.staff) return d.staff.role; throw 0; })
-      .catch(function () {
-        try { var s = JSON.parse(localStorage.getItem("fh_demo_staff") || "null");
-          if (s && s.role) return s.role; } catch (e) {}
-        return "";
-      })
-      .then(function (r) {
-        isAdmin = norm(r) === "owner" || norm(r) === "admin";
-        $("tplCard").style.display = isAdmin ? "" : "none";
-        $("btnRemind").style.display = isAdmin ? "" : "none";
-        renderDetail();
-      });
-  }
-
-  var STATE = {
-    draft:  { cls: "b-gray",   word: "draft" },
-    sent:   { cls: "b-info",   word: "sent" },
-    viewed: { cls: "b-warn",   word: "opened" },
-    signed: { cls: "b-ok",     word: "signed" },
-    void:   { cls: "b-alert",  word: "void" }
-  };
-  function stateBadge(s) {
-    var m = STATE[s] || STATE.draft;
-    return '<span class="badge ' + m.cls + '">' + m.word + "</span>";
-  }
-  function whenDay(iso) {
-    var d = new Date(iso);
-    if (!iso || !isFinite(d.getTime())) return "—";
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
-  }
-  function when(c) {
-    if (c.signed_at) return "signed " + whenDay(c.signed_at);
-    if (c.viewed_at) return "opened " + whenDay(c.viewed_at);
-    if (c.sent_at) return "sent " + whenDay(c.sent_at);
-    return "made " + whenDay(c.created_at);
-  }
   function say(el, kind, text) {
     el.innerHTML = '<span class="badge ' + kind + '">' +
       (kind === "b-ok" ? "done" : "problem") + "</span> " + esc(text);
-  }
-
-  /* ── the queue ─────────────────────────────────────────────────────────── */
-
-  function renderList() {
-    var want = $("selStatus").value;
-    var rows = contracts.filter(function (c) { return !want || c.status === want; });
-    $("listBody").innerHTML = rows.length ? rows.map(function (c) {
-      var who = [c.first_name, c.last_name].filter(Boolean).join(" ") || c.client_email || "—";
-      return '<tr class="rowlink' + (selContract && selContract.id === c.id ? " sel" : "") +
-        '" data-id="' + esc(c.id) + '"><td>' + esc(who) + "</td><td>" + esc(c.title) +
-        "</td><td>" + stateBadge(c.status) + "</td><td class='mono' style='font-size:11px;color:var(--gray)'>" +
-        esc(when(c)) + "</td></tr>";
-    }).join("") : '<tr><td colspan="4" class="note">Nothing here yet.</td></tr>';
-
-    Array.prototype.forEach.call($("listBody").querySelectorAll("tr[data-id]"), function (tr) {
-      tr.onclick = function () { openContract(tr.getAttribute("data-id")); };
-    });
-
-    $("kOut").textContent = contracts.filter(function (c) { return c.status === "sent" || c.status === "viewed"; }).length;
-    $("kSigned").textContent = contracts.filter(function (c) { return c.status === "signed"; }).length;
-    $("kDraft").textContent = contracts.filter(function (c) { return c.status === "draft"; }).length;
-  }
-
-  function openContract(id) {
-    FHData.read("contracts", { id: id }).then(function (res) {
-      if (!res.ok) { return; }
-      selContract = res.data.contract;
-      selContract.__integrity = res.data.integrity;
-      selContract.__copy_hash = res.data.copy_hash;
-      selContract.__signers = res.data.signers || [];
-      selContract.__waiting = res.data.waiting_on || null;
-      renderList();
-      renderDetail();
-    });
-  }
-
-  function renderDetail() {
-    var c = selContract;
-    if (!c) { $("detailCard").style.display = "none"; return; }
-    $("detailCard").style.display = "";
-    $("dTitle").textContent = c.title;
-    var m = STATE[c.status] || STATE.draft;
-    $("dState").className = "badge " + m.cls;
-    $("dState").textContent = m.word;
-
-    var facts = [];
-    if (c.sent_at) facts.push("Sent " + String(c.sent_at).slice(0, 16).replace("T", " "));
-    if (c.viewed_at) facts.push("First opened " + String(c.viewed_at).slice(0, 16).replace("T", " ") +
-      " (" + c.view_count + " time" + (c.view_count === 1 ? "" : "s") + ")");
-    if (c.signed_at) {
-      facts.push("<strong>Signed by " + esc(c.signer_name) + "</strong> on " +
-        String(c.signed_at).slice(0, 16).replace("T", " ") +
-        (c.signer_ip ? " from " + esc(c.signer_ip) : ""));
-    }
-    if (c.voided_at) facts.push("Voided — " + esc(c.void_reason || ""));
-    if (c.__integrity) {
-      facts.push(c.__integrity.ok
-        ? '<span class="badge b-ok">unchanged</span> These are the exact words that were sent.'
-        : '<span class="badge b-alert">changed</span> This does not match what was sent (' +
-          esc(c.__integrity.reason || "") + "). It cannot be signed.");
-    }
-    var sg = c.__signers || [];
-    if (sg.length > 1 || (sg.length === 1 && c.status !== "draft")) {
-      facts.push(sg.map(function (s2) {
-        var word = s2.status === "signed"
-          ? "signed " + String(s2.signed_at || "").slice(0, 10)
-          : (s2.status === "declined" ? "did not sign" : s2.status);
-        return '<span class="badge ' + (s2.status === "signed" ? "b-ok" : "b-gray") + '">' +
-          esc(s2.role_label) + "</span> " + esc(s2.name) + " — " + esc(word);
-      }).join("<br>"));
-    }
-    if (c.__waiting) facts.push("Waiting on <strong>" + esc(c.__waiting.name) + "</strong>.");
-    if (c.signed_document_id) {
-      facts.push('<span class="badge b-ok">final document</span> A signed PDF is on file.');
-    }
-    if (c.__copy_hash) facts.push('<span class="mono" style="font-size:11px">copy ' + esc(c.__copy_hash) + "</span>");
-    $("dFacts").innerHTML = facts.join("<br>") || "Not sent yet.";
-    $("dBody").textContent = c.rendered_body ||
-      "This contract has not been sent, so it has no wording yet.";
-    if (c.source_kind === "pdf" && c.status !== "draft") {
-      $("dActions").innerHTML = "";
-    }
-
-    var acts = [];
-    if (isAdmin && c.status !== "signed" && c.status !== "void") {
-      acts.push('<button class="btn sm" data-act="void">Void</button>');
-    }
-    if (c.status !== "draft") acts.push('<button class="btn sm" data-act="download">Download PDF</button>');
-    $("dActions").innerHTML = acts.join(" ");
-    Array.prototype.forEach.call($("dActions").querySelectorAll("[data-act]"), function (b) {
-      b.onclick = function () { detailAction(b.getAttribute("data-act")); };
-    });
-    $("dMsg").textContent = "";
-  }
-
-  function detailAction(act) {
-    var c = selContract;
-    if (!c) return;
-    if (act === "download") {
-      FHData.read("contracts", { file: "contract", id: c.id }).then(function (res) {
-        if (!res.ok || !res.data || !res.data.pdf_base64) {
-          say($("dMsg"), "b-alert", "no file to download yet"); return;
-        }
-        var a = document.createElement("a");
-        a.href = "data:application/pdf;base64," + res.data.pdf_base64;
-        a.download = res.data.filename || "contract.pdf";
-        document.body.appendChild(a); a.click(); a.remove();
-      });
-      return;
-    }
-    if (act === "void") {
-      var reason = window.prompt("Why is this being voided? This is kept on the record.");
-      if (reason == null) return;
-      FHData.write("/api/contracts", { action: "void", id: c.id, reason: reason }).then(function (res) {
-        if (!res.ok) { say($("dMsg"), "b-alert", res.error || "could not void"); return; }
-        say($("dMsg"), "b-ok", "Voided.");
-        loadContracts();
-        openContract(c.id);
-      });
-    }
   }
 
   /* ── the wording library ───────────────────────────────────────────────── */
@@ -586,7 +374,6 @@ window.dispatchEvent(new Event("pdfjs-ready"));
     Array.prototype.forEach.call($("tplList").querySelectorAll("tr[data-tid]"), function (tr) {
       tr.onclick = function () { editTemplate(tr.getAttribute("data-tid")); };
     });
-    $("kTpl").textContent = templates.filter(function (t) { return t.active; }).length;
   }
 
   function renderFieldRows(fields) {
@@ -1008,19 +795,11 @@ window.dispatchEvent(new Event("pdfjs-ready"));
     return FHData.wire(FHData.read("contracts", { view: "templates" }), "contract wordings", function (data) {
       templates = (data && data.items) || [];
       renderTplList();
+      $("liveTxt").textContent = "— live";
       if (editing) {
         for (var i = 0; i < templates.length; i++) if (templates[i].id === editing.id) editing = templates[i];
       }
       return "live wordings · " + templates.length;
-    });
-  }
-
-  function loadContracts() {
-    return FHData.wire(FHData.read("contracts", { view: "contracts", limit: 200 }), "contracts", function (data) {
-      contracts = (data && data.items) || [];
-      renderList();
-      $("liveTxt").textContent = "— live";
-      return "live contracts · " + contracts.length;
     });
   }
 
@@ -1036,24 +815,6 @@ window.dispatchEvent(new Event("pdfjs-ready"));
     pdfState.roles.push({ index: pdfState.roles.length, label: "Signer " + (pdfState.roles.length + 1) });
     renderRoles(); renderTools();
   };
-  $("selStatus").addEventListener("change", renderList);
-  /* Chasing runs on a schedule too (src/workflows/contract-chaser.mjs), but
-     Inngest is not switched on, so this button is how it happens today. Same
-     function either way. */
-  $("btnRemind").onclick = function () {
-    var n = $("kOut").textContent;
-    if (!confirm("Email everyone who has not signed yet (" + n + " people) and put them on the follow-up list?")) return;
-    $("btnRemind").disabled = true;
-    $("btnRemind").textContent = "sending…";
-    FHData.write("/api/contracts", { action: "run_reminders" }).then(function (res) {
-      $("btnRemind").disabled = false;
-      $("btnRemind").textContent = "Send reminders";
-      FHData.banner(res.ok ? "real" : "error",
-        res.ok ? (res.data && res.data.message) || "Reminders sent."
-               : "could not send reminders — " + (res.error || "unknown"), "reminders");
-      if (res.ok) loadContracts();
-    });
-  };
   $("btnNewTpl").onclick = newTemplate;
   $("btnSaveTpl").onclick = saveTemplate;
   $("btnArchive").onclick = archiveTemplate;
@@ -1065,9 +826,7 @@ window.dispatchEvent(new Event("pdfjs-ready"));
   };
   $("tBody").addEventListener("input", showTags);
 
-  resolveRole();
   loadTemplates();
-  loadContracts();
 })();
 </script>
 </body>

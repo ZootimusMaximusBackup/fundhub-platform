@@ -375,6 +375,140 @@ describe("/api/contracts endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : fals
     });
   });
 
+  /* ── what the Documents screen asks for ────────────────────────────────────
+     Batch contracts-dedup-2026-08-17: Contracts became template setup only and
+     every sent contract is watched from Documents instead. A `documents` row
+     carries no contract id, so these are the calls that get one. */
+
+  describe("finding the contract behind a document row", () => {
+    test("A DOCUMENT ID FINDS THE CONTRACT THAT OWNS IT", async () => {
+      const { contract } = await sentContract();
+      assert.ok(contract.document_id, "a sent contract must have registered a document");
+
+      const r = await read(
+        { view: "contracts", document_id: contract.document_id }, staff.closer.token);
+      assert.equal(r.code, 200, JSON.stringify(r.body));
+      assert.equal(r.body.view, "contracts");
+      const hit = r.body.items.find((x) => x.id === contract.id);
+      assert.ok(hit, "the owning contract did not come back");
+      assert.equal(hit.document_id, contract.document_id);
+      // The status badge the screen draws. Nothing else in the row supplies it.
+      assert.ok(["sent", "viewed"].includes(hit.status), `unexpected status ${hit.status}`);
+    });
+
+    test("several ids in one call, and nothing that was not asked for", async () => {
+      const a = await sentContract();
+      const b = await sentContract();
+      const r = await read({
+        view: "contracts",
+        document_id: `${a.contract.document_id},${b.contract.document_id}`
+      }, staff.closer.token);
+      assert.equal(r.code, 200, JSON.stringify(r.body));
+      assert.deepEqual(
+        r.body.items.map((x) => x.id).sort(),
+        [a.contract.id, b.contract.id].sort());
+    });
+
+    test("ANOTHER COMPANY'S SESSION GETS NOTHING FROM THIS COMPANY'S DOCUMENT ID", async () => {
+      const { contract } = await sentContract();
+      const r = await read(
+        { view: "contracts", document_id: contract.document_id }, staff.foreign.token);
+      assert.equal(r.code, 200);
+      assert.equal(r.body.items.length, 0);
+    });
+
+    test("an id that owns no contract is an empty answer, and junk is a 400", async () => {
+      const none = await read(
+        { view: "contracts", document_id: "00000000-0000-0000-0000-000000000000" },
+        staff.owner.token);
+      assert.equal(none.code, 200);
+      assert.equal(none.body.items.length, 0);
+
+      for (const bad of ["zzz", `${"0".repeat(8)}-0000-0000-0000-000000000000,zzz`, ","]) {
+        const r = await read({ view: "contracts", document_id: bad }, staff.owner.token);
+        assert.equal(r.code, 400, `"${bad}" should have been refused`);
+        assert.equal(r.body.error, "invalid_document_id");
+      }
+    });
+
+    test("the filter never returns a storage key", async () => {
+      const { contract } = await sentContract();
+      const r = await read(
+        { view: "contracts", document_id: contract.document_id }, staff.owner.token);
+      assert.equal(JSON.stringify(r.body).includes("storage_key"), false);
+    });
+  });
+
+  describe("reminding one contract", () => {
+    /* The gate is the point of this one. run_reminders — the whole-company
+       sweep — is owner/admin. Reminding the one person holding up one contract
+       is the same act as sending it, and sending is ordinary staff work. */
+    test("AN ORDINARY STAFF MEMBER MAY REMIND ONE CONTRACT", async () => {
+      const { contract } = await sentContract(staff.closer.token);
+      const r = await post({ action: "remind", id: contract.id }, staff.setter.token);
+      assert.equal(r.code, 200, JSON.stringify(r.body));
+      assert.equal(r.body.action, "remind");
+      assert.equal(r.body.contract_id, contract.id);
+      assert.equal(r.body.reminder, 1);
+      assert.ok(r.body.waiting_on && r.body.waiting_on.name, "nobody was named as waiting");
+      assert.equal(typeof r.body.message, "string");
+      assert.ok(r.body.message.length > 0, "a reminder must always say what happened");
+    });
+
+    test("a draft has nobody to remind", async () => {
+      n += 1;
+      const t = await post({
+        action: "create_template", template_key: `CTHTTP-RM${n}`, name: `Remind ${n}`, body: "Words."
+      }, staff.owner.token);
+      const d = await post({
+        action: "create_draft", client_id: client, template_id: t.body.template.id
+      }, staff.owner.token);
+      const r = await post({ action: "remind", id: d.body.contract.id }, staff.owner.token);
+      assert.equal(r.code, 409);
+      assert.equal(r.body.error, "not_sent");
+    });
+
+    test("A VOIDED CONTRACT IS NEVER CHASED", async () => {
+      const { contract } = await sentContract();
+      const v = await post({ action: "void", id: contract.id, reason: "test" }, staff.owner.token);
+      assert.equal(v.code, 200, JSON.stringify(v.body));
+      const r = await post({ action: "remind", id: contract.id }, staff.owner.token);
+      assert.equal(r.code, 409);
+      assert.equal(r.body.error, "already_finished");
+    });
+
+    test("IT GIVES UP AFTER THE CAP rather than emailing forever", async () => {
+      const { contract } = await sentContract();
+      const signers = await listSigners(db, contract.id);
+      // Four reminders already on the record. Written straight in, because what
+      // the cap counts is the messages themselves — see chasesFor().
+      for (let i = 1; i <= 4; i++) {
+        await db.query(
+          `INSERT INTO messages
+             (org_id, client_id, direction, channel, template_key, rendered_body,
+              provider_ref, status, compliance_check_passed, to_address)
+           VALUES ($1,$2,'outbound','email','CONTRACT-REMIND-EMAIL','x',$3,'queued',true,$4)`,
+          [org, client, `contract:${contract.id}:${signers[0].id}:chase${i}`,
+           "contract.http.test.kj@example.com"]);
+      }
+      const r = await post({ action: "remind", id: contract.id }, staff.owner.token);
+      assert.equal(r.code, 409, JSON.stringify(r.body));
+      assert.equal(r.body.error, "chase_limit");
+      assert.match(r.body.message, /call/i);
+    });
+
+    test("an unknown id is a 404, junk is a 400, and another company's is a 404", async () => {
+      assert.equal((await post({ action: "remind", id: "zzz" }, staff.owner.token)).code, 400);
+      assert.equal((await post(
+        { action: "remind", id: "00000000-0000-0000-0000-000000000000" },
+        staff.owner.token)).code, 404);
+
+      const { contract } = await sentContract();
+      const foreign = await post({ action: "remind", id: contract.id }, staff.foreign.token);
+      assert.equal(foreign.code, 404);
+    });
+  });
+
   // ── the client endpoint ───────────────────────────────────────────────────
 
   describe("/api/contracts/sign — the anonymous half", () => {

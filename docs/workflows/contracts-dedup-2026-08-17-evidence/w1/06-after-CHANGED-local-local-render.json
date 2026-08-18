@@ -1,0 +1,84 @@
+{
+  "what": "LOCAL static render of the changed file, /api/** stubbed. NOT a live check.",
+  "why": "fundhub.ai /api/auth/login answers 500 'cannot execute INSERT in a read-only transaction' — no role can sign in right now.",
+  "when": "2026-08-18T03:51:22.103Z",
+  "facts": {
+    "title": "Fundhub — Contract templates",
+    "h1": "Contract templates",
+    "crumb": "Setup",
+    "liveChip": "— live",
+    "banner": "live wordings · 3",
+    "tplRowCount": 3,
+    "tplRowsText": [
+      "FUNDING-AGREEMENT Funding Agreement IN USE",
+      "ACH-AUTH ACH Authorization PDF · 2P IN USE",
+      "OLD-TERMS Old Terms ARCHIVED"
+    ],
+    "tplCardBadge": "owner & admin",
+    "explainText": "Build a contract once. Use it many times. Upload a PDF, or type the words here. Add the blanks people fill in. Say who has to sign.\n\nStaff pick it later. When they send a contract from a client’s screen, this one shows up in their list. They never have to write it again.\n\nTo see contracts you already sent, and who has signed them, go to Documents.",
+    "docsLinkHref": "documents.html",
+    "ids": {
+      "kOut": "absent",
+      "kTpl": "absent",
+      "kSigned": "absent",
+      "kDraft": "absent",
+      "listBody": "absent",
+      "selStatus": "absent",
+      "btnRemind": "absent",
+      "detailCard": "absent",
+      "dTitle": "absent",
+      "dState": "absent",
+      "dFacts": "absent",
+      "dBody": "absent",
+      "dActions": "absent",
+      "dMsg": "absent",
+      "explainCard": "VISIBLE",
+      "tplCard": "VISIBLE",
+      "tplList": "VISIBLE",
+      "btnUpload": "VISIBLE",
+      "btnNewTpl": "VISIBLE",
+      "tplEditor": "hidden",
+      "pdfEditor": "hidden",
+      "btnSaveTpl": "hidden",
+      "btnArchive": "hidden",
+      "btnCancelTpl": "hidden",
+      "btnAddField": "hidden",
+      "btnAddSigner": "hidden",
+      "btnSaveFields": "hidden"
+    }
+  },
+  "afterNewWording": {
+    "tplEditorVisible": true,
+    "statementPrefilled": "I have read this document and "
+  },
+  "afterPickingATemplate": {
+    "tKey": "FUNDING-AGREEMENT",
+    "tName": "Funding Agreement",
+    "tBodyStart": "Hello {{contact.first_name}}, ",
+    "fieldRows": 1,
+    "tagsHint": "blanks used: contact.first_name, field.amount"
+  },
+  "afterPickingThePdf": {
+    "pdfEditorVisible": true,
+    "tplEditorHidden": true,
+    "pdfName": "ach-auth.pdf · 2 pages",
+    "signerRoles": "1. CLIENT",
+    "typeChips": [
+      "Text",
+      "Date",
+      "Tick box",
+      "Signature",
+      "Initials"
+    ],
+    "boxProps": "Nothing selected.",
+    "pagesArea": "The file could not be loaded."
+  },
+  "apiCallsTheScreenMade": [
+    "GET /api/read/contracts?view=templates",
+    "GET /api/auth/session",
+    "GET /api/health",
+    "GET /api/org-brand",
+    "GET /api/read/contracts?file=template&template_id=t2"
+  ],
+  "consoleErrors": []
+}
