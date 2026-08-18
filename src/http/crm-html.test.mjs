@@ -198,6 +198,9 @@ test("inquiry-remover.html is not Alvin furniture", () => {
   assert.ok(html.includes('id="whoName"'));
   assert.ok(html.includes("/api/auth/session"));
   assert.ok(html.includes("No letters issued yet"));
+  assert.ok(html.includes("Upload FTC or police report"), "FTC upload must stay on the case row");
+  assert.ok(html.includes('data-act="upload-fraud"'), "FTC attach action must stay");
+  assert.ok(html.includes('data-act="send"'), "Send on a case must stay");
 });
 
 test("closer-call.js does not paint builder notes", () => {

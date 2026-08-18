@@ -186,6 +186,12 @@
   .more[open]>summary .arrow{transform:rotate(180deg);}
   .more-body{padding-top:7px;}
 
+  .need-row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--paper-dim);font-size:var(--fs-body);text-decoration:none;color:inherit;}
+  .need-row:last-child{border-bottom:none;}
+  .need-row:hover{background:var(--soft);}
+  .need-name{font-weight:600;}
+  .need-meta{font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--text-dim);}
+
   .facts-list{display:flex;flex-direction:column;}
   .fact-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--paper-dim);font-size:var(--fs-caption);}
   .fact-row:last-child{border-bottom:none;}
@@ -444,6 +450,19 @@
         </div>
       </div>
 
+      <div class="group">
+        <div class="group-title">Need action</div>
+        <p style="font-size:var(--fs-body);color:var(--text-dim);margin:0 0 10px;">Clients with an open inquiry removal case. Pick one to open the file.</p>
+        <div id="ccp-need-action" style="font-size:var(--fs-body);color:var(--text-dim);">Loading…</div>
+      </div>
+
+      <div class="group">
+        <div class="group-title">Actions</div>
+        <p id="ccp-actions-desk-note" style="font-size:var(--fs-body);line-height:1.45;color:var(--text);margin:0 0 10px;">Bureau pulls run from the closer deck. This button opens a removal case. It does not pull a bureau.</p>
+        <button type="button" class="action-btn" id="ccp-issue-ir" style="cursor:pointer;">Issue Inquiry Removal <span class="arrow">→</span></button>
+        <p id="ccp-issue-ir-status" style="font-size:var(--fs-body);color:var(--text-dim);margin:8px 0 0;"></p>
+      </div>
+
       <!-- Agent context — exactly what the AI sees for this client. -->
       <div class="group">
         <button class="group-title tog" type="button" aria-expanded="false" aria-controls="agent-context-body">
@@ -530,11 +549,12 @@
         <p style="margin:8px 0 0;font-size:var(--fs-caption);color:var(--gray,#71717A)">Shows lenders that fit this file. Apply opens the bank page when a URL is on file.</p>
       </div>
 
-      <div class="side-title">Actions</div>
-      <p id="ccp-actions-note" style="font-size:var(--fs-body);line-height:1.45;color:var(--text);margin:0 0 10px;">Bureau pulls run from the closer deck. These buttons open the live file.</p>
+      <div class="side-title">Quick Launch</div>
+      <p id="ccp-actions-note" style="font-size:var(--fs-body);line-height:1.45;color:var(--text);margin:0 0 10px;">These open the live file. Bureau pulls stay on the closer deck.</p>
       <a class="action-btn" id="ccp-link-pipeline" href="pipeline.html">Open Pipeline <span class="arrow">↗</span></a>
       <a class="action-btn" id="ccp-link-present" href="present.html">Open Closer Deck <span class="arrow">↗</span></a>
       <a class="action-btn" id="ccp-link-messaging" href="messaging.html">Open Messaging <span class="arrow">↗</span></a>
+      <a class="action-btn" id="ccp-link-ir" href="inquiry-remover.html">Open Inquiry Remover <span class="arrow">↗</span></a>
 
       <details class="more" id="more-menu">
         <summary>More <span class="arrow">⌄</span></summary>
@@ -717,6 +737,7 @@ document.addEventListener("DOMContentLoaded", function () {
     href("ccp-link-present2", "present.html?contact=" + q);
     href("ccp-link-messaging", "messaging.html?client_id=" + q);
     href("ccp-link-lenders", "lenders.html?client_id=" + q);
+    href("ccp-link-ir", "inquiry-remover.html");
   }
 
   function render(d) {
@@ -824,6 +845,74 @@ document.addEventListener("DOMContentLoaded", function () {
           }) + "</option>");
       });
       sel.innerHTML = html.join("");
+    });
+  })();
+
+  (function loadNeedAction() {
+    var box = $("ccp-need-action");
+    if (!box || !window.FHData || typeof FHData.inquiryCases !== "function") {
+      if (box) box.textContent = "Could not load the action list.";
+      return;
+    }
+    FHData.inquiryCases().then(function (res) {
+      if (!res || !res.ok) {
+        box.textContent = "Could not load the action list.";
+        return;
+      }
+      var cases = (res.data && res.data.cases) || [];
+      if (!cases.length) {
+        box.textContent = "No open inquiry removal cases.";
+        return;
+      }
+      box.textContent = "";
+      cases.slice(0, 12).forEach(function (c) {
+        if (!c || !c.client_id) return;
+        var a = document.createElement("a");
+        a.className = "need-row";
+        a.href = "client-control-panel.html?id=" + encodeURIComponent(c.client_id);
+        var name = document.createElement("span");
+        name.className = "need-name";
+        name.textContent = c.client_name || c.client_email || c.case_id || "Client";
+        var meta = document.createElement("span");
+        meta.className = "need-meta";
+        meta.textContent = [c.case_status, c.selected_bureaus_raw].filter(Boolean).join(" · ");
+        a.appendChild(name);
+        a.appendChild(meta);
+        box.appendChild(a);
+      });
+    });
+  })();
+
+  (function wireIssueRemoval() {
+    var btn = $("ccp-issue-ir");
+    var status = $("ccp-issue-ir-status");
+    if (!btn) return;
+    function say(t) { if (status) status.textContent = t || ""; }
+    if (!id) {
+      btn.disabled = true;
+      say("Pick a client first.");
+      return;
+    }
+    btn.addEventListener("click", function () {
+      if (!window.FHData || typeof FHData.write !== "function") {
+        say("Not available — the data layer has not loaded.");
+        return;
+      }
+      btn.disabled = true;
+      say("Opening a removal case…");
+      FHData.write("/api/inquiry-cases", {
+        action: "create",
+        client_id: id,
+        request_source: "client_control_panel"
+      }).then(function (res) {
+        if (!res || !res.ok) {
+          btn.disabled = false;
+          say((res && (res.error || res.message)) || "Could not open a case.");
+          return;
+        }
+        say("Case opened. Going to Inquiry Remover…");
+        location.href = "inquiry-remover.html";
+      });
     });
   })();
 

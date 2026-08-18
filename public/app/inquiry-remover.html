@@ -388,6 +388,25 @@
       <div class="filter-note" id="filter-note" role="status" aria-live="polite"></div>
     </div>
 
+    <div class="section fh-maxw" id="caseQueueSection">
+      <div class="section-title">Inquiry removal cases</div>
+      <p style="font-size:var(--fs-body);color:var(--text-dim);margin:0 0 10px">
+        Click a row to upload an FTC or police report, review the letter, and send.
+        Nothing mails until you press send. The system never files an FTC report for you.
+      </p>
+      <table class="queue" id="caseQueueTable">
+        <thead>
+          <tr>
+            <th>Client</th><th>Bureau</th><th>Items</th><th>Status</th>
+            <th>Docs</th><th>Delivery</th><th>Call</th><th>Round</th>
+          </tr>
+        </thead>
+        <tbody id="caseQueueBody">
+          <tr><td colspan="8" style="color:var(--text-dim)">Loading cases…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
     <div class="section fh-maxw" id="cases-panel" hidden>
       <div class="section-title">Active Cases</div>
       <div id="cases-list"></div>
@@ -409,25 +428,6 @@
         </div>
         <a class="letter-more" href="documents.html">All letters<span class="lm-ar">↗</span></a>
       </div>
-    </div>
-
-    <div class="section fh-maxw" id="caseQueueSection">
-      <div class="section-title">Inquiry removal cases</div>
-      <p style="font-size:var(--fs-body);color:var(--text-dim);margin:0 0 10px">
-        One row per client per bureau. Click a row to review the letter, identity packet, and send.
-        Nothing mails until you press send.
-      </p>
-      <table class="queue" id="caseQueueTable">
-        <thead>
-          <tr>
-            <th>Client</th><th>Bureau</th><th>Items</th><th>Status</th>
-            <th>Docs</th><th>Delivery</th><th>Call</th><th>Round</th>
-          </tr>
-        </thead>
-        <tbody id="caseQueueBody">
-          <tr><td colspan="8" style="color:var(--text-dim)">Loading cases…</td></tr>
-        </tbody>
-      </table>
     </div>
 
     </div>
@@ -1882,10 +1882,10 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
           '</div>' +
           '<p style="font-size:var(--fs-body);color:var(--text-dim)">Inquiries and personal-info mismatches staged for this bureau. Inclusion checkboxes land with the letter editor in a follow-up polish.</p>' +
           '<div class="fraud-slot">' +
-            '<label>Additional documentation — fraud / identity theft cases</label>' +
+            '<label>Upload FTC or police report</label>' +
             '<p class="hint">Upload an FTC or police report you obtained. The system never generates or files one.</p>' +
             '<input type="file" class="fraud-file" accept=".pdf,image/*">' +
-            '<button type="button" class="qbtn" data-act="upload-fraud" style="margin-top:8px">Attach to case</button>' +
+            '<button type="button" class="qbtn" data-act="upload-fraud" style="margin-top:8px">Upload FTC or police report</button>' +
           '</div>' +
         '</div>' +
         '<div class="case-col">' +

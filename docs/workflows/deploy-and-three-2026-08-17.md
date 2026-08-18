@@ -16,7 +16,7 @@ Chris: deploy everything, double-check, then build the three prompts, then check
 | 1 | main | Live prove: hashes, Pipeline hole gone, sixteen smoke | pending |
 | 2 | agent | Contracts vs Documents — finish the named split | done |
 | 3 | agent | Finance OS — restore company money dashboard (Plaid + subscriptions inside it) | done |
-| 4 | agent | Funding advisor fulfillment — CCP + Inquiry Remover queue | pending |
+| 4 | agent | Funding advisor fulfillment — CCP + Inquiry Remover queue | done |
 
 ## File ownership after deploy
 
@@ -117,3 +117,35 @@ The existing reads still need a `client_id` in the address bar. Without one, the
 5. **Not deployed. Not pushed.**
 
 Nothing pushed or deployed. Commit is this row's commit.
+
+---
+
+## W4 — Funding desk + FTC stay visible
+
+**COMPLIANCE REVIEW REQUIRED** — FTC upload, dispute letter send, and opening an inquiry removal case stay on these two screens. No new pull. No new mail path.
+
+Owner call: do not delete or hide FTC upload, generate letter, send, or client sign-off. Do not copy the Airtable look. Do not add fake bureau-pull buttons.
+
+### Files touched this pass
+
+| File | What |
+|---|---|
+| `public/app/inquiry-remover.html` | Case queue (FTC / letter / send) is first. Copy names FTC. Button says Upload FTC or police report. Work Queue, letters list, and Repair stay. |
+| `public/app/client-control-panel.html` | Need-action list from existing inquiry-cases read. Issue Inquiry Removal uses existing POST create. Side stack renamed Quick Launch. Apply door left alone. |
+| `src/http/crm-html.test.mjs` | Lock: FTC upload and Send must stay on Inquiry Remover. |
+| `docs/workflows/deploy-and-three-2026-08-17.md` | This manifest |
+
+Not touched: `contracts.html`, `documents.html`, `finance-os.html`, `pipeline.html`, `sidebar.fragment.html`, `shell.js`, `inquiry-remover-view.mjs`, contract send, present, closer-call. No new route. No new field. No Pull Equifax / Pull TransUnion / Pull Experian string (existing lock). No journey path changed.
+
+### What this pass closed
+
+1. FTC upload was under a second Work Queue. It is now the first work block on Inquiries. Click a case row → upload FTC, edit letter, send.
+2. Funding desk can open a removal case from the client file, then go to Inquiry Remover.
+3. Need-action list shows open cases from the existing read.
+
+### Left over (not built — honest)
+
+1. **No bureau-pull buttons on this screen.** Soft-pull queues a row. It does not pull TU / EX / EQ. A live HTTP pull is not wired. Existing test forbids the fake "Pull Equifax" label.
+2. **Generate Apps has no staff HTTP.** Not added.
+3. **Phone inquiry schedule** still answers not configured when the inquiry host is unset.
+4. **Not pushed until the parent deploys.**
