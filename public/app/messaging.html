@@ -1211,6 +1211,13 @@
     paintQuietNote(state.selected ? state.selected.channel : null);
   }, 60000);
 
+  // data.js carries `defer` (see its tag above), so FHData does not exist yet
+  // while this script is being parsed — the first inbox read here threw, and
+  // the throw killed the rest of this function before the conversation list
+  // was ever requested. Every deferred script runs before DOMContentLoaded, so
+  // the first read waits for that event. The deep-link handling below stays
+  // inside it, because it only runs once that first read has come back.
+  document.addEventListener("DOMContentLoaded", function () {
   clearThread();
   loadList().then(function () {
     var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1270,6 +1277,7 @@
       last_name: null,
       needs_reply: false
     });
+  });
   });
 })();
 </script>

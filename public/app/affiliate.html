@@ -503,6 +503,12 @@ renderLeads(); renderPayouts();
     })
     .catch(function () {});
 
+  // data.js carries `defer` (see its tag above), so FHData does not exist yet
+  // while this script is being parsed — calling it here threw, and the throw
+  // killed the rest of this function before the affiliate figures were ever
+  // requested. Every deferred script runs before DOMContentLoaded, so the
+  // first read waits for that event.
+  document.addEventListener("DOMContentLoaded", function () {
   FHData.wire(FHData.affiliates({ limit: 200 }), "affiliate figures", function (data) {
     lastRows = data.items || [];
     var mine = paintMine();
@@ -523,6 +529,7 @@ renderLeads(); renderPayouts();
     // no read endpoint yet. Left as a dash rather than guessed.
     return "live affiliate code · " + (mine.tracking_id || "No code yet") +
            " · " + usd(owed) + " accrued";
+  });
   });
 })();
 </script>

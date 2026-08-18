@@ -713,7 +713,14 @@ renderProducts(); renderRules(); renderLedger(); renderStats();
    NOTE: no commission PERCENTAGE is rendered from a constant. Rates live in
    commission_rules rows; the tiles show the count of active rules and the
    amounts actually accrued, never an invented rate. */
-(function () {
+
+// data.js carries `defer` (see its tag above), so FHData does not exist yet
+// while this script is being parsed — the two FHData.wire calls below ran at
+// parse time and threw, and the throw killed the rest of this block before the
+// product ladder or the commission ledger was ever requested, which is why the
+// tiles sat on "loading…" and both tables stayed empty. Every deferred script
+// runs before DOMContentLoaded, so the first read waits for that event.
+document.addEventListener("DOMContentLoaded", function () {
   "use strict";
   var esc = function (v) {
     return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
@@ -816,7 +823,7 @@ renderProducts(); renderRules(); renderLedger(); renderStats();
     set("kPaid", usd(paid));
     return "live ledger · " + rows.length + " entries · " + usd(accrued) + " accrued";
   });
-})();
+});
 </script>
 </body>
 </html>

@@ -637,7 +637,12 @@
   // Paint the real dates for the default period, then read live. Do not wait
   // for a period click — the pill shipped with a hardcoded range for weeks.
   paintPeriod(RANGES.filter(function(x){ return x.id === current; })[0]);
-  loadKpis(current);
+  // data.js carries `defer` (see its tag above), so FHData does not exist yet
+  // while this script is being parsed — reading here only ever hit the
+  // `typeof FHData === 'undefined'` guard above, so the five KPI tiles were
+  // blanked and never asked for. Every deferred script runs before
+  // DOMContentLoaded, so the first read waits for that event.
+  document.addEventListener('DOMContentLoaded', function(){ loadKpis(current); });
 
   btn.addEventListener('click', function(e){
     e.stopPropagation();
@@ -883,13 +888,26 @@
     call({ action: "email_invoice_backlog" });
   };
 
-  refresh();
+  // data.js carries `defer` (see its tag above), so FHData does not exist yet
+  // while this script is being parsed — calling it here threw, and the throw
+  // killed the rest of this function before the outbound queue was ever read.
+  // Every deferred script runs before DOMContentLoaded, so the first read waits
+  // for that event.
+  document.addEventListener("DOMContentLoaded", function () {
+    refresh();
+  });
 })();
 </script>
 <script>
 
 /* Ops & Admin — KPIs, dead-letter queue, AR, compliance blocks from live APIs. */
-(function () {
+// data.js carries `defer` (see its tag above), so FHData does not exist yet
+// while this script is being parsed — the reads below threw, and the throw
+// killed the rest of this block before the AR table, the compliance table, the
+// failed-events tile and the staff tables were ever requested. Every deferred
+// script runs before DOMContentLoaded, so this whole block waits for that
+// event; none of it needs to run before the page is built.
+document.addEventListener("DOMContentLoaded", function () {
   "use strict";
   var esc = function (v) {
     return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
@@ -1044,7 +1062,7 @@
       return rows.length ? ("live staff · " + rows.length) : "No staff rows.";
     });
   }
-})();
+});
 </script>
 <script>
 (function () {

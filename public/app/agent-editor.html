@@ -826,7 +826,13 @@ function hideEmpty(){
    populated only from what /api/read/agents actually returns; a registry
    with two rows shows two rows, and a registry with zero rows shows the
    empty state, not built-in sample markup. */
-(function () {
+
+// data.js carries `defer` (see its tag above), so FHData does not exist yet
+// while this script is being parsed — calling it here threw, and the throw
+// killed the rest of this block before the staff pickers or the agent registry
+// were ever requested. Every deferred script runs before DOMContentLoaded, so
+// this whole block waits for that event; nothing in it needs to run sooner.
+document.addEventListener("DOMContentLoaded", function () {
   "use strict";
   if (typeof AGENTS === "undefined" || typeof renderList !== "function") return;
 
@@ -887,7 +893,7 @@ function hideEmpty(){
     }
     renderStats();
   });
-})();
+});
 </script>
 </body>
 </html>
