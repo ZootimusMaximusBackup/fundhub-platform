@@ -47,7 +47,7 @@
   button{font:inherit;color:inherit;}
   /* crm-sidebar.css paints .app paper-white and display:block — that collapses
      the sky on this screen. Keep Galaxy a full-height dark column that clears
-     the fixed rail. Column (not row) so the Demo Mode banner can sit on top
+     the fixed rail. Column (not row) so a full-width banner can sit on top
      without crushing the canvas. */
   .app{
     display:flex !important;
@@ -61,7 +61,6 @@
     box-sizing:border-box !important;
   }
   html.fh-side-mini .app{padding-left:var(--fh-side-w-mini,60px) !important;}
-  .app > #fh-demo-banner{flex:0 0 auto !important; width:100% !important;}
   .shell{
     flex:1 1 auto !important;
     min-width:0 !important;
@@ -299,7 +298,6 @@
         <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
         <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
         <a class="navitem" href="contracts.html"><span class="ico">✒</span><span class="lbl">Contract templates</span></a>
-        <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Demo Mode</span></a>
         <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
 </div></div>
 
@@ -1817,7 +1815,7 @@ async function loadActivityFeed(){
     var data = await res.json();
     if(!data || !data.ok || !data.nodes || !data.nodes.length){
       var noticeEmpty = document.getElementById('galaxyBackendNotice');
-      if(noticeEmpty) noticeEmpty.innerHTML = '<b>No workers yet</b><i>Turn Demo Mode on (Admin → Demo Mode) to seed open shifts, or clock someone in.</i>';
+      if(noticeEmpty) noticeEmpty.innerHTML = '<b>No workers yet</b><i>Nobody is clocked in right now. Clock someone in and they show up here.</i>';
       return;
     }
     applyLiveFeed(data);
@@ -1834,7 +1832,7 @@ window.addEventListener('resize', resize);
 resize();
 requestAnimationFrame(draw);
 loadActivityFeed();
-/* Sidebar mount + Demo banner arrive after first paint — remeasure the sky. */
+/* Sidebar mount + beta banner arrive after first paint — remeasure the sky. */
 setTimeout(function(){ resize(); }, 280);
 setTimeout(function(){ resize(); }, 900);
 

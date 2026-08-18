@@ -25,7 +25,6 @@ export const ROLE_ROUTES: Record<Role, string[]> = {
     'app/brand-studio.html',
     'app/inquiry-remover.html',
     'app/lenders.html',
-    'app/sample-data.html',
     'app/client-portal.html',
     'app/partner-galaxy.html',
     'app/affiliate.html',
@@ -51,7 +50,6 @@ export const ROLE_ROUTES: Record<Role, string[]> = {
     'app/brand-studio.html',
     'app/inquiry-remover.html',
     'app/lenders.html',
-    'app/sample-data.html',
     'app/client-portal.html',
   ],
   // Partner Galaxy + Affiliate Portal + Client Portal + brand design + Facebook ads (campaign-manager).
@@ -94,7 +92,6 @@ export const NAV_ITEMS: Record<string, string> = {
   'app/brand-studio.html': 'Brand studio',
   'app/inquiry-remover.html': 'Inquiry remover',
   'app/lenders.html': 'Lenders',
-  'app/sample-data.html': 'Sample data',
   'app/client-portal.html': 'Client portal',
   'app/partner-galaxy.html': 'Partner galaxy',
   'app/affiliate.html': 'Affiliate portal',
@@ -141,8 +138,7 @@ export const NAV_GROUPS = [
       'app/content-admin.html',
       'app/brand-studio.html',
       'app/inquiry-remover.html',
-      'app/sample-data.html',
-    ],
+      ],
   },
   {
     name: 'External',

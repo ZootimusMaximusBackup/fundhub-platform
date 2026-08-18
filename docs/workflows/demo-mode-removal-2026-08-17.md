@@ -142,11 +142,97 @@ Twenty production readers use it to keep fake money out of real totals, includin
 
 ## Blockers and open questions
 
-**BLOCKED ON CHRIS — one question:** deleting the screen removes the only Wipe
-button. Decide what happens to the ON/OFF/Wipe controls before any deletion.
+**ANSWERED 2026-08-17:** owner chose "remove it all, leave any data alone" —
+screen, nav row, ops-admin panel and orange banner go; `/api/demo/mode` stays;
+no wipe. Recorded as owner-set.
 
-**UNVERIFIED:** does production hold demo rows? `.env` read was denied.
+**STILL UNVERIFIED — does production hold demo rows?** Reading `.env` was denied
+in this session, so no query was run. If Demo Mode was ON when this shipped,
+fake rows still show on CRM screens and the warning banner is now gone. The
+read-only query that answers it is at the end of `W2-seeding-endpoint.md`.
 
-## Change manifests
+**LIVE PROOF BLOCKED — login is down on fundhub.ai.**
+`POST /api/auth/login` returns HTTP 500 `cannot execute INSERT in a read-only
+transaction`, on a deliberately wrong password too, so it fails before the
+password is checked. Pages serve 200; `GET /api/read/staff` returns a clean 401.
+So reads are fine and writes are refused — the database is in read-only mode.
+Not caused by this change. Live Playwright and the human click path cannot run
+until it is fixed.
 
-_Nothing written yet. Phase 2 has not started._
+**CONCURRENCY — this branch was built twice.** The first pass was made directly
+in the shared checkout and was wiped when five other sessions committed between
+20:49:46 and 20:52:44 (`dd79cd1`..`8659d5f`). The second pass was done in an
+isolated git worktree on branch `remove-demo-mode`. Six more commits
+(`5a719a3`..`6805f75`) landed during that; the branch was rebased onto
+`6805f75`, taking upstream's deletion of `public/app/subscriptions.html`.
+
+## Change manifest
+
+Branch `remove-demo-mode`, one commit on top of `6805f75`. 44 files,
++60 / -675.
+
+**Deleted**
+- `public/app/sample-data.html` — the screen (446 lines)
+
+**Nav (edit the fragment, run `node scripts/sync-sidebar.mjs` — never by hand)**
+- `public/app/sidebar.fragment.html` — Demo Mode row removed
+- `public/app/shell.js` — `SIDEBAR_HTML` regenerated; row removed from
+  `BETA_PAGES`, `ALL`, and `OWNER_ADMIN_ONLY` (with its comment block)
+- 31 screens under `public/app/` — inline sidebars re-synced
+
+**Second UI entry point**
+- `public/app/ops-admin.html` — ON/OFF panel markup and its inline script (101 lines)
+
+**Banner**
+- `public/app/shell.js` — `mountDemoBanner()` and its call site
+- `public/app/galaxy.html` — dead `#fh-demo-banner` CSS rule, two stale comments,
+  and the empty-state copy that told people to open the deleted screen
+
+**Lists and builders**
+- `src/lib/rbac.ts` — three role lists and the screen-title map
+- `scripts/build-artifact.mjs`, `scripts/build-crm-artifact.mjs`,
+  `scripts/artifact-shell.html`, `scripts/tmp-full-live-verify.mjs`
+- `scripts/sync-sidebar.mjs`, `src/verification/report.mjs` — comments that named
+  the deleted screen
+
+**Tests**
+- `e2e/demo-mode.spec.mjs` — **INVERTED, not deleted.** Was "the banner shows";
+  now "the banner never shows, and the nav row is gone". Same precedent as the
+  sales_manager guards flipped for `db/migrations/112`.
+- `e2e/screens-smoke.spec.mjs`, `e2e/crm-flows.spec.mjs` — screen removed from lists
+- `e2e/verification-roles.spec.mjs` — dead exemption removed
+- `src/verification/journeys/cross-cutting.mjs` — dead allow-list branch removed
+
+**Deliberately NOT touched** — all four mapped first, all load-bearing:
+`api/demo/mode.mjs` and its two `netlify/functions/api.mjs` lines ·
+`src/shifts/store.mjs:233` and `src/sales/metrics.mjs:641` (demo staff filter) ·
+Hiring's demo-row handling · `api/demo/simulate.mjs`, the demo logins, and the
+offline `fh_demo` mock.
+
+## Proof
+
+| Check | Result |
+|---|---|
+| `npm run lint` | clean — 1294 files parse |
+| `npm test` baseline at `6805f75` | 5601 pass / **12 fail** |
+| `npm test` on this branch | 5600 pass / **10 fail** |
+| New failures introduced | **none** — same 7 test names, two fewer failures |
+| Any remaining failure about Demo Mode | **no** — every one is `subscriptions.html` |
+| `npm run journeys:check` | stale, but the diff contains **zero** demo content — it is the other sessions' new company-brain and lender routes. Not regenerated: not this change's work to commit. |
+| No remaining references | yes — the four surviving hits of the string "sample-data" are unrelated (a notice category on finance-os, a FIELD-NOTES line, a help-topic id pointing at Finance OS, and prose in a test comment) |
+| Live Playwright 100/100 | **NOT RUN** — login is down, see above |
+| Human click path | **NOT RUN** — same reason |
+
+**Pre-existing failures on main, none of them this change's doing:** journeys
+stale ×2, `inline sidebars match shell.js`, `app shell` ×3 (all
+`subscriptions.html` dangling links from another session's half-finished
+removal), and one org-filter endpoint test.
+
+## Deploy status
+
+`git push origin remove-demo-mode:main` was **blocked**, so the branch was
+pushed on its own instead:
+`https://github.com/ZootimusMaximusBackup/fundhub-platform/pull/new/remove-demo-mode`
+
+Merging it to `main` is what triggers the Netlify deploy. That is the owner's
+click. Nothing was deployed from this session.

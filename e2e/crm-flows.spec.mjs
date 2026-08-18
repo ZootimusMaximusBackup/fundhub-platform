@@ -180,7 +180,6 @@ test.describe("hiring / creative / social / campaign", () => {
     "/app/campaign-manager.html",
     "/app/galaxy.html",
     "/app/affiliate.html",
-    "/app/sample-data.html",
     "/app/consent-capture.html",
   ]) {
     test(`${path} is interactive without throwing`, async ({ page }) => {

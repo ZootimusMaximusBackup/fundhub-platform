@@ -24,11 +24,11 @@
     "command-center.html", "galaxy.html", "ops-admin.html",
     "agent-editor.html", "journeys.html", "campaign-manager.html",
     "social-studio.html", "creative-factory.html",
-    "hiring.html", "sample-data.html", "brand-studio.html", "affiliate.html"
+    "hiring.html", "brand-studio.html", "affiliate.html"
   ];
 
   /* ==SIDEBAR_HTML_START== */
-  var SIDEBAR_HTML = "<aside class=\"side\" id=\"side\">\n  <div class=\"side-top\"><a class=\"logo inv\" href=\"command-center.html\" aria-label=\"fundhub\"></a><button class=\"burger\" id=\"burger\" type=\"button\" title=\"Collapse sidebar\">‹‹</button></div>\n  <nav class=\"side-scroll\" id=\"fh-side-nav\">\n\n<div class=\"navgroup\" data-fh-section=\"home\"><button class=\"navhead\" type=\"button\">Home<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"partner-galaxy.html\"><span class=\"ico\">⌂</span><span class=\"lbl\">Home</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"sales\"><button class=\"navhead\" type=\"button\">Sales<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"pipeline.html\"><span class=\"ico\">▤</span><span class=\"lbl\">Pipeline</span></a>\n        <a class=\"navitem\" href=\"closer-dashboard.html\"><span class=\"ico\">★</span><span class=\"lbl\">Closer Dashboard</span></a>\n        <a class=\"navitem\" href=\"closer-call.html\"><span class=\"ico\">☎</span><span class=\"lbl\">Call cockpit</span></a>\n        <a class=\"navitem\" href=\"my-numbers.html\"><span class=\"ico\">＃</span><span class=\"lbl\">My numbers</span></a>\n        <a class=\"navitem\" href=\"sales-floor.html\"><span class=\"ico\">▣</span><span class=\"lbl\">Sales floor</span></a>\n        <a class=\"navitem\" href=\"calendar.html\"><span class=\"ico\">▦</span><span class=\"lbl\">Calendar</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"funding\"><button class=\"navhead\" type=\"button\">Funding<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"lenders.html\"><span class=\"ico\">⬡</span><span class=\"lbl\">Lenders</span></a>\n        <a class=\"navitem\" href=\"finance-os.html\"><span class=\"ico\">▩</span><span class=\"lbl\">Finance OS</span></a>\n        <a class=\"navitem\" href=\"contracts.html\"><span class=\"ico\">✒</span><span class=\"lbl\">Contracts</span></a>\n        <a class=\"navitem\" href=\"subscriptions.html\"><span class=\"ico\">◍</span><span class=\"lbl\">Subscriptions</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"client-ops\"><button class=\"navhead\" type=\"button\">Client ops<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"client-control-panel.html\"><span class=\"ico\">◎</span><span class=\"lbl\">Client Control Panel</span></a>\n        <a class=\"navitem\" href=\"messaging.html\"><span class=\"ico\">✉</span><span class=\"lbl\">Messaging</span></a>\n        <a class=\"navitem\" href=\"documents.html\"><span class=\"ico\">▧</span><span class=\"lbl\">Documents</span></a>\n        <a class=\"navitem\" href=\"inquiry-remover.html\"><span class=\"ico\">⊘</span><span class=\"lbl\">Specialist</span></a>\n        <a class=\"navitem\" href=\"company-brain.html\"><span class=\"ico\">◎</span><span class=\"lbl\">Company Brain</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"watch\"><button class=\"navhead\" type=\"button\">Watch<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"command-center.html\"><span class=\"ico\">⌘</span><span class=\"lbl\">Command Center</span></a>\n        <a class=\"navitem\" href=\"galaxy.html\"><span class=\"ico\">✷</span><span class=\"lbl\">Galaxy</span></a>\n        <a class=\"navitem\" href=\"ops-admin.html\"><span class=\"ico\">⚙</span><span class=\"lbl\">Ops &amp; Admin</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"automation\"><button class=\"navhead\" type=\"button\">Automation<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"agent-editor.html\"><span class=\"ico\">◈</span><span class=\"lbl\">Agent Editor</span></a>\n        <a class=\"navitem\" href=\"automations.html\"><span class=\"ico\">⇄</span><span class=\"lbl\">Workflows</span></a>\n        <a class=\"navitem\" href=\"journeys.html\"><span class=\"ico\">⇝</span><span class=\"lbl\">Journeys</span></a>\n        <a class=\"navitem\" href=\"template-editor.html\"><span class=\"ico\">✎</span><span class=\"lbl\">Message Copy</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"marketing\"><button class=\"navhead\" type=\"button\">Marketing<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"campaign-manager.html\"><span class=\"ico\">◇</span><span class=\"lbl\">Campaigns</span></a>\n        <a class=\"navitem\" href=\"social-studio.html\"><span class=\"ico\">◉</span><span class=\"lbl\">Social Studio</span></a>\n        <a class=\"navitem\" href=\"creative-factory.html\"><span class=\"ico\">✳</span><span class=\"lbl\">Creative Factory</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"admin\"><button class=\"navhead\" type=\"button\">Admin<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"staff-teams.html\"><span class=\"ico\">⚇</span><span class=\"lbl\">Staff &amp; Teams</span></a>\n        <a class=\"navitem\" href=\"hiring.html\"><span class=\"ico\">⊕</span><span class=\"lbl\">Hiring</span></a>\n        <a class=\"navitem\" href=\"products-commissions.html\"><span class=\"ico\">⛁</span><span class=\"lbl\">Products &amp; Commissions</span></a>\n        <a class=\"navitem\" href=\"sample-data.html\"><span class=\"ico\">⌗</span><span class=\"lbl\">Demo Mode</span></a>\n        <a class=\"navitem\" href=\"brand-studio.html\"><span class=\"ico\">◆</span><span class=\"lbl\">Brand Studio</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"portals\"><button class=\"navhead\" type=\"button\">Portals<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"client-portal.html\"><span class=\"ico\">◐</span><span class=\"lbl\">Client Portal</span></a>\n        <a class=\"navitem\" href=\"affiliate.html\"><span class=\"ico\">⇗</span><span class=\"lbl\">Affiliate</span></a>\n</div></div>\n\n  </nav>\n  <div class=\"side-foot\"><span class=\"pulse\"></span><span class=\"who\">fundhub</span></div>\n</aside>";
+  var SIDEBAR_HTML = "<aside class=\"side\" id=\"side\">\n  <div class=\"side-top\"><a class=\"logo inv\" href=\"command-center.html\" aria-label=\"fundhub\"></a><button class=\"burger\" id=\"burger\" type=\"button\" title=\"Collapse sidebar\">‹‹</button></div>\n  <nav class=\"side-scroll\" id=\"fh-side-nav\">\n\n<div class=\"navgroup\" data-fh-section=\"home\"><button class=\"navhead\" type=\"button\">Home<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"partner-galaxy.html\"><span class=\"ico\">⌂</span><span class=\"lbl\">Home</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"sales\"><button class=\"navhead\" type=\"button\">Sales<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"pipeline.html\"><span class=\"ico\">▤</span><span class=\"lbl\">Pipeline</span></a>\n        <a class=\"navitem\" href=\"closer-dashboard.html\"><span class=\"ico\">★</span><span class=\"lbl\">Closer Dashboard</span></a>\n        <a class=\"navitem\" href=\"closer-call.html\"><span class=\"ico\">☎</span><span class=\"lbl\">Call cockpit</span></a>\n        <a class=\"navitem\" href=\"my-numbers.html\"><span class=\"ico\">＃</span><span class=\"lbl\">My numbers</span></a>\n        <a class=\"navitem\" href=\"sales-floor.html\"><span class=\"ico\">▣</span><span class=\"lbl\">Sales floor</span></a>\n        <a class=\"navitem\" href=\"calendar.html\"><span class=\"ico\">▦</span><span class=\"lbl\">Calendar</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"funding\"><button class=\"navhead\" type=\"button\">Funding<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"lenders.html\"><span class=\"ico\">⬡</span><span class=\"lbl\">Lenders</span></a>\n        <a class=\"navitem\" href=\"finance-os.html\"><span class=\"ico\">▩</span><span class=\"lbl\">Finance OS</span></a>\n        <a class=\"navitem\" href=\"contracts.html\"><span class=\"ico\">✒</span><span class=\"lbl\">Contracts</span></a>\n        <a class=\"navitem\" href=\"subscriptions.html\"><span class=\"ico\">◍</span><span class=\"lbl\">Subscriptions</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"client-ops\"><button class=\"navhead\" type=\"button\">Client ops<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"client-control-panel.html\"><span class=\"ico\">◎</span><span class=\"lbl\">Client Control Panel</span></a>\n        <a class=\"navitem\" href=\"messaging.html\"><span class=\"ico\">✉</span><span class=\"lbl\">Messaging</span></a>\n        <a class=\"navitem\" href=\"documents.html\"><span class=\"ico\">▧</span><span class=\"lbl\">Documents</span></a>\n        <a class=\"navitem\" href=\"inquiry-remover.html\"><span class=\"ico\">⊘</span><span class=\"lbl\">Specialist</span></a>\n        <a class=\"navitem\" href=\"company-brain.html\"><span class=\"ico\">◎</span><span class=\"lbl\">Company Brain</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"watch\"><button class=\"navhead\" type=\"button\">Watch<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"command-center.html\"><span class=\"ico\">⌘</span><span class=\"lbl\">Command Center</span></a>\n        <a class=\"navitem\" href=\"galaxy.html\"><span class=\"ico\">✷</span><span class=\"lbl\">Galaxy</span></a>\n        <a class=\"navitem\" href=\"ops-admin.html\"><span class=\"ico\">⚙</span><span class=\"lbl\">Ops &amp; Admin</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"automation\"><button class=\"navhead\" type=\"button\">Automation<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"agent-editor.html\"><span class=\"ico\">◈</span><span class=\"lbl\">Agent Editor</span></a>\n        <a class=\"navitem\" href=\"automations.html\"><span class=\"ico\">⇄</span><span class=\"lbl\">Workflows</span></a>\n        <a class=\"navitem\" href=\"journeys.html\"><span class=\"ico\">⇝</span><span class=\"lbl\">Journeys</span></a>\n        <a class=\"navitem\" href=\"template-editor.html\"><span class=\"ico\">✎</span><span class=\"lbl\">Message Copy</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"marketing\"><button class=\"navhead\" type=\"button\">Marketing<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"campaign-manager.html\"><span class=\"ico\">◇</span><span class=\"lbl\">Campaigns</span></a>\n        <a class=\"navitem\" href=\"social-studio.html\"><span class=\"ico\">◉</span><span class=\"lbl\">Social Studio</span></a>\n        <a class=\"navitem\" href=\"creative-factory.html\"><span class=\"ico\">✳</span><span class=\"lbl\">Creative Factory</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"admin\"><button class=\"navhead\" type=\"button\">Admin<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"staff-teams.html\"><span class=\"ico\">⚇</span><span class=\"lbl\">Staff &amp; Teams</span></a>\n        <a class=\"navitem\" href=\"hiring.html\"><span class=\"ico\">⊕</span><span class=\"lbl\">Hiring</span></a>\n        <a class=\"navitem\" href=\"products-commissions.html\"><span class=\"ico\">⛁</span><span class=\"lbl\">Products &amp; Commissions</span></a>\n        <a class=\"navitem\" href=\"brand-studio.html\"><span class=\"ico\">◆</span><span class=\"lbl\">Brand Studio</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"portals\"><button class=\"navhead\" type=\"button\">Portals<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"client-portal.html\"><span class=\"ico\">◐</span><span class=\"lbl\">Client Portal</span></a>\n        <a class=\"navitem\" href=\"affiliate.html\"><span class=\"ico\">⇗</span><span class=\"lbl\">Affiliate</span></a>\n</div></div>\n\n  </nav>\n  <div class=\"side-foot\"><span class=\"pulse\"></span><span class=\"who\">fundhub</span></div>\n</aside>";
   /* ==SIDEBAR_HTML_END== */
 
   var ALL = [
@@ -37,7 +37,7 @@
     "messaging.html", "calendar.html", "documents.html", "company-brain.html",
     "ops-admin.html", "command-center.html", "galaxy.html",
     "agent-editor.html", "automations.html", "products-commissions.html",
-    "staff-teams.html", "sample-data.html",
+    "staff-teams.html",
     "inquiry-remover.html", "affiliate.html", "client-portal.html", "partner-galaxy.html", "brand-studio.html",
     "campaign-manager.html", "social-studio.html", "creative-factory.html", "hiring.html",
     /* Finance OS is one screen now, not twelve. money-map.html,
@@ -140,13 +140,6 @@
     /* journeys.html — api/journeys/ask.mjs and api/journeys/store.mjs both
        gate on requireRole("owner", "admin"); the nav row matches. */
     "journeys.html",
-    /* sample-data.html — the Demo Mode row. Its only endpoint, api/demo/mode.mjs,
-       gates on requireRole(owner, admin) for GET, POST and DELETE alike, so
-       every staff role that could see the row got a 403 the moment the screen
-       loaded. UI-STANDARDS §4: a role does not render an item it cannot use.
-       Nav row moved to match the gate that was already there — the gate itself
-       is unchanged. (UI audit 2026-08-17, pattern row C.) */
-    "sample-data.html",
     /* Beta screens stay on the owner's rail only (owner decision 2026-08-17).
        Staff, partners, and affiliates do not see these rows. The Content mock
        was removed — the real screen is a separate build. */
@@ -1475,7 +1468,7 @@
     /* pointer-events:none — the chip is a label, not a control surface. It is
        fixed at z-index 2147483000, above everything a screen can draw, and it
        is ~337px wide, so anything under it stopped receiving clicks: the beta
-       banner's Dismiss (dead on company-brain, ops-admin, sample-data; "not
+       banner's Dismiss (dead on company-brain, ops-admin; "not
        receiving pointer events" on journeys and creative-factory), header rows
        on client-control-panel and inquiry-remover, the New-person drawer's
        title and close on staff-teams, and at phone width whatever sits at the
@@ -1740,58 +1733,6 @@
     try { window.dispatchEvent(new Event("resize")); } catch (e) { /* ignore */ }
   }
 
-  /* Persistent Demo Mode banner — not a chip. Every CRM screen when the org
-     toggle is on. Money totals still exclude is_demo rows on the server. */
-  function mountDemoBanner(staff) {
-    if (!staff || !staff.org_id) return;
-    var role = normRole(staff.role);
-    if (role !== "owner" && role !== "admin") return;
-    var tok = "";
-    try { tok = localStorage.getItem("fh_token") || ""; } catch (e) { tok = ""; }
-    var demoHeaders = { Accept: "application/json" };
-    if (tok && tok !== "demo") demoHeaders.authorization = "Bearer " + tok;
-    fetch("/api/demo/mode", { credentials: "same-origin", headers: demoHeaders })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) {
-        if (!d || !d.ok || !d.demo_mode_enabled) {
-          var old = document.getElementById("fh-demo-banner");
-          if (old) old.remove();
-          document.documentElement.classList.remove("fh-demo-mode");
-          return;
-        }
-        document.documentElement.classList.add("fh-demo-mode");
-        if (document.getElementById("fh-demo-banner")) return;
-        var bar = document.createElement("div");
-        bar.id = "fh-demo-banner";
-        bar.setAttribute("role", "status");
-        bar.setAttribute("data-fh-demo-banner", "1");
-        bar.style.cssText = [
-          "position:relative", "top:0", "z-index:2147482990", "width:100%",
-          "flex:0 0 auto", "box-sizing:border-box", "padding:10px 16px",
-          "background:#7A2E0E", "color:#FFF7ED",
-          "font:600 13px/1.35 'JetBrains Mono',ui-monospace,monospace",
-          "letter-spacing:.04em", "text-align:center",
-          "border-bottom:2px solid #FDBA74",
-          "display:flex", "gap:12px", "align-items:center", "justify-content:center",
-          "flex-wrap:wrap"
-        ].join(";");
-        bar.innerHTML =
-          "<span>DEMO MODE ON — sample data is displayed. Numbers on this screen may be fictional.</span>" +
-          "<a href=\"sample-data.html\" style=\"color:#FFEDD5;text-decoration:underline;font-weight:700\">Manage demo data</a>";
-        /* Same mount rule as the beta banner — see mountFullWidthBar. This used
-           to resolve its own host as .shell || .app || body, with no .main and
-           no row check, so on the twelve screens whose .app is a flex ROW and
-           which have no .shell (finance-os, subscriptions and the rest) this bar
-           landed as a third COLUMN and crushed the page into a ~60px strip. That
-           was the finance-os/subscriptions CRITICAL on the 2026-08-17 board,
-           fixed for the beta banner in a80b02e and left latent here because it
-           only fires with Demo Mode on. Both banners now share one rule. */
-        mountFullWidthBar(bar);
-        try { window.dispatchEvent(new Event("resize")); } catch (e) { /* ignore */ }
-      })
-      .catch(function () { /* no banner if the endpoint is unreachable */ });
-  }
-
   // Expose for Brand Studio live preview of CRM chrome.
   window.FHApplyBrand = paintBrand;
 
@@ -1846,7 +1787,6 @@
       }
       applyBrand(sess.staff);
       mountChatWidget(sess.staff, sess.demo);
-      mountDemoBanner(sess.staff);
     });
   }).catch(function () {
     // Never leave nav permanently gated on an unexpected failure.

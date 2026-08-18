@@ -220,7 +220,7 @@ export function writeReport({ collector, meta = {}, journeyNotes = [], credentia
     "- Static HTML direct-URL is not a P0 leak: Netlify serves files; API ROLE_SET probes prove isolation.",
     "- Company Brain tier gate verified via access.mjs + SQL filter; live retrieve needs OPENAI_API_KEY.",
     "- DIY EMAIL-DS02 still [DRAFT]: hard guard correctly refuses send (not silent no-op).",
-    "- Harness sample-data check matches fabricated $12,450 only — not nav label \"Sample Data\".",
+    "- Harness fabricated-figure check matches $12,450 only — not ordinary price copy.",
     "- Bus replay skips payload amounts ≥ $1bn so adversarial poison events cannot kill the job."
   ].join("\n\n"));
   lines.push("");

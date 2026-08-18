@@ -71,7 +71,6 @@ const GROUPS = [
       ["app/content-admin.html", "Content admin"],
       ["app/brand-studio.html", "Brand studio"],
       ["app/inquiry-remover.html", "Inquiry remover"],
-      ["app/sample-data.html", "Sample data"],
     ],
   },
   {
@@ -102,8 +101,8 @@ const BRIDGE = (rel) => `
      Items a role can't reach are removed from the DOM outright, not hidden:
      view-source shows the same thing the eye does. */
   var ROLE_ROUTES = {
-    admin: ["app/closer-dashboard.html","app/pipeline.html","app/client-control-panel.html","app/messaging.html","app/calendar.html","app/documents.html","app/campaign-manager.html","app/social-studio.html","app/creative-factory.html","app/command-center.html","app/ops-admin.html","app/galaxy.html","app/automations.html","app/agent-editor.html","app/hiring.html","app/products-commissions.html","app/staff-teams.html","app/content-admin.html","app/brand-studio.html","app/inquiry-remover.html","app/sample-data.html","app/client-portal.html","app/partner-galaxy.html","app/affiliate.html"],
-    staff: ["app/closer-dashboard.html","app/pipeline.html","app/client-control-panel.html","app/messaging.html","app/calendar.html","app/documents.html","app/campaign-manager.html","app/social-studio.html","app/creative-factory.html","app/command-center.html","app/galaxy.html","app/automations.html","app/agent-editor.html","app/hiring.html","app/staff-teams.html","app/content-admin.html","app/brand-studio.html","app/inquiry-remover.html","app/sample-data.html","app/client-portal.html"],
+    admin: ["app/closer-dashboard.html","app/pipeline.html","app/client-control-panel.html","app/messaging.html","app/calendar.html","app/documents.html","app/campaign-manager.html","app/social-studio.html","app/creative-factory.html","app/command-center.html","app/ops-admin.html","app/galaxy.html","app/automations.html","app/agent-editor.html","app/hiring.html","app/products-commissions.html","app/staff-teams.html","app/content-admin.html","app/brand-studio.html","app/inquiry-remover.html","app/client-portal.html","app/partner-galaxy.html","app/affiliate.html"],
+    staff: ["app/closer-dashboard.html","app/pipeline.html","app/client-control-panel.html","app/messaging.html","app/calendar.html","app/documents.html","app/campaign-manager.html","app/social-studio.html","app/creative-factory.html","app/command-center.html","app/galaxy.html","app/automations.html","app/agent-editor.html","app/hiring.html","app/staff-teams.html","app/content-admin.html","app/brand-studio.html","app/inquiry-remover.html","app/client-portal.html"],
     partner: ["app/partner-galaxy.html","app/affiliate.html","app/client-portal.html","app/brand-studio.html","app/campaign-manager.html"],
     affiliate: ["app/affiliate.html","app/client-portal.html"],
     client: ["app/client-portal.html"]

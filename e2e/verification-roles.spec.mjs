@@ -140,7 +140,7 @@ for (const [roleName, cfg] of Object.entries(ROLES)) {
             file: `public/app/${screen}`
           });
         }
-        if (sample > 0 && screen !== "sample-data.html") {
+        if (sample > 0) {
           pushAssert({
             section: "UI", journey: "ROLE_SCREENS", role: roleName, status: "FAIL",
             id: `ui-${roleName}-${screen}-sample`,
