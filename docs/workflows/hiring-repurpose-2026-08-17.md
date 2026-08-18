@@ -77,6 +77,23 @@ was never built.
   nothing on the screen creates a posting. Replaces the old "⚠ never tested
   against a real LinkedIn account", which implied a connection exists.
 
+**Page script — three defects fixed to make the screen usable**
+
+1. **The screen loaded nothing.** Since `f23ced1` (today 13:36) `shell.js` and
+   `data.js` are `defer`red, but the inline page script runs during parse, so
+   `FHData.banner()` at the top of `wireHiring()` threw `FHData is not defined`
+   and the function stopped before fetching. Every tile read "loading…" and
+   every table was empty. Now started on `DOMContentLoaded`.
+   Turns `e2e/screens-smoke.spec.mjs` "/app/hiring.html loads without a
+   JavaScript error" from **red to green**. No test was changed.
+2. **The page ran 68px off the right edge**, cutting off the Flags column, Last
+   synced, and the right-hand board columns. `.fh-maxw` sets
+   `margin-inline:auto`, and an auto cross-axis margin cancels flex stretch, so
+   the column sized to its own max-content — which the 11-column board makes
+   wider than the page. `width:100%` on `.content` restores the stretch.
+   Measured: content column 1280px → 1212px.
+3. The tile/insight rewrites below.
+
 **Page script**
 - `statRow`: 5 tiles → 4 (`SHORT BY`, `WAITING ON YOU`, `ON THE BENCH`,
   `OPEN APPLICATIONS`). `fundhub-brand.css:129` forces `.stats` to 4 columns
@@ -104,24 +121,39 @@ Harness: clean worktree at HEAD + the page, mocked owner session, 1440×900.
 
 | | Before | After |
 |---|---|---|
-| Page height | 2689px | 1260px |
-| Words of prose in the body | 1116 | 295 |
+| Page height | 2689px | 1837px (now that data actually paints) |
+| Words of prose in the body | 1116 | 463 incl. painted rows (295 static) |
 | Caption blocks | 20 | 9 |
-| Distinct font sizes in content | 3 | 3 |
+| Content column width | 1280px (overflowed) | 1212px (fits) |
+
+Live, signed in as owner on fundhub.ai, after deploy:
+
+| | Before (06:28 run) | After |
+|---|---|---|
+| Console errors | 1 (`FHData is not defined`) | **0** |
+| Failing API calls | — | **0** of 10 |
+| Page height | 3373px | 2093px |
+| Sideways scroll at 1440 | yes (1508px doc) | **no** |
+| Rows painted | tiles stuck on "loading…" | bench 3 · queue 1 · postings 2 · funnel 1 · decisions 1 |
 
 ## Proof
 
 - `npm run lint` — clean, 1296 files.
-- `npm test` — 5627 pass / 13 fail. All 13 reproduce with the page reverted to
-  HEAD; none is hiring. They belong to other sessions' in-flight work
-  (company-brain, contracts, lenders) plus the journeys-stale check.
+- `npm test` — 5592 pass / 39 fail. **Identical with the page swapped back to
+  its pre-change version** (5592/39), so none is this change. They belong to
+  other sessions' in-flight work (company-brain, contracts, lenders, a sidebar
+  sweep) plus the journeys-stale check. The count moved 13 → 39 during this
+  task as other sessions committed — see CLAUDE.md §12 on this number moving.
 - `src/http/{crm-html,app-nav-reachability,routes,auth-gate}.test.mjs` — 76
   pass / 4 fail, **identical with and without this change**. The 4 are a
   sidebar sweep another session had in flight.
-- `e2e/screens-smoke.spec.mjs -g hiring` — fails on
-  `ReferenceError: FHData is not defined`. **Pre-existing on main**: reproduced
-  in a clean worktree at HEAD with the untouched page. Logged below, not fixed
-  here (not named, and not this screen's file).
+- `e2e/screens-smoke.spec.mjs -g hiring` — **passes**. Was red on main; fixed
+  by defect 1 above, without touching the test.
+- `e2e/crm-flows.spec.mjs -g hiring` — `/app/hiring.html is interactive
+  without throwing` passes.
+- Live click sweep, owner on fundhub.ai: 38 controls clicked, 20 OK, 18 NOOP.
+  All 18 NOOPs are filter chips already showing a count of 0 — wired, nothing
+  to filter. No dead control, no forbidden control, no failing call.
 - Evidence: `docs/workflows/hiring-repurpose-2026-08-17-evidence/`
   (`before/`, `after/`, `live/`).
 
@@ -134,11 +166,18 @@ because nothing a journey describes moved.
 
 ## Found, not fixed (out of scope — did not touch)
 
-1. **`FHData is not defined` on `/app/hiring.html`.** Pre-existing on main,
-   reproduced at HEAD. The browser smoke test for this screen is red because of
-   it. Not in the file Chris named.
-2. **Sideways scroll at 390px.** True before this change and after; the bench
-   table is wider than the phone. Pre-existing.
+1. **Fifteen other screens are dead the same way `hiring.html` was.** Same
+   cause (`f23ced1` deferring `shell.js`/`data.js` while inline scripts call
+   `FHData` during parse). Verified in a clean worktree at HEAD, so this is
+   main, not local mess: `index`, `command-center`, `pipeline`, `messaging`,
+   `documents`, `contracts`, `client-control-panel`, `products-commissions`,
+   `ops-admin`, `agent-editor`, `template-editor`, `partner-galaxy`,
+   `affiliate`, `consent-capture`, `client-portal`. Each needs the same
+   one-line `DOMContentLoaded` change. **This is the biggest thing found today
+   and it is not hiring's to fix.**
+2. **Sideways scroll at 390px in the offline harness.** True before and after;
+   the board's 11 columns. The live run reports no phone overflow, so this
+   looks like a harness/shell difference — worth one look, not chased here.
 3. **`api/hiring/postings.mjs:10` points at `api/hiring/channels.mjs`**, which
    does not exist. A comment, not a route, so nothing 404s — but it is a
    promise the code does not keep.

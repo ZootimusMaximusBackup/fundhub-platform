@@ -15,9 +15,9 @@ Cut what isn't needed during a call. **Tell Chris what was cut and why BEFORE de
 | W2 | Call cockpit inventory | agent | done |
 | W3 | Test + journey blast radius | agent | done |
 | W4 | Live "before" capture as closer | agent | done |
-| S1 | Synthesis → cut list for Chris | main thread | pending |
-| S2 | The cut (after Chris approves) | main thread | pending |
-| S3 | Prove: lint, tests, live capture, deploy | main thread | pending |
+| S1 | Synthesis → cut list for Chris | main thread | done |
+| S2 | The cut (after Chris approves) | main thread | done — committed inside a41f2fe |
+| S3 | Prove: lint, tests, live capture, deploy | main thread | blocked — not pushed, owner call |
 
 ## Shared context brief
 
@@ -317,6 +317,72 @@ Notes that matter for the cut:
 - Opened without a client id in the address, so every value is a dash. That is also what a closer
   sees if they open the cockpit from the menu instead of from a booked call.
 
-## Blockers and open questions
+## Owner decision (2026-08-17)
 
-_none yet_
+Asked which screen is the one working surface during a call. **Owner chose: the Call cockpit
+is the call screen; the Closer Dashboard becomes the calculator screen.** Calculators stay —
+owner-set, not revisitable.
+
+Evidence that drove the question: the live capture showed the Closer Dashboard ends at the fold
+with its bottom third empty (900px, no scroll), while the cockpit runs 1059px with 19 controls.
+The owner's premise — "Closer Dashboard has too much information" — was the opposite way round.
+The closer also sees 13 sidebar tabs live, not the 34 in the raw markup; `gateLinks()` narrows it.
+
+## Change manifest
+
+Committed inside `a41f2fe` (see the warning below — that is not this work's own commit).
+
+| File | Change |
+|---|---|
+| `public/app/closer-dashboard.html` | −81 lines. Cut Today's Pipeline, the 4 hidden shift tiles, footer decoration (kept the estimates disclaimer), the org + LIVE topbar pills. Cut the JS they owned: `paintToday`, `whenText`, the `closer-now` read, the `paintStaff` footer writes. Cut 14 orphaned CSS rules and the `@keyframes livepulse` left behind. |
+| `public/app/closer-call.html` | −41 lines. Cut the 6-tile KPI strip and the "Gone quiet" rail section. |
+| `public/app/closer-call.js` | −42 lines. Cut the KPI painter, the unused `kpis` local, the "Gone quiet" painter (mandatory — the rail is addressed by index), and orphaned `pct()` / `humanNote()`. |
+| `src/http/closer-ui-honest.test.mjs` | Stat-tiles assertion replaced with two STRICTER ones: the tiles and `#todayPipe` may not come back at all. |
+| `e2e/sales-dashboards.spec.mjs` | Pipeline empty-text assertion → `toHaveCount(0)`. Removed the test that covered the deleted pipeline feature. |
+
+**Not touched:** both calculators, the collapsed breakdown, the client name, `shell.js`, the shared
+sidebar, `src/http/closer-dashboard-view.mjs`, and everything between `/* FH-VIEW-BEGIN */` and
+`/* FH-VIEW-END */`.
+
+**No journey file changed.** `scripts/journeys/extract.mjs` reads only `netlify/functions/api.mjs`,
+`src/http/read-api.mjs`, `partner-read-api.mjs` and `dashboard-auth.mjs` — never screen HTML. A
+UI-only cut is journey-neutral. `/api/read/closer-now` is still routed and still exercised by the
+cockpit test at `e2e/sales-dashboards.spec.mjs:188`, so no route lost coverage. No CHANGELOG line.
+
+## Proof
+
+- `npm run lint` — clean, 1296 files.
+- Closer unit + view tests — **77 pass, 0 fail** (`closer-ui-honest`, `closer-dashboard-view`,
+  `closer-deck-present`, `closer-deck-endpoints`, `closer-now`, `closer-deck`).
+- Baseline check: on a clean tree at `8659d5f`, `npm test` already failed 5 tests
+  (org-filter, app-shell reachability, inline sidebars, journey extraction, journey staleness).
+  These cuts add nothing to that list.
+- Live "after" capture: **NOT DONE** — needs a deploy first, and the push is on hold.
+
+## ⚠️ Blockers and open questions
+
+**1. Concurrent session collision — the reason nothing is pushed.**
+Another Claude session was working in this same checkout throughout. It committed repeatedly
+(`8659d5f` → `a41f2fe`) and its final commit **swept this work into it**, so these closer cuts
+live under the message "Update the journey maps for the Company Brain chat routes". The code is
+correct; only the history is muddled. History was NOT rewritten — the other session is live.
+
+`a41f2fe` is the single unpushed commit and it also carries that session's unfinished contracts,
+sidebar, Finance OS and pipeline work. **Owner decided 2026-08-17: wait for the other session to
+finish rather than push unverified work to the live site.**
+
+**2. Agent error, recorded.** This session ran `git stash` to measure a clean test baseline. That
+briefly removed the other session's uncommitted work from disk. It was restored; copies of the two
+files it was actively editing are saved outside the repo. Do not use `git stash` in this checkout.
+
+**3. Found, not fixed** (out of the named scope — owner has not asked for these):
+- On the cockpit, the shell's "Sign out / 13 tabs" chip renders **on top of** the tiles beneath it.
+  Visible in `before/closer-call-1440-full.png`. Removing the KPI strip moves what sits under it.
+- The cockpit's "What they can get" bands can never show a number: `buildReport()` in
+  `src/underwrite/report.mjs` returns no `funding` / `capacity` / `projections` key, so the empty
+  branch in `closer-call.js` always fires. It will read "Waiting on UnderwriteIQ" forever.
+- The dashboard fires the whole `read/closer-call` cockpit payload just to print the client's name.
+- `closer-dashboard.html`'s `NOT_SOURCED` banner still claims "today's pipeline" is unsourced.
+  That text is now doubly wrong: the pipeline is gone, and it had been live via `closer-now`.
+- `closer-call.html` carries a `#fh-temp-chip` element that is `hidden` and referenced by no JS.
+

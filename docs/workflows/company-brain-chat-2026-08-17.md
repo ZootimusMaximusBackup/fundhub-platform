@@ -17,7 +17,7 @@ a different shape, because three other workflows are building against it right n
 | ID | Task | Owner | Status |
 |---|---|---|---|
 | W1 | Ground: read the code, freeze contracts, write this board | main session | **done** |
-| W2 | Chat screen rebuild — `public/app/company-brain.html` | agent | **claimed** |
+| W2 | Chat screen rebuild — `public/app/company-brain.html` | agent | **done** |
 | W3 | Upload + ingest — new endpoint, new migration, reuse pipeline | agent | **done** |
 | W4 | Chat history — threads + messages, persist each turn | agent | **done** |
 | W5 | Approval gating — uploads unanswerable until owner approves | agent | **done** |
@@ -439,3 +439,81 @@ Both behaviours are covered by tests.
 
 **Not run here:** live Playwright and the human click path. Both need the migration
 applied and W2's screen finished — W6's step.
+
+---
+
+### W2 — chat screen rebuild (`public/app/company-brain.html`)
+
+**File touched:** `public/app/company-brain.html` only. Nothing under `api/`, `src/`, `db/`
+or `netlify/` was opened for edit.
+
+**What the screen is now.** One full-height app frame with three panes. Left: a rail of past
+chats with a New chat button. Middle: a scrolling message history with the composer pinned to
+the bottom. Right: a Documents panel, closed until asked for, holding the uploaded-file list
+and — for `owner` only — the approval queue. Nothing on the page scrolls except the message
+list and the two panels.
+
+- Conversation column measures **948px at a 1440px viewport** (was a card inside `.content
+  fh-maxw`). Message text keeps a 76ch reading measure, centred — 671px measured.
+- Composer is a `<textarea>` that grows to a 200px cap. Enter sends, Shift+Enter makes a new
+  line, Send and Attach both disable while a request is in flight.
+- Thread rail collapses under 900px and opens over the conversation from a ☰ button. The
+  Documents panel overlays under 1200px. **No sideways page scroll at 1440x900 or at 390px**
+  — measured `scrollWidth - clientWidth = 0` at both.
+
+**Endpoints called** (all against the frozen contracts; none stubbed, none faked):
+
+| Call | Board | Used for |
+|---|---|---|
+| `POST /api/read/company-brain` | §3.4 | asks a question, sends `thread_id` when one is open, reads `thread_id` / `history_saved` back |
+| `POST /api/company-brain/upload` | §3.1 | `multipart/form-data`, field `file`, `thread_id` when open. **No `content-type` header is set** so the browser writes the boundary |
+| `GET /api/company-brain/upload` | §3.2 | uploaded-file list and pending count |
+| `GET /api/company-brain/threads` | §3.3 | rail list |
+| `GET /api/company-brain/threads?thread_id=` | §3.3 | loads one chat's messages |
+| `GET` / `POST /api/company-brain/reviews` | existing | owner approval queue, unchanged shape |
+
+**Approval gating is stated on screen.** After an upload: "Uploaded &lt;name&gt;. An owner has to
+approve it before it can be used in answers." The Documents panel repeats it per file and the
+pending count rides on the Documents button.
+
+**Kept from the old file, deliberately:** `esc()` on every interpolated value, the
+`localStorage.fh_token` / `fh_session` / `fh_demo` pattern, the source row's Drive link, tier
+badge, client-record link and recording badge, the owner review queue, the CRM sidebar markup,
+the topbar, and both stylesheet links. Plain vanilla JS, no dependency, no CDN script.
+
+**Removed:** the `.foot` strip ("company brain · fundhub.ai"). A footer under a pinned composer
+is wrong for a chat screen. Nothing else was dropped.
+
+**Uploaded files never print "null".** `webViewLink` and `driveFileId` null renders as the file
+name plus its tier badge and no link — verified against a §3.5-shaped payload in a browser.
+
+**Errors are sentences, never status codes.** Every failure maps through one `friendly()`
+table: role refused, no company on the account, file too big, file type unreadable, signed
+out, "this part of Company Brain is not switched on yet" for a route that is not wired, and a
+network sentence when the server cannot be reached. Loading is a skeleton, empty says it is
+empty. No placeholder or sample content anywhere.
+
+**Test hooks for W6** (as requested): `data-brain-conversation` on the conversation column,
+`data-brain-thread-list` on the rail. Note the Documents panel now starts **closed** — it is
+in-flow above 1200px and opening it on load cut the conversation to 608px, under W6's 700px
+assertion. It opens on click and opens itself right after an upload.
+
+**One real bug found and fixed during verification.** Auto-scroll used only
+`requestAnimationFrame`, which never fires in a throttled or hidden tab — a chat opened in a
+background tab sat at the top of the history. It now sets `scrollTop` straight away and keeps
+the frame callback as a second pass. Verified: six turns, lands on the newest.
+
+**Checks run:** `npm run lint` clean. `node --test src/http/company-brain-screen.test.mjs` —
+4/4 pass. Rendered and driven in a real browser at 1440x900 and 390x844: empty state, error
+state, ask, sources, upload copy, thread rail, mobile collapse, auto-scroll. No JavaScript
+errors in the console; the only console entries are 404s from the endpoints W3/W4 have not
+wired yet, which is what the screen's error state is for.
+
+**Not done here (not W2's to do):** live Playwright and the human click path on `fundhub.ai`
+— both need the endpoints wired and the migrations applied, which is W6's step.
+
+**Flag for whoever owns it — not mine, not touched.** While this task ran, roughly thirty
+files under `public/app/` were modified and `public/app/sample-data.html` was deleted by
+something outside this workflow, and one edit to `public/app/company-brain.html` was reverted
+under me and had to be re-applied. No workflow in §4 owns `public/app/*` except W2 owning this
+one file. Worth confirming that mass change was intended before anything ships.
