@@ -1,7 +1,7 @@
 # Campaigns — rendered visible text, 1440 wide, partner selected
 # https://fundhub.ai/app/campaign-manager.html?partner_id=94796e0e-d012-4987-8721-676093aaed79
 # partner: DEMO Partner — Northlight Capital
-# captured 2026-08-18T04:01:57.705Z
+# captured 2026-08-18T04:07:57.980Z
 
 ===== SIDEBAR =====
 ‹‹
@@ -95,7 +95,7 @@ SCOPE	CAMPAIGN	PLATFORM	DAILY LIMIT	SPEND TODAY	HEADROOM	% OF CEILING	MAX DAILY 
 No daily limit matches this filter.
 0 of 0 daily limits in use · closest to the limit first
 Do not add these rows up. A partner limit, a platform limit and a campaign limit can all count the same money. Green means our own copy looks fine — only breached checks the ad platform itself.
-0 of 0 campaigns have no daily limit of their own and so appear nowhere above. They are still covered by the partner and platform limits. Once a limit has been breached, every further budget change is refused until a person clears it.
+0 of 0 campaigns have no limit of their own. Partner and platform limits still cover them.
 CAMPAIGNS
 PLATFORM
 all
@@ -164,7 +164,7 @@ creative
 connection
 social post
 autopilot
-RULE KEY
+RULE
 any
 scale winner
 cost per sale too high

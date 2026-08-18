@@ -2,11 +2,11 @@
   "base": "https://fundhub.ai",
   "screen": "/app/campaign-manager.html",
   "email": "owner@fundhub.ai",
-  "ranAt": "2026-08-18T04:01:57.705Z",
+  "ranAt": "2026-08-18T04:07:57.980Z",
   "login": {
     "ok": true,
-    "loginApiStatus": 200,
-    "landedAt": "/app/command-center.html"
+    "cached": true,
+    "landedAt": "about:blank"
   },
   "partnerPicker": {
     "present": true,
@@ -61,7 +61,7 @@
     "apiCalls": [
       {
         "method": "GET",
-        "url": "/api/campaigns/spend?state=all&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+        "url": "/api/auth/session",
         "status": 200
       },
       {
@@ -71,27 +71,12 @@
       },
       {
         "method": "GET",
-        "url": "/api/auth/session",
-        "status": 200
-      },
-      {
-        "method": "GET",
         "url": "/api/campaigns/list?state=all&limit=200&partner_id=94796e0e-d012-4987-8721-676093aaed79",
         "status": 200
       },
       {
         "method": "GET",
-        "url": "/api/campaigns/fatigue?state=all&days=7&partner_id=94796e0e-d012-4987-8721-676093aaed79",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/read/partners?limit=200",
-        "status": 200
-      },
-      {
-        "method": "GET",
-        "url": "/api/health",
+        "url": "/api/campaigns/action-log?state=all&limit=200&partner_id=94796e0e-d012-4987-8721-676093aaed79",
         "status": 200
       },
       {
@@ -101,12 +86,27 @@
       },
       {
         "method": "GET",
+        "url": "/api/read/partners?limit=200",
+        "status": 200
+      },
+      {
+        "method": "GET",
         "url": "/api/demo/mode",
         "status": 200
       },
       {
         "method": "GET",
-        "url": "/api/campaigns/action-log?state=all&limit=200&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+        "url": "/api/campaigns/fatigue?state=all&days=7&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/campaigns/spend?state=all&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/health",
         "status": 200
       }
     ],
@@ -212,37 +212,37 @@
         "top": 956
       },
       {
-        "text": "0 of 0 campaigns have no daily limit of their own and so appear nowhere above. They are still covered by the partner and platform limits. Once a limit has been breached, every further budget change is refused until a person clears it.",
-        "h": 63,
+        "text": "0 of 0 campaigns have no limit of their own. Partner and platform limits still cover them.",
+        "h": 42,
         "top": 1019
       },
       {
         "text": "Spend here is yesterday’s. Today is only part of a day. Status and Synced stay blank until you press Sync Meta now.",
         "h": 42,
-        "top": 1418
+        "top": 1397
       },
       {
         "text": "Only ads that ran in this window are listed. Unconfigured means the rotation rules are switched off for this partner.",
         "h": 42,
-        "top": 1768
+        "top": 1747
       },
       {
         "text": "Fix blockers in the ad platform’s own Business Manager — nothing here changes them. The same blocker can show more than once. A blank expiry means we do not know, not forever.",
         "h": 63,
-        "top": 2064
+        "top": 2043
       },
       {
         "text": "Nothing here retries, so never carried out stays that way. Kill switch rows say it too, but the stop did happen. Revertible is a label, not a button.",
         "h": 42,
-        "top": 2435
+        "top": 2414
       }
     ],
-    "docHeight": 2568
+    "docHeight": 2547
   },
   "mobile": {
     "scrollWidth": 1280,
     "horizontalOverflow": false,
-    "docHeight": 3104,
+    "docHeight": 3083,
     "apiFails": []
   },
   "partnerChosen": {
