@@ -52,6 +52,124 @@ full — empty must say what will appear and never show fake sample data).
 
 <!-- W2, W3, W4 append here -->
 
+### W2 — the BEFORE pictures, live, with a partner picked
+
+**Owner: W2. W2 edited no source file.** Everything W2 wrote is under
+`docs/workflows/campaigns-readable-2026-08-17-evidence/`, plus this section.
+
+**The short version: the Campaigns screen has no data in it. None. For any partner.**
+All five panels work. All five come back empty. W1 must not put a single made-up
+number on this screen, because the real screen will show zeros to everyone.
+
+#### Files written
+
+| File | What it is |
+|---|---|
+| `…-evidence/before/1440-fold.png` | The first screen a person sees, 1440 wide, partner picked |
+| `…-evidence/before/1440-full.png` | The whole page top to bottom, 1440 wide (3,628 pixels tall) |
+| `…-evidence/before/390-fold.png` | The first screen on a phone, 390 wide |
+| `…-evidence/before/390-full.png` | The whole page on a phone (4,165 pixels tall) |
+| `…-evidence/before/1440-no-partner-fold.png` | Bonus: the same screen with **no** partner picked |
+| `…-evidence/before/1440-visible-text.txt` | Every word the page showed, 1440 wide |
+| `…-evidence/before/390-visible-text.txt` | Every word the page showed, 390 wide |
+| `…-evidence/before/capture.json` | Row counts, panel by panel, plus every web call and its answer |
+| `…-evidence/before/partner-row-scan.json` | Row counts for all 8 partners, not just the one in the pictures |
+| `…-evidence/before/WHICH-VERSION.md` | Proof these pictures are the OLD screen, not W1's new one |
+| `…-evidence/before/OUTAGE-2026-08-17.md` | Why the first try failed (see I2) |
+| `…-evidence/before/outage-bounced-to-login-1440.png` | The sign-in page the first try got instead |
+| `…-evidence/before/capture-attempt-1-failed.json` | The failed first try, kept as proof |
+| `…-evidence/_tools/campaigns-before.mjs` | The script. Run it again for the AFTER pictures. |
+
+#### What was run
+
+```
+UI_AUDIT_STATE_DIR=<scratch folder> \
+  node docs/workflows/campaigns-readable-2026-08-17-evidence/_tools/campaigns-before.mjs
+```
+
+Against **https://fundhub.ai**, signed in as `owner@fundhub.ai`, at 04:00 UTC on 2026-08-18.
+
+The shared harness (`docs/workflows/ui-audit-evidence/_tools/ui-audit.mjs`) was read first
+and its way of working was copied — same sign-in, same saved-session trick, same write
+block. It was not used directly because it cannot do the one thing this job needed: the
+Campaigns screen is blank until a partner is picked, and picking one sends the browser to
+a new web address. The harness also does not save the page's words or count rows.
+The new script is 200 lines and does only those six things.
+
+**Nothing was written to the database.** Every non-read web call was blocked and answered
+with a fake error before it could leave the browser. The only exception is signing in.
+No password or key was ever printed.
+
+#### 1. Which partner, and were there real ones to pick?
+
+Yes. The Partner box had **8 real partners** in it (9 choices counting "Choose a partner").
+Picked the first: **DEMO Partner — Northlight Capital**.
+
+The full list, as the box showed it: DEMO Partner — Northlight Capital · DEMO Partner —
+Quillcrest White Label · E2E WL Book LLC · E2E WL Click Co · E2E WL Click17 Co ·
+principalread Alpha · principalread Bravo · TEST — White-Label Partner Role.
+
+Note for W1: every one of those eight is a test or demo name. There is no real customer
+partner on this list.
+
+#### 2. Each panel: real rows, or empty?
+
+Every panel answered. Every panel was empty. The footer said **"5 of 5 panels loaded"**.
+
+| Panel | Did it answer? | Rows |
+|---|---|---|
+| CM-03 spend vs ceilings | yes, 200 | **0** |
+| CM-04 campaign list | yes, 200 | **0** |
+| CM-06 creative fatigue | yes, 200 | **0** |
+| CM-07 connections | yes, 200 | **0** |
+| CM-08 action log | yes, 200 | **0** |
+
+The five tiles at the top: three show a dash (no number to show), two show `0.00` and `0 / 0`.
+The four "needs attention" tiles all show `0`.
+
+Then all eight partners were checked the same way, one read each, no clicking
+(`partner-row-scan.json`). **Every panel, every partner, zero rows.** There is no partner
+on this site whose Campaigns screen has anything in it.
+
+So the AFTER pictures will also be all empty states. That is the honest picture and it is
+what W1's work has to look good as.
+
+#### 3. How much of the first screen is grey explaining, vs numbers and tables?
+
+Eyeballing `1440-fold.png` — the first 900 pixels:
+
+* **About 14%** — the black beta warning strip and the title bar.
+* **About 29%** — the five number tiles. Their actual numbers take up maybe a tenth of the
+  screen, and three of the five have no number at all.
+* **About 54%** — the `SCOPE & SOURCES` card. Its left half is two grey paragraphs; its
+  right half is the "Did each panel load?" table, six rows, each with a grey line under it
+  reading "loaded fine — there is nothing there yet".
+
+Put simply: **more than half of the first screen is the screen talking about itself.**
+The only real numbers up there are two zeros.
+
+Whole page: **16 grey explanation blocks, 945 pixels of the page's 3,628** — about **26%**
+of the entire screen is grey paragraphs. None of them sit above the 900-pixel line; the
+first one starts at exactly 900. Their positions and text are listed in `capture.json`
+under `panels.greyCapBlocks`.
+
+#### 4. Did any panel error?
+
+**No.** Zero failed web calls. Zero errors in the browser console. Every read came back 200.
+The screen was working correctly. It simply has nothing to show.
+
+#### Other things seen, not fixed (out of W2's scope)
+
+* **On a phone the top of the screen is broken.** In `390-fold.png` the currency label,
+  the Partner box, Reload, Search and the account pill all sit on top of the first number
+  tile, and the cards run off the right edge. The page lays itself out 1,280 pixels wide
+  inside a 390-pixel phone. Same thing showed in the earlier harness run.
+* The hidden "campaign detail" panel appears as a white strip in the top right of
+  `1440-full.png`. That is the drawer being photographed while hidden, not a real fault.
+* An older no-partner picture of this screen from 19:39 UTC the same day is at
+  `docs/workflows/ui-audit-evidence/campaign-manager-mlfix/`. In it every campaign read
+  came back 400, because no partner was chosen.
+
 ### W3 — copy brief for `public/app/campaign-manager.html`
 
 **Owner: W3 (analysis only). W3 edited no source file. W1 executes this.**
@@ -519,3 +637,14 @@ said `db: up` throughout, because it only reads. Full write-up and the bounced-t
 screenshot are in `campaigns-readable-2026-08-17-evidence/before/OUTAGE-2026-08-17.md`.
 Re-checked at 03:59 UTC: reads are healthy again (401, not 503). Whether sign-in writes
 recovered is unconfirmed. **This blocked the BEFORE capture and is blocking the AFTER capture.**
+
+**I2 update, from W2 (04:00–04:12 UTC): it is over. Nothing is blocked any more.**
+The site started working again at **04:00:15 UTC**, 27 minutes after it broke. W2 was
+polling every 30 seconds and caught the exact moment. The BEFORE capture ran straight
+away and finished at 04:00:22 UTC — and it caught the OLD screen with about ten minutes
+to spare, proof in
+`campaigns-readable-2026-08-17-evidence/before/WHICH-VERSION.md`.
+By 04:12 UTC the live site was serving W1's new version (the file at
+`https://fundhub.ai/app/campaign-manager.html` now hashes the same as commit `6805f75`).
+**The AFTER capture can be taken right now.** Run the same script with
+`OUT_DIR=<full path to an "after" folder>` set, or the BEFORE shots get written over.

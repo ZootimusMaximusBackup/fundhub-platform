@@ -1,0 +1,252 @@
+{
+  "base": "https://fundhub.ai",
+  "screen": "/app/campaign-manager.html",
+  "email": "owner@fundhub.ai",
+  "ranAt": "2026-08-18T04:01:57.705Z",
+  "login": {
+    "ok": true,
+    "loginApiStatus": 200,
+    "landedAt": "/app/command-center.html"
+  },
+  "partnerPicker": {
+    "present": true,
+    "disabled": false,
+    "optionCount": 9,
+    "options": [
+      {
+        "value": "",
+        "label": "Choose a partner"
+      },
+      {
+        "value": "94796e0e-d012-4987-8721-676093aaed79",
+        "label": "DEMO Partner — Northlight Capital"
+      },
+      {
+        "value": "08aaad2e-ea94-4e00-9fe3-1f9e703336f2",
+        "label": "DEMO Partner — Quillcrest White Label"
+      },
+      {
+        "value": "c28b0149-b0d2-42ef-9b27-f708afaed436",
+        "label": "E2E WL Book LLC"
+      },
+      {
+        "value": "caf277ee-a7f4-4d96-985c-5579908a169b",
+        "label": "E2E WL Click Co"
+      },
+      {
+        "value": "068b933c-9f31-4b47-9499-857276d18c07",
+        "label": "E2E WL Click17 Co"
+      },
+      {
+        "value": "8f331880-a922-4a81-ac5a-6d003c767bb5",
+        "label": "principalread Alpha"
+      },
+      {
+        "value": "5772f2ac-7360-47a3-ba6c-587ae9900345",
+        "label": "principalread Bravo"
+      },
+      {
+        "value": "9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+        "label": "TEST — White-Label Partner Role"
+      }
+    ],
+    "apiFails": []
+  },
+  "load": {
+    "finalUrl": "/app/campaign-manager.html?partner_id=94796e0e-d012-4987-8721-676093aaed79",
+    "selectedInDropdown": {
+      "value": "94796e0e-d012-4987-8721-676093aaed79",
+      "label": "DEMO Partner — Northlight Capital"
+    },
+    "apiCalls": [
+      {
+        "method": "GET",
+        "url": "/api/campaigns/spend?state=all&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/campaigns/connections?state=all&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/campaigns/list?state=all&limit=200&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/campaigns/fatigue?state=all&days=7&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/read/partners?limit=200",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/health",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/org-brand",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/demo/mode",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/campaigns/action-log?state=all&limit=200&partner_id=94796e0e-d012-4987-8721-676093aaed79",
+        "status": 200
+      }
+    ],
+    "apiFails": [],
+    "consoleErrors": []
+  },
+  "panels": {
+    "statRow": {
+      "tiles": 5,
+      "text": "SPEND TODAY—no daily limit set for this partnerHEADROOM TODAY—no daily limit set for this partnerSPEND YESTERDAY0.00yesterday, across 0 campaignsLIVE CAMPAIGNS0 / 0running right now, out of every campaignROAS 7D—return on ad spend · average of 0 campaigns, last 7 days"
+    },
+    "sources": null,
+    "needsAttention": {
+      "count": 4,
+      "text": "0Daily limits already hitThe kill switch stopped spending on these0Changes that did not go throughWritten down but never carried out, or the ad platform refused them0Connections that cannot go liveSomething has to be fixed before a campaign on them can run0Campaigns with an error on themThe ad platf"
+    },
+    "spend": {
+      "panel": "Spend vs ceilings",
+      "tbody": "spendRows",
+      "present": true,
+      "rowCount": 1,
+      "looksLikeStateRow": true,
+      "firstRowText": "No daily limit matches this filter.",
+      "dataRows": 0,
+      "rail": {
+        "count": 3,
+        "text": "all0breached0ok0"
+      },
+      "foot": "0 of 0 daily limits in use · closest to the limit first"
+    },
+    "campaigns": {
+      "panel": "Campaign list",
+      "tbody": "campRows",
+      "present": true,
+      "rowCount": 1,
+      "looksLikeStateRow": true,
+      "firstRowText": "No campaigns yet. Press Sync Meta now to pull them in.",
+      "dataRows": 0,
+      "rail": {
+        "count": 7,
+        "text": "all0draft0awaiting approval0approved0live0paused0archived0"
+      },
+      "foot": "showing 0–0 of 0‹ prevnext ›"
+    },
+    "fatigue": {
+      "panel": "Creative fatigue",
+      "tbody": "fatRows",
+      "present": true,
+      "rowCount": 1,
+      "looksLikeStateRow": true,
+      "firstRowText": "No ad matches this filter within the window.",
+      "dataRows": 0,
+      "rail": {
+        "count": 5,
+        "text": "all0refresh0queue0ok0unconfigured0"
+      },
+      "foot": "0 of 0 ads with activity in the last 7 days · most heavily repeated first"
+    },
+    "connections": {
+      "panel": "Connections",
+      "tbody": "connRows",
+      "present": true,
+      "rowCount": 1,
+      "looksLikeStateRow": true,
+      "firstRowText": "No ad platform connected yet. Connect one in the platform’s Business Manager.",
+      "dataRows": 0,
+      "rail": {
+        "count": 6,
+        "text": "all0pending0active0expired0revoked0needs verification0"
+      },
+      "foot": "0 of 0 connections"
+    },
+    "actionLog": {
+      "panel": "Action log",
+      "tbody": "logRows",
+      "present": true,
+      "rowCount": 1,
+      "looksLikeStateRow": true,
+      "firstRowText": "Nothing has been done to these campaigns yet.",
+      "dataRows": 0,
+      "rail": {
+        "count": 5,
+        "text": "all0agent0human0revertible0failed0"
+      },
+      "foot": "0 of 0 actions · newest first · nothing here can be edited or deleted"
+    },
+    "footNote": "5 of 5 panels loaded",
+    "scope": {
+      "name": "DEMO Partner — Northlight Capital",
+      "pid": null,
+      "badge": null,
+      "how": "Spend is this partner’s ads today. One partner at a time."
+    },
+    "greyCapBlocks": [
+      {
+        "text": "Click a tile to jump to that panel.",
+        "h": 42,
+        "top": 659
+      },
+      {
+        "text": "Do not add these rows up. A partner limit, a platform limit and a campaign limit can all count the same money. Green means our own copy looks fine — only breached checks the ad platform itself.",
+        "h": 63,
+        "top": 956
+      },
+      {
+        "text": "0 of 0 campaigns have no daily limit of their own and so appear nowhere above. They are still covered by the partner and platform limits. Once a limit has been breached, every further budget change is refused until a person clears it.",
+        "h": 63,
+        "top": 1019
+      },
+      {
+        "text": "Spend here is yesterday’s. Today is only part of a day. Status and Synced stay blank until you press Sync Meta now.",
+        "h": 42,
+        "top": 1418
+      },
+      {
+        "text": "Only ads that ran in this window are listed. Unconfigured means the rotation rules are switched off for this partner.",
+        "h": 42,
+        "top": 1768
+      },
+      {
+        "text": "Fix blockers in the ad platform’s own Business Manager — nothing here changes them. The same blocker can show more than once. A blank expiry means we do not know, not forever.",
+        "h": 63,
+        "top": 2064
+      },
+      {
+        "text": "Nothing here retries, so never carried out stays that way. Kill switch rows say it too, but the stop did happen. Revertible is a label, not a button.",
+        "h": 42,
+        "top": 2435
+      }
+    ],
+    "docHeight": 2568
+  },
+  "mobile": {
+    "scrollWidth": 1280,
+    "horizontalOverflow": false,
+    "docHeight": 3104,
+    "apiFails": []
+  },
+  "partnerChosen": {
+    "value": "94796e0e-d012-4987-8721-676093aaed79",
+    "label": "DEMO Partner — Northlight Capital"
+  }
+}
