@@ -224,6 +224,73 @@ export async function notifySigners(db, args = {}) {
 // ---------------------------------------------------------------------------
 
 /**
+ * chasesFor — how many reminders have already gone out for one contract.
+ *
+ * Counted from the messages actually queued for it rather than a counter on the
+ * contract row: the messages ARE the record of what was sent, and a counter
+ * would be a second source of truth that can disagree with them.
+ *
+ * Returns { n, last } — how many, and when the newest one was written.
+ */
+export async function chasesFor(db, { orgId, contractId } = {}) {
+  const { rows } = await db.query(
+    `SELECT count(*)::int AS n, max(created_at) AS last
+       FROM messages
+      WHERE org_id = $1::uuid AND provider_ref LIKE $2`,
+    [orgId, `contract:${contractId}:%:chase%`]);
+  return { n: rows[0]?.n || 0, last: rows[0]?.last || null };
+}
+
+/**
+ * remindContract — chase ONE contract, now.
+ *
+ * The single-contract half of chaseContracts, pulled out so the sweep and a
+ * person pressing a button on one row run the SAME code. Two ways to send the
+ * same reminder is exactly the bug that surfaces months later as "the button
+ * sends a different email from the nightly job".
+ *
+ * `listSigners` and `mintLinks` are passed in for the same reason chaseContracts
+ * takes them: src/contracts/send.mjs imports this module, so importing it back
+ * would be a cycle.
+ *
+ * Returns { ok: true, reminder, waiting, queued, skipped, delivery } on success,
+ * or { ok: false, reason } — "nobody_waiting" or "chase_limit". It never throws
+ * for those; a caller turns them into its own answer.
+ */
+export async function remindContract(db, {
+  orgId, contract, listSigners, mintLinks, maxChases = MAX_CHASES,
+  chasesSoFar = null, baseUrl = null, secret = undefined, staffName = null
+} = {}) {
+  const signers = await listSigners(db, contract.id);
+  const waiting = signers
+    .filter((s) => s.status !== "signed" && s.status !== "declined")
+    .sort((a, b) => a.signer_index - b.signer_index)[0];
+  if (!waiting) return { ok: false, reason: "nobody_waiting", signers };
+
+  const n = Number.isInteger(chasesSoFar)
+    ? chasesSoFar
+    : (await chasesFor(db, { orgId, contractId: contract.id })).n;
+
+  /* IT STOPS. A system that emails somebody forever is a system people filter,
+     and the filter costs more than the deal. The cap holds for a person pressing
+     the button too — that is the whole point of a cap. */
+  if (n >= maxChases) return { ok: false, reason: "chase_limit", chasesSoFar: n, maxChases, waiting, signers };
+
+  /* Fresh links: the original may be near its expiry by the time a later
+     reminder goes out, and a reminder carrying a dead link is worse than none. */
+  const { links } = await mintLinks(db, { orgId, contract, baseUrl, secret });
+
+  const res = await notifySigners(db, {
+    orgId, contract, signers, links,
+    purpose: `chase${n + 1}`,
+    templateKey: REMIND_TEMPLATE_KEY,
+    staffName: staffName || contract.sent_by_name || null
+  });
+
+  return { ok: true, reminder: n + 1, maxChases, waiting, signers, ...res };
+}
+
+/**
  * outstandingContracts — sent, not signed, and nobody has touched it in a while.
  *
  * The clock runs from the LAST THING THAT HAPPENED (`updated_at`), not from the
@@ -246,21 +313,12 @@ export async function outstandingContracts(db, {
       LIMIT $4`,
     [orgId, now, String(Math.max(0, afterDays)), Math.max(1, Math.min(limit, 500))]);
 
-  /* How many times this contract has already been chased, counted from the
-     messages actually queued for it rather than a counter on the row — the
-     messages ARE the record of what was sent, and a counter would be a second
-     source of truth that can disagree with them. */
   const out = [];
   for (const c of rows) {
-    const { rows: sent } = await db.query(
-      `SELECT count(*)::int AS n, max(created_at) AS last
-         FROM messages
-        WHERE org_id = $1::uuid AND provider_ref LIKE $2`,
-      [orgId, `contract:${c.id}:%:chase%`]);
-    const n = sent[0]?.n || 0;
+    const { n, last } = await chasesFor(db, { orgId, contractId: c.id });
     if (n >= maxChases) continue;
-    if (sent[0]?.last) {
-      const since = (new Date(now || Date.now()) - new Date(sent[0].last)) / 86400000;
+    if (last) {
+      const since = (new Date(now || Date.now()) - new Date(last)) / 86400000;
       if (since < everyDays) continue;
     }
     out.push({ contract: c, chasesSoFar: n });
@@ -288,22 +346,13 @@ export async function chaseContracts(db, {
 
   for (const { contract, chasesSoFar } of due) {
     try {
-      const signers = await listSigners(db, contract.id);
-      const waiting = signers
-        .filter((s) => s.status !== "signed" && s.status !== "declined")
-        .sort((a, b) => a.signer_index - b.signer_index)[0];
-      if (!waiting) { summary.skipped.push({ id: contract.id, reason: "nobody_waiting" }); continue; }
-
-      // Fresh links: the original may be near its expiry by the time a third
-      // reminder goes out, and a reminder carrying a dead link is worse than none.
-      const { links } = await mintLinks(db, { orgId, contract, baseUrl, secret });
-
-      const res = await notifySigners(db, {
-        orgId, contract, signers, links,
-        purpose: `chase${chasesSoFar + 1}`,
-        templateKey: REMIND_TEMPLATE_KEY,
-        staffName: contract.sent_by_name
+      const res = await remindContract(db, {
+        orgId, contract, listSigners, mintLinks, maxChases, chasesSoFar,
+        baseUrl, secret, staffName: contract.sent_by_name
       });
+      if (!res.ok) { summary.skipped.push({ id: contract.id, reason: res.reason }); continue; }
+      const waiting = res.waiting;
+
       if (res.queued.length) summary.reminded += 1;
       else summary.skipped.push({ id: contract.id, reason: res.skipped[0]?.reason || "nothing_queued" });
 

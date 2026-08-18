@@ -70,8 +70,12 @@ import {
 import { assertNoCardData } from "../../src/subscriptions/index.mjs";
 
 /* ROLE_SETS.FINANCE — {owner, admin}. A payment instrument is the narrowest
-   thing this API serves. It shares subscriptions.html, whose row in
-   public/app/shell.js OWNER_ADMIN_ONLY mirrors this gate. */
+   thing this API serves. It had no screen of its own: it shared
+   subscriptions.html, which was deleted on 2026-08-17 (owner decision — client
+   payment tracking moves into Finance OS). The API and its gate are unchanged
+   and still routed; whatever screen Finance OS grows for cards must carry the
+   matching OWNER_ADMIN_ONLY row in public/app/shell.js. See
+   docs/FINANCE-OS-REBUILD-HANDOVER.md. */
 const CARD_ROLES = ROLE_SETS.FINANCE;
 
 const SESSION_OWNED = ["org_id", "orgId"];

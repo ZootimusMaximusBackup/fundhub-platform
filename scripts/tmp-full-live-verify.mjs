@@ -104,7 +104,7 @@ const pages = [
   "brand-studio.html", "galaxy.html", "documents.html", "lenders.html", "products-commissions.html",
   "agent-editor.html", "template-editor.html", "journeys.html", "campaign-manager.html",
   "social-studio.html", "creative-factory.html", "content-admin.html", "hiring.html",
-  "sample-data.html", "company-brain.html", "subscriptions.html", "soft-pull-approve.html",
+  "sample-data.html", "company-brain.html", "soft-pull-approve.html",
   "payment-success.html", "closer-call.html", "index.html"
 ];
 

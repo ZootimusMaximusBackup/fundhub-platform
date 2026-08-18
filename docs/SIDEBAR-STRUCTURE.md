@@ -25,7 +25,7 @@ Ordered by how a Fundhub day actually runs: sell → fund → serve the client �
 | Section | Items (in order) | Why this order |
 |---|---|---|
 | **Sales** | Pipeline → Closer Dashboard → Call cockpit → My numbers → Sales floor → Calendar | Desk work starts on the board; closers then open a call, check personal numbers; managers open the floor; calendar closes the booking loop. |
-| **Funding** | Lenders → Finance OS → Contracts → Subscriptions | Match a lender, read money, send the agreement, then Fundhub billing. |
+| **Funding** | Lenders → Finance OS → Contracts | Match a lender, read money, send the agreement. |
 | **Client ops** | Client Control Panel → Messaging → Documents → Inquiry Remover → Company Brain | One client, talk to them, file, clear inquiries, firm knowledge. |
 | **Watch** | Command Center → Galaxy → Ops & Admin | Roll-up KPIs, relationship graph, then platform health. |
 | **Automation** | Agent Editor → Workflows → Journeys → Message Copy | Who speaks → what runs → drip journeys → the words themselves. |
@@ -44,7 +44,7 @@ Aligned with `ROLE_SETS` in `src/http/read-api.mjs` and the sales-screen rules:
 | Shared staff surface | Every `ROLE_SETS.STAFF` role |
 | `closer-call.html`, `my-numbers.html` | `closer` (+ `owner` / `admin` via `*`) |
 | `sales-floor.html` | `sales_manager` (+ `owner` / `admin`) |
-| `subscriptions.html`, `journeys.html` | `owner` / `admin` |
+| `journeys.html` | `owner` / `admin` |
 | `hiring.html` | `owner` / `admin` (`ROLE_SETS.HIRING`) |
 | `client-portal.html`, `affiliate.html` | those principal roles only |
 | `partner-galaxy.html`, `brand-studio.html` | `partner` (brand-studio also on owner/admin `*`) |

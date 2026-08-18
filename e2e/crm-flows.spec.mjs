@@ -182,7 +182,6 @@ test.describe("hiring / creative / social / campaign", () => {
     "/app/affiliate.html",
     "/app/sample-data.html",
     "/app/consent-capture.html",
-    "/app/subscriptions.html"
   ]) {
     test(`${path} is interactive without throwing`, async ({ page }) => {
       await openScreen(page, path, OWNER);

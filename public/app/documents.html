@@ -126,8 +126,6 @@ th[data-s="age"]{text-align:right}
 <div class="navgroup" data-fh-section="funding"><button class="navhead" type="button">Funding<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="lenders.html"><span class="ico">⬡</span><span class="lbl">Lenders</span></a>
         <a class="navitem" href="finance-os.html"><span class="ico">▩</span><span class="lbl">Finance OS</span></a>
-        <a class="navitem" href="contracts.html"><span class="ico">✒</span><span class="lbl">Contracts</span></a>
-        <a class="navitem" href="subscriptions.html"><span class="ico">◍</span><span class="lbl">Subscriptions</span></a>
 </div></div>
 
 <div class="navgroup" data-fh-section="client-ops"><button class="navhead" type="button">Client ops<span class="chev">▾</span></button><div class="navlist">
@@ -161,6 +159,7 @@ th[data-s="age"]{text-align:right}
         <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
         <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
         <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem" href="contracts.html"><span class="ico">✒</span><span class="lbl">Contract templates</span></a>
         <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Demo Mode</span></a>
         <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
 </div></div>
@@ -214,10 +213,16 @@ th[data-s="age"]{text-align:right}
               <th data-s="doc">Document</th><th data-s="client">Client</th><th data-s="cls">Class</th>
               <th data-s="gen">Generated</th><th data-s="del">Delivered</th><th data-s="sig">Signature</th>
               <th data-s="age">Age pending</th>
+              <!-- Not sortable on purpose: no data-s, so the sort-arrow loop skips it.
+                   Only a row that IS a contract fills this in. -->
+              <th>Contract</th>
             </tr></thead>
             <tbody id="body"></tbody>
           </table>
         </div>
+        <!-- Whatever the contract endpoint said, in its own words. Lives OUTSIDE
+             #body so a re-sort or a search keystroke does not wipe the answer. -->
+        <div id="ctMsg" style="display:none;padding:11px 16px;border-top:1px solid var(--line);font-size:var(--fs-body)"></div>
         <div class="legend">
           <span><span class="dot" style="background:var(--ok)"></span>complete</span>
           <span><span class="dot" style="background:var(--warn)"></span>in progress · awaiting a counterparty</span>
@@ -259,6 +264,29 @@ var DOCS=[];
 var GEN={queued:['b-butter','Queued'],generating:['b-warn','Generating'],generated:['b-ok','Generated'],failed:['b-alert','Failed']};
 var DEL={na:['b-info','N/A'],not_sent:['b-butter','Not sent'],sent:['b-warn','Sent'],opened:['b-ok','Opened'],bounced:['b-alert','Bounced']};
 var SIG={na:['b-info','N/A'],awaiting:['b-warn','Awaiting'],signed:['b-ok','Signed'],declined:['b-alert','Declined'],expired:['b-alert','Expired']};
+
+/* A sent contract is watched here, not on the Contracts screen — Contracts is
+   where the form is built, Documents is where the form is watched.
+
+   The contract's OWN state is not the document's signature state and must not
+   be folded into it: a voided contract still has a delivered document sitting
+   in the row next to it. Same five words the Contracts screen uses, so the two
+   screens cannot drift apart. */
+var CSTATE={draft:['b-gray','draft'],sent:['b-info','sent'],viewed:['b-warn','opened'],signed:['b-ok','signed'],void:['b-alert','void']};
+/* Set from the session by the loader below. Void is owner/admin at the API, and
+   a role does not render a control it cannot use. */
+var ctAdmin=false;
+function ctCell(d){
+  var c=d.contract;                        // undefined = this row is not a contract
+  if(!c) return '<span style="color:var(--gray2)">—</span>';
+  var m=CSTATE[c.status]||CSTATE.draft;
+  var acts=[];
+  if(c.status!=='draft') acts.push('<button class="btn sm" data-ct="open" data-cid="'+esc(c.id)+'">Open PDF</button>');
+  if(c.status==='sent'||c.status==='viewed') acts.push('<button class="btn sm" data-ct="remind" data-cid="'+esc(c.id)+'">Remind</button>');
+  if(ctAdmin&&c.status!=='signed'&&c.status!=='void') acts.push('<button class="btn sm" data-ct="void" data-cid="'+esc(c.id)+'">Void</button>');
+  return '<span class="badge '+m[0]+'">'+m[1]+'</span>'+
+    (acts.length?'<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">'+acts.join('')+'</div>':'');
+}
 
 function pending(d){
   return d.gen!=='generated' || d.del==='not_sent' || d.del==='bounced' ||
@@ -335,8 +363,9 @@ function render(){
       '<td><span class="badge '+g[0]+'">'+g[1]+'</span></td>'+
       '<td><span class="badge '+dl[0]+'">'+dl[1]+'</span></td>'+
       '<td><span class="badge '+s[0]+'">'+s[1]+'</span></td>'+
-      '<td>'+(isP?'<span class="age '+ageCls(d.age)+'">'+d.age+'d</span>':'<span class="age" style="color:var(--gray2)">—</span>')+'</td></tr>';
-  }).join('')||'<tr><td colspan="7" class="empty">'+(DOCS.length?'Nothing matches that filter.':'No documents on file yet.')+'</td></tr>';
+      '<td>'+(isP?'<span class="age '+ageCls(d.age)+'">'+d.age+'d</span>':'<span class="age" style="color:var(--gray2)">—</span>')+'</td>'+
+      '<td>'+ctCell(d)+'</td></tr>';
+  }).join('')||'<tr><td colspan="8" class="empty">'+(DOCS.length?'Nothing matches that filter.':'No documents on file yet.')+'</td></tr>';
 
   document.querySelectorAll('#tbl th[data-s]').forEach(function(th){
     var arrow=sortKey===th.dataset.s?(sortDir===1?' ↑':' ↓'):'';
@@ -416,6 +445,162 @@ renderTabs(); renderClassbar(); render();
     }
   } catch (e) {}
 
+  /* ── the sent contract, watched from here ───────────────────────────────────
+     Contracts is where the form is built. Documents is where the form is
+     watched. Everything below is the watching half: the contract's own signing
+     state, opening the signed copy, voiding, and chasing a signature.
+
+     A documents row does NOT point at its contract; a contracts row points at
+     its documents (document_id, and signed_document_id once everybody has
+     signed). So this asks ONCE for the whole page rather than once per row —
+     a 200-row page asking per row is 200 requests for a badge. */
+  var CT_CHUNK = 200;                       // the endpoint's cap on ids per call
+
+  /* Whatever the server said, in the server's own words. It lives outside #body
+     so a re-sort, a tab change or a search keystroke does not wipe it. */
+  var say = function (kind, text) {
+    var el = document.getElementById("ctMsg");
+    if (!el) return;
+    el.style.display = "";
+    el.innerHTML = '<span class="badge ' + kind + '">' +
+      (kind === "b-ok" ? "done" : "problem") + "</span> " + esc(text);
+  };
+
+  var contractById = function (id) {
+    if (typeof DOCS === "undefined") return null;
+    for (var i = 0; i < DOCS.length; i++) {
+      if (DOCS[i].contract && DOCS[i].contract.id === id) return DOCS[i].contract;
+    }
+    return null;
+  };
+
+  var decorateContracts = function () {
+    if (typeof DOCS === "undefined" || !DOCS.length) return;
+    /* A contract registers its document under contracts.kind, which is
+       'contract' OR 'authorization' (db/migrations/124_contracts.sql:148), so
+       both classes are asked about. A row that is not a contract simply gets no
+       answer back and is left exactly as it was — no badge, no buttons. And
+       when the page holds neither class, nothing is asked at all. */
+    var ids = DOCS.filter(function (d) {
+      return d.id && (d.cls === "contract" || d.cls === "auth");
+    }).map(function (d) { return d.id; });
+    if (!ids.length) return;
+
+    var chunks = [];
+    for (var i = 0; i < ids.length; i += CT_CHUNK) chunks.push(ids.slice(i, i + CT_CHUNK));
+
+    Promise.all(chunks.map(function (chunk) {
+      return FHData.read("contracts", { view: "contracts", document_id: chunk.join(",") });
+    })).then(function (results) {
+      var byDoc = {}, bad = null;
+      results.forEach(function (res) {
+        if (!res.ok) { bad = bad || res; return; }
+        var items = (res.data && res.data.items) || [];
+        for (var j = 0; j < items.length; j++) {
+          var c = items[j];
+          if (c.document_id) byDoc[c.document_id] = c;
+          if (c.signed_document_id) byDoc[c.signed_document_id] = c;
+        }
+      });
+      DOCS.forEach(function (d) { d.contract = byDoc[d.id]; });
+      try { redraw(); } catch (e) {}
+      // A failed lookup must not pass for "these are not contracts". Say so.
+      if (bad) FHData.explain(bad, "contract signing status");
+    });
+  };
+
+  var ACT = {
+    /* The bytes come back base64 INSIDE the JSON — not a URL, and never a
+       storage key — so the browser builds its own blob out of them. signed=1
+       asks for the finished signed copy; with no signed copy on file there
+       would be nothing there, so the current copy is asked for instead. */
+    open: function (id) {
+      var c = contractById(id);
+      FHData.read("contracts", {
+        file: "contract", id: id, signed: (c && c.signed_document_id) ? 1 : ""
+      }).then(function (res) {
+        if (!res.ok || !res.data || !res.data.pdf_base64) {
+          say("b-alert", (res && res.error) || "There is no file to open for this contract yet.");
+          return;
+        }
+        var bin = atob(res.data.pdf_base64);
+        var buf = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+        var url = URL.createObjectURL(new Blob([buf], { type: "application/pdf" }));
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = res.data.filename || "contract.pdf";
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+      });
+    },
+
+    /* EVERY answer this gives carries a plain-English message written for the
+       person reading it, and it is the only wording shown. A 200 can mean
+       "queued nothing, because outbound mail is paused" — from out here that
+       looks identical to a reminder that went, and only the server knows it did
+       not. Inventing "Reminder sent." over the top of that is how a screen ends
+       up lying. data.js keeps the server's sentence on res.error when the call
+       failed and on res.data.message when it worked. */
+    remind: function (id, btn) {
+      var was = btn.textContent;
+      btn.disabled = true; btn.textContent = "sending…";
+      FHData.write("/api/contracts", { action: "remind", id: id }).then(function (res) {
+        btn.disabled = false; btn.textContent = was;
+        if (!res.ok) { say("b-alert", res.error || "The reminder did not go."); return; }
+        say("b-ok", (res.data && res.data.message) || "The reminder was accepted.");
+      });
+    },
+
+    void: function (id, btn) {
+      var reason = window.prompt("Why is this being voided? This is kept on the record.");
+      if (reason == null) return;
+      btn.disabled = true;
+      FHData.write("/api/contracts", { action: "void", id: id, reason: reason }).then(function (res) {
+        btn.disabled = false;
+        if (!res.ok) { say("b-alert", res.error || "The contract could not be voided."); return; }
+        say("b-ok", (res.data && res.data.message) || "The contract was voided.");
+        decorateContracts();   // re-read the state rather than guess the new badge
+      });
+    }
+  };
+
+  /* One listener on the table body, not one per button: render() rebuilds #body
+     on every sort, tab, filter and keystroke, and per-button wiring would have
+     to be redone after each of those or the buttons would go dead. */
+  var tblBody = document.getElementById("body");
+  if (tblBody) {
+    tblBody.addEventListener("click", function (ev) {
+      var btn = ev.target && ev.target.closest ? ev.target.closest("button[data-ct]") : null;
+      if (!btn) return;
+      var fn = ACT[btn.getAttribute("data-ct")];
+      if (fn) fn(btn.getAttribute("data-cid"), btn);
+    });
+  }
+
+  /* Void is owner/admin at the API and answers 403 to anyone else, so the
+     button is not drawn for anyone else — same resolution contracts.html uses
+     for the same reason: shell.js writes the role from an async session call,
+     so reading its cached value synchronously loses the race on a first load
+     and would hide Void from an owner until they reloaded. */
+  var norm = function (v) { return String(v == null ? "" : v).trim().toLowerCase(); };
+  (function resolveRole() {
+    var t;
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+    return fetch("/api/auth/session", { headers: t ? { authorization: "Bearer " + t } : {} })
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (d) { if (d && d.ok && d.staff) return d.staff.role; throw 0; })
+      .catch(function () {
+        try { var s = JSON.parse(localStorage.getItem("fh_demo_staff") || "null");
+          if (s && s.role) return s.role; } catch (e) {}
+        return "";
+      })
+      .then(function (r) {
+        ctAdmin = norm(r) === "owner" || norm(r) === "admin";
+        try { redraw(); } catch (e) {}
+      });
+  })();
+
   FHData.wire(FHData.documents({ limit: 200 }), "documents", function (data) {
     var rows = data.items || [];
     if (!rows.length) {
@@ -466,6 +651,9 @@ renderTabs(); renderClassbar(); render();
 
       var born = new Date(r.generated_at || r.created_at || Date.now());
       return {
+        // Carried so the contract lookup below has something to join on. It is
+        // the documents row id, not a storage key — redact() strips those.
+        id: r.id,
         doc: r.title || r.document_key || "—",
         cls: cls,
         sub: (r.subtype ? r.subtype + " · " : "") + "v" + (r.current_version || 1),
@@ -480,6 +668,7 @@ renderTabs(); renderClassbar(); render();
     DOCS.length = 0;
     Array.prototype.push.apply(DOCS, mapped);
     try { redraw(); } catch (e) { return null; }   // class cards + table + tiles, all from DOCS
+    decorateContracts();                           // one extra call, then the badges appear
 
     return "live documents · " + rows.length + " records" +
            (data.hasMore ? " (first 200)" : "") +

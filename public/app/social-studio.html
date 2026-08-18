@@ -103,16 +103,16 @@ table.grid tr:last-child td{border-bottom:0}
 
 /* ══ SOCIAL STUDIO — page specific ═══════════════════════════════════════ */
 
-/* ── stat tiles double as calculator buttons: the derivation strip under the
-      row shows the exact predicate the number came from ───────────────────── */
+/* ── the tiles double as buttons: the strip under the row says, in plain
+      words, what the number above it counts ───────────────────────────────── */
 button.stat{text-align:left;cursor:pointer;font:inherit;color:inherit;width:100%}
 button.stat:hover{border-color:var(--gray2)}
 button.stat[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 0 0 3px rgba(169,198,232,.22)}
 button.stat:focus-visible{outline:2px solid var(--info);outline-offset:2px}
 .deriv{margin-top:12px;border:1px solid var(--line);border-radius:10px;background:var(--soft);
-  padding:12px 15px;display:flex;gap:12px;align-items:flex-start}
+  padding:12px 16px;display:flex;flex-direction:column;gap:6px;align-items:stretch}
 .deriv .dk{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;
-  color:var(--gray);flex:0 0 96px;padding-top:2px}
+  color:var(--gray)}
 .deriv .dv{flex:1;min-width:0;font-family:var(--mono);font-size:var(--fs-caption);line-height:1.65;color:var(--ink);
   word-break:break-word}
 .deriv .dv b{font-weight:600}
@@ -199,7 +199,7 @@ button.stat:focus-visible{outline:2px solid var(--info);outline-offset:2px}
   transition:background .12s,color .12s,border-color .12s}
 .rtab:hover{border-color:var(--gray2);color:var(--ink)}
 /* the selected tab is a selected tab, not a primary button — §1 keeps exactly one
-   filled control on the screen, and that one is "Queue post" in SS-03. */
+   filled control on the screen, and that one is "Queue post" in the writer. */
 .rtab.on{background:#fff;border-color:var(--ink);color:var(--ink);box-shadow:inset 0 -2px 0 var(--ink)}
 .rtab:focus-visible{outline:2px solid var(--info);outline-offset:2px}
 .rtab .rn{font-family:var(--mono);font-size:var(--fs-caption);font-weight:600;border-radius:9px;padding:0 6px;
@@ -219,8 +219,8 @@ button.stat:focus-visible{outline:2px solid var(--info);outline-offset:2px}
 .filters .fl{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;color:var(--gray)}
 .pane{display:none}
 .pane.on{display:block}
-/* the full status CHECK set — including the two that never appear in a list,
-   because leaving them out would imply social_posts has four states. */
+/* all six states — including the two that never appear in a list, because
+   leaving them out would imply a post has only four. */
 .legend{display:flex;gap:14px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap;background:#fff}
 .lgi{display:flex;gap:7px;align-items:baseline;font-size:var(--fs-caption);color:var(--gray);max-width:250px}
 .lgi .lgt{line-height:1.45}
@@ -230,7 +230,7 @@ table.grid tr[data-row]{cursor:pointer}
 table.grid tr[data-row]:hover td{background:var(--soft)}
 table.grid tr[data-row][aria-expanded="true"] td{background:var(--soft)}
 .rchev{display:inline-block;width:10px;color:var(--gray2);font-size:var(--fs-caption);transition:transform .16s ease;margin-right:6px}
-/* caret + channel name are one unit. At 1180 the first column is narrow enough
+/* caret + account name are one unit. At 1180 the first column is narrow enough
    that they would otherwise break across two lines. */
 table.grid tr[data-row]>td:first-child{white-space:nowrap}
 tr[data-row][aria-expanded="true"] .rchev{transform:rotate(90deg)}
@@ -286,37 +286,36 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
   border-radius:6px;padding:7px 9px;word-break:break-word;line-height:1.55}
 .jsonline+.jsonline{margin-top:6px}
 
+/* ── "how this works" disclosure — the detail a builder needs, one click deeper
+      instead of in the page body ─────────────────────────────────────────── */
+details.how{border-top:1px solid var(--line);background:var(--soft)}
+details.how>summary{padding:11px 16px;cursor:pointer;font-size:var(--fs-caption);color:var(--gray);
+  font-weight:600;list-style:none;display:flex;align-items:center;gap:8px}
+details.how>summary::-webkit-details-marker{display:none}
+details.how>summary::before{content:"\25B8";color:var(--gray2);display:inline-block;transition:transform .16s ease}
+details.how[open]>summary::before{transform:rotate(90deg)}
+details.how>summary:focus-visible{outline:2px solid var(--info);outline-offset:-2px}
+details.how .howbd{padding:0 16px 14px;font-size:var(--fs-caption);color:var(--gray);line-height:1.6}
+details.how .howbd b{color:var(--ink);font-weight:600}
+details.how .howbd p+p{margin-top:9px}
+
+/* a table stays a table and scrolls inside its own box; the page never scrolls
+   sideways (§11) */
+#tblQueued,#tblBlocked,#tblFailed,#tblPosted,#tblAudit{overflow-x:auto}
+
 @media(max-width:1240px){.cols{grid-template-columns:1fr}.vpane{position:static}}
 @media(max-width:1100px){.stats{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:820px){.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}
   .deriv{flex-direction:column;gap:6px}.deriv .dk{flex:none}}
+@media(max-width:560px){.stats{grid-template-columns:1fr}
+  .topbar{height:auto;flex:0 0 auto;padding:10px 16px;flex-wrap:wrap;row-gap:8px}
+  .content{padding:16px 16px 32px}
+  .cols[style]{grid-template-columns:minmax(0,1fr) !important}}
 </style>
 <script defer src="shell.js"></script>
 <script defer src="data.js"></script>
 </head>
 <body>
-<!--
-  SOCIAL STUDIO — organic posting across the partner's connected social channels.
-
-  Built from:
-    db/migrations/049_social.sql            social_channels, social_posts, the
-                                            same-partner trigger and the screen gate
-    src/social/scheduler.mjs                schedule(), publishDue(), nextBestTime(),
-                                            CHANNELS, MAX_ATTEMPTS = 3
-    src/compliance/screen.mjs               the guardrail engine; organic screens
-                                            with platform = null
-    db/migrations/047_compliance_rules.sql  compliance_rules + the seeded rule rows
-                                            reproduced verbatim for the composer preview
-    db/migrations/046_ad_platforms.sql      action_log, partner_onboarding_tasks,
-                                            partner_module_settings
-    db/migrations/045_creative_factory.sql  creative_assets (the asset picker)
-    src/partners/onboarding.mjs             openOnboardingTask() dedupe semantics
-    src/adplatforms/tokens.mjs              redactConnection() — has_access_token only
-    api/campaigns/action-log.mjs            the audit read shape, incl. `revertible`
-
-  OAuth connect + schedule/publish are wired. There is still no list API for
-  social_posts / social_channels, so post panes stay empty until that lands. See SS-12.
--->
 <div class="app">
   <aside class="side" id="side">
   <div class="side-top"><a class="logo inv" href="command-center.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
@@ -393,30 +392,30 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
       <span class="selwrap"><label for="partnerSel">Partner</label>
         <select id="partnerSel"></select></span>
       <span class="chip" id="nowChip"><span class="cd" style="background:var(--info)"></span><span id="nowTxt">now</span></span>
-      <button class="btn mono" id="composeTop">+ Compose</button>
+      <button class="btn" id="composeTop">Write a post</button>
     </div>
 
     <div class="content fh-maxw">
 
-      <!-- ══ SS-00 · SUMMARY ══════════════════════════════════════════════ -->
+      <!-- the five headline numbers -->
       <div class="stats" id="stats">
         <button type="button" class="stat" data-k="channels" aria-pressed="true">
-          <span class="eyebrow">CHANNELS</span>
+          <span class="eyebrow">Connected accounts</span>
           <div class="sv" id="kChannels">—</div><div class="sd" id="kChannelsD">—</div></button>
         <button type="button" class="stat" data-k="queued" aria-pressed="false">
-          <span class="eyebrow">QUEUED</span>
+          <span class="eyebrow">Waiting to post</span>
           <div class="sv" id="kQueued">—</div><div class="sd" id="kQueuedD">—</div></button>
         <button type="button" class="stat" data-k="blocked" aria-pressed="false">
-          <span class="eyebrow">BLOCKED</span>
+          <span class="eyebrow">Needs a rewrite</span>
           <div class="sv" id="kBlocked">—</div><div class="sd" id="kBlockedD">—</div></button>
         <button type="button" class="stat" data-k="failed" aria-pressed="false">
-          <span class="eyebrow">FAILED</span>
+          <span class="eyebrow">Could not be sent</span>
           <div class="sv" id="kFailed">—</div><div class="sd" id="kFailedD">—</div></button>
         <button type="button" class="stat" data-k="posted" aria-pressed="false">
-          <span class="eyebrow">POSTED</span>
+          <span class="eyebrow">Sent</span>
           <div class="sv" id="kPosted">—</div><div class="sd" id="kPostedD">—</div></button>
       </div>
-      <div class="deriv"><div class="dk">Derivation</div><div class="dv" id="derivBody">—</div></div>
+      <div class="deriv"><div class="dk">What this counts</div><div class="dv" id="derivBody">—</div></div>
 
       <div class="notice" id="sampleNotice">
         <span class="ni">◉</span>
@@ -425,42 +424,40 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
 
       <div class="card" style="margin-top:14px">
         <div class="card-hd">
-          <div class="eyebrow">Generate posts</div>
+          <div class="eyebrow">Write posts</div>
           <div class="spacer"></div>
           <span class="chip" id="ssSuiteChip"><span class="cd"></span><span id="ssSuiteTxt">—</span></span>
         </div>
         <div class="card-bd">
-          <p class="hint" id="ssSuiteMsg">Posts are written from this partner's brand. Meta and Google stay unconnected until those keys land. You can still generate and queue here.</p>
+          <p class="hint" id="ssSuiteMsg">Posts are written from this partner's brand. Writing a post does not send it — it lands in the waiting list below, where you can read it first.</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px">
-            <button class="btn dark" type="button" id="ssGenBtn">Write 3 posts</button>
+            <button class="btn" type="button" id="ssGenBtn">Write 3 posts for me</button>
             <span class="hint mono" id="ssGenMsg"></span>
           </div>
         </div>
       </div>
 
-      <!-- ══ SS-01 · CONNECTED CHANNELS ═══════════════════════════════════ -->
+      <!-- the social accounts this partner has connected -->
       <div class="card" style="margin-top:14px">
         <div class="card-hd">
-          <div class="eyebrow">CONNECTED CHANNELS</div>
+          <div class="eyebrow">Connected accounts</div>
           <div class="spacer"></div>
           <span class="badge b-gray mono" id="chCount">—</span>
-          <span class="badge b-gray mono">social_channels</span>
         </div>
         <div id="chGrid"></div>
       </div>
 
-      <!-- ══ SS-02 · NOT CONNECTED ════════════════════════════════════════ -->
+      <!-- the account types with no connection yet -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">NOT CONNECTED</div>
+          <div class="eyebrow">Not connected yet</div>
           <div class="spacer"></div>
           <span class="badge b-gray mono" id="ghCount">—</span>
         </div>
         <div id="ghGrid"></div>
         <div class="cap" id="oauthConnectBox">
-          Connect a channel via OAuth. Tokens store encrypted on
-          <code class="mono">social_channels</code>. Credentials stay unset until the apps are provisioned
-          (see <code class="mono">docs/STILL-MISSING.md</code>).
+          <b>Facebook, Instagram and LinkedIn can be connected here.</b> The other five are not ready to
+          connect yet. Sign-in keys are stored locked away and are never shown back to you.
           <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
             <button type="button" class="btn" data-oauth="facebook" id="oauthFb">Connect Facebook</button>
             <button type="button" class="btn" data-oauth="instagram" id="oauthIg">Connect Instagram</button>
@@ -470,235 +467,204 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
                asked for with a browser prompt() box; it is a field on the screen now. -->
           <div class="field" style="margin-top:8px;max-width:320px">
             <label for="liOrg">LinkedIn organization ID — LinkedIn only</label>
-            <input id="liOrg" type="text" autocomplete="off" placeholder="12345678">
+            <input id="liOrg" type="text" autocomplete="off" placeholder="Paste your organization ID">
             <span class="hint">LinkedIn will not connect without it. Facebook and Instagram do not use it.</span>
           </div>
-          <div id="oauthMsg" style="margin-top:8px;font-size:var(--fs-caption);color:var(--ink2)">Connecting opens that channel's own sign-in page. If a channel is not set up yet, this line will say so and nothing is sent.</div>
+          <div id="oauthMsg" style="margin-top:8px;font-size:var(--fs-caption);color:var(--ink2)">Connecting opens that account's own sign-in page. If an account is not set up yet, this line will say so and nothing is sent.</div>
         </div>
       </div>
 
       <div class="cols">
         <div>
-          <!-- ══ SS-03 · COMPOSE ════════════════════════════════════════ -->
+          <!-- the post writer -->
           <div class="card" id="composer">
             <div class="card-hd">
-              <div class="eyebrow">COMPOSE A POST</div>
-              <div class="spacer"></div>
-              <span class="badge b-gray mono">5 fields · schedule()</span>
+              <div class="eyebrow">Write a post</div>
             </div>
             <div class="card-bd">
               <div class="grid2" style="margin-bottom:12px">
                 <div class="field">
-                  <label for="cChannel">Channel — channel_id</label>
+                  <label for="cChannel">Account</label>
                   <select id="cChannel"></select>
-                  <span class="hint">one post targets exactly one channel; there is no cross-post</span>
+                  <span class="hint">A post goes to one account. There is no cross-posting.</span>
                 </div>
                 <div class="field">
-                  <label for="cOffer">Offer type — required</label>
+                  <label for="cOffer">What this post is about</label>
                   <select id="cOffer">
-                    <option value="">— not set —</option>
-                    <option value="funding">funding</option>
-                    <option value="credit_cards">credit_cards</option>
-                    <option value="credit_repair">credit_repair</option>
+                    <option value="">— choose one —</option>
+                    <option value="funding">Funding</option>
+                    <option value="credit_cards">Credit cards</option>
+                    <option value="credit_repair">Credit repair</option>
                   </select>
-                  <span class="hint">NOT NULL; screen() blocks with offer_type_missing when absent</span>
+                  <span class="hint">Required. The copy check refuses a post without it.</span>
                 </div>
               </div>
 
               <div class="field capwrap">
-                <label for="cCaption">Caption</label>
-                <textarea id="cCaption" placeholder="Write the caption. It is screened before anything is queued."></textarea>
+                <label for="cCaption">What the post says</label>
+                <textarea id="cCaption" placeholder="Write the post. It is checked against the rules before anything is saved."></textarea>
                 <div class="capmeta">
-                  <span class="hint">the only text field on social_posts — no title, hashtags, link_url or alt_text columns exist</span>
-                  <span class="cc" id="capCount">0 chars</span>
+                  <span class="hint">This is the whole post. There is no separate headline, hashtag or link box.</span>
+                  <span class="cc" id="capCount">0 letters</span>
                 </div>
               </div>
 
               <div class="grid2" style="margin-top:12px">
                 <div class="field">
-                  <label for="cAsset">Asset — optional, one only</label>
+                  <label for="cAsset">Picture or video (optional)</label>
                   <select id="cAsset"></select>
-                  <span class="hint">asset_id is a single nullable FK — no carousels, no join table</span>
-                  <span class="hint">schedule() never reads creative_assets.compliance_state, and no CHECK or trigger
-                    in 049 gates on it — a <b>pending</b> or <b>blocked</b> asset attaches and publishes</span>
+                  <span class="hint">Attaching a picture is not ready yet. Posts go out as text.</span>
                 </div>
                 <div class="field">
-                  <label for="cWhen">scheduled_for — override (UTC)</label>
+                  <label for="cWhen">Send at (optional) — times are UTC</label>
                   <input id="cWhen" type="datetime-local">
-                  <span class="hint" id="cWhenHint">leave empty to use nextBestTime(channel)</span>
+                  <span class="hint" id="cWhenHint">Leave this empty to use the account's next posting time.</span>
                 </div>
               </div>
 
               <div style="display:flex;gap:9px;margin-top:14px;align-items:center;flex-wrap:wrap">
                 <!-- §1: exactly one filled button on this screen, and it is the one that does
                      the screen's job — queue the post. Preview and publish are secondary. -->
-                <button class="btn mono" id="runScreen">Run guardrail preview</button>
-                <button class="btn dark mono" id="queueBtn"
-                  title="POST /api/social/schedule → src/social/scheduler.mjs schedule()">Queue post</button>
-                <button class="btn mono" id="publishDueBtn" type="button"
-                  title="POST /api/social/publish → publishDue">Publish due now</button>
-                <button class="btn mono" id="clearComposer">Clear</button>
-                <span class="hint mono" id="queueMsg" style="font-size:var(--fs-caption);color:var(--gray2)">Queues into social_posts. Cron social-publish-sweeper runs publishDue every 5 minutes.</span>
+                <button class="btn" id="runScreen">Check the wording</button>
+                <button class="btn dark" id="queueBtn">Queue post</button>
+                <button class="btn" id="publishDueBtn" type="button">Send anything due now</button>
+                <button class="btn" id="clearComposer">Clear the form</button>
+                <span class="hint" id="queueMsg" style="font-size:var(--fs-caption);color:var(--gray2)">Every post is checked against the rules before it is saved.</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- ══ SS-04 · GUARDRAIL VERDICT ═══════════════════════════════ -->
+        <!-- the live copy check beside the writer -->
         <div class="card vpane">
           <div class="card-hd">
-            <div class="eyebrow">GUARDRAIL VERDICT</div>
+            <div class="eyebrow">Copy check</div>
           </div>
           <div class="verdict">
             <span class="badge b-gray mono" id="vState">—</span>
-            <span class="badge b-gray mono" id="vCount">0 reasons</span>
-            <div class="vwhat" id="vWhat">Type a caption to screen it.</div>
+            <span class="badge b-gray mono" id="vCount">nothing checked yet</span>
+            <div class="vwhat" id="vWhat">Type your post and it is checked as you go.</div>
           </div>
           <div class="card-bd" id="vReasons" style="padding-top:13px"></div>
-          <div class="cap">
-            <b>Organic screens with <code class="mono">platform = null</code></b>
-            (<code class="mono">scheduler.mjs:56–59</code>). That means the TikTok credit-repair structural block and the
-            Meta special-ad-category force are skipped by construction, and no targeting is screened. The CROA, claims
-            and disclosure copy rules apply in full — a caption is judged exactly as an ad would be.
-            <br><br>
-            This panel compiles the same seeded <code class="mono">compliance_rules</code> patterns the engine uses, so it
-            is a faithful preview — but the authoritative verdict is the one <code class="mono">screen()</code> returns in
-            <code class="mono">src/compliance/screen.mjs</code>. <b>screen.mjs does not write it here.</b>
-            <code class="mono">schedule()</code> issues its own INSERT into <code class="mono">compliance_screenings</code>
-            (<code class="mono">scheduler.mjs:64–70</code>); the organic path never calls
-            <code class="mono">screenAndRecord()</code>, and that INSERT names neither <code class="mono">platform</code> nor
-            <code class="mono">rules_version</code>, so both columns stay NULL on every organic screening row. The engine
-            <b>fails closed</b>: any error at all returns <code class="mono">blocked</code> /
-            <code class="mono">screen_error</code>. Rules are also cached per org for 60s, so a rule edit can take a minute
-            to bite.
-          </div>
+          <details class="how">
+            <summary>How the copy check works</summary>
+            <div class="howbd">
+              <p>Your words are read against the rules this business has to follow. A post that breaks one is
+                refused and kept, with the reason written on it.</p>
+              <p><b>What you see here is a rehearsal, not the final answer.</b> The rules used for this preview are
+                a copy held inside this page. If someone changes a rule, this preview does not change with it. The
+                answer that counts is the one you get when you save the post.</p>
+              <p>These are ordinary posts on your own accounts, not paid adverts, so the rules that only apply to
+                paid adverts are skipped, and nothing about who sees the post is checked. The credit-repair rules,
+                the claims rules and the disclosure rules apply in full — your words are judged exactly as an advert
+                would be.</p>
+              <p>If the check itself ever breaks, it refuses the post rather than letting it through.</p>
+              <p>If a picture is ever attached, the check does not look at it. It only reads the words.</p>
+            </div>
+          </details>
         </div>
       </div>
 
-      <!-- ══ SS-05..SS-09 · POST WORKBENCH ══════════════════════════════ -->
+      <!-- the post lists -->
       <div class="card" id="workbench" style="margin-top:14px">
         <div class="card-hd">
-          <div class="eyebrow" id="wbEyebrow">SCHEDULED QUEUE</div>
-          <div class="spacer"></div>
-          <span class="badge b-gray mono">social_posts</span>
+          <div class="eyebrow" id="wbEyebrow">Waiting to post</div>
         </div>
         <div class="tabrail" role="tablist" aria-label="Post states">
-          <button class="rtab on" type="button" role="tab" aria-selected="true"  data-pane="queued">Queue<span class="rn" id="nQueued">0</span></button>
-          <button class="rtab"    type="button" role="tab" aria-selected="false" data-pane="blocked">Review queue<span class="rn" id="nBlocked">0</span></button>
-          <button class="rtab"    type="button" role="tab" aria-selected="false" data-pane="failed">Failed<span class="rn" id="nFailed">0</span></button>
-          <button class="rtab"    type="button" role="tab" aria-selected="false" data-pane="posted">Published<span class="rn" id="nPosted">0</span></button>
-          <button class="rtab"    type="button" role="tab" aria-selected="false" data-pane="audit">Audit trail<span class="rn" id="nAudit">0</span></button>
+          <button class="rtab on" type="button" role="tab" aria-selected="true"  data-pane="queued">Waiting<span class="rn" id="nQueued">0</span></button>
+          <button class="rtab"    type="button" role="tab" aria-selected="false" data-pane="blocked">Needs a rewrite<span class="rn" id="nBlocked">0</span></button>
+          <button class="rtab"    type="button" role="tab" aria-selected="false" data-pane="failed">Could not be sent<span class="rn" id="nFailed">0</span></button>
+          <button class="rtab"    type="button" role="tab" aria-selected="false" data-pane="posted">Sent<span class="rn" id="nPosted">0</span></button>
+          <button class="rtab"    type="button" role="tab" aria-selected="false" data-pane="audit">Send history<span class="rn" id="nAudit">0</span></button>
         </div>
         <div class="filters">
-          <label class="fl" for="fChannel">channel</label>
+          <label class="fl" for="fChannel">Account</label>
           <select id="fChannel"></select>
-          <label class="fl" for="fOffer">offer_type</label>
+          <label class="fl" for="fOffer">About</label>
           <select id="fOffer">
-            <option value="">all</option>
-            <option value="funding">funding</option>
-            <option value="credit_cards">credit_cards</option>
-            <option value="credit_repair">credit_repair</option>
+            <option value="">All</option>
+            <option value="funding">Funding</option>
+            <option value="credit_cards">Credit cards</option>
+            <option value="credit_repair">Credit repair</option>
           </select>
           <div class="spacer"></div>
           <span class="fl" id="fCount">—</span>
         </div>
 
-        <!-- social_posts_status_ck — all six values, and what each one actually is -->
+        <!-- the six states a post can be in, one plain line each -->
         <div class="legend">
-          <span class="lgi transient"><span class="badge b-gray">draft</span><span class="lgt">set by the INSERT and moved on inside the same call — never a resting state</span></span>
-          <span class="lgi"><span class="badge b-info">queued</span><span class="lgt">screened and waiting for publishDue</span></span>
-          <span class="lgi transient"><span class="badge b-butter">posting</span><span class="lgt">set and cleared in one transaction; a row stuck here means a crash, not work in progress</span></span>
-          <span class="lgi"><span class="badge b-ok">posted</span><span class="lgt">external_post_id returned</span></span>
-          <span class="lgi"><span class="badge b-warn">failed</span><span class="lgt">3 attempts burned; opens a task</span></span>
-          <span class="lgi"><span class="badge b-alert">blocked</span><span class="lgt">the guardrail refused it; terminal</span></span>
+          <span class="lgi transient"><span class="badge b-gray">Draft</span><span class="lgt">Written, but not sent anywhere yet. You can still change your mind.</span></span>
+          <span class="lgi"><span class="badge b-info">Waiting</span><span class="lgt">Checked and lined up. It will go out at its set time.</span></span>
+          <span class="lgi transient"><span class="badge b-butter">Sending now</span><span class="lgt">Going out right now. This lasts a second or two. A post that sits here means something crashed.</span></span>
+          <span class="lgi"><span class="badge b-ok">Sent</span><span class="lgt">It went out. It is live on the account.</span></span>
+          <span class="lgi"><span class="badge b-warn">Could not be sent</span><span class="lgt">The system tried three times and could not get it out.</span></span>
+          <span class="lgi"><span class="badge b-alert">Needs a rewrite</span><span class="lgt">The copy check refused it. It will never go out. Write a new one.</span></span>
         </div>
 
         <div class="pane on" id="pane-queued" role="tabpanel"><div id="tblQueued"></div>
           <div class="cap">
-            <code class="mono">publishDue</code> reads <code class="mono">status = 'queued' AND scheduled_for &lt;= now()</code>,
-            ordered by <code class="mono">scheduled_for</code>, <b>LIMIT 50</b> per invocation. A row whose channel is not
-            <code class="mono">active</code> is skipped with <code class="mono">{ skipped: 'channel_not_active' }</code> — the post
-            stays queued and <code class="mono">attempt</code> is <b>not</b> incremented. A row with
-            <code class="mono">scheduled_for IS NULL</code> is never due and will sit here forever.
+            A post goes out at the time set on it. <b>A post with no send time never goes out on its own</b>, and a post
+            on an account that cannot publish waits rather than fails.
           </div>
         </div>
         <div class="pane" id="pane-blocked" role="tabpanel"><div id="tblBlocked"></div>
           <div class="cap">
-            A blocked post is <b>stored with its reasons</b>, not rejected and forgotten —
-            <code class="mono">social_posts_blocked_reason_ck</code> forbids an empty reason list. It is also
-            <b>terminal</b>: nothing in the repo re-screens an existing post, and <code class="mono">schedule()</code> only
-            ever INSERTs a new row. Fixing the copy means composing a new post in SS-03. There is no unblock, no
-            override and no exception request — <code class="mono">screen.mjs</code> has no force argument and none may be added.
+            A refused post is kept, with its reasons on it. <b>It can never be sent.</b> There is no unblock, no override
+            and no way to ask for an exception. To fix the wording, write a new post.
           </div>
         </div>
         <div class="pane" id="pane-failed" role="tabpanel"><div id="tblFailed"></div><div id="taskStrip"></div></div>
         <div class="pane" id="pane-posted" role="tabpanel"><div id="tblPosted"></div>
           <div class="cap">
-            No engagement figures appear here because none exist. <code class="mono">ad_metrics_daily.ad_id</code> is
-            <code class="mono">NOT NULL</code> and references <code class="mono">ads</code>, so it cannot hold a row for a
-            <code class="mono">social_post</code>, and there is no organic metrics table anywhere in the schema. Organic
-            posting is also never metered: <code class="mono">creative_usage_events.event_type</code> is CHECKed to
-            <code class="mono">generation | managed_spend</code> and has no <code class="mono">social_post_id</code>.
+            <b>There are no like, view, click or share figures anywhere in the system</b>, so none are shown here.
+            Nothing records them.
           </div>
         </div>
         <div class="pane" id="pane-audit" role="tabpanel"><div id="tblAudit"></div>
           <div class="cap">
-            One row is written <b>before</b> every platform call, so a crash mid-post leaves a findable record:
-            <code class="mono">actor 'agent'</code>, <code class="mono">target_type 'social_post'</code>,
-            <code class="mono">rule_key 'social_publish'</code>. <code class="mono">agent_id</code> comes from
-            <code class="mono">publishDue</code>'s <code class="mono">agentId</code> parameter, which defaults to
-            <code class="mono">null</code> — nothing in the repo passes one, so it reads null here.
-            <code class="mono">revertible</code> is the API's computed
-            <code class="mono">undo_payload IS NOT NULL AND undone_at IS NULL</code>; the payload itself is never returned.
-            It says a revert is <i>recorded as possible</i>, not that one would work: the payload is
-            <code class="mono">{action:'delete_post'}</code> and no social delete implementation exists.
+            A line is written <b>before</b> every attempt to send, so a post that crashes half way still leaves a record.
+            <b>"Undo recorded" does not mean a post can be taken back.</b> It means an undo note was written down, and
+            nothing in the system can act on it.
           </div>
         </div>
       </div>
 
       <div class="cols" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
-        <!-- ══ SS-10 · POSTING WINDOW ═══════════════════════════════════ -->
+        <!-- the regular times of day an account posts at -->
         <div class="card" style="margin-top:0">
           <div class="card-hd">
-            <div class="eyebrow">POSTING WINDOW</div>
+            <div class="eyebrow">Best times to post</div>
             <div class="spacer"></div>
-            <span class="selwrap"><label for="btChannel">channel</label>
+            <span class="selwrap"><label for="btChannel">Account</label>
               <select id="btChannel"></select></span>
           </div>
           <div class="card-bd" id="btBody"></div>
           <div class="cap">
-            <b>Slots are evaluated in UTC.</b> <code class="mono">nextBestTime</code> uses
-            <code class="mono">getUTCDay()</code> and <code class="mono">Date.UTC()</code> and never reads
-            <code class="mono">social_channels.timezone</code>, even though the column comment in
-            <code class="mono">049:34–36</code> describes <code class="mono">best_times</code> as being in the partner's
-            timezone. The stored timezone is shown above as data; rendering these slots in it would show a time the
-            scheduler will not use. The scan runs 8 days forward and returns the first slot strictly after
-            <i>now</i>; an empty <code class="mono">best_times</code> returns <code class="mono">null</code> rather than
-            inventing a time.
+            <b>All times here are UTC.</b> An account can also have a time zone saved on it, but nothing uses it —
+            showing these times in it would show a time that is not the time a post goes out. The next time is found by
+            looking 8 days ahead. If no times are set, no time is picked and none is made up.
           </div>
         </div>
 
-        <!-- ══ SS-11 · APPROVAL SETTING ═════════════════════════════════ -->
+        <!-- who has to sign off before a post goes out -->
         <div class="card" style="margin-top:0">
           <div class="card-hd">
-            <div class="eyebrow">APPROVAL SETTING</div>
-            <div class="spacer"></div>
-            <span class="badge b-gray mono">partner_module_settings</span>
+            <div class="eyebrow">Who approves posts</div>
           </div>
           <div class="card-bd" id="approvalBody"></div>
         </div>
       </div>
 
-      <!-- SS-12 "NOT BUILT YET" panel removed 2026-08-17 (UI-STANDARDS §5: no
-           coming-soon UI in production). What it listed is recorded in the fix
-           manifest, not on the owner's screen. -->
+      <!-- A "not built yet" panel used to sit here. It was removed 2026-08-17
+           (UI-STANDARDS §5: no coming-soon UI in production). What it listed is
+           recorded in the fix manifest, not on the owner's screen. -->
 
     </div>
 
     <div class="foot">
       <span class="pulse"></span><span>systems nominal · fundhub.ai</span>
       <span class="spacer"></span>
-      <span id="footNote">ss · oauth/schedule/publish live · no list API · empty panes</span>
+      <span id="footNote">all times shown in utc</span>
     </div>
   </div>
 </div>
@@ -706,11 +672,11 @@ tr.det>td{background:var(--soft);padding:0 14px 13px !important}
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer" aria-hidden="true" aria-label="Post detail">
   <div class="drawer-hd">
-    <div class="eyebrow">POST RECORD</div>
+    <div class="eyebrow">Post details</div>
     <button class="dx" id="drawerClose" aria-label="Close">✕</button>
   </div>
   <div class="drawer-bd" id="drawerBody"></div>
-  <div class="drawer-ft">social_posts · compliance_screenings · action_log · partner_onboarding_tasks</div>
+  <div class="drawer-ft">Only the writing details are known for these posts. Sending details appear once a post has actually gone out.</div>
 </aside>
 
 <script>
@@ -719,31 +685,29 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){retur
 
 /* ════════════════════════════════════════════════════════════════════════
    THE CLOCK. Real wall-clock time, read when the page loads. It used to be a
-   frozen constant (Jul 30 2026 14:20Z) shown in the topbar as "now" — a stated
-   time that was not the time. Every "due / not due" call on this screen is made
-   against this instant; the scheduler's own predicate is
-   `scheduled_for <= COALESCE($now, now())`.
+   frozen constant (Jul 30 2026 14:20Z) shown in the top bar as "now" — a stated
+   time that was not the time. Every "past its time / not yet" call on this
+   screen is made against this instant.
    ════════════════════════════════════════════════════════════════════════ */
 var NOW = new Date();
 var NOW_ISO = NOW.toISOString();
 
-/* The 8 permitted channels — social_channels_channel_ck (049:43-44), identical to
-   the frozen CHANNELS export at scheduler.mjs:193-195. */
+/* The 8 kinds of social account this system allows. */
 var CHANNELS = ['instagram','tiktok','facebook','linkedin','x','youtube_shorts','threads','pinterest'];
 var CHANNEL_LABEL = {
   instagram:'Instagram', tiktok:'TikTok', facebook:'Facebook', linkedin:'LinkedIn',
   x:'X', youtube_shorts:'YouTube Shorts', threads:'Threads', pinterest:'Pinterest'
 };
 var OFFER_TYPES = ['funding','credit_cards','credit_repair'];
-var MAX_ATTEMPTS = 3;                 /* scheduler.mjs:16 — a const, not a column */
-var PUBLISH_LIMIT = 50;               /* scheduler.mjs:99 */
+var MAX_ATTEMPTS = 3;                 /* tries before the system gives up */
 
-/* ══ COMPLIANCE RULES ════════════════════════════════════════════════════
-   The seeded rows from db/migrations/047_compliance_rules.sql:204-301, verbatim.
-   compliance_rules is org-scoped — no partner_id, no RLS — deliberately, because a
-   per-partner rule table would be a per-partner way to be less compliant. So this
-   list is the same for every partner in the selector, and this screen offers no
-   editor for it.
+/* ══ THE RULE BOOK ═══════════════════════════════════════════════════════
+   The same seeded rules the server checks with, copied here so the writer can
+   show a verdict as you type. The rule wording and the citations are regulated
+   copy, reproduced verbatim — do not reword them.
+
+   Rules are set for the whole business, not per partner: the list is the same
+   for every partner in the picker, and this screen offers no editor for it.
    ════════════════════════════════════════════════════════════════════════ */
 var RULES = [
   {rule_set:'croa', rule_key:'guaranteed-score-increase', offer_types:['credit_repair'], platforms:[],
@@ -808,52 +772,49 @@ var RULES = [
 ];
 
 /* ══ PARTNERS ════════════════════════════════════════════════════════════
-   social_channels and social_posts are partner-RLS'd. A staff session reading them
-   through the partner read APIs must name a partner or gets 400 partner_id_required
-   — so this screen is scoped to one partner at a time and there is no merged feed.
+   Everything on this screen belongs to one partner at a time. Every read and
+   write names that partner, and there is no merged view across partners.
 
-   THERE IS NO ROSTER. This list used to hold three invented partners with
-   invented uuids (the same book Creative Factory and Campaigns used), and every
-   read and write on this screen was sent with one of those ids — against a
-   partner that does not exist. They are gone. Nothing may be hardcoded back
-   here: the picker needs a real partner list, and until it has one this screen
-   shows its empty state and sends nothing.
+   NOTHING MAY BE HARDCODED HERE. This list once held three invented partners
+   with invented ids, and every read and write on this screen was sent against a
+   partner that did not exist. The picker is filled from the live partner list
+   only; with no partner, the screen shows its empty state and sends nothing.
    ════════════════════════════════════════════════════════════════════════ */
 var PARTNERS = [];
 
-/* ══ SOCIAL CHANNELS ═════════════════════════════════════════════════════ */
-var SOCIAL_CHANNELS = []; /* live list API not built — empty on purpose */
+/* ══ CONNECTED ACCOUNTS ══════════════════════════════════════════════════
+   Nothing hands the account list to this screen yet, so it stays empty. Do not
+   fill it with examples. */
+var SOCIAL_CHANNELS = [];
 
-/* ══ CREATIVE ASSETS — the composer's asset picker ═══════════════════════
-   Same-partner is enforced by trigger social_post_same_partner, so only this
-   partner's library is offered. */
-var ASSETS = []; /* live list API not built — empty on purpose */
+/* ══ PICTURES AND VIDEOS — the writer's attachment picker ════════════════
+   Nothing hands the picture library to this screen yet, so it stays empty. */
+var ASSETS = [];
 
-/* ══ SOCIAL POSTS ════════════════════════════════════════════════════════
-   Columns are exactly social_posts. There is no title, hashtags, link_url, utm,
-   first_comment, alt_text, location, thumbnail or post_type column, and no
-   archived_at / deleted_at — so there is nothing here to edit or delete.
+/* ══ POSTS ═══════════════════════════════════════════════════════════════
+   Filled by loadQueue() from the live read. A post is one block of words: there
+   is no headline, hashtag, link or alt-text field, and no way to edit or delete
+   one after it is written.
    ════════════════════════════════════════════════════════════════════════ */
-var POSTS = []; /* live list API not built — empty on purpose */
+var POSTS = [];
 
-/* ══ ACTION LOG — target_type = 'social_post' ════════════════════════════
-   Written BEFORE the platform call, every time. actor is always 'agent';
-   agent_id is null because publishDue's agentId parameter defaults to null and
-   nothing in the repo passes one.
+/* ══ SEND HISTORY ════════════════════════════════════════════════════════
+   A line is written before every attempt to send, so a crash half way still
+   leaves a record.
 
-   Empty on purpose. This used to hold eleven invented publish attempts that the
-   audit table painted whenever the live read failed, so a failed read looked
-   like history. The only real source is /api/campaigns/action-log — see
-   wireActionLog(); when that read fails the table now says so. */
+   Empty on purpose. This used to hold eleven invented send attempts that the
+   history table painted whenever the live read failed, so a failed read looked
+   like real history. The only real source is the live read in wireActionLog();
+   when that read fails the table now says so. */
 var ACTION_LOG = [];
 
-/* ══ PARTNER ONBOARDING TASKS ════════════════════════════════════════════
-   The unique index is (partner_id, task_key, connection_id, campaign_id) NULLS NOT
-   DISTINCT WHERE resolved_at IS NULL. A social_post_failed task carries neither a
-   connection_id nor a campaign_id, so a partner has AT MOST ONE open row for it —
-   no matter how many posts failed. A repeat open refreshes `detail` only; the
-   `title` keeps the channel named by the first failure. */
-var TASKS = []; /* live list API not built — empty on purpose */
+/* ══ JOBS SOMEONE NEEDS TO FIX ═══════════════════════════════════════════
+   A partner gets AT MOST ONE open job for failed posts, however many posts
+   failed. A later failure refreshes its detail only; the title keeps the account
+   named by the first failure.
+
+   Nothing hands these jobs to this screen yet, so the list stays empty. */
+var TASKS = [];
 
 /* ══ HELPERS ═════════════════════════════════════════════════════════════ */
 var MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -876,13 +837,19 @@ function rel(iso){
   return ms<0 ? s+' ago' : 'in '+s;
 }
 var STATUS_BADGE={draft:'b-gray',queued:'b-info',posting:'b-butter',posted:'b-ok',failed:'b-warn',blocked:'b-alert'};
+/* The words a person reads. The system's own state words are never shown. */
+var STATUS_LABEL={draft:'Draft',queued:'Waiting',posting:'Sending now',posted:'Sent',failed:'Could not be sent',blocked:'Needs a rewrite'};
+var CONN_LABEL={active:'ready to post',pending:'still being set up',expired:'the sign-in has run out',revoked:'the sign-in was taken away'};
+var CHECK_LABEL={passed:'Looks fine',needs_approval:'Someone must approve it',blocked:'Refused'};
 var STATE_BADGE={active:'b-ok',pending:'b-info',expired:'b-warn',revoked:'b-alert'};
 var SCREEN_BADGE={passed:'b-ok',needs_approval:'b-accent',blocked:'b-alert'};
 var RULESET_BADGE={croa:'b-alert',claims:'b-warn',disclosure:'b-info',platform:'b-gray',engine:'b-butter',approval:'b-accent'};
-function statusBadge(s){return '<span class="badge '+(STATUS_BADGE[s]||'b-gray')+'">'+esc(s)+'</span>';}
+function statusBadge(s){return '<span class="badge '+(STATUS_BADGE[s]||'b-gray')+'">'+esc(STATUS_LABEL[s]||s)+'</span>';}
+function connLabel(s){return CONN_LABEL[s]||s;}
 
-/* ══ nextBestTime — ported verbatim from scheduler.mjs:174-191 ═══════════
-   Including the fact that it never reads channel.timezone. */
+/* ══ the account's next posting time ═════════════════════════════════════
+   The same walk the server does, including the fact that it works in UTC and
+   never reads the time zone saved on the account. */
 function nextBestTime(channel, from){
   from = from || NOW;
   var times = channel && channel.best_times;
@@ -904,12 +871,11 @@ function nextBestTime(channel, from){
   return null;
 }
 
-/* ══ previewScreen — the same decision tree as src/compliance/screen.mjs ══
-   A PREVIEW ONLY. The authoritative verdict is written server-side; this exists so
-   the composer does not send copy it can already tell will be refused. It applies
-   the same seeded patterns, the same platform-null scoping, the same
-   severity !== 'warn' hard-block rule and the same approval gates.
-   hasDisclosureAsset is false because schedule() never passes one. */
+/* ══ the copy check preview ══════════════════════════════════════════════
+   A PREVIEW ONLY. The answer that counts is worked out on the server when the
+   post is saved; this exists so the writer does not send words it can already
+   tell will be refused. It uses the same rules, the same scoping and the same
+   approval gates. It never assumes a disclosure has been attached. */
 var _rx={};
 function toRegex(p){ if(!_rx[p]) _rx[p]=new RegExp(p,'i'); return _rx[p]; }
 function appliesTo(scope, value){
@@ -919,8 +885,8 @@ function appliesTo(scope, value){
 }
 function previewScreen(caption, offerType, approveBeforeLaunch){
   if(OFFER_TYPES.indexOf(offerType) === -1){
-    return {state:'blocked', reasons:[{code:'offer_type_missing', rule_set:'engine',
-      message:'offer_type must be one of funding, credit_cards, credit_repair; got '+JSON.stringify(offerType||null)+'.'}]};
+    return {state:'blocked', reasons:[{code:'missing-topic', rule_set:'required', severity:'block',
+      message:'Choose what this post is about first. It has to be funding, credit cards or credit repair.'}]};
   }
   var reasons=[], hay=String(caption||''), platform=null, hasDisclosureAsset=false;
   RULES.forEach(function(rule){
@@ -931,8 +897,8 @@ function previewScreen(caption, offerType, approveBeforeLaunch){
       if(!inText && !hasDisclosureAsset) reasons.push(fromRule(rule));
       return;
     }
-    /* mirrors screen.mjs:182 verbatim. Unreachable on this screen — the platforms
-       check above already returned, because platform is always null here. */
+    /* mirrors the server verbatim. Unreachable here — the check above already
+       returned, because these are ordinary posts, not paid adverts. */
     if(rule.rule_key === 'tiktok-credit-repair-prohibited') return;
     var matched = rule.match_type === 'phrase'
       ? hay.toLowerCase().indexOf(String(rule.pattern).toLowerCase()) !== -1
@@ -948,8 +914,8 @@ function previewScreen(caption, offerType, approveBeforeLaunch){
   }
   if(approveBeforeLaunch){
     return {state:'needs_approval', reasons:reasons.concat([{
-      code:'human_approval_required_setting', rule_set:'approval',
-      message:'This partner has approve_before_launch enabled, so a human must approve before launch.'}])};
+      code:'human-approval-required', rule_set:'approval',
+      message:'This partner is set so a person must approve posts before they go out.'}])};
   }
   return {state:'passed', reasons:reasons};
 }
@@ -969,8 +935,8 @@ function hasPartner(){ return !!partner(); }
 /* §6 empty state. Names what would be here and why nothing is, instead of
    painting a tile, a row or a count for a partner nobody has chosen. */
 function noPartner(what){
-  return '<div class="empty">'+what+' appears here once a partner is selected.<br>'+
-    'No partner can be selected yet: this screen has no partner list to read, so nothing is loaded and nothing is sent.</div>';
+  return '<div class="empty">'+what+' will show here once a partner is chosen.<br>'+
+    'No partner is chosen, so nothing is loaded and nothing is sent.</div>';
 }
 function channels(){ return SOCIAL_CHANNELS.filter(function(c){ return c.partner === P; }); }
 function chById(id){ return SOCIAL_CHANNELS.filter(function(c){ return c.id === id; })[0] || null; }
@@ -983,98 +949,81 @@ function readyPosts(){
 function postById(id){ return POSTS.filter(function(p){ return p.id === id; })[0] || null; }
 function approveBeforeLaunch(){
   var p = partner(), s = p && p.settings;
-  return s ? s.approve_before_launch : true;   /* scheduler.mjs:61 — ?? true */
+  return s ? s.approve_before_launch : true;   /* unknown means the safe answer */
 }
 function logs(){ return ACTION_LOG.filter(function(l){ return l.partner === P; }); }
 function tasks(){ return TASKS.filter(function(t){ return t.partner === P; }); }
 
-/* queue sub-state, from real columns only */
+/* what happens next to one post, worked out from what the post really carries */
 function queueState(p){
-  if (p.status === 'draft') return {k:'draft', label:'draft — waiting to queue', cls:'b-gray'};
+  if (p.status === 'draft') return {k:'draft', short:'Draft', label:'Written, not lined up yet', cls:'b-gray'};
   var c = chById(p.channel_id);
-  if(!p.scheduled_for) return {k:'no_time', label:'scheduled_for is NULL — never due', cls:'b-warn'};
+  if(!p.scheduled_for) return {k:'no_time', short:'No send time', label:'No send time set — it will never go out on its own', cls:'b-warn'};
   if(c && c.connection_state !== 'active')
-    return {k:'skip', label:"skipped: channel_not_active ("+c.connection_state+")", cls:'b-alert'};
-  if(new Date(p.scheduled_for) <= NOW) return {k:'due', label:'due — publishDue would take it', cls:'b-ok'};
-  return {k:'wait', label:'not due yet', cls:'b-gray'};
+    return {k:'skip', short:'Held', label:"That account cannot post right now — "+connLabel(c.connection_state)+". The post waits, it has not failed", cls:'b-alert'};
+  if(new Date(p.scheduled_for) <= NOW) return {k:'due', short:'Due', label:'Past its time — it goes out on the next send', cls:'b-ok'};
+  return {k:'wait', short:'Waiting', label:'Waiting for its time', cls:'b-gray'};
 }
 
-/* ══ SS-00 · STATS + DERIVATION ══════════════════════════════════════════ */
+/* ══ THE FIVE HEADLINE NUMBERS ═══════════════════════════════════════════ */
 var DERIV = {};
 function renderStats(){
   if(!hasPartner()){
     ['Channels','Queued','Blocked','Failed','Posted'].forEach(function(k){
       document.getElementById('k'+k).textContent = '—';
-      document.getElementById('k'+k+'D').textContent = 'no partner selected';
+      document.getElementById('k'+k+'D').textContent = 'no partner chosen';
     });
     DERIV = {};
     document.getElementById('derivBody').textContent =
-      'Nothing to derive. Each tile counts one partner\'s social_channels or social_posts rows, and no partner is selected.';
+      'Nothing to count. Every number above belongs to one partner, and no partner is chosen.';
     return;
   }
   var chs = channels(), act = chs.filter(function(c){ return c.connection_state === 'active'; });
   var q = readyPosts(), b = byStatus('blocked'), f = byStatus('failed'), po = byStatus('posted');
-  var due = q.filter(function(p){ return queueState(p).k === 'due'; });
   var noTime = q.filter(function(p){ return queueState(p).k === 'no_time'; });
-  /* What the due query actually SELECTs: scheduled_for <= now(), nothing else.
-     A future-dated post on a dead channel is not selected and therefore not
-     skipped — it is simply not returned. */
+  /* Past its time is the only thing that can honestly be worked out here: a post
+     carries no account, so whether the account could publish is unknowable. */
   var selected = q.filter(function(p){ return p.scheduled_for && new Date(p.scheduled_for) <= NOW; });
-  var skipDue = selected.filter(function(p){
-    var c = chById(p.channel_id); return !c || c.connection_state !== 'active'; });
   var reasonCount = b.reduce(function(a,p){ return a + p.blocked_reasons.length; }, 0);
-  var openTasks = tasks().filter(function(t){ return !t.resolved_at; });
 
-  document.getElementById('kChannels').textContent = chs.length + ' / 8';
-  document.getElementById('kChannelsD').textContent = act.length + ' active · ' + (chs.length-act.length) + ' cannot publish';
+  document.getElementById('kChannels').textContent = chs.length + ' of 8';
+  document.getElementById('kChannelsD').textContent = act.length + ' can post · ' + (chs.length-act.length) + ' cannot';
   document.getElementById('kQueued').textContent = q.length;
-  document.getElementById('kQueuedD').textContent = selected.length + ' due now · ' + skipDue.length + ' would be skipped';
+  document.getElementById('kQueuedD').textContent = selected.length + ' past their time';
   document.getElementById('kBlocked').textContent = b.length;
-  document.getElementById('kBlockedD').textContent = reasonCount + ' reason' + (reasonCount===1?'':'s') + ' stored · terminal';
+  document.getElementById('kBlockedD').textContent = reasonCount + ' reason' + (reasonCount===1?'':'s') + ' given';
   document.getElementById('kFailed').textContent = f.length;
-  document.getElementById('kFailedD').textContent = openTasks.length + ' open task' + (openTasks.length===1?'':'s') + ' · attempt = ' + MAX_ATTEMPTS;
+  document.getElementById('kFailedD').textContent = 'tries ' + MAX_ATTEMPTS + ' times before giving up';
   document.getElementById('kPosted').textContent = po.length;
-  document.getElementById('kPostedD').textContent = 'no engagement data exists';
+  document.getElementById('kPostedD').textContent = 'no like or view figures exist';
 
   DERIV = {
     channels:
-      '<b>count(social_channels WHERE partner_id = $1) = '+chs.length+'</b>; of those '+
-      'connection_state = \'active\' → '+act.length+'.<br>'+
-      'The 8 is not a count — it is the size of the CHECK set, so the tile reads "'+chs.length+' of the 8 permitted values".<br>'+
-      '<span class="src">social_channels_channel_ck · 049_social.sql:43-44</span>',
+      'Social accounts this partner has connected: <b>'+chs.length+'</b>. '+
+      'Of those, <b>'+act.length+'</b> can post right now.<br>'+
+      'The 8 is not a count. It is how many kinds of social account this system allows.',
     queued:
-      '<b>count(social_posts WHERE status = \'queued\') = '+q.length+'</b>.<br>'+
-      'publishDue\'s predicate is <b>scheduled_for &lt;= now()</b> with now = '+fmtLong(NOW_ISO)+
-      ' → <b>'+selected.length+'</b> row'+(selected.length===1?'':'s')+
-      ' selected, of which '+skipDue.length+(skipDue.length===1?' sits':' sit')+
-      ' on a channel whose connection_state ≠ active and '+(skipDue.length===1?'is':'are')+
-      ' skipped, leaving <b>'+due.length+'</b> it would actually take.<br>'+
-      noTime.length+' row'+(noTime.length===1?' has':'s have')+' scheduled_for = NULL, so <code>NULL &lt;= now()</code> is NULL and '+
-      (noTime.length===1?'it is':'they are')+' never due.<br>'+
-      'ORDER BY scheduled_for, LIMIT '+PUBLISH_LIMIT+' per invocation.<br>'+
-      '<span class="src">src/social/scheduler.mjs:92-107</span>',
+      'Posts written and waiting: <b>'+q.length+'</b>.<br>'+
+      '<b>'+selected.length+'</b> '+(selected.length===1?'is':'are')+' already past the time set on '+
+      (selected.length===1?'it':'them')+', measured against '+fmtLong(NOW_ISO)+'.<br>'+
+      '<b>'+noTime.length+'</b> '+(noTime.length===1?'has':'have')+' no send time at all, so '+
+      (noTime.length===1?'it':'they')+' will never go out until someone sets one.',
     blocked:
-      '<b>count(social_posts WHERE status = \'blocked\') = '+b.length+'</b>, carrying '+reasonCount+
-      ' entries across their blocked_reasons arrays (mean '+(b.length?(reasonCount/b.length).toFixed(1):'0')+' per post).<br>'+
-      'The CHECK forbids an empty array on a blocked row, so every one of these is actionable.<br>'+
-      'No re-screen path exists — this count only ever goes up.<br>'+
-      '<span class="src">social_posts_blocked_reason_ck · 049_social.sql:91-92 · scheduler.mjs:72-78</span>',
+      'Posts the copy check refused: <b>'+b.length+'</b>, with <b>'+reasonCount+'</b> reason'+(reasonCount===1?'':'s')+
+      ' given between them.<br>'+
+      'A refused post is kept with its reasons and can never be sent. To change the wording, write a new post. '+
+      'This number only ever goes up.',
     failed:
-      '<b>count(social_posts WHERE status = \'failed\') = '+f.length+'</b>. Every one has attempt = '+MAX_ATTEMPTS+
-      ', because giveUp is <code>attempt &gt;= MAX_ATTEMPTS</code> and MAX_ATTEMPTS is a hardcoded const.<br>'+
-      'Open partner_onboarding_tasks WHERE task_key = \'social_post_failed\' AND resolved_at IS NULL = <b>'+openTasks.length+'</b>'+
-      (openTasks.length === f.length ? '.' : ' — not '+f.length+', because the partial unique index dedupes on (partner_id, task_key, NULL, NULL).')+'<br>'+
-      '<span class="src">scheduler.mjs:16, 145, 156-164 · 046_ad_platforms.sql:716-719</span>',
+      'Posts that could not be sent: <b>'+f.length+'</b>.<br>'+
+      'The system tries '+MAX_ATTEMPTS+' times before it gives up.',
     posted:
-      '<b>count(social_posts WHERE status = \'posted\') = '+po.length+'</b>; social_posts_posted_ck guarantees every one has a posted_at.<br>'+
-      'Nothing further is derivable. There is no organic metrics table: ad_metrics_daily.ad_id is NOT NULL and FKs <code>ads</code>, '+
-      'and creative_usage_events has no social_post_id and only the event types generation | managed_spend.<br>'+
-      '<span class="src">049:93-94 · 046:432-467 · 050:79-119</span>'
+      'Posts that went out: <b>'+po.length+'</b>.<br>'+
+      'Nothing else can be shown here. There are no like, view, click or share figures anywhere in the system.'
   };
   document.getElementById('derivBody').innerHTML = DERIV[derivKey] || '—';
 }
 
-/* ══ SS-01 · CONNECTED CHANNELS ══════════════════════════════════════════ */
+/* ══ CONNECTED ACCOUNTS ══════════════════════════════════════════════════ */
 function renderChannels(){
   var chs = channels(), host = document.getElementById('chGrid');
   if(!hasPartner()){
@@ -1086,8 +1035,8 @@ function renderChannels(){
   document.getElementById('chCount').textContent = chs.length + ' connected';
   if(!chs.length){
     host.className='';
-    host.innerHTML = '<div class="empty">No <span class="mono">social_channels</span> rows for this partner. '+
-      'Nothing can be composed or queued until one exists. Connect one in SS-02 below.</div>';
+    host.innerHTML = '<div class="empty">No social accounts are connected yet. Once one is, it will show here.'+
+      '<br>Nothing can be written or queued until there is one. Connect Facebook, Instagram or LinkedIn just below.</div>';
     return;
   }
   host.className='chgrid';
@@ -1096,13 +1045,13 @@ function renderChannels(){
     var days = Object.keys(c.best_times || {});
     var slotCount = days.reduce(function(a,d){ return a + (c.best_times[d]||[]).length; }, 0);
     var consequence = c.connection_state === 'active'
-      ? 'Publishable. publishDue will pick up its due posts.'
-      : 'publishDue skips every post on this channel with <b>skipped: \'channel_not_active\'</b>. The posts stay <b>queued</b> and attempt is not incremented — they do not fail, they wait.';
+      ? 'This account can post. Anything due on it goes out on the next send.'
+      : '<b>This account cannot post.</b> Its posts wait rather than fail — they stay in the waiting list and are not counted as a failed try.';
     var tokenNote = c.connection_state === 'active'
       ? ''
       : (c.has_access_token
-         ? 'Ciphertext is still stored, but the state is ' + c.connection_state + '.'
-         : 'No access token stored. social_channels_active_token_ck means this row can never be set active while that is true.');
+         ? 'A sign-in key is still stored, but the account is ' + c.connection_state + '.'
+         : 'No sign-in key is stored. This account can never be switched on while that is true.');
     return '<div class="chcard s-'+esc(c.connection_state)+'">'+
       '<div class="chcard-hd">'+
         '<span class="cn">'+esc(CHANNEL_LABEL[c.channel])+
@@ -1111,62 +1060,61 @@ function renderChannels(){
         '<span class="badge '+STATE_BADGE[c.connection_state]+'">'+esc(c.connection_state)+'</span>'+
       '</div>'+
       '<div class="chcard-bd">'+
-        '<div class="kv"><span class="k">channel</span><span class="v mono">'+esc(c.channel)+'</span></div>'+
+        '<div class="kv"><span class="k">kind</span><span class="v mono">'+esc(CHANNEL_LABEL[c.channel] || c.channel)+'</span></div>'+
         '<div class="kv"><span class="k">account id</span><span class="v mono">'+esc(c.external_account_id)+'</span></div>'+
-        '<div class="kv"><span class="k">access token</span><span class="v">'+
-          '<span class="tick '+(c.has_access_token?'y':'n')+'">'+(c.has_access_token?'✓ present':'✗ absent')+'</span></span></div>'+
-        '<div class="kv"><span class="k">refresh token</span><span class="v">'+
-          '<span class="tick '+(c.has_refresh_token?'y':'n')+'">'+(c.has_refresh_token?'✓ present':'✗ absent')+'</span></span></div>'+
-        '<div class="kv"><span class="k">expires</span><span class="v mono">'+
-          (c.token_expires_at ? esc(fmt(c.token_expires_at))+' <span style="color:var(--gray2)">('+esc(rel(c.token_expires_at))+')</span>' : 'null')+'</span></div>'+
-        '<div class="kv"><span class="k">timezone</span><span class="v mono">'+esc(c.timezone)+'</span></div>'+
-        '<div class="kv"><span class="k">best_times</span><span class="v mono">'+
-          (slotCount ? slotCount+' slot'+(slotCount===1?'':'s')+' over '+days.length+' day'+(days.length===1?'':'s') : '{} — empty')+'</span></div>'+
-        '<div class="kv"><span class="k">next slot</span><span class="v mono">'+(next?esc(fmt(next)):'null')+'</span></div>'+
-        '<div class="kv"><span class="k">scopes</span><span class="v"><span class="scopes">'+
-          (c.scopes.length ? c.scopes.map(function(s){return '<span class="scope">'+esc(s)+'</span>';}).join('') : '<span class="scope">[]</span>')+
+        '<div class="kv"><span class="k">sign-in key</span><span class="v">'+
+          '<span class="tick '+(c.has_access_token?'y':'n')+'">'+(c.has_access_token?'✓ stored':'✗ missing')+'</span></span></div>'+
+        '<div class="kv"><span class="k">renewal key</span><span class="v">'+
+          '<span class="tick '+(c.has_refresh_token?'y':'n')+'">'+(c.has_refresh_token?'✓ stored':'✗ missing')+'</span></span></div>'+
+        '<div class="kv"><span class="k">key expires</span><span class="v mono">'+
+          (c.token_expires_at ? esc(fmt(c.token_expires_at))+' <span style="color:var(--gray2)">('+esc(rel(c.token_expires_at))+')</span>' : 'no date stored')+'</span></div>'+
+        '<div class="kv"><span class="k">time zone</span><span class="v mono">'+esc(c.timezone)+' <span style="color:var(--gray2)">(saved, not used)</span></span></div>'+
+        '<div class="kv"><span class="k">posting times</span><span class="v mono">'+
+          (slotCount ? slotCount+' time'+(slotCount===1?'':'s')+' over '+days.length+' day'+(days.length===1?'':'s') : 'none set')+'</span></div>'+
+        '<div class="kv"><span class="k">next time</span><span class="v mono">'+(next?esc(fmt(next)):'none — no times set')+'</span></div>'+
+        '<div class="kv"><span class="k">permissions</span><span class="v"><span class="scopes">'+
+          (c.scopes.length ? c.scopes.map(function(s){return '<span class="scope">'+esc(s)+'</span>';}).join('') : '<span class="scope">none</span>')+
           '</span></span></div>'+
-        (c.last_error ? '<div class="kv"><span class="k">last_error</span><span class="v err">'+esc(c.last_error)+'</span></div>' : '')+
+        (c.last_error ? '<div class="kv"><span class="k">last error</span><span class="v err">'+esc(c.last_error)+'</span></div>' : '')+
         '<div class="consq">'+consequence+(tokenNote?' '+esc(tokenNote):'')+'</div>'+
       '</div>'+
     '</div>';
   }).join('');
 }
 
-/* ══ SS-02 · NOT CONNECTED ═══════════════════════════════════════════════ */
+/* ══ NOT CONNECTED YET ═══════════════════════════════════════════════════ */
 function renderGhosts(){
   var host = document.getElementById('ghGrid');
   if(!hasPartner()){
     document.getElementById('ghCount').textContent = '—';
     host.className='';
-    host.innerHTML = noPartner('The permitted channels a partner has not connected');
+    host.innerHTML = noPartner('The kinds of account a partner has not connected');
     return;
   }
   var have = channels().map(function(c){ return c.channel; });
   var missing = CHANNELS.filter(function(c){ return have.indexOf(c) === -1; });
-  document.getElementById('ghCount').textContent = missing.length + ' of 8 unused';
-  if(!missing.length){ host.className=''; host.innerHTML='<div class="empty">All eight permitted channels have a row.</div>'; return; }
+  document.getElementById('ghCount').textContent = missing.length + ' of 8 not connected';
+  if(!missing.length){ host.className=''; host.innerHTML='<div class="empty">All eight kinds of account are connected.</div>'; return; }
   host.className='ghost';
   host.innerHTML = missing.map(function(c){
     return '<div class="ghosttile"><div class="gn">'+esc(CHANNEL_LABEL[c])+'</div>'+
-           '<div class="gs">'+esc(c)+' · not connected</div></div>';
+           '<div class="gs">not connected</div></div>';
   }).join('');
 }
 
-/* ══ SS-03 · COMPOSER ════════════════════════════════════════════════════ */
+/* ══ THE WRITER ══════════════════════════════════════════════════════════ */
 function renderComposerOptions(){
   var chs = channels();
   var sel = document.getElementById('cChannel');
   sel.innerHTML = chs.length
     ? chs.map(function(c){
-        return '<option value="'+esc(c.id)+'">'+esc(c.channel)+' · '+esc(c.handle||c.external_account_id)+
-               ' ('+esc(c.connection_state)+')</option>'; }).join('')
-    : '<option value="">— no channels —</option>';
+        return '<option value="'+esc(c.id)+'">'+esc(CHANNEL_LABEL[c.channel] || c.channel)+' · '+
+               esc(c.handle||c.external_account_id)+' ('+esc(c.connection_state)+')</option>'; }).join('')
+    : '<option value="">— connect an account first —</option>';
 
   var a = document.getElementById('cAsset');
   a.innerHTML = '<option value="">— none —</option>' + assets().map(function(x){
-    return '<option value="'+esc(x.id)+'">'+esc(x.id)+' · '+esc(x.kind)+' '+esc(x.format)+
-           ' · '+esc(x.compliance_state)+'</option>'; }).join('');
+    return '<option value="'+esc(x.id)+'">'+esc(x.kind)+' · '+esc(x.format)+'</option>'; }).join('');
 }
 function composerState(){
   return {
@@ -1179,54 +1127,55 @@ function composerState(){
 }
 function renderVerdict(){
   var s = composerState();
-  document.getElementById('capCount').textContent = s.caption.length.toLocaleString('en-US') + ' chars' +
-    (s.caption.length > 8000 ? ' · screened_text stores the first 8,000' : '');
+  document.getElementById('capCount').textContent = s.caption.length.toLocaleString('en-US') + ' letters' +
+    (s.caption.length > 8000 ? ' · only the first 8,000 are checked' : '');
 
   var ch = chById(s.channelId);
   var next = ch ? nextBestTime(ch) : null;
   var hint = document.getElementById('cWhenHint');
-  if(!ch){ hint.textContent = 'no channel selected'; }
-  else if(s.when){ hint.textContent = 'override wins — schedule() writes scheduledFor as given'; }
-  else if(next){ hint.textContent = 'nextBestTime → ' + fmt(next) + ' (UTC, from best_times)'; }
-  else { hint.textContent = 'best_times is empty → scheduled_for would be NULL, and the post would never publish'; }
+  if(!ch){ hint.textContent = 'No account chosen yet.'; }
+  else if(s.when){ hint.textContent = 'It goes out at the time you set.'; }
+  else { hint.textContent = next
+    ? 'Left empty, it goes out at the next posting time: ' + fmt(next) + ' (UTC).'
+    : 'This account has no posting times set, so this post would have no send time and would never go out.'; }
 
   var badge = document.getElementById('vState');
-  /* Nothing has been typed and no offer type picked, so nothing is screened. The
-     panel used to open showing a verdict and a reason count for a caption nobody
-     wrote — a judgement about text that does not exist. It now waits. */
+  /* Nothing has been typed and nothing picked, so nothing is checked. The panel
+     used to open showing a verdict and a reason count for words nobody wrote — a
+     judgement about text that does not exist. It now waits. */
   if(!s.caption.trim() && !s.offerType){
     badge.textContent = '—';
     badge.className = 'badge b-gray mono';
-    document.getElementById('vCount').textContent = '0 reasons';
+    document.getElementById('vCount').textContent = 'nothing checked yet';
     document.getElementById('vWhat').innerHTML =
-      'Type a caption and pick an offer type. Nothing is screened until both exist — an empty offer_type is itself a block.';
+      'Write the post and say what it is about. Nothing is checked until both are filled in, and leaving out what the post is about is itself a refusal.';
     document.getElementById('vReasons').innerHTML = '';
     return;
   }
 
   var v = previewScreen(s.caption, s.offerType, approveBeforeLaunch());
-  badge.textContent = v.state;
+  badge.textContent = CHECK_LABEL[v.state] || v.state.replace('_',' ');
   badge.className = 'badge ' + (SCREEN_BADGE[v.state] || 'b-gray');
   document.getElementById('vCount').textContent = v.reasons.length + ' reason' + (v.reasons.length===1?'':'s');
 
   var what;
   if(v.state === 'blocked'){
-    what = 'The row would be INSERTed and then set to <b>status = \'blocked\'</b> with these reasons stored on it. '+
-           'It stays in the review queue permanently — there is no re-screen, no override, no edit-and-resubmit.';
+    what = 'This post would be <b>saved and refused</b>, with the reasons below kept on it. It would stay in the '+
+           '"needs a rewrite" list for good — it cannot be checked again, overruled, or edited and re-sent.';
   } else {
     var w = s.when ? new Date(s.when + ':00Z').toISOString() : next;
-    what = 'The row would be set to <b>status = \'queued\'</b>' +
-           (w ? ' with scheduled_for = <b>'+esc(fmt(w))+'</b>.' : ' with scheduled_for = <b>NULL</b> — it would sit here forever.') +
+    what = 'This post would be <b>saved and lined up</b>' +
+           (w ? ' to go out at <b>'+esc(fmt(w))+'</b>.' : ' with <b>no send time</b> — it would sit and wait for good.') +
            (v.state === 'needs_approval'
-             ? ' <b>needs_approval does not hold it.</b> social_posts has no approval column; the screening row records that a human should look, and publishDue still picks the post up.'
+             ? ' <b>Needing approval does not hold it back.</b> The check writes down that a person should look at it, and the post still goes out at its time.'
              : '');
   }
   document.getElementById('vWhat').innerHTML = what;
 
   var host = document.getElementById('vReasons');
   host.innerHTML = v.reasons.length ? v.reasons.map(reasonHtml).join('') :
-    '<div class="empty" style="padding:14px 0">No rule matched. '+
-    (v.state==='passed' ? 'This would queue as <span class="mono">passed</span>.' : '')+'</div>';
+    '<div class="empty" style="padding:14px 0">No rule was broken. '+
+    (v.state==='passed' ? 'This would be lined up to go out.' : '')+'</div>';
 }
 function reasonHtml(r){
   var sev = r.severity === 'warn' ? 'warn'
@@ -1236,23 +1185,24 @@ function reasonHtml(r){
     '<div class="rh">'+
       '<span class="rc">'+esc(r.code)+'</span>'+
       '<span class="badge '+(RULESET_BADGE[r.rule_set]||'b-gray')+'">'+esc(r.rule_set)+'</span>'+
-      (r.severity ? '<span class="badge b-gray">'+esc(r.severity)+'</span>' : '') +
+      (r.severity ? '<span class="badge b-gray">'+esc(r.severity === 'block' ? 'refuses the post'
+                       : (r.severity === 'warn' ? 'warning' : r.severity))+'</span>' : '') +
     '</div>'+
     '<div class="rm">'+esc(r.message)+'</div>'+
     (r.detail ? '<div class="rcite">detail: '+esc(r.detail)+'</div>' : '')+
     (r.citation ? '<div class="rcite">'+esc(r.citation)+'</div>' : '')+
     (!r.severity && r.rule_set !== 'approval'
-      ? '<div class="rsevnote">no severity field → screen.mjs:200 counts it as a hard block</div>' : '')+
+      ? '<div class="rsevnote">No severity was set, so this counts as a hard refusal.</div>' : '')+
   '</div>';
 }
 
-/* ══ SS-05..SS-09 · WORKBENCH ════════════════════════════════════════════ */
+/* ══ THE POST LISTS ══════════════════════════════════════════════════════ */
 var EYEBROWS = {
-  queued:'SCHEDULED QUEUE',
-  blocked:'REVIEW QUEUE — BLOCKED',
-  failed:'FAILED POSTS &amp; TASKS',
-  posted:'PUBLISHED',
-  audit:'PUBLISH AUDIT TRAIL'
+  queued:'Waiting to post',
+  blocked:'Needs a rewrite',
+  failed:'Could not be sent',
+  posted:'Sent',
+  audit:'Send history'
 };
 function applyFilters(list){
   return list.filter(function(p){
@@ -1263,14 +1213,18 @@ function applyFilters(list){
 }
 function renderFilterOptions(){
   var sel = document.getElementById('fChannel');
-  sel.innerHTML = '<option value="">all</option>' + channels().map(function(c){
-    return '<option value="'+esc(c.id)+'"'+(fltChannel===c.id?' selected':'')+'>'+esc(c.channel)+'</option>'; }).join('');
+  sel.innerHTML = '<option value="">All accounts</option>' + channels().map(function(c){
+    return '<option value="'+esc(c.id)+'"'+(fltChannel===c.id?' selected':'')+'>'+
+      esc(CHANNEL_LABEL[c.channel] || c.channel)+'</option>'; }).join('');
   document.getElementById('fOffer').value = fltOffer;
 }
 function capCell(p){
   return '<div class="pcap trunc">'+esc(p.caption)+'</div>';
 }
-function chLabel(id){ var c = chById(id); return c ? c.channel : '—'; }
+function chLabel(id){ var c = chById(id); return c ? (CHANNEL_LABEL[c.channel] || c.channel) : '—'; }
+/* what a post is about, in the words the screen shows */
+var OFFER_LABEL = {funding:'Funding', credit_cards:'Credit cards', credit_repair:'Credit repair'};
+function offerLabel(v){ return OFFER_LABEL[v] || (v || '—'); }
 
 function renderQueue(){
   var rows = applyFilters(readyPosts()).sort(function(a,b){
@@ -1278,21 +1232,21 @@ function renderQueue(){
     return new Date(a.scheduled_for) - new Date(b.scheduled_for);
   });
   var host = document.getElementById('tblQueued');
-  if(!hasPartner()){ host.innerHTML = noPartner('Posts waiting to publish'); return; }
-  if(!rows.length){ host.innerHTML = '<div class="empty">Nothing drafted or queued for this partner and filter.</div>'; return; }
+  if(!hasPartner()){ host.innerHTML = noPartner('Posts waiting to go out'); return; }
+  if(!rows.length){ host.innerHTML = '<div class="empty">Nothing is waiting to go out for this partner and filter.</div>'; return; }
   host.innerHTML = '<table class="grid"><thead><tr>'+
-    '<th>Channel</th><th>Caption</th><th>Offer type</th><th>scheduled_for</th>'+
-    '<th>Attempt</th><th>Disposition — derived, not a column</th></tr></thead><tbody>'+
+    '<th>Account</th><th>Post</th><th>About</th><th>Send at</th>'+
+    '<th>Tries</th><th>What happens next</th></tr></thead><tbody>'+
     rows.map(function(p){
       var qs = queueState(p);
       return '<tr data-row="'+esc(p.id)+'" tabindex="0" aria-expanded="false">'+
         '<td><span class="rchev">▸</span><span class="mono">'+esc(chLabel(p.channel_id))+'</span></td>'+
         '<td>'+capCell(p)+
-          (p.last_error?'<span class="substate">last_error: '+esc(p.last_error)+' — retried, not failed</span>':'')+'</td>'+
-        '<td class="mono">'+esc(p.offer_type)+'</td>'+
-        '<td class="mono">'+(p.scheduled_for?esc(fmt(p.scheduled_for))+'<span class="substate">'+esc(rel(p.scheduled_for))+'</span>':'<span style="color:#6E2A22">NULL</span>')+'</td>'+
+          (p.last_error?'<span class="substate">Last error: '+esc(p.last_error)+' — it will try again</span>':'')+'</td>'+
+        '<td class="mono">'+esc(offerLabel(p.offer_type))+'</td>'+
+        '<td class="mono">'+(p.scheduled_for?esc(fmt(p.scheduled_for))+'<span class="substate">'+esc(rel(p.scheduled_for))+'</span>':'<span style="color:#6E2A22">no time set</span>')+'</td>'+
         '<td><span class="attn'+(p.attempt>0?' hot':'')+'">'+p.attempt+'</span><span class="substate">of '+MAX_ATTEMPTS+'</span></td>'+
-        '<td><span class="badge '+qs.cls+'">'+esc(qs.k.replace('_',' '))+'</span><span class="substate">'+esc(qs.label)+'</span></td>'+
+        '<td><span class="badge '+qs.cls+'">'+esc(qs.short)+'</span><span class="substate">'+esc(qs.label)+'</span></td>'+
       '</tr>' + detailRow(p, 6);
     }).join('') + '</tbody></table>';
   wireRows(host);
@@ -1301,10 +1255,10 @@ function renderQueue(){
 function renderBlocked(){
   var rows = applyFilters(byStatus('blocked')).sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); });
   var host = document.getElementById('tblBlocked');
-  if(!hasPartner()){ host.innerHTML = noPartner('Posts the guardrail refused'); return; }
-  if(!rows.length){ host.innerHTML = '<div class="empty">Nothing blocked for this partner and filter.</div>'; return; }
+  if(!hasPartner()){ host.innerHTML = noPartner('Posts the copy check refused'); return; }
+  if(!rows.length){ host.innerHTML = '<div class="empty">No post has been refused for this partner and filter.</div>'; return; }
   host.innerHTML = '<table class="grid"><thead><tr>'+
-    '<th>Channel</th><th>Caption</th><th>Offer type</th><th>Rule sets</th><th>Reasons</th><th>Created</th>'+
+    '<th>Account</th><th>Post</th><th>About</th><th>Rules broken</th><th>Reasons</th><th>Written</th>'+
     '</tr></thead><tbody>'+
     rows.map(function(p){
       var sets = {};
@@ -1312,7 +1266,7 @@ function renderBlocked(){
       return '<tr data-row="'+esc(p.id)+'" tabindex="0" aria-expanded="false">'+
         '<td><span class="rchev">▸</span><span class="mono">'+esc(chLabel(p.channel_id))+'</span></td>'+
         '<td>'+capCell(p)+'</td>'+
-        '<td class="mono">'+esc(p.offer_type)+'</td>'+
+        '<td class="mono">'+esc(offerLabel(p.offer_type))+'</td>'+
         '<td>'+Object.keys(sets).map(function(s){
           return '<span class="badge '+(RULESET_BADGE[s]||'b-gray')+'" style="margin-right:4px">'+esc(s)+'</span>'; }).join('')+'</td>'+
         '<td><span class="attn hot">'+p.blocked_reasons.length+'</span></td>'+
@@ -1326,23 +1280,24 @@ function renderFailed(){
   var rows = applyFilters(byStatus('failed')).sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); });
   var host = document.getElementById('tblFailed');
   if(!hasPartner()){
-    host.innerHTML = noPartner('Posts that gave up after ' + MAX_ATTEMPTS + ' attempts');
+    host.innerHTML = noPartner('Posts that gave up after ' + MAX_ATTEMPTS + ' tries');
     document.getElementById('taskStrip').innerHTML = '';
     return;
   }
   if(!rows.length){
-    host.innerHTML = '<div class="empty">Nothing failed for this partner and filter.</div>';
+    host.innerHTML = '<div class="empty">Nothing has failed. This screen cannot yet see posts that were actually sent, '+
+      'so this list stays empty.</div>';
   } else {
     host.innerHTML = '<table class="grid"><thead><tr>'+
-      '<th>Channel</th><th>Caption</th><th>Attempt</th><th>last_error</th><th>scheduled_for</th>'+
+      '<th>Account</th><th>Post</th><th>Tries</th><th>Why it stopped</th><th>Send at</th>'+
       '</tr></thead><tbody>'+
       rows.map(function(p){
         return '<tr data-row="'+esc(p.id)+'" tabindex="0" aria-expanded="false">'+
           '<td><span class="rchev">▸</span><span class="mono">'+esc(chLabel(p.channel_id))+'</span></td>'+
           '<td>'+capCell(p)+'</td>'+
-          '<td><span class="attn hot">'+p.attempt+'</span><span class="substate">gave up at '+MAX_ATTEMPTS+'</span></td>'+
-          '<td><span class="err">'+esc(p.last_error)+'</span><span class="substate">truncated to 1,000 chars on write</span></td>'+
-          '<td class="mono">'+(p.scheduled_for?esc(fmt(p.scheduled_for)):'NULL')+'</td>'+
+          '<td><span class="attn hot">'+p.attempt+'</span><span class="substate">gave up after '+MAX_ATTEMPTS+'</span></td>'+
+          '<td><span class="err">'+esc(p.last_error)+'</span><span class="substate">the message is cut off after 1,000 letters</span></td>'+
+          '<td class="mono">'+(p.scheduled_for?esc(fmt(p.scheduled_for)):'no time set')+'</td>'+
         '</tr>' + detailRow(p, 5);
       }).join('') + '</tbody></table>';
     wireRows(host);
@@ -1352,30 +1307,25 @@ function renderFailed(){
   var strip = document.getElementById('taskStrip');
   if(!open.length){
     strip.innerHTML = rows.length
-      ? '<div class="cap">'+
-        'No open <span class="mono">social_post_failed</span> task.</div>'
+      ? '<div class="cap">Nothing to fix. Jobs are not shown on this screen yet.</div>'
       : '';
     return;
   }
-  /* The dedupe point is about how many of THIS PARTNER's posts failed, not how many
-     survive the channel/offer filter — so the prose below counts the unfiltered set.
-     Filtering the table must not change what the index does. */
+  /* The one-job point is about how many of THIS PARTNER's posts failed, not how
+     many survive the account/topic filter — so the line below counts the
+     unfiltered set. Filtering the table must not change what is true. */
   var allFailed = byStatus('failed');
   strip.innerHTML = open.map(function(t){
-    var mismatch = allFailed.length > 1;
     return '<div class="task">'+
-      '<div class="tk">partner_onboarding_tasks · task_key '+esc(t.task_key)+' · severity '+esc(t.severity)+'</div>'+
+      '<div class="tk">job to fix · '+esc(t.severity)+'</div>'+
       '<div class="tt" style="margin-top:5px">'+esc(t.title)+'</div>'+
-      '<div class="td">detail: '+esc(t.detail)+'</div>'+
-      '<div class="td" style="opacity:.85">opened '+esc(fmtLong(t.created_at))+' · refreshed '+esc(fmtLong(t.updated_at))+
-        ' · resolved_at '+(t.resolved_at?esc(fmtLong(t.resolved_at)):'null')+'</div>'+
+      '<div class="td">'+esc(t.detail)+'</div>'+
+      '<div class="td" style="opacity:.85">opened '+esc(fmtLong(t.created_at))+' · last updated '+esc(fmtLong(t.updated_at))+
+        (t.resolved_at?' · fixed '+esc(fmtLong(t.resolved_at)):' · not fixed yet')+'</div>'+
       '<div class="td" style="opacity:.85;border-top:1px dashed var(--warn);padding-top:8px;margin-top:9px">'+
-        allFailed.length+' failed post'+(allFailed.length===1?'':'s')+' for this partner, <b>one</b> task row. The partial unique index is '+
-        '(partner_id, task_key, connection_id, campaign_id) NULLS NOT DISTINCT WHERE resolved_at IS NULL, and a '+
-        'social_post_failed task carries neither id — so every failure after the first is an ON CONFLICT DO UPDATE '+
-        'that refreshes <b>detail</b> only.'+
-        (mismatch ? ' That is why the title still names <b>instagram</b> while the detail is the <b>linkedin</b> error: the title is never updated.' : '')+
-        ' There is also no social_channel_id column on the table, so this task cannot be linked back to either post.'+
+        allFailed.length+' post'+(allFailed.length===1?'':'s')+' could not be sent for this partner, and there is '+
+        '<b>one</b> job covering all of them. Every failure after the first only refreshes the wording of this job — '+
+        'the heading keeps the account named by the first one. The job cannot be traced back to a single post.'+
       '</div>'+
     '</div>';
   }).join('');
@@ -1384,16 +1334,17 @@ function renderFailed(){
 function renderPosted(){
   var rows = applyFilters(byStatus('posted')).sort(function(a,b){ return new Date(b.posted_at)-new Date(a.posted_at); });
   var host = document.getElementById('tblPosted');
-  if(!hasPartner()){ host.innerHTML = noPartner('Posts that published'); return; }
-  if(!rows.length){ host.innerHTML = '<div class="empty">Nothing published for this partner and filter.</div>'; return; }
+  if(!hasPartner()){ host.innerHTML = noPartner('Posts that went out'); return; }
+  if(!rows.length){ host.innerHTML = '<div class="empty">This screen cannot yet see posts that went out. '+
+    'There are no like, view or click figures anywhere in the system.</div>'; return; }
   host.innerHTML = '<table class="grid"><thead><tr>'+
-    '<th>Channel</th><th>Caption</th><th>Offer type</th><th>posted_at</th><th>external_post_id</th>'+
+    '<th>Account</th><th>Post</th><th>About</th><th>Went out</th><th>Reference</th>'+
     '</tr></thead><tbody>'+
     rows.map(function(p){
       return '<tr data-row="'+esc(p.id)+'" tabindex="0" aria-expanded="false">'+
         '<td><span class="rchev">▸</span><span class="mono">'+esc(chLabel(p.channel_id))+'</span></td>'+
         '<td>'+capCell(p)+'</td>'+
-        '<td class="mono">'+esc(p.offer_type)+'</td>'+
+        '<td class="mono">'+esc(offerLabel(p.offer_type))+'</td>'+
         '<td class="mono">'+esc(fmt(p.posted_at))+'<span class="substate">'+esc(rel(p.posted_at))+'</span></td>'+
         '<td class="mono" style="word-break:break-all;font-size:var(--fs-caption)">'+esc(p.external_post_id)+'</td>'+
       '</tr>' + detailRow(p, 5);
@@ -1401,18 +1352,17 @@ function renderPosted(){
   wireRows(host);
 }
 
-/* renderAudit — api/campaigns/action-log rows, and nothing else. There used to
-   be a second renderer here that drew invented rows whenever the live read
-   failed; a failed read now says it failed. The channel/offer filters above the
-   table do not apply to these rows: a real action_log row carries no channel or
-   offer_type (those live on social_posts, which has no endpoint — see SS-12). */
+/* The send history — live rows, and nothing else. There used to be a second
+   renderer here that drew invented rows whenever the live read failed; a failed
+   read now says it failed. The account and topic filters above the table do not
+   apply to these rows: a send-history line carries neither. */
 function renderAudit(){
   var host = document.getElementById('tblAudit');
   if(LIVE_ACTIONS){
-    if(!LIVE_ACTIONS.length){ host.innerHTML = '<div class="empty">No action_log rows with target_type = \'social_post\' for this partner.</div>'; return; }
+    if(!LIVE_ACTIONS.length){ host.innerHTML = '<div class="empty">No send attempts have been recorded for this partner yet.</div>'; return; }
     host.innerHTML = '<table class="grid"><thead><tr>'+
-      '<th>created_at</th><th>rule_key</th><th>actor</th><th>reason</th><th>target_id</th>'+
-      '<th>before → after</th><th>executed_at</th><th>execute_error</th><th>revertible</th></tr></thead><tbody>'+
+      '<th>When</th><th>What</th><th>Who</th><th>Why</th><th>Post</th>'+
+      '<th>Change</th><th>Done at</th><th>Problem</th><th>Undo recorded</th></tr></thead><tbody>'+
       LIVE_ACTIONS.slice().sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at); }).map(function(l){
         return '<tr>'+
           '<td class="mono">'+esc(fmt(l.created_at))+'</td>'+
@@ -1424,44 +1374,44 @@ function renderAudit(){
           '<td class="mono" style="font-size:var(--fs-caption)">'+esc(JSON.stringify(l.before))+'<br>→ '+esc(JSON.stringify(l.after))+'</td>'+
           '<td class="mono">'+(l.executed_at?esc(fmt(l.executed_at)):'<span style="color:#6E2A22">null</span>')+'</td>'+
           '<td>'+(l.execute_error?'<span class="err">'+esc(l.execute_error)+'</span>':'<span style="color:var(--gray2)">—</span>')+'</td>'+
-          '<td><span class="badge '+(l.revertible?'b-info':'b-gray')+'">'+(l.revertible?'true':'false')+'</span></td>'+
+          '<td><span class="badge '+(l.revertible?'b-info':'b-gray')+'">'+(l.revertible?'yes':'no')+'</span></td>'+
         '</tr>';
       }).join('') + '</tbody></table>';
     return;
   }
-  if(!hasPartner()){ host.innerHTML = noPartner('Every publish attempt, newest first'); return; }
+  if(!hasPartner()){ host.innerHTML = noPartner('Every attempt to send, newest first'); return; }
   host.innerHTML = ACTIONS_ERR
-    ? '<div class="empty">The publish audit trail could not be read: ' + esc(ACTIONS_ERR) +
+    ? '<div class="empty">The send history could not be read: ' + esc(ACTIONS_ERR) +
       '<br>Nothing is shown in its place. Reload the page to try again.</div>'
-    : '<div class="empty">Reading the publish audit trail…</div>';
+    : '<div class="empty">Reading the send history…</div>';
 }
 
 /* expanding row bodies ---------------------------------------------------- */
 function detailRow(p, span){
   var c = chById(p.channel_id), a = p.asset_id ? ASSETS.filter(function(x){return x.id===p.asset_id;})[0] : null;
   return '<tr class="det" hidden data-det="'+esc(p.id)+'"><td colspan="'+span+'"><div class="detbox">'+
-    '<div class="detcol"><div class="dt">post</div>'+
-      kvline('id', p.id)+kvline('status', p.status)+kvline('offer_type', p.offer_type)+
-      kvline('attempt', p.attempt)+kvline('created_at', fmtLong(p.created_at))+'</div>'+
-    '<div class="detcol"><div class="dt">channel</div>'+
-      kvline('channel_id', p.channel_id)+kvline('channel', c?c.channel:'—')+
-      kvline('connection_state', c?c.connection_state:'—')+kvline('timezone', c?c.timezone:'—')+'</div>'+
-    '<div class="detcol"><div class="dt">asset</div>'+
-      (a ? kvline('asset_id', a.id)+kvline('kind / format', a.kind+' '+a.format)+
-           kvline('compliance_state', a.compliance_state)+kvline('ai_generated', String(a.ai_generated))+
-           kvline('synthetic_performer', String(a.synthetic_performer))+
-           '<div class="jsonline">compliance_state is <b>not a gate</b> here — schedule() never reads it.</div>'
-         : '<div class="jsonline">asset_id: null — a caption-only post</div>')+'</div>'+
-    '<div class="detcol" style="flex:2;min-width:240px"><div class="dt">caption</div>'+
+    '<div class="detcol"><div class="dt">Post</div>'+
+      kvline('Reference', p.id)+kvline('State', STATUS_LABEL[p.status]||p.status)+kvline('About', offerLabel(p.offer_type))+
+      kvline('Tries', p.attempt)+kvline('Written', fmtLong(p.created_at))+'</div>'+
+    '<div class="detcol"><div class="dt">Account</div>'+
+      kvline('Reference', p.channel_id)+kvline('Kind', c?(CHANNEL_LABEL[c.channel]||c.channel):'—')+
+      kvline('Account state', c?connLabel(c.connection_state):'—')+kvline('Time zone', c?c.timezone:'—')+'</div>'+
+    '<div class="detcol"><div class="dt">picture or video</div>'+
+      (a ? kvline('Reference', a.id)+kvline('Kind', a.kind+' '+a.format)+
+           kvline('Check state', a.compliance_state)+kvline('Made by a computer', String(a.ai_generated))+
+           kvline('Person in it is not real', String(a.synthetic_performer))+
+           '<div class="jsonline">The copy check never looks at the picture. It only reads the words.</div>'
+         : '<div class="jsonline">No picture. This post is words only.</div>')+'</div>'+
+    '<div class="detcol" style="flex:2;min-width:240px"><div class="dt">what it says</div>'+
       '<div class="pcap">'+esc(p.caption)+'</div>'+
-      '<div style="margin-top:9px"><button class="btn sm mono" data-open="'+esc(p.id)+'">Open full record</button></div></div>'+
+      '<div style="margin-top:9px"><button class="btn sm" data-open="'+esc(p.id)+'">See the details</button></div></div>'+
   '</div></td></tr>';
 }
 function reasonDetailRow(p, span){
   return '<tr class="det" hidden data-det="'+esc(p.id)+'"><td colspan="'+span+'"><div class="detbox" style="flex-direction:column">'+
-    '<div style="width:100%"><div class="dt" style="font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-bottom:8px">blocked_reasons — stored on the row</div>'+
+    '<div style="width:100%"><div class="dt" style="font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-bottom:8px">why it was refused</div>'+
     p.blocked_reasons.map(reasonHtml).join('')+
-    '<div style="margin-top:10px"><button class="btn sm mono" data-open="'+esc(p.id)+'">Open full record</button></div></div>'+
+    '<div style="margin-top:10px"><button class="btn sm" data-open="'+esc(p.id)+'">See the details</button></div></div>'+
   '</div></td></tr>';
 }
 function kvline(k,v){ return '<div class="jsonline"><b>'+esc(k)+':</b> '+esc(v)+'</div>'; }
@@ -1493,75 +1443,71 @@ function openDrawer(id){
                    .sort(function(x,y){ return new Date(y.created_at)-new Date(x.created_at); });
   var qs = p.status === 'queued' ? queueState(p) : null;
 
-  var html = '<div class="dsec">social_posts</div>'+
+  var html = '<div class="dsec">post</div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:11px">'+statusBadge(p.status)+
-      '<span class="badge b-gray">'+esc(p.offer_type)+'</span>'+
-      '<span class="badge b-gray">'+esc(c?c.channel:'—')+'</span>'+
-      (qs?'<span class="badge '+qs.cls+'">'+esc(qs.k.replace('_',' '))+'</span>':'')+'</div>'+
-    kvline('id', p.id)+
-    kvline('channel_id', p.channel_id)+
-    kvline('asset_id', p.asset_id || 'null')+
-    kvline('scheduled_for', p.scheduled_for ? fmtLong(p.scheduled_for) : 'null')+
-    kvline('posted_at', p.posted_at ? fmtLong(p.posted_at) : 'null')+
-    kvline('external_post_id', p.external_post_id || 'null')+
-    kvline('attempt', p.attempt + ' of ' + MAX_ATTEMPTS + ' (MAX_ATTEMPTS, a const)')+
-    kvline('last_error', p.last_error || 'null')+
-    kvline('created_at', fmtLong(p.created_at))+
+      '<span class="badge b-gray">'+esc(offerLabel(p.offer_type))+'</span>'+
+      '<span class="badge b-gray">'+esc(c?(CHANNEL_LABEL[c.channel]||c.channel):'—')+'</span>'+
+      (qs?'<span class="badge '+qs.cls+'">'+esc(qs.short)+'</span>':'')+'</div>'+
+    kvline('Reference', p.id)+
+    kvline('Account reference', p.channel_id)+
+    kvline('Picture reference', p.asset_id || 'none')+
+    kvline('Send at', p.scheduled_for ? fmtLong(p.scheduled_for) : 'no time set')+
+    kvline('Went out', p.posted_at ? fmtLong(p.posted_at) : 'not sent')+
+    kvline('Reference on the account', p.external_post_id || 'none')+
+    kvline('Tries', p.attempt + ' of ' + MAX_ATTEMPTS)+
+    kvline('Last error', p.last_error || 'none')+
+    kvline('Written', fmtLong(p.created_at))+
 
-    '<div class="dsec">caption</div>'+
+    '<div class="dsec">what it says</div>'+
     '<div class="pcap">'+esc(p.caption)+'</div>'+
     '<div class="rcite" style="margin-top:7px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2)">'+
-      p.caption.length.toLocaleString('en-US')+' chars · compliance_screenings.screened_text keeps the first 8,000</div>'+
+      p.caption.length.toLocaleString('en-US')+' letters · only the first 8,000 are checked</div>'+
 
-    '<div class="dsec">compliance_screenings</div>'+
-    '<div style="margin-bottom:9px"><span class="badge '+(SCREEN_BADGE[p.screening.state]||'b-gray')+'">'+esc(p.screening.state)+'</span></div>'+
-    kvline('subject_type', 'social_post')+
-    kvline('subject_id', p.id)+
-    kvline('platform', 'null — screen() is called with platform null because organic is not an ad placement '+
-                       '(scheduler.mjs:59), and schedule()\'s own INSERT omits the column anyway (scheduler.mjs:64-70)')+
-    kvline('rules_version', 'null — the column exists (047:130) but schedule() never sets it')+
+    '<div class="dsec">copy check</div>'+
+    '<div style="margin-bottom:9px"><span class="badge '+(SCREEN_BADGE[p.screening.state]||'b-gray')+'">'+esc(String(p.screening.state).replace('_',' '))+'</span></div>'+
+    kvline('What was checked', 'The words of this post')+
+    kvline('Post reference', p.id)+
+    kvline('Where it runs', 'An ordinary post on your own account, not a paid advert, so the rules that only apply to paid adverts were skipped.')+
     (p.screening.codes.length
-      ? '<div class="jsonline"><b>reasons[].code:</b> '+esc(p.screening.codes.join(', '))+'</div>'
-      : '<div class="jsonline"><b>reasons:</b> [] — state is \'passed\', which is the only state allowed an empty array</div>')+
-    '<div class="rcite" style="margin-top:7px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2)">append-only · trg_compliance_screenings_no_delete</div>'+
+      ? '<div class="jsonline"><b>Rules broken:</b> '+esc(p.screening.codes.join(', '))+'</div>'
+      : '<div class="jsonline"><b>Rules broken:</b> none — it passed.</div>')+
+    '<div class="rcite" style="margin-top:7px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2)">check results are kept for good and cannot be deleted</div>'+
 
     (p.status === 'blocked'
-      ? '<div class="dsec">blocked_reasons</div>' + p.blocked_reasons.map(reasonHtml).join('')
+      ? '<div class="dsec">why it was refused</div>' + p.blocked_reasons.map(reasonHtml).join('')
       : '')+
 
-    (a ? '<div class="dsec">creative_assets</div>'+
-         kvline('asset_id', a.id)+kvline('kind', a.kind)+kvline('format', a.format)+
-         kvline('compliance_state', a.compliance_state)+
-         kvline('ai_generated', String(a.ai_generated))+
-         kvline('synthetic_performer', String(a.synthetic_performer))+
-         (a.duration_sec ? kvline('duration_sec', a.duration_sec) : '')+
-         '<div class="jsonline"><b>Nothing gates on compliance_state.</b> schedule() passes only asset_id '+
-           '(scheduler.mjs:40-46) and never reads creative_assets; no CHECK or trigger in 049 looks at the asset '+
-           'beyond partner_id, which trg_social_post_same_partner checks. A '+esc(a.compliance_state)+' asset is '+
-           'published exactly like an approved one.</div>'+
-         '<div class="rcite" style="margin-top:7px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2)">storage_key is redacted out of every API response</div>'
+    (a ? '<div class="dsec">picture or video</div>'+
+         kvline('Reference', a.id)+kvline('Kind', a.kind)+kvline('Format', a.format)+
+         kvline('Check state', a.compliance_state)+
+         kvline('Made by a computer', String(a.ai_generated))+
+         kvline('Person in it is not real', String(a.synthetic_performer))+
+         (a.duration_sec ? kvline('Length in seconds', a.duration_sec) : '')+
+         '<div class="jsonline"><b>The copy check never looks at the picture.</b> It only reads the words, so a '+
+           'picture that has not been checked goes out exactly like one that has.</div>'+
+         '<div class="rcite" style="margin-top:7px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2)">the file itself is never sent to this screen</div>'
        : '')+
 
-    '<div class="dsec">action_log — target_type social_post</div>'+
+    '<div class="dsec">send history</div>'+
     (rows.length ? rows.map(function(l){
       return '<div class="jsonline">'+
         '<b>'+esc(fmtLong(l.created_at))+'</b><br>'+
-        'rule_key: social_publish · actor: agent · agent_id: null<br>'+
-        'reason: scheduled post to '+esc(l.channel)+'<br>'+
-        'before {status:queued} → after {status:posted}<br>'+
-        'executed_at: '+(l.executed_at?esc(fmtLong(l.executed_at)):'null')+'<br>'+
-        'execute_error: '+(l.execute_error?'<span style="color:#6E2A22">'+esc(l.execute_error)+'</span>':'null')+'<br>'+
-        'revertible: '+(!l.undone_at)+
+        'Sent by the system<br>'+
+        'Why: scheduled post to '+esc(l.channel)+'<br>'+
+        'Went from waiting to sent<br>'+
+        'Done at: '+(l.executed_at?esc(fmtLong(l.executed_at)):'not done')+'<br>'+
+        'Problem: '+(l.execute_error?'<span style="color:#6E2A22">'+esc(l.execute_error)+'</span>':'none')+'<br>'+
+        'Undo recorded: '+((!l.undone_at) ? 'yes — but nothing in the system can take a post back' : 'no')+
       '</div>';
-    }).join('') : '<div class="jsonline">No action_log row. Nothing tried to publish this post yet.</div>')+
+    }).join('') : '<div class="jsonline">Nothing has tried to send this post yet.</div>')+
 
     (p.status === 'failed'
-      ? '<div class="dsec">partner_onboarding_tasks</div>'+
+      ? '<div class="dsec">job to fix</div>'+
         tasks().filter(function(t){ return !t.resolved_at && t.task_key==='social_post_failed'; }).map(function(t){
-          return '<div class="jsonline"><b>'+esc(t.task_key)+'</b> · severity '+esc(t.severity)+'<br>'+
-            esc(t.title)+'<br>detail: '+esc(t.detail)+'<br>'+
-            'This is the partner\'s single open row for the key — it is not this post\'s task, because the table has '+
-            'no social_post_id and no social_channel_id.</div>';
+          return '<div class="jsonline"><b>Job to fix</b> · '+esc(t.severity)+'<br>'+
+            esc(t.title)+'<br>'+esc(t.detail)+'<br>'+
+            'This is the partner\'s one open job for failed posts. It is not this post\'s own job — a job cannot be '+
+            'traced back to a single post.</div>';
         }).join('')
       : '');
 
@@ -1576,35 +1522,34 @@ function closeDrawer(){
   document.getElementById('scrim').classList.remove('on');
 }
 
-/* ══ SS-10 · POSTING WINDOW ══════════════════════════════════════════════ */
+/* ══ BEST TIMES TO POST ══════════════════════════════════════════════════ */
 var DAY_ORDER = ['sun','mon','tue','wed','thu','fri','sat'];
 function renderBestTimes(){
   var sel = document.getElementById('btChannel'), chs = channels();
   if(sel.innerHTML === '' || !chs.filter(function(c){return c.id===sel.value;}).length){
     sel.innerHTML = chs.length ? chs.map(function(c){
-      return '<option value="'+esc(c.id)+'">'+esc(c.channel)+'</option>'; }).join('')
+      return '<option value="'+esc(c.id)+'">'+esc(CHANNEL_LABEL[c.channel] || c.channel)+'</option>'; }).join('')
       : '<option value="">— none —</option>';
   }
   var c = chById(sel.value) || chs[0];
   var host = document.getElementById('btBody');
-  if(!hasPartner()){ host.innerHTML = noPartner('The posting slots a channel will use'); return; }
-  if(!c){ host.innerHTML = '<div class="empty">No channels for this partner.</div>'; return; }
+  if(!hasPartner()){ host.innerHTML = noPartner('The times of day an account posts at'); return; }
+  if(!c){ host.innerHTML = '<div class="empty">Set your posting times once an account is connected. All times are UTC.</div>'; return; }
   var next = nextBestTime(c);
   var nextSlot = next ? pad(new Date(next).getUTCHours())+':'+pad(new Date(next).getUTCMinutes()) : null;
   var nextDay  = next ? DAY_ORDER[new Date(next).getUTCDay()] : null;
 
-  var body = '<div class="kv" style="margin-bottom:4px"><span class="k">timezone</span>'+
-             '<span class="v mono">'+esc(c.timezone)+' <span style="color:var(--gray2)">(stored, not used by the scheduler)</span></span></div>'+
-             '<div class="kv" style="margin-bottom:11px"><span class="k">next slot</span><span class="v mono">'+
-             (next ? esc(fmtLong(next))+' <span style="color:var(--gray2)">('+esc(rel(next))+')</span>' : '<span style="color:#6E2A22">null — nothing will ever be scheduled</span>')+
+  var body = '<div class="kv" style="margin-bottom:4px"><span class="k">time zone</span>'+
+             '<span class="v mono">'+esc(c.timezone)+' <span style="color:var(--gray2)">(saved, but nothing uses it)</span></span></div>'+
+             '<div class="kv" style="margin-bottom:11px"><span class="k">next time</span><span class="v mono">'+
+             (next ? esc(fmtLong(next))+' <span style="color:var(--gray2)">('+esc(rel(next))+')</span>' : '<span style="color:#6E2A22">none — no post will ever be given a time</span>')+
              '</span></div>';
 
   var days = Object.keys(c.best_times || {});
   if(!days.length){
     body += '<div class="notice warn" style="margin-top:0"><span class="ni">⚠</span><span>'+
-      '<b>best_times is <code>{}</code>.</b> nextBestTime returns null, so every post composed for this channel gets '+
-      '<code>scheduled_for = NULL</code> and is never picked up by publishDue. It is queued and invisible to the '+
-      'due query at the same time. Somebody has to set a time.</span></div>';
+      '<b>No posting times are set for this account.</b> Every post written for it gets no send time, so it waits '+
+      'in the list and never goes out. Somebody has to set a time.</span></div>';
   } else {
     body += '<div class="btgrid">' + DAY_ORDER.map(function(d){
       var slots = (c.best_times[d] || []).slice().sort();
@@ -1612,49 +1557,49 @@ function renderBestTimes(){
         (slots.length ? slots.map(function(s){
           var isNext = (d === nextDay && s === nextSlot);
           return '<span class="slot'+(isNext?' next':'')+'">'+esc(s)+(isNext?' ◂ next':'')+'</span>'; }).join('')
-          : '<span class="none">no slots</span>')+
+          : '<span class="none">no times</span>')+
       '</span></div>';
     }).join('') + '</div>';
   }
   host.innerHTML = body;
 }
 
-/* ══ SS-11 · APPROVAL SETTING ════════════════════════════════════════════ */
+/* ══ WHO APPROVES POSTS ══════════════════════════════════════════════════ */
 function renderApproval(){
   var host = document.getElementById('approvalBody');
-  if(!hasPartner()){ host.innerHTML = noPartner('The approve_before_launch setting'); return; }
+  if(!hasPartner()){ host.innerHTML = noPartner('Who has to approve a post'); return; }
   var s = partner().settings, on = approveBeforeLaunch();
   var crRows = posts().filter(function(p){ return p.offer_type === 'credit_repair'; });
   host.innerHTML =
     '<div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:12px">'+
-      '<span class="sw'+(on?' on':'')+'" role="img" aria-label="approve_before_launch is '+(on?'on':'off')+'"></span>'+
-      '<span style="font-size:var(--fs-body);font-weight:600">approve_before_launch = <span class="mono">'+(on?'true':'false')+'</span></span>'+
-      '<span class="badge '+(s?'b-gray':'b-warn')+'">'+(s?'stored row':'no row — falls back to true')+'</span>'+
+      '<span class="sw'+(on?' on':'')+'" role="img" aria-label="a person must approve: '+(on?'yes':'no')+'"></span>'+
+      '<span style="font-size:var(--fs-body);font-weight:600">'+
+        (on?'A person must approve a post before it goes out':'Posts go out with nobody approving them')+'</span>'+
+      '<span class="badge '+(s?'b-gray':'b-warn')+'">'+(s?'your saved setting':'setting not read')+'</span>'+
     '</div>'+
-    (s ? '<div class="kv"><span class="k">weekly target</span><span class="v mono">'+s.weekly_asset_target+' assets (CHECK &gt;= 15)</span></div>'+
-         '<div class="kv"><span class="k">max jobs</span><span class="v mono">'+s.max_concurrent_jobs+' concurrent (CHECK 1–20)</span></div>'+
+    (s ? '<div class="kv"><span class="k">weekly target</span><span class="v mono">'+s.weekly_asset_target+' pictures a week</span></div>'+
+         '<div class="kv"><span class="k">jobs at once</span><span class="v mono">'+s.max_concurrent_jobs+'</span></div>'+
          '<div class="kv" style="margin-bottom:10px"><span class="k">autopilot</span><span class="v mono">'+
-           (s.autopilot_enabled?'enabled':'disabled')+' · launch '+(s.launch_enabled?'enabled':'disabled')+
-           ' <span style="color:var(--gray2)">(paid side — no effect on organic)</span></span></div>'
-       : '<div class="kv" style="margin-bottom:10px"><span class="k">row</span><span class="v mono">none — scheduler.mjs:61 reads '+
-         '<code>settings?.approve_before_launch ?? true</code></span></div>')+
+           (s.autopilot_enabled?'on':'off')+' · launching '+(s.launch_enabled?'on':'off')+
+           ' <span style="color:var(--gray2)">(paid adverts only — no effect here)</span></span></div>'
+       : '<div class="notice warn" style="margin-top:0;margin-bottom:10px"><span class="ni">⚠</span><span>'+
+         '<b>This screen cannot read your approval setting yet.</b> Until it can, treat every post as needing a '+
+         'person to look at it.</span></div>')+
     '<div class="notice'+(on?'':' warn')+'" style="margin-top:4px"><span class="ni">'+(on?'◉':'⚠')+'</span><span>'+
       (on
-        ? '<b>Every organic post for this partner screens as <code>needs_approval</code></b> — and is <b>still queued and still published</b>. '+
-          '<code>social_posts</code> has no approval column, and <code>schedule()</code> sets anything that is not blocked to '+
-          '<code>queued</code>. The screening row records that a human should look; nothing waits for one. Saying "held until approved" '+
+        ? '<b>Every post for this partner is marked "needs approval" — and is still lined up and still sent.</b> '+
+          'There is nowhere to record an approval, and anything the copy check does not refuse is lined up to go out. '+
+          'The check writes down that a person should look at it; nothing waits for one. Saying "held until approved" '+
           'here would be false.'
-        : '<b>Organic posts screen as <code>passed</code></b> when no rule matches, so they queue with an empty reason list. '+
-          'The switch changes the screening state only — it never changes whether the post publishes, because nothing gates on it.')+
+        : '<b>A post that breaks no rule is marked as passed</b> and lines up to go out. This switch changes only what '+
+          'the copy check writes down — it never changes whether a post goes out, because nothing acts on it.')+
     '</span></div>'+
     '<div class="notice bad" style="margin-top:10px"><span class="ni">◆</span><span>'+
-      '<b>credit_repair ignores this switch entirely.</b> screen.mjs returns <code>needs_approval</code> for every '+
-      'credit_repair subject that clears the hard-block filter — <code>screen.mjs:200-201</code> returns '+
-      '<code>blocked</code> first — before the setting is consulted, and that gate cannot be turned off. '+
-      'This partner has <b>'+crRows.length+'</b> credit_repair post'+(crRows.length===1?'':'s')+'.'+
-      '<br><br>Separately: the seeded <code>croa-consumer-rights</code> rule is <code>match_type = \'required\'</code>, and '+
-      '<code>schedule()</code> never passes <code>hasDisclosureAsset</code> — so a credit_repair caption that does not itself '+
-      'contain the literal "Consumer Credit File Rights Under State and Federal Law" is <b>blocked</b>, not merely held.'+
+      '<b>Credit repair ignores this switch completely.</b> Every credit-repair post that is not refused outright is '+
+      'marked as needing a person to approve it, before this setting is even looked at, and that cannot be turned off. '+
+      'This partner has <b>'+crRows.length+'</b> credit-repair post'+(crRows.length===1?'':'s')+'.'+
+      '<br><br>Separately: a credit-repair post that does not itself carry the words '+
+      '"Consumer Credit File Rights Under State and Federal Law" is <b>refused</b>, not merely held.'+
     '</span></div>';
 }
 
@@ -1663,7 +1608,7 @@ function renderCounts(){
   if(!hasPartner()){
     ['nQueued','nBlocked','nFailed','nPosted','nAudit'].forEach(function(id){
       document.getElementById(id).textContent = '—'; });
-    document.getElementById('fCount').textContent = 'no partner selected';
+    document.getElementById('fCount').textContent = 'no partner chosen';
     return;
   }
   document.getElementById('nQueued').textContent  = applyFilters(readyPosts()).length;
@@ -1672,7 +1617,7 @@ function renderCounts(){
   document.getElementById('nPosted').textContent  = applyFilters(byStatus('posted')).length;
   document.getElementById('nAudit').textContent   = LIVE_ACTIONS ? LIVE_ACTIONS.length : '—';
   var all = applyFilters(posts()).length;
-  document.getElementById('fCount').textContent = all + ' of ' + posts().length + ' posts match';
+  document.getElementById('fCount').textContent = all + ' of ' + posts().length + ' posts match your filter';
 }
 function renderPanes(){
   renderQueue(); renderBlocked(); renderFailed(); renderPosted(); renderAudit(); renderCounts();
@@ -1692,7 +1637,7 @@ function renderAll(){
    exist. */
 function syncWriteControls(){
   var on = hasPartner();
-  var why = 'No partner selected — nothing can be queued, published or connected from this screen yet.';
+  var why = 'No partner is chosen — nothing can be queued, sent or connected from this screen yet.';
   ['queueBtn','publishDueBtn','oauthFb','oauthIg','oauthLi','liOrg'].forEach(function(id){
     var el = document.getElementById(id);
     if(!el) return;
@@ -1712,26 +1657,25 @@ function syncWriteControls(){
   if(!on){
     document.getElementById('queueMsg').textContent = why;
     var om = document.getElementById('oauthMsg');
-    if (om) om.textContent = 'Connecting a channel needs a partner. No partner is selected.';
+    if (om) om.textContent = 'Connecting an account needs a partner. No partner is chosen.';
   } else {
     var qm = document.getElementById('queueMsg');
-    if (qm && /No partner selected/.test(qm.textContent || '')) qm.textContent = '';
+    if (qm && /No partner is chosen/.test(qm.textContent || '')) qm.textContent = '';
     var omOn = document.getElementById('oauthMsg');
-    if (omOn && /No partner is selected/.test(omOn.textContent || '')) {
-      omOn.textContent = 'Connecting opens that channel\'s own sign-in page. If a channel is not set up yet, this line will say so and nothing is sent.';
+    if (omOn && /No partner is chosen/.test(omOn.textContent || '')) {
+      omOn.textContent = 'Connecting opens that account\'s own sign-in page. If an account is not set up yet, this line will say so and nothing is sent.';
     }
   }
 }
 
-/* ══ API WIRING — SS-?? AUDIT TRAIL ═══════════════════════════════════════
-   Everything else on this screen is sample: there is no api/social/* route
-   (see SS-12), so posts, channels, the queue/blocked/failed/posted panes and
-   the drawer have nothing real to read. api/campaigns/action-log is the one
-   exception — it is routed and it already accepts ?target_type=social_post
-   (action-log.mjs:16) — so this is the one live read on the page. Same
-   apiGet() reproduction of data.js's contract that hiring.html and
-   creative-factory.html use, for the same reason: action-log is not under
-   /api/read/*, so FHData has no wrapper for it. */
+/* ══ THE LIVE READS ══════════════════════════════════════════════════════
+   The partner list, the written posts, the writing allowance and the send
+   history are read live. Connected accounts, the picture library and the jobs
+   list have no read yet, so their panels say so and show nothing.
+
+   apiGet() reproduces data.js's contract, the same way hiring.html and
+   creative-factory.html do, because these reads sit outside the wrapped
+   /api/read/* family. */
 function apiGet(path){
   var demo = false, tok = '';
   try { demo = localStorage.getItem('fh_demo') === '1'; tok = localStorage.getItem('fh_token') || ''; } catch(e){}
@@ -1783,7 +1727,7 @@ function wireActionLog(){
     });
 }
 
-/* stat tiles → derivation strip */
+/* the tiles switch what the strip underneath explains */
 document.querySelectorAll('button.stat').forEach(function(b){
   b.addEventListener('click', function(){
     derivKey = b.dataset.k;
@@ -1823,7 +1767,7 @@ document.getElementById('fOffer').addEventListener('change', function(){
       sel.innerHTML = '<option value="">No partners on file</option>';
       sel.disabled = true;
       var n = document.getElementById('ssNoticeTxt');
-      if (n) n.textContent = 'No partner is selected, so nothing on this page is loaded.';
+      if (n) n.textContent = 'No partner is chosen, so nothing on this page is loaded.';
       renderAll();
       return;
     }
@@ -1893,12 +1837,12 @@ document.getElementById('queueBtn').addEventListener('click', function(){
      and never a hardcoded id. */
   var p = partner();
   if (!p) {
-    msg.textContent = 'No partner selected — nothing was sent.';
+    msg.textContent = 'No partner is chosen — nothing was sent.';
     return;
   }
-  if (!channelId) { msg.textContent = 'Pick a channel.'; return; }
-  if (!caption) { msg.textContent = 'Caption required.'; return; }
-  msg.textContent = 'Queueing…';
+  if (!channelId) { msg.textContent = 'Pick an account to post to first.'; return; }
+  if (!caption) { msg.textContent = 'Write the post first.'; return; }
+  msg.textContent = 'Saving…';
   var t = '';
   try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
   var body = {
@@ -1920,23 +1864,22 @@ document.getElementById('queueBtn').addEventListener('click', function(){
   }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
     .then(function (res) {
       if (!res.ok) {
-        msg.textContent = 'Not queued: ' + (res.message || res.error || 'error');
+        msg.textContent = 'Not saved: ' + (res.message || res.error || 'error');
         return;
       }
-      msg.textContent = 'Queued as ' + (res.state || 'ok') +
-        (res.post && res.post.id ? ' · id ' + res.post.id : '') +
-        '. Cron publishes due posts every 5 min, or click Publish due now.';
+      msg.textContent = 'Saved. Copy check says: ' + String(res.state || 'ok').replace('_', ' ') +
+        '. Use "Send anything due now" to send everything that is already past its time.';
     });
 });
 document.getElementById('publishDueBtn').addEventListener('click', function () {
   var msg = document.getElementById('queueMsg');
   var p = partner();
   if (!p) {
-    msg.textContent = 'No partner selected — nothing was sent.';
+    msg.textContent = 'No partner is chosen — nothing was sent.';
     return;
   }
   /* §5 — a send asks first and names what it does. No count is given: this screen
-     has no read for the queue, so a number here would be invented. */
+     cannot read what is really due, so a number here would be invented. */
   if (!window.confirm(
     'Publish every post that is already due for ' + (p.name || 'this partner') + '?\n\n' +
     'They go out on that partner\'s connected social accounts right away, in public. ' +
@@ -1944,7 +1887,7 @@ document.getElementById('publishDueBtn').addEventListener('click', function () {
     msg.textContent = 'Nothing was published.';
     return;
   }
-  msg.textContent = 'Publishing due posts…';
+  msg.textContent = 'Sending everything that is due…';
   var t = '';
   try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
   fetch('/api/social/publish', {
@@ -1958,12 +1901,14 @@ document.getElementById('publishDueBtn').addEventListener('click', function () {
   }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
     .then(function (res) {
       if (!res.ok) {
-        msg.textContent = 'Publish failed: ' + (res.message || res.error || 'error');
+        msg.textContent = 'Nothing was sent: ' + (res.message || res.error || 'error');
         return;
       }
       var n = (res.results || []).length;
       var ok = (res.results || []).filter(function (x) { return x.ok; }).length;
-      msg.textContent = 'publishDue returned ' + n + ' result(s), ' + ok + ' ok.';
+      msg.textContent = n === 0
+        ? 'Nothing was due, so nothing went out.'
+        : 'Tried ' + n + ' post' + (n === 1 ? '' : 's') + ' · ' + ok + ' went out.';
     });
 });
 document.getElementById('composeTop').addEventListener('click', function(){
@@ -1980,14 +1925,14 @@ document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDr
 /* ══ OAUTH CONNECT ═══════════════════════════════════════════════════════ */
 (function () {
   var msg = document.getElementById('oauthMsg');
-  // Same partner the rest of this screen is scoped to (the topbar partnerSel).
-  // There is no partner list yet, so this returns '' and the connect buttons are
-  // disabled — nothing is sent for a partner that does not exist.
+  // Same partner the rest of this screen is scoped to (the top bar picker). With
+  // no partner this returns '' and the connect buttons are disabled — nothing is
+  // sent for a partner that does not exist.
   function partnerId() { var p = partner(); return p ? p.id : ''; }
   function token() {
     try { return localStorage.getItem('fh_token') || ''; } catch (e) { return ''; }
   }
-  /* §6 — the screen never shows the API's raw code. Every reason it can send back
+  /* §6 — the screen never shows a raw error code. Every reason it can send back
      is said in words, and each one ends with what to do next. Anything unmapped
      falls through to a plain sentence, never to the code itself. */
   var LABEL = { facebook:'Facebook', instagram:'Instagram', linkedin:'LinkedIn' };
@@ -2107,7 +2052,7 @@ function loadQueue(){
       syncWriteControls();
       return;
     }
-    if (txt) txt.textContent = (res.data.enabled ? 'On · ' : 'Off · ') + (res.data.remaining != null ? res.data.remaining + ' left' : '');
+    if (txt) txt.textContent = (res.data.enabled ? 'Writing on' : 'Writing off') + (res.data.remaining != null ? ' · ' + res.data.remaining + ' left' : '');
     if (chip) chip.className = 'chip ' + (res.data.enabled ? 'on' : '');
     window.__ssSuiteEnabled = !!res.data.enabled;
     syncWriteControls();
@@ -2136,16 +2081,16 @@ document.getElementById('ssGenBtn').addEventListener('click', function(){
   }).then(function(r){ return r.json().catch(function(){ return { ok:false }; }); })
     .then(function(res){
       msg.textContent = res.ok
-        ? 'Wrote ' + ((res.items && res.items.length) || 0) + ' posts.'
-        : (res.message || res.error || 'Write failed');
+        ? 'Wrote ' + ((res.items && res.items.length) || 0) + ' posts. They are in the waiting list below.'
+        : (res.message || res.error || 'Nothing was written.');
       loadQueue();
     });
 });
 
 /* ══ BOOT ════════════════════════════════════════════════════════════════ */
 document.getElementById('nowTxt').textContent = 'now = ' + fmt(NOW_ISO);
-/* The composer opens empty. It used to open with a caption and an offer type
-   already filled in, which read as copy somebody had written. */
+/* The writer opens empty. It used to open with words and a topic already filled
+   in, which read as a post somebody had written. */
 renderAll();
 wireActionLog();
 </script>

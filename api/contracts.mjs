@@ -7,6 +7,7 @@
 //   { action: "save_draft",   id, values, title }                     (staff)
 //   { action: "preview", template_id, client_id, values }             (staff)
 //   { action: "send",    id }                                         (staff)
+//   { action: "remind",  id }                                         (staff)
 //   { action: "void",    id, reason }                                 (owner/admin)
 //
 // POST with an `action` in the body rather than one path per verb — the same
@@ -54,7 +55,8 @@ import { safeError } from "../src/http/health.mjs";
 import {
   ContractError, createTemplate, updateTemplate, getTemplate,
   createDraft, saveDraft, preview, send, voidContract, getContract,
-  uploadTemplate, saveFields, listSigners, replaceSigners
+  uploadTemplate, saveFields, listSigners, replaceSigners,
+  remindContract, mintLinks
 } from "../src/contracts/index.mjs";
 import { runChase } from "../src/workflows/contract-chaser.mjs";
 
@@ -74,7 +76,7 @@ const OWNER_ADMIN_ACTIONS = new Set([
 const ALL_ACTIONS = [
   "create_template", "upload_template", "save_template", "save_fields",
   "archive_template", "create_draft", "save_draft", "preview", "send", "void",
-  "create_client", "run_reminders"
+  "create_client", "run_reminders", "remind"
 ];
 
 /* The absolute base a signed link is built on, so the CRM can show a link a
@@ -386,6 +388,114 @@ export default async function handler(req, res) {
             : (out.considered
                 ? "Nothing to chase — everything outstanding has been reminded recently."
                 : "Nothing outstanding. Every contract that was sent has been dealt with.")
+        });
+      }
+
+      /* ── chase ONE contract ────────────────────────────────────────────────
+         A person pressing "remind" on one row, which run_reminders above cannot
+         serve: that one is a sweep of the whole company and deliberately leaves
+         alone anything sent in the last few days, so a button wired to it
+         answers "nothing to chase" on the very contract the staff member is
+         looking at.
+
+         ROLE_SETS.STAFF, NOT owner/admin — deliberately, and not an oversight
+         next to run_reminders. Reminding the one person holding up the one
+         contract you sent is the same act as sending it, and `send` is staff
+         work. Deciding that a batch of clients gets chased today is the narrower
+         act, and that one keeps its narrower gate.
+
+         IT STILL STOPS AT MAX_CHASES. A cap with a manual way around it is not a
+         cap, and a system that emails somebody forever is a system people
+         filter. remindContract() enforces it for the button and the sweep alike.
+
+         NOTHING NEW TRANSMITS HERE. This calls the same notifySigners() path the
+         send already uses, which writes `messages` rows and hands them to
+         src/messaging/dispatch.mjs; outbound fetch stays in
+         src/messaging/providers/* (CLAUDE.md §12). The wording comes from the
+         seeded CONTRACT-REMIND-EMAIL template and is not sent unless it has
+         passed compliance. */
+      case "remind": {
+        if (!isUuid(body.id)) return res.status(400).json({ ok: false, error: "invalid_id", message: "That id is not a valid record id." });
+        const contract = await getContract(db, { orgId, id: body.id });
+        if (!contract) {
+          return res.status(404).json({
+            ok: false, error: "not_found", message: "That contract is not on file."
+          });
+        }
+        if (contract.status === "draft") {
+          return res.status(409).json({
+            ok: false, error: "not_sent",
+            message: "This contract has not been sent yet, so there is nobody to remind."
+          });
+        }
+        if (contract.status === "signed" || contract.status === "void") {
+          return res.status(409).json({
+            ok: false, error: "already_finished",
+            message: contract.status === "signed"
+              ? "This contract is already signed. Nobody is waiting on it."
+              : "This contract was voided, so no reminder can go out."
+          });
+        }
+
+        const out = await remindContract(db, {
+          orgId, contract, listSigners, mintLinks,
+          baseUrl: baseUrlFrom(req), staffName: staff.name || null
+        });
+
+        if (!out.ok) {
+          return res.status(409).json({
+            ok: false, error: out.reason,
+            message: out.reason === "chase_limit"
+              ? `This contract has already had ${out.chasesSoFar} reminders. ` +
+                "Give them a call instead — another email is unlikely to help."
+              : "Everyone has already signed or turned it down, so there is nobody left to remind."
+          });
+        }
+
+        /* WHY A SKIPPED REMINDER IS STILL A 200. The reminder is a best effort
+           over the top of a contract that is already legally out; nothing about
+           the contract failed. What the staff member needs is to be told plainly
+           that no email left the building and why — a red error would say the
+           wrong thing about the contract itself. */
+        const firstSkip = (out.skipped || []).find((s) => s.reason !== "not_their_turn_yet");
+        const paused = out.delivery && out.delivery.paused === true;
+        const sentCount = (out.delivery && out.delivery.sent) || 0;
+        const who = out.waiting?.name || "the person who has not signed";
+        const message =
+          sentCount ? `Reminder ${out.reminder} of ${out.maxChases} sent to ${who}.`
+          : paused ? "Sending is paused for this company, so the reminder is waiting in the queue."
+          : !out.queued.length
+            ? (firstSkip?.reason === "no_template"
+                ? "No reminder was sent: the reminder email wording is missing from this company's copy library."
+                : firstSkip?.reason === "template_not_approved"
+                  ? "No reminder was sent: the reminder wording has not been approved yet."
+                  : firstSkip?.reason === "no_email"
+                    ? `No reminder was sent: ${firstSkip.name || who} has no email address on file.`
+                    : firstSkip?.reason === "already_queued"
+                      ? "That reminder is already waiting to go out."
+                      : "No reminder went out this time.")
+            : `Reminder ${out.reminder} of ${out.maxChases} is queued for ${who} but has not gone out yet.`;
+
+        return res.status(200).json({
+          ok: true, action, contract_id: contract.id,
+          reminder: out.reminder, max_reminders: out.maxChases,
+          waiting_on: out.waiting
+            ? {
+                name: out.waiting.name,
+                role: out.waiting.role_label,
+                remaining: (out.signers || []).filter(
+                  (s) => s.status !== "signed" && s.status !== "declined").length
+              }
+            : null,
+          queued: out.queued.length,
+          delivery: {
+            sent: sentCount,
+            blocked: (out.delivery && out.delivery.blocked) || 0,
+            failed: (out.delivery && out.delivery.failed) || 0,
+            ...(paused ? { paused: true } : {})
+          },
+          skipped: out.skipped || [],
+          message
         });
       }
 

@@ -21,7 +21,6 @@ const SCREENS = [
   "/app/inquiry-remover.html",
   "/app/lenders.html",
   "/app/finance-os.html",
-  "/app/subscriptions.html",
   "/app/products-commissions.html",
   "/app/staff-teams.html",
   "/app/ops-admin.html",

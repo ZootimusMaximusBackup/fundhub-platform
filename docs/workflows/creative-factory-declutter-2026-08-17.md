@@ -15,8 +15,8 @@
 | A — ground brief + the screen edit | agent-A | `public/app/creative-factory.html` | **DONE** (orchestrator fixed one defect after — see below) |
 | B — new home for the legal rules | agent-B | `docs/compliance/creative-block-reasons.md` (new) | **DONE** |
 | C — sibling screens (social-studio, brand-studio) | — | — | NOT LAUNCHED — out of the owner's ask, parked |
-| D — journeys `-actual.md` + changelog | agent-D | `docs/journeys/*-actual.md`, `docs/journeys/CHANGELOG.md` | **claimed** |
-| E — checks + live proof | agent-E | evidence folder only | blocked on A, D, deploy |
+| D — journeys `-actual.md` + changelog | agent-D | `docs/journeys/*-actual.md`, `docs/journeys/CHANGELOG.md` | **DONE** |
+| E — checks + live proof | agent-E | evidence folder only | **BLOCKED** — checks done by the orchestrator and green; live proof impossible while fundhub.ai answers 503 `usage_exceeded` |
 
 ## Shared context brief (ground once, fan out)
 
@@ -93,6 +93,58 @@ Wrote `docs/compliance/creative-block-reasons.md` (250 lines). The `docs/complia
 - **The first failure was proven pre-existing**, not caused by this batch: a clean `git worktree` at HEAD (`9ec9c25`) runs `scripts/journeys/generate.test.mjs` → 20 tests, 19 pass, 1 fail, same subtest. Measured today, in this environment, per CLAUDE.md §12.
 - `npx tsc --noEmit` cannot run — no `tsconfig.json` in this repo. Not faked. (DOC-GAP, already recorded on the main audit board.)
 - Caveat, stated plainly: other sessions are editing this same tree, so these counts include their work as well as this batch's.
+
+## Lane D — merged manifest (2026-08-17)
+
+**No `-actual.md` file changed, and that is the correct result — verified independently by the orchestrator, not taken on trust.** `npm run journeys:check` → `docs/journeys is up to date (9 files)`. The journey pages are generated from routes and role gates; this batch changed screen wording and panel order and touched neither. The screen calls the same eight endpoints before and after (seven `/api/creative/*` plus `GET /api/partner-marketing/usage`). Hand-editing those files to "document" this batch would have broken the suite, because the suite regenerates and compares them.
+
+One entry appended to `docs/journeys/CHANGELOG.md`.
+
+**Gaps found, recorded and NOT reconciled (CLAUDE.md §4 forbids editing `-intended.md`):**
+1. All eight `-intended.md` files say Creative Factory is **4 routes**. It has been **7** since 2026-08-02 — the same day those pages were written. Pre-existing.
+2. `white-label-intended.md` §5 says the usage card shows "tokens used this month vs a 250,000 cap". The card is now headed "Writing budget" and says **words**, and the cap is whatever the usage endpoint returns — 250,000 is only the default, and a partner may be set to a different one.
+3. No `-intended.md` file has ever mentioned the on-screen block-reason table or its citations. Nothing said it belonged there, and nothing says it should go. No intended journey was broken either way.
+
+## Working-tree reconciliation before commit (orchestrator)
+
+Another session's in-flight nav restructure had leaked into `creative-factory.html` while Lane A was recovering from the tree being wiped: the file had lost the `Subscriptions` nav row and carried a `Contracts` → `Contract templates` rename that belongs to the contracts/documents batch, not this one. **The whole `<aside class="side">` block was restored byte-for-byte from HEAD**, so this commit carries only the declutter. That other batch will land its nav change across all 34 screens in its own commit.
+
+**Proof this batch adds no test breakage** — the decluttered file was copied into a clean `git worktree` at HEAD and the shell/nav suites run there:
+- `src/http/app-nav-matches-shell.test.mjs` → 27 pass / 7 fail **with** our file, and 27 pass / 7 fail **without** it. Identical. Those 7 are pre-existing at HEAD.
+- `src/http/routes.test.mjs` + `src/http/mobile-shell.test.mjs` in the same clean worktree → **59 pass, 0 fail**.
+- In the live shared tree the same nav test shows 31 failures, because another session has changed `shell.js` and has not yet copied it into the screens. Not this batch, and not fixable from here.
+
+## Committed
+
+`0be3c22` — "Take the builder text and the law citations off Creative Factory."
+Three files: `public/app/creative-factory.html`, `docs/compliance/creative-block-reasons.md`, `docs/journeys/CHANGELOG.md`. Staged path-by-path; the changelog was staged as HEAD-plus-our-line-only so the contracts batch's entry stayed in the working tree as theirs to commit. **Not pushed. Nothing is live.**
+
+## PUSHED — and the live site is down, for a reason that is not this change
+
+`0be3c22` + `dea8019` pushed to `main` at ~04:28 UTC 2026-08-18 on the owner's instruction ("Push it").
+
+**https://fundhub.ai returns HTTP 503 `{"error":"usage_exceeded","message":"Usage exceeded"}` on EVERY path** — homepage, every screen, and `/api/*`. Netlify has paused the project because the account is over its usage allowance.
+
+Measured, not guessed:
+- `netlify api listSiteDeploys` → **15 deploys in the last hour**, the newest at 04:21:50 UTC. They are spaced roughly two minutes apart and carry other sessions' commit titles (hiring board, pipeline board, hiring screen, contracts/documents).
+- **No deploy was ever created for `0be3c22` or `dea8019`.** The push landed on `main`; Netlify did not start a build for it.
+- This is the failure mode CLAUDE.md §11 already records from 2026-08-06: too many builds burn the month's credits and the live site is paused.
+
+**Nothing was retried.** Re-deploying costs another build and would make it worse. Fixing the allowance is a billing decision and belongs to the owner alone.
+
+**Consequence for this batch:** the code is on `main` and will go live with the next successful build. Lane E cannot capture live proof until the site answers again.
+
+## WHERE THIS STOPPED — 2026-08-18, read this first if you pick it up later
+
+**The work is done and safe on `main`.** Two commits: `0be3c22` (declutter) and `dea8019` (budget card says tokens, 250,000 cap named).
+
+**It is NOT on the live site yet.** fundhub.ai recovered from the `usage_exceeded` outage and answers 200 again, but it still serves the OLD page — checked directly: 10 statute citations still on live, no closed reference sections, no tokens caption. Netlify never built the commits; the queue was frozen during the outage and nothing has triggered a build since.
+
+**To finish, one action:** trigger a build of `main` — `netlify api createSiteBuild --data '{"site_id":"5905dba4-9942-480c-a510-813a3fe2b073"}'`, or Netlify project → Deploys → Trigger deploy. (The orchestrator was blocked from running this by the local permission classifier — not a Netlify problem.)
+
+**Know before deploying:** `origin/main` moved to `8503b8c` ("Make the CRM text bigger, the layout wider, and stop the panels jumping") from another session, which sits ahead of this batch. A build publishes that too. It was not reviewed by this batch.
+
+**After the build, the only thing left is Lane E:** live proof shots on fundhub.ai with `docs/workflows/ui-audit-evidence/_tools/ui-audit.mjs`. Nothing else is outstanding.
 
 ## Blockers and open questions
 

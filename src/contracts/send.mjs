@@ -83,9 +83,25 @@ const LIST_COLUMNS = `
   c.source_kind, c.signing_order, c.completed_at, c.signed_document_id,
   c.created_at, c.updated_at`;
 
-/** listContracts — the CRM queue. Newest first, optionally narrowed to a client. */
-export async function listContracts(db, { orgId, clientId = null, status = null, limit = 100 } = {}) {
+/**
+ * listContracts — the CRM queue. Newest first, optionally narrowed to a client.
+ *
+ * `documentIds` IS HOW THE DOCUMENTS SCREEN FINDS THE CONTRACT BEHIND A ROW.
+ * The pointer only runs one way: a contract names its documents, a document
+ * does not name its contract. So the Documents screen collects the ids of the
+ * rows it is showing and asks this list which contracts own them, in ONE call,
+ * rather than a request per row.
+ *
+ * It matches EITHER end of that pointer — `document_id` (the copy that was
+ * sent) or `signed_document_id` (the finished signed copy, which is a second
+ * documents row). A screen listing both would otherwise decorate one and leave
+ * the other looking like an unrelated file.
+ */
+export async function listContracts(db, {
+  orgId, clientId = null, status = null, documentIds = null, limit = 100
+} = {}) {
   if (!orgId) throw badRequest("A contract list needs to know which company it is for.", "org_required");
+  const docIds = Array.isArray(documentIds) && documentIds.length ? documentIds : null;
   const { rows } = await db.query(
     `SELECT ${LIST_COLUMNS},
             cl.first_name, cl.last_name, cl.email AS client_email,
@@ -96,9 +112,12 @@ export async function listContracts(db, { orgId, clientId = null, status = null,
       WHERE c.org_id = $1::uuid
         AND ($2::uuid IS NULL OR c.client_id = $2::uuid)
         AND ($3::text IS NULL OR c.status = $3)
+        AND ($5::uuid[] IS NULL
+             OR c.document_id = ANY($5::uuid[])
+             OR c.signed_document_id = ANY($5::uuid[]))
       ORDER BY c.created_at DESC
       LIMIT $4`,
-    [orgId, clientId, status, Math.max(1, Math.min(Number(limit) || 100, 200))]
+    [orgId, clientId, status, Math.max(1, Math.min(Number(limit) || 100, 200)), docIds]
   );
   return rows;
 }

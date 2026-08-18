@@ -55,7 +55,11 @@ describe("the Contracts screen (public/app/contracts.html)", () => {
 
   test("every endpoint it calls is really routed", () => {
     const called = apiPaths(CRM);
-    assert.ok(called.length >= 2, `expected the screen to call the API, found ${called.length}`);
+    /* Was >= 2. The screen lost its contract queue on 2026-08-17 (owner
+       decision: this is a template loader, not a status board), and its
+       /api/auth/session call went with resolveRole(). One literal is left.
+       The count was never the point — the routing check below is. */
+    assert.ok(called.length >= 1, `expected the screen to call the API, found ${called.length}`);
     for (const p of called) {
       const key = p.replace(/^\/api\//, "");
       assert.ok(Object.prototype.hasOwnProperty.call(ROUTES, key),
@@ -78,9 +82,15 @@ describe("the Contracts screen (public/app/contracts.html)", () => {
     assert.match(CRM, /in use/);
   });
 
-  test("it tells staff to send from the call, not from this page", () => {
-    assert.match(CRM, /Send from the call/);
-    assert.match(CRM, /call cockpit/);
+  /* De-dup, 2026-08-17: this screen builds contract templates; Documents is
+     where sent contracts are watched. The note card has to say so, or the two
+     screens read as duplicates of each other again. */
+  test("it hands off to Documents for anything already sent", () => {
+    assert.match(CRM, /Staff pick it later/);
+    assert.match(CRM, /href="documents\.html"/,
+      "the screen must link staff to Documents to see what was sent and who signed");
+    assert.equal(/id="listBody"/.test(CRM), false, "the contract queue must not come back");
+    assert.equal(/id="detailCard"/.test(CRM), false, "the contract detail card must not come back");
   });
 
   test("it can author wording without a developer — that is the whole point", () => {
@@ -91,37 +101,35 @@ describe("the Contracts screen (public/app/contracts.html)", () => {
     assert.match(CRM, /id="tBody"/, "no editor for the contract wording");
   });
 
-  /* The one-screen-two-gates arrangement. The card is display:none in the
-     markup and only revealed once the session says owner or admin, so a
-     narrower role never sees a control whose endpoint would refuse them. */
-  test("the wording card starts hidden and is revealed only for owner or admin", () => {
-    assert.match(CRM, /id="tplCard"[^>]*style="display:none/,
-      "the contract-wording card must be hidden in the markup, not only by script");
-    assert.match(CRM, /isAdmin\s*=\s*norm\(r\)\s*===\s*"owner"\s*\|\|\s*norm\(r\)\s*===\s*"admin"/);
-    assert.match(CRM, /\$\("tplCard"\)\.style\.display\s*=\s*isAdmin/);
-  });
-
-  test("void is offered only to an owner or admin, matching the endpoint's gate", () => {
-    assert.match(CRM, /if \(isAdmin && c\.status !== "signed" && c\.status !== "void"\)/);
+  /* WAS: the card was display:none and revealed only for owner/admin.
+     Owner decision 2026-08-17 — the wording library IS this screen, so it
+     renders for every staff role and there is nothing left to reveal.
+     THE WRITE GATE DID NOT MOVE: OWNER_ADMIN_ACTIONS in api/contracts.mjs
+     still refuses a narrower role's save, and the badge still says so, so a
+     closer is told rather than silently refused. The role-visibility question
+     for the nav row itself is recorded on the batch board as Q1. */
+  test("the wording card is the screen, so it renders without a role check", () => {
+    assert.match(CRM, /id="tplCard"/);
+    assert.equal(/id="tplCard"[^>]*style="display:none/.test(CRM), false,
+      "the wording card must not be hidden — it is the whole screen now");
+    assert.match(CRM, /owner &amp; admin/,
+      "the card must still tell a narrower role that saving is owner/admin only");
   });
 
   test("live wordings never paint the sample-markup banner", () => {
     assert.match(CRM, /return "live wordings · " \+ templates\.length/);
-    assert.match(CRM, /return "live contracts · " \+ contracts\.length/);
     assert.equal(/if \(!templates\.length\) return null/.test(CRM), false);
-    assert.equal(/if \(!contracts\.length\) return null/.test(CRM), false);
+    /* The "live contracts" half went to documents-screen.test.mjs with the
+       queue itself — see "it never paints a sample banner over real rows". */
   });
 
-  test("it shows the status of every contract, which the brief required", () => {
-    for (const s of ["draft", "sent", "viewed", "signed", "void"]) {
-      assert.ok(new RegExp(`\\b${s}\\b`).test(CRM), `the screen never mentions the "${s}" state`);
-    }
-  });
-
-  test("it surfaces a tampered contract rather than hiding it", () => {
-    assert.match(CRM, /__integrity/);
-    assert.match(CRM, /It cannot be signed/);
-  });
+  /* MOVED, not dropped (2026-08-17 de-dup):
+       · the five contract statuses  → documents-screen.test.mjs
+       · the tampered-contract warning → the signing-page block below, which is
+         where a tampered document is actually refused. The staff-side display
+         of it went with the detail card and has NOT been rebuilt on Documents;
+         that gap is recorded on the batch board, and the refusal itself is
+         still enforced by src/contracts/sign.mjs (409 content_changed). */
 
   test("it links back out to another screen", () => {
     const links = [...CRM.matchAll(/href="([a-z0-9-]+\.html)"/g)].map((m) => m[1]);
@@ -161,6 +169,17 @@ describe("the client signing page (public/contract.html)", () => {
     const called = apiPaths(CLIENT);
     assert.deepEqual(called, ["/api/contracts/sign"]);
     assert.ok(Object.prototype.hasOwnProperty.call(ROUTES, "contracts/sign"));
+  });
+
+  /* Came from the Contracts screen on 2026-08-17. The staff-side detail card
+     used to assert __integrity and "It cannot be signed"; that card moved off
+     the screen in the Documents de-dup. This is the assertion that matters
+     more anyway — the person about to sign a tampered document is the one who
+     has to be told, and src/contracts/sign.mjs answers 409 content_changed
+     regardless of what any screen renders. */
+  test("a tampered contract is refused out loud, not hidden", () => {
+    assert.match(CLIENT, /cannot be signed/);
+    assert.match(CLIENT, /Nothing has been agreed and nothing has been charged/);
   });
 
   test("it passes the link's own query string straight through, unmodified", () => {
@@ -306,10 +325,10 @@ describe("the Contracts screen — uploading and placing boxes", () => {
     assert.ok(CRM.includes("signer_roles"));
   });
 
-  test("the finished document can be downloaded from the CRM", () => {
-    assert.match(CRM, /file: "contract"/);
-    assert.match(CRM, /a\.download = res\.data\.filename/);
-  });
+  /* "the finished document can be downloaded from the CRM" moved to
+     documents-screen.test.mjs — downloading a sent contract is Documents' job
+     now. The template PDF the field placer reads is a different call
+     (file=template), asserted above. */
 });
 
 describe("the client signing page — uploaded documents", () => {

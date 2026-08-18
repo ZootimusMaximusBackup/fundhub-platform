@@ -30,12 +30,14 @@
  * card-stack.html, bank-accounts.html, bills-cashflow.html, banking-entry.html,
  * finance-command.html, finance-add.html, alerts.html and deal-model.html are
  * gone — Finance OS (finance-os.html) absorbed them, an owner decision, not a
- * regression. subscriptions.html stayed, moved to Setup. The tests below used
- * to reach for whichever of those eleven happened to fit each scenario; they now
- * reach for finance-os.html or subscriptions.html, the two CLIENT_SCREENS this
- * app still has, since the mechanism under test — carrying the open client
- * across a query string — has nothing to do with which specific screen it runs
- * against.
+ * regression. finance-os.html was deleted outright on 2026-08-17, also an
+ * owner decision: client payment tracking belongs in Finance OS, which is being
+ * rebuilt. The tests below used to reach for whichever screen happened to fit
+ * each scenario; they now reach for finance-os.html, which sits in BOTH
+ * CLIENT_SCREENS and OWNER_ADMIN_ONLY exactly as finance-os.html did, so
+ * every gate and carry case still has a real screen behind it. The mechanism
+ * under test — carrying the open client across a query string — has nothing to
+ * do with which specific screen it runs against.
  *
  * It lives under src/ rather than public/ because package.json's test glob only
  * walks src/ and scripts/ (see the traps section of CLAUDE.md).
@@ -198,9 +200,9 @@ async function runShell({ role = "owner", page = "finance-os.html", search = "",
 
 describe("shell.js — the harness reaches the real code", () => {
   test("the shell runs, gates, and rewrites the anchors it was given", async () => {
-    const a = anchor("subscriptions.html");
+    const a = anchor("finance-os.html");
     await runShell({ links: [a], search: "?client_id=" + CID });
-    assert.notEqual(a.href, "subscriptions.html",
+    assert.notEqual(a.href, "finance-os.html",
       "shell.js did not touch the anchor at all — the harness is not reaching gateLinks()");
   });
 });
@@ -210,13 +212,13 @@ describe("shell.js — the harness reaches the real code", () => {
 describe("shell.js — the open client rides along", () => {
 
   test("a link to a screen that reads a client gets the client appended", async () => {
-    const a = anchor("subscriptions.html");
+    const a = anchor("finance-os.html");
     await runShell({ links: [a], search: "?client_id=" + CID });
-    assert.equal(a.href, "subscriptions.html?client_id=" + CID);
+    assert.equal(a.href, "finance-os.html?client_id=" + CID);
   });
 
   test("every remaining CLIENT_SCREENS entry carries it, so a walk through the file keeps the client", async () => {
-    const screens = ["finance-os.html", "subscriptions.html"];
+    const screens = ["finance-os.html", "closer-dashboard.html"];
     const links = screens.map((s) => anchor(s));
     await runShell({ links, search: "?client_id=" + CID });
     for (let i = 0; i < screens.length; i++) {
@@ -247,43 +249,43 @@ describe("shell.js — the open client rides along", () => {
     // A row can link to the client IT is about — a sample-data card, a search
     // result. Overwriting that with whoever is currently open would send the
     // reader to the wrong person's file.
-    const a = anchor("subscriptions.html?client_id=" + OTHER);
+    const a = anchor("finance-os.html?client_id=" + OTHER);
     await runShell({ links: [a], search: "?client_id=" + CID });
-    assert.equal(a.href, "subscriptions.html?client_id=" + OTHER);
+    assert.equal(a.href, "finance-os.html?client_id=" + OTHER);
   });
 
   test("nothing is appended when no client is open", async () => {
-    const a = anchor("subscriptions.html");
+    const a = anchor("finance-os.html");
     await runShell({ links: [a], search: "" });
-    assert.equal(a.href, "subscriptions.html");
+    assert.equal(a.href, "finance-os.html");
   });
 
   test("a junk client_id is not sprayed across the app", async () => {
     // Ten links carrying a typo is ten 400s reported as ten separate faults.
-    const a = anchor("subscriptions.html");
+    const a = anchor("finance-os.html");
     await runShell({ links: [a], search: "?client_id=not-a-uuid" });
-    assert.equal(a.href, "subscriptions.html");
+    assert.equal(a.href, "finance-os.html");
   });
 
   test("gateLinks runs twice and the client is appended exactly once", async () => {
     // The hint pass and the session pass both call it. Rewriting from the live
     // href instead of data-fh-href would produce ?client_id=x&client_id=x.
-    const a = anchor("subscriptions.html");
+    const a = anchor("finance-os.html");
     await runShell({ links: [a], search: "?client_id=" + CID });
-    assert.equal(a.href, "subscriptions.html?client_id=" + CID);
+    assert.equal(a.href, "finance-os.html?client_id=" + CID);
     assert.equal((a.href.match(/client_id=/g) || []).length, 1);
   });
 
   test("an existing query string is extended, not replaced", async () => {
-    const a = anchor("subscriptions.html?tier=starter");
+    const a = anchor("finance-os.html?tier=starter");
     await runShell({ links: [a], search: "?client_id=" + CID });
-    assert.equal(a.href, "subscriptions.html?tier=starter&client_id=" + CID);
+    assert.equal(a.href, "finance-os.html?tier=starter&client_id=" + CID);
   });
 
   test("a fragment stays at the end where a fragment belongs", async () => {
-    const a = anchor("subscriptions.html#history");
+    const a = anchor("finance-os.html#history");
     await runShell({ links: [a], search: "?client_id=" + CID });
-    assert.equal(a.href, "subscriptions.html?client_id=" + CID + "#history");
+    assert.equal(a.href, "finance-os.html?client_id=" + CID + "#history");
   });
 });
 
@@ -297,42 +299,42 @@ describe("shell.js — remembering the client across a screen that has none", ()
 
     // Page 2: the Command Center itself, no client in the bar. Its sidebar rows
     // still have to point back at the client's file.
-    const a = anchor("subscriptions.html");
+    const a = anchor("finance-os.html");
     await runShell({ links: [a], page: "command-center.html", search: "", remembered: CID });
-    assert.equal(a.href, "subscriptions.html?client_id=" + CID);
+    assert.equal(a.href, "finance-os.html?client_id=" + CID);
   });
 
   test("the address bar always beats the memory", async () => {
-    const a = anchor("subscriptions.html");
+    const a = anchor("finance-os.html");
     const r = await runShell({ links: [a], search: "?client_id=" + CID, remembered: OTHER });
-    assert.equal(a.href, "subscriptions.html?client_id=" + CID);
+    assert.equal(a.href, "finance-os.html?client_id=" + CID);
     assert.equal(r.store.fh_client, CID, "the memory was not updated to the client on screen");
   });
 
   test("a remembered value that is not a uuid is ignored, not propagated", async () => {
-    const a = anchor("subscriptions.html");
+    const a = anchor("finance-os.html");
     await runShell({ links: [a], page: "command-center.html", search: "", remembered: "wat" });
-    assert.equal(a.href, "subscriptions.html");
+    assert.equal(a.href, "finance-os.html");
   });
 
   test("the control panel's ?id= is what gets remembered on the control panel", async () => {
     // `id` means a client THERE and something else everywhere else, so it is
     // read only on that one screen.
-    const seen = anchor("subscriptions.html");
+    const seen = anchor("finance-os.html");
     const r = await runShell({
       links: [seen], page: "client-control-panel.html", search: "?id=" + CID
     });
     assert.equal(r.store.fh_client, CID);
-    assert.equal(seen.href, "subscriptions.html?client_id=" + CID);
+    assert.equal(seen.href, "finance-os.html?client_id=" + CID);
   });
 
   test("an ?id= on some other screen is NOT read as a client", async () => {
     // agent-editor.html?id= is an agent. Remembering it as a client would send
     // the next click to a record that is not a person.
-    const a = anchor("subscriptions.html");
+    const a = anchor("finance-os.html");
     const r = await runShell({ links: [a], page: "agent-editor.html", search: "?id=" + CID });
     assert.equal(r.store.fh_client, undefined);
-    assert.equal(a.href, "subscriptions.html");
+    assert.equal(a.href, "finance-os.html");
   });
 });
 
@@ -341,8 +343,8 @@ describe("shell.js — remembering the client across a screen that has none", ()
 describe("shell.js — a query string does not open a hole in the gate", () => {
 
   test("a forbidden screen is hidden even when the link carries a client", async () => {
-    // A closer may not open subscriptions.html (shell.js OWNER_ADMIN_ONLY).
-    const a = anchor("subscriptions.html?client_id=" + CID);
+    // A closer may not open finance-os.html (shell.js OWNER_ADMIN_ONLY).
+    const a = anchor("finance-os.html?client_id=" + CID);
     await runShell({ role: "closer", page: "closer-dashboard.html",
                      search: "?client_id=" + CID, links: [a] });
     assert.equal(a.li.style.display, "none",
@@ -351,7 +353,7 @@ describe("shell.js — a query string does not open a hole in the gate", () => {
   });
 
   test("a click on a forbidden screen with a query string is stopped", async () => {
-    const a = anchor("subscriptions.html?client_id=" + CID);
+    const a = anchor("finance-os.html?client_id=" + CID);
     const r = await runShell({ role: "closer", page: "closer-dashboard.html", links: [a] });
     const ev = r.click(a);
     assert.equal(ev.defaultPrevented, true,
@@ -372,7 +374,7 @@ describe("shell.js — a query string does not open a hole in the gate", () => {
     // outside /app/, which could not carry it; that page was deleted
     // (owner-set 2026-08-17).
     const r = await runShell({
-      role: "closer", page: "subscriptions.html", search: "?client_id=" + CID
+      role: "closer", page: "finance-os.html", search: "?client_id=" + CID
     });
     assert.ok(r.navigations.length > 0, "a forbidden screen was not routed away from");
     assert.equal(r.navigations[0].to, "/app/closer-dashboard.html?client_id=" + CID);
