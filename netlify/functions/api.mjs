@@ -135,6 +135,7 @@ import partnerMarketingUsage from "../../api/partner-marketing/usage.mjs";
 import partnerMarketingGenerateCopy from "../../api/partner-marketing/generate-copy.mjs";
 import partnerMarketingCopyHistory from "../../api/partner-marketing/copy-history.mjs";
 import partnerMarketingGenerateLogo from "../../api/partner-marketing/generate-logo.mjs";
+import messageBlasterGift from "../../api/gifts/message-blaster.mjs";
 import publicPartnerPage from "../../api/public/partner-page.mjs";
 import publicSurveySubmit from "../../api/public/survey-submit.mjs";
 import publicPartnerApply from "../../api/public/partner-apply.mjs";
@@ -500,6 +501,9 @@ export const ROUTES = {
   "partner-marketing/generate-copy": partnerMarketingGenerateCopy,
   "partner-marketing/copy-history": partnerMarketingCopyHistory,
   "partner-marketing/generate-logo": partnerMarketingGenerateLogo,
+  /* Affiliate + partner Mac gift. Handler and dmg bundle existed; this map
+     line is what makes GET /api/gifts/message-blaster reachable. */
+  "gifts/message-blaster": messageBlasterGift,
   "public/partner-page": publicPartnerPage,
   "public/survey-submit": publicSurveySubmit,
   "public/partner-apply": publicPartnerApply,
