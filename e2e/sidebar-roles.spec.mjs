@@ -34,6 +34,9 @@ const SETTER = {
 
 const CLOSER_DESK = ["closer-call.html", "my-numbers.html"];
 const SALES_FLOOR = ["sales-floor.html"];
+/* The lender database. ROLE_SETS.LENDERS at the API (owner, admin,
+   funding_advisor) and ADVISOR_ONLY in shell.js — owner decision 2026-08-17. */
+const ADVISOR_ONLY = ["lenders.html"];
 const OWNER_ADMIN_ONLY = ["subscriptions.html", "journeys.html"];
 const HIRING_ONLY = ["hiring.html"];
 const PORTAL_ONLY = ["client-portal.html", "affiliate.html"];
@@ -93,7 +96,7 @@ test.describe("sidebar role visibility", () => {
     const hrefs = await visibleNavHrefs(page);
     expectIncludes(hrefs, CLOSER_DESK);
     expectIncludes(hrefs, ["pipeline.html", "closer-dashboard.html"]);
-    expectExcludes(hrefs, [...SALES_FLOOR, ...OWNER_ADMIN_ONLY, ...HIRING_ONLY, ...PORTAL_ONLY]);
+    expectExcludes(hrefs, [...SALES_FLOOR, ...OWNER_ADMIN_ONLY, ...HIRING_ONLY, ...PORTAL_ONLY, ...ADVISOR_ONLY]);
     for (const h of hrefs) expect(SCREENS.has(h), `broken nav link ${h}`).toBe(true);
   });
 
@@ -101,30 +104,30 @@ test.describe("sidebar role visibility", () => {
     await openScreen(page, "/app/pipeline.html", SALES_MANAGER);
     const hrefs = await visibleNavHrefs(page);
     expectIncludes(hrefs, SALES_FLOOR);
-    expectExcludes(hrefs, [...CLOSER_DESK, ...OWNER_ADMIN_ONLY, ...HIRING_ONLY, ...PORTAL_ONLY]);
+    expectExcludes(hrefs, [...CLOSER_DESK, ...OWNER_ADMIN_ONLY, ...HIRING_ONLY, ...PORTAL_ONLY, ...ADVISOR_ONLY]);
     for (const h of hrefs) expect(SCREENS.has(h), `broken nav link ${h}`).toBe(true);
   });
 
   test("owner sees closer desk, sales floor, hiring, and owner-only rows", async ({ page }) => {
     await openScreen(page, "/app/pipeline.html", OWNER);
     const hrefs = await visibleNavHrefs(page);
-    expectIncludes(hrefs, [...CLOSER_DESK, ...SALES_FLOOR, ...OWNER_ADMIN_ONLY, ...HIRING_ONLY]);
+    expectIncludes(hrefs, [...CLOSER_DESK, ...SALES_FLOOR, ...OWNER_ADMIN_ONLY, ...HIRING_ONLY, ...ADVISOR_ONLY]);
     for (const h of hrefs) expect(SCREENS.has(h), `broken nav link ${h}`).toBe(true);
   });
 
-  test("funding_advisor does not see closer desk, sales floor, portals, or hiring", async ({ page }) => {
+  test("funding_advisor sees the lender database, not closer desk, sales floor, portals, or hiring", async ({ page }) => {
     await openScreen(page, "/app/pipeline.html", FUNDING_ADVISOR);
     const hrefs = await visibleNavHrefs(page);
-    expectIncludes(hrefs, ["pipeline.html", "command-center.html"]);
+    expectIncludes(hrefs, ["pipeline.html", "command-center.html", ...ADVISOR_ONLY]);
     expectExcludes(hrefs, [...CLOSER_DESK, ...SALES_FLOOR, ...OWNER_ADMIN_ONLY, ...HIRING_ONLY, ...PORTAL_ONLY]);
     for (const h of hrefs) expect(SCREENS.has(h), `broken nav link ${h}`).toBe(true);
   });
 
-  test("setter does not see closer desk or sales floor", async ({ page }) => {
+  test("setter does not see closer desk, sales floor, or the lender database", async ({ page }) => {
     await openScreen(page, "/app/pipeline.html", SETTER);
     const hrefs = await visibleNavHrefs(page);
     expectIncludes(hrefs, ["pipeline.html"]);
-    expectExcludes(hrefs, [...CLOSER_DESK, ...SALES_FLOOR, ...OWNER_ADMIN_ONLY, ...PORTAL_ONLY]);
+    expectExcludes(hrefs, [...CLOSER_DESK, ...SALES_FLOOR, ...OWNER_ADMIN_ONLY, ...PORTAL_ONLY, ...ADVISOR_ONLY]);
     for (const h of hrefs) expect(SCREENS.has(h), `broken nav link ${h}`).toBe(true);
   });
 });

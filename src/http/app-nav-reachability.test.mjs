@@ -55,6 +55,7 @@ const SALES_FLOOR_ONLY = shellList("SALES_FLOOR_ONLY");
 const PORTAL_ONLY = shellList("PORTAL_ONLY");
 const HIRING_ONLY = shellList("HIRING_ONLY");
 const FINANCE_ONLY = shellList("FINANCE_ONLY");
+const ADVISOR_ONLY = shellList("ADVISOR_ONLY");
 
 /** staffTabs — shell.js's own staffTabs(), the shared employee surface.
     Role-narrow extras stack on top in allowedFor(). */
@@ -66,11 +67,13 @@ const STAFF_TABS = ALL.filter(
     !SALES_FLOOR_ONLY.includes(s) &&
     !PORTAL_ONLY.includes(s) &&
     !HIRING_ONLY.includes(s) &&
-    !FINANCE_ONLY.includes(s)
+    !FINANCE_ONLY.includes(s) &&
+    !ADVISOR_ONLY.includes(s)
 );
 
 const CLOSER_TABS = [...STAFF_TABS, ...CLOSER_DESK_ONLY];
 const SALES_MANAGER_TABS = [...STAFF_TABS, ...SALES_FLOOR_ONLY, ...FINANCE_ONLY];
+const ADVISOR_TABS = [...STAFF_TABS, ...ADVISOR_ONLY];
 
 /* ── the screens on disk ──────────────────────────────────────────────────── */
 
@@ -117,6 +120,7 @@ describe("app shell — the lists this test reads", () => {
     assert.deepEqual(SALES_FLOOR_ONLY, ["sales-floor.html"]);
     assert.deepEqual([...PORTAL_ONLY].sort(), ["affiliate.html", "client-portal.html"].sort());
     assert.deepEqual(HIRING_ONLY, ["hiring.html"]);
+    assert.deepEqual(ADVISOR_ONLY, ["lenders.html"]);
     assert.deepEqual(
       [...FINANCE_ONLY].sort(),
       ["products-commissions.html", "staff-teams.html"].sort()
@@ -178,13 +182,24 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
   }
 
   test("a generic staff role sees the shared staff surface only", () => {
-    // funding_advisor / setter / inquiry_specialist — no closer desk, no floor.
+    // setter / inquiry_specialist — no closer desk, no floor, no lender database.
     const visible = visibleFor(STAFF_TABS);
     assert.equal(visible.length, STAFF_TABS.length);
     assert.deepEqual([...visible].sort(), [...STAFF_TABS].sort());
-    for (const h of [...CLOSER_DESK_ONLY, ...SALES_FLOOR_ONLY, ...OWNER_ADMIN_ONLY, ...FINANCE_ONLY]) {
+    for (const h of [...CLOSER_DESK_ONLY, ...SALES_FLOOR_ONLY, ...OWNER_ADMIN_ONLY, ...FINANCE_ONLY, ...ADVISOR_ONLY]) {
       assert.ok(!visible.includes(h), `generic staff must not see ${h}`);
     }
+  });
+
+  /* Owner decision 2026-08-17: the lender database is the funding advisor's and
+     the owner's. ROLE_SETS.LENDERS at the API, ADVISOR_ONLY in the nav — the
+     two moved in the same commit so the row cannot outlive the gate. */
+  test("a funding advisor sees the staff surface plus the lender database", () => {
+    const visible = visibleFor(ADVISOR_TABS);
+    assert.deepEqual([...visible].sort(), [...ADVISOR_TABS].sort());
+    assert.ok(visible.includes("lenders.html"));
+    assert.ok(!visible.includes("closer-call.html"));
+    assert.ok(!visible.includes("sales-floor.html"));
   });
 
   test("a closer sees the staff surface plus closer desk, not the sales floor", () => {
@@ -193,6 +208,7 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
     assert.ok(visible.includes("closer-call.html"));
     assert.ok(visible.includes("my-numbers.html"));
     assert.ok(!visible.includes("sales-floor.html"));
+    assert.ok(!visible.includes("lenders.html"));
   });
 
   test("a sales manager sees the staff surface plus sales floor, not closer desk", () => {
@@ -204,6 +220,7 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
     assert.ok(!visible.includes("closer-call.html"));
     assert.ok(!visible.includes("my-numbers.html"));
     assert.ok(!visible.includes("ops-admin.html"));
+    assert.ok(!visible.includes("lenders.html"));
   });
 
   test("owner/admin keep every non-partner sidebar row", () => {

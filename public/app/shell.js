@@ -90,8 +90,16 @@
        above. Move a gate there and this row has to move with it. */
     "contracts.html",
     /* lenders.html — funding advisor maintenance surface for the seven Airtable
-       lender product tables (+ bureau mismatch review). ROLE_SETS.STAFF at the
-       API. Lives under the Funding sidebar group. */
+       lender product tables (+ bureau mismatch review). ROLE_SETS.LENDERS at
+       the API — owner, admin, funding_advisor — narrowed from ROLE_SETS.STAFF
+       by owner decision 2026-08-17: the Lenders list is the funding advisor's
+       and the owner's, and nobody else sees or touches it.
+
+       MOVE A GATE AND MOVE ITS ROW. The gate moved in src/http/read-api.mjs,
+       so the row moved with it — see ADVISOR_ONLY below, which is what keeps
+       closer / setter / inquiry_specialist / sales_manager from being offered
+       a screen whose API now 403s them. Lives under the Funding sidebar
+       group. */
     "lenders.html"
   ];
 
@@ -185,9 +193,17 @@
      added for those roles — "*" already covers owner/admin). */
   var HIRING_ONLY = ["hiring.html"];
 
+  /* Lender database — the funding advisor's maintenance surface. Same pattern:
+     in every sidebar, visible to funding_advisor (and owner/admin via "*").
+     Matches ROLE_SETS.LENDERS at the /api/read/lenders gate — owner, admin,
+     funding_advisor. Closer / setter / inquiry_specialist / sales_manager lost
+     the row because they lost the data (owner decision 2026-08-17). */
+  var ADVISOR_ONLY = ["lenders.html"];
+
   /* staffTabs — every screen a signed-in employee may open, which is every row
      the shared sidebar leaves them looking at — except the role-narrow
-     screens above, which closer / sales_manager pick up in allowedFor().
+     screens above, which closer / sales_manager / funding_advisor pick up in
+     allowedFor().
 
      The sidebar markup itself carries more rows than this: subscriptions
      .html, closer-call, my-numbers, and sales-floor sit in the markup so
@@ -203,7 +219,8 @@
         && SALES_FLOOR_ONLY.indexOf(s) === -1
         && PORTAL_ONLY.indexOf(s) === -1
         && HIRING_ONLY.indexOf(s) === -1
-        && FINANCE_ONLY.indexOf(s) === -1;
+        && FINANCE_ONLY.indexOf(s) === -1
+        && ADVISOR_ONLY.indexOf(s) === -1;
     });
   }
 
@@ -233,7 +250,10 @@
   var ROLE_TABS = {
     owner: "*",
     admin: "*",
-    funding_advisor: "staff",
+    /* Funding advisor gets the shared staff surface plus the lender database.
+       "funding_advisor" is resolved in allowedFor() — staffTabs() +
+       ADVISOR_ONLY. Owner and admin already reach it through "*". */
+    funding_advisor: "funding_advisor",
     /* Closer gets the shared staff surface plus the closer desk screens.
        "closer" is resolved in allowedFor() — staffTabs() + CLOSER_DESK_ONLY. */
     closer: "closer",
@@ -295,6 +315,7 @@
     var m = ROLE_TABS[role];
     if (m === "*") return ALL.slice();
     if (m === "closer") return staffTabs().concat(CLOSER_DESK_ONLY);
+    if (m === "funding_advisor") return staffTabs().concat(ADVISOR_ONLY);
     if (m === "sales_manager") return staffTabs().concat(SALES_FLOOR_ONLY).concat(FINANCE_ONLY);
     if (m === "staff" || !m) return staffTabs();
     return m.slice();
