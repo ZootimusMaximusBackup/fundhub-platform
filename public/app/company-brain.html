@@ -525,7 +525,13 @@ button,input,select,textarea{font:inherit;color:inherit}
   }
 
   function scrollToEnd() {
-    // after paint, so scrollHeight is the new height
+    /* Straight away first. requestAnimationFrame on its own was not enough:
+       a throttled or hidden tab never fires it, so a chat opened in a tab the
+       user switches to later sat at the top of the history instead of on the
+       newest turn. Reading scrollHeight right after the innerHTML write already
+       forces layout, so the direct set is correct on its own. The frame callback
+       is only a second pass for fonts and late layout. */
+    msgsEl.scrollTop = msgsEl.scrollHeight;
     window.requestAnimationFrame(function () { msgsEl.scrollTop = msgsEl.scrollHeight; });
   }
 
