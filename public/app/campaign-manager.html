@@ -104,6 +104,15 @@ table.grid tr:last-child td{border-bottom:0}
 .cap{padding:10px 16px;border-top:1px solid var(--line);background:var(--soft);font-size:var(--fs-body);color:var(--gray);line-height:1.5}
 .cap b{color:var(--ink);font-weight:600}
 .cap+.cap{border-top:1px dashed var(--line)}
+/* ── scope line + quiet load warning (replaced the SCOPE & SOURCES card) ──
+   The warning is silent while panels are loading or loaded. It speaks only when a
+   panel is rejected, and repeats that panel's own plain sentence — never a code. */
+.scoperow{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 16px}
+.scoperow .who{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
+.scoperow .how{font-size:var(--fs-body);color:var(--gray)}
+.loadwarn{padding:10px 14px;margin:0 0 16px;border:1px solid var(--warn);border-left-width:3px;border-radius:8px;background:rgba(245,206,143,.26);color:#6B4A12;font-size:var(--fs-body);line-height:1.5}
+.loadwarn b{font-weight:600}
+.loadwarn[hidden]{display:none}
 
 /* filter rails */
 .rail{display:flex;flex-wrap:wrap;gap:4px}
@@ -166,8 +175,6 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 .pager{display:flex;align-items:center;gap:10px;padding:11px 16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.06em}
 
 /* source ledger */
-table.grid td.srccell{white-space:nowrap}
-table.grid td.srccell .sub{white-space:normal}
 .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;vertical-align:middle}
 .dot.real{background:var(--ok)}.dot.sample{background:var(--warn)}.dot.error{background:var(--alert)}
 .dot.reading{background:var(--line)}   /* in flight — not yet an outcome, so not a colour */
@@ -263,7 +270,6 @@ table.grid td.srccell .sub{white-space:normal}
         <a class="navitem" href="lenders.html"><span class="ico">⬡</span><span class="lbl">Lenders</span></a>
         <a class="navitem" href="finance-os.html"><span class="ico">▩</span><span class="lbl">Finance OS</span></a>
         <a class="navitem" href="contracts.html"><span class="ico">✒</span><span class="lbl">Contracts</span></a>
-        <a class="navitem" href="subscriptions.html"><span class="ico">◍</span><span class="lbl">Subscriptions</span></a>
 </div></div>
 
 <div class="navgroup" data-fh-section="client-ops"><button class="navhead" type="button">Client ops<span class="chev">▾</span></button><div class="navlist">
@@ -317,7 +323,7 @@ table.grid td.srccell .sub{white-space:normal}
       <!-- hidden until GET /api/campaigns/spend answers; renderSpend() is the only
            thing that may show it, and only from rows the server sent -->
       <span class="chip" id="ceilChip" style="display:none"><span class="cd"></span><span id="ceilTxt"></span></span>
-      <span class="chip" title="Nothing here records which currency an ad account bills in, so no symbol is shown. Amounts are in the ad account's own currency.">amounts · the ad account's own currency</span>
+      <span class="chip" title="Amounts use the ad account’s own currency.">amounts · the ad account's own currency</span>
       <div class="selwrap" id="partnerPickWrap">
         <label for="partnerSel">Partner</label>
         <select id="partnerSel" aria-label="Partner">
@@ -329,57 +335,31 @@ table.grid td.srccell .sub{white-space:normal}
 
     <div class="content fh-maxw">
 
+      <!-- Who this screen is showing. Was the top half of the SCOPE & SOURCES card;
+           the card's grey "Did each panel load?" table is gone (owner call, 2026-08-17). -->
+      <div class="scoperow">
+        <span class="who" id="scopeName">—</span>
+        <span class="how" id="scopeHow"></span>
+      </div>
+
+      <!-- Silent unless a panel was rejected. renderSources() is the only thing that
+           fills it, and only from panels the reader actually turned down. -->
+      <div class="loadwarn" id="loadWarn" hidden></div>
+
       <!-- ══ CM-00 · SUMMARY ══════════════════════════════════════════════ -->
       <div class="stats" id="statRow"></div>
-
-      <!-- ══ CM-01 · SCOPE + DATA SOURCES ═════════════════════════════════ -->
-      <div class="card">
-        <div class="card-hd">
-          <div class="eyebrow">SCOPE &amp; SOURCES</div>
-          <div class="spacer"></div>
-          <span class="badge b-gray mono" id="scopeBadge">one partner</span>
-        </div>
-        <div class="card-bd" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px">
-          <div>
-            <div class="mono" style="font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray)">Book being shown</div>
-            <div style="font-size:var(--fs-title);font-weight:600;margin-top:5px" id="scopeName">—</div>
-            <div class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.06em;margin-top:3px" id="scopePid">—</div>
-            <p class="note" style="margin-top:11px" id="scopeHow"></p>
-            <p class="note" style="margin-top:9px">
-              This screen shows <b>one partner at a time</b>. Nothing on it adds several
-              partners together, and there is no all-partners view.
-            </p>
-          </div>
-          <div>
-            <div class="mono" style="font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:7px">Did each panel load?</div>
-            <div class="dw-tbl"><div class="tblscroll">
-              <table class="grid">
-                <thead><tr><th>Panel</th><th>Status</th><th>Rows</th></tr></thead>
-                <tbody id="srcRows"></tbody>
-              </table>
-            </div></div>
-          </div>
-        </div>
-        <div class="cap">
-          <b>Nothing on this screen is made up.</b> A panel that could not be loaded says so and
-          stays empty. It never keeps rows from an earlier load, and it never stands in numbers
-          of its own.
-        </div>
-      </div>
 
       <!-- ══ CM-02 · NEEDS ATTENTION ══════════════════════════════════════ -->
       <div class="card">
         <div class="card-hd">
           <div class="eyebrow">NEEDS ATTENTION</div>
           <div class="spacer"></div>
-          <span class="badge b-gray mono">each tile is a real filter</span>
         </div>
         <div class="card-bd">
           <div class="attn" id="attnRow"></div>
         </div>
         <div class="cap">
-          These are counts of real rows, not scores. Clicking a tile filters the panel it came
-          from and jumps to it.
+          Click a tile to jump to that panel.
         </div>
       </div>
 
@@ -394,7 +374,7 @@ table.grid td.srccell .sub{white-space:normal}
           <table class="grid">
             <thead><tr>
               <th>Scope</th><th>Campaign</th><th>Platform</th><th>Daily limit</th>
-              <th>Spend today</th><th>Headroom</th><th>% of ceiling</th>
+              <th>Spend today</th><th title="Stops at zero. An overspend shows as over 100% instead.">Headroom</th><th>% of ceiling</th>
               <th>Max daily increase</th><th>Flags</th>
             </tr></thead>
             <tbody id="spendRows"></tbody>
@@ -402,15 +382,7 @@ table.grid td.srccell .sub{white-space:normal}
         </div>
         <div class="pager" id="spendFoot"></div>
         <div class="cap">
-          <b>This is our own copy of today's spend, not the ad platform's.</b> A green row is not
-          proof that spend is under control — it only means our copy looks fine. The
-          <b>breached</b> flag is the one that reads the ad platform directly, so it stays right
-          even when our copy is behind.
-        </div>
-        <div class="cap">
-          <b>Do not add these rows up.</b> A partner limit, a platform limit and a campaign limit
-          can all count the same money. <b>Headroom</b> never goes below zero — an overspend shows
-          up as a percentage above 100 instead.
+          <b>Do not add these rows up.</b> A partner limit, a platform limit and a campaign limit can all count the same money. Green means our own copy looks fine — only <b>breached</b> checks the ad platform itself.
         </div>
         <div class="cap" id="spendGapCap"></div>
       </div>
@@ -424,12 +396,12 @@ table.grid td.srccell .sub{white-space:normal}
             <select id="fPlatform"><option value="all">all</option><option value="meta">meta</option><option value="tiktok">tiktok</option><option value="google">google</option></select>
           </div>
           <div class="selwrap"><label for="fOffer">Offer</label>
-            <select id="fOffer"><option value="all">all</option><option value="funding">funding</option><option value="credit_cards">credit_cards</option><option value="credit_repair">credit_repair</option></select>
+            <select id="fOffer"><option value="all">all</option><option value="funding">funding</option><option value="credit_cards">credit cards</option><option value="credit_repair">credit repair</option></select>
           </div>
           <div class="selwrap"><label for="fLimit">Limit</label>
             <select id="fLimit"><option>10</option><option>25</option><option selected>50</option><option>200</option></select>
           </div>
-          <button class="btn dark mono" id="syncMetaBtn" type="button" title="Pull campaigns, ad sets, ads, and spend from Meta Marketing API">Sync Meta now</button>
+          <button class="btn dark mono" id="syncMetaBtn" type="button" title="Pull campaigns, ad sets, ads and spend from Meta.">Sync Meta now</button>
           <span class="hint mono" id="syncMetaMsg" style="font-size:var(--fs-caption);color:var(--gray2)"></span>
         </div>
         <div class="card-bd" style="padding:11px 16px;border-bottom:1px solid var(--line)">
@@ -447,14 +419,7 @@ table.grid td.srccell .sub{white-space:normal}
         </div>
         <div class="pager" id="campPager"></div>
         <div class="cap">
-          <b>Spend here is yesterday's, on purpose.</b> Today's is only part of a day, and a list
-          judged on it makes a campaign that started at 11pm look dead. Today's spend is in the
-          panel above, and only per limit — there is no today's figure for a single campaign.
-        </div>
-        <div class="cap">
-          <b>Status</b> is the ad platform's own word for the campaign and <b>Synced</b> is when we
-          last pulled it in. Both stay empty until <b>Sync Meta now</b> fills them. There is no
-          link out to Ads Manager: nothing here holds the campaign's id on the ad platform.
+          <b>Spend here is yesterday’s.</b> Today is only part of a day. <b>Status</b> and <b>Synced</b> stay blank until you press Sync Meta now.
         </div>
       </div>
 
@@ -482,15 +447,7 @@ table.grid td.srccell .sub{white-space:normal}
         </div>
         <div class="pager" id="fatFoot"></div>
         <div class="cap">
-          <b>The recommendation is the optimiser's, not this screen's.</b> It sends back one word —
-          refresh, queue, ok, or unconfigured — and nothing here adds to it. <b>Unconfigured</b>
-          means both of the optimiser's creative rules are switched off for this partner, so it is
-          all-or-nothing across the whole table, never a verdict on one ad.
-        </div>
-        <div class="cap">
-          <b>An ad missing from this table is not a healthy ad.</b> Only ads with activity in the
-          window are listed at all. The figures are plain day-by-day averages, not weighted by how
-          much each day was shown. There is no fatigue score and no picture of the creative.
+          Only ads that ran in this window are listed. <b>Unconfigured</b> means the rotation rules are switched off for this partner.
         </div>
       </div>
 
@@ -512,20 +469,7 @@ table.grid td.srccell .sub{white-space:normal}
         </div>
         <div class="pager" id="connFoot"></div>
         <div class="cap">
-          <b>Whether a campaign may go live is decided by the system, not on this screen.</b> The
-          connection has to be active and the business verified. Verifying a business is done in the
-          ad platform's own Business Manager — there is nothing to click here, and nothing here
-          connects an account.
-        </div>
-        <div class="cap">
-          <b>No password or access key is ever shown here</b> — only whether one is stored and when
-          it runs out. A blank expiry means <b>we do not know</b>, not "valid forever".
-        </div>
-        <div class="cap">
-          <b>A blocker is raised for one campaign but listed against the connection</b>, so the same
-          blocker can appear more than once. Which campaign it came from is not part of this list,
-          so this screen does not name one. A Google connection can be read here but not changed
-          from here.
+          Fix blockers in the ad platform’s own Business Manager — nothing here changes them. The same blocker can show more than once. A blank expiry means we do not know, not forever.
         </div>
       </div>
 
@@ -537,22 +481,22 @@ table.grid td.srccell .sub{white-space:normal}
           <div class="selwrap"><label for="fTarget">Target</label>
             <select id="fTarget">
               <option value="all">all</option><option value="campaign">campaign</option>
-              <option value="ad_set">ad_set</option><option value="ad">ad</option>
-              <option value="creative_asset">creative_asset</option><option value="connection">connection</option>
-              <option value="social_post">social_post</option><option value="autopilot">autopilot</option>
+              <option value="ad_set">ad set</option><option value="ad">ad</option>
+              <option value="creative_asset">creative</option><option value="connection">connection</option>
+              <option value="social_post">social post</option><option value="autopilot">autopilot</option>
             </select>
           </div>
           <div class="selwrap"><label for="fRule">Rule key</label>
             <select id="fRule">
               <option value="all">any</option>
-              <option value="scale_winner">scale_winner</option>
-              <option value="cpa_over_target">cpa_over_target</option>
-              <option value="cpa_recovering">cpa_recovering</option>
-              <option value="frequency_bands">frequency_bands</option>
-              <option value="ctr_below_floor">ctr_below_floor</option>
-              <option value="kill_no_conversions">kill_no_conversions</option>
-              <option value="kill_switch_ceiling">kill_switch_ceiling</option>
-              <option value="learning_phase">learning_phase</option>
+              <option value="scale_winner">scale winner</option>
+              <option value="cpa_over_target">cost per sale too high</option>
+              <option value="cpa_recovering">cost per sale recovering</option>
+              <option value="frequency_bands">shown too often</option>
+              <option value="ctr_below_floor">click rate too low</option>
+              <option value="kill_no_conversions">no sales</option>
+              <option value="kill_switch_ceiling">daily limit hit</option>
+              <option value="learning_phase">still learning</option>
             </select>
           </div>
         </div>
@@ -570,24 +514,7 @@ table.grid td.srccell .sub{white-space:normal}
         </div>
         <div class="pager" id="logFoot"></div>
         <div class="cap">
-          <b>There are four outcomes and no others:</b> done, failed, undone, or written down but
-          never carried out. There is no "pending" and no "retrying" — nothing here tries a second
-          time, so a row that says it was never carried out will stay that way.
-        </div>
-        <div class="cap">
-          <b>Every kill switch row says "never carried out" — that is how it is written down, not
-          what happened.</b> The stop itself did happen: the limit was flagged as breached and the
-          campaigns under it were paused. Ad sets underneath keep the state they had.
-        </div>
-        <div class="cap">
-          <b>The row is written before the change is sent</b>, then stamped when it comes back. That
-          is why "written down but never carried out" is a state you can find rather than a change
-          that vanished. Nothing in this list can be edited or deleted.
-        </div>
-        <div class="cap">
-          <b>"Revertible" is a flag, not a button.</b> Nothing on this screen can undo an action.
-          Rows from the optimiser usually carry no name — the rule is the attribution. Names on
-          human rows are the partner's own users.
+          Nothing here retries, so <b>never carried out</b> stays that way. Kill switch rows say it too, but the stop did happen. <b>Revertible</b> is a label, not a button.
         </div>
       </div>
 
@@ -741,6 +668,34 @@ function outcomeOf(a){
 }
 var APPROVAL_TONE = { draft:'b-gray', awaiting_approval:'b-warn', approved:'b-info', live:'b-ok', paused:'b-warn', archived:'b-gray' };
 var CONNSTATE_TONE = { pending:'b-warn', active:'b-ok', expired:'b-alert', revoked:'b-alert', needs_verification:'b-warn' };
+/* The database's own words, in plain English. The STORED value never changes and
+   is still what every filter sends — this is only what the reader sees. Anything
+   not listed falls back to the same word with its underscores opened up, so a new
+   state is never swallowed and never has to be invented here. */
+var WORDS = {
+  awaiting_approval:'awaiting approval',
+  credit_cards:'credit cards',
+  credit_repair:'credit repair',
+  needs_verification:'needs verification',
+  ad_set:'ad set',
+  creative_asset:'creative',
+  social_post:'social post',
+  scale_winner:'scale winner',
+  cpa_over_target:'cost per sale too high',
+  cpa_recovering:'cost per sale recovering',
+  frequency_bands:'shown too often',
+  ctr_below_floor:'click rate too low',
+  kill_no_conversions:'no sales',
+  kill_switch_ceiling:'daily limit hit',
+  learning_phase:'still learning',
+  connection_not_active:'connection not active',
+  verify_business:'verify the business',
+  link_croa_disclosure:'attach the credit repair disclosure'
+};
+function words(v){
+  if(v === null || v === undefined || v === '') return v;
+  return WORDS[v] || String(v).replace(/_/g, ' ');
+}
 var VERIF_TONE = { unverified:'b-gray', submitted:'b-warn', approved:'b-ok', rejected:'b-alert' };
 var REC_TONE = { refresh:'b-alert', queue:'b-warn', ok:'b-ok', unconfigured:'b-gray' };
 
@@ -764,7 +719,7 @@ function rail(host, values, current, counts, onPick){
   host.innerHTML = values.map(function(v){
     var n = counts && counts[v] !== undefined ? '<span class="n">'+counts[v]+'</span>' : '';
     return '<button type="button" data-v="'+esc(v)+'"'+(v===current?' class="on"':'')+
-           ' aria-pressed="'+(v===current)+'">'+esc(v)+n+'</button>';
+           ' aria-pressed="'+(v===current)+'">'+esc(words(v))+n+'</button>';
   }).join('');
   host.querySelectorAll('button').forEach(function(b){
     b.addEventListener('click', function(){ onPick(b.dataset.v); });
@@ -810,7 +765,7 @@ function renderSpend(){
     if(c.exhausted) flags.push('<span class="badge b-warn mono">exhausted</span>');
     if(c.approaching_ceiling) flags.push('<span class="badge b-warn mono">approaching</span>');
     if(!flags.length) flags.push('<span class="badge b-ok mono">ok</span>');
-    var bar = pct === null ? '<span class="nul mono" style="font-size:var(--fs-caption)">no meter · limit is 0</span>'
+    var bar = pct === null ? '<span class="nul mono" style="font-size:var(--fs-caption)">limit is 0</span>'
       : '<div class="meter '+tone+'"><i style="width:'+Math.min(100, pct)+'%"></i><span class="mark" style="left:80%"></span></div>';
     return '<tr class="'+stripe+'">'+
       '<td><b>'+esc(c.scope)+'</b>'+(c.breached_at?'<span class="sub">breached '+dt(c.breached_at,true)+'</span>':'')+'</td>'+
@@ -823,7 +778,7 @@ function renderSpend(){
       '<td class="mnum">'+c.max_daily_increase_pct+'%</td>'+
       '<td><div style="display:flex;gap:5px;flex-wrap:wrap">'+flags.join('')+'</div></td>'+
     '</tr>';
-  }).join('') : panelRow(9, 'spend', 'No daily limit matches this filter. That is not the same as “no limits”: when a partner has no limit set at all, every budget change is refused.');
+  }).join('') : panelRow(9, 'spend', 'No daily limit matches this filter.');
 
   document.getElementById('spendFoot').textContent = unread ? unread :
     rows.length + ' of ' + CEILINGS.length + ' daily limits in use · closest to the limit first';
@@ -903,7 +858,7 @@ function tiles(){
          which comes back on the same read. */
       sd: spendBad ? spendBad
         : !pc ? 'no daily limit set for this partner'
-        : pc.pct_of_ceiling === null ? 'the daily limit is 0, so there is no percentage'
+        : pc.pct_of_ceiling === null ? 'the daily limit is 0'
         : dec(pc.pct_of_ceiling,2)+'% of this partner’s daily limit' },
     { eyebrow:'HEADROOM TODAY',
       value: spendBad || !pc ? nul() : cents(pc.headroom_cents),
@@ -911,8 +866,8 @@ function tiles(){
          same row — nothing here is fetched or assumed to say it. */
       sd: spendBad ? spendBad
         : !pc ? 'no daily limit set for this partner'
-        : plain(pc.daily_limit_cents) === null ? 'never goes below zero'
-        : 'left of a ' + plain(pc.daily_limit_cents) + ' daily limit · never goes below zero' },
+        : plain(pc.daily_limit_cents) === null ? ''
+        : 'left of a ' + plain(pc.daily_limit_cents) + ' daily limit' },
     { eyebrow:'SPEND YESTERDAY',
       value: listBad ? nul() : cents(yest),
       sd: listBad ? listBad : 'yesterday, across ' + CAMPAIGNS.length + ' campaigns' },
@@ -1003,9 +958,9 @@ function renderCampaigns(reset){
       '<td class="mono">'+esc(c.platform)+
         (c.platform==='google'?'<span class="sub" title="Google campaigns can be read here but not changed from here.">cannot be changed here</span>':'')+
         (c.special_ad_category?'<span class="sub">cat '+esc(c.special_ad_category)+'</span>':'')+'</td>'+
-      '<td class="mono">'+esc(c.offer_type)+'</td>'+
-      '<td><span class="badge '+(APPROVAL_TONE[c.approval_state]||'b-gray')+' mono">'+esc(c.approval_state)+'</span></td>'+
-      '<td class="mono">'+(c.strategy_key ? esc(c.strategy_key) : nul())+'</td>'+
+      '<td>'+esc(words(c.offer_type))+'</td>'+
+      '<td><span class="badge '+(APPROVAL_TONE[c.approval_state]||'b-gray')+'">'+esc(words(c.approval_state))+'</span></td>'+
+      '<td>'+(c.strategy_key ? esc(words(c.strategy_key)) : nul())+'</td>'+
       '<td class="mnum">'+cents(c.budget_cents)+'</td>'+
       '<td class="mnum">'+cents(c.spend_yesterday_cents)+'</td>'+
       '<td class="mnum">'+(c.roas_7d===null?nul():dec(c.roas_7d,2))+'</td>'+
@@ -1017,7 +972,7 @@ function renderCampaigns(reset){
     '</tr>';
   }).join('') : panelRow(13, 'list', CAMPAIGNS.length
       ? 'No campaign matches this filter.'
-      : 'No campaigns yet for this partner. One appears here after <b>Sync Meta now</b> pulls the partner’s ad account, or after a campaign is created on the platform.');
+      : 'No campaigns yet. Press <b>Sync Meta now</b> to pull them in.');
 
   document.getElementById('campRows').querySelectorAll('tr.rowbtn').forEach(function(tr){
     function open(){ openDrawer(tr.dataset.c); }
@@ -1070,7 +1025,7 @@ function renderFatigue(){
     '</tr>';
   }).join('') : panelRow(12, 'fatigue',
       (UI.fatState==='unconfigured'
-        ? 'Nothing can be marked “unconfigured” here. That only happens when <i>both</i> of the optimiser’s creative rules are switched off for this partner, which would be true of every ad at once rather than of one.'
+        ? 'Nothing is unconfigured. The rotation rules are on for this partner.'
         : 'No ad matches this filter within the window.'));
 
   document.getElementById('fatFoot').textContent = unread ? unread :
@@ -1097,7 +1052,7 @@ function renderConn(){
       : '<span class="badge b-gray mono">none stored</span>';
     var blk = (c.blockers && c.blockers.length)
       ? c.blockers.map(function(b){
-          return '<div style="margin-bottom:5px"><span class="badge '+(b.severity==='blocker'?'b-alert':'b-warn')+' mono">'+esc(b.task_key)+'</span>'+
+          return '<div style="margin-bottom:5px"><span class="badge '+(b.severity==='blocker'?'b-alert':'b-warn')+'">'+esc(words(b.task_key))+'</span>'+
                  '<div class="sub" style="margin-top:3px;letter-spacing:0;font-family:var(--sans);font-size:var(--fs-body);color:var(--gray)">'+esc(b.title)+' — '+esc(b.detail)+'</div></div>';
         }).join('')
       : '<span class="badge b-ok mono">none</span>';
@@ -1107,9 +1062,9 @@ function renderConn(){
         (c.last_error?'<span class="sub" style="color:#6E2A22">has an error</span>':'')+'</td>'+
       '<td class="mono">'+esc(c.external_ad_account_id)+
         '<span class="sub">'+(c.external_business_id?'biz '+esc(c.external_business_id):'no business id')+'</span>'+
-        '<span class="sub">scopes '+(c.scopes && c.scopes.length ? esc(c.scopes.join(' · ')) : '[]')+'</span></td>'+
-      '<td><span class="badge '+(CONNSTATE_TONE[c.connection_state]||'b-gray')+' mono">'+esc(c.connection_state)+'</span></td>'+
-      '<td><span class="badge '+(VERIF_TONE[c.platform_verification_state]||'b-gray')+' mono">'+esc(c.platform_verification_state)+'</span></td>'+
+        '</td>'+
+      '<td><span class="badge '+(CONNSTATE_TONE[c.connection_state]||'b-gray')+'">'+esc(words(c.connection_state))+'</span></td>'+
+      '<td><span class="badge '+(VERIF_TONE[c.platform_verification_state]||'b-gray')+'">'+esc(words(c.platform_verification_state))+'</span></td>'+
       '<td>'+tok+'<span class="sub">expires '+(c.token_expires_at?dt(c.token_expires_at,true):'—  (unknown, not “forever”)')+'</span>'+
         '<span class="sub">renewal key '+(c.has_refresh_token?'stored':'not stored')+'</span>'+
         '<span class="sub">last synced '+(c.last_synced_at?dt(c.last_synced_at,true):'never')+'</span></td>'+
@@ -1121,7 +1076,7 @@ function renderConn(){
     '</tr>';
   }).join('') : panelRow(9, 'conn', CONNECTIONS.length
       ? 'No connection in this state.'
-      : 'No ad platform is connected to this partner yet. Connecting one is done in the platform’s own Business Manager — nothing on this screen connects an account.');
+      : 'No ad platform connected yet. Connect one in the platform’s Business Manager.');
 
   document.getElementById('connFoot').textContent = unread ? unread :
     rows.length + ' of ' + CONNECTIONS.length + ' connections';
@@ -1194,9 +1149,9 @@ function renderLog(){
     return '<tr class="rowbtn '+stripe+'" data-a="'+i+'" tabindex="0" aria-expanded="false">'+
       '<td class="mono"><span class="chev">▸</span>'+dt(a.created_at,true)+'</td>'+
       '<td>'+who+'</td>'+
-      '<td><span class="mono" style="font-size:var(--fs-caption)">'+esc(a.target_type)+'</span>'+
+      '<td><span style="font-size:var(--fs-caption)">'+esc(words(a.target_type))+'</span>'+
         '<span class="sub" style="letter-spacing:0;font-family:var(--sans);font-size:var(--fs-body);color:var(--ink)">'+(lbl?esc(lbl):'<span class="nul">nothing recorded</span>')+'</span></td>'+
-      '<td class="mono">'+(a.rule_key?esc(a.rule_key):nul())+'</td>'+
+      '<td>'+(a.rule_key?esc(words(a.rule_key)):nul())+'</td>'+
       '<td style="max-width:280px">'+esc(a.reason)+'</td>'+
       '<td>'+diffCell(a)+'</td>'+
       '<td><span class="badge '+o.cls+' mono">'+esc(o.t)+'</span></td>'+
@@ -1206,12 +1161,12 @@ function renderLog(){
     '</tr>';
   }).join('') : panelRow(8, 'log',
       ((UI.logRule==='cpa_over_target' || UI.logRule==='cpa_recovering')
-        ? 'Nothing here, and there never will be until someone sets a target cost per sale. The rule is switched on with nothing to compare against, so it never runs.'
+        ? 'Nothing here until someone sets a target cost per sale.'
         : (UI.logRule==='learning_phase'
-            ? 'Nothing here. This rule only ever decides to leave an ad set alone, and a decision to do nothing is not written down. You can see the learning window by opening a campaign.'
+            ? 'Nothing here. This rule only ever leaves ad sets alone.'
             : (ACTIONS.length
                 ? 'No action matches this filter.'
-                : 'Nothing has been done to this partner’s campaigns yet — by a person or by the optimiser. Entries appear here on their own as work happens; there is nothing to start from this screen.'))));
+                : 'Nothing has been done to these campaigns yet.'))));
 
   document.getElementById('logRows').querySelectorAll('tr.rowbtn').forEach(function(tr){
     function toggle(){
@@ -1352,11 +1307,9 @@ function renderDrawerBody(){
   var host = document.getElementById('dwBody');
   var sub = document.getElementById('dwSub');
   if(sub) sub.textContent = 'last ' + DW.days + ' days' +
-    (det ? '' : c ? ' · showing the row from the list — the full record has not loaded' : '');
+    (det ? '' : c ? ' · still loading' : '');
   if(!c){
-    host.innerHTML = '<div class="empty">This campaign could not be shown. Either there is no such ' +
-      'campaign, or it belongs to a different partner. This screen does not say which, on purpose — ' +
-      'saying so would give away that somebody else has it.</div>';
+    host.innerHTML = '<div class="empty">This campaign could not be shown.</div>';
     return;
   }
   /* Until /detail answers there are NO ad sets and NO daily series to show. They
@@ -1368,8 +1321,8 @@ function renderDrawerBody(){
   /* a write must never be sent when this screen has no partner at all */
   var canWrite = hasPartnerScope();
   var cwHint = canWrite
-    ? 'These change this partner’s real ad account on Meta. Each one asks you to confirm first, and this screen reloads when Meta confirms it worked.'
-    : 'These buttons are off because no partner is selected. Open this screen for one partner first — a change needs to know whose ad account it is touching.';
+    ? 'These change the real ad account on Meta. You confirm first.'
+    : 'Pick a partner first. These need one ad account.';
 
   var sum = function(k){ return series.reduce(function(n,d){ return n + Number(d[k]||0); }, 0); };
   var avg = function(k){
@@ -1382,20 +1335,20 @@ function renderDrawerBody(){
      Sync Meta now does write both, so the hardcoded null had become a claim the
      record could contradict (UI-STANDARDS §6). */
   var kv = [
-    ['Approval', '<span class="badge '+(APPROVAL_TONE[c.approval_state]||'b-gray')+' mono">'+esc(c.approval_state)+'</span>'],
+    ['Approval', '<span class="badge '+(APPROVAL_TONE[c.approval_state]||'b-gray')+'">'+esc(words(c.approval_state))+'</span>'],
     ['Ad platform', '<span class="mono">'+esc(c.platform)+'</span>'],
-    ['Offer', '<span class="mono">'+esc(c.offer_type)+'</span>'],
+    ['Offer', esc(words(c.offer_type))],
     ['Special ad category', c.special_ad_category
         ? '<span class="mono">'+esc(c.special_ad_category)+'</span>'
-        : '<span class="nul mono">none</span><span class="sub">Meta only — empty on '+esc(c.platform)+' is correct, not missing</span>'],
+        : '<span class="nul mono">none</span><span class="sub">Meta only — blank is correct here.</span>'],
     ['Objective', c.objective ? '<span class="mono">'+esc(c.objective)+'</span>' : '<span class="nul mono">none</span>'],
-    ['Daily budget', '<span class="mono">'+cents(c.budget_cents)+'</span><span class="sub">a daily amount — there is no total budget and no start or end date</span>'],
-    ['Approved', c.approved_at ? '<span class="mono">'+dt(c.approved_at,true)+'</span><span class="sub">who approved it is not shown here</span>' : '<span class="nul mono">not approved</span>'],
+    ['Daily budget', '<span class="mono">'+cents(c.budget_cents)+'</span>'],
+    ['Approved', c.approved_at ? '<span class="mono">'+dt(c.approved_at,true)+'</span>' : '<span class="nul mono">not approved</span>'],
     ['Disclosure attached', c.has_disclosure_asset
         ? '<span class="badge b-ok mono">yes</span>'
         : '<span class="badge '+(c.offer_type==='credit_repair'?'b-alert':'b-gray')+' mono">no</span>' +
           (c.offer_type==='credit_repair' ? '<span class="sub">a credit repair campaign cannot go live without it</span>' : '')],
-    ['Strategy', c.strategy_key ? '<span class="mono">'+esc(c.strategy_key)+'</span><span class="sub">the raw name — there is no friendly one yet</span>' : '<span class="nul mono">none</span>'],
+    ['Strategy', c.strategy_key ? esc(words(c.strategy_key)) : '<span class="nul mono">none</span>'],
     ['Status on the ad platform', c.status ? '<span class="mono">'+esc(c.status)+'</span>' : '<span class="nul mono">not known</span><span class="sub">fills in after Sync Meta now</span>'],
     ['Last synced', c.synced_at ? '<span class="mono">'+dt(c.synced_at,true)+'</span>' : '<span class="nul mono">never</span>'],
     ['Created', '<span class="mono">'+dt(c.created_at,true)+'</span>']
@@ -1415,7 +1368,7 @@ function renderDrawerBody(){
     '</tr>';
   }).join('') : '<tr><td colspan="7"><div class="empty">' +
       (det ? 'This campaign has no ad sets.'
-           : 'Ad sets have not loaded yet. They come with the full campaign record — the panel list at the top of the screen says whether it loaded.') +
+           : 'Ad sets have not loaded yet.') +
     '</div></td></tr>';
 
   /* /detail returns recent_actions already scoped to this campaign and its ad
@@ -1461,18 +1414,18 @@ function renderDrawerBody(){
         '<div class="hint mono" id="cwMsg" style="margin-top:8px;font-size:var(--fs-caption);color:var(--gray2)">' + esc(cwHint) + '</div>' +
       '</div>' +
       (c.last_error
-        ? '<div style="margin-top:10px"><div class="k mono" style="font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:4px">the ad platform’s own words, most recent only</div>' +
+        ? '<div style="margin-top:10px"><div class="k mono" style="font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:4px">What the ad platform said</div>' +
           '<div class="errbox">'+esc(c.last_error)+'</div>' +
           '<p class="note" style="margin-top:6px">Only the latest one is kept here. Earlier ones are in the action list below.</p></div>'
         : '') +
-      '<div style="margin-top:10px"><div class="k mono" style="font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:4px">targeting, exactly as it was sent to the ad platform</div>' +
+      '<div style="margin-top:10px"><div class="k mono" style="font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:4px">Who this campaign targets</div>' +
         '<div class="jsonbox">'+esc(JSON.stringify(c.targeting || {}, null, 1))+'</div></div>' +
     '</div>' +
 
     '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">AD SETS</div>' +
       '<div class="dw-tbl"><div class="tblscroll"><table class="grid"><thead><tr><th>Ad set</th><th>Approval</th><th>Status</th><th>Budget / day</th><th>Ads</th><th>Learning until</th><th>In learning</th></tr></thead>' +
       '<tbody>'+setRows+'</tbody></table></div></div>' +
-      '<p class="note" style="margin-top:7px">While an ad set is still learning, the optimiser leaves it alone. Those skips are never written into the action log, so an ad set can be untouched for days with nothing to show for it here.</p>' +
+      '<p class="note" style="margin-top:7px">The optimiser leaves an ad set alone while it is learning.</p>' +
     '</div>' +
 
     '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">DAILY SERIES</div>' +
@@ -1487,7 +1440,7 @@ function renderDrawerBody(){
         }).join('') + '</div>' +
       (series.length
         ? '<div class="chartwrap" id="dwChart">'+chartSVG(series, DW.metric)+'<div class="tip" id="dwTip"></div></div>'
-        : '<div class="empty">Nothing was recorded for this campaign in this window. That is an empty, not a zero.</div>') +
+        : '<div class="empty">Nothing was recorded in this window.</div>') +
       (series.length
         ? '<div class="kv" style="margin-top:11px;grid-template-columns:repeat(4,minmax(0,1fr))">' +
             '<div><div class="k">spend · total</div><div class="v mono">'+cents(sum('spend_cents'))+'</div></div>' +
@@ -1499,7 +1452,6 @@ function renderDrawerBody(){
             '<div><div class="k">cost per conversion · average</div><div class="v mono">'+cents(avg('cpa_cents'))+'</div></div>' +
             '<div><div class="k">return on ad spend · average</div><div class="v mono">'+dec(avg('roas'),2)+'</div></div>' +
           '</div>' +
-          '<p class="note" style="margin-top:7px">The first four are added up over the days shown. The last four are averages of each day. These eight are everything that is recorded — there is no cost per thousand, no pacing and no days-remaining behind this screen.</p>' +
           '<div class="dw-tbl" style="margin-top:10px"><div class="tblscroll"><table class="grid"><thead><tr><th>Date</th><th>Spend</th><th>Impr.</th><th>Clicks</th><th>Conv.</th><th>Freq</th><th>CTR</th><th>CPA</th><th>ROAS</th></tr></thead><tbody>' +
             tail.map(function(d){
               return '<tr><td class="mono">'+esc(d.date)+(d.date===TODAY?'<span class="sub">partial</span>':'')+'</td>'+
@@ -1508,15 +1460,14 @@ function renderDrawerBody(){
                 '<td class="mnum">'+dec(d.frequency,2)+'</td><td class="mnum">'+pctv(d.ctr)+'</td>'+
                 '<td class="mnum">'+cents(d.cpa_cents)+'</td><td class="mnum">'+dec(d.roas,2)+'</td></tr>';
             }).join('') +
-          '</tbody></table></div></div>' +
-          '<p class="note" style="margin-top:6px">The same last '+tail.length+' days as a table — the chart is never the only way to read a number.</p>'
+          '</tbody></table></div></div>'
         : '') +
     '</div>' +
 
     '<div class="dw-sec"><div class="eyebrow" style="margin-bottom:8px">RECENT ACTIONS</div>' +
       '<div class="dw-tbl"><div class="tblscroll"><table class="grid"><thead><tr><th>When</th><th>Actor</th><th>Rule</th><th>Reason</th><th>Change</th><th>Outcome</th><th>Revert</th></tr></thead>' +
       '<tbody>'+actRows+'</tbody></table></div></div>' +
-      '<p class="note" style="margin-top:7px">This is <b>not</b> everything that happened. It covers this campaign and its ad sets only — anything done to a single ad, to a creative or to the connection is in the Action log panel on the main screen. Newest 50 only, and no names here.</p>' +
+      '<p class="note" style="margin-top:7px">This campaign and its ad sets only. Newest 50.</p>' +
     '</div>';
 
   var ds = document.getElementById('dwDays');
@@ -1541,7 +1492,7 @@ function renderDrawerBody(){
          when the address names one — a partner login is pinned server-side and
          sending a null would be worse than sending nothing. */
       if (!hasPartnerScope()) {
-        if (msg) msg.textContent = 'Nothing was sent. No partner is selected, so there is no ad account to change.';
+        if (msg) msg.textContent = 'Nothing was sent. Pick a partner first.';
         return;
       }
       var sendPid = partnerParam();
@@ -1652,7 +1603,7 @@ function hookChart(series, mk){
    check rather than painting the wrong campaign. */
 function loadDetail(id){
   var seq = ++DW.seq;
-  SRC.detail = { source:'…', note:'reading', rows:null };
+  SRC.detail = { source:'…', note:'', rows:null };
   renderSources();
   return apiGet(scoped('/api/campaigns/detail?id=' + encodeURIComponent(id) + '&days=' + DW.days))
     .then(function(res){
@@ -1690,7 +1641,7 @@ function openDrawer(id){
 function closeDrawer(){
   DW.seq++;                       /* anything still in flight no longer applies */
   if(SRC.detail && SRC.detail.source === '…'){
-    SRC.detail = { source:'…', note:'read on demand, when a row is opened', rows:null };
+    SRC.detail = { source:'…', note:'', rows:null };
     renderSources();
   }
   document.getElementById('drawer').classList.remove('on');
@@ -1711,35 +1662,35 @@ var PANELS = [
   { key:'log',      label:'action log'       }
 ];
 var SRC = {};
-PANELS.forEach(function(p){ SRC[p.key] = { source:'…', note:'not loaded yet', rows:null }; });
+PANELS.forEach(function(p){ SRC[p.key] = { source:'…', note:'', rows:null }; });
 /* '…' is the in-flight marker wireAll seeds every panel with, not an outcome —
    painting it like a failure reports six errors while nothing has failed yet. */
 function tone(src){ return src==='api' ? 'real' : src==='…' ? 'reading'
   : (src==='demo'||src==='notfound'||src==='badrequest'||src==='nodata') ? 'sample' : 'error'; }
-/* One plain word per outcome. The reader's own code (badrequest, nodb, …) is
-   NOT printed and is no longer on the tooltip either: a status code is not
-   something a person can act on, and this table used to print it twice —
-   UI-STANDARDS §6. The next step is on the note beside it. */
-var SOURCE_WORD = {
-  'api':'loaded',
-  '…':'loading…',
-  'demo':'nothing loaded — demo session',
-  'unauthorized':'not allowed to see this',
-  'badrequest':'the request was turned down',
-  'notfound':'nothing matching',
-  'nodata':'nothing to load',
-  'nodb':'the database could not be reached',
-  'offline':'the server could not be reached',
-  'error':'could not be shown'
-};
+/* The Panel / Status / Rows table this used to paint is gone (owner call,
+   2026-08-17): it was repair-shop wording at the top of a customer screen.
+   The honesty it carried is kept in three cheaper places — this one line, the
+   plain sentence each panel prints in its own body, and the footer count.
+   SILENT unless a panel was actually turned down. '…' is the in-flight marker,
+   never a failure, so a screen still reading says nothing at all. */
 function renderSources(){
-  document.getElementById('srcRows').innerHTML = PANELS.map(function(p){
-    var s = SRC[p.key];
-    return '<tr><td>'+esc(p.label)+'</td>'+
-      '<td class="srccell"><span class="dot '+tone(s.source)+'"></span><span style="font-size:var(--fs-caption)">'+esc(SOURCE_WORD[s.source] || 'could not be shown')+'</span>'+
-        '<span class="sub">'+esc(s.note)+'</span></td>'+
-      '<td class="mnum">'+(s.rows===null?nul():s.rows)+'</td></tr>';
-  }).join('');
+  var el = document.getElementById('loadWarn');
+  if(!el) return;
+  var bad = PANELS.filter(function(p){
+    var src = SRC[p.key].source;
+    return src !== 'api' && src !== '…';
+  });
+  if(!bad.length){ el.hidden = true; el.textContent = ''; return; }
+  /* The reason shown is the panel's own sentence — the same words its body
+     shows, never a status code (UI-STANDARDS §6). */
+  var names = bad.map(function(p){ return p.label; });
+  var list = names.length === 1 ? names[0]
+    : names.slice(0,-1).join(', ') + ' and ' + names[names.length-1];
+  var why = '';
+  for(var i=0;i<bad.length;i++){ if(SRC[bad[i].key].note){ why = SRC[bad[i].key].note; break; } }
+  el.innerHTML = '<b>' + esc(list.charAt(0).toUpperCase() + list.slice(1)) +
+    ' did not load.</b> ' + esc(why);
+  el.hidden = false;
 }
 /* Partner names come only from GET /api/read/partners (FHData.partners).
    Empty or failed → honest empty. Never a built-in roster. */
@@ -1752,16 +1703,11 @@ function partnerNameFor(id){
   return null;
 }
 function renderScope(){
-  var qp = partnerParam();
   var scoped = hasPartnerScope();
-  var name = partnerNameFor(qp);
-  document.getElementById('scopeName').textContent = name || (scoped ? 'One partner’s book' : 'No partner selected');
-  document.getElementById('scopePid').textContent = name ? name
-    : scoped ? 'your own partner, set by your sign-in' : 'no partner';
-  document.getElementById('scopeBadge').textContent = qp ? 'one partner'
-    : scoped ? 'your book' : 'nothing to show';
+  var name = partnerNameFor(partnerParam());
+  document.getElementById('scopeName').textContent = name || (scoped ? 'Your partner' : 'No partner selected');
   document.getElementById('scopeHow').textContent = scoped
-    ? 'Spend is this partner’s ads today.'
+    ? 'Spend is this partner’s ads today. One partner at a time.'
     : 'Pick a partner from the list to see their ads.';
   renderSources();
 }
@@ -1878,17 +1824,17 @@ function scoped(path){
 }
 
 /* One plain sentence for the panel body: what failed, and what to do next.
-   Deliberately not the endpoint's own error string — that stays in CM-01. */
+   Deliberately not the endpoint's own error string, which is never shown. */
 function readFailureText(res){
-  if(res.source === 'demo') return 'This is a demo session, so nothing was read from the database.';
+  if(res.source === 'demo') return 'This is a demo session. Nothing was loaded.';
   if(res.source === 'unauthorized') return 'You are not signed in for this data, so nothing was read. Sign in and press Reload.';
-  if(res.source === 'notfound') return 'There is no matching record to read here.';
+  if(res.source === 'notfound') return 'There is nothing here to show.';
   if(res.source === 'badrequest'){
     return partnerParam()
-      ? 'The request was turned down, so nothing could be read here. Press Reload to try again.'
-      : 'Nothing can be shown until a partner is chosen — this screen reads one partner’s book at a time.';
+      ? 'This could not load. Press Reload to try again.'
+      : 'Pick a partner to see their ads.';
   }
-  if(res.source === 'nodb') return 'The database could not be reached, so nothing could be read here. Press Reload to try again.';
+  if(res.source === 'nodb') return 'We could not reach the data. Press Reload to try again.';
   return 'This could not be read right now. Press Reload to try again.';
 }
 
@@ -1903,14 +1849,14 @@ function wirePanel(key, path, apply){
       var items = (res.data && res.data.items) || [];
       delete PANEL_MSG[key];
       s.source = 'api';
-      s.note = items.length ? 'loaded' : 'loaded fine — there is nothing there yet';
+      s.note = '';
       s.rows = items.length;
       /* apply() ALWAYS runs on a good read, including an empty one — otherwise
          rows from an earlier read would sit under a later "nothing there". */
       try { apply(items); }
       catch(e){
         PANEL_MSG[key] = 'This could not be shown. Press Reload to try again.';
-        s.source = 'error'; s.note = 'render failed: ' + e.message; s.rows = null;
+        s.source = 'error'; s.note = 'This could not be shown. Press Reload to try again.'; s.rows = null;
         try { apply([]); } catch(e2){}
       }
     } else {
@@ -1942,8 +1888,8 @@ function isPartnerLogin(){
 }
 
 function wireAll(){
-  PANELS.forEach(function(p){ SRC[p.key] = { source:'…', note:'reading', rows:null }; });
-  SRC.detail = { source:'…', note:'read on demand, when a row is opened', rows:null };
+  PANELS.forEach(function(p){ SRC[p.key] = { source:'…', note:'', rows:null }; });
+  SRC.detail = { source:'…', note:'', rows:null };
   renderSources();
 
   /* Staff with no partner in the address: do not call the five reads.
@@ -1951,7 +1897,7 @@ function wireAll(){
      A partner login has no partner_id in the address — the server pins
      their book — so they still read. */
   if (!partnerParam() && !isPartnerLogin()) {
-    var pick = 'Nothing can be shown until a partner is chosen — this screen reads one partner’s book at a time.';
+    var pick = 'Pick a partner to see their ads.';
     PANELS.forEach(function(p){
       PANEL_MSG[p.key] = pick;
       SRC[p.key] = { source:'badrequest', note:pick, rows:null };
@@ -2005,7 +1951,7 @@ function wireAll(){
     var msg = !total ? 'Campaigns — nothing has been read yet'
       : bad ? 'Campaigns — ' + good + ' of ' + total + ' panels loaded. ' +
               (first || 'The rest could not be read. Press Reload to try again.')
-      : 'Campaigns — every panel loaded from the database';
+      : 'Campaigns — everything loaded';
     /* the same count in the same words — no endpoint path, and no "read-only",
        which stopped being true when the Meta controls landed */
     document.getElementById('footNote').textContent =
@@ -2041,7 +1987,7 @@ syncScopeUi();
 document.getElementById('syncMetaBtn').addEventListener('click', function () {
   var msg = document.getElementById('syncMetaMsg');
   if (!hasPartnerScope()) {
-    msg.textContent = 'Nothing was sent. No partner is selected, so there is no ad account to pull.';
+    msg.textContent = 'Nothing was sent. Pick a partner first.';
     return;
   }
   var pid = partnerParam();
