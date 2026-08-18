@@ -1,0 +1,2458 @@
+{
+  "tool": "docs/workflows/pipeline-perf-evidence/w1-live-owner/measure.mjs",
+  "label": "before",
+  "ranAt": "2026-08-18T04:08:22.805Z",
+  "base": "https://fundhub.ai",
+  "screen": "/app/pipeline.html",
+  "role": "owner@fundhub.ai",
+  "viewport": "1440x900",
+  "browser": "chromium (playwright, headless)",
+  "network": "no throttling — real network from the machine that ran this",
+  "loginMode": "cached-session",
+  "runs": {
+    "cold": 3,
+    "warm": 3,
+    "quietWindowMs": 1500
+  },
+  "cold": {
+    "domContentLoadedMs": {
+      "median": 1290,
+      "all": [
+        1290,
+        688,
+        1519
+      ]
+    },
+    "loadMs": {
+      "median": 1587,
+      "all": [
+        1587,
+        984,
+        1933
+      ]
+    },
+    "ttfbMs": {
+      "median": 262,
+      "all": [
+        262,
+        253,
+        1086
+      ]
+    },
+    "fcpMs": {
+      "median": 1288,
+      "all": [
+        1288,
+        688,
+        1516
+      ]
+    },
+    "lcpMs": {
+      "median": 1296,
+      "all": [
+        1296,
+        700,
+        1528
+      ]
+    },
+    "firstCardMs": {
+      "median": null,
+      "all": [
+        null,
+        null,
+        null
+      ]
+    },
+    "allCardsInMs": {
+      "median": null,
+      "all": [
+        null,
+        null,
+        null
+      ]
+    },
+    "spinnerGoneMs": {
+      "median": null,
+      "all": [
+        null,
+        null,
+        null
+      ]
+    },
+    "longTasksOver50": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "longestTaskMs": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "totalBlockingMs": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "blockingBeforeCardsMs": {
+      "median": null,
+      "all": [
+        null,
+        null,
+        null
+      ]
+    },
+    "blockingAfterCardsMs": {
+      "median": null,
+      "all": [
+        null,
+        null,
+        null
+      ]
+    },
+    "apiCallCount": {
+      "median": 4,
+      "all": [
+        4,
+        4,
+        4
+      ]
+    },
+    "apiBytesTotal": {
+      "median": 871,
+      "all": [
+        871,
+        871,
+        871
+      ]
+    },
+    "apiTransferBytesTotal": {
+      "median": 1830,
+      "all": [
+        1830,
+        1830,
+        1830
+      ]
+    },
+    "cardsRendered": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "columns": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "warm": {
+    "domContentLoadedMs": {
+      "median": 291,
+      "all": [
+        291,
+        221,
+        344
+      ]
+    },
+    "loadMs": {
+      "median": 292,
+      "all": [
+        292,
+        222,
+        345
+      ]
+    },
+    "ttfbMs": {
+      "median": 72,
+      "all": [
+        63,
+        72,
+        183
+      ]
+    },
+    "fcpMs": {
+      "median": 180,
+      "all": [
+        180,
+        140,
+        260
+      ]
+    },
+    "lcpMs": {
+      "median": 180,
+      "all": [
+        180,
+        140,
+        260
+      ]
+    },
+    "firstCardMs": {
+      "median": null,
+      "all": [
+        null,
+        null,
+        null
+      ]
+    },
+    "allCardsInMs": {
+      "median": null,
+      "all": [
+        null,
+        null,
+        null
+      ]
+    },
+    "spinnerGoneMs": {
+      "median": null,
+      "all": [
+        null,
+        null,
+        null
+      ]
+    },
+    "longTasksOver50": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "longestTaskMs": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "totalBlockingMs": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "blockingBeforeCardsMs": {
+      "median": null,
+      "all": [
+        null,
+        null,
+        null
+      ]
+    },
+    "blockingAfterCardsMs": {
+      "median": null,
+      "all": [
+        null,
+        null,
+        null
+      ]
+    },
+    "apiCallCount": {
+      "median": 4,
+      "all": [
+        4,
+        4,
+        4
+      ]
+    },
+    "apiBytesTotal": {
+      "median": 871,
+      "all": [
+        871,
+        871,
+        871
+      ]
+    },
+    "apiTransferBytesTotal": {
+      "median": 1830,
+      "all": [
+        1830,
+        1830,
+        1840
+      ]
+    },
+    "cardsRendered": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    },
+    "columns": {
+      "median": 0,
+      "all": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "representativeColdRun": {
+    "index": 1,
+    "settledReason": "timeout-no-cards",
+    "apiCriticalPath": {
+      "links": [
+        {
+          "url": "/api/auth/session",
+          "status": 200,
+          "startMs": 1289,
+          "endMs": 1594,
+          "durMs": 305
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "startMs": 1605,
+          "endMs": 2333,
+          "durMs": 728
+        }
+      ],
+      "sumDurationMs": 1033,
+      "wallSpanMs": 1044,
+      "gapMs": 11,
+      "linkCount": 2
+    },
+    "allResourceCriticalPath": {
+      "links": [
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+          "status": 200,
+          "startMs": 264,
+          "endMs": 1253,
+          "durMs": 989
+        },
+        {
+          "url": "/api/auth/session",
+          "status": 200,
+          "startMs": 1289,
+          "endMs": 1594,
+          "durMs": 305
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "startMs": 1605,
+          "endMs": 2333,
+          "durMs": 728
+        }
+      ],
+      "sumDurationMs": 2022,
+      "wallSpanMs": 2069,
+      "gapMs": 47,
+      "linkCount": 3
+    },
+    "apiOverlap": [
+      {
+        "url": "/api/auth/session",
+        "startMs": 1289,
+        "endMs": 1594,
+        "durMs": 305,
+        "concurrentWith": 0
+      },
+      {
+        "url": "/api/health",
+        "startMs": 1605,
+        "endMs": 2333,
+        "durMs": 728,
+        "concurrentWith": 2
+      },
+      {
+        "url": "/api/org-brand",
+        "startMs": 1605,
+        "endMs": 2147,
+        "durMs": 542,
+        "concurrentWith": 2
+      },
+      {
+        "url": "/api/demo/mode",
+        "startMs": 1606,
+        "endMs": 2333,
+        "durMs": 728,
+        "concurrentWith": 2
+      }
+    ],
+    "apiBodies": [
+      {
+        "url": "/api/org-brand",
+        "status": 200,
+        "method": "GET",
+        "bytes": 285,
+        "keys": 2
+      },
+      {
+        "url": "/api/demo/mode",
+        "status": 200,
+        "method": "GET",
+        "bytes": 234,
+        "keys": 5
+      },
+      {
+        "url": "/api/auth/session",
+        "status": 200,
+        "method": "GET",
+        "bytes": 222,
+        "keys": 3
+      },
+      {
+        "url": "/api/health",
+        "status": 200,
+        "method": "GET",
+        "bytes": 130,
+        "keys": 8
+      }
+    ],
+    "columns": [],
+    "cardCountTimeline": [
+      {
+        "atMs": 1254,
+        "cards": 0,
+        "cols": 0
+      }
+    ],
+    "longTasks": [],
+    "errors": [],
+    "repeatedRequests": []
+  },
+  "notes": [],
+  "allRuns": [
+    {
+      "kind": "cold",
+      "index": 1,
+      "ranAt": "2026-08-18T04:04:46.762Z",
+      "finalUrl": "/app/pipeline.html",
+      "settledReason": "timeout-no-cards",
+      "metrics": {
+        "domContentLoadedMs": 1290,
+        "loadMs": 1587,
+        "ttfbMs": 262,
+        "fcpMs": 1288,
+        "lcpMs": 1296,
+        "firstCardMs": null,
+        "allCardsInMs": null,
+        "spinnerGoneMs": null,
+        "spinnerFirstSeenMs": 1254,
+        "longTasksOver50": 0,
+        "longestTaskMs": 0,
+        "totalBlockingMs": 0,
+        "blockingBeforeCardsMs": null,
+        "blockingAfterCardsMs": null,
+        "apiCallCount": 4,
+        "apiBytesTotal": 871,
+        "apiTransferBytesTotal": 1830,
+        "cardsRendered": 0,
+        "columns": 0
+      },
+      "board": {
+        "hidden": true,
+        "noteText": "Loading the board…",
+        "columns": [],
+        "cardCountTimeline": [
+          {
+            "atMs": 1254,
+            "cards": 0,
+            "cols": 0
+          }
+        ],
+        "spinnerTimeline": [
+          {
+            "atMs": 1254,
+            "spinner": true
+          }
+        ]
+      },
+      "longTasks": [],
+      "apiCriticalPath": {
+        "links": [
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 1289,
+            "endMs": 1594,
+            "durMs": 305
+          },
+          {
+            "url": "/api/health",
+            "status": 200,
+            "startMs": 1605,
+            "endMs": 2333,
+            "durMs": 728
+          }
+        ],
+        "sumDurationMs": 1033,
+        "wallSpanMs": 1044,
+        "gapMs": 11,
+        "linkCount": 2
+      },
+      "allResourceCriticalPath": {
+        "links": [
+          {
+            "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+            "status": 200,
+            "startMs": 264,
+            "endMs": 1253,
+            "durMs": 989
+          },
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 1289,
+            "endMs": 1594,
+            "durMs": 305
+          },
+          {
+            "url": "/api/health",
+            "status": 200,
+            "startMs": 1605,
+            "endMs": 2333,
+            "durMs": 728
+          }
+        ],
+        "sumDurationMs": 2022,
+        "wallSpanMs": 2069,
+        "gapMs": 47,
+        "linkCount": 3
+      },
+      "apiOverlap": [
+        {
+          "url": "/api/auth/session",
+          "startMs": 1289,
+          "endMs": 1594,
+          "durMs": 305,
+          "concurrentWith": 0
+        },
+        {
+          "url": "/api/health",
+          "startMs": 1605,
+          "endMs": 2333,
+          "durMs": 728,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/org-brand",
+          "startMs": 1605,
+          "endMs": 2147,
+          "durMs": 542,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "startMs": 1606,
+          "endMs": 2333,
+          "durMs": 728,
+          "concurrentWith": 2
+        }
+      ],
+      "apiBodies": [
+        {
+          "url": "/api/org-brand",
+          "status": 200,
+          "method": "GET",
+          "bytes": 285,
+          "keys": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "status": 200,
+          "method": "GET",
+          "bytes": 234,
+          "keys": 5
+        },
+        {
+          "url": "/api/auth/session",
+          "status": 200,
+          "method": "GET",
+          "bytes": 222,
+          "keys": 3
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "method": "GET",
+          "bytes": 130,
+          "keys": 8
+        }
+      ],
+      "resources": [
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 264,
+          "endMs": 1253,
+          "durMs": 989,
+          "ttfbMs": 989,
+          "transferBytes": 1158,
+          "encodedBytes": 858,
+          "decodedBytes": 10056,
+          "fromCache": false
+        },
+        {
+          "url": "/app/fundhub-brand.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 264,
+          "endMs": 1056,
+          "durMs": 792,
+          "ttfbMs": 792,
+          "transferBytes": 7165,
+          "encodedBytes": 6865,
+          "decodedBytes": 15756,
+          "fromCache": false
+        },
+        {
+          "url": "/app/crm-sidebar.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 264,
+          "endMs": 1056,
+          "durMs": 792,
+          "ttfbMs": 792,
+          "transferBytes": 3867,
+          "encodedBytes": 3567,
+          "decodedBytes": 11302,
+          "fromCache": false
+        },
+        {
+          "url": "/app/shell.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 267,
+          "endMs": 1077,
+          "durMs": 810,
+          "ttfbMs": 794,
+          "transferBytes": 28709,
+          "encodedBytes": 28409,
+          "decodedBytes": 95213,
+          "fromCache": false
+        },
+        {
+          "url": "/app/proxy-apply.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 268,
+          "endMs": 1078,
+          "durMs": 810,
+          "ttfbMs": 810,
+          "transferBytes": 4520,
+          "encodedBytes": 4220,
+          "decodedBytes": 14242,
+          "fromCache": false
+        },
+        {
+          "url": "/app/data.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 268,
+          "endMs": 1078,
+          "durMs": 810,
+          "ttfbMs": 810,
+          "transferBytes": 10035,
+          "encodedBytes": 9735,
+          "decodedBytes": 31919,
+          "fromCache": false
+        },
+        {
+          "url": "/api/auth/session",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1289,
+          "endMs": 1594,
+          "durMs": 305,
+          "ttfbMs": 305,
+          "transferBytes": 470,
+          "encodedBytes": 170,
+          "decodedBytes": 222,
+          "fromCache": false
+        },
+        {
+          "url": "/api/health",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1605,
+          "endMs": 2333,
+          "durMs": 728,
+          "ttfbMs": 728,
+          "transferBytes": 400,
+          "encodedBytes": 100,
+          "decodedBytes": 130,
+          "fromCache": false
+        },
+        {
+          "url": "/api/org-brand",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1605,
+          "endMs": 2147,
+          "durMs": 542,
+          "ttfbMs": 542,
+          "transferBytes": 510,
+          "encodedBytes": 210,
+          "decodedBytes": 285,
+          "fromCache": false
+        },
+        {
+          "url": "/app/chat-widget.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1605,
+          "endMs": 1993,
+          "durMs": 387,
+          "ttfbMs": 387,
+          "transferBytes": 4376,
+          "encodedBytes": 4076,
+          "decodedBytes": 15062,
+          "fromCache": false
+        },
+        {
+          "url": "/api/demo/mode",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1606,
+          "endMs": 2333,
+          "durMs": 728,
+          "ttfbMs": 728,
+          "transferBytes": 450,
+          "encodedBytes": 150,
+          "decodedBytes": 234,
+          "fromCache": false
+        }
+      ],
+      "errors": [],
+      "repeatedRequests": [],
+      "writesObserved": [],
+      "requestCount": 14
+    },
+    {
+      "kind": "cold",
+      "index": 2,
+      "ranAt": "2026-08-18T04:05:17.762Z",
+      "finalUrl": "/app/pipeline.html",
+      "settledReason": "timeout-no-cards",
+      "metrics": {
+        "domContentLoadedMs": 688,
+        "loadMs": 984,
+        "ttfbMs": 253,
+        "fcpMs": 688,
+        "lcpMs": 700,
+        "firstCardMs": null,
+        "allCardsInMs": null,
+        "spinnerGoneMs": null,
+        "spinnerFirstSeenMs": 655,
+        "longTasksOver50": 0,
+        "longestTaskMs": 0,
+        "totalBlockingMs": 0,
+        "blockingBeforeCardsMs": null,
+        "blockingAfterCardsMs": null,
+        "apiCallCount": 4,
+        "apiBytesTotal": 871,
+        "apiTransferBytesTotal": 1830,
+        "cardsRendered": 0,
+        "columns": 0
+      },
+      "board": {
+        "hidden": true,
+        "noteText": "Loading the board…",
+        "columns": [],
+        "cardCountTimeline": [
+          {
+            "atMs": 655,
+            "cards": 0,
+            "cols": 0
+          }
+        ],
+        "spinnerTimeline": [
+          {
+            "atMs": 655,
+            "spinner": true
+          }
+        ]
+      },
+      "longTasks": [],
+      "apiCriticalPath": {
+        "links": [
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 687,
+            "endMs": 985,
+            "durMs": 298
+          },
+          {
+            "url": "/api/demo/mode",
+            "status": 200,
+            "startMs": 1000,
+            "endMs": 1505,
+            "durMs": 505
+          }
+        ],
+        "sumDurationMs": 803,
+        "wallSpanMs": 818,
+        "gapMs": 15,
+        "linkCount": 2
+      },
+      "allResourceCriticalPath": {
+        "links": [
+          {
+            "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+            "status": 200,
+            "startMs": 255,
+            "endMs": 654,
+            "durMs": 399
+          },
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 687,
+            "endMs": 985,
+            "durMs": 298
+          },
+          {
+            "url": "/api/demo/mode",
+            "status": 200,
+            "startMs": 1000,
+            "endMs": 1505,
+            "durMs": 505
+          }
+        ],
+        "sumDurationMs": 1202,
+        "wallSpanMs": 1250,
+        "gapMs": 48,
+        "linkCount": 3
+      },
+      "apiOverlap": [
+        {
+          "url": "/api/auth/session",
+          "startMs": 687,
+          "endMs": 985,
+          "durMs": 298,
+          "concurrentWith": 0
+        },
+        {
+          "url": "/api/health",
+          "startMs": 1000,
+          "endMs": 1320,
+          "durMs": 320,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/org-brand",
+          "startMs": 1000,
+          "endMs": 1361,
+          "durMs": 361,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "startMs": 1000,
+          "endMs": 1505,
+          "durMs": 505,
+          "concurrentWith": 2
+        }
+      ],
+      "apiBodies": [
+        {
+          "url": "/api/org-brand",
+          "status": 200,
+          "method": "GET",
+          "bytes": 285,
+          "keys": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "status": 200,
+          "method": "GET",
+          "bytes": 234,
+          "keys": 5
+        },
+        {
+          "url": "/api/auth/session",
+          "status": 200,
+          "method": "GET",
+          "bytes": 222,
+          "keys": 3
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "method": "GET",
+          "bytes": 130,
+          "keys": 8
+        }
+      ],
+      "resources": [
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 255,
+          "endMs": 654,
+          "durMs": 399,
+          "ttfbMs": 399,
+          "transferBytes": 1158,
+          "encodedBytes": 858,
+          "decodedBytes": 10056,
+          "fromCache": false
+        },
+        {
+          "url": "/app/crm-sidebar.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 255,
+          "endMs": 310,
+          "durMs": 55,
+          "ttfbMs": 54,
+          "transferBytes": 3867,
+          "encodedBytes": 3567,
+          "decodedBytes": 11302,
+          "fromCache": false
+        },
+        {
+          "url": "/app/fundhub-brand.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 255,
+          "endMs": 316,
+          "durMs": 61,
+          "ttfbMs": 55,
+          "transferBytes": 7165,
+          "encodedBytes": 6865,
+          "decodedBytes": 15756,
+          "fromCache": false
+        },
+        {
+          "url": "/app/shell.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 263,
+          "endMs": 458,
+          "durMs": 196,
+          "ttfbMs": 195,
+          "transferBytes": 28709,
+          "encodedBytes": 28409,
+          "decodedBytes": 95213,
+          "fromCache": false
+        },
+        {
+          "url": "/app/proxy-apply.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 266,
+          "endMs": 458,
+          "durMs": 192,
+          "ttfbMs": 192,
+          "transferBytes": 4520,
+          "encodedBytes": 4220,
+          "decodedBytes": 14242,
+          "fromCache": false
+        },
+        {
+          "url": "/app/data.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 266,
+          "endMs": 460,
+          "durMs": 194,
+          "ttfbMs": 192,
+          "transferBytes": 10035,
+          "encodedBytes": 9735,
+          "decodedBytes": 31919,
+          "fromCache": false
+        },
+        {
+          "url": "/api/auth/session",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 687,
+          "endMs": 985,
+          "durMs": 298,
+          "ttfbMs": 298,
+          "transferBytes": 470,
+          "encodedBytes": 170,
+          "decodedBytes": 222,
+          "fromCache": false
+        },
+        {
+          "url": "/api/health",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1000,
+          "endMs": 1320,
+          "durMs": 320,
+          "ttfbMs": 320,
+          "transferBytes": 400,
+          "encodedBytes": 100,
+          "decodedBytes": 130,
+          "fromCache": false
+        },
+        {
+          "url": "/api/org-brand",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1000,
+          "endMs": 1361,
+          "durMs": 361,
+          "ttfbMs": 355,
+          "transferBytes": 510,
+          "encodedBytes": 210,
+          "decodedBytes": 285,
+          "fromCache": false
+        },
+        {
+          "url": "/app/chat-widget.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1000,
+          "endMs": 1270,
+          "durMs": 271,
+          "ttfbMs": 270,
+          "transferBytes": 4376,
+          "encodedBytes": 4076,
+          "decodedBytes": 15062,
+          "fromCache": false
+        },
+        {
+          "url": "/api/demo/mode",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1000,
+          "endMs": 1505,
+          "durMs": 505,
+          "ttfbMs": 505,
+          "transferBytes": 450,
+          "encodedBytes": 150,
+          "decodedBytes": 234,
+          "fromCache": false
+        }
+      ],
+      "errors": [],
+      "repeatedRequests": [],
+      "writesObserved": [],
+      "requestCount": 14
+    },
+    {
+      "kind": "cold",
+      "index": 3,
+      "ranAt": "2026-08-18T04:05:48.765Z",
+      "finalUrl": "/app/pipeline.html",
+      "settledReason": "timeout-no-cards",
+      "metrics": {
+        "domContentLoadedMs": 1519,
+        "loadMs": 1933,
+        "ttfbMs": 1086,
+        "fcpMs": 1516,
+        "lcpMs": 1528,
+        "firstCardMs": null,
+        "allCardsInMs": null,
+        "spinnerGoneMs": null,
+        "spinnerFirstSeenMs": 1484,
+        "longTasksOver50": 0,
+        "longestTaskMs": 0,
+        "totalBlockingMs": 0,
+        "blockingBeforeCardsMs": null,
+        "blockingAfterCardsMs": null,
+        "apiCallCount": 4,
+        "apiBytesTotal": 871,
+        "apiTransferBytesTotal": 1830,
+        "cardsRendered": 0,
+        "columns": 0
+      },
+      "board": {
+        "hidden": true,
+        "noteText": "Loading the board…",
+        "columns": [],
+        "cardCountTimeline": [
+          {
+            "atMs": 1484,
+            "cards": 0,
+            "cols": 0
+          }
+        ],
+        "spinnerTimeline": [
+          {
+            "atMs": 1484,
+            "spinner": true
+          }
+        ]
+      },
+      "longTasks": [],
+      "apiCriticalPath": {
+        "links": [
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 1518,
+            "endMs": 2188,
+            "durMs": 670
+          },
+          {
+            "url": "/api/org-brand",
+            "status": 200,
+            "startMs": 2190,
+            "endMs": 2707,
+            "durMs": 517
+          }
+        ],
+        "sumDurationMs": 1187,
+        "wallSpanMs": 1189,
+        "gapMs": 2,
+        "linkCount": 2
+      },
+      "allResourceCriticalPath": {
+        "links": [
+          {
+            "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+            "status": 200,
+            "startMs": 1088,
+            "endMs": 1483,
+            "durMs": 395
+          },
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 1518,
+            "endMs": 2188,
+            "durMs": 670
+          },
+          {
+            "url": "/api/org-brand",
+            "status": 200,
+            "startMs": 2190,
+            "endMs": 2707,
+            "durMs": 517
+          }
+        ],
+        "sumDurationMs": 1582,
+        "wallSpanMs": 1619,
+        "gapMs": 37,
+        "linkCount": 3
+      },
+      "apiOverlap": [
+        {
+          "url": "/api/auth/session",
+          "startMs": 1518,
+          "endMs": 2188,
+          "durMs": 670,
+          "concurrentWith": 0
+        },
+        {
+          "url": "/api/health",
+          "startMs": 2190,
+          "endMs": 2687,
+          "durMs": 498,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/org-brand",
+          "startMs": 2190,
+          "endMs": 2707,
+          "durMs": 517,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "startMs": 2190,
+          "endMs": 2650,
+          "durMs": 460,
+          "concurrentWith": 2
+        }
+      ],
+      "apiBodies": [
+        {
+          "url": "/api/org-brand",
+          "status": 200,
+          "method": "GET",
+          "bytes": 285,
+          "keys": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "status": 200,
+          "method": "GET",
+          "bytes": 234,
+          "keys": 5
+        },
+        {
+          "url": "/api/auth/session",
+          "status": 200,
+          "method": "GET",
+          "bytes": 222,
+          "keys": 3
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "method": "GET",
+          "bytes": 130,
+          "keys": 8
+        }
+      ],
+      "resources": [
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1088,
+          "endMs": 1483,
+          "durMs": 395,
+          "ttfbMs": 395,
+          "transferBytes": 1158,
+          "encodedBytes": 858,
+          "decodedBytes": 10056,
+          "fromCache": false
+        },
+        {
+          "url": "/app/fundhub-brand.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1088,
+          "endMs": 1311,
+          "durMs": 223,
+          "ttfbMs": 216,
+          "transferBytes": 7165,
+          "encodedBytes": 6865,
+          "decodedBytes": 15756,
+          "fromCache": false
+        },
+        {
+          "url": "/app/crm-sidebar.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1088,
+          "endMs": 1311,
+          "durMs": 223,
+          "ttfbMs": 223,
+          "transferBytes": 3867,
+          "encodedBytes": 3567,
+          "decodedBytes": 11302,
+          "fromCache": false
+        },
+        {
+          "url": "/app/data.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1088,
+          "endMs": 1404,
+          "durMs": 316,
+          "ttfbMs": 316,
+          "transferBytes": 10035,
+          "encodedBytes": 9735,
+          "decodedBytes": 31919,
+          "fromCache": false
+        },
+        {
+          "url": "/app/shell.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1088,
+          "endMs": 1404,
+          "durMs": 316,
+          "ttfbMs": 315,
+          "transferBytes": 28709,
+          "encodedBytes": 28409,
+          "decodedBytes": 95213,
+          "fromCache": false
+        },
+        {
+          "url": "/app/proxy-apply.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1088,
+          "endMs": 1404,
+          "durMs": 316,
+          "ttfbMs": 316,
+          "transferBytes": 4520,
+          "encodedBytes": 4220,
+          "decodedBytes": 14242,
+          "fromCache": false
+        },
+        {
+          "url": "/api/auth/session",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 1518,
+          "endMs": 2188,
+          "durMs": 670,
+          "ttfbMs": 669,
+          "transferBytes": 470,
+          "encodedBytes": 170,
+          "decodedBytes": 222,
+          "fromCache": false
+        },
+        {
+          "url": "/api/health",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 2190,
+          "endMs": 2687,
+          "durMs": 498,
+          "ttfbMs": 498,
+          "transferBytes": 400,
+          "encodedBytes": 100,
+          "decodedBytes": 130,
+          "fromCache": false
+        },
+        {
+          "url": "/api/org-brand",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 2190,
+          "endMs": 2707,
+          "durMs": 517,
+          "ttfbMs": 517,
+          "transferBytes": 510,
+          "encodedBytes": 210,
+          "decodedBytes": 285,
+          "fromCache": false
+        },
+        {
+          "url": "/app/chat-widget.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 2190,
+          "endMs": 2319,
+          "durMs": 129,
+          "ttfbMs": 129,
+          "transferBytes": 4376,
+          "encodedBytes": 4076,
+          "decodedBytes": 15062,
+          "fromCache": false
+        },
+        {
+          "url": "/api/demo/mode",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 2190,
+          "endMs": 2650,
+          "durMs": 460,
+          "ttfbMs": 460,
+          "transferBytes": 450,
+          "encodedBytes": 150,
+          "decodedBytes": 234,
+          "fromCache": false
+        }
+      ],
+      "errors": [],
+      "repeatedRequests": [],
+      "writesObserved": [],
+      "requestCount": 14
+    },
+    {
+      "kind": "warm",
+      "index": 1,
+      "ranAt": "2026-08-18T04:06:20.808Z",
+      "finalUrl": "/app/pipeline.html",
+      "settledReason": "timeout-no-cards",
+      "metrics": {
+        "domContentLoadedMs": 291,
+        "loadMs": 292,
+        "ttfbMs": 63,
+        "fcpMs": 180,
+        "lcpMs": 180,
+        "firstCardMs": null,
+        "allCardsInMs": null,
+        "spinnerGoneMs": null,
+        "spinnerFirstSeenMs": 169,
+        "longTasksOver50": 0,
+        "longestTaskMs": 0,
+        "totalBlockingMs": 0,
+        "blockingBeforeCardsMs": null,
+        "blockingAfterCardsMs": null,
+        "apiCallCount": 4,
+        "apiBytesTotal": 871,
+        "apiTransferBytesTotal": 1830,
+        "cardsRendered": 0,
+        "columns": 0
+      },
+      "board": {
+        "hidden": true,
+        "noteText": "Loading the board…",
+        "columns": [],
+        "cardCountTimeline": [
+          {
+            "atMs": 169,
+            "cards": 0,
+            "cols": 0
+          }
+        ],
+        "spinnerTimeline": [
+          {
+            "atMs": 169,
+            "spinner": true
+          }
+        ]
+      },
+      "longTasks": [],
+      "apiCriticalPath": {
+        "links": [
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 291,
+            "endMs": 575,
+            "durMs": 284
+          },
+          {
+            "url": "/api/demo/mode",
+            "status": 200,
+            "startMs": 576,
+            "endMs": 1010,
+            "durMs": 434
+          }
+        ],
+        "sumDurationMs": 718,
+        "wallSpanMs": 719,
+        "gapMs": 1,
+        "linkCount": 2
+      },
+      "allResourceCriticalPath": {
+        "links": [
+          {
+            "url": "/app/data.js",
+            "status": 304,
+            "startMs": 67,
+            "endMs": 290,
+            "durMs": 223
+          },
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 291,
+            "endMs": 575,
+            "durMs": 284
+          },
+          {
+            "url": "/api/demo/mode",
+            "status": 200,
+            "startMs": 576,
+            "endMs": 1010,
+            "durMs": 434
+          }
+        ],
+        "sumDurationMs": 941,
+        "wallSpanMs": 943,
+        "gapMs": 2,
+        "linkCount": 3
+      },
+      "apiOverlap": [
+        {
+          "url": "/api/auth/session",
+          "startMs": 291,
+          "endMs": 575,
+          "durMs": 284,
+          "concurrentWith": 0
+        },
+        {
+          "url": "/api/health",
+          "startMs": 576,
+          "endMs": 814,
+          "durMs": 238,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/org-brand",
+          "startMs": 576,
+          "endMs": 860,
+          "durMs": 284,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "startMs": 576,
+          "endMs": 1010,
+          "durMs": 434,
+          "concurrentWith": 2
+        }
+      ],
+      "apiBodies": [
+        {
+          "url": "/api/org-brand",
+          "status": 200,
+          "method": "GET",
+          "bytes": 285,
+          "keys": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "status": 200,
+          "method": "GET",
+          "bytes": 234,
+          "keys": 5
+        },
+        {
+          "url": "/api/auth/session",
+          "status": 200,
+          "method": "GET",
+          "bytes": 222,
+          "keys": 3
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "method": "GET",
+          "bytes": 130,
+          "keys": 8
+        }
+      ],
+      "resources": [
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 66,
+          "endMs": 66,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 858,
+          "decodedBytes": 10056,
+          "fromCache": true
+        },
+        {
+          "url": "/app/fundhub-brand.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 66,
+          "endMs": 159,
+          "durMs": 92,
+          "ttfbMs": 92,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/crm-sidebar.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 66,
+          "endMs": 168,
+          "durMs": 102,
+          "ttfbMs": 102,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/proxy-apply.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 67,
+          "endMs": 289,
+          "durMs": 222,
+          "ttfbMs": 222,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/data.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 67,
+          "endMs": 290,
+          "durMs": 223,
+          "ttfbMs": 223,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/shell.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 67,
+          "endMs": 290,
+          "durMs": 223,
+          "ttfbMs": 223,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+          "type": "css",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 169,
+          "endMs": 169,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 48432,
+          "decodedBytes": 48432,
+          "fromCache": true
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2",
+          "type": "css",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 169,
+          "endMs": 169,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 31340,
+          "decodedBytes": 31340,
+          "fromCache": true
+        },
+        {
+          "url": "/api/auth/session",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 291,
+          "endMs": 575,
+          "durMs": 284,
+          "ttfbMs": 284,
+          "transferBytes": 470,
+          "encodedBytes": 170,
+          "decodedBytes": 222,
+          "fromCache": false
+        },
+        {
+          "url": "/api/health",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 576,
+          "endMs": 814,
+          "durMs": 238,
+          "ttfbMs": 238,
+          "transferBytes": 400,
+          "encodedBytes": 100,
+          "decodedBytes": 130,
+          "fromCache": false
+        },
+        {
+          "url": "/app/chat-widget.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 576,
+          "endMs": 681,
+          "durMs": 105,
+          "ttfbMs": 105,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/api/org-brand",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 576,
+          "endMs": 860,
+          "durMs": 284,
+          "ttfbMs": 284,
+          "transferBytes": 510,
+          "encodedBytes": 210,
+          "decodedBytes": 285,
+          "fromCache": false
+        },
+        {
+          "url": "/api/demo/mode",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 576,
+          "endMs": 1010,
+          "durMs": 434,
+          "ttfbMs": 434,
+          "transferBytes": 450,
+          "encodedBytes": 150,
+          "decodedBytes": 234,
+          "fromCache": false
+        }
+      ],
+      "errors": [],
+      "repeatedRequests": [],
+      "writesObserved": [],
+      "requestCount": 14
+    },
+    {
+      "kind": "warm",
+      "index": 2,
+      "ranAt": "2026-08-18T04:06:51.485Z",
+      "finalUrl": "/app/pipeline.html",
+      "settledReason": "timeout-no-cards",
+      "metrics": {
+        "domContentLoadedMs": 221,
+        "loadMs": 222,
+        "ttfbMs": 72,
+        "fcpMs": 140,
+        "lcpMs": 140,
+        "firstCardMs": null,
+        "allCardsInMs": null,
+        "spinnerGoneMs": null,
+        "spinnerFirstSeenMs": 130,
+        "longTasksOver50": 0,
+        "longestTaskMs": 0,
+        "totalBlockingMs": 0,
+        "blockingBeforeCardsMs": null,
+        "blockingAfterCardsMs": null,
+        "apiCallCount": 4,
+        "apiBytesTotal": 871,
+        "apiTransferBytesTotal": 1830,
+        "cardsRendered": 0,
+        "columns": 0
+      },
+      "board": {
+        "hidden": true,
+        "noteText": "Loading the board…",
+        "columns": [],
+        "cardCountTimeline": [
+          {
+            "atMs": 130,
+            "cards": 0,
+            "cols": 0
+          }
+        ],
+        "spinnerTimeline": [
+          {
+            "atMs": 130,
+            "spinner": true
+          }
+        ]
+      },
+      "longTasks": [],
+      "apiCriticalPath": {
+        "links": [
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 221,
+            "endMs": 776,
+            "durMs": 555
+          },
+          {
+            "url": "/api/demo/mode",
+            "status": 200,
+            "startMs": 777,
+            "endMs": 1866,
+            "durMs": 1089
+          }
+        ],
+        "sumDurationMs": 1644,
+        "wallSpanMs": 1645,
+        "gapMs": 1,
+        "linkCount": 2
+      },
+      "allResourceCriticalPath": {
+        "links": [
+          {
+            "url": "/app/shell.js",
+            "status": 304,
+            "startMs": 74,
+            "endMs": 219,
+            "durMs": 146
+          },
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 221,
+            "endMs": 776,
+            "durMs": 555
+          },
+          {
+            "url": "/api/demo/mode",
+            "status": 200,
+            "startMs": 777,
+            "endMs": 1866,
+            "durMs": 1089
+          }
+        ],
+        "sumDurationMs": 1790,
+        "wallSpanMs": 1792,
+        "gapMs": 2,
+        "linkCount": 3
+      },
+      "apiOverlap": [
+        {
+          "url": "/api/auth/session",
+          "startMs": 221,
+          "endMs": 776,
+          "durMs": 555,
+          "concurrentWith": 0
+        },
+        {
+          "url": "/api/org-brand",
+          "startMs": 777,
+          "endMs": 1428,
+          "durMs": 651,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/health",
+          "startMs": 777,
+          "endMs": 1616,
+          "durMs": 840,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "startMs": 777,
+          "endMs": 1866,
+          "durMs": 1089,
+          "concurrentWith": 2
+        }
+      ],
+      "apiBodies": [
+        {
+          "url": "/api/org-brand",
+          "status": 200,
+          "method": "GET",
+          "bytes": 285,
+          "keys": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "status": 200,
+          "method": "GET",
+          "bytes": 234,
+          "keys": 5
+        },
+        {
+          "url": "/api/auth/session",
+          "status": 200,
+          "method": "GET",
+          "bytes": 222,
+          "keys": 3
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "method": "GET",
+          "bytes": 130,
+          "keys": 8
+        }
+      ],
+      "resources": [
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 74,
+          "endMs": 74,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 858,
+          "decodedBytes": 10056,
+          "fromCache": true
+        },
+        {
+          "url": "/app/fundhub-brand.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 74,
+          "endMs": 130,
+          "durMs": 56,
+          "ttfbMs": 56,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/crm-sidebar.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 74,
+          "endMs": 130,
+          "durMs": 56,
+          "ttfbMs": 56,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/shell.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 74,
+          "endMs": 219,
+          "durMs": 146,
+          "ttfbMs": 145,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/proxy-apply.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 74,
+          "endMs": 220,
+          "durMs": 146,
+          "ttfbMs": 146,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/data.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 74,
+          "endMs": 220,
+          "durMs": 146,
+          "ttfbMs": 146,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+          "type": "css",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 130,
+          "endMs": 130,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 48432,
+          "decodedBytes": 48432,
+          "fromCache": true
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2",
+          "type": "css",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 130,
+          "endMs": 130,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 31340,
+          "decodedBytes": 31340,
+          "fromCache": true
+        },
+        {
+          "url": "/api/auth/session",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 221,
+          "endMs": 776,
+          "durMs": 555,
+          "ttfbMs": 555,
+          "transferBytes": 470,
+          "encodedBytes": 170,
+          "decodedBytes": 222,
+          "fromCache": false
+        },
+        {
+          "url": "/api/org-brand",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 777,
+          "endMs": 1428,
+          "durMs": 651,
+          "ttfbMs": 651,
+          "transferBytes": 510,
+          "encodedBytes": 210,
+          "decodedBytes": 285,
+          "fromCache": false
+        },
+        {
+          "url": "/api/health",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 777,
+          "endMs": 1616,
+          "durMs": 840,
+          "ttfbMs": 840,
+          "transferBytes": 400,
+          "encodedBytes": 100,
+          "decodedBytes": 130,
+          "fromCache": false
+        },
+        {
+          "url": "/app/chat-widget.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 777,
+          "endMs": 1265,
+          "durMs": 488,
+          "ttfbMs": 488,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/api/demo/mode",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 777,
+          "endMs": 1866,
+          "durMs": 1089,
+          "ttfbMs": 1089,
+          "transferBytes": 450,
+          "encodedBytes": 150,
+          "decodedBytes": 234,
+          "fromCache": false
+        }
+      ],
+      "errors": [],
+      "repeatedRequests": [],
+      "writesObserved": [],
+      "requestCount": 14
+    },
+    {
+      "kind": "warm",
+      "index": 3,
+      "ranAt": "2026-08-18T04:07:22.292Z",
+      "finalUrl": "/app/pipeline.html",
+      "settledReason": "timeout-no-cards",
+      "metrics": {
+        "domContentLoadedMs": 344,
+        "loadMs": 345,
+        "ttfbMs": 183,
+        "fcpMs": 260,
+        "lcpMs": 260,
+        "firstCardMs": null,
+        "allCardsInMs": null,
+        "spinnerGoneMs": null,
+        "spinnerFirstSeenMs": 249,
+        "longTasksOver50": 0,
+        "longestTaskMs": 0,
+        "totalBlockingMs": 0,
+        "blockingBeforeCardsMs": null,
+        "blockingAfterCardsMs": null,
+        "apiCallCount": 4,
+        "apiBytesTotal": 871,
+        "apiTransferBytesTotal": 1840,
+        "cardsRendered": 0,
+        "columns": 0
+      },
+      "board": {
+        "hidden": true,
+        "noteText": "Loading the board…",
+        "columns": [],
+        "cardCountTimeline": [
+          {
+            "atMs": 249,
+            "cards": 0,
+            "cols": 0
+          }
+        ],
+        "spinnerTimeline": [
+          {
+            "atMs": 249,
+            "spinner": true
+          }
+        ]
+      },
+      "longTasks": [],
+      "apiCriticalPath": {
+        "links": [
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 344,
+            "endMs": 672,
+            "durMs": 328
+          },
+          {
+            "url": "/api/demo/mode",
+            "status": 200,
+            "startMs": 673,
+            "endMs": 1198,
+            "durMs": 525
+          }
+        ],
+        "sumDurationMs": 853,
+        "wallSpanMs": 854,
+        "gapMs": 1,
+        "linkCount": 2
+      },
+      "allResourceCriticalPath": {
+        "links": [
+          {
+            "url": "/app/data.js",
+            "status": 304,
+            "startMs": 185,
+            "endMs": 343,
+            "durMs": 158
+          },
+          {
+            "url": "/api/auth/session",
+            "status": 200,
+            "startMs": 344,
+            "endMs": 672,
+            "durMs": 328
+          },
+          {
+            "url": "/api/demo/mode",
+            "status": 200,
+            "startMs": 673,
+            "endMs": 1198,
+            "durMs": 525
+          }
+        ],
+        "sumDurationMs": 1011,
+        "wallSpanMs": 1013,
+        "gapMs": 2,
+        "linkCount": 3
+      },
+      "apiOverlap": [
+        {
+          "url": "/api/auth/session",
+          "startMs": 344,
+          "endMs": 672,
+          "durMs": 328,
+          "concurrentWith": 0
+        },
+        {
+          "url": "/api/health",
+          "startMs": 672,
+          "endMs": 906,
+          "durMs": 233,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/org-brand",
+          "startMs": 672,
+          "endMs": 974,
+          "durMs": 302,
+          "concurrentWith": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "startMs": 673,
+          "endMs": 1198,
+          "durMs": 525,
+          "concurrentWith": 2
+        }
+      ],
+      "apiBodies": [
+        {
+          "url": "/api/org-brand",
+          "status": 200,
+          "method": "GET",
+          "bytes": 285,
+          "keys": 2
+        },
+        {
+          "url": "/api/demo/mode",
+          "status": 200,
+          "method": "GET",
+          "bytes": 234,
+          "keys": 5
+        },
+        {
+          "url": "/api/auth/session",
+          "status": 200,
+          "method": "GET",
+          "bytes": 222,
+          "keys": 3
+        },
+        {
+          "url": "/api/health",
+          "status": 200,
+          "method": "GET",
+          "bytes": 130,
+          "keys": 8
+        }
+      ],
+      "resources": [
+        {
+          "url": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+          "type": "link",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 185,
+          "endMs": 185,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 858,
+          "decodedBytes": 10056,
+          "fromCache": true
+        },
+        {
+          "url": "/app/fundhub-brand.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 185,
+          "endMs": 222,
+          "durMs": 37,
+          "ttfbMs": 37,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/crm-sidebar.css",
+          "type": "link",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 185,
+          "endMs": 248,
+          "durMs": 63,
+          "ttfbMs": 63,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/shell.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 185,
+          "endMs": 342,
+          "durMs": 157,
+          "ttfbMs": 157,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/proxy-apply.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 185,
+          "endMs": 342,
+          "durMs": 157,
+          "ttfbMs": 157,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/app/data.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 185,
+          "endMs": 343,
+          "durMs": 158,
+          "ttfbMs": 158,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2",
+          "type": "css",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 249,
+          "endMs": 249,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 48432,
+          "decodedBytes": 48432,
+          "fromCache": true
+        },
+        {
+          "url": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwgknk-4.woff2",
+          "type": "css",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 249,
+          "endMs": 249,
+          "durMs": 0,
+          "ttfbMs": 0,
+          "transferBytes": 0,
+          "encodedBytes": 31340,
+          "decodedBytes": 31340,
+          "fromCache": true
+        },
+        {
+          "url": "/api/auth/session",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 344,
+          "endMs": 672,
+          "durMs": 328,
+          "ttfbMs": 328,
+          "transferBytes": 470,
+          "encodedBytes": 170,
+          "decodedBytes": 222,
+          "fromCache": false
+        },
+        {
+          "url": "/api/health",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 672,
+          "endMs": 906,
+          "durMs": 233,
+          "ttfbMs": 233,
+          "transferBytes": 400,
+          "encodedBytes": 100,
+          "decodedBytes": 130,
+          "fromCache": false
+        },
+        {
+          "url": "/app/chat-widget.js",
+          "type": "script",
+          "protocol": "h2",
+          "status": 304,
+          "startMs": 672,
+          "endMs": 867,
+          "durMs": 195,
+          "ttfbMs": 195,
+          "transferBytes": 300,
+          "encodedBytes": 0,
+          "decodedBytes": 0,
+          "fromCache": false
+        },
+        {
+          "url": "/api/org-brand",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 672,
+          "endMs": 974,
+          "durMs": 302,
+          "ttfbMs": 302,
+          "transferBytes": 520,
+          "encodedBytes": 220,
+          "decodedBytes": 285,
+          "fromCache": false
+        },
+        {
+          "url": "/api/demo/mode",
+          "type": "fetch",
+          "protocol": "h2",
+          "status": 200,
+          "startMs": 673,
+          "endMs": 1198,
+          "durMs": 525,
+          "ttfbMs": 525,
+          "transferBytes": 450,
+          "encodedBytes": 150,
+          "decodedBytes": 234,
+          "fromCache": false
+        }
+      ],
+      "errors": [],
+      "repeatedRequests": [],
+      "writesObserved": [],
+      "requestCount": 14
+    }
+  ],
+  "shotRun": {
+    "metrics": {
+      "domContentLoadedMs": 3084,
+      "loadMs": 3793,
+      "ttfbMs": 644,
+      "fcpMs": 3084,
+      "lcpMs": 3096,
+      "firstCardMs": null,
+      "allCardsInMs": null,
+      "spinnerGoneMs": null,
+      "spinnerFirstSeenMs": 3048,
+      "longTasksOver50": 0,
+      "longestTaskMs": 0,
+      "totalBlockingMs": 0,
+      "blockingBeforeCardsMs": null,
+      "blockingAfterCardsMs": null,
+      "apiCallCount": 4,
+      "apiBytesTotal": 871,
+      "apiTransferBytesTotal": 1830,
+      "cardsRendered": 0,
+      "columns": 0
+    },
+    "settledReason": "timeout-no-cards",
+    "files": [
+      "shot-first-paint.png",
+      "shot-all-cards-in.png"
+    ]
+  }
+}

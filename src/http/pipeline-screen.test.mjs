@@ -184,12 +184,47 @@ describe("public/app/pipeline.html — rail tab counts", () => {
     assert.match(HTML, /setRailCount\(rail, fhPipelineSummary\(stages\)\.count\)/);
     assert.match(HTML, /applyBoard\(cache\[key\], rail, label, key\)/);
     assert.match(HTML, /applyBoard\(res\.data\.stages, rail, label, key\)/);
-    // loadRailCounts still writes each inactive rail's count from its own fetch.
-    assert.match(HTML, /setRailCount\(rail, fhPipelineSummary\(res\.data\.stages\)\.count\)/);
+    // loadRailCounts still writes each inactive rail's count. It reads that
+    // number from the one counts request now instead of fetching the rail's
+    // whole board to measure it, so the assertion follows the new source.
+    assert.match(HTML, /setRailCount\(rail, n\)/);
   });
 
   test("every real pipeline's count is loaded up front, not just the active rail", () => {
     assert.match(HTML, /function loadRailCounts\(/);
     assert.match(HTML, /loadRailCounts\("R-01"\)/);
+  });
+
+  test("the tab counts come from one request, not one whole board per rail", () => {
+    // Eight rails once meant eight full board reads on every page load, each
+    // pulling up to 500 cards just to take the length. If FHData.pipeline
+    // reappears inside loadRailCounts, that cost is back.
+    assert.match(HTML, /FHData\.pipelineCounts\(\)/);
+    const fn = HTML.slice(HTML.indexOf("function loadRailCounts("));
+    const body = fn.slice(0, fn.indexOf("\n  }"));
+    assert.ok(!/FHData\.pipeline\(/.test(body),
+      "loadRailCounts must not fetch a rail's whole board to count it");
+  });
+
+  test("the board's first read waits for the deferred data.js", () => {
+    // data.js carries `defer`, so FHData does not exist yet while the inline
+    // script is being parsed. Calling it at parse time threw ReferenceError,
+    // which killed the rest of the script, and the board never asked for a
+    // single card. That shipped to production on 2026-08-17.
+    assert.match(HTML, /<script defer src="data\.js">/,
+      "data.js is expected to carry defer — if that changed, this guard needs rewriting");
+    const listener = HTML.indexOf('document.addEventListener("DOMContentLoaded"');
+    const firstRead = HTML.indexOf('load("R-01", "Sales")');
+    assert.ok(listener !== -1, "the first board read must sit inside a DOMContentLoaded handler");
+    assert.ok(firstRead > listener,
+      'load("R-01", "Sales") must run on DOMContentLoaded, not while the page is parsing');
+  });
+
+  test("the rail on screen is requested before the other rails' counts", () => {
+    const firstRead = HTML.indexOf('load("R-01", "Sales")');
+    const counts = HTML.indexOf('loadRailCounts("R-01")');
+    assert.ok(firstRead !== -1 && counts !== -1);
+    assert.ok(firstRead < counts,
+      "the board the user is looking at must not queue behind the tab counts");
   });
 });

@@ -1,0 +1,61 @@
+{
+  "note": "Captured by hand from the live diagnostic probes described in provenance below, NOT invented. measure.mjs now writes this file itself when a login fails (added after these probes ran).",
+  "blockedAt": "2026-08-18T03:30:00Z",
+  "localTime": "2026-08-17 20:30 MST",
+  "base": "https://fundhub.ai",
+  "what": "Sign-in on the live site returns HTTP 500. No session can be created, so the owner pipeline board cannot be measured.",
+  "attempts": [
+    {
+      "role": "owner@fundhub.ai",
+      "request": "POST /api/auth/login",
+      "status": 500,
+      "responseBody": "{\"ok\":false,\"error\":\"internal_error\",\"message\":\"cannot execute INSERT in a read-only transaction\"}",
+      "pageText": "Server error, not a wrong password — cannot execute INSERT in a read-only transaction. Check Netlify function logs for /api/auth/login.",
+      "landedAt": "/login.html (never left the login page)",
+      "localStorage": { "fh_token": "absent", "fh_role": null }
+    },
+    {
+      "role": "closer@fundhub.ai",
+      "request": "POST /api/auth/login",
+      "status": 500,
+      "responseBody": "{\"ok\":false,\"error\":\"internal_error\",\"message\":\"cannot execute INSERT in a read-only transaction\"}",
+      "pageText": "Server error, not a wrong password — cannot execute INSERT in a read-only transaction. Check Netlify function logs for /api/auth/login.",
+      "landedAt": "/login.html (never left the login page)",
+      "localStorage": { "fh_token": "absent", "fh_role": null }
+    }
+  ],
+  "cachedSessionsAlsoDead": [
+    {
+      "source": "prior session state, saved 2026-08-17 03:26 local",
+      "request": "GET /api/auth/session with the cached bearer token",
+      "status": 503,
+      "responseBody": "{\"ok\":false,\"error\":\"auth_unavailable\",\"db\":\"down\"}"
+    },
+    {
+      "source": "prior session state, saved 2026-08-17 01:34 local",
+      "request": "GET /api/auth/session with the cached bearer token",
+      "status": 503,
+      "responseBody": "{\"ok\":false,\"error\":\"auth_unavailable\",\"db\":\"down\"}"
+    }
+  ],
+  "siteIsOtherwiseServing": {
+    "GET /api/health": {
+      "status": 200,
+      "body": "{\"ok\":true,\"db\":\"up\",\"state\":\"up\",\"migrations\":159,\"expected\":156,\"pending\":0,\"error\":null}",
+      "observedTimesMs": [529, 566, 471]
+    },
+    "GET /api/auth/session (no token)": { "status": 401, "body": "{\"ok\":false,\"error\":\"unauthorized\"}" },
+    "GET /app/pipeline.html": { "status": 200, "observedTimesMs": [68, 72, 74] },
+    "GET /login.html": { "status": 200, "observedTimesMs": [44, 220, 74] }
+  },
+  "reading": "Reads work. Writes do not. The database the live API talks to is refusing every INSERT, so creating a login session fails. /api/health only reads, which is why it still says db up.",
+  "notFromThisRepo": "grep across src/, db/, netlify/, api/, scripts/ finds no code that sets default_transaction_read_only or opens a READ ONLY transaction. The read-only state is coming from the database side, not from application code in this repo.",
+  "unconfirmed": "The exact cause (Supabase project in read-only mode, a replica endpoint, or a database/role level setting applied by hand) was NOT confirmed. A direct psql check of default_transaction_read_only / pg_is_in_recovery was blocked by this agent's permission sandbox. Nobody should quote a cause until someone with database access runs that check.",
+  "provenance": [
+    "2026-08-17 ~20:26 MST — measure.mjs smoke run (1 cold, 1 warm) aborted at login.",
+    "2026-08-17 ~20:33 MST — single scripted login as owner@fundhub.ai, full request/response captured (row 1 above).",
+    "2026-08-17 ~20:36 MST — single scripted login as closer@fundhub.ai, full request/response captured (row 2 above).",
+    "2026-08-17 ~20:41 MST — measure.mjs full run (3 cold + 3 warm + screenshots) aborted at login, same failure.",
+    "Stopped after that per CLAUDE.md §8: no third attempt at the same blocked step."
+  ]
+}

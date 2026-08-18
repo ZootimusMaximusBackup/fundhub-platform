@@ -1,0 +1,95 @@
+{
+  "tool": "docs/workflows/pipeline-perf-evidence/w1-live-owner/measure.mjs",
+  "workflow": "W1 — live stopwatch, owner role",
+  "label": "before",
+  "ranAt": "2026-08-18T03:44:00Z",
+  "localTime": "2026-08-17 20:44 MST",
+  "base": "https://fundhub.ai",
+  "screen": "/app/pipeline.html",
+  "role": "owner@fundhub.ai",
+  "viewport": "1440x900",
+  "browser": "chromium (playwright 1.62.1, headless)",
+  "network": "no throttling — real network from the machine that ran this",
+
+  "status": "BLOCKED — live sign-in returns HTTP 500, so no owner session could be created and no page timing could be taken.",
+  "blockedBy": "POST /api/auth/login → 500 {\"ok\":false,\"error\":\"internal_error\",\"message\":\"cannot execute INSERT in a read-only transaction\"} — reproduced for owner@fundhub.ai and closer@fundhub.ai. Evidence: login-blocked.json.",
+
+  "measuredNothing": {
+    "why": "Every timing in this task depends on being signed in as owner. Without a session the screen bounces to /login.html and paints no board.",
+    "fieldsDeliberatelyNull": "Everything below is null because it was NOT measured. None of these numbers were estimated, modelled or carried over from another role or another day."
+  },
+
+  "cold": {
+    "runs": 0,
+    "domContentLoadedMs": { "median": null, "all": [] },
+    "loadMs": { "median": null, "all": [] },
+    "fcpMs": { "median": null, "all": [] },
+    "lcpMs": { "median": null, "all": [] },
+    "firstCardMs": { "median": null, "all": [] },
+    "allCardsInMs": { "median": null, "all": [] },
+    "spinnerGoneMs": { "median": null, "all": [] },
+    "cardsRendered": { "median": null, "all": [] },
+    "columns": { "median": null, "all": [] },
+    "apiCallCount": { "median": null, "all": [] },
+    "apiBytesTotal": { "median": null, "all": [] },
+    "longTasksOver50": { "median": null, "all": [] },
+    "totalBlockingMs": { "median": null, "all": [] }
+  },
+  "warm": {
+    "runs": 0,
+    "domContentLoadedMs": { "median": null, "all": [] },
+    "loadMs": { "median": null, "all": [] },
+    "fcpMs": { "median": null, "all": [] },
+    "lcpMs": { "median": null, "all": [] },
+    "firstCardMs": { "median": null, "all": [] },
+    "allCardsInMs": { "median": null, "all": [] },
+    "spinnerGoneMs": { "median": null, "all": [] },
+    "cardsRendered": { "median": null, "all": [] },
+    "columns": { "median": null, "all": [] },
+    "apiCallCount": { "median": null, "all": [] },
+    "apiBytesTotal": { "median": null, "all": [] },
+    "longTasksOver50": { "median": null, "all": [] },
+    "totalBlockingMs": { "median": null, "all": [] }
+  },
+  "apiCriticalPath": null,
+  "screenshots": { "shot-first-paint.png": "not captured — blocked", "shot-all-cards-in.png": "not captured — blocked" },
+
+  "whatWasMeasured": {
+    "note": "These are the only real numbers this workflow produced. They need no sign-in. They describe the SHELL's download weight, not the data fill.",
+    "method": "One GET per file from a headless Chromium request context against https://fundhub.ai, no session, no cache.",
+    "capturedAt": "2026-08-18T03:40:00Z",
+    "staticAssets": [
+      { "file": "/app/pipeline.html", "status": 200, "overTheWireBytes": 21737, "uncompressedBytes": 85769, "encoding": "br", "cacheControl": "public,max-age=0,must-revalidate", "firstByteToLastByteMs": 591 },
+      { "file": "/app/shell.js", "status": 200, "overTheWireBytes": 28184, "uncompressedBytes": 93920, "encoding": "br", "cacheControl": "public,max-age=0,must-revalidate", "firstByteToLastByteMs": 136 },
+      { "file": "/app/data.js", "status": 200, "overTheWireBytes": 9735, "uncompressedBytes": 31919, "encoding": "br", "cacheControl": "public,max-age=0,must-revalidate", "firstByteToLastByteMs": 213 },
+      { "file": "/app/proxy-apply.js", "status": 200, "overTheWireBytes": 4220, "uncompressedBytes": 14242, "encoding": "br", "cacheControl": "public,max-age=0,must-revalidate", "firstByteToLastByteMs": 404 },
+      { "file": "/app/fundhub-brand.css", "status": 200, "overTheWireBytes": 6865, "uncompressedBytes": 15756, "encoding": "br", "cacheControl": "public,max-age=0,must-revalidate", "firstByteToLastByteMs": 193 },
+      { "file": "/app/crm-sidebar.css", "status": 200, "overTheWireBytes": 3567, "uncompressedBytes": 11302, "encoding": "br", "cacheControl": "public,max-age=0,must-revalidate", "firstByteToLastByteMs": 94 }
+    ],
+    "totals": { "overTheWireBytes": 74308, "uncompressedBytes": 252908, "fileCount": 6 },
+    "observations": [
+      "Shell download weight is small: about 73 KB compressed. The shell is not the problem, which matches the Lighthouse score of 100.",
+      "Every file is served max-age=0, must-revalidate. A returning user still pays one round trip per file to be told the file has not changed. Six files = six round trips before the page can even start asking for data.",
+      "The uncompressed JavaScript the browser must parse and run is about 140 KB (shell.js 94 KB + data.js 32 KB + proxy-apply.js 14 KB), plus an 86 KB HTML file with the whole board script inlined."
+    ],
+    "liveApiSpotChecks": [
+      { "path": "/api/health", "status": 200, "roundTripMsSamples": [529, 566, 471], "body": "ok:true, db:up, migrations:159, expected:156, pending:0" },
+      { "path": "/api/auth/session (no token)", "status": 401, "roundTripMsSamples": [576, 161, 379] },
+      { "path": "/app/pipeline.html", "status": 200, "roundTripMsSamples": [68, 72, 74] }
+    ],
+    "liveApiCaveat": "A signed-out /api/health call takes about half a second round trip. That is one data point about API latency in general, NOT a measurement of the pipeline endpoint, which was never reachable without a session."
+  },
+
+  "codeReadNotMeasured": {
+    "warning": "This is what the page source says it does. It is NOT measured and must not be reported as a timing. It is here so W3/W4 know what to look for the moment login works again.",
+    "source": "public/app/pipeline.html, bottom of file",
+    "observation": "On load the board calls loadRailCounts(\"R-01\") and then load(\"R-01\"). loadRailCounts fires one FHData.pipeline() request for each of the other 7 rails (funding_card_stacking, funding_altfin, optimization, inquiry_removal, ar_collections, affiliates_white_label, hiring) purely to fill the tab counters, while load() fetches the Sales board the user actually sees. That is 8 calls to GET /api/dashboard/pipeline on every page open. Whether they overlap or queue, and what each costs the owner, is exactly what this script was written to measure."
+  },
+
+  "howToFinishThis": [
+    "Wait for live writes to work again (POST /api/auth/login must stop returning 500).",
+    "Then: UI_AUDIT_STATE_DIR=<a tmp dir> node docs/workflows/pipeline-perf-evidence/w1-live-owner/measure.mjs --runs 3",
+    "It logs in once, caches the session, runs 3 cold loads in fresh contexts, 3 warm reloads, then a separate screenshot pass, and rewrites this file with real numbers.",
+    "W4 re-runs the same command with --label after --out <a different dir> to get the after numbers."
+  ]
+}

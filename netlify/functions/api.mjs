@@ -50,6 +50,7 @@ import inquiry from "../../api/inquiry.mjs";
 import dashClients from "../../api/dashboard/clients.mjs";
 import dashClient from "../../api/dashboard/client.mjs";
 import dashPipeline from "../../api/dashboard/pipeline.mjs";
+import dashPipelineCounts from "../../api/dashboard/pipeline-counts.mjs";
 import dashSeed from "../../api/dashboard/seed.mjs";
 import dashKpis from "../../api/dashboard/kpis.mjs";
 import dashClientArchive from "../../api/dashboard/client-archive.mjs";
@@ -286,6 +287,7 @@ export const ROUTES = {
   "dashboard/clients": dashClients,
   "dashboard/client": dashClient,
   "dashboard/pipeline": dashPipeline,
+  "dashboard/pipeline-counts": dashPipelineCounts,
   "dashboard/seed": dashSeed,
   "dashboard/kpis": dashKpis,
   "dashboard/client-archive": dashClientArchive,

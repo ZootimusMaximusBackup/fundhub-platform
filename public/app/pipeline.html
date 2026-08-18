@@ -324,8 +324,6 @@
 <div class="navgroup" data-fh-section="funding"><button class="navhead" type="button">Funding<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="lenders.html"><span class="ico">⬡</span><span class="lbl">Lenders</span></a>
         <a class="navitem" href="finance-os.html"><span class="ico">▩</span><span class="lbl">Finance OS</span></a>
-        <a class="navitem" href="contracts.html"><span class="ico">✒</span><span class="lbl">Contracts</span></a>
-        <a class="navitem" href="subscriptions.html"><span class="ico">◍</span><span class="lbl">Subscriptions</span></a>
 </div></div>
 
 <div class="navgroup" data-fh-section="client-ops"><button class="navhead" type="button">Client ops<span class="chev">▾</span></button><div class="navlist">
@@ -359,6 +357,7 @@
         <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
         <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
         <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem" href="contracts.html"><span class="ico">✒</span><span class="lbl">Contract templates</span></a>
         <a class="navitem" href="sample-data.html"><span class="ico">⌗</span><span class="lbl">Demo Mode</span></a>
         <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
 </div></div>
@@ -1740,20 +1739,21 @@ restore();
   }
 
     // Every rail's tab count, on page load — not just whichever pipeline is
-  // active. Reuses `cache` (so clicking a tab afterward never refetches) and
-  // leaves a rail's count at the "—" it starts on if the fetch fails: the
-  // same rule setSummary follows, unknown is a dash, never a fabricated 0.
+  // active. One request answers all of them. This used to fetch each rail's
+  // entire board (every stage, every card, up to 500 rows) purely to take the
+  // length, which cost eight full board reads per page load for eight numbers.
+  // A rail whose count does not come back keeps the "—" it starts on: the same
+  // rule setSummary follows, unknown is a dash, never a fabricated 0.
   // `skipRail` is the one load() is already fetching for the initial paint,
-  // so this never double-fetches it.
+  // so its tab is left to the real board response.
   function loadRailCounts(skipRail) {
-    Object.keys(PIPELINE_KEYS).forEach(function (rail) {
-      if (rail === skipRail) return;
-      var key = PIPELINE_KEYS[rail];
-      FHData.pipeline(key).then(function (res) {
-        if (res.ok && res.data && res.data.stages) {
-          cache[key] = res.data.stages;
-          setRailCount(rail, fhPipelineSummary(res.data.stages).count);
-        }
+    FHData.pipelineCounts().then(function (res) {
+      if (!res.ok || !res.data || !res.data.counts) return;
+      var counts = res.data.counts;
+      Object.keys(PIPELINE_KEYS).forEach(function (rail) {
+        if (rail === skipRail) return;
+        var n = counts[PIPELINE_KEYS[rail]];
+        if (typeof n === "number") setRailCount(rail, n);
       });
     });
   }
@@ -1769,8 +1769,16 @@ restore();
     }
   };
 
-  loadRailCounts("R-01");
-  load("R-01", "Sales");
+  // data.js carries `defer` (see its tag above), so FHData does not exist yet
+  // while this script is being parsed — calling it here threw, and the throw
+  // killed the rest of this function before the board was ever requested. Every
+  // deferred script runs before DOMContentLoaded, so the first read waits for
+  // that event. The rail on screen is asked for first; the other tabs' counts
+  // follow and never queue in front of the board the user is looking at.
+  document.addEventListener("DOMContentLoaded", function () {
+    load("R-01", "Sales");
+    loadRailCounts("R-01");
+  });
 })();
 </script>
 <script>

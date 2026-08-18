@@ -1,0 +1,53 @@
+{
+  "mode": "before",
+  "apiDelayMs": 400,
+  "cardsPerStage": 50,
+  "runs": 3,
+  "medianFirstCardMs": null,
+  "medianAllCardsInMs": null,
+  "cardCount": 0,
+  "boardReads": 0,
+  "countReads": 0,
+  "totalApiRequests": 4,
+  "pageErrors": [
+    "FHData is not defined"
+  ],
+  "raw": [
+    {
+      "run": 1,
+      "firstCardMs": null,
+      "allCardsInMs": null,
+      "cardCount": 0,
+      "boardReads": 0,
+      "countReads": 0,
+      "apiRequests": 4,
+      "pageErrors": [
+        "FHData is not defined"
+      ]
+    },
+    {
+      "run": 2,
+      "firstCardMs": null,
+      "allCardsInMs": null,
+      "cardCount": 0,
+      "boardReads": 0,
+      "countReads": 0,
+      "apiRequests": 4,
+      "pageErrors": [
+        "FHData is not defined"
+      ]
+    },
+    {
+      "run": 3,
+      "firstCardMs": null,
+      "allCardsInMs": null,
+      "cardCount": 0,
+      "boardReads": 0,
+      "countReads": 0,
+      "apiRequests": 4,
+      "pageErrors": [
+        "FHData is not defined"
+      ]
+    }
+  ]
+}

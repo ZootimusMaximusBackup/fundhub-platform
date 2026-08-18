@@ -182,6 +182,13 @@ window.FHData = (function () {
     pipeline: function (key) {
       return get("/api/dashboard/pipeline?key=" + encodeURIComponent(key || "sales"));
     },
+
+    /* GET /api/dashboard/pipeline-counts → data.counts, a { pipeline_key: n }
+       map covering every rail in one request. The rail tabs need the number
+       only, so this replaces fetching each rail's whole board to measure it. */
+    pipelineCounts: function () {
+      return get("/api/dashboard/pipeline-counts");
+    },
     /* GET /api/tasks → data.tasks[] */
     tasks: function (opts) {
       var o = opts || {};
