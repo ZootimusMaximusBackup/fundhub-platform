@@ -47,8 +47,8 @@ staff sidebar.
 |---|---|---|---|
 | W1 | Server lock — narrow role set on 4 endpoints + tests | agent-w1 | done |
 | W2 | Screen + nav gate in shell.js | agent-w2 | done |
-| W3 | Live proof, 4 roles, on fundhub.ai | — | blocked (needs W1+W2 deployed) |
-| W4 | Journeys `-actual.md` + changelog | agent-w4 | pending |
+| W3 | Live proof, 4 roles, on fundhub.ai | agent-w3 | done |
+| W4 | Journeys `-actual.md` + changelog | agent-w4 | done |
 
 ## Scope fences — do not cross
 
@@ -261,6 +261,164 @@ copy against itself. Updating the mirror is what keeps it honest.
    for.
 
 **Not committed.** All changes left in the working tree for the orchestrator.
+
+### W3 — live proof on fundhub.ai (done, 2026-08-17)
+
+I logged in as four real people on the real website, https://fundhub.ai. Not a
+test copy. For each one I checked three things: does the "Lenders" menu row show
+up, what happens if you type the lenders web address straight into the browser,
+and what the server sends back if you ask it for the lender list directly.
+
+That last one is the one that counts. Hiding a menu row proves nothing. Someone
+who knows the web address can still ask the server. So I asked the server, the
+same way the app does, using each person's own live sign-in.
+
+**What happened**
+
+| Who signed in | "Lenders" row in the menu? | Typed the lenders address — where did they land? | Asked the server for the lender list |
+|---|---|---|---|
+| Owner (owner@) | Yes, shows | The Lenders page. It opened. | **200 — allowed.** Server said yes. |
+| Funding advisor (advisor@) | Yes, shows | The Lenders page. It opened. | **200 — allowed.** Server said yes. |
+| Closer (closer@) | No, gone | Bounced to their own Closer Dashboard | **403 — blocked.** "this endpoint is limited to owner, admin, funding_advisor" |
+| Sales manager (sales@) | No, gone | Bounced to their own Sales Floor | **403 — blocked.** Same message. |
+
+Every single one came out the way the plan said it should. Four for four.
+
+**The closer's match box still works.** This was the one thing that could have
+broken. The closer's dashboard has a box that says "which lenders fit this
+client." That box uses a different door, and board decision 2 says to leave that
+door open. I asked the server for it as the closer: **200 — it answered.** The
+box is right there in the closer's screenshot. Nothing broke.
+
+**Two honest notes, so nobody is surprised**
+
+1. **There are no lenders in the system yet.** The owner and the advisor got in
+   fine, but the page says "No lenders yet. Import a CSV from Airtable." The
+   count is zero. So the lock is real and working, but the cupboard it locks is
+   empty until somebody imports the lender tables. The closer's match box shows
+   zero matches for the same reason, not because it is broken.
+2. **A closer signing in still gets sent to their own dashboard, not an error
+   page.** They never see a blank screen or a scary message. They just land
+   where they belong.
+
+**Where the proof is**
+
+`docs/workflows/lenders-role-lock-2026-08-17-evidence/`
+
+* `<role>-sidebar.png` — the menu, for all four people (4 files)
+* `<role>-direct-url.png` — where the browser ended up after typing the lenders
+  address (4 files)
+* `<role>-api-read-lenders.json` — the server's real answer, word for word,
+  with the status number (4 files)
+* `closer-api-lender-matches.json` — the closer's match box, still answering 200
+* `summary.json` — every fact from the run in one file
+* `_tools/prove-lenders-lock.mjs` — the script that did it, so anyone can re-run it
+
+**How it was run.** One command, one pass, no retries needed:
+`node docs/workflows/lenders-role-lock-2026-08-17-evidence/_tools/prove-lenders-lock.mjs`.
+Sign-in reuses `liveStaffLogin` from `e2e/live-auth.mjs` — no new login code was
+written. The password comes from the gitignored `.env` and is never printed and
+never saved into any evidence file. Nothing was written to the live site: every
+request in this run was a read.
+
+**Also checked, not assumed.** For each person the script asked the server "who
+am I?" first, and the server named the role back: owner, sales_manager, closer,
+funding_advisor. So these really are four different roles, not the same account
+four times. Menu rows were counted from the live page after the app finished
+hiding what each role may not see — 32 rows for the owner, 13 for the sales
+manager, 12 for the closer, 11 for the advisor.
+
+**Found, not fixed, and not part of this job.** The sales manager's menu on the
+live site does not show "Finance OS", though W2's table above expects it to.
+That is a different screen and a different decision. Written down here so it is
+not lost. Nothing was changed.
+
+**Nothing was committed and no code was touched.** W3 only read the live site
+and wrote evidence files.
+
+### W4 — journeys regenerated from the code + changelog (done, 2026-08-17)
+
+**Files touched — 1 changed by me, 9 already carried by another workflow's commit**
+
+| File | What changed |
+|---|---|
+| `docs/journeys/CHANGELOG.md` | Four new lines at the top, newest first — one each for `role-owner`, `role-funding-advisor`, `role-sales-manager`, `role-closer`. Nothing below them edited. |
+| `docs/journeys/*-actual.md` + `README.md` | **Already correct when I got here — see "What happened" below.** Regenerated by `npm run journeys` from the code, not hand-written. No `-intended.md` was opened for writing. |
+
+**What happened — read this, it is the odd part.** At 20:56 `npm run journeys:check`
+failed with 9 stale files, and the regenerated output carried exactly the lender
+lock. At 21:00 a different workflow (Company Brain chat) ran `npm run journeys`
+for its own two new routes and committed the whole regenerated set as
+**`a41f2fe`** — which swept my lender diff in with it, because the generator
+rewrites every page from the whole tree, not just the part you changed. So the
+`-actual.md` half of W4 is already committed, in somebody else's commit, with a
+message that does not mention lenders. That is why my changelog lines say
+`7efa24e + 8659d5f (actual pages regenerated in a41f2fe)`. Nothing is missing and
+nothing is wrong — but the four journey pages moved under a commit message about
+Company Brain, so the changelog is the only place the lender reason is written down.
+
+**What the four pages now say** — read out of the files, not assumed:
+
+| Journey | Lender book (`read/lenders`, `lenders`, `read/lender-observations`, `lender-observations`) | Reach |
+|---|---|---|
+| `role-owner` | **can reach** — listed `owner, admin, funding_advisor` | 167 of 170 → **170 of 173** |
+| `role-funding-advisor` | **can reach** — unchanged in reach, shorter role list | 121 of 170 → **124 of 173** |
+| `role-sales-manager` | **blocked** | 135 of 170 → **134 of 173** |
+| `role-closer` | **blocked** | 118 of 170 → **117 of 173** |
+
+`/api/read/lender-matches` still reads
+`owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager`
+on every page, exactly as board decision 2 says it should. Not touched, not
+reported as a defect.
+
+The route total moved 170 → 173 because of three routes that are **not mine**:
+`/api/company-brain/threads`, `/api/company-brain/upload`,
+`/api/dashboard/pipeline-counts`. They belong to other in-flight workflows. The
+generator cannot separate them from the lender change — it regenerates the whole
+set or nothing.
+
+`README.md` gained one row in the role-set table: `LENDERS | owner, admin, funding_advisor`.
+
+**FINDING — the intended journeys never covered lenders at all**
+
+I read all four `-intended.md` files before touching anything. **None of them
+mentions lenders anywhere** — not the routes, not the screen, not the word. So
+there is no intended journey saying a closer *should* reach the Lenders list, and
+nothing was silently reconciled.
+
+The reason is a date gap, and it is worth knowing:
+
+* The `-intended.md` files were generated on **2026-08-02** (`1ae3eef`), when the
+  system had **88 routes**.
+* The lender database landed on **2026-08-04** (`87d5e9e`), two days later.
+* Nobody has updated an intended journey since.
+
+So the hand-written source of truth has never described who *should* reach the
+lender book — before this lock or after it. **That absence is the finding.** The
+lock cannot be checked against intent, because no intent was ever written down for
+this feature. Only Chris can fill that in; an agent writing it would be authoring
+the thing its own work is checked against (`docs/journeys/README.md` says so).
+
+Second, smaller gap, **pre-existing and not caused by this change**: the intended
+pages are frozen at 88 routes and today there are 173, so every category count in
+them is stale. Example — `role-closer-intended.md` says "Reading data — 19 routes"
+reachable and 7 blocked; the actual page says 37 and 12. That drift predates the
+lender work by two weeks and belongs to whoever revises the intended files.
+
+**Verification — measured 2026-08-17, this machine, `DATABASE_URL` unset**
+
+| Command | Result |
+|---|---|
+| `npm run lint` | **PASS** — `lint: 1296 file(s) and inline script(s) parse clean` |
+| `npm run journeys:check` | **PASS** — `docs/journeys is up to date (9 files).` |
+| `node --test src/http/lenders-role-gate.test.mjs src/http/app-nav-reachability.test.mjs` | **50 tests, 50 pass, 0 fail, 0 skipped** |
+| `node --test scripts/journeys/generate.test.mjs` | 20 tests, 19 pass, **1 fail** — `gifts/message-blaster: a gate is referenced but its shape was not recognised`. Pre-existing, W1 already recorded it, nothing to do with lenders. It is the same UNVERIFIED route `README.md` has been naming for days. |
+
+The three known pre-existing nav failures (`app-nav-matches-shell`, from `63a0241`)
+were not investigated and not touched — not mine.
+
+**Not committed.** Changes left in the working tree for the orchestrator:
+`docs/journeys/CHANGELOG.md` and this board file.
 
 ## Blockers and open questions
 

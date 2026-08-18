@@ -1,0 +1,32 @@
+{
+  "role": "owner",
+  "email": "owner@fundhub.ai",
+  "sessionRoleFromServer": "owner",
+  "request": {
+    "method": "GET",
+    "url": "https://fundhub.ai/api/read/lenders",
+    "auth": "Bearer <this role's live session token>"
+  },
+  "httpStatus": 200,
+  "expectedHttpStatus": 200,
+  "match": true,
+  "rowCount": 0,
+  "body": {
+    "ok": true,
+    "lenders": [],
+    "meta": {
+      "count": 0,
+      "lender_tables": [
+        "OnlineBizCC",
+        "InBranchBizCC",
+        "BizLOC_Stated",
+        "BizLOC_Documented",
+        "PersonalCC",
+        "PersonalLoans",
+        "PersonalLOC"
+      ],
+      "empty": true
+    }
+  },
+  "capturedAt": "2026-08-18T04:01:03.312Z"
+}

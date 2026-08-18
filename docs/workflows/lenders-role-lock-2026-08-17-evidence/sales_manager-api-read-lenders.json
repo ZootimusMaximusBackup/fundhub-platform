@@ -1,0 +1,20 @@
+{
+  "role": "sales_manager",
+  "email": "sales@fundhub.ai",
+  "sessionRoleFromServer": "sales_manager",
+  "request": {
+    "method": "GET",
+    "url": "https://fundhub.ai/api/read/lenders",
+    "auth": "Bearer <this role's live session token>"
+  },
+  "httpStatus": 403,
+  "expectedHttpStatus": 403,
+  "match": true,
+  "rowCount": null,
+  "body": {
+    "ok": false,
+    "error": "forbidden",
+    "message": "this endpoint is limited to owner, admin, funding_advisor"
+  },
+  "capturedAt": "2026-08-18T04:01:21.663Z"
+}

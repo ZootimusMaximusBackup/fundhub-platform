@@ -1,0 +1,30 @@
+{
+  "role": "closer",
+  "email": "closer@fundhub.ai",
+  "sessionRoleFromServer": "closer",
+  "why": "Board decision 2 — lender-matches stays on ROLE_SETS.STAFF so the closer's match box keeps working. MUST be 200.",
+  "request": {
+    "method": "GET",
+    "url": "https://fundhub.ai/api/read/lender-matches?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+    "auth": "Bearer <closer's live session token>"
+  },
+  "httpStatus": 200,
+  "expectedHttpStatus": 200,
+  "match": true,
+  "rowCount": 0,
+  "body": {
+    "ok": true,
+    "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+    "match_count": 0,
+    "summary": {
+      "lender_count": 0,
+      "match_count": 0,
+      "skipped_count": 0,
+      "sensitive_bureaus": [],
+      "client_state": null
+    },
+    "matches": [],
+    "skipped": []
+  },
+  "capturedAt": "2026-08-18T04:01:42.797Z"
+}
