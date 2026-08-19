@@ -1,0 +1,1339 @@
+{
+  "generatedAt": "2026-08-19T02:50:05.848Z",
+  "results": {
+    "payment_links_recent": {
+      "ok": true,
+      "sql": "SELECT id, client_id, purpose, description, amount_cents, currency, status, provider,\n          link_ref, checkout_url IS NOT NULL AS has_checkout_url, is_demo,\n          created_at, paid_at\n     FROM payment_links ORDER BY created_at DESC LIMIT 20",
+      "params": [],
+      "rowCount": 20,
+      "rows": [
+        {
+          "id": "42f8e954-5d37-4370-af4c-bf009fae727d",
+          "client_id": "55bffcc3-46c0-4d23-93a8-bfe63af15b65",
+          "purpose": "diagnostic",
+          "description": "UnderwriteIQ soft-pull assessment",
+          "amount_cents": "3200",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_62f46f9b770b2c06245426c4",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T18:05:46.154Z",
+          "paid_at": null
+        },
+        {
+          "id": "1ec655da-a014-4cd0-bda8-18b82f579bd9",
+          "client_id": "55bffcc3-46c0-4d23-93a8-bfe63af15b65",
+          "purpose": "diagnostic",
+          "description": "UnderwriteIQ soft-pull assessment",
+          "amount_cents": "3200",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_41d0120ccf44b10658cab6a5",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T18:05:43.773Z",
+          "paid_at": null
+        },
+        {
+          "id": "c17b7b32-963d-487c-aa6b-91e76a4f037b",
+          "client_id": "55bffcc3-46c0-4d23-93a8-bfe63af15b65",
+          "purpose": "diagnostic",
+          "description": "UnderwriteIQ soft-pull assessment",
+          "amount_cents": "3200",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_a9938767d6b196b962122bc2",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T18:05:43.717Z",
+          "paid_at": null
+        },
+        {
+          "id": "a62b734a-ad36-49a5-b635-cc91551d899b",
+          "client_id": "55bffcc3-46c0-4d23-93a8-bfe63af15b65",
+          "purpose": "diagnostic",
+          "description": "UnderwriteIQ soft-pull assessment",
+          "amount_cents": "3200",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_10c312633980fe32854e2d5f",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T18:05:41.047Z",
+          "paid_at": null
+        },
+        {
+          "id": "aa39c087-43ca-4280-8c3b-fd7a62c2c5ca",
+          "client_id": "55bffcc3-46c0-4d23-93a8-bfe63af15b65",
+          "purpose": "diagnostic",
+          "description": "UnderwriteIQ soft-pull assessment",
+          "amount_cents": "3200",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_4fc04678e78546071cc2c2af",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T18:05:01.229Z",
+          "paid_at": null
+        },
+        {
+          "id": "2ed3e81b-2039-4b17-8faf-32515d19dcf7",
+          "client_id": "55bffcc3-46c0-4d23-93a8-bfe63af15b65",
+          "purpose": "diagnostic",
+          "description": "UnderwriteIQ soft-pull assessment",
+          "amount_cents": "3200",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_8a1441fd5d7b0c91e2a6d091",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T18:04:58.863Z",
+          "paid_at": null
+        },
+        {
+          "id": "d2124c11-fcc5-4da3-ae18-a7240ae1f0ca",
+          "client_id": "55bffcc3-46c0-4d23-93a8-bfe63af15b65",
+          "purpose": "diagnostic",
+          "description": "UnderwriteIQ soft-pull assessment",
+          "amount_cents": "3200",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_42e4e528c74846587e098260",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T18:04:54.449Z",
+          "paid_at": null
+        },
+        {
+          "id": "b43c49d1-15e1-423b-8772-9feed46ece64",
+          "client_id": "55bffcc3-46c0-4d23-93a8-bfe63af15b65",
+          "purpose": "diagnostic",
+          "description": "UnderwriteIQ soft-pull assessment",
+          "amount_cents": "3200",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_a3215e13d4525167b071b06d",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T18:04:51.867Z",
+          "paid_at": null
+        },
+        {
+          "id": "7f239c41-8cb4-4d67-8e23-591fb07d86b0",
+          "client_id": "55bffcc3-46c0-4d23-93a8-bfe63af15b65",
+          "purpose": "diagnostic",
+          "description": "UnderwriteIQ soft-pull assessment",
+          "amount_cents": "3200",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_1c0a0bef7b4f4d65c89dab35",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T18:01:11.745Z",
+          "paid_at": null
+        },
+        {
+          "id": "08e6bc37-6cf7-4147-9997-a14298041131",
+          "client_id": "55bffcc3-46c0-4d23-93a8-bfe63af15b65",
+          "purpose": "diagnostic",
+          "description": "UnderwriteIQ soft-pull assessment",
+          "amount_cents": "3200",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_028196262be379fbecc38436",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T18:01:09.247Z",
+          "paid_at": null
+        },
+        {
+          "id": "bf88885a-87ee-40a0-97c2-40cd04e2be99",
+          "client_id": "55bffcc3-46c0-4d23-93a8-bfe63af15b65",
+          "purpose": "diagnostic",
+          "description": "UnderwriteIQ soft-pull assessment",
+          "amount_cents": "3200",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_a5fb04f1a546f739e40a6f90",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T18:01:00.243Z",
+          "paid_at": null
+        },
+        {
+          "id": "95d413fc-4968-459c-b41a-c698e51ea16b",
+          "client_id": "55bffcc3-46c0-4d23-93a8-bfe63af15b65",
+          "purpose": "diagnostic",
+          "description": "UnderwriteIQ soft-pull assessment",
+          "amount_cents": "3200",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_9a5b14290d94a6ff8ddb2361",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T18:00:57.316Z",
+          "paid_at": null
+        },
+        {
+          "id": "2584667f-400a-442d-b45e-dfe7b1523f61",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "purpose": "repair",
+          "description": "Repair test run (first round, done for you)",
+          "amount_cents": "20000",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_f4a46945c457cc97a9346313",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T08:19:21.435Z",
+          "paid_at": null
+        },
+        {
+          "id": "52167570-38fb-4521-966d-ce8e0456fa87",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "purpose": "custom",
+          "description": "Prove e-book $1",
+          "amount_cents": "100",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_a4154dd4d6192e8665a1c8f8",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T08:19:19.639Z",
+          "paid_at": null
+        },
+        {
+          "id": "5ad0f3ee-1720-45c2-b48d-25b61f2dbb0a",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "purpose": "diagnostic",
+          "description": "UnderwriteIQ soft-pull assessment",
+          "amount_cents": "3200",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_a224f504a3c5a5a87f231faa",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T08:19:16.663Z",
+          "paid_at": null
+        },
+        {
+          "id": "d8072bc5-268d-4732-928c-50ca2190b007",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "purpose": "repair",
+          "description": "Repair test run (first round, done for you)",
+          "amount_cents": "20000",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_f3a794e905dd13b41e426d84",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T08:17:10.303Z",
+          "paid_at": null
+        },
+        {
+          "id": "f0e1b6a7-b2e6-42be-9b32-9300b7c933d1",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "purpose": "custom",
+          "description": "Prove e-book $1",
+          "amount_cents": "100",
+          "currency": "USD",
+          "status": "created",
+          "provider": "commas",
+          "link_ref": "pl_5944250854c8cd41b752a97c",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T08:17:09.057Z",
+          "paid_at": null
+        },
+        {
+          "id": "418193ad-3ffc-4e39-b2ab-19fb51f877dd",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "purpose": "diagnostic",
+          "description": "UnderwriteIQ soft-pull assessment",
+          "amount_cents": "3200",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_197836f6016f08b88b4ac4a9",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T08:17:05.894Z",
+          "paid_at": null
+        },
+        {
+          "id": "03f1273c-7139-4e4b-960b-b1ca03088857",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "purpose": "diagnostic",
+          "description": "UnderwriteIQ soft-pull assessment",
+          "amount_cents": "3200",
+          "currency": "USD",
+          "status": "created",
+          "provider": "commas",
+          "link_ref": "pl_242b1fe3ac7610e8878ba0c9",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T08:15:37.683Z",
+          "paid_at": null
+        },
+        {
+          "id": "cc35dbff-2bb9-497d-b0b7-d79dbb058af6",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "purpose": "repair",
+          "description": "Repair test run (first round, done for you)",
+          "amount_cents": "20000",
+          "currency": "USD",
+          "status": "sent",
+          "provider": "commas",
+          "link_ref": "pl_d1dab0c433fa92a1a684f3f5",
+          "has_checkout_url": true,
+          "is_demo": false,
+          "created_at": "2026-08-16T08:14:17.887Z",
+          "paid_at": null
+        }
+      ]
+    },
+    "payment_links_by_day": {
+      "ok": true,
+      "sql": "SELECT date_trunc('day', created_at)::date AS day, count(*)::int AS count,\n          count(*) FILTER (WHERE is_demo)::int AS demo,\n          count(*) FILTER (WHERE checkout_url IS NOT NULL)::int AS with_url\n     FROM payment_links GROUP BY 1 ORDER BY 1 DESC LIMIT 20",
+      "params": [],
+      "rowCount": 1,
+      "rows": [
+        {
+          "day": "2026-08-16T07:00:00.000Z",
+          "count": 40,
+          "demo": 0,
+          "with_url": 40
+        }
+      ]
+    },
+    "payment_links_provider_breakdown": {
+      "ok": true,
+      "sql": "SELECT provider, status, is_demo, count(*)::int AS count FROM payment_links\n    GROUP BY provider, status, is_demo ORDER BY count DESC",
+      "params": [],
+      "rowCount": 3,
+      "rows": [
+        {
+          "provider": "commas",
+          "status": "sent",
+          "is_demo": false,
+          "count": 25
+        },
+        {
+          "provider": "commas",
+          "status": "created",
+          "is_demo": false,
+          "count": 14
+        },
+        {
+          "provider": "commas",
+          "status": "paid",
+          "is_demo": false,
+          "count": 1
+        }
+      ]
+    },
+    "payment_links_descriptions": {
+      "ok": true,
+      "sql": "SELECT DISTINCT description, purpose, amount_cents FROM payment_links ORDER BY description",
+      "params": [],
+      "rowCount": 6,
+      "rows": [
+        {
+          "description": "Business Financial Assessment — Fundhub",
+          "purpose": "diagnostic",
+          "amount_cents": "3200"
+        },
+        {
+          "description": "Business Financial Assessment — Fundhub ($1 live prove)",
+          "purpose": "diagnostic",
+          "amount_cents": "100"
+        },
+        {
+          "description": "Credit repair, done-for-you",
+          "purpose": "repair",
+          "amount_cents": "100000"
+        },
+        {
+          "description": "Prove e-book $1",
+          "purpose": "custom",
+          "amount_cents": "100"
+        },
+        {
+          "description": "Repair test run (first round, done for you)",
+          "purpose": "repair",
+          "amount_cents": "20000"
+        },
+        {
+          "description": "UnderwriteIQ soft-pull assessment",
+          "purpose": "diagnostic",
+          "amount_cents": "3200"
+        }
+      ]
+    },
+    "schema_migrations_recent": {
+      "ok": true,
+      "sql": "SELECT key, applied_at FROM schema_migrations ORDER BY key DESC LIMIT 10",
+      "params": [],
+      "rowCount": 10,
+      "rows": [
+        {
+          "key": "seed/011_followup_sms_pack.sql",
+          "applied_at": "2026-08-16T05:30:16.184Z"
+        },
+        {
+          "key": "seed/010_bs_sms_precall.sql",
+          "applied_at": "2026-08-16T03:09:25.729Z"
+        },
+        {
+          "key": "seed/009_u02_funding_delivery_template.sql",
+          "applied_at": "2026-08-16T03:09:56.542Z"
+        },
+        {
+          "key": "seed/008_contract_messages.sql",
+          "applied_at": "2026-08-02T15:28:45.529Z"
+        },
+        {
+          "key": "seed/007_portal_magic_link_template.sql",
+          "applied_at": "2026-08-02T15:28:45.219Z"
+        },
+        {
+          "key": "seed/007_payment_link_template.sql",
+          "applied_at": "2026-08-02T15:28:44.899Z"
+        },
+        {
+          "key": "seed/007_contract_templates.sql",
+          "applied_at": "2026-08-02T15:28:44.579Z"
+        },
+        {
+          "key": "seed/006_message_templates_source_doc.sql",
+          "applied_at": "2026-07-31T02:24:53.163Z"
+        },
+        {
+          "key": "seed/002_pipelines.sql",
+          "applied_at": "2026-07-31T02:24:53.163Z"
+        },
+        {
+          "key": "schema/020_auth.sql",
+          "applied_at": "2026-07-31T02:24:53.163Z"
+        }
+      ]
+    },
+    "schema_migrations_count": {
+      "ok": true,
+      "sql": "SELECT count(*)::int AS count FROM schema_migrations",
+      "params": [],
+      "rowCount": 1,
+      "rows": [
+        {
+          "count": 162
+        }
+      ]
+    },
+    "schema_migrations_numeric_top": {
+      "ok": true,
+      "sql": "SELECT key, applied_at FROM schema_migrations\n    WHERE key ~ 'migrations/[0-9]+' ORDER BY (regexp_replace(key, '^.*migrations/([0-9]+).*$', '\\1'))::int DESC LIMIT 10",
+      "params": [],
+      "rowCount": 10,
+      "rows": [
+        {
+          "key": "migrations/176_company_brain_upload_reviews.sql",
+          "applied_at": "2026-08-18T03:51:18.241Z"
+        },
+        {
+          "key": "migrations/175_company_brain_threads.sql",
+          "applied_at": "2026-08-18T03:51:17.951Z"
+        },
+        {
+          "key": "migrations/174_company_brain_uploads.sql",
+          "applied_at": "2026-08-18T03:51:17.656Z"
+        },
+        {
+          "key": "migrations/173_specialist_role_name.sql",
+          "applied_at": "2026-08-18T00:06:17.932Z"
+        },
+        {
+          "key": "migrations/172_wl_marketing.sql",
+          "applied_at": "2026-08-17T23:27:04.693Z"
+        },
+        {
+          "key": "migrations/171_content.sql",
+          "applied_at": "2026-08-17T22:14:42.061Z"
+        },
+        {
+          "key": "migrations/170_call_outcome_checklist.sql",
+          "applied_at": "2026-08-17T22:14:41.749Z"
+        },
+        {
+          "key": "migrations/169_contract_template_placeholders.sql",
+          "applied_at": "2026-08-17T00:39:59.833Z"
+        },
+        {
+          "key": "migrations/168_retire_ghl_agents.sql",
+          "applied_at": "2026-08-16T05:30:05.390Z"
+        },
+        {
+          "key": "migrations/167_dispute_authorization_consent.sql",
+          "applied_at": "2026-08-16T02:04:05.546Z"
+        }
+      ]
+    },
+    "documents_test_client": {
+      "ok": true,
+      "sql": "SELECT id, kind, subtype, title, delivery_status, delivered_at, delivery_channel, signed_at, created_at\n     FROM documents WHERE client_id = $1 ORDER BY created_at DESC",
+      "params": [
+        "8556bedc-46e1-4d85-b0cd-a24adfee1521"
+      ],
+      "rowCount": 4,
+      "rows": [
+        {
+          "id": "07d45e8f-c602-4337-8037-3251590b6e1c",
+          "kind": "contract",
+          "subtype": "credit_repair",
+          "title": "Credit Repair Agreement (signed)",
+          "delivery_status": "not_delivered",
+          "delivered_at": null,
+          "delivery_channel": null,
+          "signed_at": null,
+          "created_at": "2026-08-18T22:03:14.233Z"
+        },
+        {
+          "id": "add14bc8-2fbe-4887-a4f3-8a0e88b216aa",
+          "kind": "contract",
+          "subtype": "credit_repair",
+          "title": "Credit Repair Agreement",
+          "delivery_status": "sent",
+          "delivered_at": "2026-08-18T21:58:28.649Z",
+          "delivery_channel": "portal",
+          "signed_at": "2026-08-18T22:03:13.471Z",
+          "created_at": "2026-08-18T21:58:29.060Z"
+        },
+        {
+          "id": "f13993df-4ab3-4ce2-9196-cad390a90728",
+          "kind": "authorization",
+          "subtype": "soft_pull_consent",
+          "title": "Soft Pull Authorization (signed)",
+          "delivery_status": "not_delivered",
+          "delivered_at": null,
+          "delivery_channel": null,
+          "signed_at": null,
+          "created_at": "2026-08-18T16:12:38.347Z"
+        },
+        {
+          "id": "9cb7d591-23cd-40e0-94cc-2b02894c9e16",
+          "kind": "authorization",
+          "subtype": "soft_pull_consent",
+          "title": "Soft Pull Authorization",
+          "delivery_status": "sent",
+          "delivered_at": "2026-08-18T16:07:52.126Z",
+          "delivery_channel": "portal",
+          "signed_at": "2026-08-18T16:12:37.597Z",
+          "created_at": "2026-08-18T16:07:52.527Z"
+        }
+      ]
+    },
+    "clients_custom_fields_crs_paid": {
+      "ok": true,
+      "sql": "SELECT id, custom_fields FROM clients WHERE custom_fields ? 'crs_paid' LIMIT 10",
+      "params": [],
+      "rowCount": 2,
+      "rows": [
+        {
+          "id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "custom_fields": {
+            "crs_paid": true,
+            "prove_w1": {
+              "ok": true,
+              "c00": {
+                "done": true,
+                "scope": "consumer_only",
+                "detail": null,
+                "pulled": true,
+                "reason": null,
+                "requestId": "bb31a170-fab8-4e6d-a409-996f0432546c",
+                "crsResultId": "26fd1c2c-9bd5-464e-91c9-13c5f2fab463",
+                "bureausPulled": [
+                  "TU",
+                  "EX",
+                  "EQ"
+                ]
+              },
+              "phone": "+16616180865",
+              "fences": {
+                "ghl": false,
+                "inngest": false,
+                "CRS_ALLOW_LIVE": "0",
+                "ADAPTERS_DRY_RUN": "0",
+                "MESSAGING_DRY_RUN": "1"
+              },
+              "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+              "spine_tier": "FUNDING_PLUS_REPAIR",
+              "dirty_email": "stanbridgejchris+repair@gmail.com",
+              "finished_at": "2026-08-14T18:08:00.720Z",
+              "forced_paths": {
+                "w2": "natural funding tier — still run U-02 + C-06",
+                "w3": "FORCE REPAIR_ONLY + payment.received DIY/Consulting Services Package on dirty_client_id"
+              },
+              "crs_host_note": "sandbox identities per bureau; CRM email is Gmail not fixture",
+              "crs_result_id": "26fd1c2c-9bd5-464e-91c9-13c5f2fab463",
+              "dirty_consent": {
+                "id": "08527ada-07cb-4289-a288-738cf92e3020",
+                "created": true
+              },
+              "funding_email": "stanbridgejchris@gmail.com",
+              "dirty_client_id": "929fc1cb-9ea0-4267-8152-28662b799173",
+              "funding_consent": {
+                "id": "2f99faa6-d64f-4a36-8b8e-4fc735753583",
+                "created": true
+              },
+              "tradeline_count": 28,
+              "soft_pull_status": "fulfilled",
+              "funding_client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+              "soft_pull_request_id": "bb31a170-fab8-4e6d-a409-996f0432546c",
+              "decision_rendered_event_id": "ef8cf37c-1bd6-40bb-b1e1-0c2f94900153",
+              "analysis_completed_event_id": "2e5aee6e-27bd-41ed-aa8a-8fed99709ac0"
+            },
+            "prove_w2": {
+              "ok": true,
+              "c06": {
+                "done": true,
+                "branch": "funding",
+                "delivery": {
+                  "error": "{\"ok\":false,\"error\":\"Unauthorized\"}",
+                  "status": 401,
+                  "delivered": false
+                }
+              },
+              "u02": {
+                "done": true,
+                "email": {
+                  "sent": true
+                },
+                "branch": "funding"
+              },
+              "fences": {
+                "ghl": false,
+                "inngest": false,
+                "CRS_ALLOW_LIVE": "0",
+                "ADAPTERS_DRY_RUN": "0",
+                "MESSAGING_DRY_RUN": "1"
+              },
+              "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+              "status": "pass",
+              "dispatch": [
+                {
+                  "id": "9a88be27-0876-4b72-947f-48f3612770a4",
+                  "outcome": "sent",
+                  "detail_len": 36
+                }
+              ],
+              "address_ok": true,
+              "spine_tier": "FUNDING_PLUS_REPAIR",
+              "started_at": "2026-08-14T18:15:23.449Z",
+              "c06_webhook": {
+                "url": "https://underwrite-iq-lite.vercel.app/api/lite/deliver-letters",
+                "delivery": {
+                  "error": "{\"ok\":false,\"error\":\"Unauthorized\"}",
+                  "status": 401,
+                  "delivered": false
+                },
+                "letterSet": "funding"
+              },
+              "finished_at": "2026-08-14T18:15:31.807Z",
+              "client_email": "stanbridgejchris@gmail.com",
+              "email_routing": {
+                "after": {
+                  "channel": "email",
+                  "enabled": true,
+                  "provider": "resend"
+                },
+                "before": {
+                  "channel": "email",
+                  "enabled": true,
+                  "provider": "mailgun"
+                },
+                "flipped": true
+              },
+              "funding_email": "stanbridgejchris@gmail.com",
+              "sms_new_count": 0,
+              "daily_send_cap": 500,
+              "payload_source": "crs",
+              "scores_present": [
+                "ex",
+                "eq",
+                "tu"
+              ],
+              "new_message_ids": [
+                "9a88be27-0876-4b72-947f-48f3612770a4"
+              ],
+              "funding_messages": [
+                {
+                  "id": "9a88be27-0876-4b72-947f-48f3612770a4",
+                  "status": "sent",
+                  "channel": "email",
+                  "provider": "resend",
+                  "last_error": null,
+                  "to_address": "stanbridgejchris@gmail.com",
+                  "template_key": "EMAIL-U02-ANALYZER-FUNDING-DELIVERY",
+                  "provider_id_len": 36
+                }
+              ],
+              "template_flipped": {
+                "template_key": "EMAIL-U02-ANALYZER-FUNDING-DELIVERY",
+                "body_has_draft": false,
+                "compliance_passed": true
+              },
+              "analysis_event_id": "2e5aee6e-27bd-41ed-aa8a-8fed99709ac0",
+              "funding_client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+              "outbox_still_paused": true,
+              "payload_identity_ok": null,
+              "payload_outcome_tier": "FUNDING_PLUS_REPAIR",
+              "repair_message_count": 0,
+              "other_templates_untouched": [
+                {
+                  "template_key": "EMAIL-DS02-DIY-LETTERS-READY",
+                  "compliance_passed": false
+                },
+                {
+                  "template_key": "EMAIL-U02-ANALYZER-REPAIR-DELIVERY",
+                  "compliance_passed": false
+                }
+              ]
+            },
+            "prove_w3": {
+              "ok": true,
+              "tiers": {
+                "dirty": {
+                  "id": "929fc1cb-9ea0-4267-8152-28662b799173",
+                  "email": "stanbridgejchris+repair@gmail.com",
+                  "outcome_tier": "REPAIR_ONLY"
+                },
+                "funding_after": {
+                  "id": "9af65808-a619-4e65-ae91-239766a006b7",
+                  "outcome_tier": "FUNDING_PLUS_REPAIR"
+                },
+                "funding_before": {
+                  "id": "9af65808-a619-4e65-ae91-239766a006b7",
+                  "outcome_tier": "FUNDING_PLUS_REPAIR"
+                },
+                "funding_tier_unchanged": true
+              },
+              "fences": {
+                "ghl": false,
+                "inngest": false,
+                "DIY_IN_REPO": "1",
+                "CRS_ALLOW_LIVE": "0",
+                "ADAPTERS_DRY_RUN": "0",
+                "MESSAGING_DRY_RUN": "0"
+              },
+              "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+              "dest_ok": true,
+              "sent_ok": true,
+              "template": {
+                "ok": true,
+                "before": [
+                  {
+                    "has_draft": false,
+                    "body_start": "Hey {{contact.first_name}},\n\nAs promised — your correction l",
+                    "template_key": "EMAIL-DS02-DIY-LETTERS-READY",
+                    "compliance_passed": true
+                  },
+                  {
+                    "has_draft": false,
+                    "body_start": " Your Funding Letter Pack is ready ✅\n\n Hey {{contact.first_n",
+                    "template_key": "EMAIL-U02-ANALYZER-FUNDING-DELIVERY",
+                    "compliance_passed": true
+                  },
+                  {
+                    "has_draft": false,
+                    "body_start": " Your Repair Letter Pack is ready ✅\n\n Hey {{contact.first_na",
+                    "template_key": "EMAIL-U02-ANALYZER-REPAIR-DELIVERY",
+                    "compliance_passed": false
+                  }
+                ],
+                "updated": [
+                  {
+                    "template_key": "EMAIL-DS02-DIY-LETTERS-READY",
+                    "compliance_passed": true
+                  }
+                ],
+                "flipped_keys": [
+                  "EMAIL-DS02-DIY-LETTERS-READY"
+                ],
+                "u02_untouched_by_this_update": [
+                  {
+                    "template_key": "EMAIL-U02-ANALYZER-FUNDING-DELIVERY",
+                    "compliance_passed": true
+                  },
+                  {
+                    "template_key": "EMAIL-U02-ANALYZER-REPAIR-DELIVERY",
+                    "compliance_passed": false
+                  }
+                ]
+              },
+              "dirty_row": {
+                "id": "929fc1cb-9ea0-4267-8152-28662b799173",
+                "tags": [
+                  "prove:crs-company",
+                  "client:diy-letters"
+                ],
+                "email": "stanbridgejchris+repair@gmail.com",
+                "diy_status": "Delivered",
+                "outcome_tier": "REPAIR_ONLY",
+                "diy_letter_count": "3",
+                "diy_package_reason": null,
+                "diy_delivered_event_id": "crs-prove-w3:929fc1cb-9ea0-4267-8152-28662b799173:1786731381598:payment.received"
+              },
+              "u02_after": [],
+              "dispatches": [
+                {
+                  "id": "595939c7-8d6f-4123-ac51-57003a754c60",
+                  "detail": "92327e08-a1c4-4a00-9d52-7aa8474c72e4",
+                  "outcome": "sent",
+                  "queued_to": "stanbridgejchris+repair@gmail.com",
+                  "transmitted_to": "stanbridgejchris@gmail.com",
+                  "resend_test_mode": "plus_alias_on_row_same_gmail_inbox"
+                }
+              ],
+              "dirty_email": "stanbridgejchris+repair@gmail.com",
+              "finished_at": "2026-08-14T18:19:41.245Z",
+              "funding_row": {
+                "id": "9af65808-a619-4e65-ae91-239766a006b7",
+                "email": "stanbridgejchris@gmail.com",
+                "diy_status": null,
+                "outcome_tier": "FUNDING_PLUS_REPAIR",
+                "diy_delivered_event_id": null
+              },
+              "dirty_handle": {
+                "done": true,
+                "delivery": {
+                  "event": "crs-prove-w3:929fc1cb-9ea0-4267-8152-28662b799173:1786731381598:payment.received",
+                  "delivered": true,
+                  "letterCount": 3
+                },
+                "skipped_rerun": true
+              },
+              "letter_count": 3,
+              "ds02_messages": [
+                {
+                  "id": "595939c7-8d6f-4123-ac51-57003a754c60",
+                  "status": "sent",
+                  "channel": "email",
+                  "subject": "Your correction letters are ready",
+                  "provider": "resend",
+                  "created_at": "2026-08-14T18:16:23.415Z",
+                  "last_error": null,
+                  "to_address": "stanbridgejchris+repair@gmail.com",
+                  "provider_ref": "workflow:EMAIL-DS02-DIY-LETTERS-READY:crs-prove-w3:929fc1cb-9ea0-4267-8152-28662b799173:1786731381598:payment.received",
+                  "template_key": "EMAIL-DS02-DIY-LETTERS-READY",
+                  "has_provider_id": true,
+                  "provider_id_len": 36
+                }
+              ],
+              "funding_email": "stanbridgejchris@gmail.com",
+              "dirty_event_id": "crs-prove-w3:929fc1cb-9ea0-4267-8152-28662b799173:1786731578793:payment.received",
+              "funding_handle": {
+                "done": false,
+                "reason": "blocked_not_repair_only:FUNDING_PLUS_REPAIR"
+              },
+              "dirty_client_id": "929fc1cb-9ea0-4267-8152-28662b799173",
+              "funding_blocked": true,
+              "funding_event_id": "crs-prove-w3:9af65808-a619-4e65-ae91-239766a006b7:1786731578793:payment.received-block",
+              "funding_client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+              "letters_delivered": true,
+              "skip_dirty_handle": true,
+              "u02_repair_before": [],
+              "dirty_handle_error": null,
+              "no_free_repair_pack": true,
+              "funding_handle_error": null,
+              "funding_leaked_letters": false
+            },
+            "crs_status": "Complete",
+            "diy_status": "Delivered",
+            "prove_role": "funding",
+            "prove_batch": "crs-company-2026-08-14",
+            "analyzer_path": "Funding",
+            "business_name": "ProveFunding",
+            "crs_fico_score": null,
+            "crs_pull_scope": "consumer_only",
+            "analyzer_status": "Complete",
+            "first_touch_date": "2026-08-18T21:56:41.104Z",
+            "ghl_link_missing": true,
+            "lead_magnet_type": "Survey",
+            "lifecycle_status": "New Lead",
+            "crs_snapshot_date": "2026-08-16T05:11:00.437Z",
+            "round_hold_reason": "Awaiting CRS",
+            "cf_svy_planned_use": "Covering a shortfall right now",
+            "primary_fico_score": null,
+            "cf_svy_has_business": "No, personal funding only",
+            "ghl_link_missing_at": "2026-08-14 18:19:39.758344+00",
+            "last_progress_action": "analyzer_completed",
+            "funding_delivery_sent": true,
+            "closer_deck_letters_at": "2026-08-16T08:19:24.710Z",
+            "total_funding_estimate": 50000,
+            "analyzer_prequal_amount": 50000,
+            "cf_svy_business_revenue": "$100k - $249k",
+            "cf_svy_money_change_now": [
+              "Fresh start (new business / startup launch)"
+            ],
+            "closer_deck_disposition": {
+              "at": "2026-08-16T08:19:25.228Z",
+              "route": "DESCENT",
+              "offer_key": "REPAIR_TRIAL",
+              "temperature": 8,
+              "amount_cents": 20000,
+              "beliefs_count": 2,
+              "cost_of_inaction": "$32"
+            },
+            "ghl_link_missing_reason": "not_configured",
+            "last_progress_timestamp": "2026-08-16T05:11:00.474Z",
+            "primary_snapshot_source": "CRS",
+            "cf_svy_available_capital": "$5k - $25k",
+            "cf_svy_income_verifiable": "Yes, both",
+            "cf_svy_revenue_verifiable": "Yes, bank statements",
+            "cf_svy_self_reported_fico": "650-699",
+            "closer_deck_ebook_link_id": "52167570-38fb-4521-966d-ce8e0456fa87",
+            "closer_deck_ebook_sent_at": "2026-08-16T08:19:20.662Z",
+            "closer_deck_letters_offer": "REPAIR_DFY",
+            "cf_svy_annual_income_range": "$500k+",
+            "cf_svy_funding_target_amount": "$100k - $200k",
+            "closer_deck_soft_pull_link_id": "5ad0f3ee-1720-45c2-b48d-25b61f2dbb0a",
+            "closer_deck_soft_pull_sent_at": "2026-08-16T08:19:18.392Z",
+            "closer_deck_ebook_amount_cents": 100,
+            "cf_svy_self_reported_fico_label": "500-579"
+          }
+        },
+        {
+          "id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "custom_fields": {
+            "crs_paid": true,
+            "crs_status": "Requested",
+            "sale_closed": true,
+            "deposit_paid": true,
+            "analyzer_path": "Funding",
+            "crs_pull_scope": "consumer_only",
+            "crm_archived_at": "2026-08-18T21:45:03.377Z",
+            "ghl_link_dry_run": true,
+            "round_hold_reason": "Awaiting CRS",
+            "employee_next_action": "Apply for Funding",
+            "ready_for_next_round": true
+          }
+        }
+      ]
+    },
+    "tables_like_custom_or_invoice": {
+      "ok": true,
+      "sql": "SELECT table_name FROM information_schema.tables\n    WHERE table_schema='public' AND (table_name LIKE '%custom_field%' OR table_name LIKE '%invoice%'\n       OR table_name LIKE '%entitle%' OR table_name LIKE '%product%')\n    ORDER BY table_name",
+      "params": [],
+      "rowCount": 12,
+      "rows": [
+        {
+          "table_name": "client_custom_fields"
+        },
+        {
+          "table_name": "entitlement_catalog"
+        },
+        {
+          "table_name": "entitlements"
+        },
+        {
+          "table_name": "invoice_line_items"
+        },
+        {
+          "table_name": "invoice_payments"
+        },
+        {
+          "table_name": "invoices"
+        },
+        {
+          "table_name": "product_aliases"
+        },
+        {
+          "table_name": "product_entitlements"
+        },
+        {
+          "table_name": "products"
+        },
+        {
+          "table_name": "v_client_entitlements"
+        },
+        {
+          "table_name": "v_invoice_aging"
+        },
+        {
+          "table_name": "v_invoice_balance"
+        }
+      ]
+    },
+    "sales_columns": {
+      "ok": true,
+      "sql": "SELECT column_name FROM information_schema.columns WHERE table_name='sales' ORDER BY ordinal_position",
+      "params": [],
+      "rowCount": 14,
+      "rows": [
+        {
+          "column_name": "id"
+        },
+        {
+          "column_name": "org_id"
+        },
+        {
+          "column_name": "client_id"
+        },
+        {
+          "column_name": "product_id"
+        },
+        {
+          "column_name": "agreed_price"
+        },
+        {
+          "column_name": "agreed_success_fee_percent"
+        },
+        {
+          "column_name": "currency"
+        },
+        {
+          "column_name": "sold_at"
+        },
+        {
+          "column_name": "status"
+        },
+        {
+          "column_name": "external_ref"
+        },
+        {
+          "column_name": "notes"
+        },
+        {
+          "column_name": "created_at"
+        },
+        {
+          "column_name": "updated_at"
+        },
+        {
+          "column_name": "is_demo"
+        }
+      ]
+    },
+    "sales_recent": {
+      "ok": true,
+      "sql": "SELECT * FROM sales ORDER BY created_at DESC LIMIT 10",
+      "params": [],
+      "rowCount": 4,
+      "rows": [
+        {
+          "id": "ee7b9598-cda5-46ad-bd13-e38a52622e50",
+          "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "product_id": "29809c86-347f-4c09-87e5-04f6420ac9e9",
+          "agreed_price": "1000.00",
+          "agreed_success_fee_percent": null,
+          "currency": "USD",
+          "sold_at": "2026-08-18T20:50:24.543Z",
+          "status": "active",
+          "external_ref": "w16-sim-8556bedc-REPAIR_DFY-unlock",
+          "notes": "source:sale.closed",
+          "created_at": "2026-08-18T20:50:24.672Z",
+          "updated_at": "2026-08-18T20:50:24.672Z",
+          "is_demo": false
+        },
+        {
+          "id": "c88d9172-78a2-4cc1-9c33-8d6bc93ae8ea",
+          "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "product_id": "c087bdd2-0314-46b7-88f6-dc5c54b46a63",
+          "agreed_price": "3000.00",
+          "agreed_success_fee_percent": "10.0000",
+          "currency": "USD",
+          "sold_at": "2026-08-18T20:50:21.693Z",
+          "status": "active",
+          "external_ref": "w16-sim-8556bedc-FUNDING_DFY-unlock",
+          "notes": "source:deposit.paid",
+          "created_at": "2026-08-18T20:50:21.833Z",
+          "updated_at": "2026-08-18T20:50:21.833Z",
+          "is_demo": false
+        },
+        {
+          "id": "39361bbe-8701-4529-a5be-77ec0f15923e",
+          "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "product_id": "97593dbe-50b1-4830-a119-81b14915b006",
+          "agreed_price": "32.00",
+          "agreed_success_fee_percent": null,
+          "currency": "USD",
+          "sold_at": "2026-08-18T20:50:19.598Z",
+          "status": "active",
+          "external_ref": "w16-sim-8556bedc-SOFT_PULL-unlock",
+          "notes": "source:diagnostic.paid",
+          "created_at": "2026-08-18T20:50:19.731Z",
+          "updated_at": "2026-08-18T20:50:19.731Z",
+          "is_demo": false
+        },
+        {
+          "id": "e641178a-8637-481b-91d4-31bc208fd842",
+          "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "product_id": "97593dbe-50b1-4830-a119-81b14915b006",
+          "agreed_price": "1.00",
+          "agreed_success_fee_percent": null,
+          "currency": "USD",
+          "sold_at": "2026-08-16T05:10:17.024Z",
+          "status": "active",
+          "external_ref": "ORD-MA94-BBWM-4QFP",
+          "notes": "source:diagnostic.paid",
+          "created_at": "2026-08-16T05:10:17.051Z",
+          "updated_at": "2026-08-16T05:10:17.051Z",
+          "is_demo": false
+        }
+      ]
+    },
+    "products_all_detail": {
+      "ok": true,
+      "sql": "SELECT code, name, category, default_price, active, sort_order FROM products ORDER BY sort_order NULLS LAST, code",
+      "params": [],
+      "rowCount": 5,
+      "rows": [
+        {
+          "code": "diagnostic",
+          "name": "$32 Diagnostic",
+          "category": "diagnostic",
+          "default_price": "32.00",
+          "active": true,
+          "sort_order": 10
+        },
+        {
+          "code": "card-stacking-dfy",
+          "name": "Card Stacking DFY",
+          "category": "funding",
+          "default_price": "3000.00",
+          "active": true,
+          "sort_order": 20
+        },
+        {
+          "code": "consulting-package",
+          "name": "Consulting Services Package",
+          "category": "consulting",
+          "default_price": "1000.00",
+          "active": true,
+          "sort_order": 30
+        },
+        {
+          "code": "repair-bundle",
+          "name": "Credit Repair Bundle",
+          "category": "repair",
+          "default_price": "2000.00",
+          "active": true,
+          "sort_order": 40
+        },
+        {
+          "code": "inquiry-removal",
+          "name": "Inquiry Removal",
+          "category": "inquiry_removal",
+          "default_price": null,
+          "active": true,
+          "sort_order": 50
+        }
+      ]
+    },
+    "client_entitlements_table": {
+      "ok": true,
+      "sql": "SELECT table_name, column_name FROM information_schema.columns\n    WHERE table_schema='public' AND table_name LIKE '%entitlement%' ORDER BY table_name, ordinal_position",
+      "params": [],
+      "rowCount": 44,
+      "rows": [
+        {
+          "table_name": "entitlement_catalog",
+          "column_name": "id"
+        },
+        {
+          "table_name": "entitlement_catalog",
+          "column_name": "org_id"
+        },
+        {
+          "table_name": "entitlement_catalog",
+          "column_name": "code"
+        },
+        {
+          "table_name": "entitlement_catalog",
+          "column_name": "name"
+        },
+        {
+          "table_name": "entitlement_catalog",
+          "column_name": "description"
+        },
+        {
+          "table_name": "entitlement_catalog",
+          "column_name": "kind"
+        },
+        {
+          "table_name": "entitlement_catalog",
+          "column_name": "sort_order"
+        },
+        {
+          "table_name": "entitlement_catalog",
+          "column_name": "active"
+        },
+        {
+          "table_name": "entitlement_catalog",
+          "column_name": "created_at"
+        },
+        {
+          "table_name": "entitlement_catalog",
+          "column_name": "updated_at"
+        },
+        {
+          "table_name": "entitlement_catalog",
+          "column_name": "display_price_cents"
+        },
+        {
+          "table_name": "entitlements",
+          "column_name": "id"
+        },
+        {
+          "table_name": "entitlements",
+          "column_name": "org_id"
+        },
+        {
+          "table_name": "entitlements",
+          "column_name": "client_id"
+        },
+        {
+          "table_name": "entitlements",
+          "column_name": "entitlement_code"
+        },
+        {
+          "table_name": "entitlements",
+          "column_name": "source_transaction_id"
+        },
+        {
+          "table_name": "entitlements",
+          "column_name": "source_event_id"
+        },
+        {
+          "table_name": "entitlements",
+          "column_name": "granted_by"
+        },
+        {
+          "table_name": "entitlements",
+          "column_name": "grant_reason"
+        },
+        {
+          "table_name": "entitlements",
+          "column_name": "granted_at"
+        },
+        {
+          "table_name": "entitlements",
+          "column_name": "expires_at"
+        },
+        {
+          "table_name": "entitlements",
+          "column_name": "revoked_at"
+        },
+        {
+          "table_name": "entitlements",
+          "column_name": "revoked_by"
+        },
+        {
+          "table_name": "entitlements",
+          "column_name": "revoke_reason"
+        },
+        {
+          "table_name": "entitlements",
+          "column_name": "created_at"
+        },
+        {
+          "table_name": "entitlements",
+          "column_name": "updated_at"
+        },
+        {
+          "table_name": "entitlements",
+          "column_name": "is_demo"
+        },
+        {
+          "table_name": "product_entitlements",
+          "column_name": "id"
+        },
+        {
+          "table_name": "product_entitlements",
+          "column_name": "org_id"
+        },
+        {
+          "table_name": "product_entitlements",
+          "column_name": "product_code"
+        },
+        {
+          "table_name": "product_entitlements",
+          "column_name": "entitlement_code"
+        },
+        {
+          "table_name": "product_entitlements",
+          "column_name": "duration_days"
+        },
+        {
+          "table_name": "product_entitlements",
+          "column_name": "created_at"
+        },
+        {
+          "table_name": "v_client_entitlements",
+          "column_name": "org_id"
+        },
+        {
+          "table_name": "v_client_entitlements",
+          "column_name": "client_id"
+        },
+        {
+          "table_name": "v_client_entitlements",
+          "column_name": "entitlement_code"
+        },
+        {
+          "table_name": "v_client_entitlements",
+          "column_name": "entitlement_name"
+        },
+        {
+          "table_name": "v_client_entitlements",
+          "column_name": "kind"
+        },
+        {
+          "table_name": "v_client_entitlements",
+          "column_name": "sort_order"
+        },
+        {
+          "table_name": "v_client_entitlements",
+          "column_name": "granted_at"
+        },
+        {
+          "table_name": "v_client_entitlements",
+          "column_name": "expires_at"
+        },
+        {
+          "table_name": "v_client_entitlements",
+          "column_name": "revoked_at"
+        },
+        {
+          "table_name": "v_client_entitlements",
+          "column_name": "active"
+        },
+        {
+          "table_name": "v_client_entitlements",
+          "column_name": "source_transaction_id"
+        }
+      ]
+    }
+  }
+}

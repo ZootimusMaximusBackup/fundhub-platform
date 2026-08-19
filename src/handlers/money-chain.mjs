@@ -14,6 +14,13 @@
 //      closerId / advisorId). No invented owner.
 //   4. product_entitlements stays empty in migrations; grantFromTransaction
 //      no-ops when unmapped. Tests seed the mapping.
+//      SUPERSEDED IN PART, 2026-08-18: leaving it empty meant every paid
+//      purchase granted nothing, silently, in production.
+//      180_product_entitlements_seed.sql now seeds the four pairs that shipped
+//      code already answers (the portal's own MAP, offers.mjs, BUCKET_TO_CODE,
+//      015's product codes) and no others. grantFromTransaction still no-ops
+//      when unmapped — that part is unchanged and deliberate — but the no-op is
+//      no longer silent. See warnNothingUnlocked below.
 //   5. commission.earned is NOT emitted — not in CANONICAL_EVENTS yet.
 //
 // COMPLIANCE REVIEW REQUIRED: payment rails + fee/commission timing.
@@ -45,8 +52,43 @@ export const BUCKET_TO_CODE = Object.freeze({
   deposit: "card-stacking-dfy",
   success_fee: "card-stacking-dfy",
   diy: "consulting-package",
+  // 'repair' is offers.mjs' own paymentPurpose for REPAIR_DFY and REPAIR_TRIAL
+  // (src/config/offers.mjs), and 'repair-bundle' is the only product with
+  // category 'repair' (015_seed_products.sql). Without this entry a repair
+  // payment resolves to NO product, and onSaleClosedMoney's last-resort 'diy'
+  // default then files it under consulting-package — which is exactly how a
+  // repair sale ended up on the wrong product (live audit 2026-08-18). This
+  // entry only ever turns "no product" into the right one; it reroutes nothing
+  // that already resolved.
+  repair: "repair-bundle",
   unmatched: null
 });
+
+/* WHY NOTHING UNLOCKED — and why that sentence now gets written down.
+   Refusing to grant an entitlement nobody has mapped is correct and stays.
+   Doing it in silence was not: grantForPurchase returned { unmapped: true }, the
+   return value went nowhere, and "he paid, why is his portal still locked?" had
+   no readable answer. These two make it legible — a pure reason code a test can
+   assert, and one greppable line in the function log per occurrence. */
+export const NOTHING_UNLOCKED = "[money-chain] nothing unlocked";
+export const PRODUCT_ASSUMED = "[money-chain] product assumed";
+
+/** Why a purchase could grant nothing, before the mapping is even consulted.
+ *  null means "nothing in the way — go look the mapping up". */
+export function nothingUnlockedReason({ clientId, product } = {}) {
+  if (!clientId) return "no_client";
+  if (!product || !product.code) return "no_product";
+  return null;
+}
+
+function warnNothingUnlocked(event, reason, { clientId = null, productCode = null } = {}) {
+  console.warn(
+    `${NOTHING_UNLOCKED}: ${reason} ` +
+    `(event=${event?.name || "?"} org=${event?.orgId || "?"} ` +
+    `client=${clientId || "none"} product=${productCode || "none"}). ` +
+    `Money was recorded; no entitlement was granted.`
+  );
+}
 
 /** payment.received product bucket → sale_payments.kind */
 export function paymentKindFor(productBucket, sourceEvent) {
@@ -432,21 +474,45 @@ export async function writeBackEndCommissions(db, { roundId, event } = {}) {
 }
 
 async function grantForPurchase(db, event, { clientId, product } = {}) {
-  if (!clientId || !product?.code) return { unmapped: true, granted: [], skipped: [] };
+  const blocked = nothingUnlockedReason({ clientId, product });
+  if (blocked) {
+    warnNothingUnlocked(event, blocked, { clientId, productCode: product?.code || null });
+    return {
+      productCode: product?.code || null,
+      granted: [], skipped: [], unmapped: true, reason: blocked
+    };
+  }
   const p = event.payload || {};
   const transactionId = await findTransactionId(db, event.orgId, p.providerRef);
-  return grantFromTransaction(db, {
+  const out = await grantFromTransaction(db, {
     orgId: event.orgId,
     clientId,
     transactionId,
     productCode: product.code,
     sourceEventId: asUuid(event.id)
   });
+  // The mapping table said nothing about this product. Normal, never guessed at,
+  // and now readable: src/entitlements/entitlements.mjs unmappedProducts() lists
+  // every product still in this state.
+  if (out.unmapped) {
+    warnNothingUnlocked(event, out.reason || "no_mapping", {
+      clientId, productCode: out.productCode
+    });
+  }
+  return out;
 }
 
 async function recordPurchase(event, db, { productBucket, paymentKind }) {
   const { sale, product, clientId } = await ensureSale(db, event, { productBucket });
-  if (!sale) return { done: false, reason: "no_sale" };
+  if (!sale) {
+    // Money arrived and no sale row could be written, so no entitlement can be
+    // granted either. Say so once, out loud, with the two facts that explain it.
+    warnNothingUnlocked(event, "no_sale", {
+      clientId: clientId || null,
+      productCode: product?.code || null
+    });
+    return { done: false, reason: "no_sale", clientId: clientId || null };
+  }
 
   await ensureAttributions(db, {
     orgId: event.orgId,
@@ -500,6 +566,20 @@ export async function onDepositPaidMoney(event, db) {
 
 export async function onSaleClosedMoney(event, db) {
   const bucket = event.payload?.product || "diy";
+  if (!event.payload?.product) {
+    // A sale.closed carrying no product bucket gets filed under the DIY
+    // consulting package by this default, and that default is how a repair sale
+    // ended up on consulting-package (live audit 2026-08-18). Dropping the
+    // default would silently stop writing sales for the emitters that lean on
+    // it (api/dashboard/seed.mjs, scripts/demo-journey.mjs), and what a
+    // productless sale.closed means is an owner decision — so it stays, but it
+    // no longer happens quietly.
+    console.warn(
+      `${PRODUCT_ASSUMED}: sale.closed carried no product bucket; filing it as ` +
+      `'diy' → ${BUCKET_TO_CODE.diy} (org=${event?.orgId || "?"}). ` +
+      `If this was a repair or course sale it is now on the wrong product.`
+    );
+  }
   return recordPurchase(event, db, {
     productBucket: bucket,
     paymentKind: paymentKindFor(bucket, "sale.closed")
@@ -514,7 +594,16 @@ export async function onSaleClosedMoney(event, db) {
 export async function onPaymentReceivedMoney(event, db) {
   const orgId = event.orgId;
   const clientId = await resolveClient(db, event);
-  if (!orgId || !clientId) return { done: false, reason: "no_client" };
+  if (!orgId || !clientId) {
+    // The single loudest case: a real payment whose client we cannot identify.
+    // Every Commas-sourced payment event measured on 2026-08-18 landed here,
+    // because the inbox row carries no clientId and the payload email is the
+    // only fallback. Nothing is written and nothing unlocks — say which.
+    warnNothingUnlocked(event, "no_client", {
+      productCode: event.payload?.productName || event.payload?.product || null
+    });
+    return { done: false, reason: "no_client" };
+  }
 
   const p = event.payload || {};
   const bucket = p.product || null;

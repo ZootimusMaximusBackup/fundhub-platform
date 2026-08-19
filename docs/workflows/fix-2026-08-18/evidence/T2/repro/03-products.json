@@ -1,0 +1,132 @@
+{
+  "collectedAt": "2026-08-19T02:56:44.066Z",
+  "database": "live production (Supabase, project ref oqpnlusrotpxfenysfxz)",
+  "access": "READ ONLY — every statement ran inside BEGIN READ ONLY and passed a SELECT-only guard",
+  "testClient": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "protectedClientNeverWritten": "9af65808-a619-4e65-ae91-239766a006b7 (read as metadata only, never modified)",
+  "check": "3. products: DISTINCT code",
+  "claim": "5 codes, no $200 repair-trial",
+  "verdict": "CONFIRMED",
+  "distinctCodes": [
+    "card-stacking-dfy",
+    "consulting-package",
+    "diagnostic",
+    "inquiry-removal",
+    "repair-bundle"
+  ],
+  "detail": [
+    {
+      "code": "diagnostic",
+      "name": "$32 Diagnostic",
+      "category": "diagnostic",
+      "default_price": "32.00",
+      "active": true,
+      "sort_order": 10
+    },
+    {
+      "code": "card-stacking-dfy",
+      "name": "Card Stacking DFY",
+      "category": "funding",
+      "default_price": "3000.00",
+      "active": true,
+      "sort_order": 20
+    },
+    {
+      "code": "consulting-package",
+      "name": "Consulting Services Package",
+      "category": "consulting",
+      "default_price": "1000.00",
+      "active": true,
+      "sort_order": 30
+    },
+    {
+      "code": "repair-bundle",
+      "name": "Credit Repair Bundle",
+      "category": "repair",
+      "default_price": "2000.00",
+      "active": true,
+      "sort_order": 40
+    },
+    {
+      "code": "inquiry-removal",
+      "name": "Inquiry Removal",
+      "category": "inquiry_removal",
+      "default_price": null,
+      "active": true,
+      "sort_order": 50
+    }
+  ],
+  "note": "No repair-trial / $200 product row exists. The closest row is repair-bundle at default_price 2000.00 ($2,000), which is a different offer from the $200 REPAIR_TRIAL in src/config/offers.mjs. A payment_links row for 'Repair test run (first round, done for you)' at 20000 cents DOES exist, so the pay link is sellable while the product it names is not in the catalog.",
+  "productAliases": [
+    {
+      "alias": "Card Stacking",
+      "source": "legacy",
+      "product_id": "c087bdd2-0314-46b7-88f6-dc5c54b46a63"
+    },
+    {
+      "alias": "$3000 deposit",
+      "source": "legacy",
+      "product_id": "c087bdd2-0314-46b7-88f6-dc5c54b46a63"
+    },
+    {
+      "alias": "Consulting Services Deposit",
+      "source": "commas",
+      "product_id": "c087bdd2-0314-46b7-88f6-dc5c54b46a63"
+    },
+    {
+      "alias": "Consulting Success Fee",
+      "source": "commas",
+      "product_id": "c087bdd2-0314-46b7-88f6-dc5c54b46a63"
+    },
+    {
+      "alias": "$2,000 credit repair bundle",
+      "source": "legacy",
+      "product_id": "0e4087cf-4a2f-4af4-b1a9-ce2f6319bdaa"
+    },
+    {
+      "alias": "$32 diagnostic",
+      "source": "legacy",
+      "product_id": "97593dbe-50b1-4830-a119-81b14915b006"
+    },
+    {
+      "alias": "Inquiry Removal Service",
+      "source": "legacy",
+      "product_id": "b5466f67-73ca-4a22-817b-a9d6dc3f0c0a"
+    },
+    {
+      "alias": "$2000 credit repair bundle",
+      "source": "legacy",
+      "product_id": "0e4087cf-4a2f-4af4-b1a9-ce2f6319bdaa"
+    },
+    {
+      "alias": "Diagnostic",
+      "source": "legacy",
+      "product_id": "97593dbe-50b1-4830-a119-81b14915b006"
+    },
+    {
+      "alias": "Consulting Services Package",
+      "source": "commas",
+      "product_id": "29809c86-347f-4c09-87e5-04f6420ac9e9"
+    },
+    {
+      "alias": "$3,000 deposit",
+      "source": "legacy",
+      "product_id": "c087bdd2-0314-46b7-88f6-dc5c54b46a63"
+    },
+    {
+      "alias": "Credit Repair",
+      "source": "legacy",
+      "product_id": "0e4087cf-4a2f-4af4-b1a9-ce2f6319bdaa"
+    },
+    {
+      "alias": "32 diagnostic",
+      "source": "legacy",
+      "product_id": "97593dbe-50b1-4830-a119-81b14915b006"
+    },
+    {
+      "alias": "Business Financial Assessment",
+      "source": "commas",
+      "product_id": "97593dbe-50b1-4830-a119-81b14915b006"
+    }
+  ]
+}

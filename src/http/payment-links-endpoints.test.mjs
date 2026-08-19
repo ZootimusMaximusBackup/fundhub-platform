@@ -23,16 +23,27 @@ const CHECKOUT_BASE = "https://pay.commas.io/c/onboarding";
 
 let savedQuery = null;
 let savedEnv = null;
+let savedKey = null;
 beforeEach(() => {
   savedQuery = db.query;
   savedEnv = process.env.COMMAS_CHECKOUT_BASE_URL;
   process.env.COMMAS_CHECKOUT_BASE_URL = CHECKOUT_BASE;
+  /* REAL-MONEY GUARD. "create" now reaches the live checkout-session API when
+     FANBASIS_CHECKOUT_API_KEY is present, and that call mints a REAL, payable
+     Commas session. `npm test` does not load .env, but a developer who sourced
+     it into their shell would have the key exported for the whole run. So the
+     key is removed for every test here and restored after. Belt; the braces
+     are the `noNetwork` fetch below. */
+  savedKey = process.env.FANBASIS_CHECKOUT_API_KEY;
+  delete process.env.FANBASIS_CHECKOUT_API_KEY;
   clearHandlers(); // sendTemplated's message.queued emit must not reach a stray handler from another suite
 });
 afterEach(() => {
   db.query = savedQuery;
   if (savedEnv === undefined) delete process.env.COMMAS_CHECKOUT_BASE_URL;
   else process.env.COMMAS_CHECKOUT_BASE_URL = savedEnv;
+  if (savedKey === undefined) delete process.env.FANBASIS_CHECKOUT_API_KEY;
+  else process.env.FANBASIS_CHECKOUT_API_KEY = savedKey;
 });
 
 const makeRes = () => ({
@@ -92,12 +103,20 @@ function stubDb({ role = "owner", orgId = ORG_A, authenticated = true, ownsClien
   return queries;
 }
 
+/* A fetch that refuses. No test in this file may reach the network — the mint
+   path posts real money requests to a real payment processor. A test that
+   wants the mint branch hands in its own fetchImpl. */
+const noNetwork = async (url) => {
+  throw new Error(`test stub: refused a live request to ${String(url)}`);
+};
+
 async function call(opts = {}) {
-  const { method = "GET", query = {}, body = undefined, ...rest } = opts;
+  const { method = "GET", query = {}, body = undefined, env, fetchImpl = noNetwork, ...rest } = opts;
   const queries = stubDb(rest);
   const res = makeRes();
   const req = { method, headers: { authorization: "Bearer session-token" }, query, body };
-  const thrown = await paymentLinks(req, res).then(() => null, (e) => e);
+  const deps = { env: env ?? process.env, fetchImpl };
+  const thrown = await paymentLinks(req, res, deps).then(() => null, (e) => e);
   return { status: res.statusCode, body: res.body, headers: res.headers, queries, thrown };
 }
 
@@ -165,11 +184,58 @@ describe("POST /api/payment-links — create", () => {
     assert.deepEqual(r.queries, []);
   });
 
-  test("no COMMAS_CHECKOUT_BASE_URL configured means 503, not an invented link", async () => {
-    delete process.env.COMMAS_CHECKOUT_BASE_URL;
-    const r = await create({ purpose: "deposit", price: "25.00" });
+  /* These two replace a single older test, "no COMMAS_CHECKOUT_BASE_URL
+     configured means 503, not an invented link", which asserted the defect:
+     it locked in a 503 whenever the base URL was missing, even though the
+     FanBasis API key alone is enough to mint a link. Refusing to invent a link
+     is still asserted — in (a), where there really is no way to build one. */
+
+  test("neither checkout setting configured means 503, not an invented link", async () => {
+    const r = await create({ purpose: "deposit", price: "25.00" }, { env: {} });
     assert.equal(r.status, 503);
     assert.equal(r.body.error, "commas_not_configured");
+    assert.equal(ran(r.queries, "linksInsert").length, 0);
+  });
+
+  test("the FanBasis API key alone is enough — no COMMAS_CHECKOUT_BASE_URL needed", async () => {
+    const seen = [];
+    const fetchImpl = async (url, opts) => {
+      seen.push({ url: String(url), body: JSON.parse(opts.body), apiKey: opts.headers["x-api-key"] });
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({
+          data: { id: "N1test", payment_link: "https://www.fanbasis.com/agency-checkout/x/N1test" }
+        })
+      };
+    };
+    const r = await create({ purpose: "deposit", price: "25.00" }, {
+      env: { FANBASIS_CHECKOUT_API_KEY: "fb-key" },
+      fetchImpl
+    });
+    assert.notEqual(r.status, 503, "the API key was set and the endpoint still refused");
+    assert.equal(r.status, 200);
+    assert.equal(seen.length, 1, "the checkout-session API was never called");
+    assert.equal(seen[0].apiKey, "fb-key");
+    assert.equal(seen[0].body.amount_cents, 2500);
+    // The row records what the provider actually returned. Nothing is invented.
+    const ins = ran(r.queries, "linksInsert")[0];
+    assert.ok(ins, "no payment_links row was written");
+    assert.equal(ins.params[7], "https://www.fanbasis.com/agency-checkout/x/N1test");
+    assert.equal(ins.params[9], "N1test");
+  });
+
+  test("a checkout provider that refuses is a 502 the CRM can read, not a 500", async () => {
+    const fetchImpl = async () => ({
+      ok: false, status: 500, text: async () => JSON.stringify({ message: "upstream on fire" })
+    });
+    const r = await create({ purpose: "deposit", price: "25.00" }, {
+      env: { FANBASIS_CHECKOUT_API_KEY: "fb-key" },
+      fetchImpl
+    });
+    assert.equal(r.thrown, null, "the provider error escaped the handler and became a generic 500");
+    assert.equal(r.status, 502);
+    assert.equal(r.body.error, "commas_checkout_failed");
     assert.equal(ran(r.queries, "linksInsert").length, 0);
   });
 
@@ -223,7 +289,26 @@ describe("POST /api/payment-links — create", () => {
     assert.equal(ran(r.queries, "linksInsert").length, 0);
   });
 
-  for (const role of ["closer", "setter", "funding_advisor", "client"]) {
+  /* A closer CAN create. They already mint links through api/closer-deck.mjs
+     (send_pay_link / send_soft_pull), so refusing them here only closed the
+     CRM's own button to the one person whose job is taking payment on the
+     call. Creating is where that stops: sending the ask by SMS and expiring a
+     live ask stay on ROLE_SETS.FINANCE, asserted in the send block below. */
+  test("a closer can create a payment link for a client their own org owns", async () => {
+    const r = await create({ purpose: "deposit", price: "25.00" }, { role: "closer" });
+    assert.equal(r.status, 200, "a closer was refused the create action");
+    assert.equal(ran(r.queries, "linksInsert").length, 1);
+    const ins = ran(r.queries, "linksInsert")[0];
+    assert.equal(ins.params[0], ORG_A, "the link was not filed under the closer's own org");
+  });
+
+  test("a closer still cannot create a link for a client another org owns", async () => {
+    const r = await create({ purpose: "deposit", price: "25.00" }, { role: "closer", ownsClient: false });
+    assert.equal(r.status, 403);
+    assert.equal(ran(r.queries, "linksInsert").length, 0);
+  });
+
+  for (const role of ["setter", "funding_advisor", "inquiry_specialist", "client"]) {
     test(`a ${role} cannot create a payment link`, async () => {
       const r = await create({ purpose: "deposit", price: "25.00" }, { role });
       assert.equal(r.status, 403);
@@ -302,6 +387,12 @@ describe("POST /api/payment-links — expire", () => {
   test("an unknown link is a 404", async () => {
     const r = await expire({ handlers: { linksGetOne: { rows: [] } } });
     assert.equal(r.status, 404);
+  });
+
+  test("a closer cannot expire a link — creating is the only action they gained", async () => {
+    const r = await expire({ role: "closer" });
+    assert.equal(r.status, 403);
+    assert.deepEqual(r.queries, []);
   });
 });
 

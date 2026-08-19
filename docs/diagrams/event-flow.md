@@ -169,7 +169,7 @@ flowchart LR
 | `invoice.paid` | commission + billing | — | 0 |
 | `invoice.voided` | commission + billing | — | 0 |
 | `contract.sent` | contracts | — | 0 |
-| `contract.signed` | contracts | — | 0 |
+| `contract.signed` | contracts | `onContractSigned` | 0 |
 | `repair.enrolled` | credit repair | — | 0 |
 | `repair.docs.needed` | credit repair | — | 0 |
 | `repair.docs.complete` | credit repair | — | 0 |

@@ -1,0 +1,196 @@
+{
+  "agent": "T2 reproduce agent (step 1)",
+  "collectedAt": "2026-08-18",
+  "database": "live production Supabase (project ref oqpnlusrotpxfenysfxz)",
+  "access": "READ ONLY — every statement ran inside BEGIN READ ONLY behind a SELECT-only guard. No INSERT/UPDATE/DELETE/DDL was issued. No application code was written.",
+  "testClient": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "protectedClient": "9af65808-a619-4e65-ae91-239766a006b7 — appeared in read results as metadata only; never written, never used as a test subject",
+  "headline": "17 of 17 items checked. 16 still reproduce outright. 1 (T2-06) is confirmed at the database level but its live-UI half could not be exercised from a read-only session. Nothing was already fixed.",
+
+  "items": [
+    {
+      "item": "T2-04",
+      "stillReproduces": true,
+      "evidenceFile": "04-payment-links-test-client.json",
+      "oneLineFinding": "Still 503 live, and the cause is a code defect rather than only a missing setting: api/payment-links.mjs:110-116 refuses the request whenever COMMAS_CHECKOUT_BASE_URL is unset, even though the function it guards prefers a different route that mints a checkout session from the API key that IS set — so the endpoint is stricter than the code behind it.",
+      "corroboration": "A parallel live-probe agent writing into this same folder captured the live 503 at 2026-08-19T02:46:57Z with the exact message 'COMMAS_CHECKOUT_BASE_URL is not set — no checkout link can be built' (live-before-payment-links.json). That file was not collected by this agent; it is cited, not vouched for."
+    },
+    {
+      "item": "T2-05",
+      "stillReproduces": true,
+      "evidenceFile": "11-code-root-causes.json",
+      "oneLineFinding": "The Client Control Panel still has no way to create a pay link — a case-insensitive grep for 'payment-link', 'pay link', 'paymentLink' and 'create.*pay' across public/app/client-control-panel.html returns zero matches, so there is not even a disabled button."
+    },
+    {
+      "item": "T2-06",
+      "stillReproduces": "needs-live-ui",
+      "evidenceFile": "01-product-entitlements.json",
+      "oneLineFinding": "The unlock half is confirmed dead — product_entitlements is empty, entitlements holds nothing for the test client and v_client_entitlements returns no rows for them — but whether pressing Sign still writes a consent row and still unlocks nothing has to be re-walked in the live portal."
+    },
+    {
+      "item": "T2-07",
+      "stillReproduces": true,
+      "evidenceFile": "02-entitlement-catalog.json",
+      "oneLineFinding": "All 5 entitlement_catalog rows still have display_price_cents NULL, and migration 171 that added the column is confirmed applied — so this is an unfilled column, not a missing one."
+    },
+    {
+      "item": "T2-08",
+      "stillReproduces": true,
+      "evidenceFile": "01-product-entitlements.json",
+      "oneLineFinding": "product_entitlements still holds exactly 0 rows, so no purchase of any product can unlock any tile."
+    },
+    {
+      "item": "T2-09",
+      "stillReproduces": true,
+      "evidenceFile": "11-code-root-causes.json",
+      "oneLineFinding": "Title matching runs off product_aliases, and none of the current checkout titles ('UnderwriteIQ soft-pull assessment', 'Credit repair, done-for-you', 'Repair test run…') has an alias row — only the legacy 'Business Financial Assessment' does, which is exactly why it is the only title that ever produced a diagnostic.paid."
+    },
+    {
+      "item": "T2-10",
+      "stillReproduces": true,
+      "evidenceFile": "02-entitlement-catalog.json",
+      "oneLineFinding": "entitlement_catalog still has 5 codes while public/app/client-portal.html's MAP still has 6 tile keys, so one tile has no product behind it."
+    },
+    {
+      "item": "T2-12",
+      "stillReproduces": true,
+      "evidenceFile": "03-products.json",
+      "oneLineFinding": "The credit-repair sale ee7b9598 is still filed against product code consulting-package instead of repair-bundle, and repair-bundle does exist as a product, so the wrong row is being chosen rather than a missing one."
+    },
+    {
+      "item": "T2-13",
+      "stillReproduces": true,
+      "evidenceFile": "03-products.json",
+      "oneLineFinding": "There is still no $200 product — the 5 product codes are diagnostic, card-stacking-dfy, consulting-package, repair-bundle ($2,000) and inquiry-removal — even though a payment_links row for 'Repair test run' at 20000 cents already exists."
+    },
+    {
+      "item": "T2-14",
+      "stillReproduces": true,
+      "evidenceFile": "11-code-root-causes.json",
+      "oneLineFinding": "REPAIR_DFY and REPAIR_TRIAL still both map to 'metro2-letter-pack' at public/app/client-portal.html lines 1329 and 1330, so a $200 trial would open the $1,000 deliverable."
+    },
+    {
+      "item": "T2-15",
+      "stillReproduces": true,
+      "evidenceFile": "11-code-root-causes.json",
+      "oneLineFinding": "FUNDING_MASTERY still maps to null at public/app/client-portal.html line 1332, so the $5,000 tile has no rule that can ever turn it on."
+    },
+    {
+      "item": "T2-17",
+      "stillReproduces": true,
+      "evidenceFile": "11-code-root-causes.json",
+      "oneLineFinding": "src/register-all.mjs still subscribes nothing to contract.signed — the word 'contract' does not appear in the file at all — while src/contracts/sign.mjs:515 emits the event and 5 contract.signed rows sit in the events table with nothing having acted on them."
+    },
+    {
+      "item": "T2-18",
+      "stillReproduces": true,
+      "evidenceFile": "05-events-grouped.json",
+      "oneLineFinding": "Every one of the 9 real (source='commas') payment events still has client_id NULL — the rows that appear to have a client are all the previous audit's own w16-sim simulations — but the payloads do carry an email and often a ref that resolves through payment_links.link_ref, and all 40 payment_links rows have a non-null client_id, so a real resolution path exists."
+    },
+    {
+      "item": "T2-19",
+      "stillReproduces": true,
+      "evidenceFile": "11-code-root-causes.json",
+      "oneLineFinding": "Draft 8988b582 is still an unvoided draft, and the cause is the check constraint contracts_sent_has_artifact_ck: voiding flips status off 'draft', which then demands body_sha, sent_at and rendered_body be present — all three are NULL on a never-sent draft, so the UPDATE fails and surfaces as 500 write_failed."
+    },
+    {
+      "item": "T2-22",
+      "stillReproduces": true,
+      "evidenceFile": "01-product-entitlements.json",
+      "oneLineFinding": "Paid events still unlock nothing — the simulated payments wrote 3 sales rows for the test client, yet product_entitlements stayed empty and the client holds no entitlements in either the entitlements table or the v_client_entitlements view."
+    },
+    {
+      "item": "T2-23",
+      "stillReproduces": true,
+      "evidenceFile": "09-clients-crs-column.json",
+      "oneLineFinding": "There is still no crs_paid column on clients — zero columns match '%crs%' — and the flag lives only inside the custom_fields jsonb blob, where it is set for just 2 clients."
+    },
+    {
+      "item": "T2-24",
+      "stillReproduces": true,
+      "evidenceFile": "07-documents-not-delivered.json",
+      "oneLineFinding": "Signed copies are still never delivered — all 4 not_delivered documents are '(signed)' copies, and the pattern repeats exactly per contract: the original goes out with delivery_status 'sent' while the countersigned copy is created as 'not_delivered' and never picked up again."
+    }
+  ],
+
+  "alreadyFixed": [],
+
+  "blockers": [
+    {
+      "blocks": "T2-01",
+      "problem": "There is no safe contract to test the chase reminder against. Only 3 contracts in the whole table are in status sent or viewed, and all 3 belong to the protected live credit file 9af65808. Every contract on the test client is either signed or a never-sent draft.",
+      "needed": "A builder must create AND send a fresh contract on test client 8556bedc and leave it unsigned before the reminder path can be proven. That is a write, so it was out of scope here.",
+      "evidenceFile": "08-contracts-test-client.json"
+    }
+  ],
+
+  "correctionsToTheBrief": [
+    {
+      "briefClaim": "events: every payment event has client_id NULL",
+      "reality": "True for real payments, but a plain GROUP BY does not show it. 8 rows carry a client_id and every one of them is a prior audit's synthetic row (payload.source='w16-sim' or 'audit-fire') that passed the client_id in by hand. Filtering to payload.source='commas' gives 9 real payment events, 0 with a client_id. Any test or query written against the naive count will read the defect as half-fixed when it is not.",
+      "evidenceFile": "05-events-grouped.json"
+    },
+    {
+      "briefClaim": "payment_links WHERE client_id = test client — claim: 0 rows",
+      "reality": "Correct for the test client, but the table holds 40 rows, all created 2026-08-16, all provider='commas', all with a checkout_url, and all with a non-null client_id. The create path provably worked 2 days before the 503 was observed.",
+      "evidenceFile": "04-payment-links-test-client.json"
+    },
+    {
+      "briefClaim": "schema_migrations: SELECT name",
+      "reality": "There is no 'name' column — schema_migrations is (key, applied_at). Highest applied is migrations/176_company_brain_upload_reviews.sql, so a new migration for this batch must be 177 or higher.",
+      "evidenceFile": "10-schema-migrations.json"
+    },
+    {
+      "briefClaim": "products: 5 codes, no $200 repair-trial",
+      "reality": "Confirmed, with a nuance worth carrying: repair-bundle exists at default_price 2000.00, which is $2,000 and NOT the $200 REPAIR_TRIAL. Anyone skim-reading '2000' as the trial price will map the wrong product.",
+      "evidenceFile": "03-products.json"
+    }
+  ],
+
+  "questions": [
+    {
+      "item": "T2-13 / T2-14",
+      "question": "Which entitlement should the $200 REPAIR_TRIAL unlock? It currently shares 'metro2-letter-pack' with the $1,000 REPAIR_DFY. No doc, migration, code comment or catalog row records a distinct entitlement for the trial, and entitlement_catalog has no spare code for it. Inventing one would be inventing product policy.",
+      "blocking": "Any fix to T2-14 that is more than removing the duplicate mapping."
+    },
+    {
+      "item": "T2-15",
+      "question": "Which entitlement should the $5,000 FUNDING_MASTERY tile unlock? Its mapping is explicitly null and the 5 catalog codes are all already claimed by other tiles. The 6th code does not exist anywhere.",
+      "blocking": "T2-15 and the 6-tiles-vs-5-codes half of T2-10."
+    },
+    {
+      "item": "T2-07",
+      "question": "What price should each of the 5 entitlement_catalog rows display? The column is applied and empty; no doc records the intended per-entitlement display prices. src/config/offers.mjs prices are per-OFFER, not per-entitlement, and the two do not map one-to-one.",
+      "blocking": "Filling display_price_cents with defensible values."
+    },
+    {
+      "item": "T2-20",
+      "question": "Should a closer be allowed to create a pay link? The 403 is deliberate — ROLE_SETS.FINANCE is {owner, admin, sales_manager} and closer is excluded, while closer IS in ROLE_SETS.STAFF. The audit calls this broken, but widening a role set on a regulated money path is a policy call, not a bug fix.",
+      "blocking": "T2-20."
+    }
+  ],
+
+  "crossLinks": [
+    {
+      "connects": "T2-04 and T2-18",
+      "insight": "These two are the same defect seen from both ends. src/payment-links/index.mjs has two ways to build a checkout: the preferred one mints a Commas session and passes metadata {link_ref, client_id, org_id}, and the fallback just builds a URL from COMMAS_CHECKOUT_BASE_URL and passes no metadata at all. All 40 existing links were made by the fallback, which is precisely why their payment events come back carrying only a bare ref and no client id. Fixing T2-04 by making the mint path reachable would also give the webhook a client_id to read, which is the cleanest available fix for T2-18. Fixing T2-04 by merely setting COMMAS_CHECKOUT_BASE_URL would restore payments while leaving every future payment event orphaned.",
+      "evidenceFile": "11-code-root-causes.json"
+    }
+  ],
+
+  "filesInThisFolderNotWrittenByThisAgent": [
+    "live-before-payment-links.json",
+    "T2-05-no-pay-button.json",
+    "t2-ccp/",
+    "NOTE: a parallel live-probe agent wrote these into this folder while this read-only pass was running. They independently confirm T2-04 (503), T2-20 (403, 'limited to owner, admin, sales_manager') and T2-05 (36 controls on the Client Control Panel, none of them a payment control). They were left untouched."
+  ],
+
+  "boardRequests": [],
+
+  "safetyNotes": [
+    "Only SELECT statements were executed, all inside BEGIN READ ONLY, all through a guard that rejected non-SELECT text and any statement referencing the protected client id.",
+    "No card was charged, no bureau called, no SMS sent, no env var set, no migration applied.",
+    "The protected client 9af65808 appears in read output (it owns 3 of the sent contracts, 1 not_delivered document and 1 sale). It was never written to and never used as a test subject.",
+    "Files written are confined to docs/workflows/fix-2026-08-18/evidence/T2/repro/."
+  ]
+}

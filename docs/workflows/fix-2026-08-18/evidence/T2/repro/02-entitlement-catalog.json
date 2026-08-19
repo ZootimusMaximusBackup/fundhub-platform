@@ -1,0 +1,102 @@
+{
+  "collectedAt": "2026-08-19T02:56:44.066Z",
+  "database": "live production (Supabase, project ref oqpnlusrotpxfenysfxz)",
+  "access": "READ ONLY — every statement ran inside BEGIN READ ONLY and passed a SELECT-only guard",
+  "testClient": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "protectedClientNeverWritten": "9af65808-a619-4e65-ae91-239766a006b7 (read as metadata only, never modified)",
+  "check": "2. entitlement_catalog: code, name, display_price_cents, sort_order",
+  "claim": "5 codes, display_price_cents all NULL",
+  "verdict": "CONFIRMED",
+  "count": 5,
+  "rows": [
+    {
+      "code": "credit-analysis-report",
+      "name": "Credit Analysis Report",
+      "display_price_cents": null,
+      "sort_order": 10
+    },
+    {
+      "code": "credit-optimization-roadmap",
+      "name": "Credit Optimization Roadmap",
+      "display_price_cents": null,
+      "sort_order": 20
+    },
+    {
+      "code": "funding-snapshot",
+      "name": "Funding Snapshot",
+      "display_price_cents": null,
+      "sort_order": 30
+    },
+    {
+      "code": "bank-lender-match-list",
+      "name": "Bank and Lender Match List",
+      "display_price_cents": null,
+      "sort_order": 40
+    },
+    {
+      "code": "metro2-letter-pack",
+      "name": "Metro 2 Dispute Letter Pack",
+      "display_price_cents": null,
+      "sort_order": 50
+    }
+  ],
+  "allDisplayPricesNull": true,
+  "columns": [
+    {
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "org_id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "code",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "name",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "description",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "kind",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "sort_order",
+      "data_type": "integer",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "active",
+      "data_type": "boolean",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "display_price_cents",
+      "data_type": "integer",
+      "is_nullable": "YES"
+    }
+  ],
+  "note": "display_price_cents was added by migrations/171_content.sql (applied 2026-08-17T22:14:42.061Z) and has never been filled on any of the 5 rows. NULL here means unknown price, not free."
+}

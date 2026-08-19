@@ -1,0 +1,19 @@
+=== T2 AFTER-state — /tmp/wt-T2, live DATABASE_URL, 2026-08-18 ===
+
+--- failing tests (compare to BASELINE.md: same 3, all pre-existing) ---
+    not ok 5 - *** no route's gate is left unverified ***
+not ok 33 - the extraction is faithful to the code
+not ok 2163 - an endpoint excused from the org filter still passes the session's org to its store
+not ok 3218 - DATABASE_URL is present and checkable
+
+--- unverified routes (neither is payment-links) ---
+        0: 'finance/crs-pull: a gate is referenced but its shape was not recognised'
+        1: 'gifts/message-blaster: a gate is referenced but its shape was not recognised'
+
+--- totals ---
+# tests 5700
+# suites 424
+# pass 5694
+# fail 3
+# cancelled 0
+# skipped 3

@@ -10,7 +10,7 @@ import { db, close } from "../db.mjs";
 import { emit, replay, _resetOrgCache } from "../events/bus.mjs";
 import { clearHandlers } from "../events/registry.mjs";
 import { register as registerLifecycle } from "./client-lifecycle.mjs";
-import { register as registerMoneyChain } from "./money-chain.mjs";
+import { register as registerMoneyChain, onPaymentReceivedMoney } from "./money-chain.mjs";
 import { createSession } from "../auth/session.mjs";
 import { resolveDefaultOrg } from "../auth/org.mjs";
 
@@ -53,12 +53,11 @@ describe("money-chain writers", { skip: !HAS_DB ? "no DATABASE_URL" : false }, (
     if (frontRuleId) {
       await db.query(`DELETE FROM commission_rules WHERE id = ANY($1)`, [[frontRuleId, backRuleId].filter(Boolean)]);
     }
-    if (org) {
-      await db.query(
-        `DELETE FROM product_entitlements WHERE org_id = $1 AND product_code IN ('diagnostic','consulting-package','card-stacking-dfy')`,
-        [org]
-      );
-    }
+    /* The product→entitlement mapping is NOT wiped any more. It used to be a
+       test fixture this file inserted and deleted; since
+       180_product_entitlements_seed.sql it is shipped configuration, and
+       deleting it here would strip real config out of whatever database
+       DATABASE_URL points at. */
     await db.query(`DELETE FROM staff WHERE email LIKE $1`, [`${MARK}%`]);
   }
 
@@ -114,15 +113,27 @@ describe("money-chain writers", { skip: !HAS_DB ? "no DATABASE_URL" : false }, (
       [org, fundingProductId]
     )).rows[0].id;
 
-    await db.query(
-      `INSERT INTO product_entitlements (org_id, product_code, entitlement_code)
-       VALUES
-         ($1, 'diagnostic', 'credit-analysis-report'),
-         ($1, 'consulting-package', 'metro2-letter-pack'),
-         ($1, 'card-stacking-dfy', 'funding-snapshot')
-       ON CONFLICT DO NOTHING`,
+    /* WAS: this file inserted its own three-pair mapping, so the grant tests
+       below passed against a fixture while production granted nothing. The
+       mapping is shipped configuration now
+       (180_product_entitlements_seed.sql); read it instead of writing it, and
+       fail loudly rather than silently re-creating it. */
+    const mapping = (await db.query(
+      `SELECT product_code, entitlement_code FROM product_entitlements WHERE org_id = $1`,
       [org]
-    );
+    )).rows.map((r) => `${r.product_code}→${r.entitlement_code}`);
+    for (const pair of [
+      "diagnostic→credit-analysis-report",
+      "consulting-package→metro2-letter-pack",
+      "card-stacking-dfy→funding-snapshot"
+    ]) {
+      if (!mapping.includes(pair)) {
+        throw new Error(
+          `product_entitlements is missing ${pair}. ` +
+          `Apply db/migrations/180_product_entitlements_seed.sql before running these tests.`
+        );
+      }
+    }
 
     const owner = (await db.query(
       `SELECT id, org_id FROM staff WHERE org_id = $1 AND role = 'owner' LIMIT 1`, [org]
@@ -396,6 +407,79 @@ describe("money-chain writers", { skip: !HAS_DB ? "no DATABASE_URL" : false }, (
     assert.equal(
       (await db.query(`SELECT count(*)::int n FROM sale_payments WHERE sale_id = $1`, [sale.id])).rows[0].n,
       nBefore
+    );
+  });
+
+  /* ── money landed → something opened, and when it does not, why not ──
+     These are the tests the live audit of 2026-08-18 wanted: paid sales existed
+     and the client held zero entitlements, because product_entitlements was
+     empty and the refusal to guess was invisible. */
+
+  test("a paid purchase unlocks the mapped deliverable exactly once, replay included", async () => {
+    const email = `${MARK}.grant@example.com`;
+    await emit(db, "diagnostic.paid", {
+      email, product: "crs", productName: "Business Financial Assessment",
+      amount: 32, providerRef: `${MARK}_grant_1`, source: "commas"
+    }, { orgId: org, idempotencyKey: `${MARK}:grant-diag` });
+
+    const client = (await db.query(`SELECT id FROM clients WHERE email = $1`, [email])).rows[0];
+    assert.ok(client, "the payment created the client");
+
+    const held = async () => (await db.query(
+      `SELECT count(*)::int n FROM entitlements
+        WHERE client_id = $1 AND entitlement_code = 'credit-analysis-report'
+          AND revoked_at IS NULL`,
+      [client.id]
+    )).rows[0].n;
+
+    assert.equal(await held(), 1, "paying for the diagnostic must unlock the report");
+
+    await replay(db, {});
+    assert.equal(await held(), 1, "a replayed webhook must not grant a second time");
+  });
+
+  test("a payment we cannot pin to a client refuses and names the reason", async () => {
+    const out = await onPaymentReceivedMoney(
+      { id: null, name: "payment.received", orgId: org, payload: { amount: 100 } },
+      db
+    );
+    assert.equal(out.done, false);
+    assert.equal(out.reason, "no_client");
+  });
+
+  test("an unmapped product grants nothing and names WHICH gap it hit", async () => {
+    const email = `${MARK}.unmapped@example.com`;
+    // ghl_contact_id preset so the lifecycle backfill has nothing to sync.
+    const clientId = (await db.query(
+      `INSERT INTO clients (org_id, email, first_name, last_name, ghl_contact_id)
+       VALUES ($1,$2,$3,'Unmapped',$4) RETURNING id`,
+      [org, email, MARK, `dry-${MARK}-unmapped`]
+    )).rows[0].id;
+
+    // 'Inquiry Removal' is a real product. 180 deliberately does NOT map it,
+    // because no shipped code says what an inquiry removal delivers.
+    const unmapped = await onPaymentReceivedMoney({
+      id: null, name: "payment.received", orgId: org, clientId,
+      payload: { productName: "Inquiry Removal", amount: 500, providerRef: `${MARK}_inq_1` }
+    }, db);
+    assert.equal(unmapped.entitlements.unmapped, true);
+    assert.equal(unmapped.entitlements.reason, "no_mapping");
+    assert.equal(unmapped.entitlements.productCode, "inquiry-removal");
+
+    // A name that matches no product at all is a different gap, and says so.
+    const noProduct = await onPaymentReceivedMoney({
+      id: null, name: "payment.received", orgId: org, clientId,
+      payload: { productName: "Nothing We Sell", amount: 10, providerRef: `${MARK}_np_1` }
+    }, db);
+    assert.equal(noProduct.entitlements.unmapped, true);
+    assert.equal(noProduct.entitlements.reason, "no_product");
+
+    assert.equal(
+      (await db.query(
+        `SELECT count(*)::int n FROM entitlements WHERE client_id = $1`, [clientId]
+      )).rows[0].n,
+      0,
+      "nothing may be granted on a guess"
     );
   });
 });

@@ -1,0 +1,33 @@
+{
+  "collectedAt": "2026-08-19T02:56:44.066Z",
+  "database": "live production (Supabase, project ref oqpnlusrotpxfenysfxz)",
+  "access": "READ ONLY — every statement ran inside BEGIN READ ONLY and passed a SELECT-only guard",
+  "testClient": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "protectedClientNeverWritten": "9af65808-a619-4e65-ae91-239766a006b7 (read as metadata only, never modified)",
+  "check": "9. does clients.crs_paid exist?",
+  "claim": "MISSING, only custom_fields json",
+  "verdict": "CONFIRMED",
+  "crsLikeColumnsOnClients": [],
+  "crsLikeColumnCount": 0,
+  "paidOrCustomColumnsOnClients": [
+    {
+      "column_name": "custom_fields",
+      "data_type": "jsonb"
+    }
+  ],
+  "customFieldsCrsPaidRows": [
+    {
+      "id": "9af65808-a619-4e65-ae91-239766a006b7",
+      "crs_paid": true,
+      "isTestClient": false,
+      "isProtectedClient": true
+    },
+    {
+      "id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "crs_paid": true,
+      "isTestClient": true,
+      "isProtectedClient": false
+    }
+  ],
+  "note": "Zero columns on clients match '%crs%'. The only place a paid flag lives is clients.custom_fields (jsonb), where crs_paid=true is set for exactly 2 clients — the test client and the protected client. A separate wide table client_custom_fields also exists (309 columns, 20 rows); it is a different surface and is not what the paid flag is written to."
+}

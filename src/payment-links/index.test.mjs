@@ -84,6 +84,18 @@ function fakeDb() {
   };
 }
 
+/* REAL-MONEY GUARD. createPaymentLink defaults `env` to process.env and
+   `fetchImpl` to the global fetch, and it PREFERS the live checkout-session
+   API whenever FANBASIS_CHECKOUT_API_KEY is present. A developer who sourced
+   .env into their shell would therefore have these tests POST to
+   www.fanbasis.com and mint real, payable checkout sessions. Every call below
+   goes through `mint`, which names an empty env and a fetch that refuses; the
+   one test that wants the mint branch overrides both explicitly. */
+const noNetwork = async (url) => {
+  throw new Error(`test stub: refused a live request to ${String(url)}`);
+};
+const mint = (db, args = {}) => createPaymentLink(db, { env: {}, fetchImpl: noNetwork, ...args });
+
 describe("generateLinkRef", () => {
   test("produces a distinct pl_ token each time", () => {
     const a = generateLinkRef(), b = generateLinkRef();
@@ -95,7 +107,7 @@ describe("generateLinkRef", () => {
 describe("createPaymentLink", () => {
   test("mints a checkout URL carrying the amount and the link's own ref", async () => {
     const db = fakeDb();
-    const link = await createPaymentLink(db, {
+    const link = await mint(db, {
       orgId: ORG, clientId: CLIENT, purpose: "deposit", amountCents: 250000, checkoutBaseUrl: BASE_URL
     });
     assert.equal(link.status, "created");
@@ -108,7 +120,7 @@ describe("createPaymentLink", () => {
   test("a custom link with no description is refused before any write", async () => {
     const db = fakeDb();
     await assert.rejects(
-      createPaymentLink(db, { orgId: ORG, clientId: CLIENT, purpose: "custom", amountCents: 500, checkoutBaseUrl: BASE_URL }),
+      mint(db, { orgId: ORG, clientId: CLIENT, purpose: "custom", amountCents: 500, checkoutBaseUrl: BASE_URL }),
       TypeError
     );
     assert.equal(db.rows.length, 0);
@@ -117,7 +129,7 @@ describe("createPaymentLink", () => {
   test("an unknown purpose is refused", async () => {
     const db = fakeDb();
     await assert.rejects(
-      createPaymentLink(db, { orgId: ORG, clientId: CLIENT, purpose: "yacht", amountCents: 500, checkoutBaseUrl: BASE_URL }),
+      mint(db, { orgId: ORG, clientId: CLIENT, purpose: "yacht", amountCents: 500, checkoutBaseUrl: BASE_URL }),
       TypeError
     );
   });
@@ -125,11 +137,11 @@ describe("createPaymentLink", () => {
   test("a zero or negative amount is refused, not billed as free", async () => {
     const db = fakeDb();
     await assert.rejects(
-      createPaymentLink(db, { orgId: ORG, clientId: CLIENT, purpose: "repair", amountCents: 0, checkoutBaseUrl: BASE_URL }),
+      mint(db, { orgId: ORG, clientId: CLIENT, purpose: "repair", amountCents: 0, checkoutBaseUrl: BASE_URL }),
       RangeError
     );
     await assert.rejects(
-      createPaymentLink(db, { orgId: ORG, clientId: CLIENT, purpose: "repair", amountCents: -100, checkoutBaseUrl: BASE_URL }),
+      mint(db, { orgId: ORG, clientId: CLIENT, purpose: "repair", amountCents: -100, checkoutBaseUrl: BASE_URL }),
       RangeError
     );
   });
@@ -137,7 +149,7 @@ describe("createPaymentLink", () => {
   test("no checkout config means no link — nothing invented", async () => {
     const db = fakeDb();
     await assert.rejects(
-      createPaymentLink(db, {
+      mint(db, {
         orgId: ORG, clientId: CLIENT, purpose: "deposit", amountCents: 500,
         env: {}
       }),
@@ -160,7 +172,7 @@ describe("createPaymentLink", () => {
         })
       };
     };
-    const link = await createPaymentLink(db, {
+    const link = await mint(db, {
       orgId: ORG, clientId: CLIENT, purpose: "diagnostic",
       description: "Business Financial Assessment — Fundhub",
       amountCents: 100,
@@ -177,7 +189,7 @@ describe("status transitions", () => {
   let db, link;
   beforeEach(async () => {
     db = fakeDb();
-    link = await createPaymentLink(db, {
+    link = await mint(db, {
       orgId: ORG, clientId: CLIENT, purpose: "diagnostic", amountCents: 3200, checkoutBaseUrl: BASE_URL
     });
   });
@@ -204,7 +216,7 @@ describe("status transitions", () => {
     assert.equal(expired.status, "expired");
     assert.ok(expired.expired_at);
 
-    const link2 = await createPaymentLink(db, { orgId: ORG, clientId: CLIENT, purpose: "repair", amountCents: 100, checkoutBaseUrl: BASE_URL });
+    const link2 = await mint(db, { orgId: ORG, clientId: CLIENT, purpose: "repair", amountCents: 100, checkoutBaseUrl: BASE_URL });
     await markSent(db, { id: link2.id, orgId: ORG });
     const expired2 = await markExpired(db, { id: link2.id, orgId: ORG });
     assert.equal(expired2.status, "expired");
@@ -251,22 +263,22 @@ describe("status transitions", () => {
 describe("reads", () => {
   test("getPaymentLink scopes to org — another org gets nothing", async () => {
     const db = fakeDb();
-    const link = await createPaymentLink(db, { orgId: ORG, clientId: CLIENT, purpose: "deposit", amountCents: 100, checkoutBaseUrl: BASE_URL });
+    const link = await mint(db, { orgId: ORG, clientId: CLIENT, purpose: "deposit", amountCents: 100, checkoutBaseUrl: BASE_URL });
     assert.equal((await getPaymentLink(db, { id: link.id, orgId: ORG })).id, link.id);
     assert.equal(await getPaymentLink(db, { id: link.id, orgId: OTHER_ORG }), null);
   });
 
   test("getByLinkRef finds a row with no org context — the webhook has none", async () => {
     const db = fakeDb();
-    const link = await createPaymentLink(db, { orgId: ORG, clientId: CLIENT, purpose: "deposit", amountCents: 100, checkoutBaseUrl: BASE_URL });
+    const link = await mint(db, { orgId: ORG, clientId: CLIENT, purpose: "deposit", amountCents: 100, checkoutBaseUrl: BASE_URL });
     assert.equal((await getByLinkRef(db, { linkRef: link.link_ref })).id, link.id);
   });
 
   test("listPaymentLinksForClient never crosses org or client boundaries", async () => {
     const db = fakeDb();
-    const mine = await createPaymentLink(db, { orgId: ORG, clientId: CLIENT, purpose: "deposit", amountCents: 100, checkoutBaseUrl: BASE_URL });
-    await createPaymentLink(db, { orgId: OTHER_ORG, clientId: CLIENT, purpose: "deposit", amountCents: 100, checkoutBaseUrl: BASE_URL });
-    await createPaymentLink(db, { orgId: ORG, clientId: "another-client", purpose: "deposit", amountCents: 100, checkoutBaseUrl: BASE_URL });
+    const mine = await mint(db, { orgId: ORG, clientId: CLIENT, purpose: "deposit", amountCents: 100, checkoutBaseUrl: BASE_URL });
+    await mint(db, { orgId: OTHER_ORG, clientId: CLIENT, purpose: "deposit", amountCents: 100, checkoutBaseUrl: BASE_URL });
+    await mint(db, { orgId: ORG, clientId: "another-client", purpose: "deposit", amountCents: 100, checkoutBaseUrl: BASE_URL });
     const list = await listPaymentLinksForClient(db, { orgId: ORG, clientId: CLIENT });
     assert.equal(list.length, 1);
     assert.equal(list[0].id, mine.id);

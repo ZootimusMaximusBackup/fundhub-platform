@@ -118,6 +118,44 @@ describe("commas inbox (real Postgres)", { skip: !HAS_DB ? "no DATABASE_URL" : f
     assert.equal(received, 1, "the deposit was credited twice");
   });
 
+  /* WHOSE MONEY IS THIS.
+     Every payment event this adapter wrote used to be stored with a null
+     client. The CRM could show that $3,000 had arrived and could not say who
+     paid it. events.client_id is the column that answers that question, and it
+     is a real column with a real foreign key — the unit tests model it, only a
+     real Postgres proves the value survives the round trip.
+
+     NOTE ON THE CLIENT ROW: resolving a payer find-or-creates by email, the
+     same as the handler that runs a moment later, so this test leaves one
+     fixture client behind on purpose. It is keyed on (org, lower(email)), so
+     running the suite a hundred times still leaves exactly one. wipe() does
+     not remove it — this file does not delete client rows. */
+  test("a payment's events carry the client the money belongs to", async () => {
+    await wipe();
+    clearHandlers();
+    const paymentId = `${MARK}_whose`;
+    const raw = envelope(paymentId);
+    await handleCommasWebhook({ db, rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
+    await drain(db, { process: processCommasInboxRow });
+
+    const rows = (await db.query(
+      `SELECT name, client_id FROM events WHERE idempotency_key LIKE $1 ORDER BY name`,
+      [`commas:${paymentId}:%`]
+    )).rows;
+    assert.deepEqual(rows.map((r) => r.name), ["deposit.paid", "payment.received"]);
+    assert.ok(rows.every((r) => r.client_id), "a payment landed with nobody's name on it");
+
+    const payer = (await db.query(
+      `SELECT id FROM clients WHERE org_id = $1 AND lower(email) = $2 LIMIT 1`,
+      [orgId, `${MARK}@example.com`]
+    )).rows[0];
+    assert.ok(payer, "the payer was never resolved at all");
+    assert.ok(
+      rows.every((r) => r.client_id === payer.id),
+      "one payment's events disagree about who paid it"
+    );
+  });
+
   test("the unique index itself rejects a duplicate, not just the application", async () => {
     await wipe();
     const paymentId = `${MARK}_idx`;
