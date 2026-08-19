@@ -1324,8 +1324,8 @@ function paintRun(d){
       '<span><i>'+wf.fired.length+'/'+wf.registered+'</i>automations reached</span>'+
     '</div>'+
     '<p class="jr-rmuted">Journeys read from: '+esc(d.journeySource)+
-      '. Nothing was saved — the run was undone when it finished, and nothing was handed to the live '+
-      'automation service.</p>'+
+      '. Nothing was saved — the run was undone when it finished, and none of the events this test '+
+      'fires were handed to the live automation service.</p>'+
     (skipped.length? '<h4>Rows in the table this test left out ('+skipped.length+')</h4>'+
       '<p class="jr-rmuted">These are not part of the six journeys the editor owns, so testing them '+
       'would say nothing about your automations.</p>'+

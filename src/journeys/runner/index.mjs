@@ -28,12 +28,23 @@
  * NOT REAL: time (a virtual clock — see fake-step.mjs) and the last inch of a
  * send (the memory provider). Those are the only two.
  *
- * DELIBERATELY SUPPRESSED, and it is a third thing: the Inngest fan-out. Every
- * emit() below passes skipInngest: true. See the long note in fireEvent() for
- * why — in short, that fan-out is a network call, a network call cannot be
- * rolled back, and this harness promises the owner that nothing survives the
- * run. It costs no coverage, because the runner already calls every triggered
- * workflow body directly.
+ * DELIBERATELY SUPPRESSED, and it is a third thing: the Inngest fan-out for
+ * the events THIS FILE fires. fireEvent()'s emit() passes skipInngest: true —
+ * see the long note there for why. In short: that fan-out is a network call, a
+ * network call cannot be rolled back, and every event this runner fires is a
+ * real workflow trigger with up to eight listeners. It costs no coverage,
+ * because the runner already calls every triggered workflow body directly.
+ *
+ * ONE DERIVED EVENT STILL ESCAPES, AND IT IS NAMED HERE RATHER THAN GLOSSED.
+ * The workflow bodies this runner invokes call sendTemplated, and
+ * src/workflows/messaging.mjs:165 emits "message.queued" without skipInngest.
+ * That file is not this thread's to change. The exposure is bounded and was
+ * measured, not assumed: "message.queued" is not a trigger for ANY registered
+ * workflow, so the leaked event reaches Inngest's log and starts nothing. It
+ * is bookkeeping noise, not a live automation. Do not let that shrink into
+ * "nothing escapes" — if messaging.mjs ever emits a real trigger, this comment
+ * is the thing that was wrong. The fix belongs in messaging.mjs (T5) or in
+ * src/events/bus.mjs (T16); it is on the fix board.
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * THE PART THAT IS A MAPPING DECISION, STATED OUT LOUD

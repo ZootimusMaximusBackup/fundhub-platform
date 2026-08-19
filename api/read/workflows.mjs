@@ -354,6 +354,14 @@ export function statusOf({ events, crons, emitters, lastTriggeredAt }) {
   /* No events at all: either a clock job, or a workflow with no declared
      trigger whatsoever, which nothing can ever start. */
   if (!events.length) return crons.length ? "scheduled" : "no_emitter";
+  /* An event NOBODY HAS WRITTEN DOWN is not an event nothing emits. Conflating
+     those two is the exact fault this endpoint was rewritten to remove, and it
+     would have been reintroduced here: an unmanifested event has no emitter
+     with a `how`, so it fell through to "no_emitter" and the screen told the
+     owner the absolute "nothing in the code emits this". src/workflows/
+     index.test.mjs makes this state unreachable by failing on it, but an
+     endpoint must not lie on the day somebody ships past a test. */
+  if (emitters.some((e) => e.known === false)) return "emitter_unknown";
   if (!emitters.some((e) => e.how)) return "no_emitter";
   return lastTriggeredAt ? "trigger_seen" : "trigger_never_seen";
 }
@@ -399,10 +407,14 @@ const run = readHandler({
         canStartToday = open.length > 0;
         if (!canStartToday) {
           const missing = [...new Set(emitters.map((e) => e.gate).filter(Boolean))];
-          blockedReason = missing.length
-            ? `Nothing can start this right now. Every way in is switched off: ` +
-              `${missing.join(" and ")} ${missing.length > 1 ? "are" : "is"} not set.`
-            : "Nothing in the code emits this workflow's trigger, so it can never start.";
+          const unknown = emitters.filter((e) => e.known === false).map((e) => e.event);
+          blockedReason = unknown.length
+            ? `Nobody has recorded how ${unknown.join(" or ")} gets sent, so this screen ` +
+              `cannot say whether this job can start. That is a gap in our notes, not proof it is broken.`
+            : missing.length
+              ? `Nothing can start this right now. Every way in is switched off: ` +
+                `${missing.join(" and ")} ${missing.length > 1 ? "are" : "is"} not set.`
+              : "Nothing in the code emits this workflow's trigger, so it can never start.";
         }
       }
 

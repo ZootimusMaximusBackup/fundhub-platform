@@ -424,6 +424,8 @@
                           all it means.
        trigger_never_seen something can send the start signal, but none has
                           ever been recorded.
+       emitter_unknown    nobody has recorded how this start signal is sent.
+                          A gap in our notes, NOT a claim the job is broken.
        no_emitter         nothing in the system can send this start signal, so
                           the job can never begin. */
   function statusBadge(row){
@@ -441,6 +443,14 @@
     if(row.status === 'trigger_never_seen'){
       return '<span class="toggle off" title="Something can send the signal that starts this job, but no signal has ever been recorded.">' +
         '<span class="dot"></span>NEVER STARTED</span>';
+    }
+    /* An event nobody has written down is NOT an event nothing sends. Falling
+       through to "NOTHING STARTS IT" would state the absolute, which is the
+       same conflation this screen was rewritten to stop making. */
+    if(row.status === 'emitter_unknown'){
+      return '<span class="toggle paused" title="Nobody has written down how this job\'s start signal gets sent, ' +
+        'so this screen cannot say. That is a gap in our notes, not proof the job is broken.">' +
+        '<span class="dot"></span>NOT CHECKED</span>';
     }
     return '<span class="toggle paused" title="Nothing in the system can send the signal that starts this job.">' +
       '<span class="dot"></span>NOTHING STARTS IT</span>';
