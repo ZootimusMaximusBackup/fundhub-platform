@@ -794,6 +794,7 @@ var PARTNERS = [];
    ════════════════════════════════════════════════════════════════════════ */
 var SOCIAL_CHANNELS = [];
 var CHANNELS_READ = false;   /* has the account read finished, either way */
+var CHANNELS_ERR = null;     /* why it failed, said back to the reader verbatim */
 
 /* ══ PICTURES AND VIDEOS — the writer's attachment picker ════════════════
    Still empty on purpose, and not because nothing hands the list over.
@@ -1054,9 +1055,17 @@ function renderChannels(){
     host.innerHTML = noPartner('Each connected social account');
     return;
   }
-  document.getElementById('chCount').textContent = chs.length + ' connected';
+  document.getElementById('chCount').textContent = CHANNELS_ERR ? '—' : (chs.length + ' connected');
   if(!chs.length){
     host.className='';
+    /* Three different things, and none of them may wear another's words: the read
+       has not come back, the read failed, or there really are no accounts. */
+    if(CHANNELS_ERR){
+      host.innerHTML = '<div class="empty">The connected accounts could not be read: '+esc(CHANNELS_ERR)+
+        '<br>Nothing is shown in their place, and this is <b>not</b> the same as having none. '+
+        'Reload the page to try again.</div>';
+      return;
+    }
     host.innerHTML = '<div class="empty">'+
       (CHANNELS_READ
         ? 'No social accounts are connected yet. Once one is, it will show here.'
@@ -2170,10 +2179,12 @@ function loadChannels(){
   var p = partner();
   SOCIAL_CHANNELS = [];
   CHANNELS_READ = false;
+  CHANNELS_ERR = null;
   if(!p){ renderAll(); return; }
   apiGet('/api/social/channels?partner_id='+encodeURIComponent(p.id)+'&state=all&limit=50')
     .then(function(res){
       CHANNELS_READ = true;
+      CHANNELS_ERR = res.ok ? null : (res.error || 'the reason was not given');
       SOCIAL_CHANNELS = res.ok ? ((res.data.items)||[]).map(function(row){
         return Object.assign({}, row, {
           partner: P,
