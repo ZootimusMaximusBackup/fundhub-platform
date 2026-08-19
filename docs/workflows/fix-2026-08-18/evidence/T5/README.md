@@ -71,7 +71,7 @@ identical before and after, not a result of this work.
 | T5-13 test inbox is a real credit file | The bare test inbox resolves to exactly **1** client and it **is** `9af65808-…`. The test phone matches **7** clients, that file among them. Never used. |
 | T5-14 173 templates promise a link | 173 email templates contain "unsubscribe" and **0** contain any URL at all. |
 | T5-15 unsubscribe page missing | `/unsubscribe`, `/unsubscribe.html`, `/api/unsubscribe`, `/api/public/unsubscribe` — all 404. |
-| T5-16 no proof a text lands | Email rows only ever reach `sent` or `failed`, never `delivered`. |
+| T5-16 no proof a text lands | Email rows only ever reach `sent` or `failed`, never `delivered`. **Now wired end to end** — `POST /api/webhooks/resend` reaches the adapter and a signed receipt really does move the row, proven by `src/http/webhooks-resend.pg.test.mjs` going through the same door the endpoint uses. Needs `RESEND_WEBHOOK_SECRET` to accept anything. |
 | T5-17 inbound reply appears in Messaging | Two inbound email rows, threaded to a client. **Works — and still works.** |
 
 ## Safety
