@@ -1704,12 +1704,20 @@ function renderApproval(){
            'person to look at it.</span></div>')+
     '<div class="notice'+(on?'':' warn')+'" style="margin-top:4px"><span class="ni">'+(on?'◉':'⚠')+'</span><span>'+
       (on
-        ? '<b>Every post for this partner is marked "needs approval" — and is still lined up and still sent.</b> '+
-          'There is nowhere to record an approval, and anything the copy check does not refuse is lined up to go out. '+
-          'The check writes down that a person should look at it; nothing waits for one. Saying "held until approved" '+
-          'here would be false.'
-        : '<b>A post that breaks no rule is marked as passed</b> and lines up to go out. This switch changes only what '+
-          'the copy check writes down — it never changes whether a post goes out, because nothing acts on it.')+
+        /* This used to say the opposite, and it was right at the time: a post
+           marked "needs approval" was lined up and sent anyway. That changed. The
+           holding pen is real now, and so is the missing button — both halves have
+           to be here, because "it stops and waits" on its own would read as a
+           finished feature. */
+        ? '<b>A post marked "needs approval" now stops and waits. It does not go out.</b> '+
+          'The part of the system that sends posts cannot see a post that is waiting, so nothing sends it — '+
+          'not late, not by accident, not at all.'+
+          '<br><br><b>But nothing can approve one yet.</b> There is no button on this screen, and nothing '+
+          'anywhere else in the system, that marks a post as approved. So every post that stops here stays '+
+          'stopped. The post is kept and nothing is lost, but it will not go out until that button is built.'
+        : '<b>With this off, a post that breaks no rule is marked as passed, and it does go out.</b> '+
+          'This switch is not just a note any more. On, it stops posts and makes them wait. Off, it lets them '+
+          'through. Credit repair is the one exception, and this switch never releases those — see below.')+
     '</span></div>'+
     '<div class="notice bad" style="margin-top:10px"><span class="ni">◆</span><span>'+
       '<b>Credit repair ignores this switch completely.</b> Every credit-repair post that is not refused outright is '+

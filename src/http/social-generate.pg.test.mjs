@@ -46,6 +46,7 @@ const res = () => {
 describe("POST /api/social/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
   let handler, callModelBounded, org, staffId, token, partnerId;
   let hadKey = false, savedKey;
+  let hadTimeout = false, savedTimeout;
 
   /* The handler runs the real requirePrincipal against the real sessions table,
      so every call carries a token minted for a real staff row. There is no
@@ -81,6 +82,18 @@ describe("POST /api/social/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
     savedKey = process.env.ANTHROPIC_API_KEY;
     delete process.env.ANTHROPIC_API_KEY;
 
+    /* SET BEFORE THE IMPORT, and that ordering is the whole trick. The handler's
+       own time limit is a module-level const worked out once when the file is
+       first imported, so a value put in the environment afterwards is never seen
+       and the handler test below would sit for the real 8.5 seconds.
+
+       1000 is the floor the handler clamps to — Math.max(1000, …) — so asking for
+       less changes nothing. The handler timeout test costs about one second. */
+    hadTimeout = Object.prototype.hasOwnProperty.call(
+      process.env, "SOCIAL_GENERATE_TIMEOUT_MS");
+    savedTimeout = process.env.SOCIAL_GENERATE_TIMEOUT_MS;
+    process.env.SOCIAL_GENERATE_TIMEOUT_MS = "1000";
+
     ({ default: handler, callModelBounded } = await import("../../api/social/generate.mjs"));
 
     org = (await db.query(`SELECT id FROM orgs WHERE is_default LIMIT 1`)).rows[0].id;
@@ -104,6 +117,9 @@ describe("POST /api/social/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
   after(async () => {
     await cleanup();
     if (hadKey) process.env.ANTHROPIC_API_KEY = savedKey;
+    else delete process.env.ANTHROPIC_API_KEY;
+    if (hadTimeout) process.env.SOCIAL_GENERATE_TIMEOUT_MS = savedTimeout;
+    else delete process.env.SOCIAL_GENERATE_TIMEOUT_MS;
     await close();
   });
 
@@ -208,6 +224,64 @@ describe("POST /api/social/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
     } finally {
       globalThis.fetch = realFetch;
     }
+  });
+
+  /* THE 504 THE PARTNER ACTUALLY SEES. The two tests above prove the mechanism —
+     callModelBounded really does abort — but a mechanism that works and a handler
+     that reports it are different claims, and only the second one is what the
+     partner meets. This drives the endpoint end to end: no answer from the model,
+     and the endpoint must give up by itself and say so, with nothing saved.
+
+     STILL NO OUTBOUND REQUEST. globalThis.fetch is replaced for the length of the
+     test and only ever settles when the abort fires, and the key put in the
+     environment is a placeholder that never reaches a network. Both are put back
+     in the finally block. */
+  test("when the model never answers the endpoint gives up, says 504, and saves no posts", async () => {
+    await asStaff((tx) => tx.query(
+      `UPDATE partner_module_settings SET marketing_suite_enabled = true WHERE partner_id = $1`,
+      [partnerId]));
+    const before = (await queueRows()).length;
+    const usageBefore = (await usageRows()).length;
+
+    const realFetch = globalThis.fetch;
+    let sawSignal = null;
+    globalThis.fetch = (url, init) => new Promise((resolve, reject) => {
+      sawSignal = init && init.signal;
+      if (!sawSignal) return reject(new Error("no abort signal was attached"));
+      sawSignal.addEventListener("abort", () => {
+        const e = new Error("This operation was aborted");
+        e.name = "AbortError";
+        reject(e);
+      });
+    });
+    // A key has to be present or src/agents/model.mjs answers from its keyless
+    // path and never reaches fetch at all — the timeout would never fire.
+    process.env.ANTHROPIC_API_KEY = "not-a-real-key-never-sent";
+    try {
+      const started = Date.now();
+      const r = await call("POST", { body: { partner_id: partnerId, count: 3 } });
+      const took = Date.now() - started;
+
+      assert.ok(took < 6000, `the endpoint must give up on its own, took ${took}ms`);
+      assert.ok(sawSignal && sawSignal.aborted, "the request itself must be cancelled");
+      assert.strictEqual(r.code, 504);
+      assert.strictEqual(r.body.ok, false);
+      assert.strictEqual(r.body.error, "model_timeout",
+        "'took too long' must not be folded into 'not set up' — they need different next steps");
+      assert.match(r.body.message, /took too long/i);
+      assert.match(r.body.message, /nothing was saved/i,
+        "the partner has to be told the writing is not sitting somewhere half done");
+    } finally {
+      globalThis.fetch = realFetch;
+      delete process.env.ANTHROPIC_API_KEY;
+    }
+
+    assert.strictEqual((await queueRows()).length, before,
+      "a request that ran out of time must leave no posts behind");
+    // The cost is written down before the endpoint decides it has nothing to
+    // save, so the attempt is on the record even though it produced nothing.
+    assert.strictEqual((await usageRows()).length, usageBefore + 1,
+      "the attempt must still be written down");
   });
 
   // ------------------------------------------------------------------- fixture

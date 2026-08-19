@@ -52,8 +52,33 @@ export const fetchRows = (tx, { limit, offset, query }) => {
   ).then((r) => r.rows);
 };
 
+/* mapRow — redact, THEN put back the two booleans the SQL worked out.
+
+   redactConnection is the safety net and stays in the chain: it destructures
+   encrypted_access_token / encrypted_refresh_token off the row, so no ciphertext
+   can leave here even if somebody later adds `SELECT c.*` above.
+
+   But it also derives has_access_token / has_refresh_token from those same two
+   columns — and this endpoint deliberately never selects them, so on its own it
+   wrote Boolean(undefined) = false over the correct answer. Every connected
+   account then told the owner it had no sign-in key, which is the opposite of the
+   truth and would have sent somebody re-connecting working accounts.
+
+   The SQL values win because the SQL is the only one that looked at the columns.
+   `=== true` rather than a plain read: a driver that ever hands back null or a
+   string must not turn into a truthy "yes".
+
+   mapRow is exported so src/http/social-channels.pg.test.mjs can assert against
+   the rows this endpoint really ships, rather than against the raw rows — where
+   the presence booleans are trivially right and the bug is invisible. */
+export const mapRow = (row) => ({
+  ...redactConnection(row),
+  has_access_token: row.has_access_token === true,
+  has_refresh_token: row.has_refresh_token === true,
+});
+
 const run = partnerReadHandler({
-  mapRow: redactConnection,
+  mapRow,
   fetch: fetchRows,
 });
 

@@ -89,7 +89,17 @@ export default async function handler(req, res) {
           offerType: row.offer_type,
           scheduledFor: body.scheduled_for || row.scheduled_for
         });
-        const status = scheduled.state === "blocked" ? "blocked" : "scheduled";
+        /* THREE ENDINGS, NOT TWO. src/social/scheduler.mjs returns 'blocked',
+           'needs_approval' or 'passed', and 240 made the middle one real: that
+           post is sitting in social_posts.status = 'awaiting_approval' and the
+           sender cannot see it. Recording it here as 'scheduled' told the partner
+           it was lined up to go out when nothing will ever send it — two tables
+           saying different things about the same post, and the partner reading
+           the wrong one. 243 adds the word this line needs. */
+        const status =
+          scheduled.state === "blocked" ? "blocked"
+            : scheduled.state === "needs_approval" ? "awaiting_approval"
+              : "scheduled";
         const u = await tx.query(
           `UPDATE marketing_content_queue
               SET status = $2,

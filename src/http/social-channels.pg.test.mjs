@@ -63,22 +63,43 @@ describe("social studio reads", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
   });
 
   test("channels never carry token ciphertext, before or after redaction", async () => {
-    const { fetchRows } = await import("../../api/social/channels.mjs");
-    const { redactConnection } = await import("./partner-read-api.mjs");
+    /* THE ENDPOINT'S OWN MAPPER, not a redactor this test picked for itself. The
+       screen never sees the raw rows — it sees mapRow(row) — so every assertion
+       about what the owner is told has to be made against that. Asserting the
+       presence booleans on the RAW row is trivially true (the SQL computes them
+       right there) and cannot fail however broken the mapper is. */
+    const { fetchRows, mapRow } = await import("../../api/social/channels.mjs");
     const rows = await asPartner(owner, (tx) =>
       fetchRows(tx, { limit: 50, offset: 0, query: {}, partnerId: owner }));
-    const both = JSON.stringify(rows) + JSON.stringify(rows.map(redactConnection));
+    const shipped = rows.map(mapRow);
+
+    const both = JSON.stringify(rows) + JSON.stringify(shipped);
     assert.ok(!both.includes("SOCIALCHANNELSUPERSECRET"),
       "token ciphertext reached the response");
-    for (const r of rows) {
+    for (const r of [...rows, ...shipped]) {
       assert.strictEqual(r.encrypted_access_token, undefined);
       assert.strictEqual(r.encrypted_refresh_token, undefined);
       assert.strictEqual(typeof r.has_access_token, "boolean");
       assert.strictEqual(typeof r.has_refresh_token, "boolean");
     }
-    const active = rows.find((r) => r.connection_state === "active");
+
+    /* The account card reads has_access_token to decide whether it says the
+       account is signed in or has no sign-in key. A false here is a working
+       account reported as broken, and somebody re-connecting accounts that were
+       fine. */
+    const active = shipped.find((r) => r.connection_state === "active");
+    assert.ok(active, "the fixture seeds one active channel");
     assert.strictEqual(active.has_access_token, true,
-      "an active channel has a stored key and must say so");
+      "an active channel has a stored key and the shipped row must say so");
+    assert.strictEqual(active.has_refresh_token, true,
+      "the fixture stores a refresh key too, and the shipped row must say so");
+
+    // The other direction, so a mapper that hard-coded true would not pass
+    // either: the pending channel really was seeded with neither key.
+    const pending = shipped.find((r) => r.connection_state === "pending");
+    assert.ok(pending, "the fixture seeds one pending channel");
+    assert.strictEqual(pending.has_access_token, false);
+    assert.strictEqual(pending.has_refresh_token, false);
   });
 
   test("every field the account card walks is the shape it expects", async () => {
