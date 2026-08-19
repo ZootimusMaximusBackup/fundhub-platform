@@ -107,12 +107,16 @@ const ok = (name, cond, extra = "") => {
   // A client with no phone on file: the box is empty and says so, and Send is off.
   const emptyNote = await page.textContent("#composeToNote").catch(() => "");
   ok("an empty destination explains what is missing BEFORE Send is pressed", /phone number/i.test(emptyNote), emptyNote.trim());
-  ok("Send is disabled while there is nowhere to send", await page.isDisabled("#sendBtn"));
+  // Empty is a WARNING, not a lock: the send falls back to the client record,
+  // as it always did. Gating Send on this box being filled tied sending to a
+  // separate client read and killed the button when that read failed.
+  ok("an empty destination warns but still lets the send fall back",
+      !(await page.isDisabled("#sendBtn")));
   await page.screenshot({ path: path.join(OUT, "messaging-1-no-address.png") });
 
   await page.fill("#composeTo", "5551234567");
   await page.waitForTimeout(200);
-  ok("a number without a country code is refused, with Send still off",
+  ok("a filled-but-malformed number DOES switch Send off",
       await page.isDisabled("#sendBtn"), (await page.textContent("#composeToNote")).trim());
   await page.screenshot({ path: path.join(OUT, "messaging-2-bad-address.png") });
 

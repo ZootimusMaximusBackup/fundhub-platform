@@ -467,6 +467,11 @@ describe("the destination box", () => {
     assert.equal(sms.empty, true);
     assert.match(sms.text, /phone number/i);
     assert.match(sms.text, /type one/i, "it has to say what to do about it");
+    /* `empty` is reported separately from `ok` because the screen treats the two
+       differently: an empty box still SENDS, falling back to the address on the
+       client's record exactly as it always did. Gating Send on the box being
+       filled coupled sending to a separate client read, so a slow or failed
+       fetch killed the button — worse than the bug the box was added to fix. */
 
     const email = V.addressLooksRight("email", "");
     assert.match(email.text, /email address/i);

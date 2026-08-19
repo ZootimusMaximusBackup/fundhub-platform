@@ -1071,7 +1071,19 @@
   /* Repaint the note under the destination box and decide whether Send can be
      pressed. Called when a thread opens, when the client's record arrives, and
      on every keystroke — the sender should never press Send only to be told
-     the address was wrong. */
+     the address was wrong.
+
+     AN EMPTY BOX DOES NOT DISABLE SEND, and that is deliberate. The first
+     version of this gated Send on the box being filled, which quietly coupled
+     sending to a completely separate read: the box is prefilled from the client
+     record, so a slow or failed client fetch left Send dead with nothing the
+     person could do about it. That is a worse bug than the one this box was
+     added to fix. Empty means "use the address on their record", exactly as it
+     always did — the note still warns when there is none, and if there really
+     is no address the dispatcher gives the same honest answer it always has.
+
+     A FILLED BUT MALFORMED box DOES disable Send: there the person has said
+     where to send, and it cannot work. */
   function paintTo() {
     var row = state.selected;
     if (!row) return;
@@ -1080,7 +1092,7 @@
     note.hidden = verdict.ok;
     note.textContent = verdict.text;
     note.className = "to-note" + (verdict.ok || verdict.empty ? "" : " bad");
-    $("sendBtn").disabled = !verdict.ok || state.sending;
+    $("sendBtn").disabled = (!verdict.ok && !verdict.empty) || state.sending;
   }
 
   /* The texting-hours line. Repainted on every thread open AND on a slow timer,
