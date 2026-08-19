@@ -756,12 +756,25 @@
      decides the name. A message with no sender_name and direction outbound was
      queued by a workflow, not by a person — it is labelled "Automatic" rather
      than being attributed to whoever happens to be looking at the screen. */
+  /* It left the building. `sent` means the provider accepted it; `delivered`
+     means their server confirmed it arrived. Neither is a problem and neither
+     gets an error block. They are kept as separate values rather than collapsed
+     because accepted is not delivered — that distinction is the whole reason
+     the delivery webhook exists. */
+  var LANDED = ["sent", "delivered"];
+
   function messageRow(msg, opts) {
     var o = opts || {};
     var inbound = msg.direction === "inbound";
     var who = inbound ? (o.clientName || "Them")
                       : (msg.sender_name || "Automatic");
-    var held = !inbound && msg.status && msg.status !== "sent";
+    /* WHICH OUTBOUND STATUSES ARE A PROBLEM. This used to read
+       `msg.status !== "sent"`, which painted a red error block on ANY other
+       value — including `delivered`, which is the best outcome there is. The
+       Mailgun delivery path already writes `delivered` and `complained` today,
+       so a successfully delivered message was being shown to staff as "Not
+       sent yet". Landed states are listed, not inferred. */
+    var held = !inbound && msg.status && LANDED.indexOf(msg.status) === -1;
     return '<div class="msg' + (inbound ? "" : " out") + '" data-id="' + esc(msg.id) + '">' +
       '<div class="av ' + (inbound ? "client" : (msg.sender_name ? "human" : "agent")) + '">' +
         esc(inbound ? (o.clientInitials || "—") : (msg.sender_name ? initialsFromName(msg.sender_name) : "SYS")) +
@@ -855,6 +868,10 @@
     if (status === "failed") return "Not sent";
     if (status === "queued") return "Waiting to go out";
     if (status === "sending") return "Going out now";
+    if (status === "bounced") return "Not delivered — their mail server rejected it";
+    if (status === "rejected") return "Not sent — the address was refused";
+    if (status === "complained") return "Delivered, but they marked it as spam";
+    if (status === "undelivered") return "Sent, but it did not arrive";
     return "Not sent yet";
   }
 

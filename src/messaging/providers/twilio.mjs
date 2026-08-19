@@ -64,6 +64,14 @@ const DEFAULT_BASE_URL = "https://api.twilio.com";
    pasted into the wrong variable. */
 const MESSAGING_SERVICE_PREFIX = "MG";
 
+/* The public origin this deployment answers on. Same expression the rest of the
+   messaging path uses to build links (src/messaging/dispatch.mjs), so there is
+   one convention rather than a fourth. */
+function statusCallbackUrl(env) {
+  const base = String(env.APP_BASE_URL || env.URL || "").replace(/\/+$/, "");
+  return base ? `${base}/api/webhooks/twilio-status` : "";
+}
+
 function config(env) {
   const accountSid = env.TWILIO_SEND_ACCOUNT_SID;
   const authToken = env.TWILIO_SEND_AUTH_TOKEN;
@@ -80,6 +88,16 @@ function config(env) {
     accountSid,
     authToken,
     from: String(from).trim(),
+    /* Where Twilio posts what happened to the message afterwards. Without it
+       Twilio has nowhere to report and `delivered` can never be written for a
+       text — which is exactly why nobody could prove a text landed (T5-16).
+       The receiving end is src/adapters/twilio-status.mjs, already wired.
+
+       Built from the public origin rather than defaulted to the live site, so a
+       deploy preview reports to itself instead of to production. Empty when no
+       origin is configured: a callback URL pointing at the wrong host is worse
+       than none, because the receipts would silently move somebody else's rows. */
+    statusCallback: statusCallbackUrl(env),
     baseUrl: String(env.TWILIO_SEND_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, "")
   };
 }
@@ -134,6 +152,8 @@ async function attempt(message, { fetchImpl, timeoutMs, signal, env = process.en
     form.set("From", cfg.from);
   }
   form.set("Body", body);
+  // Ask Twilio to tell us what happened to it. See statusCallbackUrl.
+  if (cfg.statusCallback) form.set("StatusCallback", cfg.statusCallback);
 
   // Optional MMS: public HTTPS MediaUrl values only (Twilio fetches them).
   // Local file paths are refused — host under public/ and pass absolute https URLs.

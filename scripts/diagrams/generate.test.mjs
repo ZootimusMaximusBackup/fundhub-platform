@@ -112,8 +112,10 @@ test("every canonical event lands in exactly one group", async () => {
 test("adapters report their auth scheme and emitted events", async () => {
   const { canonicalEvents } = await extractAll();
   const adapters = extractAdapters(canonicalEvents);
-  // 12: nine webhook/direct + oxylabs + hubstaff + inquiry-removal (IRA bridge).
-  assert.equal(adapters.length, 12, "12 adapters in src/adapters");
+  // 13: nine webhook/direct + oxylabs + hubstaff + inquiry-removal (IRA bridge)
+  // + resend-events (2026-08-18, T5-16 — delivery/bounce/complaint receipts for
+  // the live email provider, which had no webhook door at all).
+  assert.equal(adapters.length, 13, "13 adapters in src/adapters");
 
   const twilio = adapters.find((a) => a.name === "twilio");
   assert.equal(twilio.scheme, "HMAC-SHA1", "Twilio signs with SHA1, unlike the rest");

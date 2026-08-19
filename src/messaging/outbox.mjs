@@ -109,6 +109,18 @@ export async function setSettings(db, { orgId, staffId = null, outboundEnabled, 
  * rows are the record and a counter is a second source of truth that can drift
  * from them.
  */
+/* WHAT COUNTS AS ALREADY SENT TODAY.
+
+   This was the bare literal 'sent' in both places below, and that is a bug the
+   moment any delivery receipt arrives: a message that moves from 'sent' to
+   'delivered' would STOP counting, silently resetting the operator's
+   sent-today number and letting the queue drain past its own daily ceiling.
+   The Mailgun path already writes 'delivered' and 'complained' today.
+
+   Every status here means the message LEFT. A cap on how much mail we put out
+   in a day has to count what went out, not what we later learned about it. */
+export const SENT_TODAY_STATUSES = ["sent", "delivered", "complained"];
+
 export async function outboxStatus(db, { orgId, now = null } = {}) {
   const settings = await settingsFor(db, orgId);
   const { rows } = await db.query(
@@ -120,13 +132,13 @@ export async function outboxStatus(db, { orgId, now = null } = {}) {
        count(*) FILTER (WHERE status = 'sending')                                    ::int AS sending,
        count(*) FILTER (WHERE status = 'failed')                                     ::int AS failed,
        count(*) FILTER (WHERE status = 'blocked')                                    ::int AS blocked,
-       count(*) FILTER (WHERE status = 'sent'
+       count(*) FILTER (WHERE status = ANY($3::text[])
                           AND created_at >= date_trunc('day', COALESCE($2::timestamptz, now())))
                                                                                      ::int AS sent_today,
        max(last_attempt_at)                                                                AS last_attempt
        FROM messages
       WHERE org_id = $1::uuid AND direction = 'outbound'`,
-    [orgId, resolveTimestampParam(now)]);
+    [orgId, resolveTimestampParam(now), SENT_TODAY_STATUSES]);
   const counts = rows[0] || {};
 
   /* Whether a provider is actually reachable is the question an operator really
@@ -198,9 +210,9 @@ export async function drain(db, { orgId, limit = DEFAULT_BATCH, now = null, disp
   if (settings.daily_send_cap > 0) {
     const { rows } = await db.query(
       `SELECT count(*)::int AS n FROM messages
-        WHERE org_id = $1::uuid AND direction = 'outbound' AND status = 'sent'
+        WHERE org_id = $1::uuid AND direction = 'outbound' AND status = ANY($3::text[])
           AND created_at >= date_trunc('day', COALESCE($2::timestamptz, now()))`,
-      [orgId, resolveTimestampParam(now)]);
+      [orgId, resolveTimestampParam(now), SENT_TODAY_STATUSES]);
     const already = rows[0]?.n || 0;
     const room = settings.daily_send_cap - already;
     if (room <= 0) {

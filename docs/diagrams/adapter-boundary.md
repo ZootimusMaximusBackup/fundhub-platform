@@ -21,6 +21,7 @@ flowchart TB
     o_lendflow["Lendflow alt-fin"]
     o_mailgun["Mailgun inbound-email"]
     o_oxylabs["Oxylabs residential proxy adapter."]
+    o_resend_events["Resend delivery events"]
     o_twilio_status["Twilio delivery-status callback"]
     o_twilio["Twilio inbound SMS"]
   end
@@ -36,6 +37,7 @@ flowchart TB
     b_lendflow["lendflow<br/>HMAC-SHA256<br/>fail-closed"]
     b_mailgun["mailgun<br/>HMAC-SHA256<br/>fail-closed"]
     b_oxylabs["oxylabs<br/>no signature<br/>direct call"]
+    b_resend_events["resend-events<br/>signature<br/>fail-closed"]
     b_twilio_status["twilio-status<br/>HMAC-SHA1<br/>fail-closed"]
     b_twilio["twilio<br/>HMAC-SHA1<br/>fail-closed"]
   end
@@ -61,6 +63,8 @@ flowchart TB
   b_mailgun --> BUS
   o_oxylabs --> b_oxylabs
   b_oxylabs --> DB_oxylabs[("messages<br/>status update")]
+  o_resend_events --> b_resend_events
+  b_resend_events --> DB_resend_events[("messages<br/>status update")]
   o_twilio_status --> b_twilio_status
   b_twilio_status --> DB_twilio_status[("messages<br/>status update")]
   o_twilio --> b_twilio
@@ -79,10 +83,11 @@ flowchart TB
 | `lendflow` | inbound webhook + outbound call | `verifyLendflowSignature` (HMAC-SHA256) | `round.started`<br/>`round.submitted`<br/>`round.approved`<br/>`round.funded` | ⚠️ **no** — carries a CONFIRM banner |
 | `mailgun` | inbound webhook | `verifyMailgunSignature` (HMAC-SHA256) | `message.inbound`<br/>`mail.response` | yes |
 | `oxylabs` | direct call | none — not a webhook | — | yes |
+| `resend-events` | inbound webhook | `verifyResendSignature` (null) | — | yes |
 | `twilio-status` | inbound webhook | `verifyTwilioSignature` (HMAC-SHA1) | — | yes |
 | `twilio` | inbound webhook | `verifyTwilioSignature` (HMAC-SHA1) | `message.inbound` | yes |
 
-> ⚠️ 4 of 12 adapters still carry a `CONFIRM` banner in their header:
+> ⚠️ 4 of 13 adapters still carry a `CONFIRM` banner in their header:
 > `bland`, `clickfunnels`, `commas`, `lendflow`. Their field paths, header names or signature
 > schemes were written from documentation rather than from an observed payload. The boundary is drawn
 > here as the code intends it, which is not the same as how the vendor actually behaves.
