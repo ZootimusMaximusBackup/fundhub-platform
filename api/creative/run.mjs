@@ -10,6 +10,25 @@ import { claim, run } from "../../src/creative/generate.mjs";
 import { runDue } from "../../src/creative/runner.mjs";
 import { safeError } from "../../src/http/health.mjs";
 
+/* plainReason — the failure a job recorded, in words the owner reads.
+
+   generation_jobs.error holds the engineer's sentence, and the commonest one
+   names a database table ("insert a creative_providers row"), which is exactly
+   what must never reach a screen. Only the reason we can state plainly is
+   translated; anything else points at the job list, where the raw text still
+   sits for whoever is debugging. Nothing is invented and nothing is hidden. */
+function plainReason(error) {
+  const text = String(error || "");
+  if (/no active provider configured/i.test(text)) {
+    return "No ad-making service is switched on for this account, so there is nothing to make the work.";
+  }
+  if (/has no module/i.test(text)) {
+    return "The ad-making service on file is one this system does not know how to use.";
+  }
+  if (!text) return "The job list below shows what happened.";
+  return "The reason is on the job in the list below.";
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("allow", "POST");
@@ -48,13 +67,43 @@ export default async function handler(req, res) {
       return out;
     });
 
+    /* WHAT ACTUALLY HAPPENED, not just how many rows were touched.
+
+       `ran` counts jobs CLAIMED, and a claimed job that failed still counts. So
+       "Ran 1 job." was the whole answer even when the job died on "no active
+       provider configured" and made nothing — the screen read as success. The
+       counts and the first failure reason are added alongside the existing
+       fields; `ran`, `jobs` and `note` keep their meaning, so no caller that
+       reads them breaks. The runner cron reads runDue() directly and is not
+       affected either way. */
+    const failed = jobs.filter((j) => j.status === "failed").length;
+    const succeeded = jobs.filter((j) => j.status === "succeeded").length;
+    const requeued = jobs.filter((j) => j.status === "queued").length;
+    const firstReason = plainReason((jobs.find((j) => j.error) || {}).error);
+
+    let note;
+    if (!jobs.length) {
+      note = "Nothing was waiting to run. Add a batch first, then press this again.";
+    } else if (failed && !succeeded) {
+      note = (failed === 1
+        ? "It did not work, and nothing was made. "
+        : "None of them worked, and nothing was made. ") + firstReason;
+    } else if (failed) {
+      note = "Some did not work. " + firstReason;
+    } else if (requeued && !succeeded) {
+      note = "The service could not be reached. They are back in the queue and will be tried again.";
+    } else {
+      note = undefined;
+    }
+
     return res.status(200).json({
       ok: true,
       ran: jobs.length,
+      succeeded,
+      failed,
+      requeued,
       jobs,
-      note: jobs.length
-        ? undefined
-        : "no queued jobs (or concurrency cap reached) — enqueue first, then run"
+      note
     });
   } catch (err) {
     return res.status(500).json({ ok: false, error: safeError(err) });

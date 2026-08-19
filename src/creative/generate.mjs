@@ -39,7 +39,8 @@ const BASE_BACKOFF_MS = 500;
    `tx` must be a scoped client from withPartnerScope() — every table touched here
    is RLS'd, so an unscoped caller would write rows it cannot read back. */
 export async function enqueue(tx, {
-  orgId, partnerId, brandKitId = null, requestedBy = null,
+  orgId, partnerId, brandKitId = null,
+  requestedByKind = null, requestedByStaffId = null, requestedByAccountId = null,
   spec = {}, assetKind, idempotencyKey
 } = {}) {
   if (!orgId) throw new Error("enqueue: orgId is required");
@@ -51,6 +52,30 @@ export async function enqueue(tx, {
     throw new Error("enqueue: idempotencyKey is required — a generated one would defeat idempotency");
   }
 
+  /* WHO ASKED, in the shape 241_generation_jobs_requested_by.sql accepts: a kind
+     plus the one id column that kind lives in. An employee's id is in `staff`
+     and a partner's is in `accounts`, so the old single requested_by column —
+     which pointed at accounts alone — made every employee-initiated job die on a
+     foreign key violation.
+
+     NULL is a legitimate answer: the cron drains this queue with nobody signed
+     in, and 045 says so in the column comment. What is not legitimate is a
+     mismatch, and it is caught here as well as at the CHECK so the message names
+     the argument rather than the constraint. */
+  const requesterKind = requestedByKind || null;
+  if (requesterKind && requesterKind !== "staff" && requesterKind !== "partner") {
+    throw new Error(
+      `enqueue: requestedByKind must be "staff", "partner" or null (got "${requesterKind}")`);
+  }
+  if (requesterKind === "staff" && !requestedByStaffId) {
+    throw new Error("enqueue: requestedByKind 'staff' needs requestedByStaffId");
+  }
+  if (requesterKind === "partner" && !requestedByAccountId) {
+    throw new Error("enqueue: requestedByKind 'partner' needs requestedByAccountId");
+  }
+  const requesterStaffId = requesterKind === "staff" ? requestedByStaffId : null;
+  const requesterAccountId = requesterKind === "partner" ? requestedByAccountId : null;
+
   const existing = await tx.query(
     `SELECT * FROM generation_jobs WHERE partner_id = $1 AND idempotency_key = $2`,
     [partnerId, idempotencyKey]
@@ -59,11 +84,14 @@ export async function enqueue(tx, {
 
   const ins = await tx.query(
     `INSERT INTO generation_jobs
-       (org_id, partner_id, brand_kit_id, requested_by, spec, provider, status, idempotency_key)
-     VALUES ($1,$2,$3,$4,$5::jsonb,$6,'queued',$7)
+       (org_id, partner_id, brand_kit_id,
+        requested_by_kind, requested_by_staff_id, requested_by_account_id,
+        spec, provider, status, idempotency_key)
+     VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,'queued',$9)
      ON CONFLICT (partner_id, idempotency_key) DO NOTHING
      RETURNING *`,
-    [orgId, partnerId, brandKitId, requestedBy,
+    [orgId, partnerId, brandKitId,
+     requesterKind, requesterStaffId, requesterAccountId,
      JSON.stringify({ ...spec, assetKind }), null, idempotencyKey]
   );
 

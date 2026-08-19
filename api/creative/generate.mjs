@@ -6,8 +6,31 @@ import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs
 import { withPartnerScope } from "../../src/partners/rls.mjs";
 import { resolvePartnerId } from "../../src/http/partner-read-api.mjs";
 import { enqueue } from "../../src/creative/generate.mjs";
+import { resolve } from "../../src/creative/providers/index.mjs";
 import { safeError } from "../../src/http/health.mjs";
 import { assertSuiteEnabled, SUITE_OFF } from "../../src/brand/meter.mjs";
+
+/* WHO ASKED, translated from the principal into the columns 241 added.
+
+   This used to be `requestedBy: principal.staffId || null` against a single
+   requested_by column that referenced accounts(id). An employee's id lives in
+   `staff`, not in `accounts`, so every enqueue from an owner or admin session
+   raised a foreign key violation and the screen showed a 500. A partner session
+   has no staffId at all, so it wrote NULL and looked fine — which is why the
+   fault only ever showed up for staff.
+
+   A principal kind this function does not recognise records nobody rather than
+   guessing. An unattributed job is legal here (045: "NULL for a
+   scheduled/agent-initiated batch"); a wrongly attributed one is not. */
+function requesterOf(principal) {
+  if (principal?.kind === "staff" && principal.staffId) {
+    return { requestedByKind: "staff", requestedByStaffId: principal.staffId };
+  }
+  if (principal?.kind === "partner" && principal.accountId) {
+    return { requestedByKind: "partner", requestedByAccountId: principal.accountId };
+  }
+  return { requestedByKind: null };
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -47,11 +70,11 @@ export default async function handler(req, res) {
         throw e;
       }
       await assertSuiteEnabled(tx, partnerId);
-      return enqueue(tx, {
+      const out = await enqueue(tx, {
         orgId: org.org_id,
         partnerId,
         brandKitId: body.brand_kit_id || null,
-        requestedBy: principal.staffId || null,
+        ...requesterOf(principal),
         assetKind,
         idempotencyKey,
         spec: body.spec || {
@@ -60,13 +83,31 @@ export default async function handler(req, res) {
           variants: body.variants || 1
         }
       });
+
+      /* CAN THIS JOB ACTUALLY RUN? Asked here, with the same resolve() the
+         runner uses, so the answer the screen shows is the real one rather than
+         a hedge. There is no creative_providers row in any migration or seed
+         file, so on a fresh install the answer is no — and src/creative/
+         generate.mjs treats that as a permanent failure, not an outage. Saying
+         "queued" and stopping there would let the screen imply pictures are
+         coming when nothing can make them. */
+      let providerReady = true;
+      try {
+        await resolve(tx, { orgId: org.org_id, assetKind });
+      } catch {
+        providerReady = false;
+      }
+      return { ...out, providerReady };
     });
 
     return res.status(200).json({
       ok: true,
       created: result.created,
       job: result.job,
-      note: "Job is queued. Provider credentials (CREATIVE_* env) must be set for run() to produce assets — see docs/STILL-MISSING.md."
+      provider_ready: result.providerReady,
+      note: result.providerReady
+        ? "Saved to the queue. It is picked up within a few minutes, or press \"Run queued jobs now\"."
+        : "Saved to the queue, but it cannot run yet: no ad-making service is switched on for this account. The next try will be recorded as a failure and nothing will be made."
     });
   } catch (err) {
     if (err.code === "NOT_FOUND") return res.status(404).json({ ok: false, error: err.message });
