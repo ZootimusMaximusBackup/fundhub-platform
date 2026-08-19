@@ -221,6 +221,29 @@ export function clientIdFromRecipient(recipient) {
   return m ? m[1] : null;
 }
 
+/* THE REPLY TAG. Same plus-address idea F-10 already uses for bank mail, on a
+   different local part so the two can never be confused: `monitor+<id>@` is a
+   bank statement ABOUT a client, `reply+<id>@` is the client's own words TO us,
+   and those two produce completely different rows.
+
+   Minted on every outbound email by src/messaging/providers/resend.mjs. The
+   local part must be exactly `reply` — a `monitor+` address arriving here must
+   fall through to the From-address path, not be read as a reply. */
+const REPLY_TAG = /(?:^|<)\s*reply\+([0-9a-fA-F-]{36})@/;
+
+export function replyClientIdFrom(recipient) {
+  const m = REPLY_TAG.exec(String(recipient || "").trim().toLowerCase());
+  return m ? m[1] : null;
+}
+
+/* The org that owns a client. Needed because the reply tag names a client and
+   the event bus needs a tenant; without this an emit falls back to the default
+   org, which on a multi-tenant install is the wrong one. */
+async function orgOfClient(db, clientId) {
+  const r = await db.query(`SELECT org_id FROM clients WHERE id = $1 LIMIT 1`, [clientId]);
+  return r.rows[0]?.org_id || null;
+}
+
 /* resolveClientFromSender — the client who WROTE this email, if it was a client.
    Matched on the From address against `clients.email`, case-insensitively and
    trimmed, the same lookup src/handlers/comms.mjs findClient() does.
@@ -254,12 +277,28 @@ export async function resolveClientFromSender(db, from) {
   const bracketed = /<([^>]+)>/.exec(email);
   const address = (bracketed ? bracketed[1] : email).trim();
   if (!address) return null;
+  /* TWO ROWS, NOT ONE, AND NO `LIMIT 1`. This used to be `LIMIT 1` with no
+     ORDER BY, which is not "the oldest client with that address" — it is an
+     ARBITRARY one, whichever Postgres handed back first. When two records share
+     an address (a couple, a business address, a reused work account, the same
+     person entered twice) a reply would be filed onto whichever of them the
+     planner happened to reach, and the next read could pick the other.
+
+     Reading two rows is enough to know whether there is exactly one answer. */
   const r = await db.query(
-    `SELECT id, org_id FROM clients WHERE lower(email) = $1 LIMIT 1`,
+    `SELECT id, org_id FROM clients WHERE lower(email) = $1 LIMIT 2`,
     [address]
   );
+  if (r.rows.length > 1) {
+    /* AMBIGUOUS — REFUSE TO GUESS. Filing a person's words onto the wrong
+       customer's credit file is worse than filing them nowhere: the wrong
+       client's thread now contains somebody else's private message, and the
+       right client looks like they never replied. The caller records the mail
+       unthreaded instead, which is visible and recoverable. */
+    return { clientId: null, orgId: null, ambiguous: true, address };
+  }
   const c = r.rows[0];
-  return c ? { clientId: c.id, orgId: c.org_id } : null;
+  return c ? { clientId: c.id, orgId: c.org_id, ambiguous: false, address } : null;
 }
 
 export async function resolveClientFromRecipient(db, recipient) {
@@ -658,9 +697,33 @@ export async function handleMailgunWebhook({ db, body, signingKey }) {
      keep. This payload is a person's own words written to us, which is exactly
      what a conversation thread is, and a thread with the messages missing is
      not a thread. */
-  const sender = await resolveClientFromSender(db, evt.from);
-  if (sender) {
+  /* WHO REPLIED — THE ADDRESS THEY WROTE TO ANSWERS FIRST.
+
+     Every email we send now carries a Reply-To of `reply+<clientId>@<domain>`
+     (src/messaging/providers/resend.mjs), so an ordinary reply comes back
+     addressed to exactly one client. That is deterministic: it does not care
+     whether two people share a mailbox, whether they replied from their phone
+     rather than the address on file, or whether they changed jobs.
+
+     The From address is the FALLBACK, and it can only answer when it answers
+     unambiguously — see resolveClientFromSender. This ordering is T5-04: a
+     reply used to be filed on whichever client the database happened to return
+     first for that address. */
+  const tagged = replyClientIdFrom(evt.recipient);
+  const sender = tagged
+    ? { clientId: tagged, orgId: await orgOfClient(db, tagged), ambiguous: false }
+    : await resolveClientFromSender(db, evt.from);
+
+  if (sender && (sender.clientId || sender.ambiguous)) {
     const inboundKey = evt.messageId ? `mailgun:${evt.messageId}:message.inbound` : undefined;
+    if (sender.ambiguous) {
+      /* Recorded, not thrown away, and not attached to anybody. Losing a
+         client's words is not an acceptable way to avoid misfiling them. */
+      console.warn(
+        `[mailgun] inbound reply from an address held by more than one client — ` +
+        `filed unthreaded rather than on a guess. Message ${evt.messageId || "(no id)"}.`
+      );
+    }
     const res = await emit(db, "message.inbound", {
       from: evt.from,
       to: evt.recipient,
@@ -668,8 +731,15 @@ export async function handleMailgunWebhook({ db, body, signingKey }) {
       subject: evt.subject,
       sid: evt.messageId,
       channel: "email",
-      source: "mailgun"
-    }, { idempotencyKey: inboundKey, orgId: sender.orgId, clientId: sender.clientId });
+      source: "mailgun",
+      // Named on the payload so the reason a message is unthreaded survives
+      // into the event log rather than living only in a warning line.
+      unresolved_reason: sender.ambiguous ? "address_matches_more_than_one_client" : undefined
+    }, {
+      idempotencyKey: inboundKey,
+      orgId: sender.orgId || undefined,
+      clientId: sender.clientId || undefined
+    });
     emitted.push({ name: "message.inbound", id: res.id, deduped: res.deduped });
   }
 
