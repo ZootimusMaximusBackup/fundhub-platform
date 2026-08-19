@@ -178,7 +178,7 @@ flowchart TD
 | `/api/partner-marketing/generate-logo` | POST | staff, partner |
 | `/api/partner-marketing/usage` | GET | staff, partner |
 | `/api/partner-pages` | GET, PATCH, POST | employees: owner, admin<br>plus: partner |
-| `/api/payment-links` | GET, POST | owner, admin, sales_manager |
+| `/api/payment-links` | GET, POST | owner, admin, sales_manager, closer |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/pipeline-cards` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/privacy/erasure` | GET, POST | owner, admin |

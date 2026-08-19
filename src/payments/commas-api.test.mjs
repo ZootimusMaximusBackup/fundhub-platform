@@ -4,6 +4,8 @@ import {
   commasConfig,
   getPayment,
   reconcilePayment,
+  createCheckoutSession,
+  withCheckoutIdentifiers,
   DEFAULT_API_BASE,
   API_KEY_ENV
 } from "./commas-api.mjs";
@@ -182,4 +184,89 @@ test("with no API key, reconcile does nothing and reports why", async () => {
   assert.equal(res.enqueued, false);
   assert.match(res.reason, new RegExp(API_KEY_ENV));
   assert.equal(db.inbox.length, 0);
+});
+
+/* ── the success URL carries the two ids the thank-you page needs ───────────
+ *
+ * public/app/payment-success.html is public and has no session. It was handed
+ * a bare URL with nothing on it, so it could not tell whether the payment had
+ * actually landed — its copy had to hedge with "if your payment went through".
+ * The contract is exactly two query parameters, `ref` and `client_id`, and
+ * this file and that page are the two halves of it. */
+
+const CHECKOUT_ENV = { FANBASIS_CHECKOUT_API_KEY: "ck_test", FANBASIS_CHECKOUT_API_BASE: "https://x.test/api" };
+const META = { link_ref: "pl_abc123", client_id: "11111111-2222-3333-4444-555555555555", org_id: "org-1" };
+
+test("withCheckoutIdentifiers: appends ref and client_id, and nothing else", () => {
+  const url = new URL(withCheckoutIdentifiers("https://fundhub.ai/app/payment-success.html", META));
+  assert.equal(url.searchParams.get("ref"), "pl_abc123");
+  assert.equal(url.searchParams.get("client_id"), "11111111-2222-3333-4444-555555555555");
+  assert.deepEqual([...url.searchParams.keys()].sort(), ["client_id", "ref"], "something else reached the query string");
+  assert.equal(url.origin + url.pathname, "https://fundhub.ai/app/payment-success.html");
+});
+
+test("withCheckoutIdentifiers: an existing query string survives, and nothing doubles up", () => {
+  const once = withCheckoutIdentifiers("https://fundhub.ai/app/payment-success.html?utm=email", META);
+  const twice = withCheckoutIdentifiers(once, META);
+  const url = new URL(twice);
+  assert.equal(url.searchParams.get("utm"), "email");
+  assert.deepEqual(url.searchParams.getAll("ref"), ["pl_abc123"], "the ref was appended twice");
+});
+
+test("withCheckoutIdentifiers: nothing to add, or nothing to add it to, leaves the url alone", () => {
+  const plain = "https://fundhub.ai/app/payment-success.html";
+  assert.equal(withCheckoutIdentifiers(plain, null), plain);
+  assert.equal(withCheckoutIdentifiers(plain, {}), plain);
+  assert.equal(withCheckoutIdentifiers(plain, { org_id: "org-1" }), plain, "org_id must not travel on the url");
+  // A payer landing on a plain thank-you page is cosmetic; landing nowhere is not.
+  assert.equal(withCheckoutIdentifiers("not a url at all", META), "not a url at all");
+});
+
+test("withCheckoutIdentifiers: whichever id is known goes on, the other is simply absent", () => {
+  const refOnly = new URL(withCheckoutIdentifiers("https://x.test/ok", { link_ref: "pl_1" }));
+  assert.deepEqual([...refOnly.searchParams.keys()], ["ref"]);
+  const clientOnly = new URL(withCheckoutIdentifiers("https://x.test/ok", { client_id: "c1" }));
+  assert.deepEqual([...clientOnly.searchParams.keys()], ["client_id"]);
+});
+
+test("createCheckoutSession sends a success_url the thank-you page can act on", async () => {
+  const fetchImpl = fakeFetch([{ status: 200, body: JSON.stringify({ data: { payment_link: "https://pay/x", id: "sess_1" } }) }]);
+  const res = await createCheckoutSession({
+    amountCents: 3200,
+    productTitle: "diagnostic",
+    metadata: META,
+    env: CHECKOUT_ENV,
+    fetchImpl
+  });
+  assert.equal(res.ok, true);
+
+  const sent = JSON.parse(fetchImpl.calls[0].opts.body);
+  const url = new URL(sent.success_url);
+  assert.equal(url.searchParams.get("ref"), "pl_abc123");
+  assert.equal(url.searchParams.get("client_id"), "11111111-2222-3333-4444-555555555555");
+  assert.deepEqual([...url.searchParams.keys()].sort(), ["client_id", "ref"]);
+  // and the metadata itself is untouched — the ids still round-trip on the webhook
+  assert.equal(sent.metadata.link_ref, "pl_abc123");
+  assert.equal(sent.metadata.client_id, "11111111-2222-3333-4444-555555555555");
+});
+
+test("createCheckoutSession decorates an explicitly supplied success url too", async () => {
+  const fetchImpl = fakeFetch([{ status: 200, body: JSON.stringify({ data: { payment_link: "https://pay/x", id: "s" } }) }]);
+  await createCheckoutSession({
+    amountCents: 100,
+    productTitle: "x",
+    metadata: { link_ref: "pl_z" },
+    successUrl: "https://custom.test/thanks",
+    env: CHECKOUT_ENV,
+    fetchImpl
+  });
+  const sent = JSON.parse(fetchImpl.calls[0].opts.body);
+  assert.equal(sent.success_url, "https://custom.test/thanks?ref=pl_z");
+});
+
+test("createCheckoutSession with no metadata still sends a plain success url", async () => {
+  const fetchImpl = fakeFetch([{ status: 200, body: JSON.stringify({ data: { payment_link: "https://pay/x", id: "s" } }) }]);
+  await createCheckoutSession({ amountCents: 100, productTitle: "x", env: CHECKOUT_ENV, fetchImpl });
+  const sent = JSON.parse(fetchImpl.calls[0].opts.body);
+  assert.equal(sent.success_url, "https://fundhub.ai/app/payment-success.html");
 });

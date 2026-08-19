@@ -10,8 +10,19 @@ import {
 const HAVE_DB = !!process.env.DATABASE_URL;
 const CODE = "metro2-letter-pack";
 
+/* FIXTURE PRODUCT CODES, and why the tests stopped borrowing a real one.
+   These tests used 'repair-bundle' as their scratch product and wiped
+   product_entitlements for the whole org between tests. Both stopped being safe
+   the moment 180_product_entitlements_seed.sql put real configuration in that
+   table: the wipe would delete shipped config from whatever database
+   DATABASE_URL points at, and the inserts would collide with the seeded row.
+   Fixture rows now carry an 'ent-fixture' prefix, and the wipe only removes
+   those. Nothing this file writes can touch a real mapping. */
+const FIXTURE_PRODUCT = "ent-fixture-product";
+const FIXTURE_UNMAPPED = "ent-fixture-unmapped";
+
 describe("entitlements", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
-  let org, clientId, otherClient, staffId, txA, txB;
+  let org, clientId, otherClient, staffId, txA, txB, fixtureProductId;
 
   before(async () => {
     org = (await db.query(`SELECT id FROM orgs WHERE is_default LIMIT 1`)).rows[0].id;
@@ -33,19 +44,33 @@ describe("entitlements", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
       `INSERT INTO transactions (org_id, client_id, product_name, amount_paid, status)
        VALUES ($1,$2,'Credit Repair Bundle',1500,'paid') RETURNING id`,
       [org, clientId])).rows[0].id;
+    // A sellable product that no migration maps, so the "which products grant
+    // nothing yet" report has something of ours to find and lose.
+    fixtureProductId = (await db.query(
+      `INSERT INTO products (org_id, code, name, category, price_is_variable, sort_order)
+       VALUES ($1,$2,'Entitlement fixture product','diagnostic',true,999) RETURNING id`,
+      [org, FIXTURE_UNMAPPED])).rows[0].id;
   });
 
+  /* Scoped to this file's own rows, deliberately. The org-wide DELETEs that
+     used to live here would have wiped every real client's grants and the
+     shipped product→entitlement configuration. */
   const wipe = async () => {
     await db.query(`ALTER TABLE entitlements DISABLE TRIGGER trg_entitlements_no_delete`);
-    await db.query(`DELETE FROM entitlements WHERE org_id = $1`, [org]);
+    await db.query(
+      `DELETE FROM entitlements WHERE org_id = $1 AND client_id = ANY($2)`,
+      [org, [clientId, otherClient].filter(Boolean)]);
     await db.query(`ALTER TABLE entitlements ENABLE TRIGGER trg_entitlements_no_delete`);
-    await db.query(`DELETE FROM product_entitlements WHERE org_id = $1`, [org]);
+    await db.query(
+      `DELETE FROM product_entitlements WHERE org_id = $1 AND product_code LIKE 'ent-fixture%'`,
+      [org]);
   };
 
   beforeEach(wipe);
 
   after(async () => {
     await wipe();
+    await db.query(`DELETE FROM products WHERE id = $1`, [fixtureProductId]);
     await db.query(`DELETE FROM transactions WHERE id = ANY($1)`, [[txA, txB]]);
     await db.query(`DELETE FROM clients WHERE id = ANY($1)`, [[clientId, otherClient]]);
     await db.query(`DELETE FROM staff WHERE id = $1`, [staffId]);
@@ -54,20 +79,26 @@ describe("entitlements", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
 
   // ── the catalog is what makes a locked tile representable ──
 
-  test("the catalog holds the five deliverables the portal renders", async () => {
+  /* WAS "the five deliverables". The portal ships SIX tiles
+     (public/app/client-portal.html) and the catalog held five codes, so the
+     sixth — the Funding Mastery course — had no code to gate on and could never
+     open. 180_product_entitlements_seed.sql adds it. This assertion moved from
+     five to six on purpose. */
+  test("the catalog holds a code for every deliverable tile the portal renders", async () => {
     const rows = await catalog(db, { orgId: org });
     assert.deepEqual(rows.map((r) => r.code).sort(), [
       "bank-lender-match-list", "credit-analysis-report",
-      "credit-optimization-roadmap", "funding-snapshot", "metro2-letter-pack"
+      "credit-optimization-roadmap", "funding-mastery-course",
+      "funding-snapshot", "metro2-letter-pack"
     ]);
     assert.ok(rows.every((r) => r.kind === "deliverable"));
   });
 
-  test("a client with no grants gets five locked tiles, not an empty screen", async () => {
+  test("a client with no grants gets six locked tiles, not an empty screen", async () => {
     const r = await forClient(db, { orgId: org, clientId });
     assert.equal(r.held.length, 0);
-    assert.equal(r.locked.length, 5, "the portal must be able to render the upsell");
-    assert.equal(r.all.length, 5);
+    assert.equal(r.locked.length, 6, "the portal must be able to render the upsell");
+    assert.equal(r.all.length, 6);
   });
 
   // ── grant, and the re-delivery guarantee ──
@@ -78,7 +109,7 @@ describe("entitlements", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
 
     const r = await forClient(db, { orgId: org, clientId });
     assert.deepEqual(r.held.map((h) => h.code), [CODE]);
-    assert.equal(r.locked.length, 4);
+    assert.equal(r.locked.length, 5);
     assert.equal(r.held[0].entitlement_name ?? r.held[0].name, "Metro 2 Dispute Letter Pack");
     assert.equal(await has(db, { orgId: org, clientId, code: CODE }), true);
   });
@@ -236,9 +267,12 @@ describe("entitlements", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
 
   test("an unmapped product grants nothing and says so — no guessed mapping", async () => {
     const out = await grantFromTransaction(db, {
-      orgId: org, clientId, transactionId: txA, productCode: "repair-bundle"
+      orgId: org, clientId, transactionId: txA, productCode: FIXTURE_PRODUCT
     });
     assert.equal(out.unmapped, true);
+    // WAS: unmapped:true and nothing else. A caller could not tell "no mapping"
+    // from "no client" or "no product", so the refusal was unreportable.
+    assert.equal(out.reason, "no_mapping");
     assert.deepEqual(out.granted, []);
     assert.equal((await forClient(db, { orgId: org, clientId })).held.length, 0);
   });
@@ -246,28 +280,83 @@ describe("entitlements", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
   test("once configured, a purchase grants the mapped entitlements", async () => {
     await db.query(
       `INSERT INTO product_entitlements (org_id, product_code, entitlement_code)
-       VALUES ($1,'repair-bundle',$2), ($1,'repair-bundle','credit-analysis-report')`,
-      [org, CODE]);
+       VALUES ($1,$3,$2), ($1,$3,'credit-analysis-report')`,
+      [org, CODE, FIXTURE_PRODUCT]);
 
     const out = await grantFromTransaction(db, {
-      orgId: org, clientId, transactionId: txA, productCode: "repair-bundle"
+      orgId: org, clientId, transactionId: txA, productCode: FIXTURE_PRODUCT
     });
     assert.equal(out.unmapped, false);
+    assert.equal(out.reason, null);
     assert.deepEqual(out.granted.sort(), ["credit-analysis-report", CODE].sort());
 
     const r = await forClient(db, { orgId: org, clientId });
     assert.equal(r.held.length, 2);
-    assert.equal(r.locked.length, 3);
+    assert.equal(r.locked.length, 4);
+  });
+
+  /* THE POINT OF MIGRATION 180. Everything above proves the machinery works
+     once someone fills the table in. These prove the table is now filled in for
+     the products shipped code can defend — which is what "money landed and
+     nothing opened" actually needed. */
+  test("the seeded mapping turns a real repair purchase into the letter pack", async () => {
+    const out = await grantFromTransaction(db, {
+      orgId: org, clientId, transactionId: txA, productCode: "repair-bundle"
+    });
+    assert.equal(out.unmapped, false, "180_product_entitlements_seed.sql not applied?");
+    assert.deepEqual(out.granted, [CODE]);
+    assert.equal(await has(db, { orgId: org, clientId, code: CODE }), true);
+  });
+
+  test("the seeded mapping covers diagnostic, funding and the DIY package too", async () => {
+    const cases = [
+      ["diagnostic", "credit-analysis-report"],
+      ["card-stacking-dfy", "funding-snapshot"],
+      ["consulting-package", "metro2-letter-pack"]
+    ];
+    for (const [productCode, code] of cases) {
+      const out = await grantFromTransaction(db, {
+        orgId: org, clientId, transactionId: txA, productCode
+      });
+      assert.equal(out.unmapped, false, `${productCode} is unmapped`);
+      assert.ok(out.granted.includes(code), `${productCode} did not grant ${code}`);
+    }
+  });
+
+  test("replaying a real purchase grants once, not twice", async () => {
+    const first = await grantFromTransaction(db, {
+      orgId: org, clientId, transactionId: txA, productCode: "diagnostic" });
+    const again = await grantFromTransaction(db, {
+      orgId: org, clientId, transactionId: txA, productCode: "diagnostic" });
+    assert.deepEqual(first.granted, ["credit-analysis-report"]);
+    assert.deepEqual(again.granted, []);
+    assert.deepEqual(again.skipped, ["credit-analysis-report"]);
+    const { rows } = await db.query(
+      `SELECT count(*)::int AS n FROM entitlements
+        WHERE client_id = $1 AND entitlement_code = 'credit-analysis-report'`,
+      [clientId]);
+    assert.equal(rows[0].n, 1);
+  });
+
+  test("the offers we could not defend stay unmapped — nothing was guessed", async () => {
+    // inquiry-removal is a real product with no shipped code saying what it
+    // delivers. 180 leaves it blank on purpose. If someone maps it later they
+    // should have to change this line and say why.
+    const out = await grantFromTransaction(db, {
+      orgId: org, clientId, transactionId: txA, productCode: "inquiry-removal"
+    });
+    assert.equal(out.unmapped, true);
+    assert.deepEqual(out.granted, []);
   });
 
   test("replaying a purchase is idempotent", async () => {
     await db.query(
       `INSERT INTO product_entitlements (org_id, product_code, entitlement_code)
-       VALUES ($1,'repair-bundle',$2)`, [org, CODE]);
+       VALUES ($1,$3,$2)`, [org, CODE, FIXTURE_PRODUCT]);
     const first = await grantFromTransaction(db, {
-      orgId: org, clientId, transactionId: txA, productCode: "repair-bundle" });
+      orgId: org, clientId, transactionId: txA, productCode: FIXTURE_PRODUCT });
     const again = await grantFromTransaction(db, {
-      orgId: org, clientId, transactionId: txA, productCode: "repair-bundle" });
+      orgId: org, clientId, transactionId: txA, productCode: FIXTURE_PRODUCT });
     assert.deepEqual(first.granted, [CODE]);
     assert.deepEqual(again.granted, []);
     assert.deepEqual(again.skipped, [CODE]);
@@ -279,9 +368,9 @@ describe("entitlements", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
   test("a term-limited mapping produces an expiring grant", async () => {
     await db.query(
       `INSERT INTO product_entitlements (org_id, product_code, entitlement_code, duration_days)
-       VALUES ($1,'repair-bundle',$2,30)`, [org, CODE]);
+       VALUES ($1,$3,$2,30)`, [org, CODE, FIXTURE_PRODUCT]);
     await grantFromTransaction(db, {
-      orgId: org, clientId, transactionId: txA, productCode: "repair-bundle" });
+      orgId: org, clientId, transactionId: txA, productCode: FIXTURE_PRODUCT });
     const r = await forClient(db, { orgId: org, clientId });
     assert.equal(r.held.length, 1);
     assert.ok(r.held[0].expires_at, "duration_days must produce an expiry");
@@ -289,15 +378,19 @@ describe("entitlements", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
 
   test("unmappedProducts reports every product that grants nothing yet", async () => {
     const before = await unmappedProducts(db, { orgId: org });
-    assert.ok(before.some((p) => p.code === "repair-bundle"), JSON.stringify(before));
+    assert.ok(before.some((p) => p.code === FIXTURE_UNMAPPED), JSON.stringify(before));
+    // The four products 180 mapped must NOT be in this report any more.
+    for (const mapped of ["diagnostic", "card-stacking-dfy", "repair-bundle", "consulting-package"]) {
+      assert.ok(!before.some((p) => p.code === mapped), `${mapped} still reports as unmapped`);
+    }
     const n = before.length;
 
     await db.query(
       `INSERT INTO product_entitlements (org_id, product_code, entitlement_code)
-       VALUES ($1,'repair-bundle',$2)`, [org, CODE]);
+       VALUES ($1,$3,$2)`, [org, CODE, FIXTURE_UNMAPPED]);
     const after = await unmappedProducts(db, { orgId: org });
     assert.equal(after.length, n - 1);
-    assert.ok(!after.some((p) => p.code === "repair-bundle"));
+    assert.ok(!after.some((p) => p.code === FIXTURE_UNMAPPED));
   });
 
   // ── argument guards ──

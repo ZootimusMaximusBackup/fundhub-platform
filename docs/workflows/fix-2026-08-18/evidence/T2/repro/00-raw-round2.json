@@ -1,0 +1,1159 @@
+{
+  "generatedAt": "2026-08-19T02:48:29.172Z",
+  "results": {
+    "events_all_payment_detail": {
+      "ok": true,
+      "sql": "SELECT id, name, client_id, created_at,\n          payload->>'source'    AS src,\n          payload->>'email'     AS email,\n          payload->>'product'   AS product,\n          payload->>'productName' AS product_name,\n          payload->>'providerRef' AS provider_ref,\n          payload->>'ref'       AS ref,\n          payload->>'link_ref'  AS link_ref,\n          payload->'metadata'   AS metadata,\n          payload\n     FROM events\n    WHERE name IN ('payment.received','diagnostic.paid','deposit.paid','sale.closed')\n    ORDER BY created_at DESC",
+      "params": [],
+      "rowCount": 19,
+      "rows": [
+        {
+          "id": "44eb6a4b-8834-4ba9-92e9-84e20d1b4b00",
+          "name": "payment.received",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T20:50:28.711Z",
+          "src": "w16-sim",
+          "email": "client@fundhub.ai",
+          "product": "unmatched",
+          "product_name": "Funding Mastery course (A to Z)",
+          "provider_ref": "w16-sim-8556bedc-FUNDING_MASTERY-live",
+          "ref": null,
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "email": "client@fundhub.ai",
+            "amount": 5000,
+            "source": "w16-sim",
+            "product": "unmatched",
+            "offerKey": "FUNDING_MASTERY",
+            "productName": "Funding Mastery course (A to Z)",
+            "providerRef": "w16-sim-8556bedc-FUNDING_MASTERY-live"
+          }
+        },
+        {
+          "id": "dcb10b34-ec8c-437f-ab38-819b783907e8",
+          "name": "payment.received",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T20:50:27.671Z",
+          "src": "w16-sim",
+          "email": "client@fundhub.ai",
+          "product": "unmatched",
+          "product_name": "UnderwriteIQ Deliverables Package",
+          "provider_ref": "w16-sim-8556bedc-UWIQ_DELIVERABLES-live",
+          "ref": null,
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "email": "client@fundhub.ai",
+            "amount": 1000,
+            "source": "w16-sim",
+            "product": "unmatched",
+            "offerKey": "UWIQ_DELIVERABLES",
+            "productName": "UnderwriteIQ Deliverables Package",
+            "providerRef": "w16-sim-8556bedc-UWIQ_DELIVERABLES-live"
+          }
+        },
+        {
+          "id": "b6b606a6-160a-4579-a346-5dfcad079799",
+          "name": "sale.closed",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T20:50:26.466Z",
+          "src": "w16-sim",
+          "email": "client@fundhub.ai",
+          "product": "diy",
+          "product_name": "Repair test run (first round, done for you)",
+          "provider_ref": "w16-sim-8556bedc-REPAIR_TRIAL-unlock",
+          "ref": null,
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "email": "client@fundhub.ai",
+            "amount": 200,
+            "source": "w16-sim",
+            "product": "diy",
+            "offerKey": "REPAIR_TRIAL",
+            "productName": "Repair test run (first round, done for you)",
+            "providerRef": "w16-sim-8556bedc-REPAIR_TRIAL-unlock"
+          }
+        },
+        {
+          "id": "d1d09471-1ed6-4aab-8a71-09ff0e922b74",
+          "name": "payment.received",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T20:50:25.416Z",
+          "src": "w16-sim",
+          "email": "client@fundhub.ai",
+          "product": "unmatched",
+          "product_name": "Repair test run (first round, done for you)",
+          "provider_ref": "w16-sim-8556bedc-REPAIR_TRIAL-live",
+          "ref": null,
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "email": "client@fundhub.ai",
+            "amount": 200,
+            "source": "w16-sim",
+            "product": "unmatched",
+            "offerKey": "REPAIR_TRIAL",
+            "productName": "Repair test run (first round, done for you)",
+            "providerRef": "w16-sim-8556bedc-REPAIR_TRIAL-live"
+          }
+        },
+        {
+          "id": "257fcd7c-c974-4fe5-a05e-84e216c8c949",
+          "name": "sale.closed",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T20:50:24.097Z",
+          "src": "w16-sim",
+          "email": "client@fundhub.ai",
+          "product": "diy",
+          "product_name": "Credit repair, done-for-you",
+          "provider_ref": "w16-sim-8556bedc-REPAIR_DFY-unlock",
+          "ref": null,
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "email": "client@fundhub.ai",
+            "amount": 1000,
+            "source": "w16-sim",
+            "product": "diy",
+            "offerKey": "REPAIR_DFY",
+            "productName": "Credit repair, done-for-you",
+            "providerRef": "w16-sim-8556bedc-REPAIR_DFY-unlock"
+          }
+        },
+        {
+          "id": "03eccc8d-8f79-475e-9729-ff54dce74e1d",
+          "name": "payment.received",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T20:50:22.908Z",
+          "src": "w16-sim",
+          "email": "client@fundhub.ai",
+          "product": "unmatched",
+          "product_name": "Credit repair, done-for-you",
+          "provider_ref": "w16-sim-8556bedc-REPAIR_DFY-live",
+          "ref": null,
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "email": "client@fundhub.ai",
+            "amount": 1000,
+            "source": "w16-sim",
+            "product": "unmatched",
+            "offerKey": "REPAIR_DFY",
+            "productName": "Credit repair, done-for-you",
+            "providerRef": "w16-sim-8556bedc-REPAIR_DFY-live"
+          }
+        },
+        {
+          "id": "5eba4879-cbc4-4e3f-ba4e-757b50c9ac20",
+          "name": "deposit.paid",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T20:50:21.251Z",
+          "src": "w16-sim",
+          "email": "client@fundhub.ai",
+          "product": "deposit",
+          "product_name": "Funding, done-for-you",
+          "provider_ref": "w16-sim-8556bedc-FUNDING_DFY-unlock",
+          "ref": null,
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "email": "client@fundhub.ai",
+            "amount": 3000,
+            "source": "w16-sim",
+            "product": "deposit",
+            "offerKey": "FUNDING_DFY",
+            "productName": "Funding, done-for-you",
+            "providerRef": "w16-sim-8556bedc-FUNDING_DFY-unlock"
+          }
+        },
+        {
+          "id": "38bd8c82-1de3-40fc-b1d2-733c7d6f13b5",
+          "name": "payment.received",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T20:50:20.672Z",
+          "src": "w16-sim",
+          "email": "client@fundhub.ai",
+          "product": "unmatched",
+          "product_name": "Funding, done-for-you",
+          "provider_ref": "w16-sim-8556bedc-FUNDING_DFY-live",
+          "ref": null,
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "email": "client@fundhub.ai",
+            "amount": 3000,
+            "source": "w16-sim",
+            "product": "unmatched",
+            "offerKey": "FUNDING_DFY",
+            "productName": "Funding, done-for-you",
+            "providerRef": "w16-sim-8556bedc-FUNDING_DFY-live"
+          }
+        },
+        {
+          "id": "ac3352a1-d484-4927-bfe2-f55b9affe005",
+          "name": "diagnostic.paid",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T20:50:18.891Z",
+          "src": "w16-sim",
+          "email": "client@fundhub.ai",
+          "product": "crs",
+          "product_name": "UnderwriteIQ soft-pull assessment",
+          "provider_ref": "w16-sim-8556bedc-SOFT_PULL-unlock",
+          "ref": null,
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "email": "client@fundhub.ai",
+            "amount": 32,
+            "source": "w16-sim",
+            "product": "crs",
+            "offerKey": "SOFT_PULL",
+            "productName": "UnderwriteIQ soft-pull assessment",
+            "providerRef": "w16-sim-8556bedc-SOFT_PULL-unlock"
+          }
+        },
+        {
+          "id": "41da5328-8e71-45b5-8e20-2a39e7b379fc",
+          "name": "payment.received",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T20:50:18.221Z",
+          "src": "w16-sim",
+          "email": "client@fundhub.ai",
+          "product": "unmatched",
+          "product_name": "UnderwriteIQ soft-pull assessment",
+          "provider_ref": "w16-sim-8556bedc-SOFT_PULL-live",
+          "ref": null,
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "email": "client@fundhub.ai",
+            "amount": 32,
+            "source": "w16-sim",
+            "product": "unmatched",
+            "offerKey": "SOFT_PULL",
+            "productName": "UnderwriteIQ soft-pull assessment",
+            "providerRef": "w16-sim-8556bedc-SOFT_PULL-live"
+          }
+        },
+        {
+          "id": "0bc264a3-e1dc-42d0-ae87-18b96a4a7ad4",
+          "name": "diagnostic.paid",
+          "client_id": null,
+          "created_at": "2026-08-18T19:14:42.385Z",
+          "src": "commas",
+          "email": "sim+1787079946953@demo.fundhub.local",
+          "product": "crs",
+          "product_name": "Business Financial Assessment",
+          "provider_ref": "wpay-sim-41a3199f-pay-noid",
+          "ref": null,
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "email": "sim+1787079946953@demo.fundhub.local",
+            "amount": 32,
+            "source": "commas",
+            "product": "crs",
+            "productName": "Business Financial Assessment",
+            "providerRef": "wpay-sim-41a3199f-pay-noid"
+          }
+        },
+        {
+          "id": "ee763f7f-3aef-49a9-a308-0f69ca835934",
+          "name": "payment.received",
+          "client_id": null,
+          "created_at": "2026-08-18T19:14:40.660Z",
+          "src": "commas",
+          "email": "sim+1787079946953@demo.fundhub.local",
+          "product": "crs",
+          "product_name": "Business Financial Assessment",
+          "provider_ref": "wpay-sim-41a3199f-pay-noid",
+          "ref": null,
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "email": "sim+1787079946953@demo.fundhub.local",
+            "amount": 32,
+            "source": "commas",
+            "product": "crs",
+            "productName": "Business Financial Assessment",
+            "providerRef": "wpay-sim-41a3199f-pay-noid"
+          }
+        },
+        {
+          "id": "629d54f6-1ee3-4b04-9903-9ec984f1a9ff",
+          "name": "diagnostic.paid",
+          "client_id": null,
+          "created_at": "2026-08-16T05:10:16.333Z",
+          "src": "commas",
+          "email": "stanbridgejchris@gmail.com",
+          "product": "crs",
+          "product_name": "Business Financial Assessment — Fundhub",
+          "provider_ref": "ORD-MA94-BBWM-4QFP",
+          "ref": "pl_prove_chris_1",
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "ref": "pl_prove_chris_1",
+            "dueBy": null,
+            "email": "stanbridgejchris@gmail.com",
+            "amount": 1,
+            "source": "commas",
+            "product": "crs",
+            "paymentId": "ORD-MA94-BBWM-4QFP",
+            "productName": "Business Financial Assessment — Fundhub",
+            "providerRef": "ORD-MA94-BBWM-4QFP"
+          }
+        },
+        {
+          "id": "98368a84-6465-4d07-86ff-4c5ef3212b88",
+          "name": "payment.received",
+          "client_id": null,
+          "created_at": "2026-08-16T05:10:15.244Z",
+          "src": "commas",
+          "email": "stanbridgejchris@gmail.com",
+          "product": "crs",
+          "product_name": "Business Financial Assessment — Fundhub",
+          "provider_ref": "ORD-MA94-BBWM-4QFP",
+          "ref": "pl_prove_chris_1",
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "ref": "pl_prove_chris_1",
+            "dueBy": null,
+            "email": "stanbridgejchris@gmail.com",
+            "amount": 1,
+            "source": "commas",
+            "product": "crs",
+            "paymentId": "ORD-MA94-BBWM-4QFP",
+            "productName": "Business Financial Assessment — Fundhub",
+            "providerRef": "ORD-MA94-BBWM-4QFP"
+          }
+        },
+        {
+          "id": "25b466ee-19b0-4043-9c90-333349603d8d",
+          "name": "diagnostic.paid",
+          "client_id": null,
+          "created_at": "2026-08-13T07:33:03.072Z",
+          "src": "commas",
+          "email": "bakerskater987+test.commas.1786606351723@gmail.com",
+          "product": "crs",
+          "product_name": "Business Financial Assessment",
+          "provider_ref": "gauntlet-commas-1786606353567",
+          "ref": null,
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "ref": null,
+            "dueBy": null,
+            "email": "bakerskater987+test.commas.1786606351723@gmail.com",
+            "amount": 32,
+            "source": "commas",
+            "product": "crs",
+            "paymentId": "gauntlet-commas-1786606353567",
+            "productName": "Business Financial Assessment",
+            "providerRef": "gauntlet-commas-1786606353567"
+          }
+        },
+        {
+          "id": "c9751f20-eb44-463d-b2fe-baab41fa0d68",
+          "name": "payment.received",
+          "client_id": null,
+          "created_at": "2026-08-13T07:33:02.122Z",
+          "src": "commas",
+          "email": "bakerskater987+test.commas.1786606351723@gmail.com",
+          "product": "crs",
+          "product_name": "Business Financial Assessment",
+          "provider_ref": "gauntlet-commas-1786606353567",
+          "ref": null,
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "ref": null,
+            "dueBy": null,
+            "email": "bakerskater987+test.commas.1786606351723@gmail.com",
+            "amount": 32,
+            "source": "commas",
+            "product": "crs",
+            "paymentId": "gauntlet-commas-1786606353567",
+            "productName": "Business Financial Assessment",
+            "providerRef": "gauntlet-commas-1786606353567"
+          }
+        },
+        {
+          "id": "472f73eb-5c03-470e-8216-8f6f6f610e1b",
+          "name": "diagnostic.paid",
+          "client_id": null,
+          "created_at": "2026-08-12T14:30:38.523Z",
+          "src": "commas",
+          "email": "test+crs@fundhub.ai",
+          "product": "crs",
+          "product_name": "Business Financial Assessment",
+          "provider_ref": "ORD-SYNTH-C18117792FFE",
+          "ref": "pl_synth_crs_e2e",
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "ref": "pl_synth_crs_e2e",
+            "dueBy": null,
+            "email": "test+crs@fundhub.ai",
+            "amount": 32,
+            "source": "commas",
+            "product": "crs",
+            "paymentId": "ORD-SYNTH-C18117792FFE",
+            "productName": "Business Financial Assessment",
+            "providerRef": "ORD-SYNTH-C18117792FFE"
+          }
+        },
+        {
+          "id": "3aa60eab-ea05-4776-86fb-a6dae5c1cdfb",
+          "name": "payment.received",
+          "client_id": null,
+          "created_at": "2026-08-12T14:30:35.774Z",
+          "src": "commas",
+          "email": "test+crs@fundhub.ai",
+          "product": "crs",
+          "product_name": "Business Financial Assessment",
+          "provider_ref": "ORD-SYNTH-C18117792FFE",
+          "ref": "pl_synth_crs_e2e",
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "ref": "pl_synth_crs_e2e",
+            "dueBy": null,
+            "email": "test+crs@fundhub.ai",
+            "amount": 32,
+            "source": "commas",
+            "product": "crs",
+            "paymentId": "ORD-SYNTH-C18117792FFE",
+            "productName": "Business Financial Assessment",
+            "providerRef": "ORD-SYNTH-C18117792FFE"
+          }
+        },
+        {
+          "id": "a82c4092-be7c-42ce-8d12-4ec836827e70",
+          "name": "payment.received",
+          "client_id": null,
+          "created_at": "2026-08-12T14:24:11.062Z",
+          "src": "commas",
+          "email": "test@example.com",
+          "product": "unmatched",
+          "product_name": "Test Product",
+          "provider_ref": "test_6a7c81d973776",
+          "ref": null,
+          "link_ref": null,
+          "metadata": null,
+          "payload": {
+            "ref": null,
+            "dueBy": null,
+            "email": "test@example.com",
+            "amount": null,
+            "source": "commas",
+            "product": "unmatched",
+            "paymentId": "test_6a7c81d973776",
+            "productName": "Test Product",
+            "providerRef": "test_6a7c81d973776"
+          }
+        }
+      ]
+    },
+    "events_grouped_real_vs_sim": {
+      "ok": true,
+      "sql": "SELECT name,\n          COALESCE(payload->>'source','(none)') AS src,\n          count(*)::int AS count,\n          count(client_id)::int AS with_client\n     FROM events\n    WHERE name IN ('payment.received','diagnostic.paid','deposit.paid','sale.closed','contract.signed','contract.sent')\n    GROUP BY name, COALESCE(payload->>'source','(none)')\n    ORDER BY name, src",
+      "params": [],
+      "rowCount": 9,
+      "rows": [
+        {
+          "name": "contract.sent",
+          "src": "(none)",
+          "count": 7,
+          "with_client": 7
+        },
+        {
+          "name": "contract.signed",
+          "src": "(none)",
+          "count": 4,
+          "with_client": 4
+        },
+        {
+          "name": "contract.signed",
+          "src": "audit-fire",
+          "count": 1,
+          "with_client": 1
+        },
+        {
+          "name": "deposit.paid",
+          "src": "w16-sim",
+          "count": 1,
+          "with_client": 1
+        },
+        {
+          "name": "diagnostic.paid",
+          "src": "commas",
+          "count": 4,
+          "with_client": 0
+        },
+        {
+          "name": "diagnostic.paid",
+          "src": "w16-sim",
+          "count": 1,
+          "with_client": 1
+        },
+        {
+          "name": "payment.received",
+          "src": "commas",
+          "count": 5,
+          "with_client": 0
+        },
+        {
+          "name": "payment.received",
+          "src": "w16-sim",
+          "count": 6,
+          "with_client": 6
+        },
+        {
+          "name": "sale.closed",
+          "src": "w16-sim",
+          "count": 2,
+          "with_client": 2
+        }
+      ]
+    },
+    "events_contract_detail": {
+      "ok": true,
+      "sql": "SELECT id, name, client_id, created_at, payload\n     FROM events WHERE name IN ('contract.signed','contract.sent')\n    ORDER BY created_at DESC",
+      "params": [],
+      "rowCount": 12,
+      "rows": [
+        {
+          "id": "4f042145-b480-42af-ad9a-4509c23a1550",
+          "name": "contract.signed",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T22:03:14.675Z",
+          "payload": {
+            "kind": "contract",
+            "status": "signed",
+            "subtype": "credit_repair",
+            "body_sha": "sha256:42361d105e45bf789a7a89ab439e57f24baeb68ce49d0494c757f99df4a1f724",
+            "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+            "contract_id": "8dfa576f-5404-45fa-8f39-7d589d4e8a4a",
+            "document_id": "add14bc8-2fbe-4887-a4f3-8a0e88b216aa",
+            "template_key": "CREDIT-REPAIR-AGREEMENT",
+            "document_version_id": "4b0377ae-2f4d-44b3-bbca-1031ecc33449"
+          }
+        },
+        {
+          "id": "71daf953-34a5-4fcf-945c-0cdbf7a21094",
+          "name": "contract.sent",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T21:58:30.571Z",
+          "payload": {
+            "kind": "contract",
+            "status": "sent",
+            "subtype": "credit_repair",
+            "body_sha": "sha256:42361d105e45bf789a7a89ab439e57f24baeb68ce49d0494c757f99df4a1f724",
+            "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+            "contract_id": "8dfa576f-5404-45fa-8f39-7d589d4e8a4a",
+            "document_id": "add14bc8-2fbe-4887-a4f3-8a0e88b216aa",
+            "template_key": "CREDIT-REPAIR-AGREEMENT",
+            "document_version_id": "4b0377ae-2f4d-44b3-bbca-1031ecc33449"
+          }
+        },
+        {
+          "id": "a80dde69-0fb5-45e4-a5d2-3a208df6e4c7",
+          "name": "contract.signed",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T21:44:36.124Z",
+          "payload": {
+            "e2e": true,
+            "source": "audit-fire",
+            "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521"
+          }
+        },
+        {
+          "id": "1157d297-cebb-48ec-88c7-76b3cf215768",
+          "name": "contract.signed",
+          "client_id": "cb6f5839-2979-491d-9080-00ca51833b07",
+          "created_at": "2026-08-18T20:11:46.633Z",
+          "payload": {
+            "kind": "contract",
+            "status": "signed",
+            "subtype": "funding_agreement",
+            "body_sha": "sha256:b36f6597456b40d8892c52bac94cb200003bdde823d5bd811f6f282a026fae51",
+            "client_id": "cb6f5839-2979-491d-9080-00ca51833b07",
+            "contract_id": "003b3da3-0467-46ac-be78-b4b1d2fdcd31",
+            "document_id": "bb457c84-cc19-4def-be78-642b0fa64108",
+            "template_key": "FUNDING-AGREEMENT",
+            "document_version_id": "d31abc54-5639-4a39-bdc8-1fb995e992b9"
+          }
+        },
+        {
+          "id": "ef6ecd20-bd56-4ecf-acfd-fd0f539193a7",
+          "name": "contract.sent",
+          "client_id": "cb6f5839-2979-491d-9080-00ca51833b07",
+          "created_at": "2026-08-18T20:05:47.157Z",
+          "payload": {
+            "kind": "contract",
+            "status": "sent",
+            "subtype": "funding_agreement",
+            "body_sha": "sha256:b36f6597456b40d8892c52bac94cb200003bdde823d5bd811f6f282a026fae51",
+            "client_id": "cb6f5839-2979-491d-9080-00ca51833b07",
+            "contract_id": "003b3da3-0467-46ac-be78-b4b1d2fdcd31",
+            "document_id": "bb457c84-cc19-4def-be78-642b0fa64108",
+            "template_key": "FUNDING-AGREEMENT",
+            "document_version_id": "d31abc54-5639-4a39-bdc8-1fb995e992b9"
+          }
+        },
+        {
+          "id": "99d08e51-0c79-4a13-9d8a-64a30b9d0968",
+          "name": "contract.signed",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "created_at": "2026-08-18T16:55:19.226Z",
+          "payload": {
+            "kind": "contract",
+            "status": "signed",
+            "subtype": "funding_agreement",
+            "body_sha": "sha256:4ac1a2db1ea003393029c7822ffa46cfbc2ecd75d40734bd8f41d82192b257ae",
+            "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+            "contract_id": "e2bd8fba-836d-4a29-a80f-6fb9a5eb97b2",
+            "document_id": "8a8cc588-3a2f-43bf-bc02-e5aa6aea2e3b",
+            "template_key": "FUNDING-AGREEMENT",
+            "document_version_id": "9eb02634-00c1-4915-8371-b85412e4f5fe"
+          }
+        },
+        {
+          "id": "13313d55-6138-45c8-9bde-90c1a1cb8733",
+          "name": "contract.signed",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T16:12:38.818Z",
+          "payload": {
+            "kind": "authorization",
+            "status": "signed",
+            "subtype": "soft_pull_consent",
+            "body_sha": "sha256:706e874b56218450914bbfcd202e08e27d0485d7ec03541e5c4c5cb62c04c8e7",
+            "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+            "contract_id": "16b29639-ac19-42ab-ba48-8789018b0e48",
+            "document_id": "9cb7d591-23cd-40e0-94cc-2b02894c9e16",
+            "template_key": "SOFT-PULL-CONSENT",
+            "document_version_id": "10bcac5e-facb-4375-a7e7-15888775e2d5"
+          }
+        },
+        {
+          "id": "3e2f6d10-0578-4b82-8605-2b4e6b77ebfa",
+          "name": "contract.sent",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T16:07:54.317Z",
+          "payload": {
+            "kind": "authorization",
+            "status": "sent",
+            "subtype": "soft_pull_consent",
+            "body_sha": "sha256:706e874b56218450914bbfcd202e08e27d0485d7ec03541e5c4c5cb62c04c8e7",
+            "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+            "contract_id": "16b29639-ac19-42ab-ba48-8789018b0e48",
+            "document_id": "9cb7d591-23cd-40e0-94cc-2b02894c9e16",
+            "template_key": "SOFT-PULL-CONSENT",
+            "document_version_id": "10bcac5e-facb-4375-a7e7-15888775e2d5"
+          }
+        },
+        {
+          "id": "23139b2a-3e98-495f-8093-c3cca714658c",
+          "name": "contract.sent",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "created_at": "2026-08-16T23:03:36.512Z",
+          "payload": {
+            "kind": "contract",
+            "status": "sent",
+            "subtype": "funding_agreement",
+            "body_sha": "sha256:4ac1a2db1ea003393029c7822ffa46cfbc2ecd75d40734bd8f41d82192b257ae",
+            "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+            "contract_id": "e2bd8fba-836d-4a29-a80f-6fb9a5eb97b2",
+            "document_id": "8a8cc588-3a2f-43bf-bc02-e5aa6aea2e3b",
+            "template_key": "FUNDING-AGREEMENT",
+            "document_version_id": "9eb02634-00c1-4915-8371-b85412e4f5fe"
+          }
+        },
+        {
+          "id": "296fde42-de77-4ca7-9667-3162f3cc47cd",
+          "name": "contract.sent",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "created_at": "2026-08-16T23:03:34.830Z",
+          "payload": {
+            "kind": "authorization",
+            "status": "sent",
+            "subtype": "soft_pull_consent",
+            "body_sha": "sha256:b2b4a3deeba3ea0cccd8a6de26a49c35615de7ea2f310b3dc5e5b6cd104e1f33",
+            "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+            "contract_id": "f59d6197-9ff0-4910-b882-6af021cdb57e",
+            "document_id": "5e183a3e-b666-4bd0-82fe-bfe02e437f9c",
+            "template_key": "SOFT-PULL-CONSENT",
+            "document_version_id": "4542d45a-af93-4e92-a3f9-fd1072df9891"
+          }
+        },
+        {
+          "id": "dc202c4a-38a9-4d63-92ff-1e24065ce596",
+          "name": "contract.sent",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "created_at": "2026-08-16T17:06:42.838Z",
+          "payload": {
+            "kind": "contract",
+            "status": "sent",
+            "subtype": "funding_agreement",
+            "body_sha": "sha256:4ac1a2db1ea003393029c7822ffa46cfbc2ecd75d40734bd8f41d82192b257ae",
+            "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+            "contract_id": "b1503fd1-296a-4153-93ec-bd181096f66d",
+            "document_id": "9f544280-2d69-4ed3-85fa-67ccb45fa08b",
+            "template_key": "FUNDING-AGREEMENT",
+            "document_version_id": "765375c6-ec34-46db-9711-b6cc2453c6d8"
+          }
+        },
+        {
+          "id": "0e327cfd-f2b2-477f-8a84-7afe89b7906d",
+          "name": "contract.sent",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "created_at": "2026-08-16T17:06:41.253Z",
+          "payload": {
+            "kind": "authorization",
+            "status": "sent",
+            "subtype": "soft_pull_consent",
+            "body_sha": "sha256:b2b4a3deeba3ea0cccd8a6de26a49c35615de7ea2f310b3dc5e5b6cd104e1f33",
+            "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+            "contract_id": "0a3b154e-8bde-4d42-ba31-7bbbcf44e889",
+            "document_id": "177e8cc0-db81-478d-9ec4-4b7903e7333f",
+            "template_key": "SOFT-PULL-CONSENT",
+            "document_version_id": "a1ad144e-e75b-4ffb-ac82-7493609f9598"
+          }
+        }
+      ]
+    },
+    "contracts_outstanding": {
+      "ok": true,
+      "sql": "SELECT id, status, template_key, client_id, created_at, sent_at, signed_at, viewed_at\n     FROM contracts\n    WHERE status IN ('sent','viewed')\n    ORDER BY created_at DESC",
+      "params": [],
+      "rowCount": 3,
+      "rows": [
+        {
+          "id": "f59d6197-9ff0-4910-b882-6af021cdb57e",
+          "status": "sent",
+          "template_key": "SOFT-PULL-CONSENT",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "created_at": "2026-08-16T23:03:33.084Z",
+          "sent_at": "2026-08-16T23:03:33.217Z",
+          "signed_at": null,
+          "viewed_at": null
+        },
+        {
+          "id": "b1503fd1-296a-4153-93ec-bd181096f66d",
+          "status": "sent",
+          "template_key": "FUNDING-AGREEMENT",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "created_at": "2026-08-16T17:06:41.443Z",
+          "sent_at": "2026-08-16T17:06:41.546Z",
+          "signed_at": null,
+          "viewed_at": null
+        },
+        {
+          "id": "0a3b154e-8bde-4d42-ba31-7bbbcf44e889",
+          "status": "viewed",
+          "template_key": "SOFT-PULL-CONSENT",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "created_at": "2026-08-16T17:06:39.479Z",
+          "sent_at": "2026-08-16T17:06:39.728Z",
+          "signed_at": null,
+          "viewed_at": "2026-08-17T07:52:42.088Z"
+        }
+      ]
+    },
+    "contracts_all_min": {
+      "ok": true,
+      "sql": "SELECT id, status, template_key, client_id, created_at, sent_at, signed_at\n     FROM contracts ORDER BY created_at DESC",
+      "params": [],
+      "rowCount": 10,
+      "rows": [
+        {
+          "id": "8dfa576f-5404-45fa-8f39-7d589d4e8a4a",
+          "status": "signed",
+          "template_key": "CREDIT-REPAIR-AGREEMENT",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T21:58:28.218Z",
+          "sent_at": "2026-08-18T21:58:28.649Z",
+          "signed_at": "2026-08-18T22:03:13.471Z"
+        },
+        {
+          "id": "003b3da3-0467-46ac-be78-b4b1d2fdcd31",
+          "status": "signed",
+          "template_key": "FUNDING-AGREEMENT",
+          "client_id": "cb6f5839-2979-491d-9080-00ca51833b07",
+          "created_at": "2026-08-18T20:05:43.706Z",
+          "sent_at": "2026-08-18T20:05:45.186Z",
+          "signed_at": "2026-08-18T20:11:45.303Z"
+        },
+        {
+          "id": "16b29639-ac19-42ab-ba48-8789018b0e48",
+          "status": "signed",
+          "template_key": "SOFT-PULL-CONSENT",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T16:07:51.623Z",
+          "sent_at": "2026-08-18T16:07:52.126Z",
+          "signed_at": "2026-08-18T16:12:37.597Z"
+        },
+        {
+          "id": "8988b582-d98a-44c8-9173-86de54fc5788",
+          "status": "draft",
+          "template_key": "SOFT-PULL-CONSENT",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T16:04:05.676Z",
+          "sent_at": null,
+          "signed_at": null
+        },
+        {
+          "id": "e2bd8fba-836d-4a29-a80f-6fb9a5eb97b2",
+          "status": "signed",
+          "template_key": "FUNDING-AGREEMENT",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "created_at": "2026-08-16T23:03:35.018Z",
+          "sent_at": "2026-08-16T23:03:35.098Z",
+          "signed_at": "2026-08-18T16:55:17.829Z"
+        },
+        {
+          "id": "f59d6197-9ff0-4910-b882-6af021cdb57e",
+          "status": "sent",
+          "template_key": "SOFT-PULL-CONSENT",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "created_at": "2026-08-16T23:03:33.084Z",
+          "sent_at": "2026-08-16T23:03:33.217Z",
+          "signed_at": null
+        },
+        {
+          "id": "b1503fd1-296a-4153-93ec-bd181096f66d",
+          "status": "sent",
+          "template_key": "FUNDING-AGREEMENT",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "created_at": "2026-08-16T17:06:41.443Z",
+          "sent_at": "2026-08-16T17:06:41.546Z",
+          "signed_at": null
+        },
+        {
+          "id": "0a3b154e-8bde-4d42-ba31-7bbbcf44e889",
+          "status": "viewed",
+          "template_key": "SOFT-PULL-CONSENT",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "created_at": "2026-08-16T17:06:39.479Z",
+          "sent_at": "2026-08-16T17:06:39.728Z",
+          "signed_at": null
+        },
+        {
+          "id": "010343de-0b29-4867-ae4c-312370be782c",
+          "status": "draft",
+          "template_key": "FUNDING-AGREEMENT",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "created_at": "2026-08-16T17:06:00.598Z",
+          "sent_at": null,
+          "signed_at": null
+        },
+        {
+          "id": "c55658b1-ebb4-4381-aa4d-198e8d59be60",
+          "status": "draft",
+          "template_key": "SOFT-PULL-CONSENT",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "created_at": "2026-08-16T17:06:00.104Z",
+          "sent_at": null,
+          "signed_at": null
+        }
+      ]
+    },
+    "contracts_reminder_columns": {
+      "ok": true,
+      "sql": "SELECT column_name, data_type FROM information_schema.columns\n    WHERE table_name='contracts' AND (column_name LIKE '%remind%' OR column_name LIKE '%chase%'\n          OR column_name LIKE '%viewed%' OR column_name LIKE '%void%')\n    ORDER BY ordinal_position",
+      "params": [],
+      "rowCount": 4,
+      "rows": [
+        {
+          "column_name": "viewed_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "voided_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "voided_by",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "void_reason",
+          "data_type": "text"
+        }
+      ]
+    },
+    "contracts_columns_full": {
+      "ok": true,
+      "sql": "SELECT column_name, data_type, is_nullable FROM information_schema.columns\n    WHERE table_name='contracts' ORDER BY ordinal_position",
+      "params": [],
+      "rowCount": 41,
+      "rows": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "org_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "client_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "template_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "template_key",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "title",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "kind",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "subtype",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "merge_values",
+          "data_type": "jsonb",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "rendered_body",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "body_sha",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "document_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "document_version_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "signature_statement",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "signature_required",
+          "data_type": "boolean",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "status",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "sent_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "sent_by",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "link_expires_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "viewed_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "view_count",
+          "data_type": "integer",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "signed_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "signer_name",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "signer_ip",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "signer_user_agent",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "voided_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "voided_by",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "void_reason",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "created_by",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "source_kind",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "fields",
+          "data_type": "jsonb",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "source_document_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "source_document_version_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "signed_document_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "signed_document_version_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "signed_body_sha",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "signing_order",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "completed_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "is_demo",
+          "data_type": "boolean",
+          "is_nullable": "NO"
+        }
+      ]
+    },
+    "payment_links_recent": {
+      "ok": false,
+      "sql": "SELECT id, client_id, status, created_at, provider, amount_cents, title, url IS NOT NULL AS has_url\n     FROM payment_links ORDER BY created_at DESC LIMIT 15",
+      "params": [],
+      "error": "column \"title\" does not exist"
+    },
+    "payment_links_by_day": {
+      "ok": false,
+      "sql": "SELECT date_trunc('day', created_at)::date AS day, count(*)::int AS count\n     FROM payment_links GROUP BY 1 ORDER BY 1 DESC LIMIT 20",
+      "params": [],
+      "error": "current transaction is aborted, commands ignored until end of transaction block"
+    },
+    "schema_migrations_recent": {
+      "ok": false,
+      "sql": "SELECT key, applied_at FROM schema_migrations ORDER BY key DESC LIMIT 10",
+      "params": [],
+      "error": "current transaction is aborted, commands ignored until end of transaction block"
+    },
+    "schema_migrations_count": {
+      "ok": false,
+      "sql": "SELECT count(*)::int AS count FROM schema_migrations",
+      "params": [],
+      "error": "current transaction is aborted, commands ignored until end of transaction block"
+    },
+    "documents_test_client": {
+      "ok": false,
+      "sql": "SELECT id, kind, title, delivery_status, created_at FROM documents\n    WHERE client_id = $1 ORDER BY created_at DESC",
+      "params": [
+        "8556bedc-46e1-4d85-b0cd-a24adfee1521"
+      ],
+      "error": "current transaction is aborted, commands ignored until end of transaction block"
+    },
+    "clients_custom_fields_sample": {
+      "ok": false,
+      "sql": "SELECT id, custom_fields FROM clients\n    WHERE custom_fields ? 'crs_paid' ORDER BY updated_at DESC LIMIT 10",
+      "params": [],
+      "error": "current transaction is aborted, commands ignored until end of transaction block"
+    },
+    "client_custom_fields_table_exists": {
+      "ok": false,
+      "sql": "SELECT table_name FROM information_schema.tables WHERE table_name IN ('client_custom_fields','custom_field_defs','custom_fields')",
+      "params": [],
+      "error": "current transaction is aborted, commands ignored until end of transaction block"
+    },
+    "sales_recent": {
+      "ok": false,
+      "sql": "SELECT id, client_id, product_code, amount_cents, created_at FROM sales ORDER BY created_at DESC LIMIT 15",
+      "params": [],
+      "error": "current transaction is aborted, commands ignored until end of transaction block"
+    },
+    "invoices_table_exists": {
+      "ok": false,
+      "sql": "SELECT table_name FROM information_schema.tables WHERE table_name LIKE '%invoice%'",
+      "params": [],
+      "error": "current transaction is aborted, commands ignored until end of transaction block"
+    }
+  }
+}

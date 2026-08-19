@@ -1,0 +1,102 @@
+{
+  "collectedAt": "2026-08-19T02:56:44.066Z",
+  "database": "live production (Supabase, project ref oqpnlusrotpxfenysfxz)",
+  "access": "READ ONLY — every statement ran inside BEGIN READ ONLY and passed a SELECT-only guard",
+  "testClient": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "protectedClientNeverWritten": "9af65808-a619-4e65-ae91-239766a006b7 (read as metadata only, never modified)",
+  "check": "7. documents with delivery_status='not_delivered' that are signed contract copies",
+  "claim": "signed contract copies sit undelivered",
+  "verdict": "CONFIRMED",
+  "deliveryStatusBreakdown": [
+    {
+      "delivery_status": "sent",
+      "count": 7
+    },
+    {
+      "delivery_status": "not_delivered",
+      "count": 4
+    }
+  ],
+  "notDeliveredRows": [
+    {
+      "id": "07d45e8f-c602-4337-8037-3251590b6e1c",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "kind": "contract",
+      "title": "Credit Repair Agreement (signed)",
+      "delivery_status": "not_delivered",
+      "created_at": "2026-08-18T22:03:14.233Z"
+    },
+    {
+      "id": "ad69a9a0-e99e-4b0b-9805-bb6f66539656",
+      "client_id": "cb6f5839-2979-491d-9080-00ca51833b07",
+      "kind": "contract",
+      "title": "Funding Agreement (signed)",
+      "delivery_status": "not_delivered",
+      "created_at": "2026-08-18T20:11:46.178Z"
+    },
+    {
+      "id": "5dfb4bde-c9d3-447c-8a1e-0036baf43f23",
+      "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+      "kind": "contract",
+      "title": "Funding Agreement — prove send 2026-08-16 (signed)",
+      "delivery_status": "not_delivered",
+      "created_at": "2026-08-18T16:55:18.717Z"
+    },
+    {
+      "id": "f13993df-4ab3-4ce2-9196-cad390a90728",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "kind": "authorization",
+      "title": "Soft Pull Authorization (signed)",
+      "delivery_status": "not_delivered",
+      "created_at": "2026-08-18T16:12:38.347Z"
+    }
+  ],
+  "testClientDocuments": [
+    {
+      "id": "07d45e8f-c602-4337-8037-3251590b6e1c",
+      "kind": "contract",
+      "subtype": "credit_repair",
+      "title": "Credit Repair Agreement (signed)",
+      "delivery_status": "not_delivered",
+      "delivered_at": null,
+      "delivery_channel": null,
+      "signed_at": null,
+      "created_at": "2026-08-18T22:03:14.233Z"
+    },
+    {
+      "id": "add14bc8-2fbe-4887-a4f3-8a0e88b216aa",
+      "kind": "contract",
+      "subtype": "credit_repair",
+      "title": "Credit Repair Agreement",
+      "delivery_status": "sent",
+      "delivered_at": "2026-08-18T21:58:28.649Z",
+      "delivery_channel": "portal",
+      "signed_at": "2026-08-18T22:03:13.471Z",
+      "created_at": "2026-08-18T21:58:29.060Z"
+    },
+    {
+      "id": "f13993df-4ab3-4ce2-9196-cad390a90728",
+      "kind": "authorization",
+      "subtype": "soft_pull_consent",
+      "title": "Soft Pull Authorization (signed)",
+      "delivery_status": "not_delivered",
+      "delivered_at": null,
+      "delivery_channel": null,
+      "signed_at": null,
+      "created_at": "2026-08-18T16:12:38.347Z"
+    },
+    {
+      "id": "9cb7d591-23cd-40e0-94cc-2b02894c9e16",
+      "kind": "authorization",
+      "subtype": "soft_pull_consent",
+      "title": "Soft Pull Authorization",
+      "delivery_status": "sent",
+      "delivered_at": "2026-08-18T16:07:52.126Z",
+      "delivery_channel": "portal",
+      "signed_at": "2026-08-18T16:12:37.597Z",
+      "created_at": "2026-08-18T16:07:52.527Z"
+    }
+  ],
+  "note": "4 of 11 documents are not_delivered, and every one of them is a '(signed)' copy. The pattern is exact and repeats per contract: the ORIGINAL goes out (delivery_status='sent', delivery_channel='portal', delivered_at set) and the SIGNED countersigned copy that is generated afterwards is created with delivery_status='not_delivered', delivered_at NULL, delivery_channel NULL, and is never picked up again. On the test client: add14bc8 'Credit Repair Agreement' = sent, while 07d45e8f 'Credit Repair Agreement (signed)' = not_delivered, created 2026-08-18T22:03:14Z — 45 seconds after the signature. One of the four (5dfb4bde) belongs to the protected client 9af65808; it was read as metadata only.",
+  "alsoNote": "documents.signed_at is NULL on both '(signed)' copies for the test client even though the contract row has signed_at set — worth a look, but it is not the T2-24 defect itself."
+}

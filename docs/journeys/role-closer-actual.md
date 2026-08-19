@@ -33,9 +33,9 @@ flowchart TD
     CAN --> A_read[Reading data — 37 routes]
     CAN --> A_repair[repair — 2 routes]
     CAN --> A_social[social — 5 routes]
-    CAN --> A_top_level[Everything else — 20 routes]
+    CAN --> A_top_level[Everything else — 21 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 55 routes]
+    WHO -->|Yes| CANT[Blocked — 54 routes]
     CANT --> B_auth[Signing in and out — 4 blocked]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_chat[chat — 1 blocked]
@@ -50,13 +50,13 @@ flowchart TD
     CANT --> B_proxy[proxy — 2 blocked]
     CANT --> B_read[Reading data — 12 blocked]
     CANT --> B_staff[staff — 2 blocked]
-    CANT --> B_top_level[Everything else — 11 blocked]
+    CANT --> B_top_level[Everything else — 10 blocked]
     WHO -->|Yes| UNV[UNVERIFIED — 2 routes whose gate could not be traced]
 ```
 
 ## What they can reach
 
-**117 of 174 routes.**
+**118 of 174 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -125,6 +125,7 @@ flowchart TD
 | `/api/partner-marketing/generate-copy` | POST | staff, partner |
 | `/api/partner-marketing/generate-logo` | POST | staff, partner |
 | `/api/partner-marketing/usage` | GET | staff, partner |
+| `/api/payment-links` | GET, POST | owner, admin, sales_manager, closer |
 | `/api/pipeline-cards` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/public/partner-apply` | POST | anyone |
 | `/api/public/partner-page` | GET | anyone |
@@ -186,7 +187,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**55 of 174 routes.**
+**54 of 174 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -225,7 +226,6 @@ flowchart TD
 | `/api/partner-brand` | GET, PUT | employees: owner, admin<br>plus: partner |
 | `/api/partner-brand/verify-domain` | POST | owner, admin |
 | `/api/partner-pages` | GET, PATCH, POST | employees: owner, admin<br>plus: partner |
-| `/api/payment-links` | GET, POST | owner, admin, sales_manager |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/privacy/erasure` | GET, POST | owner, admin |
 | `/api/products` | POST | owner, admin, sales_manager |

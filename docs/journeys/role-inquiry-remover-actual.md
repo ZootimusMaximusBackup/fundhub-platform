@@ -225,7 +225,7 @@ flowchart TD
 | `/api/partner-brand` | GET, PUT | employees: owner, admin<br>plus: partner |
 | `/api/partner-brand/verify-domain` | POST | owner, admin |
 | `/api/partner-pages` | GET, PATCH, POST | employees: owner, admin<br>plus: partner |
-| `/api/payment-links` | GET, POST | owner, admin, sales_manager |
+| `/api/payment-links` | GET, POST | owner, admin, sales_manager, closer |
 | `/api/privacy/erasure` | GET, POST | owner, admin |
 | `/api/products` | POST | owner, admin, sales_manager |
 | `/api/proxy/end` | POST | owner, funding_advisor |

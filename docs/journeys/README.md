@@ -42,7 +42,7 @@ have no automation tree at all. See `src/journeys/seed-journeys.mjs`'s header.
 | [client](./client-actual.md) ([intended](./client-intended.md)) | `client` | reaches 26 of 174 routes |
 | [role-owner](./role-owner-actual.md) ([intended](./role-owner-intended.md)) | `owner` | reaches 170 of 174 routes |
 | [role-sales-manager](./role-sales-manager-actual.md) ([intended](./role-sales-manager-intended.md)) | `sales_manager` | reaches 134 of 174 routes |
-| [role-closer](./role-closer-actual.md) ([intended](./role-closer-intended.md)) | `closer` | reaches 117 of 174 routes |
+| [role-closer](./role-closer-actual.md) ([intended](./role-closer-intended.md)) | `closer` | reaches 118 of 174 routes |
 | [role-funding-advisor](./role-funding-advisor-actual.md) ([intended](./role-funding-advisor-intended.md)) | `funding_advisor` | reaches 124 of 174 routes |
 | [role-inquiry-remover](./role-inquiry-remover-actual.md) ([intended](./role-inquiry-remover-intended.md)) | `inquiry_specialist` | reaches 115 of 174 routes |
 | [affiliate](./affiliate-actual.md) ([intended](./affiliate-intended.md)) | `affiliate` | reaches 21 of 174 routes |

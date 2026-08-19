@@ -134,7 +134,7 @@ flowchart TD
 | `/api/partner-marketing/generate-copy` | POST | staff, partner |
 | `/api/partner-marketing/generate-logo` | POST | staff, partner |
 | `/api/partner-marketing/usage` | GET | staff, partner |
-| `/api/payment-links` | GET, POST | owner, admin, sales_manager |
+| `/api/payment-links` | GET, POST | owner, admin, sales_manager, closer |
 | `/api/pipeline-cards` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/products` | POST | owner, admin, sales_manager |
 | `/api/public/partner-apply` | POST | anyone |

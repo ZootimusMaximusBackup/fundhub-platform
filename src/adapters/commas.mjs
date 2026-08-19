@@ -6,6 +6,18 @@
 //   2. normalize the raw body into a flat event,
 //   3. emit canonical events onto the bus — handlers (registered elsewhere) react.
 //
+// ONE THING WAS ADDED TO (2), and it is worth saying out loud because the list
+// above is a contract. Before emitting, this file now reads the payment_links
+// row the payment came from and resolves WHOSE payment it is. It does that
+// because the alternative was worse: every payment event row was being written
+// with a null client, so the money landed and nothing could say who paid it,
+// and the product bucket was being decided from a vendor product title that no
+// link this system mints has carried for years. Both answers live in our own
+// database. Reading them is normalisation, not a side effect — the one write
+// this path can cause (find-or-create a client by email) is the same write the
+// handler on the very next line already made, and is fenced accordingly. See
+// resolveInboxClientId().
+//
 // This is the port of the live underwrite-iq-lite `commas-payment.js` handler.
 // The DIFFERENCE: the live handler does GHL/Airtable side effects inline; here the
 // adapter only translates money-in → canonical events. The GHL/Airtable/CRS effects
@@ -22,6 +34,12 @@
 import crypto from "node:crypto";
 import { emit, defaultOrgId } from "../events/bus.mjs";
 import { enqueue } from "../payments/commas-inbox.mjs";
+/* The SAME resolver every downstream money handler uses, imported rather than
+   copied so the two can never drift. Checked for an import cycle before
+   adding: client-lifecycle.mjs reaches 17 modules and none of them is this
+   file. See resolveInboxClientId() below for the one rule that governs when it
+   is allowed to create a client. */
+import { resolveClient } from "../handlers/client-lifecycle.mjs";
 
 /* The signature header, in the order we look for it.
  *
@@ -89,6 +107,12 @@ export function paymentIdOf(body) {
   const id = d.payment_id ?? b.payment_id ?? d.paymentId ?? b.paymentId ?? null;
   return id ? String(id) : null;
 }
+
+/* A uuid, or nothing. Written out here rather than imported from
+   src/http/read-api.mjs on purpose: this file runs in the webhook and sweeper
+   paths and has no business pulling in the HTTP layer for one regex. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const asUuidOrNull = (v) => (typeof v === "string" && UUID_RE.test(v.trim()) ? v.trim() : null);
 
 // --- 2. Normalize the webhook body into a flat event ------------------------
 // Mirrors extractEvent() in the live handler verbatim, plus an `id` for idempotency.
@@ -169,6 +193,25 @@ export function normalizeCommasEvent(body) {
     b.ref ||
     null;
 
+  /* clientId — OUR OWN client id, read back out of THE SAME metadata bag `ref`
+     comes from.
+     src/payments/commas-api.mjs mints every checkout session with
+     metadata { link_ref, client_id, org_id } (built by
+     src/payment-links/index.mjs), so the id is already on the session. It was
+     being parsed straight past on the way back in, which is why every payment
+     event row carried a null client and nothing could say whose money it was.
+
+     ONLY THE TWO BAGS WE FILL, and only when the value is uuid-shaped. A bare
+     `client_id` at the top of a Commas payload is THEIR customer id in THEIR
+     numbering; treating that as one of ours would attribute a payment to
+     whichever of our clients happened to collide. Anything that is not a uuid
+     is not one of our ids, so it becomes null and the payment stays honestly
+     unattributed. */
+  const clientId =
+    asUuidOrNull(d.api_metadata && d.api_metadata.data && d.api_metadata.data.client_id) ||
+    asUuidOrNull(d.metadata && d.metadata.client_id) ||
+    null;
+
   /* dueBy — a dispute's response deadline. Missing it is how a chargeback is
      lost by default, so it is carried through to the task rather than left in
      the raw body for somebody to find. */
@@ -192,18 +235,31 @@ export function normalizeCommasEvent(body) {
     amount,
     email: String(email).trim().toLowerCase(),
     ref: ref ? String(ref) : null,
+    clientId,
     itemId: itemId ? String(itemId) : null,
-    dueBy: dueByRaw ? String(dueByRaw) : null
+    dueBy: dueByRaw ? String(dueByRaw) : null,
+    /* purpose — NOT read off the payload, and deliberately so. It is our own
+       field (payment_links.purpose), and the only trustworthy copy of it is
+       the row `ref` points at, which needs a database. processCommasInboxRow
+       fills it in before the product is decided. Declared here so the shape of
+       a normalized event is the same whether or not that lookup happened. */
+    purpose: null
   };
 }
 
 /* buildCommasCheckoutUrl — a checkout link for a VARIABLE amount, for the CRM's
    "send a payment link" action (src/payment-links/index.mjs). Pure URL
-   construction, no network call: this repo permits new outbound `fetch` only
-   inside src/messaging/providers/* (CLAUDE.md §12), and a Commas API endpoint
-   to mint a server-side checkout SESSION is not confirmed to exist — see
-   docs/PAYMENT-LINKS-SPEC.md. What IS confirmed is that Commas checkout pages
-   are reached by URL, so this assumes (⚠️ CONFIRM against a live Commas
+   construction, no network call.
+
+   NO LONGER THE PRIMARY PATH. This comment used to say a Commas API endpoint
+   for minting a server-side checkout SESSION was not confirmed to exist. It
+   does: src/payments/commas-api.mjs createCheckoutSession() posts to
+   /checkout-sessions with FANBASIS_CHECKOUT_API_KEY, and
+   src/payment-links/index.mjs prefers it. This function is the FALLBACK, used
+   only when that key is absent — and a link built here carries no metadata, so
+   the payment that comes back has our `ref` and nothing else.
+
+   It assumes (⚠️ CONFIRM against a live Commas
    account, same as the rest of this file) that the page reads `amount`,
    `description` and a caller-supplied reference off the query string the way
    the live handler's product pages do. `ref` is the value normalizeCommasEvent
@@ -226,8 +282,54 @@ function nameMatches(name, needle) {
   return String(name || "").toLowerCase().includes(needle);
 }
 
+/* PURPOSE → product bucket. THE SIGNAL WE CONTROL, CHECKED FIRST.
+ *
+ * The four PRODUCT strings above are the titles of products Chris created in
+ * the Commas dashboard years ago. Nothing this system mints today is called
+ * any of them: a link's title is `description || purpose`
+ * (src/payment-links/index.mjs), so the CRM's $32 link is titled "diagnostic"
+ * and the closer deck's is titled "UnderwriteIQ soft-pull assessment". Both
+ * fell through to "unmatched", so a real payment emitted payment.received and
+ * nothing else — diagnostic.paid, deposit.paid and sale.closed never fired
+ * from a link we sent.
+ *
+ * `purpose` is ours. It is written on the payment_links row at mint time from
+ * src/config/offers.mjs paymentPurpose, and read back off that row here. It
+ * does not depend on what an operator typed in a description box, and it does
+ * not depend on a vendor-side product title nobody in this repo can see.
+ *
+ * ONLY TWO OF THE FOUR PURPOSES ARE IN THIS MAP, and the other two are absent
+ * by decision rather than by oversight:
+ *   deposit    → the onboarding deposit. deposit.paid. Unambiguous.
+ *   diagnostic → the $32 soft-pull gate. diagnostic.paid. Unambiguous.
+ *   repair     → NO canonical bucket exists. The nearest, "diy", means the
+ *                Consulting Services Package, and posting a repair sale under
+ *                it would file it against the wrong product code. Nobody has
+ *                decided what a repair purchase should emit.
+ *   custom     → free text. It covers the deliverables package, the course,
+ *                and anything an operator types. It names no single product.
+ * Do not add a row here to make a test green. Adding one decides an offer
+ * question, and that is the owner's to decide, not this file's.
+ *
+ * AN ABSENT PURPOSE FALLS THROUGH, it does not short-circuit. A purpose this
+ * map says nothing about contributes nothing, and the title below becomes the
+ * only signal left — which for a repair or custom link matches none of the
+ * four legacy strings, so the honest answer "unmatched" is what comes out, and
+ * payment.received is the only event emitted.
+ *
+ * THE LEGACY TITLES STAY. Old rows replay through this same function and must
+ * classify exactly as they did, and a payment made on a Commas dashboard
+ * product page has no link and therefore no purpose — the title is all it has.
+ */
+export const PURPOSE_PRODUCT = Object.freeze({
+  deposit: "deposit",
+  diagnostic: "crs"
+});
+
 // Product bucket from a normalized event: "crs" | "deposit" | "success_fee" | "diy" | "unmatched".
 export function productOf(evt) {
+  const purpose = String((evt && evt.purpose) || "").trim().toLowerCase();
+  if (Object.prototype.hasOwnProperty.call(PURPOSE_PRODUCT, purpose)) return PURPOSE_PRODUCT[purpose];
   if (nameMatches(evt.name, PRODUCT.CRS.nameIncludes)) return "crs";
   if (nameMatches(evt.name, PRODUCT.DIY.nameIncludes)) return "diy";
   if (nameMatches(evt.name, PRODUCT.DEPOSIT.nameIncludes)) return "deposit";
@@ -394,6 +496,112 @@ export async function handleCommasWebhook({ db, rawBody, signatureHeader, secret
   }
 }
 
+/* loadPaymentLink — the payment_links row this payment came from, or null.
+ *
+ * `link_ref` is globally unique (119_payment_links.sql:50), which is exactly
+ * why it can be looked up here with no org context. `commas_session_id` is the
+ * fallback for a link minted through the checkout-session API, where the
+ * session id is the value that comes back on the webhook. link_ref is tried
+ * first because it is the value we chose; the session id is the vendor's.
+ *
+ * NULL IS A NORMAL ANSWER, not an error. A payment made on a Commas dashboard
+ * product page has no link of ours behind it, and never will.
+ *
+ * A DATABASE ERROR IS NOT SWALLOWED. It propagates, drain() marks the row
+ * failed with its bytes intact, and the next sweep retries it. Catching it
+ * would emit the event with a null client id, and the idempotency key would
+ * then make that wrong answer permanent — a retry would dedupe rather than
+ * correct it. Failing loudly is the recoverable option. */
+async function loadPaymentLink(db, { linkRef, sessionId }) {
+  if (linkRef) {
+    const byRef = await db.query(
+      `SELECT id, org_id, client_id, purpose FROM payment_links WHERE link_ref = $1 LIMIT 1`,
+      [String(linkRef)]
+    );
+    if (byRef.rows[0]) return byRef.rows[0];
+  }
+  if (sessionId) {
+    const bySession = await db.query(
+      `SELECT id, org_id, client_id, purpose FROM payment_links
+        WHERE provider = 'commas' AND commas_session_id = $1 LIMIT 1`,
+      [String(sessionId)]
+    );
+    if (bySession.rows[0]) return bySession.rows[0];
+  }
+  return null;
+}
+
+/* The two canonical events NO registered handler creates a client for.
+ *
+ * Everything else on the bus — payment.received, payment.failed,
+ * payment.refunded, payment.disputed, diagnostic.paid, deposit.paid,
+ * sale.closed — reaches a handler that already calls resolveClient() and
+ * find-or-creates by email (src/handlers/client-lifecycle.mjs register(),
+ * src/handlers/commas-disputes.mjs register()). Resolving those here changes
+ * WHEN that row is created, never WHETHER, so no client exists afterwards that
+ * would not have existed anyway.
+ *
+ * payment.expired and payment.canceled have no handler at all. They are
+ * abandoned checkouts. Conjuring a client row into the CRM for somebody who
+ * never paid would be inventing a customer, so those get a read-only lookup:
+ * if the payer is already known they are attributed, and if not the event
+ * stays unattributed. */
+const NO_HANDLER_CREATES_A_CLIENT = new Set(["payment.expired", "payment.canceled"]);
+
+async function findClientIdByEmail(db, orgId, email) {
+  if (!orgId || !email) return null;
+  const { rows } = await db.query(
+    `SELECT id FROM clients WHERE org_id = $1 AND lower(email) = $2 LIMIT 1`,
+    [orgId, String(email).trim().toLowerCase()]
+  );
+  return rows[0]?.id ?? null;
+}
+
+async function clientIdInOrg(db, orgId, clientId) {
+  if (!orgId || !clientId) return null;
+  const { rows } = await db.query(
+    `SELECT id FROM clients WHERE id = $1 AND org_id = $2 LIMIT 1`,
+    [clientId, orgId]
+  );
+  return rows[0]?.id ?? null;
+}
+
+/* resolveInboxClientId — whose payment is this? Returns a client uuid or null.
+ *
+ * Three sources, best first, and every one of them is checked against the org
+ * the inbox row belongs to. A link_ref is globally unique and a metadata bag
+ * is whatever the vendor echoed, so neither carries org scope on its own;
+ * attributing across orgs would leak one tenant's money onto another's client.
+ *
+ *   1. the payment_links row we minted — our own table, our own client id
+ *   2. the client id we put on the checkout session's metadata
+ *   3. the payer's email, through the same resolver the handlers use
+ *
+ * NULL IS A LEGITIMATE ANSWER AND MUST SURVIVE. A payment we cannot attribute
+ * stays unattributed and visible as such. It is never guessed. */
+export async function resolveInboxClientId(db, { orgId, evt, link, mayCreate = false }) {
+  if (link && link.client_id) {
+    if (link.org_id === orgId) return link.client_id;
+    console.warn(
+      `[commas] payment link ${link.id} belongs to org ${link.org_id} but the ` +
+      `webhook arrived on org ${orgId} — not attributing across orgs`
+    );
+  }
+
+  if (evt.clientId) {
+    const confirmed = await clientIdInOrg(db, orgId, evt.clientId);
+    if (confirmed) return confirmed;
+    console.warn(
+      `[commas] checkout metadata named client ${evt.clientId}, which is not a ` +
+      `client of org ${orgId} — ignoring it rather than attributing the payment`
+    );
+  }
+
+  if (!evt.email) return null;
+  if (!mayCreate) return findClientIdByEmail(db, orgId, evt.email);
+  return (await resolveClient(db, { orgId, clientId: null, payload: { email: evt.email } })) || null;
+}
+
 /* processCommasInboxRow(row, db) → { ok, ignored?, reason?, emitted }
  *
  * Phase two. Runs from the sweeper, never from the request path. Interprets
@@ -423,10 +631,27 @@ export async function processCommasInboxRow(row, db) {
   }
 
   const evt = normalizeCommasEvent(body);
-  const canonical = mapToCanonical(evt);
-  if (canonical.length === 0) {
+
+  /* Answered before touching the database on purpose. A non-terminal type maps
+     to nothing whatever the product turns out to be, so a row that is going to
+     be ignored costs no queries. mapToCanonical is pure, so calling it again
+     below after the purpose is known is free. */
+  if (mapToCanonical(evt).length === 0) {
     return { ok: true, ignored: true, reason: `no_canonical_mapping:${evt.type || "unknown"}`, emitted: [] };
   }
+
+  /* The link we minted, when this payment came from one. It carries the two
+     facts the payload cannot be trusted for: what the money was FOR
+     (purpose → the product bucket) and WHOSE it is (client_id). */
+  const link = await loadPaymentLink(db, { linkRef: evt.ref, sessionId: evt.itemId });
+  if (link && link.org_id === row.org_id && link.purpose) evt.purpose = String(link.purpose);
+
+  const canonical = mapToCanonical(evt);
+
+  /* One resolution for the whole row, so a payment's several canonical events
+     can never disagree about who paid. */
+  const mayCreate = canonical.some((c) => !NO_HANDLER_CREATES_A_CLIENT.has(c.name));
+  const clientId = await resolveInboxClientId(db, { orgId: row.org_id, evt, link, mayCreate });
 
   const emitted = [];
   for (const c of canonical) {
@@ -443,12 +668,20 @@ export async function processCommasInboxRow(row, db) {
       providerRef: evt.paymentId || evt.id,
       paymentId: evt.paymentId,
       ref: evt.ref, // our own reference, if the payment came from a payment_links checkout URL
+      /* purpose — what the link was FOR, from our own payment_links row. Null
+         when the payment did not come from a link of ours. Carried so the
+         `product` above can be read back to its evidence instead of being
+         taken on faith. */
+      purpose: evt.purpose,
       itemId: evt.itemId,
       dueBy: evt.dueBy, // dispute response deadline, when the event carries one
       source: "commas"
     };
     const res = await emit(db, c.name, payload, {
       orgId: row.org_id,
+      /* WHOSE payment this is. May be null — an unattributable payment must
+         stay unattributed rather than be attached to a guess. */
+      clientId,
       idempotencyKey: `commas:${row.dedupe_key}:${c.name}`
     });
     emitted.push({ name: c.name, id: res.id, deduped: res.deduped });

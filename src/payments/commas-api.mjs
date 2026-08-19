@@ -208,6 +208,43 @@ export function checkoutConfig(env = process.env) {
   };
 }
 
+/* withCheckoutIdentifiers — put the two ids the thank-you page needs onto the
+ * success URL.
+ *
+ * The page Commas sends the payer to after paying
+ * (public/app/payment-success.html) is PUBLIC and has no session. It was being
+ * handed a bare URL with nothing on it, so it could not tell whether the
+ * payment had actually landed and had to hedge in its own copy. The only way
+ * it can look anything up is if the identifiers travel with it.
+ *
+ * THE CONTRACT, and it is a contract because a page and a payments module in
+ * two different directories have to agree on it: exactly two query parameters,
+ * named `ref` and `client_id`.
+ *   ref       = payment_links.link_ref  — the opaque token we minted
+ *   client_id = clients.id              — the client the link was made for
+ * Both are opaque internal ids already on the session's metadata. NOTHING ELSE
+ * ABOUT THE PAYER GOES ON THE QUERY STRING — no email, no name, no amount.
+ *
+ * A success URL that will not parse comes back untouched rather than dropped:
+ * a payer landing on a plain thank-you page is a cosmetic problem, and a payer
+ * landing nowhere is not. */
+export function withCheckoutIdentifiers(successUrl, metadata) {
+  const meta = metadata && typeof metadata === "object" ? metadata : {};
+  const ref = meta.link_ref == null ? null : String(meta.link_ref);
+  const clientId = meta.client_id == null ? null : String(meta.client_id);
+  if (!ref && !clientId) return successUrl;
+
+  let url;
+  try {
+    url = new URL(String(successUrl));
+  } catch {
+    return successUrl;
+  }
+  if (ref) url.searchParams.set("ref", ref);
+  if (clientId) url.searchParams.set("client_id", clientId);
+  return url.toString();
+}
+
 /**
  * createCheckoutSession — POST /checkout-sessions → { payment_link }.
  * Never throws on HTTP/transport failure; callers decide how to surface it.
@@ -241,7 +278,7 @@ export async function createCheckoutSession({
     || env.COMMAS_SUCCESS_URL
     || env.PUBLIC_BASE_URL && `${String(env.PUBLIC_BASE_URL).replace(/\/$/, "")}/app/payment-success.html`
     || "https://fundhub.ai/app/payment-success.html";
-  if (success) body.success_url = String(success);
+  if (success) body.success_url = withCheckoutIdentifiers(String(success), metadata);
   if (metadata && typeof metadata === "object") {
     const meta = {};
     for (const [k, v] of Object.entries(metadata)) {

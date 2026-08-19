@@ -1,0 +1,367 @@
+{
+  "collectedAt": "2026-08-19T02:56:44.066Z",
+  "database": "live production (Supabase, project ref oqpnlusrotpxfenysfxz)",
+  "access": "READ ONLY — every statement ran inside BEGIN READ ONLY and passed a SELECT-only guard",
+  "testClient": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "protectedClientNeverWritten": "9af65808-a619-4e65-ae91-239766a006b7 (read as metadata only, never modified)",
+  "check": "6. sample recent payment events — does the payload carry an email and/or a ref/link_ref/metadata client id?",
+  "verdict": "CONFIRMED orphaned, AND a resolution path exists",
+  "requestedSampleFiveMostRecent": [
+    {
+      "id": "44eb6a4b-8834-4ba9-92e9-84e20d1b4b00",
+      "name": "payment.received",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "payload": {
+        "email": "client@fundhub.ai",
+        "amount": 5000,
+        "source": "w16-sim",
+        "product": "unmatched",
+        "offerKey": "FUNDING_MASTERY",
+        "productName": "Funding Mastery course (A to Z)",
+        "providerRef": "w16-sim-8556bedc-FUNDING_MASTERY-live"
+      },
+      "created_at": "2026-08-18T20:50:28.711Z"
+    },
+    {
+      "id": "dcb10b34-ec8c-437f-ab38-819b783907e8",
+      "name": "payment.received",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "payload": {
+        "email": "client@fundhub.ai",
+        "amount": 1000,
+        "source": "w16-sim",
+        "product": "unmatched",
+        "offerKey": "UWIQ_DELIVERABLES",
+        "productName": "UnderwriteIQ Deliverables Package",
+        "providerRef": "w16-sim-8556bedc-UWIQ_DELIVERABLES-live"
+      },
+      "created_at": "2026-08-18T20:50:27.671Z"
+    },
+    {
+      "id": "d1d09471-1ed6-4aab-8a71-09ff0e922b74",
+      "name": "payment.received",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "payload": {
+        "email": "client@fundhub.ai",
+        "amount": 200,
+        "source": "w16-sim",
+        "product": "unmatched",
+        "offerKey": "REPAIR_TRIAL",
+        "productName": "Repair test run (first round, done for you)",
+        "providerRef": "w16-sim-8556bedc-REPAIR_TRIAL-live"
+      },
+      "created_at": "2026-08-18T20:50:25.416Z"
+    },
+    {
+      "id": "03eccc8d-8f79-475e-9729-ff54dce74e1d",
+      "name": "payment.received",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "payload": {
+        "email": "client@fundhub.ai",
+        "amount": 1000,
+        "source": "w16-sim",
+        "product": "unmatched",
+        "offerKey": "REPAIR_DFY",
+        "productName": "Credit repair, done-for-you",
+        "providerRef": "w16-sim-8556bedc-REPAIR_DFY-live"
+      },
+      "created_at": "2026-08-18T20:50:22.908Z"
+    },
+    {
+      "id": "38bd8c82-1de3-40fc-b1d2-733c7d6f13b5",
+      "name": "payment.received",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "payload": {
+        "email": "client@fundhub.ai",
+        "amount": 3000,
+        "source": "w16-sim",
+        "product": "unmatched",
+        "offerKey": "FUNDING_DFY",
+        "productName": "Funding, done-for-you",
+        "providerRef": "w16-sim-8556bedc-FUNDING_DFY-live"
+      },
+      "created_at": "2026-08-18T20:50:20.672Z"
+    }
+  ],
+  "allPaymentEventsFlattened": [
+    {
+      "id": "44eb6a4b-8834-4ba9-92e9-84e20d1b4b00",
+      "name": "payment.received",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "source": "w16-sim",
+      "email": "client@fundhub.ai",
+      "product": "unmatched",
+      "productName": "Funding Mastery course (A to Z)",
+      "ref": null,
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-18T20:50:28.711Z"
+    },
+    {
+      "id": "dcb10b34-ec8c-437f-ab38-819b783907e8",
+      "name": "payment.received",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "source": "w16-sim",
+      "email": "client@fundhub.ai",
+      "product": "unmatched",
+      "productName": "UnderwriteIQ Deliverables Package",
+      "ref": null,
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-18T20:50:27.671Z"
+    },
+    {
+      "id": "b6b606a6-160a-4579-a346-5dfcad079799",
+      "name": "sale.closed",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "source": "w16-sim",
+      "email": "client@fundhub.ai",
+      "product": "diy",
+      "productName": "Repair test run (first round, done for you)",
+      "ref": null,
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-18T20:50:26.466Z"
+    },
+    {
+      "id": "d1d09471-1ed6-4aab-8a71-09ff0e922b74",
+      "name": "payment.received",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "source": "w16-sim",
+      "email": "client@fundhub.ai",
+      "product": "unmatched",
+      "productName": "Repair test run (first round, done for you)",
+      "ref": null,
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-18T20:50:25.416Z"
+    },
+    {
+      "id": "257fcd7c-c974-4fe5-a05e-84e216c8c949",
+      "name": "sale.closed",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "source": "w16-sim",
+      "email": "client@fundhub.ai",
+      "product": "diy",
+      "productName": "Credit repair, done-for-you",
+      "ref": null,
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-18T20:50:24.097Z"
+    },
+    {
+      "id": "03eccc8d-8f79-475e-9729-ff54dce74e1d",
+      "name": "payment.received",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "source": "w16-sim",
+      "email": "client@fundhub.ai",
+      "product": "unmatched",
+      "productName": "Credit repair, done-for-you",
+      "ref": null,
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-18T20:50:22.908Z"
+    },
+    {
+      "id": "5eba4879-cbc4-4e3f-ba4e-757b50c9ac20",
+      "name": "deposit.paid",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "source": "w16-sim",
+      "email": "client@fundhub.ai",
+      "product": "deposit",
+      "productName": "Funding, done-for-you",
+      "ref": null,
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-18T20:50:21.251Z"
+    },
+    {
+      "id": "38bd8c82-1de3-40fc-b1d2-733c7d6f13b5",
+      "name": "payment.received",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "source": "w16-sim",
+      "email": "client@fundhub.ai",
+      "product": "unmatched",
+      "productName": "Funding, done-for-you",
+      "ref": null,
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-18T20:50:20.672Z"
+    },
+    {
+      "id": "ac3352a1-d484-4927-bfe2-f55b9affe005",
+      "name": "diagnostic.paid",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "source": "w16-sim",
+      "email": "client@fundhub.ai",
+      "product": "crs",
+      "productName": "UnderwriteIQ soft-pull assessment",
+      "ref": null,
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-18T20:50:18.891Z"
+    },
+    {
+      "id": "41da5328-8e71-45b5-8e20-2a39e7b379fc",
+      "name": "payment.received",
+      "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "source": "w16-sim",
+      "email": "client@fundhub.ai",
+      "product": "unmatched",
+      "productName": "UnderwriteIQ soft-pull assessment",
+      "ref": null,
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-18T20:50:18.221Z"
+    },
+    {
+      "id": "0bc264a3-e1dc-42d0-ae87-18b96a4a7ad4",
+      "name": "diagnostic.paid",
+      "client_id": null,
+      "source": "commas",
+      "email": "sim+1787079946953@demo.fundhub.local",
+      "product": "crs",
+      "productName": "Business Financial Assessment",
+      "ref": null,
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-18T19:14:42.385Z"
+    },
+    {
+      "id": "ee763f7f-3aef-49a9-a308-0f69ca835934",
+      "name": "payment.received",
+      "client_id": null,
+      "source": "commas",
+      "email": "sim+1787079946953@demo.fundhub.local",
+      "product": "crs",
+      "productName": "Business Financial Assessment",
+      "ref": null,
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-18T19:14:40.660Z"
+    },
+    {
+      "id": "629d54f6-1ee3-4b04-9903-9ec984f1a9ff",
+      "name": "diagnostic.paid",
+      "client_id": null,
+      "source": "commas",
+      "email": "stanbridgejchris@gmail.com",
+      "product": "crs",
+      "productName": "Business Financial Assessment — Fundhub",
+      "ref": "pl_prove_chris_1",
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-16T05:10:16.333Z"
+    },
+    {
+      "id": "98368a84-6465-4d07-86ff-4c5ef3212b88",
+      "name": "payment.received",
+      "client_id": null,
+      "source": "commas",
+      "email": "stanbridgejchris@gmail.com",
+      "product": "crs",
+      "productName": "Business Financial Assessment — Fundhub",
+      "ref": "pl_prove_chris_1",
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-16T05:10:15.244Z"
+    },
+    {
+      "id": "25b466ee-19b0-4043-9c90-333349603d8d",
+      "name": "diagnostic.paid",
+      "client_id": null,
+      "source": "commas",
+      "email": "bakerskater987+test.commas.1786606351723@gmail.com",
+      "product": "crs",
+      "productName": "Business Financial Assessment",
+      "ref": null,
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-13T07:33:03.072Z"
+    },
+    {
+      "id": "c9751f20-eb44-463d-b2fe-baab41fa0d68",
+      "name": "payment.received",
+      "client_id": null,
+      "source": "commas",
+      "email": "bakerskater987+test.commas.1786606351723@gmail.com",
+      "product": "crs",
+      "productName": "Business Financial Assessment",
+      "ref": null,
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-13T07:33:02.122Z"
+    },
+    {
+      "id": "472f73eb-5c03-470e-8216-8f6f6f610e1b",
+      "name": "diagnostic.paid",
+      "client_id": null,
+      "source": "commas",
+      "email": "test+crs@fundhub.ai",
+      "product": "crs",
+      "productName": "Business Financial Assessment",
+      "ref": "pl_synth_crs_e2e",
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-12T14:30:38.523Z"
+    },
+    {
+      "id": "3aa60eab-ea05-4776-86fb-a6dae5c1cdfb",
+      "name": "payment.received",
+      "client_id": null,
+      "source": "commas",
+      "email": "test+crs@fundhub.ai",
+      "product": "crs",
+      "productName": "Business Financial Assessment",
+      "ref": "pl_synth_crs_e2e",
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-12T14:30:35.774Z"
+    },
+    {
+      "id": "a82c4092-be7c-42ce-8d12-4ec836827e70",
+      "name": "payment.received",
+      "client_id": null,
+      "source": "commas",
+      "email": "test@example.com",
+      "product": "unmatched",
+      "productName": "Test Product",
+      "ref": null,
+      "link_ref": null,
+      "metadata": null,
+      "created_at": "2026-08-12T14:24:11.062Z"
+    }
+  ],
+  "payloadCarries": {
+    "email": "YES — every real commas event has payload.email (e.g. stanbridgejchris@gmail.com, test+crs@fundhub.ai)",
+    "ref": "SOMETIMES — pl_prove_chris_1 and pl_synth_crs_e2e appear as payload.ref",
+    "link_ref": "NO — the key 'link_ref' is never present; the same value is carried as 'ref'",
+    "metadataClientId": "NO — payload.metadata is absent on every row"
+  },
+  "resolutionPathProof": {
+    "payment_links_lookup_by_ref": [
+      {
+        "link_ref": "pl_prove_chris_1",
+        "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+        "description": "Business Financial Assessment — Fundhub ($1 live prove)",
+        "amount_cents": "100",
+        "status": "paid",
+        "created_at": "2026-08-16T05:00:14.382Z"
+      }
+    ],
+    "clients_lookup_by_email": [
+      {
+        "id": "9af65808-a619-4e65-ae91-239766a006b7",
+        "email": "stanbridgejchris@gmail.com",
+        "first_name": "Chris",
+        "last_name": "ProveFunding"
+      }
+    ],
+    "payment_links_client_id_coverage": {
+      "total": 40,
+      "with_client": 40
+    }
+  },
+  "note": "The five most recent rows the brief asked for are all w16-sim simulations, so they are NOT representative — the flattened list of all 19 payment-ish events is the honest view. Two usable resolution routes exist for the real orphans: (a) payload.ref -> payment_links.link_ref -> payment_links.client_id. All 40 payment_links rows have a non-null client_id, and pl_prove_chris_1 resolves cleanly. (b) payload.email -> clients.email. stanbridgejchris@gmail.com resolves to exactly one client. Route (a) is the stronger one: it is an explicit id rather than an email match, and email is not unique in principle. Note route (b) resolves ONLY to the protected live credit file 9af65808 for the sample data present, so do not exercise it against these rows.",
+  "gap": "2 of the 9 real orphan events carry NO ref at all (25b466ee, 0bc264a3, c9751f20, ee763f7f, a82c4092 have ref null). For those, email is the only route, and a82c4092 ('Test Product', test@example.com) resolves to nothing. A resolver must therefore be allowed to fail and leave client_id NULL rather than guess."
+}

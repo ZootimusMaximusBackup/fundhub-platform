@@ -180,7 +180,7 @@ flowchart TD
 | `/api/messages` | POST | staff |
 | `/api/messages-outbound` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/partner-brand/verify-domain` | POST | owner, admin |
-| `/api/payment-links` | GET, POST | owner, admin, sales_manager |
+| `/api/payment-links` | GET, POST | owner, admin, sales_manager, closer |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/pipeline-cards` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/privacy/erasure` | GET, POST | owner, admin |

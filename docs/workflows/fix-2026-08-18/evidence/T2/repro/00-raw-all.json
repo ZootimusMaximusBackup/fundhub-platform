@@ -1,0 +1,1123 @@
+{
+  "generatedAt": "2026-08-19T02:46:57.142Z",
+  "testClient": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "results": {
+    "pe_count": {
+      "ok": true,
+      "sql": "SELECT count(*)::int AS count FROM product_entitlements",
+      "params": [],
+      "rowCount": 1,
+      "rows": [
+        {
+          "count": 0
+        }
+      ]
+    },
+    "pe_rows": {
+      "ok": true,
+      "sql": "SELECT * FROM product_entitlements ORDER BY 1 LIMIT 500",
+      "params": [],
+      "rowCount": 0,
+      "rows": []
+    },
+    "pe_columns": {
+      "ok": true,
+      "sql": "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name='product_entitlements' ORDER BY ordinal_position",
+      "params": [],
+      "rowCount": 6,
+      "rows": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "org_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "product_code",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "entitlement_code",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "duration_days",
+          "data_type": "integer",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        }
+      ]
+    },
+    "catalog_columns": {
+      "ok": true,
+      "sql": "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name='entitlement_catalog' ORDER BY ordinal_position",
+      "params": [],
+      "rowCount": 11,
+      "rows": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "org_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "code",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "name",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "description",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "kind",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "sort_order",
+          "data_type": "integer",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "active",
+          "data_type": "boolean",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "display_price_cents",
+          "data_type": "integer",
+          "is_nullable": "YES"
+        }
+      ]
+    },
+    "catalog_rows": {
+      "ok": true,
+      "sql": "SELECT code, name, display_price_cents, sort_order FROM entitlement_catalog ORDER BY sort_order NULLS LAST, code",
+      "params": [],
+      "rowCount": 5,
+      "rows": [
+        {
+          "code": "credit-analysis-report",
+          "name": "Credit Analysis Report",
+          "display_price_cents": null,
+          "sort_order": 10
+        },
+        {
+          "code": "credit-optimization-roadmap",
+          "name": "Credit Optimization Roadmap",
+          "display_price_cents": null,
+          "sort_order": 20
+        },
+        {
+          "code": "funding-snapshot",
+          "name": "Funding Snapshot",
+          "display_price_cents": null,
+          "sort_order": 30
+        },
+        {
+          "code": "bank-lender-match-list",
+          "name": "Bank and Lender Match List",
+          "display_price_cents": null,
+          "sort_order": 40
+        },
+        {
+          "code": "metro2-letter-pack",
+          "name": "Metro 2 Dispute Letter Pack",
+          "display_price_cents": null,
+          "sort_order": 50
+        }
+      ]
+    },
+    "catalog_all": {
+      "ok": true,
+      "sql": "SELECT * FROM entitlement_catalog ORDER BY sort_order NULLS LAST, code",
+      "params": [],
+      "rowCount": 5,
+      "rows": [
+        {
+          "id": "61c8a612-7a4a-4ca2-aac8-5db5e048cb55",
+          "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+          "code": "credit-analysis-report",
+          "name": "Credit Analysis Report",
+          "description": "The analyzer output the client receives.",
+          "kind": "deliverable",
+          "sort_order": 10,
+          "active": true,
+          "created_at": "2026-07-31T02:24:53.163Z",
+          "updated_at": "2026-08-17T21:37:41.243Z",
+          "display_price_cents": null
+        },
+        {
+          "id": "d1f8ffbc-c1bd-4248-87c6-0fe8c23c4856",
+          "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+          "code": "credit-optimization-roadmap",
+          "name": "Credit Optimization Roadmap",
+          "description": "The optimization plan derived from the analysis.",
+          "kind": "deliverable",
+          "sort_order": 20,
+          "active": true,
+          "created_at": "2026-07-31T02:24:53.163Z",
+          "updated_at": "2026-08-17T21:37:41.590Z",
+          "display_price_cents": null
+        },
+        {
+          "id": "e437acb5-52c2-46da-859c-5b0bb1402493",
+          "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+          "code": "funding-snapshot",
+          "name": "Funding Snapshot",
+          "description": "Position and prequalification estimate at a point in time.",
+          "kind": "deliverable",
+          "sort_order": 30,
+          "active": true,
+          "created_at": "2026-07-31T02:24:53.163Z",
+          "updated_at": "2026-08-17T21:37:41.946Z",
+          "display_price_cents": null
+        },
+        {
+          "id": "30483fde-d2a5-4527-a27f-dce161f59a51",
+          "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+          "code": "bank-lender-match-list",
+          "name": "Bank and Lender Match List",
+          "description": "Which institutions match the client profile.",
+          "kind": "deliverable",
+          "sort_order": 40,
+          "active": true,
+          "created_at": "2026-07-31T02:24:53.163Z",
+          "updated_at": "2026-08-17T21:37:42.304Z",
+          "display_price_cents": null
+        },
+        {
+          "id": "a79c30db-0a66-40e9-bc70-3f42876e66af",
+          "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+          "code": "metro2-letter-pack",
+          "name": "Metro 2 Dispute Letter Pack",
+          "description": "The paid DIY letter pack. Delivered by ds-02.",
+          "kind": "deliverable",
+          "sort_order": 50,
+          "active": true,
+          "created_at": "2026-07-31T02:24:53.163Z",
+          "updated_at": "2026-08-17T21:37:42.696Z",
+          "display_price_cents": null
+        }
+      ]
+    },
+    "products_columns": {
+      "ok": true,
+      "sql": "SELECT column_name, data_type FROM information_schema.columns WHERE table_name='products' ORDER BY ordinal_position",
+      "params": [],
+      "rowCount": 16,
+      "rows": [
+        {
+          "column_name": "id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "org_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "code",
+          "data_type": "text"
+        },
+        {
+          "column_name": "name",
+          "data_type": "text"
+        },
+        {
+          "column_name": "description",
+          "data_type": "text"
+        },
+        {
+          "column_name": "category",
+          "data_type": "text"
+        },
+        {
+          "column_name": "default_price",
+          "data_type": "numeric"
+        },
+        {
+          "column_name": "min_price",
+          "data_type": "numeric"
+        },
+        {
+          "column_name": "max_price",
+          "data_type": "numeric"
+        },
+        {
+          "column_name": "price_is_variable",
+          "data_type": "boolean"
+        },
+        {
+          "column_name": "default_success_fee_percent",
+          "data_type": "numeric"
+        },
+        {
+          "column_name": "active",
+          "data_type": "boolean"
+        },
+        {
+          "column_name": "sort_order",
+          "data_type": "integer"
+        },
+        {
+          "column_name": "notes",
+          "data_type": "text"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone"
+        }
+      ]
+    },
+    "products_distinct_code": {
+      "ok": true,
+      "sql": "SELECT DISTINCT code FROM products ORDER BY code",
+      "params": [],
+      "rowCount": 5,
+      "rows": [
+        {
+          "code": "card-stacking-dfy"
+        },
+        {
+          "code": "consulting-package"
+        },
+        {
+          "code": "diagnostic"
+        },
+        {
+          "code": "inquiry-removal"
+        },
+        {
+          "code": "repair-bundle"
+        }
+      ]
+    },
+    "products_all": {
+      "ok": true,
+      "sql": "SELECT * FROM products ORDER BY code",
+      "params": [],
+      "rowCount": 5,
+      "rows": [
+        {
+          "id": "c087bdd2-0314-46b7-88f6-dc5c54b46a63",
+          "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+          "code": "card-stacking-dfy",
+          "name": "Card Stacking DFY",
+          "description": "Done-for-you card stacking. Deposit up front, success fee on funding.",
+          "category": "funding",
+          "default_price": "3000.00",
+          "min_price": null,
+          "max_price": null,
+          "price_is_variable": true,
+          "default_success_fee_percent": "10.0000",
+          "active": true,
+          "sort_order": 20,
+          "notes": "Deposit is the front end. 10% success fee is the back end, invoiced on round.funded (spec §12, ports AX20/AX21).",
+          "created_at": "2026-07-31T02:24:53.163Z",
+          "updated_at": "2026-07-31T02:24:53.163Z"
+        },
+        {
+          "id": "29809c86-347f-4c09-87e5-04f6420ac9e9",
+          "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+          "code": "consulting-package",
+          "name": "Consulting Services Package",
+          "description": "DIY consulting. Variable per client via the Commas custom-amount checkout.",
+          "category": "consulting",
+          "default_price": "1000.00",
+          "min_price": null,
+          "max_price": null,
+          "price_is_variable": true,
+          "default_success_fee_percent": null,
+          "active": true,
+          "sort_order": 30,
+          "notes": "Name must stay EXACTLY this — it is the product Chris creates in Commas (spec §15.2). Renaming it here keeps the old name as a routing alias, but coordinate with Commas before renaming.",
+          "created_at": "2026-07-31T02:24:53.163Z",
+          "updated_at": "2026-07-31T02:24:53.163Z"
+        },
+        {
+          "id": "97593dbe-50b1-4830-a119-81b14915b006",
+          "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+          "code": "diagnostic",
+          "name": "$32 Diagnostic",
+          "description": "Entry diagnostic. Triggers analysis.completed and the 6-tier decision.",
+          "category": "diagnostic",
+          "default_price": "32.00",
+          "min_price": null,
+          "max_price": null,
+          "price_is_variable": false,
+          "default_success_fee_percent": null,
+          "active": true,
+          "sort_order": 10,
+          "notes": "Effectively fixed price. price_is_variable=false so the sale form locks it.",
+          "created_at": "2026-07-31T02:24:53.163Z",
+          "updated_at": "2026-07-31T02:24:53.163Z"
+        },
+        {
+          "id": "b5466f67-73ca-4a22-817b-a9d6dc3f0c0a",
+          "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+          "code": "inquiry-removal",
+          "name": "Inquiry Removal",
+          "description": "Inquiry removal. Price set per engagement.",
+          "category": "inquiry_removal",
+          "default_price": null,
+          "min_price": null,
+          "max_price": null,
+          "price_is_variable": true,
+          "default_success_fee_percent": null,
+          "active": true,
+          "sort_order": 50,
+          "notes": "No default price on record. Sale form requires the closer to enter one.",
+          "created_at": "2026-07-31T02:24:53.163Z",
+          "updated_at": "2026-07-31T02:24:53.163Z"
+        },
+        {
+          "id": "0e4087cf-4a2f-4af4-b1a9-ce2f6319bdaa",
+          "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+          "code": "repair-bundle",
+          "name": "Credit Repair Bundle",
+          "description": "Credit repair bundle.",
+          "category": "repair",
+          "default_price": "2000.00",
+          "min_price": null,
+          "max_price": null,
+          "price_is_variable": true,
+          "default_success_fee_percent": null,
+          "active": true,
+          "sort_order": 40,
+          "notes": null,
+          "created_at": "2026-07-31T02:24:53.163Z",
+          "updated_at": "2026-07-31T02:24:53.163Z"
+        }
+      ]
+    },
+    "payment_links_columns": {
+      "ok": true,
+      "sql": "SELECT column_name, data_type FROM information_schema.columns WHERE table_name='payment_links' ORDER BY ordinal_position",
+      "params": [],
+      "rowCount": 20,
+      "rows": [
+        {
+          "column_name": "id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "org_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "client_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "purpose",
+          "data_type": "text"
+        },
+        {
+          "column_name": "description",
+          "data_type": "text"
+        },
+        {
+          "column_name": "amount_cents",
+          "data_type": "bigint"
+        },
+        {
+          "column_name": "currency",
+          "data_type": "text"
+        },
+        {
+          "column_name": "status",
+          "data_type": "text"
+        },
+        {
+          "column_name": "link_ref",
+          "data_type": "text"
+        },
+        {
+          "column_name": "checkout_url",
+          "data_type": "text"
+        },
+        {
+          "column_name": "provider",
+          "data_type": "text"
+        },
+        {
+          "column_name": "commas_session_id",
+          "data_type": "text"
+        },
+        {
+          "column_name": "paid_amount_cents",
+          "data_type": "bigint"
+        },
+        {
+          "column_name": "created_by_staff_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "sent_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "paid_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "expired_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "is_demo",
+          "data_type": "boolean"
+        }
+      ]
+    },
+    "payment_links_test_client": {
+      "ok": true,
+      "sql": "SELECT * FROM payment_links WHERE client_id = $1",
+      "params": [
+        "8556bedc-46e1-4d85-b0cd-a24adfee1521"
+      ],
+      "rowCount": 0,
+      "rows": []
+    },
+    "payment_links_total": {
+      "ok": true,
+      "sql": "SELECT count(*)::int AS count FROM payment_links",
+      "params": [],
+      "rowCount": 1,
+      "rows": [
+        {
+          "count": 40
+        }
+      ]
+    },
+    "events_grouped": {
+      "ok": true,
+      "sql": "SELECT name, count(*)::int AS count, count(client_id)::int AS with_client\n     FROM events\n    WHERE name IN ('payment.received','diagnostic.paid','deposit.paid','sale.closed','contract.signed','contract.sent')\n    GROUP BY name ORDER BY name",
+      "params": [],
+      "rowCount": 6,
+      "rows": [
+        {
+          "name": "contract.sent",
+          "count": 7,
+          "with_client": 7
+        },
+        {
+          "name": "contract.signed",
+          "count": 5,
+          "with_client": 5
+        },
+        {
+          "name": "deposit.paid",
+          "count": 1,
+          "with_client": 1
+        },
+        {
+          "name": "diagnostic.paid",
+          "count": 5,
+          "with_client": 1
+        },
+        {
+          "name": "payment.received",
+          "count": 11,
+          "with_client": 6
+        },
+        {
+          "name": "sale.closed",
+          "count": 2,
+          "with_client": 2
+        }
+      ]
+    },
+    "events_payment_sample": {
+      "ok": true,
+      "sql": "SELECT id, name, client_id, payload, created_at\n     FROM events\n    WHERE name IN ('payment.received','diagnostic.paid')\n    ORDER BY created_at DESC LIMIT 5",
+      "params": [],
+      "rowCount": 5,
+      "rows": [
+        {
+          "id": "44eb6a4b-8834-4ba9-92e9-84e20d1b4b00",
+          "name": "payment.received",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "payload": {
+            "email": "client@fundhub.ai",
+            "amount": 5000,
+            "source": "w16-sim",
+            "product": "unmatched",
+            "offerKey": "FUNDING_MASTERY",
+            "productName": "Funding Mastery course (A to Z)",
+            "providerRef": "w16-sim-8556bedc-FUNDING_MASTERY-live"
+          },
+          "created_at": "2026-08-18T20:50:28.711Z"
+        },
+        {
+          "id": "dcb10b34-ec8c-437f-ab38-819b783907e8",
+          "name": "payment.received",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "payload": {
+            "email": "client@fundhub.ai",
+            "amount": 1000,
+            "source": "w16-sim",
+            "product": "unmatched",
+            "offerKey": "UWIQ_DELIVERABLES",
+            "productName": "UnderwriteIQ Deliverables Package",
+            "providerRef": "w16-sim-8556bedc-UWIQ_DELIVERABLES-live"
+          },
+          "created_at": "2026-08-18T20:50:27.671Z"
+        },
+        {
+          "id": "d1d09471-1ed6-4aab-8a71-09ff0e922b74",
+          "name": "payment.received",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "payload": {
+            "email": "client@fundhub.ai",
+            "amount": 200,
+            "source": "w16-sim",
+            "product": "unmatched",
+            "offerKey": "REPAIR_TRIAL",
+            "productName": "Repair test run (first round, done for you)",
+            "providerRef": "w16-sim-8556bedc-REPAIR_TRIAL-live"
+          },
+          "created_at": "2026-08-18T20:50:25.416Z"
+        },
+        {
+          "id": "03eccc8d-8f79-475e-9729-ff54dce74e1d",
+          "name": "payment.received",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "payload": {
+            "email": "client@fundhub.ai",
+            "amount": 1000,
+            "source": "w16-sim",
+            "product": "unmatched",
+            "offerKey": "REPAIR_DFY",
+            "productName": "Credit repair, done-for-you",
+            "providerRef": "w16-sim-8556bedc-REPAIR_DFY-live"
+          },
+          "created_at": "2026-08-18T20:50:22.908Z"
+        },
+        {
+          "id": "38bd8c82-1de3-40fc-b1d2-733c7d6f13b5",
+          "name": "payment.received",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "payload": {
+            "email": "client@fundhub.ai",
+            "amount": 3000,
+            "source": "w16-sim",
+            "product": "unmatched",
+            "offerKey": "FUNDING_DFY",
+            "productName": "Funding, done-for-you",
+            "providerRef": "w16-sim-8556bedc-FUNDING_DFY-live"
+          },
+          "created_at": "2026-08-18T20:50:20.672Z"
+        }
+      ]
+    },
+    "documents_columns": {
+      "ok": true,
+      "sql": "SELECT column_name, data_type FROM information_schema.columns WHERE table_name='documents' ORDER BY ordinal_position",
+      "params": [],
+      "rowCount": 29,
+      "rows": [
+        {
+          "column_name": "id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "org_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "client_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "document_key",
+          "data_type": "text"
+        },
+        {
+          "column_name": "kind",
+          "data_type": "text"
+        },
+        {
+          "column_name": "subtype",
+          "data_type": "text"
+        },
+        {
+          "column_name": "title",
+          "data_type": "text"
+        },
+        {
+          "column_name": "invoice_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "current_version",
+          "data_type": "integer"
+        },
+        {
+          "column_name": "current_version_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "storage_key",
+          "data_type": "text"
+        },
+        {
+          "column_name": "mime_type",
+          "data_type": "text"
+        },
+        {
+          "column_name": "byte_size",
+          "data_type": "bigint"
+        },
+        {
+          "column_name": "checksum",
+          "data_type": "text"
+        },
+        {
+          "column_name": "generated_by",
+          "data_type": "text"
+        },
+        {
+          "column_name": "generated_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "delivered_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "delivery_channel",
+          "data_type": "text"
+        },
+        {
+          "column_name": "delivery_status",
+          "data_type": "text"
+        },
+        {
+          "column_name": "signature_required",
+          "data_type": "boolean"
+        },
+        {
+          "column_name": "signed_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "signer_name",
+          "data_type": "text"
+        },
+        {
+          "column_name": "signature_ref",
+          "data_type": "text"
+        },
+        {
+          "column_name": "expires_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "source_event_id",
+          "data_type": "text"
+        },
+        {
+          "column_name": "metadata",
+          "data_type": "jsonb"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "is_demo",
+          "data_type": "boolean"
+        }
+      ]
+    },
+    "documents_delivery_status_breakdown": {
+      "ok": true,
+      "sql": "SELECT delivery_status, count(*)::int AS count FROM documents GROUP BY delivery_status ORDER BY count DESC",
+      "params": [],
+      "rowCount": 2,
+      "rows": [
+        {
+          "delivery_status": "sent",
+          "count": 7
+        },
+        {
+          "delivery_status": "not_delivered",
+          "count": 4
+        }
+      ]
+    },
+    "documents_not_delivered": {
+      "ok": true,
+      "sql": "SELECT id, client_id, kind, title, delivery_status, created_at\n     FROM documents\n    WHERE delivery_status = 'not_delivered'\n    ORDER BY created_at DESC LIMIT 100",
+      "params": [],
+      "rowCount": 4,
+      "rows": [
+        {
+          "id": "07d45e8f-c602-4337-8037-3251590b6e1c",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "kind": "contract",
+          "title": "Credit Repair Agreement (signed)",
+          "delivery_status": "not_delivered",
+          "created_at": "2026-08-18T22:03:14.233Z"
+        },
+        {
+          "id": "ad69a9a0-e99e-4b0b-9805-bb6f66539656",
+          "client_id": "cb6f5839-2979-491d-9080-00ca51833b07",
+          "kind": "contract",
+          "title": "Funding Agreement (signed)",
+          "delivery_status": "not_delivered",
+          "created_at": "2026-08-18T20:11:46.178Z"
+        },
+        {
+          "id": "5dfb4bde-c9d3-447c-8a1e-0036baf43f23",
+          "client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+          "kind": "contract",
+          "title": "Funding Agreement — prove send 2026-08-16 (signed)",
+          "delivery_status": "not_delivered",
+          "created_at": "2026-08-18T16:55:18.717Z"
+        },
+        {
+          "id": "f13993df-4ab3-4ce2-9196-cad390a90728",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "kind": "authorization",
+          "title": "Soft Pull Authorization (signed)",
+          "delivery_status": "not_delivered",
+          "created_at": "2026-08-18T16:12:38.347Z"
+        }
+      ]
+    },
+    "contracts_columns": {
+      "ok": true,
+      "sql": "SELECT column_name, data_type FROM information_schema.columns WHERE table_name='contracts' ORDER BY ordinal_position",
+      "params": [],
+      "rowCount": 41,
+      "rows": [
+        {
+          "column_name": "id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "org_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "client_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "template_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "template_key",
+          "data_type": "text"
+        },
+        {
+          "column_name": "title",
+          "data_type": "text"
+        },
+        {
+          "column_name": "kind",
+          "data_type": "text"
+        },
+        {
+          "column_name": "subtype",
+          "data_type": "text"
+        },
+        {
+          "column_name": "merge_values",
+          "data_type": "jsonb"
+        },
+        {
+          "column_name": "rendered_body",
+          "data_type": "text"
+        },
+        {
+          "column_name": "body_sha",
+          "data_type": "text"
+        },
+        {
+          "column_name": "document_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "document_version_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "signature_statement",
+          "data_type": "text"
+        },
+        {
+          "column_name": "signature_required",
+          "data_type": "boolean"
+        },
+        {
+          "column_name": "status",
+          "data_type": "text"
+        },
+        {
+          "column_name": "sent_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "sent_by",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "link_expires_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "viewed_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "view_count",
+          "data_type": "integer"
+        },
+        {
+          "column_name": "signed_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "signer_name",
+          "data_type": "text"
+        },
+        {
+          "column_name": "signer_ip",
+          "data_type": "text"
+        },
+        {
+          "column_name": "signer_user_agent",
+          "data_type": "text"
+        },
+        {
+          "column_name": "voided_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "voided_by",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "void_reason",
+          "data_type": "text"
+        },
+        {
+          "column_name": "created_by",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "source_kind",
+          "data_type": "text"
+        },
+        {
+          "column_name": "fields",
+          "data_type": "jsonb"
+        },
+        {
+          "column_name": "source_document_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "source_document_version_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "signed_document_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "signed_document_version_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "signed_body_sha",
+          "data_type": "text"
+        },
+        {
+          "column_name": "signing_order",
+          "data_type": "text"
+        },
+        {
+          "column_name": "completed_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "is_demo",
+          "data_type": "boolean"
+        }
+      ]
+    },
+    "contracts_test_client": {
+      "ok": true,
+      "sql": "SELECT id, status, template_key, client_id, created_at, sent_at, signed_at FROM contracts WHERE client_id = $1 ORDER BY created_at DESC",
+      "params": [
+        "8556bedc-46e1-4d85-b0cd-a24adfee1521"
+      ],
+      "rowCount": 3,
+      "rows": [
+        {
+          "id": "8dfa576f-5404-45fa-8f39-7d589d4e8a4a",
+          "status": "signed",
+          "template_key": "CREDIT-REPAIR-AGREEMENT",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T21:58:28.218Z",
+          "sent_at": "2026-08-18T21:58:28.649Z",
+          "signed_at": "2026-08-18T22:03:13.471Z"
+        },
+        {
+          "id": "16b29639-ac19-42ab-ba48-8789018b0e48",
+          "status": "signed",
+          "template_key": "SOFT-PULL-CONSENT",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T16:07:51.623Z",
+          "sent_at": "2026-08-18T16:07:52.126Z",
+          "signed_at": "2026-08-18T16:12:37.597Z"
+        },
+        {
+          "id": "8988b582-d98a-44c8-9173-86de54fc5788",
+          "status": "draft",
+          "template_key": "SOFT-PULL-CONSENT",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T16:04:05.676Z",
+          "sent_at": null,
+          "signed_at": null
+        }
+      ]
+    },
+    "contracts_status_breakdown": {
+      "ok": true,
+      "sql": "SELECT status, count(*)::int AS count FROM contracts GROUP BY status ORDER BY count DESC",
+      "params": [],
+      "rowCount": 4,
+      "rows": [
+        {
+          "status": "signed",
+          "count": 4
+        },
+        {
+          "status": "draft",
+          "count": 3
+        },
+        {
+          "status": "sent",
+          "count": 2
+        },
+        {
+          "status": "viewed",
+          "count": 1
+        }
+      ]
+    },
+    "contracts_drafts": {
+      "ok": true,
+      "sql": "SELECT id, status, template_key, client_id, created_at\n     FROM contracts WHERE status = 'draft' AND client_id <> $1\n    ORDER BY created_at DESC LIMIT 50",
+      "params": [
+        "9af65808-a619-4e65-ae91-239766a006b7"
+      ],
+      "rowCount": 1,
+      "rows": [
+        {
+          "id": "8988b582-d98a-44c8-9173-86de54fc5788",
+          "status": "draft",
+          "template_key": "SOFT-PULL-CONSENT",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "created_at": "2026-08-18T16:04:05.676Z"
+        }
+      ]
+    },
+    "clients_crs_columns": {
+      "ok": true,
+      "sql": "SELECT column_name FROM information_schema.columns WHERE table_name='clients' AND column_name LIKE '%crs%'",
+      "params": [],
+      "rowCount": 0,
+      "rows": []
+    },
+    "clients_paid_like_columns": {
+      "ok": true,
+      "sql": "SELECT column_name, data_type FROM information_schema.columns WHERE table_name='clients' AND (column_name LIKE '%paid%' OR column_name LIKE '%custom%')",
+      "params": [],
+      "rowCount": 1,
+      "rows": [
+        {
+          "column_name": "custom_fields",
+          "data_type": "jsonb"
+        }
+      ]
+    },
+    "schema_migrations_columns": {
+      "ok": true,
+      "sql": "SELECT column_name, data_type FROM information_schema.columns WHERE table_name='schema_migrations' ORDER BY ordinal_position",
+      "params": [],
+      "rowCount": 2,
+      "rows": [
+        {
+          "column_name": "key",
+          "data_type": "text"
+        },
+        {
+          "column_name": "applied_at",
+          "data_type": "timestamp with time zone"
+        }
+      ]
+    }
+  }
+}
