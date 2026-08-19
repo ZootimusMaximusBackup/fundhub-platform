@@ -4,6 +4,9 @@
 //
 // Usage: MIGRATION_DATABASE_URL=postgres://... node db/migrate.mjs
 //    or: DATABASE_URL=postgres://... node db/migrate.mjs   (see below)
+//
+// Inside a Netlify build this runs on the production context ONLY — every other
+// context exits 0 without touching the database. See the rule below.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -12,6 +15,45 @@ import { pool, close } from "../src/db.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DIRS = ["schema", "migrations", "seed"];
+
+/* MIGRATIONS RUN ON THE PRODUCTION DEPLOY ONLY. Owner rule, set 2026-08-19.
+
+   netlify.toml is the primary control: only [context.production] invokes this
+   file. This is the second lock, and it exists because the first one is a
+   config line anyone can change without noticing what it protects.
+
+   The hazard it closes: Netlify hands MIGRATION_DATABASE_URL to deploy previews
+   and branch deploys as readily as to production, and there is only one
+   database behind it. So until today, merely OPENING a pull request applied its
+   migrations to the live database. Measured 2026-08-19: PR #86's three
+   migrations landed on production at 03:20, twenty minutes before anyone merged
+   them at 03:42. Those three were safe. The next ones might not be, and by the
+   time a reviewer reads the diff the database has already obeyed it.
+
+   Scope, deliberately narrow. This only fires inside a Netlify build. Running
+   `node db/migrate.mjs` on a laptop, in CI, or by hand against a scratch
+   database is untouched — CONTEXT is unset there and the rule does not apply.
+   The command in CLAUDE.md §11 still works exactly as written.
+
+   Exit 0, not 1. A skipped migration is the intended outcome in a preview, not
+   a failure, and it must not red the build. The preview will run against a
+   database that does not have the new shape yet; /api/health will report
+   `pending` above zero. That is the honest signal, and it belongs to the
+   preview rather than to production. */
+const NETLIFY_CONTEXT = String(process.env.CONTEXT || "").trim();
+const NETLIFY_CONTEXTS = ["production", "deploy-preview", "branch-deploy", "dev"];
+const IN_NETLIFY_BUILD =
+  !!process.env.NETLIFY || NETLIFY_CONTEXTS.includes(NETLIFY_CONTEXT);
+
+if (IN_NETLIFY_BUILD && NETLIFY_CONTEXT !== "production") {
+  console.log(
+    `→ skipping migrations: Netlify context is ` +
+    `"${NETLIFY_CONTEXT || "(unset)"}", not "production".\n` +
+    `  Migrations run on the production deploy only (owner rule, 2026-08-19).\n` +
+    `  This build shares the live database; a preview must not reshape it.`
+  );
+  process.exit(0);
+}
 
 /* WHICH CONNECTION MIGRATIONS USE, AND WHY IT IS NO LONGER DATABASE_URL.
 

@@ -27,6 +27,47 @@
   #
   # If this ever blocks a deploy you need to make, the escape is to revert this
   # line to the old `echo` — not to weaken src/security/superuser-guard.test.mjs.
+  #
+  # OWNER RULE, set 2026-08-19: MIGRATIONS RUN ON THE PRODUCTION DEPLOY ONLY.
+  #
+  # This default command is the one every context EXCEPT production uses —
+  # deploy previews, branch deploys, and any context Netlify adds later. It
+  # deliberately does NOT run db/migrate.mjs.
+  #
+  # Why the default is the safe one rather than the other way round: a context
+  # with no block of its own falls back to here. If the migrating command were
+  # the default, every new context would silently start writing to the live
+  # database. This way a new context is inert until someone opts it in on
+  # purpose.
+  #
+  # What went wrong. Until today this line read
+  # `node db/migrate.mjs && npm run guard:db` for every context, and Netlify
+  # supplies MIGRATION_DATABASE_URL to previews as well as to production. So
+  # opening a pull request applied its migrations to the PRODUCTION database
+  # immediately, before any human reviewed or merged it. Measured on 2026-08-19:
+  # PR #86's three migrations landed on live at 03:20, twenty minutes before the
+  # merge at 03:42. They were safe. A DROP, a rewrite, or a bad lock would have
+  # been just as live, just as early, with nobody expecting it.
+  #
+  # `npm run guard:db` still runs everywhere. It reads nothing and writes
+  # nothing — it refuses the deploy if DATABASE_URL points at a superuser or a
+  # role that can bypass row locks — and that question is worth asking in every
+  # context.
+  #
+  # The trade this buys, and it is a real one: a preview of a branch that adds a
+  # migration now runs against a database that does not have it yet. Expect
+  # /api/health to report `pending` above zero on such a preview, and expect any
+  # screen depending on the new shape to fail there. That is the correct
+  # failure — it belongs to the preview, not to production.
+  #
+  # Enforced in two places so it cannot be undone by accident:
+  #   - src/security/migrations-production-only.test.mjs pins this file's shape
+  #   - db/migrate.mjs refuses to run inside any Netlify build that is not
+  #     production, whatever command invokes it
+  command = "npm run guard:db"
+
+# The ONLY context that migrates. Nothing else may.
+[context.production]
   command = "node db/migrate.mjs && npm run guard:db"
 
 [build.environment]
