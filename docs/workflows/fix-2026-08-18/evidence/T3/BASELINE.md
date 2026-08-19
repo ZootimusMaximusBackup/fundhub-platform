@@ -41,3 +41,22 @@ dominated by cross-file pollution of a shared test database.
 | 3 | the app's database role holds no superuser-level privilege | `src/security/superuser-guard.test.mjs:185` | expected here: I connected as the Postgres superuser, which is exactly the §12 trap. CI runs this as the unprivileged `fundhub_app` role |
 
 **The merge bar for T3 is "no worse than these three."** Any fourth failure is mine.
+
+## Re-measured after rebasing onto `dd6b2903` (T11 and T4 merged in the meantime)
+
+`main` grew a fourth failure while this branch was being built, and it is not this branch's.
+
+```
+with T3, on dd6b2903 : 5957 tests · 5953 pass · 4 fail · 0 skipped
+```
+
+The fourth is **`fence: nothing reaches the network except through src/lib/outbound-fetch.mjs`**
+(`src/lib/no-unfenced-transmit.test.mjs:189`), and it names `api/social/generate.mjs` — **T11's
+file, which T3 never touched.** Proved by exporting pristine `dd6b2903` to a scratch folder and
+running that one test file there: it fails identically, naming the same file.
+
+**So the merge bar moved from three failures to four, and this branch matches it exactly.**
+
+CI tells the same story from the other direction: at the earlier base `c860b8c`, `main`'s run and
+this branch's run each had **101 failing tests, and diffing the failure NAMES gave zero difference
+in either direction** — the red is T11's partner-module isolation suite, already on `main`.
