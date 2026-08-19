@@ -74,13 +74,16 @@ const APP_DIR = fileURLToPath(new URL("../../public/app/", import.meta.url));
 /* screen -> owning thread, and what is wrong. Every one of these was read by
    hand on 2026-08-18 against the source in this branch. */
 const KNOWN_UNFIXED = {
-  // Genuinely dead reads — the screen gives up during page parse and never
-  // retries, exactly like the calendar did.
-  "brand-studio.html":
-    "T11 — line ~1282 `if (typeof FHData === \"undefined\" || !FHData.orgBrand) return;` " +
-    "runs during page parse, so the saved brand is never read back.",
-
   // Degrades instead of dying, but still reads at the wrong moment.
+  "brand-studio.html":
+    "T11/T10 — the dead partner read is FIXED (T11's loadBrandFromServer waits for " +
+    "DOMContentLoaded, and T10 added the entity_address round trip on top). What is " +
+    "left is smaller and deliberate: banner() ~1297 calls FHData.banner behind a " +
+    "`typeof FHData !== \"undefined\"` guard, so a call during page parse cannot throw " +
+    "— it silently writes nothing to the bottom status strip. T11's own comment in " +
+    "loadBrandFromServer says it avoids calling banner() in the pre-load branch for " +
+    "exactly that reason. Listed so the count stays honest, not because the screen " +
+    "is broken.",
   "social-studio.html":
     "T11 — line ~1799 reads FHData during page parse; it does fall back to a raw " +
     "fetch, so partners still load, but the FHData path is dead every time.",

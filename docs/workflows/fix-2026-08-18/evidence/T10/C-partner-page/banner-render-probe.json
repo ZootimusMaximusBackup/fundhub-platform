@@ -1,0 +1,22 @@
+{
+  "1_draft_only (the live partner's real state on 2026-08-19)": {
+    "reads": "Your page · draft, not live yet — publish it in Brand Studio",
+    "link_goes_to": "brand-studio.html?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+    "link_text": "publish it in Brand Studio"
+  },
+  "2_published_on_fundhub": {
+    "reads": "Your page · https://fundhub.ai/sites/9defaf28-47c5-43a0-8f5e-f41ef90f360a/apply",
+    "link_goes_to": "https://fundhub.ai/sites/9defaf28-47c5-43a0-8f5e-f41ef90f360a/apply",
+    "link_text": "https://fundhub.ai/sites/9defaf28-47c5-43a0-8f5e-f41ef90f360a/apply"
+  },
+  "3_published_on_verified_custom_domain": {
+    "reads": "Your page · https://money.example.com/apply",
+    "link_goes_to": "https://money.example.com/apply",
+    "link_text": "https://money.example.com/apply"
+  },
+  "4_no_page_at_all": {
+    "reads": "Your page · none made yet — open Brand Studio",
+    "link_goes_to": "brand-studio.html?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+    "link_text": "open Brand Studio"
+  }
+}

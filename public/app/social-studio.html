@@ -606,9 +606,12 @@ details.how .howbd p+p{margin-top:9px}
         </div>
 
         <div class="pane on" id="pane-queued" role="tabpanel"><div id="tblQueued"></div>
+          <div class="cap" id="qActMsg" hidden></div>
           <div class="cap">
             A post goes out at the time set on it. <b>A post with no send time never goes out on its own</b>, and a post
             on an account that cannot publish waits rather than fails.
+            <br>Emptying the time box and pressing "Queue it" does <b>not</b> take away a time that is already saved —
+            the post keeps that time and still goes out. To stop a post going out, throw it away.
           </div>
         </div>
         <div class="pane" id="pane-blocked" role="tabpanel"><div id="tblBlocked"></div>
@@ -979,6 +982,136 @@ function readyPosts(){
   });
 }
 function postById(id){ return POSTS.filter(function(p){ return p.id === id; })[0] || null; }
+
+/* ══ THE TWO WRITES THAT NEED NO CONNECTED ACCOUNT ═══════════════════════
+   POST /api/social/posts is the only write on this screen that works with zero
+   social accounts, and nothing on the page called it — the endpoint was routed,
+   handled a partner, and was dead code from the browser's side.
+
+   With no channel_id it sets the post to waiting and saves the send time.
+   With action:'discard' it throws the post away. Neither one touches Facebook,
+   Instagram or LinkedIn, which is what lets a partner with no connected account
+   do the three things the white-label journey promises: write a post into the
+   queue, set a time, or throw one away.
+
+   /api/social/schedule is still the right call when an account IS picked — it
+   is the only path that makes a real social_posts row — so the composer keeps
+   using it for that case.
+   ════════════════════════════════════════════════════════════════════════ */
+function postWrite(body){
+  var t = '';
+  try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
+  return fetch('/api/social/posts', {
+    method: 'POST',
+    headers: Object.assign(
+      { accept: 'application/json', 'content-type': 'application/json' },
+      (t && t !== 'demo') ? { authorization: 'Bearer ' + t } : {}),
+    body: JSON.stringify(body)
+  }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+    .catch(function () { return { ok: false, error: 'offline' }; });
+}
+/* ══ WHAT A REFUSAL SAYS TO A PERSON ═════════════════════════════════════
+   CLAUDE.md §10 — nobody reading this screen is technical. When the server
+   refuses, it answers with a short internal word: "not_found", "suite_off",
+   "unauthorized". Those words mean nothing to a partner and must never reach
+   the screen. This turns each one into one plain sentence, and anything it does
+   not recognise into a sentence that says what happened without naming anything
+   internal. The server's own `message` is deliberately not used: some of them
+   are written for a developer, not for a person.
+   ════════════════════════════════════════════════════════════════════════ */
+function plainWrite(res){
+  switch (String((res && res.error) || '')) {
+    case 'offline':
+      return 'The screen could not reach the server, so nothing was changed. Check the connection and try again.';
+    case 'not_found':
+      return 'That post is not in the list any more. Reload the page to see what is there now.';
+    case 'suite_off':
+      return 'This part of the system is switched off for this partner. Only the owner can turn it on.';
+    case 'partner_id_required':
+      return 'The screen does not know which partner this is for. Pick a partner at the top and try again.';
+    case 'id_required':
+      return 'The screen lost track of which post this was. Reload the page and try again.';
+    case 'channel_id_required':
+      return 'A post can only be sent on a connected account, and no account was picked.';
+    case 'unauthorized':
+      return 'You are signed out. Sign in again and try once more.';
+    case 'forbidden':
+      return 'Your account is not allowed to change this partner\'s posts.';
+    case 'auth_unavailable':
+      return 'The system could not check who you are just now. Try again in a moment.';
+    case 'caption_required':
+      return 'Write the post first. Nothing was saved.';
+    case 'partner_not_found':
+      return 'That partner is not in the system, so nothing was changed. Pick a different partner.';
+    case 'staff_only_for_all':
+      return 'Only a member of staff can do that for every partner at once. Pick one partner first.';
+    case 'token_cap':
+      return 'The writing allowance for this month is used up, so nothing new was written.';
+    case 'no_model':
+      return 'The writer is not switched on, so nothing was written.';
+    case 'method_not_allowed':
+      return 'The screen asked for something this part of the system does not do.';
+    default:
+      return 'The server would not do it, and nothing was changed. Try again in a moment.';
+  }
+}
+function qActMsg(text){
+  var el = document.getElementById('qActMsg');
+  if (!el) return;
+  el.textContent = text || '';
+  el.hidden = !text;
+}
+/* The time boxes on this screen are UTC — every time it prints is UTC, and the
+   column header says so. A datetime-local box has no zone of its own, so the
+   value is read back as UTC. Reading it as the browser's local time would save
+   a different moment than the one shown in the box. */
+function utcFromBox(v){
+  if (!v) return null;
+  var d = new Date(v.length === 16 ? v + ':00Z' : v + 'Z');
+  return isFinite(d.getTime()) ? d.toISOString() : null;
+}
+function queueOne(id){
+  var post = postById(id); if (!post) return;
+  var p = partner();
+  if (!p) { qActMsg('No partner is chosen — nothing was saved.'); return; }
+  var box = document.querySelector('[data-qwhen="' + id + '"]');
+  var when = utcFromBox(box ? box.value : '');
+  qActMsg('Saving…');
+  postWrite({ partner_id: p.id, id: id, scheduled_for: when }).then(function (res) {
+    if (!res.ok) {
+      qActMsg('Not saved. ' + plainWrite(res));
+      return;
+    }
+    /* ══ THE SENTENCE IS BUILT FROM THE SERVER'S ANSWER, NOT FROM THE BOX ══
+       api/social/posts.mjs, the branch that runs when no account is picked,
+       saves the time as
+           scheduled_for = COALESCE($2::timestamptz, scheduled_for)
+       with $2 = body.scheduled_for || row.scheduled_for.
+
+       Read that twice: an EMPTY time box does not clear a time that is already
+       saved. The old time is kept and the post still goes out. Building this
+       sentence from the box would have told the partner the exact opposite of
+       what happened. So it is built from the row the server sends back, which
+       is what is really stored. */
+    var item = res.item;
+    if (!item || !('scheduled_for' in item)) {
+      qActMsg('Saved. The screen could not read the send time back, so check the "Send at" column below.');
+      loadQueue();
+      return;
+    }
+    var saved = item.scheduled_for;
+    if (!saved) {
+      qActMsg('Saved. That post is waiting, and it has no send time, so it will not go out on its own.');
+    } else if (!when) {
+      qActMsg('Saved. That post is waiting and is still set for ' + fmt(saved) + '. ' +
+        'Emptying the time box does not take away a time that was already saved. ' +
+        'To stop a post going out, throw it away.');
+    } else {
+      qActMsg('Saved. That post is waiting and set for ' + fmt(saved) + '.');
+    }
+    loadQueue();
+  });
+}
 function settings(){ var p = partner(); return (p && p.settings) || null; }
 function approveBeforeLaunch(){
   var s = settings();
@@ -1099,11 +1232,9 @@ function renderChannels(){
       (CHANNELS_READ
         ? 'No social accounts are connected yet. Once one is, it will show here.'
         : 'Reading this partner\'s connected accounts…')+
-      '<br>Posts can still be written, but none can be lined up to go out until an account is connected.'+
-      '<br>'+
+      '<br>With no account, a post typed in the writer below cannot be saved yet. Use "Write 3 posts for me" at the top to put posts in the waiting list. From there you can give a post a send time, or throw it away, without an account.<br>'+
       (viewerCanConnect()
-        ? 'You can connect Facebook, Instagram or LinkedIn further down this page. If a button there is greyed out, '+
-          'that service has not been switched on for this site yet, and nothing can be connected until somebody does that.'
+        ? 'You can connect Facebook, Instagram or LinkedIn further down this page. If a button there is greyed out, that service has not been switched on for this site yet, and nothing can be connected until somebody does that.'
         : 'Only the owner can connect an account, so there is nothing for you to do here.')+
       '</div>';
     return;
@@ -1314,7 +1445,7 @@ function renderQueue(){
   if(!rows.length){ host.innerHTML = '<div class="empty">Nothing is waiting to go out for this partner and filter.</div>'; return; }
   host.innerHTML = '<table class="grid"><thead><tr>'+
     '<th>Account</th><th>Post</th><th>About</th><th>Send at</th>'+
-    '<th>Tries</th><th>What happens next</th></tr></thead><tbody>'+
+    '<th>Tries</th><th>What happens next</th><th>Set a time, or throw it away</th></tr></thead><tbody>'+
     rows.map(function(p){
       var qs = queueState(p);
       return '<tr data-row="'+esc(p.id)+'" tabindex="0" aria-expanded="false">'+
@@ -1326,9 +1457,35 @@ function renderQueue(){
         '<td><span class="attn'+(p.attempt>0?' hot':'')+'">'+triesText(p)+'</span><span class="substate">'+
           (hasTries(p) ? 'of '+MAX_ATTEMPTS : 'not tried yet')+'</span></td>'+
         '<td><span class="badge '+qs.cls+'">'+esc(qs.short)+'</span><span class="substate">'+esc(qs.label)+'</span></td>'+
-      '</tr>' + detailRow(p, 6);
+        '<td>'+queueActions(p)+'</td>'+
+      '</tr>' + detailRow(p, 7);
     }).join('') + '</tbody></table>';
   wireRows(host);
+}
+
+/* The two things a partner can do to a waiting post with no connected account.
+   Both go to POST /api/social/posts — see postWrite() above. The time box is
+   UTC, like every other time on this screen.
+
+   The throw-away button here is drawn by the SAME check, canDiscard(), that
+   draws the one inside the row's details. A post held for a person cannot be
+   thrown away, and before this check the two buttons disagreed about that. */
+function queueActions(p){
+  /* toISOString() throws on an unparseable value, and one bad row must not take
+     the whole table down with it — an empty box is the honest fallback. */
+  var when = '';
+  if (p.scheduled_for) {
+    var d = new Date(p.scheduled_for);
+    if (isFinite(d.getTime())) when = d.toISOString().slice(0,16);
+  }
+  return '<div class="qact" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+
+    '<input type="datetime-local" data-qwhen="'+esc(p.id)+'" value="'+esc(when)+'" '+
+      'aria-label="Send at, in UTC" style="font:inherit;padding:4px 6px">'+
+    '<button class="btn sm" type="button" data-qqueue="'+esc(p.id)+'">Queue it</button>'+
+    (canDiscard(p)
+      ? '<button class="btn sm" type="button" data-qdrop="'+esc(p.id)+'">Throw it away</button>'
+      : '')+
+    '</div>';
 }
 
 function renderBlocked(){
@@ -1460,7 +1617,7 @@ function renderAudit(){
   }
   if(!hasPartner()){ host.innerHTML = noPartner('Every attempt to send, newest first'); return; }
   host.innerHTML = ACTIONS_ERR
-    ? '<div class="empty">The send history could not be read: ' + esc(ACTIONS_ERR) +
+    ? '<div class="empty">The send history could not be read. ' + esc(ACTIONS_ERR) +
       '<br>Nothing is shown in its place. Reload the page to try again.</div>'
     : '<div class="empty">Reading the send history…</div>';
 }
@@ -1526,14 +1683,35 @@ function wireRows(host){
     b.addEventListener('click', function(e){ e.stopPropagation(); openDrawer(b.dataset.open); });
   });
   host.querySelectorAll('[data-discard]').forEach(function(b){
-    b.addEventListener('click', function(e){ e.stopPropagation(); discardPost(b.dataset.discard, b); });
+    b.addEventListener('click', function(e){ e.stopPropagation(); discardOne(b.dataset.discard, b); });
+  });
+  /* A click inside the action box must not also open the row's detail. */
+  host.querySelectorAll('.qact').forEach(function(box){
+    box.addEventListener('click', function(e){ e.stopPropagation(); });
+    box.addEventListener('keydown', function(e){ e.stopPropagation(); });
+  });
+  host.querySelectorAll('[data-qqueue]').forEach(function(b){
+    b.addEventListener('click', function(e){ e.stopPropagation(); queueOne(b.dataset.qqueue); });
+  });
+  host.querySelectorAll('[data-qdrop]').forEach(function(b){
+    b.addEventListener('click', function(e){ e.stopPropagation(); discardOne(b.dataset.qdrop, b); });
   });
 }
 
 /* ══ THROW A POST AWAY ═══════════════════════════════════════════════════
    §5 — asks first and names what it does. The post is marked as thrown away, not
-   removed: nothing on this screen deletes anything, and the record stays. */
-function discardPost(id, btn){
+   removed: nothing on this screen deletes anything, and the record stays.
+
+   ONE function, and only one. Two buttons offer this — the one inside a row's
+   details and the one in the waiting list's own column — and both call this, and
+   both are drawn only when canDiscard() says the post may go. Two functions, or
+   one button drawn without that check, would let the screen answer the same
+   question two different ways on the same row. It did, and this is that fix.
+
+   The request itself goes through postWrite(), which is the single place on this
+   screen that talks to /api/social/posts. An unreachable site comes back from it
+   as a refusal like any other, so there is one failure path, not two. */
+function discardOne(id, btn){
   var p = postById(id), pr = partner();
   if(!p || !pr) return;
   var words = String(p.caption || '').slice(0, 80);
@@ -1541,27 +1719,14 @@ function discardPost(id, btn){
      'It stops waiting and will never go out. It cannot be put back from this screen.')) return;
   var was = btn ? btn.textContent : '';
   if(btn){ btn.disabled = true; btn.textContent = 'Throwing away…'; }
-  var t = '';
-  try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
-  fetch('/api/social/posts', {
-    method: 'POST',
-    headers: Object.assign(
-      { accept: 'application/json', 'content-type': 'application/json' },
-      (t && t !== 'demo') ? { authorization: 'Bearer ' + t } : {}),
-    body: JSON.stringify({ partner_id: pr.id, id: id, action: 'discard' })
-  }).then(function(r){ return r.json().catch(function(){ return { ok:false }; }); })
+  postWrite({ partner_id: pr.id, id: id, action: 'discard' })
     .then(function(res){
       if(!res.ok){
         if(btn){ btn.disabled = false; btn.textContent = was; }
-        window.alert('It was not thrown away: ' +
-          (res.message || res.error || 'something went wrong. Nothing was changed.'));
+        window.alert('It was not thrown away. ' + plainWrite(res));
         return;
       }
       loadQueue();
-    })
-    .catch(function(){
-      if(btn){ btn.disabled = false; btn.textContent = was; }
-      window.alert('It was not thrown away — the site could not be reached. Nothing was changed. Try again in a moment.');
     });
 }
 
@@ -1882,14 +2047,15 @@ function apiGet(path){
 }
 
 var LIVE_ACTIONS = null; // null = not read; the table then says why, and shows no rows
-var ACTIONS_ERR = null;  // the reason the read failed, shown to the user verbatim
+var ACTIONS_ERR = null;  // the reason the read failed, already in plain words
 function wireActionLog(){
   var p = partner();
   if(!p){ LIVE_ACTIONS = null; ACTIONS_ERR = null; renderAudit(); renderCounts(); return; }
   apiGet('/api/campaigns/action-log?partner_id='+encodeURIComponent(p.id)+'&target_type=social_post&state=all&limit=200')
     .then(function(res){
       LIVE_ACTIONS = res.ok ? (res.data.items||[]) : null;
-      ACTIONS_ERR = res.ok ? null : (res.error || null);
+      /* Plain words, not the server's internal word — CLAUDE.md §10. */
+      ACTIONS_ERR = res.ok ? null : plainWrite(res);
       renderAudit(); renderCounts();
       if(window.FHData){
         /* Plain words. This used to print the name the database uses for a post
@@ -2017,7 +2183,21 @@ document.getElementById('queueBtn').addEventListener('click', function(){
     msg.textContent = 'No partner is chosen — nothing was sent.';
     return;
   }
-  if (!channelId) { msg.textContent = 'Pick an account to post to first.'; return; }
+  if (!channelId) {
+    /* THE ONE THING THIS SCREEN STILL CANNOT DO, SAID PLAINLY.
+       A caption typed here can only be saved by POST /api/social/schedule, and
+       that route refuses without a connected account (channel_id_required). The
+       queue's own write, POST /api/social/posts, only ever changes a post that
+       is ALREADY in the list — it has no "make a new one" branch. So with zero
+       accounts there is no route that stores a hand-typed post, and this says so
+       instead of asking for an account the partner is not allowed to connect. */
+    msg.textContent = channels().length
+      ? 'Pick an account to post to first.'
+      : 'There is no account to post to, so a post typed here cannot be saved yet. '+
+        'Use "Write 3 posts for me" at the top to put posts in the waiting list. '+
+        'From there you can set a time or throw one away without an account.';
+    return;
+  }
   if (!caption) { msg.textContent = 'Write the post first.'; return; }
   msg.textContent = 'Saving…';
   var t = '';
@@ -2041,7 +2221,7 @@ document.getElementById('queueBtn').addEventListener('click', function(){
   }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
     .then(function (res) {
       if (!res.ok) {
-        msg.textContent = 'Not saved: ' + (res.message || res.error || 'error');
+        msg.textContent = 'Not saved. ' + plainWrite(res);
         return;
       }
       msg.textContent = 'Saved. Copy check says: ' + String(res.state || 'ok').replace('_', ' ') +
@@ -2078,7 +2258,7 @@ document.getElementById('publishDueBtn').addEventListener('click', function () {
   }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
     .then(function (res) {
       if (!res.ok) {
-        msg.textContent = 'Nothing was sent: ' + (res.message || res.error || 'error');
+        msg.textContent = 'Nothing was sent. ' + plainWrite(res);
         return;
       }
       var n = (res.results || []).length;
@@ -2365,7 +2545,7 @@ document.getElementById('ssGenBtn').addEventListener('click', function(){
     .then(function(res){
       msg.textContent = res.ok
         ? 'Wrote ' + ((res.items && res.items.length) || 0) + ' posts. They are in the waiting list below.'
-        : (res.message || res.error || 'Nothing was written.');
+        : plainWrite(res);
       loadQueue();
     })
     /* Without this the button sat on "Writing…" for ever whenever the request

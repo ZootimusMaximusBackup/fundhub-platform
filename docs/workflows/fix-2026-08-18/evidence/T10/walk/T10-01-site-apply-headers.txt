@@ -1,0 +1,13 @@
+HTTP/2 404 
+age: 1
+cache-control: no-cache
+cache-status: "Netlify Durable"; fwd=bypass
+cache-status: "Netlify Edge"; fwd=miss; fwd-status=404
+content-type: text/html; charset=utf-8
+date: Wed, 19 Aug 2026 06:54:24 GMT
+netlify-vary: query
+server: Netlify
+strict-transport-security: max-age=31536000
+x-content-type-options: nosniff
+x-nf-request-id: 01M0CCSCN1Y57EHA8P7GW7A66F
+

@@ -1,0 +1,72 @@
+{
+  "email": "owner@fundhub.ai",
+  "ranAt": "2026-08-19T11:00:13.695Z",
+  "login": {
+    "cached": true,
+    "ok": true
+  },
+  "httpStatus": 200,
+  "samples": [
+    {
+      "atMs": "after-networkidle",
+      "url": "/app/galaxy.html",
+      "title": "Fundhub — Galaxy",
+      "role": "owner",
+      "bodyHead": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ ✷ Galaxy BETA ⚙ Ops & Admin BETA AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Beta — under development. Data may"
+    },
+    {
+      "atMs": "+2000",
+      "url": "/app/galaxy.html",
+      "title": "Fundhub — Galaxy",
+      "role": "owner",
+      "bodyHead": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ ✷ Galaxy BETA ⚙ Ops & Admin BETA AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Beta — under development. Data may"
+    },
+    {
+      "atMs": "+4000",
+      "url": "/app/galaxy.html",
+      "title": "Fundhub — Galaxy",
+      "role": "owner",
+      "bodyHead": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ ✷ Galaxy BETA ⚙ Ops & Admin BETA AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Beta — under development. Data may"
+    },
+    {
+      "atMs": "+6000",
+      "url": "/app/galaxy.html",
+      "title": "Fundhub — Galaxy",
+      "role": "owner",
+      "bodyHead": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ ✷ Galaxy BETA ⚙ Ops & Admin BETA AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Beta — under development. Data may"
+    },
+    {
+      "atMs": "+8000",
+      "url": "/app/galaxy.html",
+      "title": "Fundhub — Galaxy",
+      "role": "owner",
+      "bodyHead": "‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ WATCH ▾ ✷ Galaxy BETA ⚙ Ops & Admin BETA AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Beta — under development. Data may"
+    }
+  ],
+  "stayedOnGalaxy": true,
+  "finalUrl": "/app/galaxy.html",
+  "api": [
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/read/company-activity",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/org-brand",
+      "status": 200
+    }
+  ],
+  "apiFails": [],
+  "consoleErrors": []
+}

@@ -207,7 +207,7 @@ table.grid tbody tr:hover{background:var(--soft)}
           </div>
           <div style="display:flex;gap:26px;margin-top:15px;flex-wrap:wrap">
             <div><div class="eyebrow" style="color:#71717A">CODE</div><div class="mono" id="affCode" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">No code yet</div></div>
-            <div><div class="eyebrow" style="color:#71717A">CLICKS 30D</div><div class="mono" id="affClicks" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">—</div></div>
+            <div><div class="eyebrow" style="color:#71717A">CLICKS 30D</div><div class="mono" id="affClicks" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">—</div><div id="affClicksNote" style="font-size:var(--fs-caption);color:var(--gray2);margin-top:3px;max-width:150px;line-height:1.35">not recorded yet</div></div>
             <div><div class="eyebrow" style="color:#71717A">RATE</div><div class="mono" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">Per agreement</div></div>
             <div><div class="eyebrow" style="color:#71717A">COOKIE</div><div class="mono" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">60d</div></div>
           </div>
@@ -223,10 +223,10 @@ table.grid tbody tr:hover{background:var(--soft)}
       </div>
 
       <div class="stats" style="margin-top:14px">
-        <div class="stat"><div class="eyebrow">REFERRED</div><div class="sv" id="kRef">—</div><div class="sd">lifetime leads · comes from your referral tracking, not connected to this page yet</div></div>
-        <div class="stat"><div class="eyebrow">CONVERTED</div><div class="sv" id="kConv">—</div><div class="sd" id="kConvRate">comes from your referral tracking, not connected to this page yet</div></div>
-        <div class="stat"><div class="eyebrow">OWED</div><div class="sv" id="kOwed">$0</div><div class="sd">accrued, not yet paid</div></div>
-        <div class="stat"><div class="eyebrow">PAID</div><div class="sv" id="kPaid">—</div><div class="sd">lifetime · comes from past payout runs, not connected to this page yet</div></div>
+        <div class="stat"><div class="eyebrow">REFERRED</div><div class="sv" id="kRef">—</div><div class="sd" id="kRefNote">lifetime leads attributed to your code</div></div>
+        <div class="stat"><div class="eyebrow">CONVERTED</div><div class="sv" id="kConv">—</div><div class="sd" id="kConvRate">referrals that paid a qualifying product</div></div>
+        <div class="stat"><div class="eyebrow">OWED</div><div class="sv" id="kOwed">$0</div><div class="sd" id="kOwedNote">accrued, not yet paid</div></div>
+        <div class="stat"><div class="eyebrow">PAID</div><div class="sv" id="kPaid">—</div><div class="sd" id="kPaidNote">lifetime · from settled payout runs</div></div>
       </div>
 
       <details class="scopebar" style="margin-top:14px">
@@ -281,9 +281,19 @@ table.grid tbody tr:hover{background:var(--soft)}
         </div>
       </div>
 
+      <!-- This card was missing the opening card-hd tag, so the unmatched
+           closing tag on the header line closed the card early and card-bd
+           became a sibling of the card instead of its body. The tell was 102
+           opening div tags in this file against 103 closing ones; they are
+           equal again. Restored to the same shape the PAYOUT HISTORY header
+           below uses.
+           The label reads CLICK TO CONVERTED, not CLICK TO FUNDED: a conversion
+           here is the first qualifying paid product, which is a funded
+           engagement OR a paid repair enrolment. "Funded" named only half. -->
       <div class="card" style="margin-top:14px">
-          <div class="spacer"></div><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">LIFETIME · CLICK TO FUNDED</span></div>
-        <div class="card-bd"><div class="empty" id="funnel">Nothing to show yet. Clicks, sign-ups and funded deals are not connected to this page, so it cannot count them.</div></div>
+        <div class="card-hd"><div class="eyebrow">REFERRAL FUNNEL</div>
+          <div class="spacer"></div><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">LIFETIME · CLICK TO CONVERTED</span></div>
+        <div class="card-bd" id="funnelBody"><div class="empty" id="funnel">Nothing to show yet. Waiting for your referral figures.</div></div>
       </div>
 
       <div class="card">
@@ -416,10 +426,18 @@ function renderPayouts(){
    empty LEADS and PAYOUTS arrays above and printed as "0", "0%" and "$0.00".
    Nothing fetches those arrays, so those were not measurements — and to an
    affiliate "PAID $0.00 lifetime" reads as "we have paid you nothing", which
-   this page has no way to know. They now sit at the em dash the markup ships
-   with, captioned where the real number will come from. OWED stays live off
-   /api/read/affiliates in the block below. When a read endpoint for referred
-   leads and payout runs exists, paint these four from it — never from LEADS. */
+   this page had no way to know. They then sat at the em dash the markup ships
+   with, captioned where the real number would come from.
+
+   T10-04: the numbers are real now. /api/read/affiliates returns
+   referred_count, referred_untracked, converted_count, unrated_converted_count,
+   clicks_count, clicks_30d, paid_total and paid_runs, and the block at the
+   bottom of this file paints all four tiles and the funnel from them.
+
+   THE STANDING RULE HAS NOT CHANGED: these are painted from that read and
+   NEVER from LEADS or PAYOUTS. Those two arrays are still empty and still
+   fetched by nothing; the tables they feed still say so in their own empty
+   states. Do not wire a KPI to them. */
 
 function copy(txt,btn,label){
   function done(){var o=btn.textContent;btn.textContent='Copied ✓';setTimeout(function(){btn.textContent=label},1400)}
@@ -476,6 +494,76 @@ renderLeads(); renderPayouts();
     if (link) link.value = "https://fundhub.ai/start?ref=" + c;
   }
 
+  /* num — a count the endpoint did not send is UNKNOWN, and unknown is null.
+     Number(undefined) is NaN and Number(null) is 0; both would end up printed
+     as a number that was never measured. Nothing here defaults a missing count
+     to zero. */
+  function num(v) {
+    if (v === null || v === undefined || v === "") return null;
+    var n = Number(v);
+    return isFinite(n) ? n : null;
+  }
+
+  /* paintFunnel — click → referred → converted, off the same read as the tiles.
+
+     The card header says CLICK TO CONVERTED, not CLICK TO FUNDED: a conversion
+     is the first qualifying paid product, which is a funded engagement OR a
+     paid repair enrolment, so "funded" would name only half of it.
+
+     A stage whose number cannot be known shows a dash and the reason under it.
+     If NO stage is known the card keeps the empty state the markup ships with,
+     rather than drawing three dashes and calling it a funnel.
+
+     ONE CONVERSION RATE ON THIS SCREEN, NOT TWO. The Converted step divides by
+     TRACKED referrals — the identical denominator the CONVERTED tile above uses
+     — and names it in the caption. It used to divide by every referral, so this
+     card and that tile printed two different percentages off one set of numbers
+     and an affiliate had no way to tell which was true. A referral nobody is
+     tracking has an UNKNOWN outcome; putting it in the denominator counts it as
+     "did not convert", which drags the rate down and then states the result as
+     a measured fact. Whoever changes one of these two must change both. */
+  function paintFunnel(clicks, referred, converted, tracked) {
+    var body = document.getElementById("funnelBody");
+    if (!body) return;
+
+    // Zero recorded clicks means nothing records clicks yet — see the CLICKS
+    // note below. Treated as unknown here for the same reason.
+    var clickN = (clicks === null || clicks === 0) ? null : clicks;
+
+    // If there are referrals but none of them are tracked, the conversion count
+    // is not a measurement of anything. Show the dash and the reason, the same
+    // as the tile does, instead of a bar labelled 0.
+    var convN = converted;
+    var convWhy = "not available";
+    if (converted !== null && tracked === 0 && referred) {
+      convN = null;
+      convWhy = "none of these are tracked yet";
+    }
+
+    var steps = [
+      { label: "Clicks",    n: clickN,    why: "not recorded yet",
+        sub: clickN === null ? "" : "recorded link clicks" },
+      { label: "Referred",  n: referred,  why: "not available",
+        sub: (referred !== null && clickN) ? Math.round((referred / clickN) * 100) + "% of clicks" : "" },
+      { label: "Converted", n: convN,     why: convWhy,
+        sub: (convN !== null && tracked) ? Math.round((convN / tracked) * 100) + "% of " + tracked + " tracked" : "" }
+    ];
+
+    var known = steps.filter(function (s) { return s.n !== null; }).length;
+    if (!known) return;
+
+    var shade = [1, 0.72, 0.46];
+    body.innerHTML = '<div class="funnel">' + steps.map(function (s, i) {
+      return '<div class="fstep">' +
+               '<div class="fb" style="background:rgba(10,10,10,' + shade[i] + ');color:#fff">' +
+                 (s.n === null ? "—" : String(s.n)) +
+               '</div>' +
+               '<div class="fl">' + s.label + '</div>' +
+               '<div class="fp">' + (s.n === null ? s.why : s.sub) + '</div>' +
+             '</div>';
+    }).join("") + '</div>';
+  }
+
   var meId = null;
   var lastRows = [];
   function paintMine() {
@@ -525,8 +613,135 @@ renderLeads(); renderPayouts();
 
     var owed = Number(mine.balance_due || 0);
     set("kOwed", usd(owed));
-    // kPaid has no source: settled totals live in affiliate_payouts, which has
-    // no read endpoint yet. Left as a dash rather than guessed.
+
+    /* THE FOUR TILES (T10-04). Every number below comes from this row and from
+       nothing else — never from LEADS or PAYOUTS, which are still empty arrays
+       nothing fetches. Where a number genuinely cannot be known the tile keeps
+       its dash and says why: a dash with a reason beats a zero that lies. */
+    var referred  = num(mine.referred_count);
+    var untracked = num(mine.referred_untracked);
+    var converted = num(mine.converted_count);
+    var unrated   = num(mine.unrated_converted_count);
+    var clicks    = num(mine.clicks_count);
+    var clicks30  = num(mine.clicks_30d);
+    var paidTotal = num(mine.paid_total);
+    var paidRuns  = num(mine.paid_runs);
+
+    /* TRACKED — the referrals whose outcome is actually knowable. A tracked
+       referral has a referral record, so the system can see whether that person
+       ever paid. An UNTRACKED one is just a code left on the client's record by
+       the live capture; nothing follows it, so nobody knows what happened.
+
+       If either half is missing, TRACKED is unknown — deliberately null, not
+       the full referred count. `num(...) || 0` used to sit on the line above:
+       a missing untracked count became 0, every untracked referral silently
+       looked tracked, and the denominator below quietly grew to include people
+       whose outcome nobody knows. That is the zero-that-lies this file exists
+       to stop, three lines under the comment forbidding it. */
+    var tracked = (referred === null || untracked === null)
+      ? null
+      : referred - untracked;
+
+    // REFERRED — both attribution sources, de-duplicated, counted server side.
+    if (referred === null) {
+      set("kRef", "—");
+      set("kRefNote", "referral counting did not answer this time");
+    } else {
+      set("kRef", String(referred));
+      set("kRefNote", (referred === 1 ? "lifetime lead" : "lifetime leads") +
+                      " attributed to your code");
+    }
+
+    /* CONVERTED — referrals that paid a qualifying product.
+
+       An UNRATED conversion is a real conversion whose money is not calculated:
+       no commission rate is in force, so commission_due is NULL. It is counted
+       here as converted and its money is counted nowhere. It is never a zero.
+
+       UNTRACKED referrals are people the live capture recorded on the client
+       record but who have no referral row, so nobody knows whether they
+       converted. They are excluded from the rate and named, rather than
+       silently treated as "did not convert".
+
+       THE ZERO THAT WAS NOT A MEASUREMENT. When every referral is untracked,
+       the count of conversions is 0 for the only reason it could be: nothing is
+       watching. Printing that 0 in the big number told an affiliate "nobody you
+       sent has paid", which this screen has no way to know and which is often
+       simply false. So that case shows a dash and says, in plain words, that
+       nobody is tracking those referrals. A dash with a reason beats a zero
+       that lies. Do not put a number back here. */
+    if (converted === null || referred === null) {
+      set("kConv", "—");
+      set("kConvRate", "referrals that paid a qualifying product");
+    } else if (referred === 0) {
+      // A true zero: there is nothing yet that could have converted.
+      set("kConv", "0");
+      set("kConvRate", "no referrals yet");
+    } else if (tracked === null) {
+      // The count is real; the share it represents is not knowable right now.
+      set("kConv", String(converted));
+      set("kConvRate", "we cannot work out what share of your referrals this is right now");
+    } else if (tracked === 0) {
+      set("kConv", "—");
+      set("kConvRate", "we cannot tell yet · none of your " + referred +
+                       (referred === 1 ? " referral is" : " referrals are") +
+                       " being tracked, so nobody knows who paid");
+    } else {
+      set("kConv", String(converted));
+      // The SAME denominator paintFunnel uses. Change one, change both.
+      var note = Math.round((converted / tracked) * 100) + "% of " + tracked +
+                 (tracked === 1 ? " tracked referral" : " tracked referrals");
+      if (untracked > 0) {
+        note += " · " + untracked + " more not tracked here";
+      }
+      if (unrated !== null && unrated > 0) {
+        note += " · " + unrated + " with no rate set";
+      }
+      set("kConvRate", note);
+    }
+
+    // OWED — 033's rollup. It skips unrated conversions entirely, so say so
+    // rather than letting the number look like the whole story. If the unrated
+    // count itself did not arrive, the tile keeps its plain caption: an unknown
+    // is not evidence that every conversion has a rate.
+    if (unrated !== null && unrated > 0) {
+      set("kOwedNote", "accrued, not yet paid · " + unrated +
+                       (unrated === 1 ? " conversion has" : " conversions have") +
+                       " no rate set, so nothing accrued for " +
+                       (unrated === 1 ? "it" : "them"));
+    }
+
+    /* PAID — settled payout runs only. This one IS a real zero when it is zero:
+       payout lines carry a NOT NULL amount, so the total is always computable.
+       paid_runs is what lets the tile say WHY the zero is a zero. */
+    if (paidTotal === null || paidRuns === null) {
+      set("kPaid", "—");
+      set("kPaidNote", "payout history did not answer this time");
+    } else if (paidRuns === 0) {
+      set("kPaid", usd(0));
+      set("kPaidNote", "no payout run has settled yet");
+    } else {
+      set("kPaid", usd(paidTotal));
+      set("kPaidNote", "lifetime · " + paidRuns +
+                       (paidRuns === 1 ? " settled payout run" : " settled payout runs"));
+    }
+
+    /* CLICKS 30D — still honestly empty, and here is why.
+
+       Clicks are recorded by /api/public/affiliate-click, and the only thing
+       that would call it is public/start.html, which today writes the code to
+       localStorage and redirects to apply.fundhub.ai without touching a server.
+       That one line is a board request and is not in this change. So zero
+       recorded clicks means "nothing records clicks", NOT "nobody clicked", and
+       printing 0 would be the same lie this screen just stopped telling.
+       The moment a real click lands, the number appears. */
+    if (clicks !== null && clicks > 0) {
+      set("affClicks", String(clicks30 === null ? clicks : clicks30));
+      set("affClicksNote", "last 30 days · " + clicks + " lifetime");
+    }
+
+    paintFunnel(clicks, referred, converted, tracked);
+
     return "live affiliate code · " + (mine.tracking_id || "No code yet") +
            " · " + usd(owed) + " accrued";
   });
