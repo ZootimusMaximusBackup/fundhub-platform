@@ -146,7 +146,11 @@ table.grid tr:last-child td{border-bottom:0}
 /* ── locked tile editor ─────────────────────────────────────────────────── */
 .ted{border:1px solid var(--line);border-radius:9px;margin-bottom:11px;overflow:hidden}
 .ted:last-child{margin-bottom:0}
-.ted-hd{display:flex;align-items:center;gap:11px;padding:10px 13px;background:var(--soft);border-bottom:1px solid var(--line)}
+/* flex-wrap like every other header on this screen (.card-hd, .drop, .trow,
+   .pv-hd). Without it the catalog code — flex:0 0 auto, so it cannot shrink —
+   holds the row open and pushes the on/off switch past the right edge of a
+   phone, even once the grid track below is free to be narrow. */
+.ted-hd{display:flex;align-items:center;gap:11px;padding:10px 13px;background:var(--soft);border-bottom:1px solid var(--line);flex-wrap:wrap}
 .ted-hd .code{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;color:var(--gray);flex:0 0 auto}
 .ted-hd .nm{font-size:var(--fs-body);font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ted-bd{padding:13px;display:flex;flex-direction:column;gap:11px}
@@ -190,7 +194,12 @@ table.grid tr:last-child td{border-bottom:0}
 .warnrow{display:none;align-items:center;gap:9px;padding:9px 13px;border-radius:8px;background:rgba(245,206,143,.26);border:1px solid var(--warn);color:#6B4A12;font-size:var(--fs-body);margin-top:12px}
 .warnrow.on{display:flex}
 
-@media(max-width:1180px){.cols{grid-template-columns:1fr}.pv{position:static}}
+/* minmax(0,1fr), not 1fr. A bare 1fr means minmax(auto,1fr), so this single
+   column could never be narrower than its widest child's min-content — measured
+   at 537px inside a 390px phone, which pushed the whole page sideways and took
+   the library count, the card spacers and the drop-zone text off-screen with
+   it. The two-column rule above already says minmax(0,1fr) for this reason. */
+@media(max-width:1180px){.cols{grid-template-columns:minmax(0,1fr)}.pv{position:static}}
 @media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.upmeta.on{grid-template-columns:1fr}}
 </style>
 <script defer src="shell.js"></script>

@@ -22,6 +22,7 @@ flowchart TD
     CAN --> A_chat[chat — 3 routes]
     CAN --> A_climate[climate — 2 routes]
     CAN --> A_company_brain[company-brain — 3 routes]
+    CAN --> A_content[content — 1 route]
     CAN --> A_contracts[contracts — 1 route]
     CAN --> A_creative[Creative Factory — 7 routes]
     CAN --> A_dashboard[The dashboard — 7 routes]
@@ -59,7 +60,7 @@ flowchart TD
 
 ## What they can reach
 
-**138 of 179 routes.**
+**139 of 180 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -93,6 +94,7 @@ flowchart TD
 | `/api/company-brain/sync` | GET, POST | owner, admin, sales_manager |
 | `/api/company-brain/threads` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/company-brain/upload` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/content/welcome-video` | GET, HEAD | staff, client |
 | `/api/contracts` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/contracts/sign` | GET, POST | anyone |
 | `/api/creative/actions` | POST | partner, staff |
@@ -210,7 +212,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**39 of 179 routes.**
+**39 of 180 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

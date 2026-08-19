@@ -157,6 +157,7 @@ import creativeActions from "../../api/creative/actions.mjs";
 import creativeRun from "../../api/creative/run.mjs";
 import contentTiles from "../../api/content/tiles.mjs";
 import contentUpload from "../../api/content/upload.mjs";
+import contentWelcomeVideo from "../../api/content/welcome-video.mjs";
 import hiringCandidates from "../../api/hiring/candidates.mjs";
 import hiringApplication from "../../api/hiring/application.mjs";
 import hiringPostings from "../../api/hiring/postings.mjs";
@@ -555,6 +556,13 @@ export const ROUTES = {
      (owner, admin). Same people the Content nav item is shown to. */
   "content/tiles": contentTiles,
   "content/upload": contentUpload,
+  /* The client portal's hero video. NOT ROLE_SETS.OPS like the two lines above
+     — this is the read a signed-in CLIENT makes on their own portal, so it
+     serves {staff, client} and pins a client to their own session. It also
+     answers with NO session when the request carries a valid signature: a
+     <video src> cannot send an Authorization header, so the signature is the
+     credential, exactly as api/documents/[id].mjs does it. */
+  "content/welcome-video": contentWelcomeVideo,
 
   // Hiring. ROLE_SETS.HIRING is {owner, admin} — NOT the STAFF set, because
   // these carry applicant PII and the scoring trail of an automated employment

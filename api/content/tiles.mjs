@@ -41,10 +41,46 @@ function publicVideo(row) {
   };
 }
 
+/**
+ * partialSaveMessage — say what landed, and only what landed.
+ *
+ * This handler runs no transaction, so a save that fails halfway leaves the
+ * first half on file. Both the map-failure answer and the failed-refresh answer
+ * describe that state, and neither may name work the caller never sent: the
+ * Content screen posts tiles only, map only, or both.
+ *
+ * `failed` is true for the map-failure answer, which still has bad news to
+ * deliver; the refresh answer passes false because everything asked for is
+ * already on file by then.
+ */
+function partialSaveMessage({ tilesSaved, tiersMapped, failed = true }) {
+  const parts = [];
+  if (tilesSaved) parts.push("Tile words were saved.");
+  if (tiersMapped === 1) parts.push("One video choice was saved.");
+  else if (tiersMapped > 1) parts.push(`${tiersMapped} video choices were saved.`);
+
+  if (failed) {
+    parts.push(tiersMapped > 0
+      ? "The rest of the video choices could not be saved."
+      : "The welcome video could not be mapped.");
+  } else if (parts.length === 0) {
+    // Nothing to report and nothing failed — only reachable if a save somehow
+    // wrote nothing at all. Do not claim a save that did not happen.
+    parts.push("Nothing was changed.");
+  }
+  return parts.join(" ");
+}
+
 async function loadBundle(orgId) {
-  /* Price and the video tables land in 171_content.sql. Until that file
-     is applied, read what already exists and leave price/videos empty.
-     Do not invent a price. */
+  /* 171_content.sql has shipped (db/migrations runs to 225), so
+     display_price_cents and both video tables are on file. The two catches
+     below stay only for a database that is one migration behind — a deploy
+     preview runs against the old shape until the branch merges, CLAUDE.md §11
+     — and each of them forgives exactly ONE SQLSTATE. Anything else is a real
+     fault and must reach the caller. A bare catch here turned a missing grant,
+     a row-level-security refusal and a typo into the same picture as a working
+     empty library: "0 videos". Do not invent a price, and do not invent an
+     empty library either. */
   const tiles = await db.query(
     `SELECT code, name, description, active, sort_order
        FROM entitlement_catalog
@@ -61,7 +97,13 @@ async function loadBundle(orgId) {
       [orgId]
     );
     for (const row of prices.rows) priceByCode[row.code] = row.display_price_cents;
-  } catch {
+  } catch (err) {
+    /* 42703 = undefined_column, NOT 42P01. entitlement_catalog itself has
+       existed since 032_entitlements.sql; 171 only added the COLUMN. So the
+       one forgivable failure here is "this database has no
+       display_price_cents", and the honest answer to that is an unknown price.
+       NULL means "nobody has saved a price", never 0. */
+    if (!(err && err.code === "42703")) throw err;
     priceByCode = {};
   }
   let videos = { rows: [] };
@@ -78,7 +120,13 @@ async function loadBundle(orgId) {
       `SELECT tier_code, video_id FROM content_tier_map WHERE org_id = $1::uuid`,
       [orgId]
     );
-  } catch {
+  } catch (err) {
+    /* 42P01 = undefined_table: 171_content.sql has not been applied to this
+       database, so an empty library really is the truth. A grant refusal, a
+       row-level-security deny or a typo is NOT that, and every one of them used
+       to arrive on screen as "0 videos" — the same picture a working empty
+       library paints. Surface those instead of painting over them. */
+    if (!(err && err.code === "42P01")) throw err;
     videos = { rows: [] };
     map = { rows: [] };
   }
@@ -155,6 +203,13 @@ export default async function handler(req, res) {
       });
     }
 
+    /* WHAT ACTUALLY LANDED, tracked as it happens. Every failure message below
+       is built from these two, because the screen posts three different shapes
+       — tiles only, map only, or both (public/app/content-admin.html) — and a
+       message that names work the caller never sent is simply false. */
+    let tilesSaved = false;
+    let tiersMapped = 0;
+
     if (tiles) {
       for (const t of tiles) {
         const code = String(t && t.code || t && t.id || "").trim().toLowerCase();
@@ -225,6 +280,11 @@ export default async function handler(req, res) {
           });
         }
       }
+      /* Only once the WHOLE loop is through. Every exit above is a `return`, so
+         this line is unreachable on a partial run. An EMPTY tiles array is not a
+         save either — `[]` is truthy, and "tile words were saved" would be a
+         claim about nothing. */
+      tilesSaved = tiles.length > 0;
     }
 
     if (mapping) {
@@ -238,6 +298,7 @@ export default async function handler(req, res) {
               `DELETE FROM content_tier_map WHERE org_id = $1::uuid AND tier_code = $2`,
               [orgId, code]
             );
+            tiersMapped += 1;
             continue;
           }
           const found = await db.query(
@@ -257,26 +318,72 @@ export default async function handler(req, res) {
              DO UPDATE SET video_id = EXCLUDED.video_id, updated_at = now()`,
             [orgId, code, videoId]
           );
+          tiersMapped += 1;
         }
-      } catch {
-        const wantsVideo = Object.values(mapping).some((v) => v != null && v !== "");
-        if (wantsVideo) {
-          return res.status(400).json({
-            ok: false, error: "videos_not_stored_yet",
-            message: "Tile words were saved. Welcome videos are not stored in the database yet."
-          });
-        }
+      } catch (err) {
+        /* content_tier_map has existed since 171_content.sql, so a failure here
+           is a real one — a missing grant, a row-level-security refusal, a bad
+           id. Two things were wrong with the old answer:
+
+             1. It said welcome videos "are not stored in the database yet",
+                which stopped being true the day 171 landed.
+             2. On an UNMAP (every value blank) wantsVideo was false, nothing
+                was returned, and execution fell through to the 200 {ok:true}
+                below — a DELETE that failed reported as a save that worked.
+
+           The tile UPDATEs above have already committed (this handler opens no
+           transaction; every db.query autocommits), so say that much and hand
+           back the real cause in the shape this file already uses.
+
+           WHAT IT MAY AND MAY NOT CLAIM. "Tile words were saved" was printed
+           unconditionally, and the screen posts { action:'save', map: MAP } with
+           NO tiles at all when only the video dropdown moved — so that sentence
+           was false on the commonest path to this catch. Same for the other
+           half: with two of three tiers already written, "the welcome video
+           could not be mapped" is false about the two that landed. Both halves
+           are now built from what actually happened. */
+        if (dbDown(res, err)) return;
+        return res.status(500).json({
+          ok: false, error: "map_save_failed",
+          message: partialSaveMessage({ tilesSaved, tiersMapped }),
+          detail: safeError(err)
+        });
       }
     }
 
-    const bundle = await loadBundle(orgId);
+    /* THE SAVE IS OVER BY THIS LINE. Every statement above autocommitted, so
+       whatever the owner typed is on file. This re-read exists only so the
+       screen redraws from the database instead of from its own form, and a
+       failure in it is NOT a failed save. It used to fall to the outer catch and
+       answer "Something went wrong saving content.", which sent the owner back
+       to retry a save that had already worked. dbDown() is deliberately NOT
+       consulted here: its 503 says "the database is not answering" and nothing
+       about the save, and the save is the half that matters. */
+    let bundle;
+    try {
+      bundle = await loadBundle(orgId);
+    } catch (err) {
+      return res.status(500).json({
+        ok: false,
+        error: "saved_but_reread_failed",
+        saved: tilesSaved || tiersMapped > 0,
+        message: `${partialSaveMessage({ tilesSaved, tiersMapped, failed: false })} `
+          + "The screen could not be refreshed, so reload the page to see what is on file.",
+        detail: safeError(err)
+      });
+    }
     return res.status(200).json({ ok: true, action: "save", ...bundle });
   } catch (err) {
     if (dbDown(res, err)) return;
     return res.status(500).json({
       ok: false,
       error: "query_failed",
-      message: "Something went wrong saving content.",
+      /* This catch is reachable on BOTH verbs. On a GET nobody was saving, and
+         "Something went wrong saving content." told a reader their page load
+         had lost their work. */
+      message: method === "GET"
+        ? "Content could not be read right now."
+        : "Content could not be saved right now.",
       detail: safeError(err)
     });
   }

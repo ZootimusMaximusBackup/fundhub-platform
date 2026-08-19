@@ -142,6 +142,32 @@ async function exchange(token) {
        portal's own fetches work; the cookie is what makes a cold reload work.
        Same two transports the password login already uses. */
     try { localStorage.setItem("fh_token", data.token); } catch (e) {}
+    /* THE ACCOUNT, NOT JUST THE TOKEN. The endpoint answers with `account` —
+       the principal built in src/auth/magic-link.mjs — and that object carries
+       clientId, which is the only thing /app/client-portal.html has to find
+       this person's own file with. There is no ?id= in the address bar on a
+       link landing, so dropping it here is why clicking the emailed link
+       arrived at "We could not load your file." public/login.html already
+       stores it for the password path, comment and all; this is that same
+       line, not a new idea, and the API shape is untouched.
+
+       A MISSING ACCOUNT IS REMOVED, NOT LEFT BEHIND. Signing out does not clear
+       this key, so a previous person's id can still be sitting in it — and
+       adopting it would put one client's id on another client's screen. */
+    try {
+      if (data.account) localStorage.setItem("fh_account", JSON.stringify(data.account));
+      else localStorage.removeItem("fh_account");
+      /* The role hint public/app/shell.js reads before the session answers, for
+         the same reason public/login.html writes it: a stale "owner" left by an
+         earlier staff sign-in on this browser makes the portal take its STAFF
+         branches, which call two staff-only routes and paint a failure at a
+         client who is signed in perfectly well. It grants nothing — every
+         endpoint gates server-side, and shell.js replaces this with the real
+         session's answer a moment later. */
+      var kind = data.principal || (data.account && data.account.kind) || "";
+      if (kind) localStorage.setItem("fh_role", String(kind).trim().toLowerCase());
+      else localStorage.removeItem("fh_role");
+    } catch (e) { /* private mode — the token above already failed the same way */ }
     /* A browser that fell back to fh.js's offline mock at some point has
        fh_demo set, and while it is set NOTHING in the app contacts the real
        backend again (see the note in public/login.html). A real session must
