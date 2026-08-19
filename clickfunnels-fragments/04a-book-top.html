@@ -95,6 +95,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     var name=(root.querySelector('input[name="name"]')||{}).value||'';
     var email=(root.querySelector('input[name="email"]')||{}).value||'';
     var phone=(root.querySelector('input[name="phone_number"]')||{}).value||'';
+    // Picking a slot fills start/end while the contact form is still empty.
+    // A record without a name and an email is a browsing visitor, not a booking,
+    // and the thank-you page must never be told otherwise.
+    if(!name||!email) return null;
     var timeString=(root.querySelector('#timeString')||{}).textContent||'';
     return {
       start:start, end:end, tz:tz,
@@ -106,6 +110,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   }
   function persist(data){
     if(!data) return;
+    data.submittedAt=Date.now();
     try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){}
     try{ sessionStorage.setItem(KEY, JSON.stringify(data)); }catch(e){}
   }
@@ -125,13 +130,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       }, true);
     }
   }
-  var last='';
-  setInterval(function(){
-    bindBook();
-    var d=readBooking();
-    if(!d) return;
-    var sig=d.start+'|'+d.end+'|'+d.tz+'|'+d.name+'|'+d.email;
-    if(sig!==last){ last=sig; persist(d); }
-  }, 400);
+  // Rebind only. This used to persist on every change, which wrote a "booking"
+  // the instant a slot was clicked — no name, no email, no submit — and the
+  // thank-you page then told that visitor their call was booked. Only a real
+  // press of Book or Confirm may write the key now.
+  setInterval(bindBook, 400);
 })();
 </script>

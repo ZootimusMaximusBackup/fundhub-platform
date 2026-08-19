@@ -140,3 +140,39 @@ UNVERIFIED gates `finance/crs-pull` and `gifts/message-blaster`). Neither is thi
 
 ### Request to another thread
 None. No file outside T14's list was edited.
+
+### T14 — second pass, after adversarial audit (2026-08-19)
+
+An audit of the committed T14 branch raised 32 candidate findings. It hit a session
+limit at 19 of 71 agents, so 7 were verified and **25 were never checked**. The
+serious ones were then verified by hand. Full detail:
+`docs/workflows/fix-2026-08-18/evidence/T14/AUDIT-SECOND-PASS.md`.
+
+**The first thank-you fix did not work.** The gate trusted `fh_booking_v1`, but
+`04a-book-top.html` wrote that key from a 400ms timer the moment a slot was clicked
+— no name, no email, no submit. Clicking a slot and walking away still produced
+"Your Call Is Booked." Fixed: the timer no longer persists (it only rebinds), a
+record now requires name + email, and the thank-you gate additionally requires the
+record to be under 6 hours old and the appointment to be in the future. Five attack
+cases proven in `evidence/T14/gate-cases.json`.
+
+Also fixed this pass: the "what happens on the call" and "reschedule from your
+confirmation email" blocks no longer show to non-bookers; the education banner's
+"40+ video lessons / template libraries / lifetime access" promises and the FAQ's
+invented "most students finish in 4 to 8 weeks" claim are gone; `/education/learn/`
+is now linked from the education footer instead of being unreachable.
+
+**Files touched this pass:** `clickfunnels-fragments/04a-book-top.html`,
+`clickfunnels-fragments/05-thank-you.html`, `public/education/index.html`.
+
+**NEW BLOCKER — the education endpoint has zero executed tests.**
+`scripts/run-suite.mjs:69` exits as soon as any unit test fails, and two unit tests
+already fail on untouched `main`, so the pg tests never start. Run directly,
+`src/http/education-enroll.pg.test.mjs` reports **0 tests** with no DATABASE_URL.
+`npm test`'s 5840 passing contains no database test at all. This is a repo-wide
+measurement problem, not a T14 one — `scripts/run-suite.mjs` is not T14-owned —
+but it means the enrolment endpoint has no coverage that has ever run.
+**Whoever owns the test harness should see this.**
+
+**Still open, not this thread's to fix:** nothing in the product reads the
+enrolment rows, so staff cannot see a request that comes in.
