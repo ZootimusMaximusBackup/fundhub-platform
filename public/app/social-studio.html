@@ -455,8 +455,11 @@ details.how .howbd p+p{margin-top:9px}
         </div>
         <div id="ghGrid"></div>
         <div class="cap" id="oauthConnectBox">
-          <b>Facebook, Instagram and LinkedIn can be connected here.</b> The other five are not ready to
-          connect yet. Sign-in keys are stored locked away and are never shown back to you.
+          <b>Only Facebook, Instagram and LinkedIn can be connected here.</b> The other five cannot be
+          connected or posted to at all — the part that would send a post to them was never built, and there
+          is no plan on this screen to build it. A button below that is greyed out means that service has not
+          been switched on for this site, and nothing can be connected until somebody does that.
+          Sign-in keys are stored locked away and are never shown back to you.
           <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
             <button type="button" class="btn" data-oauth="facebook" id="oauthFb">Connect Facebook</button>
             <button type="button" class="btn" data-oauth="instagram" id="oauthIg">Connect Instagram</button>
@@ -511,8 +514,10 @@ details.how .howbd p+p{margin-top:9px}
               <div class="grid2" style="margin-top:12px">
                 <div class="field">
                   <label for="cAsset">Picture or video (optional)</label>
-                  <select id="cAsset"></select>
-                  <span class="hint">Attaching a picture is not ready yet. Posts go out as text.</span>
+                  <select id="cAsset" disabled></select>
+                  <span class="hint">Attaching a picture is not ready on any account, so this is switched off.
+                    Every post goes out as words only: Facebook and LinkedIn send the words and nothing else,
+                    and Instagram will not send a post at all until the picture part is built.</span>
                 </div>
                 <div class="field">
                   <label for="cWhen">Send at (optional) — times are UTC</label>
@@ -782,12 +787,20 @@ var RULES = [
 var PARTNERS = [];
 
 /* ══ CONNECTED ACCOUNTS ══════════════════════════════════════════════════
-   Nothing hands the account list to this screen yet, so it stays empty. Do not
-   fill it with examples. */
+   Filled by loadChannels() from the live read of the chosen partner's connected
+   accounts. Empty until that read comes back, and empty for good if it fails —
+   the tile then says nothing is connected, which is what an unreadable list and
+   an empty list both honestly mean here. Do not fill it with examples.
+   ════════════════════════════════════════════════════════════════════════ */
 var SOCIAL_CHANNELS = [];
+var CHANNELS_READ = false;   /* has the account read finished, either way */
 
 /* ══ PICTURES AND VIDEOS — the writer's attachment picker ════════════════
-   Nothing hands the picture library to this screen yet, so it stays empty. */
+   Still empty on purpose, and not because nothing hands the list over.
+   Attaching a picture goes nowhere: src/social/adapters.mjs sends the words only
+   — Facebook posts `message`, LinkedIn posts with media set to none, and
+   Instagram refuses outright because the picture step was never built. Filling
+   this picker would offer a choice that never reaches the post. */
 var ASSETS = [];
 
 /* ══ POSTS ═══════════════════════════════════════════════════════════════
@@ -937,6 +950,14 @@ function noPartner(what){
   return '<div class="empty">'+what+' will show here once a partner is chosen.<br>'+
     'No partner is chosen, so nothing is loaded and nothing is sent.</div>';
 }
+/* Who is looking at this screen. A partner never sees the connect buttons — the
+   block at the bottom of this file replaces them with a sentence — so the empty
+   state must not send a partner to look for a button that is not there. */
+function viewerRole(){
+  try { return String(localStorage.getItem('fh_role') || '').trim().toLowerCase(); }
+  catch(e){ return ''; }
+}
+function viewerCanConnect(){ return viewerRole() !== 'partner'; }
 function channels(){ return SOCIAL_CHANNELS.filter(function(c){ return c.partner === P; }); }
 function chById(id){ return SOCIAL_CHANNELS.filter(function(c){ return c.id === id; })[0] || null; }
 function assets(){ return ASSETS.filter(function(a){ return a.partner === P; }); }
@@ -946,9 +967,11 @@ function readyPosts(){
   return posts().filter(function(p){ return p.status === 'queued' || p.status === 'draft'; });
 }
 function postById(id){ return POSTS.filter(function(p){ return p.id === id; })[0] || null; }
+function settings(){ var p = partner(); return (p && p.settings) || null; }
 function approveBeforeLaunch(){
-  var p = partner(), s = p && p.settings;
-  return s ? s.approve_before_launch : true;   /* unknown means the safe answer */
+  var s = settings();
+  /* unknown means the safe answer, and so does a saved `false` we could not read */
+  return (s && typeof s.approve_before_launch === 'boolean') ? s.approve_before_launch : true;
 }
 function logs(){ return ACTION_LOG.filter(function(l){ return l.partner === P; }); }
 function tasks(){ return TASKS.filter(function(t){ return t.partner === P; }); }
@@ -1034,8 +1057,17 @@ function renderChannels(){
   document.getElementById('chCount').textContent = chs.length + ' connected';
   if(!chs.length){
     host.className='';
-    host.innerHTML = '<div class="empty">No social accounts are connected yet. Once one is, it will show here.'+
-      '<br>Nothing can be written or queued until there is one. Connect Facebook, Instagram or LinkedIn just below.</div>';
+    host.innerHTML = '<div class="empty">'+
+      (CHANNELS_READ
+        ? 'No social accounts are connected yet. Once one is, it will show here.'
+        : 'Reading this partner\'s connected accounts…')+
+      '<br>Posts can still be written, but none can be lined up to go out until an account is connected.'+
+      '<br>'+
+      (viewerCanConnect()
+        ? 'You can connect Facebook, Instagram or LinkedIn further down this page. If a button there is greyed out, '+
+          'that service has not been switched on for this site yet, and nothing can be connected until somebody does that.'
+        : 'Only the owner can connect an account, so there is nothing for you to do here.')+
+      '</div>';
     return;
   }
   host.className='chgrid';
@@ -1096,8 +1128,12 @@ function renderGhosts(){
   if(!missing.length){ host.className=''; host.innerHTML='<div class="empty">All eight kinds of account are connected.</div>'; return; }
   host.className='ghost';
   host.innerHTML = missing.map(function(c){
+    /* Three of the eight can be connected. The other five have no way to send a
+       post at all — the code that would do it was never written — so "not
+       connected" would read as "not connected yet", which is not true. */
+    var buildable = ['facebook','instagram','linkedin'].indexOf(c) !== -1;
     return '<div class="ghosttile"><div class="gn">'+esc(CHANNEL_LABEL[c])+'</div>'+
-           '<div class="gs">not connected</div></div>';
+           '<div class="gs">'+(buildable ? 'not connected' : 'cannot be used')+'</div></div>';
   }).join('');
 }
 
@@ -1221,6 +1257,11 @@ function capCell(p){
   return '<div class="pcap trunc">'+esc(p.caption)+'</div>';
 }
 function chLabel(id){ var c = chById(id); return c ? (CHANNEL_LABEL[c.channel] || c.channel) : '—'; }
+/* How many times a post has been tried.
+   A post that is only written down has no try count at all — nothing has been
+   attempted — and the table used to print the word "undefined" in that cell. */
+function hasTries(p){ return typeof p.attempt === 'number'; }
+function triesText(p){ return hasTries(p) ? String(p.attempt) : '—'; }
 /* what a post is about, in the words the screen shows */
 var OFFER_LABEL = {funding:'Funding', credit_cards:'Credit cards', credit_repair:'Credit repair'};
 function offerLabel(v){ return OFFER_LABEL[v] || (v || '—'); }
@@ -1244,7 +1285,8 @@ function renderQueue(){
           (p.last_error?'<span class="substate">Last error: '+esc(p.last_error)+' — it will try again</span>':'')+'</td>'+
         '<td class="mono">'+esc(offerLabel(p.offer_type))+'</td>'+
         '<td class="mono">'+(p.scheduled_for?esc(fmt(p.scheduled_for))+'<span class="substate">'+esc(rel(p.scheduled_for))+'</span>':'<span style="color:#6E2A22">no time set</span>')+'</td>'+
-        '<td><span class="attn'+(p.attempt>0?' hot':'')+'">'+p.attempt+'</span><span class="substate">of '+MAX_ATTEMPTS+'</span></td>'+
+        '<td><span class="attn'+(p.attempt>0?' hot':'')+'">'+triesText(p)+'</span><span class="substate">'+
+          (hasTries(p) ? 'of '+MAX_ATTEMPTS : 'not tried yet')+'</span></td>'+
         '<td><span class="badge '+qs.cls+'">'+esc(qs.short)+'</span><span class="substate">'+esc(qs.label)+'</span></td>'+
       '</tr>' + detailRow(p, 6);
     }).join('') + '</tbody></table>';
@@ -1294,7 +1336,7 @@ function renderFailed(){
         return '<tr data-row="'+esc(p.id)+'" tabindex="0" aria-expanded="false">'+
           '<td><span class="rchev">▸</span><span class="mono">'+esc(chLabel(p.channel_id))+'</span></td>'+
           '<td>'+capCell(p)+'</td>'+
-          '<td><span class="attn hot">'+p.attempt+'</span><span class="substate">gave up after '+MAX_ATTEMPTS+'</span></td>'+
+          '<td><span class="attn hot">'+triesText(p)+'</span><span class="substate">gave up after '+MAX_ATTEMPTS+'</span></td>'+
           '<td><span class="err">'+esc(p.last_error)+'</span><span class="substate">the message is cut off after 1,000 letters</span></td>'+
           '<td class="mono">'+(p.scheduled_for?esc(fmt(p.scheduled_for)):'no time set')+'</td>'+
         '</tr>' + detailRow(p, 5);
@@ -1391,7 +1433,7 @@ function detailRow(p, span){
   return '<tr class="det" hidden data-det="'+esc(p.id)+'"><td colspan="'+span+'"><div class="detbox">'+
     '<div class="detcol"><div class="dt">Post</div>'+
       kvline('Reference', p.id)+kvline('State', STATUS_LABEL[p.status]||p.status)+kvline('About', offerLabel(p.offer_type))+
-      kvline('Tries', p.attempt)+kvline('Written', fmtLong(p.created_at))+'</div>'+
+      kvline('Tries', triesText(p))+kvline('Written', fmtLong(p.created_at))+'</div>'+
     '<div class="detcol"><div class="dt">Account</div>'+
       kvline('Reference', p.channel_id)+kvline('Kind', c?(CHANNEL_LABEL[c.channel]||c.channel):'—')+
       kvline('Account state', c?connLabel(c.connection_state):'—')+kvline('Time zone', c?c.timezone:'—')+'</div>'+
@@ -1403,8 +1445,22 @@ function detailRow(p, span){
          : '<div class="jsonline">No picture. This post is words only.</div>')+'</div>'+
     '<div class="detcol" style="flex:2;min-width:240px"><div class="dt">what it says</div>'+
       '<div class="pcap">'+esc(p.caption)+'</div>'+
-      '<div style="margin-top:9px"><button class="btn sm" data-open="'+esc(p.id)+'">See the details</button></div></div>'+
+      '<div style="margin-top:9px;display:flex;gap:8px;flex-wrap:wrap">'+
+        '<button class="btn sm" data-open="'+esc(p.id)+'">See the details</button>'+
+        /* Throwing a post away already existed on the server (api/social/posts.mjs
+           takes action "discard"); nothing on this screen ever called it, so old
+           drafts piled up with no way to clear them. Only for posts that have not
+           been sent — a sent post is a record, not a draft. */
+        (canDiscard(p)
+          ? '<button class="btn sm" data-discard="'+esc(p.id)+'">Throw this post away</button>'
+          : '')+
+      '</div></div>'+
   '</div></td></tr>';
+}
+/* Which posts may be thrown away. Draft, waiting and lined-up posts have not gone
+   anywhere; sent, failed and refused ones are history and are left alone. */
+function canDiscard(p){
+  return p.status === 'draft' || p.status === 'queued' || p.status === 'scheduled';
 }
 function reasonDetailRow(p, span){
   return '<tr class="det" hidden data-det="'+esc(p.id)+'"><td colspan="'+span+'"><div class="detbox" style="flex-direction:column">'+
@@ -1431,6 +1487,44 @@ function wireRows(host){
   host.querySelectorAll('[data-open]').forEach(function(b){
     b.addEventListener('click', function(e){ e.stopPropagation(); openDrawer(b.dataset.open); });
   });
+  host.querySelectorAll('[data-discard]').forEach(function(b){
+    b.addEventListener('click', function(e){ e.stopPropagation(); discardPost(b.dataset.discard, b); });
+  });
+}
+
+/* ══ THROW A POST AWAY ═══════════════════════════════════════════════════
+   §5 — asks first and names what it does. The post is marked as thrown away, not
+   removed: nothing on this screen deletes anything, and the record stays. */
+function discardPost(id, btn){
+  var p = postById(id), pr = partner();
+  if(!p || !pr) return;
+  var words = String(p.caption || '').slice(0, 80);
+  if(!window.confirm('Throw this post away?\n\n"'+words+(String(p.caption||'').length>80?'…':'')+'"\n\n'+
+     'It stops waiting and will never go out. It cannot be put back from this screen.')) return;
+  var was = btn ? btn.textContent : '';
+  if(btn){ btn.disabled = true; btn.textContent = 'Throwing away…'; }
+  var t = '';
+  try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
+  fetch('/api/social/posts', {
+    method: 'POST',
+    headers: Object.assign(
+      { accept: 'application/json', 'content-type': 'application/json' },
+      (t && t !== 'demo') ? { authorization: 'Bearer ' + t } : {}),
+    body: JSON.stringify({ partner_id: pr.id, id: id, action: 'discard' })
+  }).then(function(r){ return r.json().catch(function(){ return { ok:false }; }); })
+    .then(function(res){
+      if(!res.ok){
+        if(btn){ btn.disabled = false; btn.textContent = was; }
+        window.alert('It was not thrown away: ' +
+          (res.message || res.error || 'something went wrong. Nothing was changed.'));
+        return;
+      }
+      loadQueue();
+    })
+    .catch(function(){
+      if(btn){ btn.disabled = false; btn.textContent = was; }
+      window.alert('It was not thrown away — the site could not be reached. Nothing was changed. Try again in a moment.');
+    });
 }
 
 /* ══ DRAWER ══════════════════════════════════════════════════════════════ */
@@ -1453,7 +1547,7 @@ function openDrawer(id){
     kvline('Send at', p.scheduled_for ? fmtLong(p.scheduled_for) : 'no time set')+
     kvline('Went out', p.posted_at ? fmtLong(p.posted_at) : 'not sent')+
     kvline('Reference on the account', p.external_post_id || 'none')+
-    kvline('Tries', p.attempt + ' of ' + MAX_ATTEMPTS)+
+    kvline('Tries', hasTries(p) ? (p.attempt + ' of ' + MAX_ATTEMPTS) : 'not tried yet')+
     kvline('Last error', p.last_error || 'none')+
     kvline('Written', fmtLong(p.created_at))+
 
@@ -1567,23 +1661,38 @@ function renderBestTimes(){
 function renderApproval(){
   var host = document.getElementById('approvalBody');
   if(!hasPartner()){ host.innerHTML = noPartner('Who has to approve a post'); return; }
-  var s = partner().settings, on = approveBeforeLaunch();
+  /* Three different answers, and they must not be blurred into one:
+       s is null        — the setting has not been read (or the read failed)
+       s.stored = false — nothing has ever been saved for this partner, so the
+                          system falls back to "a person must approve"
+       s.stored = true  — a real saved value */
+  var s = settings(), on = approveBeforeLaunch();
+  var saved = !!(s && s.stored);
   var crRows = posts().filter(function(p){ return p.offer_type === 'credit_repair'; });
   host.innerHTML =
     '<div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:12px">'+
       '<span class="sw'+(on?' on':'')+'" role="img" aria-label="a person must approve: '+(on?'yes':'no')+'"></span>'+
       '<span style="font-size:var(--fs-body);font-weight:600">'+
         (on?'A person must approve a post before it goes out':'Posts go out with nobody approving them')+'</span>'+
-      '<span class="badge '+(s?'b-gray':'b-warn')+'">'+(s?'your saved setting':'setting not read')+'</span>'+
+      '<span class="badge '+(saved?'b-gray':(s?'b-info':'b-warn'))+'">'+
+        (saved ? 'your saved setting' : (s ? 'nothing saved — the safe default' : 'setting not read'))+'</span>'+
     '</div>'+
-    (s ? '<div class="kv"><span class="k">weekly target</span><span class="v mono">'+s.weekly_asset_target+' pictures a week</span></div>'+
-         '<div class="kv"><span class="k">jobs at once</span><span class="v mono">'+s.max_concurrent_jobs+'</span></div>'+
+    (saved
+       ? (s.weekly_asset_target != null
+            ? '<div class="kv"><span class="k">weekly target</span><span class="v mono">'+s.weekly_asset_target+' pictures a week</span></div>' : '')+
+         (s.max_concurrent_jobs != null
+            ? '<div class="kv"><span class="k">jobs at once</span><span class="v mono">'+s.max_concurrent_jobs+'</span></div>' : '')+
          '<div class="kv" style="margin-bottom:10px"><span class="k">autopilot</span><span class="v mono">'+
            (s.autopilot_enabled?'on':'off')+' · launching '+(s.launch_enabled?'on':'off')+
            ' <span style="color:var(--gray2)">(paid adverts only — no effect here)</span></span></div>'
-       : '<div class="notice warn" style="margin-top:0;margin-bottom:10px"><span class="ni">⚠</span><span>'+
-         '<b>This screen cannot read your approval setting yet.</b> Until it can, treat every post as needing a '+
-         'person to look at it.</span></div>')+
+       : s
+         ? '<div class="notice" style="margin-top:0;margin-bottom:10px"><span class="ni">◉</span><span>'+
+           '<b>Nothing has been saved for this partner yet.</b> With nothing saved, the system treats every post as '+
+           'needing a person to look at it. That is the safe answer, and it is the same answer the sending part of '+
+           'the system uses.</span></div>'
+         : '<div class="notice warn" style="margin-top:0;margin-bottom:10px"><span class="ni">⚠</span><span>'+
+           '<b>This screen could not read the approval setting.</b> Until it can, treat every post as needing a '+
+           'person to look at it.</span></div>')+
     '<div class="notice'+(on?'':' warn')+'" style="margin-top:4px"><span class="ni">'+(on?'◉':'⚠')+'</span><span>'+
       (on
         ? '<b>Every post for this partner is marked "needs approval" — and is still lined up and still sent.</b> '+
@@ -1634,6 +1743,11 @@ function renderAll(){
    partner selected there is nothing to write to, so every control that would
    send is disabled and says why, instead of posting to an id that does not
    exist. */
+/* Connect buttons for a service this site has not been set up for. Filled in by
+   the connect block at the bottom of this file once the server has said so.
+   Held here because every redraw runs syncWriteControls, and without this the
+   redraw put a dead button back to looking usable. */
+var OAUTH_OFF = {};
 function syncWriteControls(){
   var on = hasPartner();
   var why = 'No partner is chosen — nothing can be queued, sent or connected from this screen yet.';
@@ -1641,6 +1755,7 @@ function syncWriteControls(){
     var el = document.getElementById(id);
     if(!el) return;
     if(el._title0 === undefined) el._title0 = el.getAttribute('title') || '';
+    if(OAUTH_OFF[id]){ el.disabled = true; return; }   /* not set up — stays off */
     el.disabled = !on;
     if(on){ if(el._title0) el.setAttribute('title', el._title0); else el.removeAttribute('title'); }
     else el.setAttribute('title', why);
@@ -1720,8 +1835,12 @@ function wireActionLog(){
       ACTIONS_ERR = res.ok ? null : (res.error || null);
       renderAudit(); renderCounts();
       if(window.FHData){
-        if(res.ok) FHData.banner('real', 'social_post action log · api', 'social-audit');
-        else FHData.explain(res, 'social_post action log');
+        /* Plain words. This used to print the name the database uses for a post
+           and the word "api" — neither means anything to the person reading it.
+           The third value is a key the banner uses to keep sources apart and is
+           never shown, so it stays as it is. */
+        if(res.ok) FHData.banner('real', 'post send history · live', 'social-audit');
+        else FHData.explain(res, 'the post send history');
       }
     });
 }
@@ -1786,6 +1905,8 @@ document.getElementById('fOffer').addEventListener('change', function(){
     if (n) n.textContent = 'Showing ' + (PARTNERS[P].name || PARTNERS[P].id) + '.';
     renderAll();
     wireActionLog();
+    loadChannels();
+    loadSettings();
     loadQueue();
   }
   sel.addEventListener('change', function(){
@@ -2003,13 +2124,15 @@ document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDr
   try { role = String(localStorage.getItem('fh_role') || '').trim().toLowerCase(); } catch (e) { role = ''; }
   var box = document.getElementById('oauthConnectBox');
   if (box && role === 'partner') {
-    box.innerHTML = 'Connecting Facebook, Instagram, or LinkedIn is for the owner once those apps are set up. You can still write and queue posts here.';
+    box.innerHTML = 'Only the owner can connect a social account, and only Facebook, Instagram and LinkedIn can ever be connected. ' +
+      'The other five cannot be posted to at all. You can still write posts here — they wait until an account is connected.';
   } else if (box) {
     function markMissing(channel, code) {
       var id = channel === 'facebook' ? 'oauthFb' : (channel === 'instagram' ? 'oauthIg' : 'oauthLi');
       var el = document.getElementById(id);
       if (!el) return;
       if (code === 'not_configured') {
+        OAUTH_OFF[id] = true;   /* so the next redraw does not switch it back on */
         el.disabled = true;
         el.setAttribute('title', (LABEL[channel] || channel) + ' is not set up yet. Nothing was sent.');
       }
@@ -2031,6 +2154,55 @@ document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeDr
     ['facebook', 'instagram', 'linkedin'].forEach(probe);
   }
 })();
+
+/* ══ THE CONNECTED ACCOUNTS ══════════════════════════════════════════════
+   The read this screen never had. The tile counted zero however many accounts
+   were connected, because nothing ever filled SOCIAL_CHANNELS.
+
+   THE STAMP AT THE END MATTERS. channels() filters on `c.partner === P`, and P is
+   the partner picker's position in the list, not a partner id — a leftover from
+   when this screen was drawn against made-up data. A row from the server carries
+   a partner id and no such field, so without the stamp every card would be
+   filtered out and the list would look empty on a perfectly good read.
+   loadQueue() below stamps the same field for the same reason.
+   ════════════════════════════════════════════════════════════════════════ */
+function loadChannels(){
+  var p = partner();
+  SOCIAL_CHANNELS = [];
+  CHANNELS_READ = false;
+  if(!p){ renderAll(); return; }
+  apiGet('/api/social/channels?partner_id='+encodeURIComponent(p.id)+'&state=all&limit=50')
+    .then(function(res){
+      CHANNELS_READ = true;
+      SOCIAL_CHANNELS = res.ok ? ((res.data.items)||[]).map(function(row){
+        return Object.assign({}, row, {
+          partner: P,
+          /* the card walks both of these; a missing one would stop the whole grid */
+          scopes: Array.isArray(row.scopes) ? row.scopes : [],
+          best_times: (row.best_times && typeof row.best_times === 'object') ? row.best_times : {}
+        });
+      }) : [];
+      renderAll();
+    });
+}
+
+/* ══ WHO HAS TO APPROVE A POST ═══════════════════════════════════════════
+   Read on its own because the partner list this screen uses does not carry it.
+   The value is hung on the chosen partner row, which is where the approval card
+   already looks for it. Left unset if the read fails, so the card says it could
+   not read the setting rather than showing a value nobody saved. */
+function loadSettings(){
+  var p = partner();
+  if(!p){ return; }
+  var forPartner = p.id;
+  apiGet('/api/social/settings?partner_id='+encodeURIComponent(forPartner))
+    .then(function(res){
+      var cur = partner();
+      if(!cur || cur.id !== forPartner) return;   /* the picker moved on */
+      if(res.ok && res.data && res.data.settings) cur.settings = res.data.settings;
+      renderApproval();
+    });
+}
 
 function loadQueue(){
   var p = partner();
@@ -2082,6 +2254,14 @@ document.getElementById('ssGenBtn').addEventListener('click', function(){
       msg.textContent = res.ok
         ? 'Wrote ' + ((res.items && res.items.length) || 0) + ' posts. They are in the waiting list below.'
         : (res.message || res.error || 'Nothing was written.');
+      loadQueue();
+    })
+    /* Without this the button sat on "Writing…" for ever whenever the request
+       itself fell over — a dropped connection, or the server being cut off part
+       way through. The connect block further up this file has had the same
+       ending for the same reason. */
+    .catch(function(){
+      msg.textContent = 'The writing did not finish and nothing was saved. Try again in a moment.';
       loadQueue();
     });
 });

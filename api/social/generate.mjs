@@ -1,4 +1,20 @@
 // POST /api/social/generate — write post captions from the partner's brand.
+//
+// TWO THINGS ARE DELIBERATE HERE, and both exist because this endpoint used to
+// leave Social Studio stuck on "Writing…" with nothing saved.
+//
+//   1. THE MODEL CALL HAPPENS WITH NO TRANSACTION OPEN. It used to sit inside the
+//      same withPartnerScope block as the inserts, so a slow reply held a database
+//      connection open for its whole length, and when the platform killed the
+//      function every row written in that transaction rolled back. The work is now
+//      three short steps: read what we need, call the model with nothing held, then
+//      write. A kill between steps can no longer erase a completed step.
+//
+//   2. THE MODEL CALL IS BOUNDED BY US, not by the platform. src/agents/model.mjs
+//      sets no timeout and is not this thread's file to change, but it does accept
+//      a fetchImpl — so the abort signal is attached from here. The bound is under
+//      the function's own limit on purpose: being killed produces no reply at all,
+//      while failing ourselves produces a sentence the partner can read.
 
 import { db } from "../../src/db.mjs";
 import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
@@ -32,6 +48,43 @@ function parseCaptions(text, want) {
   return arr.map((s) => String(s).trim()).filter(Boolean).slice(0, want);
 }
 
+/* HOW LONG WE WAIT FOR THE MODEL.
+   Netlify's default limit for a synchronous function is 10 seconds and this repo
+   sets no override for the `api` function in netlify.toml, so anything past that
+   is killed with no reply. 8.5s leaves room for the two short database steps
+   either side and still returns our own message rather than a dead request.
+   Raise SOCIAL_GENERATE_TIMEOUT_MS only alongside the function's own limit —
+   a value above it puts the kill back in charge. */
+const MODEL_TIMEOUT_MS = Math.max(
+  1000, Number(process.env.SOCIAL_GENERATE_TIMEOUT_MS) || 8500
+);
+
+/* callModelBounded — callModel with an abort attached.
+
+   Promise.race is the wrong tool here and was considered: the losing side keeps
+   running, so the real request would still be in flight behind the timeout. An
+   AbortController ends the request itself. The timer is cleared only after
+   callModel returns, so the bound covers reading the reply body as well as
+   waiting for the first byte.
+
+   No key means callModel returns its shadow result before it ever reaches
+   fetchImpl, so the keyless path is unchanged. */
+export async function callModelBounded(args, ms = MODEL_TIMEOUT_MS) {
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => { timedOut = true; controller.abort(); }, ms);
+  try {
+    const out = await callModel({
+      ...args,
+      fetchImpl: (url, init) =>
+        globalThis.fetch(url, { ...init, signal: controller.signal })
+    });
+    return { ...out, timedOut };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("allow", "POST");
@@ -49,8 +102,12 @@ export default async function handler(req, res) {
   const count = Math.min(8, Math.max(1, Number(body.count) || 3));
   const offerType = body.offer_type || "funding";
 
+  const scope = { kind: "partner", partnerId };
+
   try {
-    const items = await withPartnerScope({ kind: "partner", partnerId }, async (tx) => {
+    // STEP 1 — a short read. Is this switched on, is there budget left, and what
+    // does this partner sound like? Nothing slow runs with this open.
+    const setup = await withPartnerScope(scope, async (tx) => {
       await assertSuiteEnabled(tx, partnerId);
       await assertUnderCap(tx, partnerId);
       const org = (await tx.query(
@@ -65,35 +122,52 @@ export default async function handler(req, res) {
         `SELECT entity_name, voice, ink, display_face FROM partner_brand WHERE partner_id = $1`,
         [partnerId]
       )).rows[0] || {};
-      const model = await callModel({
-        system: SYSTEM,
-        user: [
-          `Brand: ${brand.entity_name || "the partner"}`,
-          `Voice: ${brand.voice || "plain"}`,
-          `Write ${count} distinct posts. Each under 280 characters.`
-        ].join("\n"),
-        env: process.env,
-        model: DEFAULT_MODEL,
-        maxTokens: 800
-      });
-      await recordUsage(tx, {
-        orgId: org.org_id,
-        partnerId,
-        purpose: "social",
-        inputTokens: model.usage?.input_tokens,
-        outputTokens: model.usage?.output_tokens,
-        model: model.request?.model
-      });
-      if (model.mode === "shadow" || model.error || !model.text) {
-        const e = new Error(model.error || "the writing robot is not set on this site");
-        e.code = "no_model";
-        throw e;
-      }
-      const captions = parseCaptions(model.text, count);
+      return { orgId: org.org_id, brand };
+    });
+
+    // STEP 2 — the model call. No transaction, no database connection held.
+    const model = await callModelBounded({
+      system: SYSTEM,
+      user: [
+        `Brand: ${setup.brand.entity_name || "the partner"}`,
+        `Voice: ${setup.brand.voice || "plain"}`,
+        `Write ${count} distinct posts. Each under 280 characters.`
+      ].join("\n"),
+      env: process.env,
+      model: DEFAULT_MODEL,
+      maxTokens: 800
+    });
+
+    // STEP 3 — write down what it cost, whatever the answer was. This used to sit
+    // inside the same transaction as the refusal below, so a failed call left no
+    // record of the tokens it had already spent and the budget under-counted.
+    await withPartnerScope(scope, (tx) => recordUsage(tx, {
+      orgId: setup.orgId,
+      partnerId,
+      purpose: "social",
+      inputTokens: model.usage?.input_tokens,
+      outputTokens: model.usage?.output_tokens,
+      model: model.request?.model
+    }));
+
+    if (model.timedOut) {
+      const e = new Error("the writing did not finish in time");
+      e.code = "model_timeout";
+      throw e;
+    }
+    if (model.mode === "shadow" || model.error || !model.text) {
+      const e = new Error(model.error || "the writing robot is not set on this site");
+      e.code = "no_model";
+      throw e;
+    }
+
+    // STEP 4 — a short write. Every post is screened and saved, or none is.
+    const captions = parseCaptions(model.text, count);
+    const items = await withPartnerScope(scope, async (tx) => {
       const out = [];
       for (const caption of captions) {
         const verdict = await screen(tx, {
-          orgId: org.org_id,
+          orgId: setup.orgId,
           partnerId,
           kind: "social_post",
           offerType,
@@ -108,7 +182,7 @@ export default async function handler(req, res) {
              (org_id, partner_id, caption, offer_type, status, blocked_reasons)
            VALUES ($1,$2,$3,$4,$5,$6::jsonb)
            RETURNING *`,
-          [org.org_id, partnerId, caption, offerType, status,
+          [setup.orgId, partnerId, caption, offerType, status,
            JSON.stringify(verdict.reasons || [])]
         );
         out.push(ins.rows[0]);
@@ -126,6 +200,13 @@ export default async function handler(req, res) {
       return res.status(429).json({ ok: false, error: "token_cap",
         message: "This partner has used this month's writing budget.",
         usage: err.usage || null });
+    }
+    if (err.code === "model_timeout") {
+      // Said as its own thing, not folded into no_model. "Not set up" and "took
+      // too long" call for different next steps, and the partner is the one who
+      // has to choose between waiting and telling somebody.
+      return res.status(504).json({ ok: false, error: "model_timeout",
+        message: "The writing took too long and was stopped. Nothing was saved. Try again." });
     }
     if (err.code === "no_model") {
       return res.status(503).json({ ok: false, error: "no_model",
