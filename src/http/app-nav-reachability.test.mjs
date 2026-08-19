@@ -58,6 +58,30 @@ const FINANCE_ONLY = shellList("FINANCE_ONLY");
 const ADVISOR_ONLY = shellList("ADVISOR_ONLY");
 const CONSENT_DESK_ONLY = shellList("CONSENT_DESK_ONLY");
 const ADMIN_BLOCKED = shellList("ADMIN_BLOCKED");
+const NAV_HIDDEN = shellList("NAV_HIDDEN");
+
+const KEEP_ON_MENU = [
+  "pipeline.html",
+  "client-control-panel.html",
+  "closer-dashboard.html",
+  "closer-call.html",
+  "my-numbers.html",
+  "sales-floor.html",
+  "calendar.html",
+  "messaging.html",
+  "documents.html",
+  "contracts.html",
+  "template-editor.html",
+  "inquiry-remover.html",
+  "content-admin.html",
+  "products-commissions.html",
+  "staff-teams.html",
+  "agent-editor.html"
+];
+
+function menuTabs(allowed) {
+  return allowed.filter((s) => !NAV_HIDDEN.includes(s));
+}
 
 /** staffTabs — shell.js's own staffTabs(), the shared employee surface.
     Role-narrow extras stack on top in allowedFor(). */
@@ -146,6 +170,32 @@ describe("app shell — the lists this test reads", () => {
     }
     assert.ok(ADMIN_BLOCKED.includes("partner-galaxy.html"));
     assert.deepEqual(
+      [...NAV_HIDDEN].sort(),
+      [
+        "affiliate.html",
+        "automations.html",
+        "brand-studio.html",
+        "campaign-manager.html",
+        "company-brain.html",
+        "consent-capture.html",
+        "creative-factory.html",
+        "finance-os.html",
+        "galaxy.html",
+        "hiring.html",
+        "journeys.html",
+        "ops-admin.html",
+        "partner-galaxy.html",
+        "social-studio.html"
+      ].sort()
+    );
+    for (const s of NAV_HIDDEN) {
+      assert.ok(ALL.includes(s), `${s} left the menu but is missing from ALL — typing the URL would bounce`);
+    }
+    for (const s of KEEP_ON_MENU) {
+      assert.ok(!NAV_HIDDEN.includes(s), `${s} must stay on the menu`);
+      assert.ok(ALL.includes(s), `${s} must stay a reachable screen`);
+    }
+    assert.deepEqual(
       [...FINANCE_ONLY].sort(),
       ["products-commissions.html", "staff-teams.html"].sort()
     );
@@ -202,21 +252,21 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
   const nav = () => navHrefs(HTML.get(WITH_SIDEBAR[0]));
 
   function visibleFor(allowed) {
-    return nav().filter((h) => allowed.includes(h));
+    return nav().filter((h) => menuTabs(allowed).includes(h));
   }
 
   test("a generic staff role sees the shared staff surface only", () => {
     // setter / inquiry_specialist — no closer desk, no floor, no lender database.
     const visible = visibleFor(STAFF_TABS);
-    assert.equal(visible.length, STAFF_TABS.length);
-    assert.deepEqual([...visible].sort(), [...STAFF_TABS].sort());
-    for (const h of [...CLOSER_DESK_ONLY, ...SALES_FLOOR_ONLY, ...OWNER_ADMIN_ONLY, ...FINANCE_ONLY, ...ADVISOR_ONLY, ...CONSENT_DESK_ONLY]) {
+    assert.deepEqual([...visible].sort(), [...menuTabs(STAFF_TABS)].sort());
+    for (const h of [...CLOSER_DESK_ONLY, ...SALES_FLOOR_ONLY, ...OWNER_ADMIN_ONLY, ...FINANCE_ONLY, ...ADVISOR_ONLY, ...CONSENT_DESK_ONLY, ...NAV_HIDDEN]) {
       assert.ok(!visible.includes(h), `generic staff must not see ${h}`);
     }
     /* api/consent/capture.mjs CONSENT_ROLES refuses setter, inquiry_specialist
        and sales_manager. Offering them the row would be a Save button that 403s
        the person looking at it. */
     assert.ok(!visible.includes("consent-capture.html"));
+    assert.ok(!visible.includes("automations.html"));
   });
 
   /* Owner decision 2026-08-17: the lender database is the funding advisor's and
@@ -224,26 +274,26 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
      two moved in the same commit so the row cannot outlive the gate. */
   test("a funding advisor sees the staff surface plus the lender database", () => {
     const visible = visibleFor(ADVISOR_TABS);
-    assert.deepEqual([...visible].sort(), [...ADVISOR_TABS].sort());
+    assert.deepEqual([...visible].sort(), [...menuTabs(ADVISOR_TABS)].sort());
     assert.ok(visible.includes("lenders.html"));
-    assert.ok(visible.includes("consent-capture.html"));
+    assert.ok(!visible.includes("consent-capture.html"));
     assert.ok(!visible.includes("closer-call.html"));
     assert.ok(!visible.includes("sales-floor.html"));
   });
 
   test("a closer sees the staff surface plus closer desk, not the sales floor", () => {
     const visible = visibleFor(CLOSER_TABS);
-    assert.deepEqual([...visible].sort(), [...CLOSER_TABS].sort());
+    assert.deepEqual([...visible].sort(), [...menuTabs(CLOSER_TABS)].sort());
     assert.ok(visible.includes("closer-call.html"));
     assert.ok(visible.includes("my-numbers.html"));
-    assert.ok(visible.includes("consent-capture.html"));
+    assert.ok(!visible.includes("consent-capture.html"));
     assert.ok(!visible.includes("sales-floor.html"));
     assert.ok(!visible.includes("lenders.html"));
   });
 
   test("a sales manager sees the staff surface plus sales floor, not closer desk", () => {
     const visible = visibleFor(SALES_MANAGER_TABS);
-    assert.deepEqual([...visible].sort(), [...SALES_MANAGER_TABS].sort());
+    assert.deepEqual([...visible].sort(), [...menuTabs(SALES_MANAGER_TABS)].sort());
     assert.ok(visible.includes("sales-floor.html"));
     assert.ok(visible.includes("staff-teams.html"));
     assert.ok(visible.includes("products-commissions.html"));
@@ -254,9 +304,24 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
     assert.ok(!visible.includes("consent-capture.html"));
   });
 
-  test("the owner keeps every non-partner sidebar row", () => {
+  test("the owner menu is every allowed sidebar row except the kill list", () => {
     const visible = visibleFor(OWNER_TABS);
-    assert.deepEqual([...visible].sort(), [...OWNER_TABS].sort());
+    assert.deepEqual([...visible].sort(), [...menuTabs(OWNER_TABS)].sort());
+    for (const s of NAV_HIDDEN) {
+      assert.ok(!visible.includes(s), `owner menu still offers ${s}`);
+    }
+    for (const s of KEEP_ON_MENU) {
+      assert.ok(visible.includes(s), `owner menu lost ${s}`);
+    }
+  });
+
+  test("killed screens leave every role menu", () => {
+    for (const allowed of [STAFF_TABS, CLOSER_TABS, ADVISOR_TABS, SALES_MANAGER_TABS, OWNER_TABS, ADMIN_TABS]) {
+      const visible = visibleFor(allowed);
+      for (const s of NAV_HIDDEN) {
+        assert.ok(!visible.includes(s), `${s} is still on a role menu`);
+      }
+    }
   });
 
   /* THE DEFECT THIS CASE EXISTS FOR (live walk 2026-08-18, admin@fundhub.ai).
@@ -271,13 +336,13 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
      role, so it could not see a role-level change at all. */
   test("an admin does not keep the client-facing portals or partner Home", () => {
     const visible = visibleFor(ADMIN_TABS);
-    assert.deepEqual([...visible].sort(), [...ADMIN_TABS].sort());
+    assert.deepEqual([...visible].sort(), [...menuTabs(ADMIN_TABS)].sort());
     for (const s of ADMIN_BLOCKED) {
       assert.ok(!visible.includes(s),
         `an admin must not be offered ${s} — it is a principal's screen, not an employee desk`);
     }
-    assert.ok(visible.includes("brand-studio.html"),
-      "brand-studio.html stays on the admin rail — PRINCIPAL_ONLY records owner/admin keeping it");
+    assert.ok(!visible.includes("brand-studio.html"),
+      "brand-studio.html left the admin menu in the 2026-08-19 kill pass");
   });
 });
 
