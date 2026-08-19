@@ -315,8 +315,22 @@ export const DELIVERY_STATUS_MAP = {
 export const COMPLAINT_TASK_ROLE = "admin";
 export const COMPLAINT_SOURCE = "mailgun-complaint";
 
+/* The source name an unsubscribe is filed under. Deliberately NOT
+   'provider_complaint': a spam report and an unsubscribe both stop the mail,
+   but only one of them is somebody saying our copy looked like spam, and an
+   operator reading opt_outs needs to tell those apart. */
+export const UNSUBSCRIBE_SOURCE = "provider_unsubscribe";
+
+/* `unsubscribed` WAS IN THIS SET UNTIL 2026-08-18 (T5-02), which meant the
+   provider told us somebody had unsubscribed and we threw it away. The result
+   was backwards: a spam complaint — the weaker, angrier signal — stopped the
+   mail, and a deliberate press of the unsubscribe button did nothing at all.
+   It is handled in its own branch below rather than added to
+   DELIVERY_STATUS_MAP, because an unsubscribe is not a delivery state: the
+   mail arrived, and writing it as a status would overwrite `delivered` and
+   destroy the only record that it landed. */
 export const IGNORED_DELIVERY_EVENTS = new Set([
-  "accepted", "opened", "clicked", "unsubscribed", "stored", "delivered_ip"
+  "accepted", "opened", "clicked", "stored", "delivered_ip"
 ]);
 
 /* Mailgun writes the id with angle brackets on the send response and without
@@ -380,6 +394,38 @@ export async function handleMailgunDeliveryEvent({ db, body, signingKey }) {
     return { ok: true, status: 200, reason: "not_delivery_state", updated: 0, event: evt.event };
   }
 
+  /* UNSUBSCRIBED — a withdrawal of consent, handled here and then done.
+
+     It sits between the signature check and the status machinery on purpose.
+     Above it, so a forged payload can never opt anybody out. Below the status
+     machinery, so it can return before `mapped` is consulted — an unsubscribe
+     has no delivery status to write and must not touch messages.status.
+
+     It does NOT raise a review task, which is the one thing that makes it
+     different from the complaint branch further down. A spam report is a
+     signal about the TEMPLATE: somebody found the copy objectionable enough to
+     press a button that damages our sending domain, and a person should read
+     it. An unsubscribe is the ordinary, wanted outcome of the link we are
+     obliged to put in the mail. Filing a task for each one would bury the
+     complaints that actually need reading. */
+  if (evt.event === "unsubscribed") {
+    const row = await findOutboundEmailByProviderId(db, evt.providerMessageId);
+    const target = row && row.client_id
+      ? { clientId: row.client_id, orgId: row.org_id }
+      : await resolveClientByEmail(db, evt.recipient);
+    if (!target) {
+      return {
+        ok: true, status: 200, reason: "unmatched", updated: 0,
+        event: evt.event, optedOut: false, taskRaised: false
+      };
+    }
+    await recordOptOut(db, target.clientId, target.orgId, "email", UNSUBSCRIBE_SOURCE);
+    return {
+      ok: true, status: 200, reason: "unsubscribed", updated: 0,
+      event: evt.event, optedOut: true, taskRaised: false
+    };
+  }
+
   let mapped = DELIVERY_STATUS_MAP[evt.event];
   if (evt.event === "failed") {
     // Mailgun splits hard bounces from transient ones by severity, and the two
@@ -393,17 +439,7 @@ export async function handleMailgunDeliveryEvent({ db, body, signingKey }) {
     return { ok: true, status: 200, reason: "unknown_event", updated: 0, event: evt.event };
   }
 
-  // Matched on THEIR id, both sides stripped of angle brackets. Guarded to
-  // outbound email so a colliding id cannot move a row on another channel.
-  const found = await db.query(
-    `SELECT id, org_id, client_id, template_key
-       FROM messages
-      WHERE btrim(provider_message_id, '<>') = $1
-        AND direction = 'outbound'
-        AND channel = 'email'`,
-    [evt.providerMessageId]
-  );
-  const row = found.rows[0] || null;
+  const row = await findOutboundEmailByProviderId(db, evt.providerMessageId);
 
   /* THE OPT-OUT COMES FIRST, and it is the reason this endpoint exists.
 
@@ -487,6 +523,22 @@ async function raiseComplaintTask(db, target, row, evt) {
     ]
   });
   return !!res?.created;
+}
+
+/* Matched on THEIR id, both sides stripped of angle brackets. Guarded to
+   outbound email so a colliding id cannot move a row on another channel.
+   Shared by the unsubscribe branch and the delivery-status branch so the two
+   can never drift into matching different rows for the same receipt. */
+async function findOutboundEmailByProviderId(db, providerMessageId) {
+  const found = await db.query(
+    `SELECT id, org_id, client_id, template_key
+       FROM messages
+      WHERE btrim(provider_message_id, '<>') = $1
+        AND direction = 'outbound'
+        AND channel = 'email'`,
+    [providerMessageId]
+  );
+  return found.rows[0] || null;
 }
 
 /* Last resort for a complaint we cannot tie to a message row. A complaint that
@@ -585,10 +637,14 @@ export async function handleMailgunWebhook({ db, body, signingKey }) {
      rule, one dedupe. A second event name would be a second copy of that, and
      the two would drift.
 
-     The TCPA STOP/START branch inside that handler is guarded on
-     `channel === "sms"` and so does not fire here, which is correct: "STOP" in
-     an email subject line is not a TCPA opt-out keyword, and treating it as one
-     would silence a channel the consumer never asked us to stop using.
+     The STOP/START branch inside that handler NOW FIRES FOR EMAIL TOO
+     (changed 2026-08-18, T5-01). It used to be guarded on `channel === "sms"`,
+     and the note here defended that on the grounds that "STOP" in an email
+     SUBJECT line is not a TCPA keyword. That much still holds — and it is why
+     the branch reads the BODY and requires a whole-body exact match, so a
+     subject line, a signature block or a quoted thread can never trigger it.
+     What it got wrong was concluding that email therefore had no opt-out word
+     at all, which left a client who replied "STOP" still on the list.
 
      `sid` carries the Message-Id because that is the field onMessageInbound
      writes to provider_ref — so a Mailgun redelivery of the same email lands on

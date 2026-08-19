@@ -38,6 +38,14 @@ function pgFake() {
         const c = clients.find((c) => c.org_id === params[0] && c.phone === params[1]);
         return { rows: c ? [{ id: c.id }] : [] };
       }
+      // Digits-only fallback, mirroring idx_clients_phone_digits. Twilio sends
+      // E.164; clients.phone is free text and not every live row is E.164.
+      if (/SELECT id FROM clients/.test(sql) && /regexp_replace\(phone/.test(sql)) {
+        const wanted = new Set(params[1] || []);
+        const c = clients.find((c) =>
+          c.org_id === params[0] && wanted.has(String(c.phone || "").replace(/\D+/g, "")));
+        return { rows: c ? [{ id: c.id }] : [] };
+      }
       if (/INSERT INTO clients/.test(sql)) {
         if (clients.find((c) => c.org_id === params[0] && String(c.email || "").toLowerCase() === String(params[1]).toLowerCase())) return { rows: [] };
         const id = "cl-" + ++n;
@@ -257,4 +265,98 @@ test("message.inbound STOP: unknown sender (no client match) does not crash", as
   // No clients seeded — should resolve clientId to null and skip opt-out silently
   await onMessageInbound(ev("message.inbound", { from: "+19999999999", body: "STOP", sid: "SM7", channel: "sms", source: "twilio" }), db);
   assert.equal(db.optOuts.length, 0);
+});
+
+/* EMAIL STOP — T5-01.
+
+   Proven broken on the live site 2026-08-18: a client emailed a body of exactly
+   "STOP", it was stored as message e9a17306, and opt_outs stayed empty, so the
+   next campaign would have mailed them again. These pin the fix. */
+
+const emailEv = (body, sid) => ev("message.inbound",
+  { from: "person@example.com", body, sid, channel: "email", source: "mailgun" });
+
+test("message.inbound email STOP: records an opt-out on the EMAIL channel", async () => {
+  const db = pgFake();
+  db.clients.push({ id: "cl-e1", org_id: "org-1", email: "person@example.com" });
+  await onMessageInbound(emailEv("STOP", "<mg-1@mg.fundhub.ai>"), db);
+  assert.equal(db.optOuts.length, 1, "an emailed STOP must record an opt-out");
+  assert.equal(db.optOuts[0].client_id, "cl-e1");
+  assert.equal(db.optOuts[0].channel, "email", "email opt-out, not sms");
+  assert.equal(db.optOuts[0].source, "inbound_keyword");
+  assert.equal(db.optOuts[0].opted_in_at, null);
+  assert.equal(db.messages.length, 1, "and the message is still filed in the thread");
+});
+
+test("message.inbound email UNSUBSCRIBE / REMOVE / lower case all count", async () => {
+  for (const [i, word] of ["UNSUBSCRIBE", "remove", "Opt Out", "  stop  "].entries()) {
+    const db = pgFake();
+    db.clients.push({ id: "cl-e2", org_id: "org-1", email: "person@example.com" });
+    await onMessageInbound(emailEv(word, `<mg-w${i}@mg.fundhub.ai>`), db);
+    assert.equal(db.optOuts.length, 1, `"${word}" should opt the person out`);
+    assert.equal(db.optOuts[0].channel, "email");
+  }
+});
+
+test("message.inbound email CANCEL is NOT an opt-out — it means the meeting", async () => {
+  // The SMS list treats CANCEL / END / QUIT as opt-out words. On email they are
+  // ambiguous: a one-word reply to a booking note means cancel the booking, and
+  // reading it as "stop all email" would cut somebody off from the updates about
+  // their own credit file. See EMAIL_STOP_KEYWORDS in comms.mjs.
+  for (const [i, word] of ["CANCEL", "END", "QUIT"].entries()) {
+    const db = pgFake();
+    db.clients.push({ id: "cl-e3", org_id: "org-1", email: "person@example.com" });
+    await onMessageInbound(emailEv(word, `<mg-c${i}@mg.fundhub.ai>`), db);
+    assert.equal(db.optOuts.length, 0, `"${word}" must not silence email`);
+    assert.equal(db.messages.length, 1, "it is an ordinary message");
+  }
+});
+
+test("message.inbound email: a sentence containing STOP is a message, not an opt-out", async () => {
+  const db = pgFake();
+  db.clients.push({ id: "cl-e4", org_id: "org-1", email: "person@example.com" });
+  await onMessageInbound(emailEv("Please stop by the office on Tuesday", "<mg-2@mg.fundhub.ai>"), db);
+  assert.equal(db.optOuts.length, 0, "matching is whole-body and exact");
+  assert.equal(db.messages.length, 1);
+});
+
+test("message.inbound email STOP suppresses email only — the client still gets texts", async () => {
+  const db = pgFake();
+  db.clients.push({ id: "cl-e5", org_id: "org-1", email: "person@example.com", phone: "+15551110000" });
+  await onMessageInbound(emailEv("STOP", "<mg-3@mg.fundhub.ai>"), db);
+  const live = (ch) => db.optOuts.some((r) => r.client_id === "cl-e5" && r.channel === ch && !r.opted_in_at);
+  assert.equal(live("email"), true, "email is stopped");
+  assert.equal(live("sms"), false, "sms is untouched — they never asked us to stop texting");
+});
+
+test("message.inbound email START: opts back in on the email channel", async () => {
+  const db = pgFake();
+  db.clients.push({ id: "cl-e6", org_id: "org-1", email: "person@example.com" });
+  await onMessageInbound(emailEv("STOP", "<mg-4@mg.fundhub.ai>"), db);
+  assert.equal(db.optOuts[0].opted_in_at, null, "opted out");
+  await onMessageInbound(emailEv("START", "<mg-5@mg.fundhub.ai>"), db);
+  assert.notEqual(db.optOuts[0].opted_in_at, null, "opted back in");
+  assert.equal(db.optOuts[0].channel, "email");
+});
+
+test("message.inbound: a voice message never touches opt_outs", async () => {
+  // There is no keyword list for voice, so the branch is skipped entirely
+  // rather than falling back to the SMS words.
+  const db = pgFake();
+  db.clients.push({ id: "cl-v1", org_id: "org-1", phone: "+15551234567" });
+  await onMessageInbound(ev("message.inbound",
+    { from: "+15551234567", body: "STOP", sid: "V1", channel: "voice", source: "bland" }), db);
+  assert.equal(db.optOuts.length, 0);
+});
+
+test("message.inbound SMS: a client stored without +1 formatting is still found", async () => {
+  // T5-07. Twilio always sends E.164. clients.phone is free text and two live
+  // records are not E.164, so an exact-text match alone loses their STOP.
+  const db = pgFake();
+  db.clients.push({ id: "cl-p1", org_id: "org-1", phone: "(555) 123-4567" });
+  await onMessageInbound(ev("message.inbound",
+    { from: "+15551234567", body: "STOP", sid: "SM8", channel: "sms", source: "twilio" }), db);
+  assert.equal(db.optOuts.length, 1, "digits-only fallback must resolve the client");
+  assert.equal(db.optOuts[0].client_id, "cl-p1");
+  assert.equal(db.optOuts[0].channel, "sms");
 });
