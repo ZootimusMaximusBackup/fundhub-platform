@@ -52,6 +52,10 @@ describe("POST /api/social/posts — approve and refuse a held post", {
 }, () => {
   let handler, org, partnerId, channelId;
   let ownerId, tokOwner, tokCloser, tokPartner;
+  // A SECOND COMPANY. Everything about it is a copy of the first: its own org
+  // row, its own partner, its own social account. Nothing signs in as it — the
+  // point is what an owner of the FIRST company can reach.
+  let orgB, partnerB, channelB;
 
   /* No injection seam, deliberately: the handler runs the real requirePrincipal
      against the real sessions/account_sessions tables, so every call carries a
@@ -79,19 +83,25 @@ describe("POST /api/social/posts — approve and refuse a held post", {
      holding pen, a screening row saying a person must sign it off (without which
      240's gate refuses every status change), and the queue row the screen reads.
      Fresh per test, because approving one is a one-way move. */
-  async function seedHeld({ queueStatus = "awaiting_approval" } = {}) {
+  async function seedHeld({ queueStatus = "awaiting_approval",
+                           inOrg = null, forPartner = null, onChannel = null } = {}) {
+    // The three overrides exist for one test: the same held post, made the same
+    // way, but belonging to a DIFFERENT company. Left null everywhere else, so
+    // every other test seeds exactly what it seeded before.
+    const o = inOrg || org, pt = forPartner || partnerId, ch = onChannel || channelId;
+
     const postId = (await db.query(
       `INSERT INTO social_posts
          (org_id, partner_id, channel_id, caption, offer_type, status, scheduled_for)
        VALUES ($1,$2,$3,$4,'credit_repair','awaiting_approval', now() + interval '1 day')
        RETURNING id`,
-      [org, partnerId, channelId, `${MARK} held copy`])).rows[0].id;
+      [o, pt, ch, `${MARK} held copy`])).rows[0].id;
 
     await db.query(
       `INSERT INTO compliance_screenings
          (org_id, partner_id, subject_type, subject_id, offer_type, state, reasons, screened_text)
        VALUES ($1,$2,'social_post',$3,'credit_repair','needs_approval',$4::jsonb,$5)`,
-      [org, partnerId, postId,
+      [o, pt, postId,
        JSON.stringify([{ code: "human_approval_required_credit_repair", rule_set: "approval",
                          message: "Credit-repair copy always needs a person." }]),
        `${MARK} held copy`]);
@@ -101,7 +111,7 @@ describe("POST /api/social/posts — approve and refuse a held post", {
          (org_id, partner_id, caption, offer_type, status, social_post_id, scheduled_for)
        VALUES ($1,$2,$3,'credit_repair',$4,$5, now() + interval '1 day')
        RETURNING id`,
-      [org, partnerId, `${MARK} held copy`, queueStatus, postId])).rows[0].id;
+      [o, pt, `${MARK} held copy`, queueStatus, postId])).rows[0].id;
 
     return { postId, queueId };
   }
@@ -148,6 +158,26 @@ describe("POST /api/social/posts — approve and refuse a held post", {
       password: "a-long-enough-password-1", invitedBy: ownerId, partnerId
     });
     tokPartner = (await createAccountSession(db, { accountId: acct.id, orgId: org })).token;
+
+    orgB = (await db.query(
+      `INSERT INTO orgs (slug, name) VALUES ($1,$2)
+       ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name RETURNING id`,
+      [`${MARK}-org-b`, `${MARK} other company`])).rows[0].id;
+    partnerB = (await db.query(
+      `INSERT INTO partners (org_id, name, slug, status)
+       VALUES ($1,$2,$3,'active') RETURNING id`,
+      [orgB, `${MARK} partner b`, `${MARK}-partner-b`])).rows[0].id;
+    // Turned on for the same reason the first partner's is: a suite that is off
+    // refuses every write, and a refusal for the wrong reason proves nothing
+    // about who may reach whose post.
+    await db.query(
+      `INSERT INTO partner_module_settings (org_id, partner_id, marketing_suite_enabled)
+       VALUES ($1,$2,true)`, [orgB, partnerB]);
+    channelB = (await db.query(
+      `INSERT INTO social_channels
+         (org_id, partner_id, channel, external_account_id, handle, connection_state)
+       VALUES ($1,$2,'facebook',$3,$4,'pending') RETURNING id`,
+      [orgB, partnerB, `${MARK}-acct-b`, `${MARK}-handle-b`])).rows[0].id;
   });
 
   async function purge() {
@@ -182,6 +212,8 @@ describe("POST /api/social/posts — approve and refuse a held post", {
     await db.query(`DELETE FROM partner_module_settings WHERE partner_id IN
       (SELECT id FROM partners WHERE slug LIKE $1)`, [MARK_LIKE]);
     await db.query(`DELETE FROM partners WHERE slug LIKE $1`, [MARK_LIKE]);
+    // Last: every row above carries an org_id pointing at it.
+    await db.query(`DELETE FROM orgs WHERE slug LIKE $1`, [MARK_LIKE]);
   }
 
   after(async () => { await purge(); await close(); });
@@ -325,5 +357,85 @@ describe("POST /api/social/posts — approve and refuse a held post", {
     const r = await call({ partner_id: partnerId, id: queueId, action: "approve" }, tokOwner);
     assert.equal(r.code, 409, JSON.stringify(r.body));
     assert.equal((await queueRow(queueId)).status, "awaiting_approval");
+  });
+
+  test("somebody else APPROVING the post first makes a refusal change nothing", async () => {
+    const { postId, queueId } = await seedHeld();
+    /* The mirror of the test above, and the one the refuse arm used to fail.
+       The queue row still says held; the post has already been approved by
+       somebody else and is lined up to send. 240's gate refuses a held post
+       into 'queued' unless the signature is set in the same statement, so this
+       is written exactly the way a real approve writes it.
+
+       What went wrong before: the refusal did not look at how many rows it
+       changed. It changed none — the post was no longer held — but it still
+       marked the screen's row 'blocked' and answered 200. The owner was told
+       the post was stopped while the post was still queued and would still
+       have gone out. */
+    await db.query(
+      `UPDATE social_posts
+          SET status = 'queued', approved_at = now(), approved_by = $2
+        WHERE id = $1`, [postId, ownerId]);
+
+    const r = await call({ partner_id: partnerId, id: queueId, action: "reject" }, tokOwner);
+    assert.equal(r.code, 409, JSON.stringify(r.body));
+
+    const post = await postRow(postId);
+    assert.equal(post.status, "queued",
+      "a refusal that answered success left the post free to go out");
+    assert.ok(post.approved_at, "the other person's approval was wiped");
+    assert.equal((post.blocked_reasons || []).length, 0,
+      "a reason was written onto a post the refusal did not stop");
+
+    const q = await queueRow(queueId);
+    assert.equal(q.status, "awaiting_approval",
+      "the screen's row said blocked while the post was still queued to send");
+    assert.equal((q.blocked_reasons || []).length, 0);
+  });
+
+  // ── one company's owner may not touch another company's post ─────────────
+
+  /* Row-level security scopes the transaction to the partner NAMED IN THE BODY,
+     which says nothing about whether that partner belongs to the caller. These
+     two tests are the only thing standing between an owner of one company and
+     every other company's held posts. Both tables are read afterwards, because
+     a 404 that wrote anyway is exactly the failure worth catching. */
+  test("an owner of one company cannot approve another company's held post", async () => {
+    const { postId, queueId } = await seedHeld({
+      inOrg: orgB, forPartner: partnerB, onChannel: channelB });
+
+    const r = await call({ partner_id: partnerB, id: queueId, action: "approve" }, tokOwner);
+    assert.equal(r.code, 404, JSON.stringify(r.body));
+
+    // Made-up id, same call. The two answers must be word for word the same, or
+    // the endpoint confirms that another company's post is real.
+    const missing = await call(
+      { partner_id: partnerB, id: "00000000-0000-4000-8000-000000000000", action: "approve" },
+      tokOwner);
+    assert.equal(missing.code, r.code);
+    assert.deepEqual(r.body, missing.body,
+      "the answer for another company's post differs from the answer for no post at all");
+
+    const post = await postRow(postId);
+    assert.equal(post.status, "awaiting_approval", "another company's post was released");
+    assert.equal(post.approved_at, null);
+    assert.equal(post.approved_by, null);
+    assert.equal((await queueRow(queueId)).status, "awaiting_approval");
+  });
+
+  test("an owner of one company cannot refuse another company's held post", async () => {
+    const { postId, queueId } = await seedHeld({
+      inOrg: orgB, forPartner: partnerB, onChannel: channelB });
+
+    const r = await call({ partner_id: partnerB, id: queueId, action: "reject" }, tokOwner);
+    assert.equal(r.code, 404, JSON.stringify(r.body));
+
+    const post = await postRow(postId);
+    assert.equal(post.status, "awaiting_approval", "another company's post was stopped for good");
+    assert.equal((post.blocked_reasons || []).length, 0);
+
+    const q = await queueRow(queueId);
+    assert.equal(q.status, "awaiting_approval");
+    assert.equal((q.blocked_reasons || []).length, 0);
   });
 });

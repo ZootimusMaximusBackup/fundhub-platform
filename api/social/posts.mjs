@@ -15,6 +15,12 @@
 // A PARTNER MAY NEVER APPROVE THEIR OWN POST. That is the whole point of the
 // hold, so it is refused here on the server; the buttons being hidden on
 // public/app/social-studio.html is a courtesy, not the gate.
+//
+// AND NEITHER MAY ANOTHER COMPANY'S OWNER. withPartnerScope opens the
+// transaction as the partner NAMED IN THE REQUEST, so row-level security says
+// nothing about whether that partner belongs to the caller's company. The org
+// predicate on the approve/reject lookup is the only thing that does — the same
+// guard, written the same way, as api/brand/review.mjs.
 
 import { db } from "../../src/db.mjs";
 import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
@@ -29,6 +35,14 @@ import { SUITE_OFF, assertSuiteEnabled } from "../../src/brand/meter.mjs";
    whether held marketing copy goes out, and widening it should cost somebody an
    edit to this line. */
 const APPROVAL_ROLES = new Set(["owner", "admin"]);
+
+/* Where the caller's company comes from. Copied from api/brand/review.mjs, the
+   sibling that already scopes its own approve and reject this way — the same
+   principal shapes reach both files, so they must read the org the same way. */
+function orgIdOf(principal) {
+  if (principal.kind === "staff") return principal.staff?.org_id || principal.orgId || null;
+  return principal.orgId || null;
+}
 
 /* WHAT A REFUSED POST BECOMES, AND WHAT THAT WORD ALSO MEANS.
    social_posts admits only draft / awaiting_approval / queued / posting / posted
@@ -107,13 +121,25 @@ async function decideHeldPost(tx, { row, action, staffId }) {
   // guards, so the trigger lets this through untouched, and publishDue never
   // sees it again. COALESCE because a null list must not swallow the reason.
   const reason = JSON.stringify([REFUSED_BY_A_PERSON]);
-  await tx.query(
+  const refused = await tx.query(
     `UPDATE social_posts
         SET status = 'blocked',
             blocked_reasons = COALESCE(blocked_reasons, '[]'::jsonb) || $2::jsonb
-      WHERE id = $1 AND status = 'awaiting_approval'`,
+      WHERE id = $1 AND status = 'awaiting_approval'
+      RETURNING id, status`,
     [row.social_post_id, reason]
   );
+  /* Somebody else moved it between the read and the write — the same check the
+     approve arm above makes, and it was missing here. Without it a refusal that
+     changed no row still marked the screen's row 'blocked' and answered 200,
+     while the post itself sat in 'queued' and would still have gone out: the
+     screen said stopped, the sender said send. Throwing rolls the queue write
+     below back too, because both statements are in the one transaction. */
+  if (!refused.rows[0]) {
+    const e = new Error("not held");
+    e.code = "NOT_HELD";
+    throw e;
+  }
   const u = await tx.query(
     `UPDATE marketing_content_queue
         SET status = 'blocked',
@@ -162,6 +188,7 @@ export default async function handler(req, res) {
          post was named. A partner is refused outright — they may write, queue
          and throw away their own posts, and that is all. Staff need owner or
          admin, checked in its own call after the principal resolved. */
+      let approvalOrgId = null;
       if (action === "approve" || action === "reject") {
         if (principal.kind !== "staff") {
           return res.status(403).json({
@@ -171,13 +198,38 @@ export default async function handler(req, res) {
         }
         const staff = principal.staff || { role: principal.role };
         if (!requireRole(res, staff, APPROVAL_ROLES)) return;
+
+        /* THE CALLER'S OWN COMPANY, read the same way api/brand/review.mjs
+           reads it. withPartnerScope below scopes rows to the partner NAMED IN
+           THE BODY, not to the company the caller belongs to, so nothing else
+           in this file compares the two. A staff session with no company
+           attached is refused rather than treated as "every company", for the
+           same reason review.mjs refuses it. */
+        approvalOrgId = orgIdOf(principal);
+        if (!approvalOrgId) {
+          return res.status(403).json({
+            ok: false, error: "no_org_scope",
+            message: "Your sign-in is not attached to a company, so nothing was changed."
+          });
+        }
       }
 
       const out = await withPartnerScope({ kind: "partner", partnerId }, async (tx) => {
         await assertSuiteEnabled(tx, partnerId);
+        /* THE WHERE CLAUSE IS THE GUARD. Without the org line, an owner or
+           admin of one company could approve or refuse another company's held
+           post simply by putting that partner's id in the body — row-level
+           security scopes to the named partner, and named the partner is. It
+           is NULL, and so passes, for every action except approve and reject,
+           which is deliberate: list, queue and discard legitimately serve a
+           partner and are unchanged. A post in another company reads as "not
+           found", the same answer as a post that does not exist, so this
+           endpoint never confirms another company's post is real. */
         const row = (await tx.query(
-          `SELECT * FROM marketing_content_queue WHERE id = $1 AND partner_id = $2`,
-          [body.id, partnerId]
+          `SELECT * FROM marketing_content_queue
+            WHERE id = $1 AND partner_id = $2
+              AND ($3::uuid IS NULL OR org_id = $3::uuid)`,
+          [body.id, partnerId, approvalOrgId]
         )).rows[0];
         if (!row) {
           const e = new Error("not found");

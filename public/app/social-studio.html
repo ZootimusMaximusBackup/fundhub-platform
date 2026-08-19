@@ -1385,13 +1385,21 @@ function renderVerdict(){
   if(v.state === 'blocked'){
     what = 'This post would be <b>saved and refused</b>, with the reasons below kept on it. It would stay in the '+
            '"needs a rewrite" list for good — it cannot be checked again, overruled, or edited and re-sent.';
+  } else if(v.state === 'needs_approval'){
+    /* This used to say a post needing approval was lined up and went out at its
+       time anyway. That was true when it was written and is false now: the post
+       is stopped and waits for a person. Saying it here matters more than
+       anywhere else on this screen, because this is what the writer reads
+       BEFORE they save. */
+    var wHeld = s.when ? new Date(s.when + ':00Z').toISOString() : next;
+    what = 'This post would be <b>saved and stopped</b>. It does not go out on its own' +
+           (wHeld ? ' — not at <b>'+esc(fmt(wHeld))+'</b>, and not at any other time.' : '.') +
+           ' Somebody signed in as the owner or an admin has to approve it in the waiting list on this ' +
+           'screen before it can go out. If they refuse it instead, it is kept and never sent.';
   } else {
     var w = s.when ? new Date(s.when + ':00Z').toISOString() : next;
     what = 'This post would be <b>saved and lined up</b>' +
-           (w ? ' to go out at <b>'+esc(fmt(w))+'</b>.' : ' with <b>no send time</b> — it would sit and wait for good.') +
-           (v.state === 'needs_approval'
-             ? ' <b>Needing approval does not hold it back.</b> The check writes down that a person should look at it, and the post still goes out at its time.'
-             : '');
+           (w ? ' to go out at <b>'+esc(fmt(w))+'</b>.' : ' with <b>no send time</b> — it would sit and wait for good.');
   }
   document.getElementById('vWhat').innerHTML = what;
 
@@ -1987,16 +1995,17 @@ function renderApproval(){
     '<div class="notice'+(on?'':' warn')+'" style="margin-top:4px"><span class="ni">'+(on?'◉':'⚠')+'</span><span>'+
       (on
         /* This used to say the opposite, and it was right at the time: a post
-           marked "needs approval" was lined up and sent anyway. That changed. The
-           holding pen is real now, and so is the missing button — both halves have
-           to be here, because "it stops and waits" on its own would read as a
-           finished feature. */
+           marked "needs approval" was lined up and sent anyway. Then it stopped
+           and waited with no way out, and this said so. Both halves are true
+           now — it stops, AND a person can release it — so both are said here,
+           in the same words the waiting list and the counts above use. */
         ? '<b>A post marked "needs approval" now stops and waits. It does not go out.</b> '+
           'The part of the system that sends posts cannot see a post that is waiting, so nothing sends it — '+
           'not late, not by accident, not at all.'+
-          '<br><br><b>But nothing can approve one yet.</b> There is no button on this screen, and nothing '+
-          'anywhere else in the system, that marks a post as approved. So every post that stops here stays '+
-          'stopped. The post is kept and nothing is lost, but it will not go out until that button is built.'
+          '<br><br><b>Somebody signed in as the owner or an admin can approve it.</b> Every held post is in '+
+          'the waiting list on this screen, with a button to approve it or refuse it. Approving it lets it go '+
+          'out at its time. Refusing it stops it for good and it can never be sent. Nobody else can do either '+
+          '— not the partner, and not any other kind of employee.'
         : '<b>With this off, a post that breaks no rule is marked as passed, and it does go out.</b> '+
           'This switch is not just a note any more. On, it stops posts and makes them wait. Off, it lets them '+
           'through. Credit repair is the one exception, and this switch never releases those — see below.')+
