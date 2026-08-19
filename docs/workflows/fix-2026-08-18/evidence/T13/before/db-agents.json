@@ -1,0 +1,131 @@
+{
+  "captured_at": "2026-08-19T06:53:36.245Z",
+  "source": "production DATABASE_URL — read-only",
+  "agents_by_status": [
+    {
+      "status": "draft",
+      "n": 12
+    },
+    {
+      "status": "live",
+      "n": 2
+    },
+    {
+      "status": "retired",
+      "n": 8
+    }
+  ],
+  "agents_total": 22,
+  "live_and_shadow": [
+    {
+      "code": "AG-04",
+      "name": "Setter Josh",
+      "status": "live",
+      "channel": "voice",
+      "runtime": "bland",
+      "runtime_ref": "inquiry-removal-ai",
+      "sort_order": 10,
+      "prompt_missing": true,
+      "guardrails_missing": true,
+      "never_edited": true,
+      "went_live_at": "2026-07-31T02:24:53.163Z",
+      "created_at": "2026-07-31T02:24:53.163Z",
+      "updated_at": "2026-07-31T02:24:53.163Z"
+    },
+    {
+      "code": "AG-09",
+      "name": "Inquiry Removal AI",
+      "status": "live",
+      "channel": "voice",
+      "runtime": "bland",
+      "runtime_ref": "inquiry-removal-ai",
+      "sort_order": 20,
+      "prompt_missing": true,
+      "guardrails_missing": true,
+      "never_edited": true,
+      "went_live_at": "2026-07-31T02:24:53.163Z",
+      "created_at": "2026-07-31T02:24:53.163Z",
+      "updated_at": "2026-07-31T02:24:53.163Z"
+    }
+  ],
+  "retired": [
+    {
+      "code": "GHL-A1",
+      "name": "Agent 1 — Lead Follow-up & Booking",
+      "status": "retired",
+      "retired_at": "2026-08-16T05:16:29.483Z"
+    },
+    {
+      "code": "GHL-A2",
+      "name": "Agent 2 — AR / Collections",
+      "status": "retired",
+      "retired_at": "2026-08-16T05:16:29.483Z"
+    },
+    {
+      "code": "GHL-A3",
+      "name": "Agent 3 — Non-Buyer & Nurture",
+      "status": "retired",
+      "retired_at": "2026-08-16T05:16:29.483Z"
+    },
+    {
+      "code": "GHL-A4",
+      "name": "Agent 4 — Backend Pre-Call (replies only)",
+      "status": "retired",
+      "retired_at": "2026-08-16T05:16:29.483Z"
+    },
+    {
+      "code": "GHL-A5",
+      "name": "Agent 5 — Onboarding & Doc-Chasing",
+      "status": "retired",
+      "retired_at": "2026-08-16T05:16:29.483Z"
+    },
+    {
+      "code": "GHL-A7",
+      "name": "Agent 7 — Affiliate Re-engagement",
+      "status": "retired",
+      "retired_at": "2026-08-16T05:16:29.483Z"
+    },
+    {
+      "code": "GHL-DOC",
+      "name": "Document Check",
+      "status": "retired",
+      "retired_at": "2026-08-16T05:16:29.483Z"
+    },
+    {
+      "code": "GHL-RECON",
+      "name": "Recon",
+      "status": "retired",
+      "retired_at": "2026-08-16T05:16:29.483Z"
+    }
+  ],
+  "tables_present": [
+    {
+      "table_name": "agent_shadow_log"
+    },
+    {
+      "table_name": "outbound_calls"
+    }
+  ],
+  "outbound_calls_rows": 0,
+  "agent_shadow_log_rows": 0,
+  "msg_inbound_events": 2,
+  "messages_from_agent": 0,
+  "trigger_events_column": [
+    {
+      "column_name": "guardrails"
+    },
+    {
+      "column_name": "prompt"
+    },
+    {
+      "column_name": "runtime"
+    },
+    {
+      "column_name": "runtime_ref"
+    },
+    {
+      "column_name": "trigger_events"
+    }
+  ],
+  "webhook_captures_bland": 0
+}

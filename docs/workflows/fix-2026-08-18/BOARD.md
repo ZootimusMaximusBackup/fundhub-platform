@@ -713,3 +713,232 @@ refuses to decide on, so the hiring fix has nothing to act on in production toda
   The closer board is now PROVEN, both halves: see `evidence/T12/proof-closer-board.md`. The roster
   SQL returns Chris and the seeded "TEST — Closer Role"; `filterCloserRoster()` drops the seeded
   login and keeps Chris. One closer on the board.
+
+## Cross-thread requests
+
+<!-- One block per request. The owning thread does the edit; the asking thread does not reach across. -->
+
+### T13 → **T12** · add the start-call button to the Call cockpit · owner-approved 2026-08-19
+
+**Owner-approved 2026-08-19.** Chris asked for a start-call button on the Call cockpit
+(`public/app/closer-call.html`) and explicitly ruled that **T13 must not touch that file** — T12 owns
+it and is mid-verification, so a T13 edit would collide when T12's PR lands.
+
+**Paste this during the throwaway-database re-verify T12 already owes.** It is complete; nothing needs
+designing. The endpoint it calls is live on `main` as of T13's merge.
+
+**⛔ THE ONE RULE THAT MATTERS: the button must not be able to dial until a real client case exists.**
+Same rule as the inquiry desk Send button (`public/app/inquiry-remover.html:1903-1916`): the control
+renders **disabled with a plain-language reason**, rather than being clickable and then erroring. Your
+own file already does this at `closer-call.html:222` — `fh-join` renders
+`disabled title="No call link on this appointment"`. Copy that shape exactly.
+
+A cockpit opened with no `client_id` resolves one from `closer-now` (`closer-call.js:423-438`) and can
+legitimately end up with none. That state must render the button disabled, not hidden — a control that
+disappears reads as a missing feature; a disabled one with a reason reads as "not yet".
+
+#### 1. Markup — `public/app/closer-call.html`, in the button row at ~line 222
+
+Sits beside `fh-join`, matching its class and its disabled-with-a-reason shape.
+
+```html
+<button type="button" class="k" id="fh-agent-call" disabled
+        title="No client on this call yet">Robot call</button>
+```
+
+#### 2. Wiring — `public/app/closer-call.js`
+
+```js
+/* Start-call button — hands this client to a voice agent.
+   Requested by T13 (owner-approved 2026-08-19); T13 does not own this file.
+
+   DISABLED UNTIL THERE IS SOMEBODY TO CALL. Same rule as the inquiry desk Send
+   button: a control that cannot succeed renders disabled with the reason on it,
+   never clickable-then-erroring. `clientId` is resolved asynchronously by
+   resolveClient() (:423-438) and can legitimately come back empty. */
+function wireAgentCall() {
+  var btn = document.getElementById("fh-agent-call");
+  if (!btn) return;
+
+  if (!clientId) {
+    btn.disabled = true;
+    btn.title = "No client on this call yet";
+    return;
+  }
+  btn.disabled = false;
+  btn.title = "Ask a voice agent to call this person";
+
+  btn.addEventListener("click", async function () {
+    if (btn.disabled) return;
+    var code = (window.__FH_AGENT_CODE || "AG-04");
+
+    /* ASK FIRST, DIAL SECOND. action:"check" runs every gate — agent live, has a
+       script, person reachable, not opted out, not do-not-call — and dials
+       nothing. It is what turns a refusal into a sentence a human can act on
+       instead of a failed call. */
+    btn.disabled = true;
+    try {
+      var pre = await window.FHData.write("/api/agent-call", {
+        action: "check", agent_code: code, client_id: clientId
+      });
+      if (!pre.ok) {
+        alert((pre.error && pre.error.message) || pre.error ||
+              "That call cannot be placed right now.");
+        return;
+      }
+      if (!confirm(pre.message + "\n\nStart the call now?")) return;
+
+      var res = await window.FHData.write("/api/agent-call", {
+        action: "call", agent_code: code, client_id: clientId
+      });
+      if (!res.ok) {
+        alert((res.error && res.error.message) || res.error ||
+              "The call could not be placed.");
+        return;
+      }
+      alert(res.message || "The call has started.");
+    } finally {
+      btn.disabled = !clientId;
+    }
+  });
+}
+```
+
+Call `wireAgentCall()` from the same place the rest of the screen wires up, **after** `clientId` has
+been resolved — otherwise it will read empty on every load and paint itself permanently disabled.
+
+#### 3. What the endpoint answers (all shipped and tested by T13)
+
+`POST /api/agent-call`, routed in `netlify/functions/api.mjs`. Roles: `owner, admin, sales_manager,
+closer, setter, inquiry_specialist`. Every refusal is `{ ok:false, placed:false, reason, message }`
+and `message` is already written in plain language — show it as-is, do not rewrite it.
+
+| Reason | Means |
+|---|---|
+| `not_live` / `no_prompt` | the agent has not been promoted, or has no script saved |
+| `not_a_voice_runtime` | that agent does not run on the phone system |
+| `not_client_facing` | an internal ops agent may never contact a client |
+| `client_not_found` / `no_phone` | wrong company, or no usable number on the record |
+| `dnd_voice` / `opted_out` | **the person asked not to be phoned. Never retry these.** |
+| `not_configured` | the phone system is not connected on this deployment (503) |
+
+Refusal order is deliberate and pinned by `src/http/agent-call.pg.test.mjs`: **consent is answered
+before configuration**, so a do-not-call person is refused for being do-not-call, never for a missing
+setting. Do not reorder these checks in the UI by pre-filtering.
+
+#### 4. Two things that are NOT T12's problem
+
+- **Nothing dials while `MESSAGING_DRY_RUN` is unset.** The provider returns `blocked` and the screen
+  shows "Outbound sending is switched off on this deployment". That is correct and expected until
+  Chris switches it off deliberately. **Do not treat that as a bug in the button.**
+- **`AG-04` has no script yet.** It is a draft until Chris writes its prompt, so `check` will answer
+  `not_live` on a real database today. That is the button working, not failing.
+
+
+<!-- ══ T13 · Agent Editor & Bland voice agents ══════════════════════════ -->
+
+## T13 — Agent Editor & Bland voice agents (wave 2) · DONE
+
+Branch `fix/T13-agent-editor-bland` off `origin/main` `c860b8c`.
+Evidence: `docs/workflows/fix-2026-08-18/evidence/T13/` (README.md has a verdict per item).
+
+### In one sentence
+
+The Agent Editor said two robots were live and covering the desk. Neither had ever spoken to
+anyone, and nothing in the build could make them. The screen now tells the truth, and there is a
+real — but deliberately switched-off — way to start a call.
+
+### Files touched
+
+| File | What |
+|---|---|
+| `db/migrations/177_agents_live_integrity.sql` | **NEW.** AG-04/AG-09 corrected to `draft`; `agents_live_needs_prompt_ck` added NOT VALID; `agent_triggers` + `agent_runs` created with RLS declared; triggers backfilled from both legacy stores |
+| `public/app/agent-editor.html` | Retired is a real state; counts corrected; a voice agent says it never answers texts; runtime surfaced read-only; guardrail tags read "NOT SET · ON BY DEFAULT" |
+| `api/read/agents.mjs` | Returns `trigger_events` — the column 114 seeded and nothing has ever read |
+| `api/agents.mjs` | Save persists `runtime` / `runtime_ref` (appended LAST — see the warning below) |
+| `api/agent-call.mjs` | **NEW.** The call-launch handler. Five fail-closed gates, consent before configuration |
+| `src/messaging/providers/bland-voice.mjs` | **NEW.** The only outbound path to `api.bland.ai`, behind the MESSAGING fence |
+| `src/agents/runtime.mjs`, `src/agents/shadow-log.mjs` | Every agent wake now writes an `agent_runs` row, tolerantly |
+| `netlify/functions/api.mjs` | `"agent-call": agentCall` appended to ROUTES + its import |
+| `db/expected-migrations.mjs`, `docs/journeys/*-actual.md`, `README.md` | Regenerated, never hand-edited |
+
+**Migration number:** used **177**, not the 230–234 block this board reserves for T13. 230–234 is
+also reserved for T8, and 177 is outside every block, so nothing can collide with it. **T8 keeps
+230–234 in full.**
+
+### Tests
+
+**14 added, all passing.** New: `src/messaging/providers/bland-voice.test.mjs` (runs with no
+database), `src/http/agent-call.pg.test.mjs`, `src/http/agents-write.pg.test.mjs`.
+
+**Two existing tests were changed because they asserted the behaviour this thread fixed.** Both in
+`src/agents/registry.pg.test.mjs`, both commented in place:
+
+1. The fixture set the two seeded agents live with `prompt = NULL` — the exact shape migration 177
+   now refuses. It gives them a prompt instead.
+2. `"prompts and guardrails ship empty, and needsAttention says so"` asserted BOTH halves were
+   missing on a live agent. It is now `"a running agent missing either half of its definition is
+   flagged"`, which is the invariant `needsAttention` actually exists for.
+
+**Baseline, measured here** — local Postgres 16 on macOS, one scratch database per side, run one at
+a time:
+
+| | tests | pass | fail |
+|---|---|---|---|
+| `origin/main` `c860b8c` | 5845 | 5842 | **3** |
+| this branch | 5859 | 5856 | **3** |
+
+Same three failures, same three files, none of them mine: `scripts/journeys/generate.test.mjs`
+(`finance/crs-pull`, `gifts/message-blaster` — T3/T11), `src/http/read-endpoints-org-scope.test.mjs`
+(`company-brain-affiliate.mjs` — **T9**), `src/security/superuser-guard.test.mjs` (an artefact of my
+local scratch database connecting as a superuser).
+
+### ⚠️ Read this before you edit `api/agents.mjs`
+
+`src/http/agents-write.test.mjs` reads the save UPDATE's parameters **by index** and calls
+`JSON.parse(params[7])`. `runtime` and `runtime_ref` are appended at positions 9 and 10 for that
+reason. Insert anything before `guardrails` and you get a JSON parse error pointing at the test
+rather than at your change.
+
+### Cross-thread notes
+
+* **T9 — Company Brain.** `src/http/read-endpoints-org-scope.test.mjs` fails on
+  `company-brain-affiliate.mjs`: it is excused from writing an org filter because its store applies
+  one, but it no longer passes `orgId: staff.org_id`. It is red on `main` today, not caused here.
+* **T5 / messaging — a real gap, not mine to close.** `message.inbound` now fires (2 events,
+  2026-08-18 21:43, both email) — so the audit's "count 0" is out of date. But **both carry no
+  client**, and `src/agents/runtime.mjs:57` returns `no_client` when the event has none. The reply
+  robot still never wakes; what is missing now is the step that matches an inbound email to a
+  person. That lives in messaging, not here.
+* **T7 owns `src/http/router.mjs`.** Not touched. The Bland inbound webhook door is unchanged; this
+  thread only makes something arrive at it.
+
+### ⛔ BLOCKERS for Chris — three decisions, none of them code
+
+1. **Nothing on any screen starts a call — RESOLVED 2026-08-19, owner-directed.** Chris asked for
+   the button on the **Call cockpit** (`public/app/closer-call.html`), and ruled that **T13 must not
+   touch that file** — T12 owns it and is mid-verification. The complete markup and wiring are
+   written up under **Cross-thread requests → T13 → T12** at the top of this file, for T12 to paste
+   during the throwaway-database re-verify it already owes. The endpoint ships here; the button
+   ships with T12.
+2. **Dialling is held by `MESSAGING_DRY_RUN`.** Unset means nothing leaves — that is the repo's own
+   fence and this thread did not weaken it. Switching it off is your call and it affects every
+   outbound channel, not just calls.
+3. **Bureau calls stay blocked regardless.** `vendor/inquiry-remover/UPDATE-REQUIRED.md` is
+   owner-set: Experian now needs documents uploaded to its portal first, then a wait, then the call,
+   and the bureau scripts still describe a call-first sequence. `api/agent-call.mjs` accepts
+   client-facing agents only for that reason.
+
+### Left undone, named
+
+* **Guardrails are not evaluated on a voice call**, only on text replies. The four switches on the
+  screen describe the text engine. The compliance gate IS run over the prompt before a call, and
+  do-not-call plus voice opt-out are both checked, but the four guardrail flags are not.
+* **`agent_triggers` is a record, not a switch.** Nothing enforces a trigger — `src/agents/guardrails.mjs`
+  has always said so. Making a trigger actually gate a reply is a behaviour change no journey names.
+* **`agent_runs` is written but not yet shown.** The Agent Editor still prints "0 runs" from
+  `runsTracked:false`. Surfacing it needs a read endpoint, and a deploy preview runs against the
+  production database WITHOUT the new tables, so a screen reading them would break on every preview
+  until this merges. Deliberately deferred.
+* **T13-12 stays unanswerable.** Bland's API does not return the `task` text, so the exact words
+  spoken on the 30 earlier calls cannot be read back. Nothing here changes that.

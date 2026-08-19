@@ -195,6 +195,7 @@ import readPortalSummary from "../../api/read/portal-summary.mjs";
 import contractsSign from "../../api/contracts/sign.mjs";
 import messagesOutbound from "../../api/messages-outbound.mjs";
 import agentsWrite from "../../api/agents.mjs";
+import agentCall from "../../api/agent-call.mjs";
 import pipelineCards from "../../api/pipeline-cards.mjs";
 import productsWrite from "../../api/products.mjs";
 import lendersWrite from "../../api/lenders.mjs";
@@ -261,6 +262,11 @@ export const ROUTES = {
      away with no error. Routed in the same commit as the handler and the
      screen wiring. */
   "agents": agentsWrite,
+  /* Start a phone call for a registry agent, or ask whether one could be
+     started. Narrower than STAFF: the desks that contact clients only. Every
+     refusal is explicit; the provider behind it is held by MESSAGING_DRY_RUN,
+     so nothing dials unless that is switched off on purpose. */
+  "agent-call": agentCall,
   /* Pipeline board card moves. Shift-gated STAFF write. Drag and MOVE used to
      rearrange the DOM and stash positions in sessionStorage. */
   "pipeline-cards": pipelineCards,

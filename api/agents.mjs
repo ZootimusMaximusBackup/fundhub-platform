@@ -30,6 +30,12 @@ import { requireRole, ROLE_SETS } from "../src/http/read-api.mjs";
 import { dbDown } from "../src/http/db-down.mjs";
 
 const CHANNELS = new Set(["sms", "email", "voice", "internal"]);
+/* Where an agent runs. The list is 037_agent_registry.sql's own column comment
+   (`runtime text -- bland | vercel | inngest | netlify | internal`). Save could
+   not write this at all until now, so an agent saved in the Agent Editor had no
+   way to say which system should run it and could never be pointed at a real
+   call. api/agent-call.mjs refuses anything that is not 'bland'. */
+const RUNTIMES = new Set(["bland", "vercel", "inngest", "netlify", "internal", "ghl"]);
 const CLASSES = new Set(["client_facing", "ops"]);
 const ACTIONS = new Set(["save", "promote", "demote", "create"]);
 
@@ -45,6 +51,12 @@ function normClass(raw) {
   if (s === "client_facing" || s === "clientfacing") return "client_facing";
   if (s === "ops" || s === "operations") return "ops";
   return null;
+}
+
+function normRuntime(raw) {
+  const t = String(raw || "").trim().toLowerCase();
+  if (!t) return "";           // "" = caller sent an empty value on purpose
+  return RUNTIMES.has(t) ? t : null;  // null = caller sent something invalid
 }
 
 function normCode(raw) {
@@ -230,6 +242,32 @@ export default async function handler(req, res) {
         ? asGuardrails(body.guardrails)
         : (current.guardrails || {});
 
+      /* RUNTIME. Optional on the wire — the Agent Editor does not send it today,
+         and an absent key must mean "leave it alone", never "clear it". */
+      let runtime = current.runtime;
+      if (body.runtime !== undefined) {
+        const r = normRuntime(body.runtime);
+        if (r === null) {
+          return res.status(400).json({
+            ok: false, error: "invalid_runtime",
+            message: "That is not a system we can run an agent on. Use bland, vercel, inngest, netlify or internal."
+          });
+        }
+        runtime = r || null;
+      }
+      /* 037's agents_runtime_required_ck refuses a live or shadow agent with no
+         runtime: an agent that is running has to say where. Caught here so the
+         person gets a sentence instead of a database error. */
+      if (!runtime && (current.status === "live" || current.status === "shadow")) {
+        return res.status(400).json({
+          ok: false, error: "runtime_required",
+          message: "This agent is running, so it has to say which system runs it. Return it to shadow first if you want to unset that."
+        });
+      }
+      const runtimeRef = body.runtime_ref !== undefined
+        ? (String(body.runtime_ref || "").trim() || null)
+        : current.runtime_ref;
+
       const updated = await db.query(
         `UPDATE agents SET
             name = $3,
@@ -238,10 +276,17 @@ export default async function handler(req, res) {
             owner_label = $6,
             prompt = $7,
             guardrails = $8::jsonb,
+            runtime = $9,
+            runtime_ref = $10,
             updated_at = now()
           WHERE org_id = $1::uuid AND code = $2
           RETURNING *`,
-        [orgId, code, name, channel, agentClass, ownerLabel, prompt, JSON.stringify(guardrails)]
+        /* runtime/runtime_ref are LAST on purpose. src/http/agents-write.test.mjs
+           reads this array positionally and JSON.parse()s index 7; putting a new
+           value before guardrails turns that into a parse error pointing at the
+           test rather than at the change. */
+        [orgId, code, name, channel, agentClass, ownerLabel, prompt,
+         JSON.stringify(guardrails), runtime, runtimeRef]
       );
       return res.status(200).json({
         ok: true, action: "save", agent: publicAgent(updated.rows[0])
