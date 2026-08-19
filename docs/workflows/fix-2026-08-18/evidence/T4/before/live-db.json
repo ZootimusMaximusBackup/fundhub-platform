@@ -1,0 +1,138 @@
+{
+  "whoami": [
+    {
+      "current_user": "fundhub_app",
+      "session_user": "fundhub_app",
+      "is_superuser": false,
+      "bypasses_rls": false
+    }
+  ],
+  "events_inquiry_removed_total": [
+    {
+      "n": 1
+    }
+  ],
+  "inquiry_removal_cases_for_test_client": [
+    {
+      "id": "1d212e99-a7f7-4947-920c-4f55904b512e",
+      "case_id": "IRC-1787069591409",
+      "case_status": "Queued",
+      "funding_round_id": null,
+      "cleared_at": null,
+      "completed_at": null,
+      "call_fired_at": null,
+      "master_call_state": null
+    },
+    {
+      "id": "e235efc2-2223-4d31-9a24-2a57313fce34",
+      "case_id": "IRC-1787069712644",
+      "case_status": "Queued",
+      "funding_round_id": null,
+      "cleared_at": null,
+      "completed_at": null,
+      "call_fired_at": null,
+      "master_call_state": null
+    },
+    {
+      "id": "f872cc9d-d0fb-484b-a0a5-fb90e031b45d",
+      "case_id": "IRC-1787072070546",
+      "case_status": "Completed",
+      "funding_round_id": null,
+      "cleared_at": null,
+      "completed_at": "2026-08-18T21:42:28.802Z",
+      "call_fired_at": null,
+      "master_call_state": null
+    }
+  ],
+  "funding_rounds_for_test_client": [
+    {
+      "n": 0
+    }
+  ],
+  "next_round_tasks_for_test_client": [
+    {
+      "id": "f09e0aff-0ff9-4735-b20b-bfdc59dd12d6",
+      "title": "Start next funding round — clean file"
+    }
+  ],
+  "dispute_table_counts": [
+    {
+      "t": "dispute_cases",
+      "n": 0
+    },
+    {
+      "t": "dispute_items",
+      "n": 0
+    },
+    {
+      "t": "dispute_letters",
+      "n": 0
+    },
+    {
+      "t": "dispute_responses",
+      "n": 0
+    },
+    {
+      "t": "furnisher_mail_addresses",
+      "n": 5
+    },
+    {
+      "t": "repair_decision_log",
+      "n": 2
+    }
+  ],
+  "dispute_rls_state": [
+    {
+      "tbl": "dispute_cases",
+      "rls_on": true,
+      "policies": 1
+    },
+    {
+      "tbl": "dispute_items",
+      "rls_on": true,
+      "policies": 1
+    },
+    {
+      "tbl": "dispute_letters",
+      "rls_on": true,
+      "policies": 1
+    },
+    {
+      "tbl": "dispute_responses",
+      "rls_on": true,
+      "policies": 1
+    },
+    {
+      "tbl": "furnisher_mail_addresses",
+      "rls_on": true,
+      "policies": 1
+    },
+    {
+      "tbl": "repair_decision_log",
+      "rls_on": true,
+      "policies": 1
+    }
+  ],
+  "migration_200_applied": [
+    {
+      "key": "migrations/104_app_role.sql"
+    },
+    {
+      "key": "migrations/200_dispute_rls_policies.sql"
+    },
+    {
+      "key": "migrations/201_no_bare_rls_sweep.sql"
+    }
+  ],
+  "optimization_cards_total": [
+    {
+      "n": 0
+    }
+  ],
+  "dispute_authorization_consents_total": [
+    {
+      "n": 1
+    }
+  ],
+  "inquiry_log_for_test_client": []
+}
