@@ -194,12 +194,16 @@ already warns the number has never been stable; this is why.
   fixed and proven in a browser; the live press is Chris's call.
 - **`INQUIRY_API_BASE` is not set.** Phone inquiry is deliberately on hold, so the Call and
   Hold columns stay blank by design. **Not a bug — do not "fix" it.**
-- **Nothing triggers letter generation, and there is no button.** The engine works and is
-  proven against a real database, but no schedule, workflow or event starts it, and the
-  standing no-new-screens rule means no control was added. Today it can only be called
-  directly. `role-inquiry-remover-intended.md` names `read/repair-cases`, `repair/send` and
-  `repair/exceptions` — it does not describe a generate step at all, so there is no ground
-  truth saying where the trigger belongs. **This needs Chris's decision.**
+- ~~**Nothing triggers letter generation, and there is no button.**~~ **CLOSED — owner decision,
+  2026-08-19.** The trigger is a **"Generate letters" action on the case detail view of the
+  Specialist desk** — the case the Specialist already has open. Existing screen, existing
+  surface, **no new page, tab or menu row**, so the no-new-surfaces rule is intact. Built and
+  proven in a browser across all six outcomes. Logged as owner-set. Note for whoever revises
+  that journey next: `role-inquiry-remover-intended.md` still does not name a generate step,
+  and an agent may not write it in — a human should.
+- **Still no AUTOMATIC trigger.** A person has to press it. No schedule, workflow or event
+  starts letter generation on its own, and `src/workflows/c-06-crs-results-router.mjs`
+  (request #2 above) is where that would belong. That is a separate thread's file.
 - **The funding-round hop is not in the written journey.** Finishing an inquiry is supposed to
   start the next funding round. `docs/journeys/role-inquiry-remover-intended.md` does not
   describe that step at all, so T4 did not build it. On live, the "Start next funding round"
