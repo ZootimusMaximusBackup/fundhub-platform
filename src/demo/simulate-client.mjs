@@ -10,6 +10,7 @@
 // endpoints' tables allow. Teardown deletes by is_demo markers.
 
 import { ingestCrsResult } from "../tradelines/store.mjs";
+import { pool } from "../db.mjs";
 
 export const DEMO_EMAIL_PREFIX = "sim+";
 export const DEMO_EMAIL_DOMAIN = "demo.fundhub.local";
@@ -209,24 +210,49 @@ export async function loadSimulatedClient(db, { orgId, staffId = null } = {}) {
    time. A table added next month is handled without anyone remembering to
    come back here.
 
-   WHY IT IS ONE STATEMENT.
-   Everything happens inside a single SQL statement built from data-modifying
-   CTEs. That buys three things at once:
+   WHY IT IS TWO STATEMENTS IN A TRANSACTION, AND NOT ONE.
 
-     1. It is atomic. A single statement either wholly succeeds or wholly
-        rolls back, so the half-erased client above cannot happen again. No
-        BEGIN/COMMIT is needed, which matters because `db` here is a pool —
-        separate `db.query` calls are not guaranteed the same connection and
-        so cannot share a transaction.
-     2. Delete ORDER stops mattering. A NO ACTION foreign key is checked at
-        the END of the statement, not as each row goes. Parent and child can
-        be removed in the same breath, which sidesteps the ordering puzzles
-        (contracts before documents, documents before invoices, and the
-        circular documents ↔ document_versions pair).
-     3. It is one round trip instead of twelve-plus. Combined with the
-        client_id indexes added in db/migrations/202_client_fk_indexes.sql,
-        this is what takes the path back under Netlify's 10-second function
-        limit — the same path was timing out at 504.
+   The children go first, all of them in ONE statement built from
+   data-modifying CTEs. Then the client goes, in a second statement. Both sit
+   inside an explicit BEGIN/COMMIT on a single checked-out connection.
+
+   The one statement for the children buys the thing that matters most: delete
+   ORDER stops mattering. A NO ACTION foreign key is checked at the END of a
+   statement, not as each row goes, so parent and child rows among the children
+   can be removed in the same breath. That sidesteps every ordering puzzle in
+   this schema at once — contracts before documents, documents before invoices,
+   and the circular documents ↔ document_versions pair.
+
+   The client CANNOT join that statement, and this is the part that is easy to
+   get wrong. It was got wrong here first, and live caught it:
+
+     demo teardown failed for client cb6f5839-…: documents ad69a9a0-…:
+     documents are never deleted — register a superseding version instead
+
+   Several tables carry an archive-only guard trigger — documents, contracts,
+   invoices, commission_ledger, entitlements and others. Migrations 150, 151 and
+   152 rewrote those triggers so a demo wipe is allowed, and the way they allow
+   it is by looking UP at the parent: `EXISTS (SELECT 1 FROM clients c WHERE
+   c.id = OLD.client_id AND c.is_demo)`. That lookup only answers yes while the
+   client row is still there. Put the client's own DELETE in the same statement
+   and the trigger can find the client already gone, decide this is not a demo
+   wipe after all, and refuse.
+
+   Postgres is explicit that sub-statements of a data-modifying CTE "cannot see
+   one another's effects on the target tables" and that trying to is
+   unpredictable. A trigger doing its own SELECT against another CTE's target
+   is exactly that situation. So the client is deleted separately, after the
+   children are done, while every guard trigger has had the answer it needs.
+
+   The explicit transaction is what keeps this atomic across the two
+   statements — without it, statement one committing and statement two failing
+   would recreate the half-erased client this whole rewrite exists to prevent.
+   `db` here is a pool, and separate `db.query` calls are not guaranteed the
+   same connection, so a connection is checked out for the duration.
+
+   Cost: three round trips instead of twelve-plus. Combined with the client_id
+   indexes in db/migrations/202_client_fk_indexes.sql, that is what takes this
+   path back under Netlify's 10-second function limit — it was timing out at 504.
 
    Nothing is swallowed. If a delete is refused, the error is re-raised with
    the name of the table that refused it, instead of a misleading complaint
@@ -301,12 +327,20 @@ export async function clientChildTables(db) {
   return out;
 }
 
-/** Build the one-statement wipe for a single client id ($1). */
-function buildWipeStatement(children) {
+/**
+ * Build the one-statement wipe of a client's CHILDREN ($1 = client id).
+ *
+ * The client row itself is deliberately NOT deleted here — the guard triggers
+ * on documents, contracts and invoices need to look it up and see it is a demo
+ * client before they will allow their own row to go. See the header.
+ *
+ * Order within the statement is cosmetic: foreign keys between these tables are
+ * NO ACTION and are therefore checked once, at the end.
+ */
+function buildChildWipeStatement(children) {
   const parts = ["victim AS (SELECT id FROM clients WHERE id = $1 AND is_demo = true)"];
   let n = 0;
 
-  // Grandchildren first in the text (order is cosmetic — see header note 2).
   for (const c of INDIRECT_CHILDREN) {
     parts.push(
       `w${n++} AS (DELETE FROM ${ident(c.table)} WHERE ${ident(c.column)} IN ` +
@@ -319,7 +353,8 @@ function buildWipeStatement(children) {
     );
   }
 
-  return `WITH ${parts.join(",\n     ")}\nDELETE FROM clients WHERE id IN (SELECT id FROM victim) RETURNING id`;
+  // A WITH needs a final query. This one also tells us the client matched.
+  return `WITH ${parts.join(",\n     ")}\nSELECT count(*)::int AS matched FROM victim`;
 }
 
 /**
@@ -370,23 +405,40 @@ export async function teardownSimulated(db, { orgId, clientId = null, limit = 10
   if (targets.length === 0) return { removed: [], count: 0, truncated: false };
 
   // Asked once per call, not once per client.
-  const statement = buildWipeStatement(await clientChildTables(db));
+  const childStatement = buildChildWipeStatement(await clientChildTables(db));
 
   const removed = [];
   for (const c of targets) {
+    // One connection for the pair of statements, so BEGIN/COMMIT actually
+    // covers both. db.connect exists on a checked-out client in tests; the
+    // shared pool is the normal path.
+    const conn = typeof db.connect === "function" ? await db.connect() : await pool().connect();
     try {
-      const res = await db.query(statement, [c.id]);
-      if (res.rowCount > 0) removed.push({ id: c.id, email: c.email });
+      await conn.query("BEGIN");
+      await conn.query(childStatement, [c.id]);
+      // Client last, and only now — the guard triggers above have had their
+      // answer. `is_demo = true` is repeated here rather than trusted from the
+      // SELECT: a real client must not be removable by this path even if the
+      // row changed underneath us.
+      const gone = await conn.query(
+        `DELETE FROM clients WHERE id = $1 AND is_demo = true RETURNING id`, [c.id]
+      );
+      await conn.query("COMMIT");
+      if (gone.rowCount > 0) removed.push({ id: c.id, email: c.email });
     } catch (err) {
-      // Name the table that actually refused. Postgres puts it on the error
-      // as `table` for a foreign-key violation; a guard trigger puts its own
-      // message in `message`. Either beats a bare complaint about `clients`.
+      await conn.query("ROLLBACK").catch(() => null);
+      // Name what actually refused. Postgres puts the table on the error for a
+      // foreign-key violation; a guard trigger puts its own sentence in the
+      // message. Either beats a bare complaint about `clients`, which was the
+      // one table that was never the problem.
       const blocker = err && (err.table || err.constraint);
       const why = blocker ? ` — blocked by ${blocker}` : "";
       const wrapped = new Error(`demo teardown failed for client ${c.id}${why}: ${err.message}`);
       wrapped.cause = err;
       wrapped.code = err && err.code;
       throw wrapped;
+    } finally {
+      conn.release();
     }
   }
   return { removed, count: removed.length, truncated };
