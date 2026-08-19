@@ -92,3 +92,101 @@ test("the attempt log is not disturbed by status changes", { skip: !HAS_DB }, as
   const attempts = await listAttempts(db, { orgId, inquiryId });
   assert.equal(attempts.length, 3, "append-only means append-only");
 });
+
+/* ───────────────────────────────────────────────────────────────────────────
+   THE CASE BRANCH — previously uncovered, and that is why it shipped broken.
+
+   confirmRemoval only touches inquiry_removal_cases when the inquiry_log row is
+   linked to a case AND it was the last open one. Neither existing suite ever
+   built that shape: work.test.mjs mocks the row with `case_id: null`, and every
+   fixture above leaves case_id NULL. So the UPDATE in that branch was never
+   executed by any test, and it carried `case_status = 'Cleared'` — a value the
+   inquiry_case_status enum does not have. Postgres answers 22P02 and the whole
+   call throws, which also means the inquiry.removed emit on the next line never
+   ran. On the live desk, "Mark confirmed" on the last open inquiry of a case
+   500'd every time.
+
+   These two tests pin both halves: the case really reaches 'Completed', and a
+   case that is already finished is left alone.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+const CASE_EMAIL = "inquiry_work_pg_case_test@example.com";
+
+async function wipeCase() {
+  await db.query(
+    `DELETE FROM staff_events
+      WHERE detail->>'inquiry_id' IN (
+        SELECT il.id::text FROM inquiry_log il
+          JOIN clients c ON c.id = il.client_id
+         WHERE c.email = $1)`, [CASE_EMAIL]);
+  // events.client_id is a plain FK with no ON DELETE CASCADE, and this is the one
+  // branch that writes an inquiry.removed row — so the event has to go before the
+  // client, or the delete below fails with 23503.
+  await db.query(
+    `DELETE FROM events WHERE client_id IN (SELECT id FROM clients WHERE email = $1)`,
+    [CASE_EMAIL]);
+  await db.query(`DELETE FROM clients WHERE email=$1`, [CASE_EMAIL]);
+}
+
+async function buildLinkedCase() {
+  const cid = (await db.query(
+    `INSERT INTO clients (org_id, email, first_name, last_name) VALUES ($1,$2,'Case','Branch') RETURNING id`,
+    [orgId, CASE_EMAIL]
+  )).rows[0].id;
+  const caseRow = (await db.query(
+    `INSERT INTO inquiry_removal_cases (org_id, client_id, case_id, case_status, open_inquiry_count)
+     VALUES ($1,$2,$3,'Queued',1) RETURNING *`,
+    [orgId, cid, `IRC-PGTEST-${Date.now()}`]
+  )).rows[0];
+  const inqId = (await db.query(
+    `INSERT INTO inquiry_log (org_id, client_id, case_id, bureau, inquiry, status, is_open)
+     VALUES ($1,$2,$3,'Experian','Some Lender','Pending Removal',true) RETURNING id`,
+    [orgId, cid, caseRow.id]
+  )).rows[0].id;
+  return { clientId: cid, caseRow, inquiryId: inqId };
+}
+
+test("confirming the last open inquiry completes its case instead of throwing on the enum",
+  { skip: !HAS_DB }, async () => {
+    await wipeCase();
+    const built = await buildLinkedCase();
+
+    await confirmRemoval(db, { orgId, inquiryId: built.inquiryId, staffId });
+
+    const after = (await db.query(
+      `SELECT case_status::text AS case_status, cleared_at, completed_at, open_inquiry_count, master_call_state
+         FROM inquiry_removal_cases WHERE id = $1`, [built.caseRow.id])).rows[0];
+
+    assert.equal(after.case_status, "Completed",
+      "the finished state is 'Completed' — 'Cleared' is not a member of inquiry_case_status");
+    assert.equal(after.open_inquiry_count, 0);
+    assert.equal(after.master_call_state, "completed");
+    assert.ok(after.cleared_at instanceof Date, "cleared_at is stamped");
+    assert.ok(after.completed_at instanceof Date, "completed_at is stamped");
+
+    const ev = await db.query(
+      `SELECT COUNT(*)::int AS n FROM events WHERE name = 'inquiry.removed' AND client_id = $1`,
+      [built.clientId]);
+    assert.equal(ev.rows[0].n, 1,
+      "the event fires — before the fix the enum error threw before this line was reached");
+
+    await wipeCase();
+  });
+
+test("a case that is already finished is not re-completed", { skip: !HAS_DB }, async () => {
+  await wipeCase();
+  const built = await buildLinkedCase();
+  await db.query(
+    `UPDATE inquiry_removal_cases
+        SET case_status = 'Canceled'::inquiry_case_status, updated_at = now()
+      WHERE id = $1`, [built.caseRow.id]);
+
+  await confirmRemoval(db, { orgId, inquiryId: built.inquiryId, staffId });
+
+  const after = (await db.query(
+    `SELECT case_status::text AS case_status FROM inquiry_removal_cases WHERE id = $1`,
+    [built.caseRow.id])).rows[0];
+  assert.equal(after.case_status, "Canceled", "a terminal case stays where it is");
+
+  await wipeCase();
+});

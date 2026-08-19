@@ -415,7 +415,7 @@
 
     <div class="section fh-maxw">
       <div class="section-title">Work Queue</div>
-      <table class="queue" id="workQueueTable">
+      <table class="queue">
         <tr><th>Client</th><th>Bureau</th><th>Inquiry</th><th>Call State</th><th>Hold</th><th>Attempts</th><th>Status</th></tr>
         <tr id="queue-status-row"><td colspan="7" style="text-align:center;padding:28px 16px;color:var(--text-dim);">Loading inquiry queue…</td></tr>
       </table>
@@ -1117,32 +1117,10 @@ return VIEW;
    row with a banner — rule: fall back, don't invent people.
    ─────────────────────────────────────────────────────────────────────────── */
 window.__fhQueueReady = (function () {
-  /* data.js carries `defer` (see its tag above), so window.FHData does not exist
-     yet while THIS script is being parsed. The guard used to sit here and read it,
-     so the whole block quit before doing anything: the Work Queue kept its
-     "Loading inquiry queue…" row forever, the four tiles kept their "—", and the
-     three bureau chips kept their hardcoded 0. Every deferred script runs before
-     DOMContentLoaded, so the first read waits for that event — the same pattern
-     client-control-panel.html and messaging.html already use.
-
-     __fhQueueReady is still ASSIGNED synchronously here, because the behaviour
-     block further down tests for it while IT is being parsed. Only the READ moved. */
-  var domReady = new Promise(function (resolve) {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', function () { resolve(); });
-    } else {
-      resolve();
-    }
-  });
-  /* Three tables on this page carry class="queue" — #caseQueueTable, the Work
-     Queue, and #repairTable — and querySelector returns the FIRST in document
-     order, so every lookup here used to land on the cases table: rows were
-     appended under the wrong header and #queue-status-row was never found to be
-     removed. Ask for the one we mean. */
-  function queueTable() { return document.getElementById('workQueueTable'); }
-  var table = null;
+  var table = document.querySelector('table.queue');
+  if (!table || !window.FHData) return Promise.resolve();
   function showQueueStatus(msg) {
-    var table = queueTable();
+    var table = document.querySelector('table.queue');
     if (!table) return;
     [].slice.call(table.querySelectorAll('tr[data-row], #queue-status-row')).forEach(function (r) { r.remove(); });
     var tr = document.createElement('tr');
@@ -1237,7 +1215,7 @@ window.__fhQueueReady = (function () {
       var box = btn.closest('.case-detail');
       if (!box || !box.dataset.caseId) return;
       var action = btn.getAttribute('data-case-act');
-      var body = { id: box.dataset.caseId, action: action };
+      var body = { case_id: box.dataset.caseId, action: action };
       if (action === 'close') {
         if (!window.confirm('Close this inquiry-removal case?')) return;
         body.reason = 'closed_by_rep';
@@ -1264,13 +1242,6 @@ window.__fhQueueReady = (function () {
     };
   }
 
-  return domReady.then(function () {
-    table = queueTable();
-    if (!table || !window.FHData) return;
-    return runLoad();
-  });
-
-  function runLoad() {
   return Promise.all([
     FHData.inquiries({ limit: 200 }),
     FHData.inquiryCases ? FHData.inquiryCases({ limit: 100, active: 1 }) : Promise.resolve({ ok: false })
@@ -1278,7 +1249,7 @@ window.__fhQueueReady = (function () {
     var res = pair[0];
     var casesRes = pair[1];
     if (casesRes && casesRes.ok) {
-      renderCases((casesRes.data && casesRes.data.cases) || []);
+      renderCases((casesRes.data && casesRes.data.items) || []);
     }
     if (!res.ok) { showQueueStatus('Could not load the inquiry queue.'); FHData.explain(res, 'inquiry queue'); return; }
     var items = (res.data && res.data.items) || [];
@@ -1293,11 +1264,7 @@ window.__fhQueueReady = (function () {
       return;
     }
 
-    /* The static "Loading inquiry queue…" row (#queue-status-row) is only cleared
-       by showQueueStatus, which the success path never calls — so on a good load
-       it used to sit above the real rows forever. Purge it here with them. */
-    [].slice.call(table.querySelectorAll('tr[data-row], #queue-status-row'))
-      .forEach(function (r) { r.remove(); });
+    [].slice.call(table.querySelectorAll('tr[data-row]')).forEach(function (r) { r.remove(); });
 
     var unknown = 0, calls = 0, left = 0, confirmed = 0, worked = 0, byBureau = {};
     items.forEach(function (it) {
@@ -1348,7 +1315,6 @@ window.__fhQueueReady = (function () {
   }).catch(function () {
     FHData.banner('error', 'sample queue — the inquiry read failed', 'inquiries');
   });
-  }
 })();
 </script>
 
@@ -1379,7 +1345,7 @@ window.__fhQueueReady = (function () {
    ─────────────────────────────────────────────────────────────────────────── */
 window.__fhInitQueue = function(){
   var V      = window.FHInquiryView,
-      table  = document.getElementById('workQueueTable'),
+      table  = document.querySelector('table.queue'),
       rows   = [].slice.call(table.querySelectorAll('tr[data-row]')),
       chips  = [].slice.call(document.querySelectorAll('.bureau-chip[data-bureau]')),
       note   = document.getElementById('filter-note'),
@@ -1871,11 +1837,11 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
       .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   }
   function uiStatus(C) {
-    if (window.FHInquiryView && window.FHInquiryView.caseUiStatus) return window.FHInquiryView.caseUiStatus(C);
+    if (window.VIEW && VIEW.caseUiStatus) return VIEW.caseUiStatus(C);
     return { label: C.case_status || "—", cls: "" };
   }
   function callState(C) {
-    if (window.FHInquiryView && window.FHInquiryView.caseCallState) return window.FHInquiryView.caseCallState(C);
+    if (window.VIEW && VIEW.caseCallState) return VIEW.caseCallState(C);
     return "—";
   }
   function deliveryChips(C) {
@@ -1927,8 +1893,6 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
           '<h4>Generated letter (draft)</h4>' +
           '<div class="case-letter"><textarea class="letter-edit">' + esc(letter.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 8000)) + '</textarea></div>' +
           '<p style="font-size:var(--fs-caption);color:var(--text-dim);margin:6px 0 0">Draft only — nothing sends until you press send below.</p>' +
-          '<button type="button" class="qbtn" data-act="generate-letters" style="margin-top:8px">Generate letters</button>' +
-          '<p class="gen-result" style="font-size:var(--fs-caption);color:var(--text-dim);margin:6px 0 0"></p>' +
         '</div>' +
         '<div class="case-col">' +
           '<h4>Identity packet</h4>' +
@@ -1964,47 +1928,6 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
       body: JSON.stringify(body)
     }).then(function (r) { return r.json(); });
   }
-  /* Every refusal analyze.mjs can return, in words the Specialist can act on. An
-     unlisted reason falls through to the raw string rather than being hidden. */
-  var GEN_REASONS = {
-    no_credit_file:   "No credit report on file yet. Pull one first.",
-    no_violations:    "Nothing to dispute on this file — no letter was made.",
-    missing_identity: "This client has no name on their record, so a letter cannot be addressed.",
-    client_not_found: "That client record could not be found.",
-    invalid_round:    "That dispute round is not one this desk can generate.",
-    already_generated:"Letters for this round already exist."
-  };
-
-  /* Short forms, for naming a bureau that was skipped inside a longer sentence. */
-  var GEN_SHORT = {
-    no_violations:        "nothing to dispute",
-    already_generated:    "already done",
-    missing_identity:     "no name on file",
-    no_rule_id_claims:    "no rule-backed findings",
-    variance_gate_exhausted: "too similar to an earlier letter"
-  };
-
-  /* Says what happened in one sentence. A letter that was NOT made is as important as
-     one that was, so a skipped bureau is named with its reason rather than dropped. */
-  function genSummary(d) {
-    if (d.already_generated) return "Letters for this round already exist. Nothing was made again.";
-    var n = Number(d.letters_stored || 0) || 0;
-    var parts = [];
-    parts.push(n
-      ? n + (n === 1 ? " letter is" : " letters are") + " ready. Nothing has been mailed."
-      : "No letter was made.");
-    var skipped = (d.skipped || []).filter(function (x) { return x && x.bureau; });
-    if (skipped.length) {
-      parts.push("Skipped " + skipped.map(function (x) {
-        return x.bureau + " — " + (GEN_SHORT[x.reason] || x.reason || "no reason given");
-      }).join("; ") + ".");
-    }
-    if (d.identity_complete === false) {
-      parts.push("Heads up: this client's address is incomplete, so the letter is missing it.");
-    }
-    return parts.join(" ");
-  }
-
   function bindDetail(trDetail, C) {
     trDetail.querySelectorAll("[data-act]").forEach(function (btn) {
       btn.addEventListener("click", function (e) {
@@ -2018,38 +1941,6 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
           }).then(function (d) {
             if (!d.ok) { btn.textContent = d.error || "failed"; return; }
             load();
-          });
-          return;
-        }
-        if (act === "generate-letters") {
-          /* Owner decision 2026-08-19: letter generation is triggered from the case the
-             Specialist already has open — existing surface, no new screen and no new menu
-             row. This WRITES dispute letters and mails nothing; Send below is still the
-             only thing that reaches a bureau. */
-          if (!C.client_id) { btn.textContent = "no client"; return; }
-          var out = trDetail.querySelector(".gen-result");
-          btn.disabled = true;
-          btn.textContent = "Generating…";
-          fetch("/api/repair/generate", {
-            method: "POST",
-            headers: headers(true),
-            body: JSON.stringify({ client_id: C.client_id })
-          }).then(function (r) { return r.json(); }).then(function (d) {
-            btn.disabled = false;
-            btn.textContent = "Generate letters";
-            if (!out) return;
-            if (d && d.ok) {
-              /* Deliberately NO load() here. Letters land on the Repair tab; nothing on
-                 this inquiry case row changes. Re-rendering would rebuild the detail and
-                 wipe the sentence the Specialist needs to read. */
-              out.textContent = genSummary(d);
-              return;
-            }
-            out.textContent = GEN_REASONS[d && d.reason] || (d && d.error) || "Could not generate letters.";
-          }).catch(function () {
-            btn.disabled = false;
-            btn.textContent = "Generate letters";
-            if (out) out.textContent = "Could not generate letters.";
           });
           return;
         }
@@ -2088,7 +1979,7 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
           var serviceLevel = serviceSel ? serviceSel.value : "";
           var req;
           try {
-            req = window.FHInquiryView.buildCaseSendRequest({
+            req = VIEW.buildCaseSendRequest({
               caseId: C.id,
               mail: wantMail,
               portal: wantPortal,
@@ -2362,13 +2253,7 @@ function loadRepairDesk() {
           });
       });
     });
-  /* Leave the stuck panel hidden if the read fails. This is NOT a role problem, and
-     the comment that used to sit here said it was: Specialist, owner and admin all
-     pass /api/repair/exceptions. The panel is empty because both lists it reads are
-     always empty today — nothing ever marks a repair card stalled, and nothing ever
-     writes a bureau reply. The 2026-08-18 audit read the old comment and recorded
-     T4-05 as a permissions fault. It is not one. */
-  }).catch(function () { });
+  }).catch(function () { /* hide stuck panel — role cannot use it */ });
 
   function toggleRepairRow(tr) {
     var id = tr.getAttribute("data-repair-row");
