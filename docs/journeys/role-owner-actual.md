@@ -31,7 +31,7 @@ flowchart TD
     CAN --> A_demo[demo — 2 routes]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 10 routes]
-    CAN --> A_hiring[Hiring — 6 routes]
+    CAN --> A_hiring[Hiring — 7 routes]
     CAN --> A_journeys[journeys — 2 routes]
     CAN --> A_partner_brand[partner-brand — 1 route]
     CAN --> A_partner_marketing[partner-marketing — 5 routes]
@@ -52,7 +52,7 @@ flowchart TD
 
 ## What they can reach
 
-**178 of 182 routes.**
+**179 of 183 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -133,6 +133,7 @@ flowchart TD
 | `/api/hiring/application` | GET | owner, admin |
 | `/api/hiring/bench` | GET | owner, admin |
 | `/api/hiring/candidates` | GET | owner, admin |
+| `/api/hiring/decide` | POST | owner, admin |
 | `/api/hiring/decisions` | GET | owner, admin |
 | `/api/hiring/funnel` | GET | owner, admin |
 | `/api/hiring/postings` | GET | owner, admin |
@@ -243,7 +244,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**2 of 182 routes.**
+**2 of 183 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
