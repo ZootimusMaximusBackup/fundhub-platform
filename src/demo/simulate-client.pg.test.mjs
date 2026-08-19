@@ -76,6 +76,27 @@ async function dirtyTheClient(clientId) {
     `INSERT INTO payment_links (org_id, client_id, purpose, amount_cents, link_ref, checkout_url)
      VALUES ($1,$2,'deposit',5000,'t16-ref-1','https://example.invalid/t16')`,
     [orgId, clientId]);
+
+  // PAPERWORK. This is the case the first version of the fix got wrong, and it
+  // is the case live caught:
+  //
+  //   demo teardown failed for client cb6f5839-…: documents ad69a9a0-…:
+  //   documents are never deleted — register a superseding version instead
+  //
+  // `documents` carries an archive-only guard trigger. Migrations 150/151/152
+  // rewrote it to allow a demo wipe, and the way it allows one is by looking UP
+  // at the parent — `EXISTS (SELECT 1 FROM clients WHERE id = OLD.client_id AND
+  // is_demo)`. That only answers yes while the client row still exists. Delete
+  // the client in the same statement as its documents and the trigger can find
+  // the client already gone, conclude this is not a demo wipe, and refuse.
+  //
+  // The demo seeder creates no documents, so nothing here exercised that path
+  // and the whole suite went green on a broken fix. It does now.
+  await db.query(
+    `INSERT INTO documents (org_id, client_id, document_key, kind, title, storage_key, mime_type)
+     VALUES ($1,$2,'t16-teardown-doc-a','contract','Doc A','k/t16a','application/pdf'),
+            ($1,$2,'t16-teardown-doc-b','contract','Doc B','k/t16b','application/pdf')`,
+    [orgId, clientId]);
 }
 
 // Every public table that can hold a row for this client, counted generically
@@ -137,6 +158,38 @@ describe("demo client teardown", { skip: !hasDb ? "no DATABASE_URL" : false }, (
     assert.deepEqual(after, {},
       "teardown said it succeeded but rows are still there — this is the exact bug: " +
       JSON.stringify(after));
+  });
+
+  test("paperwork guarded by an archive trigger does not block the wipe", async () => {
+    const sim = await loadSimulatedClient(db, { orgId });
+    const clientId = sim.client.id;
+    await db.query(
+      `INSERT INTO documents (org_id, client_id, document_key, kind, title, storage_key, mime_type)
+       VALUES ($1,$2,'t16-guarded-doc','contract','Guarded','k/g','application/pdf')`,
+      [orgId, clientId]);
+
+    // Must not throw. If it does, the client is deleted in the same statement as
+    // its documents again and the guard trigger cannot see it is a demo client.
+    await teardownSimulated(db, { orgId, clientId });
+    assert.deepEqual(await rowsLeftAnywhere(clientId), {});
+  });
+
+  test("a real client's paperwork is never touched", async () => {
+    const r = await db.query(
+      `INSERT INTO clients (org_id, first_name, email, is_demo)
+       VALUES ($1,'Real','t16-real-doc@example.invalid', false) RETURNING id`, [orgId]);
+    const realId = r.rows[0].id;
+    await db.query(
+      `INSERT INTO documents (org_id, client_id, document_key, kind, title, storage_key, mime_type)
+       VALUES ($1,$2,'t16-real-guarded-doc','contract','Real','k/r','application/pdf')`,
+      [orgId, realId]);
+
+    await teardownSimulated(db, { orgId, clientId: realId });
+    await teardownSimulated(db, { orgId });
+
+    const left = await rowsLeftAnywhere(realId);
+    assert.equal(left.clients, 1, "the real client must survive");
+    assert.equal(left.documents, 1, "and so must their paperwork");
   });
 
   test("a real client is never removed by this path", async () => {
