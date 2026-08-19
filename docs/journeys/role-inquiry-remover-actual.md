@@ -56,7 +56,7 @@ flowchart TD
 
 ## What they can reach
 
-**116 of 175 routes.**
+**117 of 176 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -186,7 +186,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**57 of 175 routes.**
+**57 of 176 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
