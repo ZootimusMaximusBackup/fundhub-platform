@@ -498,3 +498,16 @@ Until (a) runs, "Chris will appear on the closer board" is UNPROVEN. Separately,
 "0 CLOSERS ON SHIFT" chip counts OPEN SHIFTS, not roster size — it stays 0 until somebody clocks in,
 fix or no fix. And all three live candidates are Demo Mode rows, which `decideSection()` deliberately
 refuses to decide on, so the hiring fix has nothing to act on in production today.
+
+### T12 — owner decisions, 2026-08-19
+
+- **The "N closers on shift" chip counts OPEN SHIFTS, not roster size. Owner-set: correct as built.**
+  It stays at 0 until somebody clocks in. Not a defect, not to be re-raised.
+- **Chris is to have a staff row as the owner-set closer, email `chris@fundhub.ai`, status active.**
+  Owner-set. The SQL is `evidence/T12/add-owner-set-closer.sql` — idempotent, one transaction, shows
+  the result before COMMIT. It deliberately sets NO password: that row cannot sign in, and issuing a
+  credential is a separate act through `src/auth/invite.mjs`.
+  **NOT YET RUN.** Every database command attempted from this session on 2026-08-19 — including a
+  read-only SELECT — was refused by the sandbox permission classifier. Handed to Chris to run.
+  Until it runs, Sales Floor stays empty of closers: the org's only ACTIVE closer is the seeded
+  "TEST — Closer Role" login, which the board filters out on purpose.
