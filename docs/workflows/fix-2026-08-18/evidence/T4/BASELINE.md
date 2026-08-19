@@ -67,28 +67,56 @@ superuser-level privilege`. None is in a file T4 touches.
 and `gifts/message-blaster`. Both pre-date this work and T7 recorded the same pair. T4's new
 route traced correctly.)
 
-### Database half — run directly, serially
+### Database half — controlled comparison
+
+`npm test` never reaches these, so they were run directly. **Like-for-like:** the identical
+command on both sides, each against its own freshly-migrated scratch database.
 
 ```
 node --test --test-concurrency=1 $(find src -name '*.pg.test.mjs' | sort)
-# tests 1628   # pass 1508   # fail 53   # cancelled 67
 ```
 
-This batch is **flaky by roughly ±2** — repeat runs on identical code produce different
-failure lists — so no single number here should be quoted as *the* count.
+| | `origin/main` (control) | `fix/T4-inquiry-repair` |
+|---|---|---|
+| tests | 1615 | 1628 (**+13** — exactly T4's 13 new tests) |
+| pass | 1558 | 1571 (**+13**) |
+| **fail** | **50** | **50** |
+| cancelled | 7 | 7 |
 
-**Is any of it T4's?** One failing suite mentions an area T4 works in:
-`inquiry send + doc flip` in `src/inquiry-ops/send.pg.test.mjs`. It is **not T4's**:
+**Identical failure count.** T4's 13 new tests all pass and nothing else moved.
 
-- T4 changed ten non-doc files. That suite imports **none** of them.
-- Its failure is in its own teardown — `documents are never deleted — register a
-  superseding version instead`, a database guard refusing the test's cleanup.
+### This batch is genuinely flaky — proven, not assumed
+
+The two failure *name* lists differed by a single one-for-one swap, so the control was run a
+**second time on the same unmodified code and the same database**:
+
+| control run | failing suites |
+|---|---|
+| 1 | 24 |
+| 2 | **29** |
+
+Same code, same database, five different names. Among the five that appeared only in run 2 is
+`updated_at triggers fire on the new tables` — **the one name that had shown up on T4's branch
+and not in control run 1.** So it fails on unmodified `main` too.
+
+Confirmed a third way: run on its own against `origin/main`, `src/auth/auth.pg.test.mjs`
+**passes**. It is an ordering artifact between suites, not a defect and not T4's.
+
+**Conclusion: T4 adds no test failures in either half.** That rests on three independent
+checks — an equal failure count against a matched control, the flakiness of the one differing
+name demonstrated on unmodified code, and the fact that **no failing suite imports any of the
+ten files T4 changed**.
 
 Every file T4 changed, for the record:
 `api/inquiry-cases.mjs` · `api/repair/generate.mjs` · `netlify/functions/api.mjs` ·
 `public/app/inquiry-remover.html` · `src/http/calendar-paint.test.mjs` ·
 `src/http/inquiry-cases.pg.test.mjs` · `src/http/repair-generate.pg.test.mjs` ·
 `src/inquiries/work.mjs` · `src/inquiries/work.pg.test.mjs` · `src/repair/analyze.mjs`
+
+### Do not quote a single number from this batch
+
+Anyone diffing it must run their own control on the same machine, ideally twice. A count taken
+once proves nothing here.
 
 ### `npx tsc --noEmit`
 
