@@ -249,8 +249,9 @@
      Both close with one filter, because allowedFor() is the only producer of
      the ok list that gateLinks() and BOTH bounce checks read.
 
-     OWNER IS DELIBERATELY NOT TREATED THE SAME, and that is a question, not an
-     oversight — see the T0 task report. shell.js's own mountChatWidget comment
+     OWNER IS DELIBERATELY NOT TREATED THE SAME. Asked and answered:
+     OWNER-SET 2026-08-18 — "leave owner alone, keep the owner walk. Admin
+     blocked is correct." Settled; do not re-raise it. shell.js's own mountChatWidget comment
      and client-portal.html's STAFF_ROLES were written for an "owner walk" of a
      client's portal, so removing it from the owner would delete a documented
      feature on an agent's judgment. The two audit findings both name admin.
@@ -346,8 +347,10 @@
        pick-a-partner step because the server pins their own book). So the row
        looks like the only missing piece.
 
-       It was added on 2026-08-18 and taken back out the same hour, for two
-       reasons that have to be answered by the owner first:
+       It was added on 2026-08-18 and taken back out the same hour. OWNER-SET
+       the same day: no Campaigns row for partners. Settled — do not re-file
+       this as a missing feature. The two reasons, recorded so the next audit
+       does not have to re-derive them:
 
        1. THE CITATION DOES NOT SAY WHAT IT LOOKS LIKE IT SAYS. The line
           docs/journeys/white-label-intended.md:67 reads "Campaigns (6 routes) —
