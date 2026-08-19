@@ -1,9 +1,10 @@
 // /api/consent/capture — the consent gate's capture flow.
 //
 //   GET  ?client_id=<uuid>[&kind=]
-//        → { ok, kind, disclosure, status, history }
-//        the words to show, whether a live consent exists, and the full trail
-//        including revoked rows.
+//        → { ok, kind, disclosure, status, history, identity, approval_link }
+//        the words to show, whether a live consent exists, the full trail
+//        including revoked rows, whether an identity is already held for this
+//        person, and a freshly signed link the client can open to supply both.
 //
 //   POST { client_id, action: "grant", capture_method, granted_name?,
 //          consent_version?, expires_at?, document_id? }
@@ -30,6 +31,24 @@
 // record that a consumer agreed to a sentence they never saw. See that file's
 // header — this is the single most important line in this handler.
 //
+// NO IDENTITY DATA LEAVES THIS ENDPOINT — NOT EVER, NOT UNDER ANY QUERY STRING.
+// The GET says whether an identity is on file with a BOOLEAN, and a boolean plus
+// a link expiry is the entire permitted surface. No SSN, no last four, no date
+// of birth, no address. A staff screen must not be able to read identity data
+// out of this endpoint even by accident, so the read below narrows to one
+// true/false at the point of the call rather than spreading a record and
+// trusting the caller to pick fields carefully.
+//
+// OWNER DECISION, 2026-08-19: identity capture is CLIENT SELF-SERVE. Staff never
+// see, type or handle a Social Security number. They hand over the signed link
+// this endpoint mints; the client fills the form in themselves on
+// public/app/soft-pull-approve.html. That is why this file gained a link and a
+// boolean and nothing else.
+//
+// src/http/consent-capture.test.mjs holds the rule shut with a deny-list run
+// over the whole serialized body, not a check of three named fields, so a field
+// added here later cannot leak past the test.
+
 // ORG COMES FROM THE SESSION, ALWAYS. principal.orgId and nothing else. There is
 // no org_id parameter on any method here, and a principal without one is
 // refused rather than defaulted — a consent filed under a guessed org is a
@@ -44,6 +63,9 @@ import { db } from "../../src/db.mjs";
 import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
 import { isUuid, requireRole, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { disclosureFor } from "../../src/consent/disclosures.mjs";
+import { signSoftPullApproveUrl } from "../../src/consent/approve-token.mjs";
+import { secretFromEnv } from "../../src/documents/signed-url.mjs";
+import { readIdentity } from "../../src/pii/index.mjs";
 import {
   captureConsent,
   revokeConsent,
@@ -129,18 +151,166 @@ async function handleGet(req, res, principal, orgId) {
   }
 
   const clientId = String(q.client_id).trim();
-  const [status, history] = await Promise.all([
+
+  /* THE TWO EXTRAS ARE SOFT-PULL ONLY.
+     A bureau pull has two locks on it, in this order: consent (403
+     consent_required) and then identity (422 identity_required). Both were
+     proven live on all three bureaus on 2026-08-18/19. The link and the
+     identity boolean below exist to show a closer which of those two is still
+     shut BEFORE they order a pull.
+
+     Neither means anything for another consent kind. `dispute_authorization`
+     has no approval page and no bureau pull behind it, so asking about it
+     returns null for both rather than a link to the wrong form — and, just as
+     important, never reads the identity table at all on a request that has no
+     business touching it. */
+  const isSoftPull = kind === DEFAULT_KIND;
+
+  const [status, history, identityOnFile] = await Promise.all([
     consentStatus(db, { orgId, clientId, kind }),
-    listConsents(db, { orgId, clientId, kind, limit: boundedLimit(q.limit) })
+    listConsents(db, { orgId, clientId, kind, limit: boundedLimit(q.limit) }),
+    isSoftPull ? identityIsOnFile(clientId) : Promise.resolve(null)
   ]);
+
+  /* THE LINK IS MINTED FOR STAFF AND NOT FOR CLIENTS. It is a bearer credential
+     — the HMAC in the URL is the whole credential, no session required (see
+     src/consent/approve-token.mjs and api/soft-pull-approve.mjs). Staff need it
+     because handing it over is the entire point of the flow. A client principal
+     is already signed in and has no use for a link to a page they can reach
+     anyway, so it is not minted into their response. Least exposure. */
+  const approvalLink = isSoftPull && principal.kind === "staff"
+    ? mintApprovalLink({ orgId, clientId })
+    : null;
 
   return res.status(200).json({
     ok: true,
     kind,
     disclosure: disclosureFor(kind),
     status,
-    history
+    history,
+    // A BOOLEAN AND NOTHING MORE. See the header. `null` here means "not asked",
+    // which is different from `false` ("asked, and we hold nothing").
+    identity: identityOnFile === null ? null : { on_file: identityOnFile },
+    approval_link: approvalLink
   });
+}
+
+/* identityIsOnFile — the SECOND lock on a bureau pull, as a yes or a no.
+ *
+ * readIdentity() (src/pii/index.mjs:155) returns a masked record: ssn_present,
+ * ssn_last4, dob, addresses. Exactly one bit of that is allowed out of this
+ * endpoint, so the record is narrowed to a boolean HERE, inside the function,
+ * and the object itself never reaches the response builder. Narrowing at the
+ * call site rather than at the response would leave a whole PII record sitting
+ * in a local variable one careless spread away from the JSON.
+ *
+ * readIdentity IS THE RIGHT READ AND revealSsn IS NOT. readIdentity does not
+ * write a pii_access_log row, because it discloses nothing (see rule 2 in
+ * src/pii/index.mjs). revealSsn does write one, and using it for a presence
+ * check would fill the disclosure log — the record an audit actually reads —
+ * with thousands of screen loads where nobody looked at anything.
+ *
+ * WHAT THE BOOLEAN HONESTLY MEANS: we hold encrypted SSN bytes for this person.
+ * It does not promise those bytes still decrypt under the current key, and it
+ * is not a promise that a pull will succeed. It is the same thing the pull
+ * refuses on when it is missing (src/finance/crs-pull.mjs:548-559), which is
+ * what makes it worth showing before the tap.
+ */
+async function identityIsOnFile(clientId) {
+  /* NEVER LET THIS SINK THE CONSENT ANSWER. The identity read is the SECOND of
+     two things this endpoint reports, and it is the less important one: a
+     closer who cannot see whether we hold an identity can still see whether the
+     client agreed, and can still hand over the link. A closer who sees a broken
+     screen can do neither.
+
+     So a failure here degrades to `null` — "we did not find out" — which the
+     screen already renders differently from `false` ("we asked, we hold
+     nothing"). That is the same fail-soft shape mintApprovalLink() uses for a
+     missing signing key, and it is deliberate that the two match.
+
+     Verified 2026-08-19: without this catch, making the pii_identity read throw
+     takes the whole GET to a 500 and the consent line goes with it. An RLS
+     denial returns zero rows rather than an error, so this needs a timeout, a
+     dead connection or a missing table — unlikely, and not worth losing the
+     consent line over. */
+  try {
+    const identity = await readIdentity(db, { clientId });
+    return !!(identity && identity.ssn_present);
+  } catch {
+    return null;
+  }
+}
+
+/* publicBaseUrl — the origin an emailed or copied link has to point at.
+ *
+ * COPIED, DELIBERATELY, FROM src/sales/closer-deck.mjs:331-335 — byte for byte.
+ * That file mints THIS EXACT LINK for the email version of this flow, and a
+ * link a closer copies off the screen must resolve to the same origin as the
+ * one the client is emailed. Matching it is the point.
+ *
+ * THIS IS NOW THE THIRD COPY AND THE COPIES DO NOT AGREE. There are two
+ * families of base-URL resolution in this repo and they read different
+ * variables:
+ *   PUBLIC_BASE_URL → URL → fundhub.ai   src/sales/closer-deck.mjs:331,
+ *                                        api/contracts.mjs:86,
+ *                                        api/read/portal-contracts.mjs:18
+ *   APP_BASE_URL    → URL → fundhub.ai   src/messaging/dispatch.mjs:56,
+ *                                        src/workflows/messaging.mjs:56,
+ *                                        api/social/oauth.mjs:17
+ * Neither is exported, so neither can be imported, and this file may not edit
+ * either of them. Following the soft-pull family is the only choice that keeps
+ * the copied link and the emailed link identical. The duplication is a board
+ * item, not something to fix by inventing a fourth convention here.
+ */
+function publicBaseUrl(env = process.env) {
+  if (env.PUBLIC_BASE_URL) return String(env.PUBLIC_BASE_URL).replace(/\/$/, "");
+  if (env.URL) return String(env.URL).replace(/\/$/, "");
+  return "https://fundhub.ai";
+}
+
+/* mintApprovalLink — a fresh signed link, or an honest null with a sentence.
+ *
+ * FAIL SOFT, VISIBLY. secretFromEnv() THROWS when DOCUMENT_URL_SECRET is unset
+ * or shorter than 32 characters (src/documents/signed-url.mjs:29-37) — that is
+ * the correct behaviour there, because an unsigned link is worse than no link.
+ * It is the wrong behaviour HERE: this endpoint is also the only thing telling
+ * a closer whether a client has consented, and a missing config value must not
+ * take that whole answer down with it. So the throw is caught, the link comes
+ * back null, and the screen is given words it can put in front of a person.
+ *
+ * Same shape as the existing caller at src/sales/closer-deck.mjs:354-363: the
+ * try wraps secretFromEnv and nothing else. Signing itself cannot fail from
+ * here — orgId is non-empty (checked in the handler), clientId is a validated
+ * uuid, and the TTL is the module default — so a throw out of
+ * signSoftPullApproveUrl would be a real bug and should be loud, not swallowed.
+ *
+ * The env var is named in the message, in brackets, matching how this codebase
+ * already hands a closer a machine detail they can quote to the desk without
+ * having to understand it. The NAME is not a secret; the value is never read,
+ * logged or returned.
+ */
+function mintApprovalLink({ orgId, clientId, env = process.env }) {
+  let secret;
+  try {
+    secret = secretFromEnv(env);
+  } catch {
+    return {
+      url: null,
+      expires_at: null,
+      unavailable_reason:
+        "This system is missing the key it uses to sign client links, so no approval " +
+        "link can be made right now. That is a setup problem, not a problem with this " +
+        "client — pass it to the desk. [DOCUMENT_URL_SECRET]"
+    };
+  }
+
+  const link = signSoftPullApproveUrl({
+    orgId,
+    clientId,
+    secret,
+    baseUrl: publicBaseUrl(env)
+  });
+  return { url: link.url, expires_at: link.expiresAtIso, unavailable_reason: null };
 }
 
 async function handlePost(req, res, principal, orgId) {

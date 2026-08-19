@@ -150,6 +150,50 @@ the Client Control Panel now reads consent state directly instead.
 6. **`npx tsc --noEmit` is in the definition of done and cannot pass.** There is no `tsconfig.json`
    in the repo, so it type-checks nothing and exits 1 on untouched `main`. Either add a config or
    drop it from §6 — right now it is a gate every thread has to explain away.
+
+### T3 addendum — T3-11 identity capture, owner decision resolved 2026-08-19
+
+**Owner decision: identity capture is CLIENT SELF-SERVE. Staff never see, type or handle an SSN.**
+Logged as owner-set. The client form already existed (`public/app/soft-pull-approve.html`, a public
+signed-link page with no CRM shell and no nav row); only the staff handoff was missing.
+
+Files: `api/consent/capture.mjs`, `public/app/client-control-panel.html`,
+`public/app/soft-pull-approve.html`, `src/http/consent-capture.test.mjs`. **No route added, no
+migration, no menu row, `netlify/functions/api.mjs` diff is 0 bytes.**
+
+Tests `5923 → 5934`, all +11 passing, same three pre-existing failures. Consent endpoint alone
+56 pass / 0 fail. PII cleanliness proven empirically, not asserted: a real identity was seeded, the
+handler invoked, and every value in the serialised body scanned — `{"on_file": true}` and nothing else.
+
+**One setting this needs, by name only: `DOCUMENT_URL_SECRET`.** It is the same one the emailed
+version of this link already uses (`src/sales/closer-deck.mjs:354-363`), so if the Present deck can
+send a soft-pull email today it is already set. If it is ever missing the screen says so in words.
+
+#### More board items found on the way
+
+7. **The base-URL helper is copied three times and the copies read two different settings.**
+   `PUBLIC_BASE_URL` at `src/sales/closer-deck.mjs:331`, `api/contracts.mjs:86`,
+   `api/read/portal-contracts.mjs:18`; `APP_BASE_URL` at `src/messaging/dispatch.mjs:56`,
+   `src/workflows/messaging.mjs:56`, `api/social/oauth.mjs:17`. None is exported, so none can be
+   shared. T3 copied the closer-deck one byte-identical **on purpose**, so a copied link lands where
+   the emailed link lands. Two families of the same helper reading different env vars is a bug
+   waiting to surface — worth one owner deciding which wins.
+8. **`api/soft-pull-approve.mjs` does not forward the disclosure `title`.** `src/consent/disclosures.mjs:50`
+   holds `"Soft Pull Authorization"`, but the endpoint sends only version/text/bullets, which is why
+   the client page was showing consumers the internal string `soft-pull-v1` as a heading. T3 typed a
+   label into the page because that endpoint is not T3's. Plumb the title instead. Related: `bullets`
+   is always empty — no disclosure entry has that field.
+9. **The $32 price is hand-typed twice in `public/app/soft-pull-approve.html`** instead of coming
+   from the offer catalog. T3 did not add a third copy.
+10. **`storeIdentity` replaces the whole address list rather than merging it**
+    (`src/pii/index.mjs:138` — `addresses = EXCLUDED.addresses`, no COALESCE, unlike `ssn_enc` and
+    `dob` on the lines above). Not reachable from this form, because
+    `api/soft-pull-approve.mjs:178-188` refuses a submission with any empty address box. It is a trap
+    for the NEXT caller that writes a partial identity.
+11. **`readIdentity` decrypts an SSN into memory to answer a yes/no.** T3 uses it for a presence
+    check on every client-panel load. It writes no access-log row and discards the value, so it is
+    correct — but a lighter `SELECT ssn_enc IS NOT NULL` helper would avoid an unnecessary decrypt on
+    a regulated path. Not changed: `src/pii/index.mjs` is not T3's.
 # T4 — Inquiry desk & dispute letters · manifest (wave 2)
 
 Branch `fix/T4-inquiry-repair` · worktree `/tmp/wt-T4` off `origin/main` @ `c860b8c`
