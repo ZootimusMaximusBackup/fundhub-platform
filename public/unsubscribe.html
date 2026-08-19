@@ -39,7 +39,7 @@
       <b>Done.</b> You will not get any more of these emails.
     </div>
 
-    <div class="err" id="err" hidden></div>
+    <div class="err" id="err"></div>
   </div>
 </div>
 
@@ -55,8 +55,10 @@
   function fail(msg) {
     $("busy").style.display = "none";
     $("ask").hidden = true;
-    $("err").hidden = false;
+    // fh.css sets .err{display:none}; the hidden attribute alone will not show
+    // it. Same two lines portal-login.html uses.
     $("err").textContent = msg;
+    $("err").style.display = "block";
   }
 
   function show(el) { $("busy").style.display = "none"; el.hidden = false; }
@@ -110,7 +112,7 @@
           return;
         }
         $("ask").hidden = true;
-        $("err").hidden = true;
+        $("err").style.display = "none";
         $("done-box").style.display = "block";
       })
       .catch(function () {

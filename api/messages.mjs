@@ -117,7 +117,17 @@ export default async function handler(req, res) {
          not clock in, so there is no shift this work belongs to.
          `staff_events.shift_id` is nullable for exactly that case. */
       shiftId: shift.id,
-      idempotencyKey: body.idempotency_key || null
+      idempotencyKey: body.idempotency_key || null,
+      /* WHERE THIS ONE MESSAGE GOES, if the sender typed somewhere. Optional:
+         absent, the client record answers as it always has.
+
+         It is recorded on the message row and never written back to the client.
+         That is the whole point of having it — staff needed to send one message
+         to a different address without editing somebody's file, and doing that
+         by editing the file is how a one-off send permanently redirects a real
+         client's mail. Validated in compose.mjs against the same shape the
+         provider enforces. */
+      toAddress: body.to || null
     });
 
     return res.status(200).json({

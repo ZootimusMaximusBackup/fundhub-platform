@@ -248,6 +248,14 @@
   .compose-note .pausetag{background:var(--accent-bg);color:var(--ink2);border:1px solid var(--accent-line);
     border-radius:4px;padding:1px 6px;font-size:var(--fs-caption);font-weight:700;}
   .compose-box{display:flex;gap:9px;align-items:flex-end;}
+  /* The destination row. One line, above the box, so a person reads where it
+     is going before they read what they are writing. */
+  .compose-to{display:flex;align-items:center;gap:9px;margin-bottom:7px;}
+  .compose-to label{font-size:var(--fs-caption);color:var(--text-dim);white-space:nowrap;}
+  .compose-to input.compose-input{min-height:32px;padding:5px 9px;}
+  .compose-to input.compose-input:disabled{opacity:.55;}
+  .to-note{font-size:var(--fs-caption);color:var(--text-dim);white-space:nowrap;}
+  .to-note.bad{color:var(--danger,#C2453D);}
   .compose-input{flex:1;border:1px solid var(--line);border-radius:8px;padding:9px 11px;min-height:54px;
     font-size:var(--fs-body);color:var(--text-faint);background:var(--paper);}
   .compose-actions{display:flex;flex-direction:column;gap:6px;}
@@ -477,6 +485,18 @@
         <!-- The texting-hours rule, stated BEFORE anything is typed. Hidden on
              email threads, where it does not apply. -->
         <div class="quiet-note" id="quietNote" hidden></div>
+        <!-- WHERE IT GOES. Until 2026-08-18 there was no such box: a message
+             could only go to whatever address was already on the person's
+             record, and when that was empty the send failed with nothing the
+             sender could do about it from here. It is filled in from their
+             file, and anything typed over it applies to THIS MESSAGE ONLY —
+             it is never written back to their record. -->
+        <div class="compose-to">
+          <label for="composeTo">Send this one to</label>
+          <input class="compose-input" id="composeTo" type="text" autocomplete="off"
+                 spellcheck="false" placeholder="Pick a conversation first" disabled>
+          <div class="to-note" id="composeToNote" hidden></div>
+        </div>
         <div class="compose-box">
           <textarea class="compose-input" id="composeBody" rows="3" maxlength="4000"
                     placeholder="Pick a conversation first" disabled></textarea>
@@ -870,8 +890,37 @@
     }
   }
 
+  /* addressLooksRight — is what is in the destination box sendable?
+     PURE, and inside the markers, so the test harness can drive it without a
+     browser. The shapes are the same ones src/messaging/compose.mjs enforces on
+     the server, so the box never says yes to something the send will refuse.
+     The server checks again regardless — this is here to tell somebody before
+     they write three paragraphs, not instead of the real check. */
+  var ADDRESS_SHAPE = {
+    email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    sms: /^\+[1-9]\d{7,14}$/
+  };
+
+  function addressLooksRight(channel, value) {
+    var v = String(value == null ? "" : value).trim();
+    if (!v) {
+      return { ok: false, empty: true, text: channel === "email"
+        ? "We have no email address for this person. Type one to send."
+        : "We have no phone number for this person. Type one to send." };
+    }
+    var shape = ADDRESS_SHAPE[channel];
+    if (!shape) return { ok: false, empty: false, text: "This channel cannot be addressed by hand." };
+    if (!shape.test(v)) {
+      return { ok: false, empty: false, text: channel === "email"
+        ? "That does not look like an email address."
+        : "Use the full number with the country code, like +15551234567." };
+    }
+    return { ok: true, empty: false, text: "" };
+  }
+
   root.FHInbox = {
     esc: esc,
+    addressLooksRight: addressLooksRight,
     initials: initials,
     initialsFromName: initialsFromName,
     displayName: displayName,
@@ -994,8 +1043,27 @@
     $("composeBody").disabled = true;
     $("composeBody").value = "";
     $("composeBody").placeholder = "Pick a conversation first";
+    $("composeTo").disabled = true;
+    $("composeTo").value = "";
+    $("composeTo").placeholder = "Pick a conversation first";
+    $("composeToNote").hidden = true;
     $("sendBtn").disabled = true;
     paintContext(null);
+  }
+
+  /* Repaint the note under the destination box and decide whether Send can be
+     pressed. Called when a thread opens, when the client's record arrives, and
+     on every keystroke — the sender should never press Send only to be told
+     the address was wrong. */
+  function paintTo() {
+    var row = state.selected;
+    if (!row) return;
+    var verdict = V.addressLooksRight(row.channel === "email" ? "email" : "sms", $("composeTo").value);
+    var note = $("composeToNote");
+    note.hidden = verdict.ok;
+    note.textContent = verdict.text;
+    note.className = "to-note" + (verdict.ok || verdict.empty ? "" : " bad");
+    $("sendBtn").disabled = !verdict.ok || state.sending;
   }
 
   /* The texting-hours line. Repainted on every thread open AND on a slow timer,
@@ -1023,7 +1091,15 @@
     paintQuietNote(row.channel);
     $("composeBody").disabled = false;
     $("composeBody").placeholder = "Write to " + V.displayName(row) + "…";
-    $("sendBtn").disabled = false;
+    /* The box opens empty and disabled-looking until the person's record
+       answers. It is filled in by paintContext below, from the SAME client read
+       the right rail already makes — a second call for the same fact would be
+       a second thing to keep in step. */
+    $("composeTo").disabled = false;
+    $("composeTo").value = "";
+    $("composeTo").placeholder = row.channel === "email"
+      ? "name@example.com" : "+15551234567";
+    paintTo();
     $("thread").innerHTML = '<div class="empty-box">Loading this conversation…</div>';
 
     paintContext(row);
@@ -1081,6 +1157,13 @@
         if (cl.email) extra += '<div class="ctx-row"><span class="k">Email</span><span class="v">' + V.esc(cl.email) + "</span></div>";
         if (cl.phone) extra += '<div class="ctx-row"><span class="k">Phone</span><span class="v">' + V.esc(cl.phone) + "</span></div>";
         if (extra) $("ctxRows").insertAdjacentHTML("beforeend", extra);
+        /* Fill the destination box from their file. Only if nobody has typed
+           over it — a late-arriving read must not wipe what somebody is in the
+           middle of writing. */
+        if (!$("composeTo").value) {
+          $("composeTo").value = (row.channel === "email" ? cl.email : cl.phone) || "";
+          paintTo();
+        }
       });
     }
 
@@ -1132,6 +1215,12 @@
       Math.random().toString(36).slice(2, 10));
 
     var payload = { body: body, idempotency_key: key };
+    /* Where this one goes. Sent only when there is something in the box, so a
+       send with nothing typed behaves exactly as it always did and the client
+       record answers. The server validates it again and records it on the
+       message row — it is never written back to the person's record. */
+    var to = String(($("composeTo") && $("composeTo").value) || "").trim();
+    if (to) payload.to = to;
     if (row.id) payload.conversation_id = row.id;
     else {
       payload.client_id = row.client_id;
@@ -1140,7 +1229,9 @@
     FHData.sendMessage(payload)
       .then(function (res) {
         state.sending = false;
-        $("sendBtn").disabled = false;
+        // Through paintTo rather than straight to false: if the destination box
+        // is empty or malformed, Send has to stay off.
+        paintTo();
         if (!res.ok) {
           // A 403 here is very often "you are not clocked in", which is a thing
           // the person can fix in ten seconds — so it must not read as an outage.
@@ -1183,6 +1274,9 @@
   });
 
   $("sendBtn").addEventListener("click", send);
+  // Repaint on every keystroke, so a bad address is caught before anything is
+  // written rather than after Send is pressed.
+  $("composeTo").addEventListener("input", paintTo);
   $("composeBody").addEventListener("keydown", function (e) {
     // Enter sends, Shift+Enter is a new line — the convention every messaging
     // app already taught everyone.
@@ -1253,7 +1347,10 @@
         paintQuietNote("sms");
         $("composeBody").disabled = false;
         $("composeBody").placeholder = "Write to " + V.displayName(row) + "…";
-        $("sendBtn").disabled = false;
+        $("composeTo").disabled = false;
+        $("composeTo").value = "";
+        $("composeTo").placeholder = "+15551234567";
+        paintTo();
         $("thread").innerHTML = '<div class="empty-box">No texts with them yet. Your reply below would be the first.</div>';
         paintContext(row);
       });
