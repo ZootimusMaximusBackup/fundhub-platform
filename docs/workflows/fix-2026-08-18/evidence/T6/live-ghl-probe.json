@@ -1,0 +1,30 @@
+{
+  "at": "2026-08-19T03:03:38.921Z",
+  "note": "read-only GETs; no POST; keys never printed",
+  "results": [
+    {
+      "label": "GHL_RELAY_API_KEY -> v2 workflows",
+      "url": "https://services.leadconnectorhq.com/workflows/?locationId=<LOCATION_ID>",
+      "status": 401,
+      "body": "{\"statusCode\":401,\"message\":\"The token is not authorized for this scope.\"}"
+    },
+    {
+      "label": "GHL_API_KEY -> v2 workflows",
+      "url": "https://services.leadconnectorhq.com/workflows/?locationId=<LOCATION_ID>",
+      "status": 401,
+      "body": "{\"statusCode\":401,\"message\":\"Invalid JWT\"}"
+    },
+    {
+      "label": "GHL_API_KEY -> v1 workflows",
+      "url": "https://rest.gohighlevel.com/v1/workflows/",
+      "status": 401,
+      "body": "{\"msg\":\"Api key is invalid.\"}"
+    },
+    {
+      "label": "GHL_RELAY_API_KEY -> v1 workflows",
+      "url": "https://rest.gohighlevel.com/v1/workflows/",
+      "status": 401,
+      "body": "{\"msg\":\"Api key is invalid.\"}"
+    }
+  ]
+}

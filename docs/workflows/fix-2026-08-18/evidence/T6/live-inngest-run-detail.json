@@ -1,0 +1,2 @@
+HTTP 401
+{"errors":[{"code":"authorization_header_missing","message":"authorization header missing or invalid"}]}
