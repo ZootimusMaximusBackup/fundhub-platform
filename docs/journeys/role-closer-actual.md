@@ -51,12 +51,12 @@ flowchart TD
     CANT --> B_read[Reading data — 12 blocked]
     CANT --> B_staff[staff — 2 blocked]
     CANT --> B_top_level[Everything else — 11 blocked]
-    WHO -->|Yes| UNV[UNVERIFIED — 1 route whose gate could not be traced]
+    WHO -->|Yes| UNV[UNVERIFIED — 2 routes whose gate could not be traced]
 ```
 
 ## What they can reach
 
-**117 of 173 routes.**
+**117 of 174 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -186,7 +186,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**55 of 173 routes.**
+**55 of 174 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -253,6 +253,7 @@ either way whether this journey reaches them. Each one is a question for a human
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
+| `/api/finance/crs-pull` | POST | — |
 | `/api/gifts/message-blaster` | GET, HEAD | — |
 
 ## How to check this yourself

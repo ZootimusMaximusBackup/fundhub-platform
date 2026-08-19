@@ -162,7 +162,7 @@
        nothing about the three principal roles, whose ROLE_TABS entries are
        explicit arrays. social-studio.html and creative-factory.html have been in
        both this list and ROLE_TABS.partner since the commit that wrote the
-       decision; campaign-manager.html joined them 2026-08-18. The sentence that
+       decision. The sentence that
        used to sit here claimed staff, partners and affiliates all miss these
        rows; that was never true of partners — corrected rather than deleted so
        the next reader does not re-derive it. */
@@ -337,17 +337,33 @@
        auth land, these three move out of ROLE_TABS and 036 is reverted. */
     client: ["client-portal.html"],
     affiliate: ["affiliate.html"],
-    /* campaign-manager.html is here because the screen and the API were both
-       built for a partner and only the row was missing. Every route under
-       api/campaigns/ gates on requirePrincipal(["partner","staff"]) — no
-       requireRole anywhere in that directory — and campaign-manager.html
-       carries a purpose-built partner mode (isPartnerLogin(), which skips the
-       "pick a partner" step because the server pins their book). Social Studio
-       and Creative Factory are already here on exactly the same footing.
-       docs/journeys/white-label-intended.md lists Campaigns under what a
-       partner should reach. Proven missing live 2026-08-18: partner@ was
-       offered 4 rows and typing Campaigns bounced them to partner Home. */
-    partner: ["partner-galaxy.html", "brand-studio.html", "social-studio.html", "creative-factory.html", "campaign-manager.html"]
+    /* NO CAMPAIGNS ROW YET, AND THAT IS AN OPEN QUESTION, NOT AN OVERSIGHT.
+       A partner cannot reach campaign-manager.html from any screen (proven live
+       2026-08-18: 4 rows offered, typing the address bounced them home). The
+       API would let them in — every route under api/campaigns/ gates on
+       requirePrincipal(["partner","staff"]) with no requireRole — and the
+       screen has a real partner mode (isPartnerLogin(), which skips the
+       pick-a-partner step because the server pins their own book). So the row
+       looks like the only missing piece.
+
+       It was added on 2026-08-18 and taken back out the same hour, for two
+       reasons that have to be answered by the owner first:
+
+       1. THE CITATION DOES NOT SAY WHAT IT LOOKS LIKE IT SAYS. The line
+          docs/journeys/white-label-intended.md:67 reads "Campaigns (6 routes) —
+          should be reachable". The byte-identical sentence also sits in the
+          closer, inquiry-remover, funding-advisor, sales-manager and owner
+          intended files — and four of those roles are DELIBERATELY refused this
+          row by the 2026-08-17 owner decision that put campaign-manager.html in
+          OWNER_ADMIN_ONLY. So the sentence counts routes, which a partner
+          already reaches; it is not a statement about a nav row.
+       2. IT WOULD WALK PAST THE OWNER SWITCH. white-label-intended.md says the
+          marketing suite is off per partner until the owner turns it on, and
+          that a screen in the off state says so rather than sitting live and
+          failing. social-studio.html asks (/api/partner-marketing/usage);
+          campaign-manager.html asks nothing, so this row would hand every
+          partner a live campaigns desk whether their suite is on or off. */
+    partner: ["partner-galaxy.html", "brand-studio.html", "social-studio.html", "creative-factory.html"]
   };
 
   /* Where each role lands when it arrives at /app/ with no screen named, or
@@ -763,8 +779,23 @@
 
      Done here rather than per page because the rows arrive after shell.js runs
      — the observer catches tables that do not exist yet. */
+  /* THIS IS AN ALLOW-LIST OF DATA TABLES, AND IT HAS TO STAY ONE.
+     UI-STANDARDS §11 says a table that must stay a table may scroll inside its
+     own box; this builds that box. A screen whose table carries none of these
+     classes gets no box and pushes the whole page sideways on a phone — which
+     is what consent-capture.html's <table class="cc-hist"> was doing (measured
+     2026-08-18: 453px inside a 390px viewport), so it is named here.
+
+     DO NOT REPLACE THIS WITH querySelectorAll("table"). It was tried on
+     2026-08-18 and reverted the same hour. crm-sidebar.css pairs the box with
+     `.fh-scroll-x > table{min-width:max-content}`, which is right for a data
+     grid and wrong for a LAYOUT table — closer-call.html:269 and :280 use
+     class-less tables to position two panels, and forcing them to max-content
+     took that screen from 390px to 754px on a phone. Nine other class-less or
+     oddly-classed tables are in the same position. Add a class here when a new
+     DATA table appears; that is the deliberate cost of not breaking the rest. */
   function wrapWideTables(root) {
-    var tables = (root || document).querySelectorAll("table.grid,table.queue");
+    var tables = (root || document).querySelectorAll("table.grid,table.queue,table.cc-hist");
     for (var i = 0; i < tables.length; i++) {
       var t = tables[i];
       var p = t.parentNode;
@@ -1048,10 +1079,18 @@
      mails them a link. Sending a signed-out client to /login.html was a dead end
      on the one screen client-portal.html exists for.
 
-     Keyed on the PAGE, not on the role, because by the time we know the session
-     is gone we no longer have a role to key on — and routeAway() has already
-     bounced a cached client off every page except this one, so the two tests
-     mean the same thing here.
+     KEYED ON THE ROLE, AND THE PAGE IS ONLY THE FALLBACK. Keying on the page
+     alone looks equivalent and is not: routeAway() proves that a cached CLIENT
+     can only be on this page, not that everyone on this page is a client. The
+     owner is the counterexample — the owner walk of a client's portal is a
+     supported thing (see ADMIN_BLOCKED above, which deliberately leaves the
+     owner able to open it), so an owner whose session expires there would have
+     been sent to the client's mail-me-a-link page, which cannot sign a staff
+     member in. That would have removed one dead end by building the same one
+     for somebody else.
+     The caller passes the last role it knew, because both call sites clear the
+     cache before redirecting. With no cached role at all — a cold load on this
+     page — the client is the right guess: they are who the screen is for.
 
      NO ?next= ON THE PORTAL BRANCH. public/portal-login.html reads only "email"
      and "t", and api/auth/magic-link-verify.mjs answers with a hardcoded
@@ -1063,8 +1102,9 @@
      refuses any kind other than "client" as not_eligible, and affiliate accounts
      do carry a real password — routing them to the portal page would invent a
      second dead end rather than remove one. */
-  function signInUrl(withNext) {
-    if (PAGE === "client-portal.html") return "/portal-login.html";
+  function signInUrl(withNext, lastRole) {
+    var staffish = lastRole && lastRole !== "client";
+    if (PAGE === "client-portal.html" && !staffish) return "/portal-login.html";
     return withNext ? "/login.html?next=/app/" + PAGE : "/login.html";
   }
 
@@ -1091,8 +1131,11 @@
         localStorage.removeItem(CLIENT_KEY);
         localStorage.removeItem(ENTITY_KEY);
       } catch (e) { /* private mode — the redirect still happens */ }
+      /* Read before the wipe on the next line, or signInUrl() gets "" and a
+         signing-out owner is sent to the client's sign-in page. */
+      var lastRole = readCachedRole();
       writeCachedRole("");
-      location.href = signInUrl(false);
+      location.href = signInUrl(false, lastRole);
     }
 
     if (!token) { finish(); return; }
@@ -1879,7 +1922,7 @@
   sessionPromise.then(function (sess) {
     if (!sess) {
       writeCachedRole("");
-      location.href = signInUrl(true);
+      location.href = signInUrl(true, hinted);
       return;
     }
     var role = normRole(sess.staff.role);
