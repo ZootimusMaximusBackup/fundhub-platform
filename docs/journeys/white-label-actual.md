@@ -17,6 +17,7 @@ flowchart TD
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| CAN[Can reach]
     CAN --> A_auth[Signing in and out — 6 routes]
+    CAN --> A_brand[brand — 1 route]
     CAN --> A_campaigns[Campaigns — 8 routes]
     CAN --> A_climate[climate — 2 routes]
     CAN --> A_contracts[contracts — 1 route]
@@ -25,7 +26,7 @@ flowchart TD
     CAN --> A_partner_marketing[partner-marketing — 5 routes]
     CAN --> A_public[public — 4 routes]
     CAN --> A_read[Reading data — 2 routes]
-    CAN --> A_social[social — 4 routes]
+    CAN --> A_social[social — 6 routes]
     CAN --> A_top_level[Everything else — 7 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 126 routes]
@@ -53,7 +54,7 @@ flowchart TD
 
 ## What they can reach
 
-**48 of 176 routes.**
+**51 of 179 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -63,6 +64,7 @@ flowchart TD
 | `/api/auth/magic-link-verify` | — | anyone |
 | `/api/auth/reset` | POST | anyone |
 | `/api/auth/session` | — | anyone |
+| `/api/brand/review` | POST | employees: owner, admin<br>plus: partner |
 | `/api/campaigns/action-log` | GET | partner, staff |
 | `/api/campaigns/connections` | GET | partner, staff |
 | `/api/campaigns/detail` | GET | partner, staff |
@@ -99,10 +101,12 @@ flowchart TD
 | `/api/public/unsubscribe` | — | anyone |
 | `/api/read/company-brain-affiliate` | POST | employees: affiliate, partner<br>plus: affiliate, partner |
 | `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
+| `/api/social/channels` | GET | partner, staff |
 | `/api/social/generate` | POST | partner, staff |
 | `/api/social/posts` | GET, POST | partner, staff |
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
+| `/api/social/settings` | GET, POST | staff, partner |
 | `/api/soft-pull-approve` | GET, POST | anyone |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
 
@@ -113,7 +117,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**126 of 176 routes.**
+**126 of 179 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

@@ -1,0 +1,186 @@
+{
+  "stage": "04-owner-creative",
+  "email": "owner@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-19T10:51:29.134Z",
+  "login": {
+    "ok": true,
+    "cached": true
+  },
+  "finalUrl": "/app/creative-factory.html",
+  "chain": [
+    {
+      "tag": "BUTTON",
+      "id": "genBtn",
+      "cls": "btn dark mono fh-tap",
+      "display": "block",
+      "visibility": "visible",
+      "offsetWidth": 189,
+      "offsetHeight": 40,
+      "rect": {
+        "w": 189,
+        "h": 40
+      }
+    },
+    {
+      "tag": "DIV",
+      "id": null,
+      "cls": null,
+      "display": "flex",
+      "visibility": "visible",
+      "offsetWidth": 1130,
+      "offsetHeight": 40,
+      "rect": {
+        "w": 1130,
+        "h": 40
+      }
+    },
+    {
+      "tag": "DIV",
+      "id": null,
+      "cls": "card-bd",
+      "display": "block",
+      "visibility": "visible",
+      "offsetWidth": 1162,
+      "offsetHeight": 73,
+      "rect": {
+        "w": 1162,
+        "h": 73
+      }
+    },
+    {
+      "tag": "DIV",
+      "id": null,
+      "cls": "card",
+      "display": "block",
+      "visibility": "visible",
+      "offsetWidth": 1164,
+      "offsetHeight": 357,
+      "rect": {
+        "w": 1164,
+        "h": 357
+      }
+    },
+    {
+      "tag": "DIV",
+      "id": null,
+      "cls": "content fh-maxw",
+      "display": "block",
+      "visibility": "visible",
+      "offsetWidth": 1212,
+      "offsetHeight": 2897,
+      "rect": {
+        "w": 1212,
+        "h": 2897
+      }
+    },
+    {
+      "tag": "DIV",
+      "id": null,
+      "cls": "main",
+      "display": "flex",
+      "visibility": "visible",
+      "offsetWidth": 1212,
+      "offsetHeight": 3069,
+      "rect": {
+        "w": 1212,
+        "h": 3069
+      }
+    },
+    {
+      "tag": "DIV",
+      "id": null,
+      "cls": "app",
+      "display": "flex",
+      "visibility": "visible",
+      "offsetWidth": 1440,
+      "offsetHeight": 3069,
+      "rect": {
+        "w": 1440,
+        "h": 3069
+      }
+    },
+    {
+      "tag": "BODY",
+      "id": null,
+      "cls": null,
+      "display": "block",
+      "visibility": "visible",
+      "offsetWidth": 1440,
+      "offsetHeight": 1000,
+      "rect": {
+        "w": 1440,
+        "h": 1000
+      }
+    }
+  ],
+  "state": {
+    "CF_SUITE": {
+      "enabled": true,
+      "remaining": 249756,
+      "cap": 250000,
+      "used": 244,
+      "loaded": true,
+      "error": null
+    },
+    "genBtnDisabled": false,
+    "bodyText": "‹‹\nSALES\n▾\nFUNDING\n▾\nCLIENT OPS\n▾\nWATCH\n▾\nAUTOMATION\n▾\nMARKETING\n▾\n◇\nCampaigns\nBETA\n◉\nSocial Studio\nBETA\n✳\nCreative Factory\nBETA\n▭\nContent\nADMIN\n▾\nPORTALS\n▾\nfundhub\nBeta — under development. Data may be incomplete or inaccurate. Do not use for client decisions.\nDismiss\nMARKETING\nCreative Factory\nDEMO PARTNER — NORTHLIGHT CAPITAL\nWRITES ON\nSearch\n⌘K\nTEST — Owner Role · owner · 32 tabs\nLIVE\nSign out\nJOBS IN FLIGHT\n0\n0 running · 0 queued\nFAILED JOBS\n0\nall carry a reason\nAWAITING REVIEW\n0\n0 blocked · 0 campaigns\nLIBRARY ASSETS\n0\nnot archived\nACTIVE BRAND KITS\n0\nof 0 total\nPARTNER SCOPE\nONE PARTNER\nPARTNER\nDEMO Partner — Northlight Capital\nDEMO Partner — Quillcrest White Label\nE2E WL Book LLC\nE2E WL Click Co\nE2E WL Click17 Co\nprincipalread Alpha\nprincipalread Bravo\nTEST — White-Label Partner Role\n94796e0e-d012-4987-8721-676093aaed79\nShowing DEMO Partner — Northlight Capital only.\nThis screen shows one partner at a time.\nWRITING BUDGET\nON\nON?\nYes\nUSED THIS MONTH\n244\nLEFT\n249756\nCAP\n250000\nThis counts the writing robot's tokens used for this partner this month. The cap is 250,000 a month, unless this partner has been given a different one. It does not charge money.\nGENERATE AND DECIDE\nAsk for new creative. Queued work is picked up on its own every couple of minutes. \"Run queued jobs now\" starts it straight away.\nKIND\nstatic\ncopy\nvideo\nresize\nWHAT TO MAKE\nNAME THIS BATCH\nENQUEUE GENERATION\nRUN QUEUED JOBS NOW\nDecide on one creative. Pick it from the library below, then approve, reject or archive it. Each of the three asks you to confirm first.\nCREATIVE\nNo creatives loaded for this partner\nAPPROVE\nREJECT\nARCHIVE\nNo names and no performance figures on a creative. This screen is never told who asked for or approved a creative, and it is never told how an advert performed. Spend and fatigue live on Campaigns.\nGENERATION JOBS\nSTATE\nALL0\nQUEUED0\nRUNNING0\nSUCCEEDED0\nFAILED0\nSHOW\n5\n10\n25\n50\n200\nJOB\tSTATUS\tKIND\tSHAPES\tVERSIONS\tTRIES\tMADE\tMADE BY\tSTARTED\tFINISHED\nNo jobs match this filter for this partner.\n‹ PREV\nNEXT ›\nShowing 0\nNewest first. Cost per job is not shown here.\nCREATIVE LIBRARY\n0 ON THIS PAGE\nSTATE\nALL0\nPENDING0\nPASSED0\nBLOCKED0\nAPPROVED0\nKIND\nANY0\nSTATIC0\nVIDEO0\nCOPY0\nFORMAT\nANY0\n1X10\n4X50\n9X160\n16X90\nBRAND KIT\nany\nINCLUDE ARCHIVED\nNo\nYes\nSHOW\n6\n12\n50\n200\nNo assets match this filter for this partner.\n‹ PREV\nNEXT ›\nShowing 0\nNo previews. The file itself is not sent to this screen.\nREVIEW QUEUE\nSTATE\nALL0\nBLOCKED0\nPENDING0\nAWAITING_APPROVAL0\nSHOW\n5\n10\n50\nITEM\tSTATE\tKIND\tDETAIL\tREASONS\tBUDGET\tOFFER\tWHERE\tLABELS\tUPDATED\nNothing in the queue for this filter.\n‹ PREV\nNEXT ›\nShowing 0\nCreatives and campaigns share this list. Blank means it does not apply.\nBRAND KITS\nSTATE\nALL0\nDRAFT0\nACTIVE0\nARCHIVED0\nNo brand kits match this filter for this partner.\n‹ PREV\nNEXT ›\nShowing 0\nBrand kits are read-only here.\nREFERENCE\nREAD ONCE\nWhat each job state means\nHow the AI labels are decided\nWhy creative gets stopped\nSettings the creative engine ships with\nsystems nominal · fundhub.ai\ncreative factory · demo partner — northlight capital\nDETAIL\n—\n✕\nChat\ncreative factory · everything loaded"
+  },
+  "loadNetwork": [
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200,
+      "body": "{\"ok\":true,\"principal\":\"staff\",\"staff\":{\"id\":\"30a3f059-97ca-406a-b72f-f13a606e543b\",\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"role\":\"owner\",\"email\":\"owner@fundhub.ai\",\"name\":\"TEST — Owner Role\",\"status\":\"active\"}}"
+    },
+    {
+      "method": "GET",
+      "url": "/api/read/partners?limit=200",
+      "status": 200,
+      "body": "{\"ok\":true,\"count\":8,\"limit\":200,\"offset\":0,\"hasMore\":false,\"items\":[{\"id\":\"94796e0e-d012-4987-8721-676093aaed79\",\"slug\":\"demo-partner\",\"name\":\"DEMO Partner — Northlight Capital\",\"status\":\"active\",\"revenue_share_pct\":\"50.00000\",\"agreement_signed\":true,\"balance_accrued\":\"0\",\"total_paid\":\"0\",\"open_accruals\":\"0\"},{\"id\":\"08aaad2e-ea94-4e00-9fe3-1f9e703336f2\",\"slug\":\"demo-partner-platform\",\"name\":\"DEMO Partner — Quillcrest White Label\",\"status\":\"active\",\"revenue_share_pct\":\"45.00000\",\"agreement_signed\":true,\"balance_accrued\":\"0\",\"total_paid\":\"0\",\"open_accruals\":\"0\"},{\"id\":\"c28b0149-b0d2-42ef-9b27-f708afaed436\",\"slug\":\"e2e-wl-book-llc\",\"name\":\"E2E WL Book LLC\",\"status\":\"active\",\"revenue_share_pct\":\"50.00000\",\"agreement_signed\":false,\"balance_accrued\":\"0\",\"total_paid\":\"0\",\"open_accruals\":\"0\"},{\"id\":\"caf277ee-a7f4-4d96-985c-5579908a169b\",\"slug\":\"e2e-wl-click-co\",\"name\":\"E2E WL Click Co\",\"status\":\"active\",\"revenue_share_pct\":\"50.00000\",\"agreement_signed\":false,\"balance_accrued\":\"0\",\"total_paid\":\"0\",\"open_accruals\":\"0\"},{\"id\":\"068b933c-9f31-4b47-9499-857276d18c07\",\"slug\":\"e2e-wl-click17-co\",\"name\":\"E2E WL Click17 Co\",\"status\":\"active\",\"revenue_share_pct\":\"50.00000\",\"agreement_signed\":false,\"balance_accrued\":\"0\",\"total_paid\":\"0\",\"open_accruals\":\"0\"},{\"id\":\"8f331880-a922-4a81-ac5a-6d003c767bb5\",\"slug\":\"principalread-alpha\",\"name\":\"principalread Alpha\",\"status\":\"active\",\"revenue_share_pct\":\"50.00000\",\"agreement_signed\":false,\"balance_accrued\":\"0\",\"total_paid\":\"0\",\"open_accruals\":\"0\"},{\"id\":\"5772f2ac-7360-47a3-ba6c-587ae9900345\",\"slug\":\"principalread-bravo\",\"name\":\"principalread Bravo\",\"status\":\"active\",\"revenue_share_pct\":\"50.00000\",\"agreement_signed\":false,\"balance_accrued\":\"0\",\"total_paid\":\"0\",\"open_accruals\":\"0\"},{\"id\":\"9defaf28-47c5-43a0-8f5e-f41ef90f360a\",\"slug\":\"test-role-partner\",\"name\":\"TEST — White-Label Partner Role\",\"status\":\"active\",\"revenue_share_pct\":\"50.00000\",\"agreement_signed\":false,\"balance_accrued\":\"0\",\"total_paid\":\"0\",\"open_accruals\":\"0\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/org-brand",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/creative/brand-kits?partner_id=94796e0e-d012-4987-8721-676093aaed79&state=all&limit=200",
+      "status": 200,
+      "body": "{\"ok\":true,\"count\":0,\"limit\":200,\"offset\":0,\"hasMore\":false,\"items\":[]}"
+    },
+    {
+      "method": "GET",
+      "url": "/api/creative/approvals?partner_id=94796e0e-d012-4987-8721-676093aaed79&state=all&limit=200",
+      "status": 200,
+      "body": "{\"ok\":true,\"count\":0,\"limit\":200,\"offset\":0,\"hasMore\":false,\"items\":[]}"
+    },
+    {
+      "method": "GET",
+      "url": "/api/creative/jobs?partner_id=94796e0e-d012-4987-8721-676093aaed79&state=all&limit=200",
+      "status": 200,
+      "body": "{\"ok\":true,\"count\":0,\"limit\":200,\"offset\":0,\"hasMore\":false,\"items\":[]}"
+    },
+    {
+      "method": "GET",
+      "url": "/api/partner-marketing/usage?partner_id=94796e0e-d012-4987-8721-676093aaed79",
+      "status": 200,
+      "body": "{\"ok\":true,\"partner_id\":\"94796e0e-d012-4987-8721-676093aaed79\",\"enabled\":true,\"cap\":250000,\"used\":244,\"remaining\":249756,\"orgId\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\"}"
+    },
+    {
+      "method": "GET",
+      "url": "/api/creative/library?partner_id=94796e0e-d012-4987-8721-676093aaed79&state=all&include_archived=1&limit=200",
+      "status": 200,
+      "body": "{\"ok\":true,\"count\":0,\"limit\":200,\"offset\":0,\"hasMore\":false,\"items\":[]}"
+    }
+  ],
+  "consoleErrorsAll": [],
+  "pageErrorsAll": [],
+  "blockedWrites": []
+}

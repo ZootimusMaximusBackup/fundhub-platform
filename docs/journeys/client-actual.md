@@ -27,9 +27,10 @@ flowchart TD
     CAN --> A_read[Reading data — 3 routes]
     CAN --> A_top_level[Everything else — 6 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 147 routes]
+    WHO -->|Yes| CANT[Blocked — 150 routes]
     CANT --> B_auth[Signing in and out — 4 blocked]
     CANT --> B_banking[banking — 3 blocked]
+    CANT --> B_brand[brand — 1 blocked]
     CANT --> B_campaigns[Campaigns — 8 blocked]
     CANT --> B_chat[chat — 3 blocked]
     CANT --> B_company_brain[company-brain — 4 blocked]
@@ -46,7 +47,7 @@ flowchart TD
     CANT --> B_proxy[proxy — 2 blocked]
     CANT --> B_read[Reading data — 46 blocked]
     CANT --> B_repair[repair — 2 blocked]
-    CANT --> B_social[social — 5 blocked]
+    CANT --> B_social[social — 7 blocked]
     CANT --> B_staff[staff — 2 blocked]
     CANT --> B_top_level[Everything else — 26 blocked]
     WHO -->|Yes| UNV[UNVERIFIED — 2 routes whose gate could not be traced]
@@ -54,7 +55,7 @@ flowchart TD
 
 ## What they can reach
 
-**27 of 176 routes.**
+**27 of 179 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -93,7 +94,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**147 of 176 routes.**
+**150 of 179 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -108,6 +109,7 @@ flowchart TD
 | `/api/banking/revoke` | GET, POST | owner, admin |
 | `/api/banking/sync-accounts` | POST | owner, admin, sales_manager |
 | `/api/bookings` | GET | staff |
+| `/api/brand/review` | POST | employees: owner, admin<br>plus: partner |
 | `/api/call-outcomes` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/campaigns/action-log` | GET | partner, staff |
 | `/api/campaigns/connections` | GET | partner, staff |
@@ -236,11 +238,13 @@ flowchart TD
 | `/api/repair/exceptions` | GET, POST | staff |
 | `/api/repair/send` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/shifts` | GET, POST | staff |
+| `/api/social/channels` | GET | partner, staff |
 | `/api/social/generate` | POST | partner, staff |
 | `/api/social/oauth` | — | staff |
 | `/api/social/posts` | GET, POST | partner, staff |
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
+| `/api/social/settings` | GET, POST | staff, partner |
 | `/api/staff/monitoring-consent` | POST | owner |
 | `/api/staff/telemetry` | GET | owner, admin, sales_manager |
 | `/api/tasks` | GET, PATCH | staff |

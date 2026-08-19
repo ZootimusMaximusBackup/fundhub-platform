@@ -32,13 +32,14 @@ flowchart TD
     CAN --> A_public[public — 4 routes]
     CAN --> A_read[Reading data — 44 routes]
     CAN --> A_repair[repair — 2 routes]
-    CAN --> A_social[social — 5 routes]
+    CAN --> A_social[social — 7 routes]
     CAN --> A_staff[staff — 1 route]
     CAN --> A_top_level[Everything else — 24 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 38 routes]
+    WHO -->|Yes| CANT[Blocked — 39 routes]
     CANT --> B_auth[Signing in and out — 4 blocked]
     CANT --> B_banking[banking — 1 blocked]
+    CANT --> B_brand[brand — 1 blocked]
     CANT --> B_chat[chat — 1 blocked]
     CANT --> B_company_brain[company-brain — 1 blocked]
     CANT --> B_consent[consent — 1 blocked]
@@ -58,7 +59,7 @@ flowchart TD
 
 ## What they can reach
 
-**136 of 176 routes.**
+**138 of 179 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -189,11 +190,13 @@ flowchart TD
 | `/api/repair/exceptions` | GET, POST | staff |
 | `/api/repair/send` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/shifts` | GET, POST | staff |
+| `/api/social/channels` | GET | partner, staff |
 | `/api/social/generate` | POST | partner, staff |
 | `/api/social/oauth` | — | staff |
 | `/api/social/posts` | GET, POST | partner, staff |
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
+| `/api/social/settings` | GET, POST | staff, partner |
 | `/api/soft-pull-approve` | GET, POST | anyone |
 | `/api/staff/telemetry` | GET | owner, admin, sales_manager |
 | `/api/tasks` | GET, PATCH | staff |
@@ -207,7 +210,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**38 of 176 routes.**
+**39 of 179 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -217,6 +220,7 @@ flowchart TD
 | `/api/auth/staff-role` | POST | owner, admin |
 | `/api/auth/suspend` | POST | owner, admin |
 | `/api/banking/revoke` | GET, POST | owner, admin |
+| `/api/brand/review` | POST | employees: owner, admin<br>plus: partner |
 | `/api/chat/portal-message` | POST | client |
 | `/api/company-brain/reviews` | GET, POST | owner |
 | `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |

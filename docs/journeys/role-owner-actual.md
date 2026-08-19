@@ -18,6 +18,7 @@ flowchart TD
     WHO -->|Yes| CAN[Can reach]
     CAN --> A_auth[Signing in and out — 10 routes]
     CAN --> A_banking[banking — 3 routes]
+    CAN --> A_brand[brand — 1 route]
     CAN --> A_campaigns[Campaigns — 8 routes]
     CAN --> A_chat[chat — 3 routes]
     CAN --> A_climate[climate — 2 routes]
@@ -39,7 +40,7 @@ flowchart TD
     CAN --> A_public[public — 4 routes]
     CAN --> A_read[Reading data — 48 routes]
     CAN --> A_repair[repair — 2 routes]
-    CAN --> A_social[social — 5 routes]
+    CAN --> A_social[social — 7 routes]
     CAN --> A_staff[staff — 2 routes]
     CAN --> A_top_level[Everything else — 32 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
@@ -51,7 +52,7 @@ flowchart TD
 
 ## What they can reach
 
-**172 of 176 routes.**
+**175 of 179 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -72,6 +73,7 @@ flowchart TD
 | `/api/banking/revoke` | GET, POST | owner, admin |
 | `/api/banking/sync-accounts` | POST | owner, admin, sales_manager |
 | `/api/bookings` | GET | staff |
+| `/api/brand/review` | POST | employees: owner, admin<br>plus: partner |
 | `/api/call-outcomes` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/campaigns/action-log` | GET | partner, staff |
 | `/api/campaigns/connections` | GET | partner, staff |
@@ -217,11 +219,13 @@ flowchart TD
 | `/api/repair/exceptions` | GET, POST | staff |
 | `/api/repair/send` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/shifts` | GET, POST | staff |
+| `/api/social/channels` | GET | partner, staff |
 | `/api/social/generate` | POST | partner, staff |
 | `/api/social/oauth` | — | staff |
 | `/api/social/posts` | GET, POST | partner, staff |
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
+| `/api/social/settings` | GET, POST | staff, partner |
 | `/api/soft-pull-approve` | GET, POST | anyone |
 | `/api/staff/monitoring-consent` | POST | owner |
 | `/api/staff/telemetry` | GET | owner, admin, sales_manager |
@@ -236,7 +240,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**2 of 176 routes.**
+**2 of 179 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
