@@ -183,15 +183,24 @@ export async function confirmRemoval(db, { inquiryId, staffId, orgId, status = "
     );
     const remaining = open.rows[0]?.n || 0;
     if (remaining === 0) {
+      // case_status is the inquiry_case_status ENUM (db/migrations/140_inquiry_ops.sql):
+      // Queued | Scheduled | In Progress | Completed | Escalated | Blocked | Canceled.
+      // 'Cleared' and 'Closed' are NOT members. Writing them raised 22P02
+      // (invalid input value for enum) which threw before the emit below ever ran,
+      // so confirming the last open inquiry on a case 500'd every time. The
+      // finished state is 'Completed' — same mapping the sibling path already uses
+      // (src/inquiry-removal/cases.mjs). The WHERE list is isActiveCaseStatus()
+      // narrowed to the members this enum actually has.
       await db.query(
         `UPDATE inquiry_removal_cases SET
-            case_status = 'Cleared',
+            case_status = 'Completed'::inquiry_case_status,
             cleared_at = COALESCE(cleared_at, now()),
             completed_at = COALESCE(completed_at, now()),
             open_inquiry_count = 0,
             master_call_state = 'completed',
             updated_at = now()
-          WHERE id = $1 AND case_status NOT IN ('Cleared','Closed','Completed')`,
+          WHERE id = $1
+            AND case_status IN ('Queued','Scheduled','In Progress','Escalated','Blocked')`,
         [row.case_id]
       );
       await emit(db, "inquiry.removed", {

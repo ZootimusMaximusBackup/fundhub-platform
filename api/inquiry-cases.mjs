@@ -64,13 +64,28 @@ export default async function handler(req, res, deps = {}) {
         staffId: staff.id
       });
       if (result.caseCleared && result.caseRow) {
-        await emitFn("inquiry.removed", {
-          org_id: orgId,
-          client_id: result.caseRow.client_id,
-          case_id: result.caseRow.id,
-          inquiry_id: result.inquiry.id,
-          source: "staff_clear_inquiry"
-        });
+        // emit() is emit(db, name, payload, opts) — src/events/bus.mjs. This call
+        // used to pass (name, payload), so the name landed in the `db` slot and the
+        // bus threw "event name required". The throw surfaced as a 500 AFTER
+        // clearInquiry had already committed: the inquiry was cleared, the event was
+        // lost, and the specialist was told it failed. Shape kept identical to the
+        // mark_cleared/close emit below so both paths produce the same payload.
+        await emitFn(
+          database,
+          "inquiry.removed",
+          {
+            caseId: result.caseRow.case_id,
+            inquiryRemovalCaseId: result.caseRow.id,
+            inquiryId: result.inquiry.id,
+            fundingRoundId: result.caseRow.funding_round_id,
+            source: "staff_clear_inquiry"
+          },
+          {
+            orgId,
+            clientId: result.caseRow.client_id,
+            idempotencyKey: `inquiry.removed:case:${result.caseRow.id}`
+          }
+        );
       }
       return res.status(200).json({ ok: true, inquiry: result.inquiry, case: result.caseRow, case_cleared: result.caseCleared });
     }
