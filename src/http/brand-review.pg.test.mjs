@@ -47,7 +47,7 @@ const res = () => {
 describe("POST /api/brand/review", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
   let handler, org;
   let partnerA, partnerB;
-  let tokPartnerA, tokOwner, tokCloser;
+  let tokPartnerA, tokOwner, tokAdmin, tokCloser;
   // A SECOND COMPANY. Every other fixture in this file lives in the default org,
   // so until this existed no test in it could reach the org_id predicate the
   // handler writes into every statement — the only thing keeping an owner of one
@@ -103,8 +103,15 @@ describe("POST /api/brand/review", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
        VALUES ($1,$2,$3,$4,'active') RETURNING id`,
       [org, `${MARK} ${role}`, role, `${MARK}.${role}@example.com`])).rows[0].id;
     const ownerId = await mkStaff("owner");
+    /* ADMIN IS THE OTHER HALF OF THE GATE. REVIEW_ROLES is {owner, admin} and
+       only owner was ever exercised, so "admin" was carried by the Set literal
+       and nothing else. The approve buttons in public/app/creative-factory.html
+       are drawn for owner AND admin, so an admin who cannot actually approve
+       would be a button that only refuses. */
+    const adminId = await mkStaff("admin");
     const closerId = await mkStaff("closer");
     tokOwner = (await createSession(db, { staffId: ownerId, orgId: org })).token;
+    tokAdmin = (await createSession(db, { staffId: adminId, orgId: org })).token;
     tokCloser = (await createSession(db, { staffId: closerId, orgId: org })).token;
 
     // Partner accounts are invite-only, and accounts.invited_by is a foreign key,
@@ -221,6 +228,49 @@ describe("POST /api/brand/review", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
     assert.equal(row.approval_status, "draft");
     assert.equal(row.approved_at, null);
     assert.match(row.review_note, /does not match the filing/);
+  });
+
+  /* The Creative Factory queue draws Approve and Send-it-back for owner AND
+     admin (apprDetail's brand branch reads the cached role and admits both), so
+     an admin has to be able to finish the job the button starts. */
+  test("an admin approves a submitted brand too, not only the owner", async () => {
+    await setStatus(partnerA, "review");
+    const r = await call({ partner_id: partnerA, action: "approve" }, tokAdmin);
+    assert.equal(r.code, 200, JSON.stringify(r.body));
+    assert.equal(r.body.approval_status, "approved");
+
+    const row = await statusOf(partnerA);
+    assert.equal(row.approval_status, "approved");
+    assert.ok(row.approved_at, "approved_at was not set");
+    assert.ok(row.approved_by, "approved_by was not recorded");
+  });
+
+  test("an admin sends a brand back, and the reason is kept", async () => {
+    await setStatus(partnerA, "review");
+    const r = await call(
+      { partner_id: partnerA, action: "reject", note: "The logo is the old wordmark." },
+      tokAdmin);
+    assert.equal(r.code, 200, JSON.stringify(r.body));
+
+    const row = await statusOf(partnerA);
+    assert.equal(row.approval_status, "draft");
+    assert.equal(row.approved_at, null);
+    assert.match(row.review_note, /old wordmark/);
+  });
+
+  /* The reason box on the queue screen carries maxlength="2000", which is the
+     browser's help and not a rule — the server's own NOTE_MAX is the rule, and
+     nothing exercised it. A refusal here has to leave the brand in review. */
+  test("a reason longer than the limit is refused, and nothing moves", async () => {
+    await setStatus(partnerA, "review");
+    const r = await call(
+      { partner_id: partnerA, action: "reject", note: "x".repeat(2001) }, tokOwner);
+    assert.equal(r.code, 400, JSON.stringify(r.body));
+    assert.equal(r.body.error, "note_too_long");
+
+    const row = await statusOf(partnerA);
+    assert.equal(row.approval_status, "review", "an over-long reason still moved the brand");
+    assert.equal(row.review_note, null, "an over-long reason was written anyway");
   });
 
   test("a rejection with no reason is refused", async () => {

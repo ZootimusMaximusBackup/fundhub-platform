@@ -855,9 +855,11 @@ function rel(iso){
   var s = m<60 ? m+'m' : (m<1440 ? Math.round(m/60)+'h' : Math.round(m/1440)+'d');
   return ms<0 ? s+' ago' : 'in '+s;
 }
-var STATUS_BADGE={draft:'b-gray',queued:'b-info',awaiting_approval:'b-accent',posting:'b-butter',posted:'b-ok',failed:'b-warn',blocked:'b-alert'};
-/* The words a person reads. The system's own state words are never shown. */
-var STATUS_LABEL={draft:'Draft',queued:'Waiting',awaiting_approval:'Held for a person',posting:'Sending now',posted:'Sent',failed:'Could not be sent',blocked:'Needs a rewrite'};
+var STATUS_BADGE={draft:'b-gray',queued:'b-info',scheduled:'b-info',awaiting_approval:'b-accent',posting:'b-butter',posted:'b-ok',failed:'b-warn',blocked:'b-alert'};
+/* The words a person reads. The system's own state words are never shown.
+   'scheduled' is in both maps because an approved post lands there, and without
+   an entry the details panel would print the system's own word at a reader. */
+var STATUS_LABEL={draft:'Draft',queued:'Waiting',scheduled:'Lined up',awaiting_approval:'Held for a person',posting:'Sending now',posted:'Sent',failed:'Could not be sent',blocked:'Needs a rewrite'};
 var CONN_LABEL={active:'ready to post',pending:'still being set up',expired:'the sign-in has run out',revoked:'the sign-in was taken away'};
 var CHECK_LABEL={passed:'Looks fine',needs_approval:'Someone must approve it',blocked:'Refused'};
 var STATE_BADGE={active:'b-ok',pending:'b-info',expired:'b-warn',revoked:'b-alert'};
@@ -965,6 +967,11 @@ function viewerRole(){
   catch(e){ return ''; }
 }
 function viewerCanConnect(){ return viewerRole() !== 'partner'; }
+/* Who may approve a held post. Owner or admin only, and an unknown role is not
+   admitted — the same idiom brand-studio.html uses for its own owner-only
+   button. This only decides whether the button is drawn; api/social/posts.mjs
+   refuses anybody else whether or not the button was there. */
+function viewerCanApprove(){ var r = viewerRole(); return r === 'owner' || r === 'admin'; }
 function channels(){ return SOCIAL_CHANNELS.filter(function(c){ return c.partner === P; }); }
 function chById(id){ return SOCIAL_CHANNELS.filter(function(c){ return c.id === id; })[0] || null; }
 function assets(){ return ASSETS.filter(function(a){ return a.partner === P; }); }
@@ -975,10 +982,17 @@ function byStatus(s){ return posts().filter(function(p){ return p.status === s; 
    (see db/migrations/240 and 243), and this list once kept only 'queued' and
    'draft' while the other tabs read 'blocked', 'failed' and 'posted' — so a held
    post appeared on no tab at all. The partner could not see that it existed, let
-   alone that it had stopped. What it is doing is said per row by queueState(). */
+   alone that it had stopped. What it is doing is said per row by queueState().
+
+   'scheduled' IS ALSO ONE OF THEM, and was not before. A post that has been
+   handed to a social account with a send time sits in 'scheduled', which no tab
+   on this screen read — so it vanished from the screen the moment it was lined
+   up. Approving a held post moves it there, so without this an approval would
+   look like the post had been deleted. */
 function readyPosts(){
   return posts().filter(function(p){
-    return p.status === 'queued' || p.status === 'draft' || p.status === 'awaiting_approval';
+    return p.status === 'queued' || p.status === 'draft' ||
+           p.status === 'scheduled' || p.status === 'awaiting_approval';
   });
 }
 function postById(id){ return POSTS.filter(function(p){ return p.id === id; })[0] || null; }
@@ -1124,13 +1138,17 @@ function tasks(){ return TASKS.filter(function(t){ return t.partner === P; }); }
 /* what happens next to one post, worked out from what the post really carries */
 function queueState(p){
   if (p.status === 'draft') return {k:'draft', short:'Draft', label:'Written, not lined up yet', cls:'b-gray'};
-  /* Stopped by the copy check and waiting for a person. Both halves have to be
-     said: it does not go out, AND nobody can release it — there is no button on
-     this screen or anywhere else that marks a post approved, so it stays here.
-     Saying only the first half would read as "somebody is about to look at it". */
+  /* Stopped by the copy check and waiting for a person. Both halves still have
+     to be said: it does not go out, AND who can release it. This line used to
+     say nothing in the system could approve one — true when it was written, and
+     false now that the buttons below exist, which is the reassuring direction to
+     be wrong in. A reader who cannot approve it is told so plainly rather than
+     shown a button that would refuse them. */
   if (p.status === 'awaiting_approval')
     return {k:'held_for_person', short:'Held for a person',
-            label:'A person has to approve it, so it will not go out. Nothing in this system can approve one yet, so it stays here',
+            label: viewerCanApprove()
+              ? 'A person has to approve it before it goes out. You can approve or refuse it here'
+              : 'A person has to approve it, so it will not go out. Only the owner or an admin at Fundhub can approve it',
             cls:'b-accent'};
   var c = chById(p.channel_id);
   if(!p.scheduled_for) return {k:'no_time', short:'No send time', label:'No send time set — it will never go out on its own', cls:'b-warn'};
@@ -1191,8 +1209,9 @@ function renderStats(){
       (noTime.length===1?'it':'they')+' will never go out until someone sets one.<br>'+
       '<b>'+held.length+'</b> '+(held.length===1?'was':'were')+' stopped by the copy check and '+
       (held.length===1?'is':'are')+' waiting for a person to approve '+(held.length===1?'it':'them')+'. '+
-      'Nothing in this system can approve one yet, so '+(held.length===1?'it stays':'they stay')+' where '+
-      (held.length===1?'it is':'they are')+' and '+(held.length===1?'does':'do')+' not go out.',
+      (held.length===1?'It stays':'They stay')+' where '+(held.length===1?'it is':'they are')+
+      ' and '+(held.length===1?'does':'do')+' not go out until somebody signed in as the owner or an '+
+      'admin approves '+(held.length===1?'it':'them')+' in the waiting list below.',
     blocked:
       'Posts the copy check refused: <b>'+b.length+'</b>, with <b>'+reasonCount+'</b> reason'+(reasonCount===1?'':'s')+
       ' given between them.<br>'+
@@ -1366,13 +1385,21 @@ function renderVerdict(){
   if(v.state === 'blocked'){
     what = 'This post would be <b>saved and refused</b>, with the reasons below kept on it. It would stay in the '+
            '"needs a rewrite" list for good — it cannot be checked again, overruled, or edited and re-sent.';
+  } else if(v.state === 'needs_approval'){
+    /* This used to say a post needing approval was lined up and went out at its
+       time anyway. That was true when it was written and is false now: the post
+       is stopped and waits for a person. Saying it here matters more than
+       anywhere else on this screen, because this is what the writer reads
+       BEFORE they save. */
+    var wHeld = s.when ? new Date(s.when + ':00Z').toISOString() : next;
+    what = 'This post would be <b>saved and stopped</b>. It does not go out on its own' +
+           (wHeld ? ' — not at <b>'+esc(fmt(wHeld))+'</b>, and not at any other time.' : '.') +
+           ' Somebody signed in as the owner or an admin has to approve it in the waiting list on this ' +
+           'screen before it can go out. If they refuse it instead, it is kept and never sent.';
   } else {
     var w = s.when ? new Date(s.when + ':00Z').toISOString() : next;
     what = 'This post would be <b>saved and lined up</b>' +
-           (w ? ' to go out at <b>'+esc(fmt(w))+'</b>.' : ' with <b>no send time</b> — it would sit and wait for good.') +
-           (v.state === 'needs_approval'
-             ? ' <b>Needing approval does not hold it back.</b> The check writes down that a person should look at it, and the post still goes out at its time.'
-             : '');
+           (w ? ' to go out at <b>'+esc(fmt(w))+'</b>.' : ' with <b>no send time</b> — it would sit and wait for good.');
   }
   document.getElementById('vWhat').innerHTML = what;
 
@@ -1435,6 +1462,21 @@ function triesText(p){ return hasTries(p) ? String(p.attempt) : '—'; }
 var OFFER_LABEL = {funding:'Funding', credit_cards:'Credit cards', credit_repair:'Credit repair'};
 function offerLabel(v){ return OFFER_LABEL[v] || (v || '—'); }
 
+/* THE TWO BUTTONS THAT DRAIN THE HELD QUEUE.
+   Drawn beside the line that already says the post is held, and only there.
+   Only for a signed-in owner or admin: api/social/posts.mjs refuses everybody
+   else, so showing a partner this button would offer an action that always
+   fails. The empty line after the buttons is where the answer is written, so a
+   refusal appears next to the post it is about. */
+function heldControls(p){
+  if(p.status !== 'awaiting_approval' || !viewerCanApprove()) return '';
+  return '<div style="margin-top:7px;display:flex;gap:6px;flex-wrap:wrap">'+
+      '<button class="btn sm" data-approve="'+esc(p.id)+'">Approve it</button>'+
+      '<button class="btn sm" data-reject="'+esc(p.id)+'">Refuse it</button>'+
+    '</div>'+
+    '<span class="substate" data-decidemsg="'+esc(p.id)+'"></span>';
+}
+
 function renderQueue(){
   var rows = applyFilters(readyPosts()).sort(function(a,b){
     if(!a.scheduled_for) return 1; if(!b.scheduled_for) return -1;
@@ -1456,7 +1498,8 @@ function renderQueue(){
         '<td class="mono">'+(p.scheduled_for?esc(fmt(p.scheduled_for))+'<span class="substate">'+esc(rel(p.scheduled_for))+'</span>':'<span style="color:#6E2A22">no time set</span>')+'</td>'+
         '<td><span class="attn'+(p.attempt>0?' hot':'')+'">'+triesText(p)+'</span><span class="substate">'+
           (hasTries(p) ? 'of '+MAX_ATTEMPTS : 'not tried yet')+'</span></td>'+
-        '<td><span class="badge '+qs.cls+'">'+esc(qs.short)+'</span><span class="substate">'+esc(qs.label)+'</span></td>'+
+        '<td><span class="badge '+qs.cls+'">'+esc(qs.short)+'</span><span class="substate">'+esc(qs.label)+'</span>'+
+          heldControls(p)+'</td>'+
         '<td>'+queueActions(p)+'</td>'+
       '</tr>' + detailRow(p, 7);
     }).join('') + '</tbody></table>';
@@ -1696,6 +1739,15 @@ function wireRows(host){
   host.querySelectorAll('[data-qdrop]').forEach(function(b){
     b.addEventListener('click', function(e){ e.stopPropagation(); discardOne(b.dataset.qdrop, b); });
   });
+  /* stopPropagation for the same reason the two above have it: the whole row is
+     a click target that opens the details, and a button inside it must not do
+     both things at once. */
+  host.querySelectorAll('[data-approve]').forEach(function(b){
+    b.addEventListener('click', function(e){ e.stopPropagation(); decideHeld(b.dataset.approve, 'approve', b); });
+  });
+  host.querySelectorAll('[data-reject]').forEach(function(b){
+    b.addEventListener('click', function(e){ e.stopPropagation(); decideHeld(b.dataset.reject, 'reject', b); });
+  });
 }
 
 /* ══ THROW A POST AWAY ═══════════════════════════════════════════════════
@@ -1727,6 +1779,48 @@ function discardOne(id, btn){
         return;
       }
       loadQueue();
+    });
+}
+
+/* ══ APPROVE OR REFUSE A HELD POST ═══════════════════════════════════════
+   Asks first and names what it does, the same way throwing a post away does.
+   Approving lets a post go out, and refusing stops it for good, so neither is
+   worth doing on a stray click. The server is the real gate — this only sends
+   the decision and prints what came back. */
+function decideHeld(id, action, btn){
+  var p = postById(id), pr = partner();
+  if(!p || !pr) return;
+  var full = String(p.caption || '');
+  var words = full.slice(0, 80) + (full.length > 80 ? '…' : '');
+  var ask = action === 'approve'
+    ? 'Approve this post?\n\n"'+words+'"\n\nIt stops being held and goes out at its send time.'
+    : 'Refuse this post?\n\n"'+words+'"\n\nIt will never go out. It cannot be put back from this screen.';
+  if(!window.confirm(ask)) return;
+  var msg = document.querySelector('[data-decidemsg="'+id+'"]');
+  var was = btn ? btn.textContent : '';
+  if(btn){ btn.disabled = true; btn.textContent = action === 'approve' ? 'Approving…' : 'Refusing…'; }
+  if(msg) msg.textContent = '';
+  var t = '';
+  try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
+  fetch('/api/social/posts', {
+    method: 'POST',
+    headers: Object.assign(
+      { accept: 'application/json', 'content-type': 'application/json' },
+      (t && t !== 'demo') ? { authorization: 'Bearer ' + t } : {}),
+    body: JSON.stringify({ partner_id: pr.id, id: id, action: action })
+  }).then(function(r){ return r.json().catch(function(){ return { ok:false }; }); })
+    .then(function(res){
+      if(!res.ok){
+        if(btn){ btn.disabled = false; btn.textContent = was; }
+        if(msg) msg.textContent = 'Nothing changed: ' +
+          (res.message || res.error || 'something went wrong.');
+        return;
+      }
+      loadQueue();
+    })
+    .catch(function(){
+      if(btn){ btn.disabled = false; btn.textContent = was; }
+      if(msg) msg.textContent = 'Nothing changed — the site could not be reached. Try again in a moment.';
     });
 }
 
@@ -1901,16 +1995,17 @@ function renderApproval(){
     '<div class="notice'+(on?'':' warn')+'" style="margin-top:4px"><span class="ni">'+(on?'◉':'⚠')+'</span><span>'+
       (on
         /* This used to say the opposite, and it was right at the time: a post
-           marked "needs approval" was lined up and sent anyway. That changed. The
-           holding pen is real now, and so is the missing button — both halves have
-           to be here, because "it stops and waits" on its own would read as a
-           finished feature. */
+           marked "needs approval" was lined up and sent anyway. Then it stopped
+           and waited with no way out, and this said so. Both halves are true
+           now — it stops, AND a person can release it — so both are said here,
+           in the same words the waiting list and the counts above use. */
         ? '<b>A post marked "needs approval" now stops and waits. It does not go out.</b> '+
           'The part of the system that sends posts cannot see a post that is waiting, so nothing sends it — '+
           'not late, not by accident, not at all.'+
-          '<br><br><b>But nothing can approve one yet.</b> There is no button on this screen, and nothing '+
-          'anywhere else in the system, that marks a post as approved. So every post that stops here stays '+
-          'stopped. The post is kept and nothing is lost, but it will not go out until that button is built.'
+          '<br><br><b>Somebody signed in as the owner or an admin can approve it.</b> Every held post is in '+
+          'the waiting list on this screen, with a button to approve it or refuse it. Approving it lets it go '+
+          'out at its time. Refusing it stops it for good and it can never be sent. Nobody else can do either '+
+          '— not the partner, and not any other kind of employee.'
         : '<b>With this off, a post that breaks no rule is marked as passed, and it does go out.</b> '+
           'This switch is not just a note any more. On, it stops posts and makes them wait. Off, it lets them '+
           'through. Credit repair is the one exception, and this switch never releases those — see below.')+

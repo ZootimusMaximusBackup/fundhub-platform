@@ -1703,13 +1703,59 @@ function apprDetail(r){
       '<b>A partner sent their own brand in to be checked.</b> That is their logo, colours, wording and ' +
       'business details — not an advert. The advert rules have not been run on it, so there is nothing ' +
       'flagged to show and no reason list.</p></div>';
-    /* NO BUTTON, AND NO CLAIM THAT ONE EXISTS ELSEWHERE. api/brand/review.mjs
-       accepts approve and reject, but no screen calls them: brand-studio.html
-       sends only action "submit". Saying "approve it over there" would send the
-       reader looking for a control that is not built. */
-    out += '<div class="detfull"><p class="note" style="color:var(--gray2)">' +
-      'This queue only shows you that a brand is waiting. There is no button yet — on this screen or ' +
-      'any other — that approves a brand or sends it back.</p></div>';
+    /* THE TWO BUTTONS, AND THE PARTNER THEY ACT ON.
+       api/brand/review.mjs wants a partner_id. r.id is NOT it — the brand arm of
+       api/creative/approvals.mjs selects b.id, the brand row's own id. The
+       partner is the one this whole screen is scoped to: that arm reads
+       WHERE b.partner_id = the partner_id in the request, so any brand row on
+       screen belongs to exactly that partner. tagPartner() stamps that partner's
+       index onto every row, so it is read back off the row rather than off
+       whatever happens to be selected when the button is pressed. */
+    var bpid = null;
+    try { if(PARTNERS[r.partner]) bpid = PARTNERS[r.partner].id; } catch(e){}
+    if(!bpid) bpid = currentPartnerId();
+
+    /* WHO SEES THE BUTTONS. approve and reject are owner/admin only, refused on
+       the server before any row is read (api/brand/review.mjs). Partners reach
+       this screen too — shell.js lists creative-factory.html in ROLE_TABS.partner
+       as well as in OWNER_ADMIN_ONLY, and OWNER_ADMIN_ONLY is subtracted inside
+       staffTabs() only, so it hides the row from non-owner STAFF and says nothing
+       about partners. Hiding a control is not a gate; the server is the gate.
+       This only stops a partner being shown a button that can only refuse. Same
+       idiom, and the same cached role, as brand-studio.html's Verify button. */
+    var vrole = '';
+    try { vrole = String(localStorage.getItem('fh_role') || '').trim().toLowerCase(); } catch(e){}
+    var canReview = (vrole === 'owner' || vrole === 'admin');
+
+    if(canReview){
+      out += '<div class="detfull" data-brand-box style="margin-top:6px">' +
+        '<p class="note">Approve it if the logo, colours and business details look right to go out under ' +
+        'the Fundhub name. Send it back if something needs changing — that puts it back to a draft the ' +
+        'partner can edit and send in again.</p>' +
+        '<div class="field" style="max-width:520px;margin:6px 0">' +
+          '<label for="brNote-' + esc(r.id) + '">Reason for sending it back</label>' +
+          '<input id="brNote-' + esc(r.id) + '" data-brand-note maxlength="2000" ' +
+            'placeholder="What needs changing before this can be approved">' +
+        '</div>' +
+        /* THE REASON IS SAVED, NOT DELIVERED. It is written to the brand record,
+           and nothing shows it to the partner — brand-studio.html never reads it
+           back (grep: review_note appears in no screen file). Saying "the partner
+           reads this" here would be the reassuring kind of lie. */
+        '<p class="note" style="color:var(--gray2)">The reason is kept with the brand. It is not sent to ' +
+        'the partner, and their own Brand Studio screen does not show it yet, so tell them separately.</p>' +
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">' +
+          '<button class="btn dark sm mono" type="button" data-brand-act="approve" ' +
+            'data-brand-partner="' + esc(bpid || '') + '">Approve this brand</button>' +
+          '<button class="btn sm mono" type="button" data-brand-act="reject" ' +
+            'data-brand-partner="' + esc(bpid || '') + '">Send it back</button>' +
+          '<span class="hint mono" data-brand-msg style="font-size:var(--fs-caption);color:var(--gray2)"></span>' +
+        '</div>' +
+      '</div>';
+    } else {
+      out += '<div class="detfull"><p class="note" style="color:var(--gray2)">' +
+        'Only a Fundhub owner or admin can approve a brand or send it back, so there are no buttons here ' +
+        'for this sign-in. This queue shows you that a brand is waiting.</p></div>';
+    }
     return out + '</div>';
   }
 
@@ -2354,6 +2400,83 @@ document.querySelectorAll('[data-cact]').forEach(function (btn) {
         if (typeof wireCreative === 'function') wireCreative();
       });
   });
+});
+
+/* ══ BRAND: APPROVE / SEND BACK ══════════════════════════════════════════
+   The two buttons apprDetail() draws on a brand row. Delegated on document
+   because the detail row is built after this runs — the same idiom as the
+   [data-open-asset] listener above. api/brand/review.mjs is the only writer of
+   a brand's approval state; nothing here decides anything, it just asks.
+
+   THE SERVER IS THE GATE. apprDetail() draws these only for owner/admin, but
+   that is tidiness, not security: the handler refuses a partner before it reads
+   a row, so a hand-made request gets the same 403 the hidden button would have.
+
+   ONE RELOAD PATH, COPIED. wireCreative() is what the two other write buttons on
+   this screen call when they are done. It re-reads all four panels, so the
+   approved brand leaves the queue and the counts on the filter buttons follow. */
+var BRAND_CONFIRM = {
+  approve: 'Approve this brand? It will be marked approved for this partner.',
+  reject: 'Send this brand back? It becomes a draft again and leaves the queue.'
+};
+document.addEventListener('click', function (e) {
+  var btn = e.target.closest ? e.target.closest('[data-brand-act]') : null;
+  if (!btn) return;
+  e.stopPropagation();
+  var box = btn.closest('[data-brand-box]');
+  var msg = box ? box.querySelector('[data-brand-msg]') : null;
+  var noteEl = box ? box.querySelector('[data-brand-note]') : null;
+  function say(t) { if (msg) msg.textContent = t; }
+
+  var action = btn.getAttribute('data-brand-act');
+  var partnerId = btn.getAttribute('data-brand-partner') || '';
+  if (!partnerId) { say('No partner is selected, so nothing was changed.'); return; }
+
+  /* The handler refuses a reject with no reason (400 note_required). Asking here
+     first saves a round trip and says the same thing in the same words. */
+  var note = noteEl ? String(noteEl.value || '').trim() : '';
+  if (action === 'reject' && !note) {
+    say('Type a reason first — it is kept with the brand.');
+    if (noteEl) noteEl.focus();
+    return;
+  }
+  if (!window.confirm(BRAND_CONFIRM[action])) { say(''); return; }
+
+  var body = action === 'reject'
+    ? { partner_id: partnerId, action: 'reject', note: note }
+    : { partner_id: partnerId, action: 'approve' };
+
+  btn.disabled = true;
+  say(action === 'approve' ? 'Approving…' : 'Sending it back…');
+  var status = 0;
+  fetch('/api/brand/review', {
+    method: 'POST',
+    headers: cfAuthHeaders(),
+    body: JSON.stringify(body)
+  }).then(function (r) { status = r.status; return r.json().catch(function () { return { ok: false }; }); })
+    .then(function (res) {
+      btn.disabled = false;
+      if (res && res.ok) {
+        say(action === 'approve'
+          ? 'Approved. It has left the queue.'
+          : 'Sent back. It is a draft again and has left the queue.');
+        if (typeof wireCreative === 'function') wireCreative();
+        return;
+      }
+      /* BRANCH ON THE STATUS, NEVER ECHO res.error. Two refusals carry no plain
+         words at all — requirePrincipal answers 401 with {error:"unauthorized"}
+         and 503 with {error:"auth_unavailable"} — and printing those codes at a
+         person is what brand-studio.html was fixed for. Every other refusal from
+         this endpoint carries a whole sentence written to be shown as it stands. */
+      say(status === 401 ? 'Your sign-in has expired. Sign in again and try once more.'
+        : status === 403 ? 'This sign-in is not allowed to approve a brand. Nothing was changed.'
+        : status === 503 ? 'We could not reach the system just now. Nothing was changed.'
+        : ((res && res.message) || 'Nothing was changed. Try again in a moment.'));
+    })
+    .catch(function () {
+      btn.disabled = false;
+      say('Nothing was changed — we could not reach the server. Try again in a moment.');
+    });
 });
 </script>
 </body>
