@@ -36,6 +36,15 @@ import { resolve, addressFieldFor } from "./providers/index.mjs";
 import { isSynthetic } from "./live-fence.mjs";
 import { isDraftTemplateCopy, isDraftTemplateRow } from "./draft-guard.mjs";
 import { fenceVerdict, MESSAGING_DRY_RUN } from "../lib/dry-run.mjs";
+import { signUnsubscribeUrl, withUnsubscribeFooter } from "./unsubscribe.mjs";
+
+/* The public origin an emailed link has to point at. Same expression the rest
+   of the messaging path already uses to build portal links
+   (src/workflows/messaging.mjs), rather than a fourth base-URL convention:
+   APP_BASE_URL, then Netlify's own URL, then the live site. */
+function publicBaseUrl(env = process.env) {
+  return String(env.APP_BASE_URL || env.URL || "https://fundhub.ai").replace(/\/+$/, "");
+}
 
 /* A clock value, resolved to whatever a `::timestamptz` bind param accepts.
    `now` arrives here as null, a Date, an ISO string, or — from a virtual
@@ -491,6 +500,67 @@ export async function dispatchOne(db, message, options = {}) {
         `the client has no ${addressColumnFor(route.provider, message.channel)} to send to`, route.provider);
     }
 
+    /* ---- 2b. The way out ---------------------------------------------------
+
+       Every outbound email leaves with a working unsubscribe link, and it is
+       built HERE rather than in the provider or in the template.
+
+       Not the provider: the provider contract is that it never mutates the
+       message — "no truncation, no appended footer" — and three tests in
+       providers.test.mjs hold all three providers to it.
+
+       Not the template: there are 237 of them, 173 of which already promise an
+       unsubscribe in words and none of which carried a link (measured against
+       production 2026-08-18). Editing 173 rows to paste the same link in is
+       173 chances to get it wrong, and the link has to be per-client anyway.
+
+       THE STORED COPY IS NOT REWRITTEN. messages.rendered_body keeps exactly
+       what the compliance gate approved; the footer is added to the copy handed
+       to the provider and nowhere else. That does mean rendered_body is no
+       longer byte-identical to what left the building, and the footer is the
+       difference — which is the honest trade, because making rendered_body
+       differ from the approved copy would break the one thing that column is
+       for.
+
+       EMAIL ONLY. A text message opts out with the word STOP, which the inbound
+       handler reads; appending a URL to an SMS would cost a segment and break
+       the twilio no-footer test.
+
+       IF THE LINK CANNOT BE SIGNED THE MAIL STILL GOES, LOUDLY. Holding it was
+       the first instinct and it is wrong here, because most of what this system
+       actually sends is transactional — the portal sign-in link, the contract,
+       the invoice. Holding those because a marketing footer could not be signed
+       would lock clients out of their own portal to satisfy an obligation that
+       does not apply to a sign-in email in the first place.
+
+       The right rule is "footer required on commercial mail, not on
+       transactional mail", and THIS REPO HAS NO WAY TO TELL THE TWO APART —
+       message_templates carries no such flag. That absence is a finding, not a
+       gap to fill with a guess, so it is written down here and reported rather
+       than invented. Until it exists: send, and make the failure impossible to
+       miss in the log. In production both signing secrets are set, so this
+       branch does not fire. */
+    let outboundBody = message.rendered_body;
+    let unsubscribeUrl = null;
+    if (message.channel === "email" && message.client_id) {
+      try {
+        unsubscribeUrl = signUnsubscribeUrl({
+          orgId: message.org_id,
+          clientId: message.client_id,
+          channel: "email",
+          baseUrl: publicBaseUrl(env),
+          env
+        }).url;
+        outboundBody = withUnsubscribeFooter(message.rendered_body, unsubscribeUrl);
+      } catch (err) {
+        unsubscribeUrl = null;
+        console.warn(
+          `[dispatch] message ${message.id} is going out WITHOUT an unsubscribe link — ` +
+          `${String(err?.message || err)}. Set UNSUBSCRIBE_TOKEN_SECRET.`
+        );
+      }
+    }
+
     // ---- 3. Send -----------------------------------------------------------
     const result = await provider.send({
       id: message.id,
@@ -499,8 +569,12 @@ export async function dispatchOne(db, message, options = {}) {
       channel: message.channel,
       to: address,
       subject: await subjectFor(db, message),
-      body: message.rendered_body,
+      body: outboundBody,
       providerRef: message.provider_ref,
+      // Passed alongside the body, not inside it. The provider turns this into
+      // the RFC 8058 List-Unsubscribe headers, which are metadata rather than
+      // message content — so setting them does not break the never-mutate rule.
+      unsubscribeUrl,
       attachments: message.attachments || null
     }, { fetchImpl, timeoutMs, signal, env });
 

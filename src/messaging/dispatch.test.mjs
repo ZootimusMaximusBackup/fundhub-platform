@@ -98,7 +98,15 @@ const ENV = {
   MAILGUN_SEND_API_KEY: "key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   MAILGUN_SEND_DOMAIN: "mg.example.com",
   MAILGUN_SEND_FROM: "Fundhub <no-reply@mg.example.com>",
-  GHL_RELAY_API_KEY: "ghl-token"
+  GHL_RELAY_API_KEY: "ghl-token",
+  /* ADDED 2026-08-18 (T5-14). Outbound email now carries a signed unsubscribe
+     link, and dispatch HOLDS an email it cannot sign one for rather than
+     sending commercial mail with no way out. So a send test has to declare a
+     signing secret, exactly as production does — without one every email test
+     here correctly returns no_unsubscribe instead of sent. The value is a
+     throwaway 64-char string; it only has to be long enough to be accepted. */
+  UNSUBSCRIBE_TOKEN_SECRET: "test-unsubscribe-secret-0123456789abcdef0123456789abcdef",
+  APP_BASE_URL: "https://fundhub.test"
 };
 
 beforeEach(() => clearRuleCache());

@@ -1,0 +1,124 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Fundhub — Unsubscribe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/fh.css">
+<style>
+  /* Nothing new invented. fh.css already gives .login-box, .card, .err, .note,
+     .sub and .btn their look, and this page uses them exactly as
+     public/portal-login.html does, so a person who has seen any other Fundhub
+     page recognises this one. The only addition is the confirmed panel, which
+     is the same shape portal-login.html uses for "check your inbox". */
+  #done-box { display: none; border: 1px solid #A8D8B0; border-radius: 9px;
+              padding: 11px 13px; background: #0E1410; margin: 12px 0 0;
+              font-size: 13px; line-height: 1.55; color: #A8D8B0; }
+  #busy { display: none; margin: 14px 0 0; font: 500 11px/1.6 'JetBrains Mono', monospace;
+          letter-spacing: .08em; text-transform: uppercase; color: #A1A1AA; }
+</style>
+</head><body>
+<div class="login-box">
+  <div class="card">
+    <h1>Unsubscribe</h1>
+
+    <!-- Everything starts hidden. Which panel appears is decided only after the
+         link has been checked, so a broken link never shows a button that
+         cannot work. -->
+    <div id="busy">Checking your link…</div>
+
+    <div id="ask" hidden>
+      <p class="sub" id="askText">Press the button below and we will stop sending you these emails.</p>
+      <button class="btn" id="go" type="button">Unsubscribe me</button>
+      <p class="note">This only stops our emails. If you are a client, your file and your text
+        messages are not affected.</p>
+    </div>
+
+    <div id="done-box">
+      <b>Done.</b> You will not get any more of these emails.
+    </div>
+
+    <div class="err" id="err" hidden></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var q = new URLSearchParams(location.search);
+  var token = {
+    org: q.get("org"), client: q.get("client"), channel: q.get("channel"),
+    exp: q.get("exp"), sig: q.get("sig")
+  };
+
+  function fail(msg) {
+    $("busy").style.display = "none";
+    $("ask").hidden = true;
+    $("err").hidden = false;
+    $("err").textContent = msg;
+  }
+
+  function show(el) { $("busy").style.display = "none"; el.hidden = false; }
+
+  if (!token.org || !token.client || !token.sig || !token.exp) {
+    fail("This link is missing part of its address. Reply to any of our emails with the word STOP and we will take you off the list.");
+    return;
+  }
+
+  var qs = new URLSearchParams(token).toString();
+  $("busy").style.display = "block";
+
+  /* The GET only ASKS. It never unsubscribes anybody — mail scanners open
+     every link in a message before the person does, and a GET that acted
+     would take people off the list who never pressed anything. The POST
+     below is the act. */
+  fetch("/api/public/unsubscribe?" + qs, { headers: { Accept: "application/json" } })
+    .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+    .then(function (res) {
+      if (!res.ok || !res.body.ok) {
+        fail((res.body && res.body.message) ||
+          "This unsubscribe link is not valid any more. Reply to any of our emails with the word STOP and we will take you off the list.");
+        return;
+      }
+      if (res.body.already_unsubscribed) {
+        $("busy").style.display = "none";
+        $("done-box").style.display = "block";
+        $("done-box").innerHTML = "<b>You are already unsubscribed.</b> You will not get any more of these emails.";
+        return;
+      }
+      show($("ask"));
+    })
+    .catch(function () {
+      fail("We could not reach Fundhub just now. Please try again in a minute.");
+    });
+
+  $("go").addEventListener("click", function () {
+    $("go").disabled = true;
+    $("go").textContent = "Working…";
+    fetch("/api/public/unsubscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(token)
+    })
+      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+      .then(function (res) {
+        if (!res.ok || !res.body.ok) {
+          $("go").disabled = false;
+          $("go").textContent = "Unsubscribe me";
+          fail((res.body && res.body.message) || "We could not record that just now. Please try again in a minute.");
+          return;
+        }
+        $("ask").hidden = true;
+        $("err").hidden = true;
+        $("done-box").style.display = "block";
+      })
+      .catch(function () {
+        $("go").disabled = false;
+        $("go").textContent = "Unsubscribe me";
+        fail("We could not reach Fundhub just now. Please try again in a minute.");
+      });
+  });
+})();
+</script>
+</body></html>

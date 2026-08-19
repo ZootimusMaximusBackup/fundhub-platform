@@ -143,9 +143,25 @@ async function attempt(message, { fetchImpl, timeoutMs, signal, env = process.en
   } else {
     payload.text = body;
   }
-  if (message.providerRef) {
-    payload.headers = { "X-Fundhub-Ref": String(message.providerRef) };
+  /* HEADERS ARE NOT THE MESSAGE. The contract this file inherits is that the
+     BODY goes out exactly as approved — no truncation, no appended footer — and
+     that still holds: nothing here touches payload.text or payload.html.
+     Headers are envelope metadata the reader never sees as content.
+
+     List-Unsubscribe / List-Unsubscribe-Post are RFC 8058. They are what puts
+     an "Unsubscribe" control in Gmail's and Apple Mail's own chrome, beside the
+     sender name, and Gmail and Yahoo both require them of bulk senders. The
+     visible footer link is appended upstream in dispatch.mjs; these are the
+     same door opened from the mail client instead of from the message.
+
+     The angle brackets are required by the RFC, not decoration. */
+  const headers = {};
+  if (message.providerRef) headers["X-Fundhub-Ref"] = String(message.providerRef);
+  if (message.unsubscribeUrl) {
+    headers["List-Unsubscribe"] = `<${String(message.unsubscribeUrl)}>`;
+    headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
   }
+  if (Object.keys(headers).length) payload.headers = headers;
 
   const attached = await loadAttachments(message.attachments);
   if (attached.error) return rejection(attached.error);

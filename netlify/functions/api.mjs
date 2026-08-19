@@ -143,6 +143,7 @@ import messageBlasterGift from "../../api/gifts/message-blaster.mjs";
 import publicPartnerPage from "../../api/public/partner-page.mjs";
 import publicSurveySubmit from "../../api/public/survey-submit.mjs";
 import publicPartnerApply from "../../api/public/partner-apply.mjs";
+import publicUnsubscribe from "../../api/public/unsubscribe.mjs";
 import creativeGenerate from "../../api/creative/generate.mjs";
 import creativeLibrary from "../../api/creative/library.mjs";
 import creativeBrandKits from "../../api/creative/brand-kits.mjs";
@@ -523,6 +524,11 @@ export const ROUTES = {
   "public/partner-page": publicPartnerPage,
   "public/survey-submit": publicSurveySubmit,
   "public/partner-apply": publicPartnerApply,
+  /* The door behind the unsubscribe link in every outbound email. No auth —
+     same class as survey-submit: the signed token in the URL is the credential,
+     and a person getting out of a mailing list must never be asked to sign in.
+     GET reports state, POST is the act; see the handler's header for why. */
+  "public/unsubscribe": publicUnsubscribe,
   /* Public lending-climate lead magnet. No auth — same class as survey-submit. */
   "climate": climate,
   "climate/geocode": climateGeocode,
