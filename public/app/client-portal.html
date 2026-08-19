@@ -90,6 +90,9 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .playbtn.playing{padding-left:0;font-size:var(--fs-title)}
 .player.playing .ghost .logo{opacity:.18}
 .video-empty{position:relative;z-index:1;margin:0 24px;max-width:28ch;text-align:center;color:var(--dark-text-dim);font-size:var(--fs-body);font-weight:600}
+/* The real player, added only once a mapped video's metadata has loaded. It
+   fills the 16/9 frame the ghost was holding, so nothing on the page moves. */
+.video-el{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;z-index:2}
 .vrow{display:flex;align-items:center;gap:10px;margin-top:10px}
 .vtrack{flex:1;height:3px;border-radius:2px;background:var(--line);overflow:hidden;cursor:pointer}
 .vtrack i{display:block;height:100%;width:0;background:var(--spectrum);border-radius:2px}
@@ -980,15 +983,93 @@ var PRODUCTS = {
   window.__openBook = openBook;
 })();
 
-/* ── welcome video: honest empty. Do not pretend a video played. ── */
-(function(){
-  var btn = document.getElementById('playbtn');
-  if (btn) btn.remove();
-  var now = document.getElementById('vnow');
-  if (now) now.textContent = '—';
-  var empty = document.getElementById('video-empty');
-  if (empty) empty.textContent = 'Welcome video is not available';
-})();
+/* ── welcome video ─────────────────────────────────────────────────────────
+   THIS USED TO ASK NOBODY ANYTHING. The block here removed a play button that
+   had already been deleted from the markup and re-wrote the empty-state line at
+   :378 with the identical string — three statements, all no-ops — so the hero
+   said "Welcome video is not available" whether or not one existed. It could
+   not have said anything else: until GET /api/content/welcome-video there was
+   no way for a client's browser to reach an uploaded video at all.
+
+   THE EMPTY STATE IS STILL THE DEFAULT AND STILL HONEST. The markup ships the
+   "not available" line, and it is only ever replaced by a video that really
+   resolved. A failed read, a 401, an org with nothing mapped and a database one
+   migration behind all leave the page exactly as it loaded. Do not pretend a
+   video played.
+
+   NO TIMER. The clock is the browser's own timeupdate event on a real <video>.
+   src/http/crm-html.test.mjs bans repeating timers in this file outright — and
+   it scans the comments too, so do not name one here — because a clock ticking
+   with no video behind it is the exact fake this card used to be. */
+document.addEventListener('DOMContentLoaded', function(){
+  var player = document.getElementById('player');
+  var empty  = document.getElementById('video-empty');
+  if (!player || !empty) return;
+
+  var t = '';
+  try { t = localStorage.getItem('fh_token') || ''; } catch (e) {}
+
+  /* A client is their session — the endpoint refuses to read client_id from the
+     query string for a client principal. The param is forwarded only so a staff
+     member walking a client's portal with ?id= sees that client's video. */
+  var q = '';
+  try {
+    var p = new URLSearchParams(location.search);
+    var forId = p.get('id') || p.get('client_id');
+    if (forId) q = '?client_id=' + encodeURIComponent(forId);
+  } catch (e) {}
+
+  fetch('/api/content/welcome-video' + q, {
+    headers: t ? { authorization: 'Bearer ' + t } : {},
+    credentials: 'same-origin'
+  }).then(function(r){ return r.json(); }).then(function(d){
+    /* stream is an OBJECT — { url, expiresAt, expiresAtIso } — not a string.
+       Assigning it straight to src stringifies to "[object Object]", which the
+       browser resolves against this page and 404s, and the card silently falls
+       back to "not available": the same picture as no video at all. Read .url. */
+    var v = d && d.ok && d.video;
+    var src = v && v.stream && v.stream.url;
+    if (!src) return;                       // nothing mapped — leave the empty state
+
+    var el = document.createElement('video');
+    el.src = src;
+    el.controls = true;
+    el.preload = 'metadata';
+    el.setAttribute('playsinline', '');
+    el.className = 'video-el';
+    el.setAttribute('aria-label', v.title || 'Welcome video');
+
+    /* Only once the browser has actually accepted the file does the empty state
+       go away. A broken link leaves the card saying it is not available, which
+       is true. */
+    el.addEventListener('loadedmetadata', function(){
+      empty.hidden = true;
+      var ghost = player.querySelector('.ghost');
+      if (ghost) ghost.hidden = true;
+      var title = document.getElementById('video-title');
+      if (title && v.title) title.textContent = v.title;
+      var now = document.getElementById('vnow');
+      if (now && v.duration_label) now.textContent = v.duration_label;
+    });
+    el.addEventListener('error', function(){
+      /* The row is on file and the bytes are not reachable. Say the true thing
+         rather than leaving a dead black rectangle. */
+      empty.hidden = false;
+      empty.textContent = 'Welcome video is not available';
+    });
+
+    var now2 = document.getElementById('vnow');
+    if (now2) {
+      el.addEventListener('timeupdate', function(){
+        var s = Math.floor(el.currentTime || 0);
+        var m = Math.floor(s / 60);
+        now2.textContent = m + ':' + String(s % 60).padStart(2, '0');
+      });
+    }
+
+    player.appendChild(el);
+  }, function(){ /* offline or refused — the empty state already says so */ });
+});
 
 /* ── document upload — selected / sending / sent ────────────────────────── */
 (function(){
@@ -1320,7 +1401,10 @@ var PRODUCTS = {
 // were never requested and sat empty. Every deferred script runs before
 // DOMContentLoaded, so the whole screen starts on that event instead. Nothing
 // here needs the page any earlier.
-document.addEventListener("DOMContentLoaded", function () {
+// It is async because the client file id may only be knowable from the session
+// — see the third source below — and the refusal it guards must not fire before
+// that answer is back.
+document.addEventListener("DOMContentLoaded", async function () {
   "use strict";
   // Screen tile keys (src/config/offers.mjs) → entitlement catalog codes (032).
   var MAP = {
@@ -1374,10 +1458,19 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
     setOwnVisible(true);
+    /* NO DOWNLOAD BUTTON. It never had one that worked — grep this file for
+       "dl-btn" and the only other hits are two CSS rules; there was no click
+       handler at all. Nor is there anything for one to call: GET
+       /api/read/documents admits staff only (api/read/documents.mjs), and GET
+       /api/documents/<id> takes an HMAC-signed link that nothing mints for a
+       client. A control that cannot finish must not render — the same rule
+       paintTile() already applies to Unlock below. So say where the file
+       really comes from, in the wording paintDocsNotListed() already uses for
+       this same absence a few lines down. */
     list.innerHTML = rows.map(function (r) {
       return '<div class="own own-real"><div><div class="on-t">' + r.name +
-        '</div><div class="on-d">On your account · PDF</div></div>' +
-        '<div class="own-actions"><button class="dl-btn" type="button">Download ↓</button></div></div>';
+        '</div><div class="on-d">On your account · ask your advisor in chat for a copy</div></div>' +
+        '<div class="own-actions"><span class="dr-s">On file</span></div></div>';
     }).join("");
   }
 
@@ -1584,16 +1677,41 @@ document.addEventListener("DOMContentLoaded", function () {
         '<div class="pv">' + esc(amt) + '<span class="paid-pill">' + esc(st) + '</span></div></div>';
     }).join("");
   }
-  function nameFromSession() {
+  /* ONE SESSION READ, SHARED BY BOTH THINGS THAT NEED IT. Two questions on this
+     screen have the same answer: what is this person called, and which client
+     file is theirs. A client signed in by an emailed link has no other source
+     for either — no ?id= in the bar and, before portal-login.html was fixed, no
+     fh_account. Asking twice would be two round trips for one answer, so the
+     promise is made once and both callers wait on the same one. It never
+     rejects: a failed read is an empty answer, exactly as before. */
+  var sessionPromise = null;
+  function session() {
+    if (sessionPromise) return sessionPromise;
     var t = "";
     try { t = localStorage.getItem("fh_token") || ""; } catch (e) {}
-    return fetch("/api/auth/session", {
+    sessionPromise = fetch("/api/auth/session", {
       headers: t ? { authorization: "Bearer " + t } : {},
       credentials: "same-origin"
     }).then(function (r) { return r.json(); }).then(function (d) {
+      return (d && d.ok) ? d : null;
+    }, function () { return null; });
+    return sessionPromise;
+  }
+  function nameFromSession() {
+    return session().then(function (d) {
       var s = d && d.staff;
       return (s && s.name) ? String(s.name) : "";
-    }, function () { return ""; });
+    });
+  }
+  /* The client's OWN id, off the session they already hold. api/auth/session.mjs
+     projects it as staff.client_id for a client principal and leaves it absent
+     for staff, who reach this screen with ?id= instead — so this can never hand
+     a staff member somebody's file by accident. */
+  function clientIdFromSession() {
+    return session().then(function (d) {
+      var s = d && d.staff;
+      return (s && s.client_id) ? String(s.client_id) : "";
+    });
   }
 
   markStaffChrome();
@@ -1610,6 +1728,27 @@ document.addEventListener("DOMContentLoaded", function () {
       clientId = acct.clientId || acct.client_id;
     }
   } catch (e) {}
+
+  /* PUBLISHED FOR THE DISPUTE CARD FURTHER DOWN, which is a separate script tag
+     and so cannot see anything in here. It needs the same id and must not ask
+     for it a second time — the round trip is the cost, not the endpoint. A
+     promise, not a value, because the answer may not exist yet. */
+  window.__fhClientId = clientId
+    ? Promise.resolve(clientId)
+    : clientIdFromSession();
+
+  /* THE THIRD SOURCE, AND WHY IT COMES LAST. ?id= is the staff walk and
+     fh_account is a password sign-in; both answer instantly, so neither is made
+     to wait on a network call. Only when both are empty — which is every client
+     who signed in by clicking an emailed link — does this screen ask the session
+     who it is talking to. The refusal below used to fire here, synchronously,
+     BEFORE that question could be answered, and taking its `return` skipped
+     every read on the rest of this screen: agreements, pre-qual, documents and
+     entitlements were never requested at all. It now fires only once the answer
+     is known. */
+  if (!clientId) {
+    clientId = await window.__fhClientId;
+  }
 
   if (!clientId) {
     paintEmptyIdentity();
@@ -1788,6 +1927,21 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   var clientId = resolveClientId();
+
+  /* THE ID MAY NOT BE KNOWABLE YET. ?id= and fh_account answer straight away —
+     the staff walk and a password sign-in — but a client who arrived by emailed
+     link has neither, and their id only comes back with /api/auth/session. The
+     portal script above already asks once and publishes the answer, so this
+     waits on that promise rather than asking again. Unlike the reads on this
+     screen, this card CANNOT skip the id: api/consent/capture.mjs requires a
+     uuid on both the GET and the POST and checks it against the session before
+     it will answer. Without this the card tells a client who IS signed in to
+     "Sign in to load the legal wording", and the signature can never be taken. */
+  function whenClientId(done) {
+    var p = window.__fhClientId;
+    if (clientId || !p || typeof p.then !== "function") { done(); return; }
+    p.then(function (id) { if (id) clientId = id; done(); }, function () { done(); });
+  }
 
   function say(kindOfMsg, text) {
     var el = $("cpSignMsg");
@@ -2007,7 +2161,10 @@ document.addEventListener("DOMContentLoaded", function () {
   $("cpSignClear").addEventListener("click", function () { clearPad(); });
   $("cpSignSubmit").addEventListener("click", submit);
 
-  load();
+  /* load() waits on the id. Fired before it, this card shows an empty pad and
+     tells a signed-in client to sign in — the wording never arrives and the
+     signature can never be recorded. */
+  whenClientId(load);
 })();
 </script>
 </body>

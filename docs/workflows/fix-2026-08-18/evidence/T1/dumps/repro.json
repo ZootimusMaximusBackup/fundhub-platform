@@ -1,0 +1,127 @@
+{
+  "base": "https://fundhub.ai",
+  "email": "client@fundhub.ai",
+  "ranAt": "2026-08-19T06:54:06.282Z",
+  "steps": [
+    {
+      "step": "password-login",
+      "landedAt": "/login.html",
+      "api": [
+        {
+          "m": "GET",
+          "url": "/api/auth/login",
+          "status": 200
+        },
+        {
+          "m": "POST",
+          "url": "/api/auth/login",
+          "status": 401
+        }
+      ]
+    },
+    {
+      "step": "localStorage-after-password-login",
+      "keys": {
+        "fh_token": false,
+        "fh_role": null,
+        "fh_account_present": false,
+        "fh_account_has_clientId": false
+      }
+    },
+    {
+      "step": "A-portal-with-fh_account-no-id",
+      "dom": {
+        "greeting": null,
+        "sub": null,
+        "bodyHasCouldNotLoad": false,
+        "videoEmpty": null,
+        "footer": null
+      },
+      "api": [
+        {
+          "m": "GET",
+          "url": "/api/auth/session",
+          "status": 401
+        }
+      ]
+    },
+    {
+      "step": "B-portal-no-fh_account-no-id (== magic-link state)",
+      "dom": {
+        "greeting": null,
+        "sub": null,
+        "bodyHasCouldNotLoad": false,
+        "videoEmpty": null,
+        "fh_token_still_there": false,
+        "fh_account_present": false
+      },
+      "api": [
+        {
+          "m": "GET",
+          "url": "/api/auth/session",
+          "status": 401
+        }
+      ]
+    },
+    {
+      "step": "C-same-token-direct-api",
+      "probe": {
+        "/api/auth/session": {
+          "status": 401,
+          "keys": [
+            "ok",
+            "error"
+          ],
+          "client_id": null,
+          "ok": false,
+          "count": null
+        },
+        "/api/read/portal-summary": {
+          "status": 401,
+          "keys": [
+            "ok",
+            "error"
+          ],
+          "client_id": null,
+          "ok": false,
+          "count": null
+        },
+        "/api/read/portal-contracts": {
+          "status": 401,
+          "keys": [
+            "ok",
+            "error"
+          ],
+          "client_id": null,
+          "ok": false,
+          "count": null
+        },
+        "/api/read/entitlements": {
+          "status": 401,
+          "keys": [
+            "ok",
+            "error"
+          ],
+          "client_id": null,
+          "ok": false,
+          "count": null
+        },
+        "/api/read/documents": {
+          "status": 401,
+          "keys": [
+            "ok",
+            "error"
+          ],
+          "client_id": null,
+          "ok": false,
+          "count": null
+        }
+      }
+    },
+    {
+      "step": "D-portal-login-source",
+      "storesToken": true,
+      "storesAccount": false
+    }
+  ]
+}

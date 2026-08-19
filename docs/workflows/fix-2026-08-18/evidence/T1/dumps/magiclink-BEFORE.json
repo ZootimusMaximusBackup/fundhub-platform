@@ -1,0 +1,89 @@
+{
+  "ranAt": "2026-08-19T10:44:20.047Z",
+  "base": "https://fundhub.ai",
+  "client": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "steps": [
+    {
+      "step": "1-request-link",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "message": "If that email address has a Fundhub portal, a sign-in link is on its way. The link expires in 15 minutes."
+      }
+    },
+    {
+      "step": "2-message-row",
+      "id": "d55a805d-e735-45b9-928b-223f9413d493",
+      "status": "queued",
+      "provider": "internal",
+      "template_key": "EMAIL-PORTAL-MAGIC-LINK",
+      "created_at": "2026-08-19T10:44:22.648Z",
+      "to_address_is_plus_tag": true,
+      "token_found": true
+    },
+    {
+      "step": "3-clicked-the-link",
+      "afterVerify": {
+        "url": "/app/client-portal.html",
+        "fh_token": true,
+        "fh_account": null,
+        "fh_role": "client"
+      },
+      "api": [
+        {
+          "m": "POST",
+          "url": "/api/auth/magic-link-verify",
+          "status": 200
+        },
+        {
+          "m": "GET",
+          "url": "/api/auth/session",
+          "status": 200
+        },
+        {
+          "m": "GET",
+          "url": "/api/org-brand",
+          "status": 200
+        },
+        {
+          "m": "GET",
+          "url": "/api/health",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "step": "4-portal-as-the-real-client",
+      "seen": {
+        "greeting": "Welcome to your Fundhub portal",
+        "sub": "We could not load your file. Use the link we sent you, or sign in again.",
+        "couldNotLoad": true,
+        "videoText": "Welcome video is not available",
+        "hasPlayButton": false,
+        "hasVideoEl": false,
+        "tilesLocked": 6,
+        "tilesUnlocked": 0,
+        "entitlementStrip": null,
+        "disputeCard": "Sign in to load the legal wording",
+        "downloadButtons": 0
+      },
+      "api": [
+        {
+          "m": "GET",
+          "url": "/api/auth/session",
+          "status": 200
+        },
+        {
+          "m": "GET",
+          "url": "/api/health",
+          "status": 200
+        },
+        {
+          "m": "GET",
+          "url": "/api/org-brand",
+          "status": 200
+        }
+      ]
+    }
+  ]
+}

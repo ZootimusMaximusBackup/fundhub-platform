@@ -20,6 +20,7 @@ flowchart TD
     CAN --> A_chat[chat — 1 route]
     CAN --> A_climate[climate — 2 routes]
     CAN --> A_consent[consent — 1 route]
+    CAN --> A_content[content — 1 route]
     CAN --> A_contracts[contracts — 1 route]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 1 route]
@@ -55,7 +56,7 @@ flowchart TD
 
 ## What they can reach
 
-**27 of 179 routes.**
+**28 of 180 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -70,6 +71,7 @@ flowchart TD
 | `/api/climate/config` | — | anyone |
 | `/api/climate/geocode` | OPTIONS | anyone |
 | `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
+| `/api/content/welcome-video` | GET, HEAD | staff, client |
 | `/api/contracts/sign` | GET, POST | anyone |
 | `/api/documents-upload` | POST | staff, client |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
@@ -94,7 +96,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**150 of 179 routes.**
+**150 of 180 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
