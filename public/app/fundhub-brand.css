@@ -121,7 +121,26 @@ html{ font-size:100%; }        /* = the reader's browser default, normally 16px 
   box-shadow:var(--panel-shadow);
 }
 /* Put .fh-maxw on the content column only, never on a table or its scroll wrapper — tables stay wider inside their own overflow-x container (§1). */
-.fh-maxw{max-width:var(--fh-maxw);margin-inline:auto}
+
+/* WIDTH:100% IS LOAD-BEARING. Do not drop it.
+   This class is almost always put on a flex item of a column-direction flex
+   container (.main{display:flex;flex-direction:column}, or .stage). Per
+   flexbox, an item with an AUTO margin on the cross axis is not stretched — so
+   margin-inline:auto quietly cancelled the stretch and left the wrapper sized
+   by its own content instead of by the column it sits in. Measured 2026-08-18:
+   that produced BOTH halves of the width complaint at once.
+     Too NARROW on a wide monitor: at 2560 the cap says 1800, but agent-editor
+     shrink-wrapped to 755px, template-editor 1186, brand-studio 1420,
+     campaign-manager 1598 — every one of them carrying this class.
+     Too WIDE on a phone: at 390 the widest thing inside is a table, so the
+     wrapper grew to the table instead — Documents painted 1484px and Campaigns
+     1449px and the whole page slid sideways, against UI-STANDARDS §11 ("No
+     sideways page scroll"). The table's own .fh-scroll-x box was working the
+     whole time; the wrapper AROUND it was the thing overflowing.
+   hiring.html, products-commissions.html and staff-teams.html had each already
+   added exactly this declaration by hand to their own .content. This moves that
+   one-line workaround to the one place the class is defined. */
+.fh-maxw{max-width:var(--fh-maxw);margin-inline:auto;width:100%}
 
 /* ── UI-STANDARDS.md §3 TYPE SNAP ──────────────────────────────────────────
    Screen CSS loads AFTER this file, so leftover 7.5–13px sizes win unless we

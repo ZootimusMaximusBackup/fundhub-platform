@@ -56,6 +56,8 @@ const PORTAL_ONLY = shellList("PORTAL_ONLY");
 const HIRING_ONLY = shellList("HIRING_ONLY");
 const FINANCE_ONLY = shellList("FINANCE_ONLY");
 const ADVISOR_ONLY = shellList("ADVISOR_ONLY");
+const CONSENT_DESK_ONLY = shellList("CONSENT_DESK_ONLY");
+const ADMIN_BLOCKED = shellList("ADMIN_BLOCKED");
 
 /** staffTabs — shell.js's own staffTabs(), the shared employee surface.
     Role-narrow extras stack on top in allowedFor(). */
@@ -68,12 +70,23 @@ const STAFF_TABS = ALL.filter(
     !PORTAL_ONLY.includes(s) &&
     !HIRING_ONLY.includes(s) &&
     !FINANCE_ONLY.includes(s) &&
-    !ADVISOR_ONLY.includes(s)
+    !ADVISOR_ONLY.includes(s) &&
+    !CONSENT_DESK_ONLY.includes(s)
 );
 
-const CLOSER_TABS = [...STAFF_TABS, ...CLOSER_DESK_ONLY];
+const CLOSER_TABS = [...STAFF_TABS, ...CLOSER_DESK_ONLY, ...CONSENT_DESK_ONLY];
 const SALES_MANAGER_TABS = [...STAFF_TABS, ...SALES_FLOOR_ONLY, ...FINANCE_ONLY];
-const ADVISOR_TABS = [...STAFF_TABS, ...ADVISOR_ONLY];
+const ADVISOR_TABS = [...STAFF_TABS, ...ADVISOR_ONLY, ...CONSENT_DESK_ONLY];
+
+/* Owner still gets everything ("*"); admin does not. allowedFor() subtracts
+   ADMIN_BLOCKED on the admin branch, so the two roles no longer see the same
+   rail and this file can no longer describe them in one test.
+
+   Both are modelled the way allowedFor() actually builds them — from ALL, not
+   from a filter this file invented — so a role-level change cannot slip past
+   the way it did while one test covered both. */
+const OWNER_TABS = [...ALL];
+const ADMIN_TABS = ALL.filter((s) => !ADMIN_BLOCKED.includes(s));
 
 /* ── the screens on disk ──────────────────────────────────────────────────── */
 
@@ -121,6 +134,17 @@ describe("app shell — the lists this test reads", () => {
     assert.deepEqual([...PORTAL_ONLY].sort(), ["affiliate.html", "client-portal.html"].sort());
     assert.deepEqual(HIRING_ONLY, ["hiring.html"]);
     assert.deepEqual(ADVISOR_ONLY, ["lenders.html"]);
+    assert.deepEqual(CONSENT_DESK_ONLY, ["consent-capture.html"]);
+    /* ADMIN_BLOCKED is written out as a literal so shellList() can read it, which
+       means it could drift from PORTAL_ONLY. It must still contain all of it:
+       a client portal is not an employee desk for an admin any more than for a
+       setter. partner-galaxy.html is the third member, matching gateLinks()'s
+       own partner-only rule for that row. */
+    for (const s of PORTAL_ONLY) {
+      assert.ok(ADMIN_BLOCKED.includes(s),
+        `ADMIN_BLOCKED lost ${s}, which PORTAL_ONLY still calls a principal-only screen`);
+    }
+    assert.ok(ADMIN_BLOCKED.includes("partner-galaxy.html"));
     assert.deepEqual(
       [...FINANCE_ONLY].sort(),
       ["products-commissions.html", "staff-teams.html"].sort()
@@ -186,9 +210,13 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
     const visible = visibleFor(STAFF_TABS);
     assert.equal(visible.length, STAFF_TABS.length);
     assert.deepEqual([...visible].sort(), [...STAFF_TABS].sort());
-    for (const h of [...CLOSER_DESK_ONLY, ...SALES_FLOOR_ONLY, ...OWNER_ADMIN_ONLY, ...FINANCE_ONLY, ...ADVISOR_ONLY]) {
+    for (const h of [...CLOSER_DESK_ONLY, ...SALES_FLOOR_ONLY, ...OWNER_ADMIN_ONLY, ...FINANCE_ONLY, ...ADVISOR_ONLY, ...CONSENT_DESK_ONLY]) {
       assert.ok(!visible.includes(h), `generic staff must not see ${h}`);
     }
+    /* api/consent/capture.mjs CONSENT_ROLES refuses setter, inquiry_specialist
+       and sales_manager. Offering them the row would be a Save button that 403s
+       the person looking at it. */
+    assert.ok(!visible.includes("consent-capture.html"));
   });
 
   /* Owner decision 2026-08-17: the lender database is the funding advisor's and
@@ -198,6 +226,7 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
     const visible = visibleFor(ADVISOR_TABS);
     assert.deepEqual([...visible].sort(), [...ADVISOR_TABS].sort());
     assert.ok(visible.includes("lenders.html"));
+    assert.ok(visible.includes("consent-capture.html"));
     assert.ok(!visible.includes("closer-call.html"));
     assert.ok(!visible.includes("sales-floor.html"));
   });
@@ -207,6 +236,7 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
     assert.deepEqual([...visible].sort(), [...CLOSER_TABS].sort());
     assert.ok(visible.includes("closer-call.html"));
     assert.ok(visible.includes("my-numbers.html"));
+    assert.ok(visible.includes("consent-capture.html"));
     assert.ok(!visible.includes("sales-floor.html"));
     assert.ok(!visible.includes("lenders.html"));
   });
@@ -221,12 +251,33 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
     assert.ok(!visible.includes("my-numbers.html"));
     assert.ok(!visible.includes("ops-admin.html"));
     assert.ok(!visible.includes("lenders.html"));
+    assert.ok(!visible.includes("consent-capture.html"));
   });
 
-  test("owner/admin keep every non-partner sidebar row", () => {
-    const ownerAllowed = ALL.filter((s) => !PRINCIPAL_ONLY.includes(s));
-    const visible = visibleFor(ownerAllowed);
-    assert.deepEqual([...visible].sort(), [...ownerAllowed].sort());
+  test("the owner keeps every non-partner sidebar row", () => {
+    const visible = visibleFor(OWNER_TABS);
+    assert.deepEqual([...visible].sort(), [...OWNER_TABS].sort());
+  });
+
+  /* THE DEFECT THIS CASE EXISTS FOR (live walk 2026-08-18, admin@fundhub.ai).
+     An admin was offered a Client Portal row and clicking it opened a client's
+     own portal; typing /app/partner-galaxy.html opened partner Home even though
+     its row was hidden. Both came from ROLE_TABS.admin being "*", which
+     allowedFor() resolved to every screen with nothing subtracted.
+
+     This case is deliberately NOT merged back with the owner's. Merging them is
+     what let the old single test stay green while describing an admin rail that
+     no longer exists — it derived its expectation from ALL rather than from the
+     role, so it could not see a role-level change at all. */
+  test("an admin does not keep the client-facing portals or partner Home", () => {
+    const visible = visibleFor(ADMIN_TABS);
+    assert.deepEqual([...visible].sort(), [...ADMIN_TABS].sort());
+    for (const s of ADMIN_BLOCKED) {
+      assert.ok(!visible.includes(s),
+        `an admin must not be offered ${s} — it is a principal's screen, not an employee desk`);
+    }
+    assert.ok(visible.includes("brand-studio.html"),
+      "brand-studio.html stays on the admin rail — PRINCIPAL_ONLY records owner/admin keeping it");
   });
 });
 
