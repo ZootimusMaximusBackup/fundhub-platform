@@ -264,6 +264,32 @@
      still contains all of PORTAL_ONLY, so the two cannot drift apart. */
   var ADMIN_BLOCKED = ["client-portal.html", "affiliate.html", "partner-galaxy.html"];
 
+  /* NAV_HIDDEN — leave the menu, keep the URL.
+     Owner-set 2026-08-19 kill pass. These screens stay in ALL and in
+     allowedFor(), so typing the address still opens them. gateLinks() hides
+     only the .navitem rows. In-page links and background jobs are untouched.
+     No Retired flyout (owner picked nothing). */
+  var NAV_HIDDEN = [
+    "finance-os.html",
+    "consent-capture.html",
+    "company-brain.html",
+    "galaxy.html",
+    "partner-galaxy.html",
+    "ops-admin.html",
+    "automations.html",
+    "journeys.html",
+    "brand-studio.html",
+    "campaign-manager.html",
+    "social-studio.html",
+    "creative-factory.html",
+    "hiring.html",
+    "affiliate.html"
+  ];
+
+  function menuFor(ok) {
+    return ok.filter(function (s) { return NAV_HIDDEN.indexOf(s) === -1; });
+  }
+
   /* staffTabs — every screen a signed-in employee may open, which is every row
      the shared sidebar leaves them looking at — except the role-narrow
      screens above, which closer / sales_manager / funding_advisor pick up in
@@ -1186,6 +1212,8 @@
       var allowed = ok.indexOf(file) !== -1;
       /* Partner Home is for partners. Owner and staff use Galaxy. */
       if (file === "partner-galaxy.html" && role !== "partner") allowed = false;
+      /* Kill pass: hide the menu row only. allowedFor() still opens the URL. */
+      var hideNav = a.classList.contains("navitem") && NAV_HIDDEN.indexOf(file) !== -1;
       // The sidebar logo is chrome, not a tab. Every screen points it at
       // pipeline.html, which some roles may not treat as home, so
       // hiding it took the logo off the page for them. Send it home instead.
@@ -1199,7 +1227,7 @@
       // when the target screen reads both.
       if (allowed) a.setAttribute("href", withEntity(withClient(h, cid), eid));
       var box = a.closest("li") || a.closest(".card") || a;
-      if (!allowed) {
+      if (!allowed || hideNav) {
         box.style.display = "none";
         box.setAttribute("data-fh-gated", "1");
       } else if (box.hasAttribute("data-fh-gated")) {
@@ -1653,10 +1681,11 @@
        clicking. An unrecognised role says so outright. */
     var role = normRole(staff.role);
     var ok = allowedFor(role);
+    var menu = menuFor(ok);
     var known = isKnownRole(role);
-    var roleText = role + " · " + ok.length + (ok.length === 1 ? " tab" : " tabs");
+    var roleText = role + " · " + menu.length + (menu.length === 1 ? " tab" : " tabs");
     var roleTitle = known
-      ? "role " + role + " — " + ok.length + " of " + ALL.length + " screens. Change the map in shell.js ROLE_TABS."
+      ? "role " + role + " — " + menu.length + " of " + ALL.length + " screens. Change the map in shell.js ROLE_TABS."
       : "role \"" + role + "\" is not in shell.js ROLE_TABS — falling back to the shared Work tabs. Add it to the map.";
     el.innerHTML =
       '<span title="' + esc(roleTitle) + '" style="color:' + (known ? "#A1A1AA" : "#F5CE8F") + '">' +

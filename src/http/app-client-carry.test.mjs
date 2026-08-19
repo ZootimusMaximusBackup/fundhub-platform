@@ -207,6 +207,22 @@ describe("shell.js — the harness reaches the real code", () => {
   });
 });
 
+describe("shell.js — kill pass hides the menu row, not the URL", () => {
+  test("a Finance OS nav row is hidden for the owner and still carries the client", async () => {
+    const a = anchor("finance-os.html", { classes: ["navitem"] });
+    await runShell({ links: [a], search: "?client_id=" + CID });
+    assert.equal(a.li.style.display, "none");
+    assert.equal(a.href, "finance-os.html?client_id=" + CID);
+  });
+
+  test("an in-page Finance OS link stays visible for the owner", async () => {
+    const a = anchor("finance-os.html");
+    await runShell({ links: [a], search: "?client_id=" + CID });
+    assert.notEqual(a.li.style.display, "none");
+    assert.equal(a.href, "finance-os.html?client_id=" + CID);
+  });
+});
+
 /* ── carrying the client ──────────────────────────────────────────────────── */
 
 describe("shell.js — the open client rides along", () => {
