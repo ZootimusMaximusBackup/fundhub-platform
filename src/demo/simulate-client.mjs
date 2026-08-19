@@ -119,8 +119,12 @@ export async function loadSimulatedClient(db, { orgId, staffId = null } = {}) {
 
   const payload = buildSimulatedCrsPayload({ email, name });
   const crsRes = await db.query(
-    `INSERT INTO crs_results (org_id, client_id, result, outcome_tier)
-     VALUES ($1, $2, $3::jsonb, $4)
+    // is_demo on the ROW, not just on the client. Audit item T16-23 found 61
+    // rows across 7 tables that were demo work stored as if it were real, which
+    // makes cleanup and reporting quietly wrong. Every table this function
+    // writes to carries the column; it was simply never set.
+    `INSERT INTO crs_results (org_id, client_id, result, outcome_tier, is_demo)
+     VALUES ($1, $2, $3::jsonb, $4, true)
      RETURNING *`,
     [orgId, client.id, JSON.stringify(payload), "FULL_FUNDING"]
   );
@@ -140,8 +144,8 @@ export async function loadSimulatedClient(db, { orgId, staffId = null } = {}) {
   const stage = await firstSalesStage(db, orgId);
   if (stage) {
     const cardRes = await db.query(
-      `INSERT INTO cards (org_id, client_id, pipeline_id, stage_id, owner)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO cards (org_id, client_id, pipeline_id, stage_id, owner, is_demo)
+       VALUES ($1, $2, $3, $4, $5, true)
        RETURNING *`,
       [orgId, client.id, stage.pipeline_id, stage.stage_id, staffId]
     );
@@ -153,9 +157,10 @@ export async function loadSimulatedClient(db, { orgId, staffId = null } = {}) {
   try {
     await db.query(
       `INSERT INTO bank_accounts (
-         org_id, client_id, name, account_type, mask, current_balance_cents, currency_code, raw
+         org_id, client_id, name, account_type, mask, current_balance_cents, currency_code, raw,
+         is_demo
        ) VALUES ($1, $2, 'Simulated Checking', 'depository', '4242', 500000, 'USD',
-                 '{"provider":"mock","is_demo":true}'::jsonb)`,
+                 '{"provider":"mock","is_demo":true}'::jsonb, true)`,
       [orgId, client.id]
     );
   } catch { /* optional — tradelines + crs are the required half */ }
