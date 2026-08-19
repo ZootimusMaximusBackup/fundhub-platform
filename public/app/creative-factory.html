@@ -926,10 +926,10 @@ function renderScope(){
      string of letters and numbers that means nothing to the person reading it and
      is not something they can act on. The name is already on the same object. */
   document.getElementById('scopePid').textContent = p ? (p.name || p.slug || 'Unnamed partner') : 'No partner selected';
-  document.getElementById('scopeChipTxt').textContent = p ? (p.name || p.slug || p.id) : 'no partner selected';
+  document.getElementById('scopeChipTxt').textContent = p ? (p.name || p.slug || 'Unnamed partner') : 'no partner selected';
   document.getElementById('scopeOffers').innerHTML = '';
   document.getElementById('scopeHow').innerHTML = p
-    ? 'Showing <b>' + esc(p.name || p.slug || p.id) + '</b> only.'
+    ? 'Showing <b>' + esc(p.name || p.slug || 'Unnamed partner') + '</b> only.'
     : 'Nothing is loaded. Pick a partner to show jobs, creatives, or brand kits.';
   setWriteControls(canWriteCreative());
 }
@@ -1241,10 +1241,33 @@ function jobDetail(j){
 
   if(j.error){
     out += '<div class="detfull" style="margin-top:4px"><div class="dk" style="font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:5px">What went wrong</div>' +
-      '<div class="errbox">' + esc(j.error) + '</div></div>';
+      '<div class="errbox">' + esc(plainJobError(j.error)) + '</div></div>';
   }
   out += '<div class="detfull"><p class="note" style="margin-top:6px">' + jobExplain(j) + '</p></div>';
   return out + '</div>';
+}
+
+/* The stored failure reason, in words the owner reads.
+
+   generation_jobs.error holds the engineer's sentence verbatim (src/creative/
+   generate.mjs:283), and the commonest one tells the reader to "insert a
+   creative_providers row" — a database table name, printed to a person who does
+   not write code. This box used to show it unchanged.
+
+   Only the three sentences that actually exist in the code are translated. Every
+   one of them is matched on the same words jobExplain() below matches on, so the
+   box and the line under it can never disagree. Anything else gets a neutral
+   sentence: a wrong plain-English guess about an unknown failure is worse than
+   admitting the detail is not shown here. */
+function plainJobError(err){
+  var t = String(err || '');
+  if(/no active provider configured/i.test(t))
+    return 'No ad-making service is switched on for this account, so there was nothing to make the work. Trying again will not help.';
+  if(/has no module/i.test(t))
+    return 'The ad-making service on file is one this system does not know how to use. Trying again will not help.';
+  if(/returned zero assets/i.test(t))
+    return 'The ad-making service answered, but sent nothing back.';
+  return 'The job stopped with an error that this screen cannot put into plain words. Nothing was made.';
 }
 
 function jobExplain(j){
@@ -1470,12 +1493,29 @@ function libEmptyMsg(){
 }
 
 /* ══ CF-06 · REVIEW &amp; APPROVAL QUEUE ══════════════════════════════════ */
+
+/* WHAT EACH ROW IS, IN WORDS. api/creative/approvals.mjs returns three item_type
+   values and all three are database words. 'partner_brand' is the NAME OF A
+   TABLE, and it was being printed straight into the first column, so the person
+   reading the queue literally saw "partner_brand". Nothing here prints the raw
+   value — an item_type this map does not know reads as a neutral word instead. */
+var ITEM_WORDS = {
+  creative_asset: 'Creative',
+  campaign:       'Campaign',
+  partner_brand:  'Brand'
+};
+function itemWord(t){ return ITEM_WORDS[t] || 'Item'; }
+
 function apprRows(){
   var want = S.apprState;
   if(APPROVALS_LIVE){
     return APPROVALS_LIVE.filter(function(r){
       if(want==='all') return true;
-      if(want==='awaiting_approval') return r.item_type==='campaign';
+      /* Brands belong under this filter too. approvals.mjs sets wantBrands for
+         'awaiting_approval' (line 33) and returns them, so keeping them out here
+         threw away rows the server had already sent — the count on the button
+         and the queue below it both read low. */
+      if(want==='awaiting_approval') return r.item_type==='campaign' || r.item_type==='partner_brand';
       return r.item_type==='creative_asset' && r.state===want;
     }).slice().sort(function(a,b){ return a.updated_at < b.updated_at ? 1 : a.updated_at > b.updated_at ? -1 : 0; });
   }
@@ -1540,7 +1580,7 @@ function renderApprovals(){
         : '';
       var nReasons = (r.reasons||[]).length;
       return '<tr class="rowbtn ' + stripe + '" data-appr="' + esc(r.id) + '" tabindex="0" aria-expanded="false">' +
-        '<td><span class="chev">▸</span><span class="mono">' + esc(r.item_type) + '</span>' +
+        '<td><span class="chev">▸</span><span>' + esc(itemWord(r.item_type)) + '</span>' +
           '<span class="sub">' + esc(shortId(r.id)) + '</span></td>' +
         '<td><span class="badge ' + badge + '">' + esc(r.state) + '</span></td>' +
         '<td class="mono">' + (r.subtype ? esc(r.subtype) : '') + '</td>' +
@@ -1585,9 +1625,36 @@ var SCREEN_STATE_WORDS = {
 
 function apprDetail(r){
   var isCampaign = r.item_type === 'campaign';
+  var isBrand    = r.item_type === 'partner_brand';
   var out = '<div class="detwrap">';
   out += '<div class="detcol"><div class="dk">Item</div><div class="dv">' +
-    (isCampaign ? 'Campaign' : 'Creative') + '</div></div>';
+    esc(itemWord(r.item_type)) + '</div></div>';
+
+  /* A BRAND GETS ITS OWN BRANCH. It is not a creative and not a campaign: it
+     carries no compliance reasons, no budget, no offer, no platform and no AI
+     labels, because approvals.mjs selects NULL for every one of those columns on
+     this arm. Without this branch it fell through to the creative branch and
+     rendered a row of empty boxes plus an "Open the full creative" button that
+     points at something that is not a creative. */
+  if(isBrand){
+    out += '<div class="detcol"><div class="dk">Business name</div><div class="dv">' +
+      (r.detail ? esc(r.detail) : nul('not filled in')) + '</div></div>';
+    out += '<div class="detcol"><div class="dk">In the queue since</div><div class="dv mono">' +
+      esc(fmt(r.updated_at)) + '</div></div>';
+    out += '<div class="detfull"><p class="note" style="margin-top:6px">' +
+      '<b>A partner sent their own brand in to be checked.</b> That is their logo, colours, wording and ' +
+      'business details — not an advert. The advert rules have not been run on it, so there is nothing ' +
+      'flagged to show and no reason list.</p></div>';
+    /* NO BUTTON, AND NO CLAIM THAT ONE EXISTS ELSEWHERE. api/brand/review.mjs
+       accepts approve and reject, but no screen calls them: brand-studio.html
+       sends only action "submit". Saying "approve it over there" would send the
+       reader looking for a control that is not built. */
+    out += '<div class="detfull"><p class="note" style="color:var(--gray2)">' +
+      'This queue only shows you that a brand is waiting. There is no button yet — on this screen or ' +
+      'any other — that approves a brand or sends it back.</p></div>';
+    return out + '</div>';
+  }
+
   out += '<div class="detcol"><div class="dk">Reference</div><div class="dv mono">' + esc(r.id) + '</div></div>';
   out += '<div class="detcol"><div class="dk">' + (isCampaign ? 'Strategy' : 'Kind') + '</div><div class="dv mono">' +
     (r.subtype ? esc(r.subtype) : nul('—')) + '</div></div>';

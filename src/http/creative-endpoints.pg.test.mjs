@@ -140,6 +140,38 @@ describe("creative read endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : false
       "a blocked asset without its reasons is the same as dropping it");
   });
 
+  test("a brand sent for review reaches the approval queue", async () => {
+    // The third arm of the UNION in approvals.mjs. A brand waits on the same
+    // person as a campaign awaiting approval, so it answers to the same
+    // ?state=awaiting_approval value.
+    const { fetchRows } = await import("../../api/creative/approvals.mjs");
+    const rows = await asPartner(owner, (tx) =>
+      fetchRows(tx, { limit: 50, offset: 0, query: { state: "awaiting_approval" }, partnerId: owner }));
+    const brand = rows.find((r) => r.item_type === "partner_brand");
+    assert.ok(brand, "a brand in review must appear in the queue");
+    assert.strictEqual(brand.state, "review");
+    assert.strictEqual(brand.subtype, "brand");
+    assert.strictEqual(brand.detail, "EP Test Entity LLC", "the queue shows the business name");
+    // The whole UNION is ordered by this column, so a null here would sort the
+    // row to an arbitrary place. COALESCE(submitted_at, updated_at) is what
+    // keeps a row that predates 242 from dropping out of the sort.
+    assert.ok(brand.updated_at, "the brand row must carry a timestamp to sort on");
+  });
+
+  test("a brand in review does not reach another partner's queue", async () => {
+    // THE WHERE CLAUSE IS THE ONLY GUARD ON THIS ARM. partner_brand is not one
+    // of the nineteen tables 045 puts a row-level security policy on, so the
+    // scoped transaction protects it not at all — `b.partner_id = $7` in
+    // approvals.mjs is the entire isolation story here. Delete that predicate
+    // and every partner sees every partner's brand; this test is what notices.
+    const { fetchRows } = await import("../../api/creative/approvals.mjs");
+    const rows = await asPartner(stranger, (tx) =>
+      fetchRows(tx, { limit: 50, offset: 0, query: { state: "awaiting_approval" }, partnerId: stranger }));
+    assert.deepStrictEqual(
+      rows.filter((r) => r.item_type === "partner_brand"), [],
+      "another partner's brand reached this queue");
+  });
+
   test("jobs surface the failure reason but never the vendor cost", async () => {
     const { fetchRows } = await import("../../api/creative/jobs.mjs");
     const rows = await asPartner(owner, (tx) =>
@@ -187,6 +219,15 @@ describe("creative read endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : false
          VALUES ($1,$2,$3,'copy','1x1',true,'blocked',
                  '[{"code":"guaranteed-approval","message":"no"}]'::jsonb)`,
         [org, partnerId, kitId]);
+
+      // A brand sitting in review, so the third arm of the approvals UNION has
+      // something to return. submitted_at is set because this one was sent;
+      // approved_at stays NULL, which 043's CHECK requires for any status other
+      // than 'approved'.
+      await tx.query(
+        `INSERT INTO partner_brand (org_id, partner_id, entity_name, approval_status, submitted_at)
+         VALUES ($1,$2,'EP Test Entity LLC','review', now())`,
+        [org, partnerId]);
 
       await tx.query(
         `INSERT INTO generation_jobs (org_id, partner_id, brand_kit_id, spec, status, error, idempotency_key)
@@ -258,7 +299,7 @@ describe("creative read endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : false
     await asStaff(async (tx) => {
       for (const t of ["action_log", "partner_onboarding_tasks", "ad_metrics_daily", "ads", "ad_sets",
                        "campaigns", "spend_ceilings", "compliance_screenings", "generation_job_assets",
-                       "generation_jobs", "creative_assets", "brand_kits",
+                       "generation_jobs", "creative_assets", "brand_kits", "partner_brand",
                        "partner_module_settings", "ad_platform_connections"]) {
         await tx.query(`DELETE FROM ${t} WHERE partner_id = ANY($1)`, [ids]);
       }

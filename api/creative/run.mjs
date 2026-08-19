@@ -14,9 +14,10 @@ import { safeError } from "../../src/http/health.mjs";
 
    generation_jobs.error holds the engineer's sentence, and the commonest one
    names a database table ("insert a creative_providers row"), which is exactly
-   what must never reach a screen. Only the reason we can state plainly is
-   translated; anything else points at the job list, where the raw text still
-   sits for whoever is debugging. Nothing is invented and nothing is hidden. */
+   what must never reach a screen. Only a reason we can state plainly is
+   translated; anything else points at the job list, which now runs the same
+   sentence through its own ladder (creative-factory.html plainJobError). Nothing
+   is invented and nothing is hidden. */
 function plainReason(error) {
   const text = String(error || "");
   if (/no active provider configured/i.test(text)) {
@@ -24,6 +25,12 @@ function plainReason(error) {
   }
   if (/has no module/i.test(text)) {
     return "The ad-making service on file is one this system does not know how to use.";
+  }
+  /* A job that is back in the queue is most often here: the vendor replied and
+     sent no assets (src/creative/generate.mjs:191). That is the vendor ANSWERING,
+     which is why the requeued note below no longer says it was unreachable. */
+  if (/returned zero assets/i.test(text)) {
+    return "The service answered, but sent nothing back.";
   }
   if (!text) return "The job list below shows what happened.";
   return "The reason is on the job in the list below.";
@@ -91,7 +98,13 @@ export default async function handler(req, res) {
     } else if (failed) {
       note = "Some did not work. " + firstReason;
     } else if (requeued && !succeeded) {
-      note = "The service could not be reached. They are back in the queue and will be tried again.";
+      /* NO CAUSE IS ASSERTED HERE. This used to say "The service could not be
+         reached", which is one of several ways a job gets requeued and not the
+         commonest — a vendor that replies with zero assets is requeued too, and
+         it was plainly reachable. State only what is certain (they are going to
+         be tried again) and let the translator add a reason when it recognises
+         one. */
+      note = "They are back in the queue and will be tried again. " + firstReason;
     } else {
       note = undefined;
     }
