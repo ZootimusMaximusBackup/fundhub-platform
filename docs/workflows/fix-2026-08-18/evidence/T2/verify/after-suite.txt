@@ -1,19 +1,21 @@
-=== T2 AFTER-state — /tmp/wt-T2, live DATABASE_URL, 2026-08-18 ===
+=== T2 AFTER-state — REBASED onto origin/main a2ccf64 (T16 merged), live DATABASE_URL ===
 
---- failing tests (compare to BASELINE.md: same 3, all pre-existing) ---
+--- failing tests: the SAME 3 as BASELINE.md, all pre-existing, none in a file T2 touched ---
     not ok 5 - *** no route's gate is left unverified ***
 not ok 33 - the extraction is faithful to the code
 not ok 2163 - an endpoint excused from the org filter still passes the session's org to its store
-not ok 3218 - DATABASE_URL is present and checkable
+not ok 3220 - DATABASE_URL is present and checkable
 
---- unverified routes (neither is payment-links) ---
+--- unverified routes (payment-links is NOT among them) ---
         0: 'finance/crs-pull: a gate is referenced but its shape was not recognised'
         1: 'gifts/message-blaster: a gate is referenced but its shape was not recognised'
 
 --- totals ---
-# tests 5700
-# suites 424
-# pass 5694
+# tests 5702
+# suites 426
+# pass 5696
 # fail 3
 # cancelled 0
 # skipped 3
+
+baseline was: 5640 tests / 5634 pass / 3 fail (at d3fb2c7)
