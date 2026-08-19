@@ -411,3 +411,95 @@ describe("messaging.html — what happens when there are a lot of conversations"
     assert.match(HTML, /Nothing is waiting on a reply/);
   });
 });
+
+/* ── T5-08 / T5-12 / T5-13 · the destination box ──────────────────────────
+   Proven live on 2026-08-18 as owner: the Messaging screen had 28 controls and
+   exactly two inputs — the search box and the message body. There was nowhere
+   to say who a message was going to, so it could only ever go to whatever was
+   already on the person's record, and when that was empty the send failed with
+   nothing the sender could do about it from this screen. */
+
+describe("the destination box", () => {
+
+  test("there is a real, labelled destination control", () => {
+    assert.match(HTML, /<input[^>]*id="composeTo"/, "no destination input on the screen");
+    assert.match(HTML, /<label for="composeTo"/, "the box has no label, so nobody knows what it is");
+    // Disabled until a conversation is open, exactly like the body.
+    assert.match(HTML, /id="composeTo"[\s\S]{0,240}?disabled/);
+  });
+
+  test("what is typed is actually sent", () => {
+    assert.match(HTML, /payload\.to = to/, "the box is decoration unless it reaches the request");
+  });
+
+  test("the screen never writes the typed address back to the client record", () => {
+    /* T5-13. Sending one message somewhere else and CORRECTING somebody's file
+       are different acts, and doing the first by way of the second is how a
+       one-off send permanently redirects a real client's mail. */
+    assert.ok(!/FHData\.(updateClient|saveClient|patchClient)/.test(HTML),
+      "the screen must not save the typed address onto the person's record");
+  });
+
+  test("a good email and a good phone number are accepted", () => {
+    const V = loadViewModel();
+    assert.equal(V.addressLooksRight("email", "someone@example.com").ok, true);
+    assert.equal(V.addressLooksRight("sms", "+15551234567").ok, true);
+    assert.equal(V.addressLooksRight("email", "  someone@example.com  ").ok, true, "trimmed");
+  });
+
+  test("a bad address is refused BEFORE anything is written", () => {
+    const V = loadViewModel();
+    for (const bad of ["someone", "someone@", "@example.com", "someone example.com"]) {
+      assert.equal(V.addressLooksRight("email", bad).ok, false, `"${bad}" should be refused`);
+    }
+    for (const bad of ["5551234567", "555-123-4567", "+0555123", "not a number"]) {
+      assert.equal(V.addressLooksRight("sms", bad).ok, false, `"${bad}" should be refused`);
+    }
+  });
+
+  test("an empty box says what is missing, not just that it is wrong", () => {
+    /* This is the sentence that replaces the dead end. Before, the person got
+       "Not sent. We do not have a phone number or email address for this
+        person." AFTER pressing Send, with no way to supply one. */
+    const V = loadViewModel();
+    const sms = V.addressLooksRight("sms", "");
+    assert.equal(sms.ok, false);
+    assert.equal(sms.empty, true);
+    assert.match(sms.text, /phone number/i);
+    assert.match(sms.text, /type one/i, "it has to say what to do about it");
+    /* `empty` is reported separately from `ok` because the screen treats the two
+       differently: an empty box still SENDS, falling back to the address on the
+       client's record exactly as it always did. Gating Send on the box being
+       filled coupled sending to a separate client read, so a slow or failed
+       fetch killed the button — worse than the bug the box was added to fix. */
+
+    const email = V.addressLooksRight("email", "");
+    assert.match(email.text, /email address/i);
+    assert.match(email.text, /type one/i);
+  });
+
+  test("an empty box and a malformed one are different sentences", () => {
+    const V = loadViewModel();
+    const empty = V.addressLooksRight("email", "");
+    const wrong = V.addressLooksRight("email", "nonsense");
+    assert.notEqual(empty.text, wrong.text,
+      "'we have nothing for them' and 'that is not an address' are different problems");
+  });
+
+  test("the browser check matches what the server will accept", () => {
+    /* If the box says yes to something compose.mjs refuses, the person is told
+       it is fine and then told it is not. The two shapes are kept identical on
+       purpose — this test is what notices when one of them moves. */
+    const serverSrc = fs.readFileSync(path.resolve(HERE, "../messaging/compose.mjs"), "utf8");
+    assert.ok(serverSrc.includes("/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/"),
+      "the email shape in compose.mjs is not the one this screen checks");
+    assert.ok(serverSrc.includes("/^\\+[1-9]\\d{7,14}$/"),
+      "the phone shape in compose.mjs is not the one this screen checks");
+  });
+
+  test("a voice message cannot be addressed by hand", () => {
+    const V = loadViewModel();
+    assert.equal(V.addressLooksRight("voice", "+15551234567").ok, false,
+      "there is no staff voice compose, and inventing one is a step no journey names");
+  });
+});

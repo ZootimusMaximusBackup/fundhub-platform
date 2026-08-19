@@ -218,7 +218,12 @@ const digitsOf = (s) => s.replace(/\D+/g, "");
  * "NOT E.164: prefixing a country code onto a 10-digit number is assuming a
  * country the file never stated").
  */
-function phoneCandidates(value) {
+// EXPORTED since 2026-08-18 (T5-07), previously module-private. The inbound-SMS
+// client lookup in src/handlers/comms.mjs has exactly this problem — Twilio
+// always sends E.164, clients.phone is raw text, and two live records are not
+// E.164 — so a client's STOP resolved to nobody. A second copy of this rule
+// would be two things that must stay in step forever. One function, two callers.
+export function phoneCandidates(value) {
   if (!PHONE_SHAPE_RE.test(value)) return [];
   const d = digitsOf(value);
   if (d.length === 10) return [d, `1${d}`];

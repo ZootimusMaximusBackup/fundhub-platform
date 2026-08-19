@@ -8,7 +8,9 @@ import {
   mapToCanonical,
   handleMailgunWebhook,
   clientIdFromRecipient,
-  resolveClientFromRecipient
+  resolveClientFromRecipient,
+  replyClientIdFrom,
+  resolveClientFromSender
 } from "./mailgun.mjs";
 import { _resetOrgCache } from "../events/bus.mjs";
 import { on, clearHandlers } from "../events/registry.mjs";
@@ -309,4 +311,70 @@ test("REGRESSION: mail.response now carries a clientId the downstream workflows 
   assert.equal(ev.payload.clientId, "cl-777", "payload carries the resolved contact");
   assert.equal(ev.clientId, "cl-777", "event row is linked to the client");
   assert.equal(ev.payload.to, "monitor+cl-777@fundhub.ai");
+});
+
+/* ── T5-04 / T5-05 · who a reply belongs to ───────────────────────────────
+   Traced live 2026-08-19. The reply was deliberately NOT sent, because the
+   auditor proved it would attach to a real person's credit file: the matcher
+   took the From address and returned an arbitrary client with `LIMIT 1` and no
+   ORDER BY, so which customer a reply landed on was whatever the database
+   handed back first. */
+
+test("a reply addressed to reply+<clientId>@ names exactly one client", () => {
+  const id = "8556bedc-46e1-4d85-b0cd-a24adfee1521";
+  assert.equal(replyClientIdFrom(`reply+${id}@mg.fundhub.ai`), id);
+  assert.equal(replyClientIdFrom(`Fundhub <reply+${id}@mg.fundhub.ai>`), id, "inside angle brackets");
+  assert.equal(replyClientIdFrom(`REPLY+${id.toUpperCase()}@MG.FUNDHUB.AI`), id, "case does not matter");
+});
+
+test("a bank forwarding address is NOT read as a client reply", () => {
+  /* `monitor+<id>@` is a bank statement ABOUT a client and `reply+<id>@` is the
+     client's own words TO us. They produce completely different rows, and
+     confusing them would put a bank's words in a person's mouth. */
+  const id = "8556bedc-46e1-4d85-b0cd-a24adfee1521";
+  assert.equal(replyClientIdFrom(`monitor+${id}@fundhub.ai`), null);
+  assert.equal(replyClientIdFrom("hello@fundhub.ai"), null);
+  assert.equal(replyClientIdFrom("reply@mg.fundhub.ai"), null, "no tag, no client");
+  assert.equal(replyClientIdFrom(""), null);
+  assert.equal(replyClientIdFrom(null), null);
+});
+
+test("a tag that is not a client id shape is refused", () => {
+  // The tag has to look like a uuid or it is not one of ours.
+  assert.equal(replyClientIdFrom("reply+../../etc/passwd@mg.fundhub.ai"), null);
+  assert.equal(replyClientIdFrom("reply+12345@mg.fundhub.ai"), null);
+});
+
+test("an address held by ONE client resolves to that client", async () => {
+  const rows = [{ id: "cl-1", org_id: "org-1" }];
+  const db = { query: async () => ({ rows }) };
+  const out = await resolveClientFromSender(db, "Someone <person@example.com>");
+  assert.equal(out.clientId, "cl-1");
+  assert.equal(out.orgId, "org-1");
+  assert.equal(out.ambiguous, false);
+});
+
+test("an address held by MORE THAN ONE client refuses to guess", async () => {
+  /* THE FIX. Filing a person's words onto the wrong customer's credit file is
+     worse than filing them nowhere: the wrong client's thread now holds
+     somebody else's private message, and the right client looks like they
+     never replied. */
+  const db = { query: async () => ({ rows: [{ id: "cl-1", org_id: "org-1" }, { id: "cl-2", org_id: "org-2" }] }) };
+  const out = await resolveClientFromSender(db, "shared@example.com");
+  assert.equal(out.ambiguous, true, "two matches must not silently become one");
+  assert.equal(out.clientId, null, "and must not pick either of them");
+});
+
+test("the sender lookup reads two rows so it can tell one match from many", async () => {
+  let sql = "";
+  const db = { query: async (q) => { sql = q; return { rows: [] }; } };
+  await resolveClientFromSender(db, "nobody@example.com");
+  assert.match(sql, /LIMIT 2/, "LIMIT 1 cannot distinguish 'the only one' from 'the first of several'");
+  assert.ok(!/ORDER BY/i.test(sql),
+    "ordering would make the wrong answer deterministic rather than correct");
+});
+
+test("an unknown address still resolves to nothing", async () => {
+  const db = { query: async () => ({ rows: [] }) };
+  assert.equal(await resolveClientFromSender(db, "stranger@example.com"), null);
 });

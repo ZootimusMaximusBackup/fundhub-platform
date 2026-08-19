@@ -107,6 +107,11 @@ function config(env) {
     ok: true,
     apiKey,
     from,
+    /* NOT required, and deliberately not defaulted. Which domain receives our
+       mail is a fact about DNS, not something this file can infer from the
+       sending address — the two are different domains here, which is the whole
+       of T5-05. Unset, no Reply-To is added and behaviour is unchanged. */
+    replyToDomain: String(env.RESEND_REPLY_TO_DOMAIN || "").trim(),
     baseUrl: String(env.RESEND_BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, "")
   };
 }
@@ -143,9 +148,47 @@ async function attempt(message, { fetchImpl, timeoutMs, signal, env = process.en
   } else {
     payload.text = body;
   }
-  if (message.providerRef) {
-    payload.headers = { "X-Fundhub-Ref": String(message.providerRef) };
+  /* HEADERS ARE NOT THE MESSAGE. The contract this file inherits is that the
+     BODY goes out exactly as approved — no truncation, no appended footer — and
+     that still holds: nothing here touches payload.text or payload.html.
+     Headers are envelope metadata the reader never sees as content.
+
+     List-Unsubscribe / List-Unsubscribe-Post are RFC 8058. They are what puts
+     an "Unsubscribe" control in Gmail's and Apple Mail's own chrome, beside the
+     sender name, and Gmail and Yahoo both require them of bulk senders. The
+     visible footer link is appended upstream in dispatch.mjs; these are the
+     same door opened from the mail client instead of from the message.
+
+     The angle brackets are required by the RFC, not decoration. */
+  /* WHERE A REPLY GOES, AND WHY IT IS NOT THE FROM ADDRESS.
+
+     Mail leaves from RESEND_FROM, which is on fundhub.ai — and fundhub.ai's MX
+     records point at Cloudflare, not at us (checked 2026-08-18). Nothing reads
+     that mailbox. Inbound mail is only received on the Mailgun domain, which
+     has a catch-all route posting to /api/webhooks/mailgun. So a client who
+     pressed Reply was writing to an address no part of this system reads, which
+     is T5-05: outbound and inbound were on different domains.
+
+     REPLY_TO_DOMAIN names the domain that actually receives. The local part is
+     plus-tagged with the client id, the same convention F-10 uses for bank mail
+     (`monitor+<id>@`), so the reply comes back naming exactly one client rather
+     than being matched by guessing at the From address.
+
+     Unset, nothing is added and behaviour is exactly what it was. This is a
+     configuration fact — which domain receives mail — and the code refuses to
+     assume one. */
+  const replyDomain = String(cfg.replyToDomain || "").trim();
+  if (replyDomain && message.clientId) {
+    payload.reply_to = `reply+${message.clientId}@${replyDomain}`;
   }
+
+  const headers = {};
+  if (message.providerRef) headers["X-Fundhub-Ref"] = String(message.providerRef);
+  if (message.unsubscribeUrl) {
+    headers["List-Unsubscribe"] = `<${String(message.unsubscribeUrl)}>`;
+    headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+  }
+  if (Object.keys(headers).length) payload.headers = headers;
 
   const attached = await loadAttachments(message.attachments);
   if (attached.error) return rejection(attached.error);

@@ -221,6 +221,29 @@ export function clientIdFromRecipient(recipient) {
   return m ? m[1] : null;
 }
 
+/* THE REPLY TAG. Same plus-address idea F-10 already uses for bank mail, on a
+   different local part so the two can never be confused: `monitor+<id>@` is a
+   bank statement ABOUT a client, `reply+<id>@` is the client's own words TO us,
+   and those two produce completely different rows.
+
+   Minted on every outbound email by src/messaging/providers/resend.mjs. The
+   local part must be exactly `reply` — a `monitor+` address arriving here must
+   fall through to the From-address path, not be read as a reply. */
+const REPLY_TAG = /(?:^|<)\s*reply\+([0-9a-fA-F-]{36})@/;
+
+export function replyClientIdFrom(recipient) {
+  const m = REPLY_TAG.exec(String(recipient || "").trim().toLowerCase());
+  return m ? m[1] : null;
+}
+
+/* The org that owns a client. Needed because the reply tag names a client and
+   the event bus needs a tenant; without this an emit falls back to the default
+   org, which on a multi-tenant install is the wrong one. */
+async function orgOfClient(db, clientId) {
+  const r = await db.query(`SELECT org_id FROM clients WHERE id = $1 LIMIT 1`, [clientId]);
+  return r.rows[0]?.org_id || null;
+}
+
 /* resolveClientFromSender — the client who WROTE this email, if it was a client.
    Matched on the From address against `clients.email`, case-insensitively and
    trimmed, the same lookup src/handlers/comms.mjs findClient() does.
@@ -254,12 +277,28 @@ export async function resolveClientFromSender(db, from) {
   const bracketed = /<([^>]+)>/.exec(email);
   const address = (bracketed ? bracketed[1] : email).trim();
   if (!address) return null;
+  /* TWO ROWS, NOT ONE, AND NO `LIMIT 1`. This used to be `LIMIT 1` with no
+     ORDER BY, which is not "the oldest client with that address" — it is an
+     ARBITRARY one, whichever Postgres handed back first. When two records share
+     an address (a couple, a business address, a reused work account, the same
+     person entered twice) a reply would be filed onto whichever of them the
+     planner happened to reach, and the next read could pick the other.
+
+     Reading two rows is enough to know whether there is exactly one answer. */
   const r = await db.query(
-    `SELECT id, org_id FROM clients WHERE lower(email) = $1 LIMIT 1`,
+    `SELECT id, org_id FROM clients WHERE lower(email) = $1 LIMIT 2`,
     [address]
   );
+  if (r.rows.length > 1) {
+    /* AMBIGUOUS — REFUSE TO GUESS. Filing a person's words onto the wrong
+       customer's credit file is worse than filing them nowhere: the wrong
+       client's thread now contains somebody else's private message, and the
+       right client looks like they never replied. The caller records the mail
+       unthreaded instead, which is visible and recoverable. */
+    return { clientId: null, orgId: null, ambiguous: true, address };
+  }
   const c = r.rows[0];
-  return c ? { clientId: c.id, orgId: c.org_id } : null;
+  return c ? { clientId: c.id, orgId: c.org_id, ambiguous: false, address } : null;
 }
 
 export async function resolveClientFromRecipient(db, recipient) {
@@ -315,8 +354,22 @@ export const DELIVERY_STATUS_MAP = {
 export const COMPLAINT_TASK_ROLE = "admin";
 export const COMPLAINT_SOURCE = "mailgun-complaint";
 
+/* The source name an unsubscribe is filed under. Deliberately NOT
+   'provider_complaint': a spam report and an unsubscribe both stop the mail,
+   but only one of them is somebody saying our copy looked like spam, and an
+   operator reading opt_outs needs to tell those apart. */
+export const UNSUBSCRIBE_SOURCE = "provider_unsubscribe";
+
+/* `unsubscribed` WAS IN THIS SET UNTIL 2026-08-18 (T5-02), which meant the
+   provider told us somebody had unsubscribed and we threw it away. The result
+   was backwards: a spam complaint — the weaker, angrier signal — stopped the
+   mail, and a deliberate press of the unsubscribe button did nothing at all.
+   It is handled in its own branch below rather than added to
+   DELIVERY_STATUS_MAP, because an unsubscribe is not a delivery state: the
+   mail arrived, and writing it as a status would overwrite `delivered` and
+   destroy the only record that it landed. */
 export const IGNORED_DELIVERY_EVENTS = new Set([
-  "accepted", "opened", "clicked", "unsubscribed", "stored", "delivered_ip"
+  "accepted", "opened", "clicked", "stored", "delivered_ip"
 ]);
 
 /* Mailgun writes the id with angle brackets on the send response and without
@@ -380,6 +433,38 @@ export async function handleMailgunDeliveryEvent({ db, body, signingKey }) {
     return { ok: true, status: 200, reason: "not_delivery_state", updated: 0, event: evt.event };
   }
 
+  /* UNSUBSCRIBED — a withdrawal of consent, handled here and then done.
+
+     It sits between the signature check and the status machinery on purpose.
+     Above it, so a forged payload can never opt anybody out. Below the status
+     machinery, so it can return before `mapped` is consulted — an unsubscribe
+     has no delivery status to write and must not touch messages.status.
+
+     It does NOT raise a review task, which is the one thing that makes it
+     different from the complaint branch further down. A spam report is a
+     signal about the TEMPLATE: somebody found the copy objectionable enough to
+     press a button that damages our sending domain, and a person should read
+     it. An unsubscribe is the ordinary, wanted outcome of the link we are
+     obliged to put in the mail. Filing a task for each one would bury the
+     complaints that actually need reading. */
+  if (evt.event === "unsubscribed") {
+    const row = await findOutboundEmailByProviderId(db, evt.providerMessageId);
+    const target = row && row.client_id
+      ? { clientId: row.client_id, orgId: row.org_id }
+      : await resolveClientByEmail(db, evt.recipient);
+    if (!target) {
+      return {
+        ok: true, status: 200, reason: "unmatched", updated: 0,
+        event: evt.event, optedOut: false, taskRaised: false
+      };
+    }
+    await recordOptOut(db, target.clientId, target.orgId, "email", UNSUBSCRIBE_SOURCE);
+    return {
+      ok: true, status: 200, reason: "unsubscribed", updated: 0,
+      event: evt.event, optedOut: true, taskRaised: false
+    };
+  }
+
   let mapped = DELIVERY_STATUS_MAP[evt.event];
   if (evt.event === "failed") {
     // Mailgun splits hard bounces from transient ones by severity, and the two
@@ -393,17 +478,7 @@ export async function handleMailgunDeliveryEvent({ db, body, signingKey }) {
     return { ok: true, status: 200, reason: "unknown_event", updated: 0, event: evt.event };
   }
 
-  // Matched on THEIR id, both sides stripped of angle brackets. Guarded to
-  // outbound email so a colliding id cannot move a row on another channel.
-  const found = await db.query(
-    `SELECT id, org_id, client_id, template_key
-       FROM messages
-      WHERE btrim(provider_message_id, '<>') = $1
-        AND direction = 'outbound'
-        AND channel = 'email'`,
-    [evt.providerMessageId]
-  );
-  const row = found.rows[0] || null;
+  const row = await findOutboundEmailByProviderId(db, evt.providerMessageId);
 
   /* THE OPT-OUT COMES FIRST, and it is the reason this endpoint exists.
 
@@ -487,6 +562,22 @@ async function raiseComplaintTask(db, target, row, evt) {
     ]
   });
   return !!res?.created;
+}
+
+/* Matched on THEIR id, both sides stripped of angle brackets. Guarded to
+   outbound email so a colliding id cannot move a row on another channel.
+   Shared by the unsubscribe branch and the delivery-status branch so the two
+   can never drift into matching different rows for the same receipt. */
+async function findOutboundEmailByProviderId(db, providerMessageId) {
+  const found = await db.query(
+    `SELECT id, org_id, client_id, template_key
+       FROM messages
+      WHERE btrim(provider_message_id, '<>') = $1
+        AND direction = 'outbound'
+        AND channel = 'email'`,
+    [providerMessageId]
+  );
+  return found.rows[0] || null;
 }
 
 /* Last resort for a complaint we cannot tie to a message row. A complaint that
@@ -585,10 +676,14 @@ export async function handleMailgunWebhook({ db, body, signingKey }) {
      rule, one dedupe. A second event name would be a second copy of that, and
      the two would drift.
 
-     The TCPA STOP/START branch inside that handler is guarded on
-     `channel === "sms"` and so does not fire here, which is correct: "STOP" in
-     an email subject line is not a TCPA opt-out keyword, and treating it as one
-     would silence a channel the consumer never asked us to stop using.
+     The STOP/START branch inside that handler NOW FIRES FOR EMAIL TOO
+     (changed 2026-08-18, T5-01). It used to be guarded on `channel === "sms"`,
+     and the note here defended that on the grounds that "STOP" in an email
+     SUBJECT line is not a TCPA keyword. That much still holds — and it is why
+     the branch reads the BODY and requires a whole-body exact match, so a
+     subject line, a signature block or a quoted thread can never trigger it.
+     What it got wrong was concluding that email therefore had no opt-out word
+     at all, which left a client who replied "STOP" still on the list.
 
      `sid` carries the Message-Id because that is the field onMessageInbound
      writes to provider_ref — so a Mailgun redelivery of the same email lands on
@@ -602,9 +697,33 @@ export async function handleMailgunWebhook({ db, body, signingKey }) {
      keep. This payload is a person's own words written to us, which is exactly
      what a conversation thread is, and a thread with the messages missing is
      not a thread. */
-  const sender = await resolveClientFromSender(db, evt.from);
-  if (sender) {
+  /* WHO REPLIED — THE ADDRESS THEY WROTE TO ANSWERS FIRST.
+
+     Every email we send now carries a Reply-To of `reply+<clientId>@<domain>`
+     (src/messaging/providers/resend.mjs), so an ordinary reply comes back
+     addressed to exactly one client. That is deterministic: it does not care
+     whether two people share a mailbox, whether they replied from their phone
+     rather than the address on file, or whether they changed jobs.
+
+     The From address is the FALLBACK, and it can only answer when it answers
+     unambiguously — see resolveClientFromSender. This ordering is T5-04: a
+     reply used to be filed on whichever client the database happened to return
+     first for that address. */
+  const tagged = replyClientIdFrom(evt.recipient);
+  const sender = tagged
+    ? { clientId: tagged, orgId: await orgOfClient(db, tagged), ambiguous: false }
+    : await resolveClientFromSender(db, evt.from);
+
+  if (sender && (sender.clientId || sender.ambiguous)) {
     const inboundKey = evt.messageId ? `mailgun:${evt.messageId}:message.inbound` : undefined;
+    if (sender.ambiguous) {
+      /* Recorded, not thrown away, and not attached to anybody. Losing a
+         client's words is not an acceptable way to avoid misfiling them. */
+      console.warn(
+        `[mailgun] inbound reply from an address held by more than one client — ` +
+        `filed unthreaded rather than on a guess. Message ${evt.messageId || "(no id)"}.`
+      );
+    }
     const res = await emit(db, "message.inbound", {
       from: evt.from,
       to: evt.recipient,
@@ -612,8 +731,15 @@ export async function handleMailgunWebhook({ db, body, signingKey }) {
       subject: evt.subject,
       sid: evt.messageId,
       channel: "email",
-      source: "mailgun"
-    }, { idempotencyKey: inboundKey, orgId: sender.orgId, clientId: sender.clientId });
+      source: "mailgun",
+      // Named on the payload so the reason a message is unthreaded survives
+      // into the event log rather than living only in a warning line.
+      unresolved_reason: sender.ambiguous ? "address_matches_more_than_one_client" : undefined
+    }, {
+      idempotencyKey: inboundKey,
+      orgId: sender.orgId || undefined,
+      clientId: sender.clientId || undefined
+    });
     emitted.push({ name: "message.inbound", id: res.id, deduped: res.deduped });
   }
 

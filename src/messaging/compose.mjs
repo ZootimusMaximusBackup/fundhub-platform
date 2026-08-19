@@ -179,10 +179,48 @@ async function resolveTarget(db, { orgId, conversationId, clientId, channel }) {
   return { conversationId: convo.id, clientId, channel };
 }
 
+/* WHAT A TYPED DESTINATION IS ALLOWED TO LOOK LIKE.
+
+   Deliberately the same shapes the providers themselves enforce, so a value
+   accepted here cannot be rejected at the wire. Email is the ordinary
+   something@something.something; SMS is E.164, which is what Twilio requires
+   and what 30 of the 32 live client records already hold.
+
+   Voice has no entry and so cannot be addressed by hand. There is no staff
+   voice compose, and adding one would be a step no journey names. */
+const ADDRESS_SHAPE = {
+  email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+  sms: /^\+[1-9]\d{7,14}$/
+};
+
+const ADDRESS_HELP = {
+  email: "an email address, like name@example.com",
+  sms: "a phone number in full international form, like +15551234567"
+};
+
+/* validDestination — pure. Returns the trimmed value, or throws badRequest
+   naming what was wanted, so the person typing gets told what to fix rather
+   than "invalid input". */
+export function validDestination(channel, value) {
+  const wanted = ADDRESS_SHAPE[channel];
+  const v = typeof value === "string" ? value.trim() : "";
+  if (!wanted) throw badRequest(`a ${channel} message cannot be addressed by hand`);
+  if (!wanted.test(v)) throw badRequest(`that is not ${ADDRESS_HELP[channel]}`);
+  return v;
+}
+
 /* addressFor — where this goes, as of now.
 
    Recorded on the row (111_messages_address) rather than resolved at send time,
    so a reply that waits in the queue still goes where it was written to go.
+
+   A TYPED DESTINATION IS RECORDED ON THE MESSAGE AND NOWHERE ELSE. Nothing in
+   this file writes to `clients`, and that is a guarantee rather than an
+   accident. Staff needed a way to send ONE message to a different address
+   without editing the person's record, because those are not the same act:
+   correcting somebody's email changes their file, and sending one message
+   elsewhere does not. Doing the second by way of the first is how a one-off
+   test send ends up permanently redirecting a real client's mail.
 
    A MISSING ADDRESS IS NOT REFUSED HERE. It is tempting: no phone number means
    no text. But the dispatcher already has that branch (OUTCOME.NO_ADDRESS) and
@@ -226,7 +264,10 @@ export async function composeAndSend(db, input = {}, options = {}) {
   const {
     orgId, staffId, conversationId = null, clientId = null, channel = null,
     body, subject = null, shiftId = null, idempotencyKey = null,
-    attachments = null
+    attachments = null,
+    // Where THIS ONE message goes, if the sender typed somewhere. Absent, the
+    // client record answers, exactly as it always has.
+    toAddress: typedAddress = null
   } = input;
 
   if (!orgId) throw badRequest("orgId is required");
@@ -236,6 +277,14 @@ export async function composeAndSend(db, input = {}, options = {}) {
   if (!text) throw badRequest("body is required");
   if (text.length > MAX_BODY_LENGTH) {
     throw badRequest(`body is longer than ${MAX_BODY_LENGTH} characters`);
+  }
+
+  /* Refused before a single query, when the channel is already known. The
+     channel is only unknown on the conversationId form, where it has to be read
+     from the thread — that case is validated below instead. Checking here as
+     well costs one regex and means a typo never reaches the database. */
+  if (channel && typedAddress != null && String(typedAddress).trim() !== "") {
+    validDestination(channel, typedAddress);
   }
 
   const target = await resolveTarget(db, { orgId, conversationId, clientId, channel });
@@ -250,7 +299,14 @@ export async function composeAndSend(db, input = {}, options = {}) {
   const att = normalizeAttachments(attachments);
 
   const providerRef = idempotencyKey ? `staff:${idempotencyKey}` : null;
-  const toAddress = await addressFor(db, target.clientId, target.channel);
+
+  /* A typed destination wins for this message only; with none, the client
+     record answers as it always has. The fallback stays because most sends do
+     not type anything, and losing it would break every reply that relies on
+     the address already on file. */
+  const toAddress = typedAddress != null && String(typedAddress).trim() !== ""
+    ? validDestination(target.channel, typedAddress)
+    : await addressFor(db, target.clientId, target.channel);
 
   /* status='queued' and compliance_check_passed=false.
 

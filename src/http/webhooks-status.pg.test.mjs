@@ -442,3 +442,79 @@ test("mailgun inbound: a delivery event sent to the INBOUND url is routed, not c
     assert.equal(await statusOf(msg), "delivered", "the inbound url must hand a delivery event to the delivery path");
     assert.ok(!out.body.emitted?.length, "a delivery receipt is not a bank email and must emit no mail.response");
   });
+
+/* ── T5-02 · the provider's own unsubscribe signal ─────────────────────────
+   Until 2026-08-18 "unsubscribed" sat in IGNORED_DELIVERY_EVENTS, so the
+   system's behaviour was backwards: a spam complaint — the angrier, weaker
+   signal — stopped the mail, and a deliberate press of the unsubscribe button
+   was thrown away. These run LAST on purpose. Earlier tests in this file
+   assert org-wide counts of opt_outs and tasks, and an opt-out written before
+   them would make those assertions lie. */
+
+test("mailgun-events: an UNSUBSCRIBED event opts the client out of email",
+  { skip: !HAS_DB }, async () => {
+    const rawBody = mailgunBody({
+      event: "unsubscribed",
+      recipient: "status.bystander@example.com",
+      message: { headers: { "message-id": "20260801.2.bbbb@mg.fundhub.test" } }
+    });
+    const out = await handleWebhook({ db, provider: "mailgun-events", rawBody, headers: {}, env: ENV });
+
+    assert.equal(out.status, 200);
+    assert.equal(out.body.optedOut, true, "the whole point of the event");
+    assert.equal(out.body.reason, "unsubscribed");
+
+    const rows = (await db.query(
+      `SELECT channel, opted_in_at, source FROM opt_outs WHERE org_id = $1 AND client_id = $2`,
+      [org, otherClient])).rows;
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].channel, "email");
+    assert.equal(rows[0].opted_in_at, null, "the opt-out must be live");
+    assert.equal(rows[0].source, "provider_unsubscribe",
+      "filed apart from a spam complaint — an operator has to be able to tell them apart");
+  });
+
+test("mailgun-events: an unsubscribe does NOT overwrite the delivered state",
+  { skip: !HAS_DB }, async () => {
+    /* An unsubscribe is not a delivery state. The mail arrived — that is how
+       they saw the link. Writing it onto messages.status would destroy the only
+       record that it landed, which is the same reason `opened` is ignored. */
+    assert.equal(await statusOf(emailBystander), "delivered");
+  });
+
+test("mailgun-events: an unsubscribe raises no review task",
+  { skip: !HAS_DB }, async () => {
+    /* A spam complaint is a signal about the COPY and a person must read it.
+       An unsubscribe is the ordinary, wanted outcome of the link we are obliged
+       to put in the mail. One task per unsubscribe would bury the complaints. */
+    const n = (await db.query(
+      `SELECT count(*)::int AS c FROM tasks WHERE org_id = $1`, [org])).rows[0].c;
+    assert.equal(n, 1, "still only the one complaint task from earlier in this file");
+  });
+
+test("mailgun-events: an unsubscribe for an address we do not know is acknowledged, not acted on",
+  { skip: !HAS_DB }, async () => {
+    const rawBody = mailgunBody({
+      event: "unsubscribed",
+      recipient: "nobody-here@example.com",
+      message: { headers: { "message-id": "no-such-message@mg.fundhub.test" } }
+    });
+    const out = await handleWebhook({ db, provider: "mailgun-events", rawBody, headers: {}, env: ENV });
+    assert.equal(out.status, 200, "Mailgun must not be left retrying forever");
+    assert.equal(out.body.reason, "unmatched");
+    assert.equal(out.body.optedOut, false, "there is no client to opt out and inventing one is worse");
+  });
+
+test("mailgun-events: an UNSIGNED unsubscribe is rejected before it touches the database", async () => {
+  // Same bar as the complaint path. A forged unsubscribe would silence a
+  // client's mail, so it must be refused on the signature, not on trust.
+  const body = mailgunBody(
+    { event: "unsubscribed", recipient: "status.subject@example.com" },
+    { sign: false }
+  );
+  const out = await handleWebhook({
+    db: forbiddenDb(), provider: "mailgun-events", rawBody: body, headers: {}, env: ENV
+  });
+  assert.equal(out.status, 401);
+  assert.equal(out.body.reason, "bad_signature");
+});

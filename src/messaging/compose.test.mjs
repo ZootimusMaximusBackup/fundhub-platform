@@ -145,3 +145,70 @@ test("dispatchMessage: adds no way past the gate, and claims the same way claimD
   assert.match(claim, /SET\s+status\s*=\s*'sending'/,
     "the claim does not flip the status in the statement that selects it — two callers could both send it");
 });
+
+/* ── T5-08 / T5-12 / T5-13 · a typed destination ──────────────────────────
+   Until 2026-08-18 a staff message could only go to whatever was already on
+   the client record. When that was empty the send failed and the screen had no
+   way to supply an address. */
+
+test("compose: a malformed destination is refused before the database is touched", async () => {
+  const base = { orgId: ORG, staffId: STAFF, conversationId: CONVO, body: "hi" };
+  for (const bad of ["someone", "someone@", "@example.com", "a b@c.com"]) {
+    await assert.rejects(
+      () => composeAndSend(forbidden, { ...base, channel: "email", clientId: CONVO, conversationId: null, toAddress: bad }),
+      isBadRequest,
+      `"${bad}" should be refused`
+    );
+  }
+});
+
+test("compose: a phone number without a country code is refused", async () => {
+  // Twilio requires E.164, so accepting anything else here just moves the
+  // failure to the wire, where the person who typed it never sees it.
+  for (const bad of ["5551234567", "555-123-4567", "+0555123"]) {
+    await assert.rejects(
+      () => composeAndSend(forbidden, {
+        orgId: ORG, staffId: STAFF, clientId: CONVO, channel: "sms", body: "hi", toAddress: bad
+      }),
+      isBadRequest,
+      `"${bad}" should be refused`
+    );
+  }
+});
+
+test("compose: the refusal says what was wanted, not just that it was wrong", async () => {
+  await assert.rejects(
+    () => composeAndSend(forbidden, {
+      orgId: ORG, staffId: STAFF, clientId: CONVO, channel: "sms", body: "hi", toAddress: "5551234567"
+    }),
+    (err) => /international form/.test(String(err.message)) && err.code === "BAD_REQUEST"
+  );
+});
+
+test("compose: NOTHING here writes to the clients table", () => {
+  /* T5-13, stated as a test rather than a promise in a comment. The addresses
+     set aside for testing are the same ones on a real person's live credit
+     file, so a screen that "helpfully" saved a typed address onto the record
+     would redirect a real client's mail. compose reads clients; it never
+     writes to it. */
+  const src = code(composeSrc);
+  assert.ok(!/UPDATE\s+clients/i.test(src), "compose updates the clients table");
+  assert.ok(!/INSERT\s+INTO\s+clients/i.test(src), "compose inserts into the clients table");
+});
+
+test("compose: with nothing typed, the client record still answers", () => {
+  // The fallback is load-bearing: almost every reply relies on the address
+  // already on file, and removing it would break all of them.
+  const src = code(composeSrc);
+  assert.match(src, /addressFor\(db, target\.clientId, target\.channel\)/,
+    "the fallback to the client record is gone");
+});
+
+test("compose: a voice message cannot be addressed by hand", async () => {
+  await assert.rejects(
+    () => composeAndSend(forbidden, {
+      orgId: ORG, staffId: STAFF, clientId: CONVO, channel: "voice", body: "hi", toAddress: "+15551234567"
+    }),
+    isBadRequest
+  );
+});

@@ -1,0 +1,65 @@
+{
+  "at": "2026-08-19T03:47:58.096Z",
+  "results": [
+    {
+      "name": "unsubscribe page offers a button on a valid link",
+      "pass": true,
+      "extra": ""
+    },
+    {
+      "name": "pressing it confirms, and only the POST unsubscribes",
+      "pass": true,
+      "extra": "{\"org\":\"11111111-1111-4111-8111-111111111111\",\"client\":\"22222222-2222-4222-8222-222222222222\",\"channel\":\"email\",\"exp\":\"9999999999\",\"sig\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}"
+    },
+    {
+      "name": "the confirmation is shown in plain words",
+      "pass": true,
+      "extra": ""
+    },
+    {
+      "name": "a bad link explains another way out rather than just failing",
+      "pass": true,
+      "extra": ""
+    },
+    {
+      "name": "a bad link offers no button that cannot work",
+      "pass": true,
+      "extra": ""
+    },
+    {
+      "name": "Messaging now HAS a destination box",
+      "pass": true,
+      "extra": ""
+    },
+    {
+      "name": "it is labelled",
+      "pass": true,
+      "extra": ""
+    },
+    {
+      "name": "an empty destination explains what is missing BEFORE Send is pressed",
+      "pass": true,
+      "extra": "We have no phone number for this person. Type one to send."
+    },
+    {
+      "name": "Send is disabled while there is nowhere to send",
+      "pass": true,
+      "extra": ""
+    },
+    {
+      "name": "a number without a country code is refused, with Send still off",
+      "pass": true,
+      "extra": "Use the full number with the country code, like +15551234567."
+    },
+    {
+      "name": "a good number enables Send",
+      "pass": true,
+      "extra": ""
+    },
+    {
+      "name": "and the warning goes away",
+      "pass": true,
+      "extra": ""
+    }
+  ]
+}

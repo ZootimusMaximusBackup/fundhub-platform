@@ -370,6 +370,59 @@ describe("resend provider", () => {
     assert.strictEqual(sent.from, RS_ENV.RESEND_FROM);
   });
 
+  /* ── T5-14 / T5-05 · the way out, and the way back ────────────────────
+     Two things every outbound email needs and neither of which it had:
+     somewhere for the reader to unsubscribe, and a reply address on a domain
+     that actually receives mail. */
+
+  test("List-Unsubscribe headers are set when dispatch supplies a link", async () => {
+    const f = fakeFetch({ status: 200, body: { id: "x" } });
+    await resend.send({ ...emailMsg, unsubscribeUrl: "https://fundhub.ai/unsubscribe.html?sig=abc" },
+      { fetchImpl: f, env: RS_ENV });
+    const sent = JSON.parse(f.calls[0].init.body);
+    assert.strictEqual(sent.headers["List-Unsubscribe"], "<https://fundhub.ai/unsubscribe.html?sig=abc>",
+      "RFC 8058 requires the angle brackets");
+    assert.strictEqual(sent.headers["List-Unsubscribe-Post"], "List-Unsubscribe=One-Click");
+    assert.strictEqual(sent.headers["X-Fundhub-Ref"], emailMsg.providerRef, "the existing header survives");
+  });
+
+  test("the headers do not touch the body — the never-mutate rule still holds", async () => {
+    const f = fakeFetch({ status: 200, body: { id: "x" } });
+    await resend.send({ ...emailMsg, unsubscribeUrl: "https://fundhub.ai/unsubscribe.html?sig=abc" },
+      { fetchImpl: f, env: RS_ENV });
+    const sent = JSON.parse(f.calls[0].init.body);
+    assert.strictEqual(sent.text, emailMsg.body,
+      "the visible footer is dispatch's job; a provider sends the body exactly as approved");
+  });
+
+  test("with no link supplied, no unsubscribe headers are invented", async () => {
+    const f = fakeFetch({ status: 200, body: { id: "x" } });
+    await resend.send(emailMsg, { fetchImpl: f, env: RS_ENV });
+    const sent = JSON.parse(f.calls[0].init.body);
+    assert.ok(!sent.headers["List-Unsubscribe"], "a header pointing nowhere is worse than none");
+  });
+
+  test("Reply-To points at the domain that RECEIVES, tagged with the client", async () => {
+    /* Mail leaves from fundhub.ai, whose MX records point at Cloudflare — a
+       reply there reaches nothing we read. Inbound only arrives on the Mailgun
+       domain. The plus tag is what makes the reply name one client instead of
+       being matched by guessing at the From address. */
+    const f = fakeFetch({ status: 200, body: { id: "x" } });
+    await resend.send(emailMsg, {
+      fetchImpl: f, env: { ...RS_ENV, RESEND_REPLY_TO_DOMAIN: "mg.fundhub.ai" }
+    });
+    const sent = JSON.parse(f.calls[0].init.body);
+    assert.strictEqual(sent.reply_to, "reply+c1@mg.fundhub.ai");
+  });
+
+  test("with no receiving domain configured, no Reply-To is guessed", async () => {
+    // Which domain receives mail is a fact about DNS. Defaulting it to the
+    // sending domain is exactly the bug: that is where replies already vanish.
+    const f = fakeFetch({ status: 200, body: { id: "x" } });
+    await resend.send(emailMsg, { fetchImpl: f, env: RS_ENV });
+    assert.ok(!JSON.parse(f.calls[0].init.body).reply_to);
+  });
+
   test("Bearer auth uses the API key", async () => {
     const f = fakeFetch({ status: 200, body: { id: "x" } });
     await resend.send(emailMsg, { fetchImpl: f, env: RS_ENV });

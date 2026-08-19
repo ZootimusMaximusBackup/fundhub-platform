@@ -33,10 +33,35 @@ import { addTags } from "../workflows/tags.mjs";
 import { mergeCustomFields } from "../workflows/custom-fields.mjs";
 import { advanceCardToStage } from "../workflows/cards.mjs";
 import { upsertConversation, linkMessage } from "../conversations/store.mjs";
+// One phone-matching rule for the whole repo — see the note on the export.
+import { phoneCandidates } from "../mail/suppression.mjs";
 
 // TCPA standard opt-out and opt-in keyword sets (case-insensitive, trimmed).
 const STOP_KEYWORDS  = new Set(["STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"]);
 const START_KEYWORDS = new Set(["START", "UNSTOP"]);
+
+/* EMAIL GETS A NARROWER SET, ON PURPOSE.
+   The list above is the right one for a text message, where the whole channel
+   is one conversation and a one-word reply can only be about it. Email is not
+   that. A client who replies "CANCEL" to a booking confirmation means cancel
+   the meeting, and "END" / "QUIT" are no clearer. Honouring those as an email
+   opt-out would quietly cut somebody off from the updates about their own
+   credit file — a worse outcome than missing one ambiguous word, which the
+   unsubscribe link and the provider's own unsubscribe signal both still catch.
+   What stays are the words that cannot mean anything else. */
+const EMAIL_STOP_KEYWORDS = new Set([
+  "STOP", "STOPALL", "UNSUBSCRIBE", "REMOVE", "OPT OUT", "OPTOUT", "OPT-OUT"
+]);
+
+/* Which list applies to which channel. That email HAS one is the whole of
+   T5-01: an emailed "STOP" used to fall straight past the opt-out branch and
+   be filed as an ordinary message, so the next campaign mailed them again. */
+const STOP_BY_CHANNEL  = { sms: STOP_KEYWORDS, email: EMAIL_STOP_KEYWORDS };
+const START_BY_CHANNEL = { sms: START_KEYWORDS, email: START_KEYWORDS };
+
+/* Digits-only, written to match the expression in idx_clients_phone_digits
+   (066_mail_suppression_indexes.sql:107) EXACTLY, or the index is not used. */
+const PHONE_DIGITS_SQL = `regexp_replace(phone, '[^0-9]', '', 'g')`;
 
 // Non-creating lookup: match an existing client by email or phone. Returns id|null.
 async function findClient(db, orgId, { email, phone } = {}) {
@@ -48,8 +73,26 @@ async function findClient(db, orgId, { email, phone } = {}) {
   }
   const ph = String(phone || "").trim();
   if (ph) {
+    /* EXACT TEXT FIRST, DIGITS SECOND. Twilio sends E.164 (+15551234567) and
+       this column is free text — 30 of 32 live records are E.164 and two are
+       not (measured against production 2026-08-18). An exact hit is
+       unambiguous so it is tried first; the digits-only pass is what stops a
+       client stored as "(555) 123-4567" resolving to nobody, which used to
+       mean their STOP was filed as an unthreaded message with no opt-out. */
     const r = await db.query(`SELECT id FROM clients WHERE org_id=$1 AND phone=$2 LIMIT 1`, [orgId, ph]);
     if (r.rows[0]) return r.rows[0].id;
+    /* phoneCandidates emits both the 10-digit and the 11-digit form, because
+       "+15551234567" and "(555) 123-4567" are one person and this repo stores
+       whichever the source system happened to send. It refuses anything it
+       cannot read as a NANP number rather than guessing at a country. */
+    const candidates = phoneCandidates(ph);
+    if (candidates.length) {
+      const d = await db.query(
+        `SELECT id FROM clients WHERE org_id=$1 AND ${PHONE_DIGITS_SQL} = ANY($2) LIMIT 1`,
+        [orgId, candidates]
+      );
+      if (d.rows[0]) return d.rows[0].id;
+    }
   }
   return null;
 }
@@ -135,8 +178,24 @@ async function threadMessage(db, { orgId, clientId, channel, inserted, providerR
 //     (111_messages_address) so the thread can show what the client's reply was
 //     about, which for an email is frequently the only thing above the fold.
 //
-// The STOP/START branch is unchanged and still guarded on sms. An email is not
-// a TCPA text message and its words are not opt-out keywords.
+// THE STOP/START BRANCH NOW COVERS EMAIL TOO — changed 2026-08-18, T5-01.
+//
+// It used to be guarded on `channel === "sms"`, and the comment here argued
+// that was correct because an email is not a TCPA text message and its words
+// are not TCPA opt-out keywords. The first half of that is true and the second
+// half does not follow. A person who replies to our email with nothing but the
+// word STOP has told us to stop, whatever statute the word came from; CAN-SPAM
+// requires we honour it, and on 2026-08-18 a live client did exactly that and
+// we recorded nothing (message e9a17306, opt_outs still empty).
+//
+// The opt-out is written to channel='email', so it suppresses email and only
+// email — src/lib/opt-out.mjs keys on (client_id, channel) and the send gate
+// reads it per channel. A person who stops our email still gets their texts.
+//
+// Which words count is deliberately NOT the same list per channel; see
+// EMAIL_STOP_KEYWORDS above for why "CANCEL" is an SMS opt-out and not an
+// email one. Matching stays whole-body and exact after trim + uppercase, so a
+// sentence that merely contains the word is a normal message, not an opt-out.
 export async function onMessageInbound(event, db) {
   const p = event.payload || {};
   const channel = p.channel || "sms";
@@ -144,11 +203,13 @@ export async function onMessageInbound(event, db) {
     channel === "email" ? { email: p.from } : { phone: p.from }));
   const word = String(p.body || "").trim().toUpperCase();
   const providerRef = p.sid || null;
-  if (clientId && channel === "sms") {
-    if (STOP_KEYWORDS.has(word)) {
-      await recordOptOut(db, clientId, event.orgId, "sms", "inbound_keyword");
-    } else if (START_KEYWORDS.has(word)) {
-      await recordOptIn(db, clientId, "sms");
+  const stopWords  = STOP_BY_CHANNEL[channel];
+  const startWords = START_BY_CHANNEL[channel];
+  if (clientId && stopWords) {
+    if (stopWords.has(word)) {
+      await recordOptOut(db, clientId, event.orgId, channel, "inbound_keyword");
+    } else if (startWords && startWords.has(word)) {
+      await recordOptIn(db, clientId, channel);
     }
   }
   const ins = await db.query(

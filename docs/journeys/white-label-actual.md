@@ -23,7 +23,7 @@ flowchart TD
     CAN --> A_creative[Creative Factory — 7 routes]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_partner_marketing[partner-marketing — 5 routes]
-    CAN --> A_public[public — 3 routes]
+    CAN --> A_public[public — 4 routes]
     CAN --> A_read[Reading data — 2 routes]
     CAN --> A_social[social — 4 routes]
     CAN --> A_top_level[Everything else — 7 routes]
@@ -53,7 +53,7 @@ flowchart TD
 
 ## What they can reach
 
-**47 of 174 routes.**
+**48 of 175 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -96,6 +96,7 @@ flowchart TD
 | `/api/public/partner-apply` | POST | anyone |
 | `/api/public/partner-page` | GET | anyone |
 | `/api/public/survey-submit` | POST | anyone |
+| `/api/public/unsubscribe` | — | anyone |
 | `/api/read/company-brain-affiliate` | POST | employees: affiliate, partner<br>plus: affiliate, partner |
 | `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
 | `/api/social/generate` | POST | partner, staff |
@@ -107,12 +108,12 @@ flowchart TD
 
 ### Worth knowing
 
-- **15 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/contracts/sign`, `/api/health`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/survey-submit`, `/api/soft-pull-approve`. These are the sign-in routes and the health check.
+- **16 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/contracts/sign`, `/api/health`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/survey-submit`, `/api/public/unsubscribe`, `/api/soft-pull-approve`. These are the sign-in routes and the health check.
 - **3 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**125 of 174 routes.**
+**125 of 175 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
