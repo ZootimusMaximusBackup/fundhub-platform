@@ -227,10 +227,21 @@
         .then(function (pack) {
           var d = pack.d;
           if (!d || !d.ok) {
+            // Failure fallback. There are no working proxy settings to show here —
+            // the session never came up — so do NOT print a host, username or
+            // password that was never geo-verified. Show what to do instead.
+            var nextStep = (d && d.next_step) || null;
             showModal(
               "Could not start Apply proxy",
               "<p>" + esc((d && (d.message || d.error)) || ("HTTP " + pack.http)) + "</p>" +
-              "<p style=\"color:#71717A;margin-top:8px\">The bank application was <b>not</b> opened. Fix the error and try again — do not apply from your normal IP.</p>",
+              (nextStep
+                ? '<p style="margin:8px 0 0;padding:8px 10px;background:#FEF3C7;' +
+                  'border:1px solid #FCD34D;border-radius:8px"><b>What to do next:</b> ' +
+                  esc(nextStep) + "</p>"
+                : "") +
+              '<p style="color:#71717A;margin-top:8px">Browser routing is <b>NOT</b> active and the ' +
+              "bank application was <b>not</b> opened. Do not apply from your normal internet " +
+              "connection — the bank will see the wrong location.</p>",
               [{ label: "Close", onClick: hideModal, primary: true }]
             );
             return;

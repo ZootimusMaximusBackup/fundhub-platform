@@ -115,6 +115,14 @@ export default async function handler(req, res, deps = {}) {
       if (!existing) {
         return res.status(404).json({ ok: false, error: "not_found" });
       }
+      // The row is there but the UPDATE changed nothing. Never answer ok:true
+      // with lender:null — the screen writes that straight back into its row
+      // cache, the row loses its id, and its next Save posts id:"undefined".
+      return res.status(409).json({
+        ok: false,
+        error: "save_failed",
+        message: "That lender was not saved. Reload the page and try again."
+      });
     }
     return res.status(200).json({ ok: true, lender });
   } catch (err) {

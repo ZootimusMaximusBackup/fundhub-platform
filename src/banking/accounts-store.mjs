@@ -267,10 +267,26 @@ export async function upsertBankAccount(db, account, opts = {}) {
     (row.provider !== "plaid" && row.provider_account_id);
 
   if (keyed) {
+    /* THE `WHERE` IS NOT OPTIONAL AND IT IS NOT A FILTER ON THE ROWS.
+       Both unique indexes are PARTIAL — 081 line 123 and 103 line 162 each end
+       in a WHERE. Postgres only picks a partial index as the arbiter for
+       ON CONFLICT when the statement repeats that index's own predicate; without
+       it the planner finds no arbiter at all and the INSERT dies with 42P10,
+       "there is no unique or exclusion constraint matching the ON CONFLICT
+       specification". That is a 500 on POST /api/banking/sync-accounts on the
+       very first account of every sync, which is why nothing has ever reached
+       bank_accounts through this path against a real database. Measured on a
+       scratch Postgres 16.14, 2026-08-18.
+
+       The `keyed` test directly above already guarantees the predicate holds for
+       this row, so adding the clause changes WHICH INDEX Postgres uses and
+       nothing about which rows are matched. */
     const target =
       row.provider === "plaid"
-        ? "(plaid_item_id, plaid_account_id)"
-        : "(org_id, client_id, provider, provider_account_id)";
+        ? "(plaid_item_id, plaid_account_id) " +
+          "WHERE plaid_item_id IS NOT NULL AND plaid_account_id IS NOT NULL"
+        : "(org_id, client_id, provider, provider_account_id) " +
+          "WHERE provider_account_id IS NOT NULL";
     conflict =
       ` ON CONFLICT ${target} DO UPDATE SET ` +
       UPDATABLE.map((c) => `${c} = EXCLUDED.${c}`).join(", ") +

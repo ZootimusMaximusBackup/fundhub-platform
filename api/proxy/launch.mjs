@@ -9,6 +9,25 @@ import { launchProxySession, ProxySessionError } from "../../src/proxy/launch.mj
 
 export const PROXY_ROLES = new Set(["owner", "funding_advisor"]);
 
+// Plain next step per failure, so the screen can tell the advisor what to do
+// instead of only showing an error code. Never promises routing that is off.
+const NEXT_STEP = {
+  oxylabs_credentials_missing:
+    "The proxy account is not set up yet. Ask the owner to add the proxy login before applying.",
+  client_location_missing:
+    "Add the client's city and state on their file, then try Apply again.",
+  application_url_missing:
+    "Add the application URL on this lender's row on the Lenders screen, then try Apply again.",
+  lender_not_found: "Pick a lender that exists on the Lenders screen, then try Apply again.",
+  client_not_found: "Open a client that exists in this account, then try Apply again.",
+  application_not_found: "Open an application that exists, then try Apply again.",
+  client_mismatch: "This application belongs to a different client. Open the right client and try again.",
+  geo_unavailable:
+    "No home internet connection was free near the client just now. Wait a minute and try Apply again.",
+  geo_mismatch:
+    "The connection that answered was not near the client. Do not apply. Wait a minute and try Apply again."
+};
+
 export default async function handler(req, res, deps = {}) {
   const database = deps.db ?? db;
   const env = deps.env ?? process.env;
@@ -81,7 +100,9 @@ export default async function handler(req, res, deps = {}) {
         error: err.code,
         message: err.message,
         session_id: err.sessionId || null,
-        attempts: err.attempts || undefined
+        attempts: err.attempts || undefined,
+        routing_active: false,
+        next_step: NEXT_STEP[err.code] || null
       });
     }
     if (dbDown(res, err)) return;

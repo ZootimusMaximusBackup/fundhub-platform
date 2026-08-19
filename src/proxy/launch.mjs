@@ -1,6 +1,6 @@
 // Orchestrate an Oxylabs Apply session: resolve client geo → verify exit → audit row.
 
-import { launchCredentials, oxylabsConfigFromEnv, generateSessid } from "../adapters/oxylabs.mjs";
+import { launchCredentials, generateSessid } from "../adapters/oxylabs.mjs";
 import {
   ProxySessionError,
   insertProxySession,
@@ -32,15 +32,10 @@ export async function launchProxySession(db, {
     throw new ProxySessionError("invalid_args", "org, staff and client are required", 400);
   }
 
-  const cfg = oxylabsConfigFromEnv(env);
-  if (!cfg.ready) {
-    throw new ProxySessionError(
-      "oxylabs_credentials_missing",
-      `Oxylabs credentials are not set (${cfg.missing.join(", ")}). See docs/STILL-MISSING.md.`,
-      503
-    );
-  }
-
+  // Do NOT short-circuit on missing Oxylabs credentials here. launchCredentials()
+  // returns the same `oxylabs_credentials_missing` error below, AFTER the pending
+  // proxy_sessions row exists — so a refused launch still leaves an audit row.
+  // Throwing here left proxy_sessions at 0 rows and hid the attempt entirely.
   const client = await loadClientForProxy(db, { orgId, clientId });
   if (!client) {
     throw new ProxySessionError("client_not_found", "Client not found in this org", 404);
