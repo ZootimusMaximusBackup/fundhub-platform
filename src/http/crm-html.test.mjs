@@ -207,6 +207,15 @@ test("inquiry-remover.html is not Alvin furniture", () => {
   assert.ok(html.includes('data-act="send"'), "Send on a case must stay");
 });
 
+test("closer-call.js paints UnderwriteIQ dollars from the real report keys", () => {
+  const js = fs.readFileSync(path.join(APP, "closer-call.js"), "utf8");
+  assert.match(js, /lite_banner_funding/);
+  assert.match(js, /total_personal_funding/);
+  assert.match(js, /total_combined_funding/);
+  assert.ok(!/d\.projections\s*&&\s*d\.projections\.conservative/.test(js),
+    "old projections.conservative paint path would always dash");
+});
+
 test("closer-call.js does not paint builder notes", () => {
   const js = fs.readFileSync(path.join(APP, "closer-call.js"), "utf8");
   assert.ok(!/staff_targets on My numbers/.test(js));

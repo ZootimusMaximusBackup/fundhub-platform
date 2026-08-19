@@ -5,6 +5,7 @@ import { countUnlogged, listUnloggedCalls } from "./call-outcomes.mjs";
 import { formatUsdFromCents, monthWindow } from "./metrics.mjs";
 import { toCents } from "../commissions/money.mjs";
 import { matchForClient } from "../lenders/store.mjs";
+import { triMerge } from "../http/client-detail.mjs";
 
 function money(n) {
   if (n == null || !Number.isFinite(Number(n))) return null;
@@ -274,15 +275,30 @@ function summarizeCrs(row) {
     };
   }
   const result = row.result || {};
-  // Real bureau field names vary by CRS payload shape — surface what exists.
-  const scores = result.scores || result.bureaus || result.tri_merge || null;
+  // Same bureau FICO extraction as Client Control Panel (triMerge) — raw
+  // CRS scores use ex/eq/tu; the cockpit paint path reads experian/equifax/transunion.
+  const merge = triMerge([row]);
+  const scores = {
+    experian: merge.experian,
+    equifax: merge.equifax,
+    transunion: merge.transunion
+  };
+  const signals = result.consumerSignals || result.consumer_signals || {};
+  const utilPct = result.utilization ?? result.util
+    ?? signals.utilization?.pct ?? signals.utilization?.percent
+    ?? null;
+  const inquiriesList = Array.isArray(result.inquiries) ? result.inquiries : null;
   return {
     available: true,
-    pulled_at: row.created_at,
+    pulled_at: merge.asOf || row.created_at,
     raw_keys: Object.keys(result).slice(0, 40),
     scores,
-    utilization: money(result.utilization ?? result.util ?? null),
-    inquiries_6mo: money(result.inquiries_6mo ?? result.inquiries ?? null),
+    utilization: money(utilPct),
+    inquiries_6mo: money(
+      result.inquiries_6mo
+      ?? (inquiriesList ? inquiriesList.length : null)
+      ?? (typeof result.inquiries === "number" ? result.inquiries : null)
+    ),
     derogatories: result.derogatories ?? result.derogs ?? null,
     note: "Full UnderwriteIQ projections come from /api/read/underwrite — this block only mirrors the stored CRS payload."
   };

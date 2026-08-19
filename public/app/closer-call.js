@@ -382,10 +382,27 @@
     if (!r.ok || !r.data) return;
     var d = r.data;
     var bands = document.querySelectorAll(".bands .band");
-    // Engine report shapes vary — prefer named projection fields when present.
-    var cons = d.conservative_cents || d.projections && d.projections.conservative;
-    var real = d.realistic_cents || d.projections && d.projections.realistic;
-    var opt = d.optimized_cents || d.projections && d.projections.optimized;
+    // /api/read/underwrite returns buildReport(): dollars live on d.underwrite
+    // (lite_banner_funding, personal.*, totals.*). There is no funding/projections
+    // key — older paint looked for those and always dashed.
+    var uw = d.underwrite || {};
+    var personal = uw.personal || {};
+    var totals = uw.totals || {};
+    function dollarsToCents(v) {
+      if (v == null || !Number.isFinite(Number(v))) return null;
+      return Math.round(Number(v) * 100);
+    }
+    var cons = dollarsToCents(
+      uw.lite_banner_funding != null ? uw.lite_banner_funding : personal.card_funding
+    );
+    var real = dollarsToCents(
+      totals.total_personal_funding != null
+        ? totals.total_personal_funding
+        : personal.total_personal_funding
+    );
+    var opt = dollarsToCents(
+      totals.total_combined_funding != null ? totals.total_combined_funding : real
+    );
     function setBand(i, cents, note) {
       var b = bands[i]; if (!b) return;
       var bv = b.querySelector(".bv"); var bn = b.querySelector(".bn");
@@ -393,30 +410,33 @@
         if (bv) bv.textContent = "—";
         if (bn) bn.textContent = note || "Not in UnderwriteIQ response";
       } else {
-        if (bv) bv.textContent = money(typeof cents === "number" && cents > 100000 ? cents : Number(cents) * (cents < 1000 ? 100 : 1));
-        // If already cents (>1000 typically for funding), money() expects cents.
-        if (bv && typeof cents === "number") bv.textContent = money(cents > 1000 ? cents : Math.round(cents * 100));
+        if (bv) bv.textContent = money(cents);
         if (bn) bn.textContent = note || "";
       }
     }
-    // Prefer report suggestion numbers if present as dollars in strings — else honest empty.
-    var report = d;
-    var has = report.funding || report.capacity || report.projections;
+    var has = cons != null || real != null || opt != null;
     if (!has) {
       setBand(0, null, "No conservative number yet");
       setBand(1, null, "Open Client Control Panel for the full report");
       setBand(2, null, "No optimized number yet");
       var lever = $(".lever");
-      if (lever && Array.isArray(report.suggestions)) {
-        lever.textContent = report.suggestions.slice(0, 2).map(function (s) {
+      if (lever && Array.isArray(d.suggestions)) {
+        lever.textContent = d.suggestions.slice(0, 2).map(function (s) {
           return typeof s === "string" ? s : (s.text || s.sentence || "");
         }).filter(Boolean).join(" ") || "See underwrite suggestions on the client file.";
       }
       return;
     }
     setBand(0, cons, "Conservative");
-    setBand(1, real, "Realistic");
+    setBand(1, real, "Realistic · round 1");
     setBand(2, opt, "After optimization");
+    var leverOk = $(".lever");
+    if (leverOk && Array.isArray(d.suggestions) && d.suggestions.length) {
+      var tip = d.suggestions.slice(0, 2).map(function (s) {
+        return typeof s === "string" ? s : (s.text || s.sentence || "");
+      }).filter(Boolean).join(" ");
+      if (tip) leverOk.textContent = tip;
+    }
   }
 
   async function resolveClient() {
