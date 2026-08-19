@@ -36,7 +36,7 @@ flowchart TD
     CAN --> A_social[social — 7 routes]
     CAN --> A_top_level[Everything else — 22 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 55 routes]
+    WHO -->|Yes| CANT[Blocked — 56 routes]
     CANT --> B_auth[Signing in and out — 4 blocked]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_brand[brand — 1 blocked]
@@ -51,6 +51,7 @@ flowchart TD
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
     CANT --> B_read[Reading data — 12 blocked]
+    CANT --> B_repair[repair — 1 blocked]
     CANT --> B_staff[staff — 2 blocked]
     CANT --> B_top_level[Everything else — 10 blocked]
     WHO -->|Yes| UNV[UNVERIFIED — 2 routes whose gate could not be traced]
@@ -58,7 +59,7 @@ flowchart TD
 
 ## What they can reach
 
-**123 of 180 routes.**
+**123 of 181 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -194,7 +195,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**55 of 180 routes.**
+**56 of 181 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -251,6 +252,7 @@ flowchart TD
 | `/api/read/proxy-sessions` | GET | owner, funding_advisor |
 | `/api/read/sales-floor` | GET | owner, admin, sales_manager |
 | `/api/read/staff` | GET | owner, admin, sales_manager |
+| `/api/repair/generate` | POST | owner, admin, inquiry_specialist |
 | `/api/staff/monitoring-consent` | POST | owner |
 | `/api/staff/telemetry` | GET | owner, admin, sales_manager |
 
