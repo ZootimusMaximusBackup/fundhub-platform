@@ -317,3 +317,110 @@ test("a journey that sends messages but wrote none is a mismatch", () => {
   assert.equal(hit.verdict, "mismatch");
   assert.match(hit.summary, /no message row was written/);
 });
+
+// ── the three-way message verdict ─────────────────────────────────────────
+
+/* The bug these four tests exist for: "no message row was written" was
+   reported whenever the in-memory PROVIDER logged nothing, which is true of
+   every message the safety fence or the compliance gate held. Those messages
+   WERE written. The owner was told the opposite of what happened. */
+const ledgerPath = (over = {}) => ({
+  pathId: "probe#1",
+  journeyKey: "probe",
+  messages: [],
+  stepRecord: [],
+  messageLedger: { queued: 0, sent: 0, held: 0, holdReasons: [], ...over }
+});
+
+test("queued and sent is the only verdict that passes", () => {
+  const report = { paths: [ledgerPath({ queued: 2, sent: 2 })] };
+  const { findings } = diff(oneJourney([node("sms", { body: "hi" })]), facts(), report);
+  const hit = findings.find((f) => f.category === "sms");
+  assert.equal(hit.verdict, "ok");
+  assert.equal(hit.sent, 2);
+});
+
+test("a message the safety fence held is NOT reported as never written", () => {
+  const report = {
+    paths: [ledgerPath({
+      queued: 3,
+      sent: 0,
+      held: 3,
+      holdReasons: [{ reason: "the safety fence stopped this whole path before anything was handed over", detail: "twilio" }]
+    })]
+  };
+  const { findings } = diff(oneJourney([node("sms", { body: "hi" })]), facts(), report);
+  const hit = findings.find((f) => f.category === "sms");
+  assert.equal(hit.verdict, "unverified", "held is not the same as never written");
+  assert.doesNotMatch(hit.summary, /no message row was written/);
+  assert.match(hit.summary, /3 messages were written and then held/);
+  assert.match(hit.summary, /safety fence/);
+  assert.equal(hit.queued, 3);
+});
+
+test("a hold reason in the dispatcher's own vocabulary is put into words", () => {
+  const report = { paths: [ledgerPath({ queued: 1, sent: 0, held: 1, holdReasons: [{ reason: "deferred", detail: null }] })] };
+  const { findings } = diff(oneJourney([node("email", { body: "hi" })]), facts(), report);
+  const hit = findings.find((f) => f.category === "email");
+  assert.equal(hit.verdict, "unverified");
+  assert.match(hit.summary, /quiet hours/);
+});
+
+test("nothing queued is still a mismatch, and now it is actually true", () => {
+  const report = { paths: [ledgerPath({ queued: 0, sent: 0, held: 0 })] };
+  const { findings } = diff(oneJourney([node("sms", { body: "hi" })]), facts(), report);
+  const hit = findings.find((f) => f.category === "sms");
+  assert.equal(hit.verdict, "mismatch");
+  assert.match(hit.summary, /no message row was written/);
+});
+
+test("a messages table that would not read is could-not-check, never a mismatch", () => {
+  const report = { paths: [{ pathId: "probe#1", journeyKey: "probe", messages: [], stepRecord: [], messageLedger: null }] };
+  const { findings } = diff(oneJourney([node("sms", { body: "hi" })]), facts(), report);
+  const hit = findings.find((f) => f.category === "sms");
+  assert.equal(hit.verdict, "unverified");
+  assert.match(hit.summary, /could not be read/);
+});
+
+test("one unreadable path makes the whole journey's answer unknown", () => {
+  // Averaging a failed read away against a good one is the false green this
+  // harness exists to refuse.
+  const report = {
+    paths: [
+      ledgerPath({ queued: 2, sent: 2 }),
+      { pathId: "probe#2", journeyKey: "probe", messages: [], stepRecord: [], messageLedger: null }
+    ]
+  };
+  const { findings } = diff(oneJourney([node("sms", { body: "hi" })]), facts(), report);
+  assert.equal(findings.find((f) => f.category === "sms").verdict, "unverified");
+});
+
+// ── the screens folder ────────────────────────────────────────────────────
+
+test("gatherScreens returns null when the folder cannot be read, never an empty list", () => {
+  assert.equal(gatherScreens("/nonexistent/definitely/not/a/directory"), null);
+});
+
+test("an unreadable screens folder is could-not-check, and does not accuse every screen of not existing", () => {
+  const blind = facts({ screens: null });
+  const { findings, screenCoverage, screensUnreadable } = diff(
+    oneJourney([node("record", {}, [["Screen", "Pipeline"]])]),
+    blind
+  );
+  assert.equal(screensUnreadable, true);
+  assert.deepEqual(screenCoverage, [], "nothing may be listed when nothing could be read");
+
+  const touch = findings.find((f) => f.category === "touch:Screen");
+  assert.equal(touch.verdict, "unverified");
+  assert.match(touch.summary, /could not be read/);
+
+  // And the failed read is its own row, so an empty screen list is never
+  // mistaken for "this product has no screens".
+  const own = findings.find((f) => f.category === "screens");
+  assert.ok(own, "the failed read must be a finding in its own right");
+  assert.equal(own.verdict, "unverified");
+});
+
+test("matchScreen never guesses when there is no list to match against", () => {
+  assert.equal(matchScreen("Pipeline", null), null);
+});

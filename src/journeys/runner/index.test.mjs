@@ -3,9 +3,11 @@
  * Acceptance criteria held here:
  *   * a journey with N conditions produces 2^N walked paths, each with its own
  *     synthetic client
- *   * the workflow coverage list accounts for all 47 entries in
+ *   * the workflow coverage list accounts for every entry in
  *     src/workflows/index.mjs — every one either fired or explicitly listed as
  *     unreached
+ *   * NOTHING THIS HARNESS FIRES LEAVES THE MACHINE (see the skipInngest test
+ *     at the bottom — it is the most important assertion in this file)
  */
 
 import { test } from "node:test";
@@ -15,7 +17,15 @@ import { enumeratePaths, run, START_EVENT } from "./index.mjs";
 import { load as loadRegistry, neverFired } from "./registry.mjs";
 import { SEED_JOURNEYS } from "../seed-journeys.mjs";
 import { functions } from "../../workflows/index.mjs";
+import { inngest } from "../../workflows/client.mjs";
 import { isSyntheticRow } from "./synthetic.mjs";
+
+/* THE COUNT STAYS PINNED, AND IT MOVED FROM 51 TO 53.
+   s02IncompleteSurveyNudge and inquiryCallSweeper were registered in
+   src/workflows/index.mjs — owner decision, 2026-08-19. The pin exists so that
+   registering a workflow is a visible decision rather than a silent one, so it
+   is updated here rather than read from the module. */
+const REGISTERED = 53;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);
@@ -82,18 +92,17 @@ test("the six seeded journeys walk to nine paths", () => {
 
 // ── the registry ──────────────────────────────────────────────────────────
 
-/* 51 SINCE message-dispatch-sweeper.mjs JOINED THE REGISTRY.
-   contract-chaser and message-dispatch-sweeper are CRONs with no event
+/* contract-chaser and message-dispatch-sweeper are CRONs with no event
    trigger, so no journey will ever reach them and they will always sit in
    neverFired — which is the correct outcome, not a coverage hole. The counts
-   here are pinned so that registering a workflow stays a visible decision;
-   see the note in src/workflows/index.test.mjs. */
-test("ACCEPTANCE: the registry accounts for all 51 registered workflows", async () => {
+   here are pinned (see REGISTERED at the top) so that registering a workflow
+   stays a visible decision; see the note in src/workflows/index.test.mjs. */
+test("ACCEPTANCE: the registry accounts for every registered workflow", async () => {
   const reg = await loadRegistry();
-  assert.equal(reg.registered, 51, "src/workflows/index.mjs registers 51 functions");
+  assert.equal(reg.registered, REGISTERED, `src/workflows/index.mjs registers ${REGISTERED} functions`);
   assert.equal(
     reg.workflows.length + reg.unrunnable.length,
-    51,
+    REGISTERED,
     "every registered workflow is either runnable or explicitly listed as unrunnable"
   );
   assert.deepEqual(reg.unrunnable, [], "no registered workflow should be unreachable by the runner");
@@ -106,9 +115,9 @@ test("every workflow is either fired or named in neverFired — none silently mi
      from the registry; do not re-list a ghost id here. */
   const pretendFired = ["n-06-renewal-second-wave"];
   const never = neverFired(reg, pretendFired);
-  assert.equal(never.length + pretendFired.length, 51);
+  assert.equal(never.length + pretendFired.length, REGISTERED);
   const all = new Set([...never.map((w) => w.id), ...pretendFired]);
-  assert.equal(all.size, 51);
+  assert.equal(all.size, REGISTERED);
   for (const fn of functions) assert.ok(all.has(fn.id()), `${fn.id()} is unaccounted for`);
 });
 
@@ -198,11 +207,11 @@ test("the coverage report names every unreached workflow explicitly", async () =
   const db = fakeDb();
   const report = await run(db, { journeys: SEED_JOURNEYS, orgId: "org-1", runId: "t3", env: {} });
   const c = report.workflowCoverage;
-  assert.equal(c.registered, 51);
+  assert.equal(c.registered, REGISTERED);
   assert.equal(
     c.fired.length + c.neverFired.length,
-    51,
-    "fired + neverFired must account for all 51 — a workflow missing from both is a silent coverage hole"
+    REGISTERED,
+    "fired + neverFired must account for every registered workflow — one missing from both is a silent coverage hole"
   );
 });
 
@@ -213,4 +222,124 @@ test("a journey with no canonical start event is reported, not invented", async 
   assert.deepEqual(report.journeysWithoutStartEvent, ["partner"]);
   const partnerPath = report.paths.find((p) => p.pathId.startsWith("partner#"));
   assert.deepEqual(partnerPath.events, [], "no event may be fabricated for it");
+});
+
+// ── nothing leaves the machine ────────────────────────────────────────────
+
+/* THE MOST IMPORTANT TEST IN THIS FILE.
+ *
+ * src/events/bus.mjs ends emit() by handing the event to the Inngest job cloud
+ * over HTTP, unless the caller passes skipInngest. That send is a network call
+ * and a network call cannot be rolled back — while the whole promise this
+ * harness makes to the owner is "nothing was saved, the run was undone".
+ *
+ * INNGEST_EVENT_KEY is set in production, so the branch is live there. This
+ * test turns it on deliberately and stands a counter in front of inngest.send,
+ * because the only honest way to prove nothing goes out is to make it possible
+ * for something to go out and then show that nothing did. */
+test("ACCEPTANCE: a run never hands an event to the live automation service", async () => {
+  const realSend = inngest.send;
+  const realKey = process.env.INNGEST_EVENT_KEY;
+  let sends = 0;
+  // A fake value, not a credential. It exists only to make the branch reachable.
+  process.env.INNGEST_EVENT_KEY = "not-a-real-key-this-test-only";
+  inngest.send = async (...args) => { sends += 1; return args; };
+  try {
+    const db = fakeDb();
+    const report = await run(db, { journeys: SEED_JOURNEYS, orgId: "org-1", runId: "t5", env: {} });
+    // The run really did fire events — otherwise a zero below proves nothing.
+    const fired = report.paths.reduce((sum, p) => sum + p.events.length, 0);
+    assert.ok(fired > 0, `the run must actually fire events for this test to mean anything, fired ${fired}`);
+    assert.equal(sends, 0, `the runner sent ${sends} event(s) to Inngest; a rollback cannot recall those`);
+  } finally {
+    inngest.send = realSend;
+    if (realKey === undefined) delete process.env.INNGEST_EVENT_KEY;
+    else process.env.INNGEST_EVENT_KEY = realKey;
+  }
+});
+
+// ── a key nothing can start is loud ───────────────────────────────────────
+
+test("a journey key the runner has never heard of is named, not silently skipped", async () => {
+  /* This is what a Demo Mode row did. It walked, fired nothing, and the report
+     said "0 automations reached" with no way to tell that from a genuinely
+     disconnected product. */
+  const db = fakeDb();
+  const report = await run(db, {
+    journeys: { "demo-platform-nurture": { name: "DEMO", start: "x", end: "y", nodes: [N("n1", "record")] } },
+    orgId: "org-1",
+    runId: "t6",
+    env: {}
+  });
+
+  const path = report.paths[0];
+  assert.equal(path.startEventStatus, "unknown-journey");
+  assert.deepEqual(path.events, [], "no event may be invented for a key the runner does not know");
+
+  assert.equal(report.startEventFindings.length, 1);
+  assert.equal(report.startEventFindings[0].journey, "demo-platform-nurture");
+  assert.match(
+    report.startEventFindings[0].note,
+    /nothing in the code can start the demo-platform-nurture journey/
+  );
+});
+
+test("the partner journey's missing start event is reported with its own reason", async () => {
+  const db = fakeDb();
+  const report = await run(db, { journeys: SEED_JOURNEYS, orgId: "org-1", runId: "t7", env: {}, only: "partner" });
+  assert.equal(report.startEventFindings.length, 1);
+  assert.equal(report.startEventFindings[0].status, "no-canonical-event");
+  assert.match(report.startEventFindings[0].note, /no canonical opening event/);
+});
+
+test("one finding per journey key, not one per path", async () => {
+  const db = fakeDb();
+  const report = await run(db, {
+    journeys: { mystery: { name: "M", start: "x", end: "y", nodes: [cond("c1", [lane("Yes", []), lane("No", [])])] } },
+    orgId: "org-1",
+    runId: "t8",
+    env: {}
+  });
+  assert.equal(report.paths.length, 2, "two lanes, two paths");
+  assert.equal(report.startEventFindings.length, 1, "and one finding between them");
+});
+
+// ── the message ledger ────────────────────────────────────────────────────
+
+test("a path reports the message rows that were written, not just the ones that went out", async () => {
+  /* The fake database answers the ledger read with two rows: one sent, one
+     still queued. The provider recorded nothing, which is exactly the shape
+     that used to be reported as "no message row was written". */
+  const db = fakeDb();
+  const base = db.query.bind(db);
+  db.query = async (sql, params = []) => {
+    if (/^\s*SELECT status, channel, template_key, blocked_reason/i.test(sql)) {
+      return { rows: [
+        { status: "sent", channel: "sms", template_key: "T1", blocked_reason: null },
+        { status: "queued", channel: "sms", template_key: "T2", blocked_reason: null }
+      ] };
+    }
+    return base(sql, params);
+  };
+
+  const report = await run(db, { journeys: SEED_JOURNEYS, orgId: "org-1", runId: "t9", env: {}, only: "advisor" });
+  const ledger = report.paths[0].messageLedger;
+  assert.equal(ledger.queued, 2);
+  assert.equal(ledger.sent, 1);
+  assert.equal(ledger.held, 1);
+  assert.equal(report.paths[0].messages.length, 0, "the provider recorded nothing — the two numbers are not the same number");
+});
+
+test("a messages table that will not read gives null, never zero", async () => {
+  const db = fakeDb();
+  const base = db.query.bind(db);
+  db.query = async (sql, params = []) => {
+    if (/^\s*SELECT status, channel, template_key, blocked_reason/i.test(sql)) {
+      throw new Error('relation "messages" does not exist');
+    }
+    return base(sql, params);
+  };
+
+  const report = await run(db, { journeys: SEED_JOURNEYS, orgId: "org-1", runId: "t10", env: {}, only: "advisor" });
+  assert.equal(report.paths[0].messageLedger, null, "could not look is not the same as nothing was written");
 });

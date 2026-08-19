@@ -1,7 +1,9 @@
 /* The workflow registry the runner drives.
  *
- * src/workflows/index.mjs exports `functions` — 47 Inngest function objects
- * and nothing else. That array is enough to learn WHAT exists and WHAT
+ * src/workflows/index.mjs exports `functions` — the registered Inngest function
+ * objects and nothing else. (It said "47" here; the number moves every time a
+ * workflow is registered, so it is deliberately not written down again.) That
+ * array is enough to learn WHAT exists and WHAT
  * triggers it (`fn.id()`, `fn.opts.triggers`), but not enough to run anything:
  *
  *   THE INNGEST WRAPPER CLOSES OVER THE REAL DATABASE POOL. Every workflow
@@ -13,7 +15,7 @@
  *
  * So the runner never calls `fn.fn`. It calls each module's exported
  * `handle({ event, db, step })` directly, which is the pure, injectable half
- * every one of the 47 files exposes for exactly this reason. This module is
+ * every one of those files exposes for exactly this reason. This module is
  * what joins the two: triggers and id from the function object, the callable
  * from the module's own export.
  *
@@ -40,16 +42,35 @@ let cached = null;
  */
 export async function load() {
   if (cached) return cached;
+  const byId = await readModules(WORKFLOW_DIR);
+  cached = assemble(functions, byId);
+  return cached;
+}
 
-  const files = (await fs.readdir(WORKFLOW_DIR))
-    .filter((f) => f.endsWith(".mjs") && !f.endsWith(".test.mjs"));
+/* readModules(dir) → Map<workflowId, { mod, file }>
+ *
+ * WHY THE readdir IS WRAPPED. It was bare, so a missing or unreadable directory
+ * threw a raw ENOENT that surfaced to the owner as a plain 500 with no clue
+ * what was missing. Nothing was wrong with it in production — the failure mode
+ * was just silent about itself, which is the same defect as a false green: you
+ * cannot act on what you cannot read. */
+export async function readModules(dir) {
+  let files;
+  try {
+    files = (await fs.readdir(dir)).filter((f) => f.endsWith(".mjs") && !f.endsWith(".test.mjs"));
+  } catch (err) {
+    throw new Error(
+      `journey runner: the workflow folder could not be read at ${dir} (${err?.code || err?.message || err}). ` +
+      `Without it no automation can be run, so the run is stopped rather than reported as empty.`
+    );
+  }
 
   // id → module, for every workflow module on disk.
   const byId = new Map();
   for (const file of files) {
     let mod;
     try {
-      mod = await import(pathToFileURL(path.join(WORKFLOW_DIR, file)).href);
+      mod = await import(pathToFileURL(path.join(dir, file)).href);
     } catch {
       continue; // not importable in isolation; the cross-check below catches it
     }
@@ -59,10 +80,17 @@ export async function load() {
       }
     }
   }
+  return byId;
+}
 
+/* assemble(fns, byId) → { workflows, byEvent, unrunnable, registered }
+ *
+ * Pure, and exported so the failure below can be tested without breaking the
+ * real workflow folder to do it. */
+export function assemble(fns, byId) {
   const workflows = [];
   const unrunnable = [];
-  for (const fn of functions) {
+  for (const fn of fns) {
     const id = fn.id();
     const triggers = (fn.opts?.triggers || []).map((t) => t.event).filter(Boolean);
     const found = byId.get(id);
@@ -76,6 +104,24 @@ export async function load() {
     workflows.push({ id, name: fn.opts?.name || id, triggers, file: found.file, handle: found.mod.handle });
   }
 
+  /* EVERYTHING REGISTERED AND NOTHING RUNNABLE IS A BROKEN RUNNER, NOT A RESULT.
+   *
+   * The per-workflow `unrunnable` list above is the right answer when one or
+   * two modules fail to resolve. But if EVERY one fails — a moved directory, a
+   * bad import at the top of every module, a build that shipped without them —
+   * the run still returned HTTP 200 and walked an empty registry. The screen
+   * then said "0 of 51 automations reached", which reads as "the journeys are
+   * disconnected" when what actually happened is that the runner could not load
+   * anything to reach. Two completely different problems, one indistinguishable
+   * report. This throws instead, and names the ids so the cause is on screen. */
+  if (fns.length > 0 && workflows.length === 0) {
+    throw new Error(
+      `journey runner: ${fns.length} automations are registered and not one of them could be loaded, ` +
+      `so this run could not have reached any of them. This is a fault in the runner, not a finding about the journeys. ` +
+      `Unresolved: ${unrunnable.map((u) => u.id).join(", ")}`
+    );
+  }
+
   const byEvent = new Map();
   for (const w of workflows) {
     for (const e of w.triggers) {
@@ -84,8 +130,7 @@ export async function load() {
     }
   }
 
-  cached = { workflows, byEvent, unrunnable, registered: functions.length };
-  return cached;
+  return { workflows, byEvent, unrunnable, registered: fns.length };
 }
 
 /* Every workflow that no journey reached. Each one is either dead code or a

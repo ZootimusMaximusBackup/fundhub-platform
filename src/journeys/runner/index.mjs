@@ -28,6 +28,13 @@
  * NOT REAL: time (a virtual clock — see fake-step.mjs) and the last inch of a
  * send (the memory provider). Those are the only two.
  *
+ * DELIBERATELY SUPPRESSED, and it is a third thing: the Inngest fan-out. Every
+ * emit() below passes skipInngest: true. See the long note in fireEvent() for
+ * why — in short, that fan-out is a network call, a network call cannot be
+ * rolled back, and this harness promises the owner that nothing survives the
+ * run. It costs no coverage, because the runner already calls every triggered
+ * workflow body directly.
+ *
  * ═══════════════════════════════════════════════════════════════════════════
  * THE PART THAT IS A MAPPING DECISION, STATED OUT LOUD
  *
@@ -48,6 +55,7 @@ import { emit } from "../../events/bus.mjs";
 import { ensureRegistered } from "../../register-all.mjs";
 import { createClock, fakeStep, parseDuration } from "./fake-step.mjs";
 import { load as loadRegistry, neverFired } from "./registry.mjs";
+import { queryOrNull } from "./facts.mjs";
 import { mint } from "./synthetic.mjs";
 import { dispatchDue, DEFAULT_BATCH } from "../../messaging/dispatch.mjs";
 import { preflight } from "../../messaging/live-fence.mjs";
@@ -129,7 +137,36 @@ async function fireEvent(db, { name, payload, orgId, clientId, registry, step, c
   const fired = [];
   let eventId = null;
 
-  const res = await emit(db, name, { ...payload }, { orgId, clientId });
+  /* skipInngest: true IS A SAFETY REQUIREMENT, NOT AN OPTIMISATION.
+   *
+   * src/events/bus.mjs ends emit() with, in effect:
+   *     if (process.env.INNGEST_EVENT_KEY && opts.skipInngest !== true)
+   *       void inngest.send({ name, data: {...} });
+   *
+   * That send is an HTTP call to the Inngest job cloud. It leaves the process,
+   * so it is OUTSIDE the transaction api/journeys/run.mjs opens — and a
+   * ROLLBACK cannot recall a packet that has already left the machine. The
+   * screen tells the owner "Nothing was saved — the run was undone when it
+   * finished", and without this flag that sentence was false: every event this
+   * harness fired was also handed to the live job cloud, which then ran the
+   * real workflows against the real database, outside the run's transaction
+   * entirely.
+   *
+   * This was safe once and stopped being safe without anyone editing this file.
+   * The header above still says the only unreal things here are time and the
+   * last inch of a send. That was written when INNGEST_EVENT_KEY was unset, so
+   * the branch above could never be taken. The key was turned on in production
+   * later (both INNGEST_EVENT_KEY and INNGEST_SIGNING_KEY are set on Netlify,
+   * verified 2026-08-19) and this harness silently became live. Stale comments
+   * elsewhere in the repo still claim the key is unset; do not trust them.
+   *
+   * Nothing is lost by skipping it. The loop directly below invokes every
+   * workflow the registry says is triggered by this event, through each
+   * module's own `handle`, against the caller's transaction-scoped db. The
+   * Inngest fan-out would run the SAME workflow bodies a second time, against
+   * the real pool, with no fake clock — so it adds no coverage and only
+   * real-world side effects. */
+  const res = await emit(db, name, { ...payload }, { orgId, clientId, skipInngest: true });
   eventId = res?.id ?? null;
 
   const targets = registry.byEvent.get(name) || [];
@@ -203,6 +240,74 @@ async function drain(db, { orgId, clock, env }) {
   return { results, truncated: true, refused: null };
 }
 
+/* readMessageLedger — what this path actually WROTE, read from the messages
+ * table, not from the provider.
+ *
+ * THIS EXISTS BECAUSE THE OLD ANSWER WAS FALSE. The run used to describe a
+ * path's messages purely from memory.recorded() — the in-memory PROVIDER's log,
+ * which only ever sees a message that survived every stage before it. Anything
+ * stopped short of the provider was invisible: a quiet-hours deferral, a
+ * compliance-gate block, a draft hold, and above all a whole-path refusal by
+ * the live-mode fence, which claims nothing at all. Every one of those is a
+ * message that WAS correctly queued, and the report told the owner "no message
+ * row was written". That is not a smaller version of the truth, it is the
+ * opposite of it, and it points the owner at the wrong team.
+ *
+ * So the count of rows comes from the rows. Returns null — never zero — when
+ * the table could not be read, because "nothing was queued" and "I could not
+ * look" are different findings and collapsing them is the false green this
+ * whole harness exists to prevent.
+ *
+ * queryOrNull is borrowed from facts.mjs on purpose: this runs inside
+ * api/journeys/run.mjs's open transaction, where one failed statement aborts
+ * every statement after it. That helper wraps each read in its own SAVEPOINT,
+ * which is the only reason a missing column here cannot take the whole run
+ * down with it. */
+async function readMessageLedger(db, { orgId, clientId, dispatched, refused, truncated }) {
+  const rows = await queryOrNull(
+    db,
+    `SELECT status, channel, template_key, blocked_reason
+       FROM messages
+      WHERE org_id = $1 AND client_id = $2 AND direction = 'outbound'`,
+    [orgId, clientId]
+  );
+  if (rows === null) return null;
+
+  const sent = rows.filter((r) => r.status === "sent");
+  const holds = [];
+
+  /* The fence is a whole-path refusal, so it explains every row that is still
+     sitting at 'queued' after the drain, and there is no per-message record of
+     it anywhere else. */
+  if (refused) {
+    holds.push({ reason: "the safety fence stopped this whole path before anything was handed over", detail: refused.reason });
+  }
+  if (truncated) {
+    holds.push({ reason: "the run hit its limit on dispatch passes and stopped draining", detail: null });
+  }
+  for (const d of dispatched || []) {
+    if (d.outcome === "sent") continue;
+    holds.push({ reason: d.outcome, detail: d.detail ?? null });
+  }
+  for (const r of rows) {
+    if (r.status === "blocked" && r.blocked_reason) {
+      holds.push({ reason: "held by the compliance gate", detail: r.blocked_reason });
+    }
+  }
+
+  return {
+    queued: rows.length,
+    sent: sent.length,
+    held: Math.max(0, rows.length - sent.length),
+    holdReasons: holds,
+    byStatus: rows.reduce((acc, r) => {
+      const k = r.status || "unknown";
+      acc[k] = (acc[k] || 0) + 1;
+      return acc;
+    }, {})
+  };
+}
+
 /* Walk one path with one throwaway client. */
 async function walkPath(db, ctx, { journeyKey, journey, path, pathId, index }) {
   const { orgId, runId, registry, startAt, env } = ctx;
@@ -214,7 +319,10 @@ async function walkPath(db, ctx, { journeyKey, journey, path, pathId, index }) {
   const events = [];
   const firedIds = new Set();
   const branches = [];
+  const notes = [];
   let failure = null;
+  let startEventName = null;
+  let startEventStatus = "fired";
 
   const recordFire = (name, out) => {
     events.push({ name, eventId: out.eventId, at: clock.now(), workflows: out.fired });
@@ -223,9 +331,39 @@ async function walkPath(db, ctx, { journeyKey, journey, path, pathId, index }) {
 
   try {
     // The journey's opening event, if it has one.
-    const startEvent = Object.prototype.hasOwnProperty.call(START_EVENT, journeyKey)
-      ? START_EVENT[journeyKey]
-      : undefined;
+    const known = Object.prototype.hasOwnProperty.call(START_EVENT, journeyKey);
+    const startEvent = known ? START_EVENT[journeyKey] : undefined;
+    startEventName = startEvent ?? null;
+
+    /* A KEY THE RUNNER HAS NEVER HEARD OF USED TO BE SILENT, AND THAT SILENCE
+     * IS WHAT MADE "0 of 51 automations reached" UNREADABLE.
+     *
+     * START_EVENT is the runner's own reading of the six authored journeys —
+     * see the header. A journey key that is not in it (a demo row, a key
+     * somebody added straight into the table, a rename) fell through the
+     * `if (startEvent)` below firing nothing and saying nothing. The run then
+     * reported an honest-looking zero, and the owner had no way to tell "the
+     * automations are broken" from "the runner does not know how this journey
+     * begins".
+     *
+     * Recorded, never repaired. Inventing a start event for an unknown key is
+     * exactly the thing this file promises not to do: it would make a
+     * disconnected journey look wired. */
+    if (!known) {
+      startEventStatus = "unknown-journey";
+      notes.push({
+        kind: "no-start-event",
+        journey: journeyKey,
+        note: `nothing in the code can start the ${journeyKey} journey, so no automation could run on it`
+      });
+    } else if (!startEvent) {
+      startEventStatus = "no-canonical-event";
+      notes.push({
+        kind: "no-start-event",
+        journey: journeyKey,
+        note: `the ${journeyKey} journey has no canonical opening event, so no automation could run on it`
+      });
+    }
 
     if (startEvent) {
       const out = await fireEvent(db, {
@@ -279,10 +417,24 @@ async function walkPath(db, ctx, { journeyKey, journey, path, pathId, index }) {
   const { results: dispatched, truncated, refused } = await drain(db, { orgId, clock, env });
   const recordedNow = memory.recorded().slice(before);
 
+  /* Read AFTER the drain on purpose: by now every row this path queued carries
+     its final status, so one read tells the whole story instead of two. */
+  const messageLedger = await readMessageLedger(db, {
+    orgId,
+    clientId: client.id,
+    dispatched,
+    refused,
+    truncated
+  });
+
   return {
     pathId,
+    journeyKey,
     clientId: client.id,
     clientEmail: client.email,
+    startEvent: startEventName,
+    startEventStatus,
+    notes,
     branches,
     steps,
     events,
@@ -295,6 +447,10 @@ async function walkPath(db, ctx, { journeyKey, journey, path, pathId, index }) {
       gates: m.gates,
       at: m.at
     })),
+    /* messages[] is the PROVIDER's log — what got the whole way out. It is not
+       the same number as messageLedger.queued and the two must never be used
+       interchangeably again; see readMessageLedger's header. */
+    messageLedger,
     dispatched: dispatched.map((d) => ({ id: d.id, outcome: d.outcome, detail: d.detail ?? null })),
     dispatchTruncated: truncated,
     dispatchRefused: refused,
@@ -343,6 +499,18 @@ export async function run(db, {
 
   const firedIds = new Set(walked.flatMap((w) => w.workflowsFired));
 
+  /* One row per journey key, not per path — the same key walks several paths
+     and repeating the finding nine times would bury it. */
+  const startEventFindings = [];
+  const seenKey = new Set();
+  for (const w of walked) {
+    for (const n of w.notes || []) {
+      if (n.kind !== "no-start-event" || seenKey.has(n.journey)) continue;
+      seenKey.add(n.journey);
+      startEventFindings.push({ journey: n.journey, status: w.startEventStatus, note: n.note });
+    }
+  }
+
   return {
     runId,
     orgId,
@@ -358,7 +526,12 @@ export async function run(db, {
     },
     journeysWithoutStartEvent: Object.keys(journeys).filter(
       (k) => (!only || k === only) && !START_EVENT[k]
-    )
+    ),
+    /* Same set as journeysWithoutStartEvent, but it says WHICH of the two
+       reasons applies and in words a person can act on. "partner has no
+       canonical event" is a known, recorded gap; "the runner has never heard of
+       this key" is somebody's row that nothing can ever start. */
+    startEventFindings
   };
 }
 

@@ -180,6 +180,10 @@ body.running .wire .add{display:none}
   letter-spacing:.12em;text-transform:uppercase;background:var(--paper);border-radius:11px;padding:2px 8px;z-index:2}
 .tagpill.n{color:#5B4B8A;border:1px solid #C4B3E5}
 .tagpill.c{color:#8A6A1E;border:1px solid #F5CE8F}
+/* A step missing something it needs. Sits where New/Changed sit so it reads at
+   a glance on the canvas, without having to open the step. */
+.tagpill.x{color:#8A2A2A;border:1px solid #E5A3A3}
+.nsub.x{color:#8A2A2A;font-style:normal}
 
 /* simulation states */
 body.running .node{opacity:.45}
@@ -883,8 +887,33 @@ function stopSim(){
 }
 
 /* ── rendering ── */
+/* stepFault — is this step missing something it cannot work without?
+   Mirrors the check the server does on save (api/journeys.mjs findBadSteps), so
+   the author sees the problem on the canvas instead of finding out when the
+   save is refused, or worse, in a "Test against the code" report reading
+   'wait unit "undefined"'. Only settings whose absence makes a step meaningless
+   are faults here — an unwritten message is a draft, not a fault. */
+const WAIT_UNITS=['minutes','hours','days'];
+function stepFault(n){
+  const c=n.cfg||{};
+  if(n.type==='wait'){
+    const amt=Number(c.amount);
+    if(WAIT_UNITS.indexOf(c.unit)<0||!isFinite(amt)||amt<=0)
+      return 'This step is not set up — a wait needs a number and one of minutes, hours or days.';
+  }
+  if(n.type==='condition'){
+    if(!(c.field||'').trim()) return 'This step is not set up — a question needs something to check.';
+    if(!Array.isArray(n.branches)||n.branches.length!==2)
+      return 'This step is not set up — a question needs its two paths.';
+  }
+  if(n.type==='stage'&&(!(c.stage||'').trim()||!(c.pipeline||'').trim()))
+    return 'This step is not set up — moving a card needs a pipeline and a stage.';
+  if(!TYPES[n.type]) return 'This step is not set up — there is no such kind of step.';
+  return null;
+}
 function summary(n){
   const c=n.cfg||{};
+  const fault=stepFault(n); if(fault) return fault;
   switch(n.type){
     case 'sms': return c.body||'Nothing written yet';
     case 'email': return c.subject? c.subject+' — '+(c.body||'') : (c.body||'No subject yet');
@@ -901,13 +930,20 @@ function summary(n){
 function wireHTML(path,idx,plain){return '<div class="wire'+(plain?' plain':'')+'" data-path=\''+JSON.stringify(path)+
   '\' data-idx="'+idx+'"><button class="add" aria-label="Add a step here">+</button></div>'}
 function nodeHTML(n){
-  const s=summary(n), quiet=/^N(o|othing) /.test(s);
+  const fault=stepFault(n);
+  const s=summary(n), quiet=!fault&&/^N(o|othing) /.test(s);
   const nc=n._new?' prop':(n._chg?' edited-n':'');
-  const tag=n._new?'<span class="tagpill n">New</span>':(n._chg?'<span class="tagpill c">Changed</span>':'');
+  /* "Not set up" outranks New and Changed — it is the one a person has to act
+     on, and a step is only ever one of the three. */
+  const tag=fault?'<span class="tagpill x">Not set up</span>':
+    (n._new?'<span class="tagpill n">New</span>':(n._chg?'<span class="tagpill c">Changed</span>':''));
+  // A step whose type nothing recognises still has to render, or one bad row
+  // takes the whole canvas blank and the author cannot even delete it.
+  const t=TYPES[n.type]||{g:'act',k:n.type||'Unknown step'};
   return '<div class="nrow" aria-selected="'+(n.id===selId)+'" data-id="'+n.id+'">'+tag+
-    '<button class="node g-'+TYPES[n.type].g+(n.branches?' ask-n':'')+nc+'"><div class="nin">'+
-    '<div class="ntop"><b>'+esc(n.title)+'</b><span class="ty">'+esc(TYPES[n.type].k)+'</span></div>'+
-    '<div class="nsub'+(quiet?' q':'')+'">'+esc(s)+'</div></div></button></div>';
+    '<button class="node g-'+t.g+(n.branches?' ask-n':'')+nc+'"><div class="nin">'+
+    '<div class="ntop"><b>'+esc(n.title)+'</b><span class="ty">'+esc(t.k)+'</span></div>'+
+    '<div class="nsub'+(fault?' x':(quiet?' q':''))+'">'+esc(s)+'</div></div></button></div>';
 }
 function chainHTML(nodes,path){
   let h='';
@@ -1200,7 +1236,15 @@ async function applyAll(){
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({key:k,name:j.name,start:j.start,end:j.end,desc:j.desc,nodes:j.nodes})});
       const data=await res.json().catch(()=>({}));
-      if(!res.ok||!data.ok) throw new Error((data&&(data.message||data.error))||('HTTP '+res.status));
+      if(!res.ok||!data.ok){
+        /* Name the steps. "Some steps are missing something" with no list is a
+           dead end — the author has to guess which of forty steps it means. */
+        let why=(data&&(data.message||data.error))||('HTTP '+res.status);
+        if(data&&Array.isArray(data.violations)&&data.violations.length&&data.error==='steps_not_set_up'){
+          why+=' '+data.violations.map(v=>'“'+(v.title||v.nodeId||'a step')+'” '+v.reason).join('; ')+'.';
+        }
+        throw new Error(why);
+      }
     }
     keys.forEach(k=>{ SAVED[k]=JSON.parse(JSON.stringify(J[k])); });
     dirty=0; touched={}; undoStack=[];
@@ -1233,9 +1277,42 @@ function rowsHtml(list,empty){
   return list.map(f=>'<div class="jr-rrow"><b>'+esc(f.journey||'')+'</b> · '+
     esc(f.nodeTitle||f.category||'')+'<span>'+esc(f.summary||'')+'</span></div>').join('');
 }
+/* WHAT HELD THE MESSAGES BACK.
+ *
+ * The server has always sent these numbers and this screen has never shown one
+ * of them. That is why a run where the safety fence stopped everything looked
+ * exactly like a run where the journeys send nothing at all: both showed
+ * "0 messages that would send" and no explanation. They are opposite problems
+ * and the owner had no way to tell them apart. */
+function heldHtml(d){
+  const s=d.summary, m=s.messages, out=[];
+  if(m.pathsRefusedByFence){
+    const why=(m.fenceRefusals&&m.fenceRefusals.length&&m.fenceRefusals[0].reason)||'';
+    out.push('<div class="jr-rrow"><b>The safety fence stopped '+m.pathsRefusedByFence+
+      ' path'+(m.pathsRefusedByFence===1?'':'s')+'</b><span>Nothing on '+
+      (m.pathsRefusedByFence===1?'that path':'those paths')+' was handed over to be sent, '+
+      'so the messages were written and then held. This is the test harness protecting real people '+
+      'from a test run — it is not a fault in the journey.'+(why?' Reason given: '+esc(why):'')+'</span></div>');
+  }
+  if(m.blockedByGate){
+    out.push('<div class="jr-rrow"><b>'+m.blockedByGate+' message'+(m.blockedByGate===1?'':'s')+
+      ' held by the compliance gate</b><span>These were written and then stopped before sending. '+
+      'The row exists; it just did not go out.</span></div>');
+  }
+  const truncated=(d.paths||[]).filter(p=>p.dispatchTruncated).length;
+  if(truncated){
+    out.push('<div class="jr-rrow"><b>'+truncated+' path'+(truncated===1?'':'s')+
+      ' ran out of sending rounds</b><span>The run stops after a fixed number of sending rounds so a '+
+      'looping message cannot spin forever. Anything still waiting was left waiting.</span></div>');
+  }
+  if(!out.length) return '';
+  return '<h4>What held messages back</h4>'+out.join('');
+}
 function paintRun(d){
   const s=d.summary, el=runPanel();
   const wf=s.workflows;
+  const skipped=d.journeysSkipped||[];
+  const noStart=d.startEventFindings||[];
   el.innerHTML='<div class="jr-rcard">'+
     '<div class="jr-rhead"><b>Test against the code</b>'+
       '<button class="hbtn" id="runclose">Close</button></div>'+
@@ -1247,9 +1324,19 @@ function paintRun(d){
       '<span><i>'+wf.fired.length+'/'+wf.registered+'</i>automations reached</span>'+
     '</div>'+
     '<p class="jr-rmuted">Journeys read from: '+esc(d.journeySource)+
-      '. Nothing was saved — the run was undone when it finished.</p>'+
+      '. Nothing was saved — the run was undone when it finished, and nothing was handed to the live '+
+      'automation service.</p>'+
+    (skipped.length? '<h4>Rows in the table this test left out ('+skipped.length+')</h4>'+
+      '<p class="jr-rmuted">These are not part of the six journeys the editor owns, so testing them '+
+      'would say nothing about your automations.</p>'+
+      skipped.map(x=>'<div class="jr-rrow"><b>'+esc(x.key)+'</b><span>'+esc(x.reason)+'</span></div>').join('')
+      : '')+
+    (noStart.length? '<h4>Journeys nothing can start ('+noStart.length+')</h4>'+
+      noStart.map(x=>'<div class="jr-rrow"><b>'+esc(x.journey)+'</b><span>'+esc(x.note)+'</span></div>').join('')
+      : '')+
     '<h4>The code does not do this the way the journey says ('+s.findings.broken.length+')</h4>'+
     rowsHtml(s.findings.broken,'Nothing — which on a first run usually means the check itself is not working.')+
+    heldHtml(d)+
     '<h4>Could not check ('+s.findings.couldNotCheck.length+')</h4>'+
     rowsHtml(s.findings.couldNotCheck,'Everything could be checked.')+
     '<h4>Automations no journey reaches ('+wf.neverFired.length+')</h4>'+
@@ -1257,11 +1344,16 @@ function paintRun(d){
       '<div class="jr-rrow"><span>'+wf.neverFired.map(w=>esc(w.id)).join(', ')+'</span></div>'
       : '<p class="jr-rmuted">Every automation is reached by some journey.</p>')+
     '<h4>Screens</h4>'+
-    '<div class="jr-rrow"><span>'+s.screens.touchedAndWired.length+' touched by a journey and showing real data · '+
+    /* A zero here used to be ambiguous: it meant either "no journey touches
+       any screen" or "the screens folder would not open". Say which. */
+    (d.screensUnreadable?
+      '<p class="jr-rmuted">The screens folder could not be read on this run, so no screen was checked. '+
+      'This is not a count of zero — it is a count that could not be taken.</p>'
+      : '<div class="jr-rrow"><span>'+s.screens.touchedAndWired.length+' touched by a journey and showing real data · '+
       s.screens.touchedAndWireframe.length+' touched but still a mock-up · '+
       s.screens.touchedByNoJourney.length+' touched by no journey</span></div>'+
     (s.screens.touchedAndWireframe.length? '<div class="jr-rrow"><span>Mock-ups a journey needs: '+
-      s.screens.touchedAndWireframe.map(x=>esc(x.file)).join(', ')+'</span></div>':'')+
+      s.screens.touchedAndWireframe.map(x=>esc(x.file)).join(', ')+'</span></div>':''))+
   '</div>';
   document.getElementById('runclose').onclick=closeRun;
 }
