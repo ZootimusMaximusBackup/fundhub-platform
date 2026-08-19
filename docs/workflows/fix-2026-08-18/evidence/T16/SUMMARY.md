@@ -286,3 +286,43 @@ three days**, which means nobody has been able to test anything from a client's
 point of view in that time. That is worth fixing on its own.
 
 I did not guess at a result. The item stays open.
+
+---
+
+## Proven on the live site after the merge (2026-08-19)
+
+Both fixes are confirmed working on production. The "not proven yet" section
+above is now closed.
+
+Proof: `db/teardown-live-after-deploy.json`
+
+### The credit-dispute tables are unlocked on live
+
+All six now read `lock on, forced, 1 key`. Two of them hold data the app could
+not see before:
+
+| Table | What the app saw before | What it sees now |
+|---|---|---|
+| `furnisher_mail_addresses` | 0 | **5** |
+| `repair_decision_log` | 0 | **2** |
+| the other four | 0 | 0 (genuinely empty — now readable) |
+
+Tables still locked shut anywhere in the database: **none**.
+
+### Deleting a demo client works on live
+
+Pressed delete through the real button, as owner, on a demo client carrying a
+credit report, 4 credit lines, a pipeline card and a bank account:
+
+* **200 OK in 0.5 seconds.** Nothing left behind anywhere.
+
+### One thing worth telling you about how this got applied
+
+The three database changes did **not** wait for the merge. They applied
+themselves at 03:20, when the *preview* build ran for the pull request —
+about twenty minutes before you merged.
+
+That is worth knowing: **a preview build of an unmerged pull request changes the
+live database.** It worked out well here, and these three changes were safe. A
+riskier one would have been just as live, just as early, with nobody expecting
+it. Someone should decide whether that is intended.
