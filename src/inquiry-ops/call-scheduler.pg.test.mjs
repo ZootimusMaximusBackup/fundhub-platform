@@ -7,7 +7,7 @@ import { createHmac } from "node:crypto";
 import { db, close } from "../db.mjs";
 import { resolveDefaultOrg } from "../auth/org.mjs";
 import { createCase } from "./cases.mjs";
-import { onMailDelivered, scheduleFromDelivery } from "./call-scheduler.mjs";
+import { onMailDelivered, scheduleFromDelivery, fireDueCalls } from "./call-scheduler.mjs";
 import { addBusinessDays } from "./business-days.mjs";
 import { handleWebhook } from "../http/router.mjs";
 
@@ -190,5 +190,73 @@ describe("PostGrid delivery webhook → call clock", { skip: !HAS_DB ? "no DATAB
     assert.equal(new Date(row.first_delivery_at).toISOString(), deliveredAt);
     assert.equal(row.first_delivery_channel, "portal");
     assert.equal(new Date(row.call_due_at).toISOString(), expected);
+  });
+});
+
+/* The demo guard. Owner instruction 2026-08-19, the day the sweeper was first
+   switched on: "no bureau calls about fake clients".
+
+   Real Postgres on purpose. The guard is three SQL predicates and two of them
+   turn on NULL handling (IS NOT TRUE, not = false) — a fake db that returns
+   whatever it is handed cannot tell you whether the SQL is right, and it is the
+   SQL that is the safety feature here. */
+describe("fireDueCalls never calls a bureau about a fake client", { skip: !HAS_DB ? "no DATABASE_URL" : false }, () => {
+  let orgId;
+  const MARK2 = "inqcall_demoguard";
+  const due = new Date(Date.now() - 60_000).toISOString();
+
+  async function wipe2() {
+    const ids = (await db.query(`SELECT id FROM clients WHERE email LIKE $1`, [`${MARK2}%`])).rows.map((r) => r.id);
+    if (ids.length) {
+      await db.query(`DELETE FROM inquiry_removal_cases WHERE client_id = ANY($1)`, [ids]);
+      await db.query(`DELETE FROM clients WHERE id = ANY($1)`, [ids]);
+    }
+  }
+
+  async function mkClient({ suffix, isDemo = null, synthetic = false }) {
+    const r = await db.query(
+      `INSERT INTO clients (org_id, first_name, last_name, email, is_demo, custom_fields)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+      [orgId, "Guard", suffix, `${MARK2}-${suffix}@example.com`, isDemo,
+       synthetic ? JSON.stringify({ synthetic: true }) : JSON.stringify({})]
+    );
+    return r.rows[0].id;
+  }
+
+  async function mkCase(clientId, { caseIsDemo = null } = {}) {
+    const r = await db.query(
+      `INSERT INTO inquiry_removal_cases (org_id, client_id, case_status, call_due_at, is_demo)
+       VALUES ($1,$2,'Queued',$3::timestamptz,$4) RETURNING id`,
+      [orgId, clientId, due, caseIsDemo]
+    );
+    return r.rows[0].id;
+  }
+
+  before(async () => { orgId = await resolveDefaultOrg(db); await wipe2(); });
+  after(async () => { await wipe2(); });
+
+  test("a real client's due case fires; a demo case, a demo client and a synthetic client do not", async () => {
+    const realId = await mkCase(await mkClient({ suffix: "real" }));
+    await mkCase(await mkClient({ suffix: "casedemo" }), { caseIsDemo: true });
+    await mkCase(await mkClient({ suffix: "clientdemo", isDemo: true }));
+    await mkCase(await mkClient({ suffix: "synthetic", synthetic: true }));
+
+    const res = await fireDueCalls(db, { orgId, limit: 50 });
+    const firedIds = (res.fired || res || []).map((f) => f.id || f.caseId || f);
+
+    assert.ok(firedIds.includes(realId),
+      "the real client's due case must still fire — the guard must not switch the sweeper off entirely");
+    assert.equal(firedIds.length, 1,
+      `exactly one case should fire; a demo case, a demo client or a synthetic client got a bureau call. Fired: ${JSON.stringify(firedIds)}`);
+  });
+
+  test("a NULL is_demo is treated as real, not skipped", async () => {
+    /* Both columns are nullable and almost every existing row is NULL. If the
+       guard had been written `= false` these would all silently stop firing,
+       which is the opposite failure and just as bad. */
+    const id = await mkCase(await mkClient({ suffix: "nulls", isDemo: null }));
+    const res = await fireDueCalls(db, { orgId, limit: 50 });
+    const firedIds = (res.fired || res || []).map((f) => f.id || f.caseId || f);
+    assert.ok(firedIds.includes(id), "a case with NULL is_demo is a real case and must fire");
   });
 });
