@@ -326,14 +326,17 @@
   </header>
 
 
-  <!-- Three tiles: how many workflows exist, whether the automation engine
-       that runs them is on, and how many have ever had their trigger event
-       recorded (which is not the same as the workflow having run). All three
-       come straight off /api/read/workflows — nothing here is guessed. -->
+  <!-- Three tiles, and every one of them counts something this screen can
+       actually see: how many workflows exist, how many cannot be started at
+       all right now, and how many have ever had their start signal recorded.
+       There used to be an "Engine ON/OFF" tile here. It read one setting and
+       announced that the automations were working, which it had no way of
+       knowing. It is gone. All three numbers come straight off
+       /api/read/workflows — nothing here is guessed. -->
   <div class="summary-bar">
     <div class="sum-tile"><div class="sum-label">Workflows</div><div class="sum-value" data-sum="total">—</div></div>
-    <div class="sum-tile attn"><div class="sum-label">Engine</div><div class="sum-value" data-sum="engine">—</div></div>
-    <div class="sum-tile"><div class="sum-label">Ever Triggered</div><div class="sum-value" data-sum="live">—</div></div>
+    <div class="sum-tile attn"><div class="sum-label">Can't Start</div><div class="sum-value" data-sum="blocked">—</div></div>
+    <div class="sum-tile"><div class="sum-label">Start Signal Seen</div><div class="sum-value" data-sum="live">—</div></div>
     <div class="rail-filter">
       <label for="rail-select">Rail</label>
       <select id="rail-select"></select>
@@ -363,11 +366,21 @@
 <script>
 /* ───────────────────────────────────────────────────────────────────────────
    Automations — wired to GET /api/read/workflows, which introspects the real
-   Inngest registry (src/workflows/index.mjs's `functions` array, 47 entries).
-   No row on this screen is hand-authored: rail, name, trigger and status all
-   come from that response. See api/read/workflows.mjs for the shape and for
-   why "status" can honestly be "dormant" for all 47 — INNGEST_EVENT_KEY has
-   never been set in this environment, so the engine that runs them is off.
+   Inngest registry (src/workflows/index.mjs's `functions` array). No row on
+   this screen is hand-authored: rail, name, trigger and status all come from
+   that response.
+
+   WHAT THIS SCREEN IS ALLOWED TO SAY. It shows what STARTS a job. It cannot
+   show whether a job finished, because the record of a job running lives
+   inside Inngest and nothing copies it back here. Every wording choice below
+   follows from that one limit.
+
+   It used to say the opposite. The old version printed "Engine is on. 49 of 51
+   workflows..." off the back of a single setting being present, and called a
+   workflow "LIVE" as soon as one row existed in the events table. On
+   2026-08-18 auditors fired five test events by hand and that number climbed
+   from 44 to 49. Nothing had run. If you are about to add a green tick here,
+   check first that something real can see the thing it is ticking.
    ─────────────────────────────────────────────────────────────────────────── */
 (function(){
   var main = document.getElementById('wfMain'),
@@ -400,17 +413,47 @@
     return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
   }
 
+  /* Four states, and they are four different facts. None of them says a job
+     worked, because nothing here can tell you that.
+
+       scheduled          a clock job. It runs on a timer and never writes a
+                          start signal, so asking when it last started is the
+                          wrong question. These two used to show as "NEVER
+                          TRIGGERED" forever while working fine.
+       trigger_seen       a start signal was recorded at least once. That is
+                          all it means.
+       trigger_never_seen something can send the start signal, but none has
+                          ever been recorded.
+       emitter_unknown    nobody has recorded how this start signal is sent.
+                          A gap in our notes, NOT a claim the job is broken.
+       no_emitter         nothing in the system can send this start signal, so
+                          the job can never begin. */
   function statusBadge(row){
-    if(row.status === 'live'){
-      /* status 'live' = engine key is set AND this workflow's trigger event has
-         been recorded at least once (api/read/workflows.mjs:106). It is not a
-         record of the workflow running, so the pill must not say "LIVE". */
-      return '<span class="toggle on" title="The engine is on and this workflow\'s trigger event has been recorded. This screen cannot confirm the workflow itself ran."><span class="dot"></span>TRIGGER SEEN</span>';
+    if(row.status === 'scheduled'){
+      var when = row.schedule_plain || (row.crons || []).join(', ');
+      return '<span class="toggle on" title="This job runs on a timer (' + esc(when) +
+        '). Timer jobs do not leave a start signal, so this screen cannot tell you when it last ran.">' +
+        '<span class="dot"></span>ON A TIMER</span>';
     }
-    if(row.status === 'never_triggered'){
-      return '<span class="toggle off"><span class="dot"></span>NEVER TRIGGERED</span>';
+    if(row.status === 'trigger_seen'){
+      return '<span class="toggle on" title="The signal that starts this job has been recorded at least once. ' +
+        'That is not the same as the job running. This screen cannot see whether it ran.">' +
+        '<span class="dot"></span>SIGNAL SEEN</span>';
     }
-    return '<span class="toggle paused"><span class="dot"></span>DORMANT</span>';
+    if(row.status === 'trigger_never_seen'){
+      return '<span class="toggle off" title="Something can send the signal that starts this job, but no signal has ever been recorded.">' +
+        '<span class="dot"></span>NEVER STARTED</span>';
+    }
+    /* An event nobody has written down is NOT an event nothing sends. Falling
+       through to "NOTHING STARTS IT" would state the absolute, which is the
+       same conflation this screen was rewritten to stop making. */
+    if(row.status === 'emitter_unknown'){
+      return '<span class="toggle paused" title="Nobody has written down how this job\'s start signal gets sent, ' +
+        'so this screen cannot say. That is a gap in our notes, not proof the job is broken.">' +
+        '<span class="dot"></span>NOT CHECKED</span>';
+    }
+    return '<span class="toggle paused" title="Nothing in the system can send the signal that starts this job.">' +
+      '<span class="dot"></span>NOTHING STARTS IT</span>';
   }
 
   /* ── FETCH ──────────────────────────────────────────────────────────────── */
@@ -430,7 +473,7 @@
             ((res.body && res.body.error) || ('HTTP ' + res.status)) + ').');
           return;
         }
-        render(res.body.items || []);
+        render(res.body.items || [], !!res.body.hasMore);
       })
       .catch(function(e){
         renderError('Could not reach the server (' + (e && e.message ? e.message : 'network error') + ').');
@@ -445,31 +488,36 @@
   }
 
   /* ── RENDER ─────────────────────────────────────────────────────────────── */
-  function render(items){
-    var engineActive = items.length ? items[0].engine_active : false;
-    var liveCount = items.filter(function(r){ return r.status === 'live'; }).length;
+  function render(items, hasMore){
+    var seenCount    = items.filter(function(r){ return r.status === 'trigger_seen'; }).length;
+    var blockedCount = items.filter(function(r){ return r.can_start_today === false; }).length;
 
     sum('total').textContent = String(items.length);
-    sum('engine').textContent = engineActive ? 'ON' : 'OFF';
-    document.querySelector('.sum-tile.attn').classList.toggle('clear', engineActive);
-    sum('live').textContent = liveCount + ' of ' + items.length;
+    sum('blocked').innerHTML = blockedCount + '<span class="of"> of ' + items.length + '</span>';
+    document.querySelector('.sum-tile.attn').classList.toggle('clear', blockedCount === 0);
+    sum('live').innerHTML = seenCount + '<span class="of"> of ' + items.length + '</span>';
 
-    footerCount.textContent = items.length + ' workflows · engine ' + (engineActive ? 'on' : 'off');
+    footerCount.textContent = items.length + ' workflows · ' + blockedCount + " can't start" +
+      (hasMore ? ' · more on the next page' : '');
 
-    if(!engineActive){
+    /* THE ONE SENTENCE. It is on the screen every time, in both the good and
+       the bad state, because the whole point of this fix is that the owner
+       stopped being told a job worked by a screen that cannot know. */
+    var LIMIT_LINE = 'This page shows what STARTS a job, not whether it finished.';
+
+    if(blockedCount){
       attnBar.className = 'attn-bar bad';
-      attnBar.innerHTML = '<span class="ab-ic">⚠</span><span><b>The automation engine is off.</b> ' +
-        'INNGEST_EVENT_KEY is not set in this environment, so none of these ' + items.length +
-        ' workflows have ever run — this is an owner decision (CLAUDE.md §11), not a fault.</span>';
-    } else if(!liveCount){
+      attnBar.innerHTML = '<span class="ab-ic">⚠</span><span><b>' + blockedCount +
+        ' of these ' + items.length + ' jobs cannot start at all right now.</b> ' +
+        'Something they need is switched off. Open a row to see what. ' + LIMIT_LINE + '</span>';
+    } else if(!seenCount){
       attnBar.className = 'attn-bar bad';
-      attnBar.innerHTML = '<span class="ab-ic">⚠</span><span>Engine is on, but no workflow has been ' +
-        'triggered yet.</span>';
+      attnBar.innerHTML = '<span class="ab-ic">⚠</span><span>No job here has ever had its start ' +
+        'signal recorded. ' + LIMIT_LINE + '</span>';
     } else {
       attnBar.className = 'attn-bar good';
-      attnBar.innerHTML = '<span class="ab-ic">✓</span><span>Engine is on. ' + liveCount + ' of ' +
-        items.length + ' workflows have had their trigger event recorded at least once. ' +
-        'This screen does not track whether a workflow ran.</span>';
+      attnBar.innerHTML = '<span class="ab-ic">✓</span><span>' + seenCount + ' of ' + items.length +
+        ' jobs have had their start signal recorded at least once. ' + LIMIT_LINE + '</span>';
     }
 
     var byCategory = {};
@@ -500,8 +548,8 @@
 
       var table = document.createElement('table');
       table.className = 'wf';
-      table.innerHTML = '<tr><th style="width:32%;">Workflow</th><th style="width:36%;">Trigger</th>' +
-        '<th style="width:16%;" title="When this workflow\'s trigger event was last recorded. It does not mean the workflow itself ran.">Trigger Last Seen</th>' +
+      table.innerHTML = '<tr><th style="width:32%;">Workflow</th><th style="width:36%;">What starts it</th>' +
+        '<th style="width:16%;" title="When the signal that starts this job was last recorded. It does not mean the job itself ran.">Start Signal Last Seen</th>' +
         '<th style="width:16%;">Status</th></tr>';
 
       rows.forEach(function(row){
@@ -511,33 +559,98 @@
         tr.setAttribute('aria-expanded', 'false');
 
         var triggerText = row.events.length ? 'on ' + row.events.join(', ')
-          : (row.crons.length ? 'cron ' + row.crons.join(', ') : 'no trigger declared');
+          : (row.crons.length ? (row.schedule_plain || ('cron ' + row.crons.join(', '))) : 'no trigger declared');
         var lastFired = timeAgo(row.last_triggered_at);
+
+        /* A clock job leaves no start signal, so "—" in that column would read
+           as "dead" when it means "wrong question". Say so instead. */
+        var lastCell = row.status === 'scheduled'
+          ? '<span class="wf-run-ok">runs on a timer</span>'
+          : (lastFired ? '<span class="wf-run-ok">' + esc(lastFired) + '</span>' : '<span class="wf-run-ok">—</span>');
+
+        /* The blocked line is a second fact, not a replacement for the status:
+           a job can have had a start signal months ago AND be unable to get
+           another one today. Both belong on the row. */
+        var blockedLine = row.can_start_today === false && row.blocked_reason
+          ? '<span class="wf-run-fail-detail">' + esc(row.blocked_reason) + '</span>'
+          : '';
 
         tr.innerHTML =
           '<td class="wf-name"><span class="wfchev">▸</span>' + esc(row.name) +
             '<div class="wf-owner mono">' + esc(row.id) + '</div></td>' +
-          '<td class="wf-trigger mono">' + esc(triggerText) + '</td>' +
-          '<td class="wf-run-ok">' + (lastFired ? esc(lastFired) : '—') + '</td>' +
+          '<td class="wf-trigger mono">' + esc(triggerText) + blockedLine + '</td>' +
+          '<td>' + lastCell + '</td>' +
           '<td>' + statusBadge(row) + '</td>';
+        if(row.can_start_today === false) tr.classList.add('failed');
 
         var steps = document.createElement('tr');
         steps.className = 'wf-steps';
         steps.hidden = true;
         var stepsTd = document.createElement('td');
         stepsTd.colSpan = 4;
+        /* The open panel answers one question: what would have to happen for
+           this job to start? Each way in is one line, with the switch it needs
+           and whether that switch is on. This replaces a line that printed
+           "engine_active — yes", which told the owner the automations were
+           working and was reading one setting to say it. */
+        var ways = (row.emitters || []).filter(function(e){ return e.how; });
+        var waysHtml = '';
+        if(row.status === 'scheduled'){
+          waysHtml = '<div class="step-line"><span class="sn">1</span><span class="sb">' +
+            'A timer starts it, <b>' + esc(row.schedule_plain || row.crons.join(', ')) + '</b>. ' +
+            'Nobody has to do anything. A timer job leaves no record here, so this page cannot ' +
+            'tell you when it last ran.</span></div>';
+        } else if(!ways.length){
+          waysHtml = '<div class="step-line halt"><span class="sn">✕</span><span class="sb">' +
+            'Nothing in the system can start this job.</span></div>';
+        } else {
+          /* Four of the funding jobs listen for round.started, round.submitted,
+             round.approved and round.funded, and all four share the same two
+             ways in. Listing them per event printed the same two sentences
+             eight times. De-duplicate on the wording, and gather the signal
+             names that share it. */
+          var seen = {}, uniq = [];
+          ways.forEach(function(e){
+            var k = e.how + '|' + (e.gate || '');
+            if(seen[k]){ seen[k].events.push(e.event); return; }
+            seen[k] = { how: e.how, gate: e.gate, gate_set: e.gate_set, note: e.note, events: [e.event] };
+            uniq.push(seen[k]);
+          });
+          var notesShown = {};
+          uniq.forEach(function(e, i){
+            var off = e.gate_set === false;
+            var note = (e.note && !notesShown[e.note]) ? (notesShown[e.note] = 1, e.note) : null;
+            waysHtml += '<div class="step-line' + (off ? ' halt' : '') + '">' +
+              '<span class="sn">' + (i + 1) + '</span><span class="sb">' + esc(e.how) +
+              (e.gate
+                ? ' <b>' + (off ? 'This one is switched off' : 'Switched on') + '</b> (setting ' + esc(e.gate) + ').'
+                : ' <b>Nothing switches this one off.</b>') +
+              '<br><span class="mono" style="color:var(--text-faint);">sends ' + esc(e.events.join(', ')) + '</span>' +
+              (note ? '<br>' + esc(note) : '') +
+              '</span></div>';
+          });
+        }
+
         stepsTd.innerHTML =
           '<div class="steps">' +
-            '<div class="steps-h">What the registry says</div>' +
+            '<div class="steps-h">What would start this job</div>' +
+            waysHtml +
+            '<div class="steps-h" style="margin-top:10px;">What this page cannot tell you</div>' +
+            '<div class="step-line"><span class="sb">' +
+              esc(row.run_records_note || 'This page shows what starts a job, not whether it finished.') +
+              '</span></div>' +
+            '<div class="steps-h" style="margin-top:10px;">Raw registry</div>' +
             '<div class="step-line"><span class="sb"><b>id</b> — ' + esc(row.id) + '</span></div>' +
-            '<div class="step-line"><span class="sb"><b>events</b> — ' +
+            '<div class="step-line"><span class="sb"><b>start signals it listens for</b> — ' +
               (row.events.length ? esc(row.events.join(', ')) : 'none') + '</span></div>' +
-            '<div class="step-line"><span class="sb"><b>cron</b> — ' +
+            '<div class="step-line"><span class="sb"><b>timer</b> — ' +
               (row.crons.length ? esc(row.crons.join(', ')) : 'none') + '</span></div>' +
-            '<div class="step-line"><span class="sb"><b>engine_active</b> — ' +
-              (row.engine_active ? 'yes' : 'no (INNGEST_EVENT_KEY unset)') + '</span></div>' +
-            '<div class="step-line"><span class="sb"><b>last_triggered_at</b> — ' +
-              esc(row.last_triggered_at || 'never') + '</span></div>' +
+            '<div class="step-line"><span class="sb"><b>start signal last recorded</b> — ' +
+              (row.status === 'scheduled'
+                ? 'does not apply, this job runs on a timer'
+                : esc(row.last_triggered_at || 'never')) + '</span></div>' +
+            '<div class="step-line"><span class="sb"><b>ways in last checked by a person</b> — ' +
+              esc(row.emitters_verified_on || 'unknown') + '</span></div>' +
           '</div>';
         steps.appendChild(stepsTd);
 

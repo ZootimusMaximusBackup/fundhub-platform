@@ -194,26 +194,111 @@ function checkWait(node, facts, journeyKey, runIndex) {
   });
 }
 
+/* THIS CHECK USED TO REPORT A FALSEHOOD, AND IT IS WORTH WRITING DOWN WHY.
+ *
+ * It asked one question — "did anything get written?" — and answered it from
+ * the wrong number. Its input was the count of PROVIDER records: what the
+ * in-memory provider logged after the dispatcher handed it a message. Anything
+ * that stopped short of the provider never appeared there. A quiet-hours
+ * deferral, a compliance-gate block, a draft hold, and above all a whole-path
+ * refusal by the live-mode fence, which claims nothing at all and so produces
+ * exactly zero provider records for an entire journey.
+ *
+ * Every one of those is a message that WAS correctly queued. The owner was
+ * told "no message row was written", which is not a softer version of the
+ * truth — it is the opposite of it, and it sends the owner after the team that
+ * writes the messages instead of the setting that held them.
+ *
+ * So the verdict is three-way now, and only the third one is "nothing was
+ * written":
+ *
+ *   queued and sent   — ok
+ *   queued and held   — unverified, WITH the reason it was held
+ *   nothing queued    — mismatch, the original finding, now actually true
+ *
+ * The count comes from the messages table (src/journeys/runner/index.mjs's
+ * readMessageLedger) rather than from the provider log. */
 function checkMessage(node, facts, journeyKey, runIndex) {
-  // A journey's sms/email node does not name a template — the code chooses the
-  // template key. So the check is: did anything actually get written on a path
-  // through this journey? A journey full of message steps that produces no
-  // messages row is the finding.
-  const sent = runIndex?.messagesByJourney?.get(journeyKey) ?? null;
-  if (sent === null) {
+  const ledger = runIndex?.ledgerByJourney?.get(journeyKey) ?? null;
+
+  // No ledger at all: this journey was not walked in this report.
+  if (!ledger) {
     return finding("unverified", node.type, node, journeyKey, "no walk data for this journey");
   }
-  if (sent === 0) {
+  // Walked, but the messages table would not read. Different from zero, and it
+  // must never collapse into zero.
+  if (ledger.readable === false) {
+    return finding(
+      "unverified",
+      node.type,
+      node,
+      journeyKey,
+      "the messages table could not be read on this run, so whether a message was written is unknown",
+      { messagesOnJourney: null }
+    );
+  }
+
+  if (ledger.queued === 0) {
     return finding(
       "mismatch",
       node.type,
       node,
       journeyKey,
       `the journey sends a ${node.type} here and no message row was written on any path through it`,
-      { messagesOnJourney: 0 }
+      { messagesOnJourney: 0, queued: 0, sent: 0, held: 0 }
     );
   }
-  return finding("ok", node.type, node, journeyKey, `${sent} message(s) written on paths through this journey`, { messagesOnJourney: sent });
+
+  if (ledger.sent === 0) {
+    const why = summariseHolds(ledger.holdReasons);
+    return finding(
+      "unverified",
+      node.type,
+      node,
+      journeyKey,
+      `the journey sends a ${node.type} here, ${ledger.queued} message${ledger.queued === 1 ? " was" : "s were"} written and then held — ${why}. It never reached the sending step, so this run cannot show what would have gone out.`,
+      { messagesOnJourney: ledger.queued, queued: ledger.queued, sent: 0, held: ledger.held, holdReasons: ledger.holdReasons }
+    );
+  }
+
+  const heldNote = ledger.held > 0 ? `; ${ledger.held} more ${ledger.held === 1 ? "was" : "were"} held (${summariseHolds(ledger.holdReasons)})` : "";
+  return finding(
+    "ok",
+    node.type,
+    node,
+    journeyKey,
+    `${ledger.sent} message(s) written and sent on paths through this journey${heldNote}`,
+    { messagesOnJourney: ledger.queued, queued: ledger.queued, sent: ledger.sent, held: ledger.held, holdReasons: ledger.holdReasons }
+  );
+}
+
+/* Hold reasons in plain words, deduplicated. The dispatcher's outcome codes are
+   its own vocabulary (src/messaging/dispatch.mjs OUTCOME); the owner does not
+   read code, so each one gets a sentence. An unmapped code falls through as
+   itself rather than being dropped — a reason nobody translated is still a
+   reason, and losing it would be the same mistake this check just fixed. */
+const HOLD_WORDS = {
+  deferred: "it is inside quiet hours and is waiting for the window to open",
+  blocked: "the compliance gate held it",
+  no_route: "no sending route is set up for that channel",
+  no_address: "the client record has no phone or email to send to",
+  unknown_provider: "the route names a sending service the code does not have",
+  channel_mismatch: "the route is set up for a different channel",
+  rejected: "the sending service refused it outright",
+  retry: "the sending service asked to try again later",
+  gave_up: "it ran out of attempts",
+  dry_run: "the safety fence is up, so it was held rather than sent",
+  synthetic: "it is a test record and the route points at a real sending service",
+  not_claimable: "another process had already taken it"
+};
+
+function summariseHolds(holds = []) {
+  const words = [];
+  for (const h of holds) {
+    const text = HOLD_WORDS[h.reason] || h.reason;
+    if (text && !words.includes(text)) words.push(text);
+  }
+  return words.length ? words.join("; ") : "the run does not say why";
 }
 
 function checkHandoff(node, facts, journeyKey) {
@@ -252,6 +337,7 @@ function checkHandoff(node, facts, journeyKey) {
    guessed — a wrong match would claim a journey touches a screen it does not,
    which is worse than admitting the label cannot be resolved. */
 export function matchScreen(label, screens) {
+  if (!Array.isArray(screens)) return null; // could not read the folder — the caller reports that, not a miss
   const want = tokens(label);
   if (want.size === 0) return null;
   let best = null;
@@ -272,6 +358,12 @@ function checkTouch(category, label, node, facts, journeyKey) {
   }
 
   if (category === "Screen") {
+    /* null means gatherScreens could not read public/app at all. Reporting a
+       mismatch there would accuse every screen in the product of not existing
+       because one directory read failed. */
+    if (facts.screens === null) {
+      return finding("unverified", "touch:Screen", node, journeyKey, `the screens folder could not be read, so "${label}" cannot be checked`, { label });
+    }
     const hit = matchScreen(label, facts.screens);
     if (!hit) {
       return finding("mismatch", "touch:Screen", node, journeyKey, `no screen in public/app/ resolves to "${label}"`, { label });
@@ -343,21 +435,56 @@ function checkTouch(category, label, node, facts, journeyKey) {
 
 // ── the walk index ────────────────────────────────────────────────────────
 
-/* Folds a run report into the per-journey aggregates the node checks need. */
+/* Folds a run report into the per-journey aggregates the node checks need.
+ *
+ * TWO MESSAGE NUMBERS, AND THEY ARE NOT THE SAME NUMBER.
+ *
+ *   messagesByJourney — provider records: what got the whole way out. Kept
+ *                       because the report's "messages that would send" stat
+ *                       means exactly this and nothing else.
+ *   ledgerByJourney   — rows written to the messages table, split into sent and
+ *                       held. This is what checkMessage reads, because "was a
+ *                       message row written" is a question about rows.
+ *
+ * Confusing the two is the bug this whole section exists to have fixed; see
+ * checkMessage's header. */
 export function indexRun(report) {
   const messagesByJourney = new Map();
   const sleepsByJourney = new Map();
-  if (!report?.paths) return { messagesByJourney, sleepsByJourney };
+  const ledgerByJourney = new Map();
+  if (!report?.paths) return { messagesByJourney, sleepsByJourney, ledgerByJourney };
 
   for (const p of report.paths) {
-    const key = String(p.pathId).split("#")[0];
+    const key = p.journeyKey || String(p.pathId).split("#")[0];
     messagesByJourney.set(key, (messagesByJourney.get(key) || 0) + (p.messages?.length || 0));
+
+    /* A path is in the ledger whether or not its read succeeded — an
+       unreadable read on ONE path makes the journey's answer unknown, and
+       silently averaging it away with the readable ones would be the same
+       false-green trade this file refuses everywhere else. */
+    const prior = ledgerByJourney.get(key) || { queued: 0, sent: 0, held: 0, holdReasons: [], readable: true };
+    if (p.messageLedger === null) {
+      prior.readable = false;
+    } else if (p.messageLedger) {
+      prior.queued += p.messageLedger.queued || 0;
+      prior.sent += p.messageLedger.sent || 0;
+      prior.held += p.messageLedger.held || 0;
+      for (const h of p.messageLedger.holdReasons || []) prior.holdReasons.push(h);
+    } else {
+      /* No ledger field on the path at all — an older report shape. Fall back
+         to the provider count so the check still says something, and mark it
+         so nobody mistakes it for a table read. */
+      prior.queued += p.messages?.length || 0;
+      prior.sent += p.messages?.length || 0;
+    }
+    ledgerByJourney.set(key, prior);
+
     const slept = (p.stepRecord || [])
       .filter((e) => e.kind === "sleep" || e.kind === "sleepUntil")
       .reduce((sum, e) => sum + (e.ms || 0), 0);
     sleepsByJourney.set(key, Math.max(sleepsByJourney.get(key) || 0, slept));
   }
-  return { messagesByJourney, sleepsByJourney };
+  return { messagesByJourney, sleepsByJourney, ledgerByJourney };
 }
 
 // ── the diff ──────────────────────────────────────────────────────────────
@@ -374,7 +501,7 @@ const NODE_CHECK = {
   email: checkMessage
 };
 
-/* diff(journeys, facts, report) → { findings, screenCoverage, counts }
+/* diff(journeys, facts, report) → { findings, screenCoverage, screensUnreadable, counts }
  *
  * Pure. Everything it reads comes from its arguments, which is what lets the
  * Sales Manager canary be tested against a fixture that stays honest after the
@@ -402,8 +529,19 @@ export function diff(journeys, facts, report = null) {
   for (const [key, journey] of Object.entries(journeys)) walk(journey.nodes || [], key);
 
   /* Every screen in public/app/ classified. A screen no journey touches is
-     either dead or an unwritten journey — both findings, neither repaired. */
-  const screenCoverage = facts.screens.map((s) => ({
+     either dead or an unwritten journey — both findings, neither repaired.
+
+     WHEN THE FOLDER COULD NOT BE READ the coverage list is empty AND says so.
+     An empty list on its own is indistinguishable from "the product has no
+     screens", which is exactly the shape of false green this file exists to
+     refuse, so the fact of the failed read becomes its own finding row. */
+  const screensUnreadable = facts.screens === null;
+  if (screensUnreadable) {
+    findings.push(
+      finding("unverified", "screens", null, null, "the screens folder (public/app) could not be read, so no screen could be checked and none are listed below")
+    );
+  }
+  const screenCoverage = (facts.screens || []).map((s) => ({
     file: s.file,
     title: s.title,
     wired: s.wired,
@@ -421,7 +559,7 @@ export function diff(journeys, facts, report = null) {
     return acc;
   }, {});
 
-  return { findings, screenCoverage, counts };
+  return { findings, screenCoverage, screensUnreadable, counts };
 }
 
 export default diff;

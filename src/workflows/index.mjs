@@ -32,6 +32,7 @@ import { f08PostFundingMonitoring } from './f-08-post-funding-monitoring.mjs';
 import { f09FundingDeclinedNoPath } from './f-09-funding-declined-no-path.mjs';
 import { f10ClientFundingInboxProvisioner } from './f-10-client-funding-inbox-provisioner.mjs';
 import { f11BankEmailEventRouter } from './f-11-bank-email-event-router.mjs';
+import { inquiryCallSweeper } from './inquiry-call-sweeper.mjs';
 import { n01ColdNurture } from './n-01-cold-nurture.mjs';
 import { n02WarmNurture } from './n-02-warm-nurture.mjs';
 import { n03HotNurture } from './n-03-hot-nurture.mjs';
@@ -39,6 +40,7 @@ import { n04PostFundingNurture } from './n-04-post-funding-nurture.mjs';
 import { n06RenewalSecondWave } from './n-06-renewal-second-wave.mjs';
 import { roundStartedClientNotify } from './round-started-client-notify.mjs';
 import { s01NewLeadIntake } from './s-01-new-lead-intake.mjs';
+import { s02IncompleteSurveyNudge } from './s-02-incomplete-survey-nudge.mjs';
 import { s04CallBooked } from './s-04-call-booked.mjs';
 import { s04bBookingReminders } from './s-04b-booking-reminders.mjs';
 import { s05aNoShowRecovery } from './s-05a-no-show-recovery.mjs';
@@ -62,16 +64,10 @@ export const functions = [
   bs01PrecallLauncher,
   /* Contracts — chase unsigned, daily.
 
-     REGISTERING IT DOES NOT SWITCH SENDING ON. Inngest invokes nothing until
-     INNGEST_EVENT_KEY is set, which CLAUDE.md §11 reserves to the owner. This
-     array is a declaration of what exists.
-
-     It is deliberately NOT the same decision as the message dispatch sweeper,
-     which stays out of this array on purpose and has its own test asserting so:
-     that one drains the whole outbound queue for every workflow, and this one
-     touches contracts and nothing else. Different blast radius. (Its guard test
-     greps this file for its own name, so it is described here rather than
-     named — the guard is right to be that blunt.)
+     REGISTERING A FUNCTION IS NOT THE SEND SWITCH, but it is no longer a no-op
+     either: INNGEST_EVENT_KEY and INNGEST_SIGNING_KEY are both set on the live
+     deploy (verified by name 2026-08-19), the app is synced, and Inngest has
+     executed functions in production. Anything in this array can run.
 
      The chaser also runs today WITHOUT Inngest, through
      /api/contracts { action: "run_reminders" } — see its header. */
@@ -81,7 +77,7 @@ export const functions = [
      email leaves this platform at all — twenty-six workflows queue mail and
      until now nothing drained the queue.
 
-     REGISTERING IT IS NOT THE SWITCH. The switch is per company and lives in
+     REGISTERING IT IS NOT THE SEND SWITCH. The switch is per company and lives in
      messaging_settings.outbound_enabled (119), visible and changeable in the
      CRM; src/messaging/outbox.mjs enforces it and a daily cap on every pass,
      scheduled or manual. The compliance gate runs on every message underneath
@@ -113,6 +109,12 @@ export const functions = [
   f09FundingDeclinedNoPath,
   f10ClientFundingInboxProvisioner,
   f11BankEmailEventRouter,
+  /* Bureau dispute calls, every 15 minutes. Its own header said "not registered
+     until owner enables the schedule" — that gate was implemented as "leave it
+     out of this array", which made it invisible on the Automations screen and
+     is the drift index.test.mjs now guards against. Owner enabled it
+     2026-08-19. It places real calls. */
+  inquiryCallSweeper,
   n01ColdNurture,
   n02WarmNurture,
   n03HotNurture,
@@ -120,6 +122,11 @@ export const functions = [
   n06RenewalSecondWave,
   roundStartedClientNotify,
   s01NewLeadIntake,
+  /* Chases a lead who started an application and stopped: 20-minute sleep, then
+     one nudge email if survey.submitted has not fired. entry.captured has 400
+     rows and nothing was listening. Owner enabled it 2026-08-19. It emails real
+     leads (subject to messaging_settings.outbound_enabled and the live fence). */
+  s02IncompleteSurveyNudge,
   s04CallBooked,
   s04bBookingReminders,
   sNobookChase,

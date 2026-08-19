@@ -32,14 +32,21 @@ const APP_DIR = path.join(process.cwd(), "public/app");
  *
  * The classifier looks for a CALL, not a mention: several screens carry /api/
  * paths inside explanatory prose or <code> blocks and call nothing, and
- * counting those as wired would report a wireframe as a working screen. */
+ * counting those as wired would report a wireframe as a working screen.
+ *
+ * RETURNS null, NEVER [], WHEN THE DIRECTORY CANNOT BE READ. It used to swallow
+ * the failure and hand back an empty array, which the diff then reported as
+ * "there are genuinely no screens" — every screen a journey touches became a
+ * mismatch, and the screen inventory read as a clean zero. Every
+ * database-backed field in this module already returns null for exactly this
+ * reason (see gather()'s header); the filesystem gets the same treatment. */
 export function gatherScreens(dir = APP_DIR) {
   const out = [];
   let files = [];
   try {
     files = fs.readdirSync(dir).filter((f) => f.endsWith(".html"));
   } catch {
-    return out;
+    return null; // could not look — the diff reports UNVERIFIED, not "none"
   }
   for (const file of files) {
     const src = fs.readFileSync(path.join(dir, file), "utf8");
@@ -118,7 +125,11 @@ export function gatherRails(env = process.env) {
    before; nothing there was ever poisoned in the first place. */
 let savepointCounter = 0;
 
-async function rows(db, sql, params = []) {
+/* Exported because src/journeys/runner/index.mjs needs the same protection when
+   it reads the messages table mid-run: it runs inside the very same open
+   transaction, so an unguarded failing read there would abort every statement
+   after it — including this module's. One helper, one savepoint discipline. */
+export async function queryOrNull(db, sql, params = []) {
   const savepoint = `journey_facts_sp_${savepointCounter++}`;
   let hasSavepoint = false;
   try {
@@ -162,17 +173,17 @@ export async function gather(db, { orgId, env = process.env, journeys = {} } = {
      sibling's still-open savepoint. None of these five queries is expensive
      enough for the concurrency to matter; running them one at a time keeps
      every savepoint's open/close strictly nested and easy to reason about. */
-  const pipelines = await rows(db, `SELECT key, name FROM pipelines WHERE org_id = $1`, [orgId]);
-  const stages = await rows(
+  const pipelines = await queryOrNull(db, `SELECT key, name FROM pipelines WHERE org_id = $1`, [orgId]);
+  const stages = await queryOrNull(
     db,
     `SELECT p.name AS pipeline, s.name AS stage, s.key AS stage_key
        FROM pipeline_stages s JOIN pipelines p ON p.id = s.pipeline_id
       WHERE p.org_id = $1`,
     [orgId]
   );
-  const agents = await rows(db, `SELECT code, name, status, prompt FROM agents WHERE org_id = $1`, [orgId]);
-  const templates = await rows(db, `SELECT template_key, channel, compliance_passed FROM message_templates WHERE org_id = $1`, [orgId]);
-  const clientColumns = await rows(
+  const agents = await queryOrNull(db, `SELECT code, name, status, prompt FROM agents WHERE org_id = $1`, [orgId]);
+  const templates = await queryOrNull(db, `SELECT template_key, channel, compliance_passed FROM message_templates WHERE org_id = $1`, [orgId]);
+  const clientColumns = await queryOrNull(
     db,
     `SELECT column_name FROM information_schema.columns WHERE table_name = 'clients'`,
     []

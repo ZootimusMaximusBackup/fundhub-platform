@@ -1,7 +1,12 @@
 // Sweeper — fire AI bureau calls when call_due_at elapses.
-// Defined for Inngest cron registration; deliberately not auto-activated
-// (same posture as message-dispatch-sweeper). Call fireDueCalls from tests
-// or when the owner turns the schedule on.
+//
+// SERVED SINCE 2026-08-19, owner decision. It was previously switched off by
+// being left out of src/workflows/index.mjs, which nothing counted and no
+// screen showed — see src/workflows/index.test.mjs, which now fails if a
+// workflow on disk is neither served nor explicitly listed as unserved.
+//
+// This places real outbound calls every 15 minutes. The gate that remains is
+// call_due_at: fireDueCalls only touches rows whose wait has elapsed.
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
@@ -20,4 +25,3 @@ export const inquiryCallSweeper = inngest.createFunction(
   async ({ step }) => handle({ db, step })
 );
 
-// Not registered in workflows/index.mjs until owner enables the schedule.

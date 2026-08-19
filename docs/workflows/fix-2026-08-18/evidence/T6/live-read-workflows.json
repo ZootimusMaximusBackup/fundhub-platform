@@ -1,0 +1,625 @@
+{
+  "ok": true,
+  "count": 51,
+  "limit": 200,
+  "offset": 0,
+  "hasMore": false,
+  "items": [
+    {
+      "id": "af-02-referral-ownership-capture",
+      "name": "AF-02 — Referral Ownership Capture",
+      "category": "AF",
+      "events": [
+        "entry.captured",
+        "diagnostic.paid",
+        "analysis.completed"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:56:31.778Z",
+      "status": "live"
+    },
+    {
+      "id": "ai-set-03-no-answer-cadence",
+      "name": "AI-SET-03 — No-Answer SMS Cadence",
+      "category": "AI-SET",
+      "events": [
+        "call.completed"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-15T02:00:45.506Z",
+      "status": "live"
+    },
+    {
+      "id": "ai-set-04-3way-handoff",
+      "name": "AI-SET-04 — 3-Way Text Handoff",
+      "category": "AI-SET",
+      "events": [
+        "booking.created"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:46:13.047Z",
+      "status": "live"
+    },
+    {
+      "id": "at-01-first-touch-capture",
+      "name": "AT-01 — First Touch Capture",
+      "category": "AT",
+      "events": [
+        "entry.captured"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:56:31.778Z",
+      "status": "live"
+    },
+    {
+      "id": "bc-01-customer-responsiveness",
+      "name": "BC-01 — Customer Responsiveness Classifier",
+      "category": "BC",
+      "events": [
+        "round.started"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:13:35.483Z",
+      "status": "live"
+    },
+    {
+      "id": "bc-02-customer-friction",
+      "name": "BC-02 — Customer Friction Level Detector",
+      "category": "BC",
+      "events": [
+        "round.started"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:13:35.483Z",
+      "status": "live"
+    },
+    {
+      "id": "bs-01-precall-launcher",
+      "name": "BS-01 — Pre-Call Backend Launcher",
+      "category": "BS",
+      "events": [
+        "booking.created"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:46:13.047Z",
+      "status": "live"
+    },
+    {
+      "id": "c-00-crs-soft-pull-request",
+      "name": "C-00 — CRS Soft Pull Request",
+      "category": "C",
+      "events": [
+        "diagnostic.paid"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T20:50:18.891Z",
+      "status": "live"
+    },
+    {
+      "id": "c-02-inquiry-created",
+      "name": "C-02 — Inquiry Created",
+      "category": "C",
+      "events": [
+        "analysis.completed"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:14:50.089Z",
+      "status": "live"
+    },
+    {
+      "id": "c-02b-inquiry-removal-requested",
+      "name": "C-02B — Inquiry Removal Requested",
+      "category": "C",
+      "events": [
+        "deposit.paid"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T20:50:21.251Z",
+      "status": "live"
+    },
+    {
+      "id": "c-03-inquiry-removed-resume-or-hold",
+      "name": "C-03 — Inquiry Removed",
+      "category": "C",
+      "events": [
+        "inquiry.removed"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:42:28.865Z",
+      "status": "live"
+    },
+    {
+      "id": "c-05-pre-funding-review",
+      "name": "C-05 — Pre-Funding Review Logic",
+      "category": "C",
+      "events": [
+        "round.started"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:13:35.483Z",
+      "status": "live"
+    },
+    {
+      "id": "c-06-crs-results-router",
+      "name": "C-06 — CRS Results Router",
+      "category": "C",
+      "events": [
+        "analysis.completed"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:14:50.089Z",
+      "status": "live"
+    },
+    {
+      "id": "contract-chaser",
+      "name": "Contracts — chase unsigned",
+      "category": "OTHER",
+      "events": [],
+      "crons": [
+        "0 10 * * *"
+      ],
+      "engine_active": true,
+      "last_triggered_at": null,
+      "status": "never_triggered"
+    },
+    {
+      "id": "dpc-01-analyzer-lock",
+      "name": "DPC-01 — Analyzer Lock",
+      "category": "DPC",
+      "events": [
+        "analysis.completed"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:14:50.089Z",
+      "status": "live"
+    },
+    {
+      "id": "dpc-02-call-outcome-enforcement",
+      "name": "DPC-02 — Call Outcome Enforcement",
+      "category": "DPC",
+      "events": [
+        "booking.created"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:46:13.047Z",
+      "status": "live"
+    },
+    {
+      "id": "dpc-03-inbound-reply-router",
+      "name": "DPC-03 — Inbound Reply Router",
+      "category": "DPC",
+      "events": [
+        "message.inbound"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:43:28.076Z",
+      "status": "live"
+    },
+    {
+      "id": "dpc-05-no-progress-escalation",
+      "name": "DPC-05 — 72-Hour No-Progress Escalation",
+      "category": "DPC",
+      "events": [
+        "booking.created"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:46:13.047Z",
+      "status": "live"
+    },
+    {
+      "id": "ds-01-repair-referral",
+      "name": "DS-01 — Repair Referral",
+      "category": "DS",
+      "events": [
+        "call.completed"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-15T02:00:45.506Z",
+      "status": "live"
+    },
+    {
+      "id": "ds-02-diy-letters",
+      "name": "DS-02 — DIY Letters",
+      "category": "DS",
+      "events": [
+        "payment.received"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T20:50:28.711Z",
+      "status": "live"
+    },
+    {
+      "id": "f-01-funding-intake",
+      "name": "F-01 — Funding Intake",
+      "category": "F",
+      "events": [
+        "round.started"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:13:35.483Z",
+      "status": "live"
+    },
+    {
+      "id": "f-02-portal-id-missing",
+      "name": "F-02 — Portal / ID Missing",
+      "category": "F",
+      "events": [
+        "round.started"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:13:35.483Z",
+      "status": "live"
+    },
+    {
+      "id": "f-03-round-submitted",
+      "name": "F-03 — Round Submitted",
+      "category": "F",
+      "events": [
+        "round.submitted"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:13:36.618Z",
+      "status": "live"
+    },
+    {
+      "id": "f-04-round-approvals",
+      "name": "F-04 — Round Approvals",
+      "category": "F",
+      "events": [
+        "round.approved"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:13:36.907Z",
+      "status": "live"
+    },
+    {
+      "id": "f-05-inquiry-cleanup-gate",
+      "name": "F-05 — Inquiry Cleanup Gate",
+      "category": "F",
+      "events": [
+        "round.approved"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:13:36.907Z",
+      "status": "live"
+    },
+    {
+      "id": "f-06-funding-conditions-missing-docs",
+      "name": "F-06 — Funding Conditions / Missing Docs",
+      "category": "F",
+      "events": [
+        "mail.response",
+        "docs.received"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:43:27.751Z",
+      "status": "live"
+    },
+    {
+      "id": "f-07-funding-locked",
+      "name": "F-07 — Funding Locked",
+      "category": "F",
+      "events": [
+        "round.funded"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:13:37.513Z",
+      "status": "live"
+    },
+    {
+      "id": "f-08-post-funding-monitoring",
+      "name": "F-08 — Post-Funding Monitoring",
+      "category": "F",
+      "events": [
+        "round.funded"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:13:37.513Z",
+      "status": "live"
+    },
+    {
+      "id": "f-09-funding-declined-no-path",
+      "name": "F-09 — Funding Declined / No Path",
+      "category": "F",
+      "events": [
+        "mail.response"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:43:27.751Z",
+      "status": "live"
+    },
+    {
+      "id": "f-10-client-funding-inbox-provisioner",
+      "name": "F-10 — Client Funding Inbox Provisioner",
+      "category": "F",
+      "events": [
+        "round.started"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:13:35.483Z",
+      "status": "live"
+    },
+    {
+      "id": "f-11-bank-email-event-router",
+      "name": "F-11 — Bank Email Event Router",
+      "category": "F",
+      "events": [
+        "mail.response"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:43:27.751Z",
+      "status": "live"
+    },
+    {
+      "id": "message-dispatch-sweeper",
+      "name": "Message dispatch sweeper",
+      "category": "OTHER",
+      "events": [],
+      "crons": [
+        "*/5 * * * *"
+      ],
+      "engine_active": true,
+      "last_triggered_at": null,
+      "status": "never_triggered"
+    },
+    {
+      "id": "n-01-cold-nurture",
+      "name": "N-01 — Long-Term Cold Nurture",
+      "category": "N",
+      "events": [
+        "entry.captured"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:56:31.778Z",
+      "status": "live"
+    },
+    {
+      "id": "n-02-warm-nurture",
+      "name": "N-02 — Long-Term Warm Nurture",
+      "category": "N",
+      "events": [
+        "survey.submitted"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:56:32.307Z",
+      "status": "live"
+    },
+    {
+      "id": "n-03-hot-nurture",
+      "name": "N-03 — Long-Term Hot Nurture",
+      "category": "N",
+      "events": [
+        "booking.created",
+        "call.completed"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:46:13.047Z",
+      "status": "live"
+    },
+    {
+      "id": "n-04-post-funding-nurture",
+      "name": "N-04 — Post-Funding Nurture",
+      "category": "N",
+      "events": [
+        "round.funded"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:13:37.513Z",
+      "status": "live"
+    },
+    {
+      "id": "n-06-renewal-second-wave",
+      "name": "N-06 — Renewal / Second-Wave Funding",
+      "category": "N",
+      "events": [
+        "round.funded"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:13:37.513Z",
+      "status": "live"
+    },
+    {
+      "id": "round-started-client-notify",
+      "name": "Round Started — Client Notify",
+      "category": "OTHER",
+      "events": [
+        "round.started"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:13:35.483Z",
+      "status": "live"
+    },
+    {
+      "id": "s-01-new-lead-intake",
+      "name": "S-01 — New Lead / Intake",
+      "category": "S",
+      "events": [
+        "entry.captured"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:56:31.778Z",
+      "status": "live"
+    },
+    {
+      "id": "s-04-call-booked",
+      "name": "S-04 — Call Booked",
+      "category": "S",
+      "events": [
+        "booking.created"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:46:13.047Z",
+      "status": "live"
+    },
+    {
+      "id": "s-04b-booking-reminders",
+      "name": "S-04B — Booking Confirm + Reminders",
+      "category": "S",
+      "events": [
+        "booking.created"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:46:13.047Z",
+      "status": "live"
+    },
+    {
+      "id": "s-05a-no-show-recovery",
+      "name": "S-05a — No-Show Recovery",
+      "category": "S",
+      "events": [
+        "booking.noshow"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-13T07:22:37.894Z",
+      "status": "live"
+    },
+    {
+      "id": "s-06-post-call-funding-purchased",
+      "name": "S-06 — Post-Call Outcome: Funding Purchased",
+      "category": "S",
+      "events": [
+        "deposit.paid"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T20:50:21.251Z",
+      "status": "live"
+    },
+    {
+      "id": "s-08-post-call-funding-declined",
+      "name": "S-08 — Post-Call: Funding Didn't Buy",
+      "category": "S",
+      "events": [
+        "call.completed"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-15T02:00:45.506Z",
+      "status": "live"
+    },
+    {
+      "id": "s-nobook-chase",
+      "name": "S-NOBOOK — Never Booked Chase",
+      "category": "OTHER",
+      "events": [
+        "survey.submitted"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-18T21:56:32.307Z",
+      "status": "live"
+    },
+    {
+      "id": "sys-01-client-value-calculator",
+      "name": "SYS-01 — Client Value Calculator",
+      "category": "SYS",
+      "events": [
+        "round.approved"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:13:36.907Z",
+      "status": "live"
+    },
+    {
+      "id": "sys-01-ltv-calculator",
+      "name": "SYS-01-LTV — Lifetime Value Calculator",
+      "category": "SYS",
+      "events": [
+        "round.funded"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:13:37.513Z",
+      "status": "live"
+    },
+    {
+      "id": "u-02-analyzer-complete-delivery",
+      "name": "U-02 — Analyzer Complete Delivery",
+      "category": "U",
+      "events": [
+        "analysis.completed"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:14:50.089Z",
+      "status": "live"
+    },
+    {
+      "id": "u-03-crs-snapshot-sync",
+      "name": "U-03 — CRS Snapshot Sync",
+      "category": "U",
+      "events": [
+        "analysis.completed"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:14:50.089Z",
+      "status": "live"
+    },
+    {
+      "id": "u-04-promote-crs-primary",
+      "name": "U-04 — Promote CRS as Primary Snapshot",
+      "category": "U",
+      "events": [
+        "analysis.completed"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:14:50.089Z",
+      "status": "live"
+    },
+    {
+      "id": "u-05-data-health-monitor",
+      "name": "U-05 — UnderwriteIQ Data Health Monitor",
+      "category": "U",
+      "events": [
+        "analysis.completed"
+      ],
+      "crons": [],
+      "engine_active": true,
+      "last_triggered_at": "2026-08-16T10:14:50.089Z",
+      "status": "live"
+    }
+  ]
+}
