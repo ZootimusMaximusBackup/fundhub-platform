@@ -16,13 +16,33 @@ describe("agent registry", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () =>
     org = (await db.query(`SELECT id FROM orgs WHERE is_default LIMIT 1`)).rows[0].id;
   });
 
+  /* CHANGED 2026-08-19 (T13). This fixture used to set the two seeded agents
+     live with `prompt = NULL`, which is the exact shape
+     db/migrations/177_agents_live_integrity.sql now refuses:
+     agents_live_needs_prompt_ck says a live agent must have something to say.
+     The old fixture was reproducing the defect this thread fixed — two agents
+     shown as LIVE and "acting on real clients" with no script at all — so it is
+     the fixture that was wrong, not the constraint.
+
+     The rest of the tests below are unchanged and still assert the same
+     registry behaviour; they just start from a live row that is legal.
+     went_live_at is set for the same reason: "both live agents record where they
+     actually run" asserts it, and 177 clears it on the real rows because they
+     never did go live. */
+  const FIXTURE_PROMPT =
+    "Test fixture prompt. Long enough to satisfy the promotion gate and the " +
+    "live-agent integrity check added in migration 177.";
+
   beforeEach(async () => {
     await db.query(
       `UPDATE agents SET status = CASE WHEN code = ANY($2) THEN 'live' ELSE 'draft' END,
               runtime = CASE WHEN code = ANY($2) THEN 'bland' ELSE NULL END,
               runtime_ref = CASE WHEN code = ANY($2) THEN 'inquiry-removal-ai' ELSE NULL END,
-              retired_at = NULL, prompt = NULL, guardrails = '{}'::jsonb
-        WHERE org_id = $1`, [org, SEEDED_LIVE]);
+              went_live_at = CASE WHEN code = ANY($2) THEN COALESCE(went_live_at, now()) ELSE NULL END,
+              retired_at = NULL,
+              prompt = CASE WHEN code = ANY($2) THEN $3::text ELSE NULL END,
+              guardrails = '{}'::jsonb
+        WHERE org_id = $1`, [org, SEEDED_LIVE, FIXTURE_PROMPT]);
   });
 
   after(async () => { await close(); });
@@ -84,6 +104,16 @@ describe("agent registry", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () =>
   });
 
   test("promoting to live stamps went_live_at once and does not move it", async () => {
+    /* CHANGED 2026-08-19 (T13): AG-06 is given a prompt before it is promoted.
+       agents_live_needs_prompt_ck (migration 177) refuses a live agent with
+       nothing to say, and this test is about went_live_at, not about empty
+       prompts. Promoting an empty agent is the defect the constraint exists to
+       stop, so the fixture is what was wrong here. */
+    await setDefinition(db, {
+      orgId: org, code: "AG-06",
+      prompt: "A script long enough for a live agent to have something to say.",
+      guardrails: {}
+    });
     const first = await setStatus(db, {
       orgId: org, code: "AG-06", status: "live", runtime: "inngest" });
     assert.ok(first.went_live_at);
@@ -115,11 +145,21 @@ describe("agent registry", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () =>
     assert.equal(back.retired_at, null);
   });
 
-  test("prompts and guardrails ship empty, and needsAttention says so", async () => {
+  test("a running agent missing either half of its definition is flagged", async () => {
+    /* CHANGED 2026-08-19 (T13). This used to be called "prompts and guardrails
+       ship empty" and asserted BOTH halves were missing on both live agents.
+       That was a description of the defect: two agents shipped live in July with
+       no prompt and no guardrails, and the fixture above can no longer reproduce
+       it because migration 177 refuses a live agent with no prompt.
+
+       The invariant worth keeping is the one needsAttention actually exists for:
+       a running agent missing EITHER half is flagged. The fixture leaves
+       guardrails empty, so both live agents are still correctly flagged. */
     const gaps = await needsAttention(db, { orgId: org });
     assert.deepEqual(gaps.map((g) => g.code).sort(), SEEDED_LIVE,
       "both live agents should be flagged as missing their real definitions");
-    assert.ok(gaps.every((g) => g.prompt_missing && g.guardrails_missing));
+    assert.ok(gaps.every((g) => g.prompt_missing || g.guardrails_missing));
+    assert.ok(gaps.every((g) => g.guardrails_missing), "the fixture leaves guardrails empty");
   });
 
   test("loading a real definition clears the flag", async () => {

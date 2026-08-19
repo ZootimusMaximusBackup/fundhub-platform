@@ -32,6 +32,54 @@ export async function recordShadow(db, {
   return rows[0];
 }
 
+/**
+ * recordRun(db, row) — one row in agent_runs every time the runtime woke.
+ *
+ * WHY THE RUNS THAT DID NOTHING ARE RECORDED TOO. Until migration 177 there was
+ * nowhere at all to record what an agent did, so the Agent Editor printed
+ * "0 runs" from a hardcoded zero and an operator could not tell "this robot is
+ * idle" from "this robot is broken". The most common outcome by far is a skip —
+ * no client on the event, no eligible agent, thread halted — and a skip is
+ * exactly the thing somebody needs to see. agent_shadow_log answers "what would
+ * it have said"; this answers "did it wake at all, and what did it decide".
+ *
+ * NEVER THROWS, AND THAT IS DELIBERATE. This is bookkeeping attached to the
+ * inbound-reply path. A missing table (a deploy preview runs against the
+ * production database and previews do not migrate), a permission change, a bad
+ * column — none of those may cost a client their reply. Failure is logged and
+ * swallowed.
+ */
+export async function recordRun(db, {
+  orgId, agentCode = null, clientId = null, conversationId = null,
+  triggerEvent, eventId = null, channel = null, mode = null,
+  outcome, detail = null, sentMessageId = null
+} = {}) {
+  if (!db || !orgId || !triggerEvent || !outcome) return null;
+  try {
+    const { rows } = await db.query(
+      `INSERT INTO agent_runs (
+         org_id, agent_code, client_id, conversation_id, trigger_event,
+         event_id, channel, mode, outcome, detail, sent_message_id
+       ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       ON CONFLICT DO NOTHING
+       RETURNING id, agent_code, outcome, created_at`,
+      [
+        orgId,
+        agentCode ? String(agentCode).trim().toUpperCase() : null,
+        clientId, conversationId, String(triggerEvent).slice(0, 120),
+        eventId, channel, mode,
+        String(outcome).slice(0, 80),
+        detail == null ? null : String(detail).slice(0, 500),
+        sentMessageId
+      ]
+    );
+    return (rows && rows[0]) || null;
+  } catch (err) {
+    console.error(`[agent-runs] could not record a run: ${err && err.message}`);
+    return null;
+  }
+}
+
 /** listShadow — newest first, for AE-08. */
 export async function listShadow(db, { orgId, agentCode = null, limit = 50 } = {}) {
   if (!orgId) throw new Error("listShadow: orgId is required");
@@ -70,4 +118,4 @@ export function toEditorRows(rows) {
   });
 }
 
-export default { recordShadow, listShadow, toEditorRows };
+export default { recordShadow, recordRun, listShadow, toEditorRows };

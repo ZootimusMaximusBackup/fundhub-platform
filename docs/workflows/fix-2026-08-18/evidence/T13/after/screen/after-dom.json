@@ -1,0 +1,136 @@
+{
+  "first": {
+    "chip": "0 live · 0 shadow · 14 draft · 8 retired",
+    "kAll": "22",
+    "kLive": "0",
+    "kShadow": "0",
+    "modeTitle": "DRAFT",
+    "modeSub": "A phone agent. It cannot run until it is promoted, and it never answers texts or email.",
+    "runtimeField": "Bland (phone) · inquiry-removal-ai",
+    "promoteShown": true,
+    "demoteShown": false,
+    "saveDisabled": false,
+    "notSetLabel": "NOT SET · ON BY DEFAULT",
+    "items": [
+      {
+        "name": "Setter Josh",
+        "status": "draft",
+        "trig": "no trig"
+      },
+      {
+        "name": "Inquiry Removal AI",
+        "status": "draft",
+        "trig": "no trig"
+      },
+      {
+        "name": "Agent 1 Lead Follow-up",
+        "status": "draft",
+        "trig": "no trig"
+      },
+      {
+        "name": "Agent 2 Billing",
+        "status": "draft",
+        "trig": "no trig"
+      },
+      {
+        "name": "Agent 3 Nurture",
+        "status": "draft",
+        "trig": "no trig"
+      },
+      {
+        "name": "Agent 5 Onboarding",
+        "status": "draft",
+        "trig": "no trig"
+      },
+      {
+        "name": "Document Check",
+        "status": "draft",
+        "trig": "no trig"
+      },
+      {
+        "name": "Recon",
+        "status": "draft",
+        "trig": "no trig"
+      },
+      {
+        "name": "Context Fetcher",
+        "status": "draft",
+        "trig": "no trig"
+      },
+      {
+        "name": "Agent 1 — Lead Follow-up & Booking",
+        "status": "retired",
+        "trig": "2 trig"
+      },
+      {
+        "name": "Agent 2 — AR / Collections",
+        "status": "retired",
+        "trig": "3 trig"
+      },
+      {
+        "name": "Agent 3 — Non-Buyer & Nurture",
+        "status": "retired",
+        "trig": "1 trig"
+      },
+      {
+        "name": "Agent 4 — Backend Pre-Call (replies only)",
+        "status": "retired",
+        "trig": "1 trig"
+      },
+      {
+        "name": "Agent 5 — Onboarding & Doc-Chasing",
+        "status": "retired",
+        "trig": "1 trig"
+      },
+      {
+        "name": "Agent 7 — Affiliate Re-engagement",
+        "status": "retired",
+        "trig": "1 trig"
+      },
+      {
+        "name": "Document Check",
+        "status": "retired",
+        "trig": "1 trig"
+      },
+      {
+        "name": "Recon",
+        "status": "retired",
+        "trig": "1 trig"
+      },
+      {
+        "name": "Heartbeat",
+        "status": "draft",
+        "trig": "no trig"
+      },
+      {
+        "name": "Fixer",
+        "status": "draft",
+        "trig": "no trig"
+      },
+      {
+        "name": "Daily Brief",
+        "status": "draft",
+        "trig": "no trig"
+      },
+      {
+        "name": "Compliance Gate",
+        "status": "draft",
+        "trig": "no trig"
+      },
+      {
+        "name": "Data + Models",
+        "status": "draft",
+        "trig": "no trig"
+      }
+    ]
+  },
+  "retired": {
+    "modeTitle": "RETIRED",
+    "modeSub": "Retired. It cannot be edited, promoted or run. Kept as a record of what it used to say.",
+    "runtime": "GoHighLevel — cancelled · gohighlevel",
+    "promoteShown": false,
+    "demoteShown": false,
+    "saveDisabled": true
+  },
+  "consoleErrors": []
+}

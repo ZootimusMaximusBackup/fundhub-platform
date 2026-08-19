@@ -1,0 +1,243 @@
+{
+  "captured_at": "2026-08-19T06:53:49.109Z",
+  "call_completed": [
+    {
+      "id": "145667a9-b61b-412b-b0fc-9c9e22126a5e",
+      "created_at": "2026-08-15T02:00:45.506Z",
+      "keys": [
+        "callId",
+        "disposition",
+        "durationSec",
+        "outcome",
+        "source",
+        "status",
+        "transferred"
+      ],
+      "has_client": false,
+      "call_id": "9c6db403-8153-43c7-91ff-7382f57ab192"
+    }
+  ],
+  "webhook_capture_providers": [
+    {
+      "provider": "clickfunnels",
+      "n": 452,
+      "newest": "2026-08-18T21:46:13.099Z"
+    }
+  ],
+  "agents_columns": [
+    {
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()"
+    },
+    {
+      "column_name": "org_id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "column_name": "code",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "column_name": "name",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "column_name": "agent_class",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": "'client_facing'::text"
+    },
+    {
+      "column_name": "channel",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "column_name": "status",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": "'draft'::text"
+    },
+    {
+      "column_name": "runtime",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "column_name": "runtime_ref",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "column_name": "runtime_notes",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "column_name": "prompt",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "column_name": "guardrails",
+      "data_type": "jsonb",
+      "is_nullable": "NO",
+      "column_default": "'{}'::jsonb"
+    },
+    {
+      "column_name": "owner_staff_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "column_name": "owner_label",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "column_name": "went_live_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "column_name": "retired_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "column_name": "sort_order",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "100"
+    },
+    {
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "column_name": "updated_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    },
+    {
+      "column_name": "from_name",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "column_name": "booking_enabled",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "column_default": "false"
+    },
+    {
+      "column_name": "trigger_events",
+      "data_type": "jsonb",
+      "is_nullable": "NO",
+      "column_default": "'[]'::jsonb"
+    },
+    {
+      "column_name": "output_schema",
+      "data_type": "jsonb",
+      "is_nullable": "YES",
+      "column_default": null
+    }
+  ],
+  "agents_constraints": [
+    {
+      "conname": "agents_channel_ck",
+      "def": "CHECK (((channel IS NULL) OR (channel = ANY (ARRAY['sms'::text, 'email'::text, 'sms_email'::text, 'voice'::text, 'internal'::text]))))"
+    },
+    {
+      "conname": "agents_class_ck",
+      "def": "CHECK ((agent_class = ANY (ARRAY['client_facing'::text, 'ops'::text])))"
+    },
+    {
+      "conname": "agents_code_ck",
+      "def": "CHECK ((code = upper(btrim(code))))"
+    },
+    {
+      "conname": "agents_org_id_fkey",
+      "def": "FOREIGN KEY (org_id) REFERENCES orgs(id)"
+    },
+    {
+      "conname": "agents_owner_staff_id_fkey",
+      "def": "FOREIGN KEY (owner_staff_id) REFERENCES staff(id) ON DELETE SET NULL"
+    },
+    {
+      "conname": "agents_pkey",
+      "def": "PRIMARY KEY (id)"
+    },
+    {
+      "conname": "agents_retired_ck",
+      "def": "CHECK (((status = 'retired'::text) = (retired_at IS NOT NULL)))"
+    },
+    {
+      "conname": "agents_runtime_required_ck",
+      "def": "CHECK (((status <> ALL (ARRAY['live'::text, 'shadow'::text])) OR (runtime IS NOT NULL)))"
+    },
+    {
+      "conname": "agents_status_ck",
+      "def": "CHECK ((status = ANY (ARRAY['draft'::text, 'shadow'::text, 'live'::text, 'retired'::text])))"
+    }
+  ],
+  "agents_rls": [
+    {
+      "relrowsecurity": true,
+      "relforcerowsecurity": false
+    }
+  ],
+  "agents_policies": [
+    {
+      "polname": "agents_app_all",
+      "using_expr": "true"
+    }
+  ],
+  "latest_migrations": [
+    {
+      "key": "seed/011_followup_sms_pack.sql",
+      "applied_at": "2026-08-16T05:30:16.184Z"
+    },
+    {
+      "key": "seed/010_bs_sms_precall.sql",
+      "applied_at": "2026-08-16T03:09:25.729Z"
+    },
+    {
+      "key": "seed/009_u02_funding_delivery_template.sql",
+      "applied_at": "2026-08-16T03:09:56.542Z"
+    },
+    {
+      "key": "seed/008_contract_messages.sql",
+      "applied_at": "2026-08-02T15:28:45.529Z"
+    },
+    {
+      "key": "seed/007_portal_magic_link_template.sql",
+      "applied_at": "2026-08-02T15:28:45.219Z"
+    },
+    {
+      "key": "seed/007_payment_link_template.sql",
+      "applied_at": "2026-08-02T15:28:44.899Z"
+    }
+  ]
+}

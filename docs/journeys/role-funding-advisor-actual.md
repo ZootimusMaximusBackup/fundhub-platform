@@ -37,7 +37,7 @@ flowchart TD
     CAN --> A_social[social — 7 routes]
     CAN --> A_top_level[Everything else — 24 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 51 routes]
+    WHO -->|Yes| CANT[Blocked — 52 routes]
     CANT --> B_auth[Signing in and out — 4 blocked]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_brand[brand — 1 blocked]
@@ -53,13 +53,13 @@ flowchart TD
     CANT --> B_read[Reading data — 10 blocked]
     CANT --> B_repair[repair — 1 blocked]
     CANT --> B_staff[staff — 2 blocked]
-    CANT --> B_top_level[Everything else — 8 blocked]
+    CANT --> B_top_level[Everything else — 9 blocked]
     WHO -->|Yes| UNV[UNVERIFIED — 2 routes whose gate could not be traced]
 ```
 
 ## What they can reach
 
-**131 of 184 routes.**
+**131 of 185 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -203,10 +203,11 @@ flowchart TD
 
 ## What they are blocked from
 
-**51 of 184 routes.**
+**52 of 185 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
+| `/api/agent-call` | POST | owner, admin, sales_manager, closer, setter, inquiry_specialist |
 | `/api/auth/admin-reset` | POST | owner, admin |
 | `/api/auth/invite` | POST | owner, admin |
 | `/api/auth/staff-role` | POST | owner, admin |

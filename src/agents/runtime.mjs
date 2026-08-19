@@ -21,7 +21,7 @@ import {
 } from "./guardrails.mjs";
 import { callModel } from "./model.mjs";
 import { composeAgentReply } from "./reply.mjs";
-import { recordShadow } from "./shadow-log.mjs";
+import { recordShadow, recordRun } from "./shadow-log.mjs";
 
 /**
  * handleInbound(event, db, options?) — core entry. Exported for tests.
@@ -36,14 +36,41 @@ export async function handleInbound(event, db, options = {}) {
     dispatchOptions = {}
   } = options;
 
+  /* ONE RECORDING POINT, AT THE BOUNDARY. run() has a dozen early returns and
+     they all pass through here, so every outcome is recorded exactly once
+     without threading a recorder through the pipeline. recordRun never throws —
+     see its header — so this cannot cost anybody their reply. */
   try {
-    return await run(event, db, { env, fetchImpl, now, callModelFn, dispatchOptions });
+    const outcome = await run(event, db, { env, fetchImpl, now, callModelFn, dispatchOptions });
+    await noteRun(db, event, outcome);
+    return outcome;
   } catch (err) {
     console.error(
       `[agent-runtime] failed for event ${event && event.id}: ${err && err.message}`
     );
-    return { ok: false, reason: "runtime_error", detail: String(err && err.message || err).slice(0, 300) };
+    const failed = {
+      ok: false, reason: "runtime_error",
+      detail: String(err && err.message || err).slice(0, 300)
+    };
+    await noteRun(db, event, failed);
+    return failed;
   }
+}
+
+/** Flatten whatever run() returned into one agent_runs row. */
+async function noteRun(db, event, outcome) {
+  const p = (event && event.payload) || {};
+  await recordRun(db, {
+    orgId: event && event.orgId,
+    agentCode: outcome && outcome.agent ? outcome.agent : null,
+    clientId: (event && event.clientId) || null,
+    triggerEvent: (event && event.name) || "message.inbound",
+    eventId: (event && event.id) || null,
+    channel: p.channel || null,
+    outcome: (outcome && outcome.reason) || "unknown",
+    detail: (outcome && outcome.detail) || null,
+    sentMessageId: (outcome && outcome.messageId) || null
+  });
 }
 
 async function run(event, db, { env, fetchImpl, now, callModelFn, dispatchOptions }) {

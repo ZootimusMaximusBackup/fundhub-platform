@@ -119,6 +119,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .aitem .atr{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.06em;
   white-space:nowrap;min-width:48px;text-align:right}
 .aitem .atr.none{color:#6E2A22}
+.aitem .ast.retired{color:var(--gray2);text-decoration:line-through}
 
 /* ---- config sections: what it may do stays open, the rest folds away ---- */
 details.card>summary{list-style:none;cursor:pointer}
@@ -288,10 +289,10 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
               <div class="guard"><div class="gh">Hard constraints · evaluated before every send</div>
                 <textarea id="a_guard" spellcheck="false"></textarea></div>
               <div style="margin-top:13px">
-                <div class="swrow"><div class="swl"><div class="n">Never state a funding amount</div><div class="d">Only a closer or the Funding Advisor may quote a number.</div></div><span class="unset" id="u_noamount">NOT SET</span><div class="sw" id="g_noamount"></div></div>
-                <div class="swrow"><div class="swl"><div class="n">Never promise a score outcome</div><div class="d">Blocks "we'll get you to 700" style claims outright.</div></div><span class="unset" id="u_noscore">NOT SET</span><div class="sw" id="g_noscore"></div></div>
-                <div class="swrow"><div class="swl"><div class="n">Stop on the word "attorney"</div><div class="d">Hands to a human immediately and halts the thread.</div></div><span class="unset" id="u_attorney">NOT SET</span><div class="sw" id="g_attorney"></div></div>
-                <div class="swrow"><div class="swl"><div class="n">Honor quiet hours</div><div class="d">No outbound between 9pm and 8am in the client's timezone.</div></div><span class="unset" id="u_quiet">NOT SET</span><div class="sw" id="g_quiet"></div></div>
+                <div class="swrow"><div class="swl"><div class="n">Never state a funding amount</div><div class="d">Only a closer or the Funding Advisor may quote a number.</div></div><span class="unset" id="u_noamount">NOT SET · ON BY DEFAULT</span><div class="sw" id="g_noamount"></div></div>
+                <div class="swrow"><div class="swl"><div class="n">Never promise a score outcome</div><div class="d">Blocks "we'll get you to 700" style claims outright.</div></div><span class="unset" id="u_noscore">NOT SET · ON BY DEFAULT</span><div class="sw" id="g_noscore"></div></div>
+                <div class="swrow"><div class="swl"><div class="n">Stop on the word "attorney"</div><div class="d">Hands to a human immediately and halts the thread.</div></div><span class="unset" id="u_attorney">NOT SET · ON BY DEFAULT</span><div class="sw" id="g_attorney"></div></div>
+                <div class="swrow"><div class="swl"><div class="n">Honor quiet hours</div><div class="d">No outbound between 9pm and 8am in the client's timezone.</div></div><span class="unset" id="u_quiet">NOT SET · ON BY DEFAULT</span><div class="sw" id="g_quiet"></div></div>
               </div>
             </div>
           </div>
@@ -322,6 +323,12 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
                 <div class="field"><label>Owner</label><select id="a_owner">
                   <option value="">Pick a person</option></select></div>
                 <div class="field"><label>Agent code</label><input id="a_code" class="num" readonly style="background:var(--soft);color:var(--gray)"></div>
+                <!-- Read-only on purpose. Where an agent runs decides whether it
+                     can act at all, and it is set by a deployment, not by typing
+                     in a box. It was invisible here until now, which is how two
+                     agents sat on the phone runtime looking like ordinary
+                     messaging agents. -->
+                <div class="field"><label>Runs on</label><input id="a_runtime" class="num" readonly style="background:var(--soft);color:var(--gray)"></div>
               </div>
             </div>
           </details>
@@ -471,8 +478,22 @@ function agentFromRow(real){
     chan: channelLabel(real.channel),
     cls: real.agent_class === 'ops' ? 'Ops' : 'Client-facing',
     owner: real.owner_label || '',
-    mode: real.status === 'live' ? 'live' : real.status === 'shadow' ? 'shadow' : 'draft',
+    /* 'retired' used to fall through to 'draft', so the eight GoHighLevel
+       agents cancelled on 2026-08-15 painted as editable drafts and were
+       counted as drafts in the header. api/agents.mjs:191-196 answers 409 for
+       every one of them, so the screen was offering an edit the server always
+       refuses. */
+    mode: real.status === 'live' ? 'live'
+        : real.status === 'shadow' ? 'shadow'
+        : real.status === 'retired' ? 'retired' : 'draft',
     runtime: real.runtime || null,
+    runtimeRef: real.runtime_ref || null,
+    runtimeNotes: real.runtime_notes || '',
+    /* Two stores hold triggers and neither was authoritative: the editor writes
+       guardrails.triggers, while 114_ghl_agent_seed.sql wrote agents.trigger_events
+       and no screen ever read it. Prefer what the editor wrote; fall back to the
+       seeded column so a row with real triggers stops reporting "no trig". */
+    triggerEvents: Array.isArray(real.trigger_events) ? real.trigger_events.slice() : [],
     prompt: real.prompt || '',
     guard: g.block,
     triggers: g.triggers,
@@ -494,7 +515,17 @@ function agentFromRow(real){
 var cur=null, dirty=false;
 
 /* ══ LIST ════════════════════════════════════════════════════════════════ */
-function modeDot(m){return m==='live'?'var(--ok)':'var(--accent)'}
+function modeDot(m){
+  if(m==='live') return 'var(--ok)';
+  if(m==='retired') return 'var(--gray2)';
+  return 'var(--accent)';
+}
+/* What this agent is actually woken by, from whichever store holds it. */
+function effTriggers(a){
+  var t=(a&&a.triggers)||[];
+  if(t.length) return t;
+  return (a&&a.triggerEvents)||[];
+}
 function renderList(){
   var groups=[['Client-facing','AE-A / CLIENT-FACING'],['Ops','AE-B / OPS']];
   document.getElementById('alist').innerHTML=groups.map(function(g){
@@ -503,7 +534,7 @@ function renderList(){
       /* name, mode and trigger count — the three facts you scan the list for.
          The agent code moves to the row's hover title; it is on the Identity
          card inside the config. */
-      var n=(a.triggers||[]).length;
+      var n=effTriggers(a).length;
       return '<div class="aitem '+(cur&&a.id===cur.id?'on':'')+'" data-a="'+a.id+'" title="'+a.id+'">'+
         '<span class="dot" style="background:'+modeDot(a.mode)+'"></span>'+
         '<span class="an">'+esc(a.name)+'</span>'+
@@ -537,7 +568,14 @@ function renderEvents(){
 function setSw(id,on){document.getElementById(id).classList.toggle('on',!!on)}
 function getSw(id){return document.getElementById(id).classList.contains('on')}
 /* Label every guardrail flag the database does not hold. Off-and-NOT-SET means
-   nobody has decided; off with no tag means a human turned it off and saved. */
+   nobody has decided; off with no tag means a human turned it off and saved.
+   THE TAG SAYS "ON BY DEFAULT" BECAUSE THAT IS WHAT HAPPENS. This screen paints
+   an unset flag as off (guardFromRow, `=== true`) so it does not claim a guard
+   nobody chose. The engine that enforces it reads the same unset flag as ON
+   (src/agents/guardrails.mjs:60-64, `!== false`) so an unwritten rule still
+   protects the client. Both are the safe choice on their own side; showing a
+   plain "NOT SET" next to an off switch let a human conclude the rule was not
+   being applied, when for text replies it is. */
 function setUnset(gSet){
   var s=gSet||{};
   ['noamount','noscore','attorney','quiet'].forEach(function(k){
@@ -560,7 +598,7 @@ function renderLog(){
 /* promotion gate — a real checklist that blocks */
 function gateChecks(){
   var checks=[
-    {t:'Has at least one trigger event',      ok:(cur.triggers||[]).length>0, v:(cur.triggers||[]).length+' selected'},
+    {t:'Has at least one trigger event',      ok:effTriggers(cur).length>0, v:effTriggers(cur).length+' selected'},
     {t:'Prompt is written',                   ok:cur.prompt.trim().length>=60, v:cur.prompt.trim().length+' chars · 60 min'},
     {t:'Guardrail block is not empty',        ok:cur.guard.trim().length>=20, v:cur.guard.trim().length+' chars · 20 min'},
     {t:'Escalation path is set',              ok:!!cur.esc, v:cur.esc||'none'}
@@ -582,13 +620,39 @@ function gateChecks(){
   return checks;
 }
 function renderGate(){
-  var live=cur.mode==='live';
+  var live=cur.mode==='live', retired=cur.mode==='retired';
   var card=document.getElementById('modeCard');
   card.className='mode '+(live?'live':'shadow');
-  document.getElementById('modeTitle').textContent=live?'LIVE':'SHADOW';
-  document.getElementById('modeSub').textContent=live
-    ? 'Acting on real clients on '+cur.chan+'. '+cur.runs.toLocaleString()+' runs.'
-    : 'Runs on every trigger and logs what it would send. Nothing leaves the building.';
+  document.getElementById('modeTitle').textContent=
+    retired?'RETIRED':(live?'LIVE':(cur.mode==='shadow'?'SHADOW':'DRAFT'));
+
+  /* WHAT THIS AGENT CAN ACTUALLY DO, IN THE WORDS OF THE THING THAT WOULD DO IT.
+     A green LIVE badge over "acting on real clients" was true of nothing: AG-04
+     and AG-09 were seeded live in July with no prompt and have never spoken to
+     anyone. The two sentences below are the only ones this screen can honestly
+     print, and which one it prints is decided by the same rules the runtime uses.
+
+       - runtime 'bland' is a PHONE agent. src/agents/select.mjs:34 excludes it
+         from the text-reply runtime on purpose (owner-set, 144_agent_runtime.sql).
+         It can only ever act through a call placed at /api/agent-call.
+       - runtime 'ghl' was cancelled by the owner on 2026-08-15. */
+  var sub;
+  if(retired){
+    sub='Retired. It cannot be edited, promoted or run. Kept as a record of what it used to say.';
+  }else if(cur.runtime==='ghl'){
+    sub='GoHighLevel was cancelled on 15 August 2026. This agent cannot run.';
+  }else if(cur.runtime==='bland'){
+    sub=live
+      ? 'Live on the phone. It only speaks when someone starts a call for it — it never answers texts or email.'
+      : 'A phone agent. It cannot run until it is promoted, and it never answers texts or email.';
+  }else if(live){
+    sub='Acting on real clients on '+cur.chan+'. '+cur.runs.toLocaleString()+' runs.';
+  }else if(cur.mode==='shadow'){
+    sub='Runs on every trigger and logs what it would send. Nothing leaves the building.';
+  }else{
+    sub='A draft. It does not run. Write its prompt and guardrails, then promote it.';
+  }
+  document.getElementById('modeSub').textContent=sub;
   var checks=gateChecks(), allOk=checks.every(function(c){return c.ok});
   document.getElementById('gateBox').innerHTML=
     '<div class="eyebrow" style="margin-bottom:8px">PROMOTION GATE</div>'+
@@ -598,8 +662,13 @@ function renderGate(){
     }).join('')+
     (allOk?'':'<div style="margin-top:9px;font-size:var(--fs-caption);color:#6E2A22">Promotion is blocked until every check passes.</div>');
   var pb=document.getElementById('promoteBtn'), db=document.getElementById('demoteBtn');
-  pb.style.display=live?'none':''; db.style.display=live?'':'none';
+  /* Retired hides BOTH. api/agents.mjs:191-196 answers 409 'retired' for save,
+     promote and demote alike, so every one of these buttons could only ever
+     produce an error alert. A control that cannot succeed does not render. */
+  pb.style.display=(live||retired)?'none':''; db.style.display=(live&&!retired)?'':'none';
   pb.disabled=!allOk;
+  var sb=document.getElementById('saveBtn');
+  if(sb){ sb.disabled=retired; sb.title=retired?'Retired agents cannot be edited.':''; }
   renderStats();
 }
 function renderStats(){
@@ -609,7 +678,11 @@ function renderStats(){
      would claim an agent is running when it is not, and would contradict the
      banner and the list on the same screen. */
   var sh=AGENTS.filter(function(a){return a.mode==='shadow'}).length;
-  var dr=AGENTS.length-lv-sh;
+  /* Retired counted separately. It used to fall into `dr` because dr was
+     "everything left over", so eight cancelled agents were reported as drafts
+     somebody could still pick up. */
+  var rt=AGENTS.filter(function(a){return a.mode==='retired'}).length;
+  var dr=AGENTS.length-lv-sh-rt;
   var cf=AGENTS.filter(function(a){return a.cls==='Client-facing'}).length;
   document.getElementById('kAllSub').textContent=
     AGENTS.length ? (cf+' client-facing · '+(AGENTS.length-cf)+' ops') : 'registry is empty';
@@ -617,7 +690,7 @@ function renderStats(){
   document.getElementById('kShadow').textContent=sh;
   document.getElementById('kBreach').textContent=AGENTS.reduce(function(a,x){return a+x.breaches},0);
   document.getElementById('liveTxt').textContent=
-    lv+' live · '+sh+' shadow'+(dr?' · '+dr+' draft':'');
+    lv+' live · '+sh+' shadow'+(dr?' · '+dr+' draft':'')+(rt?' · '+rt+' retired':'');
 }
 
 /* switching agents refolds the secondary sections — the config opens on what
@@ -646,6 +719,15 @@ function select(id){
   document.getElementById('a_class').value=cur.cls;
   cur.owner=setSelectOrFirst('a_owner', cur.owner);
   document.getElementById('a_code').value=cur.id;
+  var rt=document.getElementById('a_runtime');
+  if(rt){
+    var RT={bland:'Bland (phone)',ghl:'GoHighLevel — cancelled',internal:'Fundhub itself',
+            vercel:'Vercel',inngest:'Inngest',netlify:'Netlify'};
+    rt.value=cur.runtime
+      ? (RT[cur.runtime]||cur.runtime)+(cur.runtimeRef?' · '+cur.runtimeRef:'')
+      : 'Not deployed anywhere';
+    rt.title=cur.runtimeNotes||'';
+  }
   document.getElementById('a_prompt').value=cur.prompt;
   document.getElementById('a_guard').value=cur.guard;
   cur.esc=setSelectOrFirst('a_esc', cur.esc);
