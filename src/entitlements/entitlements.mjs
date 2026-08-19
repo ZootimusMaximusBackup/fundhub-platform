@@ -130,11 +130,19 @@ export async function grant(db, {
 /* grantFromTransaction — the purchase path. Looks the product's entitlements up
    in configuration and grants each one.
 
-   Returns { productCode, granted: [...codes], skipped: [...], unmapped: boolean }.
+   Returns { productCode, granted: [...codes], skipped: [...], unmapped, reason }.
    `unmapped` is the important one: a product with NO configured entitlements is
    not an error here, it is an unanswered offer question
-   (product_entitlements ships empty on purpose — see 032_entitlements.sql). The
-   caller reports it rather than guessing a mapping. */
+   (032_entitlements.sql shipped product_entitlements empty on purpose;
+   180_product_entitlements_seed.sql fills in only the pairs shipped code can
+   defend, and deliberately leaves the rest empty). The caller reports it rather
+   than guessing a mapping.
+
+   `reason` exists because "unmapped" was TRUE and INVISIBLE. Refusing to guess
+   is right; refusing to guess in silence is not — money landed, the portal
+   stayed locked, and nobody could see why. The reason string is what a caller
+   logs and a test asserts. src/handlers/money-chain.mjs surfaces it on every
+   purchase path; unmappedProducts() below is the same gap as a report. */
 export async function grantFromTransaction(db, {
   orgId, clientId, transactionId, productCode, sourceEventId = null, now = new Date()
 } = {}) {
@@ -151,7 +159,10 @@ export async function grantFromTransaction(db, {
   );
 
   if (!mapped.length) {
-    return { productCode: code, granted: [], skipped: [], unmapped: true };
+    return {
+      productCode: code, granted: [], skipped: [],
+      unmapped: true, reason: "no_mapping"
+    };
   }
 
   const granted = [], skipped = [];
@@ -164,7 +175,7 @@ export async function grantFromTransaction(db, {
     });
     (r.granted ? granted : skipped).push(m.entitlement_code);
   }
-  return { productCode: code, granted, skipped, unmapped: false };
+  return { productCode: code, granted, skipped, unmapped: false, reason: null };
 }
 
 /* revoke — stamp it, never remove it. */

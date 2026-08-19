@@ -1,0 +1,41 @@
+=== T2 FINAL test result ===
+Where: /tmp/wt-T2 (T2's own worktree), rebased onto origin/main 7db4ba6
+       (T0 + T16 + T16-follow-up + T5 all merged underneath).
+Database: live DATABASE_URL. skipped = 0, so EVERY database-backed test ran.
+This is a fuller run than the T2 baseline, which had 3 skipped.
+
+  tests 5820 | pass 5817 | fail 3 | skipped 0
+
+--- the 3 failures, and whose they are ---
+
+1. "the extraction is faithful to the code"
+   (nested: "*** no route's gate is left unverified ***")
+   PRE-EXISTING. Present in T2's baseline at d3fb2c7 before any T2 change.
+   The two routes it names are finance/crs-pull and gifts/message-blaster.
+   /api/payment-links is NOT among them — T2's gate extracts cleanly.
+
+2. "an endpoint excused from the org filter still passes the session's org to its store"
+   PRE-EXISTING. Present in T2's baseline at d3fb2c7.
+
+3. "row locks: the live catalog"
+   (nested: "no table is locked shut — row locks on with no policy attached")
+   NOT T2's, and NOT in T2's baseline because the test did not exist then.
+   The test file src/security/rls-shape.test.mjs arrived with T16's commit
+   6c7860d. The failing table is `bookings`.
+   Verified directly against the live database:
+       bookings | rls: true | policies: 0
+       products | rls: true | policies: 1
+   T2 modifies no bookings file (`git diff --name-only origin/main...HEAD`
+   returns no match for "booking"). T2's own tables are correctly policied.
+   REAL LIVE BUG, reported to the board for T16/T7: with a row lock on and no
+   policy attached, the application reads ZERO rows from bookings and cannot
+   write to it, and neither failure raises an error — it looks like an empty
+   table.
+
+--- one baseline failure is now FIXED, not by T2 ---
+"DATABASE_URL is present and checkable" failed in T2's baseline and passes now.
+
+--- net for T2 ---
+Zero failures introduced by T2.
+
+Baseline for comparison: BASELINE.md — 5640 tests / 5634 pass / 3 fail at d3fb2c7.

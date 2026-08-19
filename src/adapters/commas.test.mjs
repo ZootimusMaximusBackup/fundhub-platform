@@ -11,33 +11,80 @@ import {
   buildCommasCheckoutUrl,
   paymentIdOf,
   eventTypeOf,
-  SIGNATURE_HEADERS
+  SIGNATURE_HEADERS,
+  PURPOSE_PRODUCT
 } from "./commas.mjs";
 import { drain, dedupeKeyFor } from "../payments/commas-inbox.mjs";
 import { _resetOrgCache } from "../events/bus.mjs";
 import { on, clearHandlers } from "../events/registry.mjs";
 
-/* Fake db — now models BOTH tables the payment path touches.
+/* Fake db — models every table the payment path touches.
  *
- * It models the two unique indexes that carry the money guarantees, because a
- * fake that ignores them lets a test pass while the real thing double-counts:
+ * It models the unique indexes that carry the money guarantees, because a fake
+ * that ignores them lets a test pass while the real thing double-counts:
  *
  *   events        ON CONFLICT (org_id, idempotency_key) DO NOTHING
  *   commas_inbox  ON CONFLICT (org_id, dedupe_key)      DO NOTHING
+ *   clients       ON CONFLICT (org_id, lower(email))    DO NOTHING
  *
  * The inbox is the one that matters most now. Under at-most-once delivery the
  * inbox key is the FIRST line of defence against a re-delivery — it stops the
- * duplicate before the payload has even been interpreted. */
-function fakeDb({ dedupEvents = false, store = [], inbox = [] } = {}) {
+ * duplicate before the payload has even been interpreted.
+ *
+ * payment_links and clients are modelled WITH their org column. Attributing a
+ * payment to another tenant's client is the failure those two answers exist to
+ * prevent, and a fake with no org on the row cannot catch it. */
+function fakeDb({ dedupEvents = false, store = [], inbox = [], links = [], clients = [] } = {}) {
   let n = 0;
   let inboxN = 0;
+  let clientN = 0;
   const eventKeys = new Set();
 
   return {
     inbox,
     store,
+    links,
+    clients,
     query(sql, params) {
       if (/FROM orgs/.test(sql)) return { rows: [{ id: "org-1" }] };
+
+      /* --- payment_links ----------------------------------------------------
+         The row that says what a payment was FOR and WHOSE it is. Both lookups
+         the adapter can make are modelled, because they answer differently: a
+         link minted through the checkout-session API comes back keyed by the
+         session id, not by our ref. */
+      if (/FROM payment_links/.test(sql)) {
+        const key = /link_ref = \$1/.test(sql) ? "link_ref" : "commas_session_id";
+        const hit = links.find((r) => r[key] && r[key] === params[0]);
+        return { rows: hit ? [{ ...hit }] : [] };
+      }
+
+      /* --- clients ----------------------------------------------------------
+         Modelled with the org column, because attributing a payment to a
+         client of another org is the failure this table is here to catch. */
+      if (/FROM clients/.test(sql)) {
+        if (/lower\(email\) = \$2/.test(sql)) {
+          const [orgId, email] = params;
+          const hit = clients.find(
+            (c) => c.org_id === orgId && String(c.email || "").toLowerCase() === String(email)
+          );
+          return { rows: hit ? [{ ...hit }] : [] };
+        }
+        const [id, orgId] = params;
+        const hit = clients.find((c) => c.id === id && c.org_id === orgId);
+        return { rows: hit ? [{ ...hit }] : [] };
+      }
+      if (/INSERT INTO clients/.test(sql)) {
+        const [orgId, email] = params;
+        const lower = String(email || "").toLowerCase();
+        // clients_org_email_uniq
+        if (clients.some((c) => c.org_id === orgId && String(c.email || "").toLowerCase() === lower)) {
+          return { rows: [] };
+        }
+        const row = { id: `client-${++clientN}`, org_id: orgId, email: lower, ghl_contact_id: "ghl-x" };
+        clients.push(row);
+        return { rows: [{ id: row.id }] };
+      }
 
       // --- commas_inbox -----------------------------------------------------
       if (/INSERT INTO commas_inbox/.test(sql)) {
@@ -98,7 +145,8 @@ function fakeDb({ dedupEvents = false, store = [], inbox = [] } = {}) {
           eventKeys.add(k);
         }
         const row = { id: `evt-${++n}` };
-        store.push({ ...row, name: params[1], payload: params[5], idempotency_key: idem });
+        // params[4] is events.client_id — the column that says WHOSE payment this is.
+        store.push({ ...row, name: params[1], payload: params[5], idempotency_key: idem, client_id: params[4] });
         return { rows: [row] };
       }
       return { rows: [] };
@@ -639,4 +687,288 @@ test("normalizeCommasEvent: ref falls back through metadata.link_ref / metadata.
   assert.equal(normalizeCommasEvent({ data: { reference: "pl_c" } }).ref, "pl_c");
   assert.equal(normalizeCommasEvent({ data: { ref: "pl_d" } }).ref, "pl_d");
   assert.equal(normalizeCommasEvent({ data: {} }).ref, null, "no ref anywhere must not invent one");
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   WHOSE PAYMENT IS THIS?  (events.client_id)
+
+   Every payment event this adapter wrote used to carry a null client. The
+   money landed and nothing in the system could say who paid it. The id was
+   already on the checkout session — we mint every session with
+   metadata { link_ref, client_id, org_id } — and it was being parsed straight
+   past on the way back in.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const CLIENT_A = "11111111-2222-3333-4444-555555555555";
+const CLIENT_B = "99999999-8888-7777-6666-555555555555";
+
+const clientIdsOf = (db) => db.store.map((e) => e.client_id);
+
+test("normalizeCommasEvent: reads OUR client id back out of the checkout metadata", () => {
+  assert.equal(
+    normalizeCommasEvent({ data: { api_metadata: { data: { client_id: CLIENT_A } } } }).clientId,
+    CLIENT_A,
+    "the documented envelope's metadata bag was not read"
+  );
+  assert.equal(
+    normalizeCommasEvent({ data: { metadata: { client_id: CLIENT_A } } }).clientId,
+    CLIENT_A
+  );
+  assert.equal(normalizeCommasEvent({ data: {} }).clientId, null, "a client id must not be invented");
+});
+
+/* The guard that stops a payment being hung on whichever of our clients
+   happens to collide with one of THEIR ids. */
+test("normalizeCommasEvent: a client id that is not uuid-shaped is refused", () => {
+  assert.equal(
+    normalizeCommasEvent({ data: { metadata: { client_id: "user_4Kd9mQ2xZ7Lp" } } }).clientId,
+    null,
+    "a vendor customer id was accepted as one of ours"
+  );
+  assert.equal(normalizeCommasEvent({ data: { metadata: { client_id: 42 } } }).clientId, null);
+  assert.equal(normalizeCommasEvent({ data: { metadata: { client_id: "" } } }).clientId, null);
+});
+
+const paidOnLink = ({ ref, title = "UnderwriteIQ soft-pull assessment", email = "payer@example.com", clientId = null }) =>
+  JSON.stringify({
+    id: "evt_pl_1",
+    type: "payment.succeeded",
+    data: {
+      payment_id: "pay_pl_1",
+      amount: 32,
+      item: { id: "8YZPo", title },
+      buyer: { email },
+      api_metadata: { data: clientId ? { link_ref: ref, client_id: clientId } : { link_ref: ref } }
+    }
+  });
+
+test("a payment on a link we minted is attributed to that link's client", async () => {
+  _resetOrgCache(); clearHandlers();
+  const db = fakeDb({
+    links: [{ id: "pl-1", org_id: "org-1", client_id: CLIENT_A, link_ref: "pl_known", purpose: "diagnostic" }]
+  });
+  await deliver(db, paidOnLink({ ref: "pl_known" }));
+
+  assert.ok(db.store.length > 0, "nothing was emitted at all");
+  assert.deepEqual(
+    clientIdsOf(db),
+    db.store.map(() => CLIENT_A),
+    "a payment on our own link still landed with no client on it"
+  );
+});
+
+/* link_ref is globally unique, so it arrives with no org scope of its own.
+   Trusting it blind would post one tenant's money onto another tenant's
+   client. */
+test("a link belonging to ANOTHER org never attributes the payment", async () => {
+  _resetOrgCache(); clearHandlers();
+  const db = fakeDb({
+    links: [{ id: "pl-x", org_id: "org-OTHER", client_id: CLIENT_B, link_ref: "pl_other", purpose: "deposit" }]
+  });
+  await deliver(db, paidOnLink({ ref: "pl_other", email: "" }));
+
+  assert.ok(db.store.length > 0);
+  assert.ok(clientIdsOf(db).every((id) => id === null), "a payment was attributed across orgs");
+  // and the other org's purpose must not have decided our product either
+  assert.deepEqual(db.store.map((e) => e.name), ["payment.received"]);
+});
+
+test("checkout metadata naming a client outside this org is ignored, not trusted", async () => {
+  _resetOrgCache(); clearHandlers();
+  const db = fakeDb({ clients: [{ id: CLIENT_B, org_id: "org-OTHER", email: "b@example.com", ghl_contact_id: "g" }] });
+  await deliver(db, paidOnLink({ ref: null, clientId: CLIENT_B, email: "" }));
+
+  assert.ok(db.store.length > 0);
+  assert.ok(clientIdsOf(db).every((id) => id === null), "a cross-org metadata id was believed");
+});
+
+test("with no link, a payer we already know is found by email", async () => {
+  _resetOrgCache(); clearHandlers();
+  const db = fakeDb({
+    clients: [{ id: CLIENT_A, org_id: "org-1", email: "known@example.com", ghl_contact_id: "g" }]
+  });
+  await deliver(db, paidOnLink({ ref: null, email: "KNOWN@example.com" }));
+
+  assert.ok(db.store.length > 0);
+  assert.ok(clientIdsOf(db).every((id) => id === CLIENT_A), "a known payer was left unattributed");
+});
+
+/* THE RULE THAT MATTERS MOST. An unattributable payment stays unattributed and
+   legible. It is never hung on a guess. */
+test("a payment with nothing to identify it keeps a NULL client, and still emits", async () => {
+  _resetOrgCache(); clearHandlers();
+  const db = fakeDb();
+  const raw = JSON.stringify({
+    id: "evt_anon",
+    type: "payment.succeeded",
+    data: { payment_id: "pay_anon", amount: 500, item: { title: "Mystery Box" } }
+  });
+  const { swept } = await deliver(db, raw);
+
+  assert.equal(swept.counts.done, 1, "an unattributable payment was dropped rather than recorded");
+  assert.deepEqual(db.store.map((e) => e.name), ["payment.received"]);
+  assert.ok(clientIdsOf(db).every((id) => id === null), "a client was invented out of nothing");
+  assert.equal(db.clients.length, 0);
+});
+
+/* An expired or canceled checkout has NO handler on the bus, so nothing
+   downstream would create this person. Creating them here would put a
+   customer in the CRM who never paid. */
+test("an abandoned checkout never conjures a client into the CRM", async () => {
+  _resetOrgCache(); clearHandlers();
+  const db = fakeDb();
+  const raw = JSON.stringify({
+    type: "payment.expired",
+    data: { payment_id: "pay_gone", item: { title: "Consulting Services Deposit" }, buyer: { email: "ghost@example.com" } }
+  });
+  await deliver(db, raw);
+
+  assert.deepEqual(db.store.map((e) => e.name), ["payment.expired"]);
+  assert.equal(db.clients.length, 0, "an abandoned checkout created a client row");
+  assert.equal(db.store[0].client_id, null);
+});
+
+/* Money-in DOES reach a handler that find-or-creates by email
+   (client-lifecycle onPaymentReceived → resolveClient), so resolving here
+   changes WHEN that row appears, never WHETHER. */
+test("a money-in event from a brand new payer resolves through the same resolver the handlers use", async () => {
+  _resetOrgCache(); clearHandlers();
+  const db = fakeDb();
+  await deliver(db, paidOnLink({ ref: null, email: "brand.new@example.com" }));
+
+  assert.equal(db.clients.length, 1, "the payer was not resolved at all");
+  assert.equal(db.clients[0].email, "brand.new@example.com");
+  assert.ok(clientIdsOf(db).every((id) => id === db.clients[0].id));
+});
+
+/* Rows replay. A second pass must add nothing — not a second event, and not a
+   second client. */
+test("re-running an inbox row emits nothing new and creates nothing new", async () => {
+  _resetOrgCache(); clearHandlers();
+  const db = fakeDb({
+    links: [{ id: "pl-1", org_id: "org-1", client_id: CLIENT_A, link_ref: "pl_replay", purpose: "deposit" }],
+    clients: [{ id: CLIENT_A, org_id: "org-1", email: "payer@example.com", ghl_contact_id: "g" }]
+  });
+  await deliver(db, paidOnLink({ ref: "pl_replay" }));
+  const afterFirst = db.store.length;
+  const keysFirst = db.store.map((e) => e.idempotency_key);
+
+  // the sweeper picking the same row up again
+  await processCommasInboxRow(db.inbox[0], db);
+
+  assert.equal(db.store.length, afterFirst, "a replayed row double-wrote its events");
+  assert.deepEqual(db.store.map((e) => e.idempotency_key), keysFirst, "the idempotency key shape changed");
+  assert.equal(db.clients.length, 1);
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   WHAT WAS PAID FOR  (the purpose we set, not the title a vendor stored)
+
+   productOf classified only by substring against four product titles Chris
+   created in the Commas dashboard. Nothing this system mints is called any of
+   them, so every real link fell through to "unmatched" and diagnostic.paid /
+   deposit.paid / sale.closed never fired.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+test("productOf: the link's purpose decides the product, ahead of any title match", () => {
+  // The title is an offer name. It matches none of the four legacy strings.
+  assert.equal(productOf({ name: "UnderwriteIQ soft-pull assessment" }), "unmatched");
+  assert.equal(productOf({ name: "UnderwriteIQ soft-pull assessment", purpose: "diagnostic" }), "crs");
+  assert.equal(productOf({ name: "Funding, done-for-you", purpose: "deposit" }), "deposit");
+  assert.equal(productOf({ name: "", purpose: "DIAGNOSTIC" }), "crs", "purpose must not be case sensitive");
+});
+
+/* Only two purposes have a canonical event that is not a guess. 'repair' has
+   no bucket at all — the nearest one, 'diy', means the Consulting Services
+   Package and would file a repair sale under the wrong product. 'custom' is
+   free text. Both stay unmatched until somebody decides, and this test is here
+   so that stays a decision rather than a drift. */
+test("PURPOSE_PRODUCT maps ONLY the two purposes that have a canonical event", () => {
+  assert.deepEqual(Object.keys(PURPOSE_PRODUCT).sort(), ["deposit", "diagnostic"]);
+  assert.equal(productOf({ name: "Credit repair, done-for-you", purpose: "repair" }), "unmatched");
+  assert.equal(productOf({ name: "Funding Mastery course (A to Z)", purpose: "custom" }), "unmatched");
+});
+
+/* A purpose this map says nothing about must fall THROUGH to the title, not
+   short-circuit to unmatched — otherwise adding a purpose could silently take
+   a legacy product's routing away from it. */
+test("a purpose with no bucket falls through to the title rather than blocking it", () => {
+  assert.equal(productOf({ name: "Consulting Services Package", purpose: "custom" }), "diy");
+  assert.equal(productOf({ name: "Consulting Services Package", purpose: "" }), "diy");
+});
+
+/* Old rows replay through this same function. They must classify identically. */
+test("the legacy dashboard titles still classify exactly as they did", () => {
+  assert.equal(productOf({ name: "Business Financial Assessment" }), "crs");
+  assert.equal(productOf({ name: "Consulting Services Deposit" }), "deposit");
+  assert.equal(productOf({ name: "Consulting Success Fee" }), "success_fee");
+  assert.equal(productOf({ name: "Consulting Services Package" }), "diy");
+  assert.equal(productOf({ name: "Mystery Box" }), "unmatched");
+});
+
+test("a $32 link titled 'diagnostic' now fires diagnostic.paid end to end", async () => {
+  _resetOrgCache(); clearHandlers();
+  let softPullRan = 0;
+  on("diagnostic.paid", () => { softPullRan += 1; });
+
+  const db = fakeDb({
+    links: [{ id: "pl-d", org_id: "org-1", client_id: CLIENT_A, link_ref: "pl_diag", purpose: "diagnostic" }]
+  });
+  // exactly what api/payment-links.mjs mints with no description: title === purpose
+  await deliver(db, paidOnLink({ ref: "pl_diag", title: "diagnostic" }));
+
+  assert.deepEqual(db.store.map((e) => e.name), ["payment.received", "diagnostic.paid"]);
+  assert.equal(softPullRan, 1, "the soft-pull gate never fired for a real $32 link");
+  assert.equal(db.store[0].payload.purpose, "diagnostic", "the evidence for the product was not carried");
+  assert.equal(db.store[0].payload.product, "crs");
+});
+
+test("a deposit link fires deposit.paid whatever the closer typed in the description", async () => {
+  _resetOrgCache(); clearHandlers();
+  const db = fakeDb({
+    links: [{ id: "pl-f", org_id: "org-1", client_id: CLIENT_A, link_ref: "pl_dep", purpose: "deposit" }]
+  });
+  await deliver(db, paidOnLink({ ref: "pl_dep", title: "Funding, done-for-you" }));
+  assert.deepEqual(db.store.map((e) => e.name), ["payment.received", "deposit.paid"]);
+});
+
+test("a repair link records the money and claims nothing more", async () => {
+  _resetOrgCache(); clearHandlers();
+  const db = fakeDb({
+    links: [{ id: "pl-r", org_id: "org-1", client_id: CLIENT_A, link_ref: "pl_rep", purpose: "repair" }]
+  });
+  await deliver(db, paidOnLink({ ref: "pl_rep", title: "Credit repair, done-for-you" }));
+
+  assert.deepEqual(db.store.map((e) => e.name), ["payment.received"]);
+  assert.equal(db.store[0].payload.product, "unmatched");
+  assert.equal(db.store[0].payload.purpose, "repair", "the purpose is still recorded, it just decides nothing");
+  assert.equal(db.store[0].client_id, CLIENT_A, "an unmatched product must still know whose money it is");
+});
+
+/* A link minted through the checkout-session API comes back keyed by the
+   session id — our ref may not be echoed at all. */
+test("a link is still found by its Commas session id when no ref comes back", async () => {
+  _resetOrgCache(); clearHandlers();
+  const db = fakeDb({
+    links: [{ id: "pl-s", org_id: "org-1", client_id: CLIENT_A, link_ref: "pl_s", commas_session_id: "8YZPo", purpose: "deposit" }]
+  });
+  const raw = JSON.stringify({
+    id: "evt_sess", type: "payment.succeeded",
+    data: { payment_id: "pay_sess", amount: 3000, item: { id: "8YZPo", title: "Funding, done-for-you" } }
+  });
+  await deliver(db, raw);
+
+  assert.deepEqual(db.store.map((e) => e.name), ["payment.received", "deposit.paid"]);
+  assert.ok(clientIdsOf(db).every((id) => id === CLIENT_A));
+});
+
+/* A payment on a Commas dashboard product page has no link of ours. The
+   lookup must come back empty and everything must carry on. */
+test("no link behind the payment is normal, not an error", async () => {
+  _resetOrgCache(); clearHandlers();
+  const db = fakeDb();
+  const { swept } = await deliver(db, FLAT_TEST_EVENT);
+  assert.equal(swept.counts.done, 1);
+  assert.deepEqual(db.store.map((e) => e.name), ["payment.received", "diagnostic.paid"]);
+  assert.equal(db.store[0].payload.purpose, null);
 });

@@ -1,0 +1,69 @@
+{
+  "collectedAt": "2026-08-19T02:56:44.066Z",
+  "database": "live production (Supabase, project ref oqpnlusrotpxfenysfxz)",
+  "access": "READ ONLY — every statement ran inside BEGIN READ ONLY and passed a SELECT-only guard",
+  "testClient": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "protectedClientNeverWritten": "9af65808-a619-4e65-ae91-239766a006b7 (read as metadata only, never modified)",
+  "check": "10. schema_migrations — highest applied migration",
+  "verdict": "CONFIRMED",
+  "schemaNote": "The column is `key`, not `name` — the brief's column name does not exist on this table.",
+  "columns": [
+    {
+      "column_name": "key",
+      "data_type": "text"
+    },
+    {
+      "column_name": "applied_at",
+      "data_type": "timestamp with time zone"
+    }
+  ],
+  "totalApplied": 162,
+  "topTenByNumber": [
+    {
+      "key": "migrations/176_company_brain_upload_reviews.sql",
+      "applied_at": "2026-08-18T03:51:18.241Z"
+    },
+    {
+      "key": "migrations/175_company_brain_threads.sql",
+      "applied_at": "2026-08-18T03:51:17.951Z"
+    },
+    {
+      "key": "migrations/174_company_brain_uploads.sql",
+      "applied_at": "2026-08-18T03:51:17.656Z"
+    },
+    {
+      "key": "migrations/173_specialist_role_name.sql",
+      "applied_at": "2026-08-18T00:06:17.932Z"
+    },
+    {
+      "key": "migrations/172_wl_marketing.sql",
+      "applied_at": "2026-08-17T23:27:04.693Z"
+    },
+    {
+      "key": "migrations/171_content.sql",
+      "applied_at": "2026-08-17T22:14:42.061Z"
+    },
+    {
+      "key": "migrations/170_call_outcome_checklist.sql",
+      "applied_at": "2026-08-17T22:14:41.749Z"
+    },
+    {
+      "key": "migrations/169_contract_template_placeholders.sql",
+      "applied_at": "2026-08-17T00:39:59.833Z"
+    },
+    {
+      "key": "migrations/168_retire_ghl_agents.sql",
+      "applied_at": "2026-08-16T05:30:05.390Z"
+    },
+    {
+      "key": "migrations/167_dispute_authorization_consent.sql",
+      "applied_at": "2026-08-16T02:04:05.546Z"
+    }
+  ],
+  "highestApplied": {
+    "key": "migrations/176_company_brain_upload_reviews.sql",
+    "number": 176,
+    "applied_at": "2026-08-18T03:51:18.241Z"
+  },
+  "note": "Highest applied migration is 176. A new migration written for this batch must therefore be 177 or above. Confirms migrations/171_content.sql (which added entitlement_catalog.display_price_cents) is applied, so T2-07 is a data-fill gap and not a missing-column gap."
+}

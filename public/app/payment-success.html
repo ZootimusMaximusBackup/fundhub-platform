@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fundhub · Payment received</title>
+<title>Fundhub · After checkout</title>
 <link rel="stylesheet" href="fundhub-brand.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,21 +15,321 @@ body{margin:0;min-height:100vh;background:var(--paper);color:var(--ink);font-fam
 .card{max-width:420px;width:100%;border:1px solid var(--line);border-radius:14px;padding:28px 24px;background:var(--soft)}
 .mono{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.14em;text-transform:uppercase;color:var(--gray2)}
 h1{font-size:var(--fs-title);font-weight:800;letter-spacing:-.03em;margin:12px 0 8px;line-height:1.15}
-.lede,.ok,.fine,.back{font-size:var(--fs-body);line-height:1.45}
+.lede,.ok,.pend,.warn,.err,.fine,.back{font-size:var(--fs-body);line-height:1.45}
 .lede{color:var(--gray);margin:0 0 18px}
 .ok{border:1px solid #2C5138;background:rgba(168,216,176,.26);color:#2C5138;padding:12px 14px;border-radius:10px}
+.pend{border:1px solid var(--line);background:var(--paper);color:var(--gray);padding:12px 14px;border-radius:10px}
+.warn{border:1px solid #7A5A18;background:rgba(245,206,143,.26);color:#5C441A;padding:12px 14px;border-radius:10px}
+.err{border:1px solid #C4553F;background:rgba(242,166,155,.24);color:#6E2A22;padding:12px 14px;border-radius:10px}
+.ok b,.pend b,.warn b,.err b{display:block;font-weight:700;margin-bottom:4px}
+.ok p,.warn p,.err p{margin:6px 0 0}
+.ok ul,.warn ul{margin:8px 0 0;padding-left:20px}
+.ok li,.warn li{margin:3px 0}
 .fine{color:var(--gray2);margin-top:16px}
+.refline{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);margin-top:14px;word-break:break-all}
 .back{display:inline-block;margin-top:18px;font-weight:600;color:var(--ink)}
+.btn{margin-top:12px;padding:10px 14px;border:1px solid var(--line);border-radius:9px;background:var(--paper);
+  color:var(--ink);font-family:var(--sans);font-size:var(--fs-caption);font-weight:600;cursor:pointer}
 </style>
 </head>
 <body>
   <div class="card">
     <div class="mono">Fundhub · payment</div>
-    <h1>Payment received</h1>
-    <p class="lede">If your payment went through, you are done on this page. Stay on the call with your advisor.</p>
-    <div class="ok">If this was your soft-pull assessment, we start the credit pull next. You do not need to do anything else on this page.</div>
-    <p class="fine">You can close this tab and return to your Meet.</p>
-    <a class="back" href="client-portal.html">Back to your portal</a>
+    <h1>Thanks — you are back from checkout</h1>
+    <p class="lede">We are checking your account to see what has opened up. Stay on the call with your advisor.</p>
+    <div id="state" aria-live="polite"><div class="pend">Checking your account…</div></div>
+    <p class="refline" id="refline" hidden></p>
+    <p class="fine">This page does not take payments and it cannot confirm one. It only shows what your account says.</p>
+    <a class="back" id="back" href="client-portal.html">Back to your portal</a>
   </div>
+<script>
+/* WHAT THIS PAGE MAY AND MAY NOT SAY.
+ *
+ * This is the success_url every minted checkout session points at
+ * (src/payments/commas-api.mjs). Landing here means the payment page sent the
+ * person back. It does NOT mean money moved: nothing on this page sees the
+ * payment, and there is no public endpoint that would tell it. So the page no
+ * longer says "payment received". It says the one thing it can actually check
+ * — what /api/read/entitlements reports as open on the account — and when it
+ * cannot check, it says so plainly rather than dressing a guess up as a
+ * receipt.
+ *
+ * THE ONE READ. GET /api/read/entitlements (api/read/entitlements.mjs) answers
+ * { ok, count, limit, offset, hasMore, items[] }, and each item carries
+ * client_id, entitlement_code, entitlement_name, kind, sort_order, granted_at,
+ * expires_at, revoked_at, active, source_transaction_id. A CLIENT session is
+ * scoped to its own rows server-side and ?client_id= is ignored for it; a
+ * STAFF session is scoped by ?client_id=. No session at all is a 401.
+ *
+ * THE TWO PARAMETERS arrive on the checkout success URL: `ref` (the payment
+ * link reference) and `client_id`. Neither is trusted for anything beyond
+ * display and scoping that read — nothing here decides what anybody owns.
+ *
+ * BASELINE, NOT WISHFUL THINKING. The first successful read is remembered as
+ * what was already open. Only a code that appears AFTER that is reported as
+ * "just opened". A purchase that posted before this page loaded therefore
+ * shows up in the "already open" list instead, which under-claims rather than
+ * over-claims — the right direction for a page that cannot see the payment.
+ *
+ * BOUNDED. Six tries, three seconds apart, then it stops and tells the person
+ * what to do. A "Check again" button starts one more round on a human click.
+ * Nothing here polls the API forever from a tab somebody left open. */
+(function () {
+  "use strict";
+
+  var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  var MAX_TRIES = 6;
+  var GAP_MS = 3000;
+
+  var stateEl = document.getElementById("state");
+  var refEl = document.getElementById("refline");
+  var backEl = document.getElementById("back");
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function param(name) {
+    try { return new URLSearchParams(location.search).get(name) || ""; }
+    catch (e) { return ""; }
+  }
+
+  var ref = param("ref");
+  var clientId = param("client_id");
+  if (!UUID.test(clientId)) clientId = "";
+
+  /* Fall back to the signed-in client's own account, resolved the same way
+     client-portal.html resolves it. A malformed id is dropped, not sent. */
+  if (!clientId) {
+    try {
+      var acct = JSON.parse(localStorage.getItem("fh_account") || "null");
+      var own = acct && (acct.clientId || acct.client_id);
+      if (own && UUID.test(own)) clientId = own;
+    } catch (e) { /* nothing stored — the read may still be scoped by session */ }
+  }
+
+  /* client-portal.html opens on nobody when the address bar carries no id, so
+     the way out of this page has to carry one. It reads ?id= or ?client_id=. */
+  if (clientId && backEl) {
+    backEl.href = "client-portal.html?client_id=" + encodeURIComponent(clientId);
+  }
+
+  if (ref && refEl) {
+    refEl.hidden = false;
+    refEl.textContent = "Payment reference: " + ref;
+  }
+
+  function token() {
+    try { return localStorage.getItem("fh_token") || ""; } catch (e) { return ""; }
+  }
+
+  function headers() {
+    var t = token();
+    var h = { accept: "application/json" };
+    /* A portal sign-in also sets an HttpOnly cookie, which this page cannot
+       read; a same-origin fetch carries it regardless. */
+    if (t) h.authorization = "Bearer " + t;
+    return h;
+  }
+
+  function readUrl() {
+    var u = "/api/read/entitlements?limit=200";
+    if (clientId) u += "&client_id=" + encodeURIComponent(clientId);
+    return u;
+  }
+
+  function setState(html) { stateEl.innerHTML = html; wireAgain(); }
+
+  function wireAgain() {
+    var b = document.getElementById("again");
+    if (b) b.addEventListener("click", function () { start(); });
+  }
+
+  function listOf(rows) {
+    var out = "<ul>";
+    for (var i = 0; i < rows.length; i++) {
+      out += "<li>" + esc(rows[i].entitlement_name || rows[i].entitlement_code) + "</li>";
+    }
+    return out + "</ul>";
+  }
+
+  /* WORDED CONDITIONALLY ON PURPOSE. Every state that uses this line is a state
+     where this page read NOTHING back, so it does not know whether a payment
+     succeeded. Saying "the payment is done" here would be this page asserting an
+     outcome it cannot see — on a regulated consumer-finance product, in the one
+     screen a client lands on straight from a card form. "If you completed" is
+     the honest form, and "do not pay again" is the part that actually protects
+     them either way. */
+  var TODO =
+    '<p class="fine">What to do: if you completed the payment, tell your advisor and stay ' +
+    "on the call. Do not pay again. You can also open your portal in a few minutes " +
+    "and look there.</p>";
+
+  var AGAIN = '<button class="btn" type="button" id="again">Check again</button>';
+
+  /* ── the states this page is allowed to be in ─────────────────────────── */
+
+  function showChecking(n) {
+    setState('<div class="pend">Checking your account… (' + n + " of " + MAX_TRIES + ")</div>");
+  }
+
+  function showOpened(fresh) {
+    setState(
+      '<div class="ok"><b>Just opened on your account</b>' + listOf(fresh) + "</div>" +
+      '<p class="fine">Open your portal to use these.</p>'
+    );
+  }
+
+  function showNothingNew(held) {
+    setState(
+      '<div class="warn"><b>Nothing new has opened yet</b>' +
+      "<p>Your account already shows these open:</p>" + listOf(held) +
+      "<p>A payment can take a few minutes to show up here.</p></div>" +
+      TODO + AGAIN
+    );
+  }
+
+  function showNothingAtAll() {
+    setState(
+      '<div class="warn"><b>Nothing is open on your account yet</b>' +
+      "<p>We checked, and your account shows nothing open. A payment can take a " +
+      "few minutes to show up here.</p></div>" +
+      TODO + AGAIN
+    );
+  }
+
+  function showSignedOut() {
+    setState(
+      '<div class="warn"><b>We cannot check your account from here</b>' +
+      "<p>You are not signed in on this device, so this page cannot look up what " +
+      "is open on your account.</p></div>" +
+      /* No sign-in link of its own: the portal link at the foot of this card
+         already bounces a signed-out visitor to /portal-login.html
+         (public/app/shell.js), so a second one would be two doors to one room. */
+      '<p class="fine">Use the “Back to your portal” link below and sign in there ' +
+      "to see what is open. If you completed a payment, do not pay again — tell " +
+      "your advisor instead.</p>"
+    );
+  }
+
+  function showUnknownScope() {
+    setState(
+      '<div class="warn"><b>We cannot tell which account this is</b>' +
+      "<p>This page did not get an account reference, so it cannot say what " +
+      "opened up.</p></div>" + TODO
+    );
+  }
+
+  function showUnreachable() {
+    setState(
+      '<div class="err"><b>We could not reach your account</b>' +
+      "<p>Nothing was read, so this page cannot say what is open, and it cannot " +
+      "say whether your payment went through. The failure to read is on our " +
+      "side.</p></div>" +
+      TODO + AGAIN
+    );
+  }
+
+  /* ── the bounded poll ─────────────────────────────────────────────────── */
+
+  var tries = 0;
+  var baseline = null;   // codes already open on the first successful read
+  var timer = null;
+
+  function codesOf(rows) {
+    var out = [];
+    for (var i = 0; i < rows.length; i++) out.push(rows[i].entitlement_code);
+    return out;
+  }
+
+  /* The rows this page is willing to show. With a client id we keep only that
+     person's; without one we accept the server's own scoping, but only while
+     every row belongs to the same person — so a staff session that read widely
+     can never paint somebody else's account onto this screen. */
+  function mine(items) {
+    var rows = [];
+    var seen = null;
+    for (var i = 0; i < items.length; i++) {
+      var r = items[i];
+      if (!r || !r.active) continue;
+      if (clientId) {
+        if (r.client_id !== clientId) continue;
+      } else {
+        if (seen !== null && r.client_id !== seen) return null;
+        seen = r.client_id;
+      }
+      rows.push(r);
+    }
+    return rows;
+  }
+
+  function later(fn) {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(fn, GAP_MS);
+  }
+
+  function retryOrStop(giveUp) {
+    if (tries < MAX_TRIES) { later(check); return; }
+    giveUp();
+  }
+
+  function handle(items) {
+    var rows = mine(items);
+    if (rows === null) { showUnknownScope(); return; }
+
+    if (baseline === null) baseline = codesOf(rows);
+
+    var fresh = [];
+    for (var i = 0; i < rows.length; i++) {
+      if (baseline.indexOf(rows[i].entitlement_code) === -1) fresh.push(rows[i]);
+    }
+
+    if (fresh.length) { showOpened(fresh); return; }
+    if (tries < MAX_TRIES) { later(check); return; }
+    if (rows.length) { showNothingNew(rows); } else { showNothingAtAll(); }
+  }
+
+  function check() {
+    tries++;
+    showChecking(tries);
+    var started;
+    try {
+      started = fetch(readUrl(), { headers: headers(), credentials: "same-origin" });
+    } catch (e) {
+      retryOrStop(showUnreachable);
+      return;
+    }
+    Promise.resolve(started).then(function (r) {
+      return r.json().catch(function () { return null; }).then(function (b) {
+        return { status: r.status, body: b };
+      });
+    }).then(function (res) {
+      /* 401 is "sign in", 403 is "this session may not read that". Neither
+         changes by asking again, so stop rather than spend the budget. */
+      if (res.status === 401 || res.status === 403) { showSignedOut(); return; }
+      if (res.status === 200 && res.body && res.body.ok === true &&
+          Object.prototype.toString.call(res.body.items) === "[object Array]") {
+        handle(res.body.items);
+        return;
+      }
+      /* Anything else — a 500, or the database saying it is down — is a read
+         that did not come back. Retry inside the budget, then say so. */
+      retryOrStop(showUnreachable);
+    }).catch(function () {
+      retryOrStop(showUnreachable);
+    });
+  }
+
+  function start() {
+    tries = 0;
+    if (timer) { clearTimeout(timer); timer = null; }
+    check();
+  }
+
+  start();
+})();
+</script>
 </body>
 </html>

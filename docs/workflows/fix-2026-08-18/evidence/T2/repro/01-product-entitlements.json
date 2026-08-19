@@ -1,0 +1,45 @@
+{
+  "collectedAt": "2026-08-19T02:56:44.066Z",
+  "database": "live production (Supabase, project ref oqpnlusrotpxfenysfxz)",
+  "access": "READ ONLY — every statement ran inside BEGIN READ ONLY and passed a SELECT-only guard",
+  "testClient": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "protectedClientNeverWritten": "9af65808-a619-4e65-ae91-239766a006b7 (read as metadata only, never modified)",
+  "check": "1. product_entitlements: count + all rows",
+  "claim": "0 rows",
+  "verdict": "CONFIRMED",
+  "count": 0,
+  "rows": [],
+  "columns": [
+    {
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "org_id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "product_code",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "entitlement_code",
+      "data_type": "text",
+      "is_nullable": "NO"
+    },
+    {
+      "column_name": "duration_days",
+      "data_type": "integer",
+      "is_nullable": "YES"
+    },
+    {
+      "column_name": "created_at",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "NO"
+    }
+  ],
+  "note": "The table exists with the right shape (org_id, product_code, entitlement_code, duration_days) and is completely empty. Nothing maps a purchased product to an unlocked tile."
+}
