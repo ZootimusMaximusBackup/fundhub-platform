@@ -79,9 +79,6 @@ const KNOWN_UNFIXED = {
   "closer-dashboard.html":
     "T3 — line ~900 `if (!window.FHData || !window.FHCloserView) return;` runs during " +
     "page parse and returns. The whole calculator panel never loads and says nothing.",
-  "inquiry-remover.html":
-    "T4 — line ~1121 `if (!table || !window.FHData) return Promise.resolve();` runs " +
-    "during page parse. The inquiry queue never loads and shows no reason.",
   "brand-studio.html":
     "T11 — line ~1282 `if (typeof FHData === \"undefined\" || !FHData.orgBrand) return;` " +
     "runs during page parse, so the saved brand is never read back.",
@@ -102,7 +99,8 @@ const KNOWN_UNFIXED = {
 
 /* Screens that must be clean, named so a rename or a delete shows up as a
    failure here rather than as a check that silently stopped running. */
-const MUST_BE_CLEAN = ["calendar.html", "pipeline.html", "messaging.html"];
+const MUST_BE_CLEAN = ["calendar.html", "pipeline.html", "messaging.html",
+                       "inquiry-remover.html"];
 
 // ---------------------------------------------------------------------------
 // A small, dependency-free reader of the inline <script> blocks.
