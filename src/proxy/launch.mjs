@@ -1,6 +1,6 @@
 // Orchestrate an Oxylabs Apply session: resolve client geo → verify exit → audit row.
 
-import { launchCredentials, oxylabsConfigFromEnv, generateSessid } from "../adapters/oxylabs.mjs";
+import { launchCredentials, generateSessid } from "../adapters/oxylabs.mjs";
 import {
   ProxySessionError,
   insertProxySession,
@@ -32,15 +32,10 @@ export async function launchProxySession(db, {
     throw new ProxySessionError("invalid_args", "org, staff and client are required", 400);
   }
 
-  const cfg = oxylabsConfigFromEnv(env);
-  if (!cfg.ready) {
-    throw new ProxySessionError(
-      "oxylabs_credentials_missing",
-      `Oxylabs credentials are not set (${cfg.missing.join(", ")}). See docs/STILL-MISSING.md.`,
-      503
-    );
-  }
-
+  // Do NOT short-circuit on missing Oxylabs credentials here. launchCredentials()
+  // returns the same `oxylabs_credentials_missing` error below, AFTER the pending
+  // proxy_sessions row exists — so a refused launch still leaves an audit row.
+  // Throwing here left proxy_sessions at 0 rows and hid the attempt entirely.
   const client = await loadClientForProxy(db, { orgId, clientId });
   if (!client) {
     throw new ProxySessionError("client_not_found", "Client not found in this org", 404);
@@ -103,16 +98,34 @@ export async function launchProxySession(db, {
     status: "verifying"
   });
 
-  const launched = await launchCredentials({
-    city: loc.city,
-    state: loc.state,
-    sessid,
-    env,
-    fetchFn
-  });
+  // If anything between here and the status update throws, the row is left at
+  // 'verifying' forever — nothing in this repo sweeps stale 'verifying' rows
+  // (endProxySession only touches 'active'). Always close the row.
+  let launched;
+  try {
+    launched = await launchCredentials({
+      city: loc.city,
+      state: loc.state,
+      sessid,
+      env,
+      fetchFn
+    });
+  } catch (cause) {
+    await updateProxySession(db, {
+      orgId,
+      id: pending.id,
+      patch: {
+        status: "failed",
+        errorCode: "launch_threw",
+        errorMessage: cause?.message || "Proxy launch threw",
+        endedAt: new Date().toISOString()
+      }
+    }).catch(() => {});
+    throw cause;
+  }
 
   if (!launched.ok) {
-    await updateProxySession(db, {
+    const closed = await updateProxySession(db, {
       orgId,
       id: pending.id,
       patch: {
@@ -128,7 +141,9 @@ export async function launchProxySession(db, {
       launched.message || "Proxy launch failed",
       launched.error === "oxylabs_credentials_missing" ? 503 : 422
     );
-    err.sessionId = pending.id;
+    // Only quote a session id the audit row actually reflects. A zero-row UPDATE
+    // would otherwise hand back an id still sitting at status='verifying'.
+    err.sessionId = closed ? pending.id : null;
     err.attempts = launched.attempts || [];
     throw err;
   }

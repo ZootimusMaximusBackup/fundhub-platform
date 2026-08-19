@@ -12,7 +12,11 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // THIS IS A WRITE ENDPOINT AND IT IS GATED HARDER THAN THE READS NEXT DOOR
 // ═══════════════════════════════════════════════════════════════════════════
-// ROLE_SETS.FINANCE — {owner, admin} — not ROLE_SETS.STAFF.
+// ROLE_SETS.FINANCE — {owner, admin, sales_manager} — not ROLE_SETS.STAFF.
+// (sales_manager joined that set by an owner decision recorded at
+// src/http/read-api.mjs, H-6, 2026-08-01. This comment said {owner, admin} until
+// 2026-08-18 and was simply out of date; the gate itself never changed. A
+// funding_advisor can READ balances next door and still cannot create one here.)
 //
 // api/read/money-map.mjs, read/finance-os and read/banking-surface all serve
 // STAFF, and that is right for a read: a closer working a file needs to see it.

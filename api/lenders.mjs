@@ -100,6 +100,16 @@ export default async function handler(req, res, deps = {}) {
         if (body[k] !== undefined) patch[k] = body[k];
       }
     }
+    // The screen posts every empty box as "". `lenders.name` is NOT NULL with a
+    // non-empty check (db/migrations/138_lenders.sql:60), so a cleared Name box
+    // reached Postgres and came back as a raw 500. Refuse it in words instead.
+    if (patch.name !== undefined && String(patch.name).trim() === "") {
+      return res.status(400).json({
+        ok: false,
+        error: "name_required",
+        message: "Name is required."
+      });
+    }
     if (patch.active != null) {
       patch.active = patch.active === true || patch.active === "true" || patch.active === 1;
     }
@@ -115,6 +125,14 @@ export default async function handler(req, res, deps = {}) {
       if (!existing) {
         return res.status(404).json({ ok: false, error: "not_found" });
       }
+      // The row is there but the UPDATE changed nothing. Never answer ok:true
+      // with lender:null — the screen writes that straight back into its row
+      // cache, the row loses its id, and its next Save posts id:"undefined".
+      return res.status(409).json({
+        ok: false,
+        error: "save_failed",
+        message: "That lender was not saved. Reload the page and try again."
+      });
     }
     return res.status(200).json({ ok: true, lender });
   } catch (err) {

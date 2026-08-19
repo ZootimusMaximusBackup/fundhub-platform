@@ -1,0 +1,5 @@
+T8 live re-walk — https://fundhub.ai — 2026-08-18, owner@fundhub.ai, client 8556bedc-46e1-4d85-b0cd-a24adfee1521
+
+subscriptions.html  -> 404 (T8-06 confirmed: page gone)
+finance-os.html     -> 200; 0 hits for Connect-bank, 2 hits for client_id=, 3 hits for 'not linked' (T8-02, T8-05 confirmed)
+api/finance/bank-accounts?client_id= -> 200 (T8-05 confirmed: still client-scoped)

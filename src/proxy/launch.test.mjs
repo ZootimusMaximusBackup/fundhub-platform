@@ -41,7 +41,9 @@ function fakeDb({ client, lender, application } = {}) {
           granted_region: params[3],
           targeting_level: params[4],
           exit_ip: params[5],
-          proxy_username: params[6]
+          proxy_username: params[6],
+          error_code: params[8],
+          error_message: params[9]
         };
         sessions[0] = row;
         return { rows: [row] };
@@ -95,7 +97,7 @@ test("launchProxySession returns connection + verification and never claims rout
   assert.equal(db.sessions[0].status, "active");
 });
 
-test("launchProxySession fails when credentials missing", async () => {
+test("launchProxySession fails when credentials missing, and still leaves an audit row", async () => {
   const db = fakeDb({
     client: { id: "c1", org_id: "o1", custom_fields: { city: "Mesa", state: "AZ" } },
     lender: { id: "l1", org_id: "o1", name: "B", application_url: "https://x.test" }
@@ -104,8 +106,46 @@ test("launchProxySession fails when credentials missing", async () => {
     () => launchProxySession(db, {
       orgId: "o1", staffId: "s1", clientId: "c1", lenderId: "l1", env: {}
     }),
-    (err) => err instanceof ProxySessionError && err.code === "oxylabs_credentials_missing"
+    (err) =>
+      err instanceof ProxySessionError &&
+      err.code === "oxylabs_credentials_missing" &&
+      err.status === 503 &&
+      err.sessionId === "sess-row-1"
   );
+  // Regression: this used to throw before insertProxySession, so a refused launch
+  // left proxy_sessions empty and the attempt was invisible to the audit trail.
+  assert.equal(db.sessions.length, 1);
+  assert.equal(db.sessions[0].status, "failed");
+  assert.equal(db.sessions[0].error_code, "oxylabs_credentials_missing");
+  // The row must record WHY, not just repeat the code next to it.
+  assert.match(db.sessions[0].error_message, /OXYLABS_USERNAME, OXYLABS_PASSWORD/);
+});
+
+test("launchProxySession closes the audit row when the launch throws", async () => {
+  const db = fakeDb({
+    client: { id: "c1", org_id: "o1", custom_fields: { city: "Mesa", state: "AZ" } },
+    lender: { id: "l1", org_id: "o1", name: "B", application_url: "https://x.test" }
+  });
+  await assert.rejects(
+    () => launchProxySession(db, {
+      orgId: "o1",
+      staffId: "s1",
+      clientId: "c1",
+      lenderId: "l1",
+      // A whitespace-only username is truthy, so cfg.ready passes — but
+      // buildProxyUsername sits OUTSIDE launchCredentials' inner try and throws.
+      // This is the real path that strands a row, not a dropped socket (that one
+      // is caught inside the adapter and comes back as geo_unavailable).
+      env: { OXYLABS_USERNAME: "   ", OXYLABS_PASSWORD: "p" },
+      fetchFn: async () => { throw new Error("should not be reached"); }
+    }),
+    /oxylabs_username_required/
+  );
+  // Nothing in this repo sweeps stale 'verifying' rows, so a throw between the
+  // insert and the update would strand this row as an in-flight bank application.
+  assert.equal(db.sessions.length, 1);
+  assert.equal(db.sessions[0].status, "failed");
+  assert.equal(db.sessions[0].error_code, "launch_threw");
 });
 
 test("launchProxySession fails when client has no location", async () => {

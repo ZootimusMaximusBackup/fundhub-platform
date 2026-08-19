@@ -58,6 +58,9 @@ test("proxy/launch returns credentials_missing when env unset", async () => {
   const CLIENT = "aaaaaaaa-1111-4111-8111-111111111111";
   const LENDER = "bbbbbbbb-1111-4111-8111-111111111111";
   const ORG = "22222222-2222-4222-8222-222222222222";
+  const SESSION = "dddddddd-1111-4111-8111-111111111111";
+  const inserted = [];
+  const updated = [];
   const res = mockRes();
   await launch(
     { method: "POST", body: { client_id: CLIENT, lender_id: LENDER } },
@@ -66,12 +69,21 @@ test("proxy/launch returns credentials_missing when env unset", async () => {
       requireAuth: async () => staff("funding_advisor"),
       env: {},
       db: {
-        query: async (sql) => {
+        query: async (sql, params) => {
           if (/FROM clients/.test(sql)) {
             return { rows: [{ id: CLIENT, org_id: ORG, custom_fields: { city: "Mesa", state: "AZ" } }] };
           }
           if (/FROM lenders/.test(sql)) {
             return { rows: [{ id: LENDER, org_id: ORG, name: "Bank", application_url: "https://bank.test/a" }] };
+          }
+          // A refused launch must still write, then fail, an audit row.
+          if (/INSERT INTO proxy_sessions/.test(sql)) {
+            inserted.push(params[14]);
+            return { rows: [{ id: SESSION, org_id: ORG, status: params[14] }] };
+          }
+          if (/UPDATE proxy_sessions SET/.test(sql)) {
+            updated.push({ status: params[7], errorCode: params[8] });
+            return { rows: [{ id: SESSION, org_id: ORG, status: params[7] }] };
           }
           return { rows: [] };
         }
@@ -80,6 +92,11 @@ test("proxy/launch returns credentials_missing when env unset", async () => {
   );
   assert.equal(res.statusCode, 503);
   assert.equal(res.body.error, "oxylabs_credentials_missing");
+  assert.deepEqual(inserted, ["verifying"]);
+  assert.deepEqual(updated, [{ status: "failed", errorCode: "oxylabs_credentials_missing" }]);
+  assert.equal(res.body.session_id, SESSION);
+  assert.equal(res.body.routing_active, false);
+  assert.equal(res.body.next_step, "The proxy account is not set up yet. Ask the owner to add the proxy login before applying.");
 });
 
 test("proxy/end refuses setter", async () => {

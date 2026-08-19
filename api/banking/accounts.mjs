@@ -29,8 +29,12 @@
 // data to that set, so gating the read here more tightly would buy nothing —
 // anyone refused could read the same rows next door.
 //
-// WRITES: ROLE_SETS.FINANCE — {owner, admin} — deliberately NARROWER. Creating or
-// replacing a person's financial records is not the same act as reading them: a
+// WRITES: ROLE_SETS.FINANCE — {owner, admin, sales_manager} — deliberately
+// NARROWER than the read set. (sales_manager is in FINANCE by an owner decision
+// recorded at src/http/read-api.mjs, H-6, 2026-08-01; this line said
+// {owner, admin} until 2026-08-18 and was out of date. The gate never changed.)
+// Creating or replacing a person's financial records is not the same act as
+// reading them: a
 // wrong read is a glance, a wrong write replaces a portfolio or invents a debt,
 // and replace_holdings in particular deletes rows. Widen this only by naming a
 // role, never by reusing STAFF because it was already imported.

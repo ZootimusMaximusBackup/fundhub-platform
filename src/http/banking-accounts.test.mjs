@@ -18,8 +18,17 @@
 // are visible in the text, so the text is where they are caught. This is the
 // technique src/http/auth-gate.test.mjs already established.
 //
-// The full round trip is in banking-accounts.pg.test.mjs, which SKIPS without
-// DATABASE_URL rather than passing.
+// WHAT IS NOT COVERED ANYWHERE, AS OF 2026-08-18. This header used to end by
+// saying "the full round trip is in banking-accounts.pg.test.mjs". THAT FILE
+// DOES NOT EXIST and never has — `ls src/http/banking-*` returns three files and
+// none of them is it. The claim is removed rather than left standing, because a
+// pointer to imaginary coverage is worse than an admission of none: it is what
+// let the ON CONFLICT defect below live in the tree unnoticed.
+//
+// The round trip WAS exercised by hand against a scratch Postgres 16.14 on
+// 2026-08-18 (create_account → a real bank_accounts row, and sync-accounts →
+// four). Writing that up as a committed .pg.test.mjs is the obvious next job and
+// is deliberately left for whoever owns the banking test files.
 
 import { test } from "node:test";
 import assert from "node:assert";
@@ -185,6 +194,51 @@ test("the next due date is computed server-side, not left to the browser", () =>
 });
 
 /* ------------------------------------------------------------- actions */
+
+/* ------------------------------- the other door into the same table --------
+ *
+ * WHY A TEST ABOUT src/banking/accounts-store.mjs SITS IN THIS FILE. There are
+ * exactly two write paths into `bank_accounts`: this endpoint (a human typing an
+ * account in) and POST /api/banking/sync-accounts (a provider's list). The
+ * second one goes through accounts-store.mjs, and on 2026-08-18 it was found to
+ * fail on its FIRST ROW against a real database — a 500, every time, so no
+ * provider account had ever been stored. The store has no test file of its own
+ * in this batch's ownership split, and a defect this size must not be fixed
+ * without a guard, so the guard lives next to the other door. Move it to a test
+ * beside the store when one exists.
+ *
+ * WHAT WENT WRONG. Both unique indexes on bank_accounts are PARTIAL — each ends
+ * in a WHERE (081 line 123, 103 line 162). Postgres will not use a partial
+ * unique index as the arbiter of an ON CONFLICT unless the statement repeats
+ * that index's predicate. Without it there is no arbiter and the INSERT dies
+ * with 42P10. It is invisible to any test with a stubbed database, because a
+ * stub happily accepts any SQL string.
+ */
+test("every ON CONFLICT target repeats its partial index's WHERE, or the INSERT is a 500", () => {
+  const STORE = fs.readFileSync(path.join(ROOT, "src/banking/accounts-store.mjs"), "utf8");
+  const code = STORE.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+
+  const targets = [...code.matchAll(/ON CONFLICT \$\{target\}|"\(([^)]*)\)([^"]*)"/g)];
+  assert.ok(targets.length > 0, "the conflict targets moved — this test must move with them");
+
+  // uq_bank_accounts_plaid is partial on both plaid columns.
+  assert.match(code, /plaid_item_id,\s*plaid_account_id\)\s*"\s*\+\s*\n?\s*"WHERE plaid_item_id IS NOT NULL AND plaid_account_id IS NOT NULL"/,
+    "the plaid conflict target must repeat uq_bank_accounts_plaid's WHERE clause");
+
+  // uq_bank_accounts_provider_ref is partial on provider_account_id.
+  assert.match(code, /org_id,\s*client_id,\s*provider,\s*provider_account_id\)\s*"\s*\+\s*\n?\s*"WHERE provider_account_id IS NOT NULL"/,
+    "the non-plaid conflict target must repeat uq_bank_accounts_provider_ref's WHERE clause");
+});
+
+test("the two partial indexes this store upserts on still have the predicates it names", () => {
+  // If a later migration makes either index total, the WHERE above becomes
+  // wrong in the other direction. Read the migrations, not a memory of them.
+  const m081 = fs.readFileSync(path.join(ROOT, "db/migrations/081_bank_accounts.sql"), "utf8");
+  const m103 = fs.readFileSync(path.join(ROOT, "db/migrations/103_bank_account_provider.sql"), "utf8");
+
+  assert.match(m081, /CREATE UNIQUE INDEX[^;]*uq_bank_accounts_plaid[^;]*WHERE plaid_item_id IS NOT NULL AND plaid_account_id IS NOT NULL/s);
+  assert.match(m103, /CREATE UNIQUE INDEX[^;]*uq_bank_accounts_provider_ref[^;]*WHERE provider_account_id IS NOT NULL/s);
+});
 
 test("the POST action list matches what the handler implements", () => {
   const advertised = /allowed:\s*\[([^\]]*)\]/.exec(CODE)[1]

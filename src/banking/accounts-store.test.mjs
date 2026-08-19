@@ -178,13 +178,29 @@ describe("toAccountRow — shaping", () => {
   });
 });
 
+/* TWO ASSERTIONS IN HERE WERE CHANGED ON 2026-08-18, AND THEY WERE MADE
+   STRICTER, NOT LOOSER. They used to require the conflict target to be followed
+   IMMEDIATELY by "DO UPDATE" — i.e. they pinned the exact SQL that fails against
+   a real database. Both unique indexes on bank_accounts are PARTIAL (081 line
+   123, 103 line 162), and Postgres refuses to use a partial unique index as an
+   ON CONFLICT arbiter unless the statement repeats that index's own predicate.
+   The old SQL therefore died with 42P10 on the first row of every sync — proved
+   against a scratch Postgres 16.14 on 2026-08-18 — and these tests passed
+   throughout, because a stubbed db accepts any string.
+
+   The assertions now demand the WHERE clause as well. A future edit that drops
+   it fails here instead of only in production. */
 describe("upsertBankAccount — a sync is a re-read, not an append", () => {
 
   test("a keyed row upserts on the provider key and never touches entity_kind", async () => {
     const db = makeDb();
     await upsertBankAccount(db, acct(), OPTS);
     const sql = db.calls[0].sql;
-    assert.match(sql, /ON CONFLICT \(org_id, client_id, provider, provider_account_id\) DO UPDATE/);
+    assert.match(
+      sql,
+      /ON CONFLICT \(org_id, client_id, provider, provider_account_id\) WHERE provider_account_id IS NOT NULL DO UPDATE/,
+      "uq_bank_accounts_provider_ref is partial; without its WHERE clause repeated Postgres finds no arbiter and the INSERT is a 500"
+    );
     assert.ok(!/entity_kind/.test(sql.split("RETURNING")[0]),
       "entity_kind appears in the write half of the statement");
   });
@@ -193,7 +209,11 @@ describe("upsertBankAccount — a sync is a re-read, not an append", () => {
     const db = makeDb();
     await upsertBankAccount(db, acct({ providerAccountId: "plaid-abc" }),
       { ...OPTS, provider: "plaid", plaidItemId: "item-1" });
-    assert.match(db.calls[0].sql, /ON CONFLICT \(plaid_item_id, plaid_account_id\) DO UPDATE/);
+    assert.match(
+      db.calls[0].sql,
+      /ON CONFLICT \(plaid_item_id, plaid_account_id\) WHERE plaid_item_id IS NOT NULL AND plaid_account_id IS NOT NULL DO UPDATE/,
+      "uq_bank_accounts_plaid is partial; its predicate must be repeated or the INSERT is a 500"
+    );
   });
 
   /* Two accounts a person typed are two accounts. Deduplicating them on a name
