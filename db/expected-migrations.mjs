@@ -164,6 +164,7 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/200_dispute_rls_policies.sql",
   "migrations/201_no_bare_rls_sweep.sql",
   "migrations/202_client_fk_indexes.sql",
+  "migrations/203_bookings_rls_policy.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql",
   "seed/007_contract_templates.sql",

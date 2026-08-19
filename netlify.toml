@@ -67,8 +67,23 @@
   command = "npm run guard:db"
 
 # The ONLY context that migrates. Nothing else may.
+#
+# It also runs `guard:rls`, and ONLY it does. That check asks the live database
+# "is any table locked shut — row security on with no policy attached?" and
+# fails the build if one is, naming it. A table in that state reads zero rows
+# and refuses every write without raising anything, so it is invisible until a
+# human goes looking. `bookings` sat like that on 2026-08-19 and every incoming
+# appointment was being thrown away.
+#
+# Why production only, and not in guard:db where every context would run it:
+# previews no longer migrate, so a pending migration means the live database is
+# legitimately behind this branch. Running the shape check there would fail
+# every preview for a reason the preview cannot fix, and a guard that cries
+# wolf gets deleted. Here it runs AFTER db/migrate.mjs, so it is checking a
+# database this build has just brought up to date. That is the only moment the
+# question has a fair answer.
 [context.production]
-  command = "node db/migrate.mjs && npm run guard:db"
+  command = "node db/migrate.mjs && npm run guard:db && npm run guard:rls"
 
 [build.environment]
   NODE_VERSION = "22"

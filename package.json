@@ -18,6 +18,7 @@
     "journeys:check": "node scripts/journeys/generate.mjs --check",
     "test": "node scripts/run-suite.mjs",
     "guard:db": "node --test src/security/superuser-guard.test.mjs",
+    "guard:rls": "node --test src/security/rls-shape.test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:live": "playwright test -c playwright.live.config.mjs",
     "verify:e2e": "node scripts/run-e2e-verification.mjs",
