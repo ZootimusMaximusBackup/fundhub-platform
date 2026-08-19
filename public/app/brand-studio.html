@@ -1128,17 +1128,83 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
         refreshSuite();
       });
   });
+  /* FH-B4-SUBMIT-REVIEW — the line beside the button and the bottom status
+     strip are two views of one answer, so every branch writes both. Same rule
+     the persistence block below states at its own setSaveMsg().
+
+     THE FLAG: the brand read in the block below writes this same line when it
+     lands. A partner who pressed "Submit for approval" before the read returned
+     got their answer wiped by "Loaded your saved brand." a moment later, and was
+     told nothing about what their press did. Once a press has been answered this
+     line belongs to the press, so the read stands down. The read's own outcome
+     is not lost — it still writes the bottom status strip either way. */
+  function reviewMsg(kind, strip, beside){
+    window.__fhBrandAnswered = true;
+    $("saveMsg").textContent = beside;
+    if (window.FHData && window.FHData.banner) window.FHData.banner(kind, strip, "brand");
+  }
+
   $("submitBtn").addEventListener("click", function(){
-    /* COMPLIANCE REVIEW REQUIRED — approval flow.
-       This used to set D.status="submitted", write it to localStorage, flip the
-       topbar chip to "In review" and print "Submitted. Brands go live after an
-       internal compliance review." No request was ever made. There is no route
-       that can move a brand into review: api/partner-brand.mjs lists
-       approval_status in FORBIDDEN (line 74-75) and nothing else in api/ writes
-       that column. The partner was told they were in review while nobody at
-       Fundhub had been told anything. Say what is actually true instead, and
-       leave D.status to the server. */
-    $("saveMsg").textContent = "Nothing was sent — brand review is not set up yet. Your brand stays a draft.";
+    /* COMPLIANCE — approval flow. This button was inert: it printed "brand
+       review is not set up yet" because no route could move the brand into
+       review. api/brand/review.mjs is now that route, and it is the ONLY writer
+       of partner_brand.approval_status — api/partner-brand.mjs still lists the
+       column in FORBIDDEN (line 74-75), so a partner saving their brand still
+       cannot hand themselves an approval. D.status is never guessed here: the
+       server answers with the new status and that is what gets painted.
+       FH-B4-SUBMIT-REVIEW */
+    if (MODE !== "partner" || !partnerId) {
+      reviewMsg("error", "not sent — no partner",
+        "Nothing was sent — this screen was opened without a partner, so there is no brand to send.");
+      return;
+    }
+    if (!D.entity) {
+      reviewMsg("error", "not sent — no legal entity",
+        "Add the legal entity first — it goes into every disclosure.");
+      return;
+    }
+    var btn = $("submitBtn");
+    btn.disabled = true;
+    window.__fhBrandAnswered = true;   // "Sending…" is an answer too — see reviewMsg
+    $("saveMsg").textContent = "Sending…";
+    var status = 0;
+    fetch("/api/brand/review", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ partner_id: partnerId, action: "submit" })
+    }).then(function(r){ status = r.status; return r.json().catch(function(){ return { ok:false }; }); })
+      .then(function(res){
+        btn.disabled = false;
+        if (res && res.ok) {
+          D.status = res.approval_status === "review" ? "submitted" : (res.approval_status || D.status);
+          paint();
+          reviewMsg("real", "brand sent for review",
+            "Sent for review. Fundhub checks it before it goes live. Nothing on your funnels changes until then.");
+          return;
+        }
+        /* BRANCH ON THE HTTP STATUS. NEVER ECHO res.error. Two refusals carry no
+           plain-words message, and this line used to print their machine code
+           straight at the partner: requirePrincipal answers 401 with
+           {error:"unauthorized"} and 503 with {error:"auth_unavailable"}. A
+           partner read the word "unauthorized" and could do nothing with it.
+           Every other refusal from api/brand/review.mjs carries a `message`
+           written for this line, and it is already a whole sentence — used as it
+           stands, not glued onto a prefix, which used to double the opening
+           words. The last fallback is a sentence too, so no branch can print a
+           code. */
+        var why = status === 401
+          ? "Your sign-in has expired. Sign in again and try once more."
+          : status === 503
+            ? "We could not reach the system just now. Your brand is still a draft — try again in a few minutes."
+            : ((res && res.message)
+               || "Nothing was sent — the change was refused. Your brand is still a draft.");
+        reviewMsg("error", "not sent", why);
+      })
+      .catch(function(){
+        btn.disabled = false;
+        reviewMsg("error", "not sent — server unreachable",
+          "Nothing was sent — we could not reach the server. Your brand stays a draft. Try again in a moment.");
+      });
   });
   $("resetBtn").addEventListener("click", function(){
     /* The confirm used to say "Reset brand to fundhub defaults?" — but this
@@ -1301,9 +1367,14 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
 
     /* If the read cannot even start, say so. What is on screen at this moment is
        a set of defaults, not this brand, and defaults that look real are exactly
-       how a saved brand gets overwritten by one press of Save. */
+       how a saved brand gets overwritten by one press of Save.
+
+       NO banner() CALL HERE, ON PURPOSE. banner() only writes the bottom status
+       strip when FHData is loaded, and this is the one branch that runs BECAUSE
+       FHData is not loaded — so the call did nothing and made the branch look
+       safer than it was. The line beside Save is written by hand and does not
+       depend on FHData, so it is the whole warning in this case. */
     if (typeof window.FHData === "undefined" || typeof FHData.wire !== "function") {
-      banner("error", "brand NOT loaded — page scripts did not finish");
       setSaveMsg("We could not load your saved brand, so the boxes below are examples, not your real brand. Reload the page before you save anything.");
       return;
     }
@@ -1335,6 +1406,12 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
        here too, in the same words. Attached after wire(), so hydration has
        already run by the time this handler is called. */
     read.then(function (res) {
+      /* A press beats a page load. If the partner has already pressed "Submit
+         for approval", this line is the answer to that press — see reviewMsg
+         above — and overwriting it left them with no idea what their press did.
+         The read's own outcome still reaches the bottom status strip via wire()
+         either way, so nothing is hidden by standing down here. */
+      if (window.__fhBrandAnswered) return;
       if (!res || !res.ok) {
         setSaveMsg("We could not load your saved brand (" +
           ((res && res.error) || "the read failed") +
@@ -1347,6 +1424,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
       }
       setSaveMsg("Loaded your saved brand.");
     }).catch(function () {
+      if (window.__fhBrandAnswered) return;   // same reason as above
       setSaveMsg("We could not load your saved brand, so the boxes below are examples, not your real brand. Reload the page before you save anything.");
     });
   }

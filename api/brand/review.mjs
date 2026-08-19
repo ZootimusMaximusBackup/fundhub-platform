@@ -33,12 +33,23 @@
 //
 // PLAIN REFUSALS. Every non-200 carries a `message` a non-technical reader can
 // act on, because public/app/brand-studio.html prints it beside the button.
+//
+// AND NOTHING ELSE. The 500 arm deliberately carries no `detail`. Its sibling
+// api/partner-brand.mjs returns safeError(err) there, and that is fine for an
+// endpoint an employee reaches — safeError strips connection strings, passwords,
+// hostnames and IPs, but it still passes through 200 characters of raw Postgres
+// text, which names constraints and columns. This is the endpoint of the pair a
+// NON-EMPLOYEE reaches by design, so the raw text stops here.
+//
+// SCOPED TO THE CALLER'S COMPANY. partner_brand has org_id NOT NULL (043:37) and
+// NO row-level security policy — it is not one of the tables 045 isolates — so
+// the org_id predicate written into every statement below is the ONLY thing
+// keeping an owner or admin of one company out of another company's brand.
 
 import { db } from "../../src/db.mjs";
 import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
 import { isUuid, requireRole } from "../../src/http/read-api.mjs";
 import { resolvePartnerId } from "../../src/http/partner-read-api.mjs";
-import { safeError } from "../../src/http/health.mjs";
 
 /* Named here rather than inherited from ROLE_SETS, matching api/partner-brand.mjs:
    this decides whose brand goes live under a white-label disclosure, and widening
@@ -46,6 +57,14 @@ import { safeError } from "../../src/http/health.mjs";
 const REVIEW_ROLES = new Set(["owner", "admin"]);
 
 const ACTIONS = new Set(["submit", "approve", "reject"]);
+
+/* Where the caller's company comes from. Copied from api/partner-pages.mjs, the
+   sibling that already scopes every partner_pages statement this way — the same
+   principal shapes reach both files, so they must read the org the same way. */
+function orgIdOf(principal) {
+  if (principal.kind === "staff") return principal.staff?.org_id || principal.orgId || null;
+  return principal.orgId || null;
+}
 
 // action → the status the row must already be in. An action taken from any other
 // status is refused rather than applied, so a double-click cannot approve a draft
@@ -133,14 +152,44 @@ export default async function handler(req, res) {
 
   const staffId = principal.kind === "staff" ? (principal.staffId || null) : null;
 
+  /* THE TENANCY GUARD, AND THERE IS NO OTHER ONE. partner_brand carries no
+     row-level security policy, so the WHERE clause below is all that stands
+     between a staff owner of company A and a brand belonging to a partner of
+     company B — without it, putting that partner's id in the body was enough to
+     approve, reject or submit their brand.
+
+     Only a STAFF caller needs it. A partner principal never names a partner_id
+     that is honoured: resolvePartnerId pins it to its own id and ignores the
+     body, so its own row is already the only row it can reach. Its account org
+     is deliberately NOT also required to match the brand row: a partner whose
+     account org and partner org disagree in the data would silently lose the
+     one action they have, and that is a data problem to find, not a refusal to
+     invent here. */
+  const orgId = principal.kind === "staff" ? orgIdOf(principal) : null;
+  if (principal.kind === "staff" && !orgId) {
+    return res.status(403).json({
+      ok: false, error: "no_org_scope",
+      message: "Your sign-in is not attached to a company, so nothing was changed."
+    });
+  }
+
+  /* $1 is the partner and $2 is the org on EVERY statement below, so the guard
+     reads the same everywhere and cannot go missing from one branch. NULL for a
+     partner, and a NULL check passes — hence the explicit "or there is nothing
+     to check" test rather than two versions of each query. */
+  const ORG_OK = `($2::uuid IS NULL OR org_id = $2::uuid)`;
+
   try {
     /* Read the row first so a refusal can say WHICH state it is in. partner_brand
        carries no RLS policy (it is not one of the nineteen tables 045 isolates),
-       so the partner_id predicate here and in the UPDATE below is the only thing
-       keeping one partner out of another's row. It is written explicitly in every
-       statement for that reason. */
+       so the partner_id and org_id predicates here and in the UPDATE below are the
+       only thing keeping one partner out of another's row, and one company out of
+       another company's. They are written explicitly in every statement for that
+       reason. A brand in another company reads as "no brand", which is also the
+       honest answer: this caller has none. */
     const current = (await db.query(
-      `SELECT approval_status FROM partner_brand WHERE partner_id = $1`, [partnerId]
+      `SELECT approval_status FROM partner_brand
+        WHERE partner_id = $1 AND ${ORG_OK}`, [partnerId, orgId]
     )).rows[0];
 
     if (!current) {
@@ -165,22 +214,22 @@ export default async function handler(req, res) {
       sql = `UPDATE partner_brand
                 SET approval_status = 'review',
                     submitted_at = now(),
-                    submitted_by = $2,
+                    submitted_by = $3,
                     review_note = NULL,
                     updated_at = now()
-              WHERE partner_id = $1 AND approval_status = 'draft'
+              WHERE partner_id = $1 AND ${ORG_OK} AND approval_status = 'draft'
               RETURNING approval_status, submitted_at`;
-      params = [partnerId, staffId];
+      params = [partnerId, orgId, staffId];
     } else if (action === "approve") {
       sql = `UPDATE partner_brand
                 SET approval_status = 'approved',
                     approved_at = now(),
-                    approved_by = $2,
+                    approved_by = $3,
                     review_note = NULL,
                     updated_at = now()
-              WHERE partner_id = $1 AND approval_status = 'review'
+              WHERE partner_id = $1 AND ${ORG_OK} AND approval_status = 'review'
               RETURNING approval_status, approved_at`;
-      params = [partnerId, staffId];
+      params = [partnerId, orgId, staffId];
     } else {
       // reject — back to draft, and the approval columns go with it so the
       // coupling CHECK in 043 stays true.
@@ -188,18 +237,21 @@ export default async function handler(req, res) {
                 SET approval_status = 'draft',
                     approved_at = NULL,
                     approved_by = NULL,
-                    review_note = $2,
+                    review_note = $3,
                     updated_at = now()
-              WHERE partner_id = $1 AND approval_status = 'review'
+              WHERE partner_id = $1 AND ${ORG_OK} AND approval_status = 'review'
               RETURNING approval_status, review_note`;
-      params = [partnerId, rawNote];
+      params = [partnerId, orgId, rawNote];
     }
 
     const { rows } = await db.query(sql, params);
     if (!rows[0]) {
-      // Somebody else moved the row between the read and the write.
+      // Somebody else moved the row between the read and the write. Scoped the
+      // same way as the first read — an unscoped read here would hand a caller
+      // in another company the one fact this endpoint knows about that row.
       const now = (await db.query(
-        `SELECT approval_status FROM partner_brand WHERE partner_id = $1`, [partnerId]
+        `SELECT approval_status FROM partner_brand
+          WHERE partner_id = $1 AND ${ORG_OK}`, [partnerId, orgId]
       )).rows[0];
       return res.status(409).json({
         ok: false, error: "wrong_state",
@@ -217,11 +269,13 @@ export default async function handler(req, res) {
       approved_at: rows[0].approved_at ?? null,
       review_note: rows[0].review_note ?? null
     });
-  } catch (err) {
+  } catch {
+    /* NO `detail` HERE — see the header. A partner reaches this endpoint by
+       design, and raw database text names constraints and columns. The plain
+       sentence is the whole answer. */
     return res.status(500).json({
       ok: false, error: "write_failed",
-      message: "Something went wrong. Nothing was changed. Try again in a moment.",
-      detail: safeError(err)
+      message: "Something went wrong. Nothing was changed. Try again in a moment."
     });
   }
 }
