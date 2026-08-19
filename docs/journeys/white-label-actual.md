@@ -29,7 +29,7 @@ flowchart TD
     CAN --> A_social[social — 6 routes]
     CAN --> A_top_level[Everything else — 7 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 128 routes]
+    WHO -->|Yes| CANT[Blocked — 129 routes]
     CANT --> B_auth[Signing in and out — 4 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_chat[chat — 4 blocked]
@@ -39,7 +39,7 @@ flowchart TD
     CANT --> B_dashboard[The dashboard — 7 blocked]
     CANT --> B_demo[demo — 2 blocked]
     CANT --> B_finance[Finance — 10 blocked]
-    CANT --> B_hiring[Hiring — 6 blocked]
+    CANT --> B_hiring[Hiring — 7 blocked]
     CANT --> B_journeys[journeys — 2 blocked]
     CANT --> B_partner_brand[partner-brand — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
@@ -54,7 +54,7 @@ flowchart TD
 
 ## What they can reach
 
-**52 of 182 routes.**
+**52 of 183 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -118,7 +118,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**128 of 182 routes.**
+**129 of 183 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -172,6 +172,7 @@ flowchart TD
 | `/api/hiring/application` | GET | owner, admin |
 | `/api/hiring/bench` | GET | owner, admin |
 | `/api/hiring/candidates` | GET | owner, admin |
+| `/api/hiring/decide` | POST | owner, admin |
 | `/api/hiring/decisions` | GET | owner, admin |
 | `/api/hiring/funnel` | GET | owner, admin |
 | `/api/hiring/postings` | GET | owner, admin |

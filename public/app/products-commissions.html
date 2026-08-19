@@ -250,7 +250,7 @@ table.grid th:nth-child(3),table.grid th:nth-child(5),table.grid th:nth-child(6)
 
     <div class="content fh-maxw">
       <div class="stats">
-        <div class="stat"><div class="eyebrow">PRODUCTS</div><div class="sv" id="kProd">5</div><div class="sd">3 with variable pricing</div></div>
+        <div class="stat"><div class="eyebrow">PRODUCTS</div><div class="sv" id="kProd">5</div><div class="sd" id="kProdVar">— with variable pricing</div></div>
         <div class="stat"><div class="eyebrow">ACTIVE RULES</div><div class="sv" id="kRules">6</div><div class="sd">front-end and back-end</div></div>
         <div class="stat"><div class="eyebrow">ACCRUED</div><div class="sv" id="kAccrued">$0</div><div class="sd">owed, not yet paid</div></div>
         <div class="stat"><div class="eyebrow">PAID MTD</div><div class="sv" id="kPaid">$0</div><div class="sd" id="kPaidMonth">—</div></div>
@@ -452,6 +452,17 @@ function renderProducts(){
     tr.addEventListener('click',function(){openProduct(tr.dataset.p)});
   });
   document.getElementById('kProd').textContent=PRODUCTS.length;
+  paintVariableCaption();
+}
+
+/* The caption used to be frozen sample copy ("3 with variable pricing") while
+   the table below it showed 4. Count it from the same rows the table draws. */
+function paintVariableCaption(){
+  var el=document.getElementById('kProdVar');
+  if(!el) return;
+  if(typeof PRODUCTS==='undefined'||!PRODUCTS.length){el.textContent='no products on file yet';return;}
+  var n=PRODUCTS.filter(function(p){return !!p.variable}).length;
+  el.textContent=n+(n===1?' with variable pricing':' with variable pricing');
 }
 
 function renderRules(){
@@ -745,6 +756,7 @@ document.addEventListener("DOMContentLoaded", function () {
       return "no products on file yet";
     }
     set("kProd", rows.length);
+    try { paintVariableCaption(); } catch (e) {}
     set("kRules", rows.reduce(function (a, p) { return a + (p.active_rules || 0); }, 0));
 
     /* Feed the screen's OWN model and renderer.

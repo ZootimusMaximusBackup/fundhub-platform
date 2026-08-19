@@ -1,0 +1,849 @@
+{
+  "screen": "/app/sales-floor.html",
+  "slug": "T12-repro-sales-floor",
+  "email": "owner@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-19T06:19:39.549Z",
+  "login": {
+    "ok": true,
+    "landedAt": "/app/pipeline.html",
+    "role": "owner",
+    "loginApiStatus": 200
+  },
+  "load": {
+    "httpStatus": 200,
+    "retriesFor503OrBounce": 0,
+    "finalUrl": "/app/sales-floor.html",
+    "bounced": false,
+    "title": "Sales floor · Fundhub",
+    "apiCalls": [
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/health",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/org-brand",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/read/sales-floor",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 200
+      }
+    ],
+    "apiFails": [],
+    "consoleErrors": [],
+    "dialogs": [],
+    "shots": {
+      "fold": "docs/workflows/ui-audit-evidence/T12-repro-sales-floor/1440-fold.png",
+      "full": "docs/workflows/ui-audit-evidence/T12-repro-sales-floor/1440-full.png"
+    }
+  },
+  "dom": {
+    "vw": 1440,
+    "vh": 900,
+    "docH": 3555,
+    "sizes": {
+      "13px": {
+        "count": 21,
+        "examples": [
+          "M-01 / Sales floor",
+          "0 closers on shift",
+          "TEST — Owner Role"
+        ]
+      },
+      "16px": {
+        "count": 160,
+        "examples": [
+          "Today",
+          "Funded, not just sold",
+          "0"
+        ]
+      },
+      "32px": {
+        "count": 7,
+        "examples": [
+          "0",
+          "—",
+          "6"
+        ]
+      },
+      "12px": {
+        "count": 1,
+        "examples": [
+          "Search"
+        ]
+      },
+      "10px": {
+        "count": 1,
+        "examples": [
+          "⌘K"
+        ]
+      },
+      "11px": {
+        "count": 3,
+        "examples": [
+          "TEST — Owner Role · owner · 32 tabs",
+          "LIVE",
+          "Sign out"
+        ]
+      }
+    },
+    "navVisibleCount": 6,
+    "navActive": [
+      "▣Sales floor"
+    ],
+    "navGroups": [
+      {
+        "head": "Sales▾",
+        "items": [
+          "▤Pipeline",
+          "★Closer Dashboard",
+          "☎Call cockpit",
+          "＃My numbers",
+          "▣Sales floor",
+          "▦Calendar"
+        ]
+      },
+      {
+        "head": "Funding▾",
+        "items": []
+      },
+      {
+        "head": "Client ops▾",
+        "items": []
+      },
+      {
+        "head": "Watch▾",
+        "items": []
+      },
+      {
+        "head": "Automation▾",
+        "items": []
+      },
+      {
+        "head": "Marketing▾",
+        "items": []
+      },
+      {
+        "head": "Admin▾",
+        "items": []
+      },
+      {
+        "head": "Portals▾",
+        "items": []
+      }
+    ],
+    "h1": [],
+    "h2": [],
+    "contentWidth": 1440,
+    "contentSel": "div.app-shell",
+    "sideW": 228,
+    "controlsCount": 21,
+    "controls": [
+      {
+        "idx": 0,
+        "key": "a|||pipeline.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "",
+        "id": null,
+        "cls": "logo inv",
+        "href": "pipeline.html",
+        "disabled": false,
+        "w": 118,
+        "h": 24,
+        "top": 10,
+        "left": 16,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(0, 0, 238)",
+        "filled": false
+      },
+      {
+        "idx": 1,
+        "key": "button|‹‹|burger|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "‹‹",
+        "id": "burger",
+        "cls": "burger",
+        "href": null,
+        "disabled": false,
+        "w": 40,
+        "h": 40,
+        "top": 2,
+        "left": 172,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 2,
+        "key": "button|Sales▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Sales▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 56,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 3,
+        "key": "a|▤Pipeline||pipeline.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "▤Pipeline",
+        "id": null,
+        "cls": "navitem",
+        "href": "pipeline.html",
+        "disabled": false,
+        "w": 228,
+        "h": 33,
+        "top": 96,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 4,
+        "key": "a|★Closer Dashboard||closer-dashboard.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "★Closer Dashboard",
+        "id": null,
+        "cls": "navitem",
+        "href": "closer-dashboard.html",
+        "disabled": false,
+        "w": 228,
+        "h": 33,
+        "top": 129,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 5,
+        "key": "a|☎Call cockpit||closer-call.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "☎Call cockpit",
+        "id": null,
+        "cls": "navitem",
+        "href": "closer-call.html",
+        "disabled": false,
+        "w": 228,
+        "h": 33,
+        "top": 162,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 6,
+        "key": "a|＃My numbers||my-numbers.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "＃My numbers",
+        "id": null,
+        "cls": "navitem",
+        "href": "my-numbers.html",
+        "disabled": false,
+        "w": 228,
+        "h": 33,
+        "top": 196,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 7,
+        "key": "a|▣Sales floor||sales-floor.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "▣Sales floor",
+        "id": null,
+        "cls": "navitem on",
+        "href": "sales-floor.html",
+        "disabled": false,
+        "w": 228,
+        "h": 33,
+        "top": 229,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(22, 22, 25)",
+        "color": "rgb(252, 252, 252)",
+        "filled": true
+      },
+      {
+        "idx": 8,
+        "key": "a|▦Calendar||calendar.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "▦Calendar",
+        "id": null,
+        "cls": "navitem",
+        "href": "calendar.html",
+        "disabled": false,
+        "w": 228,
+        "h": 33,
+        "top": 262,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 9,
+        "key": "button|Funding▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Funding▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 298,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 10,
+        "key": "button|Client ops▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Client ops▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 341,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 11,
+        "key": "button|Watch▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Watch▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 384,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 12,
+        "key": "button|Automation▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Automation▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 427,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 13,
+        "key": "button|Marketing▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Marketing▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 470,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 14,
+        "key": "button|Admin▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Admin▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 513,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 15,
+        "key": "button|Portals▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Portals▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 556,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 16,
+        "key": "button|Today's recordings|fh-recordings-jump|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Today's recordings",
+        "id": "fh-recordings-jump",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 173,
+        "h": 40,
+        "top": 2670,
+        "left": 861,
+        "aboveFold": false,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(252, 252, 252)",
+        "color": "rgb(0, 0, 0)",
+        "filled": false
+      },
+      {
+        "idx": 17,
+        "key": "button|Refresh from Drive|fh-drive-refresh|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Refresh from Drive",
+        "id": "fh-drive-refresh",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 170,
+        "h": 40,
+        "top": 2953,
+        "left": 269,
+        "aboveFold": false,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(252, 252, 252)",
+        "color": "rgb(0, 0, 0)",
+        "filled": false
+      },
+      {
+        "idx": 18,
+        "key": "button|Search⌘K|fh-shell-search-btn|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Search⌘K",
+        "id": "fh-shell-search-btn",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 99,
+        "h": 40,
+        "top": 3483,
+        "left": 8,
+        "aboveFold": false,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(255, 255, 255)",
+        "color": "rgb(10, 10, 10)",
+        "filled": false
+      },
+      {
+        "idx": 19,
+        "key": "button|Sign out|fh-shell-out|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": null,
+        "text": "Sign out",
+        "id": "fh-shell-out",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 73,
+        "h": 40,
+        "top": 21,
+        "left": 1340,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(228, 228, 231)",
+        "filled": false
+      },
+      {
+        "idx": 20,
+        "key": "button|Chat|fh-chat-fab|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Chat",
+        "id": "fh-chat-fab",
+        "cls": null,
+        "href": null,
+        "disabled": false,
+        "w": 52,
+        "h": 52,
+        "top": 830,
+        "left": 1370,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(10, 10, 10)",
+        "color": "rgb(255, 255, 255)",
+        "filled": true
+      }
+    ],
+    "genericLabels": [],
+    "smallTargets": [],
+    "primaryLooking": [
+      {
+        "text": "Chat",
+        "bg": "rgb(10, 10, 10)",
+        "w": 52,
+        "h": 52,
+        "aboveFold": true
+      }
+    ],
+    "capsRuns": [
+      "Everything the floor sold",
+      "Sold, but not credited to any closer"
+    ],
+    "sampleWording": [],
+    "loadingWording": [],
+    "errorWording": [
+      "Which belief failed"
+    ],
+    "emptyWording": [
+      "0 of 0 deposits funded",
+      "Live objection counts load here. Empty means none logged this month."
+    ],
+    "centeredParas": [],
+    "offScale": {
+      "17px": 6,
+      "18px": 6
+    },
+    "unevenRows": [],
+    "tables": [],
+    "metrics": [
+      {
+        "text": "0",
+        "fontSize": "32px",
+        "tabular": true,
+        "cls": "big"
+      },
+      {
+        "text": "—",
+        "fontSize": "32px",
+        "tabular": true,
+        "cls": "big"
+      },
+      {
+        "text": "2",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "$33",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "$33",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "1",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "$3,000",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "$10,200",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "1",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "$1,000",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "$1,200",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "0",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "$0",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "$0",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "0",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "$0",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "$0",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "0",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "$0",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      },
+      {
+        "text": "$0",
+        "fontSize": "16px",
+        "tabular": true,
+        "cls": "num"
+      }
+    ],
+    "topLeft": {
+      "tag": "div",
+      "text": "M-01 / Sales floor 0 closers on shift"
+    },
+    "bodyText": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ☎ Call cockpit ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ WATCH ▾ AUTOMATION ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub M-01 / SALES FLOOR 0 CLOSERS ON SHIFT TEST — OWNER ROLE TODAY 0 Booked 0 · Held 0 · No daily sales_manager target in staff_targets FUNDED, NOT JUST SOLD — 0 of 0 deposits funded 0 No daily sales_manager target in staff_targets WHERE THE FUNNEL LEAKS This month BOOKED 6 HELD 6 100% show DEPOSITS 0 0% of held FUNDED 0 DOWNSELLS 6 $5 No deposits this month. The funnel above is the month so far. EVERYTHING THE FLOOR SOLD Eve"
+  },
+  "mobile": {
+    "scrollWidth": 390,
+    "horizontalOverflow": false,
+    "sideVisible": true,
+    "sideW": 228,
+    "burger": true,
+    "overflowers": [
+      "div.f",
+      "div.lb",
+      "div.vl",
+      "div.cv"
+    ],
+    "textUnder11px": 1,
+    "docH": 5748,
+    "shots": {
+      "full": "docs/workflows/ui-audit-evidence/T12-repro-sales-floor/390-full.png",
+      "fold": "docs/workflows/ui-audit-evidence/T12-repro-sales-floor/390-fold.png"
+    },
+    "finalUrl": "/app/sales-floor.html",
+    "apiFails": []
+  },
+  "clicks": [],
+  "clickSummary": {
+    "candidates": 4,
+    "attempted": 0,
+    "skippedForCap": 4,
+    "tally": {},
+    "loadRetriesTotal": 0
+  }
+}

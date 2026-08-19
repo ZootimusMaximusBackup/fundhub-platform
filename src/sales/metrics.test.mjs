@@ -1,4 +1,5 @@
 import { test } from "node:test";
+import fs from "node:fs";
 import assert from "node:assert/strict";
 import {
   belongsOnCloserBoard,
@@ -42,11 +43,12 @@ test("blocked closer identities: seed, demo, sandbox, test — never Chris", () 
   );
 });
 
-test("closer board excludes owners; keeps a real closer", () => {
+test("closer board excludes owners; keeps a real closer and the owner-set closer", () => {
   const chris = { name: "Chris Stanbridge", email: "chris@fundhub.ai", role: "owner", is_demo: false };
   const real = { name: "Riley Chen", email: "riley@fundhub.ai", role: "closer", is_demo: false };
   const ownerOnly = { name: "TEST — Owner Role", email: "owner@fundhub.ai", role: "owner", is_demo: false };
-  assert.equal(belongsOnCloserBoard(chris), false);
+  // Owner-set: Chris takes calls, so he is on the board. Other owners are not.
+  assert.equal(belongsOnCloserBoard(chris), true);
   assert.equal(belongsOnCloserBoard(real), true);
   assert.equal(belongsOnCloserBoard(ownerOnly), false);
 });
@@ -62,7 +64,7 @@ test("filterCloserRoster drops demo names and owners; does not mutate the source
   ];
   const frozen = rows.slice();
   const out = filterCloserRoster(rows);
-  assert.deepEqual(out.map((r) => r.name), ["Riley Chen"]);
+  assert.deepEqual(out.map((r) => r.name), ["Chris Stanbridge", "Riley Chen"]);
   assert.equal(rows.length, frozen.length, "filter must not delete staff rows");
   assert.equal(rows[0].name, "Jordan Blake");
 });
@@ -121,8 +123,9 @@ test("closerRoster SQL is closers only, never DELETEs, and returns live rates or
     end: new Date("2026-09-01T00:00:00Z"),
     now: new Date("2026-08-16T12:00:00Z")
   });
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0].name, "Riley Chen");
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].name, "Chris Stanbridge");
+  assert.equal(rows[1].name, "Riley Chen");
   assert.equal(rows[0].calls, 2);
   assert.equal(rows[0].close_rate, 0);
   assert.equal(rows[0].funded_rate, null);
@@ -130,4 +133,18 @@ test("closerRoster SQL is closers only, never DELETEs, and returns live rates or
   assert.equal(rows[0].cash_display, "$2");
   assert.equal(rows[0].action, null);
   assert.equal(rows[0].on_shift, false);
+});
+
+/* Builder notes are not operator English. My Numbers and Sales Floor paint
+   target_reason straight onto the page, so "No monthly deposits target in
+   staff_targets" appeared in front of a reader who has never heard of a table
+   called staff_targets. The value must stay null — the wording is the fix. */
+test("metrics.mjs ships no table names in reader-facing reasons", () => {
+  const src = fs.readFileSync(
+    new URL("./metrics.mjs", import.meta.url), "utf8");
+  const reasons = src.match(/reason:\s*"[^"]*"/g) || [];
+  assert.ok(reasons.length > 0, "there should be reason strings to check");
+  for (const r of reasons) {
+    assert.ok(!/staff_targets/.test(r), "reader-facing reason names a table: " + r);
+  }
 });

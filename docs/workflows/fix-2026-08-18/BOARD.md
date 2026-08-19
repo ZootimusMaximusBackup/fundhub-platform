@@ -424,3 +424,93 @@ but it means the enrolment endpoint has no coverage that has ever run.
 
 **Still open, not this thread's to fix:** nothing in the product reads the
 enrolment rows, so staff cannot see a request that comes in.
+## T12 · Staff CRM screens: sales & admin — change manifest (2026-08-18)
+
+Branch `fix/T12-staff-crm`. Evidence: `docs/workflows/fix-2026-08-18/evidence/T12/`.
+
+### Files touched
+- `src/sales/metrics.mjs` — owner-set closer now reaches the closer board; three reader-facing "staff_targets" notes rewritten into plain English (target value stays null)
+- `src/sales/metrics.test.mjs` — updated two tests that asserted the OLD behaviour (Chris excluded from the board); added a test that no reader-facing reason names a database table
+- `api/read/staff.mjs` — the caller's OWN row always comes back past the owner/seed/TEST filters, and is no longer counted in hiddenCount
+- `public/app/ops-admin.html` — the empty People list now says how many people are hidden instead of "No staff rows"; the Comp / This Week dashes carry a reason (they are NOT coerced to $0)
+- `public/app/products-commissions.html` — "N with variable pricing" is computed from the same rows the table draws (was hardcoded "3")
+- `public/app/present.js` — a 403 no longer forces a sign-out; it shows a "not allowed" wall with a manual sign-in link
+- `public/app/hiring.html` — Advance / Reject controls with a required reason box in the candidate drawer; board says how many demo candidates are hidden; "read-only" footer removed
+- `api/hiring/decide.mjs` — **NEW.** POST-only write endpoint wrapping `advance()` / `reject()` in one transaction
+- `src/hiring/hiring-endpoints.pg.test.mjs` — HTTP-shell tests for the new endpoint (run without a database)
+- `netlify/functions/api.mjs` — `import hiringDecide` + ROUTES key `"hiring/decide"`
+
+### Routes added
+- `POST /api/hiring/decide` — gate `requireRole("owner","admin")`. decided_by comes off the session and a body carrying it is refused with a 400. No outbound send on this path.
+
+### Journeys
+`npm run journeys` re-run in the same commit. `role-owner-actual.md` and `role-sales-manager-actual.md` gain `/api/hiring/decide`. CHANGELOG appended. No `-intended.md` touched.
+
+### Menu rows needed from T0
+None.
+
+### Blockers / requests to other threads
+- **T16** — `CLOSER_DECK_ROLES` in `api/read/closer-deck.mjs` excludes `funding_advisor`, so an advisor still cannot open Present at all. T12 fixed only the forced sign-out (option i). Widening the role set is a role-gate decision and needs T16's sign-off.
+- **Owner of `src/http/crm-html.test.mjs`** — please extend the existing "closer-call.js does not paint builder notes" test to `sales-floor.js` and `my-numbers.js`. T12 does not own that file, so the equivalent assertion was added to `src/sales/metrics.test.mjs` against the source strings instead.
+- **T12-02 (call checklist saved into notes text)** — the call-save path is not a T12-owned file. Reproduced but NOT fixed here. Needs an owner.
+- **T12-05 (Client Control Panel: three dead buttons, read-only notes box)** — Client Control Panel is not a T12-owned file. NOT fixed here. Needs an owner.
+- **T12-01 (Pipeline Archive / MOVE untested)** — pipeline board is not a T12-owned file, and T12-08 / T12-09 already prove drag and archive work on the TEST card. NOT re-tested here.
+
+### T12 — second pass (2026-08-19): adversarial review of the T12 commit itself
+
+A 12-agent review ran over commit `0f0a6d0`. Six defects survived adversarial refutation and are fixed
+in the follow-up commit; nine findings were refuted and are recorded here so nobody re-raises them.
+
+**Fixed in the follow-up commit**
+1. `src/hiring/pipeline.mjs` — `reject()` had no "is this application still open?" guard, the one
+   `advance()` has. A stale screen, or a second click after a lost response, could reject somebody
+   already hired and write a duplicate, undeletable adverse decision. Guard added, plus `FOR UPDATE`
+   on both `advance()` and `reject()` so two callers take turns instead of both passing the check.
+2. `src/sales/metrics.mjs:301` — `teamLeaderboard()` still filtered `role = 'closer'` while
+   `closerRoster()` was widened, so My Numbers and the Sales Floor board disagreed on team size and
+   rank. Both rosters now use the same predicate.
+3. `public/app/hiring.html` — the Advance dropdown offered onboarding, ramp and performing. Moving to
+   "hired" closes the application, so every later move is refused by the server. The list now stops at
+   hired and says why.
+4. `public/app/hiring.html` — "N demo hidden" counted every demo row on file, ignoring the board's own
+   stage/role/source/flagged filters. Now counted through the same filters.
+5. `public/app/hiring.html` — a slow drawer fetch could wire Advance/Reject to a different candidate
+   than the header named. Guarded on the open drawer's application id.
+6. `public/app/hiring.html` — two JavaScript lines overwrote the footer with "hiring · read-only" on
+   every load, so a screen that now writes still told the reader it could not. Both corrected.
+7. `public/app/ops-admin.html` — the "N people are hidden" line only rendered when the list was EMPTY,
+   and the staff-read change in the same commit means it is never empty again. The line is now
+   permanent (`#staffHiddenLine`), matching `staff-teams.html`.
+
+**Refuted — do not re-raise**: cross-org hire/reject (the org filter is applied upstream); "hired is
+terminal" as a module defect (it is a UI concern only, fixed as #3); a demo row named "Chris
+Stanbridge" reaching the board; the double dataset reload after save; the Present change breaking a
+genuinely expired session.
+
+**EVIDENCE GAP — owner decision needed.** The first pass proved the fixes with a Playwright run that
+STUBBED every API response. That proves rendering only. It cannot execute the new `api/read/staff.mjs`
+SQL, and it never once called `POST /api/hiring/decide` — so that endpoint has still never returned a
+200 anywhere. Two checks would close this and BOTH were blocked by the sandbox on 2026-08-19:
+  (a) read-only SELECTs against production (does a staff row for `chris@fundhub.ai` exist and is it
+      `status='active'`? if not, the Sales Floor board stays empty after the fix);
+  (b) a throwaway local Postgres to execute the new SQL and a real POST to the decide endpoint.
+Until (a) runs, "Chris will appear on the closer board" is UNPROVEN. Separately, the live board's
+"0 CLOSERS ON SHIFT" chip counts OPEN SHIFTS, not roster size — it stays 0 until somebody clocks in,
+fix or no fix. And all three live candidates are Demo Mode rows, which `decideSection()` deliberately
+refuses to decide on, so the hiring fix has nothing to act on in production today.
+
+### T12 — owner decisions, 2026-08-19
+
+- **The "N closers on shift" chip counts OPEN SHIFTS, not roster size. Owner-set: correct as built.**
+  It stays at 0 until somebody clocks in. Not a defect, not to be re-raised.
+- **Chris is to have a staff row as the owner-set closer, email `chris@fundhub.ai`, status active.**
+  Owner-set. The SQL is `evidence/T12/add-owner-set-closer.sql` — idempotent, one transaction, shows
+  the result before COMMIT. It deliberately sets NO password: that row cannot sign in, and issuing a
+  credential is a separate act through `src/auth/invite.mjs`.
+  **RUN by Chris on 2026-08-19 against production. Result: `UPDATE 1`, `INSERT 0 0`** — the row
+  already existed and was set active. **CORRECTION to the note above: the row DOES carry a
+  credential (`can_sign_in | t`), so it can sign in.** Signing in as `chris@fundhub.ai` therefore
+  also reaches the People list and the Clock in/out button on `staff-teams.html`.
+  The closer board is now PROVEN, both halves: see `evidence/T12/proof-closer-board.md`. The roster
+  SQL returns Chris and the seeded "TEST — Closer Role"; `filterCloserRoster()` drops the seeded
+  login and keeps Chris. One closer on the board.

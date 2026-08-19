@@ -130,7 +130,7 @@ async function cashTargetCents(db, { orgId, staffId }) {
     [orgId, staffId]
   );
   const v = r.rows[0]?.target_value;
-  if (v == null) return { cents: null, reason: "No monthly deposits target in staff_targets" };
+  if (v == null) return { cents: null, reason: "No monthly deposit target has been set for this closer yet." };
   // target_value for deposits is dollar amount of cash in existing Galaxy usage.
   return { cents: Math.round(Number(v) * 100), reason: null };
 }
@@ -298,10 +298,18 @@ async function teamLeaderboard(db, { orgId, start, end }) {
        JOIN staff s ON s.id = o.staff_id AND s.org_id = o.org_id
       WHERE o.org_id = $1
         AND o.logged_at >= $2 AND o.logged_at < $3
-        AND s.role = 'closer'
+        /* Owner-set: same roster as the Sales Floor board (closerRoster below).
+           When these two drift, My Numbers and the wall board disagree about
+           who is on the team and what rank somebody holds. */
+        AND (
+          lower(btrim(s.role)) = 'closer'
+          OR lower(btrim(s.email)) = $4
+          OR lower(btrim(s.name)) = $5
+        )
       GROUP BY o.staff_id, s.name
       ORDER BY cash_cents DESC, deposits DESC`,
-    [orgId, start.toISOString(), end.toISOString()]
+    [orgId, start.toISOString(), end.toISOString(),
+     OWNER_SET_CLOSER.email.toLowerCase(), OWNER_SET_CLOSER.name.toLowerCase()]
   );
   return r.rows.map((row, i) => {
     const held = Number(row.held || 0);
@@ -470,7 +478,7 @@ export async function salesFloor(db, { orgId, now = new Date(), env = process.en
       target_cents: targetCents,
       target_display: formatUsdFromCents(targetCents),
       target_reason: targetCents == null
-        ? "No monthly sales_manager deposits target in staff_targets"
+        ? "No monthly deposit target has been set for the sales team yet."
         : null,
       deposit_to_funded: d2f.rate,
       deposit_to_funded_n: d2f
@@ -482,7 +490,7 @@ export async function salesFloor(db, { orgId, now = new Date(), env = process.en
       held: todayFunnel.held,
       deposits: todayFunnel.deposits,
       target_cents: null,
-      target_reason: "No daily sales_manager target in staff_targets"
+      target_reason: "No daily deposit target has been set for the sales team yet."
     },
     offer_stack: offer.stack,
     offer_stack_unattributed: offer.unattributed,
@@ -616,6 +624,9 @@ export function isBlockedCloserIdentity({ name, email, is_demo } = {}, { demoMod
 }
 
 export function belongsOnCloserBoard(staff = {}, opts = {}) {
+  // Owner-set: Chris takes calls, so he belongs on the board even though
+  // staff.role says owner. Every other owner row stays off it.
+  if (isOwnerSetCloser(staff)) return true;
   if (String(staff.role || "").trim().toLowerCase() === "owner") return false;
   if (isBlockedCloserIdentity(staff, opts)) return false;
   return String(staff.role || "").trim().toLowerCase() === "closer";
@@ -650,9 +661,14 @@ async function closerRoster(db, { orgId, start, end, now }) {
        ) agg ON true
       WHERE s.org_id = $1
         AND s.status = 'active'
-        AND lower(btrim(s.role)) = 'closer'
+        AND (
+          lower(btrim(s.role)) = 'closer'
+          OR lower(btrim(s.email)) = $4
+          OR lower(btrim(s.name)) = $5
+        )
       ORDER BY cash_cents DESC, s.name`,
-    [orgId, start.toISOString(), end.toISOString()]
+    [orgId, start.toISOString(), end.toISOString(),
+     OWNER_SET_CLOSER.email.toLowerCase(), OWNER_SET_CLOSER.name.toLowerCase()]
   );
 
   const out = [];

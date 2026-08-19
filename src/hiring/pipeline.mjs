@@ -174,7 +174,8 @@ export async function advance(tx, {
 
   const app = (await tx.query(
     `SELECT a.*, s.key AS stage_key FROM candidate_applications a
-       JOIN pipeline_stages s ON s.id = a.stage_id WHERE a.id = $1`, [applicationId])).rows[0];
+       JOIN pipeline_stages s ON s.id = a.stage_id WHERE a.id = $1
+       FOR UPDATE OF a`, [applicationId])).rows[0];
   if (!app) { const e = new Error("application not found"); e.code = "NOT_FOUND"; throw e; }
   if (app.status !== "open") {
     throw new Error(`advance: application is ${app.status}, not open`);
@@ -227,8 +228,17 @@ export async function reject(tx, {
 
   const app = (await tx.query(
     `SELECT a.*, s.key AS stage_key FROM candidate_applications a
-       JOIN pipeline_stages s ON s.id = a.stage_id WHERE a.id = $1`, [applicationId])).rows[0];
+       JOIN pipeline_stages s ON s.id = a.stage_id WHERE a.id = $1
+       FOR UPDATE OF a`, [applicationId])).rows[0];
   if (!app) { const e = new Error("application not found"); e.code = "NOT_FOUND"; throw e; }
+  /* THE SAME GUARD advance() HAS AT :179. Without it a stale screen — or a
+     second click after a request whose response was lost — rejects somebody who
+     was already hired, and writes a second, undeletable adverse decision for one
+     candidate into the table an adverse-impact review reads. The row lock above
+     makes two simultaneous callers take turns rather than both pass this check. */
+  if (app.status !== "open") {
+    throw new Error(`reject: application is ${app.status}, not open`);
+  }
 
   const rec = await latestRecommendation(tx, applicationId);
   const rejectedStage = await stageIdFor(tx, { orgId, stageKey: "rejected" });
