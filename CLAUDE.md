@@ -274,6 +274,27 @@ Config lives in Netlify env vars. Schema lives in `db/schema`, `db/migrations`, 
   `DATABASE_URL="$(netlify env:get DATABASE_URL --context production)" node db/migrate.mjs`
 * **Never print a secret value back to me.** Confirm by name only.
 
+### Migrations run on the production deploy only (owner-set 2026-08-19)
+
+There is one database behind every Netlify context. Previews and branch deploys get
+`MIGRATION_DATABASE_URL` exactly as production does, so when `netlify.toml` ran
+`db/migrate.mjs` in every context, **opening a pull request rewrote the live database before
+anyone read the diff.** PR #86's migrations landed on production at 03:20 on 2026-08-19,
+twenty minutes before it was merged.
+
+So now: `[context.production]` migrates. Nothing else does. `db/migrate.mjs` exits 0 without
+touching anything if it finds itself in a Netlify build that is not production, and
+`src/security/migrations-production-only.test.mjs` fails if either half is undone.
+
+What this means for you:
+
+* **A migration you add is NOT live until the branch is merged.** Do not tell me a schema
+  change is applied because the preview built. Check `/api/health` — `pending` is the answer.
+* **A preview of a branch that adds a migration runs against the old shape.** Screens that
+  need the new one will fail *there*. That is correct and it is not something to fix.
+* **Running `node db/migrate.mjs` by hand is unaffected** — on a laptop, in CI, or with the
+  command above. The rule only bites inside a Netlify build.
+
 ### Ask me first — these three only
 
 1. Anything that **deletes data**.
