@@ -554,4 +554,49 @@ describe("/api/bookings + bookings store", { skip: !HAVE_DB ? "no DATABASE_URL" 
     const huge = await call({ limit: "9999999" }, tokenA);
     assert.equal(huge.body.bookings.length, 3);
   });
+
+  test("the endpoint never serves the raw provider payload", async () => {
+    /* raw carries the attendee's PHONE NUMBER on a real ClickFunnels booking,
+       and it outlives an erasure: src/privacy/erasure.mjs de-identifies the
+       clients row instead of deleting it, so this table's ON DELETE CASCADE
+       never fires and the attendee's details survive (scrubbing them there is
+       a T16 board item).
+
+       listBookings() gets this right TODAY by naming its own columns rather
+       than reusing the COLUMNS constant, which does include raw and is what
+       findByProviderUid / setStatusByProviderUid / getBooking select. That is
+       a one-word edit away from leaking: swapping the list query to
+       `SELECT ${COLUMNS}` would put the whole provider payload on the wire and
+       nothing else would complain. This test is the thing that complains.
+
+       The COLUMN keeps raw, deliberately — two keys in it are load-bearing.
+       raw->>'__event_id' backs the bookings_event_id_uq index that stops a
+       replay double-booking an appointment that arrived with no provider id,
+       and raw->'__history' holds the times a booking was moved from. Both are
+       server-side machinery; neither is anybody's business over HTTP. */
+    await wipeBookings();
+    await upsertBooking(db, {
+      orgId: orgA, clientId: clientA, source: "clickfunnels",
+      providerUid: "uid-rawleak", startsAt: "2026-09-09T17:00:00Z",
+      status: "booked", attendeeEmail: "bookings_pg_test_leak@example.com",
+      attendeeName: "Leak Probe",
+      raw: { phone: "+15550001111", secret: "must-not-ship" }
+    });
+
+    const r = await call({}, tokenA);
+    assert.equal(r.code, 200);
+
+    const row = r.body.bookings.find((b) => b.provider_uid === "uid-rawleak");
+    assert.ok(row, "the booking itself is still returned");
+    assert.equal(row.attendee_name, "Leak Probe");
+    assert.ok(!("raw" in row), "raw must not be a key in the response");
+
+    const wire = JSON.stringify(r.body);
+    assert.ok(!wire.includes("+15550001111"), "the attendee phone must not reach the wire");
+    assert.ok(!wire.includes("must-not-ship"), "no key of the provider payload may leak");
+
+    // ...and it is still in the column, because the machinery needs it.
+    const stored = (await rowsFor(orgA)).find((b) => b.provider_uid === "uid-rawleak");
+    assert.equal(stored.raw.phone, "+15550001111");
+  });
 });
