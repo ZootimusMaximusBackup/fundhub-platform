@@ -3,7 +3,7 @@
 # Agent trigger map
 
 Which canonical event wakes which automation. "Agent" here means a registered Inngest function —
-the 51 workflow ports in `src/workflows/`, read off their real `createFunction` triggers.
+the 53 workflow ports in `src/workflows/`, read off their real `createFunction` triggers.
 (The AG-xx prompt-driven agents in `wireframes/agent-editor.html` are a UI mock with no code behind
 them yet, and are deliberately not drawn here.)
 
@@ -48,6 +48,7 @@ flowchart LR
   e_entry_captured --> w_at_01_first_touch_capture["at-01-first-touch-capture"]
   e_entry_captured --> w_n_01_cold_nurture["n-01-cold-nurture"]
   e_entry_captured --> w_s_01_new_lead_intake["s-01-new-lead-intake"]
+  e_entry_captured --> w_s_02_incomplete_survey_nudge["s-02-incomplete-survey-nudge"]
   e_inquiry_removed(["inquiry.removed"])
   e_inquiry_removed --> w_c_03_inquiry_removed_resume_or_hold["c-03-inquiry-removed-resume-or-hold"]
   e_mail_response(["mail.response"])
@@ -94,7 +95,7 @@ flowchart LR
 | `deposit.paid` | 2 | `c-02b-inquiry-removal-requested`, `s-06-post-call-funding-purchased` |
 | `diagnostic.paid` | 2 | `af-02-referral-ownership-capture`, `c-00-crs-soft-pull-request` |
 | `docs.received` | 1 | `f-06-funding-conditions-missing-docs` |
-| `entry.captured` | 4 | `af-02-referral-ownership-capture`, `at-01-first-touch-capture`, `n-01-cold-nurture`, `s-01-new-lead-intake` |
+| `entry.captured` | 5 | `af-02-referral-ownership-capture`, `at-01-first-touch-capture`, `n-01-cold-nurture`, `s-01-new-lead-intake`, `s-02-incomplete-survey-nudge` |
 | `inquiry.removed` | 1 | `c-03-inquiry-removed-resume-or-hold` |
 | `mail.response` | 3 | `f-06-funding-conditions-missing-docs`, `f-09-funding-declined-no-path`, `f-11-bank-email-event-router` |
 | `message.inbound` | 1 | `dpc-03-inbound-reply-router` |

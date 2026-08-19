@@ -121,7 +121,7 @@ flowchart LR
 
 | event | group | bus handlers | Inngest functions |
 |---|---|---|---|
-| `entry.captured` | journey spine | `onEntryCaptured` | 4 |
+| `entry.captured` | journey spine | `onEntryCaptured` | 5 |
 | `survey.submitted` | journey spine | `onSurveySubmitted` | 2 |
 | `diagnostic.paid` | journey spine | `onDiagnosticPaid`, `onDiagnosticPaidSoftPull`, `onDiagnosticPaidMoney` | 2 |
 | `analysis.completed` | journey spine | `onAnalysisCompleted` | 8 |
