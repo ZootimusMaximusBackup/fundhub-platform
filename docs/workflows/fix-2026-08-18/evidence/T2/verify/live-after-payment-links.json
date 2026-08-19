@@ -1,0 +1,24 @@
+{
+  "when": "2026-08-19T05:10:58.474Z",
+  "base": "https://fundhub.ai",
+  "note": "T2 live AFTER-state, post-merge 279eae8 + deploy.",
+  "probes": [
+    {
+      "id": "create pay link (OWNER)",
+      "role": null,
+      "status": 200,
+      "body": "{\"ok\":true,\"action\":\"create\",\"link\":{\"id\":\"a9a53baf-9044-4161-be0e-442a8416c6e8\",\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"client_id\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"purpose\":\"diagnostic\",\"description\":null,\"amount_cents\":\"3200\",\"currency\":\"USD\",\"status\":\"created\",\"link_ref\":\"pl_e4ae9"
+    },
+    {
+      "id": "create pay link (CLOSER)",
+      "role": null,
+      "status": 200,
+      "body": "{\"ok\":true,\"action\":\"create\",\"link\":{\"id\":\"6b837d0d-ef2f-4174-8d1d-2a3f6d4f1dc0\",\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"client_id\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"purpose\":\"diagnostic\",\"description\":null,\"amount_cents\":\"3200\",\"currency\":\"USD\",\"status\":\"created\",\"link_ref\":\"pl_d07e1"
+    },
+    {
+      "id": "list pay links",
+      "status": 200,
+      "count": 2
+    }
+  ]
+}
