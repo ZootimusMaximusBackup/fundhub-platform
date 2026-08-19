@@ -68,12 +68,22 @@ Checked read-only against the live production database:
 
 ## Test position
 
-Baseline measured on this branch point against a scratch PostgreSQL 16 database with all
-migrations applied: **3 pre-existing failures**, none in T4's files. This branch adds none.
-Details and the exact commands are in `docs/workflows/fix-2026-08-18/evidence/T4/BASELINE.md`.
+Baseline measured on this branch point against a scratch PostgreSQL 16 database created for
+this thread (never production, never `fundhub_ci`): **3 pre-existing failures**, none of them
+in files T4 touches. This branch adds none — the same 3, before and after.
 
-`npx tsc --noEmit` is a no-op in this repository — there is no `tsconfig.json`; it is a
-plain JavaScript codebase. `npm run lint` passes.
+**A finding about the runner itself, which changes how everyone should read these numbers.**
+`scripts/run-suite.mjs` runs the plain tests first and, at line 69, exits if any of them
+failed — *before* it runs the database tests. Three plain tests already fail on `main`. So
+`npm test` has never reached the 111 database test files, in this thread's baseline or in
+anyone else's. Any failure count quoted from `npm test` on this branch describes the plain
+half only. The database half was therefore measured separately; running it twice on identical
+code gives slightly different results, so no single number should be treated as *the* count.
+This is put on the fix board for the other threads.
+
+`npx tsc --noEmit` is a no-op in this repository — there is no `tsconfig.json`; it is a plain
+JavaScript codebase. It prints its version and exits 0. Reported here rather than claimed as a
+passing typecheck. `npm run lint` genuinely passes: 1320 files parse clean.
 
 ## Evidence
 
