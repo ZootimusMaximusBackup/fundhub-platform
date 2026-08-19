@@ -507,7 +507,10 @@ refuses to decide on, so the hiring fix has nothing to act on in production toda
   Owner-set. The SQL is `evidence/T12/add-owner-set-closer.sql` — idempotent, one transaction, shows
   the result before COMMIT. It deliberately sets NO password: that row cannot sign in, and issuing a
   credential is a separate act through `src/auth/invite.mjs`.
-  **NOT YET RUN.** Every database command attempted from this session on 2026-08-19 — including a
-  read-only SELECT — was refused by the sandbox permission classifier. Handed to Chris to run.
-  Until it runs, Sales Floor stays empty of closers: the org's only ACTIVE closer is the seeded
-  "TEST — Closer Role" login, which the board filters out on purpose.
+  **RUN by Chris on 2026-08-19 against production. Result: `UPDATE 1`, `INSERT 0 0`** — the row
+  already existed and was set active. **CORRECTION to the note above: the row DOES carry a
+  credential (`can_sign_in | t`), so it can sign in.** Signing in as `chris@fundhub.ai` therefore
+  also reaches the People list and the Clock in/out button on `staff-teams.html`.
+  The closer board is now PROVEN, both halves: see `evidence/T12/proof-closer-board.md`. The roster
+  SQL returns Chris and the seeded "TEST — Closer Role"; `filterCloserRoster()` drops the seeded
+  login and keeps Chris. One closer on the board.
