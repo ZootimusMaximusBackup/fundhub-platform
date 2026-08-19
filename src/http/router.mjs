@@ -16,6 +16,7 @@ import { handleCalcomWebhook } from "../adapters/calcom.mjs";
 import { handleTwilioWebhook } from "../adapters/twilio.mjs";
 import { handleMailgunWebhook, handleMailgunDeliveryEvent } from "../adapters/mailgun.mjs";
 import { handleTwilioStatusWebhook } from "../adapters/twilio-status.mjs";
+import { handleResendDeliveryEvent } from "../adapters/resend-events.mjs";
 import { handleLendflowWebhook, SIGNATURE_HEADER as LENDFLOW_SIG } from "../adapters/lendflow.mjs";
 import {
   handleInquiryRemovalWebhook,
@@ -91,6 +92,25 @@ export async function handleWebhook({ db, provider, rawBody, headers = {}, url, 
   if (provider === "twilio-status") {
     return norm(await handleTwilioStatusWebhook({
       db, rawBody, signatureHeader: h("x-twilio-signature"), secret: env.TWILIO_AUTH_TOKEN, url
+    }));
+  }
+
+  /* Resend delivery receipts — delivered, bounced, complained.
+     Added 2026-08-18 (T5-16). Resend is the live outbound email provider and
+     had NO webhook door at all, so `sent` was the last thing that ever happened
+     to an email: a bounce, a spam complaint and a confirmed delivery were
+     indistinguishable from inside the system.
+
+     Signed with Svix, so the raw body matters — the signature covers
+     `<svix-id>.<svix-timestamp>.<rawBody>` byte for byte, which is why rawBody
+     is passed through rather than a re-serialised object. Fails closed with no
+     RESEND_WEBHOOK_SECRET, like every other branch here. */
+  if (provider === "resend") {
+    let body;
+    try { body = rawBody ? JSON.parse(rawBody) : {}; }
+    catch { return { status: 400, body: { ok: false, error: "invalid_json" } }; }
+    return norm(await handleResendDeliveryEvent({
+      db, body, rawBody, headers, secret: env.RESEND_WEBHOOK_SECRET
     }));
   }
 
