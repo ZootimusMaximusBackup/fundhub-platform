@@ -1,0 +1,647 @@
+{
+  "item": "A5",
+  "question": "Is anything in the sign-in or file-storage schemas readable by the app role? (T16-08)",
+  "generated_at": "2026-08-19T02:50:02.723Z",
+  "schemas": {
+    "auth": {
+      "schema": "auth",
+      "generated_at": "2026-08-19T02:50:02.723Z",
+      "schema_exists": true,
+      "schema_owner": "supabase_admin",
+      "has_usage": false,
+      "has_create": false,
+      "table_list_error": null,
+      "tables": [
+        {
+          "table": "audit_log_entries",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "custom_oauth_providers",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": false,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "flow_state",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "identities",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "instances",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "mfa_amr_claims",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "mfa_challenges",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "mfa_factors",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "oauth_authorizations",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": false,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "oauth_client_states",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": false,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "oauth_clients",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": false,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "oauth_consents",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": false,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "one_time_tokens",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "refresh_tokens",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "saml_providers",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "saml_relay_states",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "schema_migrations",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": 77,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "sessions",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "sso_domains",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "sso_providers",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "users",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "webauthn_challenges",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": false,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "webauthn_credentials",
+          "owner": "supabase_auth_admin",
+          "rls_enabled": false,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema auth"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema auth",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        }
+      ],
+      "summary": {
+        "table_count": 23,
+        "readable_count": 0,
+        "readable_tables": [],
+        "refused_count": 23
+      },
+      "schema_usage_privilege": false,
+      "refusal_level": "schema",
+      "distinct_refusal_errors": [
+        "permission denied for schema auth"
+      ],
+      "readable_in_practice_count": 0,
+      "readable_in_practice_tables": []
+    },
+    "storage": {
+      "schema": "storage",
+      "generated_at": "2026-08-19T02:51:21.420Z",
+      "schema_exists": true,
+      "schema_owner": "supabase_admin",
+      "has_usage": false,
+      "has_create": false,
+      "table_list_error": null,
+      "tables": [
+        {
+          "table": "buckets",
+          "owner": "supabase_storage_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema storage"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema storage",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "buckets_analytics",
+          "owner": "supabase_storage_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema storage"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema storage",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "buckets_vectors",
+          "owner": "supabase_storage_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema storage"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema storage",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "migrations",
+          "owner": "supabase_storage_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": 61,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema storage"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema storage",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "objects",
+          "owner": "supabase_storage_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema storage"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema storage",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "s3_multipart_uploads",
+          "owner": "supabase_storage_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema storage"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema storage",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "s3_multipart_uploads_parts",
+          "owner": "supabase_storage_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema storage"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema storage",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        },
+        {
+          "table": "vector_indexes",
+          "owner": "supabase_storage_admin",
+          "rls_enabled": true,
+          "rls_forced": false,
+          "approx_rows_planner_stat": -1,
+          "policy_count": 0,
+          "policies": [],
+          "privileges": {
+            "error": "permission denied for schema storage"
+          },
+          "can_select": null,
+          "grants": [],
+          "count": null,
+          "count_error": "permission denied for schema storage",
+          "count_attempted": true,
+          "count_timed_out": false,
+          "readable_in_practice": false
+        }
+      ],
+      "summary": {
+        "table_count": 8,
+        "readable_count": 0,
+        "readable_tables": [],
+        "refused_count": 8
+      },
+      "schema_usage_privilege": false,
+      "refusal_level": "schema",
+      "distinct_refusal_errors": [
+        "permission denied for schema storage"
+      ],
+      "readable_in_practice_count": 0,
+      "readable_in_practice_tables": []
+    }
+  },
+  "readable_tables_across_auth_and_storage": [],
+  "verdict": "NO EXPOSURE. Both schemas exist — 'auth' (owner supabase_auth_admin, 23 tables) and 'storage' (8 tables). The app role holds no USAGE privilege on either, so every read is refused at the schema boundary: \"permission denied for schema auth\". Zero of 31 tables are readable. Nothing in the sign-in or file-storage schemas is reachable by the app role.",
+  "no_row_data_was_read": "Only count(*) was attempted, and every attempt was refused. No column of auth.users or any other table was selected."
+}

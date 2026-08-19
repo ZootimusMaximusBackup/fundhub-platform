@@ -1,0 +1,432 @@
+{
+  "ran_at": "2026-08-19T03:11:52.096Z",
+  "items": {
+    "T16-18": {
+      "claim": "affiliate gets 401 ('you are signed out') on staff-only routes where 403 ('you lack permission') would be truthful",
+      "verdict": "STILL BROKEN",
+      "affiliate": {
+        "signed_in": true,
+        "principal": "affiliate",
+        "login_status": 200,
+        "count_401": 74,
+        "count_403": 30,
+        "routes_401_wrong_code": [
+          "/api/journeys/run",
+          "/api/journeys",
+          "/api/applications",
+          "/api/inquiry",
+          "/api/dashboard/clients",
+          "/api/dashboard/pipeline",
+          "/api/dashboard/pipeline-counts",
+          "/api/dashboard/kpis",
+          "/api/read/commissions",
+          "/api/read/invoices",
+          "/api/read/funding-rounds",
+          "/api/read/lenders",
+          "/api/read/lender-matches",
+          "/api/read/lender-observations",
+          "/api/read/inquiry-cases",
+          "/api/read/repair-cases",
+          "/api/read/ai-bureau-config",
+          "/api/read/proxy-sessions",
+          "/api/read/message-templates",
+          "/api/read/staff",
+          "/api/staff/telemetry",
+          "/api/staff/monitoring-consent",
+          "/api/read/failed-events",
+          "/api/read/agents",
+          "/api/read/agent-context",
+          "/api/read/agent-shadow-log",
+          "/api/read/inquiries",
+          "/api/read/products",
+          "/api/read/conversations",
+          "/api/read/inbox",
+          "/api/read/messages",
+          "/api/read/search",
+          "/api/read/tradelines",
+          "/api/read/finance-os",
+          "/api/read/banking-surface",
+          "/api/read/underwrite",
+          "/api/read/money-map",
+          "/api/read/finance-command",
+          "/api/company-brain/reviews",
+          "/api/company-brain/sync",
+          "/api/company-brain/upload",
+          "/api/company-brain/threads",
+          "/api/read/closer-call",
+          "/api/read/closer-now",
+          "/api/read/deal-math",
+          "/api/read/closer-deck",
+          "/api/read/my-numbers",
+          "/api/read/sales-floor",
+          "/api/read/company-activity",
+          "/api/read/call-outcomes",
+          "/api/read/customer-insights",
+          "/api/chat/peers",
+          "/api/demo/simulate",
+          "/api/demo/mode",
+          "/api/content/tiles",
+          "/api/hiring/candidates",
+          "/api/hiring/application",
+          "/api/hiring/postings",
+          "/api/hiring/decisions",
+          "/api/hiring/funnel",
+          "/api/hiring/bench",
+          "/api/banking/revoke",
+          "/api/privacy/erasure",
+          "/api/finance/subscriptions",
+          "/api/finance/cards",
+          "/api/finance/liabilities",
+          "/api/finance/bank-accounts",
+          "/api/finance/entities",
+          "/api/finance/bills",
+          "/api/finance/cashflow",
+          "/api/finance/alerts",
+          "/api/finance/model",
+          "/api/banking/accounts",
+          "/api/payment-links"
+        ],
+        "routes_403_correct_code": [
+          "/api/tasks",
+          "/api/dashboard/client",
+          "/api/partner-brand",
+          "/api/read/documents",
+          "/api/read/partners",
+          "/api/read/entitlements",
+          "/api/inquiries",
+          "/api/repair/exceptions",
+          "/api/pii",
+          "/api/shifts",
+          "/api/campaigns/list",
+          "/api/campaigns/detail",
+          "/api/campaigns/spend",
+          "/api/campaigns/fatigue",
+          "/api/campaigns/connections",
+          "/api/campaigns/action-log",
+          "/api/social/oauth",
+          "/api/social/posts",
+          "/api/chat/messages",
+          "/api/partner-pages",
+          "/api/partner-marketing/enable",
+          "/api/partner-marketing/usage",
+          "/api/partner-marketing/copy-history",
+          "/api/creative/library",
+          "/api/creative/brand-kits",
+          "/api/creative/jobs",
+          "/api/creative/approvals",
+          "/api/finance/soft-pull",
+          "/api/finance/crs-pull",
+          "/api/consent/capture"
+        ],
+        "data_leak_check": {
+          "distinct_401_bodies": [
+            "{\"ok\":false,\"error\":\"unauthorized\"}"
+          ],
+          "max_401_body_length": 35
+        }
+      },
+      "partner_same_defect": {
+        "count_401": 74,
+        "count_403": 14,
+        "routes_401_wrong_code": [
+          "/api/journeys/run",
+          "/api/journeys",
+          "/api/applications",
+          "/api/inquiry",
+          "/api/dashboard/clients",
+          "/api/dashboard/pipeline",
+          "/api/dashboard/pipeline-counts",
+          "/api/dashboard/kpis",
+          "/api/read/commissions",
+          "/api/read/invoices",
+          "/api/read/funding-rounds",
+          "/api/read/lenders",
+          "/api/read/lender-matches",
+          "/api/read/lender-observations",
+          "/api/read/inquiry-cases",
+          "/api/read/repair-cases",
+          "/api/read/ai-bureau-config",
+          "/api/read/proxy-sessions",
+          "/api/read/message-templates",
+          "/api/read/staff",
+          "/api/staff/telemetry",
+          "/api/staff/monitoring-consent",
+          "/api/read/failed-events",
+          "/api/read/agents",
+          "/api/read/agent-context",
+          "/api/read/agent-shadow-log",
+          "/api/read/inquiries",
+          "/api/read/products",
+          "/api/read/conversations",
+          "/api/read/inbox",
+          "/api/read/messages",
+          "/api/read/search",
+          "/api/read/tradelines",
+          "/api/read/finance-os",
+          "/api/read/banking-surface",
+          "/api/read/underwrite",
+          "/api/read/money-map",
+          "/api/read/finance-command",
+          "/api/company-brain/reviews",
+          "/api/company-brain/sync",
+          "/api/company-brain/upload",
+          "/api/company-brain/threads",
+          "/api/read/closer-call",
+          "/api/read/closer-now",
+          "/api/read/deal-math",
+          "/api/read/closer-deck",
+          "/api/read/my-numbers",
+          "/api/read/sales-floor",
+          "/api/read/company-activity",
+          "/api/read/call-outcomes",
+          "/api/read/customer-insights",
+          "/api/chat/peers",
+          "/api/demo/simulate",
+          "/api/demo/mode",
+          "/api/content/tiles",
+          "/api/hiring/candidates",
+          "/api/hiring/application",
+          "/api/hiring/postings",
+          "/api/hiring/decisions",
+          "/api/hiring/funnel",
+          "/api/hiring/bench",
+          "/api/banking/revoke",
+          "/api/privacy/erasure",
+          "/api/finance/subscriptions",
+          "/api/finance/cards",
+          "/api/finance/liabilities",
+          "/api/finance/bank-accounts",
+          "/api/finance/entities",
+          "/api/finance/bills",
+          "/api/finance/cashflow",
+          "/api/finance/alerts",
+          "/api/finance/model",
+          "/api/banking/accounts",
+          "/api/payment-links"
+        ],
+        "data_leak_check": {
+          "distinct_401_bodies": [
+            "{\"ok\":false,\"error\":\"unauthorized\"}"
+          ],
+          "max_401_body_length": 35
+        }
+      },
+      "staff_roles_for_contrast": {
+        "closer": {
+          "count_401": 0,
+          "count_403": 41
+        },
+        "sales": {
+          "count_401": 0,
+          "count_403": 29
+        },
+        "advisor": {
+          "count_401": 0,
+          "count_403": 39
+        }
+      }
+    },
+    "T16-19": {
+      "claim": "command-center/sample-data/subscriptions pages are 404 but their APIs are live; read/finance-command returns 200 with company finance figures for a closer",
+      "pages": [
+        {
+          "page": "/app/command-center.html",
+          "status": 404,
+          "content_type": "text/html; charset=utf-8",
+          "body_length": 3148
+        },
+        {
+          "page": "/app/sample-data.html",
+          "status": 404,
+          "content_type": "text/html; charset=utf-8",
+          "body_length": 3148
+        },
+        {
+          "page": "/app/subscriptions.html",
+          "status": 404,
+          "content_type": "text/html; charset=utf-8",
+          "body_length": 3148
+        }
+      ],
+      "finance_command_by_role": [
+        {
+          "role": "owner",
+          "status": 200,
+          "body_length": 9161,
+          "top_level_keys": [
+            "ok",
+            "as_of",
+            "window",
+            "client_id",
+            "entity_id",
+            "entities",
+            "totals",
+            "per_card",
+            "cashflow_series",
+            "marketing_series",
+            "combined_series",
+            "combined_series_unavailable_reason",
+            "net_worth_today_cents",
+            "net_worth_trend_available"
+          ],
+          "money_like_field_count": 137
+        },
+        {
+          "role": "closer",
+          "status": 200,
+          "body_length": 9161,
+          "top_level_keys": [
+            "ok",
+            "as_of",
+            "window",
+            "client_id",
+            "entity_id",
+            "entities",
+            "totals",
+            "per_card",
+            "cashflow_series",
+            "marketing_series",
+            "combined_series",
+            "combined_series_unavailable_reason",
+            "net_worth_today_cents",
+            "net_worth_trend_available"
+          ],
+          "money_like_field_count": 137
+        },
+        {
+          "role": "sales",
+          "status": 200,
+          "body_length": 9161,
+          "top_level_keys": [
+            "ok",
+            "as_of",
+            "window",
+            "client_id",
+            "entity_id",
+            "entities",
+            "totals",
+            "per_card",
+            "cashflow_series",
+            "marketing_series",
+            "combined_series",
+            "combined_series_unavailable_reason",
+            "net_worth_today_cents",
+            "net_worth_trend_available"
+          ],
+          "money_like_field_count": 137
+        },
+        {
+          "role": "advisor",
+          "status": 200,
+          "body_length": 9161,
+          "top_level_keys": [
+            "ok",
+            "as_of",
+            "window",
+            "client_id",
+            "entity_id",
+            "entities",
+            "totals",
+            "per_card",
+            "cashflow_series",
+            "marketing_series",
+            "combined_series",
+            "combined_series_unavailable_reason",
+            "net_worth_today_cents",
+            "net_worth_trend_available"
+          ],
+          "money_like_field_count": 137
+        },
+        {
+          "role": "affiliate",
+          "status": 401,
+          "body_length": 35,
+          "top_level_keys": [
+            "ok",
+            "error"
+          ],
+          "money_like_field_count": 0
+        },
+        {
+          "role": "partner",
+          "status": 401,
+          "body_length": 35,
+          "top_level_keys": [
+            "ok",
+            "error"
+          ],
+          "money_like_field_count": 0
+        }
+      ],
+      "verdict": "STILL BROKEN — closer can read finance-command",
+      "note": "Dollar values deliberately not recorded; only a count of money-like field names."
+    },
+    "T16-20": {
+      "claim": "sales can still call /api/finance/subscriptions after the page was deleted",
+      "probed_with_test_client": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "by_role": [
+        {
+          "role": "owner",
+          "status": 200,
+          "body_length": 90,
+          "first_200": "{\"ok\":true,\"client_id\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"current\":null,\"history\":[]}"
+        },
+        {
+          "role": "sales",
+          "status": 200,
+          "body_length": 90,
+          "first_200": "{\"ok\":true,\"client_id\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"current\":null,\"history\":[]}"
+        },
+        {
+          "role": "closer",
+          "status": 403,
+          "body_length": 100,
+          "first_200": "{\"ok\":false,\"error\":\"forbidden\",\"message\":\"this endpoint is limited to owner, admin, sales_manager\"}"
+        },
+        {
+          "role": "advisor",
+          "status": 403,
+          "body_length": 100,
+          "first_200": "{\"ok\":false,\"error\":\"forbidden\",\"message\":\"this endpoint is limited to owner, admin, sales_manager\"}"
+        }
+      ],
+      "verdict": "STILL BROKEN — sales gets 200"
+    },
+    "T16-21": {
+      "claim": "closer can still GET /api/read/ai-bureau-config (200)",
+      "by_role": [
+        {
+          "role": "owner",
+          "status": 200,
+          "body_length": 2410,
+          "first_200": "{\"ok\":true,\"configs\":[{\"id\":\"7574d3c2-dc9f-41d9-ad53-d274888a28a5\",\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"bureau_code\":\"EQ\",\"bureau_name\":\"Equifax\",\"service_number\":null,\"ivr_version\":null,\""
+        },
+        {
+          "role": "closer",
+          "status": 200,
+          "body_length": 2410,
+          "first_200": "{\"ok\":true,\"configs\":[{\"id\":\"7574d3c2-dc9f-41d9-ad53-d274888a28a5\",\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"bureau_code\":\"EQ\",\"bureau_name\":\"Equifax\",\"service_number\":null,\"ivr_version\":null,\""
+        },
+        {
+          "role": "sales",
+          "status": 200,
+          "body_length": 2410,
+          "first_200": "{\"ok\":true,\"configs\":[{\"id\":\"7574d3c2-dc9f-41d9-ad53-d274888a28a5\",\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"bureau_code\":\"EQ\",\"bureau_name\":\"Equifax\",\"service_number\":null,\"ivr_version\":null,\""
+        },
+        {
+          "role": "advisor",
+          "status": 200,
+          "body_length": 2410,
+          "first_200": "{\"ok\":true,\"configs\":[{\"id\":\"7574d3c2-dc9f-41d9-ad53-d274888a28a5\",\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"bureau_code\":\"EQ\",\"bureau_name\":\"Equifax\",\"service_number\":null,\"ivr_version\":null,\""
+        },
+        {
+          "role": "affiliate",
+          "status": 401,
+          "body_length": 35,
+          "first_200": "{\"ok\":false,\"error\":\"unauthorized\"}"
+        }
+      ],
+      "verdict": "STILL BROKEN — closer gets 200"
+    }
+  }
+}
