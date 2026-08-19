@@ -32,10 +32,10 @@ flowchart TD
     CAN --> A_public[public — 6 routes]
     CAN --> A_read[Reading data — 36 routes]
     CAN --> A_repair[repair — 3 routes]
-    CAN --> A_social[social — 7 routes]
+    CAN --> A_social[social — 6 routes]
     CAN --> A_top_level[Everything else — 23 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 59 routes]
+    WHO -->|Yes| CANT[Blocked — 60 routes]
     CANT --> B_auth[Signing in and out — 4 blocked]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_brand[brand — 1 blocked]
@@ -51,6 +51,7 @@ flowchart TD
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
     CANT --> B_read[Reading data — 13 blocked]
+    CANT --> B_social[social — 1 blocked]
     CANT --> B_staff[staff — 2 blocked]
     CANT --> B_top_level[Everything else — 10 blocked]
     WHO -->|Yes| UNV[UNVERIFIED — 2 routes whose gate could not be traced]
@@ -58,7 +59,7 @@ flowchart TD
 
 ## What they can reach
 
-**124 of 185 routes.**
+**123 of 185 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -179,7 +180,6 @@ flowchart TD
 | `/api/social/channels` | GET | partner, staff |
 | `/api/social/generate` | POST | partner, staff |
 | `/api/social/oauth` | — | staff |
-| `/api/social/posts` | GET, POST | partner, staff |
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
 | `/api/social/settings` | GET, POST | staff, partner |
@@ -195,7 +195,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**59 of 185 routes.**
+**60 of 185 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -256,6 +256,7 @@ flowchart TD
 | `/api/read/proxy-sessions` | GET | owner, funding_advisor |
 | `/api/read/sales-floor` | GET | owner, admin, sales_manager |
 | `/api/read/staff` | GET | owner, admin, sales_manager |
+| `/api/social/posts` | GET, POST | employees: owner, admin<br>plus: partner |
 | `/api/staff/monitoring-consent` | POST | owner |
 | `/api/staff/telemetry` | GET | owner, admin, sales_manager |
 

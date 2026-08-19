@@ -33,11 +33,11 @@ flowchart TD
     CAN --> A_public[public — 6 routes]
     CAN --> A_read[Reading data — 44 routes]
     CAN --> A_repair[repair — 2 routes]
-    CAN --> A_social[social — 7 routes]
+    CAN --> A_social[social — 6 routes]
     CAN --> A_staff[staff — 1 route]
     CAN --> A_top_level[Everything else — 25 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 41 routes]
+    WHO -->|Yes| CANT[Blocked — 42 routes]
     CANT --> B_auth[Signing in and out — 4 blocked]
     CANT --> B_banking[banking — 1 blocked]
     CANT --> B_brand[brand — 1 blocked]
@@ -54,6 +54,7 @@ flowchart TD
     CANT --> B_proxy[proxy — 2 blocked]
     CANT --> B_read[Reading data — 5 blocked]
     CANT --> B_repair[repair — 1 blocked]
+    CANT --> B_social[social — 1 blocked]
     CANT --> B_staff[staff — 1 blocked]
     CANT --> B_top_level[Everything else — 8 blocked]
     WHO -->|Yes| UNV[UNVERIFIED — 2 routes whose gate could not be traced]
@@ -61,7 +62,7 @@ flowchart TD
 
 ## What they can reach
 
-**142 of 185 routes.**
+**141 of 185 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -199,7 +200,6 @@ flowchart TD
 | `/api/social/channels` | GET | partner, staff |
 | `/api/social/generate` | POST | partner, staff |
 | `/api/social/oauth` | — | staff |
-| `/api/social/posts` | GET, POST | partner, staff |
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
 | `/api/social/settings` | GET, POST | staff, partner |
@@ -216,7 +216,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**41 of 185 routes.**
+**42 of 185 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -260,6 +260,7 @@ flowchart TD
 | `/api/read/lenders` | GET | owner, admin, funding_advisor |
 | `/api/read/proxy-sessions` | GET | owner, funding_advisor |
 | `/api/repair/generate` | POST | owner, admin, inquiry_specialist |
+| `/api/social/posts` | GET, POST | employees: owner, admin<br>plus: partner |
 | `/api/staff/monitoring-consent` | POST | owner |
 
 ## UNVERIFIED

@@ -105,7 +105,7 @@ flowchart TD
 | `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
 | `/api/social/channels` | GET | partner, staff |
 | `/api/social/generate` | POST | partner, staff |
-| `/api/social/posts` | GET, POST | partner, staff |
+| `/api/social/posts` | GET, POST | employees: owner, admin<br>plus: partner |
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
 | `/api/social/settings` | GET, POST | staff, partner |

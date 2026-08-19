@@ -41,10 +41,10 @@ have no automation tree at all. See `src/journeys/seed-journeys.mjs`'s header.
 |---|---|---|
 | [client](./client-actual.md) ([intended](./client-intended.md)) | `client` | reaches 30 of 185 routes |
 | [role-owner](./role-owner-actual.md) ([intended](./role-owner-intended.md)) | `owner` | reaches 181 of 185 routes |
-| [role-sales-manager](./role-sales-manager-actual.md) ([intended](./role-sales-manager-intended.md)) | `sales_manager` | reaches 142 of 185 routes |
-| [role-closer](./role-closer-actual.md) ([intended](./role-closer-intended.md)) | `closer` | reaches 126 of 185 routes |
-| [role-funding-advisor](./role-funding-advisor-actual.md) ([intended](./role-funding-advisor-intended.md)) | `funding_advisor` | reaches 131 of 185 routes |
-| [role-inquiry-remover](./role-inquiry-remover-actual.md) ([intended](./role-inquiry-remover-intended.md)) | `inquiry_specialist` | reaches 124 of 185 routes |
+| [role-sales-manager](./role-sales-manager-actual.md) ([intended](./role-sales-manager-intended.md)) | `sales_manager` | reaches 141 of 185 routes |
+| [role-closer](./role-closer-actual.md) ([intended](./role-closer-intended.md)) | `closer` | reaches 125 of 185 routes |
+| [role-funding-advisor](./role-funding-advisor-actual.md) ([intended](./role-funding-advisor-intended.md)) | `funding_advisor` | reaches 130 of 185 routes |
+| [role-inquiry-remover](./role-inquiry-remover-actual.md) ([intended](./role-inquiry-remover-intended.md)) | `inquiry_specialist` | reaches 123 of 185 routes |
 | [affiliate](./affiliate-actual.md) ([intended](./affiliate-intended.md)) | `affiliate` | reaches 24 of 185 routes |
 | [white-label](./white-label-actual.md) ([intended](./white-label-intended.md)) | `partner` | reaches 53 of 185 routes |
 
