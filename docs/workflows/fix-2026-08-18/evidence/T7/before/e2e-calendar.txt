@@ -1,0 +1,307 @@
+
+Running 11 tests using 1 worker
+
+  ✓   1 [chromium] › e2e/calendar.spec.mjs:21:3 › Calendar call controls › Join Call and Client file are disabled with no link or client (5.8s)
+  ✘   2 [chromium] › e2e/calendar.spec.mjs:34:3 › Calendar call controls › Join Call enables when meeting_url is present (22.3s)
+  ✘   3 [chromium] › e2e/calendar.spec.mjs:45:3 › Calendar call controls › Client file enables when client_id is linked (16.9s)
+  ✘   4 [chromium] › e2e/calendar.spec.mjs:56:3 › Calendar call controls › Join Call stores the meeting URL on the button (16.4s)
+  ✘   5 [chromium] › e2e/calendar.spec.mjs:68:3 › Calendar call controls › Client file navigates to the client control panel (21.9s)
+  ✘   6 [chromium] › e2e/calendar.spec.mjs:81:3 › Calendar call controls › Join Call stays disabled without a meeting URL (16.9s)
+  ✘   7 [chromium] › e2e/calendar.spec.mjs:102:3 › Calendar is today's week, not July sample › date label is actual today and sample chips are gone (13.1s)
+  ✘   8 [chromium] › e2e/calendar.spec.mjs:120:3 › Calendar is today's week, not July sample › week strip counts come from dated tasks (15.8s)
+  ✓   9 [chromium] › e2e/calendar.spec.mjs:143:3 › Calendar is today's week, not July sample › Today button returns to the real current day (6.0s)
+  ✘  10 [chromium] › e2e/calendar.spec.mjs:159:3 › Calendar Up Next / Then / briefing › clicking a Then row loads that appointment in Up Next (12.5s)
+  ✘  11 [chromium] › e2e/calendar.spec.mjs:181:3 › Calendar Up Next / Then / briefing › Before you dial shows the task title, never a UUID (13.4s)
+
+
+  1) [chromium] › e2e/calendar.spec.mjs:34:3 › Calendar call controls › Join Call enables when meeting_url is present 
+
+    Error: expect(locator).toBeEnabled() failed
+
+    Locator:  locator('#unJoin')
+    Expected: enabled
+    Received: disabled
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeEnabled" with timeout 10000ms
+      - waiting for locator('#unJoin')
+        24 × locator resolved to <button disabled id="unJoin" type="button" class="un-join" title="No call link on this appointment">Join Call</button>
+           - unexpected value "disabled"
+
+
+      40 |     });
+      41 |     await gotoScreen(page, "calendar.html");
+    > 42 |     await expect(page.locator("#unJoin")).toBeEnabled({ timeout: 10_000 });
+         |                                           ^
+      43 |   });
+      44 |
+      45 |   test("Client file enables when client_id is linked", async ({ page }) => {
+        at /private/tmp/wt-T7/e2e/calendar.spec.mjs:42:43
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-Calendar-call-con-ae4c7-when-meeting-url-is-present-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-Calendar-call-con-ae4c7-when-meeting-url-is-present-chromium/error-context.md
+
+  2) [chromium] › e2e/calendar.spec.mjs:45:3 › Calendar call controls › Client file enables when client_id is linked 
+
+    Error: expect(locator).toBeEnabled() failed
+
+    Locator:  locator('#unFile')
+    Expected: enabled
+    Received: disabled
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeEnabled" with timeout 10000ms
+      - waiting for locator('#unFile')
+        24 × locator resolved to <button disabled id="unFile" type="button" class="un-alt" title="No client linked">Client file</button>
+           - unexpected value "disabled"
+
+
+      51 |     });
+      52 |     await gotoScreen(page, "calendar.html");
+    > 53 |     await expect(page.locator("#unFile")).toBeEnabled({ timeout: 10_000 });
+         |                                           ^
+      54 |   });
+      55 |
+      56 |   test("Join Call stores the meeting URL on the button", async ({ page }) => {
+        at /private/tmp/wt-T7/e2e/calendar.spec.mjs:53:43
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-Calendar-call-con-d10c3-es-when-client-id-is-linked-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-Calendar-call-con-d10c3-es-when-client-id-is-linked-chromium/error-context.md
+
+  3) [chromium] › e2e/calendar.spec.mjs:56:3 › Calendar call controls › Join Call stores the meeting URL on the button 
+
+    Error: expect(locator).toBeEnabled() failed
+
+    Locator:  locator('#unJoin')
+    Expected: enabled
+    Received: disabled
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeEnabled" with timeout 10000ms
+      - waiting for locator('#unJoin')
+        24 × locator resolved to <button disabled id="unJoin" type="button" class="un-join" title="No call link on this appointment">Join Call</button>
+           - unexpected value "disabled"
+
+
+      62 |     });
+      63 |     await gotoScreen(page, "calendar.html");
+    > 64 |     await expect(page.locator("#unJoin")).toBeEnabled({ timeout: 10_000 });
+         |                                           ^
+      65 |     await expect(page.locator("#unJoin")).toHaveAttribute("data-join-url", /meet\.example\.com/);
+      66 |   });
+      67 |
+        at /private/tmp/wt-T7/e2e/calendar.spec.mjs:64:43
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-Calendar-call-con-25f2a-e-meeting-URL-on-the-button-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-Calendar-call-con-25f2a-e-meeting-URL-on-the-button-chromium/error-context.md
+
+  4) [chromium] › e2e/calendar.spec.mjs:68:3 › Calendar call controls › Client file navigates to the client control panel 
+
+    Error: expect(locator).toBeEnabled() failed
+
+    Locator:  locator('#unFile')
+    Expected: enabled
+    Received: disabled
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toBeEnabled" with timeout 10000ms
+      - waiting for locator('#unFile')
+        24 × locator resolved to <button disabled id="unFile" type="button" class="un-alt" title="No client linked">Client file</button>
+           - unexpected value "disabled"
+
+
+      74 |     });
+      75 |     await gotoScreen(page, "calendar.html");
+    > 76 |     await expect(page.locator("#unFile")).toBeEnabled({ timeout: 10_000 });
+         |                                           ^
+      77 |     await page.locator("#unFile").click();
+      78 |     await expect(page).toHaveURL(new RegExp(`client-control-panel\\.html\\?client_id=${CLIENT_ID}`));
+      79 |   });
+        at /private/tmp/wt-T7/e2e/calendar.spec.mjs:76:43
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-Calendar-call-con-48a40-to-the-client-control-panel-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-Calendar-call-con-48a40-to-the-client-control-panel-chromium/error-context.md
+
+  5) [chromium] › e2e/calendar.spec.mjs:81:3 › Calendar call controls › Join Call stays disabled without a meeting URL 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  locator('#unClient')
+    Expected: "Dana Whitfield"
+    Received: "Nothing up next"
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveText" with timeout 10000ms
+      - waiting for locator('#unClient')
+        24 × locator resolved to <div id="unClient" class="un-client">Nothing up next</div>
+           - unexpected value "Nothing up next"
+
+
+      93 |     });
+      94 |     await gotoScreen(page, "calendar.html");
+    > 95 |     await expect(page.locator("#unClient")).toHaveText("Dana Whitfield", { timeout: 10_000 });
+         |                                             ^
+      96 |     await expect(page.locator("#unJoin")).toBeDisabled();
+      97 |   });
+      98 | });
+        at /private/tmp/wt-T7/e2e/calendar.spec.mjs:95:45
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-Calendar-call-con-6196b-abled-without-a-meeting-URL-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-Calendar-call-con-6196b-abled-without-a-meeting-URL-chromium/error-context.md
+
+  6) [chromium] › e2e/calendar.spec.mjs:102:3 › Calendar is today's week, not July sample › date label is actual today and sample chips are gone 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  locator('#statBooked')
+    Expected: "0"
+    Received: "—"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveText" with timeout 5000ms
+      - waiting for locator('#statBooked')
+        14 × locator resolved to <div class="v" id="statBooked">—</div>
+           - unexpected value "—"
+
+
+      111 |     await expect(page.locator(".weekstrip")).not.toContainText("Dana Whitlock");
+      112 |     await expect(page.locator(".day-wrap")).toContainText("Nothing booked.");
+    > 113 |     await expect(page.locator("#statBooked")).toHaveText("0");
+          |                                               ^
+      114 |     await expect(page.locator("#statDone")).toHaveText("0");
+      115 |     await expect(page.locator("#statNoshow")).toHaveText("—");
+      116 |     await expect(page.locator("#statShow")).toHaveText("—");
+        at /private/tmp/wt-T7/e2e/calendar.spec.mjs:113:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-Calendar-is-today-c5387-y-and-sample-chips-are-gone-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-Calendar-is-today-c5387-y-and-sample-chips-are-gone-chromium/error-context.md
+
+  7) [chromium] › e2e/calendar.spec.mjs:120:3 › Calendar is today's week, not July sample › week strip counts come from dated tasks 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  locator('#statBooked')
+    Expected: "2"
+    Received: "—"
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveText" with timeout 10000ms
+      - waiting for locator('#statBooked')
+        24 × locator resolved to <div class="v" id="statBooked">—</div>
+           - unexpected value "—"
+
+
+      132 |     });
+      133 |     await gotoScreen(page, "calendar.html");
+    > 134 |     await expect(page.locator("#statBooked")).toHaveText("2", { timeout: 10_000 });
+          |                                               ^
+      135 |     await expect(page.locator("#statDone")).toHaveText("1");
+      136 |     await expect(page.locator("#statLeft")).toHaveText("1");
+      137 |     await expect(page.locator(".day-wrap")).toContainText("Live Client");
+        at /private/tmp/wt-T7/e2e/calendar.spec.mjs:134:47
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-Calendar-is-today-00762-ounts-come-from-dated-tasks-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-Calendar-is-today-00762-ounts-come-from-dated-tasks-chromium/error-context.md
+
+  8) [chromium] › e2e/calendar.spec.mjs:159:3 › Calendar Up Next / Then / briefing › clicking a Then row loads that appointment in Up Next 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  locator('#unClient')
+    Expected: "Alpha Person"
+    Received: "Nothing up next"
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveText" with timeout 10000ms
+      - waiting for locator('#unClient')
+        24 × locator resolved to <div id="unClient" class="un-client">Nothing up next</div>
+           - unexpected value "Nothing up next"
+
+
+      173 |     });
+      174 |     await gotoScreen(page, "calendar.html");
+    > 175 |     await expect(page.locator("#unClient")).toHaveText("Alpha Person", { timeout: 10_000 });
+          |                                             ^
+      176 |     await page.locator('.then-row[data-task-id="task-b"]').click();
+      177 |     await expect(page.locator("#unClient")).toHaveText("Beta Person");
+      178 |     await expect(page.locator('.then-row[data-task-id="task-a"]')).toBeVisible();
+        at /private/tmp/wt-T7/e2e/calendar.spec.mjs:175:45
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-Calendar-Up-Next--c64c7-that-appointment-in-Up-Next-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-Calendar-Up-Next--c64c7-that-appointment-in-Up-Next-chromium/error-context.md
+
+  9) [chromium] › e2e/calendar.spec.mjs:181:3 › Calendar Up Next / Then / briefing › Before you dial shows the task title, never a UUID 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  locator('#unBody')
+    Expected: "Strategy session"
+    Received: "No briefing on file."
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveText" with timeout 10000ms
+      - waiting for locator('#unBody')
+        24 × locator resolved to <div id="unBody" class="un-bullet">No briefing on file.</div>
+           - unexpected value "No briefing on file."
+
+
+      198 |     });
+      199 |     await gotoScreen(page, "calendar.html");
+    > 200 |     await expect(page.locator("#unBody")).toHaveText("Strategy session", { timeout: 10_000 });
+          |                                           ^
+      201 |     await expect(page.locator("#unBody")).not.toContainText(uid);
+      202 |     await expect(page.locator("#upNext")).not.toContainText(uid);
+      203 |   });
+        at /private/tmp/wt-T7/e2e/calendar.spec.mjs:200:43
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/calendar-Calendar-Up-Next--dc825-the-task-title-never-a-UUID-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/calendar-Calendar-Up-Next--dc825-the-task-title-never-a-UUID-chromium/error-context.md
+
+  9 failed
+    [chromium] › e2e/calendar.spec.mjs:34:3 › Calendar call controls › Join Call enables when meeting_url is present 
+    [chromium] › e2e/calendar.spec.mjs:45:3 › Calendar call controls › Client file enables when client_id is linked 
+    [chromium] › e2e/calendar.spec.mjs:56:3 › Calendar call controls › Join Call stores the meeting URL on the button 
+    [chromium] › e2e/calendar.spec.mjs:68:3 › Calendar call controls › Client file navigates to the client control panel 
+    [chromium] › e2e/calendar.spec.mjs:81:3 › Calendar call controls › Join Call stays disabled without a meeting URL 
+    [chromium] › e2e/calendar.spec.mjs:102:3 › Calendar is today's week, not July sample › date label is actual today and sample chips are gone 
+    [chromium] › e2e/calendar.spec.mjs:120:3 › Calendar is today's week, not July sample › week strip counts come from dated tasks 
+    [chromium] › e2e/calendar.spec.mjs:159:3 › Calendar Up Next / Then / briefing › clicking a Then row loads that appointment in Up Next 
+    [chromium] › e2e/calendar.spec.mjs:181:3 › Calendar Up Next / Then / briefing › Before you dial shows the task title, never a UUID 
+  2 passed (2.8m)
+EXIT=1

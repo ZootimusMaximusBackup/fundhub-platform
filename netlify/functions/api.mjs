@@ -113,6 +113,7 @@ import repairExceptions from "../../api/repair/exceptions.mjs";
 import repairSend from "../../api/repair/send.mjs";
 import pii from "../../api/pii.mjs";
 import shifts from "../../api/shifts.mjs";
+import bookings from "../../api/bookings.mjs";
 import campaignsList from "../../api/campaigns/list.mjs";
 import campaignsDetail from "../../api/campaigns/detail.mjs";
 import campaignsSpend from "../../api/campaigns/spend.mjs";
@@ -488,6 +489,10 @@ export const ROUTES = {
   "repair/send": repairSend,
   "pii": pii,
   "shifts": shifts,
+  /* Calendar bookings, GET only. Routed in the same commit as the handler,
+     the store and migration 225 — a handler file is not a route, and an
+     unrouted api/bookings.mjs 404s locally and deployed. */
+  "bookings": bookings,
 
   // Creative Factory. All ten go through src/http/partner-read-api.mjs, which is
   // requirePrincipal(["partner","staff"]) + withPartnerScope, so a partner sees

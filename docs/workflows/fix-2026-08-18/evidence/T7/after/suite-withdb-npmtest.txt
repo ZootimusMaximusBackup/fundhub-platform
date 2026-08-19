@@ -1,0 +1,16 @@
+# after/suite-withdb-npmtest.txt — TRIMMED for the repo.
+# Full run was    37408 lines. Kept: every failure line and the TAP summary.
+
+not ok 32 - the journeys are not stale
+not ok 33 - the extraction is faithful to the code
+not ok 1886 - the expected list is exactly what db/ holds — it cannot drift silently
+not ok 2148 - an endpoint excused from the org filter still passes the session's org to its store
+not ok 3197 - the app's database role holds no superuser-level privilege
+# tests 5653
+# suites 416
+# pass 5648
+# fail 5
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 32838.587166

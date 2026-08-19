@@ -1,0 +1,14 @@
+
+> fundhub-platform@0.0.1 journeys
+> node scripts/journeys/generate.mjs
+
+Wrote 9 files to docs/journeys/:
+  client-actual.md
+  role-owner-actual.md
+  role-sales-manager-actual.md
+  role-closer-actual.md
+  role-funding-advisor-actual.md
+  role-inquiry-remover-actual.md
+  affiliate-actual.md
+  white-label-actual.md
+  README.md

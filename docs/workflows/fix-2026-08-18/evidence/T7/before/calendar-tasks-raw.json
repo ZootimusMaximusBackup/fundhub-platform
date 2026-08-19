@@ -1,0 +1,6 @@
+{
+  "/api/shifts?roster=1": {
+    "ok": true,
+    "roster": []
+  }
+}

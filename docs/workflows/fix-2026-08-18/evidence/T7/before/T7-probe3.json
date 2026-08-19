@@ -1,0 +1,236 @@
+{
+  "pageOwnFetches": [
+    {
+      "url": "/api/shifts?roster=1",
+      "at": 1787108150326,
+      "status": 200,
+      "err": null
+    },
+    {
+      "url": "/api/auth/session",
+      "at": 1787108150360,
+      "status": 200,
+      "err": null
+    },
+    {
+      "url": "/api/health",
+      "at": 1787108150954,
+      "status": 200,
+      "err": null
+    },
+    {
+      "url": "/api/org-brand",
+      "at": 1787108150954,
+      "status": 200,
+      "err": null
+    }
+  ],
+  "networkApiRequests": [
+    "/api/shifts?roster=1",
+    "/api/auth/session",
+    "/api/health",
+    "/api/org-brand"
+  ],
+  "console": [],
+  "hidden": {
+    "unJoin": {
+      "present": true,
+      "display": "none",
+      "rect": {
+        "w": 0,
+        "h": 0
+      },
+      "inlineStyle": null,
+      "matchedRulesWithDisplay": [],
+      "allMatched": [],
+      "ancestors": [
+        {
+          "node": "BUTTON#unJoin.un-join",
+          "display": "none",
+          "visibility": "visible",
+          "height": 0
+        },
+        {
+          "node": "DIV.un-actions",
+          "display": "flex",
+          "visibility": "visible",
+          "height": 40
+        },
+        {
+          "node": "DIV.un-body",
+          "display": "block",
+          "visibility": "visible",
+          "height": 132
+        },
+        {
+          "node": "DIV#upNext.upnext",
+          "display": "block",
+          "visibility": "visible",
+          "height": 265
+        },
+        {
+          "node": "ASIDE.rail",
+          "display": "block",
+          "visibility": "visible",
+          "height": 706
+        },
+        {
+          "node": "MAIN",
+          "display": "grid",
+          "visibility": "visible",
+          "height": 706
+        },
+        {
+          "node": "DIV.shell",
+          "display": "flex",
+          "visibility": "visible",
+          "height": 900
+        },
+        {
+          "node": "DIV.app",
+          "display": "flex",
+          "visibility": "visible",
+          "height": 900
+        },
+        {
+          "node": "BODY",
+          "display": "block",
+          "visibility": "visible",
+          "height": 900
+        }
+      ]
+    },
+    "unFile": {
+      "present": true,
+      "display": "block",
+      "rect": {
+        "w": 96,
+        "h": 40
+      },
+      "inlineStyle": null,
+      "matchedRulesWithDisplay": [],
+      "allMatched": [],
+      "ancestors": [
+        {
+          "node": "BUTTON#unFile.un-alt",
+          "display": "block",
+          "visibility": "visible",
+          "height": 40
+        },
+        {
+          "node": "DIV.un-actions",
+          "display": "flex",
+          "visibility": "visible",
+          "height": 40
+        },
+        {
+          "node": "DIV.un-body",
+          "display": "block",
+          "visibility": "visible",
+          "height": 132
+        },
+        {
+          "node": "DIV#upNext.upnext",
+          "display": "block",
+          "visibility": "visible",
+          "height": 265
+        },
+        {
+          "node": "ASIDE.rail",
+          "display": "block",
+          "visibility": "visible",
+          "height": 706
+        },
+        {
+          "node": "MAIN",
+          "display": "grid",
+          "visibility": "visible",
+          "height": 706
+        },
+        {
+          "node": "DIV.shell",
+          "display": "flex",
+          "visibility": "visible",
+          "height": 900
+        },
+        {
+          "node": "DIV.app",
+          "display": "flex",
+          "visibility": "visible",
+          "height": 900
+        },
+        {
+          "node": "BODY",
+          "display": "block",
+          "visibility": "visible",
+          "height": 900
+        }
+      ]
+    },
+    "demozone": {
+      "present": true,
+      "display": "none",
+      "rect": {
+        "w": 0,
+        "h": 0
+      },
+      "inlineStyle": null,
+      "matchedRulesWithDisplay": [],
+      "allMatched": [],
+      "ancestors": [
+        {
+          "node": "SECTION#demozone.demozone",
+          "display": "none",
+          "visibility": "visible",
+          "height": 0
+        },
+        {
+          "node": "DIV.shell",
+          "display": "flex",
+          "visibility": "visible",
+          "height": 900
+        },
+        {
+          "node": "DIV.app",
+          "display": "flex",
+          "visibility": "visible",
+          "height": 900
+        },
+        {
+          "node": "BODY",
+          "display": "block",
+          "visibility": "visible",
+          "height": 900
+        }
+      ]
+    },
+    "stylesheets": [
+      "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+      "https://fundhub.ai/app/fundhub-brand.css",
+      "https://fundhub.ai/app/crm-sidebar.css",
+      "<inline>",
+      "https://fundhub.ai/app/crm-sidebar.css",
+      "<inline>",
+      "<inline>",
+      "<inline>",
+      "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    ],
+    "docHeight": 900,
+    "winH": 900
+  },
+  "painted": {
+    "dateLabel": "Tuesday, August 18",
+    "statBooked": "—",
+    "weekCounts": [
+      "2026-08-16=—",
+      "2026-08-17=—",
+      "2026-08-18=—",
+      "2026-08-19=—",
+      "2026-08-20=—",
+      "2026-08-21=—",
+      "2026-08-22=—",
+      "?=—"
+    ],
+    "bodyText": "‹‹\nSALES\n▾\n▤\nPipeline\n★\nCloser Dashboard\n☎\nCall cockpit\n＃\nMy numbers\n▣\nSales floor\n▦\nCalendar\nFUNDING\n▾\nCLIENT OPS\n▾\nWATCH\n▾\nAUTOMATION\n▾\nMARKETING\n▾\nADMIN\n▾\nPORTALS\n▾\nfundhub\nFundhub\n/\nCalendar\nORG: FUNDHUB\nTue, Aug 18, 10:56:06 PM EDT\nLIVE\nSearch\n⌘K\nTEST — Owner Role · owner · 32 tabs\nLIVE\nSign out\nDay\nWeek\n‹\n›\nToday\nTuesday, August 18\nBOOKED\n—\nDONE\n—\nNO-SHOW\n—\nSHOW RATE\n—\nLEFT TODAY\n—\nTHIS WEEK · AUG 16 – AUG 22\nSUN\n16\n—\nMON\n17\n—\nTUE\n18\n—\nWED\n19\n—\nTHU\n20\n—\nFRI\n21\n—\nSAT\n22\n—\nTODAY — TUESDAY, AUGUST 18\n—\nNothing booked.\nUP NEXT\n—\nno call linked\nNothing up next\nDated work from the task queue paints here when one is due.\nBEFORE YOU DIAL\nNo briefing on file.\nClient file\nTHEN\nNothing else dated after Up Next.\nCA-03 / WHO'S ON TODAY\nNobody clocked in right now.\nfundhub-calendar · v1\norg: fundhub\ntuesday, august 18\ncontext loads 15 minutes before every call\nsystems nominal · fundhub.ai\nChat"
+  }
+}

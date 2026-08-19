@@ -1,0 +1,13 @@
+# before/test-nodb.txt — TRIMMED for the repo.
+# Full run was    36871 lines. Kept: every failure line and the TAP summary.
+
+not ok 33 - the extraction is faithful to the code
+not ok 2135 - an endpoint excused from the org filter still passes the session's org to its store
+# tests 5640
+# suites 416
+# pass 5635
+# fail 2
+# cancelled 0
+# skipped 3
+# todo 0
+# duration_ms 16554.908208
