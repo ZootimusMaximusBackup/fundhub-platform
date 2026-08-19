@@ -146,6 +146,7 @@ import partnerMarketingGenerateLogo from "../../api/partner-marketing/generate-l
 import messageBlasterGift from "../../api/gifts/message-blaster.mjs";
 import publicPartnerPage from "../../api/public/partner-page.mjs";
 import publicSurveySubmit from "../../api/public/survey-submit.mjs";
+import publicEducationEnroll from "../../api/public/education-enroll.mjs";
 import publicPartnerApply from "../../api/public/partner-apply.mjs";
 import publicUnsubscribe from "../../api/public/unsubscribe.mjs";
 import creativeGenerate from "../../api/creative/generate.mjs";
@@ -535,6 +536,8 @@ export const ROUTES = {
   "gifts/message-blaster": messageBlasterGift,
   "public/partner-page": publicPartnerPage,
   "public/survey-submit": publicSurveySubmit,
+  /* The /education/enroll/ form. No auth — same class as survey-submit. */
+  "public/education-enroll": publicEducationEnroll,
   "public/partner-apply": publicPartnerApply,
   /* The door behind the unsubscribe link in every outbound email. No auth —
      same class as survey-submit: the signed token in the URL is the credential,
