@@ -205,15 +205,41 @@ export async function fireDueCalls(db, {
     params.push(orgId);
     orgClause = `AND org_id = $${params.length}::uuid`;
   }
+  /* DEMO AND TEST CASES NEVER GET A CALL. Owner instruction, 2026-08-19, given
+     the day this sweeper was first switched on: "no bureau calls about fake
+     clients".
+
+     This is a real-world action, not a database write — the call goes to a
+     credit bureau about a named consumer. A demo client is not a consumer, and
+     a call placed about one is a call that cannot be taken back.
+
+     Three ways a row can be fake, and all three are excluded, because no one of
+     them covers the others:
+       * the case itself is marked demo (inquiry_removal_cases.is_demo, added
+         2026-08-19 so a demo client's ROWS carry the mark, not just the client)
+       * the case is not marked but its client is (clients.is_demo) — true of
+         every case created before that column existed
+       * the client is a journey-runner synthetic (custom_fields.synthetic), the
+         marker src/messaging/live-fence.mjs already refuses sends on
+
+     IS NOT TRUE, not = false, on purpose: both columns are nullable, and
+     `null = false` is null, which excludes nothing. That distinction is the
+     whole guard. */
   const due = await db.query(
-    `SELECT *
-       FROM inquiry_removal_cases
-      WHERE call_due_at IS NOT NULL
-        AND call_due_at <= $1::timestamptz
-        AND call_fired_at IS NULL
-        AND case_status::text = ANY(ARRAY['In Progress','Queued','Scheduled'])
-        ${orgClause}
-      ORDER BY call_due_at ASC
+    `SELECT irc.*
+       FROM inquiry_removal_cases irc
+      WHERE irc.call_due_at IS NOT NULL
+        AND irc.call_due_at <= $1::timestamptz
+        AND irc.call_fired_at IS NULL
+        AND irc.case_status::text = ANY(ARRAY['In Progress','Queued','Scheduled'])
+        AND irc.is_demo IS NOT TRUE
+        AND NOT EXISTS (
+          SELECT 1 FROM clients c
+           WHERE c.id = irc.client_id
+             AND (c.is_demo IS TRUE OR c.custom_fields->>'synthetic' = 'true')
+        )
+        ${orgClause.replace("AND org_id", "AND irc.org_id")}
+      ORDER BY irc.call_due_at ASC
       LIMIT $2`,
     params
   );
