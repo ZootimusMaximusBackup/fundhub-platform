@@ -1,0 +1,219 @@
+{
+  "stage": "03-creative",
+  "email": "partner@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-19T10:49:31.371Z",
+  "login": {
+    "ok": true,
+    "cached": true
+  },
+  "finalUrl": "/app/creative-factory.html",
+  "chain": [
+    {
+      "tag": "BUTTON",
+      "id": "genBtn",
+      "cls": "btn dark mono fh-tap",
+      "display": "block",
+      "visibility": "visible",
+      "opacity": "1",
+      "height": "auto",
+      "offsetWidth": 0,
+      "offsetHeight": 0,
+      "rect": {
+        "w": 0,
+        "h": 0,
+        "top": 0
+      }
+    },
+    {
+      "tag": "DIV",
+      "id": null,
+      "cls": null,
+      "display": "flex",
+      "visibility": "visible",
+      "opacity": "1",
+      "height": "auto",
+      "offsetWidth": 0,
+      "offsetHeight": 0,
+      "rect": {
+        "w": 0,
+        "h": 0,
+        "top": 0
+      }
+    },
+    {
+      "tag": "DIV",
+      "id": null,
+      "cls": "card-bd",
+      "display": "block",
+      "visibility": "visible",
+      "opacity": "1",
+      "height": "auto",
+      "offsetWidth": 0,
+      "offsetHeight": 0,
+      "rect": {
+        "w": 0,
+        "h": 0,
+        "top": 0
+      }
+    },
+    {
+      "tag": "DIV",
+      "id": null,
+      "cls": "card",
+      "display": "none",
+      "visibility": "visible",
+      "opacity": "1",
+      "height": "auto",
+      "offsetWidth": 0,
+      "offsetHeight": 0,
+      "rect": {
+        "w": 0,
+        "h": 0,
+        "top": 0
+      }
+    },
+    {
+      "tag": "DIV",
+      "id": null,
+      "cls": "content fh-maxw",
+      "display": "block",
+      "visibility": "visible",
+      "opacity": "1",
+      "height": "2526.5px",
+      "offsetWidth": 1212,
+      "offsetHeight": 2527,
+      "rect": {
+        "w": 1212,
+        "h": 2527,
+        "top": 57
+      }
+    },
+    {
+      "tag": "DIV",
+      "id": null,
+      "cls": "main",
+      "display": "flex",
+      "visibility": "visible",
+      "opacity": "1",
+      "height": "2636.5px",
+      "offsetWidth": 1212,
+      "offsetHeight": 2637,
+      "rect": {
+        "w": 1212,
+        "h": 2637,
+        "top": 0
+      }
+    },
+    {
+      "tag": "DIV",
+      "id": null,
+      "cls": "app",
+      "display": "flex",
+      "visibility": "visible",
+      "opacity": "1",
+      "height": "2636.5px",
+      "offsetWidth": 1440,
+      "offsetHeight": 2637,
+      "rect": {
+        "w": 1440,
+        "h": 2637,
+        "top": 0
+      }
+    },
+    {
+      "tag": "BODY",
+      "id": null,
+      "cls": null,
+      "display": "block",
+      "visibility": "visible",
+      "opacity": "1",
+      "height": "1000px",
+      "offsetWidth": 1440,
+      "offsetHeight": 1000,
+      "rect": {
+        "w": 1440,
+        "h": 1000,
+        "top": 0
+      }
+    }
+  ],
+  "state": {
+    "CF_SUITE": {
+      "enabled": true,
+      "remaining": 248067,
+      "cap": 250000,
+      "used": 1933,
+      "loaded": true,
+      "error": null
+    },
+    "genBtnPresent": true,
+    "genBtnVisible": false,
+    "genBtnDisabled": false,
+    "partnerSelect": {
+      "id": "partnerSel",
+      "value": "0",
+      "options": [
+        "TEST — White-Label Partner Role"
+      ]
+    },
+    "bodyText": "‹‹\nHOME\n▾\nMARKETING\n▾\n◉\nSocial Studio\n✳\nCreative Factory\nADMIN\n▾\nfundhub\nMARKETING\nCreative Factory\nTEST — WHITE-LABEL PARTNER ROLE\nWRITES ON\nTEST — White-Label Partner Role · partner · 4 tabs\nLIVE\nSign out\nJOBS IN FLIGHT\n0\n0 running · 0 queued\nFAILED JOBS\n0\nall carry a reason\nAWAITING REVIEW\n0\n0 blocked · 0 campaigns\nLIBRARY ASSETS\n0\nnot archived\nACTIVE BRAND KITS\n0\nof 0 total\nPARTNER SCOPE\nONE PARTNER\nPARTNER\nTEST — White-Label Partner Role\n9defaf28-47c5-43a0-8f5e-f41ef90f360a\nShowing TEST — White-Label Partner Role only.\nThis screen shows one partner at a time.\nWRITING BUDGET\nON\nON?\nYes\nUSED THIS MONTH\n1933\nLEFT\n248067\nCAP\n250000\nThis counts the writing robot's tokens used for this partner this month. The cap is 250,000 a month, unless this partner has been given a different one. It does not charge money.\nGENERATION JOBS\nSTATE\nALL0\nQUEUED0\nRUNNING0\nSUCCEEDED0\nFAILED0\nSHOW\n5\n10\n25\n50\n200\nJOB\tSTATUS\tKIND\tSHAPES\tVERSIONS\tTRIES\tMADE\tMADE BY\tSTARTED\tFINISHED\nNo jobs match this filter for this partner.\n‹ PREV\nNEXT ›\nShowing 0\nNewest first. Cost per job is not shown here.\nCREATIVE LIBRARY\n0 ON THIS PAGE\nSTATE\nALL0\nPENDING0\nPASSED0\nBLOCKED0\nAPPROVED0\nKIND\nANY0\nSTATIC0\nVIDEO0\nCOPY0\nFORMAT\nANY0\n1X10\n4X50\n9X160\n16X90\nBRAND KIT\nany\nINCLUDE ARCHIVED\nNo\nYes\nSHOW\n6\n12\n50\n200\nNo assets match this filter for this partner.\n‹ PREV\nNEXT ›\nShowing 0\nNo previews. The file itself is not sent to this screen.\nREVIEW QUEUE\nSTATE\nALL0\nBLOCKED0\nPENDING0\nAWAITING_APPROVAL0\nSHOW\n5\n10\n50\nITEM\tSTATE\tKIND\tDETAIL\tREASONS\tBUDGET\tOFFER\tWHERE\tLABELS\tUPDATED\nNothing in the queue for this filter.\n‹ PREV\nNEXT ›\nShowing 0\nCreatives and campaigns share this list. Blank means it does not apply.\nBRAND KITS\nSTATE\nALL0\nDRAFT0\nACTIVE0\nARCHIVED0\nNo brand kits match this filter for this partner.\n‹ PREV\nNEXT ›\nShowing 0\nBrand kits are read-only here.\nREFERENCE\nREAD ONCE\nWhat each job state means\nHow the AI labels are decided\nWhy creative gets stopped\nSettings the creative engine ships with\nsystems nominal · fundhub.ai\ncreative factory · test — white-label partner role\nDETAIL\n—\n✕\ncreative factory · everything loaded"
+  },
+  "loadNetwork": [
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200,
+      "body": "{\"ok\":true,\"principal\":\"partner\",\"staff\":{\"id\":\"cc1984d1-2a25-4e89-bf99-58381143a3f1\",\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"role\":\"partner\",\"email\":\"partner@fundhub.ai\",\"name\":\"TEST — White-Label Partner Role\",\"status\":\"active\",\"principal_kind\":\"partner\",\"client_id\":null,\"affiliate_id\":null,\"partner_id\":\"9defaf28-47c5-43a0-8f5e-f41ef90f360a\"}}"
+    },
+    {
+      "method": "GET",
+      "url": "/api/read/partners?limit=200",
+      "status": 200,
+      "body": "{\"ok\":true,\"count\":1,\"limit\":200,\"offset\":0,\"hasMore\":false,\"items\":[{\"id\":\"9defaf28-47c5-43a0-8f5e-f41ef90f360a\",\"slug\":\"test-role-partner\",\"name\":\"TEST — White-Label Partner Role\",\"status\":\"active\",\"revenue_share_pct\":\"50.00000\",\"agreement_signed\":false,\"balance_accrued\":\"0\",\"total_paid\":\"0\",\"open_accruals\":\"0\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "/api/org-brand",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/creative/brand-kits?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&state=all&limit=200",
+      "status": 200,
+      "body": "{\"ok\":true,\"count\":0,\"limit\":200,\"offset\":0,\"hasMore\":false,\"items\":[]}"
+    },
+    {
+      "method": "GET",
+      "url": "/api/creative/approvals?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&state=all&limit=200",
+      "status": 200,
+      "body": "{\"ok\":true,\"count\":0,\"limit\":200,\"offset\":0,\"hasMore\":false,\"items\":[]}"
+    },
+    {
+      "method": "GET",
+      "url": "/api/creative/library?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&state=all&include_archived=1&limit=200",
+      "status": 200,
+      "body": "{\"ok\":true,\"count\":0,\"limit\":200,\"offset\":0,\"hasMore\":false,\"items\":[]}"
+    },
+    {
+      "method": "GET",
+      "url": "/api/creative/jobs?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&state=all&limit=200",
+      "status": 200,
+      "body": "{\"ok\":true,\"count\":0,\"limit\":200,\"offset\":0,\"hasMore\":false,\"items\":[]}"
+    },
+    {
+      "method": "GET",
+      "url": "/api/partner-marketing/usage?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+      "status": 200,
+      "body": "{\"ok\":true,\"partner_id\":\"9defaf28-47c5-43a0-8f5e-f41ef90f360a\",\"enabled\":true,\"cap\":250000,\"used\":1933,\"remaining\":248067,\"orgId\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\"}"
+    }
+  ],
+  "consoleErrorsAll": [],
+  "pageErrorsAll": [],
+  "blockedWrites": []
+}

@@ -388,7 +388,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
               <label for="partnerSel">Partner</label>
               <select id="partnerSel"></select>
             </div>
-            <div class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.05em;margin-top:8px;overflow-wrap:anywhere" id="scopePid">—</div>
+            <div style="font-size:var(--fs-caption);color:var(--gray2);margin-top:8px;overflow-wrap:anywhere" id="scopePid">—</div>
             <div style="margin-top:8px" id="scopeOffers"></div>
           </div>
           <div>
@@ -401,18 +401,19 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
       <!-- Writing budget — whether this partner may generate at all, and how much is left. -->
       <div class="card">
         <div class="card-hd">
-          <div class="eyebrow">Writing budget</div>
+          <div class="eyebrow">Monthly writing allowance</div>
           <div class="spacer"></div>
-          <span class="badge b-gray mono" id="cfUseBadge">meter only</span>
+          <span class="badge b-gray mono" id="cfUseBadge">counter only</span>
         </div>
         <div class="card-bd" id="cfUseBody">
           <div class="unwired">
-            <div class="uh"><span>◉</span><span>Loading writing budget…</span></div>
+            <div class="uh"><span>◉</span><span>Loading the allowance…</span></div>
           </div>
         </div>
         <div class="cap">
-          This counts the writing robot's tokens used for this partner this month. The cap is 250,000
-          a month, unless this partner has been given a different one. It does not charge money.
+          How much writing this partner has had the computer do for them this month, counted in small
+          pieces of text. The limit is 250,000 pieces a month, unless this partner has been given a
+          different one. This is a counter only — it does not charge anyone money.
         </div>
       </div>
 
@@ -422,8 +423,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           <div class="eyebrow">Generate and decide</div>
         </div>
         <div class="cap">
-          <b>Ask for new creative.</b> Queued work is picked up on its own every couple of
-          minutes. "Run queued jobs now" starts it straight away.
+          <b>Ask for new creative.</b> Work you add here waits in a queue and is picked up on its own
+          every couple of minutes. "Run queued jobs now" starts it straight away. Nothing is made
+          unless an ad-making service has been switched on for this account — if none has, the screen
+          says so and the job is recorded as a failure rather than sitting there looking busy.
         </div>
         <div class="card-bd" style="padding:16px;border-top:1px solid var(--line)">
           <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:end">
@@ -458,9 +461,15 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </div>
         </div>
         <div class="cap">
+          <!-- NO LINK IN THIS CAPTION, ON PURPOSE. shell.js hides a link a role may
+               not follow, and it hides the whole card the link sits in, not just the
+               link. A partner may not open the Campaigns screen, so the one word
+               "Campaigns" wrapped in an anchor here took this entire card — the
+               Enqueue button and the approve/reject/archive row with it — off the
+               page for the only role the screen is built for. Plain words instead. -->
           <b>No names and no performance figures on a creative.</b> This screen is never told who
-          asked for or approved a creative, and it is never told how an advert performed. Spend and
-          fatigue live on <a href="campaign-manager.html" style="text-decoration:underline">Campaigns</a>.
+          asked for or approved a creative, and it is never told how an advert performed. Money spent
+          and how often an advert was shown live on the Campaigns screen.
         </div>
       </div>
 
@@ -913,11 +922,14 @@ function renderScope(){
   var sel = document.getElementById('partnerSel');
   var p = currentPartner();
   if (p) sel.value = String(S.partner);
-  document.getElementById('scopePid').textContent = p ? p.id : 'No partner selected';
-  document.getElementById('scopeChipTxt').textContent = p ? (p.name || p.slug || p.id) : 'no partner selected';
+  /* The partner's NAME, not the id. This line used to print the raw id — a long
+     string of letters and numbers that means nothing to the person reading it and
+     is not something they can act on. The name is already on the same object. */
+  document.getElementById('scopePid').textContent = p ? (p.name || p.slug || 'Unnamed partner') : 'No partner selected';
+  document.getElementById('scopeChipTxt').textContent = p ? (p.name || p.slug || 'Unnamed partner') : 'no partner selected';
   document.getElementById('scopeOffers').innerHTML = '';
   document.getElementById('scopeHow').innerHTML = p
-    ? 'Showing <b>' + esc(p.name || p.slug || p.id) + '</b> only.'
+    ? 'Showing <b>' + esc(p.name || p.slug || 'Unnamed partner') + '</b> only.'
     : 'Nothing is loaded. Pick a partner to show jobs, creatives, or brand kits.';
   setWriteControls(canWriteCreative());
 }
@@ -983,12 +995,12 @@ function loadCfUsage(){
   CF_SUITE = { enabled: false, remaining: null, cap: null, used: null, loaded: false, error: null };
   if (!body) return;
   if (!pid) {
-    body.innerHTML = '<div class="unwired"><div class="uh"><span>◉</span><span>Pick a partner to see the writing budget.</span></div></div>';
+    body.innerHTML = '<div class="unwired"><div class="uh"><span>◉</span><span>Pick a partner to see their monthly writing allowance.</span></div></div>';
     if (badge) badge.textContent = 'no partner';
     setWriteControls(false);
     return;
   }
-  body.innerHTML = '<div class="unwired"><div class="uh"><span>◉</span><span>Loading writing budget…</span></div></div>';
+  body.innerHTML = '<div class="unwired"><div class="uh"><span>◉</span><span>Loading the allowance…</span></div></div>';
   setWriteControls(false);
   var tok = '';
   try { tok = localStorage.getItem('fh_token') || ''; } catch (e) { tok = ''; }
@@ -1000,14 +1012,14 @@ function loadCfUsage(){
   }).then(function (pack) {
     var d = pack.d || {};
     if (pack.status === 403) {
-      CF_SUITE.error = 'Only the owner or this partner can see the writing budget.';
+      CF_SUITE.error = 'Only the owner or this partner can see this allowance.';
       body.innerHTML = '<div class="unwired"><div class="uh"><span>◉</span><span>' + CF_SUITE.error + '</span></div></div>';
       if (badge) badge.textContent = 'owner / partner';
       setWriteControls(false);
       return;
     }
     if (!d.ok) {
-      CF_SUITE.error = d.message || 'Could not load the writing budget.';
+      CF_SUITE.error = d.message || 'Could not load the allowance.';
       body.innerHTML = '<div class="unwired"><div class="uh"><span>⚠</span><span>' + esc(CF_SUITE.error) + '</span></div></div>';
       if (badge) badge.textContent = 'error';
       setWriteControls(false);
@@ -1020,12 +1032,12 @@ function loadCfUsage(){
         '<div class="stat"><div class="eyebrow">On?</div><div class="sv">' + (d.enabled ? 'Yes' : 'No') + '</div></div>' +
         '<div class="stat"><div class="eyebrow">Used this month</div><div class="sv">' + (d.used == null ? '—' : d.used) + '</div></div>' +
         '<div class="stat"><div class="eyebrow">Left</div><div class="sv">' + (d.remaining == null ? '—' : d.remaining) + '</div></div>' +
-        '<div class="stat"><div class="eyebrow">Cap</div><div class="sv">' + (d.cap == null ? '—' : d.cap) + '</div></div>' +
+        '<div class="stat"><div class="eyebrow">Monthly limit</div><div class="sv">' + (d.cap == null ? '—' : d.cap) + '</div></div>' +
       '</div>' +
       (d.enabled ? '' : '<p class="note">The owner has not turned this on for this partner. Generate stays off so you do not hit a wall.</p>');
     setWriteControls(canWriteCreative());
   }).catch(function () {
-    CF_SUITE.error = 'Could not reach the writing budget.';
+    CF_SUITE.error = 'Could not reach the allowance.';
     body.innerHTML = '<div class="unwired"><div class="uh"><span>⚠</span><span>' + CF_SUITE.error + '</span></div></div>';
     if (badge) badge.textContent = 'error';
     setWriteControls(false);
@@ -1045,7 +1057,10 @@ function setWriteControls(enabled){
   if(enabled) {
     ['genMsg','actMsg'].forEach(function(id){
       var m = document.getElementById(id);
-      if (m && /budget loads|No partner selected|has not turned this on/i.test(m.textContent || '')) {
+      /* Clears the "why the buttons are off" line once they come on. The words
+         matched here must stay in step with the reason ladder below, or a stale
+         reason sits under a working button. */
+      if (m && /allowance has loaded|No partner selected|has not turned this on/i.test(m.textContent || '')) {
         m.textContent = '';
       }
     });
@@ -1057,7 +1072,7 @@ function setWriteControls(enabled){
       ? CF_SUITE.error
       : (CF_SUITE.loaded && !CF_SUITE.enabled
         ? 'The owner has not turned this on for this partner.'
-        : 'Writing tools stay off until the budget loads.'));
+        : 'These buttons stay off until the allowance has loaded.'));
   ['genMsg','actMsg'].forEach(function(id){ var m = document.getElementById(id); if(m) m.textContent = reason; });
 }
 
@@ -1226,10 +1241,33 @@ function jobDetail(j){
 
   if(j.error){
     out += '<div class="detfull" style="margin-top:4px"><div class="dk" style="font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);margin-bottom:5px">What went wrong</div>' +
-      '<div class="errbox">' + esc(j.error) + '</div></div>';
+      '<div class="errbox">' + esc(plainJobError(j.error)) + '</div></div>';
   }
   out += '<div class="detfull"><p class="note" style="margin-top:6px">' + jobExplain(j) + '</p></div>';
   return out + '</div>';
+}
+
+/* The stored failure reason, in words the owner reads.
+
+   generation_jobs.error holds the engineer's sentence verbatim (src/creative/
+   generate.mjs:283), and the commonest one tells the reader to "insert a
+   creative_providers row" — a database table name, printed to a person who does
+   not write code. This box used to show it unchanged.
+
+   Only the three sentences that actually exist in the code are translated. Every
+   one of them is matched on the same words jobExplain() below matches on, so the
+   box and the line under it can never disagree. Anything else gets a neutral
+   sentence: a wrong plain-English guess about an unknown failure is worse than
+   admitting the detail is not shown here. */
+function plainJobError(err){
+  var t = String(err || '');
+  if(/no active provider configured/i.test(t))
+    return 'No ad-making service is switched on for this account, so there was nothing to make the work. Trying again will not help.';
+  if(/has no module/i.test(t))
+    return 'The ad-making service on file is one this system does not know how to use. Trying again will not help.';
+  if(/returned zero assets/i.test(t))
+    return 'The ad-making service answered, but sent nothing back.';
+  return 'The job stopped with an error that this screen cannot put into plain words. Nothing was made.';
 }
 
 function jobExplain(j){
@@ -1455,12 +1493,29 @@ function libEmptyMsg(){
 }
 
 /* ══ CF-06 · REVIEW &amp; APPROVAL QUEUE ══════════════════════════════════ */
+
+/* WHAT EACH ROW IS, IN WORDS. api/creative/approvals.mjs returns three item_type
+   values and all three are database words. 'partner_brand' is the NAME OF A
+   TABLE, and it was being printed straight into the first column, so the person
+   reading the queue literally saw "partner_brand". Nothing here prints the raw
+   value — an item_type this map does not know reads as a neutral word instead. */
+var ITEM_WORDS = {
+  creative_asset: 'Creative',
+  campaign:       'Campaign',
+  partner_brand:  'Brand'
+};
+function itemWord(t){ return ITEM_WORDS[t] || 'Item'; }
+
 function apprRows(){
   var want = S.apprState;
   if(APPROVALS_LIVE){
     return APPROVALS_LIVE.filter(function(r){
       if(want==='all') return true;
-      if(want==='awaiting_approval') return r.item_type==='campaign';
+      /* Brands belong under this filter too. approvals.mjs sets wantBrands for
+         'awaiting_approval' (line 33) and returns them, so keeping them out here
+         threw away rows the server had already sent — the count on the button
+         and the queue below it both read low. */
+      if(want==='awaiting_approval') return r.item_type==='campaign' || r.item_type==='partner_brand';
       return r.item_type==='creative_asset' && r.state===want;
     }).slice().sort(function(a,b){ return a.updated_at < b.updated_at ? 1 : a.updated_at > b.updated_at ? -1 : 0; });
   }
@@ -1525,7 +1580,7 @@ function renderApprovals(){
         : '';
       var nReasons = (r.reasons||[]).length;
       return '<tr class="rowbtn ' + stripe + '" data-appr="' + esc(r.id) + '" tabindex="0" aria-expanded="false">' +
-        '<td><span class="chev">▸</span><span class="mono">' + esc(r.item_type) + '</span>' +
+        '<td><span class="chev">▸</span><span>' + esc(itemWord(r.item_type)) + '</span>' +
           '<span class="sub">' + esc(shortId(r.id)) + '</span></td>' +
         '<td><span class="badge ' + badge + '">' + esc(r.state) + '</span></td>' +
         '<td class="mono">' + (r.subtype ? esc(r.subtype) : '') + '</td>' +
@@ -1570,9 +1625,36 @@ var SCREEN_STATE_WORDS = {
 
 function apprDetail(r){
   var isCampaign = r.item_type === 'campaign';
+  var isBrand    = r.item_type === 'partner_brand';
   var out = '<div class="detwrap">';
   out += '<div class="detcol"><div class="dk">Item</div><div class="dv">' +
-    (isCampaign ? 'Campaign' : 'Creative') + '</div></div>';
+    esc(itemWord(r.item_type)) + '</div></div>';
+
+  /* A BRAND GETS ITS OWN BRANCH. It is not a creative and not a campaign: it
+     carries no compliance reasons, no budget, no offer, no platform and no AI
+     labels, because approvals.mjs selects NULL for every one of those columns on
+     this arm. Without this branch it fell through to the creative branch and
+     rendered a row of empty boxes plus an "Open the full creative" button that
+     points at something that is not a creative. */
+  if(isBrand){
+    out += '<div class="detcol"><div class="dk">Business name</div><div class="dv">' +
+      (r.detail ? esc(r.detail) : nul('not filled in')) + '</div></div>';
+    out += '<div class="detcol"><div class="dk">In the queue since</div><div class="dv mono">' +
+      esc(fmt(r.updated_at)) + '</div></div>';
+    out += '<div class="detfull"><p class="note" style="margin-top:6px">' +
+      '<b>A partner sent their own brand in to be checked.</b> That is their logo, colours, wording and ' +
+      'business details — not an advert. The advert rules have not been run on it, so there is nothing ' +
+      'flagged to show and no reason list.</p></div>';
+    /* NO BUTTON, AND NO CLAIM THAT ONE EXISTS ELSEWHERE. api/brand/review.mjs
+       accepts approve and reject, but no screen calls them: brand-studio.html
+       sends only action "submit". Saying "approve it over there" would send the
+       reader looking for a control that is not built. */
+    out += '<div class="detfull"><p class="note" style="color:var(--gray2)">' +
+      'This queue only shows you that a brand is waiting. There is no button yet — on this screen or ' +
+      'any other — that approves a brand or sends it back.</p></div>';
+    return out + '</div>';
+  }
+
   out += '<div class="detcol"><div class="dk">Reference</div><div class="dv mono">' + esc(r.id) + '</div></div>';
   out += '<div class="detcol"><div class="dk">' + (isCampaign ? 'Strategy' : 'Kind') + '</div><div class="dv mono">' +
     (r.subtype ? esc(r.subtype) : nul('—')) + '</div></div>';
@@ -2131,8 +2213,13 @@ document.getElementById('genBtn').addEventListener('click', function () {
         msg.textContent = 'Could not add it: ' + (res.message || res.error || 'something went wrong');
         return;
       }
+      /* The server says whether an ad-making service is actually switched on, and
+         that sentence is shown as it is. The old message promised the queue would
+         "start on its own in a few minutes" whatever the state of the account —
+         true of the clock, false of the outcome, because with no service switched
+         on the run can only record a failure. */
       msg.textContent = res.created
-        ? 'Added to the queue. It starts on its own in a few minutes, or click "Run queued jobs now".'
+        ? (res.note || 'Saved to the queue.')
         : 'That batch name was already used, so nothing new was added.';
       if (typeof wireCreative === 'function') wireCreative();
     });
@@ -2170,8 +2257,17 @@ document.getElementById('runJobsBtn').addEventListener('click', function () {
   }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
     .then(function (res) {
       if (!res.ok) { msg.textContent = 'Could not run: ' + (res.message || res.error || 'something went wrong'); return; }
+      /* "Ran 1 job." was the whole message even when that job failed and made
+         nothing, which reads as success. Say how many worked and how many did
+         not, then the server's plain-words reason. */
       var ran = res.ran || 0;
-      msg.textContent = 'Ran ' + ran + (ran === 1 ? ' job.' : ' jobs.') + (res.note ? ' ' + res.note : '');
+      var okCount = res.succeeded == null ? null : res.succeeded;
+      var head = ran === 0
+        ? 'Nothing ran.'
+        : (okCount == null
+          ? 'Tried ' + ran + (ran === 1 ? ' job.' : ' jobs.')
+          : 'Tried ' + ran + (ran === 1 ? ' job: ' : ' jobs: ') + okCount + ' worked, ' + (ran - okCount) + ' did not.');
+      msg.textContent = head + (res.note ? ' ' + res.note : '');
       if (typeof wireCreative === 'function') wireCreative();
     });
 });

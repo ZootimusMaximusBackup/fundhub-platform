@@ -1,0 +1,223 @@
+{
+  "cardInlineDisplay": "none",
+  "cardGatedAttr": "1",
+  "cardAnchors": [
+    {
+      "href": "campaign-manager.html",
+      "orig": "campaign-manager.html",
+      "text": "Campaigns"
+    }
+  ],
+  "gatedCards": [
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "A",
+      "cls": "navitem",
+      "inlineDisplay": "none",
+      "anchors": [],
+      "containsGenBtn": false
+    },
+    {
+      "tag": "DIV",
+      "cls": "card",
+      "inlineDisplay": "none",
+      "anchors": [
+        {
+          "href": "campaign-manager.html",
+          "orig": "campaign-manager.html",
+          "text": "Campaigns"
+        }
+      ],
+      "containsGenBtn": true
+    }
+  ],
+  "role": "partner"
+}

@@ -33,12 +33,13 @@ flowchart TD
     CAN --> A_public[public — 4 routes]
     CAN --> A_read[Reading data — 39 routes]
     CAN --> A_repair[repair — 2 routes]
-    CAN --> A_social[social — 5 routes]
+    CAN --> A_social[social — 7 routes]
     CAN --> A_top_level[Everything else — 24 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 48 routes]
+    WHO -->|Yes| CANT[Blocked — 49 routes]
     CANT --> B_auth[Signing in and out — 4 blocked]
     CANT --> B_banking[banking — 2 blocked]
+    CANT --> B_brand[brand — 1 blocked]
     CANT --> B_chat[chat — 1 blocked]
     CANT --> B_company_brain[company-brain — 2 blocked]
     CANT --> B_content[content — 2 blocked]
@@ -56,7 +57,7 @@ flowchart TD
 
 ## What they can reach
 
-**126 of 176 routes.**
+**128 of 179 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -178,11 +179,13 @@ flowchart TD
 | `/api/repair/exceptions` | GET, POST | staff |
 | `/api/repair/send` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/shifts` | GET, POST | staff |
+| `/api/social/channels` | GET | partner, staff |
 | `/api/social/generate` | POST | partner, staff |
 | `/api/social/oauth` | — | staff |
 | `/api/social/posts` | GET, POST | partner, staff |
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
+| `/api/social/settings` | GET, POST | staff, partner |
 | `/api/soft-pull-approve` | GET, POST | anyone |
 | `/api/tasks` | GET, PATCH | staff |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
@@ -195,7 +198,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**48 of 176 routes.**
+**49 of 179 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -205,6 +208,7 @@ flowchart TD
 | `/api/auth/suspend` | POST | owner, admin |
 | `/api/banking/revoke` | GET, POST | owner, admin |
 | `/api/banking/sync-accounts` | POST | owner, admin, sales_manager |
+| `/api/brand/review` | POST | employees: owner, admin<br>plus: partner |
 | `/api/chat/portal-message` | POST | client |
 | `/api/closer-deck` | POST | closer, sales_manager, owner, admin |
 | `/api/company-brain/reviews` | GET, POST | owner |

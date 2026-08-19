@@ -1,0 +1,186 @@
+{
+  "stage": "02-social",
+  "email": "partner@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-19T10:47:34.627Z",
+  "login": {
+    "ok": true,
+    "cached": true
+  },
+  "finalUrl": "/app/social-studio.html",
+  "dom": {
+    "channelOptions": [
+      {
+        "value": "",
+        "label": "— connect an account first —"
+      }
+    ],
+    "channelSelectVisible": true,
+    "buttons": [
+      {
+        "id": "burger",
+        "text": "‹‹",
+        "disabled": false
+      },
+      {
+        "id": "",
+        "text": "Home▾",
+        "disabled": false
+      },
+      {
+        "id": "",
+        "text": "Marketing▾",
+        "disabled": false
+      },
+      {
+        "id": "",
+        "text": "Admin▾",
+        "disabled": false
+      },
+      {
+        "id": "composeTop",
+        "text": "Write a post",
+        "disabled": false
+      },
+      {
+        "id": "fh-shell-out",
+        "text": "Sign out",
+        "disabled": false
+      },
+      {
+        "id": "",
+        "text": "Connected accounts 0 of 80 can post · 0 cannot",
+        "disabled": false
+      },
+      {
+        "id": "",
+        "text": "Waiting to post 60 past their time",
+        "disabled": false
+      },
+      {
+        "id": "",
+        "text": "Needs a rewrite 00 reasons given",
+        "disabled": false
+      },
+      {
+        "id": "",
+        "text": "Could not be sent 0tries 3 times before giving up",
+        "disabled": false
+      },
+      {
+        "id": "",
+        "text": "Sent 0no like or view figures exist",
+        "disabled": false
+      },
+      {
+        "id": "ssGenBtn",
+        "text": "Write 3 posts for me",
+        "disabled": false
+      },
+      {
+        "id": "runScreen",
+        "text": "Check the wording",
+        "disabled": false
+      },
+      {
+        "id": "queueBtn",
+        "text": "Queue post",
+        "disabled": false
+      },
+      {
+        "id": "publishDueBtn",
+        "text": "Send anything due now",
+        "disabled": false
+      },
+      {
+        "id": "clearComposer",
+        "text": "Clear the form",
+        "disabled": false
+      },
+      {
+        "id": "",
+        "text": "Waiting6",
+        "disabled": false
+      },
+      {
+        "id": "",
+        "text": "Needs a rewrite0",
+        "disabled": false
+      },
+      {
+        "id": "",
+        "text": "Could not be sent0",
+        "disabled": false
+      },
+      {
+        "id": "",
+        "text": "Sent0",
+        "disabled": false
+      },
+      {
+        "id": "",
+        "text": "Send history0",
+        "disabled": false
+      },
+      {
+        "id": "drawerClose",
+        "text": "✕",
+        "disabled": false
+      }
+    ],
+    "connectMentions": [
+      {
+        "tag": "BUTTON",
+        "id": "",
+        "text": "Connected accounts 0 of 80 can post · 0 cannot"
+      }
+    ],
+    "settingNotRead": true,
+    "bodyTextSample": "‹‹\nHOME\n▾\nMARKETING\n▾\n◉\nSocial Studio\n✳\nCreative Factory\nADMIN\n▾\nfundhub\nMARKETING\nSocial Studio\nPARTNER\nTEST — White-Label Partner Role\nNOW = AUG 19 10:47Z\nWrite a post\nTEST — White-Label Partner Role · partner · 4 tabs\nLIVE\nSign out\nCONNECTED ACCOUNTS\n0 of 8\n0 can post · 0 cannot\nWAITING TO POST\n6\n0 past their time\nNEEDS A REWRITE\n0\n0 reasons given\nCOULD NOT BE SENT\n0\ntries 3 times before giving up\nSENT\n0\nno like or view figures exist\nWHAT THIS COUNTS\nSocial accounts this partner has connected: 0. Of those, 0 can post right now.\nThe 8 is not a count. It is how many kinds of social account this system allows.\n◉\nShowing TEST — White-Label Partner Role.\nWRITE POSTS\nWRITING ON · 248297 LEFT\nPosts are written from this partner's brand. Writing a post does not send it — it lands in the waiting list below, where you can read it first.\nWrite 3 posts for me\nCONNECTED ACCOUNTS\n0 CONNECTED\nNo social accounts are connected yet. Once one is, it will show here.\nNothing can be written or queued until there is one. Connect Facebook, Instagram or LinkedIn just below.\nNOT CONNECTED YET\n8 OF 8 NOT CONNECTED\nInstagram\nNOT CONNECTED\nTikTok\nNOT CONNECTED\nFacebook\nNOT CONNECTED\nLinkedIn\nNOT CONNECTED\nX\nNOT CONNECTED\nYouTube Shorts\nNOT CONNECTED\nThreads\nNOT CONNECTED\nPinterest\nNOT CONNECTED\nConnecting Facebook, Instagram, or LinkedIn is for the owner once those apps are set up. You can still write and queue posts here.\nWRITE A POST\nACCOUNT\n— connect an account first —\nA post goes to one account. There is no cross-posting.\nWHAT THIS POST IS ABOUT\n— choose one —\nFunding\nCredit cards\nCredit repair\nRequired. The copy check refuses a post without it.\nWHAT THE POST SAYS\nThis is the whole post. There is no separate headline, hashtag or link box.\n0 letters\nPICTURE OR VIDEO (OPTIONAL)\n— none —\nAttaching a picture is not ready yet. Posts go out as text.\nSEND AT (OPTIONAL) — TIMES ARE UTC\nNo account chosen yet.\nCheck the wording\nQueue post\nSend anything due now\nClear the form\nCOPY CHECK\n—\nNOTHING CHECKED YET\nWrite the post and say what it is about. Nothing is checked until both are filled in, and leaving out what the post is about is itself a refusal.\nHow the copy check works\nWAITING TO POST\nWaiting\n6\nNeeds a rewrite\n0\nCould not be sent\n0\nSent\n0\nSend history\n0\nACCOUNT\nAll accounts\nABOUT\nAll\nFunding\nCredit cards\nCredit repair\n6 OF 6 POSTS MATCH YOUR FILTER\nDRAFT\nWritten, but not sent anywhere yet. You can still change your mind.\nWAITING\nChecked and lined up. It will go out at its set time.\nSENDING NOW\nGoing out right now. This lasts a second or two. A post that sits here means something crashed.\nSENT\nIt went out. It is live on the account.\nCOULD NOT BE SENT\nThe system tried three times and could not get it out.\nNEEDS A REWRITE\nThe copy check refused it. It will never go out. Write a new one.\nACCOUNT\tPOST\tABOUT\tSEND AT\tTRIES\tWHAT HAPPENS NEXT\n▸—\nNeed help understanding your funding options? E2E WL Click17 Co reviews your situation and connects you with potential lenders. No obligations—just clear information to help you make informed decisions.\n\tFunding\tno time set\tundefined\nof 3\n\tDRAFT\nWritten, not lined up yet\n▸—\nConfused about business funding? We break down your options in plain English. E2E WL Click17 Co helps you explore what might be available based on your unique situation. Start with a free review today.\n\tFunding\tno time set\tundefined\nof 3\n\tDRAFT\nWritten, not lined up yet\n▸—\nE2E WL Click17 Co specializes in funding reviews for businesses. We'll assess your needs and help you understand which lenders might be a fit. Simple process, no commitments required.\n\tFunding\tno time set\tundefined\nof 3\n\tDRAFT\nWritten, not lined up yet\n▸—\nLooking for funding options? The Partner connects you with potential lenders who may be able to help. No guarantees, but we make the search simpler. Learn more about how our review process works.\n\tFunding\tno time set\tundefined\nof 3\n\tDRAFT\nWritten, not lined up yet\n▸—\nNeed to explore business financing? We review your information and match you with lenders in our network. Every situation is different, so results vary. Start your free review today.\n\tFunding\tno time set\tundefined\nof 3\n\tDRAFT\nWritten, not lined up yet\n▸—\nThe Partner helps you find lenders, not loans directly. We review your needs and connect you with possible funding sources. Simple process, no obligations. See if you qualify to get matched.\n\tFunding\tno time set\tundefined\nof 3\n\tDRAFT\nWritten, not lined up yet\nA post goes out at the time set on it. A post with no send time never goes out on its own, and a post on an account that cannot publish waits rather than fails.\nBEST TIMES TO POST\nACCOUNT\n— none —\nSet your posting times once an account is connected. All times are UTC.\nAll times here are UTC. An account can also have a time zone saved on it, but nothing uses it — showing these times in it would show a time that is not the time a post goes out. The next time is found by looking 8 days ahead. If no times are set, no time is picked and none is made up.\nWHO APPROVES POSTS\nA person must approve a post before it goes out\nSETTING NOT READ\n⚠\nThis screen cannot read your approval setting yet. Until it can, treat every post as needing a person to look at it.\n◉\nEvery post for this partner is marked \"needs approval\" — and is still lined up and still sent. There is nowhere to record an approval, and anything the copy check does not refuse is lined up to go out. The check writes down that a person should look at it; nothing waits for one. Saying \"held until approved\" here would be false.\n◆\nCredit repair ignores this switch completely. Every credit-repair post that is not refused outright is marked as needing a person to approve it, before this setting is even looked at, and that cannot be turned off. This partner has 0 credit-repair posts.\nSeparately: a credit-repair post that does not itself carry the words \"Consumer Credit File Rights Under State and Federal Law\" is refused, not merely held.\nsystems nominal · fundhub.ai\nall times shown "
+  },
+  "loadNetwork": [
+    {
+      "method": "GET",
+      "url": "/api/read/partners?limit=200",
+      "status": 200,
+      "body": "{\"ok\":true,\"count\":1,\"limit\":200,\"offset\":0,\"hasMore\":false,\"items\":[{\"id\":\"9defaf28-47c5-43a0-8f5e-f41ef90f360a\",\"slug\":\"test-role-partner\",\"name\":\"TEST — White-Label Partner Role\",\"status\":\"active\",\"revenue_share_pct\":\"50.00000\",\"agreement_signed\":false,\"balance_accrued\":\"0\",\"total_paid\":\"0\",\"open_accruals\":\"0\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "/api/auth/session",
+      "status": 200,
+      "body": "{\"ok\":true,\"principal\":\"partner\",\"staff\":{\"id\":\"cc1984d1-2a25-4e89-bf99-58381143a3f1\",\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"role\":\"partner\",\"email\":\"partner@fundhub.ai\",\"name\":\"TEST — White-Label Partner Role\",\"status\":\"active\",\"principal_kind\":\"partner\",\"client_id\":null,\"affiliate_id\":null,\"partner_id\":\"9defaf28-47c5-43a0-8f5e-f41ef90f360a\"}}"
+    },
+    {
+      "method": "GET",
+      "url": "/api/health",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/partner-marketing/usage?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+      "status": 200,
+      "body": "{\"ok\":true,\"partner_id\":\"9defaf28-47c5-43a0-8f5e-f41ef90f360a\",\"enabled\":true,\"cap\":250000,\"used\":1703,\"remaining\":248297,\"orgId\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\"}"
+    },
+    {
+      "method": "GET",
+      "url": "/api/social/posts?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+      "status": 200,
+      "body": "{\"ok\":true,\"items\":[{\"id\":\"ae0241f3-92ec-435c-ad1a-550d7c5e516a\",\"caption\":\"Need help understanding your funding options? E2E WL Click17 Co reviews your situation and connects you with potential lenders. No obligations—just clear information to help you make informed decisions.\",\"offer_type\":\"funding\",\"scheduled_for\":null,\"status\":\"draft\",\"social_post_id\":null,\"blocked_reasons\":[{\"code\":\"human_approval_required_setting\",\"message\":\"This partner has approve_before_launch enabled, so a human must approve before launch.\",\"rule_set\":\"approval\"}],\"created_at\":\"2026-08-19T06:58:54.232Z\",\"updated_at\":\"2026-08-19T06:58:54.232Z\"},{\"id\":\"805b9b1f-8431-4e49-8947-40080e5e9138\",\"caption\":\"Confused about business funding? We break down your options in plain English. E2E WL Click17 Co helps you explore what might be available based on your unique situation. Start with a free review today.\",\"offer_type\":\"funding\",\"scheduled_for\":null,\"status\":\"draft\",\"social_post_id\":null,\"blocked_reasons\":[{\"code\":\"human_approval_required_setting\",\"message\":\"This partner has approve_before_launch enabled, so a human must approve before launch.\",\"rule_set\":\"approval\"}],\"created_at\":\"2026-08-19T06:58:54.232Z\",\"updated_at\":\"2026-08-19T06:58:54.232Z\"},{\"id\":\"0a09660c-bb5f-4f86-a83f-be98f75473d5\",\"caption\":\"E2E WL Click17 Co specializes in funding reviews for businesses. We'll assess your needs and help you understand which lenders might be a fit. Simple process, no commitments required.\",\"offer_type\":\"funding\",\"scheduled_for\":null,\"status\":\"draft\",\"social_post_id\":null,\"blocked_reasons\":[{\"code\":\"human_approval_required_setting\",\"message\":\"This partner has approve_before_launch enabled, so a human must approve before launch.\",\"rule_set\":\"approval\"}],\"created_at\":\"2026-08-19T06:58:54.232Z\",\"updated_at\":\"2026-08-19T06:58:54.232Z\"},{\"id\":\"292615d4-755b-4326-9280-325757576a9b\",\"caption\":\"Looking for funding options? The Partner connects you with potential lenders who may be able to help. No guarantees, but we make the search simpler. Learn more about how our review process works.\",\"offer_type\":\"funding\",\"scheduled_for\":null,\"status\":\"draft\",\"social_post_id\":null,\"blocked_reasons\":[{\"code\":\"human_approval_required_setting\",\"message\":\"This partner has approve_before_launch enabled, so a human must approve before launch.\",\"rule_set\":\"approval\"}],\"created_at\":\"2026-08-17T23:34:28.653Z\",\"updated_at\":\"2026-08-17T23:34:28.653Z\"},{\"id\":\"b029e3b5-9270-47e1-8562-ff5da697fb5d\",\"caption\":\"Need to explore business financing? We review your information and match you with lenders in our network. Every situation is different, so results vary. Start your free review today.\",\"offer_type\":\"funding\",\"scheduled_for\":null,\"status\":\"draft\",\"social_post_id\":null,\"blocked_reasons\":[{\"code\":\"human_approval_required_setting\",\"message\":\"This partner has approve_before_launch enabled, so a human must approve before launch.\",\"rule_set\":\"approval\"}],\"created_at\":\"2026-08-17T23:34:28.653Z\",\"updated_at\":\"2026-08-17T23:34:28.653Z\"},{\"id\":\"52db3de7-09eb-4143-9040-20f7c57bde37\",\"caption\":\"The Partner helps you find lenders, not loans directly. We review your needs and connect you with possible funding sources. Simple process, no obligations. See if you qualify to get matched.\",\"offer_type\":\"funding\",\"scheduled_for\":null,\"status\":\"draft\",\"social_post_id\":null,\"blocked_reasons\":[{\"code\":\"human_approval_required_setting\",\"message\":\"This partner has approve_before_launch enabled, so a human must approve before launch.\",\"rule_set\":\"approval\"}],\"created_at\":\"2026-08-17T23:34:28.653Z\",\"updated_at\":\"2026-08-17T23:34:28.653Z\"}]}"
+    },
+    {
+      "method": "GET",
+      "url": "/api/org-brand",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "url": "/api/campaigns/action-log?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&target_type=social_post&state=all&limit=200",
+      "status": 200,
+      "body": "{\"ok\":true,\"count\":0,\"limit\":200,\"offset\":0,\"hasMore\":false,\"items\":[]}"
+    }
+  ],
+  "consoleErrorsAll": [],
+  "pageErrorsAll": [],
+  "blockedWrites": []
+}

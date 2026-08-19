@@ -810,7 +810,10 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
           $("saveMsg").textContent = "DNS verified for " + D.domain + ". Add the domain in Netlify for SSL, then publish pages.";
         } else {
           D.verified = false; paint();
-          $("saveMsg").textContent = res.message || ("Not verified: " + (res.error || "txt_mismatch"));
+          // res.message is written for a person ("Add a TXT record at ..."). The
+          // fallback used to be the raw code, e.g. "Not verified: txt_mismatch".
+          $("saveMsg").textContent = res.message
+            || "Not verified. We could not check that domain just now. Try again in a moment.";
         }
       }).catch(function () {
         $("verifyBtn").disabled = false; $("verifyBtn").textContent = "Verify";
@@ -890,7 +893,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
       .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
       .then(function (res) {
         if (!res.ok) {
-          suiteMsg(res.message || res.error || "Could not load writing budget.");
+          suiteMsg(res.message || "Could not load writing budget. Try again in a moment.");
           return;
         }
         SUITE = {
@@ -962,7 +965,8 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
               body: JSON.stringify({ page_id: pageSel.value, version_id: btn.getAttribute("data-restore") })
             }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
               .then(function (res) {
-                suiteMsg(res.ok ? "Restored that version." : (res.message || res.error || "Restore failed"));
+                suiteMsg(res.ok ? "Restored that version."
+                  : (res.message || "That version was not put back. Nothing changed."));
                 refreshPages();
                 refreshSuite();
               });
@@ -983,7 +987,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
       .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
       .then(function (res) {
         if (!res.ok) {
-          list.innerHTML = '<div class="hint">Could not load pages: ' + (res.error || "error") + "</div>";
+          list.innerHTML = '<div class="hint">Could not load your pages just now. Try again in a moment.</div>';
           return;
         }
         var items = res.items || [];
@@ -1020,7 +1024,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
               .then(function (res) {
                 if (msg) msg.textContent = res.ok
                   ? "Published. Live at /sites/" + partnerId + "/" + ((res.page && res.page.slug) || "")
-                  : ("Publish failed: " + (res.error || "error"));
+                  : (res.message || "That page was not published. Nothing changed — try again in a moment.");
                 refreshPages();
               });
           });
@@ -1085,7 +1089,8 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
       body: JSON.stringify({ partner_id: partnerId, enabled: on })
     }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
       .then(function (res) {
-        suiteMsg(res.ok ? (on ? "On for this partner." : "Off for this partner.") : (res.message || res.error || "Could not change"));
+        suiteMsg(res.ok ? (on ? "On for this partner." : "Off for this partner.")
+          : (res.message || "That setting was not changed. Nothing changed — try again in a moment."));
         refreshSuite();
       });
   }
@@ -1101,7 +1106,8 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
       body: JSON.stringify({ page_id: pageSel.value, section_id: ($("histSection") && $("histSection").value) || null })
     }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
       .then(function (res) {
-        suiteMsg(res.ok ? "Copy written. Locked legal blocks were left alone." : (res.message || res.error || "Write failed"));
+        suiteMsg(res.ok ? "Copy written. Locked legal blocks were left alone."
+          : (res.message || "Nothing was written. Your page is unchanged — try again in a moment."));
         refreshPages();
         refreshSuite();
       });
@@ -1117,7 +1123,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
         if (!res.ok) {
           suiteMsg(res.message || (res.error === "not_found"
             ? "That partner is not on file."
-            : (res.error || "Wordmark failed")));
+            : "The wordmark was not made. Nothing changed — try again in a moment."));
           return;
         }
         if (res.brand && res.brand.wordmark_url) {
@@ -1128,17 +1134,83 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
         refreshSuite();
       });
   });
+  /* FH-B4-SUBMIT-REVIEW — the line beside the button and the bottom status
+     strip are two views of one answer, so every branch writes both. Same rule
+     the persistence block below states at its own setSaveMsg().
+
+     THE FLAG: the brand read in the block below writes this same line when it
+     lands. A partner who pressed "Submit for approval" before the read returned
+     got their answer wiped by "Loaded your saved brand." a moment later, and was
+     told nothing about what their press did. Once a press has been answered this
+     line belongs to the press, so the read stands down. The read's own outcome
+     is not lost — it still writes the bottom status strip either way. */
+  function reviewMsg(kind, strip, beside){
+    window.__fhBrandAnswered = true;
+    $("saveMsg").textContent = beside;
+    if (window.FHData && window.FHData.banner) window.FHData.banner(kind, strip, "brand");
+  }
+
   $("submitBtn").addEventListener("click", function(){
-    /* COMPLIANCE REVIEW REQUIRED — approval flow.
-       This used to set D.status="submitted", write it to localStorage, flip the
-       topbar chip to "In review" and print "Submitted. Brands go live after an
-       internal compliance review." No request was ever made. There is no route
-       that can move a brand into review: api/partner-brand.mjs lists
-       approval_status in FORBIDDEN (line 74-75) and nothing else in api/ writes
-       that column. The partner was told they were in review while nobody at
-       Fundhub had been told anything. Say what is actually true instead, and
-       leave D.status to the server. */
-    $("saveMsg").textContent = "Nothing was sent — brand review is not set up yet. Your brand stays a draft.";
+    /* COMPLIANCE — approval flow. This button was inert: it printed "brand
+       review is not set up yet" because no route could move the brand into
+       review. api/brand/review.mjs is now that route, and it is the ONLY writer
+       of partner_brand.approval_status — api/partner-brand.mjs still lists the
+       column in FORBIDDEN (line 74-75), so a partner saving their brand still
+       cannot hand themselves an approval. D.status is never guessed here: the
+       server answers with the new status and that is what gets painted.
+       FH-B4-SUBMIT-REVIEW */
+    if (MODE !== "partner" || !partnerId) {
+      reviewMsg("error", "not sent — no partner",
+        "Nothing was sent — this screen was opened without a partner, so there is no brand to send.");
+      return;
+    }
+    if (!D.entity) {
+      reviewMsg("error", "not sent — no legal entity",
+        "Add the legal entity first — it goes into every disclosure.");
+      return;
+    }
+    var btn = $("submitBtn");
+    btn.disabled = true;
+    window.__fhBrandAnswered = true;   // "Sending…" is an answer too — see reviewMsg
+    $("saveMsg").textContent = "Sending…";
+    var status = 0;
+    fetch("/api/brand/review", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ partner_id: partnerId, action: "submit" })
+    }).then(function(r){ status = r.status; return r.json().catch(function(){ return { ok:false }; }); })
+      .then(function(res){
+        btn.disabled = false;
+        if (res && res.ok) {
+          D.status = res.approval_status === "review" ? "submitted" : (res.approval_status || D.status);
+          paint();
+          reviewMsg("real", "brand sent for review",
+            "Sent for review. Fundhub checks it before it goes live. Nothing on your funnels changes until then.");
+          return;
+        }
+        /* BRANCH ON THE HTTP STATUS. NEVER ECHO res.error. Two refusals carry no
+           plain-words message, and this line used to print their machine code
+           straight at the partner: requirePrincipal answers 401 with
+           {error:"unauthorized"} and 503 with {error:"auth_unavailable"}. A
+           partner read the word "unauthorized" and could do nothing with it.
+           Every other refusal from api/brand/review.mjs carries a `message`
+           written for this line, and it is already a whole sentence — used as it
+           stands, not glued onto a prefix, which used to double the opening
+           words. The last fallback is a sentence too, so no branch can print a
+           code. */
+        var why = status === 401
+          ? "Your sign-in has expired. Sign in again and try once more."
+          : status === 503
+            ? "We could not reach the system just now. Your brand is still a draft — try again in a few minutes."
+            : ((res && res.message)
+               || "Nothing was sent — the change was refused. Your brand is still a draft.");
+        reviewMsg("error", "not sent", why);
+      })
+      .catch(function(){
+        btn.disabled = false;
+        reviewMsg("error", "not sent — server unreachable",
+          "Nothing was sent — we could not reach the server. Your brand stays a draft. Try again in a moment.");
+      });
   });
   $("resetBtn").addEventListener("click", function(){
     /* The confirm used to say "Reset brand to fundhub defaults?" — but this
@@ -1265,7 +1337,10 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
             ? "Saved. Applied across the CRM."
             : "Saved. Tokens apply to this partner's funnels.");
         } else {
-          var why = (d && d.problems ? d.problems.join("; ") : d && d.error) || "write failed";
+          // d.message is a sentence the server wrote for this line. d.error is a
+          // machine code ("write_failed", "forbidden") and must never reach here.
+          var why = (d && d.problems ? d.problems.join("; ") : d && d.message)
+            || "the change was refused";
           banner("error", "saved LOCALLY only — " + why);
           setSaveMsg("Not saved — the server refused the change (" + why +
             "). Your changes are kept in this browser only.");
@@ -1278,37 +1353,98 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
 
   window.__fhBrandPersist = persist;
 
-  if (MODE === "org") {
-    if (typeof FHData === "undefined" || !FHData.orgBrand) return;
-    FHData.wire(FHData.orgBrand(), "brand", function (data) {
-      var b = data.brand;
-      if (!b) return null;
-      if (typeof window.__fhBrandHydrateFromServer === "function") {
-        window.__fhBrandHydrateFromServer(b);
-      }
-      return "CRM brand · " + (b.entity_name || "unnamed");
-    });
-    return;
-  }
+  /* WHY THE READ WAITS — T11-01.
+     data.js carries `defer` (its tag is the one directly above this script), so
+     it has NOT run while this script is being parsed and FHData does not exist
+     yet. This block used to ask for the saved brand right here, during parse:
+     org mode hit a `typeof FHData === "undefined"` guard and quit without a
+     word, partner mode had no guard and threw "FHData is not defined", and that
+     throw killed the rest of this script element as well (the status-bar block
+     below it never ran, so the sticky save bar sat under the bottom strip).
+     Either way __fhBrandHydrateFromServer never ran: every text box kept its
+     grey example text, the colour, ramp and font controls showed hard-coded
+     defaults that LOOK like a real palette, and Save then answered "Legal
+     entity is required" for a value the server had on file all along.
+     Every deferred script runs before DOMContentLoaded, so the read waits for
+     that event — the same shape as public/app/client-control-panel.html and the
+     re-entry guard in campaign-manager.html / creative-factory.html. */
+  function loadBrandFromServer() {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", loadBrandFromServer, { once: true });
+      return;
+    }
 
-  if (!partnerId) {
-    if (typeof FHData !== "undefined") {
+    /* If the read cannot even start, say so. What is on screen at this moment is
+       a set of defaults, not this brand, and defaults that look real are exactly
+       how a saved brand gets overwritten by one press of Save.
+
+       NO banner() CALL HERE, ON PURPOSE. banner() only writes the bottom status
+       strip when FHData is loaded, and this is the one branch that runs BECAUSE
+       FHData is not loaded — so the call did nothing and made the branch look
+       safer than it was. The line beside Save is written by hand and does not
+       depend on FHData, so it is the whole warning in this case. */
+    if (typeof window.FHData === "undefined" || typeof FHData.wire !== "function") {
+      setSaveMsg("We could not load your saved brand, so the boxes below are examples, not your real brand. Reload the page before you save anything.");
+      return;
+    }
+
+    if (MODE === "partner" && !partnerId) {
       FHData.banner("sample",
         "sample palette — sign in as a partner, or open with ?partner_id=<id>", "brand");
+      setSaveMsg("No partner is open, so these are example colours, not a real brand. Sign in as a partner to see yours.");
+      return;
     }
-    return;
-  }
 
-  FHData.wire(
-    FHData.brand(partnerId),
-    "brand", function (data) {
-      var b = data.brand;
+    var isOrg = MODE === "org";
+    var read = isOrg ? FHData.orgBrand() : FHData.brand(partnerId);
+
+    FHData.wire(read, "brand", function (data) {
+      var b = data && data.brand;
       if (!b) return null;
       if (typeof window.__fhBrandHydrateFromServer === "function") {
         window.__fhBrandHydrateFromServer(b);
       }
-      return "partner brand · " + (b.entity_name || "unnamed") + " · " + b.approval_status;
+      return isOrg
+        ? "CRM brand · " + (b.entity_name || "unnamed")
+        : "partner brand · " + (b.entity_name || "unnamed") + " · " + b.approval_status;
     });
+
+    /* wire() writes the bottom status strip. The line beside Save is the answer
+       the partner actually reads, and the two must never disagree, so the same
+       three outcomes — loaded / nothing saved yet / read failed — are answered
+       here too, in the same words. Attached after wire(), so hydration has
+       already run by the time this handler is called. */
+    read.then(function (res) {
+      /* A press beats a page load. If the partner has already pressed "Submit
+         for approval", this line is the answer to that press — see reviewMsg
+         above — and overwriting it left them with no idea what their press did.
+         The read's own outcome still reaches the bottom status strip via wire()
+         either way, so nothing is hidden by standing down here. */
+      if (window.__fhBrandAnswered) return;
+      if (!res || !res.ok) {
+        /* NO PARENTHETICAL, EVER. This line used to append the read's own
+           `error` string, and FHData's reader puts engineer text in it on
+           several paths — "/api/* not deployed", "response was not JSON",
+           "no such record" — so a partner read those words and could do
+           nothing with them. The rest of the sentence already says what is on
+           screen and what to do about it, which is the whole job. This is now
+           word-for-word the two sibling branches at the FHData guard and the
+           .catch below, so the same failure always reads the same way. */
+        setSaveMsg("We could not load your saved brand, so the boxes below are examples, not your real brand. Reload the page before you save anything.");
+        return;
+      }
+      if (!res.data || !res.data.brand) {
+        setSaveMsg("Nothing is saved for this brand yet. Fill in the boxes and press Save & apply.");
+        return;
+      }
+      setSaveMsg("Loaded your saved brand.");
+    }).catch(function () {
+      if (window.__fhBrandAnswered) return;   // same reason as above
+      setSaveMsg("We could not load your saved brand, so the boxes below are examples, not your real brand. Reload the page before you save anything.");
+    });
+  }
+
+  loadBrandFromServer();
 })();
 
 /* Keep the sticky save bar clear of data.js's fixed bottom status strip.

@@ -1,0 +1,6 @@
+{
+  "url": "/api/social/oauth?action=start&channel=facebook&partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+  "as": "owner@fundhub.ai",
+  "status": 503,
+  "body": "{\"ok\":false,\"error\":\"not_configured\",\"missing\":[\"META_APP_ID\"],\"message\":\"META_APP_ID unset — see docs/STILL-MISSING.md\"}"
+}

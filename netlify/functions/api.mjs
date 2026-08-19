@@ -127,6 +127,9 @@ import socialPublish from "../../api/social/publish.mjs";
 import socialOauth from "../../api/social/oauth.mjs";
 import socialPosts from "../../api/social/posts.mjs";
 import socialGenerate from "../../api/social/generate.mjs";
+import socialChannels from "../../api/social/channels.mjs";
+import socialSettings from "../../api/social/settings.mjs";
+import brandReview from "../../api/brand/review.mjs";
 import chatAsk from "../../api/chat/ask.mjs";
 import chatMessages from "../../api/chat/messages.mjs";
 import chatPortalMessage from "../../api/chat/portal-message.mjs";
@@ -510,6 +513,9 @@ export const ROUTES = {
   "social/oauth": socialOauth,
   "social/posts": socialPosts,
   "social/generate": socialGenerate,
+  "social/channels": socialChannels,
+  "social/settings": socialSettings,
+  "brand/review": brandReview,
   "chat/ask": chatAsk,
   "chat/messages": chatMessages,
   "chat/portal-message": chatPortalMessage,
