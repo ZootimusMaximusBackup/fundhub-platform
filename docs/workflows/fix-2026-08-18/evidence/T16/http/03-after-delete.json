@@ -1,0 +1,65 @@
+{
+  "target_client_id": "2284bef5-4036-4785-b123-8fca5af379ab",
+  "item": "T16-02",
+  "probes": [
+    {
+      "label": "dashboard/client by id",
+      "role": "owner",
+      "method": "GET",
+      "path": "/api/dashboard/client?id=2284bef5-4036-4785-b123-8fca5af379ab",
+      "url": "https://fundhub.ai/api/dashboard/client?id=2284bef5-4036-4785-b123-8fca5af379ab",
+      "status": 404,
+      "statusText": "Not Found",
+      "content_type": "application/json",
+      "body_length": 32,
+      "elapsed_ms": 2021,
+      "error": null,
+      "body_first_400": "{\"ok\":false,\"error\":\"not_found\"}"
+    },
+    {
+      "label": "read/clients list contains id",
+      "contains_target_id": false,
+      "role": "owner",
+      "method": "GET",
+      "path": "/api/read/clients?limit=200",
+      "url": "https://fundhub.ai/api/read/clients?limit=200",
+      "status": 404,
+      "statusText": "Not Found",
+      "content_type": "application/json",
+      "body_length": 54,
+      "elapsed_ms": 782,
+      "error": null,
+      "body_first_400": "{\"ok\":false,\"error\":\"not_found\",\"path\":\"read/clients\"}"
+    },
+    {
+      "label": "dashboard/clients list contains id",
+      "contains_target_id": false,
+      "role": "owner",
+      "method": "GET",
+      "path": "/api/dashboard/clients?limit=500",
+      "url": "https://fundhub.ai/api/dashboard/clients?limit=500",
+      "status": 200,
+      "statusText": "OK",
+      "content_type": "application/json",
+      "body_length": 19955,
+      "elapsed_ms": 1117,
+      "error": null,
+      "body_first_400": "{\"ok\":true,\"count\":37,\"clients\":[{\"id\":\"0bfedb2d-24fd-4bdb-8e63-0cc95b771da7\",\"first_name\":\"E2E\",\"last_name\":\"Aff A2P\",\"email\":\"e2e+aff-a2p18b@fundhub.ai\",\"outcome_tier\":null,\"funded\":false,\"funded_amount\":null,\"is_demo\":false,\"custom_fields\":{\"crs_paid\":false,\"deposit_paid\":false,\"sale_closed\":false,\"total_funding_estimate\":null},\"transactions\":{\"count\":0,\"latest_product\":null,\"latest_amount\":nul"
+    },
+    {
+      "label": "repeat DELETE",
+      "role": "owner",
+      "method": "DELETE",
+      "path": "/api/demo/simulate",
+      "url": "https://fundhub.ai/api/demo/simulate",
+      "status": 200,
+      "statusText": "OK",
+      "content_type": "application/json",
+      "body_length": 34,
+      "elapsed_ms": 952,
+      "error": null,
+      "body_first_400": "{\"ok\":true,\"removed\":[],\"count\":0}",
+      "body_full": "{\"ok\":true,\"removed\":[],\"count\":0}"
+    }
+  ]
+}

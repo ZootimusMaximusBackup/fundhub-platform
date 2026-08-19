@@ -1,0 +1,232 @@
+{
+  "item": "A11",
+  "question": "How many custom fields are actually in use? (T16-22)",
+  "generated_at": "2026-08-19T02:58:53.046Z",
+  "shape_note": "client_custom_fields is a WIDE table: one COLUMN per custom field, one row per client. It is not a key/value table, so 'distinct keys' means 'defined columns'.",
+  "live_total_columns": 309,
+  "live_bookkeeping_columns": [
+    "client_id",
+    "org_id",
+    "created_at",
+    "updated_at"
+  ],
+  "live_custom_field_columns_defined": 305,
+  "row_count": {
+    "ok": true,
+    "rows": [
+      {
+        "n": 20
+      }
+    ],
+    "rowCount": 1,
+    "ms": 297
+  },
+  "rls": {
+    "relrowsecurity": true,
+    "policy_count": 1
+  },
+  "usage_note": "Non-null row counts only. No field VALUES were selected. The social_security_number column in particular was counted, never read.",
+  "columns_with_at_least_one_value": 11,
+  "columns_never_used": 294,
+  "used_columns_with_counts": {
+    "cf_svy_funding_target_amount": 20,
+    "cf_svy_planned_use": 19,
+    "cf_svy_money_change_now": 19,
+    "cf_svy_self_reported_fico": 19,
+    "cf_svy_has_business": 19,
+    "cf_svy_available_capital": 19,
+    "cf_svy_business_revenue": 17,
+    "cf_svy_annual_income_range": 3,
+    "cf_svy_income_verifiable": 3,
+    "cf_svy_revenue_verifiable": 3,
+    "business_name": 1
+  },
+  "percent_of_defined_fields_ever_used": 3.6,
+  "sensitive_columns_present": [
+    "social_security_number",
+    "employer_identification_number"
+  ],
+  "sensitive_columns_populated": [
+    {
+      "column": "social_security_number",
+      "non_null_rows": 0
+    },
+    {
+      "column": "employer_identification_number",
+      "non_null_rows": 0
+    }
+  ],
+  "schema_file": "/tmp/wt-T16/db/schema/005_client_custom_fields.sql",
+  "schema_file_exists": true,
+  "schema_file_columns_defined": 304,
+  "schema_file_custom_field_columns_defined": 300,
+  "schema_file_header_claim": "300",
+  "disk_vs_live_column_diff": {
+    "on_disk_not_live": [],
+    "live_not_on_disk": [
+      "cf_svy_available_capital",
+      "cf_svy_business_revenue",
+      "cf_svy_has_business",
+      "cf_svy_has_negatives",
+      "cf_svy_revenue_verifiable"
+    ]
+  },
+  "clients_total": {
+    "ok": true,
+    "rows": [
+      {
+        "n": 46
+      }
+    ],
+    "rowCount": 1,
+    "ms": 213
+  },
+  "clients_with_any_custom_field": {
+    "ok": true,
+    "rows": [
+      {
+        "n": 40
+      }
+    ],
+    "rowCount": 1,
+    "ms": 345
+  },
+  "clients_custom_fields_top30_keys": {
+    "ok": true,
+    "rows": [
+      {
+        "key": "lifecycle_status",
+        "clients_with_key": 34
+      },
+      {
+        "key": "first_touch_date",
+        "clients_with_key": 27
+      },
+      {
+        "key": "lead_magnet_type",
+        "clients_with_key": 27
+      },
+      {
+        "key": "cf_svy_funding_target_amount",
+        "clients_with_key": 20
+      },
+      {
+        "key": "cf_svy_available_capital",
+        "clients_with_key": 19
+      },
+      {
+        "key": "cf_svy_has_business",
+        "clients_with_key": 19
+      },
+      {
+        "key": "cf_svy_money_change_now",
+        "clients_with_key": 19
+      },
+      {
+        "key": "cf_svy_planned_use",
+        "clients_with_key": 19
+      },
+      {
+        "key": "cf_svy_self_reported_fico",
+        "clients_with_key": 19
+      },
+      {
+        "key": "cf_svy_business_revenue",
+        "clients_with_key": 17
+      },
+      {
+        "key": "call_outcome",
+        "clients_with_key": 16
+      },
+      {
+        "key": "cf_svy_self_reported_fico_label",
+        "clients_with_key": 16
+      },
+      {
+        "key": "bs_precall_start_ts",
+        "clients_with_key": 15
+      },
+      {
+        "key": "cf_svy_available_capital_label",
+        "clients_with_key": 15
+      },
+      {
+        "key": "cf_svy_funding_target_amount_label",
+        "clients_with_key": 15
+      },
+      {
+        "key": "cf_svy_has_business_label",
+        "clients_with_key": 15
+      },
+      {
+        "key": "cf_svy_money_change_now_labels",
+        "clients_with_key": 15
+      },
+      {
+        "key": "cf_svy_planned_use_label",
+        "clients_with_key": 15
+      },
+      {
+        "key": "cf_svy_business_revenue_label",
+        "clients_with_key": 14
+      },
+      {
+        "key": "ghl_link_missing",
+        "clients_with_key": 11
+      },
+      {
+        "key": "ghl_link_missing_at",
+        "clients_with_key": 11
+      },
+      {
+        "key": "ghl_link_missing_reason",
+        "clients_with_key": 11
+      },
+      {
+        "key": "round_hold_reason",
+        "clients_with_key": 9
+      },
+      {
+        "key": "employee_next_action",
+        "clients_with_key": 8
+      },
+      {
+        "key": "cf_inbox_forwarding_verified",
+        "clients_with_key": 7
+      },
+      {
+        "key": "funding_email_forwarding_address",
+        "clients_with_key": 7
+      },
+      {
+        "key": "ghl_link_dry_run",
+        "clients_with_key": 7
+      },
+      {
+        "key": "landing_path",
+        "clients_with_key": 7
+      },
+      {
+        "key": "address",
+        "clients_with_key": 5
+      },
+      {
+        "key": "analyzer_status",
+        "clients_with_key": 5
+      }
+    ],
+    "rowCount": 30,
+    "ms": 625
+  },
+  "clients_custom_fields_distinct_key_count": {
+    "ok": true,
+    "rows": [
+      {
+        "n": 84
+      }
+    ],
+    "rowCount": 1,
+    "ms": 198
+  },
+  "verdict": "The custom-fields table defines 305 fields and holds 20 rows. Only 11 of those 305 fields (3.6%) have ever been given a value; 294 have never held anything. Separately, the clients table carries its own custom_fields jsonb bag used by 40 of 46 clients with 84 distinct keys — two parallel custom-field systems."
+}

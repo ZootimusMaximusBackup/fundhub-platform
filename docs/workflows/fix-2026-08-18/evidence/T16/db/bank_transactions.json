@@ -1,0 +1,389 @@
+{
+  "item": "A6",
+  "question": "Why are bank_transactions rows missing their links? (T16-06)",
+  "generated_at": "2026-08-19T02:50:09.518Z",
+  "exists": true,
+  "owner": "postgres",
+  "rls_enabled": true,
+  "approx_rows_planner_stat": 18,
+  "columns": [
+    {
+      "name": "id",
+      "type": "uuid",
+      "nullable": false,
+      "default": "gen_random_uuid()"
+    },
+    {
+      "name": "org_id",
+      "type": "uuid",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "bank_account_id",
+      "type": "uuid",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "client_id",
+      "type": "uuid",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "amount_cents",
+      "type": "bigint",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "posted_on",
+      "type": "date",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "authorized_on",
+      "type": "date",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "merchant_name",
+      "type": "text",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "category",
+      "type": "text",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "is_pending",
+      "type": "boolean",
+      "nullable": false,
+      "default": "false"
+    },
+    {
+      "name": "provider_transaction_id",
+      "type": "text",
+      "nullable": false,
+      "default": null
+    },
+    {
+      "name": "provider",
+      "type": "text",
+      "nullable": false,
+      "default": "'plaid'::text"
+    },
+    {
+      "name": "raw",
+      "type": "jsonb",
+      "nullable": false,
+      "default": "'{}'::jsonb"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "nullable": false,
+      "default": "now()"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "nullable": false,
+      "default": "now()"
+    },
+    {
+      "name": "subject_client_id",
+      "type": "uuid",
+      "nullable": true,
+      "default": null
+    },
+    {
+      "name": "is_demo",
+      "type": "boolean",
+      "nullable": false,
+      "default": "false"
+    }
+  ],
+  "column_names": [
+    "id",
+    "org_id",
+    "bank_account_id",
+    "client_id",
+    "amount_cents",
+    "posted_on",
+    "authorized_on",
+    "merchant_name",
+    "category",
+    "is_pending",
+    "provider_transaction_id",
+    "provider",
+    "raw",
+    "created_at",
+    "updated_at",
+    "subject_client_id",
+    "is_demo"
+  ],
+  "policies": [
+    {
+      "policyname": "bank_transactions_app_all",
+      "cmd": "ALL",
+      "qual": "true",
+      "with_check": "true"
+    }
+  ],
+  "counts": {
+    "ok": true,
+    "rows": [
+      {
+        "total": 18,
+        "with_client_id": 0,
+        "with_bank_account_id": 0,
+        "with_org_id": 18
+      }
+    ],
+    "rowCount": 1,
+    "ms": 1911
+  },
+  "foreign_keys": [
+    {
+      "name": "bank_transactions_account_fk",
+      "child_columns": "bank_account_id",
+      "parent_table": "bank_accounts",
+      "on_delete": "SET NULL",
+      "definition": "FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "bank_transactions_client_id_fkey",
+      "child_columns": "client_id",
+      "parent_table": "clients",
+      "on_delete": "SET NULL",
+      "definition": "FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL"
+    },
+    {
+      "name": "bank_transactions_org_id_fkey",
+      "child_columns": "org_id",
+      "parent_table": "orgs",
+      "on_delete": "NO ACTION",
+      "definition": "FOREIGN KEY (org_id) REFERENCES orgs(id)"
+    }
+  ],
+  "sample_note": "Structural only: ids, timestamps and is-null flags. No amounts, descriptions, merchant names or any other value is read.",
+  "sample": {
+    "ok": true,
+    "rows": [
+      {
+        "id": "a55e7860-a48b-413b-adce-e492ff52ace4",
+        "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+        "bank_account_id": null,
+        "client_id": null,
+        "provider_transaction_id": "demo-btx-1-0",
+        "subject_client_id": "c4ec983d-3ec3-45f1-af23-14ae1575e6f0",
+        "created_at": "2026-08-05 04:56:28.113243+00",
+        "updated_at": "2026-08-05 04:56:28.113243+00",
+        "amount_cents_is_null": false,
+        "posted_on_is_null": false,
+        "authorized_on_is_null": true,
+        "merchant_name_is_null": false,
+        "category_is_null": false,
+        "is_pending_is_null": false,
+        "provider_is_null": false,
+        "raw_is_null": false,
+        "is_demo_is_null": false
+      },
+      {
+        "id": "6239c4f3-575a-4a95-8a97-6dc290c41896",
+        "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+        "bank_account_id": null,
+        "client_id": null,
+        "provider_transaction_id": "demo-btx-1-1",
+        "subject_client_id": "c4ec983d-3ec3-45f1-af23-14ae1575e6f0",
+        "created_at": "2026-08-05 04:56:28.286153+00",
+        "updated_at": "2026-08-05 04:56:28.286153+00",
+        "amount_cents_is_null": false,
+        "posted_on_is_null": false,
+        "authorized_on_is_null": true,
+        "merchant_name_is_null": false,
+        "category_is_null": false,
+        "is_pending_is_null": false,
+        "provider_is_null": false,
+        "raw_is_null": false,
+        "is_demo_is_null": false
+      },
+      {
+        "id": "4b0d378a-d346-457e-9373-8ca220c3493d",
+        "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+        "bank_account_id": null,
+        "client_id": null,
+        "provider_transaction_id": "demo-btx-1-2",
+        "subject_client_id": "c4ec983d-3ec3-45f1-af23-14ae1575e6f0",
+        "created_at": "2026-08-05 04:56:28.36036+00",
+        "updated_at": "2026-08-05 04:56:28.36036+00",
+        "amount_cents_is_null": false,
+        "posted_on_is_null": false,
+        "authorized_on_is_null": true,
+        "merchant_name_is_null": false,
+        "category_is_null": false,
+        "is_pending_is_null": false,
+        "provider_is_null": false,
+        "raw_is_null": false,
+        "is_demo_is_null": false
+      }
+    ],
+    "rowCount": 3,
+    "ms": 1878
+  },
+  "created_at_clustering": {
+    "ok": true,
+    "rows": [
+      {
+        "day": "2026-08-05",
+        "n": 18,
+        "with_client": 0,
+        "with_account": 0
+      }
+    ],
+    "rowCount": 1,
+    "ms": 2069
+  },
+  "org_resolution": {
+    "ok": true,
+    "rows": [
+      {
+        "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+        "org_still_exists": true,
+        "n": 18
+      }
+    ],
+    "rowCount": 1,
+    "ms": 1410
+  },
+  "null_combinations": {
+    "ok": true,
+    "rows": [
+      {
+        "client_null": true,
+        "account_null": true,
+        "n": 18
+      }
+    ],
+    "rowCount": 1,
+    "ms": 1048
+  },
+  "bank_accounts_count": {
+    "ok": true,
+    "rows": [
+      {
+        "n": 0
+      }
+    ],
+    "rowCount": 1,
+    "ms": 1120
+  },
+  "verdict": "(b) — the NULLs were written by the database when the parent rows were deleted, NOT by the app writing NULL. Deleting the demo clients fired ON DELETE SET NULL on client_id and CASCADE-deleted the bank_accounts rows, which then emptied bank_account_id. The subject_client_id anchor column survived on all 18 rows, which is the designed behaviour from migration 101 and means the rows are still traceable. This is the safety net working, not a data-loss bug.",
+  "anchor_resolution": {
+    "ok": true,
+    "rows": [
+      {
+        "subject_client_id": "911f8482-24eb-4f2e-89c9-b4d9441426b1",
+        "client_row_still_exists": false,
+        "n": 6
+      },
+      {
+        "subject_client_id": "deb1c0cb-1981-43e0-8267-bdcdf9c2c7fe",
+        "client_row_still_exists": false,
+        "n": 6
+      },
+      {
+        "subject_client_id": "c4ec983d-3ec3-45f1-af23-14ae1575e6f0",
+        "client_row_still_exists": false,
+        "n": 6
+      }
+    ],
+    "rowCount": 3,
+    "ms": 594
+  },
+  "anchor_null_count": {
+    "ok": true,
+    "rows": [
+      {
+        "total": 18,
+        "with_subject_client_id": 18
+      }
+    ],
+    "rowCount": 1,
+    "ms": 491
+  },
+  "demo_flag": {
+    "ok": true,
+    "rows": [
+      {
+        "is_demo": true,
+        "n": 18
+      }
+    ],
+    "rowCount": 1,
+    "ms": 689
+  },
+  "provider_id_shape": {
+    "ok": true,
+    "rows": [
+      {
+        "looks_like_demo_seed": true,
+        "n": 18
+      }
+    ],
+    "rowCount": 1,
+    "ms": 772
+  },
+  "created_equals_updated": {
+    "ok": true,
+    "rows": [
+      {
+        "never_updated_after_insert": true,
+        "n": 18
+      }
+    ],
+    "rowCount": 1,
+    "ms": 637
+  },
+  "triggers": {
+    "ok": true,
+    "rows": [
+      {
+        "tgname": "trg_bank_transactions_subject_anchor",
+        "def": "CREATE TRIGGER trg_bank_transactions_subject_anchor BEFORE INSERT OR UPDATE ON public.bank_transactions FOR EACH ROW EXECUTE FUNCTION bank_transactions_set_subject_anchor()"
+      }
+    ],
+    "rowCount": 1,
+    "ms": 911
+  },
+  "bank_accounts_shape": {
+    "ok": true,
+    "rows": [
+      {
+        "n": 1
+      }
+    ],
+    "rowCount": 1,
+    "ms": 691
+  },
+  "recurring_bills_orphans": {
+    "ok": true,
+    "rows": [
+      {
+        "total": 0,
+        "with_client": 0,
+        "with_account": 0
+      }
+    ],
+    "rowCount": 1,
+    "ms": 1053
+  },
+  "verdict_reasoning": "There are 18 bank_transactions rows. All 18 have client_id NULL and bank_account_id NULL. All 18 have org_id set to an org that still exists. The demo seeder (src/demo/seed-ui-coverage.mjs lines 42-48) inserts client_id and subject_client_id FROM THE SAME PARAMETER ($3). So at insert time both held the same value. Today subject_client_id is populated on all 18 rows while client_id is NULL. Two columns written from one value can only diverge if one of them was changed afterwards. client_id carries a foreign key to clients with ON DELETE SET NULL. subject_client_id deliberately carries NO foreign key (db/migrations/101_bank_transaction_subject_anchor.sql). That is exactly the divergence observed. The anchor points at 3 distinct client id(s); 18 row(s) point at a client that no longer exists and 0 row(s) at a client that does. bank_accounts holds 0 rows, and bank_accounts.client_id is ON DELETE CASCADE, so deleting those clients destroyed the account rows; bank_transactions.bank_account_id is ON DELETE SET NULL (db/migrations/092_bank_account_fk.sql) so it emptied rather than deleting the transaction."
+}

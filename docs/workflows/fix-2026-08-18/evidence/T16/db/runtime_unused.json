@@ -1,0 +1,237 @@
+{
+  "item": "A13",
+  "question": "Are these eleven tables actually used by anything? (T16-11)",
+  "generated_at": "2026-08-19T03:00:30.001Z",
+  "tables": {
+    "affiliate_payouts": {
+      "table": "affiliate_payouts",
+      "exists": true,
+      "rls_enabled": true,
+      "policy_count": 1,
+      "owner": "postgres",
+      "row_count": 0,
+      "row_count_error": null,
+      "runtime_refs": [],
+      "runtime_ref_count": 0,
+      "runtime_files": [],
+      "test_refs_count": 0,
+      "test_files": [],
+      "doc_refs_in_src_or_api_count": 0,
+      "verdict": "UNUSED BY RUNTIME CODE. 0 rows. Referenced only by 0 test file(s)."
+    },
+    "brand_kit_sources": {
+      "table": "brand_kit_sources",
+      "exists": true,
+      "rls_enabled": true,
+      "policy_count": 1,
+      "owner": "postgres",
+      "row_count": 0,
+      "row_count_error": null,
+      "runtime_refs": [
+        "src/partners/scope.mjs:139"
+      ],
+      "runtime_ref_count": 1,
+      "runtime_files": [
+        "src/partners/scope.mjs"
+      ],
+      "test_refs_count": 4,
+      "test_files": [
+        "src/compliance/invariants.pg.test.mjs"
+      ],
+      "doc_refs_in_src_or_api_count": 0,
+      "verdict": "IN USE. 1 runtime reference(s) across 1 file(s). 0 rows."
+    },
+    "campaign_strategies": {
+      "table": "campaign_strategies",
+      "exists": true,
+      "rls_enabled": true,
+      "policy_count": 1,
+      "owner": "postgres",
+      "row_count": 6,
+      "row_count_error": null,
+      "runtime_refs": [],
+      "runtime_ref_count": 0,
+      "runtime_files": [],
+      "test_refs_count": 0,
+      "test_files": [],
+      "doc_refs_in_src_or_api_count": 0,
+      "verdict": "UNUSED BY RUNTIME CODE. 6 rows. Referenced only by 0 test file(s)."
+    },
+    "creative_billing_rates": {
+      "table": "creative_billing_rates",
+      "exists": true,
+      "rls_enabled": true,
+      "policy_count": 1,
+      "owner": "postgres",
+      "row_count": 2,
+      "row_count_error": null,
+      "runtime_refs": [],
+      "runtime_ref_count": 0,
+      "runtime_files": [],
+      "test_refs_count": 15,
+      "test_files": [
+        "src/social/social.pg.test.mjs"
+      ],
+      "doc_refs_in_src_or_api_count": 0,
+      "verdict": "UNUSED BY RUNTIME CODE. 2 rows. Referenced only by 1 test file(s)."
+    },
+    "creative_usage_events": {
+      "table": "creative_usage_events",
+      "exists": true,
+      "rls_enabled": true,
+      "policy_count": 1,
+      "owner": "postgres",
+      "row_count": 0,
+      "row_count_error": null,
+      "runtime_refs": [
+        "src/partners/scope.mjs:150"
+      ],
+      "runtime_ref_count": 1,
+      "runtime_files": [
+        "src/partners/scope.mjs"
+      ],
+      "test_refs_count": 14,
+      "test_files": [
+        "src/compliance/invariants.pg.test.mjs",
+        "src/social/social.pg.test.mjs"
+      ],
+      "doc_refs_in_src_or_api_count": 0,
+      "verdict": "IN USE. 1 runtime reference(s) across 1 file(s). 0 rows."
+    },
+    "eeo_responses": {
+      "table": "eeo_responses",
+      "exists": true,
+      "rls_enabled": true,
+      "policy_count": 1,
+      "owner": "postgres",
+      "row_count": 0,
+      "row_count_error": null,
+      "runtime_refs": [],
+      "runtime_ref_count": 0,
+      "runtime_files": [],
+      "test_refs_count": 0,
+      "test_files": [],
+      "doc_refs_in_src_or_api_count": 0,
+      "verdict": "UNUSED BY RUNTIME CODE. 0 rows. Referenced only by 0 test file(s)."
+    },
+    "eeo_survey_invites": {
+      "table": "eeo_survey_invites",
+      "exists": true,
+      "rls_enabled": true,
+      "policy_count": 1,
+      "owner": "postgres",
+      "row_count": 0,
+      "row_count_error": null,
+      "runtime_refs": [],
+      "runtime_ref_count": 0,
+      "runtime_files": [],
+      "test_refs_count": 0,
+      "test_files": [],
+      "doc_refs_in_src_or_api_count": 0,
+      "verdict": "UNUSED BY RUNTIME CODE. 0 rows. Referenced only by 0 test file(s)."
+    },
+    "partner_payout_lines": {
+      "table": "partner_payout_lines",
+      "exists": true,
+      "rls_enabled": true,
+      "policy_count": 1,
+      "owner": "postgres",
+      "row_count": 0,
+      "row_count_error": null,
+      "runtime_refs": [],
+      "runtime_ref_count": 0,
+      "runtime_files": [],
+      "test_refs_count": 6,
+      "test_files": [
+        "src/partners/scope.pg.test.mjs"
+      ],
+      "doc_refs_in_src_or_api_count": 0,
+      "verdict": "UNUSED BY RUNTIME CODE. 0 rows. Referenced only by 1 test file(s)."
+    },
+    "partner_payouts": {
+      "table": "partner_payouts",
+      "exists": true,
+      "rls_enabled": true,
+      "policy_count": 1,
+      "owner": "postgres",
+      "row_count": 0,
+      "row_count_error": null,
+      "runtime_refs": [],
+      "runtime_ref_count": 0,
+      "runtime_files": [],
+      "test_refs_count": 10,
+      "test_files": [
+        "src/partners/scope.pg.test.mjs"
+      ],
+      "doc_refs_in_src_or_api_count": 0,
+      "verdict": "UNUSED BY RUNTIME CODE. 0 rows. Referenced only by 1 test file(s)."
+    },
+    "partner_revenue": {
+      "table": "partner_revenue",
+      "exists": true,
+      "rls_enabled": true,
+      "policy_count": 1,
+      "owner": "postgres",
+      "row_count": 0,
+      "row_count_error": null,
+      "runtime_refs": [],
+      "runtime_ref_count": 0,
+      "runtime_files": [],
+      "test_refs_count": 19,
+      "test_files": [
+        "src/security/superuser-guard.test.mjs",
+        "src/partners/scope.pg.test.mjs",
+        "src/creative/generate.pg.test.mjs"
+      ],
+      "doc_refs_in_src_or_api_count": 0,
+      "verdict": "UNUSED BY RUNTIME CODE. 0 rows. Referenced only by 3 test file(s)."
+    },
+    "product_aliases": {
+      "table": "product_aliases",
+      "exists": true,
+      "rls_enabled": true,
+      "policy_count": 1,
+      "owner": "postgres",
+      "row_count": 14,
+      "row_count_error": null,
+      "runtime_refs": [],
+      "runtime_ref_count": 0,
+      "runtime_files": [],
+      "test_refs_count": 0,
+      "test_files": [],
+      "doc_refs_in_src_or_api_count": 0,
+      "verdict": "UNUSED BY RUNTIME CODE. 14 rows. Referenced only by 0 test file(s)."
+    }
+  },
+  "grep_scope": "grep -rn over /tmp/wt-T16/api and /tmp/wt-T16/src. Files matching .test./.pg.test./tests/ are counted as tests, .md as docs; neither counts toward the runtime verdict. db/ and docs/ were not searched, per brief.",
+  "unused_by_runtime": [
+    "affiliate_payouts",
+    "campaign_strategies",
+    "creative_billing_rates",
+    "eeo_responses",
+    "eeo_survey_invites",
+    "partner_payout_lines",
+    "partner_payouts",
+    "partner_revenue",
+    "product_aliases"
+  ],
+  "empty_tables": [
+    "affiliate_payouts",
+    "brand_kit_sources",
+    "creative_usage_events",
+    "eeo_responses",
+    "eeo_survey_invites",
+    "partner_payout_lines",
+    "partner_payouts",
+    "partner_revenue"
+  ],
+  "unused_and_empty": [
+    "affiliate_payouts",
+    "eeo_responses",
+    "eeo_survey_invites",
+    "partner_payout_lines",
+    "partner_payouts",
+    "partner_revenue"
+  ],
+  "verdict": "Of 11 tables checked: 9 have no runtime code referencing them (affiliate_payouts, campaign_strategies, creative_billing_rates, eeo_responses, eeo_survey_invites, partner_payout_lines, partner_payouts, partner_revenue, product_aliases); 8 hold zero rows. 6 are BOTH empty and unreferenced by runtime code: affiliate_payouts, eeo_responses, eeo_survey_invites, partner_payout_lines, partner_payouts, partner_revenue."
+}

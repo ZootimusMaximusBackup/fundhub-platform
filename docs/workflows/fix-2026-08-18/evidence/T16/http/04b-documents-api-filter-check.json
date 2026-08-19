@@ -1,0 +1,91 @@
+{
+  "item": "T16-03",
+  "role": "owner",
+  "note": "Does /api/read/documents honour client_id? (the SCREEN never sends it — see 04/05)",
+  "probes": [
+    {
+      "label": "EXACTLY what the screen requests (no client filter)",
+      "role": "owner",
+      "method": "GET",
+      "path": "/api/read/documents?limit=200",
+      "url": "https://fundhub.ai/api/read/documents?limit=200",
+      "status": 200,
+      "statusText": "OK",
+      "content_type": "application/json",
+      "body_length": 7705,
+      "elapsed_ms": 892,
+      "error": null,
+      "body_first_400": "{\"ok\":true,\"count\":11,\"limit\":200,\"offset\":0,\"hasMore\":false,\"items\":[{\"id\":\"07d45e8f-c602-4337-8037-3251590b6e1c\",\"client_id\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"document_key\":\"contract|credit_repair|8556bedc-46e1-4d85-b0cd-a24adfee1521|8dfa576f-5404-45fa-8f39-7d589d4e8a4a:signed\",\"kind\":\"contract\",\"subtype\":\"credit_repair\",\"title\":\"Credit Repair Agreement (signed)\",\"invoice_id\":null,\"current",
+      "summary": {
+        "total_items": 11,
+        "distinct_clients": 3,
+        "clients": [
+          {
+            "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+            "is_the_real_customer": false,
+            "rows": 4
+          },
+          {
+            "client_id": "cb6f5839-2979-491d-9080-00ca51833b07",
+            "is_the_real_customer": false,
+            "rows": 2
+          },
+          {
+            "client_id": "<REAL-CUSTOMER-9af65808-REDACTED>",
+            "is_the_real_customer": true,
+            "rows": 5
+          }
+        ]
+      }
+    },
+    {
+      "label": "with client_id=TEST client",
+      "role": "owner",
+      "method": "GET",
+      "path": "/api/read/documents?limit=200&client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "url": "https://fundhub.ai/api/read/documents?limit=200&client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "status": 200,
+      "statusText": "OK",
+      "content_type": "application/json",
+      "body_length": 2824,
+      "elapsed_ms": 670,
+      "error": null,
+      "body_first_400": "{\"ok\":true,\"count\":4,\"limit\":200,\"offset\":0,\"hasMore\":false,\"items\":[{\"id\":\"07d45e8f-c602-4337-8037-3251590b6e1c\",\"client_id\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"document_key\":\"contract|credit_repair|8556bedc-46e1-4d85-b0cd-a24adfee1521|8dfa576f-5404-45fa-8f39-7d589d4e8a4a:signed\",\"kind\":\"contract\",\"subtype\":\"credit_repair\",\"title\":\"Credit Repair Agreement (signed)\",\"invoice_id\":null,\"current_",
+      "summary": {
+        "total_items": 4,
+        "distinct_clients": 1,
+        "clients": [
+          {
+            "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+            "is_the_real_customer": false,
+            "rows": 4
+          }
+        ]
+      }
+    },
+    {
+      "label": "with client_id=DEMO client 3c15e95f-71c2-49a2-92fb-47f44bc06107",
+      "role": "owner",
+      "method": "GET",
+      "path": "/api/read/documents?limit=200&client_id=3c15e95f-71c2-49a2-92fb-47f44bc06107",
+      "url": "https://fundhub.ai/api/read/documents?limit=200&client_id=3c15e95f-71c2-49a2-92fb-47f44bc06107",
+      "status": 200,
+      "statusText": "OK",
+      "content_type": "application/json",
+      "body_length": 71,
+      "elapsed_ms": 506,
+      "error": null,
+      "body_first_400": "{\"ok\":true,\"count\":0,\"limit\":200,\"offset\":0,\"hasMore\":false,\"items\":[]}",
+      "summary": {
+        "total_items": 0,
+        "distinct_clients": 0,
+        "clients": []
+      }
+    }
+  ],
+  "verdict": {
+    "api_honours_client_id": true,
+    "unfiltered_call_returns_other_peoples_files": true,
+    "real_customer_present_in_unfiltered": true
+  }
+}

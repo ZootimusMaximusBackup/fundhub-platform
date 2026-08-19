@@ -1,0 +1,25 @@
+{
+  "step": "B1.1 create",
+  "item": "T16-02",
+  "note": "POST /api/demo/simulate {} as owner",
+  "role": "owner",
+  "method": "POST",
+  "path": "/api/demo/simulate",
+  "url": "https://fundhub.ai/api/demo/simulate",
+  "status": 200,
+  "statusText": "OK",
+  "content_type": "application/json",
+  "body_length": 303,
+  "elapsed_ms": 4318,
+  "error": null,
+  "body_first_400": "{\"ok\":true,\"client_id\":\"2284bef5-4036-4785-b123-8fca5af379ab\",\"email\":\"<EMAIL-REDACTED>\",\"tradeline_count\":4,\"card_id\":\"38dfb5e0-0e9a-4a0a-8488-2fd70dc0637e\",\"crs_id\":\"a29e63e1-eb16-4db7-ad64-660aff0cadf4\",\"href\":\"/app/finance-os.html?client_id=2284bef5-4036-4785-b123-8fca5af379ab\"}",
+  "parsed": {
+    "ok": true,
+    "client_id": "2284bef5-4036-4785-b123-8fca5af379ab",
+    "email": "<EMAIL-REDACTED>",
+    "tradeline_count": 4,
+    "card_id": "38dfb5e0-0e9a-4a0a-8488-2fd70dc0637e",
+    "crs_id": "a29e63e1-eb16-4db7-ad64-660aff0cadf4",
+    "href": "/app/finance-os.html?client_id=2284bef5-4036-4785-b123-8fca5af379ab"
+  }
+}

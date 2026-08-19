@@ -1,0 +1,496 @@
+{
+  "item": "A7",
+  "question": "Do deleted demo clients actually leave? (T16-01, T16-02 + coordinator additions)",
+  "generated_at": "2026-08-19T02:55:07.691Z",
+  "ids": {
+    "41a3199f-1835-4ac8-91c0-d4f37bd92037": "T16-01 — claimed fully gone",
+    "cb6f5839-2979-491d-9080-00ca51833b07": "T16-02 — claimed 14 rows left behind",
+    "2284bef5-4036-4785-b123-8fca5af379ab": "coordinator add — deleted via the product's own endpoint minutes ago, HTTP 200 'removed: 1' in 1.5s. Is that claim true?"
+  },
+  "tables_with_client_id_column": [
+    "account_magic_links",
+    "account_statement_cycles",
+    "accounts",
+    "affiliate_events",
+    "affiliate_payout_lines",
+    "affiliate_referrals",
+    "agent_shadow_log",
+    "alerts",
+    "applications",
+    "bank_accounts",
+    "bank_inbox",
+    "bank_transactions",
+    "behavior_scores",
+    "brain_files",
+    "business_tradelines",
+    "businesses",
+    "call_compliance_flags",
+    "call_outcomes",
+    "card_liabilities",
+    "card_liability_history",
+    "cards",
+    "cashflow_reminders",
+    "client_cards",
+    "client_consents",
+    "client_custom_fields",
+    "commission_ledger",
+    "contract_signers",
+    "contracts",
+    "conversations",
+    "crs_results",
+    "customer_insights",
+    "dispute_cases",
+    "dispute_items",
+    "dispute_letters",
+    "dispute_responses",
+    "documents",
+    "entities",
+    "entitlements",
+    "events",
+    "failed_events",
+    "funding_rounds",
+    "inquiry_log",
+    "inquiry_prep",
+    "inquiry_removal_cases",
+    "investment_holdings",
+    "invoices",
+    "lender_bureau_observations",
+    "mail_responses",
+    "messages",
+    "opt_outs",
+    "outbound_calls",
+    "owner_notifications",
+    "partner_payout_lines",
+    "partner_revenue",
+    "payment_links",
+    "pii_access_log",
+    "pii_identity",
+    "plaid_items",
+    "proxy_sessions",
+    "recurring_bills",
+    "repair_decision_log",
+    "sales",
+    "snapshots",
+    "soft_pull_requests",
+    "subscriptions",
+    "tasks",
+    "tradelines",
+    "transactions"
+  ],
+  "tables_with_client_id_count": 68,
+  "client_row_exists": {
+    "41a3199f-1835-4ac8-91c0-d4f37bd92037": "no",
+    "cb6f5839-2979-491d-9080-00ca51833b07": "yes",
+    "2284bef5-4036-4785-b123-8fca5af379ab": "no"
+  },
+  "per_id": {
+    "41a3199f-1835-4ac8-91c0-d4f37bd92037": {
+      "id": "41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "label": "T16-01 — claimed fully gone",
+      "direct_client_id_tables": {},
+      "indirect": {
+        "contract_signers_via_contract_id": 0,
+        "events_by_payload_text": 0,
+        "events_by_client_id_or_payload": 0,
+        "event_names": [],
+        "account_magic_links_via_accounts": 0
+      },
+      "errors": {},
+      "total_direct_rows": 0,
+      "clients_row_itself": 0,
+      "total_rows_including_clients_row": 0
+    },
+    "cb6f5839-2979-491d-9080-00ca51833b07": {
+      "id": "cb6f5839-2979-491d-9080-00ca51833b07",
+      "label": "T16-02 — claimed 14 rows left behind",
+      "direct_client_id_tables": {
+        "account_magic_links": 3,
+        "accounts": 1,
+        "contract_signers": 1,
+        "contracts": 1,
+        "documents": 2,
+        "events": 5
+      },
+      "indirect": {
+        "contract_signers_via_contract_id": 1,
+        "events_by_payload_text": 2,
+        "events_by_client_id_or_payload": 5,
+        "event_names": [
+          {
+            "name": "message.queued",
+            "n": 3
+          },
+          {
+            "name": "contract.sent",
+            "n": 1
+          },
+          {
+            "name": "contract.signed",
+            "n": 1
+          }
+        ],
+        "account_magic_links_via_accounts": 2
+      },
+      "errors": {},
+      "total_direct_rows": 13,
+      "clients_row_itself": 1,
+      "total_rows_including_clients_row": 14
+    },
+    "2284bef5-4036-4785-b123-8fca5af379ab": {
+      "id": "2284bef5-4036-4785-b123-8fca5af379ab",
+      "label": "coordinator add — deleted via the product's own endpoint minutes ago, HTTP 200 'removed: 1' in 1.5s. Is that claim true?",
+      "direct_client_id_tables": {},
+      "indirect": {
+        "contract_signers_via_contract_id": 0,
+        "events_by_payload_text": 0,
+        "events_by_client_id_or_payload": 0,
+        "event_names": [],
+        "account_magic_links_via_accounts": 0
+      },
+      "errors": {},
+      "total_direct_rows": 0,
+      "clients_row_itself": 0,
+      "total_rows_including_clients_row": 0
+    }
+  },
+  "link_table_shapes": {
+    "accounts": [
+      "id",
+      "org_id",
+      "kind",
+      "email",
+      "name",
+      "password_hash",
+      "status",
+      "client_id",
+      "affiliate_id",
+      "partner_id",
+      "invited_by",
+      "invited_at",
+      "invite_token_hash",
+      "invite_expires_at",
+      "activated_at",
+      "last_login_at",
+      "created_at",
+      "updated_at",
+      "is_demo"
+    ],
+    "account_magic_links": [
+      "id",
+      "org_id",
+      "email",
+      "account_id",
+      "client_id",
+      "token_hash",
+      "expires_at",
+      "consumed_at",
+      "outcome",
+      "requested_ip",
+      "requested_user_agent",
+      "consumed_ip",
+      "consumed_user_agent",
+      "created_at"
+    ],
+    "contracts": [
+      "id",
+      "org_id",
+      "client_id",
+      "template_id",
+      "template_key",
+      "title",
+      "kind",
+      "subtype",
+      "merge_values",
+      "rendered_body",
+      "body_sha",
+      "document_id",
+      "document_version_id",
+      "signature_statement",
+      "signature_required",
+      "status",
+      "sent_at",
+      "sent_by",
+      "link_expires_at",
+      "viewed_at",
+      "view_count",
+      "signed_at",
+      "signer_name",
+      "signer_ip",
+      "signer_user_agent",
+      "voided_at",
+      "voided_by",
+      "void_reason",
+      "created_by",
+      "created_at",
+      "updated_at",
+      "source_kind",
+      "fields",
+      "source_document_id",
+      "source_document_version_id",
+      "signed_document_id",
+      "signed_document_version_id",
+      "signed_body_sha",
+      "signing_order",
+      "completed_at",
+      "is_demo"
+    ],
+    "contract_signers": [
+      "id",
+      "org_id",
+      "contract_id",
+      "signer_index",
+      "role_label",
+      "name",
+      "email",
+      "client_id",
+      "status",
+      "link_expires_at",
+      "viewed_at",
+      "view_count",
+      "signed_at",
+      "signer_name",
+      "signer_ip",
+      "signer_user_agent",
+      "field_values",
+      "declined_at",
+      "decline_reason",
+      "created_at",
+      "updated_at"
+    ],
+    "documents": [
+      "id",
+      "org_id",
+      "client_id",
+      "document_key",
+      "kind",
+      "subtype",
+      "title",
+      "invoice_id",
+      "current_version",
+      "current_version_id",
+      "storage_key",
+      "mime_type",
+      "byte_size",
+      "checksum",
+      "generated_by",
+      "generated_at",
+      "delivered_at",
+      "delivery_channel",
+      "delivery_status",
+      "signature_required",
+      "signed_at",
+      "signer_name",
+      "signature_ref",
+      "expires_at",
+      "source_event_id",
+      "metadata",
+      "created_at",
+      "updated_at",
+      "is_demo"
+    ],
+    "events": [
+      "id",
+      "org_id",
+      "name",
+      "version",
+      "idempotency_key",
+      "client_id",
+      "payload",
+      "replayed_at",
+      "created_at",
+      "updated_at",
+      "is_demo"
+    ]
+  },
+  "blocking_analysis": {
+    "41a3199f-1835-4ac8-91c0-d4f37bd92037": {
+      "all_tables_holding_rows": [],
+      "tables_that_block_a_delete": [],
+      "tables_that_would_cascade": [],
+      "tables_that_would_set_null": [],
+      "tables_with_no_fk_at_all": []
+    },
+    "cb6f5839-2979-491d-9080-00ca51833b07": {
+      "all_tables_holding_rows": [
+        {
+          "table": "account_magic_links",
+          "rows": 3,
+          "on_delete": "CASCADE"
+        },
+        {
+          "table": "accounts",
+          "rows": 1,
+          "on_delete": "CASCADE"
+        },
+        {
+          "table": "contract_signers",
+          "rows": 1,
+          "on_delete": "NO ACTION"
+        },
+        {
+          "table": "contracts",
+          "rows": 1,
+          "on_delete": "NO ACTION"
+        },
+        {
+          "table": "documents",
+          "rows": 2,
+          "on_delete": "NO ACTION"
+        },
+        {
+          "table": "events",
+          "rows": 5,
+          "on_delete": "NO ACTION"
+        }
+      ],
+      "tables_that_block_a_delete": [
+        {
+          "table": "contract_signers",
+          "rows": 1,
+          "on_delete": "NO ACTION"
+        },
+        {
+          "table": "contracts",
+          "rows": 1,
+          "on_delete": "NO ACTION"
+        },
+        {
+          "table": "documents",
+          "rows": 2,
+          "on_delete": "NO ACTION"
+        },
+        {
+          "table": "events",
+          "rows": 5,
+          "on_delete": "NO ACTION"
+        }
+      ],
+      "tables_that_would_cascade": [
+        {
+          "table": "account_magic_links",
+          "rows": 3,
+          "on_delete": "CASCADE"
+        },
+        {
+          "table": "accounts",
+          "rows": 1,
+          "on_delete": "CASCADE"
+        }
+      ],
+      "tables_that_would_set_null": [],
+      "tables_with_no_fk_at_all": []
+    },
+    "2284bef5-4036-4785-b123-8fca5af379ab": {
+      "all_tables_holding_rows": [],
+      "tables_that_block_a_delete": [],
+      "tables_that_would_cascade": [],
+      "tables_that_would_set_null": [],
+      "tables_with_no_fk_at_all": []
+    }
+  },
+  "tables_that_block_a_demo_client_delete_today": [
+    {
+      "table": "contract_signers",
+      "rows": 1,
+      "on_delete": "NO ACTION"
+    },
+    {
+      "table": "contracts",
+      "rows": 1,
+      "on_delete": "NO ACTION"
+    },
+    {
+      "table": "documents",
+      "rows": 2,
+      "on_delete": "NO ACTION"
+    },
+    {
+      "table": "events",
+      "rows": 5,
+      "on_delete": "NO ACTION"
+    }
+  ],
+  "board_claim": {
+    "41a3199f-1835-4ac8-91c0-d4f37bd92037": "0 rows",
+    "cb6f5839-2979-491d-9080-00ca51833b07": "14 rows"
+  },
+  "clients_table_has_client_id_column": false,
+  "surviving_client_flags": [
+    {
+      "id": "cb6f5839-2979-491d-9080-00ca51833b07",
+      "is_demo": true
+    }
+  ],
+  "answers_to_coordinator": {
+    "q1_did_the_product_delete_actually_work": {
+      "client_id": "2284bef5-4036-4785-b123-8fca5af379ab",
+      "clients_row_still_present": "no",
+      "leftover_rows_in_any_client_id_table": 0,
+      "leftover_events_by_payload_text": 0,
+      "leftover_contract_signers_via_contract": 0,
+      "leftover_account_magic_links_via_accounts": 0,
+      "verdict": "TRUE — the HTTP 200 was honest. Scanned all 68 public tables that carry a client_id column, plus events by payload text, plus the contracts/contract_signers, accounts/account_magic_links and documents chains. Zero rows remain, and the clients row itself is gone. Nothing was left behind."
+    },
+    "q2_cb6f5839_breakdown": {
+      "per_table": {
+        "account_magic_links": 3,
+        "accounts": 1,
+        "contract_signers": 1,
+        "contracts": 1,
+        "documents": 2,
+        "events": 5
+      },
+      "clients_row_itself": 1,
+      "total_including_clients_row": 14,
+      "events_row_count": 5,
+      "event_names_only": [
+        {
+          "name": "message.queued",
+          "n": 3
+        },
+        {
+          "name": "contract.sent",
+          "n": 1
+        },
+        {
+          "name": "contract.signed",
+          "n": 1
+        }
+      ],
+      "note": "Event names only, no payload contents were read or recorded."
+    },
+    "q3_tables_that_block_a_demo_client_delete_today": [
+      {
+        "table": "contract_signers",
+        "rows": 1,
+        "on_delete": "NO ACTION"
+      },
+      {
+        "table": "contracts",
+        "rows": 1,
+        "on_delete": "NO ACTION"
+      },
+      {
+        "table": "documents",
+        "rows": 2,
+        "on_delete": "NO ACTION"
+      },
+      {
+        "table": "events",
+        "rows": 5,
+        "on_delete": "NO ACTION"
+      }
+    ],
+    "q4_does_the_client_row_still_exist": {
+      "2284bef5-4036-4785-b123-8fca5af379ab": "no",
+      "cb6f5839-2979-491d-9080-00ca51833b07": "yes",
+      "41a3199f-1835-4ac8-91c0-d4f37bd92037": "no"
+    }
+  },
+  "verdicts": {
+    "41a3199f-1835-4ac8-91c0-d4f37bd92037": "CONFIRMED. The board said 0 rows. I found 0 rows in all 68 client_id tables, 0 events by payload text, and the clients row itself is gone. This client is completely gone.",
+    "cb6f5839-2979-491d-9080-00ca51833b07": "CORRECTED IN DETAIL, CONFIRMED IN TOTAL. The board said 14 rows left behind. The true shape is 13 child rows across 6 tables (account_magic_links 3, accounts 1, contract_signers 1, contracts 1, documents 2, events 5) PLUS the clients row itself, which still exists — 14 rows in total. The important correction is that the client was never deleted at all; this is not an orphan trail behind a removed client, it is a delete that never happened.",
+    "2284bef5-4036-4785-b123-8fca5af379ab": "CONFIRMED-WORKS. The product's own delete endpoint told the truth. Client row gone, 0 leftover rows anywhere."
+  },
+  "headline": "Two of three deletes were clean and complete. The one that failed (cb6f5839) failed by not deleting anything at all — the client row is still there, along with 13 child rows. Four tables block that delete because their link to clients is NO ACTION: contracts, contract_signers, documents and events."
+}
