@@ -28,7 +28,7 @@
   ];
 
   /* ==SIDEBAR_HTML_START== */
-  var SIDEBAR_HTML = "<aside class=\"side\" id=\"side\">\n  <div class=\"side-top\"><a class=\"logo inv\" href=\"pipeline.html\" aria-label=\"fundhub\"></a><button class=\"burger\" id=\"burger\" type=\"button\" title=\"Collapse sidebar\">‹‹</button></div>\n  <nav class=\"side-scroll\" id=\"fh-side-nav\">\n\n<div class=\"navgroup\" data-fh-section=\"home\"><button class=\"navhead\" type=\"button\">Home<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"partner-galaxy.html\"><span class=\"ico\">⌂</span><span class=\"lbl\">Home</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"sales\"><button class=\"navhead\" type=\"button\">Sales<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"pipeline.html\"><span class=\"ico\">▤</span><span class=\"lbl\">Pipeline</span></a>\n        <a class=\"navitem\" href=\"closer-dashboard.html\"><span class=\"ico\">★</span><span class=\"lbl\">Closer Dashboard</span></a>\n        <a class=\"navitem\" href=\"closer-call.html\"><span class=\"ico\">☎</span><span class=\"lbl\">Call cockpit</span></a>\n        <a class=\"navitem\" href=\"my-numbers.html\"><span class=\"ico\">＃</span><span class=\"lbl\">My numbers</span></a>\n        <a class=\"navitem\" href=\"sales-floor.html\"><span class=\"ico\">▣</span><span class=\"lbl\">Sales floor</span></a>\n        <a class=\"navitem\" href=\"calendar.html\"><span class=\"ico\">▦</span><span class=\"lbl\">Calendar</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"funding\"><button class=\"navhead\" type=\"button\">Funding<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"lenders.html\"><span class=\"ico\">⬡</span><span class=\"lbl\">Lenders</span></a>\n        <a class=\"navitem\" href=\"finance-os.html\"><span class=\"ico\">▩</span><span class=\"lbl\">Finance OS</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"client-ops\"><button class=\"navhead\" type=\"button\">Client ops<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"client-control-panel.html\"><span class=\"ico\">◎</span><span class=\"lbl\">Client Control Panel</span></a>\n        <a class=\"navitem\" href=\"messaging.html\"><span class=\"ico\">✉</span><span class=\"lbl\">Messaging</span></a>\n        <a class=\"navitem\" href=\"documents.html\"><span class=\"ico\">▧</span><span class=\"lbl\">Documents</span></a>\n        <a class=\"navitem\" href=\"inquiry-remover.html\"><span class=\"ico\">⊘</span><span class=\"lbl\">Specialist</span></a>\n        <a class=\"navitem\" href=\"company-brain.html\"><span class=\"ico\">◎</span><span class=\"lbl\">Company Brain</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"watch\"><button class=\"navhead\" type=\"button\">Watch<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"galaxy.html\"><span class=\"ico\">✷</span><span class=\"lbl\">Galaxy</span></a>\n        <a class=\"navitem\" href=\"ops-admin.html\"><span class=\"ico\">⚙</span><span class=\"lbl\">Ops &amp; Admin</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"automation\"><button class=\"navhead\" type=\"button\">Automation<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"agent-editor.html\"><span class=\"ico\">◈</span><span class=\"lbl\">Agent Editor</span></a>\n        <a class=\"navitem\" href=\"automations.html\"><span class=\"ico\">⇄</span><span class=\"lbl\">Workflows</span></a>\n        <a class=\"navitem\" href=\"journeys.html\"><span class=\"ico\">⇝</span><span class=\"lbl\">Journeys</span></a>\n        <a class=\"navitem\" href=\"template-editor.html\"><span class=\"ico\">✎</span><span class=\"lbl\">Message Copy</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"marketing\"><button class=\"navhead\" type=\"button\">Marketing<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"campaign-manager.html\"><span class=\"ico\">◇</span><span class=\"lbl\">Campaigns</span></a>\n        <a class=\"navitem\" href=\"social-studio.html\"><span class=\"ico\">◉</span><span class=\"lbl\">Social Studio</span></a>\n        <a class=\"navitem\" href=\"creative-factory.html\"><span class=\"ico\">✳</span><span class=\"lbl\">Creative Factory</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"admin\"><button class=\"navhead\" type=\"button\">Admin<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"staff-teams.html\"><span class=\"ico\">⚇</span><span class=\"lbl\">Staff &amp; Teams</span></a>\n        <a class=\"navitem\" href=\"hiring.html\"><span class=\"ico\">⊕</span><span class=\"lbl\">Hiring</span></a>\n        <a class=\"navitem\" href=\"products-commissions.html\"><span class=\"ico\">⛁</span><span class=\"lbl\">Products &amp; Commissions</span></a>\n        <a class=\"navitem\" href=\"contracts.html\"><span class=\"ico\">✒</span><span class=\"lbl\">Contract templates</span></a>\n        <a class=\"navitem\" href=\"brand-studio.html\"><span class=\"ico\">◆</span><span class=\"lbl\">Brand Studio</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"portals\"><button class=\"navhead\" type=\"button\">Portals<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"client-portal.html\"><span class=\"ico\">◐</span><span class=\"lbl\">Client Portal</span></a>\n        <a class=\"navitem\" href=\"affiliate.html\"><span class=\"ico\">⇗</span><span class=\"lbl\">Affiliate</span></a>\n</div></div>\n\n  </nav>\n  <div class=\"side-foot\"><span class=\"pulse\"></span><span class=\"who\">fundhub</span></div>\n</aside>";
+  var SIDEBAR_HTML = "<aside class=\"side\" id=\"side\">\n  <div class=\"side-top\"><a class=\"logo inv\" href=\"pipeline.html\" aria-label=\"fundhub\"></a><button class=\"burger\" id=\"burger\" type=\"button\" title=\"Collapse sidebar\">‹‹</button></div>\n  <nav class=\"side-scroll\" id=\"fh-side-nav\">\n\n<div class=\"navgroup\" data-fh-section=\"home\"><button class=\"navhead\" type=\"button\">Home<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"partner-galaxy.html\"><span class=\"ico\">⌂</span><span class=\"lbl\">Home</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"sales\"><button class=\"navhead\" type=\"button\">Sales<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"pipeline.html\"><span class=\"ico\">▤</span><span class=\"lbl\">Pipeline</span></a>\n        <a class=\"navitem\" href=\"closer-dashboard.html\"><span class=\"ico\">★</span><span class=\"lbl\">Closer Dashboard</span></a>\n        <a class=\"navitem\" href=\"closer-call.html\"><span class=\"ico\">☎</span><span class=\"lbl\">Call cockpit</span></a>\n        <a class=\"navitem\" href=\"my-numbers.html\"><span class=\"ico\">＃</span><span class=\"lbl\">My numbers</span></a>\n        <a class=\"navitem\" href=\"sales-floor.html\"><span class=\"ico\">▣</span><span class=\"lbl\">Sales floor</span></a>\n        <a class=\"navitem\" href=\"calendar.html\"><span class=\"ico\">▦</span><span class=\"lbl\">Calendar</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"funding\"><button class=\"navhead\" type=\"button\">Funding<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"lenders.html\"><span class=\"ico\">⬡</span><span class=\"lbl\">Lenders</span></a>\n        <a class=\"navitem\" href=\"finance-os.html\"><span class=\"ico\">▩</span><span class=\"lbl\">Finance OS</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"client-ops\"><button class=\"navhead\" type=\"button\">Client ops<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"client-control-panel.html\"><span class=\"ico\">◎</span><span class=\"lbl\">Client Control Panel</span></a>\n        <a class=\"navitem\" href=\"consent-capture.html\"><span class=\"ico\">☑</span><span class=\"lbl\">Consent</span></a>\n        <a class=\"navitem\" href=\"messaging.html\"><span class=\"ico\">✉</span><span class=\"lbl\">Messaging</span></a>\n        <a class=\"navitem\" href=\"documents.html\"><span class=\"ico\">▧</span><span class=\"lbl\">Documents</span></a>\n        <a class=\"navitem\" href=\"inquiry-remover.html\"><span class=\"ico\">⊘</span><span class=\"lbl\">Specialist</span></a>\n        <a class=\"navitem\" href=\"company-brain.html\"><span class=\"ico\">◎</span><span class=\"lbl\">Company Brain</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"watch\"><button class=\"navhead\" type=\"button\">Watch<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"galaxy.html\"><span class=\"ico\">✷</span><span class=\"lbl\">Galaxy</span></a>\n        <a class=\"navitem\" href=\"ops-admin.html\"><span class=\"ico\">⚙</span><span class=\"lbl\">Ops &amp; Admin</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"automation\"><button class=\"navhead\" type=\"button\">Automation<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"agent-editor.html\"><span class=\"ico\">◈</span><span class=\"lbl\">Agent Editor</span></a>\n        <a class=\"navitem\" href=\"automations.html\"><span class=\"ico\">⇄</span><span class=\"lbl\">Workflows</span></a>\n        <a class=\"navitem\" href=\"journeys.html\"><span class=\"ico\">⇝</span><span class=\"lbl\">Journeys</span></a>\n        <a class=\"navitem\" href=\"template-editor.html\"><span class=\"ico\">✎</span><span class=\"lbl\">Message Copy</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"marketing\"><button class=\"navhead\" type=\"button\">Marketing<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"campaign-manager.html\"><span class=\"ico\">◇</span><span class=\"lbl\">Campaigns</span></a>\n        <a class=\"navitem\" href=\"social-studio.html\"><span class=\"ico\">◉</span><span class=\"lbl\">Social Studio</span></a>\n        <a class=\"navitem\" href=\"creative-factory.html\"><span class=\"ico\">✳</span><span class=\"lbl\">Creative Factory</span></a>\n        <a class=\"navitem\" href=\"content-admin.html\"><span class=\"ico\">▭</span><span class=\"lbl\">Content</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"admin\"><button class=\"navhead\" type=\"button\">Admin<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"staff-teams.html\"><span class=\"ico\">⚇</span><span class=\"lbl\">Staff &amp; Teams</span></a>\n        <a class=\"navitem\" href=\"hiring.html\"><span class=\"ico\">⊕</span><span class=\"lbl\">Hiring</span></a>\n        <a class=\"navitem\" href=\"products-commissions.html\"><span class=\"ico\">⛁</span><span class=\"lbl\">Products &amp; Commissions</span></a>\n        <a class=\"navitem\" href=\"contracts.html\"><span class=\"ico\">✒</span><span class=\"lbl\">Contract templates</span></a>\n        <a class=\"navitem\" href=\"brand-studio.html\"><span class=\"ico\">◆</span><span class=\"lbl\">Brand Studio</span></a>\n</div></div>\n\n<div class=\"navgroup\" data-fh-section=\"portals\"><button class=\"navhead\" type=\"button\">Portals<span class=\"chev\">▾</span></button><div class=\"navlist\">\n        <a class=\"navitem\" href=\"client-portal.html\"><span class=\"ico\">◐</span><span class=\"lbl\">Client Portal</span></a>\n        <a class=\"navitem\" href=\"affiliate.html\"><span class=\"ico\">⇗</span><span class=\"lbl\">Affiliate</span></a>\n</div></div>\n\n  </nav>\n  <div class=\"side-foot\"><span class=\"pulse\"></span><span class=\"who\">fundhub</span></div>\n</aside>";
   /* ==SIDEBAR_HTML_END== */
 
   var ALL = [
@@ -92,7 +92,33 @@
        closer / setter / inquiry_specialist / sales_manager from being offered
        a screen whose API now 403s them. Lives under the Funding sidebar
        group. */
-    "lenders.html"
+    "lenders.html",
+    /* content-admin.html is the screen that edits the client portal's tiles and
+       its welcome video. It was built, wired and routed
+       (netlify/functions/api.mjs routes content/tiles and content/upload) and then
+       left out of this array, so the guard in pass 2 bounced EVERY role —
+       including the owner — to their home about 0.1s after the page painted.
+       Nobody could use the upload box, the save buttons or the portal-tile
+       switches. Proven live on https://fundhub.ai 2026-08-18 as owner.
+
+       Its reads are ROLE_SETS.OPS (owner, admin) — api/content/tiles.mjs, whose
+       own comment already named the Content nav item as its audience before
+       any such row existed. So it goes in OWNER_ADMIN_ONLY below and gets a
+       Content row under Marketing. Partners keep no Content row:
+       ROLE_TABS.partner is an explicit array, which never consults this list —
+       docs/journeys/white-label-intended.md — Content Admin is not this. */
+    "content-admin.html",
+    /* consent-capture.html is where staff record a client's permission before a
+       credit pull. Same defect, higher stakes: it was absent from this array, so
+       it bounced everyone, and no screen in the CRM linked to it either
+       (grep public/ found only comments). A closer could not reach the page that
+       records the consent requestSoftPull() refuses to run without.
+
+       Its gate is NARROWER than the shared staff surface —
+       api/consent/capture.mjs CONSENT_ROLES = owner, admin, closer,
+       funding_advisor — so it is not on staffTabs(). See CONSENT_DESK_ONLY
+       below, which is that set expressed as a nav list. */
+    "consent-capture.html"
   ];
 
   /* Screens that are not part of the shared employee rail. partner-galaxy is
@@ -131,9 +157,15 @@
     /* journeys.html — api/journeys/ask.mjs and api/journeys/store.mjs both
        gate on requireRole("owner", "admin"); the nav row matches. */
     "journeys.html",
-    /* Beta screens stay on the owner's rail only (owner decision 2026-08-17).
-       Staff, partners, and affiliates do not see these rows. The Content mock
-       was removed — the real screen is a separate build. */
+    /* Beta screens stay off the shared STAFF rail (owner decision 2026-08-17).
+       This list is subtracted inside staffTabs() and NOWHERE ELSE, so it says
+       nothing about the three principal roles, whose ROLE_TABS entries are
+       explicit arrays. social-studio.html and creative-factory.html have been in
+       both this list and ROLE_TABS.partner since the commit that wrote the
+       decision. The sentence that
+       used to sit here claimed staff, partners and affiliates all miss these
+       rows; that was never true of partners — corrected rather than deleted so
+       the next reader does not re-derive it. */
     "campaign-manager.html",
     "galaxy.html",
     "finance-os.html",
@@ -145,7 +177,10 @@
        or finance (staff, invoices). Every non-owner who opened it got a 403
        and a sample footer that blamed "not signed in". Hide the row. Do not
        widen those gates. (Fable board 2026-08-16, restamp 2026-08-17.) */
-    "ops-admin.html"
+    "ops-admin.html",
+    /* content-admin.html — /api/content/tiles and /api/content/upload both gate
+       on ROLE_SETS.OPS (owner, admin), so the row matches the gate exactly. */
+    "content-admin.html"
   ];
 
   /* Screens whose reads are ROLE_SETS.FINANCE (owner, admin, sales_manager).
@@ -183,6 +218,52 @@
      the row because they lost the data (owner decision 2026-08-17). */
   var ADVISOR_ONLY = ["lenders.html"];
 
+  /* Consent desk — the credit-pull permission screen. api/consent/capture.mjs
+     gates on CONSENT_ROLES = owner, admin, closer, funding_advisor, and that
+     set has to stay identical to SOFT_PULL_ROLES in api/finance/soft-pull.mjs
+     (capture.mjs says so in its own comment). No list already here has that
+     shape: CLOSER_DESK_ONLY drops the funding advisor, ADVISOR_ONLY drops the
+     closer. So this is a new list rather than a reused one.
+
+     MOVE A GATE AND MOVE ITS ROW. Widen or narrow CONSENT_ROLES and this list
+     moves with it in the same commit, or the rail offers a screen whose save
+     button 403s the person looking at it. setter, inquiry_specialist and
+     sales_manager are the three roles the API refuses, and they are exactly the
+     three staffTabs() drops it for. */
+  var CONSENT_DESK_ONLY = ["consent-capture.html"];
+
+  /* Screens an admin may not open. A star used to mean literally every screen, and
+     that produced two proven defects at once (live walk 2026-08-18, evidence in
+     docs/workflows/fix-2026-08-18/evidence/T0/before/admin.json):
+
+       1. The admin's rail carried a Client Portal row, and clicking it opened a
+          client's own portal page. PORTAL_ONLY right above says "not an employee
+          desk ... ROLE_TABS.client / .affiliate name the only openers — but
+          that list is subtracted inside staffTabs(), and the star branch never
+          calls staffTabs(). So the sentence was already untrue for admin.
+       2. Partner Home was HIDDEN from the admin's rail — gateLinks() refuses
+          that row to every non-partner — and yet opened when the address was
+          typed, because allowedFor() had never heard of the same rule. Hiding a
+          row is not blocking a page. Those were two gates disagreeing.
+
+     Both close with one filter, because allowedFor() is the only producer of
+     the ok list that gateLinks() and BOTH bounce checks read.
+
+     OWNER IS DELIBERATELY NOT TREATED THE SAME. Asked and answered:
+     OWNER-SET 2026-08-18 — "leave owner alone, keep the owner walk. Admin
+     blocked is correct." Settled; do not re-raise it. shell.js's own mountChatWidget comment
+     and client-portal.html's STAFF_ROLES were written for an "owner walk" of a
+     client's portal, so removing it from the owner would delete a documented
+     feature on an agent's judgment. The two audit findings both name admin.
+     brand-studio.html is deliberately absent: PRINCIPAL_ONLY records owner and
+     admin keeping it via the star, and no finding disputes that.
+
+     Written out as a plain array rather than PORTAL_ONLY.concat(...) so
+     src/http/app-nav-reachability.test.mjs can lift it — that file reads this
+     one as TEXT and only understands a literal. The test asserts this list
+     still contains all of PORTAL_ONLY, so the two cannot drift apart. */
+  var ADMIN_BLOCKED = ["client-portal.html", "affiliate.html", "partner-galaxy.html"];
+
   /* staffTabs — every screen a signed-in employee may open, which is every row
      the shared sidebar leaves them looking at — except the role-narrow
      screens above, which closer / sales_manager / funding_advisor pick up in
@@ -203,7 +284,8 @@
         && PORTAL_ONLY.indexOf(s) === -1
         && HIRING_ONLY.indexOf(s) === -1
         && FINANCE_ONLY.indexOf(s) === -1
-        && ADVISOR_ONLY.indexOf(s) === -1;
+        && ADVISOR_ONLY.indexOf(s) === -1
+        && CONSENT_DESK_ONLY.indexOf(s) === -1;
     });
   }
 
@@ -232,7 +314,9 @@
      actually is. */
   var ROLE_TABS = {
     owner: "*",
-    admin: "*",
+    /* Not "*". An admin is an employee, so the two client-facing portals and
+       partner Home are off their surface — resolved in allowedFor(). */
+    admin: "admin",
     /* Funding advisor gets the shared staff surface plus the lender database.
        "funding_advisor" is resolved in allowedFor() — staffTabs() +
        ADVISOR_ONLY. Owner and admin already reach it through "*". */
@@ -254,6 +338,34 @@
        auth land, these three move out of ROLE_TABS and 036 is reverted. */
     client: ["client-portal.html"],
     affiliate: ["affiliate.html"],
+    /* NO CAMPAIGNS ROW YET, AND THAT IS AN OPEN QUESTION, NOT AN OVERSIGHT.
+       A partner cannot reach campaign-manager.html from any screen (proven live
+       2026-08-18: 4 rows offered, typing the address bounced them home). The
+       API would let them in — every route under api/campaigns/ gates on
+       requirePrincipal(["partner","staff"]) with no requireRole — and the
+       screen has a real partner mode (isPartnerLogin(), which skips the
+       pick-a-partner step because the server pins their own book). So the row
+       looks like the only missing piece.
+
+       It was added on 2026-08-18 and taken back out the same hour. OWNER-SET
+       the same day: no Campaigns row for partners. Settled — do not re-file
+       this as a missing feature. The two reasons, recorded so the next audit
+       does not have to re-derive them:
+
+       1. THE CITATION DOES NOT SAY WHAT IT LOOKS LIKE IT SAYS. The line
+          docs/journeys/white-label-intended.md:67 reads "Campaigns (6 routes) —
+          should be reachable". The byte-identical sentence also sits in the
+          closer, inquiry-remover, funding-advisor, sales-manager and owner
+          intended files — and four of those roles are DELIBERATELY refused this
+          row by the 2026-08-17 owner decision that put campaign-manager.html in
+          OWNER_ADMIN_ONLY. So the sentence counts routes, which a partner
+          already reaches; it is not a statement about a nav row.
+       2. IT WOULD WALK PAST THE OWNER SWITCH. white-label-intended.md says the
+          marketing suite is off per partner until the owner turns it on, and
+          that a screen in the off state says so rather than sitting live and
+          failing. social-studio.html asks (/api/partner-marketing/usage);
+          campaign-manager.html asks nothing, so this row would hand every
+          partner a live campaigns desk whether their suite is on or off. */
     partner: ["partner-galaxy.html", "brand-studio.html", "social-studio.html", "creative-factory.html"]
   };
 
@@ -297,8 +409,11 @@
     if (!role) return [];
     var m = ROLE_TABS[role];
     if (m === "*") return ALL.slice();
-    if (m === "closer") return staffTabs().concat(CLOSER_DESK_ONLY);
-    if (m === "funding_advisor") return staffTabs().concat(ADVISOR_ONLY);
+    if (m === "admin") {
+      return ALL.filter(function (s) { return ADMIN_BLOCKED.indexOf(s) === -1; });
+    }
+    if (m === "closer") return staffTabs().concat(CLOSER_DESK_ONLY).concat(CONSENT_DESK_ONLY);
+    if (m === "funding_advisor") return staffTabs().concat(ADVISOR_ONLY).concat(CONSENT_DESK_ONLY);
     if (m === "sales_manager") return staffTabs().concat(SALES_FLOOR_ONLY).concat(FINANCE_ONLY);
     if (m === "staff" || !m) return staffTabs();
     return m.slice();
@@ -387,7 +502,12 @@
     "finance-os.html":           "client_id",
     "closer-dashboard.html":     "client_id",
     "closer-call.html":          "client_id",
-    "client-control-panel.html": "id"
+    "client-control-panel.html": "id",
+    /* consent-capture.html reads param("client_id") and, with none, paints
+       "No client selected" with Save disabled. It is in this map so a click on
+       the Consent rail row carries the client the user is already working —
+       currentClient() remembers it — instead of opening a dead screen. */
+    "consent-capture.html":      "client_id"
   };
 
   /* ENTITY_SCREENS — which screens additionally read an entity (personal vs. a
@@ -662,8 +782,23 @@
 
      Done here rather than per page because the rows arrive after shell.js runs
      — the observer catches tables that do not exist yet. */
+  /* THIS IS AN ALLOW-LIST OF DATA TABLES, AND IT HAS TO STAY ONE.
+     UI-STANDARDS §11 says a table that must stay a table may scroll inside its
+     own box; this builds that box. A screen whose table carries none of these
+     classes gets no box and pushes the whole page sideways on a phone — which
+     is what consent-capture.html's <table class="cc-hist"> was doing (measured
+     2026-08-18: 453px inside a 390px viewport), so it is named here.
+
+     DO NOT REPLACE THIS WITH querySelectorAll("table"). It was tried on
+     2026-08-18 and reverted the same hour. crm-sidebar.css pairs the box with
+     `.fh-scroll-x > table{min-width:max-content}`, which is right for a data
+     grid and wrong for a LAYOUT table — closer-call.html:269 and :280 use
+     class-less tables to position two panels, and forcing them to max-content
+     took that screen from 390px to 754px on a phone. Nine other class-less or
+     oddly-classed tables are in the same position. Add a class here when a new
+     DATA table appears; that is the deliberate cost of not breaking the rest. */
   function wrapWideTables(root) {
-    var tables = (root || document).querySelectorAll("table.grid,table.queue");
+    var tables = (root || document).querySelectorAll("table.grid,table.queue,table.cc-hist");
     for (var i = 0; i < tables.length; i++) {
       var t = tables[i];
       var p = t.parentNode;
@@ -725,9 +860,10 @@
      would drift back to "everything open" one click at a time. */
   function setGroupDefault(side) {
     var groups = side.querySelectorAll(".navgroup");
-    /* Three pages carry the rail without being a row on it — consent-capture
-       and partner-galaxy, plus anything opened from outside /app/. Closing
-       every group there would leave a rail of headings and nothing else, and
+    /* Some pages carry the rail without being a row on it — partner-galaxy,
+       plus anything opened from outside /app/. (consent-capture used to be on
+       this list; it has had a Consent row under Client ops since 2026-08-18.)
+       Closing every group there would leave a rail of headings and nothing else, and
        for a partner the single row they may open (Brand Studio) would be the
        thing hidden. No active row means no group to keep open, so open them
        all: this default narrows a long rail, it never empties one. */
@@ -937,6 +1073,44 @@
       });
   }
 
+  /* signInUrl — WHICH sign-in page this person can actually use.
+
+     /login.html is the staff password form. A real client has no password to
+     type: src/auth/magic-link.mjs provisions a client account with
+     unguessableHash(), a hash of 32 discarded random bytes, so the password box
+     can never be satisfied. Their sign-in page is /portal-login.html, which
+     mails them a link. Sending a signed-out client to /login.html was a dead end
+     on the one screen client-portal.html exists for.
+
+     KEYED ON THE ROLE, AND THE PAGE IS ONLY THE FALLBACK. Keying on the page
+     alone looks equivalent and is not: routeAway() proves that a cached CLIENT
+     can only be on this page, not that everyone on this page is a client. The
+     owner is the counterexample — the owner walk of a client's portal is a
+     supported thing (see ADMIN_BLOCKED above, which deliberately leaves the
+     owner able to open it), so an owner whose session expires there would have
+     been sent to the client's mail-me-a-link page, which cannot sign a staff
+     member in. That would have removed one dead end by building the same one
+     for somebody else.
+     The caller passes the last role it knew, because both call sites clear the
+     cache before redirecting. With no cached role at all — a cold load on this
+     page — the client is the right guess: they are who the screen is for.
+
+     NO ?next= ON THE PORTAL BRANCH. public/portal-login.html reads only "email"
+     and "t", and api/auth/magic-link-verify.mjs answers with a hardcoded
+     next of /app/client-portal.html. A next= appended here would be dropped at
+     every step, so it is not added — a parameter that does nothing reads as a
+     promise the page does not keep.
+
+     AFFILIATES ARE NOT CLIENTS and must keep /login.html. src/auth/magic-link.mjs
+     refuses any kind other than "client" as not_eligible, and affiliate accounts
+     do carry a real password — routing them to the portal page would invent a
+     second dead end rather than remove one. */
+  function signInUrl(withNext, lastRole) {
+    var staffish = lastRole && lastRole !== "client";
+    if (PAGE === "client-portal.html" && !staffish) return "/portal-login.html";
+    return withNext ? "/login.html?next=/app/" + PAGE : "/login.html";
+  }
+
   function signOut() {
     /* Tell the SERVER first. This used to clear localStorage and redirect,
        which logs the browser out and leaves the session row live until it
@@ -960,8 +1134,11 @@
         localStorage.removeItem(CLIENT_KEY);
         localStorage.removeItem(ENTITY_KEY);
       } catch (e) { /* private mode — the redirect still happens */ }
+      /* Read before the wipe on the next line, or signInUrl() gets "" and a
+         signing-out owner is sent to the client's sign-in page. */
+      var lastRole = readCachedRole();
       writeCachedRole("");
-      location.href = "/login.html";
+      location.href = signInUrl(false, lastRole);
     }
 
     if (!token) { finish(); return; }
@@ -1748,7 +1925,7 @@
   sessionPromise.then(function (sess) {
     if (!sess) {
       writeCachedRole("");
-      location.href = "/login.html?next=/app/" + PAGE;
+      location.href = signInUrl(true, hinted);
       return;
     }
     var role = normRole(sess.staff.role);

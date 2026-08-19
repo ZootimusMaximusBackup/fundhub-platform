@@ -46,6 +46,41 @@
   min-width: 0;
 }
 
+/* ── UI-STANDARDS §1: ONE WIDTH, ON EVERY SCREEN ──────────────────────────────
+   "Max content width 1800px, centered." (owner-set 2026-08-17, --fh-maxw in
+   fundhub-brand.css). It was opt-in per screen — a hand-added .fh-maxw class —
+   and measured live on 2026-08-18 only 18 of 31 CRM screens had it. At a 2560px
+   monitor the other 13 painted 2332px full-bleed (Calendar, Closer Dashboard,
+   Company Brain, Contract templates, Finance OS, Galaxy, Lenders, Messaging,
+   Ops & Admin, Specialist, partner Home, Call cockpit), while Sales Floor and
+   My Numbers hardcoded their own 1280px and 1240px and sat narrow in the middle
+   of the screen. Screens that should look like one product looked like five.
+
+   Making the cap a property of the RAIL rather than of each screen is what
+   stops it drifting again: every screen that links this file gets it, and a new
+   screen gets it for free.
+
+   .main IS IN THE SELECTOR ON PURPOSE. On Staff & Teams (and Documents, and
+   Campaigns) the cap sat on .content while the sticky top bar was a SIBLING
+   inside an uncapped .main — so the bar ran the full width and the screen read
+   full-bleed even though its content was capped. Capping .main puts the bar
+   inside the same box as everything under it.
+
+   !important IS ALSO ON PURPOSE, and it is the only thing that works from here.
+   Every screen's own <style> block sits AFTER this file's <link> in <head>, so
+   at equal specificity the page wins on source order — a normal declaration
+   here would lose to Sales Floor's 1280px. Importance is settled before
+   specificity and before order, which is why this reaches them. The cost: a
+   screen that later wants true full-bleed has to say so with its own
+   !important. That is the trade, stated rather than discovered. */
+:is(.app, .app-shell) :is(.shell, .content, .main),
+.app main,
+.app-shell main {
+  max-width: var(--fh-maxw) !important;
+  margin-inline: auto !important;
+  width: 100%;
+}
+
 /* Fixed rail — identical left edge on every page, scroll-independent. */
 aside.side,
 .side {
@@ -319,6 +354,42 @@ html.fh-side-mini .app-shell {
      remaining four workflows untestable. Overflow stays visible so
      docs/workflows/mobile-check.mjs can fail on it and someone fixes the
      element that is actually too wide. */
+
+  /* UI-STANDARDS §11: "No sideways page scroll." The cap above is a MAXIMUM,
+     not a width, so it is already harmless on a phone — but a screen that
+     carries its own `margin:0 auto` rather than .fh-maxw hits the same
+     cancelled-stretch trap described in fundhub-brand.css, and grows to its
+     widest child. Measured at 390px on 2026-08-18: Sales Floor painted 488px
+     and Lenders 765px that way. Pinning the wrapper to the viewport fixes it
+     without clipping anything — the note above about never using
+     overflow-x:hidden still stands, and this is the alternative it asks for. */
+  :is(.app, .app-shell) :is(.shell, .content, .main),
+  .app main,
+  .app-shell main {
+    max-width: 100% !important;
+  }
+
+  /* The session chip shell.js injects into the top bar carries its geometry as
+     an INLINE style (shell.js mountChip), including flex-shrink:0 and no
+     max-width. Measured 400px wide inside a 390px row, which pushed 14 screens
+     sideways on a phone all by itself. An inline style beats any external
+     sheet unless the external one is important, which is why these are.
+     Nothing is hidden: the chip is allowed to shrink and wrap onto a second
+     line, which shell.js's own lock sheet already permits for the bar. */
+  #fh-shell-chip {
+    flex-wrap: wrap !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex-shrink: 1 !important;
+  }
+  .topbar,
+  .topbar-right,
+  .top,
+  .page-hd {
+    flex-wrap: wrap !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
 
   /* Bigger touch targets for the nav itself. */
   .navitem { padding-top: 11px; padding-bottom: 11px; }
