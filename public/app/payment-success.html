@@ -155,9 +155,17 @@ h1{font-size:var(--fs-title);font-weight:800;letter-spacing:-.03em;margin:12px 0
     return out + "</ul>";
   }
 
+  /* WORDED CONDITIONALLY ON PURPOSE. Every state that uses this line is a state
+     where this page read NOTHING back, so it does not know whether a payment
+     succeeded. Saying "the payment is done" here would be this page asserting an
+     outcome it cannot see — on a regulated consumer-finance product, in the one
+     screen a client lands on straight from a card form. "If you completed" is
+     the honest form, and "do not pay again" is the part that actually protects
+     them either way. */
   var TODO =
-    '<p class="fine">What to do: tell your advisor the payment is done and stay on the call. ' +
-    "Do not pay again. You can also open your portal in a few minutes and look there.</p>";
+    '<p class="fine">What to do: if you completed the payment, tell your advisor and stay ' +
+    "on the call. Do not pay again. You can also open your portal in a few minutes " +
+    "and look there.</p>";
 
   var AGAIN = '<button class="btn" type="button" id="again">Check again</button>';
 
@@ -201,8 +209,8 @@ h1{font-size:var(--fs-title);font-weight:800;letter-spacing:-.03em;margin:12px 0
          already bounces a signed-out visitor to /portal-login.html
          (public/app/shell.js), so a second one would be two doors to one room. */
       '<p class="fine">Use the “Back to your portal” link below and sign in there ' +
-      "to see what is open. If you just paid, do not pay again — tell your " +
-      "advisor instead.</p>"
+      "to see what is open. If you completed a payment, do not pay again — tell " +
+      "your advisor instead.</p>"
     );
   }
 
@@ -217,8 +225,9 @@ h1{font-size:var(--fs-title);font-weight:800;letter-spacing:-.03em;margin:12px 0
   function showUnreachable() {
     setState(
       '<div class="err"><b>We could not reach your account</b>' +
-      "<p>Nothing was read, so this page cannot say what is open. That is a " +
-      "problem on our side, not with your payment.</p></div>" +
+      "<p>Nothing was read, so this page cannot say what is open, and it cannot " +
+      "say whether your payment went through. The failure to read is on our " +
+      "side.</p></div>" +
       TODO + AGAIN
     );
   }
