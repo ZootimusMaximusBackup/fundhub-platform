@@ -5,18 +5,19 @@
     "T16-20",
     "T16-21"
   ],
-  "total_routes": 163,
+  "total_routes": 171,
   "ran_at": "2026-08-19T03:03:07.849Z",
   "per_role": {
     "closer": {
       "login_status": 200,
       "by_status": {
-        "200": 37,
-        "400": 34,
+        "200": 39,
+        "400": 37,
         "403": 41,
-        "405": 51
+        "404": 1,
+        "405": 53
       },
-      "count_200": 37,
+      "count_200": 39,
       "routes_200": [
         {
           "path": "/api/auth/login",
@@ -202,6 +203,16 @@
           "path": "/api/finance/alerts",
           "body_length": 64,
           "first_120": "{\"ok\":true,\"scope\":\"book\",\"state\":\"open\",\"limit\":50,\"alerts\":[]}"
+        },
+        {
+          "path": "/api/read/workflows",
+          "body_length": 10769,
+          "first_120": "{\"ok\":true,\"count\":50,\"limit\":50,\"offset\":0,\"hasMore\":true,\"items\":[{\"id\":\"af-02-referral-ownership-capture\",\"name\":\"AF-"
+        },
+        {
+          "path": "/api/read/contracts",
+          "body_length": 10194,
+          "first_120": "{\"ok\":true,\"view\":\"contracts\",\"count\":10,\"items\":[{\"id\":\"8dfa576f-5404-45fa-8f39-7d589d4e8a4a\",\"org_id\":\"fb789b0b-8d8d-4"
         }
       ],
       "routes_401": [],
@@ -2367,18 +2378,123 @@
           "elapsed_ms": 560,
           "error": null,
           "body_first_400": "{\"ok\":false,\"error\":\"forbidden\",\"message\":\"this endpoint is limited to owner, admin, sales_manager\"}"
+        },
+        {
+          "role": "closer",
+          "method": "GET",
+          "path": "/api/read/workflows",
+          "url": "https://fundhub.ai/api/read/workflows",
+          "status": 200,
+          "statusText": "OK",
+          "content_type": "application/json",
+          "body_length": 10769,
+          "elapsed_ms": 1139,
+          "error": null,
+          "body_first_400": "{\"ok\":true,\"count\":50,\"limit\":50,\"offset\":0,\"hasMore\":true,\"items\":[{\"id\":\"af-02-referral-ownership-capture\",\"name\":\"AF-02 — Referral Ownership Capture\",\"category\":\"AF\",\"events\":[\"entry.captured\",\"diagnostic.paid\",\"analysis.completed\"],\"crons\":[],\"engine_active\":true,\"last_triggered_at\":\"2026-08-18T21:56:31.778Z\",\"status\":\"live\"},{\"id\":\"ai-set-03-no-answer-cadence\",\"name\":\"AI-SET-03 — No-Answer SM"
+        },
+        {
+          "role": "closer",
+          "method": "GET",
+          "path": "/api/read/transactions",
+          "url": "https://fundhub.ai/api/read/transactions",
+          "status": 400,
+          "statusText": "Bad Request",
+          "content_type": "application/json",
+          "body_length": 63,
+          "elapsed_ms": 278,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"client_id is required and must be a uuid\"}"
+        },
+        {
+          "role": "closer",
+          "method": "GET",
+          "path": "/api/contracts",
+          "url": "https://fundhub.ai/api/contracts",
+          "status": 405,
+          "statusText": "Method Not Allowed",
+          "content_type": "application/json",
+          "body_length": 111,
+          "elapsed_ms": 152,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"method_not_allowed\",\"message\":\"This screen only accepts a save request, not a page load.\"}"
+        },
+        {
+          "role": "closer",
+          "method": "GET",
+          "path": "/api/read/contracts",
+          "url": "https://fundhub.ai/api/read/contracts",
+          "status": 200,
+          "statusText": "OK",
+          "content_type": "application/json",
+          "body_length": 10194,
+          "elapsed_ms": 365,
+          "error": null,
+          "body_first_400": "{\"ok\":true,\"view\":\"contracts\",\"count\":10,\"items\":[{\"id\":\"8dfa576f-5404-45fa-8f39-7d589d4e8a4a\",\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"client_id\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"template_id\":\"9c4b9f01-1f83-4f14-89e1-0dfd97603d92\",\"template_key\":\"CREDIT-REPAIR-AGREEMENT\",\"title\":\"Credit Repair Agreement\",\"kind\":\"contract\",\"subtype\":\"credit_repair\",\"body_sha\":\"sha256:42361d105e45bf7"
+        },
+        {
+          "role": "closer",
+          "method": "GET",
+          "path": "/api/read/portal-contracts",
+          "url": "https://fundhub.ai/api/read/portal-contracts",
+          "status": 400,
+          "statusText": "Bad Request",
+          "content_type": "application/json",
+          "body_length": 87,
+          "elapsed_ms": 737,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"client_id_required\",\"message\":\"Pick a client to load agreements.\"}"
+        },
+        {
+          "role": "closer",
+          "method": "GET",
+          "path": "/api/read/portal-summary",
+          "url": "https://fundhub.ai/api/read/portal-summary",
+          "status": 400,
+          "statusText": "Bad Request",
+          "content_type": "application/json",
+          "body_length": 91,
+          "elapsed_ms": 228,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"client_id_required\",\"message\":\"Pick a client to load portal summary.\"}"
+        },
+        {
+          "role": "closer",
+          "method": "GET",
+          "path": "/api/contracts/sign",
+          "url": "https://fundhub.ai/api/contracts/sign",
+          "status": 404,
+          "statusText": "Not Found",
+          "content_type": "application/json",
+          "body_length": 32,
+          "elapsed_ms": 185,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"not_found\"}"
+        },
+        {
+          "role": "closer",
+          "method": "GET",
+          "path": "/api/messages-outbound",
+          "url": "https://fundhub.ai/api/messages-outbound",
+          "status": 405,
+          "statusText": "Method Not Allowed",
+          "content_type": "application/json",
+          "body_length": 41,
+          "elapsed_ms": 233,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"method_not_allowed\"}"
         }
       ]
     },
     "sales": {
       "login_status": 200,
       "by_status": {
-        "200": 44,
-        "400": 39,
+        "200": 46,
+        "400": 42,
         "403": 29,
-        "405": 51
+        "404": 1,
+        "405": 53
       },
-      "count_200": 44,
+      "count_200": 46,
       "routes_200": [
         {
           "path": "/api/auth/login",
@@ -2599,6 +2715,16 @@
           "path": "/api/finance/alerts",
           "body_length": 64,
           "first_120": "{\"ok\":true,\"scope\":\"book\",\"state\":\"open\",\"limit\":50,\"alerts\":[]}"
+        },
+        {
+          "path": "/api/read/workflows",
+          "body_length": 10769,
+          "first_120": "{\"ok\":true,\"count\":50,\"limit\":50,\"offset\":0,\"hasMore\":true,\"items\":[{\"id\":\"af-02-referral-ownership-capture\",\"name\":\"AF-"
+        },
+        {
+          "path": "/api/read/contracts",
+          "body_length": 10194,
+          "first_120": "{\"ok\":true,\"view\":\"contracts\",\"count\":10,\"items\":[{\"id\":\"8dfa576f-5404-45fa-8f39-7d589d4e8a4a\",\"org_id\":\"fb789b0b-8d8d-4"
         }
       ],
       "routes_401": [],
@@ -4752,18 +4878,123 @@
           "elapsed_ms": 760,
           "error": null,
           "body_first_400": "{\"ok\":false,\"error\":\"client_id must be a uuid\"}"
+        },
+        {
+          "role": "sales",
+          "method": "GET",
+          "path": "/api/read/workflows",
+          "url": "https://fundhub.ai/api/read/workflows",
+          "status": 200,
+          "statusText": "OK",
+          "content_type": "application/json",
+          "body_length": 10769,
+          "elapsed_ms": 539,
+          "error": null,
+          "body_first_400": "{\"ok\":true,\"count\":50,\"limit\":50,\"offset\":0,\"hasMore\":true,\"items\":[{\"id\":\"af-02-referral-ownership-capture\",\"name\":\"AF-02 — Referral Ownership Capture\",\"category\":\"AF\",\"events\":[\"entry.captured\",\"diagnostic.paid\",\"analysis.completed\"],\"crons\":[],\"engine_active\":true,\"last_triggered_at\":\"2026-08-18T21:56:31.778Z\",\"status\":\"live\"},{\"id\":\"ai-set-03-no-answer-cadence\",\"name\":\"AI-SET-03 — No-Answer SM"
+        },
+        {
+          "role": "sales",
+          "method": "GET",
+          "path": "/api/read/transactions",
+          "url": "https://fundhub.ai/api/read/transactions",
+          "status": 400,
+          "statusText": "Bad Request",
+          "content_type": "application/json",
+          "body_length": 63,
+          "elapsed_ms": 306,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"client_id is required and must be a uuid\"}"
+        },
+        {
+          "role": "sales",
+          "method": "GET",
+          "path": "/api/contracts",
+          "url": "https://fundhub.ai/api/contracts",
+          "status": 405,
+          "statusText": "Method Not Allowed",
+          "content_type": "application/json",
+          "body_length": 111,
+          "elapsed_ms": 524,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"method_not_allowed\",\"message\":\"This screen only accepts a save request, not a page load.\"}"
+        },
+        {
+          "role": "sales",
+          "method": "GET",
+          "path": "/api/read/contracts",
+          "url": "https://fundhub.ai/api/read/contracts",
+          "status": 200,
+          "statusText": "OK",
+          "content_type": "application/json",
+          "body_length": 10194,
+          "elapsed_ms": 353,
+          "error": null,
+          "body_first_400": "{\"ok\":true,\"view\":\"contracts\",\"count\":10,\"items\":[{\"id\":\"8dfa576f-5404-45fa-8f39-7d589d4e8a4a\",\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"client_id\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"template_id\":\"9c4b9f01-1f83-4f14-89e1-0dfd97603d92\",\"template_key\":\"CREDIT-REPAIR-AGREEMENT\",\"title\":\"Credit Repair Agreement\",\"kind\":\"contract\",\"subtype\":\"credit_repair\",\"body_sha\":\"sha256:42361d105e45bf7"
+        },
+        {
+          "role": "sales",
+          "method": "GET",
+          "path": "/api/read/portal-contracts",
+          "url": "https://fundhub.ai/api/read/portal-contracts",
+          "status": 400,
+          "statusText": "Bad Request",
+          "content_type": "application/json",
+          "body_length": 87,
+          "elapsed_ms": 986,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"client_id_required\",\"message\":\"Pick a client to load agreements.\"}"
+        },
+        {
+          "role": "sales",
+          "method": "GET",
+          "path": "/api/read/portal-summary",
+          "url": "https://fundhub.ai/api/read/portal-summary",
+          "status": 400,
+          "statusText": "Bad Request",
+          "content_type": "application/json",
+          "body_length": 91,
+          "elapsed_ms": 203,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"client_id_required\",\"message\":\"Pick a client to load portal summary.\"}"
+        },
+        {
+          "role": "sales",
+          "method": "GET",
+          "path": "/api/contracts/sign",
+          "url": "https://fundhub.ai/api/contracts/sign",
+          "status": 404,
+          "statusText": "Not Found",
+          "content_type": "application/json",
+          "body_length": 32,
+          "elapsed_ms": 168,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"not_found\"}"
+        },
+        {
+          "role": "sales",
+          "method": "GET",
+          "path": "/api/messages-outbound",
+          "url": "https://fundhub.ai/api/messages-outbound",
+          "status": 405,
+          "statusText": "Method Not Allowed",
+          "content_type": "application/json",
+          "body_length": 41,
+          "elapsed_ms": 352,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"method_not_allowed\"}"
         }
       ]
     },
     "advisor": {
       "login_status": 200,
       "by_status": {
-        "200": 39,
-        "400": 34,
+        "200": 41,
+        "400": 37,
         "403": 39,
-        "405": 51
+        "404": 1,
+        "405": 53
       },
-      "count_200": 39,
+      "count_200": 41,
       "routes_200": [
         {
           "path": "/api/auth/login",
@@ -4959,6 +5190,16 @@
           "path": "/api/finance/alerts",
           "body_length": 64,
           "first_120": "{\"ok\":true,\"scope\":\"book\",\"state\":\"open\",\"limit\":50,\"alerts\":[]}"
+        },
+        {
+          "path": "/api/read/workflows",
+          "body_length": 10769,
+          "first_120": "{\"ok\":true,\"count\":50,\"limit\":50,\"offset\":0,\"hasMore\":true,\"items\":[{\"id\":\"af-02-referral-ownership-capture\",\"name\":\"AF-"
+        },
+        {
+          "path": "/api/read/contracts",
+          "body_length": 10194,
+          "first_120": "{\"ok\":true,\"view\":\"contracts\",\"count\":10,\"items\":[{\"id\":\"8dfa576f-5404-45fa-8f39-7d589d4e8a4a\",\"org_id\":\"fb789b0b-8d8d-4"
         }
       ],
       "routes_401": [],
@@ -7122,6 +7363,110 @@
           "elapsed_ms": 581,
           "error": null,
           "body_first_400": "{\"ok\":false,\"error\":\"forbidden\",\"message\":\"this endpoint is limited to owner, admin, sales_manager\"}"
+        },
+        {
+          "role": "advisor",
+          "method": "GET",
+          "path": "/api/read/workflows",
+          "url": "https://fundhub.ai/api/read/workflows",
+          "status": 200,
+          "statusText": "OK",
+          "content_type": "application/json",
+          "body_length": 10769,
+          "elapsed_ms": 475,
+          "error": null,
+          "body_first_400": "{\"ok\":true,\"count\":50,\"limit\":50,\"offset\":0,\"hasMore\":true,\"items\":[{\"id\":\"af-02-referral-ownership-capture\",\"name\":\"AF-02 — Referral Ownership Capture\",\"category\":\"AF\",\"events\":[\"entry.captured\",\"diagnostic.paid\",\"analysis.completed\"],\"crons\":[],\"engine_active\":true,\"last_triggered_at\":\"2026-08-18T21:56:31.778Z\",\"status\":\"live\"},{\"id\":\"ai-set-03-no-answer-cadence\",\"name\":\"AI-SET-03 — No-Answer SM"
+        },
+        {
+          "role": "advisor",
+          "method": "GET",
+          "path": "/api/read/transactions",
+          "url": "https://fundhub.ai/api/read/transactions",
+          "status": 400,
+          "statusText": "Bad Request",
+          "content_type": "application/json",
+          "body_length": 63,
+          "elapsed_ms": 244,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"client_id is required and must be a uuid\"}"
+        },
+        {
+          "role": "advisor",
+          "method": "GET",
+          "path": "/api/contracts",
+          "url": "https://fundhub.ai/api/contracts",
+          "status": 405,
+          "statusText": "Method Not Allowed",
+          "content_type": "application/json",
+          "body_length": 111,
+          "elapsed_ms": 202,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"method_not_allowed\",\"message\":\"This screen only accepts a save request, not a page load.\"}"
+        },
+        {
+          "role": "advisor",
+          "method": "GET",
+          "path": "/api/read/contracts",
+          "url": "https://fundhub.ai/api/read/contracts",
+          "status": 200,
+          "statusText": "OK",
+          "content_type": "application/json",
+          "body_length": 10194,
+          "elapsed_ms": 575,
+          "error": null,
+          "body_first_400": "{\"ok\":true,\"view\":\"contracts\",\"count\":10,\"items\":[{\"id\":\"8dfa576f-5404-45fa-8f39-7d589d4e8a4a\",\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"client_id\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"template_id\":\"9c4b9f01-1f83-4f14-89e1-0dfd97603d92\",\"template_key\":\"CREDIT-REPAIR-AGREEMENT\",\"title\":\"Credit Repair Agreement\",\"kind\":\"contract\",\"subtype\":\"credit_repair\",\"body_sha\":\"sha256:42361d105e45bf7"
+        },
+        {
+          "role": "advisor",
+          "method": "GET",
+          "path": "/api/read/portal-contracts",
+          "url": "https://fundhub.ai/api/read/portal-contracts",
+          "status": 400,
+          "statusText": "Bad Request",
+          "content_type": "application/json",
+          "body_length": 87,
+          "elapsed_ms": 405,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"client_id_required\",\"message\":\"Pick a client to load agreements.\"}"
+        },
+        {
+          "role": "advisor",
+          "method": "GET",
+          "path": "/api/read/portal-summary",
+          "url": "https://fundhub.ai/api/read/portal-summary",
+          "status": 400,
+          "statusText": "Bad Request",
+          "content_type": "application/json",
+          "body_length": 91,
+          "elapsed_ms": 246,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"client_id_required\",\"message\":\"Pick a client to load portal summary.\"}"
+        },
+        {
+          "role": "advisor",
+          "method": "GET",
+          "path": "/api/contracts/sign",
+          "url": "https://fundhub.ai/api/contracts/sign",
+          "status": 404,
+          "statusText": "Not Found",
+          "content_type": "application/json",
+          "body_length": 32,
+          "elapsed_ms": 150,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"not_found\"}"
+        },
+        {
+          "role": "advisor",
+          "method": "GET",
+          "path": "/api/messages-outbound",
+          "url": "https://fundhub.ai/api/messages-outbound",
+          "status": 405,
+          "statusText": "Method Not Allowed",
+          "content_type": "application/json",
+          "body_length": 41,
+          "elapsed_ms": 148,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"method_not_allowed\"}"
         }
       ]
     },
@@ -7131,9 +7476,10 @@
       "by_status": {
         "200": 8,
         "400": 2,
-        "401": 74,
-        "403": 30,
-        "405": 49
+        "401": 77,
+        "403": 32,
+        "404": 1,
+        "405": 51
       },
       "count_200": 8,
       "routes_200": [
@@ -7252,7 +7598,10 @@
         "/api/finance/alerts",
         "/api/finance/model",
         "/api/banking/accounts",
-        "/api/payment-links"
+        "/api/payment-links",
+        "/api/read/workflows",
+        "/api/read/transactions",
+        "/api/read/contracts"
       ],
       "routes_403": [
         "/api/tasks",
@@ -7284,7 +7633,9 @@
         "/api/creative/approvals",
         "/api/finance/soft-pull",
         "/api/finance/crs-pull",
-        "/api/consent/capture"
+        "/api/consent/capture",
+        "/api/read/portal-contracts",
+        "/api/read/portal-summary"
       ],
       "all": [
         {
@@ -9405,6 +9756,110 @@
           "elapsed_ms": 224,
           "error": null,
           "body_first_400": "{\"ok\":false,\"error\":\"unauthorized\"}"
+        },
+        {
+          "role": "affiliate",
+          "method": "GET",
+          "path": "/api/read/workflows",
+          "url": "https://fundhub.ai/api/read/workflows",
+          "status": 401,
+          "statusText": "Unauthorized",
+          "content_type": "application/json",
+          "body_length": 35,
+          "elapsed_ms": 210,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"unauthorized\"}"
+        },
+        {
+          "role": "affiliate",
+          "method": "GET",
+          "path": "/api/read/transactions",
+          "url": "https://fundhub.ai/api/read/transactions",
+          "status": 401,
+          "statusText": "Unauthorized",
+          "content_type": "application/json",
+          "body_length": 35,
+          "elapsed_ms": 222,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"unauthorized\"}"
+        },
+        {
+          "role": "affiliate",
+          "method": "GET",
+          "path": "/api/contracts",
+          "url": "https://fundhub.ai/api/contracts",
+          "status": 405,
+          "statusText": "Method Not Allowed",
+          "content_type": "application/json",
+          "body_length": 111,
+          "elapsed_ms": 162,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"method_not_allowed\",\"message\":\"This screen only accepts a save request, not a page load.\"}"
+        },
+        {
+          "role": "affiliate",
+          "method": "GET",
+          "path": "/api/read/contracts",
+          "url": "https://fundhub.ai/api/read/contracts",
+          "status": 401,
+          "statusText": "Unauthorized",
+          "content_type": "application/json",
+          "body_length": 35,
+          "elapsed_ms": 446,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"unauthorized\"}"
+        },
+        {
+          "role": "affiliate",
+          "method": "GET",
+          "path": "/api/read/portal-contracts",
+          "url": "https://fundhub.ai/api/read/portal-contracts",
+          "status": 403,
+          "statusText": "Forbidden",
+          "content_type": "application/json",
+          "body_length": 79,
+          "elapsed_ms": 678,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"forbidden\",\"message\":\"this endpoint serves staff, client\"}"
+        },
+        {
+          "role": "affiliate",
+          "method": "GET",
+          "path": "/api/read/portal-summary",
+          "url": "https://fundhub.ai/api/read/portal-summary",
+          "status": 403,
+          "statusText": "Forbidden",
+          "content_type": "application/json",
+          "body_length": 79,
+          "elapsed_ms": 802,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"forbidden\",\"message\":\"this endpoint serves staff, client\"}"
+        },
+        {
+          "role": "affiliate",
+          "method": "GET",
+          "path": "/api/contracts/sign",
+          "url": "https://fundhub.ai/api/contracts/sign",
+          "status": 404,
+          "statusText": "Not Found",
+          "content_type": "application/json",
+          "body_length": 32,
+          "elapsed_ms": 146,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"not_found\"}"
+        },
+        {
+          "role": "affiliate",
+          "method": "GET",
+          "path": "/api/messages-outbound",
+          "url": "https://fundhub.ai/api/messages-outbound",
+          "status": 405,
+          "statusText": "Method Not Allowed",
+          "content_type": "application/json",
+          "body_length": 41,
+          "elapsed_ms": 169,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"method_not_allowed\"}"
         }
       ]
     },
@@ -9414,9 +9869,10 @@
       "by_status": {
         "200": 18,
         "400": 8,
-        "401": 74,
-        "403": 14,
-        "405": 49
+        "401": 77,
+        "403": 16,
+        "404": 1,
+        "405": 51
       },
       "count_200": 18,
       "routes_200": [
@@ -9585,7 +10041,10 @@
         "/api/finance/alerts",
         "/api/finance/model",
         "/api/banking/accounts",
-        "/api/payment-links"
+        "/api/payment-links",
+        "/api/read/workflows",
+        "/api/read/transactions",
+        "/api/read/contracts"
       ],
       "routes_403": [
         "/api/tasks",
@@ -9601,7 +10060,9 @@
         "/api/chat/messages",
         "/api/finance/soft-pull",
         "/api/finance/crs-pull",
-        "/api/consent/capture"
+        "/api/consent/capture",
+        "/api/read/portal-contracts",
+        "/api/read/portal-summary"
       ],
       "all": [
         {
@@ -11722,8 +12183,113 @@
           "elapsed_ms": 264,
           "error": null,
           "body_first_400": "{\"ok\":false,\"error\":\"unauthorized\"}"
+        },
+        {
+          "role": "partner",
+          "method": "GET",
+          "path": "/api/read/workflows",
+          "url": "https://fundhub.ai/api/read/workflows",
+          "status": 401,
+          "statusText": "Unauthorized",
+          "content_type": "application/json",
+          "body_length": 35,
+          "elapsed_ms": 313,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"unauthorized\"}"
+        },
+        {
+          "role": "partner",
+          "method": "GET",
+          "path": "/api/read/transactions",
+          "url": "https://fundhub.ai/api/read/transactions",
+          "status": 401,
+          "statusText": "Unauthorized",
+          "content_type": "application/json",
+          "body_length": 35,
+          "elapsed_ms": 351,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"unauthorized\"}"
+        },
+        {
+          "role": "partner",
+          "method": "GET",
+          "path": "/api/contracts",
+          "url": "https://fundhub.ai/api/contracts",
+          "status": 405,
+          "statusText": "Method Not Allowed",
+          "content_type": "application/json",
+          "body_length": 111,
+          "elapsed_ms": 157,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"method_not_allowed\",\"message\":\"This screen only accepts a save request, not a page load.\"}"
+        },
+        {
+          "role": "partner",
+          "method": "GET",
+          "path": "/api/read/contracts",
+          "url": "https://fundhub.ai/api/read/contracts",
+          "status": 401,
+          "statusText": "Unauthorized",
+          "content_type": "application/json",
+          "body_length": 35,
+          "elapsed_ms": 257,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"unauthorized\"}"
+        },
+        {
+          "role": "partner",
+          "method": "GET",
+          "path": "/api/read/portal-contracts",
+          "url": "https://fundhub.ai/api/read/portal-contracts",
+          "status": 403,
+          "statusText": "Forbidden",
+          "content_type": "application/json",
+          "body_length": 79,
+          "elapsed_ms": 381,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"forbidden\",\"message\":\"this endpoint serves staff, client\"}"
+        },
+        {
+          "role": "partner",
+          "method": "GET",
+          "path": "/api/read/portal-summary",
+          "url": "https://fundhub.ai/api/read/portal-summary",
+          "status": 403,
+          "statusText": "Forbidden",
+          "content_type": "application/json",
+          "body_length": 79,
+          "elapsed_ms": 685,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"forbidden\",\"message\":\"this endpoint serves staff, client\"}"
+        },
+        {
+          "role": "partner",
+          "method": "GET",
+          "path": "/api/contracts/sign",
+          "url": "https://fundhub.ai/api/contracts/sign",
+          "status": 404,
+          "statusText": "Not Found",
+          "content_type": "application/json",
+          "body_length": 32,
+          "elapsed_ms": 144,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"not_found\"}"
+        },
+        {
+          "role": "partner",
+          "method": "GET",
+          "path": "/api/messages-outbound",
+          "url": "https://fundhub.ai/api/messages-outbound",
+          "status": 405,
+          "statusText": "Method Not Allowed",
+          "content_type": "application/json",
+          "body_length": 41,
+          "elapsed_ms": 377,
+          "error": null,
+          "body_first_400": "{\"ok\":false,\"error\":\"method_not_allowed\"}"
         }
       ]
     }
-  }
+  },
+  "parser_note": "First pass parsed 163 of 171 routes: a `//` comment containing the literal `/*` (the note about src/messaging/providers/*) put the parser into block-comment mode and swallowed 8 route keys. Parser fixed; the 8 were probed separately and merged in here."
 }

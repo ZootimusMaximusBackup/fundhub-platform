@@ -205,3 +205,84 @@ the real schema, built by the same script the deploy uses.
 sitting there with 13 leftover records. Removing it means deleting rows from the
 live database, which I am not permitted to do without your say-so. Once the fix
 deploys, pressing delete on it will simply work.
+
+---
+
+## The live-site items (re-walked on fundhub.ai today)
+
+### T16-14 · No data door for a stranger — **CONFIRMED WORKS**
+
+Proof: `http/07-unsigned-sweep.json`
+
+171 routes probed with no login at all. Four came back with anything: the login
+page, the health check, and the two climate pages. Everything else refused —
+113 said "not signed in", 51 said "wrong method", the rest errored cleanly.
+**Zero routes handed out data.**
+
+### T16-16 · No live keys in the code or in the pages — **CONFIRMED WORKS**
+
+Proof: `http/11-secrets-live.json`, `http/12-repo-visibility.json`
+
+Every page script the browser downloads was fetched and scanned for 15 shapes of
+password and key. **Nothing found.** One match on the *name* `DATABASE_URL`
+turned out to be a word in a comment explaining what the setting does — the name,
+never a value. 4,324 tracked files in the repository were scanned the same way.
+No matched value was recorded anywhere, by design.
+
+### T16-17 · The code repository is public — **CONFIRMED. Your call.**
+
+`github.com/ZootimusMaximusBackup/fundhub-platform` is **PUBLIC**. Anyone on the
+internet can read every file.
+
+The good news from the item above: no key, password or customer record is sitting
+in those files. So this is not an emergency. But every business rule, every table
+name and every screen is readable by anyone who looks. Making it private is one
+click and breaks nothing. It is your decision, and I have not touched it.
+
+### T16-18, 19, 20, 21 · Doors left open behind deleted screens — **CONFIRMED STILL BROKEN**
+
+Proof: `http/09-targeted-four.json`
+
+All four reproduce today. Three screens were deleted but their back doors are
+still live:
+
+* a **closer** can still pull the company finance figures
+* a **sales** person can still ask for a client's billing
+* a **closer** can still read the AI bureau settings
+* an **affiliate** hitting a staff screen is told "you are signed out" instead of
+  "you do not have permission" — no data leaks, but it will be reported as a
+  broken login
+
+None of these files belong to this thread. Each is a one-line permission fix, and
+I have written all four up on the fix board with the exact route and role.
+
+### T16-03 · Documents shows the wrong client — **CONFIRMED, and worse than reported**
+
+Proof: `http/04-documents-test-client.json`, `05-documents-demo-client.json`,
+`04b-documents-api-filter-check.json`
+
+The audit said the screen shows "a different client's file". It is broader than
+that. **The screen never asks for a client at all.** Whichever client you open it
+for, it asks for every document in the company and shows all of them — the same
+11 rows both times, the real customer's paperwork included.
+
+The back end is fine; it does filter by client when asked. **The screen just
+never asks.** That is a one-line fix in the page, and I have written it up for the
+thread that owns that file.
+
+### T16-15 · Client portal cross-file check — **COULD NOT TEST. Honest gap.**
+
+Proof: `http/10-portal-idor.json`
+
+To test whether a signed-in client can peek at another client's file, you must
+first sign in as a client. **The `client@fundhub.ai` test account does not work on
+the live site** — it is refused with "invalid credentials" using the same password
+that signs in all six staff roles. The other way in is an emailed sign-in link,
+which this batch forbids.
+
+This is not new: a verification run on 2026-08-16 already recorded the same
+failure. **The client test account has been unusable on production for at least
+three days**, which means nobody has been able to test anything from a client's
+point of view in that time. That is worth fixing on its own.
+
+I did not guess at a result. The item stays open.
