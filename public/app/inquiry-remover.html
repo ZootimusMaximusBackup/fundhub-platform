@@ -2287,7 +2287,13 @@ function loadRepairDesk() {
           });
       });
     });
-  }).catch(function () { /* hide stuck panel — role cannot use it */ });
+  /* Leave the stuck panel hidden if the read fails. This is NOT a role problem, and
+     the comment that used to sit here said it was: Specialist, owner and admin all
+     pass /api/repair/exceptions. The panel is empty because both lists it reads are
+     always empty today — nothing ever marks a repair card stalled, and nothing ever
+     writes a bureau reply. The 2026-08-18 audit read the old comment and recorded
+     T4-05 as a permissions fault. It is not one. */
+  }).catch(function () { });
 
   function toggleRepairRow(tr) {
     var id = tr.getAttribute("data-repair-row");
