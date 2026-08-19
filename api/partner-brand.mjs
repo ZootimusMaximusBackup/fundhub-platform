@@ -65,6 +65,14 @@ const PARTNER_BRAND_ROLES = new Set(["owner", "admin"]);
 // Fields a partner may set. Anything else in the body is ignored rather than
 // rejected, so a screen sending extra state does not 400 — but it also cannot
 // write a column nobody approved.
+//
+// EVERY NAME HERE MUST ALSO COME BACK OUT. Both branches below answer from
+// v_partner_brand_effective, and until migration 236 that view did not select
+// entity_address — so the one field on this list that was not in the view was
+// write-only storage: accepted, validated, stored, and never readable again.
+// Nothing errored, which is why it survived. Adding a name here without adding
+// it to the view repeats that exact bug; src/http/partner-brand-roundtrip.pg.test.mjs
+// fails if it does.
 const WRITABLE = [
   "wordmark_url", "ink", "paper", "ramp", "display_face", "mono_face", "voice",
   "entity_name", "entity_address", "support_email", "domain", "selected_funnels"

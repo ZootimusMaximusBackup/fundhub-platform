@@ -1,6 +1,205 @@
 
 ---
 
+## T10 — Affiliate portal & white-label partner site · manifest (wave 3)
+
+Branch `fix/T10-affiliate-partner`, off `origin/main` @ `c860b8c`. Seven items owned; all seven closed
+or answered. Nothing was deployed. Merging is Chris's click.
+
+### Test baseline — measured, not assumed
+
+Scratch Postgres `fundhub_t10_base` on the owner's Mac, socket `/tmp`, never `fundhub_ci`, never
+production. Full detail and raw logs in `evidence/T10/BASELINE.md`.
+
+| | at `c860b8c` | after T10 |
+|---|---|---|
+| tests | 5845 | 5890 |
+| pass | 5842 | 5887 |
+| fail | **3** | **3 — the same three, by name** |
+| skipped | 0 | 0 |
+
+The three are `the extraction is faithful to the code`, `an endpoint excused from the org filter still
+passes the session's org to its store`, and `the app's database role holds no superuser-level
+privilege`. All pre-existing. **45 tests added, 0 weakened, 0 skipped, 0 deleted.**
+`npm run lint` clean (1326 files).
+
+### Files touched — all inside T10's owned list
+
+`public/app/affiliate.html`, `public/app/partner-galaxy.html`, `public/app/brand-studio.html`,
+`public/app/social-studio.html`, `public/app/creative-factory.html`, `api/read/affiliates.mjs`,
+`api/partner-brand.mjs`, `netlify/functions/partner-site.mjs`, `netlify/functions/api.mjs` (ROUTES,
+one key appended), `api/public/affiliate-click.mjs` (new).
+New tests: `src/http/affiliate-stats.pg.test.mjs`, `affiliate-click.pg.test.mjs`,
+`partner-brand-roundtrip.pg.test.mjs`, `brand-studio-screen.test.mjs`,
+`partner-pages-publish.pg.test.mjs`, `social-posts-write.pg.test.mjs`,
+`partner-galaxy-banner.test.mjs`, `social-studio-screen.test.mjs`, `partner-galaxy-tiles.test.mjs`.
+
+**Two shared files were edited, both regenerated or explicitly approved:**
+- `db/expected-migrations.mjs` — REGENERATED with `npm run migrations:manifest`, as its own test
+  instructs. Not hand-edited.
+- `src/http/calendar-paint.test.mjs` — the `brand-studio.html` entry was REWRITTEN, not deleted.
+  **Chris approved deleting it on 2026-08-19, on T10's statement that the screen was fixed. That statement
+  turned out to be incomplete, so the honest outcome is different from the approved one and is recorded
+  here rather than quietly taken.** The dead partner read IS fixed (T11's `loadBrandFromServer` waits for
+  DOMContentLoaded; T10 added the address round trip on top), so deleting the line looked right — and
+  deleting it went green locally. But removing a screen from `KNOWN_UNFIXED` also puts it back under the
+  scanner in test 2, and that caught a residual T10 had not seen: `banner()` (~1297, T11's code, untouched
+  by T10) calls `FHData.banner` behind a `typeof FHData !== "undefined"` guard, so a call during page parse
+  cannot throw — it silently writes nothing to the status strip. T11's own comment inside
+  `loadBrandFromServer` says it avoids calling `banner()` in the pre-load branch for exactly that reason.
+  Deleting the line therefore took the branch from 4 failures to 5. The entry is restored with accurate
+  text describing what actually remains, which is what keeps that count honest.
+
+### Routes added — one
+
+`POST /api/public/affiliate-click` → `api/public/affiliate-click.mjs`, keyed in
+`netlify/functions/api.mjs`. Public and unauthenticated on purpose (it fires from the `/start`
+redirect, before anyone signs in). Write-only, tolerates an unknown code with `affiliate_id` NULL,
+stores **hashes only** — never a raw IP or user agent. Every `-actual.md` moves 176 → 177 routes.
+
+### Migrations — 235, 236, 237, inside T10's reserved block
+
+**Deviation from the prompt, deliberate:** the prompt's file list named `177_` and `178_`, but its own
+collision rule reserves **235-239** to T10. 177/178 were empirically free, but every other thread is
+using its assigned block (T14 took 245), so the block rule won. Numbers used: **235** clicks table,
+**236** `v_partner_brand_effective` + `entity_address`, **237** referral lookup index.
+No existing migration was edited.
+
+### Journeys
+
+`npm run journeys` re-run; 9 files regenerated; `docs/journeys/CHANGELOG.md` appended in the same
+commit. No `-intended.md` touched.
+
+### Owner decisions recorded — do not re-raise
+
+1. **2026-08-19 — the partner Home money tiles.** Chris: *"wire them to real data if the queries already
+   exist. If real data doesn't exist for a tile, remove the tile — never show an invented number on a
+   money surface. Do not label them 'demo,' just delete."* All six had no partner-scoped, partner-readable
+   source, so all six are deleted, along with the flare generator that painted invented dollar amounts
+   onto the canvas. Two near-misses were rejected rather than stretched: `balance_accrued` is a lifetime
+   total with no date dimension so it cannot mean "today", and `/api/campaigns/spend` gives the cost half
+   of Cost/Funded Client but nothing partner-scoped gives the funded count.
+2. **2026-08-19 — deleting the `KNOWN_UNFIXED` line** in `src/http/calendar-paint.test.mjs`.
+
+### Requests for other threads — I could not fix these, they are not my files
+
+1. **T0 — `public/app/shell.js` `gateLinks()` is a landmine for every screen in this batch.**
+   Lines ~1200-1204: `var box = a.closest("li") || a.closest(".card") || a;` then
+   `box.style.display = "none"` when the role may not open the link's target. It loops over
+   `document.querySelectorAll("a[href]")` — **every anchor on the page, not just nav rows** — so any
+   ordinary cross-reference link written into body copy silently deletes the whole surrounding `.card`.
+   This is what made the Creative Factory "Generate and decide" card invisible to every partner: one
+   sentence linking the word "Campaigns" inside that card. No stylesheet explained it, which is why an
+   earlier CSS-only scouting pass found nothing — **the hide is an inline style written by JS.**
+   **T11 had already removed that link on `main` before T10 rebased — the card fix is T11's. T10's contribution
+   is the live diagnosis of the mechanism and this request.** Suggested real fix: scope the
+   `.card` branch to nav containers only (or require an explicit opt-in attribute), so a link in prose
+   hides the link, not the panel around it.
+2. **Owner Galaxy has the same invented-money defect.** `public/app/galaxy.html` is not T10's. Its tile
+   list is already empty, but the invention machine is still in the file — `fmtK` builds `'$'+number`,
+   and `evMoney` still rolls `amt = 8500 + Math.round(Math.random()*7)*2500` and
+   `amt = 3000 + (Math.random()<0.5?300:0)`. The owner's rule above applies to it identically.
+3. **`src/workflows/af-02-referral-ownership-capture.mjs` is the real cause behind the affiliate tiles.**
+   It records a referral by writing `clients.custom_fields.affiliate_tier1_owner` and has **never** written
+   an `affiliate_referrals` row. The one-time backfill in `033_affiliates.sql` stopped growing the moment
+   it finished. Until af-02 writes a referral row, most referrals stay untracked and CONVERTED will
+   honestly say it cannot tell. T10 counts both sources so the number is as true as the data allows.
+4. **`public/start.html` needs one line** to call `POST /api/public/affiliate-click`. Today it saves the
+   code to `localStorage` and immediately redirects, telling the server nothing. The table, the endpoint
+   and the route all exist now; until that line lands, **CLICKS keeps its honest empty state.**
+5. **`src/affiliates/economics.pg.test.mjs` is flaky and needs an owner.** Order-dependent: the
+   commission-rule tests share accumulated rows and it passed 3 runs / failed 2 on the same code. T10 did
+   not touch it and nothing T10 changed is used by it.
+
+### Cross-thread collision with T11 — HAPPENED, AND IT IS RESOLVED
+
+T11 merged into `main` while T10 was building, and it had fixed some of the same things. T10 rebased
+onto `dd6b2903` and hit conflicts in `brand-studio.html`, `creative-factory.html`, `social-studio.html`
+and `calendar-paint.test.mjs`. **Every conflicted screen was resolved to T11'S VERSION as the base, on
+purpose, and T10's remaining increment was re-applied on top.** An adversarial verifier then checked each
+file for exactly one thing — did T10 delete any of T11's merged work — and the answer was no in all three.
+
+What this changed about T10's own claims, recorded because the earlier notes were wrong:
+- **The Creative Factory invisible-card fix is T11's, not T10's.** T11 had already removed the
+  `campaign-manager.html` link from inside that card. T10's contribution is the live diagnosis (all 379
+  CSS rules in all 7 stylesheets enumerated in a partner session and tested with `el.matches()` — none
+  matched, because the hide is an inline style written by JS) and the T0 request above. T10's remaining
+  change to that screen is plain-language wording only.
+- **The Brand Studio `defer`-race fix is T11's, and T11's is better** — its `loadBrandFromServer()` also
+  tells the partner when the read failed, which T10's did not. T10 kept T11's and dropped its own. T10's
+  remaining contribution is the `entity_address` round trip, which `main` does not have at all
+  (`entity_address` appears zero times in main's copy of that screen).
+- **Social Studio: T10's queue fix is still needed** — `main` still carries the hard stop
+  `if (!channelId) { 'Pick an account to post to first.'; return; }`, so a partner still cannot save
+  anything. T10 re-applied the queue/time/discard path on top of T11's work, then removed its own
+  duplicate discard function in favour of T11's (which already carried the correct `canDiscard` gate) and
+  restored T11's empty-state wording, which T10 had weakened.
+- **One honest wart, disclosed:** the surviving discard function is T11's body under T10's function name.
+  `src/http/social-studio-screen.test.mjs` looks the function up by name, and renaming it would have taken
+  8 green tests to 6. Renaming both together is a tidy-up for whoever touches that screen next.
+
+`src/http/calendar-paint.test.mjs`: `main` still lists `brand-studio.html` in `KNOWN_UNFIXED` while also
+carrying T11's fix for it, so **that tripwire is red on `main` right now**. T10 removed the stale line
+(owner-approved). Note `main` had already removed the `inquiry-remover.html` line when T4 fixed it, which
+is the same pattern.
+
+### Small pre-existing defect left alone, on purpose
+
+`public/app/creative-factory.html` has **250 `<div>` against 251 `</div>`** — one unbalanced closing tag,
+meaning something on that screen is mis-nested. It is identical on `origin/main`, so T10 did not introduce
+it and T10 did not chase it: restructuring the markup of a screen T11 had just merged work into, at the end
+of this thread, is a worse risk than the bug. Recorded for whoever owns that screen next.
+For contrast, `public/app/affiliate.html` had the same class of defect (102 open / 103 close, the funnel
+card missing its opening `<div class="card-hd">` so `.card-bd` became a sibling instead of a child) and T10
+DID fix that one, because it was inside T10's item and the surrounding markup was T10's to reason about.
+It now balances at 110/110. **`main` still carries the 102/103.**
+
+### A file on `main` is corrupted — `docs/journeys/CHANGELOG.md`
+
+`origin/main`'s copy has unresolved git conflict markers committed into it: `<<<<<<< HEAD` at line 1,
+`=======` at line 6, `>>>>>>> origin/main` at line 10. Somebody merged without finishing and committed the
+result. This is the human-readable record the owner reads. T10's branch removes the three marker lines and
+keeps BOTH sides' entries, which is what an append-only changelog wants — but the next thread to rebase
+will meet it again unless it is fixed at the source.
+
+### Blockers no code change fixes
+
+- **`META_APP_ID` / `LINKEDIN_CLIENT_ID` are absent** — but per `white-label-intended.md` §"Marketing
+  suite (beta)" item 4, connect is staff's job and a partner should not see a Connect button. The queue /
+  set-a-time / discard fix works with **zero** connected accounts, as intended. Not a blocker for T10.
+- **`npx tsc --noEmit` checks nothing in this repo** — there is no `tsconfig.json`, so it prints its help
+  text and exits. Same on `main`; not caused by T10. One of the five §6 "definition of done" gates has
+  never actually been checking anything.
+- **The CI step "Partner isolation, as the unprivileged app role" cannot answer its own question.**
+  Run as `fundhub_app` (confirmed `rolsuper=f, rolbypassrls=f`), 4 of 6 suites abort in their **cleanup**
+  hooks with `42501 must be owner of table …` — the hooks `TRUNCATE`, and TRUNCATE needs table ownership
+  the runtime role is designed to lack. 93 tests in 145ms versus 36s for the full suite is the tell. So
+  it is red for a plumbing reason, not a security reason, and **row-level security enforcement remains
+  unmeasured on this branch** — the same gap `CLAUDE.md` §12 flags. Pre-existing, outside T10's files.
+
+### Corrections to the audit record — please do not re-file these
+
+- **T10-02 was mis-diagnosed.** The audit guessed the partner Home tiles were "staff data shaped for
+  owners". They are not org-wide staff data — **they are invented by `Math.random()` on a timer.** A live
+  capture as `partner@` records the screen's only network reads as `/api/auth/session`,
+  `/api/read/partners`, `/api/health`, `/api/org-brand`. There is no money read of any kind.
+- **T10-04's fourth tile is OWED, not CLICKS.** CLICKS 30D is a separate tile in the referral-link card
+  above. Four of the five numbers on that screen were em dashes, not three.
+- **The Creative Factory hide is not a CSS rule.** All 379 rules across all 7 stylesheets were enumerated
+  live and tested with `el.matches()`; not one matched. It is an inline style written by `shell.js`.
+- **T10-03 and T10-07 still PASS** and were re-proven live, not assumed. `/start?ref=AFF-000001` returns
+  200 and forwards with the code intact; owner Galaxy and partner Galaxy both open and stay open, and
+  `closer@` is still bounced to the closer dashboard.
+
+### Open question I could not close
+
+Nobody has confirmed these five screens on the **live** site after the fix, because nothing is deployed
+and a deploy is Chris's click. Every screen change is proven by a test that fails against the old file
+plus a browser render against a local stub. The live re-walk in `evidence/T10/walk/` proves the BEFORE
+state only.
+
+---
+
 ## T6 — Background jobs & automations · manifest (wave 1)
 
 Branch `fix/T6-background-jobs` · commits `f3fb9a7`, `de2c00c`, `c20d50a`

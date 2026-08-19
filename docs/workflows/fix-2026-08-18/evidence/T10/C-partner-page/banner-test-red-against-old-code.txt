@@ -1,0 +1,17 @@
+not ok 1 - the banner reads the partner's own page list before it says anything
+not ok 2 - what the partner reads is exactly where the link goes
+not ok 3 - a draft is described as a draft, and no public address is promised
+not ok 4 - a partner with no pages at all is told that, not given an address
+not ok 5 - a page list that will not load says so, instead of telling a signed-in partner to sign in
+not ok 6 - a page list that is refused says so too
+not ok 7 - a session the server has expired is told to sign in again, in those words
+not ok 8 - a sign-in that is not a partner is not told to sign in
+not ok 9 - the network being down does not leave stale words on screen
+ok 10 - nobody signed in keeps the page's own starting words
+not ok 11 - with several pages, 'Your page' means the apply page and nothing else
+not ok 12 - a live page that is not the apply page is never called 'Your page'
+ok 13 - the not-found page explains what a draft is and where Publish lives
+ok 14 - the not-found page is one fixed set of words, so it cannot leak who exists
+# tests 14
+# pass 3
+# fail 11

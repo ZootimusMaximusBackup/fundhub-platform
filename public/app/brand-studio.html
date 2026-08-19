@@ -756,9 +756,15 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
 
   load(); hydrate(); loadFonts(); applyTokens(); renderFunnels(); paint();
 
+  /* True as soon as someone types in the Business address box on this page
+     load. The server read finishes after the page is already interactive, so
+     the mapping below uses this to leave a half-typed address alone. */
+  var addrTyped = false;
+
   ["bName","bEntity","bAddr","bEmail"].forEach(function(id){
     $(id).addEventListener("input", function(){
       D[{bName:"name",bEntity:"entity",bAddr:"addr",bEmail:"email"}[id]] = $(id).value;
+      if (id === "bAddr") addrTyped = true;
       paint();
       if (MODE === "org") applyTokens();
     });
@@ -1240,6 +1246,23 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
     if (b.mono_face) D.mono = b.mono_face;
     if (b.wordmark_url) D.logo = b.wordmark_url;
     if (b.entity_name) D.entity = b.entity_name;
+    /* entity_address was never mapped, so the Business address box came back
+       empty on every reload even after a save that worked. The column has
+       existed since 043 and the endpoint has always accepted it; migration 236
+       adds it to v_partner_brand_effective so there is finally something here
+       to map.
+
+       KEY PRESENCE, NOT TRUTHINESS. Every other line here writes only when the
+       server value is truthy. That reads fine until an address is DELETED: the
+       stored browser draft is merged over the defaults first, and an empty
+       value from the server could never overwrite it, so the old address stayed
+       in the box and the partner had no way to tell what the server actually
+       holds. When the server answered about this field, the server wins —
+       including when its answer is "nothing on file". The one exception is an
+       address being typed right now, which is not the server's to erase. */
+    if (Object.prototype.hasOwnProperty.call(b, "entity_address") && !addrTyped) {
+      D.addr = b.entity_address == null ? "" : String(b.entity_address);
+    }
     if (b.voice) D.voice = b.voice;
     if (b.support_email) D.email = b.support_email;
     if (b.domain) D.domain = b.domain;
@@ -1305,6 +1328,11 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
       mono_face: D.mono,
       voice: D.voice,
       entity_name: D.entity,
+      /* The Business address box has been on this screen since it shipped and
+         its value was never put in the body, so the field on the form wrote
+         nowhere. entity_address has always been in WRITABLE in
+         api/partner-brand.mjs — nothing ever sent it. */
+      entity_address: D.addr || null,
       support_email: D.email,
       domain: D.domain,
       selected_funnels: D.funnels,

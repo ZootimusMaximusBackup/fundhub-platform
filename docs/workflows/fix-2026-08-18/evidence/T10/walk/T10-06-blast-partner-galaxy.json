@@ -1,0 +1,626 @@
+{
+  "screen": "/app/partner-galaxy.html",
+  "email": "partner@fundhub.ai",
+  "ranAt": "2026-08-19T11:01:26.851Z",
+  "login": {
+    "cached": true,
+    "ok": true
+  },
+  "load": {
+    "httpStatus": 200,
+    "finalUrl": "/app/partner-galaxy.html",
+    "title": "Your Galaxy — Partner View",
+    "api": [
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/read/partners?limit=200",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/health",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/org-brand",
+        "status": 200
+      }
+    ],
+    "apiFails": [],
+    "consoleErrors": []
+  },
+  "dom": {
+    "url": "https://fundhub.ai/app/partner-galaxy.html",
+    "role": "partner",
+    "title": "Your Galaxy — Partner View",
+    "gated": [
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "pipeline.html",
+        "culpritText": "▤Pipeline",
+        "inlineDisplay": "none",
+        "textHead": "▤Pipeline"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "closer-dashboard.html",
+        "culpritText": "★Closer Dashboard",
+        "inlineDisplay": "none",
+        "textHead": "★Closer Dashboard"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "closer-call.html",
+        "culpritText": "☎Call cockpit",
+        "inlineDisplay": "none",
+        "textHead": "☎Call cockpit"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "my-numbers.html",
+        "culpritText": "＃My numbers",
+        "inlineDisplay": "none",
+        "textHead": "＃My numbers"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "sales-floor.html",
+        "culpritText": "▣Sales floor",
+        "inlineDisplay": "none",
+        "textHead": "▣Sales floor"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "calendar.html",
+        "culpritText": "▦Calendar",
+        "inlineDisplay": "none",
+        "textHead": "▦Calendar"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "lenders.html",
+        "culpritText": "⬡Lenders",
+        "inlineDisplay": "none",
+        "textHead": "⬡Lenders"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "finance-os.html",
+        "culpritText": "▩Finance OS",
+        "inlineDisplay": "none",
+        "textHead": "▩Finance OS"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "client-control-panel.html",
+        "culpritText": "◎Client Control Panel",
+        "inlineDisplay": "none",
+        "textHead": "◎Client Control Panel"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "consent-capture.html",
+        "culpritText": "☑Consent",
+        "inlineDisplay": "none",
+        "textHead": "☑Consent"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "messaging.html",
+        "culpritText": "✉Messaging",
+        "inlineDisplay": "none",
+        "textHead": "✉Messaging"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "documents.html",
+        "culpritText": "▧Documents",
+        "inlineDisplay": "none",
+        "textHead": "▧Documents"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "inquiry-remover.html",
+        "culpritText": "⊘Specialist",
+        "inlineDisplay": "none",
+        "textHead": "⊘Specialist"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "company-brain.html",
+        "culpritText": "◎Company Brain",
+        "inlineDisplay": "none",
+        "textHead": "◎Company Brain"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "galaxy.html",
+        "culpritText": "✷Galaxy",
+        "inlineDisplay": "none",
+        "textHead": "✷Galaxy"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "ops-admin.html",
+        "culpritText": "⚙Ops & Admin",
+        "inlineDisplay": "none",
+        "textHead": "⚙Ops & Admin"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "agent-editor.html",
+        "culpritText": "◈Agent Editor",
+        "inlineDisplay": "none",
+        "textHead": "◈Agent Editor"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "automations.html",
+        "culpritText": "⇄Workflows",
+        "inlineDisplay": "none",
+        "textHead": "⇄Workflows"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "journeys.html",
+        "culpritText": "⇝Journeys",
+        "inlineDisplay": "none",
+        "textHead": "⇝Journeys"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "template-editor.html",
+        "culpritText": "✎Message Copy",
+        "inlineDisplay": "none",
+        "textHead": "✎Message Copy"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "campaign-manager.html",
+        "culpritText": "◇Campaigns",
+        "inlineDisplay": "none",
+        "textHead": "◇Campaigns"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "content-admin.html",
+        "culpritText": "▭Content",
+        "inlineDisplay": "none",
+        "textHead": "▭Content"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "staff-teams.html",
+        "culpritText": "⚇Staff & Teams",
+        "inlineDisplay": "none",
+        "textHead": "⚇Staff & Teams"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "hiring.html",
+        "culpritText": "⊕Hiring",
+        "inlineDisplay": "none",
+        "textHead": "⊕Hiring"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "products-commissions.html",
+        "culpritText": "⛁Products & Commissions",
+        "inlineDisplay": "none",
+        "textHead": "⛁Products & Commissions"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "contracts.html",
+        "culpritText": "✒Contract templates",
+        "inlineDisplay": "none",
+        "textHead": "✒Contract templates"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "client-portal.html",
+        "culpritText": "◐Client Portal",
+        "inlineDisplay": "none",
+        "textHead": "◐Client Portal"
+      },
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "affiliate.html",
+        "culpritText": "⇗Affiliate",
+        "inlineDisplay": "none",
+        "textHead": "⇗Affiliate"
+      }
+    ],
+    "gatedGroups": [
+      "Sales▾",
+      "Funding▾",
+      "Client ops▾",
+      "Watch▾",
+      "Automation▾",
+      "Portals▾"
+    ],
+    "stats": [],
+    "empties": [],
+    "cards": [],
+    "controls": [
+      {
+        "text": "‹‹",
+        "id": "burger",
+        "cls": "burger",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "Home▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "Sales▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": false
+      },
+      {
+        "text": "Funding▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": false
+      },
+      {
+        "text": "Client ops▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": false
+      },
+      {
+        "text": "Watch▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": false
+      },
+      {
+        "text": "Automation▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": false
+      },
+      {
+        "text": "Marketing▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "Admin▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "Portals▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": false
+      },
+      {
+        "text": "☰",
+        "id": "fh-menu-btn",
+        "cls": "fh-menu-btn",
+        "disabled": false,
+        "visible": false
+      },
+      {
+        "text": "Sign out",
+        "id": "fh-shell-out",
+        "cls": "",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "Download",
+        "id": "blasterBtn",
+        "cls": "btn",
+        "disabled": false,
+        "visible": true
+      }
+    ],
+    "nav": [
+      {
+        "label": "Home",
+        "href": "partner-galaxy.html",
+        "visible": true
+      },
+      {
+        "label": "Pipeline",
+        "href": "pipeline.html",
+        "visible": false
+      },
+      {
+        "label": "Closer Dashboard",
+        "href": "closer-dashboard.html",
+        "visible": false
+      },
+      {
+        "label": "Call cockpit",
+        "href": "closer-call.html",
+        "visible": false
+      },
+      {
+        "label": "My numbers",
+        "href": "my-numbers.html",
+        "visible": false
+      },
+      {
+        "label": "Sales floor",
+        "href": "sales-floor.html",
+        "visible": false
+      },
+      {
+        "label": "Calendar",
+        "href": "calendar.html",
+        "visible": false
+      },
+      {
+        "label": "Lenders",
+        "href": "lenders.html",
+        "visible": false
+      },
+      {
+        "label": "Finance OS",
+        "href": "finance-os.html",
+        "visible": false
+      },
+      {
+        "label": "Client Control Panel",
+        "href": "client-control-panel.html",
+        "visible": false
+      },
+      {
+        "label": "Consent",
+        "href": "consent-capture.html",
+        "visible": false
+      },
+      {
+        "label": "Messaging",
+        "href": "messaging.html",
+        "visible": false
+      },
+      {
+        "label": "Documents",
+        "href": "documents.html",
+        "visible": false
+      },
+      {
+        "label": "Specialist",
+        "href": "inquiry-remover.html",
+        "visible": false
+      },
+      {
+        "label": "Company Brain",
+        "href": "company-brain.html",
+        "visible": false
+      },
+      {
+        "label": "Galaxy",
+        "href": "galaxy.html",
+        "visible": false
+      },
+      {
+        "label": "Ops & Admin",
+        "href": "ops-admin.html",
+        "visible": false
+      },
+      {
+        "label": "Agent Editor",
+        "href": "agent-editor.html",
+        "visible": false
+      },
+      {
+        "label": "Workflows",
+        "href": "automations.html",
+        "visible": false
+      },
+      {
+        "label": "Journeys",
+        "href": "journeys.html",
+        "visible": false
+      },
+      {
+        "label": "Message Copy",
+        "href": "template-editor.html",
+        "visible": false
+      },
+      {
+        "label": "Campaigns",
+        "href": "campaign-manager.html",
+        "visible": false
+      },
+      {
+        "label": "Social Studio",
+        "href": "social-studio.html",
+        "visible": false
+      },
+      {
+        "label": "Creative Factory",
+        "href": "creative-factory.html",
+        "visible": false
+      },
+      {
+        "label": "Content",
+        "href": "content-admin.html",
+        "visible": false
+      },
+      {
+        "label": "Staff & Teams",
+        "href": "staff-teams.html",
+        "visible": false
+      },
+      {
+        "label": "Hiring",
+        "href": "hiring.html",
+        "visible": false
+      },
+      {
+        "label": "Products & Commissions",
+        "href": "products-commissions.html",
+        "visible": false
+      },
+      {
+        "label": "Contract templates",
+        "href": "contracts.html",
+        "visible": false
+      },
+      {
+        "label": "Brand Studio",
+        "href": "brand-studio.html",
+        "visible": false
+      },
+      {
+        "label": "Client Portal",
+        "href": "client-portal.html",
+        "visible": false
+      },
+      {
+        "label": "Affiliate",
+        "href": "affiliate.html",
+        "visible": false
+      }
+    ],
+    "dashChars": 3,
+    "innerText": "‹‹\nHOME\n▾\n⌂\nHome\nMARKETING\n▾\nADMIN\n▾\nfundhub\nFundhub\n/\nGalaxy\nYour page · https://fundhub.ai/sites/9defaf28-47c5-43a0-8f5e-f41ef90f360a/apply\n1 partner on file\nWed, Aug 19, 7:01:26 AM EDT\nLIVE\nTEST — White-Label Partner Role · partner · 4 tabs\nLIVE\nSign out\nGX-01 / READING THE SKY\nsize = output today\nbrightness = working right now\non pace — quiet\nahead\nbehind\nblocked\nlive handoff\nflare = money landing\nclick a cluster to zoom in · a worker for their day · empty space to pull back\nPartner gift · Message Blaster for Mac\nText everyone in one Contacts group with a personalized iMessage. Use {name} for their first name. Review the list before anything sends.\nDownload\nsystems nominal · fundhub.ai\nPARTNER VIEW — your book only. Your brand on the front, fundhub fulfillment behind it. Staff identities and other partners are never shown.\nlive partner census · 1 partner(s) · $0 accrued · 1 agreement(s) unsigned"
+  }
+}

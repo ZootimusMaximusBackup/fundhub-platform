@@ -880,6 +880,64 @@ function byPartner(rows){ return rows.filter(function(r){ return r.partner === S
 /* The one partner this screen is scoped to, or null when none was named. */
 function currentPartner(){ return PARTNERS[S.partner] || null; }
 function currentPartnerId(){ var p = currentPartner(); return p ? p.id : null; }
+/* ══ WHAT A REFUSAL SAYS TO A PERSON ═════════════════════════════════════
+   CLAUDE.md §10 — nobody reading this screen is technical. When the server
+   refuses, it answers with a short internal word: "not_found", "suite_off",
+   "unauthorized". Those words mean nothing to a partner and must never reach
+   the screen. This turns each one into one plain sentence, and anything it does
+   not recognise into a sentence this screen wrote itself. The server's own
+   `message` is deliberately not used, and neither is an error word this helper
+   does not know: both are written for a developer, not for a person, and a
+   space in them does not make them safe to show.
+   ═════════════════════════════════════════════════════════════════════════ */
+function plainCreative(res){
+  switch (String((res && res.error) || '')) {
+    case 'offline':
+      return 'The screen could not reach the server, so nothing changed. Check the connection and try again.';
+    case 'suite_off':
+      return 'This part of the system is switched off for this partner. Only the owner can turn it on.';
+    case 'partner_id_required':
+      return 'The screen does not know which partner this is for. Pick a partner at the top and try again.';
+    case 'asset_id_required':
+      return 'The screen lost track of which creative this was. Reload the page and try again.';
+    case 'idempotency_key_required':
+      return 'The request was incomplete, so nothing was sent. Reload the page and try again.';
+    case 'staff_only_for_all':
+      return 'Only Fundhub staff can do this for every partner at once.';
+    case 'unknown_action':
+      return 'That button asked for something this screen does not support. Reload the page.';
+    case 'method_not_allowed':
+      return 'That request was made the wrong way, so nothing changed. Reload the page and try again.';
+    case 'not_found':
+      return 'That item is not in the list any more. Reload the page to see what is there now.';
+    case 'unauthorized':
+      return 'You are signed out. Sign in again and try once more.';
+    case 'forbidden':
+      return 'Your account is not allowed to change this.';
+    case 'auth_unavailable':
+      return 'The system could not check who you are just now. Try again in a moment.';
+    default:
+      /* Nothing recognised. Neither the server's `message` nor an unknown error
+         word is shown — see the note above this function. The `source` below is
+         the only other thing on a failed answer, and this file's own read
+         envelope is what stamps it on, so those few words are the screen's own
+         and are safe to turn into a sentence here. */
+      switch (String((res && res.source) || '')) {
+        case 'demo':
+          return 'This is a demo sign-in, so nothing was requested.';
+        case 'offline':
+          return 'This computer could not reach Fundhub, so nothing was loaded.';
+        case 'unauthorized':
+          return 'This sign-in is not allowed to see this partner.';
+        case 'notfound':
+          return 'There is nothing on file for this.';
+        case 'nodb':
+          return 'The place these records are kept could not be reached just now.';
+        default:
+          return 'The server would not do it, and nothing changed. Try again in a moment.';
+      }
+  }
+}
 /* §6 — what a panel is allowed to paint right now. Returns null when the panel's
    endpoint answered, otherwise the sentence to show instead of rows. Never a
    count, never a zero: a failed read and an empty partner are not "none". */
@@ -888,7 +946,7 @@ function panelState(key){
     return 'No partner selected. Nothing is loaded.';
   var res = CF_ENDPOINT_RES[key];
   if(!res) return 'Loading…';
-  if(!res.ok) return 'This could not be loaded just now — ' + esc(res.error || res.source) + '. Nothing is shown, rather than an old or made-up number.';
+  if(!res.ok) return 'This could not be loaded just now. ' + esc(plainCreative(res)) + ' Nothing is shown, rather than an old or made-up number.';
   return null;
 }
 function kitName(id){
@@ -2210,7 +2268,7 @@ document.getElementById('genBtn').addEventListener('click', function () {
   }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
     .then(function (res) {
       if (!res.ok) {
-        msg.textContent = 'Could not add it: ' + (res.message || res.error || 'something went wrong');
+        msg.textContent = 'Could not add it. ' + plainCreative(res);
         return;
       }
       /* The server says whether an ad-making service is actually switched on, and
@@ -2256,7 +2314,7 @@ document.getElementById('runJobsBtn').addEventListener('click', function () {
     body: JSON.stringify({ partner_id: partnerId, max_jobs: 3 })
   }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
     .then(function (res) {
-      if (!res.ok) { msg.textContent = 'Could not run: ' + (res.message || res.error || 'something went wrong'); return; }
+      if (!res.ok) { msg.textContent = 'Could not run it. ' + plainCreative(res); return; }
       /* "Ran 1 job." was the whole message even when that job failed and made
          nothing, which reads as success. Say how many worked and how many did
          not, then the server's plain-words reason. */
@@ -2289,7 +2347,7 @@ document.querySelectorAll('[data-cact]').forEach(function (btn) {
       body: JSON.stringify({ partner_id: partnerId, asset_id: assetId, action: action })
     }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
       .then(function (res) {
-        if (!res.ok) { msg.textContent = 'Could not ' + action + ': ' + (res.message || res.error || 'something went wrong'); return; }
+        if (!res.ok) { msg.textContent = 'Could not ' + action + ' it. ' + plainCreative(res); return; }
         var st = (res.asset && res.asset.compliance_state) || '';
         msg.textContent = 'Done. This creative is now ' + st +
           (res.asset && res.asset.archived_at ? ' and archived' : '') + '.';

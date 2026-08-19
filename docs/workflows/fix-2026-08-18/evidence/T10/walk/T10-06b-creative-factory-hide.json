@@ -1,0 +1,582 @@
+{
+  "email": "partner@fundhub.ai",
+  "screen": "/app/creative-factory.html",
+  "ranAt": "2026-08-19T10:51:34.711Z",
+  "login": {
+    "cached": false,
+    "ok": true,
+    "landedAt": "/app/partner-galaxy.html",
+    "loginApiStatus": 200
+  },
+  "load": {
+    "httpStatus": 200,
+    "finalUrl": "/app/creative-factory.html",
+    "title": "Fundhub — Creative Factory",
+    "api": [
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/read/partners?limit=200",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/health",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/org-brand",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/creative/approvals?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&state=all&limit=200",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/creative/library?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&state=all&include_archived=1&limit=200",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/creative/jobs?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&state=all&limit=200",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/partner-marketing/usage?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/creative/brand-kits?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a&state=all&limit=200",
+        "status": 200
+      }
+    ],
+    "apiFails": [],
+    "consoleErrors": []
+  },
+  "result": {
+    "url": "https://fundhub.ai/app/creative-factory.html",
+    "role": "partner",
+    "sheets": [
+      {
+        "index": 0,
+        "href": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+        "ownerTag": "LINK",
+        "media": "",
+        "readable": false,
+        "ruleCount": 0,
+        "error": "Failed to read the 'cssRules' property from 'CSSStyleSheet': Cannot access rules"
+      },
+      {
+        "index": 1,
+        "href": "https://fundhub.ai/app/fundhub-brand.css",
+        "ownerTag": "LINK",
+        "media": "",
+        "readable": true,
+        "ruleCount": 38,
+        "error": null
+      },
+      {
+        "index": 2,
+        "href": "https://fundhub.ai/app/crm-sidebar.css",
+        "ownerTag": "LINK",
+        "media": "",
+        "readable": true,
+        "ruleCount": 52,
+        "error": null
+      },
+      {
+        "index": 3,
+        "href": null,
+        "ownerTag": "STYLE",
+        "media": "",
+        "readable": true,
+        "ruleCount": 182,
+        "error": null
+      },
+      {
+        "index": 4,
+        "href": "https://fundhub.ai/app/crm-sidebar.css",
+        "ownerTag": "LINK",
+        "media": "",
+        "readable": true,
+        "ruleCount": 52,
+        "error": null
+      },
+      {
+        "index": 5,
+        "href": null,
+        "ownerTag": "STYLE",
+        "media": "",
+        "readable": true,
+        "ruleCount": 5,
+        "error": null
+      },
+      {
+        "index": 6,
+        "href": "https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap",
+        "ownerTag": "LINK",
+        "media": "",
+        "readable": false,
+        "ruleCount": 0,
+        "error": "Failed to read the 'cssRules' property from 'CSSStyleSheet': Cannot access rules"
+      }
+    ],
+    "totalRules": 379,
+    "btn": {
+      "tag": "button",
+      "id": "genBtn",
+      "class": "btn dark mono fh-tap",
+      "inlineStyleAttr": null,
+      "inlineDisplay": "",
+      "hiddenAttr": false,
+      "computed": {
+        "display": "block",
+        "visibility": "visible",
+        "opacity": "1",
+        "height": "auto",
+        "maxHeight": "none",
+        "overflow": "visible",
+        "contentVisibility": "visible",
+        "position": "static"
+      },
+      "rect": {
+        "w": 0,
+        "h": 0,
+        "top": 0
+      }
+    },
+    "btnDisabled": false,
+    "card": {
+      "tag": "div",
+      "id": null,
+      "class": "card",
+      "inlineStyleAttr": "display: none;",
+      "inlineDisplay": "none",
+      "hiddenAttr": false,
+      "computed": {
+        "display": "none",
+        "visibility": "visible",
+        "opacity": "1",
+        "height": "auto",
+        "maxHeight": "none",
+        "overflow": "hidden",
+        "contentVisibility": "visible",
+        "position": "static"
+      },
+      "rect": {
+        "w": 0,
+        "h": 0,
+        "top": 0
+      }
+    },
+    "cardEyebrow": "Generate and decide",
+    "cardOuterHTMLHead": "<div class=\"card\" data-fh-gated=\"1\" style=\"display: none;\">\n        <div class=\"card-hd\">\n          <div class=\"eyebrow\">Generate and decide</div>\n        </div>\n        <div class=\"cap\">\n          <b>Ask for new creative.</b> Queued work is picked up on its own every couple of\n          minutes. \"R",
+    "chain": [
+      {
+        "tag": "button",
+        "id": "genBtn",
+        "class": "btn dark mono fh-tap",
+        "inlineStyleAttr": null,
+        "inlineDisplay": "",
+        "hiddenAttr": false,
+        "computed": {
+          "display": "block",
+          "visibility": "visible",
+          "opacity": "1",
+          "height": "auto",
+          "maxHeight": "none",
+          "overflow": "visible",
+          "contentVisibility": "visible",
+          "position": "static"
+        },
+        "rect": {
+          "w": 0,
+          "h": 0,
+          "top": 0
+        },
+        "isTheCard": false,
+        "matchingRulesSettingDisplay": []
+      },
+      {
+        "tag": "div",
+        "id": null,
+        "class": null,
+        "inlineStyleAttr": "display:flex;flex-wrap:wrap;gap:16px;align-items:end",
+        "inlineDisplay": "flex",
+        "hiddenAttr": false,
+        "computed": {
+          "display": "flex",
+          "visibility": "visible",
+          "opacity": "1",
+          "height": "auto",
+          "maxHeight": "none",
+          "overflow": "visible",
+          "contentVisibility": "visible",
+          "position": "static"
+        },
+        "rect": {
+          "w": 0,
+          "h": 0,
+          "top": 0
+        },
+        "isTheCard": false,
+        "matchingRulesSettingDisplay": []
+      },
+      {
+        "tag": "div",
+        "id": null,
+        "class": "card-bd",
+        "inlineStyleAttr": "padding:16px;border-top:1px solid var(--line)",
+        "inlineDisplay": "",
+        "hiddenAttr": false,
+        "computed": {
+          "display": "block",
+          "visibility": "visible",
+          "opacity": "1",
+          "height": "auto",
+          "maxHeight": "none",
+          "overflow": "visible",
+          "contentVisibility": "visible",
+          "position": "static"
+        },
+        "rect": {
+          "w": 0,
+          "h": 0,
+          "top": 0
+        },
+        "isTheCard": false,
+        "matchingRulesSettingDisplay": []
+      },
+      {
+        "tag": "div",
+        "id": null,
+        "class": "card",
+        "inlineStyleAttr": "display: none;",
+        "inlineDisplay": "none",
+        "hiddenAttr": false,
+        "computed": {
+          "display": "none",
+          "visibility": "visible",
+          "opacity": "1",
+          "height": "auto",
+          "maxHeight": "none",
+          "overflow": "hidden",
+          "contentVisibility": "visible",
+          "position": "static"
+        },
+        "rect": {
+          "w": 0,
+          "h": 0,
+          "top": 0
+        },
+        "isTheCard": true,
+        "matchingRulesSettingDisplay": []
+      },
+      {
+        "tag": "div",
+        "id": null,
+        "class": "content fh-maxw",
+        "inlineStyleAttr": null,
+        "inlineDisplay": "",
+        "hiddenAttr": false,
+        "computed": {
+          "display": "block",
+          "visibility": "visible",
+          "opacity": "1",
+          "height": "2526.5px",
+          "maxHeight": "none",
+          "overflow": "visible",
+          "contentVisibility": "visible",
+          "position": "static"
+        },
+        "rect": {
+          "w": 1212,
+          "h": 2527,
+          "top": 57
+        },
+        "isTheCard": false,
+        "matchingRulesSettingDisplay": []
+      },
+      {
+        "tag": "div",
+        "id": null,
+        "class": "main",
+        "inlineStyleAttr": null,
+        "inlineDisplay": "",
+        "hiddenAttr": false,
+        "computed": {
+          "display": "flex",
+          "visibility": "visible",
+          "opacity": "1",
+          "height": "2636.5px",
+          "maxHeight": "none",
+          "overflow": "visible",
+          "contentVisibility": "visible",
+          "position": "static"
+        },
+        "rect": {
+          "w": 1212,
+          "h": 2637,
+          "top": 0
+        },
+        "isTheCard": false,
+        "matchingRulesSettingDisplay": [
+          {
+            "selector": ".main",
+            "sheetHref": null,
+            "sheetIndex": 3,
+            "context": null,
+            "display": "flex",
+            "displayPriority": null,
+            "cssText": ".main { flex: 1 1 0%; min-width: 0px; display: flex; flex-direction: column; }"
+          }
+        ]
+      },
+      {
+        "tag": "div",
+        "id": null,
+        "class": "app",
+        "inlineStyleAttr": null,
+        "inlineDisplay": "",
+        "hiddenAttr": false,
+        "computed": {
+          "display": "flex",
+          "visibility": "visible",
+          "opacity": "1",
+          "height": "2636.5px",
+          "maxHeight": "none",
+          "overflow": "visible",
+          "contentVisibility": "visible",
+          "position": "static"
+        },
+        "rect": {
+          "w": 1440,
+          "h": 2637,
+          "top": 0
+        },
+        "isTheCard": false,
+        "matchingRulesSettingDisplay": [
+          {
+            "selector": ".app",
+            "sheetHref": null,
+            "sheetIndex": 3,
+            "context": null,
+            "display": "flex",
+            "displayPriority": null,
+            "cssText": ".app { display: flex; min-height: 100vh; }"
+          }
+        ]
+      },
+      {
+        "tag": "body",
+        "id": null,
+        "class": null,
+        "inlineStyleAttr": null,
+        "inlineDisplay": "",
+        "hiddenAttr": false,
+        "computed": {
+          "display": "block",
+          "visibility": "visible",
+          "opacity": "1",
+          "height": "900px",
+          "maxHeight": "none",
+          "overflow": "visible",
+          "contentVisibility": "visible",
+          "position": "static"
+        },
+        "rect": {
+          "w": 1440,
+          "h": 900,
+          "top": 0
+        },
+        "isTheCard": false,
+        "matchingRulesSettingDisplay": []
+      },
+      {
+        "tag": "html",
+        "id": null,
+        "class": null,
+        "inlineStyleAttr": "--fh-shell-top-clearance: 14px; --ink: #0A0A0A; --paper: #FCFCFC; --spectrum: linear-gradient(90deg,#F2A69B 0%,#F5CE8F 20%,#F2E39B 40%,#A8D8B0 60%,#A9C6E8 80%,#C4B3E5 100%); --alert: #F2A69B; --warn: #F5CE8F; --ok: #A8D8B0; --info: #A9C6E8; --accent: #C4B3E5; --sans: 'Inter', system-ui, -apple-system, sans-serif; --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace; --fh-statusbar: 29px;",
+        "inlineDisplay": "",
+        "hiddenAttr": false,
+        "computed": {
+          "display": "block",
+          "visibility": "visible",
+          "opacity": "1",
+          "height": "900px",
+          "maxHeight": "none",
+          "overflow": "visible",
+          "contentVisibility": "visible",
+          "position": "static"
+        },
+        "rect": {
+          "w": 1440,
+          "h": 900,
+          "top": 0
+        },
+        "isTheCard": false,
+        "matchingRulesSettingDisplay": []
+      }
+    ],
+    "cardAllMatches": [
+      {
+        "selector": ":is(.app, .app-shell) :is(.card, .stat, .panel, .tabs, .editor, .fos-panel, .kpi-tile, .big-tile, .calc-panel, .compose, .ctx-card)",
+        "sheetHref": "https://fundhub.ai/app/fundhub-brand.css",
+        "sheetIndex": 1,
+        "context": null,
+        "display": null,
+        "displayPriority": null,
+        "cssText": ":is(.app, .app-shell) :is(.card, .stat, .panel, .tabs, .editor, .fos-panel, .kpi-tile, .big-tile, .calc-panel, .compose, .ctx-card) { box-shadow: var(--panel-shadow); }"
+      },
+      {
+        "selector": ":is(.app, .app-shell, .shell, .main, .fh-maxw) *",
+        "sheetHref": "https://fundhub.ai/app/fundhub-brand.css",
+        "sheetIndex": 1,
+        "context": null,
+        "display": null,
+        "displayPriority": null,
+        "cssText": ":is(.app, .app-shell, .shell, .main, .fh-maxw) * { font-size: inherit !important; }"
+      },
+      {
+        "selector": "*, ::before, ::after",
+        "sheetHref": null,
+        "sheetIndex": 3,
+        "context": null,
+        "display": null,
+        "displayPriority": null,
+        "cssText": "*, ::before, ::after { box-sizing: border-box; margin: 0px; padding: 0px; }"
+      },
+      {
+        "selector": ".card",
+        "sheetHref": null,
+        "sheetIndex": 3,
+        "context": null,
+        "display": null,
+        "displayPriority": null,
+        "cssText": ".card { background: rgb(255, 255, 255); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }"
+      },
+      {
+        "selector": ".card + .card",
+        "sheetHref": null,
+        "sheetIndex": 3,
+        "context": null,
+        "display": null,
+        "displayPriority": null,
+        "cssText": ".card + .card { margin-top: 14px; }"
+      }
+    ],
+    "cardMatchesSettingDisplay": [],
+    "suspiciousNoneRules": [
+      {
+        "selector": ".soon, .card:has(.tag-soon), #demozone, .demozone, button.link-btn:disabled, #unJoin:disabled",
+        "sheetHref": "https://fundhub.ai/app/fundhub-brand.css",
+        "sheetIndex": 1,
+        "context": null,
+        "display": "none",
+        "displayPriority": "important",
+        "cssText": ".soon, .card:has(.tag-soon), #demozone, .demozone, button.link-btn:disabled, #unJoin:disabled { display: none !important; }"
+      },
+      {
+        "selector": ".fh-hide-phone",
+        "sheetHref": "https://fundhub.ai/app/crm-sidebar.css",
+        "sheetIndex": 2,
+        "context": "CSSMediaRule((max-width: 640px))",
+        "display": "none",
+        "displayPriority": "important",
+        "cssText": ".fh-hide-phone { display: none !important; }"
+      },
+      {
+        "selector": ".scopebar summary::-webkit-details-marker",
+        "sheetHref": null,
+        "sheetIndex": 3,
+        "context": null,
+        "display": "none",
+        "displayPriority": null,
+        "cssText": ".scopebar summary::-webkit-details-marker { display: none; }"
+      },
+      {
+        "selector": ".fh-hide-phone",
+        "sheetHref": "https://fundhub.ai/app/crm-sidebar.css",
+        "sheetIndex": 4,
+        "context": "CSSMediaRule((max-width: 640px))",
+        "display": "none",
+        "displayPriority": "important",
+        "cssText": ".fh-hide-phone { display: none !important; }"
+      }
+    ],
+    "siblingCards": [
+      {
+        "tag": "div",
+        "class": "stats",
+        "eyebrow": "JOBS IN FLIGHT",
+        "display": "grid",
+        "h": 266
+      },
+      {
+        "tag": "div",
+        "class": "card",
+        "eyebrow": "Partner scope",
+        "display": "block",
+        "h": 188
+      },
+      {
+        "tag": "div",
+        "class": "card",
+        "eyebrow": "Writing budget",
+        "display": "block",
+        "h": 262
+      },
+      {
+        "tag": "div",
+        "class": "card",
+        "eyebrow": "Generate and decide",
+        "display": "none",
+        "h": 0
+      },
+      {
+        "tag": "div",
+        "class": "card",
+        "eyebrow": "Generation jobs",
+        "display": "block",
+        "h": 311
+      },
+      {
+        "tag": "div",
+        "class": "card",
+        "eyebrow": "Creative library",
+        "display": "block",
+        "h": 469
+      },
+      {
+        "tag": "div",
+        "class": "card",
+        "eyebrow": "Review queue",
+        "display": "block",
+        "h": 311
+      },
+      {
+        "tag": "div",
+        "class": "card",
+        "eyebrow": "Brand kits",
+        "display": "block",
+        "h": 280
+      },
+      {
+        "tag": "div",
+        "class": "card",
+        "eyebrow": "Reference",
+        "display": "block",
+        "h": 296
+      }
+    ]
+  }
+}

@@ -150,6 +150,7 @@ import publicSurveySubmit from "../../api/public/survey-submit.mjs";
 import publicEducationEnroll from "../../api/public/education-enroll.mjs";
 import publicPartnerApply from "../../api/public/partner-apply.mjs";
 import publicUnsubscribe from "../../api/public/unsubscribe.mjs";
+import publicAffiliateClick from "../../api/public/affiliate-click.mjs";
 import creativeGenerate from "../../api/creative/generate.mjs";
 import creativeLibrary from "../../api/creative/library.mjs";
 import creativeBrandKits from "../../api/creative/brand-kits.mjs";
@@ -547,6 +548,11 @@ export const ROUTES = {
      and a person getting out of a mailing list must never be asked to sign in.
      GET reports state, POST is the act; see the handler's header for why. */
   "public/unsubscribe": publicUnsubscribe,
+  /* Records one visit to an affiliate referral link. No auth — it fires from
+     the /start redirect in a stranger's browser. Write-only, and it answers the
+     same whether the code resolved to an affiliate or to nobody, so it cannot
+     be used to enumerate the partner roster. */
+  "public/affiliate-click": publicAffiliateClick,
   /* Public lending-climate lead magnet. No auth — same class as survey-submit. */
   "climate": climate,
   "climate/geocode": climateGeocode,

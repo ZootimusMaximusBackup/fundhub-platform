@@ -1,0 +1,441 @@
+{
+  "screen": "/app/partner-galaxy.html",
+  "slug": "T10-walk-partner-galaxy",
+  "email": "partner@fundhub.ai",
+  "base": "https://fundhub.ai",
+  "ranAt": "2026-08-19T06:55:09.144Z",
+  "login": {
+    "ok": true,
+    "landedAt": "/app/partner-galaxy.html",
+    "role": "partner",
+    "loginApiStatus": 200
+  },
+  "load": {
+    "httpStatus": 200,
+    "retriesFor503OrBounce": 0,
+    "finalUrl": "/app/partner-galaxy.html",
+    "bounced": false,
+    "title": "Your Galaxy — Partner View",
+    "apiCalls": [
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/read/partners?limit=200",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/health",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/org-brand",
+        "status": 200
+      }
+    ],
+    "apiFails": [],
+    "consoleErrors": [],
+    "dialogs": [],
+    "shots": {
+      "fold": "docs/workflows/ui-audit-evidence/T10-walk-partner-galaxy/1440-fold.png",
+      "full": "docs/workflows/ui-audit-evidence/T10-walk-partner-galaxy/1440-full.png"
+    }
+  },
+  "dom": {
+    "vw": 1440,
+    "vh": 900,
+    "docH": 900,
+    "sizes": {
+      "16px": {
+        "count": 22,
+        "examples": [
+          "Fundhub",
+          "/",
+          "Your page ·"
+        ]
+      },
+      "13px": {
+        "count": 2,
+        "examples": [
+          "Galaxy",
+          "systems nominal · fundhub.ai"
+        ]
+      },
+      "11px": {
+        "count": 2,
+        "examples": [
+          "PARTNER VIEW — your book only. Your bran",
+          "live partner census · 1 partner(s) · $0 "
+        ]
+      }
+    },
+    "navVisibleCount": 1,
+    "navActive": [
+      "⌂Home"
+    ],
+    "navGroups": [
+      {
+        "head": "Home▾",
+        "items": [
+          "⌂Home"
+        ]
+      },
+      {
+        "head": "Marketing▾",
+        "items": []
+      },
+      {
+        "head": "Admin▾",
+        "items": []
+      }
+    ],
+    "h1": [],
+    "h2": [],
+    "contentWidth": 1440,
+    "contentSel": "div.app",
+    "sideW": 228,
+    "controlsCount": 8,
+    "controls": [
+      {
+        "idx": 0,
+        "key": "a|||/app/partner-galaxy.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "",
+        "id": null,
+        "cls": "logo inv",
+        "href": "/app/partner-galaxy.html",
+        "disabled": false,
+        "w": 118,
+        "h": 24,
+        "top": 10,
+        "left": 16,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(252, 252, 252)",
+        "filled": false
+      },
+      {
+        "idx": 1,
+        "key": "button|‹‹|burger|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "‹‹",
+        "id": "burger",
+        "cls": "burger",
+        "href": null,
+        "disabled": false,
+        "w": 40,
+        "h": 40,
+        "top": 2,
+        "left": 172,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(161, 161, 170)",
+        "filled": false
+      },
+      {
+        "idx": 2,
+        "key": "button|Home▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Home▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 56,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 3,
+        "key": "a|⌂Home||partner-galaxy.html",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "⌂Home",
+        "id": null,
+        "cls": "navitem on",
+        "href": "partner-galaxy.html",
+        "disabled": false,
+        "w": 228,
+        "h": 33,
+        "top": 96,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(22, 22, 25)",
+        "color": "rgb(252, 252, 252)",
+        "filled": true
+      },
+      {
+        "idx": 4,
+        "key": "button|Marketing▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Marketing▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 132,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 5,
+        "key": "button|Admin▾||",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Admin▾",
+        "id": null,
+        "cls": "navhead",
+        "href": null,
+        "disabled": false,
+        "w": 228,
+        "h": 40,
+        "top": 175,
+        "left": 0,
+        "aboveFold": true,
+        "sidebar": true,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(113, 113, 122)",
+        "filled": false
+      },
+      {
+        "idx": 6,
+        "key": "a|https://fundhub.ai/sites/9defaf28-47c5-43a0-8f5e-f41ef90f360||brand-studio.html?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "a",
+        "type": null,
+        "text": "https://fundhub.ai/sites/9defaf28-47c5-43a0-8f5e-f41ef90f360",
+        "id": null,
+        "cls": null,
+        "href": "brand-studio.html?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+        "disabled": false,
+        "w": 326,
+        "h": 42,
+        "top": 11,
+        "left": 378,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgba(0, 0, 0, 0)",
+        "color": "rgb(82, 82, 91)",
+        "filled": false
+      },
+      {
+        "idx": 7,
+        "key": "button|Download|blasterBtn|",
+        "ord": 0,
+        "viaCursor": false,
+        "tag": "button",
+        "type": "button",
+        "text": "Download",
+        "id": "blasterBtn",
+        "cls": "btn",
+        "href": null,
+        "disabled": false,
+        "w": 108,
+        "h": 40,
+        "top": 78,
+        "left": 1316,
+        "aboveFold": true,
+        "sidebar": false,
+        "beta": false,
+        "inputLike": false,
+        "bg": "rgb(242, 227, 155)",
+        "color": "rgb(10, 10, 10)",
+        "filled": true
+      }
+    ],
+    "genericLabels": [],
+    "smallTargets": [],
+    "primaryLooking": [
+      {
+        "text": "Download",
+        "bg": "rgb(242, 227, 155)",
+        "w": 108,
+        "h": 40,
+        "aboveFold": true
+      }
+    ],
+    "capsRuns": [],
+    "sampleWording": [],
+    "loadingWording": [],
+    "errorWording": [],
+    "emptyWording": [],
+    "centeredParas": [],
+    "offScale": {
+      "14px": 1
+    },
+    "unevenRows": [],
+    "tables": [],
+    "metrics": [],
+    "topLeft": {
+      "tag": "header",
+      "text": "Fundhub / Galaxy Your page · https://fundhub.ai/sites/9defaf28-47c5-43a0-8f5e-f4"
+    },
+    "bodyText": "‹‹ HOME ▾ ⌂ Home MARKETING ▾ ADMIN ▾ fundhub Fundhub / Galaxy Your page · https://fundhub.ai/sites/9defaf28-47c5-43a0-8f5e-f41ef90f360a/apply 1 partner on file Wed, Aug 19, 2:55:28 AM EDT LIVE TEST — White-Label Partner Role · partner · 4 tabs LIVE Sign out GX-01 / READING THE SKY size = output today brightness = working right now on pace — quiet ahead behind blocked live handoff flare = money landing click a cluster to zoom in · a worker for their day · empty space to pull back Partner gift · Message Blaster for Mac Text everyone in one Contacts group with a personalized iMessage. Use {name} "
+  },
+  "mobile": {
+    "scrollWidth": 390,
+    "horizontalOverflow": false,
+    "sideVisible": true,
+    "sideW": 228,
+    "burger": true,
+    "overflowers": [
+      "i",
+      "i",
+      "i",
+      "i",
+      "i",
+      "i"
+    ],
+    "textUnder11px": 0,
+    "docH": 844,
+    "shots": {
+      "full": "docs/workflows/ui-audit-evidence/T10-walk-partner-galaxy/390-full.png",
+      "fold": "docs/workflows/ui-audit-evidence/T10-walk-partner-galaxy/390-fold.png"
+    },
+    "finalUrl": "/app/partner-galaxy.html",
+    "apiFails": []
+  },
+  "clicks": [
+    {
+      "n": 1,
+      "tag": "a",
+      "text": "https://fundhub.ai/sites/9defaf28-47c5-43a0-8f5e-f41ef90f360",
+      "id": null,
+      "cls": null,
+      "href": "brand-studio.html?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+      "w": 326,
+      "h": 42,
+      "aboveFold": true,
+      "urlChanged": "/app/brand-studio.html?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+      "api": [
+        {
+          "method": "GET",
+          "url": "/api/partner-pages?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/partner-marketing/usage?partner_id=9defaf28-47c5-43a0-8f5e-f41ef90f360a",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/auth/session",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/health",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/partner-marketing/copy-history?page_id=136297ef-e49a-421e-8e34-b2e99184cb8c",
+          "status": 200
+        },
+        {
+          "method": "GET",
+          "url": "/api/org-brand",
+          "status": 200
+        }
+      ],
+      "intercepted": [],
+      "dialogs": [],
+      "consoleErrors": [
+        "pageerror: FHData is not defined"
+      ],
+      "domChanged": true,
+      "result": "NAV"
+    },
+    {
+      "n": 2,
+      "tag": "button",
+      "text": "Download",
+      "id": "blasterBtn",
+      "cls": "btn",
+      "href": null,
+      "w": 108,
+      "h": 40,
+      "aboveFold": true,
+      "urlChanged": null,
+      "api": [
+        {
+          "method": "GET",
+          "url": "/api/gifts/message-blaster",
+          "status": 200
+        }
+      ],
+      "intercepted": [],
+      "dialogs": [],
+      "consoleErrors": [],
+      "domChanged": true,
+      "result": "OK"
+    }
+  ],
+  "clickSummary": {
+    "candidates": 2,
+    "attempted": 2,
+    "skippedForCap": 0,
+    "tally": {
+      "NAV": 1,
+      "OK": 1
+    },
+    "loadRetriesTotal": 0
+  }
+}

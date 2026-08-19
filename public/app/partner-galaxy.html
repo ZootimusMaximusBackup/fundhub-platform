@@ -20,7 +20,7 @@
     --text:var(--paper);
     --text-dim:var(--gray2);
     --text-faint:var(--gray);
-    /* the 40% spectrum stop — money landing. Not a new hue. */
+    /* the 40% spectrum stop. Not a new hue. */
     --lemon:#F2E39B;
     /* light surface — only the read-closely panel */
     --surface:#FFFFFF;
@@ -316,7 +316,6 @@
     <i><span class="sw a"></span>behind</i>
     <i><span class="sw r"></span>blocked</i>
     <i><span class="sw line"></span>live handoff</i>
-    <i>flare = money landing</i>
     <i>click a cluster to zoom in · a worker for their day · empty space to pull back</i>
   </div>
 
@@ -355,17 +354,35 @@
    FUNDHUB GALAXY — a live pulse of the whole company.
    Force-directed workers on a dark canvas. Clusters are teams.
    Rails run behind everything; clients travel them as pulses.
-   Money lands as a flare that flies into the number it moved.
    Read-only. Nothing here does anything but show you.
+
+   NO NUMBERS LIVE ON THIS CANVAS. (T10-02, owner ruling 2026-08-19.)
+   Six labelled tiles used to sit along the bottom — Cash Collected Today,
+   Funded Today, Close Rate, Show Rate, Movement Today, Cost / Funded Client —
+   and every one of their values was made up. They started at zero and the only
+   thing that ever changed them was a dice roll: a scheduled evMoney() picked
+   `3000 + (Math.random()<0.5?300:0)` or `8500 + Math.round(Math.random()*7)*2500`
+   and flew that figure into a tile as a "flare", printing "+$11,000 ROUND FUNDED"
+   over the sky on the way. A partner reading this screen was reading invented
+   money on a money surface.
+
+   The rule the owner set: wire a tile to real data if the read already exists,
+   and if it does not exist, DELETE the tile — never a zero, never a dash, never
+   a "demo" label. Every partner-readable endpoint was checked one by one — the
+   audit sits where KPIS used to, further down this file. None of the six had a
+   partner-scoped source, so all six are gone, and the flare machinery that fed
+   them is gone with them.
+
+   The sky itself STAYS. The owner objected to invented numbers, not to the
+   animation.
    ============================================================ */
 
 var TAU = Math.PI*2;
-var KPI_H = 132;
 
 /* ---------- palette ---------- */
 var C = {
-  /* pace rings + flares are spectrum stops; the rest is the brand neutral ramp.
-     sage = ahead, peach = behind, coral = blocked, lemon = money landing. */
+  /* pace rings are spectrum stops; the rest is the brand neutral ramp.
+     sage = ahead, peach = behind, coral = blocked. */
   neutral:'#52525B', green:'#A8D8B0', amber:'#F5CE8F', red:'#F2A69B',
   gold:'#F2E39B', text:'#FCFCFC', dim:'#A1A1AA', faint:'#52525B',
   /* starlight: brand neutrals, depth carried by alpha not hue */
@@ -394,7 +411,6 @@ function mixHex(a,b,t){
 }
 function clamp(v,a,b){return v<a?a:(v>b?b:v);}
 function pick(arr){return arr[(Math.random()*arr.length)|0];}
-function easeOut(t){return 1-Math.pow(1-t,3);}
 function easeInOut(t){return t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;}
 
 /* ============================================================
@@ -432,20 +448,35 @@ var RAILS = [
   {name:'Affiliates + Hiring',amp:22, ph:5.6, stages:['Referral Received','Application In'], quiet:true}
 ];
 
-/* ---------- company KPIs — these live on the canvas ---------- */
-var KPIS = [
-  {id:'cash',  label:'Cash Collected Today', v:0, fmt:'money', hist:[], glow:0, disp:0},
-  {id:'fund',  label:'Funded Today',         v:0, fmt:'money', hist:[], glow:0, disp:0},
-  {id:'close', label:'Close Rate',           v:0, fmt:'pct',   hist:[], glow:0, disp:0},
-  {id:'show',  label:'Show Rate',            v:0, fmt:'pct',   hist:[], glow:0, disp:0},
-  {id:'move',  label:'Movement Today',       v:0, fmt:'int',   hist:[], glow:0, disp:0},
-  {id:'cpf',   label:'Cost / Funded Client', v:0, fmt:'money0',hist:[], glow:0, disp:0}
-];
-var KPI = {}; KPIS.forEach(function(k){KPI[k.id]=k;});
+/* ---------- company KPIs — DELETED, and here is the audit that deleted them ---
+   Every partner-reachable read was checked before any tile was removed. A source
+   only counted if a PARTNER principal could call it and it was scoped to THAT
+   partner; an org-wide staff number shown to a partner is a different untruth,
+   not a fix.
 
-function fmtK(k,v){
-  return '—';
-}
+   Partner-reachable reads, in full: /api/read/partners (own row only, via
+   src/partners/scope.mjs), /api/partner-pages, /api/partner-brand,
+   /api/partner-marketing/{usage,copy-history}, /api/campaigns/{list,detail,spend,
+   fatigue,connections,action-log}, /api/creative/{library,jobs,approvals,
+   brand-kits}, /api/social/posts, /api/read/company-brain-affiliate.
+
+     Cash Collected Today  — none exists. /api/read/partners carries
+                             balance_accrued and total_paid, which are lifetime
+                             revenue-share totals with no date dimension at all
+                             (v_partner_balance, db/migrations/042_partners.sql).
+                             Neither one means "collected today".
+     Funded Today          — none exists. No partner-scoped read reports funding.
+     Close Rate            — none exists.
+     Show Rate             — none exists.
+     Movement Today        — none exists.
+     Cost / Funded Client  — none exists. /api/campaigns/spend gives a partner
+                             their own ad spend, but nothing partner-scoped gives
+                             a funded-client count, so the ratio is uncomputable.
+
+   Six of six had no source, so the whole strip is gone rather than sitting there
+   showing a dash. If a tile is ever added back it must carry a `source` naming
+   the read it comes from — src/http/partner-galaxy-tiles.test.mjs enforces that,
+   and fails the build if a tile appears without one. */
 
 /* ============================================================
    2. CANVAS + LAYOUT
@@ -464,7 +495,7 @@ function resize(){
 }
 
 function layout(){
-  GH = H - KPI_H;
+  GH = H;
   var padX = clamp(W*0.11, 92, 190);
   var top  = 66, bot = 44;
   var scale = clamp(Math.min(W/1460, GH/820), 0.62, 1.18);
@@ -508,10 +539,6 @@ function layout(){
     }
   }
 
-  var kpad = clamp(W*0.035, 26, 74);
-  var colw = (W-2*kpad)/KPIS.length;
-  KPIS.forEach(function(k,i){ k.x = kpad + colw*i + colw*0.5; k.cw = colw; });
-
   /* the camera lives in world coords — park it on the sky so the first frame
      is already framed, and so a resize doesn't send it sliding */
   if(layer===0){ cam.x = W/2; cam.y = GH/2; cam.k = 1; }
@@ -529,7 +556,7 @@ function railPoint(i,u){
    ============================================================ */
 
 var time=0, frame=0, dt=1/60;
-var threads=[], pulses=[], flares=[], blooms=[], motes=[];
+var threads=[], pulses=[];
 
 function nodeSay(n, txt){
   n.act = txt; n.flash = Math.max(n.flash, 0.85);
@@ -578,53 +605,6 @@ function evMove(){
   pulses.push({rail:i, t:0, dur:3.6+Math.random()*1.4,
                u0:0.05+Math.random()*0.28, span:0.34+Math.random()*0.22,
                label: pick(CLIENTS)+'  →  '+pick(r.stages)});
-  bumpKPI('move', 1, false);
-}
-
-/* -- money lands: only against live nodes; amounts are decorative flares,
-      not ledger facts — the banner owns real partner dollars. -- */
-function evMoney(){
-  if(!NODES.length) return;
-  if(flares.length>=2) return;
-  var actives = NODES.filter(function(n){ return n.state==='active'; });
-  var n = pick(actives.length ? actives : NODES);
-  if(!n) return;
-  var roll = Math.random();
-  var amt, kid, kind, color;
-  if(roll < 0.55){
-    amt = 3000 + (Math.random()<0.5?300:0);
-    kid='cash'; kind='Deposit paid'; color=C.green;
-  } else {
-    amt = 8500 + Math.round(Math.random()*7)*2500;
-    kid='fund'; kind='Round funded'; color=C.gold;
-  }
-  var k = KPI[kid];
-  if(!k) return;
-  flares.push({n:n, k:k, amt:amt, kind:kind, color:color, t:0, dur:2.9, delivered:false, big: amt>=12000});
-  blooms.push({x:n.x, y:n.y, t:0, dur:1.5, color:color, big: amt>=12000});
-  n.flash = 1; n.out += (kid==='fund'?3:1); sizeNode(n);
-  nodeSay(n, kind+' — $'+amt.toLocaleString('en-US'));
-  for(var i=0;i<18;i++){
-    motes.push({x:n.x, y:n.y, a:Math.random()*TAU, sp:0.6+Math.random()*1.9,
-                t:0, dur:0.8+Math.random()*0.8, color:color, r:0.7+Math.random()*1.4});
-  }
-}
-
-/* -- the soft numbers drift as calls resolve -- */
-function evRate(){
-  return;
-}
-
-function bumpKPI(id, d, loud){
-  var k = KPI[id];
-  k.v += d;
-  if(k.id==='close') k.v = clamp(k.v, 22, 48);
-  if(k.id==='show')  k.v = clamp(k.v, 58, 86);
-  k.glow = Math.max(k.glow, loud?1:0.55);
-  k.delta = (k.fmt==='pct') ? (d>=0?'+':'')+d.toFixed(1)+'pt'
-          : (k.fmt==='int') ? (d>=0?'+':'')+Math.round(d)
-          : (d>=0?'+$':'-$')+Math.abs(Math.round(d)).toLocaleString('en-US');
-  k.deltaT = 1;
 }
 
 function sizeNode(n){ n.r = clamp(9 + 4.2*Math.log(1+n.out), 10, 33); }
@@ -635,19 +615,12 @@ NODES.forEach(sizeNode);
 var SCHED = [
   {fn:evActivity, lo:3.2, hi:7.0,  next:1.2},
   {fn:evHandoff,  lo:4.2, hi:9.0,  next:0.9},
-  {fn:evMove,     lo:2.6, hi:5.4,  next:0.4},
-  {fn:evMoney,    lo:13,  hi:25,   next:3.4},
-  {fn:evRate,     lo:16,  hi:34,   next:7.0}
+  {fn:evMove,     lo:2.6, hi:5.4,  next:0.4}
 ];
-var histT = 0;
 function tickEvents(){
   for(var i=0;i<SCHED.length;i++){
     var s = SCHED[i];
     if(time >= s.next){ s.fn(); s.next = time + s.lo + Math.random()*(s.hi-s.lo); }
-  }
-  histT += dt;
-  if(histT >= 1.1){
-    histT = 0;
   }
 }
 
@@ -827,10 +800,6 @@ function draw(now){
   drawStandingThreads();
   drawThreads();
   drawNodes();
-  drawMotes();
-  drawFlares();
-  drawBlooms();
-  drawKPIs();
   drawBreadcrumb();
   drawFootnote();
 
@@ -1319,181 +1288,6 @@ function drawNodes(){
   });
 }
 
-/* ---------- money particles ---------- */
-function drawMotes(){
-  ctx.globalCompositeOperation='lighter';
-  for(var i=motes.length-1;i>=0;i--){
-    var m=motes[i]; m.t+=dt;
-    if(m.t>m.dur){ motes.splice(i,1); continue; }
-    var q=m.t/m.dur;
-    var d = easeOut(q)*m.sp*46;
-    var P = view(m.x + Math.cos(m.a)*d, m.y + Math.sin(m.a)*d*0.85 - q*q*10, 0.7, 1);
-    ctx.fillStyle = rgba(m.color, (1-q)*0.7);
-    ctx.beginPath(); ctx.arc(P.x,P.y,m.r*(1-q*0.5),0,TAU); ctx.fill();
-  }
-  ctx.globalCompositeOperation='source-over';
-}
-
-/* ---------- money landing → flying into the number it moved ---------- */
-function drawFlares(){
-  for(var i=flares.length-1;i>=0;i--){
-    var f=flares[i]; f.t+=dt;
-    if(f.t>f.dur){ flares.splice(i,1); continue; }
-    var q=f.t/f.dur;
-    var A = scr(f.n);
-    var B = {x:f.k.x, y:H-KPI_H+40};
-    var cp = {x:(A.x+B.x)/2 + (B.x-A.x)*0.05, y:Math.min(A.y,B.y) - 90};
-
-    ctx.globalCompositeOperation='lighter';
-
-    /* shockwave at the earner */
-    if(q<0.55){
-      for(var w=0;w<3;w++){
-        var wt = clamp(q/0.55*1.4 - w*0.16, 0, 1);
-        if(wt<=0||wt>=1) continue;
-        var wr = f.n.dr*1.2 + wt*(f.big?110:64);
-        ctx.strokeStyle = rgba(f.color, (1-wt)*(f.big?0.55:0.34));
-        ctx.lineWidth = (1-wt)*2.6+0.5;
-        ctx.beginPath(); ctx.arc(A.x,A.y,wr,0,TAU); ctx.stroke();
-      }
-      var cg=ctx.createRadialGradient(A.x,A.y,0,A.x,A.y,f.n.dr*3.6);
-      cg.addColorStop(0, rgba('#FFFFFF', (1-q/0.55)*0.32));
-      cg.addColorStop(0.3,rgba(f.color, (1-q/0.55)*0.20));
-      cg.addColorStop(1, rgba(f.color,0));
-      ctx.fillStyle=cg; ctx.beginPath(); ctx.arc(A.x,A.y,f.n.dr*3.6,0,TAU); ctx.fill();
-    }
-
-    /* the stream from the person into the number */
-    var span=0.62;
-    for(var k=0;k<20;k++){
-      var u = (q - 0.16 - k*0.012)/span;
-      if(u<=0||u>=1) continue;
-      var pt = qbez(A,cp,B,easeInOut(u));
-      var a = Math.sin(u*Math.PI)*0.8*(1-k/26);
-      ctx.fillStyle = rgba(f.color, a*0.62);
-      ctx.beginPath(); ctx.arc(pt.x,pt.y, 2.4*(1-k/30)+0.6, 0, TAU); ctx.fill();
-    }
-    ctx.globalCompositeOperation='source-over';
-
-    /* the amount, rising off the person */
-    if(q<0.55){
-      var ra = 1-q/0.55;
-      ctx.shadowColor='rgba(6,6,10,0.95)'; ctx.shadowBlur=8;
-      ctx.font='800 '+(f.big?16:13)+'px "JetBrains Mono", monospace';
-      ctx.textAlign='center'; ctx.textBaseline='bottom';
-      ctx.fillStyle = rgba(f.color, ra);
-      ctx.fillText('+$'+f.amt.toLocaleString('en-US'), A.x, A.y - f.n.dr - 22 - (1-ra)*26);
-      ctx.font='600 9px Inter, sans-serif';
-      ctx.fillStyle = rgba(C.star, ra*0.75);
-      ctx.fillText(f.kind.toUpperCase(), A.x, A.y - f.n.dr - 38 - (1-ra)*26);
-      ctx.shadowBlur=0; ctx.shadowColor='transparent';
-    }
-
-    if(!f.delivered && q>=0.74){
-      f.delivered=true;
-      bumpKPI(f.k.id, f.amt, true);
-      if(f.k.id==='fund'){
-        bumpKPI('cpf', -(2+Math.random()*7), false);
-        bumpKPI('move', 1, false);
-      }
-    }
-  }
-}
-
-/* a big landing washes the whole sky, briefly */
-function drawBlooms(){
-  for(var i=blooms.length-1;i>=0;i--){
-    var b=blooms[i]; b.t+=dt;
-    if(b.t>b.dur){ blooms.splice(i,1); continue; }
-    var q=clamp(b.t/b.dur,0,1), a=(1-q)*(b.big?0.042:0.020);
-    var P=view(b.x, b.y, 0.7, 1), x=P.x, y=P.y;
-    ctx.globalCompositeOperation='lighter';
-    var g=ctx.createRadialGradient(x,y,0,x,y,Math.max(1,Math.max(W,H)*(0.35+q*0.5)));
-    g.addColorStop(0, rgba(b.color,a));
-    g.addColorStop(1, rgba(b.color,0));
-    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
-    ctx.globalCompositeOperation='source-over';
-  }
-}
-
-/* ---------- the company's numbers, living in the same space ---------- */
-function drawKPIs(){
-  var top = H-KPI_H;
-  var px = drift.x*0.16, py = drift.y*0.16;
-
-  /* horizon, not a box */
-  var hg = ctx.createLinearGradient(0,0,W,0);
-  hg.addColorStop(0,   rgba(C.star2,0));
-  hg.addColorStop(0.5, rgba(C.star2,0.10));
-  hg.addColorStop(1,   rgba(C.star2,0));
-  ctx.fillStyle=hg; ctx.fillRect(0, top+py-2, W, 1);
-
-  var vg = ctx.createLinearGradient(0,top,0,H);
-  vg.addColorStop(0, rgba(C.deep,0.55));
-  vg.addColorStop(1, rgba(C.deep,0));
-  ctx.fillStyle=vg; ctx.fillRect(0,top-6,W,KPI_H);
-
-  KPIS.forEach(function(k,i){
-    k.disp = lerp(k.disp, k.v, 1-Math.exp(-dt*6));
-    k.glow *= Math.exp(-dt*1.7);
-    if(k.deltaT) k.deltaT = Math.max(0, k.deltaT - dt/2.6);
-
-    var breathe = 0.5+0.5*Math.sin(time*0.5 + i*1.3);
-    var g = k.glow;
-    var x = k.x + px, yl = top + 26 + py, yv = top + 60 + py;
-
-    /* label */
-    ctx.font='700 8.5px "JetBrains Mono", monospace';
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillStyle = rgba(C.star2, 0.26 + breathe*0.05 + g*0.55);
-    ctx.fillText(k.label.toUpperCase(), x, yl);
-
-    /* value */
-    var vs = 25 + g*3;
-    ctx.font='700 '+vs.toFixed(1)+'px "JetBrains Mono", monospace';
-    if(g>0.04){
-      ctx.globalCompositeOperation='lighter';
-      var col = (k.id==='fund')?C.gold:(k.id==='cash')?C.green:C.glow;
-      var rg=ctx.createRadialGradient(x,yv,0,x,yv,90);
-      rg.addColorStop(0, rgba(col, g*0.16));
-      rg.addColorStop(1, rgba(col, 0));
-      ctx.fillStyle=rg; ctx.fillRect(x-95,yv-34,190,68);
-      ctx.globalCompositeOperation='source-over';
-    }
-    ctx.fillStyle = rgba(C.text, 0.50 + breathe*0.035 + g*0.50);
-    ctx.fillText(fmtK(k, k.disp), x, yv);
-
-    /* the delta that just landed */
-    if(k.deltaT>0.001 && k.delta){
-      var da = clamp(k.deltaT,0,1);
-      var up = (k.delta.charAt(0)==='+');
-      ctx.font='700 10px "JetBrains Mono", monospace';
-      ctx.fillStyle = rgba(up? (k.id==='fund'?C.gold:C.green) : C.star2, da*0.95);
-      ctx.fillText(k.delta, x, yv - 24 - (1-da)*10);
-    }
-
-    /* today's trace */
-    var sw = Math.min(k.cw*0.52, 108), sh = 15;
-    var sx = x - sw/2, sy = top + 88 + py;
-    if(k.hist.length>2){
-      var mn=Infinity,mx=-Infinity;
-      for(var j=0;j<k.hist.length;j++){ if(k.hist[j]<mn)mn=k.hist[j]; if(k.hist[j]>mx)mx=k.hist[j]; }
-      if(mx-mn<0.0001) mx=mn+1;
-      ctx.beginPath();
-      for(var j2=0;j2<k.hist.length;j2++){
-        var hx = sx + (j2/(k.hist.length-1))*sw;
-        var hy = sy + sh - ((k.hist[j2]-mn)/(mx-mn))*sh;
-        if(j2===0) ctx.moveTo(hx,hy); else ctx.lineTo(hx,hy);
-      }
-      ctx.strokeStyle = rgba(C.star2, 0.16 + g*0.44);
-      ctx.lineWidth=1; ctx.stroke();
-      var lx = sx+sw, ly = sy+sh-((k.hist[k.hist.length-1]-mn)/(mx-mn))*sh;
-      ctx.fillStyle = rgba(C.star, 0.30 + g*0.65);
-      ctx.beginPath(); ctx.arc(lx,ly,1.6,0,TAU); ctx.fill();
-    }
-  });
-}
-
 /* ---------- where you are, and how to get back ---------- */
 function drawBreadcrumb(){
   var crumbs = [{t:'Sky', on: layer===0}];
@@ -1538,7 +1332,6 @@ var panel = document.getElementById('panel');
 var panelBody = document.getElementById('panelBody');
 
 function hitTest(mx,my){
-  if(my > H-KPI_H) return null;
   var best=null, bd=1e9;
   for(var i=0;i<NODES.length;i++){
     var n=NODES[i];
@@ -1551,7 +1344,6 @@ function hitTest(mx,my){
 
 /* clusters are the objects at orbit — pick by how deep inside the mass you are */
 function hitCluster(mx,my){
-  if(my > H-KPI_H) return null;
   var best=null, bs=1e9;
   for(var i=0;i<CLUSTERS.length;i++){
     var c=CLUSTERS[i];
@@ -1590,7 +1382,6 @@ cv.addEventListener('mouseleave', function(){ hover=null; hoverC=null; mouse.x=-
 cv.addEventListener('click', function(e){
   var r=cv.getBoundingClientRect();
   var mx=e.clientX-r.left, my=e.clientY-r.top;
-  if(my > H-KPI_H) return;                    /* the numbers aren't navigation */
 
   if(layer>0){
     var n = hitTest(mx,my);
@@ -1721,26 +1512,135 @@ requestAnimationFrame(draw);
 
      This screen has no element that describes partners, and inventing one would
      be changing the approved layout. The banner is the honest place for it. */
+  /* THE BANNER USED TO LIE, TWICE, IN ONE LINE. (T10-01, 2026-08-19)
+
+     It built "/sites/<partner id>/apply" out of the SESSION ALONE, labelled it
+     "Your page ·", and never asked whether any such page was live. The partner
+     whose only page was a draft saw a web address on their Home screen, clicked
+     it, and got a 404. Nothing here ever said "draft". Second lie: the words on
+     screen were the /sites/ address while the link underneath them went to
+     brand-studio.html — the text and the destination were different places.
+
+     The 404 is correct: a draft is not public, and it must not become public
+     because a banner promised it. So the banner is what changes. It now reads
+     GET /api/partner-pages, which ALREADY reports status plus live_path and
+     live_url (both NULL unless status = 'published'), and it says what is true:
+     live → the real address, and the link goes to that same address; draft →
+     says draft and points at Brand Studio, where Publish lives; nothing on file
+     → says that. If the read fails it says nothing new rather than guessing.
+
+     It adds NO control and no new surface. Publish stays in Brand Studio and
+     pressing it stays the partner's own decision — this screen only reports. */
+  /* TWO MORE THINGS THIS BANNER OWES THE PARTNER. (T10-01b, 2026-08-19)
+
+     1. A READ THAT FAILS HAS TO SAY SO. The first pass left the page's own
+     starting words in place when either read failed — "Your page · sign in to
+     see your address". A partner who IS signed in then reads a caption telling
+     them to sign in. That is a wrong caption on a real failure path, so the
+     banner now says the true thing: we could not load your page details right
+     now. The one case where "sign in" really is the answer — the server itself
+     refusing the session as expired — gets its own words and keeps that meaning.
+
+     2. WITH MORE THAN ONE PAGE, WHICH ONE IS "YOUR PAGE" IS NOW A DECISION.
+     /api/partner-pages lists newest-edited first and does not sort by kind, so
+     "the first published page" quietly meant "whichever page they last touched".
+     A partner whose apply page is still a draft but whose thank-you page is live
+     would have seen the thank-you address labelled "Your page". True address,
+     wrong name for it. The apply page is the one a partner hands out, so the
+     apply page is what "Your page" means here, and nothing else is allowed to
+     borrow that label. If the apply page is not live and something else is, the
+     banner says exactly that and shows the address that IS live. */
   (function showOwnUrl() {
     var el = document.getElementById("wl-own-url");
     if (!el) return;
     var tok = "";
     try { tok = localStorage.getItem("fh_token") || ""; } catch (e) { tok = ""; }
+    // Nobody is signed in, so the words already on the page are true. Leave them.
     if (!tok || tok === "demo") return;
-    fetch("/api/auth/session", {
-      headers: { accept: "application/json", authorization: "Bearer " + tok }
-    }).then(function (r) { return r.json().catch(function () { return {}; }); })
+    var auth = { accept: "application/json", authorization: "Bearer " + tok };
+    var origin = location.origin || "https://fundhub.ai";
+
+    function studioHref(id) {
+      return "brand-studio.html?partner_id=" + encodeURIComponent(id);
+    }
+    /* The words and the destination come from the same call, so they cannot
+       drift apart again: whatever the partner reads is where the link goes. */
+    function render(lead, linkText, href) {
+      el.textContent = "";
+      el.appendChild(document.createTextNode(lead));
+      var a = document.createElement("a");
+      a.href = href;
+      a.textContent = linkText;
+      el.appendChild(a);
+    }
+    /* Plain words and no link, for the states where there is nowhere useful to
+       send them. Both of these REPLACE the caption — never leave the starting
+       words sitting there once we know they are not true. */
+    function say(words) { el.textContent = words; }
+    function couldNotLoad() {
+      say("Your page · we could not load your page details right now");
+    }
+    function signInAgain() {
+      say("Your page · your sign-in has expired — sign in again");
+    }
+
+    function isApply(p) { return p.funnel_key === "apply" || p.slug === "apply"; }
+    function isLive(p) {
+      return p.status === "published" && (p.live_url || p.live_path);
+    }
+    function addressOf(p) {
+      var addr = p.live_url || p.live_path;
+      if (!/^https?:/i.test(addr)) addr = origin + addr;
+      return addr;
+    }
+
+    // Returned instead of a body when a branch has already written the caption,
+    // so the step after it does not overwrite the better message with a worse one.
+    var SAID = { said: true };
+
+    fetch("/api/auth/session", { headers: auth })
+      .then(function (r) {
+        if (r.status === 401 || r.status === 403) { signInAgain(); return SAID; }
+        return r.ok ? r.json().catch(function () { return null; }) : null;
+      })
       .then(function (d) {
-        var id = d && d.staff && (d.staff.partner_id || d.staff.partnerId);
-        if (!id) return;
-        var path = "/sites/" + id + "/apply";
-        el.textContent = "";
-        el.appendChild(document.createTextNode("Your page · "));
-        var a = document.createElement("a");
-        a.href = "brand-studio.html?partner_id=" + encodeURIComponent(id);
-        a.textContent = (location.origin || "https://fundhub.ai") + path;
-        el.appendChild(a);
-      }).catch(function () {});
+        if (d === SAID) return null;
+        if (!d) { couldNotLoad(); return null; }
+        var id = d.staff && (d.staff.partner_id || d.staff.partnerId);
+        // A real answer that says this sign-in is not a partner. Not a failure,
+        // and not "sign in" either — they already did.
+        if (!id) { say("Your page · this sign-in does not have one"); return null; }
+        return fetch("/api/partner-pages?partner_id=" + encodeURIComponent(id), { headers: auth })
+          .then(function (r) {
+            return r.ok ? r.json().catch(function () { return null; }) : null;
+          })
+          .then(function (p) {
+            var items = (p && p.ok && Array.isArray(p.items)) ? p.items : null;
+            if (!items) { couldNotLoad(); return; }   // could not read it — do not guess
+            if (!items.length) {
+              render("Your page · none made yet — ", "open Brand Studio", studioHref(id));
+              return;
+            }
+            var liveApply = null, liveOther = null;
+            for (var i = 0; i < items.length; i++) {
+              if (!isLive(items[i])) continue;
+              if (isApply(items[i])) { liveApply = items[i]; break; }
+              if (!liveOther) liveOther = items[i];
+            }
+            if (liveApply) {
+              var addr = addressOf(liveApply);
+              render("Your page · ", addr, addr);
+              return;
+            }
+            if (liveOther) {
+              var other = addressOf(liveOther);
+              render("Your apply page is not live. Live now · ", other, other);
+              return;
+            }
+            render("Your page · draft, not live yet — ", "publish it in Brand Studio",
+              studioHref(id));
+          });
+      }).catch(function () { couldNotLoad(); });
   })();
 
   // data.js carries `defer` (see its tag above), so FHData does not exist yet
@@ -1760,11 +1660,25 @@ requestAnimationFrame(draw);
         census.innerHTML = "<b>" + rows.length + "</b> partner" +
           (rows.length === 1 ? "" : "s") + " on file";
       }
-      var owed = rows.reduce(function (a, p) { return a + Number(p.balance_accrued || 0); }, 0);
+      /* MONEY RULE (CLAUDE.md §12 and the owner's 2026-08-19 decision): a NULL
+         balance_accrued means "not calculated", NOT "nothing owed". The old
+         `Number(p.balance_accrued || 0)` folded every unknown into the sum, so
+         this badge printed a confident dollar total that silently left money
+         out. Unknowns are counted and named instead. FH-T10-ACCRUED-NULL */
+      var unknownOwed = 0;
+      var owed = rows.reduce(function (a, p) {
+        var v = p.balance_accrued;
+        if (v === null || v === undefined || v === "") { unknownOwed++; return a; }
+        var n = Number(v);
+        if (!isFinite(n)) { unknownOwed++; return a; }
+        return a + n;
+      }, 0);
+      var money = "$" + Math.round(owed).toLocaleString("en-US") + " accrued";
+      if (unknownOwed === rows.length) money = "accrued not known yet";
+      else if (unknownOwed) money += ", " + unknownOwed + " not known yet";
       var signed = rows.filter(function (p) { return p.agreement_signed; }).length;
       var unsigned = rows.length - signed;
-      return "live partner census · " + rows.length + " partner(s) · $" +
-             Math.round(owed).toLocaleString("en-US") + " accrued · " +
+      return "live partner census · " + rows.length + " partner(s) · " + money + " · " +
              (unsigned ? unsigned + " agreement(s) unsigned" : "all agreements signed");
     });
   });

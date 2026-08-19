@@ -1,0 +1,86 @@
+[
+  {
+    "case": "normal",
+    "REFERRED": "12",
+    "REFERRED_note": "lifetime leads attributed to your code",
+    "CONVERTED": "4",
+    "CONVERTED_note": "44% of 9 tracked referrals · 3 more not tracked here · 2 with no rate set",
+    "OWED": "$0.00",
+    "OWED_note": "accrued, not yet paid · 2 conversions have no rate set, so nothing accrued for them",
+    "PAID": "$0.00",
+    "PAID_note": "no payout run has settled yet",
+    "funnel": [
+      {
+        "label": "Clicks",
+        "n": "—",
+        "sub": "not recorded yet"
+      },
+      {
+        "label": "Referred",
+        "n": "12",
+        "sub": ""
+      },
+      {
+        "label": "Converted",
+        "n": "4",
+        "sub": "44% of 9 tracked"
+      }
+    ]
+  },
+  {
+    "case": "untracked",
+    "REFERRED": "5",
+    "REFERRED_note": "lifetime leads attributed to your code",
+    "CONVERTED": "—",
+    "CONVERTED_note": "we cannot tell yet · none of your 5 referrals are being tracked, so nobody knows who paid",
+    "OWED": "$0.00",
+    "OWED_note": "accrued, not yet paid",
+    "PAID": "$0.00",
+    "PAID_note": "no payout run has settled yet",
+    "funnel": [
+      {
+        "label": "Clicks",
+        "n": "—",
+        "sub": "not recorded yet"
+      },
+      {
+        "label": "Referred",
+        "n": "5",
+        "sub": ""
+      },
+      {
+        "label": "Converted",
+        "n": "—",
+        "sub": "none of these are tracked yet"
+      }
+    ]
+  },
+  {
+    "case": "unknown",
+    "REFERRED": "7",
+    "REFERRED_note": "lifetime leads attributed to your code",
+    "CONVERTED": "2",
+    "CONVERTED_note": "we cannot work out what share of your referrals this is right now",
+    "OWED": "$0.00",
+    "OWED_note": "accrued, not yet paid",
+    "PAID": "$0.00",
+    "PAID_note": "no payout run has settled yet",
+    "funnel": [
+      {
+        "label": "Clicks",
+        "n": "—",
+        "sub": "not recorded yet"
+      },
+      {
+        "label": "Referred",
+        "n": "7",
+        "sub": ""
+      },
+      {
+        "label": "Converted",
+        "n": "2",
+        "sub": ""
+      }
+    ]
+  }
+]

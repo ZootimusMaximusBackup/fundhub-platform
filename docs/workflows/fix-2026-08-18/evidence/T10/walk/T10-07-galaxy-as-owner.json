@@ -1,0 +1,368 @@
+{
+  "screen": "/app/galaxy.html",
+  "email": "owner@fundhub.ai",
+  "ranAt": "2026-08-19T10:59:29.051Z",
+  "login": {
+    "cached": true,
+    "ok": true
+  },
+  "load": {
+    "httpStatus": 200,
+    "finalUrl": "/app/galaxy.html",
+    "title": "Fundhub — Galaxy",
+    "api": [
+      {
+        "method": "GET",
+        "url": "/api/auth/session",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/health",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/org-brand",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "url": "/api/read/company-activity",
+        "status": 200
+      }
+    ],
+    "apiFails": [],
+    "consoleErrors": []
+  },
+  "dom": {
+    "url": "https://fundhub.ai/app/galaxy.html",
+    "role": "owner",
+    "title": "Fundhub — Galaxy",
+    "gated": [
+      {
+        "tag": "a",
+        "class": "navitem",
+        "isNavRow": true,
+        "eyebrow": null,
+        "heading": null,
+        "culpritHref": "partner-galaxy.html",
+        "culpritText": "⌂Home",
+        "inlineDisplay": "none",
+        "textHead": "⌂Home"
+      }
+    ],
+    "gatedGroups": [
+      "Home▾"
+    ],
+    "stats": [],
+    "empties": [],
+    "cards": [],
+    "controls": [
+      {
+        "text": "‹‹",
+        "id": "burger",
+        "cls": "burger",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "Home▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": false
+      },
+      {
+        "text": "Sales▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "Funding▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "Client ops▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "Watch▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "Automation▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "Marketing▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "Admin▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "Portals▾",
+        "id": null,
+        "cls": "navhead",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "☰",
+        "id": "fh-menu-btn",
+        "cls": "fh-menu-btn",
+        "disabled": false,
+        "visible": false
+      },
+      {
+        "text": "Dismiss",
+        "id": null,
+        "cls": "",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "Search⌘K",
+        "id": "fh-shell-search-btn",
+        "cls": "",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "Sign out",
+        "id": "fh-shell-out",
+        "cls": "",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "Chat",
+        "id": "fh-chat-fab",
+        "cls": "",
+        "disabled": false,
+        "visible": true
+      },
+      {
+        "text": "Close",
+        "id": "fh-chat-close",
+        "cls": "",
+        "disabled": false,
+        "visible": false
+      },
+      {
+        "text": "Ask system",
+        "id": null,
+        "cls": "mode on",
+        "disabled": false,
+        "visible": false
+      },
+      {
+        "text": "Knowledge",
+        "id": null,
+        "cls": "mode",
+        "disabled": false,
+        "visible": false
+      },
+      {
+        "text": "Message",
+        "id": null,
+        "cls": "mode internal-hint",
+        "disabled": false,
+        "visible": false
+      },
+      {
+        "text": "Ask",
+        "id": "fh-chat-send",
+        "cls": "",
+        "disabled": false,
+        "visible": false
+      }
+    ],
+    "nav": [
+      {
+        "label": "Home",
+        "href": "partner-galaxy.html",
+        "visible": false
+      },
+      {
+        "label": "Pipeline",
+        "href": "pipeline.html",
+        "visible": false
+      },
+      {
+        "label": "Closer Dashboard",
+        "href": "closer-dashboard.html",
+        "visible": false
+      },
+      {
+        "label": "Call cockpit",
+        "href": "closer-call.html",
+        "visible": false
+      },
+      {
+        "label": "My numbers",
+        "href": "my-numbers.html",
+        "visible": false
+      },
+      {
+        "label": "Sales floor",
+        "href": "sales-floor.html",
+        "visible": false
+      },
+      {
+        "label": "Calendar",
+        "href": "calendar.html",
+        "visible": false
+      },
+      {
+        "label": "Lenders",
+        "href": "lenders.html",
+        "visible": false
+      },
+      {
+        "label": "Finance OS",
+        "href": "finance-os.html",
+        "visible": false
+      },
+      {
+        "label": "Client Control Panel",
+        "href": "client-control-panel.html",
+        "visible": false
+      },
+      {
+        "label": "Consent",
+        "href": "consent-capture.html",
+        "visible": false
+      },
+      {
+        "label": "Messaging",
+        "href": "messaging.html",
+        "visible": false
+      },
+      {
+        "label": "Documents",
+        "href": "documents.html",
+        "visible": false
+      },
+      {
+        "label": "Specialist",
+        "href": "inquiry-remover.html",
+        "visible": false
+      },
+      {
+        "label": "Company Brain",
+        "href": "company-brain.html",
+        "visible": false
+      },
+      {
+        "label": "Galaxy",
+        "href": "galaxy.html",
+        "visible": true
+      },
+      {
+        "label": "Ops & Admin",
+        "href": "ops-admin.html",
+        "visible": true
+      },
+      {
+        "label": "Agent Editor",
+        "href": "agent-editor.html",
+        "visible": false
+      },
+      {
+        "label": "Workflows",
+        "href": "automations.html",
+        "visible": false
+      },
+      {
+        "label": "Journeys",
+        "href": "journeys.html",
+        "visible": false
+      },
+      {
+        "label": "Message Copy",
+        "href": "template-editor.html",
+        "visible": false
+      },
+      {
+        "label": "Campaigns",
+        "href": "campaign-manager.html",
+        "visible": false
+      },
+      {
+        "label": "Social Studio",
+        "href": "social-studio.html",
+        "visible": false
+      },
+      {
+        "label": "Creative Factory",
+        "href": "creative-factory.html",
+        "visible": false
+      },
+      {
+        "label": "Content",
+        "href": "content-admin.html",
+        "visible": false
+      },
+      {
+        "label": "Staff & Teams",
+        "href": "staff-teams.html",
+        "visible": false
+      },
+      {
+        "label": "Hiring",
+        "href": "hiring.html",
+        "visible": false
+      },
+      {
+        "label": "Products & Commissions",
+        "href": "products-commissions.html",
+        "visible": false
+      },
+      {
+        "label": "Contract templates",
+        "href": "contracts.html",
+        "visible": false
+      },
+      {
+        "label": "Brand Studio",
+        "href": "brand-studio.html",
+        "visible": false
+      },
+      {
+        "label": "Client Portal",
+        "href": "client-portal.html",
+        "visible": false
+      },
+      {
+        "label": "Affiliate",
+        "href": "affiliate.html",
+        "visible": false
+      }
+    ],
+    "dashChars": 3,
+    "innerText": "‹‹\nSALES\n▾\nFUNDING\n▾\nCLIENT OPS\n▾\nWATCH\n▾\n✷\nGalaxy\nBETA\n⚙\nOps & Admin\nBETA\nAUTOMATION\n▾\nMARKETING\n▾\nADMIN\n▾\nPORTALS\n▾\nfundhub\nBeta — under development. Data may be incomplete or inaccurate. Do not use for client decisions.\nDismiss\nFundhub\n/\nGalaxy\n12 workers · 2 working · 10 idle\nWed, Aug 19, 6:59:28 AM EDT\nLIVE\nSearch\n⌘K\nTEST — Owner Role · owner · 32 tabs\nLIVE\nSign out\nLIVE\nOpen shifts, recent events, and agents · 12 workers\nGX-01 / READING THE SKY\nsize = output today\nbrightness = working right now\non pace — quiet\nahead\nbehind\nblocked\nlive handoff\nflare = money landing\nclick a cluster to zoom in · a worker for their day · empty space to pull back\nsystems nominal · fundhub.ai\nChat"
+  }
+}
