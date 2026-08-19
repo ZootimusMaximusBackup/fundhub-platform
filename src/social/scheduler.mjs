@@ -23,7 +23,10 @@ export function registerAdapter(channel, adapter) { ADAPTERS[channel] = adapter;
 
    Screens first, then queues. A blocked post is STORED as blocked with its
    reasons — visible in the review queue — rather than rejected and forgotten,
-   which is the same rule the creative library follows. */
+   which is the same rule the creative library follows.
+
+   THREE OUTCOMES, NOT TWO. 'blocked' is stored blocked; 'needs_approval' is stored
+   'awaiting_approval' and waits for a person; only 'passed' reaches 'queued'. */
 export async function schedule(tx, {
   orgId, partnerId, channelId, assetId = null, caption = "", offerType, scheduledFor = null
 } = {}) {
@@ -77,11 +80,25 @@ export async function schedule(tx, {
     return { post: blocked.rows[0], state: "blocked", reasons: verdict.reasons };
   }
 
-  // The screen gate trigger in 049 lets this through only because a screening row
-  // now exists for this post.
-  const queued = await tx.query(
-    `UPDATE social_posts SET status = 'queued' WHERE id = $1 RETURNING *`, [post.id]);
-  return { post: queued.rows[0], state: verdict.state, reasons: verdict.reasons };
+  // 'needs_approval' IS NOT A PASS. It used to take this identical branch into
+  // 'queued', and publishDue reads 'queued', so every post the engine held for a
+  // person went out without one — including every credit_repair post, which
+  // src/compliance/screen.mjs holds unconditionally and which no setting releases.
+  // 240 adds the holding pen this line needed, and its screen gate refuses to let a
+  // held post into 'queued' until approved_at is set, so the two agree.
+  //
+  // The paid side answers the same question in a different place, deliberately:
+  // src/creative/generate.mjs (~228-237) maps both 'passed' and 'needs_approval' onto
+  // the asset, because an asset does not publish on its own and its approval is
+  // tracked by the campaign's approval_state. A social post DOES publish on its own,
+  // so the hold has to live on the post.
+  const nextStatus = verdict.state === "needs_approval" ? "awaiting_approval" : "queued";
+
+  // The screen gate trigger lets this through only because a screening row now
+  // exists for this post.
+  const settled = await tx.query(
+    `UPDATE social_posts SET status = $2 WHERE id = $1 RETURNING *`, [post.id, nextStatus]);
+  return { post: settled.rows[0], state: verdict.state, reasons: verdict.reasons };
 }
 
 /* publishDue(tx, req) → results[]
@@ -95,6 +112,9 @@ export async function publishDue(tx, { orgId, partnerId, now = null, agentId = n
             c.partner_id AS channel_partner_id
        FROM social_posts p
        JOIN social_channels c ON c.id = p.channel_id
+      -- 'queued' ONLY. A post the engine held for a person sits in
+      -- 'awaiting_approval' and is invisible to this read; 240's screen gate is
+      -- what stops it reaching 'queued' before somebody approves it.
       WHERE p.partner_id = $1 AND p.status = 'queued'
         AND p.scheduled_for <= COALESCE($2::timestamptz, now())
       ORDER BY p.scheduled_for

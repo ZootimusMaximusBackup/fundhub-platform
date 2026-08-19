@@ -690,7 +690,16 @@ var WORDS = {
   learning_phase:'still learning',
   connection_not_active:'connection not active',
   verify_business:'verify the business',
-  link_croa_disclosure:'attach the credit repair disclosure'
+  link_croa_disclosure:'attach the credit repair disclosure',
+  /* The three rule keys that can reach action_log and had no entry here. Without
+     them the fallback prints "roas primary", "spend tier refresh" and "social
+     publish" — readable, but not what any of them means.
+       roas_primary       048_campaign_config.sql:200 — the policy the other rules defer to
+       spend_tier_refresh 048_campaign_config.sql:231 — shipped inactive, tiers deliberately unset
+       social_publish     src/social/scheduler.mjs — the only rule key organic posting writes */
+  roas_primary:'return on ad spend comes first',
+  spend_tier_refresh:'refresh creative as spending rises',
+  social_publish:'posted to social media'
 };
 function words(v){
   if(v === null || v === undefined || v === '') return v;
@@ -1355,7 +1364,10 @@ function renderDrawerBody(){
   var setRows = sets.length ? sets.map(function(s){
     return '<tr class="'+(s.in_learning_phase?'stripe-warn':'')+'">'+
       '<td><b>'+esc(s.name)+'</b></td>'+
-      '<td><span class="badge '+(APPROVAL_TONE[s.approval_state]||'b-gray')+' mono">'+esc(s.approval_state)+'</span></td>'+
+      /* Through words(), and no mono, so this reads the same as the campaign
+         table's Approval column at :960 and the drawer's own Approval row two
+         blocks up. The TONE lookup keeps the raw key — only the text changes. */
+      '<td><span class="badge '+(APPROVAL_TONE[s.approval_state]||'b-gray')+'">'+esc(words(s.approval_state))+'</span></td>'+
       '<td class="mono">'+(s.status?esc(s.status):nul())+'</td>'+
       '<td class="mnum">'+cents(s.budget_cents)+'</td>'+
       '<td class="mnum">'+s.ad_count+'</td>'+
@@ -1382,7 +1394,9 @@ function renderDrawerBody(){
     return '<tr class="'+(o.k==='failed'?'stripe-bad':o.k==='unexecuted'?'stripe-warn':'')+'">'+
       '<td class="mono">'+dt(a.created_at,true)+'</td>'+
       '<td><span class="badge '+(a.actor==='agent'?'b-accent':'b-info')+' mono">'+esc(a.actor)+'</span></td>'+
-      '<td class="mono">'+(a.rule_key?esc(a.rule_key):nul())+'</td>'+
+      /* Same rule as the main action table at :1152 — the reader gets the plain
+         words, the filters keep sending the stored value. */
+      '<td>'+(a.rule_key?esc(words(a.rule_key)):nul())+'</td>'+
       '<td>'+esc(a.reason)+(a.execute_error?'<div class="errbox" style="margin-top:5px">'+esc(a.execute_error)+'</div>':'')+'</td>'+
       '<td>'+diffCell(a)+'</td>'+
       '<td><span class="badge '+o.cls+' mono">'+esc(o.t)+'</span></td>'+

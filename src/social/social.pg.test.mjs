@@ -89,6 +89,98 @@ describe("social, onboarding and metering", { skip: !HAVE_DB ? "no DATABASE_URL"
       /has not passed the guardrail engine/);
   });
 
+  /* ---- the approval hold (240) -------------------------------------------
+
+     These four are the regression net for the defect 240 closes: a verdict of
+     'needs_approval' used to take the identical branch as 'passed', land in
+     'queued', and be published by the very next sweep with nobody having looked
+     at it. Every fixture partner has approve_before_launch = false, so a hold has
+     to be asked for explicitly — either by turning the setting on, or by using
+     credit_repair copy, which src/compliance/screen.mjs holds whatever the
+     setting says. */
+
+  test("a post the engine holds lands in awaiting_approval, NOT queued", async () => {
+    const { partnerId, channelId } = await fixture("hold");
+    await asStaff((tx) => tx.query(
+      `UPDATE partner_module_settings SET approve_before_launch = true WHERE partner_id = $1`,
+      [partnerId]));
+
+    const out = await asPartner(partnerId, (tx) => schedule(tx, {
+      orgId: org, partnerId, channelId, offerType: "funding",
+      caption: "Business funding for qualified applicants. See if you prequalify.",
+      scheduledFor: new Date(Date.now() - 1000).toISOString()
+    }));
+    assert.strictEqual(out.state, "needs_approval");
+    assert.strictEqual(out.post.status, "awaiting_approval");
+    assert.strictEqual(out.post.approved_at, null, "nobody has approved it yet");
+  });
+
+  test("a held post is NOT picked up by publishDue, however overdue it is", async () => {
+    // The half that actually stops a send. A hold that still publishes is not a hold.
+    const { partnerId, channelId } = await fixture("holddue");
+    await asStaff((tx) => tx.query(
+      `UPDATE partner_module_settings SET approve_before_launch = true WHERE partner_id = $1`,
+      [partnerId]));
+    let posted = 0;
+    registerAdapter("instagram", { post: async () => { posted += 1; return { external_post_id: "x" }; } });
+
+    await asPartner(partnerId, (tx) => schedule(tx, {
+      orgId: org, partnerId, channelId, offerType: "funding",
+      caption: "Business funding for qualified applicants.",
+      scheduledFor: new Date(Date.now() - 60000).toISOString()
+    }));
+    const results = await asPartner(partnerId, (tx) => publishDue(tx, { orgId: org, partnerId }));
+
+    assert.deepStrictEqual(results, [], "a post awaiting approval must not be due");
+    assert.strictEqual(posted, 0, "the platform adapter must never have been called");
+    const row = await asPartner(partnerId, (tx) => tx.query(
+      `SELECT status, posted_at FROM social_posts WHERE partner_id = $1`, [partnerId])
+      .then((r) => r.rows[0]));
+    assert.strictEqual(row.status, "awaiting_approval");
+    assert.strictEqual(row.posted_at, null);
+  });
+
+  test("the engine refuses to queue a held post until somebody approves it", async () => {
+    // The database half. Even a direct write cannot release a held post while
+    // approved_at is null — and setting approved_at releases it.
+    const { partnerId, channelId } = await fixture("holdgate");
+    await asStaff((tx) => tx.query(
+      `UPDATE partner_module_settings SET approve_before_launch = true WHERE partner_id = $1`,
+      [partnerId]));
+    const out = await asPartner(partnerId, (tx) => schedule(tx, {
+      orgId: org, partnerId, channelId, offerType: "funding",
+      caption: "Business funding for qualified applicants."
+    }));
+    const id = out.post.id;
+
+    await assert.rejects(
+      () => asStaff((tx) => tx.query(`UPDATE social_posts SET status='queued' WHERE id=$1`, [id])),
+      /nobody has approved it/);
+
+    // And the other failure direction: approving it must actually let it out, or
+    // the hold becomes a hold forever.
+    await asStaff((tx) => tx.query(
+      `UPDATE social_posts SET approved_at = now(), status = 'queued' WHERE id = $1`, [id]));
+    const row = await asStaff((tx) => tx.query(
+      `SELECT status FROM social_posts WHERE id = $1`, [id]).then((r) => r.rows[0]));
+    assert.strictEqual(row.status, "queued");
+  });
+
+  test("a clean post still reaches queued — the hold must not catch everything", async () => {
+    // approve_before_launch is false on this fixture, so the verdict is 'passed'
+    // and no approval is needed or recorded.
+    const { partnerId, channelId } = await fixture("nohold");
+    const out = await asPartner(partnerId, (tx) => schedule(tx, {
+      orgId: org, partnerId, channelId, offerType: "funding",
+      caption: "Business funding for qualified applicants. See if you prequalify.",
+      scheduledFor: new Date(Date.now() - 1000).toISOString()
+    }));
+    assert.strictEqual(out.state, "passed");
+    assert.strictEqual(out.post.status, "queued");
+    assert.strictEqual(out.post.approved_at, null,
+      "a passed post needs no signature — requiring one would hold everything forever");
+  });
+
   test("a post cannot use another partner's channel", async () => {
     const a = await fixture("crossA");
     const b = await fixture("crossB");
