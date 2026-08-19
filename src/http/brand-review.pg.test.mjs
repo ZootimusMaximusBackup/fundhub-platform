@@ -48,6 +48,11 @@ describe("POST /api/brand/review", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
   let handler, org;
   let partnerA, partnerB;
   let tokPartnerA, tokOwner, tokCloser;
+  // A SECOND COMPANY. Every other fixture in this file lives in the default org,
+  // so until this existed no test in it could reach the org_id predicate the
+  // handler writes into every statement — the only thing keeping an owner of one
+  // company out of another company's brand. See the cross-company test below.
+  let org2, partnerZ;
 
   /* No injection seam, deliberately: the handler runs the real requirePrincipal
      against the real sessions/account_sessions tables, so every call carries a
@@ -109,6 +114,23 @@ describe("POST /api/brand/review", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
       password: "a-long-enough-password-1", invitedBy: ownerId, partnerId: partnerA
     });
     tokPartnerA = (await createAccountSession(db, { accountId: acct.id, orgId: org })).token;
+
+    /* The second company, its partner and that partner's brand. Raw INSERTs,
+       the same way this file already makes partners, staff and brand rows —
+       resolveDefaultOrg() only ever returns the default org, so there is no
+       helper here that makes another one. The brand starts in 'review' so the
+       cross-company approve below is refused by the org predicate and not by
+       the wrong-state check, which would pass for the wrong reason. */
+    org2 = (await db.query(
+      `INSERT INTO orgs (slug, name) VALUES ($1,$2) RETURNING id`,
+      [`${MARK}-org2`, `${MARK} Other Company`])).rows[0].id;
+    partnerZ = (await db.query(
+      `INSERT INTO partners (org_id, name, slug, status)
+       VALUES ($1,$2,$3,'active') RETURNING id`,
+      [org2, `${MARK} zulu`, `${MARK}-zulu`])).rows[0].id;
+    await db.query(
+      `INSERT INTO partner_brand (org_id, partner_id, entity_name, approval_status)
+       VALUES ($1,$2,$3,'review')`, [org2, partnerZ, `${MARK} Other Co`]);
   });
 
   async function purge() {
@@ -121,6 +143,8 @@ describe("POST /api/brand/review", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
       (SELECT id FROM partners WHERE slug LIKE $1)`, [MARK_LIKE]);
     await db.query(`DELETE FROM staff WHERE email LIKE $1`, [MARK_LIKE]);
     await db.query(`DELETE FROM partners WHERE slug LIKE $1`, [MARK_LIKE]);
+    // Last: the second company, once nothing points at it any more.
+    await db.query(`DELETE FROM orgs WHERE slug LIKE $1`, [MARK_LIKE]);
   }
 
   after(async () => { await purge(); await close(); });
@@ -277,6 +301,33 @@ describe("POST /api/brand/review", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
     const r = await call({ partner_id: partnerC, action: "submit" }, tokOwner);
     assert.equal(r.code, 404, JSON.stringify(r.body));
     assert.match(String(r.body.message), /save the brand first/i);
+  });
+
+  /* THE CROSS-COMPANY GATE. partner_brand has no row-level security policy, so
+     the org_id predicate in api/brand/review.mjs is the only thing standing
+     between an owner of one company and another company's brand. Every other
+     test in this file builds inside one org, so none of them can reach it: an
+     owner here names a partner belonging to org2, and a real refusal is the row
+     staying exactly where it was. */
+  test("an owner of one company cannot approve another company's brand", async () => {
+    const before = await statusOf(partnerZ);
+    assert.equal(before.approval_status, "review", "fixture: the other brand should start in review");
+
+    const r = await call({ partner_id: partnerZ, action: "approve" }, tokOwner);
+
+    // A brand in another company reads as no brand at all, which is the honest
+    // answer for this caller — see the note above the read in the handler.
+    assert.equal(r.code, 404, JSON.stringify(r.body));
+    assert.equal(r.body.ok, false);
+    assert.equal(r.body.error, "no_brand");
+    assert.match(String(r.body.message), /save the brand first/i);
+
+    // The body is the endpoint's account of what it did. The row is what it did.
+    const after = await statusOf(partnerZ);
+    assert.equal(after.approval_status, "review",
+      "an owner of another company moved this brand");
+    assert.equal(after.approved_at, null);
+    assert.equal(after.approved_by, null);
   });
 
   test("GET is not allowed — this endpoint only writes", async () => {

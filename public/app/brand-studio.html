@@ -810,7 +810,10 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
           $("saveMsg").textContent = "DNS verified for " + D.domain + ". Add the domain in Netlify for SSL, then publish pages.";
         } else {
           D.verified = false; paint();
-          $("saveMsg").textContent = res.message || ("Not verified: " + (res.error || "txt_mismatch"));
+          // res.message is written for a person ("Add a TXT record at ..."). The
+          // fallback used to be the raw code, e.g. "Not verified: txt_mismatch".
+          $("saveMsg").textContent = res.message
+            || "Not verified. We could not check that domain just now. Try again in a moment.";
         }
       }).catch(function () {
         $("verifyBtn").disabled = false; $("verifyBtn").textContent = "Verify";
@@ -890,7 +893,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
       .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
       .then(function (res) {
         if (!res.ok) {
-          suiteMsg(res.message || res.error || "Could not load writing budget.");
+          suiteMsg(res.message || "Could not load writing budget. Try again in a moment.");
           return;
         }
         SUITE = {
@@ -962,7 +965,8 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
               body: JSON.stringify({ page_id: pageSel.value, version_id: btn.getAttribute("data-restore") })
             }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
               .then(function (res) {
-                suiteMsg(res.ok ? "Restored that version." : (res.message || res.error || "Restore failed"));
+                suiteMsg(res.ok ? "Restored that version."
+                  : (res.message || "That version was not put back. Nothing changed."));
                 refreshPages();
                 refreshSuite();
               });
@@ -983,7 +987,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
       .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
       .then(function (res) {
         if (!res.ok) {
-          list.innerHTML = '<div class="hint">Could not load pages: ' + (res.error || "error") + "</div>";
+          list.innerHTML = '<div class="hint">Could not load your pages just now. Try again in a moment.</div>';
           return;
         }
         var items = res.items || [];
@@ -1020,7 +1024,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
               .then(function (res) {
                 if (msg) msg.textContent = res.ok
                   ? "Published. Live at /sites/" + partnerId + "/" + ((res.page && res.page.slug) || "")
-                  : ("Publish failed: " + (res.error || "error"));
+                  : (res.message || "That page was not published. Nothing changed — try again in a moment.");
                 refreshPages();
               });
           });
@@ -1085,7 +1089,8 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
       body: JSON.stringify({ partner_id: partnerId, enabled: on })
     }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
       .then(function (res) {
-        suiteMsg(res.ok ? (on ? "On for this partner." : "Off for this partner.") : (res.message || res.error || "Could not change"));
+        suiteMsg(res.ok ? (on ? "On for this partner." : "Off for this partner.")
+          : (res.message || "That setting was not changed. Nothing changed — try again in a moment."));
         refreshSuite();
       });
   }
@@ -1101,7 +1106,8 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
       body: JSON.stringify({ page_id: pageSel.value, section_id: ($("histSection") && $("histSection").value) || null })
     }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
       .then(function (res) {
-        suiteMsg(res.ok ? "Copy written. Locked legal blocks were left alone." : (res.message || res.error || "Write failed"));
+        suiteMsg(res.ok ? "Copy written. Locked legal blocks were left alone."
+          : (res.message || "Nothing was written. Your page is unchanged — try again in a moment."));
         refreshPages();
         refreshSuite();
       });
@@ -1117,7 +1123,7 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
         if (!res.ok) {
           suiteMsg(res.message || (res.error === "not_found"
             ? "That partner is not on file."
-            : (res.error || "Wordmark failed")));
+            : "The wordmark was not made. Nothing changed — try again in a moment."));
           return;
         }
         if (res.brand && res.brand.wordmark_url) {
@@ -1331,7 +1337,10 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
             ? "Saved. Applied across the CRM."
             : "Saved. Tokens apply to this partner's funnels.");
         } else {
-          var why = (d && d.problems ? d.problems.join("; ") : d && d.error) || "write failed";
+          // d.message is a sentence the server wrote for this line. d.error is a
+          // machine code ("write_failed", "forbidden") and must never reach here.
+          var why = (d && d.problems ? d.problems.join("; ") : d && d.message)
+            || "the change was refused";
           banner("error", "saved LOCALLY only — " + why);
           setSaveMsg("Not saved — the server refused the change (" + why +
             "). Your changes are kept in this browser only.");
@@ -1413,9 +1422,15 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
          either way, so nothing is hidden by standing down here. */
       if (window.__fhBrandAnswered) return;
       if (!res || !res.ok) {
-        setSaveMsg("We could not load your saved brand (" +
-          ((res && res.error) || "the read failed") +
-          "), so the boxes below are examples, not your real brand. Reload the page before you save anything.");
+        /* NO PARENTHETICAL, EVER. This line used to append the read's own
+           `error` string, and FHData's reader puts engineer text in it on
+           several paths — "/api/* not deployed", "response was not JSON",
+           "no such record" — so a partner read those words and could do
+           nothing with them. The rest of the sentence already says what is on
+           screen and what to do about it, which is the whole job. This is now
+           word-for-word the two sibling branches at the FHData guard and the
+           .catch below, so the same failure always reads the same way. */
+        setSaveMsg("We could not load your saved brand, so the boxes below are examples, not your real brand. Reload the page before you save anything.");
         return;
       }
       if (!res.data || !res.data.brand) {

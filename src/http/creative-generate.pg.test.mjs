@@ -210,12 +210,28 @@ describe("/api/creative/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
       partner_id: partnerId, asset_kind: "static", idempotency_key: "cfgen-note-1", prompt: "x"
     }, ownerToken);
     assert.strictEqual(r.code, 200);
-    assert.strictEqual(typeof r.body.provider_ready, "boolean");
+    /* provider_ready is true, false OR null, and null is not a bug — it is the
+       point of checkProvider() in api/creative/generate.mjs. It answers null when
+       the readiness check itself failed for a reason it does not recognise: the
+       job is saved either way, and answering "it cannot run" when nobody managed
+       to check would be a claim the code has not established. This assertion used
+       to demand a boolean, which passed only because the one failure the fixture
+       produces is a recognised one. */
+    assert.ok(
+      r.body.provider_ready === true
+        || r.body.provider_ready === false
+        || r.body.provider_ready === null,
+      `expected provider_ready true, false or null, got ${JSON.stringify(r.body.provider_ready)}`
+    );
     // Whichever way the install is configured, the sentence must match the fact.
     // A queued job with no provider is a job that can only fail, and saying so is
     // the point — there is no creative_providers row in any migration or seed.
     if (r.body.provider_ready === false) {
       assert.match(r.body.note, /cannot run yet/i);
+    } else if (r.body.provider_ready === null) {
+      // Not "it cannot run" and not "it will run" — the note has to say neither.
+      assert.match(r.body.note, /could not check/i);
+      assert.doesNotMatch(r.body.note, /cannot run yet/i);
     } else {
       assert.match(r.body.note, /picked up|Run queued jobs now/i);
     }
