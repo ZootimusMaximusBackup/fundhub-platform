@@ -13,6 +13,7 @@ import { register as registerInquiryDocs } from "./handlers/inquiry-docs.mjs";
 import { register as registerCommasDisputes } from "./handlers/commas-disputes.mjs";
 import { register as registerDiagnosticSoftPull } from "./handlers/diagnostic-soft-pull.mjs";
 import { register as registerContractSigned } from "./handlers/contract-signed.mjs";
+import { register as registerContractConsent } from "./handlers/contract-consent.mjs";
 import { register as registerAgentRuntime } from "./agents/runtime.mjs";
 
 let _done = false;
@@ -34,6 +35,7 @@ export function registerAll() {
      placement on entry.captured. After money-chain so the client/tx exist. */
   registerDiagnosticSoftPull();
   registerContractSigned();
+  registerContractConsent();
   // After comms: the inbound message row must exist before the runtime
   // looks it up by provider_ref. Handler order on the bus is registration order.
   registerAgentRuntime();

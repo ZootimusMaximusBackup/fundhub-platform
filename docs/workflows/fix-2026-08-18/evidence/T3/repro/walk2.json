@@ -1,0 +1,81 @@
+{
+  "base": "https://fundhub.ai",
+  "at": "2026-08-19T06:56:44.883Z",
+  "steps": [
+    {
+      "step": "closer-dashboard",
+      "dom": {
+        "boxes": {
+          "oNet": "—",
+          "oMonthly": "—",
+          "oFunded": "—",
+          "oFees": "—",
+          "oDebts": "—"
+        },
+        "bootOk": true,
+        "hasFHData": true,
+        "hasFHCloserView": true,
+        "scoresText": null
+      },
+      "apiCount": 4,
+      "api": [
+        {
+          "u": "/api/auth/session",
+          "s": 200
+        },
+        {
+          "u": "/api/auth/session",
+          "s": 200
+        },
+        {
+          "u": "/api/health",
+          "s": 200
+        },
+        {
+          "u": "/api/org-brand",
+          "s": 200
+        }
+      ],
+      "console": []
+    },
+    {
+      "step": "demo-simulate",
+      "status": 200,
+      "body": "{\"ok\":true,\"client_id\":\"c4d47a8f-b279-44fe-aaea-370f9a1de4fa\",\"email\":\"sim+1787122637161@demo.fundhub.local\",\"tradeline_count\":4,\"card_id\":\"cf4174bf-516f-44d5-a5e0-37324312bee6\",\"crs_id\":\"ce8dcdef-7120-4cd1-b199-44947b930b8b\",\"href\":\"/app/finance-os.html?client_id=c4d47a8f-b279-44fe-aaea-370f9a1de4fa\"}"
+    },
+    {
+      "step": "underwrite-fresh-sim",
+      "clientId": "c4d47a8f-b279-44fe-aaea-370f9a1de4fa",
+      "status": 200,
+      "summary": {
+        "fundable": false,
+        "metrics": {
+          "score": 0,
+          "utilization_pct": null,
+          "negative_accounts": null,
+          "late_payment_events": null,
+          "inquiries": {
+            "ex": 0,
+            "eq": 0,
+            "tu": 0,
+            "total": 0
+          }
+        },
+        "available": [],
+        "totals": {
+          "total_personal_funding": 0,
+          "total_business_funding": 0,
+          "total_combined_funding": 0
+        }
+      },
+      "raw": "{\"ok\":true,\"clientId\":\"c4d47a8f-b279-44fe-aaea-370f9a1de4fa\",\"engine\":{\"name\":\"underwrite_iq_lite\",\"upstreamCommit\":\"71656f0fe1083429f52eeb0aa095cce076a6b33c\",\"pure\":false,\"purityNote\":\"computeUnderwrite reads the system clock to age tradelines; a line with no stored open date reads as unseasoned\"},\"underwrite\":{\"fundable\":false,\"primary_bureau\":\"experian\",\"metrics\":{\"score\":0,\"utilization_pct\":null,\"negative_accounts\":null,\"late_payment_events\":null,\"inquiries\":{\"ex\":0,\"eq\":0,\"tu\":0,\"total\":0}},\"per_bureau\":{\"experian\":{\"key\":\"experian\",\"label\":\"Experian\",\"available\":false,\"score\":0,\"util\":null,\"neg\":null,\"lates\":null,\"inquiries\":0,\"tradelines\":[],\"highestRevolvingLimit\":0,\"highestInstallmentAmount\":0,\"hasAnyRevolving\":false,\"hasAnyInstallment\":false,\"thinFile\":true,\"fileAllNegative\":false,\"canCardStack\":false,\"canLoanStack\":false,\"canDualStack\":false,\"cardFunding\":0,\"loanFunding\":0,\"totalPersonalFunding\":0,\"fundable\":false,\"positiveTradelinesCount\":0},\"equifax\":{\"key\":\"equifax\",\"label\":\"Equifax\",\"available\":false,\"score\":0,\"util\":null,\"neg\":null,\"lates\":null,\"inquiries\":0,\"tradelines\":[],\"highestRevolvingLimit\":0,\"highestInstallmentAmount\":0,\"hasAnyRevolving\":false,\"hasAnyInstall"
+    },
+    {
+      "step": "ccp-fresh-sim",
+      "shown": {
+        "scoreLine": "EX — · EQ — · TU —",
+        "hasUtil": false
+      }
+    }
+  ]
+}

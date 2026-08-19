@@ -76,9 +76,6 @@ const APP_DIR = fileURLToPath(new URL("../../public/app/", import.meta.url));
 const KNOWN_UNFIXED = {
   // Genuinely dead reads — the screen gives up during page parse and never
   // retries, exactly like the calendar did.
-  "closer-dashboard.html":
-    "T3 — line ~900 `if (!window.FHData || !window.FHCloserView) return;` runs during " +
-    "page parse and returns. The whole calculator panel never loads and says nothing.",
   "brand-studio.html":
     "T11 — line ~1282 `if (typeof FHData === \"undefined\" || !FHData.orgBrand) return;` " +
     "runs during page parse, so the saved brand is never read back.",
@@ -100,7 +97,7 @@ const KNOWN_UNFIXED = {
 /* Screens that must be clean, named so a rename or a delete shows up as a
    failure here rather than as a check that silently stopped running. */
 const MUST_BE_CLEAN = ["calendar.html", "pipeline.html", "messaging.html",
-                       "inquiry-remover.html"];
+                       "inquiry-remover.html", "closer-dashboard.html"];
 
 // ---------------------------------------------------------------------------
 // A small, dependency-free reader of the inline <script> blocks.

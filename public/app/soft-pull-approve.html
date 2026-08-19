@@ -26,6 +26,9 @@ input{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8p
 .err{border:1px solid #c45;background:#fff5f4;color:#6E2A22;padding:10px 12px;border-radius:8px;font-size:12.5px;margin-bottom:12px}
 .ok{border:1px solid #2C5138;background:rgba(168,216,176,.26);color:#2C5138;padding:14px;border-radius:10px}
 .fine{font-size:10.5px;color:var(--gray2);margin-top:12px;line-height:1.45}
+ol.next{margin:0;padding-left:18px;font-size:12.5px;line-height:1.6;color:var(--ink)}
+ol.next li{margin-bottom:4px}
+ol.next li:last-child{margin-bottom:0}
 </style>
 </head>
 <body>
@@ -69,8 +72,29 @@ input{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8p
       '<p class="lede">Hi ' + esc(name) + ". Fill this out while you stay on the Google Meet. " +
       "It is a soft inquiry — it does not hurt your score.</p>" +
       (already ? '<div class="ok">Consent is already on file. You can update your details below if needed, or just pay the $32 assessment.</div><br>' : "") +
-      '<div class="card"><h2>' + esc((data.disclosure && data.disclosure.version) || "Authorization") + "</h2>" +
-      '<div class="disc">' + esc((data.disclosure && data.disclosure.text) || "") + "</div></div>" +
+      /* THE HEADING IS A LABEL, NOT THE CONSENT WORDING.
+         It used to print data.disclosure.version, which is the key
+         "soft-pull-v1" — a machine string, shown as a heading, to a consumer on
+         a consent page. src/consent/disclosures.mjs already carries a human
+         title ("Soft Pull Authorization") for exactly this, but the GET at
+         api/soft-pull-approve.mjs:132-136 forwards version, text and bullets
+         and not title, and this thread does not own that file. So the label is
+         written here and the version moves below the paragraph where a record
+         reference belongs. The WORDS OF THE CONSENT are still the server's and
+         are still rendered exactly as sent — that rule is untouched. */
+      '<div class="card"><h2>Soft pull authorization</h2>' +
+      '<div class="disc">' + esc((data.disclosure && data.disclosure.text) || "") + "</div>" +
+      '<p class="fine">Version ' + esc((data.disclosure && data.disclosure.version) || "—") + "</p></div>" +
+      /* WHAT HAPPENS NEXT, BEFORE THEY SIGN, NOT AFTER. The page used to say
+         this only in 10.5px fine print under the button and again on the
+         confirmation screen. Somebody being asked for their Social Security
+         number should be able to see the whole sequence before they type it.
+         No promise about what the report will say — CLAUDE.md §7. */
+      '<div class="card"><h2>What happens next</h2><ol class="next">' +
+      "<li>You fill this in and submit it. Your advisor never sees your Social Security number.</li>" +
+      "<li>Your advisor sends you the payment link for the assessment by email or text.</li>" +
+      "<li>Once that payment clears, we request the report. Nothing else is needed from you.</li>" +
+      "</ol></div>" +
       '<form id="f">' +
       '<label for="granted_name">Full legal name</label>' +
       '<input id="granted_name" name="granted_name" autocomplete="name" required>' +
@@ -95,6 +119,32 @@ input{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8p
       var msg = document.getElementById("msg");
       btn.disabled = true;
       msg.innerHTML = "";
+
+      /* THIS FORM MUST NEVER POST AN EMPTY ADDRESS, AND HERE IS WHY.
+         storeIdentity() COALESCEs the SSN and the date of birth, so a partial
+         submit cannot erase either of those. It does NOT coalesce addresses:
+         src/pii/index.mjs:138 assigns `addresses = EXCLUDED.addresses` flat, so
+         a submit carrying an empty array REPLACES whatever address was on file
+         with nothing.
+         Two things stop that from being reachable and both have to stay. Every
+         address input above is `required`, and api/soft-pull-approve.mjs:178-188
+         refuses the whole POST with `address_required` when any of the four
+         trims to empty — the server never reaches storeIdentity, so nothing is
+         overwritten. The browser's own `required` accepts a single space, so
+         the same trim is done here too: it saves a pointless round trip, and it
+         keeps this form structurally incapable of sending the empty array. */
+      var addr = {
+        address_line1: document.getElementById("address_line1").value.trim(),
+        city: document.getElementById("city").value.trim(),
+        state: document.getElementById("state").value.trim(),
+        postal_code: document.getElementById("postal_code").value.trim()
+      };
+      if (!addr.address_line1 || !addr.city || !addr.state || !addr.postal_code) {
+        btn.disabled = false;
+        msg.innerHTML = '<div class="err">Enter your current street address, city, state and ZIP.</div>';
+        return;
+      }
+
       var body = {
         org: token.org,
         client: token.client,
@@ -103,10 +153,10 @@ input{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8p
         granted_name: document.getElementById("granted_name").value,
         ssn: document.getElementById("ssn").value,
         dob: document.getElementById("dob").value,
-        address_line1: document.getElementById("address_line1").value,
-        city: document.getElementById("city").value,
-        state: document.getElementById("state").value,
-        postal_code: document.getElementById("postal_code").value
+        address_line1: addr.address_line1,
+        city: addr.city,
+        state: addr.state,
+        postal_code: addr.postal_code
       };
       fetch("/api/soft-pull-approve", {
         method: "POST",

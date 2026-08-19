@@ -1,7 +1,24 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildLetterPack, buildLetterPackForClient, personalFromClient, bureausFromEngine } from "./letter-pack.mjs";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+import { buildLetterPack, buildLetterPackForClient, personalFromClient, bureausFromEngine, PACK_REASON } from "./letter-pack.mjs";
+import { mergeBureauReports } from "../finance/crs-map.mjs";
 import { extractPdfText } from "../company-brain/pdf-text.mjs";
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const SANDBOX = path.resolve(HERE, "../../vendor/underwriteiq-full/api/lite/crs/sandbox");
+
+/** A stored pull in the shape crs_results.result really carries: result.bureaus. */
+function mergedSandboxPull() {
+  const load = (n) => JSON.parse(readFileSync(path.join(SANDBOX, n), "utf8"));
+  return mergeBureauReports({
+    reports: { TU: load("tu.json"), EX: load("exp.json"), EQ: load("efx.json") },
+    requestIds: { TU: "tu-1", EX: "ex-1", EQ: "eq-1" },
+    environment: "sandbox"
+  });
+}
 
 // Unit tests stay letter-only — never call live Claude.
 delete process.env.ANTHROPIC_API_KEY;
@@ -48,13 +65,28 @@ const ENGINE = {
   }
 };
 
-test("empty funding pack emits no header-only letters", async () => {
+// CHANGED 2026-08-19: this test used to assert reason === "empty_pack" here.
+// That was the bug — "no engine result was supplied" and "the engine ran and
+// found nothing to send" reported the same string, so nobody could tell a broken
+// pipeline from a clean client. See the PACK_REASON block in letter-pack.mjs.
+test("no engine result reports no_engine_result, not a bare empty_pack", async () => {
   const pack = await buildLetterPack({
     personal: { name: "Chris Sample", address: "1 Main St" },
     pack: "funding"
   });
   assert.equal(pack.files.filter((f) => /inquiry_|personal_info_|round/.test(f.filename)).length, 0);
-  assert.equal(pack.reason, "empty_pack");
+  assert.equal(pack.reason, PACK_REASON.NO_ENGINE_RESULT);
+  assert.notEqual(pack.reason, PACK_REASON.EMPTY_PACK);
+});
+
+test("engine result that yields nothing still reports the benign empty_pack", async () => {
+  const pack = await buildLetterPack({
+    crsResult: { outcome: "REPAIR_ONLY", normalized: { tradelines: [], inquiries: [], identity: {} } },
+    personal: { name: "Chris Sample", address: "1 Main St" },
+    pack: "funding"
+  });
+  assert.equal(pack.files.length, 0);
+  assert.equal(pack.reason, PACK_REASON.EMPTY_PACK);
 });
 
 test("funding pack returns openable inquiry, personal-info, and bureau dispute PDFs", async () => {
@@ -166,6 +198,57 @@ test("missing CRS skips engine without throw", async () => {
   );
   assert.equal(out.engineSkip, "no_crs_result");
   assert.equal(out.engineOutcome, null);
+  // "no pull on file yet" is a normal early state, so it is named plainly and is
+  // NOT dressed up as an engine error.
+  assert.equal(out.reason, PACK_REASON.NO_CRS_RESULT);
+});
+
+const SANDBOX_CLIENT = {
+  first_name: "Barbara",
+  last_name: "Doty",
+  custom_fields: { address: "1100 Lynhurst Ln", city: "Denton", state: "TX", zip: "76205" },
+  outcome_tier: null
+};
+
+test("a stored pull WITH result.bureaus builds real letters through the tier engine", async () => {
+  const out = await buildLetterPackForClient(
+    fakePackDb({ client: SANDBOX_CLIENT, crs: mergedSandboxPull() }),
+    { clientId: "cl-real", pack: "funding" }
+  );
+  assert.equal(out.engineSkip, null, `engine must run clean, got ${out.engineSkip}`);
+  assert.ok(out.engineOutcome, "engine must return a tier");
+  const letters = out.files.filter((f) => /inquiry_|personal_info_|round/.test(f.filename));
+  assert.ok(letters.length >= 3, `expected letters, got ${out.files.map((f) => f.filename)}`);
+  for (const f of letters) {
+    const buf = Buffer.isBuffer(f.content) ? f.content : Buffer.from(f.content);
+    assert.equal(buf.subarray(0, 4).toString(), "%PDF");
+  }
+});
+
+// The exact failure the demo seed hit: crs_results.result had no `bureaus` key,
+// so runTierEngineFromCrsResult threw and the pack came back empty. The point of
+// this test is that the empty pack now SAYS WHY.
+test("a stored pull WITHOUT result.bureaus names the engine fault, not empty_pack", async () => {
+  const noBureaus = { outcome: "FULL_FUNDING", tradelines: [{ creditorName: "Chase", bureau: "EX" }] };
+  const out = await buildLetterPackForClient(
+    fakePackDb({ client: SANDBOX_CLIENT, crs: noBureaus }),
+    { clientId: "cl-nobureaus", pack: "funding" }
+  );
+  assert.equal(out.files.length, 0);
+  assert.notEqual(out.reason, PACK_REASON.EMPTY_PACK);
+  assert.match(out.reason, /^engine_error: /);
+  assert.match(out.reason, /no bureau reports to score/);
+  assert.match(out.engineSkip, /no bureau reports to score/);
+});
+
+test("an engine that throws is reported as engine_error with its message", async () => {
+  const out = await buildLetterPackForClient(
+    fakePackDb({ client: SANDBOX_CLIENT, crs: { ok: true } }),
+    { clientId: "cl-boom", pack: "funding" },
+    { runEngine: () => { throw new Error("engine exploded"); } }
+  );
+  assert.equal(out.reason, "engine_error: engine exploded");
+  assert.equal(out.engineSkip, "engine exploded");
 });
 
 test("REGRESSION: clients.outcome_tier is not stamped onto the engine", async () => {

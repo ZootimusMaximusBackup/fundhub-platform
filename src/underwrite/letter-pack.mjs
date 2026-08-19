@@ -19,6 +19,45 @@ const { renderAllPDFs } = renderPdfMod;
 const FUNDING_SUMMARIES = new Set(["funding_summary", "business_prep_summary"]);
 const REPAIR_SUMMARIES = new Set(["repair_plan_summary", "issue_priority_sheet"]);
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// WHY `reason` IS MORE THAN "empty_pack"
+//
+// Until 2026-08-19 every pack that came out with zero files reported the single
+// string "empty_pack". That one string covered three states a human has to tell
+// apart:
+//
+//   1. the tier engine was never handed anything to score (no credit pull yet),
+//   2. the tier engine threw (bad or incomplete stored pull), and
+//   3. the engine ran fine and this client genuinely has nothing to send.
+//
+// Only (3) is a normal business outcome. (1) and (2) are faults. Reporting all
+// three identically is what let the demo seed sit broken: crs_results.result had
+// no `bureaus` key, runTierEngineFromCrsResult threw "no bureau reports to score"
+// (src/finance/crs-tier.mjs:37), buildLetterPackForClient caught it into
+// engineSkip, and the caller was told "empty_pack" — indistinguishable from a
+// clean client with no disputes.
+//
+// The distinction has to live in `reason` itself, not in a sibling field. Both
+// callers collapse the result down to that one string on the failure path —
+// src/workflows/c-06-crs-results-router.mjs:93 and
+// src/workflows/ds-02-diy-letters.mjs:65 both read `pack.reason || pack.engineSkip`,
+// so a non-null `reason` always wins and ds-02 drops `engineSkip` entirely. A new
+// field would be silently discarded on the way out.
+// ═══════════════════════════════════════════════════════════════════════════════
+export const PACK_REASON = Object.freeze({
+  /** No engine result was handed to buildLetterPack at all. */
+  NO_ENGINE_RESULT: "no_engine_result",
+  /** This client has no stored credit pull yet. Normal early state, not a fault. */
+  NO_CRS_RESULT: "no_crs_result",
+  /** The tier engine threw. Prefixes the real message: `engine_error: <message>`. */
+  ENGINE_ERROR: "engine_error",
+  /** Engine ran, and produced nothing to send. The only benign empty pack. */
+  EMPTY_PACK: "empty_pack",
+  MISSING_FUNDING_ANALYSIS: "missing_funding_analysis",
+  NO_CLIENT: "no_client",
+  PACK_ERROR: "pack_error"
+});
+
 const NICE_NAME = {
   ...FUNDING_ANALYSIS_FILENAMES,
   funding_summary: "Capital-Readiness-Summary.pdf",
@@ -180,6 +219,10 @@ export async function buildLetterPack({
     letters.push(...(await generateDisputeLetters({ bureaus, personal: who })));
   }
   let summaries = [];
+  // Reported, not just swallowed. This catch used to drop the error on the floor,
+  // the same silent-swallow that hid the engine fault below. Summaries are
+  // optional to the pack so a failure here must not throw, but it must be visible.
+  let summarySkip = crsResult?.normalized ? null : "no_normalized";
   if (crsResult?.normalized) {
     try {
       const outcome = crsResult.outcome
@@ -193,21 +236,48 @@ export async function buildLetterPack({
       const allow = pack === "repair" ? REPAIR_SUMMARIES : FUNDING_SUMMARIES;
       const specs = (docs.summaryDocuments || []).filter((s) => allow.has(s.type));
       summaries = await generateAllSummaryDocuments(specs, crsResult, who);
-    } catch {
+    } catch (err) {
       summaries = [];
+      summarySkip = String(err && err.message || err).slice(0, 240);
     }
   }
   const uiq = await uiqDeliverablePdfs(crsResult, who, pack, generateDeliverablesFn);
   const files = [...uiq.files, ...asFiles(summaries), ...asFiles(letters)];
   let reason = null;
-  if (!files.length) reason = "empty_pack";
-  else if (pack !== "repair" && !hasFundingAnalysisPdfs(files)) reason = "missing_funding_analysis";
+  // An empty pack with no engine result is a different state from an empty pack
+  // the engine produced. See the PACK_REASON block at the top of this file.
+  if (!files.length) {
+    reason = crsResult ? PACK_REASON.EMPTY_PACK : PACK_REASON.NO_ENGINE_RESULT;
+  } else if (pack !== "repair" && !hasFundingAnalysisPdfs(files)) {
+    reason = PACK_REASON.MISSING_FUNDING_ANALYSIS;
+  }
   return {
     files,
     reason,
     deliverableCount: uiq.files.length,
-    deliverableSkip: uiq.skip
+    deliverableSkip: uiq.skip,
+    summarySkip
   };
+}
+
+/**
+ * Sharpen an empty-pack reason with what actually went wrong upstream.
+ *
+ * Only ever replaces a "nothing came out" reason — a pack that produced files
+ * keeps its own reason (null, or missing_funding_analysis), because an engine
+ * fault that still yielded letters is not the headline.
+ *
+ * `engineFault` is set ONLY when something threw. "no_crs_result" is deliberately
+ * not a fault: it means this client has no credit pull on file yet, which is a
+ * normal early state and must not be reported as an engine error.
+ */
+function sharpenEmptyReason(reason, { engineSkip, engineFault }) {
+  if (reason !== PACK_REASON.NO_ENGINE_RESULT && reason !== PACK_REASON.EMPTY_PACK) {
+    return reason;
+  }
+  if (engineFault) return `${PACK_REASON.ENGINE_ERROR}: ${engineFault}`;
+  if (engineSkip === PACK_REASON.NO_CRS_RESULT) return PACK_REASON.NO_CRS_RESULT;
+  return reason;
 }
 
 export async function buildLetterPackForClient(
@@ -216,7 +286,7 @@ export async function buildLetterPackForClient(
   { runEngine = runTierEngineFromCrsResult } = {}
 ) {
   if (!clientId) {
-    return { files: [], reason: "no_client", deliverableCount: 0, engineSkip: "no_client", engineOutcome: null };
+    return { files: [], reason: PACK_REASON.NO_CLIENT, deliverableCount: 0, engineSkip: "no_client", engineOutcome: null };
   }
   let row;
   try {
@@ -228,24 +298,27 @@ export async function buildLetterPackForClient(
   } catch (err) {
     return {
       files: [],
-      reason: "no_client",
+      reason: PACK_REASON.NO_CLIENT,
       deliverableCount: 0,
       engineSkip: String(err && err.message || err).slice(0, 240),
       engineOutcome: null
     };
   }
   if (!row) {
-    return { files: [], reason: "no_client", deliverableCount: 0, engineSkip: "no_client", engineOutcome: null };
+    return { files: [], reason: PACK_REASON.NO_CLIENT, deliverableCount: 0, engineSkip: "no_client", engineOutcome: null };
   }
   const personal = personalFromClient(row);
   let engine = null;
   let engineSkip = null;
+  // engineFault mirrors engineSkip but is set only on a throw, so the reason
+  // logic can tell a broken pull apart from a client who simply has no pull yet.
+  let engineFault = null;
   try {
     const crs = await db.query(
       `SELECT result FROM crs_results WHERE client_id = $1 ORDER BY created_at DESC LIMIT 1`,
       [clientId]
     );
-    if (!crs.rows[0]?.result) engineSkip = "no_crs_result";
+    if (!crs.rows[0]?.result) engineSkip = PACK_REASON.NO_CRS_RESULT;
     else {
       try {
         engine = runEngine(crs.rows[0].result, {
@@ -253,19 +326,26 @@ export async function buildLetterPackForClient(
           submittedAddress: personal.address
         });
       } catch (err) {
-        engineSkip = String(err && err.message || err).slice(0, 240);
+        engineFault = String(err && err.message || err).slice(0, 240);
+        engineSkip = engineFault;
       }
     }
   } catch (err) {
-    engineSkip = String(err && err.message || err).slice(0, 240);
+    engineFault = String(err && err.message || err).slice(0, 240);
+    engineSkip = engineFault;
   }
   try {
     const packOut = await buildLetterPack({ crsResult: engine, personal, pack });
-    return { ...packOut, engineSkip, engineOutcome: engine?.outcome ?? null };
+    return {
+      ...packOut,
+      reason: sharpenEmptyReason(packOut.reason, { engineSkip, engineFault }),
+      engineSkip,
+      engineOutcome: engine?.outcome ?? null
+    };
   } catch (err) {
     return {
       files: [],
-      reason: "pack_error",
+      reason: PACK_REASON.PACK_ERROR,
       deliverableCount: 0,
       engineSkip: engineSkip || String(err && err.message || err).slice(0, 240),
       engineOutcome: engine?.outcome ?? null

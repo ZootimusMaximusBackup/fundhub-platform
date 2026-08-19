@@ -52,6 +52,20 @@ test("rawResponsesFromMerged throws when there are zero bureau reports", () => {
   );
 });
 
+// The shape that actually broke the demo funding pack on 2026-08-18: a stored
+// pull carrying flat tradelines and NO `bureaus` / `bureausPulled` keys at all.
+// It looks like a complete payload, which is why it went unnoticed, so it is
+// worth pinning separately from the empty-map case above.
+test("a stored pull with flat tradelines but no bureaus key still throws", () => {
+  assert.throws(
+    () => rawResponsesFromMerged({
+      outcome: "FULL_FUNDING",
+      tradelines: [{ creditorName: "Chase Sapphire Preferred", bureau: "EX" }]
+    }),
+    /no bureau reports to score/
+  );
+});
+
 test("runTierEngineFromCrsResult scores sandbox Softview bodies without re-flattening", () => {
   const merged = mergedFromSandbox();
   const flatTradelinesBefore = merged.tradelines.length;

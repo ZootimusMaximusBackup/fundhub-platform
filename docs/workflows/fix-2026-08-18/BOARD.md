@@ -78,6 +78,122 @@ Attempted twice, stopped per the two-attempt rule.
 
 ---
 
+## T3 — change manifest (wave 2, `fix/T3-credit-file`, branched from `main` @ `c860b8c`)
+
+**COMPLIANCE REVIEW REQUIRED** — consent capture and credit-pull type.
+
+Evidence: `docs/workflows/fix-2026-08-18/evidence/T3/` — `REPRO.md` (live walk before the fix),
+`RESULT.md` (item-by-item proof), `BASELINE.md` (measured test baseline), `VERIFY.md` (adversarial
+check of all five build units), `ui/` (before/after browser measurements), `repro/` (live screenshots
+and captured network responses).
+
+### Files touched — 22, all owned by T3 except the two named below
+
+| Area | Files |
+|---|---|
+| Consent seam | `src/handlers/contract-consent.mjs` **(new)**, `src/handlers/contract-consent.test.mjs` **(new)**, `src/register-all.mjs` (one import + one call, nothing else), `api/consent/capture.mjs`, `src/http/consent-capture.test.mjs` |
+| Seed ↔ reader | `src/demo/simulate-client.mjs`, `src/underwrite/adapter.mjs`, `src/underwrite/adapter.test.mjs`, `src/underwrite/underwriteiq.pg.test.mjs` |
+| Letter pack | `src/underwrite/letter-pack.mjs`, `src/underwrite/letter-pack.test.mjs`, `src/finance/crs-tier.test.mjs` |
+| Screens | `public/app/closer-dashboard.html`, `public/app/client-control-panel.html` |
+| Safe-test mode | `src/finance/crs-pull.mjs`, `api/finance/crs-pull.mjs`, `src/finance/crs-pull.test.mjs`, `src/http/finance-crs-pull.test.mjs` |
+| Generated | `docs/diagrams/README.md`, `docs/diagrams/event-flow.md` (`npm run diagrams` — handler count 35→36 and the new `contract.signed` listener; the suite fails without it) |
+| Journeys | `docs/journeys/CHANGELOG.md` appended. `npm run journeys` re-run — **every `-actual.md` byte-identical**, which is correct: no route added, no role gate moved |
+
+**Two files edited that were on nobody's list.** Both are tests that asserted the old broken state
+and would have left CI red for every other thread. Named here rather than left as a surprise:
+
+- `src/handlers/contract-signed.test.mjs` — asserted exactly one listener on `contract.signed`.
+  There are two now. Changed to assert *membership* instead of a count, so the next thread to add a
+  listener does not trip it.
+- `src/http/calendar-paint.test.mjs` — the `KNOWN_UNFIXED` list is written to fail once a screen is
+  fixed. Removed **only** the `closer-dashboard.html` entry. **T4's `inquiry-remover.html` and
+  T11's three entries were left exactly as they are** — delete your own line when you fix your screen.
+
+### Routes
+
+**No route added or removed.** `POST /api/finance/crs-pull` gains an optional `simulate` field in the
+request body, behind the gate it already had. No `netlify/functions/api.mjs` change. No migration —
+`client_consents` and `pii_identity` already exist. **Migration block 185–189 unused and returned.**
+
+### Nothing needed from T0
+
+The `consent-capture.html` request on the cross-thread table is **done and verified live** — the
+screen loads and keeps its `client_id`. T3 does not need the contextual button that row mentions;
+the Client Control Panel now reads consent state directly instead.
+
+### Blockers — real, and none of them fixable from T3's files
+
+1. **T3-11 identity capture is an OPEN OWNER DECISION, and it is the reason the bureau buttons still
+   will not work.** Two gates in series: consent, then identity. T3 fixed consent. Nothing gives
+   staff a way to put a client's Social Security number, date of birth and address on file, so all
+   three buttons now fail at the second gate (`422 identity_required`) instead of the first. The two
+   candidate answers are in the task report; they are materially different products and one of them
+   reverses a promise the client is shown on screen today. **Not guessed at.**
+2. **`src/demo/platform-seed.mjs` has the identical scores defect and no thread owns it.** All 8+
+   platform demo clients still read $0 and score 0 on UnderwriteIQ. T3 owns only that file's *test*.
+   The fix is the same shape as T3's; the roster varies tier per client, so the six counts must vary
+   with the tier rather than be one hardcoded set.
+3. **`src/liabilities/index.mjs:65` — one-line fix, live latent bug on the REAL pull path.**
+   `REF_KEYS` omits `"accountIdentifier"` while `src/tradelines/index.mjs:94` includes it, and the
+   comment at `src/liabilities/index.mjs:185` claims the two lists match. They do not. Every real
+   bureau tradeline that identifies itself only as `accountIdentifier` can never attach to its card,
+   so no `card_liabilities` row is written for it. T3 worked around it inside its own seed file.
+   **Add `"accountIdentifier"` to that list.**
+4. **`src/underwrite/engine.mjs:74-80` still states the opposite of what the engine does** — "IT
+   COLLAPSES UNKNOWN TO ZERO … An unknown reads as a clean file." Disproved by
+   `src/underwrite/vendor/underwriter.cjs:38-43` and `:212`: an unknown count stays NULL and makes a
+   client read as **not** fundable. T3 corrected the three user-visible strings that repeated this
+   in `adapter.mjs`; the note in `engine.mjs` was outside T3's list.
+5. **`docs/END-TO-END-VERIFICATION.md` is rewritten by the test suite on every database run.**
+   `src/verification/e2e-verification.pg.test.mjs` overwrites a tracked file with whatever database
+   the runner used. Anyone running the pg phase will find it dirty. Do not commit it.
+6. **`npx tsc --noEmit` is in the definition of done and cannot pass.** There is no `tsconfig.json`
+   in the repo, so it type-checks nothing and exits 1 on untouched `main`. Either add a config or
+   drop it from §6 — right now it is a gate every thread has to explain away.
+
+### T3 addendum — T3-11 identity capture, owner decision resolved 2026-08-19
+
+**Owner decision: identity capture is CLIENT SELF-SERVE. Staff never see, type or handle an SSN.**
+Logged as owner-set. The client form already existed (`public/app/soft-pull-approve.html`, a public
+signed-link page with no CRM shell and no nav row); only the staff handoff was missing.
+
+Files: `api/consent/capture.mjs`, `public/app/client-control-panel.html`,
+`public/app/soft-pull-approve.html`, `src/http/consent-capture.test.mjs`. **No route added, no
+migration, no menu row, `netlify/functions/api.mjs` diff is 0 bytes.**
+
+Tests `5923 → 5934`, all +11 passing, same three pre-existing failures. Consent endpoint alone
+56 pass / 0 fail. PII cleanliness proven empirically, not asserted: a real identity was seeded, the
+handler invoked, and every value in the serialised body scanned — `{"on_file": true}` and nothing else.
+
+**One setting this needs, by name only: `DOCUMENT_URL_SECRET`.** It is the same one the emailed
+version of this link already uses (`src/sales/closer-deck.mjs:354-363`), so if the Present deck can
+send a soft-pull email today it is already set. If it is ever missing the screen says so in words.
+
+#### More board items found on the way
+
+7. **The base-URL helper is copied three times and the copies read two different settings.**
+   `PUBLIC_BASE_URL` at `src/sales/closer-deck.mjs:331`, `api/contracts.mjs:86`,
+   `api/read/portal-contracts.mjs:18`; `APP_BASE_URL` at `src/messaging/dispatch.mjs:56`,
+   `src/workflows/messaging.mjs:56`, `api/social/oauth.mjs:17`. None is exported, so none can be
+   shared. T3 copied the closer-deck one byte-identical **on purpose**, so a copied link lands where
+   the emailed link lands. Two families of the same helper reading different env vars is a bug
+   waiting to surface — worth one owner deciding which wins.
+8. **`api/soft-pull-approve.mjs` does not forward the disclosure `title`.** `src/consent/disclosures.mjs:50`
+   holds `"Soft Pull Authorization"`, but the endpoint sends only version/text/bullets, which is why
+   the client page was showing consumers the internal string `soft-pull-v1` as a heading. T3 typed a
+   label into the page because that endpoint is not T3's. Plumb the title instead. Related: `bullets`
+   is always empty — no disclosure entry has that field.
+9. **The $32 price is hand-typed twice in `public/app/soft-pull-approve.html`** instead of coming
+   from the offer catalog. T3 did not add a third copy.
+10. **`storeIdentity` replaces the whole address list rather than merging it**
+    (`src/pii/index.mjs:138` — `addresses = EXCLUDED.addresses`, no COALESCE, unlike `ssn_enc` and
+    `dob` on the lines above). Not reachable from this form, because
+    `api/soft-pull-approve.mjs:178-188` refuses a submission with any empty address box. It is a trap
+    for the NEXT caller that writes a partial identity.
+11. **`readIdentity` decrypts an SSN into memory to answer a yes/no.** T3 uses it for a presence
+    check on every client-panel load. It writes no access-log row and discards the value, so it is
+    correct — but a lighter `SELECT ssn_enc IS NOT NULL` helper would avoid an unnecessary decrypt on
+    a regulated path. Not changed: `src/pii/index.mjs` is not T3's.
 # T4 — Inquiry desk & dispute letters · manifest (wave 2)
 
 Branch `fix/T4-inquiry-repair` · worktree `/tmp/wt-T4` off `origin/main` @ `c860b8c`

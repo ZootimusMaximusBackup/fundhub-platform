@@ -164,6 +164,34 @@
   }
   .action-error b{display:block;color:var(--text);font-size:var(--fs-caption);margin-bottom:1px;}
 
+  /* Consent state, shown above the three bureau pull buttons. THREE states, not
+     two: allowed, blocked, and "we could not check". The third one is grey and
+     leaves the buttons alone — a failed check is not evidence of a missing
+     consent, and painting it red would stop a legitimate pull for a fault of
+     ours. See checkConsent() further down. */
+  .consent-state{font-size:var(--fs-body);line-height:1.45;margin:0 0 10px;color:var(--text-dim);}
+  .consent-state.is-ok{color:var(--green);}
+  .consent-state.is-blocked{color:var(--red);font-weight:600;}
+
+  /* The client's own approval link, shown above the pull buttons whenever one
+     of the two locks is still shut. NOT A NEW SCREEN and not a new menu row —
+     the handoff belongs in the place the closer is already standing when they
+     find out they cannot pull. See renderHandoff() further down. */
+  .approve{border:1px solid var(--line);border-radius:6px;background:var(--surface);padding:10px 11px;margin:0 0 10px;}
+  .approve-what{font-size:var(--fs-caption);line-height:1.45;color:var(--text);margin:0 0 8px;}
+  .approve-row{display:flex;gap:6px;align-items:stretch;}
+  .approve-url{
+    flex:1 1 auto;min-width:0;font-family:'JetBrains Mono',monospace;font-size:11px;
+    border:1px solid var(--line);border-radius:5px;background:var(--paper);color:var(--text-dim);padding:6px 8px;
+  }
+  .approve-copy{
+    flex:0 0 auto;border:1px solid var(--ink);border-radius:5px;background:var(--surface);color:var(--text);
+    font-family:'Inter',sans-serif;font-size:var(--fs-caption);font-weight:700;padding:6px 10px;cursor:pointer;
+  }
+  .approve-copy:focus-visible{outline:2px solid var(--blue-line);outline-offset:2px;}
+  .approve-exp{font-size:var(--fs-caption);color:var(--text-faint);margin:8px 0 0;}
+  .approve-nolink{font-size:var(--fs-caption);line-height:1.45;color:var(--red);margin:0;}
+
   .link-btn{
     display:flex;align-items:center;justify-content:space-between;width:100%;
     background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:6px;
@@ -423,6 +451,12 @@
       <div class="rf-tile"><div class="rf-label">Inquiry Removal</div><div class="rf-value" data-ir-case id="ccp-ir">—</div></div>
       <div class="rf-tile"><div class="rf-label">Scores</div>
         <div class="rf-value" id="ccp-scores" style="font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);">—</div></div>
+      <!-- Card Use is the utilisation figure the client endpoint has always
+           returned and this screen never showed (src/http/client-detail.mjs:310,
+           spelt the British way there). It reads "not measured" whenever the
+           stored report carried no figure — which for a real bureau pull is the
+           ordinary case today, not an error. Never 0%: see cardUse() below. -->
+      <div class="rf-tile"><div class="rf-label">Card Use</div><div class="rf-value" id="ccp-card-use">—</div></div>
       <div class="rf-tile"><div class="rf-label">Funding Round</div><div class="rf-value" id="ccp-round">—</div></div>
     </div>
   </div>
@@ -460,6 +494,29 @@
       <div class="group">
         <div class="group-title">Actions</div>
         <p id="ccp-actions-desk-note" style="font-size:var(--fs-body);line-height:1.45;color:var(--text);margin:0 0 10px;">Pull one bureau at a time. Generate Apps refreshes the lender apply list for this file.</p>
+        <!-- All three pull buttons used to render identical and enabled whether
+             or not this client had agreed to a credit pull; the only thing that
+             ever said otherwise was the refusal that came back AFTER the tap.
+             This line is read from GET /api/consent/capture before any tap. -->
+        <p id="ccp-consent-state" class="consent-state">Open a client file to see whether a bureau pull is allowed.</p>
+        <a class="link-btn" id="ccp-consent-link" href="consent-capture.html" hidden>Record consent for this client <span class="arrow">↗</span></a>
+        <!-- THE SECOND LOCK. Consent is one gate; an identity on file is the
+             other, and the pull refuses on each with a different code. This
+             line reads GET /api/consent/capture the same way the one above it
+             does, so a closer sees BOTH before the tap instead of one. -->
+        <p id="ccp-identity-state" class="consent-state" hidden></p>
+        <!-- THE HANDOFF. The client fills their own details in on this link.
+             There is deliberately no Social Security number field anywhere on
+             this staff screen — owner decision, 2026-08-19. -->
+        <div class="approve" id="ccp-approve" hidden>
+          <p class="approve-what" id="ccp-approve-what"></p>
+          <p class="approve-nolink" id="ccp-approve-nolink" hidden></p>
+          <div class="approve-row" id="ccp-approve-row">
+            <input type="text" id="ccp-approve-url" class="approve-url" readonly aria-label="Client approval link">
+            <button type="button" class="approve-copy" id="ccp-approve-copy">Copy link</button>
+          </div>
+          <p class="approve-exp" id="ccp-approve-exp"></p>
+        </div>
         <button type="button" class="action-btn" id="ccp-pull-tu" style="cursor:pointer;">Pull TransUnion <span class="arrow">→</span></button>
         <button type="button" class="action-btn" id="ccp-pull-ex" style="cursor:pointer;">Pull Experian <span class="arrow">→</span></button>
         <button type="button" class="action-btn" id="ccp-pull-eq" style="cursor:pointer;">Pull Equifax <span class="arrow">→</span></button>
@@ -567,7 +624,20 @@
           <a class="link-btn" id="ccp-link-lenders" href="lenders.html">Open Funding Matrix <span class="arrow">↗</span></a>
           <a class="link-btn" id="ccp-link-present2" href="present.html">Open Credit Snapshot <span class="arrow">↗</span></a>
           <button class="link-btn" type="button" disabled title="Not wired on this screen">Open Bank Inbox <span class="arrow">↗</span></button>
-          <button class="link-btn" type="button" disabled title="GHL cut over — use Messaging">GHL Contact <span class="arrow">↗</span></button>
+          <!-- GHL Contact was deleted 2026-08-19. GoHighLevel is cut over to
+               Messaging, so the button had no destination left to point at and
+               a permanently dead control is worse than no control.
+
+               Raw Report STAYS DISABLED, deliberately. A bureau pull stores a
+               crs_results row and nothing else — src/finance/crs-pull.mjs writes
+               no `documents` row, and there is no raw-report subtype in
+               src/documents/kinds.mjs to write one under. The only way to reach
+               a document's bytes is api/documents/[id].mjs, which refuses
+               without a signature, and no readable GET endpoint mints one
+               (/api/read/documents strips storage_key by design). So there is
+               nothing on the wire to link. Enabling it would be a live-looking
+               control over nothing, which is exactly what this file's comments
+               were written to stop. -->
           <button class="link-btn" type="button" disabled title="Raw bureau PDF not linked here yet">Raw Report <span class="arrow">↗</span></button>
         </div>
       </details>
@@ -678,6 +748,24 @@ document.addEventListener("DOMContentLoaded", function () {
     return one("EX", tm.experian) + " · " + one("EQ", tm.equifax) + " · " + one("TU", tm.transunion);
   }
 
+  /* cardUse — how much of this client's revolving credit is in use.
+   *
+   * NOT MEASURED IS NOT ZERO, and this is the whole reason the function exists
+   * rather than a setText() call. The endpoint returns { percent, band, asOf }
+   * (src/http/client-detail.mjs:112-122) and `percent` is null whenever no
+   * stored report carried a utilisation figure. A real bureau pull does not
+   * write one today, so null is the ordinary answer for a live file — and "0%"
+   * would tell a closer this person's cards are clear when in fact nobody has
+   * looked. Only null reads "not measured"; a genuine 0 still reads "0%".
+   */
+  function cardUse(u) {
+    var pct = u && u.percent;
+    if (pct == null || pct === "") return "not measured";
+    var n = Number(pct);
+    if (!isFinite(n)) return "not measured";
+    return Math.round(n) + "%" + (u.band ? " · " + u.band : "");
+  }
+
   function tickClock() {
     var node = $("ccp-clock");
     if (!node) return;
@@ -743,6 +831,7 @@ document.addEventListener("DOMContentLoaded", function () {
     href("ccp-link-messaging", "messaging.html?client_id=" + q);
     href("ccp-link-lenders", "lenders.html?client_id=" + q);
     href("ccp-link-ir", "inquiry-remover.html");
+    href("ccp-consent-link", "consent-capture.html?client_id=" + q);
   }
 
   function render(d) {
@@ -782,6 +871,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var tm = d.tri_merge || {};
     var scores = scoreLine(tm);
+    setText("ccp-card-use", cardUse(d.utilisation));
     setText("ccp-scores", scores);
     setText("ccp-facts-scores", scores);
     setText("ccp-chip-credit", "Credit " + scores);
@@ -904,6 +994,279 @@ document.addEventListener("DOMContentLoaded", function () {
       } catch (e) {}
       return headers;
     }
+
+    /* ── CONSENT, BEFORE THE TAP ──────────────────────────────────────────────
+       The gate itself lives in src/finance/soft-pulls.mjs:288-314 and is read
+       fresh on every request; nothing here relaxes it. What this adds is the
+       SAME read, shown early, so a closer can see whether a pull can succeed
+       instead of finding out by ordering one.
+
+       THREE STATES, NOT TWO. Allowed, blocked, and "could not check". The third
+       leaves the buttons exactly as they were: a check that failed is not
+       evidence of a missing consent, and disabling on it would block a
+       legitimate pull for a fault that is ours. Unknown is not no.
+
+       The words match consent-capture.html so the two screens cannot tell a
+       closer two different stories about the same client. */
+    var CONSENT_WORDS = {
+      valid: "Consent is on file. A bureau pull can go ahead.",
+      none_on_file: "No consent on file. This client has to agree before a bureau can be asked.",
+      revoked: "This client took their permission back. Do not pull. A new consent has to be recorded first.",
+      expired: "The consent on file has run out. Record a new one before pulling.",
+      not_yet_effective: "The consent on file starts at a later date, so a pull is not allowed yet.",
+      no_org_scope: "Your session has no company attached, so consent cannot be checked. Sign out and back in.",
+      bad_input: "This screen was opened without a valid client, so consent cannot be checked."
+    };
+    var UNKNOWN_CONSENT =
+      "Could not check consent from this screen. The buttons are left on — the pull itself still refuses if consent is missing.";
+    var consentLine = $("ccp-consent-state");
+    var consentLink = $("ccp-consent-link");
+
+    function setConsentLine(text, tone) {
+      if (!consentLine) return;
+      consentLine.textContent = text;
+      consentLine.className = "consent-state" + (tone ? " is-" + tone : "");
+    }
+
+    /* A disabled button with no visible reason is the failure this whole block
+       exists to fix, so the sentence goes on the control as well as above it. */
+    function setPullsEnabled(on, why) {
+      pullBtns.forEach(function (spec) {
+        var b = $(spec.id);
+        if (!b) return;
+        b.disabled = !on;
+        if (why) b.title = why; else b.removeAttribute("title");
+      });
+    }
+
+    /* ── THE SECOND LOCK, AND THE HANDOFF ────────────────────────────────────
+       A bureau pull has TWO gates and they refuse with two different codes:
+       consent first (403 consent_required), then identity (422
+       identity_required). The line above only ever spoke about the first one,
+       so a closer with a good consent and no identity on file still found out
+       the only way there was — by ordering a pull and reading a code.
+
+       WHAT A CLOSER DOES ABOUT EITHER GATE IS THE SAME THING: hand the client
+       the signed link. The client agrees and types their own details into it.
+       Nobody on this side types a Social Security number — owner decision,
+       2026-08-19 — and there is deliberately no field on this screen that would
+       let them. The link comes from GET /api/consent/capture, freshly signed on
+       every load, and that endpoint answers identity with a boolean and nothing
+       else, so no part of the number can reach this page even by accident.
+
+       THE PULL BUTTONS ARE NOT DISABLED WHEN IDENTITY IS MISSING, deliberately.
+       src/finance/crs-pull.mjs:548 loads a real identity ONLY when the bureau
+       host is the production one; on the sandbox host the vendor's own test
+       people are used and no client identity is needed at all. Disabling here
+       would block a pull that works. Consent has no such exemption, which is
+       why the block above still disables on that one. */
+    var IDENTITY_WORDS = {
+      on_file: "Identity is on file for this client.",
+      missing:
+        "No identity on file. A bureau pull will refuse until this client's legal name, date of " +
+        "birth, address and Social Security number are on record. They type those in themselves " +
+        "on the link below — the number never reaches this screen."
+    };
+
+    var HANDOFF_WHAT = {
+      both: "Send this link to the client. They agree to the pull and enter their own details on it.",
+      consent: "Send this link to the client. They read the authorization and agree to it themselves.",
+      identity:
+        "Send this link to the client. They enter their own details on it, including the Social " +
+        "Security number, which never reaches this screen."
+    };
+
+    var identityLine = $("ccp-identity-state");
+    var approveBox = $("ccp-approve");
+    var approveWhat = $("ccp-approve-what");
+    var approveNoLink = $("ccp-approve-nolink");
+    var approveRow = $("ccp-approve-row");
+    var approveUrl = $("ccp-approve-url");
+    var approveCopy = $("ccp-approve-copy");
+    var approveExp = $("ccp-approve-exp");
+
+    function hideHandoff() {
+      if (identityLine) identityLine.hidden = true;
+      if (approveBox) approveBox.hidden = true;
+    }
+
+    /* "3:42 PM", not an ISO timestamp. A closer reads a clock. */
+    function clockTime(iso) {
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return null;
+      try {
+        return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      } catch (e) {
+        return d.toTimeString().slice(0, 5);
+      }
+    }
+
+    function renderHandoff(body) {
+      var st = (body && body.status) || {};
+      var identity = body && body.identity;       // { on_file } — or null if not asked
+      var link = body && body.approval_link;      // { url, expires_at, unavailable_reason }
+
+      /* REVOKED MEANS STOP. The consent block above hides its "record consent"
+         shortcut for exactly this reason; offering a link that re-collects a
+         permission the client took back would be the same mistake with an extra
+         step in front of it. Nothing is offered here either. */
+      if (st.reason === "revoked") { hideHandoff(); return; }
+
+      // `null` identity means the question was not asked, which is not the same
+      // as "we hold nothing". Only a hard false is reported as missing.
+      var identityMissing = !!identity && identity.on_file === false;
+      if (identity && identityLine) {
+        identityLine.hidden = false;
+        identityLine.textContent = identity.on_file ? IDENTITY_WORDS.on_file : IDENTITY_WORDS.missing;
+        identityLine.className = "consent-state" + (identity.on_file ? " is-ok" : " is-blocked");
+      } else if (identityLine) {
+        identityLine.hidden = true;
+      }
+
+      var consentMissing = !st.valid;
+      if (!approveBox) return;
+      if (!consentMissing && !identityMissing) { approveBox.hidden = true; return; }
+
+      approveBox.hidden = false;
+      if (approveWhat) {
+        approveWhat.textContent = consentMissing && identityMissing ? HANDOFF_WHAT.both
+          : consentMissing ? HANDOFF_WHAT.consent
+          : HANDOFF_WHAT.identity;
+      }
+
+      /* No link is a state with a cause, not an empty box. The endpoint hands
+         back a sentence saying why — a missing signing key is the one that
+         happens — so show that INSTEAD of the copy control, not beside it. */
+      var url = link && link.url;
+      if (approveRow) approveRow.hidden = !url;
+      if (approveNoLink) {
+        approveNoLink.hidden = !!url;
+        approveNoLink.textContent = url ? ""
+          : ((link && link.unavailable_reason) ||
+             "No approval link could be made for this client. Pass it to the desk.");
+      }
+      if (approveUrl) approveUrl.value = url || "";
+      if (approveCopy) approveCopy.textContent = "Copy link";
+      if (approveExp) {
+        var at = url && link.expires_at ? clockTime(link.expires_at) : null;
+        approveExp.hidden = !at;
+        approveExp.textContent = at
+          ? "This link stops working at " + at + ". Reload this screen for a fresh one."
+          : "";
+      }
+    }
+
+    if (approveCopy) {
+      approveCopy.addEventListener("click", function () {
+        var url = approveUrl ? approveUrl.value : "";
+        if (!url) return;
+        function done(label, ms) {
+          approveCopy.textContent = label;
+          setTimeout(function () { approveCopy.textContent = "Copy link"; }, ms);
+        }
+        /* Clipboard access can be refused by the browser, and does not exist at
+           all on an insecure origin. Selecting the box so the closer can copy it
+           by hand is a working answer; a button that silently does nothing is
+           the failure this whole screen keeps being fixed for. */
+        function selectInstead() {
+          if (!approveUrl) return;
+          approveUrl.focus();
+          approveUrl.select();
+          done("Press Ctrl+C", 3000);
+        }
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(function () { done("Copied", 2000); }, selectInstead);
+          } else {
+            selectInstead();
+          }
+        } catch (e) {
+          selectInstead();
+        }
+      });
+    }
+
+    function checkConsent() {
+      if (!id) {
+        setConsentLine("Open a client file to see whether a bureau pull is allowed.", null);
+        hideHandoff();
+        return;
+      }
+      setConsentLine("Checking consent…", null);
+      fetch("/api/consent/capture?client_id=" + encodeURIComponent(id) +
+            "&kind=soft_pull_consent", { headers: tokenHeaders() })
+        .then(function (r) { return r.json().then(function (d) { return { status: r.status, data: d }; }); })
+        .then(function (out) {
+          var body = out.data || {};
+          if (out.status !== 200 || !body.ok || !body.status) {
+            setConsentLine(UNKNOWN_CONSENT, null);
+            if (consentLink) consentLink.hidden = true;
+            // Unknown is not no — and it is not a reason to offer a link off the
+            // back of an answer we did not get.
+            hideHandoff();
+            return;
+          }
+          var st = body.status;
+          if (st.valid) {
+            setConsentLine(CONSENT_WORDS.valid, "ok");
+            setPullsEnabled(true, null);
+            if (consentLink) consentLink.hidden = true;
+            // Consent is only the first lock. The second one still has to be
+            // said out loud, and it may still need the link.
+            renderHandoff(body);
+            return;
+          }
+          var why = CONSENT_WORDS[st.reason] || "There is no usable consent on file for this client.";
+          setConsentLine(why, "blocked");
+          setPullsEnabled(false, why);
+          // Revoked means stop, so do not offer a shortcut to re-collect it.
+          if (consentLink) consentLink.hidden = st.reason === "revoked";
+          renderHandoff(body);
+        })
+        .catch(function () {
+          setConsentLine(UNKNOWN_CONSENT, null);
+          if (consentLink) consentLink.hidden = true;
+          hideHandoff();
+        });
+    }
+
+    /* ── WHY A PULL FAILED, IN WORDS ──────────────────────────────────────────
+       A refusal carries a sentence AND a machine code — see the 422 built in
+       api/finance/crs-pull.mjs:116-121 and the 403 thrown at
+       src/finance/soft-pulls.mjs:309-313. This screen read `d.error` only,
+       which flattened "this client never agreed" and "we hold no identity for
+       this person" into one grey line. Those are two problems with two
+       different owners and two different next steps.
+
+       The code picks the sentence; the code itself is kept in brackets so it
+       can be quoted verbatim when somebody reports the screen. */
+    var PULL_FAILURE = {
+      consent_required: "No consent — this client has to agree before a bureau can be asked.",
+      identity_required: "No identity on file for this client (legal name, date of birth, address, SSN). A bureau cannot be asked without one.",
+      not_configured: "The credit bureau connection is not set up on this system. Nothing to do with this client — raise it with the desk.",
+      no_reports: "The bureau was asked and sent nothing back.",
+      provider_result_id_required: "The bureau answered without a reference number, so the report was not saved.",
+      not_stored: "The bureau answered but the report could not be saved.",
+      failed: "The bureau pull did not finish.",
+      forbidden: "Your login is not allowed to order a bureau pull."
+    };
+    function pullFailure(out, label) {
+      var d = (out && out.data) || {};
+      var code = d.code ? String(d.code) : "";
+      // A one-word `error` is a code wearing a message's clothes ("forbidden"),
+      // not something to show a person. Same test consent-capture.html uses.
+      var said = typeof d.error === "string" && /\s/.test(d.error) ? d.error : "";
+      var plain = PULL_FAILURE[code];
+      if (plain && code === "consent_required" && said) {
+        // consentRefusal() (src/finance/soft-pulls.mjs:242) tells revoked from
+        // expired from never-given, and those three lead somewhere different.
+        plain = "No consent — " + said;
+      }
+      if (!plain && out && out.status === 403) plain = PULL_FAILURE.forbidden;
+      if (!plain) plain = said || ("Could not pull " + label + ".");
+      return plain + (code ? " [" + code + "]" : "");
+    }
+
     pullBtns.forEach(function (spec) {
       var btn = $(spec.id);
       if (!btn) return;
@@ -923,7 +1286,10 @@ document.addEventListener("DOMContentLoaded", function () {
             btn.disabled = false;
             var d = out.data || {};
             if (!d.ok) {
-              say(d.error || ("Could not pull " + spec.label + "."));
+              say(pullFailure(out, spec.label));
+              // A consent refusal means the line above the buttons is stale —
+              // re-read it rather than leaving it claiming the pull was fine.
+              if (d.code === "consent_required") checkConsent();
               return;
             }
             say(spec.label + " pull finished. Refresh the file to see the stored report.");
@@ -934,6 +1300,8 @@ document.addEventListener("DOMContentLoaded", function () {
           });
       });
     });
+    checkConsent();
+
     var gen = $("ccp-generate-apps");
     if (gen) {
       if (!id) gen.disabled = true;

@@ -8,6 +8,7 @@
 // pass, because each of them is a way the gate could be opened by accident:
 //
 //   * org scoping comes from the session and a body/query org is ignored;
+//   * a staff principal cannot reach a client outside their own org;
 //   * a client principal can only ever act on themself;
 //   * the role gate is a real second call and refuses roles outside the set;
 //   * the consent WORDS are never taken from the request body.
@@ -26,6 +27,8 @@ import assert from "node:assert";
 import { db } from "../db.mjs";
 import handler from "../../api/consent/capture.mjs";
 import { CURRENT_SOFT_PULL_VERSION, SOFT_PULL_DISCLOSURES } from "../consent/disclosures.mjs";
+import { verifySoftPullApproveToken } from "../consent/approve-token.mjs";
+import { encryptSsn } from "../pii/index.mjs";
 
 const ORG = "11111111-1111-1111-1111-111111111111";
 const OTHER_ORG = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
@@ -38,10 +41,12 @@ const realQuery = db.query;
 let calls = [];
 
 /* stubDb — route by SQL text. `session` describes who the caller is; null means
-   no valid session at all. Anything the handler asks beyond the session lookup
-   is answered from `answers`, a list of [pattern, result] pairs consulted in
-   order, defaulting to an empty result set. */
-function stubDb({ session = null, answers = [] } = {}) {
+   no valid session at all. `owns` answers the org check the endpoint performs
+   against `clients` — true means the named client really is in the caller's
+   org, false means they are not and the endpoint must refuse. Anything else the
+   handler asks is answered from `answers`, a list of [pattern, result] pairs
+   consulted in order, defaulting to an empty result set. */
+function stubDb({ session = null, owns = true, answers = [] } = {}) {
   calls = [];
   db.query = async (text, params) => {
     calls.push({ text, params });
@@ -62,6 +67,14 @@ function stubDb({ session = null, answers = [] } = {}) {
         name: "A Staffer", status: pick("status", "active"), active_flag: "true"
       }] };
     }
+    /* The org check — `SELECT 1 FROM clients WHERE id = $1 AND org_id = $2`.
+       Routed here rather than left to `answers` so that every case in this file
+       keeps its existing outcome without having to know the query exists; the
+       cases that want the refusal pass owns:false. It cannot collide with the
+       consent reads: OWNS matches "FROM clients WHERE id" and SELECT matches
+       "FROM client_consents", and neither string contains the other. */
+    if (OWNS.test(text)) return { rows: owns ? [{ "?column?": 1 }] : [] };
+
     for (const [pattern, result] of answers) {
       if (pattern.test(text)) return typeof result === "function" ? result(params) : result;
     }
@@ -108,6 +121,7 @@ const consentRow = (over = {}) => ({
 const INSERT = /INSERT INTO client_consents/i;
 const SELECT = /FROM client_consents/i;
 const UPDATE = /UPDATE client_consents/i;
+const OWNS = /FROM clients WHERE id/i;
 
 // ── DATABASE_URL really is unset ───────────────────────────────────────────
 
@@ -259,6 +273,118 @@ describe("org scoping", () => {
     assert.equal(res.statusCode, 400);
     assert.match(res.body.error, /org_id is required/);
     assert.ok(!calls.some((c) => SELECT.test(c.text) || INSERT.test(c.text)));
+  });
+});
+
+// ── a staff principal cannot cross into another company ────────────────────
+
+describe("the client must be in the caller's own org", () => {
+  /* THE HOLE THIS CLOSES. ownsClient() used to return `true` for ANY staff
+     principal, with no query at all, while api/finance/soft-pull.mjs and
+     api/finance/crs-pull.mjs both checked the clients row. Because the write
+     stamps the CALLER's org onto the consent, an employee at org A could file a
+     consent naming org B's consumer — and since a consent is what unlocks a
+     credit pull, the looser endpoint was a way around the stricter one.
+
+     GET AND POST ARE TESTED SEPARATELY AND THAT IS THE POINT, not duplication.
+     ownsClient() is now async, so a call site that forgot its `await` gets a
+     Promise back, and a Promise is truthy — `!promise` is false and the refusal
+     never fires. One missed await disables the check on exactly one method
+     while the other method's test still passes. */
+
+  test("GET for a client outside the session's org is a 403 and reads no consent", async () => {
+    stubDb({ session: { orgId: ORG, role: "closer" }, owns: false });
+    const res = mkRes();
+    await handler(mkReq({ query: { client_id: OTHER_CLIENT } }), res);
+
+    assert.equal(res.statusCode, 403, "a staff session reached another company's client");
+    assert.equal(res.body.error, "forbidden");
+    assert.ok(!calls.some((c) => SELECT.test(c.text)),
+      "another company's consent history was read before the refusal");
+  });
+
+  test("POST for a client outside the session's org is a 403 and writes nothing", async () => {
+    stubDb({ session: { orgId: ORG, role: "closer" }, owns: false });
+    const res = mkRes();
+    await handler(mkReq({
+      method: "POST",
+      body: { client_id: OTHER_CLIENT, capture_method: "typed", granted_name: "Dana Client" }
+    }), res);
+
+    assert.equal(res.statusCode, 403, "a staff session recorded a consent for another company's client");
+    assert.ok(!calls.some((c) => INSERT.test(c.text)),
+      "a consent row was written naming a client the caller does not have");
+  });
+
+  test("a revoke for a client outside the session's org is a 403 and revokes nothing", async () => {
+    // The revoke path is scoped by org inside revokeConsent() as well, but the
+    // client named on the request is checked here first — otherwise the 403 and
+    // the 409 leak apart and tell a prober which uuids are real.
+    stubDb({ session: { orgId: ORG, role: "closer" }, owns: false });
+    const res = mkRes();
+    await handler(mkReq({
+      method: "POST",
+      body: {
+        client_id: OTHER_CLIENT, action: "revoke",
+        consent_id: CONSENT_ID, reason: "client withdrew on a call"
+      }
+    }), res);
+
+    assert.equal(res.statusCode, 403);
+    assert.ok(!calls.some((c) => UPDATE.test(c.text)));
+  });
+
+  test("the org check is scoped by the SESSION's org, not by anything in the request", async () => {
+    stubDb({ session: { orgId: ORG, role: "closer" }, answers: [[INSERT, { rows: [consentRow()] }]] });
+    const res = mkRes();
+    await handler(mkReq({
+      method: "POST",
+      body: { client_id: CLIENT, org_id: OTHER_ORG, capture_method: "checkbox" }
+    }), res);
+
+    assert.equal(res.statusCode, 200);
+    const check = calls.find((c) => OWNS.test(c.text));
+    assert.ok(check, "the endpoint did not check the client against an org at all");
+    assert.equal(check.params[0], CLIENT);
+    assert.equal(check.params[1], ORG, "the request's org was used to scope the check");
+  });
+
+  test("the check runs before anything is read or written, on GET and on POST", async () => {
+    for (const req of [
+      mkReq({ query: { client_id: CLIENT } }),
+      mkReq({ method: "POST", body: { client_id: CLIENT, capture_method: "checkbox" } })
+    ]) {
+      stubDb({
+        session: { role: "closer" },
+        answers: [[SELECT, { rows: [consentRow()] }], [INSERT, { rows: [consentRow()] }]]
+      });
+      const res = mkRes();
+      await handler(req, res);
+      assert.equal(res.statusCode, 200);
+
+      const owns = calls.findIndex((c) => OWNS.test(c.text));
+      const touch = calls.findIndex((c) => SELECT.test(c.text) || INSERT.test(c.text));
+      assert.ok(owns >= 0, `${req.method} skipped the org check entirely`);
+      assert.ok(owns < touch, `${req.method} touched client_consents before checking the org`);
+    }
+  });
+
+  test("the consent org check is the same query the soft-pull endpoint runs", async () => {
+    /* Same idea as the role-set test above: the two endpoints have to stay
+       identical, because the consent is what unlocks the pull. Comparing the
+       source text catches a drift that no behavioural test would, since both
+       files would still pass their own suites while checking different things. */
+    const fs = await import("node:fs");
+    const url = await import("node:url");
+    const path = await import("node:path");
+    const here = path.dirname(url.fileURLToPath(import.meta.url));
+    const read = (p) => fs.readFileSync(path.resolve(here, p), "utf8");
+    const QUERY = "SELECT 1 FROM clients WHERE id = $1 AND org_id = $2";
+
+    for (const f of ["../../api/consent/capture.mjs", "../../api/finance/soft-pull.mjs"]) {
+      assert.ok(read(f).includes(QUERY),
+        `${f} no longer scopes its client check by org with the shared query`);
+    }
   });
 });
 
@@ -505,5 +631,330 @@ describe("the status read", () => {
     assert.equal(res.statusCode, 200);
     assert.equal(res.body.status.valid, false);
     assert.equal(res.body.status.reason, "none_on_file");
+  });
+});
+
+
+// ── the client-approval link, and the identity boolean ─────────────────────
+
+/* WHAT THESE PROVE, AND WHY THEY ARE IN THIS FILE RATHER THAN A NEW ONE.
+ *
+ * OWNER DECISION, 2026-08-19: identity capture is CLIENT SELF-SERVE. Staff
+ * never see, type or handle a Social Security number. A closer hands over a
+ * signed link; the client fills the form in themselves. So the GET here gained
+ * exactly two things — a freshly signed link, and a yes/no on whether an
+ * identity is already held — and the third test below is the one that matters
+ * most: NOTHING ELSE about that identity may come out of this endpoint.
+ *
+ * These are .test.mjs and not .pg.test.mjs for the reason in this file's own
+ * header: with DATABASE_URL unset the pg tests skip and the suite still reports
+ * zero failures, so a PII rule proven only there is a PII rule unproven on most
+ * runs. The stub answers the pii_identity read like any other query. */
+
+const APPROVE_SECRET = "s".repeat(48);
+const PII_KEY = Buffer.alloc(32, 7).toString("base64");
+const IDENTITY = /FROM pii_identity/i;
+
+/* Distinctive junk, on purpose. Every value here is odd enough that finding it
+   anywhere inside the serialized response is proof of a leak rather than a
+   coincidence — which is what lets the deny-list scan the whole body instead of
+   three named fields. The two-letter state is the one exception and is left out
+   of the value scan: "AZ" is too short to be evidence of anything. It is
+   covered by the key scan instead. */
+const FAKE = Object.freeze({
+  ssn: "123456789",
+  last4: "6789",
+  dob: "1980-02-29",
+  line1: "77 Nowhere Ln",
+  city: "Zzyzxville",
+  state: "AZ",
+  postal: "85001"
+});
+
+/* A pii_identity row as the table really holds one: the SSN as ciphertext, the
+   date of birth and the addresses in the clear. Encrypted for real, with the
+   same throwaway key src/pii/index.test.mjs uses, so readIdentity() genuinely
+   decrypts it and genuinely produces an ssn_last4 — a deny-list run against a
+   record that could not be decrypted would pass without proving anything. */
+function identityRow(over = {}) {
+  return {
+    id: "77777777-7777-7777-7777-777777777777",
+    org_id: ORG,
+    client_id: CLIENT,
+    ssn_enc: encryptSsn(FAKE.ssn, { clientId: CLIENT, env: { PII_ENC_KEY: PII_KEY } }),
+    dob: FAKE.dob,
+    addresses: [{
+      addressLine1: FAKE.line1, city: FAKE.city, state: FAKE.state, postalCode: FAKE.postal
+    }],
+    created_at: new Date(),
+    updated_at: new Date(),
+    ...over
+  };
+}
+
+/* withEnv — set process.env for the length of one call and put it back exactly
+   as it was, including "it was not set at all". Same shape as the DATABASE_URL
+   test at the top of this file. node:test runs the tests in a file one after
+   another, so a mutation restored in a finally cannot reach another test. */
+async function withEnv(vars, fn) {
+  const saved = {};
+  for (const k of Object.keys(vars)) saved[k] = process.env[k];
+  const put = (k, v) => { if (v === undefined) delete process.env[k]; else process.env[k] = v; };
+  for (const [k, v] of Object.entries(vars)) put(k, v);
+  try {
+    return await fn();
+  } finally {
+    for (const [k, v] of Object.entries(saved)) put(k, v);
+  }
+}
+
+/* Every key at every depth of the response, so the scan cannot be defeated by
+   nesting the leak one level down. */
+function everyKey(value, out = []) {
+  if (Array.isArray(value)) { value.forEach((v) => everyKey(v, out)); return out; }
+  if (value && typeof value === "object") {
+    for (const [k, v] of Object.entries(value)) { out.push(k); everyKey(v, out); }
+  }
+  return out;
+}
+
+describe("the client approval link", () => {
+  test("a staff GET carries a link that really opens the client's approval form", async () => {
+    const body = await withEnv(
+      { DOCUMENT_URL_SECRET: APPROVE_SECRET, PUBLIC_BASE_URL: "https://fundhub.test" },
+      async () => {
+        stubDb({ session: { role: "closer" }, answers: [[SELECT, { rows: [consentRow()] }]] });
+        const res = mkRes();
+        await handler(mkReq({ query: { client_id: CLIENT } }), res);
+        assert.equal(res.statusCode, 200);
+        return res.body;
+      }
+    );
+
+    const link = body.approval_link;
+    assert.ok(link, "no approval link was minted for a staff GET");
+    assert.equal(link.unavailable_reason, null);
+    assert.ok(
+      link.url.startsWith("https://fundhub.test/app/soft-pull-approve.html?"),
+      `the link does not point at the client form: ${link.url}`
+    );
+
+    /* THE REAL ASSERTION. Not "a url-shaped string came back" — the signature
+       in it verifies, which is the only thing that decides whether the page
+       opens for the client or shows them "this link is invalid". */
+    const u = new URL(link.url);
+    const payload = verifySoftPullApproveToken({
+      orgId: u.searchParams.get("org"),
+      clientId: u.searchParams.get("client"),
+      exp: u.searchParams.get("exp"),
+      sig: u.searchParams.get("sig"),
+      secret: APPROVE_SECRET
+    });
+    assert.ok(payload, "the minted link does not verify — the client would be turned away");
+    assert.equal(payload.orgId, ORG);
+    assert.equal(payload.clientId, CLIENT);
+
+    // The expiry the screen shows has to be the expiry the link actually has.
+    assert.equal(new Date(link.expires_at).getTime(), payload.expiresAt * 1000);
+    const hoursOut = (new Date(link.expires_at).getTime() - Date.now()) / 3_600_000;
+    assert.ok(hoursOut > 5.5 && hoursOut < 6.5, `expiry is ${hoursOut}h out, expected the 6h default`);
+  });
+
+  test("with no base url configured the link falls back to the live site", async () => {
+    /* publicBaseUrl() in the handler is a byte-for-byte copy of the one at
+       src/sales/closer-deck.mjs:331-335, because that file mints this same link
+       for the emailed version of this flow. A copied link and an emailed link
+       have to resolve to the same place. */
+    const body = await withEnv(
+      { DOCUMENT_URL_SECRET: APPROVE_SECRET, PUBLIC_BASE_URL: undefined, URL: undefined },
+      async () => {
+        stubDb({ session: { role: "closer" }, answers: [[SELECT, { rows: [consentRow()] }]] });
+        const res = mkRes();
+        await handler(mkReq({ query: { client_id: CLIENT } }), res);
+        return res.body;
+      }
+    );
+    assert.ok(body.approval_link.url.startsWith("https://fundhub.ai/app/soft-pull-approve.html?"),
+      body.approval_link.url);
+  });
+
+  for (const [label, value] of [
+    ["unset", undefined],
+    ["too short to sign with", "nowhere near thirty-two"]
+  ]) {
+    test(`a signing key that is ${label} leaves the link null WITH WORDS, and does not take the screen down`, async () => {
+      /* FAIL SOFT, VISIBLY. secretFromEnv() throws
+         (src/documents/signed-url.mjs:29-37). If that throw escaped, the whole
+         consent answer would 500 — and this endpoint is also the only thing
+         telling a closer whether the client has consented at all. A missing
+         config value must not blank that out. */
+      const out = await withEnv({ DOCUMENT_URL_SECRET: value }, async () => {
+        stubDb({ session: { role: "closer" }, answers: [[SELECT, { rows: [consentRow()] }]] });
+        const res = mkRes();
+        await handler(mkReq({ query: { client_id: CLIENT } }), res);
+        return res;
+      });
+
+      assert.equal(out.statusCode, 200, "a missing signing key took the consent screen down");
+      assert.equal(out.body.ok, true);
+      assert.equal(out.body.status.valid, true, "the consent answer was lost along with the link");
+      assert.ok(Array.isArray(out.body.history));
+
+      const link = out.body.approval_link;
+      assert.equal(link.url, null);
+      assert.equal(link.expires_at, null);
+
+      const why = link.unavailable_reason;
+      assert.ok(typeof why === "string" && why.length > 40 && /\s/.test(why),
+        `the reason is a machine code, not something to show a closer: ${JSON.stringify(why)}`);
+      assert.match(why, /DOCUMENT_URL_SECRET/,
+        "the reason does not name the setting, so nobody can act on it");
+      assert.ok(!why.includes(APPROVE_SECRET), "the reason quoted a secret value");
+    });
+  }
+
+  test("a client's own session gets no bearer link minted into it", async () => {
+    /* The link is a bearer credential — the HMAC in the url is the whole
+       credential. A signed-in client can already reach the form, so minting one
+       into their response would put a credential somewhere it has no reason to
+       be. Staff get it because handing it over IS the flow. */
+    const body = await withEnv({ DOCUMENT_URL_SECRET: APPROVE_SECRET }, async () => {
+      stubDb({
+        session: null,
+        answers: [
+          [/UPDATE account_sessions/i, { rows: [{ id: "as-1", account_id: "acct-1", org_id: ORG, expires_at: new Date(Date.now() + 3_600_000) }] }],
+          [/FROM accounts WHERE id/i, { rows: [{
+            id: "acct-1", org_id: ORG, kind: "client", email: "c@example.com",
+            name: "Dana Client", status: "active",
+            client_id: CLIENT, affiliate_id: null, partner_id: null
+          }] }],
+          [SELECT, { rows: [consentRow()] }]
+        ]
+      });
+      const res = mkRes();
+      await handler(mkReq({ query: { client_id: CLIENT } }), res);
+      assert.equal(res.statusCode, 200, `the client session was refused: ${JSON.stringify(res.body)}`);
+      return res.body;
+    });
+    assert.equal(body.approval_link, null, "a signed link was minted into a client's own response");
+  });
+
+  test("no link and no identity read for a consent kind that has neither", async () => {
+    /* dispute_authorization has no approval page behind it and no bureau pull.
+       Minting the soft-pull link there would hand a client the wrong form, and
+       reading pii_identity on that request would touch the identity table for
+       no reason at all. */
+    const body = await withEnv({ DOCUMENT_URL_SECRET: APPROVE_SECRET }, async () => {
+      stubDb({ session: { role: "closer" }, answers: [[SELECT, { rows: [] }]] });
+      const res = mkRes();
+      await handler(mkReq({ query: { client_id: CLIENT, kind: "dispute_authorization" } }), res);
+      assert.equal(res.statusCode, 200);
+      return res.body;
+    });
+    assert.equal(body.approval_link, null);
+    assert.equal(body.identity, null);
+    assert.ok(!calls.some((c) => IDENTITY.test(c.text)),
+      "the identity table was read on a request that has nothing to do with a credit pull");
+  });
+});
+
+describe("whether an identity is on file", () => {
+  const cases = [
+    ["no identity row at all", [], false],
+    ["a row with encrypted SSN bytes", [identityRow()], true],
+    ["a row that exists but holds no SSN", [identityRow({ ssn_enc: null })], false]
+  ];
+
+  for (const [label, rows, expected] of cases) {
+    test(`${label} reads as ${expected}`, async () => {
+      /* The pull refuses on the SSN specifically — src/finance/crs-pull.mjs
+         :548-559 loads the identity and gives up when there is none. A row with
+         a date of birth and an address but no number is still a refusal, so it
+         has to read as false here or the screen would tell a closer they are
+         clear when they are not. */
+      const body = await withEnv({ PII_ENC_KEY: PII_KEY, DOCUMENT_URL_SECRET: APPROVE_SECRET }, async () => {
+        stubDb({
+          session: { role: "closer" },
+          answers: [[SELECT, { rows: [consentRow()] }], [IDENTITY, { rows }]]
+        });
+        const res = mkRes();
+        await handler(mkReq({ query: { client_id: CLIENT } }), res);
+        assert.equal(res.statusCode, 200);
+        return res.body;
+      });
+      assert.deepEqual(body.identity, { on_file: expected });
+    });
+  }
+
+  test("the presence check does not write an access-log row", async () => {
+    /* readIdentity() discloses nothing and is deliberately not logged
+       (src/pii/index.mjs, rule 2). revealSsn() IS logged. Using the logged one
+       for a presence check would bury the entries an audit actually cares about
+       under thousands of screen loads where nobody looked at anything. */
+    await withEnv({ PII_ENC_KEY: PII_KEY, DOCUMENT_URL_SECRET: APPROVE_SECRET }, async () => {
+      stubDb({
+        session: { role: "closer" },
+        answers: [[SELECT, { rows: [consentRow()] }], [IDENTITY, { rows: [identityRow()] }]]
+      });
+      const res = mkRes();
+      await handler(mkReq({ query: { client_id: CLIENT } }), res);
+      assert.equal(res.statusCode, 200);
+    });
+    assert.ok(!calls.some((c) => /pii_access_log/i.test(c.text)),
+      "a page load was recorded as somebody accessing an SSN");
+  });
+});
+
+describe("no identity data leaves this endpoint", () => {
+  test("NOTHING from the identity record appears anywhere in the GET response", async () => {
+    /* THE MOST IMPORTANT TEST FOR THE OWNER DECISION OF 2026-08-19. Staff never
+       see a Social Security number, and this endpoint is the one a staff screen
+       calls. A boolean and a link expiry are the entire permitted surface.
+
+       WRITTEN AS A DENY-LIST OVER THE WHOLE SERIALIZED BODY, not as a check of
+       three named fields, and that is the point: a field added to this response
+       next month cannot leak past it. Two scans, because a leak has two shapes
+       — the VALUE somewhere in the payload, and a KEY that means identity data
+       wherever it is nested. */
+    const body = await withEnv({ PII_ENC_KEY: PII_KEY, DOCUMENT_URL_SECRET: APPROVE_SECRET }, async () => {
+      stubDb({
+        session: { role: "closer" },
+        answers: [[SELECT, { rows: [consentRow()] }], [IDENTITY, { rows: [identityRow()] }]]
+      });
+      const res = mkRes();
+      await handler(mkReq({ query: { client_id: CLIENT } }), res);
+      assert.equal(res.statusCode, 200);
+      return res.body;
+    });
+
+    /* NOT VACUOUS. If the identity read had silently stopped happening, every
+       assertion below would pass while proving nothing. This says the record
+       really was read, really was decryptable, and really did contain the
+       values being denied.
+
+       DELIBERATELY NOT A deepEqual ON THE WHOLE OBJECT. An exact-shape check
+       here would fail on any added field before the scans below ever ran, so
+       the scans — the part that generalises to a field nobody has written yet —
+       would never be the thing that caught a leak. The exact shape is pinned in
+       "whether an identity is on file" above; this test's job is the scan. */
+    assert.equal(body.identity && body.identity.on_file, true,
+      "the identity record was never read, so this test proves nothing");
+
+    const serialized = JSON.stringify(body);
+
+    for (const [what, value] of Object.entries(FAKE)) {
+      if (what === "state") continue; // two letters — see the note on FAKE
+      assert.ok(!serialized.includes(value),
+        `the ${what} from the identity record came back in the response`);
+    }
+    assert.ok(!serialized.includes("123-45-6789"), "a formatted SSN came back in the response");
+    assert.ok(!/\b\d{9}\b/.test(serialized), "a nine-digit run came back in the response");
+    assert.ok(!serialized.includes("Buffer"), "raw ciphertext bytes came back in the response");
+
+    const FORBIDDEN_KEY = /ssn|social|dob|birth|address|postal|zip|city/i;
+    for (const key of everyKey(body)) {
+      assert.ok(!FORBIDDEN_KEY.test(key),
+        `the response grew a field named ${JSON.stringify(key)} — identity data must not leave this endpoint`);
+    }
   });
 });

@@ -9,17 +9,28 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 // THE PROBLEM THIS FILE EXISTS TO SOLVE
 //
-// The engine collapses unknown to zero (see ./engine.mjs, note 2). Hand it a
-// client whose negatives nobody has typed in and it reports zero negatives, which
-// is one of the three conditions for `fundable`. The engine cannot tell "we
-// looked and there are none" from "nobody has entered this", and it never will —
-// it is a pure function over the numbers it is given.
+// The engine keeps an unknown count as null and never fills it in
+// (./vendor/underwriter.cjs:38-43). Every gate it has is written as `=== 0` —
+// `neg === 0` decides `fundable` (:212), `lates === 0` decides loan stacking
+// (:199-202) — and null fails all of them. So a client whose negatives nobody
+// has typed in comes out NOT fundable, with loan funding withheld, exactly like
+// a client whose file is genuinely dirty. The engine is right to refuse. What it
+// cannot do is say WHY it refused: it is a pure function over the numbers it is
+// given, and nothing in those numbers tells it whether a null means "we looked
+// and there are none" or "nobody has entered this".
 //
 // So this file tracks that distinction on OUR side. Every bureau field is either
 // FILLED from a real stored value or RECORDED AS MISSING, with the name of the
 // thing an owner would have to enter. `./report.mjs` then marks any suggestion
 // resting on a missing field, and the endpoint names the field instead of
 // printing a confident sentence built on a null.
+//
+// THE DIRECTION OF THE ERROR IS THE SAFE ONE, and this comment said the opposite
+// until 2026-08-19. A gap makes a client's position read WORSE than it is, never
+// better — an unknown count never passes for a clean file. So what the missing
+// map defends against is not an overstatement. It is the reverse: an operator
+// reading "not fundable, $0" off a screen and concluding the client's credit is
+// bad, when in fact six numbers were simply never entered.
 //
 // Absence is never repaired here. Nothing is coalesced to zero, no score is
 // inferred from another bureau, no date is estimated. If it is not stored, it is
@@ -310,7 +321,12 @@ export function toBureaus({ tradelines = [], liabilities = [], crsResults = [], 
         field: "inquiries",
         source: `clients.custom_fields.${INQUIRY_FIELDS[key]}`,
         reason: "not entered",
-        effect: "engine counts 0 inquiries for this bureau; a real count could only raise the total"
+        // NOT "counts 0". An AVAILABLE bureau with no count stays null
+        // (./vendor/underwriter.cjs:54-58), and the total refuses to add up
+        // while any one slot is null (:60-63) — so one blank field blanks the
+        // whole figure, not just this bureau's share of it.
+        effect: "this bureau's inquiry count is unknown, and one unknown bureau leaves the " +
+                "whole inquiry total unknown — no inquiry figure can be shown"
       });
     }
     if (utilization.pct === null) {
@@ -338,7 +354,12 @@ export function toBureaus({ tradelines = [], liabilities = [], crsResults = [], 
         source: "clients.custom_fields.crs_negative_items_count",
         reason: "not entered",
         // The consequential one. Worth spelling out at the point of loss.
-        effect: "engine counts 0 negatives, and 0 negatives is one of the three conditions for `fundable`"
+        // NOT "counts 0". The engine keeps it null (./vendor/underwriter.cjs:144)
+        // and `fundable` requires `neg === 0`, which null fails (:212) — so a
+        // blank field and a dirty file produce the same answer on the screen.
+        effect: "the negatives count stays unknown, and `fundable` requires a measured zero — " +
+                "so this client reads NOT fundable until someone enters the count, even if " +
+                "their file is spotless"
       });
     }
     if (lates === null) {
@@ -346,7 +367,11 @@ export function toBureaus({ tradelines = [], liabilities = [], crsResults = [], 
         field: "late_payment_events",
         source: "clients.custom_fields.crs_late_payments_count",
         reason: "not entered",
-        effect: "engine counts 0 late payments, which is a condition for loan stacking"
+        // NOT "counts 0". Null again (./vendor/underwriter.cjs:145), and loan
+        // stacking needs `lates === 0` (:199-202), so the funding is withheld
+        // rather than granted.
+        effect: "the late-payment count stays unknown, and loan stacking needs a measured zero — " +
+                "so every dollar of loan funding is withheld until someone enters it"
       });
     }
     if (lines.length === 0) {
