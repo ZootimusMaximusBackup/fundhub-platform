@@ -38,6 +38,17 @@ import { isDraftTemplateCopy, isDraftTemplateRow } from "./draft-guard.mjs";
 import { fenceVerdict, MESSAGING_DRY_RUN } from "../lib/dry-run.mjs";
 import { signUnsubscribeUrl, withUnsubscribeFooter } from "./unsubscribe.mjs";
 
+/* Unedited sample copy, recognised by the opening of the standard lorem-ipsum
+   passage rather than by any single Latin word. "dolor", "sit" and "amet" all
+   occur in real Spanish and Portuguese sentences, and a guard that blocks a
+   genuine message is worse than the gap it closes. Exported so a test can hold
+   the rule still. */
+const PLACEHOLDER_RE = /lorem\s+ipsum/i;
+
+export function isPlaceholderCopy(text) {
+  return PLACEHOLDER_RE.test(String(text ?? ""));
+}
+
 /* The public origin an emailed link has to point at. Same expression the rest
    of the messaging path already uses to build portal links
    (src/workflows/messaging.mjs), rather than a fourth base-URL convention:
@@ -384,6 +395,33 @@ export async function dispatchOne(db, message, options = {}) {
       );
       return await finalise(db, message, "blocked", OUTCOME.BLOCKED,
         "draft_template", null);
+    }
+
+    /* ---- 1c. UNFINISHED PLACEHOLDER COPY ---------------------------------
+
+       Same rule as the [DRAFT] guard above, for copy that was never marked.
+       32 of the 237 live message templates are unedited sample copy carrying
+       lorem ipsum — a whole family of BS-EMAIL-, BS-FUND- and BS-REPAIR- rows
+       imported verbatim from the source document and never written (measured
+       against production 2026-08-18).
+
+       THEY CANNOT BE SENT TODAY, and that is worth being precise about: all 32
+       are compliance_passed = false, and sendTemplated refuses an unapproved
+       template. The gap this closes is the one human step between here and a
+       client reading Latin — somebody opening the template editor and pressing
+       Approve on a row they have not read. The [DRAFT] guard would not catch
+       it, because these rows carry no [DRAFT] marker.
+
+       Deliberately narrow. It looks for the two openings of the standard
+       lorem-ipsum passage, not for stray Latin words: "dolor" alone appears in
+       ordinary Spanish and Portuguese copy, and a guard that blocks real
+       messages is worse than the one it replaced. */
+    if (isPlaceholderCopy(message.rendered_body) || isPlaceholderCopy(message.subject)) {
+      console.warn(
+        `[dispatch] blocked message ${message.id}: the copy is still unedited placeholder text`
+      );
+      return await finalise(db, message, "blocked", OUTCOME.BLOCKED,
+        "placeholder_copy", null);
     }
     if (message.template_key) {
       const { rows: tplRows } = await db.query(

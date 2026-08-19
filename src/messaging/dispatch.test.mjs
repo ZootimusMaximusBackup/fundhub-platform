@@ -16,7 +16,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  dispatchOne, dispatchDue, claimDue, OUTCOME, MAX_ATTEMPTS, nextQuietHoursEnd
+  dispatchOne, dispatchDue, claimDue, OUTCOME, MAX_ATTEMPTS, nextQuietHoursEnd,
+  isPlaceholderCopy
 } from "./dispatch.mjs";
 import { clearRuleCache } from "../compliance/screen.mjs";
 import { inQuietHours } from "./gate.mjs";
@@ -100,11 +101,11 @@ const ENV = {
   MAILGUN_SEND_FROM: "Fundhub <no-reply@mg.example.com>",
   GHL_RELAY_API_KEY: "ghl-token",
   /* ADDED 2026-08-18 (T5-14). Outbound email now carries a signed unsubscribe
-     link, and dispatch HOLDS an email it cannot sign one for rather than
-     sending commercial mail with no way out. So a send test has to declare a
-     signing secret, exactly as production does — without one every email test
-     here correctly returns no_unsubscribe instead of sent. The value is a
-     throwaway 64-char string; it only has to be long enough to be accepted. */
+     link, appended at dispatch. Declared here so these tests exercise the real
+     production path — with the secret set, the footer is built and the RFC 8058
+     headers go out; without it dispatch sends anyway and logs loudly, which is
+     the degraded path rather than the one worth testing by default. The value
+     is a throwaway string; it only has to be long enough to be accepted. */
   UNSUBSCRIBE_TOKEN_SECRET: "test-unsubscribe-secret-0123456789abcdef0123456789abcdef",
   APP_BASE_URL: "https://fundhub.test"
 };
@@ -564,4 +565,47 @@ describe("nextQuietHoursEnd", () => {
       assert.ok(!inQuietHours(due), `woken back inside quiet hours from ${from.toISOString()}`);
     }
   });
+});
+
+/* ── T5-11 · unfinished placeholder copy never transmits ──────────────────
+   32 of the 237 live message templates are unedited sample copy carrying
+   lorem ipsum (measured against production 2026-08-18): a whole family of
+   BS-EMAIL-, BS-FUND- and BS-REPAIR- rows imported verbatim from the source
+   document and never written.
+
+   They cannot be sent today — all 32 are compliance_passed = false and
+   sendTemplated refuses an unapproved template. What this guard closes is the
+   single human step between here and a client reading Latin: somebody pressing
+   Approve in the template editor on a row they have not read. */
+
+test("dispatch: a message whose copy is still lorem ipsum is blocked, not sent", async () => {
+  const db = fakeDb();
+  const f = spy();
+  const res = await dispatchOne(db, claimed({
+    rendered_body: "Lorem ipsum dolor sit amet, consectetur adipisicing elit."
+  }), { fetchImpl: f, env: ENV, now: MIDDAY });
+  assert.strictEqual(res.outcome, OUTCOME.BLOCKED);
+  assert.strictEqual(res.detail, "placeholder_copy");
+  assert.strictEqual(f.calls.length, 0, "nothing may reach a provider");
+});
+
+test("dispatch: placeholder copy in the SUBJECT is blocked too", async () => {
+  const db = fakeDb();
+  const f = spy();
+  const res = await dispatchOne(db, claimed({ subject: "Lorem Ipsum" }), { fetchImpl: f, env: ENV, now: MIDDAY });
+  assert.strictEqual(res.outcome, OUTCOME.BLOCKED);
+  assert.strictEqual(f.calls.length, 0);
+});
+
+test("dispatch: the placeholder guard does not block real Spanish or Portuguese copy", () => {
+  /* The rule is narrow on purpose. "dolor", "sit" and "amet" all appear in
+     ordinary Spanish and Portuguese sentences, and a guard that stops a genuine
+     message is worse than the gap it closes. */
+  assert.equal(isPlaceholderCopy("Lamentamos el dolor de cabeza que esto le causó."), false);
+  assert.equal(isPlaceholderCopy("Sit down and read this."), false);
+  assert.equal(isPlaceholderCopy("Your documents were received."), false);
+  assert.equal(isPlaceholderCopy(""), false);
+  assert.equal(isPlaceholderCopy(null), false);
+  assert.equal(isPlaceholderCopy("Lorem ipsum dolor sit amet"), true);
+  assert.equal(isPlaceholderCopy("LOREM   IPSUM"), true, "case and spacing do not rescue it");
 });
