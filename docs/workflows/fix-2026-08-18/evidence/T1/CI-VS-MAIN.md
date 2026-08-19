@@ -36,3 +36,31 @@ and the rest. None is a screen this branch changed.
 project and no file arguments it prints its own help text and exits 1, having type-checked nothing.
 It is listed in CLAUDE.md §6 and has presumably never actually run. Not caused here and not fixable
 from inside this thread — adding a tsconfig is a repo-wide change.
+
+---
+
+## Re-measured after rebasing onto `0e8a7b9` (T11 merged), 2026-08-19
+
+Main moved while this branch was open. Rebased, regenerated the journeys (they are generated —
+never hand-merged), and re-ran everything. The picture is unchanged: **still no failure that main
+does not already have.**
+
+| | main @ `0e8a7b9` | this branch |
+|---|---|---|
+| `npm run lint` | clean | clean, 1325 files |
+| `npm test` | **3 fail** | 5864 tests · 5858 pass · **3 fail** |
+
+The third failure is new since the earlier comparison and **is not from this branch**:
+
+- `fence: nothing reaches the network except through src/lib/outbound-fetch.mjs`
+  — `src/lib/no-unfenced-transmit.test.mjs`, naming **`api/social/generate.mjs`**.
+
+That file arrived with T11, along with the fence test that catches it. Verified directly: a clean
+checkout of `origin/main` fails the identical test naming the identical file. This branch never
+touches it (`git diff --name-only origin/main...HEAD` does not list it).
+
+**Worth someone's attention, but not this thread's:** it means a module can currently reach the
+network without going through the declared fence, on a regulated product. T11's file, T11's call.
+
+Route counts moved 176 → 180 (T11's three plus this branch's one); `client-actual.md` reads
+**28 of 180** and still carries `/api/content/welcome-video`.
