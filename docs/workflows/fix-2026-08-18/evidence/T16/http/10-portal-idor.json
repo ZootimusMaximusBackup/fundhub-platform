@@ -1,0 +1,91 @@
+{
+  "item": "T16-15",
+  "verdict": "COULD NOT TEST",
+  "why": "The cross-file test needs a signed-in CLIENT session. client@fundhub.ai does not authenticate on production: POST /api/auth/login returned HTTP 401 {\"ok\":false,\"error\":\"invalid_credentials\"} with the same STAFF_E2E_PASSWORD that signed in owner, closer, sales, advisor, affiliate and partner. The only other way into that account is a magic link, and this batch's hard stops forbid magic links. So the portal could not be opened as its own owner, and an IDOR test that cannot sign in as the victim proves nothing.",
+  "corroboration": "This is not new. docs/workflows/verification-rerun-2026-08-16.md already recorded 'Client portal | client@fundhub.ai | 401 | FAIL — invalid_credentials (not on prod)'. So the client test account has been unusable on production since at least 2026-08-16.",
+  "client_login_attempt": {
+    "email": "client@fundhub.ai",
+    "status": 401,
+    "body": "{\"ok\":false,\"error\":\"invalid_credentials\"}"
+  },
+  "what_WAS_established_instead": {
+    "note": "The portal read endpoints were still swept as every other principal. This does not prove a client cannot read another client's file, but it does prove the endpoints are not open to the wrong principal type.",
+    "rows": [
+      {
+        "role": "closer",
+        "path": "/api/read/portal-contracts",
+        "status": 400,
+        "body_length": 87
+      },
+      {
+        "role": "closer",
+        "path": "/api/read/portal-summary",
+        "status": 400,
+        "body_length": 91
+      },
+      {
+        "role": "sales",
+        "path": "/api/read/portal-contracts",
+        "status": 400,
+        "body_length": 87
+      },
+      {
+        "role": "sales",
+        "path": "/api/read/portal-summary",
+        "status": 400,
+        "body_length": 91
+      },
+      {
+        "role": "advisor",
+        "path": "/api/read/portal-contracts",
+        "status": 400,
+        "body_length": 87
+      },
+      {
+        "role": "advisor",
+        "path": "/api/read/portal-summary",
+        "status": 400,
+        "body_length": 91
+      },
+      {
+        "role": "affiliate",
+        "path": "/api/read/portal-contracts",
+        "status": 403,
+        "body_length": 79
+      },
+      {
+        "role": "affiliate",
+        "path": "/api/read/portal-summary",
+        "status": 403,
+        "body_length": 79
+      },
+      {
+        "role": "partner",
+        "path": "/api/read/portal-contracts",
+        "status": 403,
+        "body_length": 79
+      },
+      {
+        "role": "partner",
+        "path": "/api/read/portal-summary",
+        "status": 403,
+        "body_length": 79
+      },
+      {
+        "role": "NO SESSION",
+        "path": "/api/read/portal-contracts",
+        "status": 401,
+        "body_length": 35
+      },
+      {
+        "role": "NO SESSION",
+        "path": "/api/read/portal-summary",
+        "status": 401,
+        "body_length": 35
+      }
+    ]
+  },
+  "to_finish_this_item": [
+    "Give client@fundhub.ai a working password on production (or provide a separate client credential), then re-run: sign in as the client, read the portal's own client id from its own responses, then request the same reads with 8556bedc-46e1-4d85-b0cd-a24adfee1521 substituted and compare body hashes."
+  ]
+}

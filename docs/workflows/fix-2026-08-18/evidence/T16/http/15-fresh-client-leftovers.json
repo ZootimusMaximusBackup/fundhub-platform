@@ -1,0 +1,213 @@
+{
+  "item": "T16-02 (leftovers)",
+  "question": "After a DELETE that answered 200 'removed', can the product's own reads still see the client?",
+  "ids": {
+    "fresh_deleted_200": "2284bef5-4036-4785-b123-8fca5af379ab",
+    "walked_delete_500": "cb6f5839-2979-491d-9080-00ca51833b07",
+    "demo_created_for_B2": "3c15e95f-71c2-49a2-92fb-47f44bc06107"
+  },
+  "per_endpoint": [
+    {
+      "path": "/api/read/clients?limit=500",
+      "status": 404,
+      "content_type": "application/json",
+      "body_length": 54,
+      "elapsed_ms": 405,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": false,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/dashboard/clients?limit=500",
+      "status": 200,
+      "content_type": "application/json",
+      "body_length": 19955,
+      "elapsed_ms": 718,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": false,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/dashboard/pipeline",
+      "status": 200,
+      "content_type": "application/json",
+      "body_length": 8288,
+      "elapsed_ms": 630,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": false,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/read/documents?limit=200",
+      "status": 200,
+      "content_type": "application/json",
+      "body_length": 7705,
+      "elapsed_ms": 689,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": true,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/read/transactions?limit=200",
+      "status": 400,
+      "content_type": "application/json",
+      "body_length": 63,
+      "elapsed_ms": 955,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": false,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/read/tradelines?limit=200",
+      "status": 400,
+      "content_type": "application/json",
+      "body_length": 63,
+      "elapsed_ms": 338,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": false,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/read/invoices?limit=200",
+      "status": 200,
+      "content_type": "application/json",
+      "body_length": 1024,
+      "elapsed_ms": 506,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": false,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/read/commissions?limit=200",
+      "status": 200,
+      "content_type": "application/json",
+      "body_length": 71,
+      "elapsed_ms": 552,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": false,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/read/messages?limit=200",
+      "status": 400,
+      "content_type": "application/json",
+      "body_length": 40,
+      "elapsed_ms": 442,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": false,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/read/conversations?limit=200",
+      "status": 400,
+      "content_type": "application/json",
+      "body_length": 40,
+      "elapsed_ms": 346,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": false,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/read/inquiries?limit=200",
+      "status": 200,
+      "content_type": "application/json",
+      "body_length": 71,
+      "elapsed_ms": 498,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": false,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/read/entitlements?limit=200",
+      "status": 200,
+      "content_type": "application/json",
+      "body_length": 666,
+      "elapsed_ms": 600,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": false,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/read/customer-insights?limit=200",
+      "status": 200,
+      "content_type": "application/json",
+      "body_length": 1052,
+      "elapsed_ms": 293,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": false,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/read/call-outcomes?limit=200",
+      "status": 200,
+      "content_type": "application/json",
+      "body_length": 3836,
+      "elapsed_ms": 564,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": false,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/read/funding-rounds?limit=200",
+      "status": 200,
+      "content_type": "application/json",
+      "body_length": 71,
+      "elapsed_ms": 290,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": false,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/read/finance-os",
+      "status": 400,
+      "content_type": "application/json",
+      "body_length": 63,
+      "elapsed_ms": 430,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": false,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/read/money-map",
+      "status": 400,
+      "content_type": "application/json",
+      "body_length": 63,
+      "elapsed_ms": 236,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": false,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/read/banking-surface",
+      "status": 403,
+      "content_type": "application/json",
+      "body_length": 67,
+      "elapsed_ms": 660,
+      "mentions_fresh_deleted_client": false,
+      "mentions_walked_client": false,
+      "mentions_demo2_client": false
+    },
+    {
+      "path": "/api/dashboard/client?id=fresh(deleted,200)",
+      "status": 404,
+      "body_length": 32,
+      "note": "not found"
+    },
+    {
+      "path": "/api/dashboard/client?id=walked(delete 500)",
+      "status": 200,
+      "body_length": 1138,
+      "note": "STILL EXISTS"
+    },
+    {
+      "path": "/api/dashboard/client?id=demo2(alive)",
+      "status": 200,
+      "body_length": 2577,
+      "note": "STILL EXISTS"
+    }
+  ],
+  "verdict": {
+    "fresh_client_gone_everywhere": true,
+    "walked_client_still_present": true
+  }
+}

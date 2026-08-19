@@ -1,0 +1,44 @@
+{
+  "what": "Does the credit-dispute feature have anywhere to read and write? Measured as the ordinary app login (fundhub_app), which cannot skip row locks.",
+  "steps": [
+    {
+      "step": "1. AFTER migration 200 — the fixed state",
+      "owner_sees": {
+        "n": 5
+      },
+      "app_sees": {
+        "n": 5
+      },
+      "app_can_write": {
+        "id": "29051914-b205-43c6-bb64-cb32a0efd855"
+      }
+    },
+    {
+      "step": "2. BROKEN state recreated (row lock on, no key) — this is live today",
+      "owner_sees": {
+        "n": 6
+      },
+      "app_sees": {
+        "n": 0
+      },
+      "app_can_write": {
+        "ERROR": "new row violates row-level security policy for table \"furnisher_mail_addresses\"",
+        "CODE": "42501"
+      },
+      "note": "Owner still sees every row. The app sees none, and its write is refused. No error on read — a locked-out read looks exactly like an empty table, which is why nothing alarmed."
+    },
+    {
+      "step": "3. AFTER the standing sweep in migration 201 repaired it on its own",
+      "owner_sees": {
+        "n": 6
+      },
+      "app_sees": {
+        "n": 6
+      },
+      "app_can_write": {
+        "ERROR": "duplicate key value violates unique constraint \"furnisher_mail_addresses_org_id_name_norm_key\"",
+        "CODE": "23505"
+      }
+    }
+  ]
+}

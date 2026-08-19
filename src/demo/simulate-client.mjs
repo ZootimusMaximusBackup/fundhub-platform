@@ -119,8 +119,12 @@ export async function loadSimulatedClient(db, { orgId, staffId = null } = {}) {
 
   const payload = buildSimulatedCrsPayload({ email, name });
   const crsRes = await db.query(
-    `INSERT INTO crs_results (org_id, client_id, result, outcome_tier)
-     VALUES ($1, $2, $3::jsonb, $4)
+    // is_demo on the ROW, not just on the client. Audit item T16-23 found 61
+    // rows across 7 tables that were demo work stored as if it were real, which
+    // makes cleanup and reporting quietly wrong. Every table this function
+    // writes to carries the column; it was simply never set.
+    `INSERT INTO crs_results (org_id, client_id, result, outcome_tier, is_demo)
+     VALUES ($1, $2, $3::jsonb, $4, true)
      RETURNING *`,
     [orgId, client.id, JSON.stringify(payload), "FULL_FUNDING"]
   );
@@ -140,8 +144,8 @@ export async function loadSimulatedClient(db, { orgId, staffId = null } = {}) {
   const stage = await firstSalesStage(db, orgId);
   if (stage) {
     const cardRes = await db.query(
-      `INSERT INTO cards (org_id, client_id, pipeline_id, stage_id, owner)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO cards (org_id, client_id, pipeline_id, stage_id, owner, is_demo)
+       VALUES ($1, $2, $3, $4, $5, true)
        RETURNING *`,
       [orgId, client.id, stage.pipeline_id, stage.stage_id, staffId]
     );
@@ -153,9 +157,10 @@ export async function loadSimulatedClient(db, { orgId, staffId = null } = {}) {
   try {
     await db.query(
       `INSERT INTO bank_accounts (
-         org_id, client_id, name, account_type, mask, current_balance_cents, currency_code, raw
+         org_id, client_id, name, account_type, mask, current_balance_cents, currency_code, raw,
+         is_demo
        ) VALUES ($1, $2, 'Simulated Checking', 'depository', '4242', 500000, 'USD',
-                 '{"provider":"mock","is_demo":true}'::jsonb)`,
+                 '{"provider":"mock","is_demo":true}'::jsonb, true)`,
       [orgId, client.id]
     );
   } catch { /* optional — tradelines + crs are the required half */ }
@@ -171,44 +176,218 @@ export async function loadSimulatedClient(db, { orgId, staffId = null } = {}) {
   };
 }
 
-/**
- * teardownSimulated(db, { orgId, clientId? })
- * Removes simulated clients for the org. If clientId given, only that one
- * (and only if is_demo). Cascades via FK where present; explicit deletes
- * where needed.
- */
-export async function teardownSimulated(db, { orgId, clientId = null } = {}) {
-  if (!orgId) throw new TypeError("teardownSimulated: orgId required");
+/* ═══════════════════════════════════════════════════════════════════════════
+   TEARING DOWN A DEMO CLIENT
 
-  const clients = await db.query(
-    clientId
-      ? `SELECT id, email FROM clients WHERE org_id = $1 AND id = $2 AND is_demo = true`
-      : `SELECT id, email FROM clients WHERE org_id = $1 AND is_demo = true
-           AND (email LIKE $2 OR 'simulated' = ANY(tags))`,
-    clientId
-      ? [orgId, clientId]
-      : [orgId, `${DEMO_EMAIL_PREFIX}%@${DEMO_EMAIL_DOMAIN}`]
-  );
+   WHAT WENT WRONG BEFORE.
+   The old version deleted from a hand-written list of eleven tables and then
+   deleted the client. Ten of those eleven deletes were wrapped in
+   `.catch(() => null)`; the twelfth — the client itself — was bare. So the
+   only statement that could report a problem was the last one, and every
+   statement before it had already committed (there was no transaction).
+
+   The result, seen live on 2026-08-18: the caller gets a flat 500 naming
+   `clients`, while the client's messages, tradelines, credit results and
+   cards are already gone. The client is left stranded and half-erased,
+   still visible in every list, and permanently undeletable through this
+   path — re-running does not help, because the children that blocked it are
+   in tables the list never mentioned.
+
+   WHAT ACTUALLY BLOCKS THE DELETE.
+   67 foreign keys point at `clients`. 38 are ON DELETE CASCADE and take care
+   of themselves. The other 29 do not: 16 are NO ACTION (they refuse) and 13
+   are SET NULL (they orphan the row instead, which is how `bank_transactions`
+   ended up with 18 rows attached to nobody — audit item T16-06). The old
+   list named only 3 of the 16 blockers, and 8 of its 11 entries were
+   redundant CASCADE tables it never needed to touch.
+
+   WHY THIS IS NOW READ FROM THE CATALOG INSTEAD OF TYPED OUT.
+   This is the third time a hand-maintained list here has drifted behind the
+   schema. Any new table with a non-cascading link to `clients` broke demo
+   teardown silently, and nothing failed until someone pressed delete. So the
+   list is no longer written down: it is asked of the database itself, every
+   time. A table added next month is handled without anyone remembering to
+   come back here.
+
+   WHY IT IS ONE STATEMENT.
+   Everything happens inside a single SQL statement built from data-modifying
+   CTEs. That buys three things at once:
+
+     1. It is atomic. A single statement either wholly succeeds or wholly
+        rolls back, so the half-erased client above cannot happen again. No
+        BEGIN/COMMIT is needed, which matters because `db` here is a pool —
+        separate `db.query` calls are not guaranteed the same connection and
+        so cannot share a transaction.
+     2. Delete ORDER stops mattering. A NO ACTION foreign key is checked at
+        the END of the statement, not as each row goes. Parent and child can
+        be removed in the same breath, which sidesteps the ordering puzzles
+        (contracts before documents, documents before invoices, and the
+        circular documents ↔ document_versions pair).
+     3. It is one round trip instead of twelve-plus. Combined with the
+        client_id indexes added in db/migrations/202_client_fk_indexes.sql,
+        this is what takes the path back under Netlify's 10-second function
+        limit — the same path was timing out at 504.
+
+   Nothing is swallowed. If a delete is refused, the error is re-raised with
+   the name of the table that refused it, instead of a misleading complaint
+   about `clients`.
+
+   ONE KNOWN LIMIT, DELIBERATELY NOT WORKED AROUND.
+   `affiliate_payout_lines` carries its own guard trigger
+   (db/migrations/033_affiliates.sql) that refuses any delete once the parent
+   payout run is marked `paid`, and — unlike the archive guards rewritten in
+   150/151/152 — it has no demo exemption. A demo client whose commission
+   landed in a paid affiliate run therefore still cannot be torn down. That
+   needs a migration to broaden the trigger, it is recorded on the fix board,
+   and it is left failing loudly rather than papered over.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+// Rows that hang off a demo client's contracts, documents or invoices rather
+// than off the client itself. The catalog sweep below only finds direct
+// links, so these three are named. Each is a NO ACTION foreign key that would
+// otherwise refuse the parent's delete:
+//   contract_signers.contract_id  → contracts(id)
+//   invoice_payments.invoice_id   → invoices(id)
+//   document_versions.document_id → documents(id)
+const INDIRECT_CHILDREN = [
+  { table: "contract_signers", column: "contract_id", parent: "contracts" },
+  { table: "invoice_payments", column: "invoice_id", parent: "invoices" },
+  { table: "document_versions", column: "document_id", parent: "documents" }
+];
+
+// Postgres identifiers we are about to interpolate. They come from the
+// catalog, not from a caller, but this stays as a cheap tripwire: anything
+// that is not a plain identifier is a sign something is very wrong.
+const SAFE_IDENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const ident = (name) => {
+  if (!SAFE_IDENT.test(name)) throw new Error(`unsafe identifier from catalog: ${name}`);
+  return `"${name}"`;
+};
+
+/**
+ * clientChildTables(db) — every table with a single-column foreign key to
+ * `clients` that does NOT cascade, read live from the catalog.
+ *
+ * NO ACTION and RESTRICT refuse the parent delete; SET NULL and SET DEFAULT
+ * quietly detach the row and leave it behind. For a demo client we want both
+ * gone, so all four are returned. CASCADE is excluded — the database already
+ * handles those, and re-deleting them is wasted work.
+ */
+export async function clientChildTables(db) {
+  const { rows } = await db.query(`
+    SELECT cl.relname AS table_name,
+           a.attname  AS column_name,
+           con.confdeltype AS on_delete
+      FROM pg_constraint con
+      JOIN pg_class cl     ON cl.oid = con.conrelid
+      JOIN pg_namespace n  ON n.oid = cl.relnamespace
+      JOIN LATERAL unnest(con.conkey) AS k(attnum) ON true
+      JOIN pg_attribute a  ON a.attrelid = con.conrelid AND a.attnum = k.attnum
+     WHERE con.contype = 'f'
+       AND con.confrelid = 'public.clients'::regclass
+       AND n.nspname = 'public'
+       AND array_length(con.conkey, 1) = 1
+       AND con.confdeltype <> 'c'
+     ORDER BY cl.relname, a.attname
+  `);
+  const seen = new Set();
+  const out = [];
+  for (const r of rows) {
+    const key = `${r.table_name}.${r.column_name}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({ table: r.table_name, column: r.column_name });
+  }
+  return out;
+}
+
+/** Build the one-statement wipe for a single client id ($1). */
+function buildWipeStatement(children) {
+  const parts = ["victim AS (SELECT id FROM clients WHERE id = $1 AND is_demo = true)"];
+  let n = 0;
+
+  // Grandchildren first in the text (order is cosmetic — see header note 2).
+  for (const c of INDIRECT_CHILDREN) {
+    parts.push(
+      `w${n++} AS (DELETE FROM ${ident(c.table)} WHERE ${ident(c.column)} IN ` +
+      `(SELECT id FROM ${ident(c.parent)} WHERE client_id IN (SELECT id FROM victim)))`
+    );
+  }
+  for (const c of children) {
+    parts.push(
+      `w${n++} AS (DELETE FROM ${ident(c.table)} WHERE ${ident(c.column)} IN (SELECT id FROM victim))`
+    );
+  }
+
+  return `WITH ${parts.join(",\n     ")}\nDELETE FROM clients WHERE id IN (SELECT id FROM victim) RETURNING id`;
+}
+
+/**
+ * teardownSimulated(db, { orgId, clientId?, limit? })
+ *
+ * Removes simulated clients. With `clientId`, only that one, and only when it
+ * is flagged `is_demo` — a real client is never touched by this path. Without
+ * it, every demo client in the org, newest first, capped by `limit`.
+ *
+ * `orgId` may be omitted when `clientId` is given; it is then read from the
+ * client row. (Before this, callers that passed only a client id threw a
+ * TypeError that a surrounding catch swallowed, so their cleanup never ran —
+ * src/verification/journeys/funding.mjs is one such caller.)
+ *
+ * Returns { removed: [{id, email}], count, truncated } — `truncated` is true
+ * when more demo clients matched than `limit` allowed, so a caller can call
+ * again rather than assume the org is clean.
+ */
+export async function teardownSimulated(db, { orgId, clientId = null, limit = 100 } = {}) {
+  if (!orgId && !clientId) throw new TypeError("teardownSimulated: orgId or clientId required");
+
+  const cap = Math.max(1, Math.min(Number(limit) || 100, 500));
+  let clients;
+  if (clientId && orgId) {
+    clients = await db.query(
+      `SELECT id, email FROM clients WHERE org_id = $1 AND id = $2 AND is_demo = true`,
+      [orgId, clientId]
+    );
+  } else if (clientId) {
+    clients = await db.query(
+      `SELECT id, email FROM clients WHERE id = $1 AND is_demo = true`,
+      [clientId]
+    );
+  } else {
+    clients = await db.query(
+      `SELECT id, email FROM clients
+        WHERE org_id = $1 AND is_demo = true
+          AND (email LIKE $2 OR 'simulated' = ANY(tags))
+        ORDER BY created_at DESC
+        LIMIT $3`,
+      [orgId, `${DEMO_EMAIL_PREFIX}%@${DEMO_EMAIL_DOMAIN}`, cap + 1]
+    );
+  }
+
+  const matched = clients.rows;
+  const truncated = !clientId && matched.length > cap;
+  const targets = truncated ? matched.slice(0, cap) : matched;
+  if (targets.length === 0) return { removed: [], count: 0, truncated: false };
+
+  // Asked once per call, not once per client.
+  const statement = buildWipeStatement(await clientChildTables(db));
 
   const removed = [];
-  for (const c of clients.rows) {
-    // Order matters where FKs lack ON DELETE CASCADE.
-    await db.query(`DELETE FROM messages WHERE client_id = $1`, [c.id]).catch(() => null);
-    await db.query(`DELETE FROM conversations WHERE client_id = $1`, [c.id]).catch(() => null);
-    await db.query(`DELETE FROM cards WHERE client_id = $1`, [c.id]).catch(() => null);
-    await db.query(`DELETE FROM tasks WHERE client_id = $1`, [c.id]).catch(() => null);
-    await db.query(`DELETE FROM tradelines WHERE client_id = $1`, [c.id]).catch(() => null);
-    await db.query(`DELETE FROM crs_results WHERE client_id = $1`, [c.id]).catch(() => null);
-    await db.query(`DELETE FROM snapshots WHERE client_id = $1`, [c.id]).catch(() => null);
-    await db.query(`DELETE FROM transactions WHERE client_id = $1`, [c.id]).catch(() => null);
+  for (const c of targets) {
     try {
-      await db.query(`DELETE FROM bank_accounts WHERE client_id = $1`, [c.id]);
-    } catch { /* optional table */ }
-    try {
-      await db.query(`DELETE FROM card_liabilities WHERE client_id = $1`, [c.id]);
-    } catch { /* optional */ }
-    await db.query(`DELETE FROM clients WHERE id = $1 AND is_demo = true`, [c.id]);
-    removed.push({ id: c.id, email: c.email });
+      const res = await db.query(statement, [c.id]);
+      if (res.rowCount > 0) removed.push({ id: c.id, email: c.email });
+    } catch (err) {
+      // Name the table that actually refused. Postgres puts it on the error
+      // as `table` for a foreign-key violation; a guard trigger puts its own
+      // message in `message`. Either beats a bare complaint about `clients`.
+      const blocker = err && (err.table || err.constraint);
+      const why = blocker ? ` — blocked by ${blocker}` : "";
+      const wrapped = new Error(`demo teardown failed for client ${c.id}${why}: ${err.message}`);
+      wrapped.cause = err;
+      wrapped.code = err && err.code;
+      throw wrapped;
+    }
   }
-  return { removed, count: removed.length };
+  return { removed, count: removed.length, truncated };
 }

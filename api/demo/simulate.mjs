@@ -47,6 +47,15 @@ export default async function handler(req, res) {
     res.setHeader("allow", "POST, DELETE");
     return res.status(405).json({ ok: false, error: "method_not_allowed" });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: safeError(err) });
+    // A demo wipe fails for one reason in practice: some table still holds a
+    // row for this client and refuses to let go. Naming that table here saves
+    // an operator from reading a server log — the old version returned a bare
+    // complaint about `clients`, which was the one table that was NOT the
+    // problem. See src/demo/simulate-client.mjs for why.
+    const body = { ok: false, error: safeError(err) };
+    const blocker = err && (err.cause?.table || err.cause?.constraint);
+    if (blocker) body.blocked_by = String(blocker);
+    if (err && err.code) body.code = String(err.code);
+    return res.status(500).json(body);
   }
 }
