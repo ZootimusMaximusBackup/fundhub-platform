@@ -424,3 +424,34 @@ but it means the enrolment endpoint has no coverage that has ever run.
 
 **Still open, not this thread's to fix:** nothing in the product reads the
 enrolment rows, so staff cannot see a request that comes in.
+## T12 · Staff CRM screens: sales & admin — change manifest (2026-08-18)
+
+Branch `fix/T12-staff-crm`. Evidence: `docs/workflows/fix-2026-08-18/evidence/T12/`.
+
+### Files touched
+- `src/sales/metrics.mjs` — owner-set closer now reaches the closer board; three reader-facing "staff_targets" notes rewritten into plain English (target value stays null)
+- `src/sales/metrics.test.mjs` — updated two tests that asserted the OLD behaviour (Chris excluded from the board); added a test that no reader-facing reason names a database table
+- `api/read/staff.mjs` — the caller's OWN row always comes back past the owner/seed/TEST filters, and is no longer counted in hiddenCount
+- `public/app/ops-admin.html` — the empty People list now says how many people are hidden instead of "No staff rows"; the Comp / This Week dashes carry a reason (they are NOT coerced to $0)
+- `public/app/products-commissions.html` — "N with variable pricing" is computed from the same rows the table draws (was hardcoded "3")
+- `public/app/present.js` — a 403 no longer forces a sign-out; it shows a "not allowed" wall with a manual sign-in link
+- `public/app/hiring.html` — Advance / Reject controls with a required reason box in the candidate drawer; board says how many demo candidates are hidden; "read-only" footer removed
+- `api/hiring/decide.mjs` — **NEW.** POST-only write endpoint wrapping `advance()` / `reject()` in one transaction
+- `src/hiring/hiring-endpoints.pg.test.mjs` — HTTP-shell tests for the new endpoint (run without a database)
+- `netlify/functions/api.mjs` — `import hiringDecide` + ROUTES key `"hiring/decide"`
+
+### Routes added
+- `POST /api/hiring/decide` — gate `requireRole("owner","admin")`. decided_by comes off the session and a body carrying it is refused with a 400. No outbound send on this path.
+
+### Journeys
+`npm run journeys` re-run in the same commit. `role-owner-actual.md` and `role-sales-manager-actual.md` gain `/api/hiring/decide`. CHANGELOG appended. No `-intended.md` touched.
+
+### Menu rows needed from T0
+None.
+
+### Blockers / requests to other threads
+- **T16** — `CLOSER_DECK_ROLES` in `api/read/closer-deck.mjs` excludes `funding_advisor`, so an advisor still cannot open Present at all. T12 fixed only the forced sign-out (option i). Widening the role set is a role-gate decision and needs T16's sign-off.
+- **Owner of `src/http/crm-html.test.mjs`** — please extend the existing "closer-call.js does not paint builder notes" test to `sales-floor.js` and `my-numbers.js`. T12 does not own that file, so the equivalent assertion was added to `src/sales/metrics.test.mjs` against the source strings instead.
+- **T12-02 (call checklist saved into notes text)** — the call-save path is not a T12-owned file. Reproduced but NOT fixed here. Needs an owner.
+- **T12-05 (Client Control Panel: three dead buttons, read-only notes box)** — Client Control Panel is not a T12-owned file. NOT fixed here. Needs an owner.
+- **T12-01 (Pipeline Archive / MOVE untested)** — pipeline board is not a T12-owned file, and T12-08 / T12-09 already prove drag and archive work on the TEST card. NOT re-tested here.

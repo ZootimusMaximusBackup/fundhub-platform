@@ -166,6 +166,7 @@ import hiringPostings from "../../api/hiring/postings.mjs";
 import hiringDecisions from "../../api/hiring/decisions.mjs";
 import hiringFunnel from "../../api/hiring/funnel.mjs";
 import hiringBench from "../../api/hiring/bench.mjs";
+import hiringDecide from "../../api/hiring/decide.mjs";
 import financeSoftPull from "../../api/finance/soft-pull.mjs";
 import financeCrsPull from "../../api/finance/crs-pull.mjs";
 import bankingRevoke from "../../api/banking/revoke.mjs";
@@ -578,6 +579,7 @@ export const ROUTES = {
   "hiring/decisions": hiringDecisions,
   "hiring/funnel": hiringFunnel,
   "hiring/bench": hiringBench,
+  "hiring/decide": hiringDecide,
 
   // Finance. The one-tap soft pull for a client already on file. Routed in the
   // same commit that adds the handler, deliberately: this is the third time a

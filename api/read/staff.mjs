@@ -43,13 +43,14 @@ async function hiddenCountFor(database, staff) {
     `SELECT count(*)::int AS n
        FROM staff s
       WHERE s.org_id = $1::uuid
+        AND ($3::uuid IS NULL OR s.id <> $3::uuid)
         AND (
           s.role = 'owner'
           OR lower(s.email) = ANY($2::text[])
           OR s.name ILIKE 'TEST —%'
           OR ${demoHiddenSql(demoOn)}
         )`,
-    [orgId, seedEmails()]
+    [orgId, seedEmails(), (staff && staff.id) || null]
   )).rows[0];
   return row ? row.n : 0;
 }
@@ -84,14 +85,19 @@ export default async function handler(req, res) {
       FROM staff s
      WHERE s.org_id = $4::uuid
        AND ($3::text IS NULL OR s.role = $3)
-       AND s.role <> 'owner'
-       AND lower(s.email) <> ALL($5::text[])
-       AND s.name NOT ILIKE 'TEST —%'
-       ${demoHide}
+       /* The caller's OWN row always comes back, whatever the filters below
+          say. Without it the owner could never see a clock in/out button on
+          their own line, because the owner row is one of the hidden ones. */
+       AND ($6::uuid IS NOT NULL AND s.id = $6::uuid OR (
+             s.role <> 'owner'
+             AND lower(s.email) <> ALL($5::text[])
+             AND s.name NOT ILIKE 'TEST —%'
+             ${demoHide}
+           ))
      ORDER BY s.name
      LIMIT $1 OFFSET $2`, [
         limit + 1, offset, query.role || null, orgOf(staff),
-        seedEmails()
+        seedEmails(), (staff && staff.id) || null
       ]).then((r) => r.rows);
     }
   });

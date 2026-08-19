@@ -661,7 +661,10 @@
     var root = document.getElementById("app");
     if (!root) return;
     if (state.error) {
-      root.innerHTML = '<div class="gate"><span class="mono">Present</span><h1 class="h1" style="margin-top:10px">' + esc(state.error) + "</h1><p class=\"sub\"><a href=\"closer-call.html" + (contactId ? ("?client_id=" + encodeURIComponent(contactId)) : "") + '">Back to the call cockpit</a></p></div>';
+      var signIn = state.errorSignIn
+        ? ' &nbsp;·&nbsp; <a href="' + esc(state.errorSignIn) + '">Sign in as someone else</a>'
+        : "";
+      root.innerHTML = '<div class="gate"><span class="mono">Present</span><h1 class="h1" style="margin-top:10px">' + esc(state.error) + "</h1><p class=\"sub\"><a href=\"closer-call.html" + (contactId ? ("?client_id=" + encodeURIComponent(contactId)) : "") + '">Back to the call cockpit</a>' + signIn + '</p></div>';
       return;
     }
     if (!state.loaded) {
@@ -870,7 +873,16 @@
     var r = await window.FHData.read("closer-deck", { contact: contactId });
     if (!r.ok) {
       if (r.source === "unauthorized") {
-        location.href = "/login.html?next=" + encodeURIComponent(location.pathname + location.search);
+        /* data.js drops the HTTP status, so "unauthorized" covers BOTH signed
+           out (401) and signed in but not allowed (403). Redirecting to the
+           sign-in page threw already-signed-in advisors out of the app. Show
+           the wall instead and let the reader choose to sign in. */
+        state.error = "This account cannot open the client deck. Ask an owner "
+          + "for access, or sign in with a closer account.";
+        state.errorSignIn = "/login.html?next="
+          + encodeURIComponent(location.pathname + location.search);
+        state.loaded = true;
+        render();
         return;
       }
       state.error = (r.error && (r.error.message || r.error)) || "Could not load this contact.";

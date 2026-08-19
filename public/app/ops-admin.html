@@ -1009,20 +1009,31 @@ document.addEventListener("DOMContentLoaded", function () {
     var b = p.length > 1 ? p[p.length - 1].charAt(0) : "";
     return (a + b).toUpperCase();
   }
-  function paintStaff(rows) {
+  function paintStaff(rows, hiddenCount) {
     var comp = document.getElementById("staff-comp-body");
     var consent = document.getElementById("staff-consent-body");
     if (!rows.length) {
-      if (comp) comp.innerHTML = '<tr><td colspan="4">No staff rows.</td></tr>';
-      if (consent) consent.innerHTML = '<tr><td colspan="2">No staff rows.</td></tr>';
+      /* An empty list has two very different causes and the screen used to
+         print the same words for both. Say which one it is. */
+      var hidden = Number(hiddenCount) || 0;
+      var msg = hidden
+        ? (hidden === 1
+            ? "1 person is hidden from this list (owner and seeded test logins)."
+            : hidden + " people are hidden from this list (owner and seeded test logins).")
+        : "No staff rows.";
+      if (comp) comp.innerHTML = '<tr><td colspan="4">' + esc(msg) + "</td></tr>";
+      if (consent) consent.innerHTML = '<tr><td colspan="2">' + esc(msg) + "</td></tr>";
       return;
     }
     if (comp) {
       comp.innerHTML = rows.map(function (s) {
         var name = String(s.name || s.email || "—").trim() || "—";
+        /* Pay is not on this read and staff.comp has no agreed shape yet, so
+           these stay unknown. An unknown is a dash with a reason, never a $0. */
         return '<tr><td><span class="av human">' + esc(initials(name)) + "</span> " +
           esc(name) + "</td><td>" + esc(roleLabel(s.role)) +
-          '</td><td class="section-meta">—</td><td class="mono">—</td></tr>';
+          '</td><td class="section-meta"><span title="Pay plans are not stored on this screen yet">—</span>' +
+          '</td><td class="mono"><span title="This week\'s earnings are not on this screen yet">—</span></td></tr>';
       }).join("");
     }
     if (consent) {
@@ -1040,8 +1051,10 @@ document.addEventListener("DOMContentLoaded", function () {
   if (FHData.staff) {
     FHData.wire(FHData.staff({ limit: 200 }), "staff tables", function (data) {
       var rows = data.items || [];
-      paintStaff(rows);
-      return rows.length ? ("live staff · " + rows.length) : "No staff rows.";
+      var hidden = Number(data.hiddenCount) || 0;
+      paintStaff(rows, hidden);
+      if (rows.length) return "live staff · " + rows.length;
+      return hidden ? ("no staff on this list · " + hidden + " hidden") : "No staff rows.";
     });
   }
 });

@@ -12,6 +12,7 @@
 
 import { test, before, after, describe } from "node:test";
 import assert from "node:assert";
+import fs from "node:fs";
 import { db, close } from "../db.mjs";
 import { apply, scoreApplication, advance, reject } from "./pipeline.mjs";
 import { ROLE_SETS } from "../http/read-api.mjs";
@@ -229,4 +230,53 @@ describe("hiring read endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
       await tx.query(`DELETE FROM staff WHERE email LIKE $1`, [`${TAG}-%`]);
     });
   }
+});
+
+/* POST /api/hiring/decide — the one hiring WRITE.
+   These run without a database: they cover the shell (method gate, session-owned
+   refusal, required fields), which is where this endpoint can go wrong in a way
+   the pipeline tests would never see. The row-level behaviour is advance()'s and
+   reject()'s own, already covered in src/hiring/hiring.pg.test.mjs. */
+describe("POST /api/hiring/decide — the HTTP shell", () => {
+  function fakeRes() {
+    const out = { code: 0, body: null, headers: {} };
+    return {
+      out,
+      setHeader(k, v) { out.headers[k] = v; },
+      status(c) { out.code = c; return this; },
+      json(b) { out.body = b; return this; }
+    };
+  }
+
+  test("GET is refused — this endpoint is a write", async () => {
+    const { default: handler } = await import("../../api/hiring/decide.mjs");
+    const res = fakeRes();
+    await handler({ method: "GET", headers: {} }, res);
+    assert.strictEqual(res.out.code, 405);
+    assert.strictEqual(res.out.headers.allow, "POST");
+  });
+
+  test("an unsigned request never reaches the pipeline", async () => {
+    const { default: handler } = await import("../../api/hiring/decide.mjs");
+    const res = fakeRes();
+    await handler({ method: "POST", headers: {}, body: { action: "reject" } }, res);
+    // 401 with no session, or 503 if the database cannot answer. Never 200.
+    assert.notStrictEqual(res.out.code, 200);
+    assert.ok(res.out.code >= 400, "an unsigned write must fail");
+  });
+
+  test("the module names decided_by as session-owned, never a body field", async () => {
+    const src = fs.readFileSync(
+      new URL("../../api/hiring/decide.mjs", import.meta.url), "utf8");
+    assert.ok(/SESSION_OWNED/.test(src), "must refuse a caller-chosen decider");
+    assert.ok(/decidedByStaffId:\s*staff\.id/.test(src),
+      "decided_by must come off the session principal");
+    assert.ok(!/decidedByStaffId:\s*body\./.test(src),
+      "decided_by must never come off the request body");
+    const gate = /requireRole\(([^)]*)\)\(\s*req/.exec(src);
+    assert.ok(gate, "the gate must be literal so the journey generator can read it");
+    const named = gate[1].split(",").map((x) => x.trim().replace(/^"|"$/g, ""));
+    assert.deepStrictEqual(named.sort(), [...ROLE_SETS.HIRING].sort(),
+      "the written-out gate has drifted from ROLE_SETS.HIRING");
+  });
 });

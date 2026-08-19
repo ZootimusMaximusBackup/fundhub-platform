@@ -1,0 +1,30 @@
+{
+ "products": {
+  "kProd": "5",
+  "caption": "4 with variable pricing"
+ },
+ "opsAdmin": "23 people are hidden from this list (owner and seeded test logins).",
+ "_console": [
+  "Failed to load resource: the server responded with a status of 403 (Forbidden)"
+ ],
+ "present": {
+  "url": "/app/present.html?contact=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+  "text": " PresentThis account cannot open the client deck. Ask an owner for access, or sign in with a closer account.Back to the call cockpit · Sign in as someone else "
+ },
+ "hiringBoardCount": "1 application shown",
+ "appIds": {
+  "keys": [
+   "undefined"
+  ],
+  "cards": [
+   ""
+  ],
+  "live": true
+ },
+ "dwBody": "Scores are advisory. No candidate may be rejected without a named human and a written reason; the database enforces this.Scores are a recommendation. The decision below is yours and is recorded under your name.DECIDEmove togroup interviewone on oneofferhiredonboardingrampperformingAdvancereason — re",
+ "hiring": {
+  "advance": true,
+  "reject": true,
+  "reason": true
+ }
+}

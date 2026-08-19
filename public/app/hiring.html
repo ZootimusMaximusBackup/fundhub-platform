@@ -249,9 +249,10 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 <script defer src="data.js"></script>
 </head>
 <body>
-<!-- Hiring — read-only. The six api/hiring/* endpoints are GET-only, so nothing
-     on this screen writes. Maintainer notes live in docs/journeys/role-owner-actual.md
-     and in the endpoint files themselves, not in this page body. -->
+<!-- Hiring. The six api/hiring/* endpoints are GET-only; the one write is
+     POST /api/hiring/decide, which the drawer's Advance and Reject buttons call.
+     Maintainer notes live in docs/journeys/role-owner-actual.md and in the
+     endpoint files themselves, not in this page body. -->
 <div class="app">
   <aside class="side" id="side">
   <div class="side-top"><a class="logo inv" href="pipeline.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
@@ -513,7 +514,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
     <div class="foot">
       <span class="pulse"></span><span>systems nominal · fundhub.ai</span>
       <span class="spacer"></span>
-      <span id="footNote">hiring · read-only</span>
+      <span id="footNote">hiring</span>
     </div>
   </div>
 </div>
@@ -1679,12 +1680,17 @@ function renderBoard(){
 
   var realShown = rows.filter(function(a){ return !a.is_demo_row; }).length;
   var demoShown = rows.length - realShown;
+  /* Every candidate on file can be a Demo Mode row, and with Demo Mode off the
+     board then draws nothing at all with no explanation. Say the number. */
+  var demoHidden = SHOW_DEMO_ROWS ? 0 : demoApps().length;
   document.getElementById('boardCount').textContent =
     realShown+' application'+(realShown===1?'':'s')+' shown'+
-    (demoShown? ' · '+demoShown+' demo':'');
+    (demoShown? ' · '+demoShown+' demo':'')+
+    (demoHidden? ' · '+demoHidden+' demo hidden':'');
   document.getElementById('boardPager').innerHTML =
     'showing '+rows.length+' of '+APPS.length+' loaded application'+(APPS.length===1?'':'s')+
     (demoShown? ' · '+demoShown+' of them seeded by Demo Mode, labelled on the card and counted nowhere':'')+
+    (demoHidden? ' · '+demoHidden+' seeded by Demo Mode and hidden because Demo Mode is off':'')+
     ' · up to 200 are loaded at a time, and no screen-wide total is available';
   var t=document.getElementById('fFlagged');
   t.classList.toggle('on', boardState.flagged);
@@ -2169,13 +2175,94 @@ function decisionPanel(decisions){
   }).join('')+'</div></div></div>';
 }
 
+/* The forward funnel, in order — must match STAGES in src/hiring/pipeline.mjs. */
+var DECIDE_STAGES = ['applied','screening','group_interview','one_on_one',
+                     'offer','hired','onboarding','ramp','performing'];
+
+/* decideSection — the Advance / Reject controls.
+   A rejection needs a written reason: the endpoint requires it, and so does the
+   database. The box is right here so nobody has to go looking for it. */
+function decideSection(a){
+  if(a.is_demo_row){
+    return '<div class="dw-sec"><div class="note">This is a Demo Mode row. '+
+      'Decisions are not recorded for demo candidates.</div></div>';
+  }
+  if(a.status!=='open'){
+    return '<div class="dw-sec"><div class="note">This application is '+esc(a.status)+
+      ', so it is closed. Nothing further can be decided on it.</div></div>';
+  }
+  var i=DECIDE_STAGES.indexOf(a.stage_key);
+  var next=i>=0? DECIDE_STAGES.slice(i+1) : DECIDE_STAGES;
+  var opts=next.map(function(k){
+    return '<option value="'+esc(k)+'">'+esc(STAGE_LABEL(k))+'</option>';
+  }).join('');
+  return '<div class="dw-sec"><div class="eyebrow">DECIDE</div>'+
+    '<div class="panel"><div class="panel-bd">'+
+      '<div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">'+
+        '<label class="k2" for="dcStage">move to</label>'+
+        '<select id="dcStage">'+(opts||'<option value="">no stage left to move to</option>')+'</select>'+
+        '<button class="btn dark mono" id="dcAdvance" type="button"'+(opts?'':' disabled')+'>Advance</button>'+
+      '</div>'+
+      '<div style="margin-top:11px">'+
+        '<label class="k2" for="dcReason">reason — required to reject, optional to advance</label>'+
+        '<textarea id="dcReason" rows="3" style="width:100%;margin-top:5px" '+
+          'placeholder="Why. This is what the candidate feedback is written from."></textarea>'+
+      '</div>'+
+      '<div style="margin-top:9px;display:flex;gap:9px;align-items:center;flex-wrap:wrap">'+
+        '<button class="btn mono" id="dcReject" type="button">Reject</button>'+
+        '<span id="dcMsg" class="mono" style="font-size:var(--fs-caption);color:var(--gray)"></span>'+
+      '</div>'+
+    '</div></div></div>';
+}
+
+function STAGE_LABEL(k){ return String(k||'').replace(/_/g,' '); }
+
+/* wireDecide — attaches the two buttons after the drawer body is painted. */
+function wireDecide(a){
+  var msg=document.getElementById('dcMsg');
+  var adv=document.getElementById('dcAdvance');
+  var rej=document.getElementById('dcReject');
+  if(!msg||(!adv&&!rej)) return;
+  function busy(on,note){
+    if(adv) adv.disabled=on||!document.getElementById('dcStage').value;
+    if(rej) rej.disabled=on;
+    msg.textContent=note||'';
+  }
+  function send(body){
+    busy(true,'saving…');
+    return window.FHData.write('/api/hiring/decide', body).then(function(r){
+      if(!r.ok){
+        busy(false,'');
+        msg.textContent=(r.error&&(r.error.message||r.error))||'That did not save.';
+        return;
+      }
+      msg.textContent='Saved. Reloading the board…';
+      if(typeof wireHiring==='function'){ try{ wireHiring(); }catch(e){} }
+      setTimeout(function(){ location.reload(); },700);
+    });
+  }
+  if(adv) adv.addEventListener('click',function(){
+    var stage=document.getElementById('dcStage').value;
+    if(!stage) return;
+    var reason=(document.getElementById('dcReason').value||'').trim();
+    send({application_id:a.id, action:'advance', to_stage:stage, reason:reason||null});
+  });
+  if(rej) rej.addEventListener('click',function(){
+    var reason=(document.getElementById('dcReason').value||'').trim();
+    if(!reason){ msg.textContent='Write a reason first. A rejection without one is not allowed.'; return; }
+    if(!window.confirm('Reject this candidate? This cannot be undone from this screen.')) return;
+    send({application_id:a.id, action:'reject', reason:reason});
+  });
+}
+
 function renderDrawerBody(a){
   var role=ROLE_BY_KEY[a.role_key];
   var answerKeys=Object.keys(a.answers||{});
   document.getElementById('dwBody').innerHTML =
     '<div class="dw-sec"><div class="notice"><b>Scores are advisory. No candidate may be rejected without a named human '+
       'and a written reason; the database enforces this.</b><br>'+
-      'Nothing in this panel can be changed — it only shows what was recorded.</div></div>'+
+      'Scores are a recommendation. The decision below is yours and is recorded under your name.</div></div>'+
+    decideSection(a)+
 
     '<div class="dw-sec"><div class="eyebrow">CANDIDATE</div>'+
       '<div class="kv">'+
@@ -2236,6 +2323,7 @@ function renderDrawerBody(a){
 
     '<div class="dw-sec"><div class="eyebrow">DECISIONS</div>'+
       decisionPanel(a.decisions)+'</div>';
+  wireDecide(a);
 }
 
 /* augmentScore — gives a live api/hiring/application score the same
