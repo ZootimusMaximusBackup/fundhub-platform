@@ -1,0 +1,94 @@
+{
+  "at": "2026-08-19T04:59:17.334Z",
+  "note": "the three keys removed, per client — enough to put them back",
+  "rows": [
+    {
+      "id": "113e9f24-14dc-47ad-af62-e49af8b29841",
+      "is_demo": true,
+      "flag": "true",
+      "reason": "upsert_http_401",
+      "at": "2026-08-16 10:04:29.599039+00",
+      "has_ghl_id": true
+    },
+    {
+      "id": "54bdc228-d4ca-4192-8811-6cecbaf62ede",
+      "is_demo": false,
+      "flag": "true",
+      "reason": "not_configured",
+      "at": "2026-08-14 19:23:47.907816+00",
+      "has_ghl_id": false
+    },
+    {
+      "id": "585164ce-d9c6-43be-88c2-72c8cd9b42d2",
+      "is_demo": true,
+      "flag": "true",
+      "reason": "upsert_http_401",
+      "at": "2026-08-16 10:13:35.768257+00",
+      "has_ghl_id": true
+    },
+    {
+      "id": "5a06de3f-9696-4b86-bba9-a53bfbb83f73",
+      "is_demo": true,
+      "flag": "true",
+      "reason": "upsert_http_401",
+      "at": "2026-08-16 10:01:55.034365+00",
+      "has_ghl_id": true
+    },
+    {
+      "id": "754ab724-6a02-417a-ae7c-deb0c7ad2d3b",
+      "is_demo": false,
+      "flag": "true",
+      "reason": "not_configured",
+      "at": "2026-08-14 19:23:52.419051+00",
+      "has_ghl_id": false
+    },
+    {
+      "id": "929fc1cb-9ea0-4267-8152-28662b799173",
+      "is_demo": false,
+      "flag": "true",
+      "reason": "not_configured",
+      "at": "2026-08-14 19:23:50.246578+00",
+      "has_ghl_id": false
+    },
+    {
+      "id": "9af65808-a619-4e65-ae91-239766a006b7",
+      "is_demo": false,
+      "flag": "true",
+      "reason": "not_configured",
+      "at": "2026-08-14 18:19:39.758344+00",
+      "has_ghl_id": true
+    },
+    {
+      "id": "c352d809-ddc6-477d-b8eb-cdcb9a0f88c3",
+      "is_demo": true,
+      "flag": "true",
+      "reason": "upsert_http_401",
+      "at": "2026-08-16 10:10:27.548695+00",
+      "has_ghl_id": true
+    },
+    {
+      "id": "d56838a7-3d62-4dfd-8ed0-ead5dd76cbab",
+      "is_demo": false,
+      "flag": "true",
+      "reason": "not_configured",
+      "at": "2026-08-14 19:23:46.406384+00",
+      "has_ghl_id": false
+    },
+    {
+      "id": "dad186ff-9dce-4f59-966c-6e3db2ed503d",
+      "is_demo": false,
+      "flag": "true",
+      "reason": "not_configured",
+      "at": "2026-08-14 19:23:49.090258+00",
+      "has_ghl_id": false
+    },
+    {
+      "id": "f90df1b4-a82e-407d-b893-8b9e7a52a9cf",
+      "is_demo": true,
+      "flag": "true",
+      "reason": "upsert_http_401",
+      "at": "2026-08-16 10:00:15.329379+00",
+      "has_ghl_id": true
+    }
+  ]
+}
