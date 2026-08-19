@@ -22,12 +22,31 @@ behind a guard, which is why every case row showed a raw status and a dash for C
 **Clearing an inquiry stopped half-working.** Two separate write-path bugs, each of which
 committed a change to the database and then reported failure to the user.
 
+**Dispute letters can now be produced at all.** The three functions that write a dispute
+case, its findings and a letter had no caller anywhere in the repo, so `dispute_letters`
+was empty by construction and the desk's Send could never light up. `src/repair/analyze.mjs`
+reads the credit file already on record, runs the existing Metro 2 engine, and stores what
+it finds. **It mails nothing** — Send is still a separate human click.
+
 ## Files touched — all inside T4's owned list
 
 `public/app/inquiry-remover.html` · `api/inquiry-cases.mjs` · `src/inquiries/work.mjs` ·
-`src/inquiries/work.pg.test.mjs` · `src/http/inquiry-cases.pg.test.mjs` (new)
+`src/inquiries/work.pg.test.mjs` · `src/http/inquiry-cases.pg.test.mjs` (new) ·
+`src/repair/analyze.mjs` (new) · `api/repair/generate.mjs` (new) ·
+`src/http/repair-generate.pg.test.mjs` (new)
 
-One file outside the list, deliberately, see below: `src/http/calendar-paint.test.mjs`.
+**Routes added: one.** `POST /api/repair/generate`, keyed in `netlify/functions/api.mjs`
+(append-only, 2 lines, nothing else in that file touched), gated owner + admin +
+inquiry_specialist via `requireAuth` then a separate `requireRole`.
+
+**Migrations used: none** of T4's reserved 190–194. No schema change was needed.
+
+**Journeys affected:** one route row. Specialist repair group 2 → 3, every page 176 → 177
+routes, no existing gate moved. `npm run journeys` re-run and `docs/journeys/CHANGELOG.md`
+appended in the same commit as the code.
+
+Two files outside the list, deliberately, see below: `src/http/calendar-paint.test.mjs` and
+the generated `docs/journeys/*-actual.md` + `README.md`.
 
 **Menu rows needed from T0: none.** No new screen, tab, page or row was added.
 
@@ -41,6 +60,10 @@ the must-stay-clean list so the bug cannot come back. This is T7's designed hand
 reach across — but it is a file edit outside my list and it is flagged here on purpose.
 
 Useful side effect: T7's scanner is an **independent** confirmation that the boot fix is real.
+
+`docs/journeys/*-actual.md` and `docs/journeys/README.md` are **generated**, never hand-edited.
+Adding a route makes them stale and a test says so, so `npm run journeys` was re-run. No
+`-intended.md` was touched.
 
 ## Requests for other threads — I could not fix these, they are not my files
 
@@ -70,6 +93,19 @@ role on 2026-08-19. Raw output: `evidence/T4/before/live-db.json`.
   the permission check cleanly. An in-code comment on that screen claims the opposite and
   will send the next reader down the wrong path.
 
+## The test runner has been hiding half the suite — everyone should know this
+
+`scripts/run-suite.mjs` runs the plain tests, and at line 69 does
+`if (code !== 0) process.exit(code)` **before** it runs the database tests. Three plain
+tests already fail on `main`. So **`npm test` has never reached the 111 `*.pg.test.mjs`
+files** — not in this thread's baseline and not in anyone else's. Any "N failures" figure
+quoted from `npm test` on this branch describes the plain half only.
+
+T4 measured the database half separately by invoking `node --test` on those files directly.
+Doing that twice on identical code produced **different failure lists**, so that batch is
+flaky by roughly ±2 and no single number should be quoted as *the* count. CLAUDE.md §12
+already warns the number has never been stable; this is why.
+
 ## Blockers no code change fixes
 
 - **Pressing Send on a real inquiry case mails a real credit bureau.** T4-06 asked for that
@@ -78,6 +114,12 @@ role on 2026-08-19. Raw output: `evidence/T4/before/live-db.json`.
   fixed and proven in a browser; the live press is Chris's call.
 - **`INQUIRY_API_BASE` is not set.** Phone inquiry is deliberately on hold, so the Call and
   Hold columns stay blank by design. **Not a bug — do not "fix" it.**
+- **Nothing triggers letter generation, and there is no button.** The engine works and is
+  proven against a real database, but no schedule, workflow or event starts it, and the
+  standing no-new-screens rule means no control was added. Today it can only be called
+  directly. `role-inquiry-remover-intended.md` names `read/repair-cases`, `repair/send` and
+  `repair/exceptions` — it does not describe a generate step at all, so there is no ground
+  truth saying where the trigger belongs. **This needs Chris's decision.**
 - **The funding-round hop is not in the written journey.** Finishing an inquiry is supposed to
   start the next funding round. `docs/journeys/role-inquiry-remover-intended.md` does not
   describe that step at all, so T4 did not build it. On live, the "Start next funding round"
