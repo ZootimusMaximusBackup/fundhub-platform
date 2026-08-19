@@ -298,10 +298,18 @@ async function teamLeaderboard(db, { orgId, start, end }) {
        JOIN staff s ON s.id = o.staff_id AND s.org_id = o.org_id
       WHERE o.org_id = $1
         AND o.logged_at >= $2 AND o.logged_at < $3
-        AND s.role = 'closer'
+        /* Owner-set: same roster as the Sales Floor board (closerRoster below).
+           When these two drift, My Numbers and the wall board disagree about
+           who is on the team and what rank somebody holds. */
+        AND (
+          lower(btrim(s.role)) = 'closer'
+          OR lower(btrim(s.email)) = $4
+          OR lower(btrim(s.name)) = $5
+        )
       GROUP BY o.staff_id, s.name
       ORDER BY cash_cents DESC, deposits DESC`,
-    [orgId, start.toISOString(), end.toISOString()]
+    [orgId, start.toISOString(), end.toISOString(),
+     OWNER_SET_CLOSER.email.toLowerCase(), OWNER_SET_CLOSER.name.toLowerCase()]
   );
   return r.rows.map((row, i) => {
     const held = Number(row.held || 0);

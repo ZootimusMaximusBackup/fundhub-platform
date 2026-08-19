@@ -1682,7 +1682,14 @@ function renderBoard(){
   var demoShown = rows.length - realShown;
   /* Every candidate on file can be a Demo Mode row, and with Demo Mode off the
      board then draws nothing at all with no explanation. Say the number. */
-  var demoHidden = SHOW_DEMO_ROWS ? 0 : demoApps().length;
+  var demoHidden = SHOW_DEMO_ROWS ? 0 : APPS.filter(function(a){
+    if(!a.is_demo_row) return false;
+    if(boardState.stage!=='all' && a.stage_key!==boardState.stage) return false;
+    if(boardState.role && a.role_key!==boardState.role) return false;
+    if(boardState.source && a.source!==boardState.source) return false;
+    if(boardState.flagged && !a.needs_human) return false;
+    return true;
+  }).length;
   document.getElementById('boardCount').textContent =
     realShown+' application'+(realShown===1?'':'s')+' shown'+
     (demoShown? ' · '+demoShown+' demo':'')+
@@ -2191,8 +2198,14 @@ function decideSection(a){
     return '<div class="dw-sec"><div class="note">This application is '+esc(a.status)+
       ', so it is closed. Nothing further can be decided on it.</div></div>';
   }
+  /* Moving to "hired" closes the application (status becomes 'hired'), and
+     every later move requires an OPEN application — so onboarding, ramp and
+     performing cannot be reached from here at all. Offering them would be a
+     button that always fails. The list stops at hired and says so. */
+  var HIRED_AT=DECIDE_STAGES.indexOf('hired');
   var i=DECIDE_STAGES.indexOf(a.stage_key);
-  var next=i>=0? DECIDE_STAGES.slice(i+1) : DECIDE_STAGES;
+  var next=(i>=0? DECIDE_STAGES.slice(i+1) : DECIDE_STAGES.slice(0))
+    .filter(function(k){ return DECIDE_STAGES.indexOf(k)<=HIRED_AT; });
   var opts=next.map(function(k){
     return '<option value="'+esc(k)+'">'+esc(STAGE_LABEL(k))+'</option>';
   }).join('');
@@ -2212,6 +2225,8 @@ function decideSection(a){
         '<button class="btn mono" id="dcReject" type="button">Reject</button>'+
         '<span id="dcMsg" class="mono" style="font-size:var(--fs-caption);color:var(--gray)"></span>'+
       '</div>'+
+      '<div class="note" style="margin-top:9px">Hiring somebody closes their application. '+
+      'Onboarding, ramp and performing are tracked elsewhere and cannot be set from this screen.</div>'+
     '</div></div></div>';
 }
 
@@ -2219,6 +2234,10 @@ function STAGE_LABEL(k){ return String(k||'').replace(/_/g,' '); }
 
 /* wireDecide — attaches the two buttons after the drawer body is painted. */
 function wireDecide(a){
+  /* openDrawer() fetches the full application asynchronously. If the reader has
+     already moved to another candidate, this render is stale — wiring it would
+     point Advance and Reject at an application the header no longer names. */
+  if(!a || !a.id || (window.DRAWER_APP_ID && String(window.DRAWER_APP_ID)!==String(a.id))) return;
   var msg=document.getElementById('dcMsg');
   var adv=document.getElementById('dcAdvance');
   var rej=document.getElementById('dcReject');
@@ -2353,6 +2372,7 @@ function augmentScore(s){
 
 function openDrawer(appId){
   var a=APP_BY_ID[appId]; if(!a) return;
+  window.DRAWER_APP_ID=appId;
   document.getElementById('dwTitle').textContent=a.full_name;
   document.getElementById('dwSub').textContent =
     a.id+' · '+a.role_name+' · '+a.stage_name+' · status '+a.status+' · applied '+fdatey(a.applied_at);
@@ -2502,7 +2522,7 @@ function wireHiring(){
     var sampleIdx = deriveSample(APPS, DECISIONS);
     APP_BY_ID = sampleIdx.appById; DECISION_BY_ID = sampleIdx.decisionById;
     boot();
-    document.getElementById('footNote').textContent = 'hiring · read-only · demo session, sample rows';
+    document.getElementById('footNote').textContent = 'hiring · demo session, sample rows';
     FHData.banner('sample','sample hiring pipeline — demo session, the backend was not queried','hiring');
     return;
   }
@@ -2552,7 +2572,7 @@ function wireHiring(){
       }
     });
     document.getElementById('footNote').textContent =
-      'hiring · read-only · '+(parts.length?parts.join(' · '):'nothing loaded');
+      'hiring · '+(parts.length?parts.join(' · '):'nothing loaded');
     FHData.banner(worst, 'hiring · '+(parts.length?parts.join(' · '):'no rows yet'), 'hiring');
   });
 }

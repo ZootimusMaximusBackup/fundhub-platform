@@ -455,3 +455,46 @@ None.
 - **T12-02 (call checklist saved into notes text)** — the call-save path is not a T12-owned file. Reproduced but NOT fixed here. Needs an owner.
 - **T12-05 (Client Control Panel: three dead buttons, read-only notes box)** — Client Control Panel is not a T12-owned file. NOT fixed here. Needs an owner.
 - **T12-01 (Pipeline Archive / MOVE untested)** — pipeline board is not a T12-owned file, and T12-08 / T12-09 already prove drag and archive work on the TEST card. NOT re-tested here.
+
+### T12 — second pass (2026-08-19): adversarial review of the T12 commit itself
+
+A 12-agent review ran over commit `0f0a6d0`. Six defects survived adversarial refutation and are fixed
+in the follow-up commit; nine findings were refuted and are recorded here so nobody re-raises them.
+
+**Fixed in the follow-up commit**
+1. `src/hiring/pipeline.mjs` — `reject()` had no "is this application still open?" guard, the one
+   `advance()` has. A stale screen, or a second click after a lost response, could reject somebody
+   already hired and write a duplicate, undeletable adverse decision. Guard added, plus `FOR UPDATE`
+   on both `advance()` and `reject()` so two callers take turns instead of both passing the check.
+2. `src/sales/metrics.mjs:301` — `teamLeaderboard()` still filtered `role = 'closer'` while
+   `closerRoster()` was widened, so My Numbers and the Sales Floor board disagreed on team size and
+   rank. Both rosters now use the same predicate.
+3. `public/app/hiring.html` — the Advance dropdown offered onboarding, ramp and performing. Moving to
+   "hired" closes the application, so every later move is refused by the server. The list now stops at
+   hired and says why.
+4. `public/app/hiring.html` — "N demo hidden" counted every demo row on file, ignoring the board's own
+   stage/role/source/flagged filters. Now counted through the same filters.
+5. `public/app/hiring.html` — a slow drawer fetch could wire Advance/Reject to a different candidate
+   than the header named. Guarded on the open drawer's application id.
+6. `public/app/hiring.html` — two JavaScript lines overwrote the footer with "hiring · read-only" on
+   every load, so a screen that now writes still told the reader it could not. Both corrected.
+7. `public/app/ops-admin.html` — the "N people are hidden" line only rendered when the list was EMPTY,
+   and the staff-read change in the same commit means it is never empty again. The line is now
+   permanent (`#staffHiddenLine`), matching `staff-teams.html`.
+
+**Refuted — do not re-raise**: cross-org hire/reject (the org filter is applied upstream); "hired is
+terminal" as a module defect (it is a UI concern only, fixed as #3); a demo row named "Chris
+Stanbridge" reaching the board; the double dataset reload after save; the Present change breaking a
+genuinely expired session.
+
+**EVIDENCE GAP — owner decision needed.** The first pass proved the fixes with a Playwright run that
+STUBBED every API response. That proves rendering only. It cannot execute the new `api/read/staff.mjs`
+SQL, and it never once called `POST /api/hiring/decide` — so that endpoint has still never returned a
+200 anywhere. Two checks would close this and BOTH were blocked by the sandbox on 2026-08-19:
+  (a) read-only SELECTs against production (does a staff row for `chris@fundhub.ai` exist and is it
+      `status='active'`? if not, the Sales Floor board stays empty after the fix);
+  (b) a throwaway local Postgres to execute the new SQL and a real POST to the decide endpoint.
+Until (a) runs, "Chris will appear on the closer board" is UNPROVEN. Separately, the live board's
+"0 CLOSERS ON SHIFT" chip counts OPEN SHIFTS, not roster size — it stays 0 until somebody clocks in,
+fix or no fix. And all three live candidates are Demo Mode rows, which `decideSection()` deliberately
+refuses to decide on, so the hiring fix has nothing to act on in production today.
