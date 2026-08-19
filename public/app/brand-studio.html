@@ -1278,37 +1278,80 @@ table.grid tr.stale:hover td{background:rgba(242,166,155,.15)}
 
   window.__fhBrandPersist = persist;
 
-  if (MODE === "org") {
-    if (typeof FHData === "undefined" || !FHData.orgBrand) return;
-    FHData.wire(FHData.orgBrand(), "brand", function (data) {
-      var b = data.brand;
-      if (!b) return null;
-      if (typeof window.__fhBrandHydrateFromServer === "function") {
-        window.__fhBrandHydrateFromServer(b);
-      }
-      return "CRM brand · " + (b.entity_name || "unnamed");
-    });
-    return;
-  }
+  /* WHY THE READ WAITS — T11-01.
+     data.js carries `defer` (its tag is the one directly above this script), so
+     it has NOT run while this script is being parsed and FHData does not exist
+     yet. This block used to ask for the saved brand right here, during parse:
+     org mode hit a `typeof FHData === "undefined"` guard and quit without a
+     word, partner mode had no guard and threw "FHData is not defined", and that
+     throw killed the rest of this script element as well (the status-bar block
+     below it never ran, so the sticky save bar sat under the bottom strip).
+     Either way __fhBrandHydrateFromServer never ran: every text box kept its
+     grey example text, the colour, ramp and font controls showed hard-coded
+     defaults that LOOK like a real palette, and Save then answered "Legal
+     entity is required" for a value the server had on file all along.
+     Every deferred script runs before DOMContentLoaded, so the read waits for
+     that event — the same shape as public/app/client-control-panel.html and the
+     re-entry guard in campaign-manager.html / creative-factory.html. */
+  function loadBrandFromServer() {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", loadBrandFromServer, { once: true });
+      return;
+    }
 
-  if (!partnerId) {
-    if (typeof FHData !== "undefined") {
+    /* If the read cannot even start, say so. What is on screen at this moment is
+       a set of defaults, not this brand, and defaults that look real are exactly
+       how a saved brand gets overwritten by one press of Save. */
+    if (typeof window.FHData === "undefined" || typeof FHData.wire !== "function") {
+      banner("error", "brand NOT loaded — page scripts did not finish");
+      setSaveMsg("We could not load your saved brand, so the boxes below are examples, not your real brand. Reload the page before you save anything.");
+      return;
+    }
+
+    if (MODE === "partner" && !partnerId) {
       FHData.banner("sample",
         "sample palette — sign in as a partner, or open with ?partner_id=<id>", "brand");
+      setSaveMsg("No partner is open, so these are example colours, not a real brand. Sign in as a partner to see yours.");
+      return;
     }
-    return;
-  }
 
-  FHData.wire(
-    FHData.brand(partnerId),
-    "brand", function (data) {
-      var b = data.brand;
+    var isOrg = MODE === "org";
+    var read = isOrg ? FHData.orgBrand() : FHData.brand(partnerId);
+
+    FHData.wire(read, "brand", function (data) {
+      var b = data && data.brand;
       if (!b) return null;
       if (typeof window.__fhBrandHydrateFromServer === "function") {
         window.__fhBrandHydrateFromServer(b);
       }
-      return "partner brand · " + (b.entity_name || "unnamed") + " · " + b.approval_status;
+      return isOrg
+        ? "CRM brand · " + (b.entity_name || "unnamed")
+        : "partner brand · " + (b.entity_name || "unnamed") + " · " + b.approval_status;
     });
+
+    /* wire() writes the bottom status strip. The line beside Save is the answer
+       the partner actually reads, and the two must never disagree, so the same
+       three outcomes — loaded / nothing saved yet / read failed — are answered
+       here too, in the same words. Attached after wire(), so hydration has
+       already run by the time this handler is called. */
+    read.then(function (res) {
+      if (!res || !res.ok) {
+        setSaveMsg("We could not load your saved brand (" +
+          ((res && res.error) || "the read failed") +
+          "), so the boxes below are examples, not your real brand. Reload the page before you save anything.");
+        return;
+      }
+      if (!res.data || !res.data.brand) {
+        setSaveMsg("Nothing is saved for this brand yet. Fill in the boxes and press Save & apply.");
+        return;
+      }
+      setSaveMsg("Loaded your saved brand.");
+    }).catch(function () {
+      setSaveMsg("We could not load your saved brand, so the boxes below are examples, not your real brand. Reload the page before you save anything.");
+    });
+  }
+
+  loadBrandFromServer();
 })();
 
 /* Keep the sticky save bar clear of data.js's fixed bottom status strip.
