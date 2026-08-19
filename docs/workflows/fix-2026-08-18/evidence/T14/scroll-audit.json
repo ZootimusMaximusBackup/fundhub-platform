@@ -1,0 +1,8 @@
+{
+  "note": "T14-04 — the scroll pass the original audit never did. Both pages were scrolled one screen at a time with a 700ms pause, then re-checked for any text still faded out.",
+  "run_at": "2026-08-19",
+  "target": "live https://fundhub.ai",
+  "education": { "pageHeight": 9141, "screens": 10, "stillFadedAfterFullScroll": 0, "brokenImages": 0 },
+  "affiliates": { "pageHeight": 5266, "screens": 6, "stillFadedAfterFullScroll": 0, "brokenImages": 0 },
+  "verdict": "PASS - every block reveals on scroll, nothing stays hidden, no broken images"
+}

@@ -75,3 +75,68 @@ Whether events emitted by the live site reach the job service **today**. Both ke
 has checked since the 21:51:40Z rebuild. One read-only call settles it and needs the signing key, which
 this session could not read: `GET https://api.inngest.com/v2/runs/<id>` with the key as a bearer token.
 Attempted twice, stopped per the two-attempt rule.
+
+---
+
+## T14 — Apply funnel, public pages & education · `done`
+
+Branch `fix/T14-apply-education`. Live re-walk 2026-08-19 against `https://fundhub.ai` and
+`https://apply.fundhub.ai`. Evidence: `docs/workflows/fix-2026-08-18/evidence/T14/`.
+
+### Change manifest
+
+**Files touched**
+- `clickfunnels-fragments/05-thank-you.html` — booking claim, calendar block and invite line gated on `fh_booking_v1`
+- `clickfunnels-fragments/02a-apply-top.html` — false "Step 1 of 2" counter removed
+- `api/public/survey-submit.mjs` — resolves-or-creates the client, stamps both events with `clientId`
+- `src/workflows/s-02-incomplete-survey-nudge.mjs` — completion check also matches on payload email; `surveyCompleted` exported for test
+- `src/workflows/s-02-incomplete-survey-nudge.test.mjs` — two new tests over `surveyCompleted`
+- `public/education/{index,enroll,terms,privacy,refund}/index.html` — real form submission, honest copy, portal claims removed
+- `netlify/functions/api.mjs` — one import + one ROUTES key, append-only
+- `db/expected-migrations.mjs`, `docs/journeys/*-actual.md` — regenerated, not hand-edited
+
+**Files added**
+- `api/public/education-enroll.mjs`, `src/education/enrollments.mjs`, `src/http/education-enroll.pg.test.mjs`
+- `db/migrations/245_education_enrollments.sql` (reserved block 245–249)
+- `public/education/learn/index.html`
+
+**Route added:** `"public/education-enroll": publicEducationEnroll`
+**Migration used:** 245. **Journeys:** every `-actual.md` +1 route, +1 open route; no role gate moved.
+**Menu row needed from T0:** none — the player sits at a public path, no nav row required.
+**Events:** none emitted. No canonical name fits; `entry.captured` would start four funding workflows against an education buyer.
+
+### Verification
+`npm run lint` clean (1319 files) · `npx tsc --noEmit` exit 0 · suite **5840 pass / 2 fail**, and
+**both failures reproduce on clean `origin/main`** (`read-endpoints-org-scope.test.mjs` →
+`company-brain-affiliate.mjs`; `scripts/journeys/generate.test.mjs` → the two long-standing
+UNVERIFIED gates `finance/crs-pull` and `gifts/message-blaster`). Neither is this thread's.
+
+### Corrections to the brief handed to this thread
+1. **s-02 was NOT deregistered.** It was put back in commit `f3fb9a7`, and the pinned count is
+   already 53. No change to `src/workflows/index.mjs` or `index.test.mjs` was needed — **T6 has no
+   collision with T14 after all.** The real remaining fault was the dead completion check.
+2. **Use migration 245, not 177.** The shared-file rule reserves 245–249 for T14; the thread body's
+   suggestion of 177 belongs to another block.
+3. **`api/applications.mjs` and `src/applications/status.mjs` are misassigned.** Both are the
+   staff-only lender application status endpoint and touch nothing in the apply funnel. **Left
+   unchanged. Please reassign to T12 or T8.**
+
+### Blockers — no code change fixes these
+1. **ClickFunnels paste required.** `/apply`, `/funding-book-call` and `/thank-you` are hosted by
+   ClickFunnels. The two fragment fixes are proven but do not reach the live site until a human
+   pastes them into the CF page editor. Merging does not ship them.
+2. **The 555 phone rejection is ClickFunnels'.** Its phone widget and the words "invalid country
+   code" appear nowhere in this repo.
+3. **`/book` 404** — owner WONTFIX, and confirmed there is no repo file to change: every canonical
+   book URL in the repo already points at `funding-book-call`.
+4. **No mailbox for `e2e+…@fundhub.ai`.** `api/auth/invite.mjs:5` and `src/auth/company-email.mjs:1`
+   both state a `@fundhub.ai` address is a login, not a mailbox — so the T14-08 confirmation mail
+   bounced at the receiving end. That mail was sent by the ClickFunnels/Cal.com booking host, not by
+   this repo. Fixing it needs a catch-all alias in Google Workspace, or the e2e convention moving to
+   a domain that accepts mail. **Not fixed here.**
+5. **No payment and no CRM screen** for education enrollments. Rows are worked by hand.
+6. **Two support domains.** Education pages use `support@fundhubeducation.com`; the rest of the site
+   uses `@fundhub.ai`. Someone must decide which is real — refunds may be going nowhere.
+
+### Request to another thread
+None. No file outside T14's list was edited.

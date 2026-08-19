@@ -309,19 +309,19 @@
       </div>
       <div class="stack">
       <div class="term" aria-hidden="true">
-        <div class="term-bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">student portal / enrollment</span><button type="button" class="rerun" id="rerun" aria-label="Replay enrollment">run ↻</button></div>
+        <div class="term-bar"><span class="d"></span><span class="d"></span><span class="d"></span><span class="t">enrollment request</span><button type="button" class="rerun" id="rerun" aria-label="Replay enrollment">run ↻</button></div>
         <div class="term-body" id="term">
-          <div class="tl"><span><span class="p">$</span><span id="cmdtxt"> enroll --credit-mastery</span></span></div>
-          <div class="tl"><span><span class="p">&gt;</span> enrollment confirmed</span><span class="ts">09:41:02</span></div>
-          <div class="tl"><span><span class="p">&gt;</span> portal access granted</span><span class="ts">09:41:04</span></div>
-          <div class="tl"><span><span class="p">&gt;</span> CM-01 unlocked · reporting systems</span><span class="ts">09:41:06</span></div>
-          <div class="tl"><span><span class="p">&gt;</span> template library available</span><span class="ts">09:41:09</span></div>
-          <div class="tl"><span><span class="p">&gt;</span> progress autosaved</span><span class="ts">09:41:12</span></div>
+          <div class="tl"><span><span class="p">$</span><span id="cmdtxt"> request --credit-mastery</span></span></div>
+          <div class="tl"><span><span class="p">&gt;</span> request received</span><span class="ts">09:41:02</span></div>
+          <div class="tl"><span><span class="p">&gt;</span> nothing charged yet</span><span class="ts">09:41:04</span></div>
+          <div class="tl"><span><span class="p">&gt;</span> CM-01 · reporting systems</span><span class="ts">09:41:06</span></div>
+          <div class="tl"><span><span class="p">&gt;</span> template library included</span><span class="ts">09:41:09</span></div>
+          <div class="tl"><span><span class="p">&gt;</span> a person will contact you</span><span class="ts">09:41:12</span></div>
           <div class="tl tdim"><span><span class="p">&gt;</span> self-paced · lifetime access<span class="caret"></span></span></div>
         </div>
       </div>
       <div class="fcard fa" aria-hidden="true"><div class="av">CM</div><div><div class="fn">Credit Mastery System</div><div class="fs"><span class="sdot"></span>10 modules · self-paced</div></div></div>
-      <div class="fcard fb" aria-hidden="true"><div class="fl">Program progress</div><div class="fbar"><span></span></div><div class="fpct">CM-04 · 40%</div></div>
+      <div class="fcard fb" aria-hidden="true"><div class="fl">Capital Strategy Program</div><div class="fpct">10 modules · self-paced</div></div>
       </div>
     </div>
   </div>
@@ -341,7 +341,7 @@
 <div class="wrap">
   <div class="strip rv">
     <div class="cell"><div class="k">Format</div><div class="v">Self-paced, fully online</div></div>
-    <div class="cell"><div class="k">Delivery</div><div class="v">Instant portal access</div></div>
+    <div class="cell"><div class="k">Delivery</div><div class="v">Online, self-paced. Enrollment is by request — the programs have not opened yet.</div></div>
     <div class="cell"><div class="k">Tuition</div><div class="v">$5,000 per program</div></div>
     <div class="cell"><div class="k">Refunds</div><div class="v">Full refund within 14 days of purchase, provided you have accessed less than 20% of the program content.</div></div>
   </div>
@@ -523,7 +523,7 @@
       <details><summary>Is this a loan or a funding service?</summary><div class="fa-a">No. Fundhub Education is an education company. We do not lend money, broker loans, or arrange financing of any kind. Our programs teach you how credit and lending work so you can act on your own. If you are looking for funding, that is <a href="/">fundhub.ai</a>.</div></details>
       <details><summary>Do you repair my credit for me?</summary><div class="fa-a">No. We do not perform credit repair services and we never contact credit bureaus or creditors on your behalf. The Credit Mastery System teaches you the process and gives you the templates. Every letter is drafted, signed, and sent by you.</div></details>
       <details><summary>Do you guarantee results?</summary><div class="fa-a">No. We make no guarantees about credit scores, dispute outcomes, lending approvals, or financial results of any kind. Outcomes depend on your specific situation and your own effort. What we guarantee is the quality and completeness of the curriculum itself.</div></details>
-      <details><summary>How is the program delivered?</summary><div class="fa-a">Entirely online and self-paced. After enrollment you receive login credentials to the student portal, where all video lessons, templates, and workbooks are available immediately. You keep lifetime access, including future updates.</div></details>
+      <details><summary>How is the program delivered?</summary><div class="fa-a">Entirely online and self-paced. To be straight with you: the programs have not opened yet, and there is no student portal or login to give you today. This page takes an enrollment request — you are not charged, and a member of our team contacts you to talk through the program and payment. When the material opens, you keep lifetime access, including future updates. We will not give you a date we cannot keep.</div></details>
       <details><summary>How long does it take to complete?</summary><div class="fa-a">Each program contains 10 modules with 40+ video lessons. Most students complete a program in 4 to 8 weeks working a few hours per week, but there is no deadline. The material is yours for life.</div></details>
       <details><summary>What is the refund policy?</summary><div class="fa-a">Full refund within 14 days of purchase, provided you have accessed less than 20% of the program content. Full details are in our <a href="/education/refund/">Refund Policy</a>.</div></details>
       <details><summary>Can I pay in installments?</summary><div class="fa-a">Flexible payment options are shown at checkout where available. Any financing offered at checkout is provided by an independent third-party payment provider, subject to its own terms and approval process. Fundhub Education is not the lender.</div></details>
@@ -607,7 +607,7 @@
   function runTerm(){
     var lines = Array.prototype.slice.call(document.querySelectorAll('#term .tl'));
     var cmd = document.getElementById('cmdtxt');
-    var full = ' enroll --credit-mastery';
+    var full = ' request --credit-mastery';
     if(reduce){ lines.forEach(function(l){l.classList.add('on');}); cmd.textContent=full; return; }
     lines.forEach(function(l){l.classList.remove('on');});
     cmd.textContent='';
