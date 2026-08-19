@@ -415,7 +415,7 @@
 
     <div class="section fh-maxw">
       <div class="section-title">Work Queue</div>
-      <table class="queue" id="workQueueTable">
+      <table class="queue">
         <tr><th>Client</th><th>Bureau</th><th>Inquiry</th><th>Call State</th><th>Hold</th><th>Attempts</th><th>Status</th></tr>
         <tr id="queue-status-row"><td colspan="7" style="text-align:center;padding:28px 16px;color:var(--text-dim);">Loading inquiry queue…</td></tr>
       </table>
@@ -1117,32 +1117,10 @@ return VIEW;
    row with a banner — rule: fall back, don't invent people.
    ─────────────────────────────────────────────────────────────────────────── */
 window.__fhQueueReady = (function () {
-  /* data.js carries `defer` (see its tag above), so window.FHData does not exist
-     yet while THIS script is being parsed. The guard used to sit here and read it,
-     so the whole block quit before doing anything: the Work Queue kept its
-     "Loading inquiry queue…" row forever, the four tiles kept their "—", and the
-     three bureau chips kept their hardcoded 0. Every deferred script runs before
-     DOMContentLoaded, so the first read waits for that event — the same pattern
-     client-control-panel.html and messaging.html already use.
-
-     __fhQueueReady is still ASSIGNED synchronously here, because the behaviour
-     block further down tests for it while IT is being parsed. Only the READ moved. */
-  var domReady = new Promise(function (resolve) {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', function () { resolve(); });
-    } else {
-      resolve();
-    }
-  });
-  /* Three tables on this page carry class="queue" — #caseQueueTable, the Work
-     Queue, and #repairTable — and querySelector returns the FIRST in document
-     order, so every lookup here used to land on the cases table: rows were
-     appended under the wrong header and #queue-status-row was never found to be
-     removed. Ask for the one we mean. */
-  function queueTable() { return document.getElementById('workQueueTable'); }
-  var table = null;
+  var table = document.querySelector('table.queue');
+  if (!table || !window.FHData) return Promise.resolve();
   function showQueueStatus(msg) {
-    var table = queueTable();
+    var table = document.querySelector('table.queue');
     if (!table) return;
     [].slice.call(table.querySelectorAll('tr[data-row], #queue-status-row')).forEach(function (r) { r.remove(); });
     var tr = document.createElement('tr');
@@ -1237,7 +1215,7 @@ window.__fhQueueReady = (function () {
       var box = btn.closest('.case-detail');
       if (!box || !box.dataset.caseId) return;
       var action = btn.getAttribute('data-case-act');
-      var body = { id: box.dataset.caseId, action: action };
+      var body = { case_id: box.dataset.caseId, action: action };
       if (action === 'close') {
         if (!window.confirm('Close this inquiry-removal case?')) return;
         body.reason = 'closed_by_rep';
@@ -1264,13 +1242,6 @@ window.__fhQueueReady = (function () {
     };
   }
 
-  return domReady.then(function () {
-    table = queueTable();
-    if (!table || !window.FHData) return;
-    return runLoad();
-  });
-
-  function runLoad() {
   return Promise.all([
     FHData.inquiries({ limit: 200 }),
     FHData.inquiryCases ? FHData.inquiryCases({ limit: 100, active: 1 }) : Promise.resolve({ ok: false })
@@ -1278,7 +1249,7 @@ window.__fhQueueReady = (function () {
     var res = pair[0];
     var casesRes = pair[1];
     if (casesRes && casesRes.ok) {
-      renderCases((casesRes.data && casesRes.data.cases) || []);
+      renderCases((casesRes.data && casesRes.data.items) || []);
     }
     if (!res.ok) { showQueueStatus('Could not load the inquiry queue.'); FHData.explain(res, 'inquiry queue'); return; }
     var items = (res.data && res.data.items) || [];
@@ -1293,11 +1264,7 @@ window.__fhQueueReady = (function () {
       return;
     }
 
-    /* The static "Loading inquiry queue…" row (#queue-status-row) is only cleared
-       by showQueueStatus, which the success path never calls — so on a good load
-       it used to sit above the real rows forever. Purge it here with them. */
-    [].slice.call(table.querySelectorAll('tr[data-row], #queue-status-row'))
-      .forEach(function (r) { r.remove(); });
+    [].slice.call(table.querySelectorAll('tr[data-row]')).forEach(function (r) { r.remove(); });
 
     var unknown = 0, calls = 0, left = 0, confirmed = 0, worked = 0, byBureau = {};
     items.forEach(function (it) {
@@ -1348,7 +1315,6 @@ window.__fhQueueReady = (function () {
   }).catch(function () {
     FHData.banner('error', 'sample queue — the inquiry read failed', 'inquiries');
   });
-  }
 })();
 </script>
 
@@ -1379,7 +1345,7 @@ window.__fhQueueReady = (function () {
    ─────────────────────────────────────────────────────────────────────────── */
 window.__fhInitQueue = function(){
   var V      = window.FHInquiryView,
-      table  = document.getElementById('workQueueTable'),
+      table  = document.querySelector('table.queue'),
       rows   = [].slice.call(table.querySelectorAll('tr[data-row]')),
       chips  = [].slice.call(document.querySelectorAll('.bureau-chip[data-bureau]')),
       note   = document.getElementById('filter-note'),
@@ -1871,11 +1837,11 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
       .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   }
   function uiStatus(C) {
-    if (window.FHInquiryView && window.FHInquiryView.caseUiStatus) return window.FHInquiryView.caseUiStatus(C);
+    if (window.VIEW && VIEW.caseUiStatus) return VIEW.caseUiStatus(C);
     return { label: C.case_status || "—", cls: "" };
   }
   function callState(C) {
-    if (window.FHInquiryView && window.FHInquiryView.caseCallState) return window.FHInquiryView.caseCallState(C);
+    if (window.VIEW && VIEW.caseCallState) return VIEW.caseCallState(C);
     return "—";
   }
   function deliveryChips(C) {
@@ -2013,7 +1979,7 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
           var serviceLevel = serviceSel ? serviceSel.value : "";
           var req;
           try {
-            req = window.FHInquiryView.buildCaseSendRequest({
+            req = VIEW.buildCaseSendRequest({
               caseId: C.id,
               mail: wantMail,
               portal: wantPortal,
