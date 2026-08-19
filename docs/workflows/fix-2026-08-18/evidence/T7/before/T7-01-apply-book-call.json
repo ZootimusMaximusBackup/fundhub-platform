@@ -1,0 +1,101 @@
+{
+  "status": 200,
+  "finalUrl": "https://apply.fundhub.ai/funding-book-call",
+  "title": "Funding Book Call",
+  "headings": [
+    "You Are Qualified.",
+    "Book Your Funding Call Below",
+    "August 2026",
+    "Wednesday 19th August",
+    "Working..."
+  ],
+  "hasQualifiedHeadline": true,
+  "bookingWidget": {
+    "cronofyElementPresent": true,
+    "cronofyClass": "",
+    "cronofyInnerLength": 18535,
+    "cronofyText": "Time Zone:\n\nPhoenix\n\nDuration: 30 minutes\n\nAugust 2026\nSun\tMon\tTue\tWed\tThu\tFri\tSat\n\n26\n\t\n27\n\t\n28\n\t\n29\n\t\n30\n\t\n31\n\t\n01\n\n\n02\n\t\n03\n\t\n04\n\t\n05\n\t\n06\n\t\n07\n\t\n08\n\n\n09\n\t\n10\n\t\n11\n\t\n12\n\t\n13\n\t\n14\n\t\n15\n\n\n16\n\t\n17\n\t\n18\n\t\n19\n\t\n20\n\t\n21\n\t\n22\n\n\n23\n\t\n24\n\t\n25\n\t\n26\n\t\n27\n\t\n28\n\t\n29\n\n\n30\n\t\n31\n\t\n01\n\t\n02\n\t\n03\n\t\n04\n\t\n05\nWednesday 19th August\nSelect time\n9:30 AM - 10:00 AM (MST)\nSelect time\n10:00 AM - 10:30 AM (MST)\nSelect time\n10:30 AM - 11:00 AM (MST)\nSelect time\n11:00 AM - 11:30 AM (MST)\nSelect time\n11:30 AM - 12:00 PM (MST)\nSelect time\n12:00 PM - 12:30 PM (MST)\nSelect time\n12:30 PM - 1:00 PM (MST)\nSelect time\n1:00 PM - 1:30 PM (MST)\nSelect time\n1:30 PM - 2:00 PM (MST)\nSelect time\n2:00 PM - 2:30 PM (MST)\nSelect time\n2:30 PM - 3:00 PM (MST)\nSelect time\n3:00 PM - 3:30 PM (MST)\nSelect time\n3:30 PM - 4:00 PM (MST)\nSelect",
+    "cronofyGlobal": "object",
+    "iframes": [],
+    "timeSlotLabels": [],
+    "hasCalCom": false,
+    "bodyTextHead": "QUALIFIED · FUNDING PATH\nYou Are Qualified.\nBook Your Funding Call Below\n\nFind out exactly how much your business qualifies for. It's a live Google Meet, and we run a soft credit pull on the call — zero score impact.\n\nFunding Strategy Meeting\nChris Stanbridge\n30 minutes\nGoogle Meet\nSelect a Date & Time:\n\nTime Zone:\n\nPhoenix\n\nDuration: 30 minutes\n\nAugust 2026\nSun\tMon\tTue\tWed\tThu\tFri\tSat\n\n26\n\t\n27\n\t\n28\n\t\n29\n\t\n30\n\t\n31\n\t\n01\n\n\n02\n\t\n03\n\t\n04\n\t\n05\n\t\n06\n\t\n07\n\t\n08\n\n\n09\n\t\n10\n\t\n11\n\t\n12\n\t\n13\n\t\n14\n\t\n15\n\n\n16\n\t\n17\n\t\n18\n\t\n19\n\t\n20\n\t\n21\n\t\n22\n\n\n23\n\t\n24\n\t\n25\n\t\n26\n\t\n27\n\t\n28\n\t\n29\n\n\n30\n\t\n31\n\t\n01\n\t\n02\n\t\n03\n\t\n04\n\t\n05\nWednesday 19th August\nSelect time\n9:30 AM - 10:00 AM (MST)\nSelect time\n10:00 AM - 10:30 AM (MST)\nSelect time\n10:30 AM - 11:00 AM (MST)\nSelect time\n11:00 AM - 11:30 AM (MST)\nSelect time\n11:30 AM - 12:00 PM (MST)\nSelect time\n12:00 PM - 12:30 PM (MST)\nSelect time\n12:30 PM - 1:00 PM (MST)\nSelect time\n1:00 PM - 1:30 PM (MST)\nSelect time\n1:30 PM - 2:00 PM (MST)\nSelect time\n2:00 PM - 2:30 PM (MST)\nSelect time\n2:30 PM - 3:00 PM (MST)\nSelect time\n3:00 PM - 3:30 PM (MST)\nSelect time\n3:30 PM - 4:00 PM (MST)\nSelect time\n4:00 PM - 4:30 PM (MST)\nSelect time\n4:30 PM - 5:00 PM (MST)\nSelect time\n5:00 PM - 5:30 P"
+  },
+  "network": [
+    {
+      "m": "GET",
+      "s": 200,
+      "u": "https://apply.fundhub.ai/assets/projects/user_pages/appointment-scheduler-v1-2OJ7XJHQ.css"
+    },
+    {
+      "m": "GET",
+      "s": 200,
+      "u": "https://apply.fundhub.ai/assets/projects/user_pages/appointment-scheduler-v1-26SSFVX5.js"
+    },
+    {
+      "m": "GET",
+      "s": 200,
+      "u": "https://elements.cronofy.com/js/CronofyElements.v1.60.0.js"
+    },
+    {
+      "m": "POST",
+      "s": "ALLOWED-READ-POST",
+      "u": "https://apply.fundhub.ai/user_pages/api/v1/appointments/event_types/14234/calendar_config",
+      "body": "{\"host_id\":14784}"
+    },
+    {
+      "m": "POST",
+      "s": 200,
+      "u": "https://apply.fundhub.ai/user_pages/api/v1/appointments/event_types/14234/calendar_config"
+    },
+    {
+      "m": "POST",
+      "s": "ALLOWED-READ-POST",
+      "u": "https://api.cronofy.com/v1/availability?et=m_pUCU7Q6PfnPaV7CRKbdVkN03GhqpWOBVCRq5v3Q7HbqSLgnfXiLdh9DwP5ZdRzv1YQpZR2roVHoEpWBUzQoA",
+      "body": "{\"response_format\":\"overlapping_slots\",\"participants\":[{\"required\":\"all\",\"members\":[{\"sub\":\"acc_6072c7c7b998d50062653c61\",\"managed_availability\":true,\"calendar_ids\":[\"cal_antijzI54wbfVsMP_FLXRYCPViGou"
+    },
+    {
+      "m": "POST",
+      "s": "BLOCKED-BY-PROBE",
+      "u": "https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+      "body": "{\"t\":\"pv\",\"pixelCode\":\"cmsdutl8e00mukv041vwuo39w\",\"cookieId\":\"ak_5ncfnqm4rmszi5hpr\",\"url\":\"https://apply.fundhub.ai/funding-book-call\",\"urlPath\":\"/funding-book-call\",\"urlSearch\":\"\",\"referrer\":\"\",\"title\":\"Funding Book Call\",\"screenWidth\":1440,\"screenHeight\":900,\"isMobile\":false,\"isIOS\":false,\"isSafar"
+    },
+    {
+      "m": "POST",
+      "s": "BLOCKED-BY-PROBE",
+      "u": "https://apply.fundhub.ai/_cf/s",
+      "body": "{\"visit_token\":\"9ec076a0-509e-4f83-a1be-325be0a987f3\",\"visitor_token\":\"f279b4a5-0d08-479f-a0e7-a9e19338e542\",\"time\":1787108321.697,\"platform\":\"Web\",\"landing_page\":\"https://apply.fundhub.ai/funding-book-call\",\"screen_width\":1440,\"screen_height\":900,\"fbclid\":null,\"fbc\":null,\"fbp\":\"fb.1.1787108321692.8"
+    },
+    {
+      "m": "POST",
+      "s": "BLOCKED-BY-PROBE",
+      "u": "https://apply.fundhub.ai/_cf/s",
+      "body": "{\"visit_token\":\"9ec076a0-509e-4f83-a1be-325be0a987f3\",\"visitor_token\":\"f279b4a5-0d08-479f-a0e7-a9e19338e542\",\"time\":1787108321.701,\"platform\":\"Web\",\"landing_page\":\"https://apply.fundhub.ai/funding-book-call\",\"screen_width\":1440,\"screen_height\":900,\"fbclid\":null,\"fbc\":null,\"fbp\":\"fb.1.1787108321692.8"
+    },
+    {
+      "m": "POST",
+      "s": 200,
+      "u": "https://api.cronofy.com/v1/availability?et=m_pUCU7Q6PfnPaV7CRKbdVkN03GhqpWOBVCRq5v3Q7HbqSLgnfXiLdh9DwP5ZdRzv1YQpZR2roVHoEpWBUzQoA"
+    },
+    {
+      "m": "POST",
+      "s": "BLOCKED-BY-PROBE",
+      "u": "https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+      "body": "{\"t\":\"pv\",\"pixelCode\":\"cmsdutl8e00mukv041vwuo39w\",\"cookieId\":\"ak_5ncfnqm4rmszi5hpr\",\"url\":\"https://apply.fundhub.ai/funding-book-call\",\"urlPath\":\"/funding-book-call\",\"urlSearch\":\"\",\"referrer\":\"\",\"title\":\"Funding Book Call\",\"screenWidth\":1440,\"screenHeight\":900,\"isMobile\":false,\"isIOS\":false,\"isSafar"
+    },
+    {
+      "m": "POST",
+      "s": "BLOCKED-BY-PROBE",
+      "u": "https://bam.nr-data.net/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=4752&ck=0&s=596bd25b8e4ef51e&ref=https://apply.fundhub.ai/funding-book-call&af=err,xhr,stn,ins,spa&be=1348&fe=247",
+      "body": ""
+    }
+  ],
+  "networkFailures": [],
+  "consoleErrors": [
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED",
+    "Failed to load resource: net::ERR_FAILED"
+  ]
+}

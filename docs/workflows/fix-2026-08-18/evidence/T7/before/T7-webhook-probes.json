@@ -1,0 +1,41 @@
+{
+  "ranAt": "2026-08-18",
+  "host": "https://fundhub.ai",
+  "method": "POST",
+  "body": {
+    "probe": "t7"
+  },
+  "note": "forged/unsigned probes only; no signature replay; nothing written",
+  "results": [
+    {
+      "path": "/api/webhooks/calcom",
+      "body": "{\"ok\":false,\"status\":401,\"reason\":\"bad_signature\",\"emitted\":[]}",
+      "status": 401
+    },
+    {
+      "path": "/api/webhooks/cal",
+      "body": "{\"ok\":false,\"error\":\"unknown provider: cal\"}",
+      "status": 404
+    },
+    {
+      "path": "/api/webhooks/ghl",
+      "body": "{\"ok\":false,\"error\":\"unknown provider: ghl\"}",
+      "status": 404
+    },
+    {
+      "path": "/api/webhooks/plaid",
+      "body": "{\"ok\":false,\"error\":\"unknown provider: plaid\"}",
+      "status": 404
+    },
+    {
+      "path": "/api/webhooks/postgrid",
+      "body": "{\"ok\":false,\"error\":\"invalid_signature\"}",
+      "status": 401
+    },
+    {
+      "path": "/api/webhooks/bland",
+      "body": "{\"ok\":false,\"status\":401,\"reason\":\"bad_signature\",\"emitted\":[]}",
+      "status": 401
+    }
+  ]
+}

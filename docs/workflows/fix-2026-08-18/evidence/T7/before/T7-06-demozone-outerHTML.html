@@ -1,0 +1,35 @@
+<section class="demozone" id="demozone">
+    <button class="demo-div" id="demoToggle" aria-expanded="false">
+      <span>Demonstration states</span>
+      <span class="dd-sub">double-booking alert · empty day · open hour</span>
+      <span class="dd-chev">▾</span>
+    </button>
+    <div class="demo-body" id="demoBody" hidden="">
+
+      <div>
+        <div class="demo-cap">Double-booking — the day-wide form of the alert now carried on the 4:30 rows</div>
+        <div class="errbar">
+          <span class="ic">⚠</span>
+          <span><b>Two bookings sit in the same 4:30 slot.</b> A setter put a second client into a time that was already taken. One of them has to move.</span>
+          <span class="acts"><span>Move one booking</span><span>Reschedule the other</span></span>
+        </div>
+      </div>
+
+      <div>
+        <div class="demo-cap">Empty day — nothing booked, nobody scheduled on</div>
+        <div class="ws-grid" style="grid-template-columns:repeat(7,1fr);max-width:760px;">
+          <div class="ws-day empty" style="min-height:96px;">
+            <div class="ws-dtop"><span class="ws-dname">Sat</span><span class="ws-dnum">1</span></div>
+            <div class="ws-count">—</div>
+            <div class="ws-empty" style="display:block;">Nothing booked.<br>Nobody scheduled on.</div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="demo-cap">Open hour — a gap in the timeline</div>
+        <div class="open-slot" style="max-width:520px;">Nothing booked this hour</div>
+      </div>
+
+    </div>
+  </section>

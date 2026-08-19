@@ -8,11 +8,32 @@ import {
 // Fake pg covering the queries comms.mjs + resolveClient issue. Messages dedup is
 // DB-level (ON CONFLICT) and proven in the pg integration test; the guard-based
 // dedup for bank_inbox + tasks lives in app code and IS exercised here.
+//
+// *** A FAKE THAT DOES NOT MATCH THE REAL SQL PROVES NOTHING. ***
+//
+// This fake used to find a booking's task with `t.source_workflow === "calcom"`
+// in both the reschedule branch and the cancel/no-show branch, while the real
+// queries had already stopped filtering on the vendor label and matched on
+// `title LIKE 'Strategy session%'` instead. So the fake would have gone on
+// passing code that still hunted for 'calcom' — which is the exact regression
+// these tests stand in front of. The branches below now mirror the real WHERE
+// clauses clause for clause: matched by client, booking id and title, never by
+// the label.
+//
+// The `bookings` branches emulate the two partial unique indexes from
+// db/migrations/225_bookings.sql — (org_id, provider_uid), and
+// (org_id, raw->>'__event_id') for a booking that has no provider id — so a
+// replay and a phantom cancellation are both provable here, with no database.
+
+/* The only LIKE form the real queries bind is a trailing '%'. */
+const likeMatches = (value, like) =>
+  String(value ?? "").startsWith(String(like ?? "").replace(/%$/, ""));
+
 function pgFake() {
-  const clients = [], messages = [], bank = [], tasks = [], optOuts = [];
+  const clients = [], messages = [], bank = [], tasks = [], optOuts = [], bookings = [];
   let n = 0;
   return {
-    clients, messages, bank, tasks, optOuts,
+    clients, messages, bank, tasks, optOuts, bookings,
     async query(sql, params = []) {
       // opt_outs support (TCPA STOP/START handling)
       if (/INSERT INTO opt_outs/.test(sql)) {
@@ -74,25 +95,70 @@ function pgFake() {
         return { rows: [] };
       }
       // --- tasks: reschedule update (RETURNING id when an open row matches) ---
+      // Real WHERE: client_id = $1 AND body = $2 AND title LIKE $5.
+      // NO source_workflow filter — that is the whole point.
       if (/UPDATE tasks[\s\S]*SET[\s\S]*due_at = COALESCE/.test(sql)) {
-        const [clientId, uid, dueAt, meetingUrl] = params;
-        const t = tasks.find((t) => t.client_id === clientId && t.source_workflow === "calcom" && t.body === uid);
+        const [clientId, uid, dueAt, meetingUrl, titleLike, newTitle] = params;
+        const t = tasks.find((t) =>
+          t.client_id === clientId && t.body === uid && likeMatches(t.title, titleLike));
         if (!t) return { rows: [] };
         t.due_at = dueAt ?? t.due_at;
         t.meeting_url = meetingUrl ?? t.meeting_url;
-        t.title = "Strategy session rescheduled";
+        t.title = newTitle;
         t.done = false;
         return { rows: [{ id: t.id }] };
       }
       // --- tasks: cancel/no-show close-out (mark the open task done) ---
+      // Real WHERE: client_id = $1 AND body = $2 AND title LIKE $3 AND done = false.
       if (/UPDATE tasks SET done = true/.test(sql)) {
-        const [clientId, uid] = params;
-        const t = tasks.find((t) => t.client_id === clientId && t.source_workflow === "calcom" && t.body === uid && !t.done);
+        const [clientId, uid, titleLike] = params;
+        const t = tasks.find((t) =>
+          t.client_id === clientId && t.body === uid && likeMatches(t.title, titleLike) && !t.done);
         if (t) t.done = true;
         return { rows: [] };
       }
+      // Real WHERE: client_id = $1 AND body = $2 AND title LIKE $3.
       if (/SELECT 1 FROM tasks/.test(sql)) {
-        return { rows: tasks.find((t) => t.client_id === params[0] && t.body === params[1]) ? [{ x: 1 }] : [] };
+        const [clientId, uid, titleLike] = params;
+        const t = tasks.find((t) =>
+          t.client_id === clientId && t.body === uid && likeMatches(t.title, titleLike));
+        return { rows: t ? [{ x: 1 }] : [] };
+      }
+      // --- bookings: the terminal-status update, matched by uid ACROSS sources ---
+      if (/UPDATE bookings[\s\S]*SET status/.test(sql)) {
+        const [orgId, uid, status] = params;
+        const hits = bookings.filter((b) => b.org_id === orgId && b.provider_uid === uid);
+        for (const b of hits) b.status = status;
+        return { rows: hits };
+      }
+      // --- bookings: upsert, honouring BOTH partial unique indexes ---
+      if (/INSERT INTO bookings/.test(sql)) {
+        const [org_id, client_id, source, provider_uid, starts_at, ends_at, status,
+          meeting_url, attendee_email, attendee_name, event_type_slug, rawJson] = params;
+        const raw = rawJson == null ? null : JSON.parse(rawJson);
+        const eventId = raw && raw.__event_id != null ? String(raw.__event_id) : null;
+        const existing = provider_uid
+          ? bookings.find((b) => b.org_id === org_id && b.provider_uid === provider_uid)
+          : eventId
+            ? bookings.find((b) => b.org_id === org_id && b.provider_uid == null && b.__event_id === eventId)
+            : null;
+        if (existing) {
+          // Mirrors the DO UPDATE branch: a later event that omits a field does
+          // not erase what an earlier one told us.
+          for (const [k, v] of Object.entries({
+            client_id, starts_at, ends_at, status, meeting_url,
+            attendee_email, attendee_name, event_type_slug
+          })) if (v != null) existing[k] = v;
+          return { rows: [existing] };
+        }
+        const row = {
+          id: "bk-" + (bookings.length + 1),
+          org_id, client_id, source, provider_uid, starts_at, ends_at, status,
+          meeting_url, attendee_email, attendee_name, event_type_slug,
+          raw, __event_id: eventId
+        };
+        bookings.push(row);
+        return { rows: [row] };
       }
       if (/INSERT INTO tasks/.test(sql)) {
         const row = {
@@ -220,6 +286,139 @@ test("booking.noshow: marks the open task done, tags call:no_show, sets call_out
   assert.equal(db.tasks[0].done, true);
   assert.deepEqual(db.clients[0].tags, ["call:booked", "call:no_show"]);
   assert.equal(db.clients[0].custom_fields.call_outcome, "no_show");
+});
+
+// ── the source label: honest, or nothing ────────────────────────────────────
+
+// This is the DB-free half of the proof. The same claim is checked against a
+// real Postgres in src/http/bookings.pg.test.mjs, but that file SKIPS whenever
+// DATABASE_URL is unset — which is the default `npm test` run — so without this
+// test nothing in a normal run proves that an unnamed source is recorded as
+// "we were not told" rather than as a vendor nobody named.
+test("booking.created: a payload naming no source is recorded as 'unknown', NEVER 'calcom'", async () => {
+  const db = pgFake();
+  await onBookingCreated(ev("booking.created", {
+    email: "nosource@x.com", bookingUid: "bk_nosource", startTime: "2026-08-01T15:00:00Z"
+  }), db);
+  assert.equal(db.tasks.length, 1);
+  assert.equal(db.tasks[0].source_workflow, "unknown",
+    "an unnamed source was filled in with a guess");
+  assert.notEqual(db.tasks[0].source_workflow, "calcom");
+  assert.equal(db.bookings.length, 1);
+  assert.equal(db.bookings[0].source, "unknown");
+  assert.notEqual(db.bookings[0].source, "calcom");
+});
+
+test("booking.created: the true source off the payload reaches both the task and the booking", async () => {
+  const db = pgFake();
+  await onBookingCreated(ev("booking.created", {
+    email: "cf@x.com", bookingUid: "bk_cf", startTime: "2026-08-01T15:00:00Z", source: "clickfunnels"
+  }), db);
+  assert.equal(db.tasks[0].source_workflow, "clickfunnels");
+  assert.equal(db.bookings[0].source, "clickfunnels");
+});
+
+// The regression the old fake could not see: a task stored under the wrong
+// vendor label must still be found by the reschedule, which matches on the
+// booking id and the title, not on the label.
+test("booking.rescheduled: finds a task still labelled 'calcom' and does not add a second", async () => {
+  const db = pgFake();
+  db.clients.push({ id: "cl-legacy", org_id: "org-1", email: "legacy@x.com", tags: [], custom_fields: {} });
+  db.tasks.push({
+    id: "task-legacy", org_id: "org-1", client_id: "cl-legacy",
+    title: "Strategy session booked", body: "bk_legacy",
+    due_at: "2026-08-01T15:00:00Z", source_workflow: "calcom", done: false
+  });
+  await onBookingRescheduled(ev("booking.rescheduled", {
+    clientId: "cl-legacy", bookingUid: "bk_legacy",
+    startTime: "2026-08-04T15:00:00Z", source: "clickfunnels"
+  }, { clientId: "cl-legacy" }), db);
+  assert.equal(db.tasks.length, 1, "the reschedule missed the legacy task and created a duplicate");
+  assert.equal(db.tasks[0].title, "Strategy session rescheduled");
+  assert.equal(db.tasks[0].due_at, "2026-08-04T15:00:00Z");
+});
+
+// ── one booking, one row ────────────────────────────────────────────────────
+
+test("booking.rescheduled: a later event with NO source is the same booking, not a second one", async () => {
+  const db = pgFake();
+  await onBookingCreated(ev("booking.created", {
+    email: "onerow@x.com", bookingUid: "UID-D", startTime: "2026-08-01T15:00:00Z", source: "clickfunnels"
+  }), db);
+  const clientId = db.clients[0].id;
+  await onBookingRescheduled(ev("booking.rescheduled", {
+    clientId, bookingUid: "UID-D", startTime: "2026-08-05T15:00:00Z"
+  }, { clientId, id: "evt-y" }), db);
+  assert.equal(db.tasks.length, 1);
+  assert.equal(db.bookings.length, 1, "the same appointment was stored as two bookings");
+  assert.equal(db.bookings[0].starts_at, "2026-08-05T15:00:00.000Z");
+});
+
+test("booking.created: a redelivered event does not add a second booking with no uid", async () => {
+  const db = pgFake();
+  const e = ev("booking.created", {
+    email: "nouid@x.com", startTime: "2026-08-01T15:00:00Z", source: "clickfunnels"
+  }, { id: "evt-nouid" });
+  await onBookingCreated(e, db);
+  await onBookingCreated(e, db);
+  await onBookingCreated(e, db);
+  assert.equal(db.bookings.length, 1, "a replay multiplied a booking that has no provider id");
+});
+
+test("booking.created: two DIFFERENT bookings with no uid stay two rows", async () => {
+  const db = pgFake();
+  await onBookingCreated(ev("booking.created", {
+    email: "two@x.com", startTime: "2026-08-01T15:00:00Z", source: "clickfunnels"
+  }, { id: "evt-two-a" }), db);
+  await onBookingCreated(ev("booking.created", {
+    email: "two@x.com", startTime: "2026-08-02T15:00:00Z", source: "clickfunnels"
+  }, { id: "evt-two-b" }), db);
+  assert.equal(db.bookings.length, 2,
+    "two bookings we cannot tell apart were silently merged into one");
+});
+
+test("booking.cancelled: a cancellation matching no booking does NOT invent one", async () => {
+  const db = pgFake();
+  await onBookingCreated(ev("booking.created", {
+    email: "phantom@x.com", bookingUid: "UID-G1", startTime: "2026-08-01T15:00:00Z", source: "clickfunnels"
+  }), db);
+  const clientId = db.clients[0].id;
+  await onBookingCancelled(ev("booking.cancelled", {
+    clientId, bookingUid: "UID-G2", source: "clickfunnels"
+  }, { clientId, id: "evt-phantom" }), db);
+  assert.equal(db.bookings.length, 1, "an unmatched cancellation created a phantom booking");
+  assert.equal(db.bookings[0].provider_uid, "UID-G1");
+  assert.equal(db.bookings[0].status, "booked", "the real booking was closed by an unrelated event");
+});
+
+test("booking.cancelled: a cancellation that DOES match still sets the status", async () => {
+  const db = pgFake();
+  await onBookingCreated(ev("booking.created", {
+    email: "realcancel@x.com", bookingUid: "UID-H", startTime: "2026-08-01T15:00:00Z", source: "clickfunnels"
+  }), db);
+  const clientId = db.clients[0].id;
+  await onBookingCancelled(ev("booking.cancelled", {
+    clientId, bookingUid: "UID-H", source: "calcom"
+  }, { clientId, id: "evt-realcancel" }), db);
+  assert.equal(db.bookings.length, 1);
+  assert.equal(db.bookings[0].status, "cancelled");
+  // The task was created under 'clickfunnels' and the cancellation names
+  // 'calcom'. Closing it proves the close-out matches on the booking id and the
+  // title rather than on either label.
+  assert.equal(db.tasks[0].done, true, "the cancellation did not close its own task");
+});
+
+test("booking.created: a booking id with stray spaces is ONE booking and ONE task", async () => {
+  const db = pgFake();
+  await onBookingCreated(ev("booking.created", {
+    email: "spacey@x.com", bookingUid: "AbC-1", startTime: "2026-08-01T15:00:00Z", source: "clickfunnels"
+  }, { id: "evt-space-1" }), db);
+  await onBookingCreated(ev("booking.created", {
+    email: "spacey@x.com", bookingUid: " AbC-1 ", startTime: "2026-08-01T15:00:00Z", source: "clickfunnels"
+  }, { id: "evt-space-2" }), db);
+  assert.equal(db.tasks.length, 1, "the same booking id produced two closer follow-ups");
+  assert.equal(db.tasks[0].body, "AbC-1", "the task stored an untrimmed booking id");
+  assert.equal(db.bookings.length, 1);
 });
 
 // TCPA STOP/START keyword handling

@@ -1,0 +1,15 @@
+
+Running 11 tests using 1 worker
+
+[1/11] [chromium] › e2e/calendar.spec.mjs:32:3 › Calendar call controls › Join Call and Client file are disabled with no link or client
+[2/11] [chromium] › e2e/calendar.spec.mjs:45:3 › Calendar call controls › Join Call enables when meeting_url is present
+[3/11] [chromium] › e2e/calendar.spec.mjs:56:3 › Calendar call controls › Client file enables when client_id is linked
+[4/11] [chromium] › e2e/calendar.spec.mjs:67:3 › Calendar call controls › Join Call stores the meeting URL on the button
+[5/11] [chromium] › e2e/calendar.spec.mjs:79:3 › Calendar call controls › Client file navigates to the client control panel
+[6/11] [chromium] › e2e/calendar.spec.mjs:92:3 › Calendar call controls › Join Call stays disabled without a meeting URL
+[7/11] [chromium] › e2e/calendar.spec.mjs:113:3 › Calendar is today's week, not July sample › date label is actual today and sample chips are gone
+[8/11] [chromium] › e2e/calendar.spec.mjs:131:3 › Calendar is today's week, not July sample › week strip counts come from dated tasks
+[9/11] [chromium] › e2e/calendar.spec.mjs:154:3 › Calendar is today's week, not July sample › Today button returns to the real current day
+[10/11] [chromium] › e2e/calendar.spec.mjs:170:3 › Calendar Up Next / Then / briefing › clicking a Then row loads that appointment in Up Next
+[11/11] [chromium] › e2e/calendar.spec.mjs:195:3 › Calendar Up Next / Then / briefing › Before you dial shows the task title, never a UUID
+  11 passed (9.8s)

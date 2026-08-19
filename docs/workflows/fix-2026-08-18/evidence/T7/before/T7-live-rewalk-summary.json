@@ -1,0 +1,19 @@
+{
+  "ranAt": "2026-08-18",
+  "target": "https://fundhub.ai + https://apply.fundhub.ai (LIVE, not localhost)",
+  "loginsUsed": 1,
+  "role": "owner@fundhub.ai",
+  "writeGuard": "every non-GET /api/** intercepted and answered 599; no slot selected; no Join Call clicked; webhook probes forged/unsigned only",
+  "liveVsWorktree": {
+    "public/app/calendar.html": "identical md5 cce8d4d08f54643c593d80bd6379a51f",
+    "public/app/fundhub-brand.css": "identical md5 210e261303a88a48e107a235d0750f55"
+  },
+  "items": {
+    "T7-02": "STILL_BROKEN — calendar never calls /api/tasks; inline screen script runs before deferred data.js so FHData is undefined at that instant and the FHData.wire block never executes",
+    "T7-06": "ALREADY_FIXED (display:none !important in fundhub-brand.css:216-222) — markup and the two <span> pseudo-actions still ship",
+    "T7-12": "ALREADY_FIXED/unreachable — #unJoin:disabled is display:none, 0x0, <button> with no href/target; join behaviour CANNOT be tested without a real meeting",
+    "T7-01": "CONFIRMED_WORKS — 200, headline correct, live Cronofy/ClickFunnels calendar with real open slots; ZERO Cal.com on the page",
+    "T7-04/08/09": "CONFIRMED_WORKS — all six webhook doors returned exactly the expected status and body",
+    "T7-12/shifts": "CONFIRMED_WORKS (shape) — 200 {ok:true,roster:[]}; NOTE it also returns 200 with no Authorization header"
+  }
+}

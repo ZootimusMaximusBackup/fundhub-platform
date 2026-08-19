@@ -215,21 +215,6 @@
     color:var(--ink2);border-radius:5px;padding:2px 8px;cursor:pointer;}
   .evt-fix span:hover{background:var(--alert-bg);}
 
-  /* ---------- demonstration states — collapsed, one divider row ---------- */
-  .demozone{flex-shrink:0;background:var(--surface);border-top:1px solid var(--line);}
-  .demo-div{width:100%;display:flex;align-items:center;gap:10px;background:transparent;border:0;cursor:pointer;
-    padding:6px 16px;text-align:left;font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
-    text-transform:uppercase;color:var(--text-faint);}
-  .demo-div:hover{color:var(--text-dim);background:var(--paper);}
-  .demo-div .dd-sub{letter-spacing:.06em;text-transform:none;font-size:10px;}
-  .demo-div .dd-chev{margin-left:auto;font-size:9px;transition:transform .16s;}
-  .demozone.open .demo-div .dd-chev{transform:rotate(180deg);}
-  .demo-body{border-top:1px dashed var(--line);background:var(--paper);padding:11px 16px 13px;
-    display:flex;flex-direction:column;gap:12px;max-height:34vh;overflow:auto;}
-  .demo-body[hidden]{display:none;}
-  .demo-cap{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
-    color:var(--text-faint);margin-bottom:6px;}
-
   /* ---------- right rail ---------- */
   .rail{background:var(--paper);overflow-y:auto;padding:11px 13px 18px;}
   .rail::-webkit-scrollbar{width:8px;}
@@ -456,43 +441,6 @@
 
   </main>
 
-  <!-- ══ DEMONSTRATION STATES — collapsed by default, costs one divider row ══ -->
-  <section class="demozone" id="demozone">
-    <button class="demo-div" id="demoToggle" aria-expanded="false">
-      <span>Demonstration states</span>
-      <span class="dd-sub">double-booking alert · empty day · open hour</span>
-      <span class="dd-chev">▾</span>
-    </button>
-    <div class="demo-body" id="demoBody" hidden>
-
-      <div>
-        <div class="demo-cap">Double-booking — the day-wide form of the alert now carried on the 4:30 rows</div>
-        <div class="errbar">
-          <span class="ic">⚠</span>
-          <span><b>Two bookings sit in the same 4:30 slot.</b> A setter put a second client into a time that was already taken. One of them has to move.</span>
-          <span class="acts"><span>Move one booking</span><span>Reschedule the other</span></span>
-        </div>
-      </div>
-
-      <div>
-        <div class="demo-cap">Empty day — nothing booked, nobody scheduled on</div>
-        <div class="ws-grid" style="grid-template-columns:repeat(7,1fr);max-width:760px;">
-          <div class="ws-day empty" style="min-height:96px;">
-            <div class="ws-dtop"><span class="ws-dname">Sat</span><span class="ws-dnum">1</span></div>
-            <div class="ws-count">—</div>
-            <div class="ws-empty" style="display:block;">Nothing booked.<br>Nobody scheduled on.</div>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <div class="demo-cap">Open hour — a gap in the timeline</div>
-        <div class="open-slot" style="max-width:520px;">Nothing booked this hour</div>
-      </div>
-
-    </div>
-  </section>
-
   <footer class="statusbar">
     <span class="ghost"></span>
     <span>fundhub-calendar · v1</span>
@@ -521,6 +469,56 @@ var selectedDate = startOfDay(new Date());
 var selectedId = null;
 var view = "day";
 var loaded = false;
+/* loaded says the schedule came back. loadFailed says it came back bad, or
+   never went out at all. Without the second one every "nothing booked" on
+   this screen is a claim the page has no right to make. */
+var loadFailed = false;
+
+/* THE SCHEDULE IS TWO READS, NOT ONE, AND EITHER ONE CAN FAIL ON ITS OWN.
+   The page asks for still-open work and for finished work separately. Round 1
+   only noticed a problem when BOTH came back bad, so the worst case on this
+   whole screen slipped straight through: the open read fell over, the finished
+   read answered "nothing", and the calendar painted a clean, mint-green,
+   completely empty week that a person had no way to doubt.
+
+   A HALF-ANSWER IS A FAILURE. These two flags say which half, because the two
+   halves break different things and a person needs different words for each:
+
+     openFailed — the still-open work never came back. The body of the calendar
+                  is unreliable; nothing on it can be shown, and it is treated
+                  exactly like a total failure.
+     doneFailed — the finished calls never came back. What is still open is
+                  right and worth showing, but anything counting finished work
+                  ("Booked", "Done", "Show rate") is quietly too small, so those
+                  numbers become dashes instead of wrong numbers. */
+var openFailed = false;
+var doneFailed = false;
+
+/* The read has been out for a long time and has not answered either way. NOT a
+   failure — see the note on SLOW_AFTER_MS below. It only changes the wording so
+   nobody is left staring at "Loading" wondering if anything is still happening. */
+var readSlow = false;
+
+/* One sentence for the four places that used to say "nothing booked" before
+   the schedule had ever come back. Empty and unread are different facts and
+   the screen has to be able to tell a person which one it is looking at. */
+function pendingNote() {
+  if (loadFailed) return "Schedule did not load.";
+  if (readSlow) return "Still loading the schedule\u2026 it is taking longer than usual.";
+  return "Loading the schedule\u2026";
+}
+
+/* Wording for the two places that count BOTH open and finished work — the day
+   timeline and the week strip. Three different facts hide behind an empty list
+   and this is where the screen picks the true one:
+     the read has not answered / failed  -> pendingNote()
+     only the open half answered         -> say the finished half is missing
+     both halves answered, nothing there -> the honest empty day */
+function emptyNoteAll() {
+  if (!loaded) return pendingNote();
+  if (doneFailed) return "Nothing still open. Completed calls did not load.";
+  return "Nothing booked.";
+}
 
 function esc(v) {
   return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
@@ -653,8 +651,13 @@ function paintStats() {
   var dayTasks = tasksOn(selectedDate);
   var doneN = dayTasks.filter(function (t) { return t.done; }).length;
   var leftN = dayTasks.filter(function (t) { return !t.done; }).length;
-  if (bookedEl) bookedEl.textContent = String(dayTasks.length);
-  if (doneEl) doneEl.textContent = String(doneN);
+  /* "Booked" and "Done" both count finished calls. If the finished-calls read
+     did not come back, both are too small — and a number that is quietly wrong
+     is worse than no number at all, because nobody knows to doubt it. Dash.
+     "Left today" only counts still-open work, which did come back, so it
+     stays a real number. */
+  if (bookedEl) bookedEl.textContent = doneFailed ? "\u2014" : String(dayTasks.length);
+  if (doneEl) doneEl.textContent = doneFailed ? "\u2014" : String(doneN);
   if (leftEl) leftEl.textContent = String(leftN);
 }
 
@@ -677,7 +680,11 @@ function paintWeekStrip() {
     var count = "—";
     if (loaded) {
       if (!items.length) count = "—";
-      else {
+      else if (doneFailed) {
+        /* Only the still-open half came back, so "3 booked" would be a number
+           the page cannot stand behind. Say what the 3 really is. */
+        count = items.length + " open · done not loaded";
+      } else {
         count = items.length + " booked";
         var left = items.filter(function (t) { return !t.done; }).length;
         if (isToday && left) count += " · " + left + " left";
@@ -694,7 +701,7 @@ function paintWeekStrip() {
       });
       if (items.length > 2) html += '<div class="ws-more">+' + (items.length - 2) + " more</div>";
     } else {
-      html += '<div class="ws-empty">Nothing booked.</div>';
+      html += '<div class="ws-empty">' + esc(emptyNoteAll()) + '</div>';
     }
     html += "</div>";
   }
@@ -708,10 +715,31 @@ function paintDay() {
   var isToday = sameDay(selectedDate, today);
   var label = (isToday ? "Today — " : "") + dateLabelText(selectedDate);
   var html = '<div class="day-title eyebrow">' + esc(label) + "</div>";
+  if (!loaded) {
+    /* The read has not answered. Saying "Nothing booked." here is the exact lie
+       this screen used to tell all day long. */
+    html += '<div class="hour"><div class="hour-label">—</div><div class="hour-body">' +
+      '<div class="open-slot">' + esc(pendingNote()) +
+      (loadFailed ? ' See the message at the bottom of the screen.' : '') +
+      '</div></div></div>';
+    wrap.innerHTML = html;
+    return;
+  }
+  /* Half a schedule, drawn where the eye already is. The banner at the foot of
+     the screen says this too, but the timeline is what a person reads, and a
+     timeline missing every finished call must not look like a normal one. */
+  if (doneFailed) {
+    html += '<div class="hour"><div class="hour-label">—</div><div class="hour-body">' +
+      '<div class="open-slot" style="border-color:var(--alert-line);' +
+      'background:var(--alert-bg);color:var(--ink2);font-weight:600">' +
+      'Completed calls did not load. What is still open is below and is right \u2014 ' +
+      'anything already finished may be missing, so the Booked and Done counts ' +
+      'show a dash. Reload the page.</div></div></div>';
+  }
   var items = tasksOn(selectedDate);
   if (!items.length) {
     html += '<div class="hour"><div class="hour-label">—</div><div class="hour-body">' +
-      '<div class="open-slot">Nothing booked.</div></div></div>';
+      '<div class="open-slot">' + esc(emptyNoteAll()) + '</div></div></div>';
     wrap.innerHTML = html;
     return;
   }
@@ -797,8 +825,12 @@ function paintRail() {
     if (minsEl) minsEl.textContent = "—";
     if (lblEl) lblEl.textContent = "no call linked";
     if (whenEl) whenEl.textContent = "";
-    if (clientEl) clientEl.textContent = "Nothing up next";
-    if (metaEl) metaEl.textContent = "Dated work from the task queue paints here when one is due.";
+    if (clientEl) clientEl.textContent = loaded ? "Nothing up next" : pendingNote();
+    if (metaEl) metaEl.textContent = loaded
+      ? "Dated work from the task queue paints here when one is due."
+      : (loadFailed
+        ? "This is not a real empty day \u2014 the read failed. See the message at the bottom of the screen."
+        : "Waiting on the task queue.");
     if (bodyEl) bodyEl.textContent = "No briefing on file.";
     if (fileBtn) {
       fileBtn.disabled = true;
@@ -858,7 +890,8 @@ function paintRail() {
       return new Date(a.due_at) - new Date(b.due_at);
     }).slice(0, 8);
     if (!rest.length) {
-      then.innerHTML = '<div class="then-row"><div class="then-name" style="color:var(--ink2)">Nothing else dated after Up Next.</div></div>';
+      then.innerHTML = '<div class="then-row"><div class="then-name" style="color:var(--ink2)">' +
+        esc(loaded ? "Nothing else dated after Up Next." : pendingNote()) + '</div></div>';
     } else {
       then.innerHTML = rest.map(function (t) {
         var due = new Date(t.due_at);
@@ -882,7 +915,31 @@ function paintFooter() {
   if (!loaded) { foot.textContent = when; return; }
   var items = tasksOn(selectedDate);
   var left = items.filter(function (t) { return !t.done; }).length;
+  if (doneFailed) {
+    foot.textContent = when + " · " + left + " open · done not loaded";
+    return;
+  }
   foot.textContent = when + " · " + items.length + " booked · " + left + " left";
+}
+
+/* The chip in the top right said LIVE, in green, with a pulsing dot, no matter
+   what had actually happened. On the failure this fix is about it was the last
+   thing telling a person the screen could be trusted. It now says which of the
+   four states the schedule is really in. */
+function paintLiveChip() {
+  var pill = document.querySelector(".live-pill");
+  if (!pill) return;
+  var label = "LIVE", colour = "";
+  if (loadFailed) { label = "NOT LOADED"; colour = "#F2A69B"; }
+  else if (doneFailed) { label = "PARTIAL"; colour = "#F5CE8F"; }
+  else if (!loaded) { label = "LOADING"; colour = "#F5CE8F"; }
+  pill.innerHTML = '<span class="live-dot"></span>' + esc(label);
+  var dot = pill.querySelector(".live-dot");
+  if (dot && colour) {
+    dot.style.background = colour;
+    dot.style.animation = "none";
+    dot.style.boxShadow = "none";
+  }
 }
 
 function paintAll() {
@@ -892,6 +949,7 @@ function paintAll() {
   paintDay();
   paintRail();
   paintFooter();
+  paintLiveChip();
 }
 
 [].slice.call(document.querySelectorAll("#seg span")).forEach(function (x) {
@@ -946,17 +1004,6 @@ if (thenList) {
   });
 }
 
-var dz = document.getElementById("demozone"), dTog = document.getElementById("demoToggle"),
-    dBody = document.getElementById("demoBody");
-if (dTog && dBody && dz) {
-  dTog.addEventListener("click", function () {
-    var open = dBody.hidden;
-    dBody.hidden = !open;
-    dz.classList.toggle("open", open);
-    dTog.setAttribute("aria-expanded", String(open));
-  });
-}
-
 tickClock();
 setInterval(tickClock, 1000);
 paintAll();
@@ -970,7 +1017,29 @@ function loadDatedTasks() {
     FHData.taskQueue({ done: true, limit: 200 })
   ]).then(function (parts) {
     var open = parts[0], closed = parts[1];
-    if ((!open || !open.ok) && (!closed || !closed.ok)) return open || closed;
+
+    /* ══ THE FIX ══════════════════════════════════════════════════════════
+       This line used to read:
+
+           if ((!open || !open.ok) && (!closed || !closed.ok)) return open || closed;
+
+       — failure only when BOTH reads failed. So if the still-open read fell
+       over and the finished read answered "nothing", this function handed back
+       { ok:true, tasks:[] }. Every honest-empty guard on this screen then did
+       its job perfectly on a fact that was not true, and a person saw a calm,
+       green, totally empty week with nothing anywhere to doubt.
+
+       A HALF-ANSWER IS A FAILURE. Which half decides what the screen says. */
+    openFailed = !open || !open.ok;
+    doneFailed = !closed || !closed.ok;
+
+    /* The still-open read is the calendar. Without it there is no honest way to
+       draw a day, so this is reported as a failed read even when the finished
+       half answered — better an empty screen that says it is broken than a
+       half-empty one that says it is fine. `closed` is used as the reason only
+       when `open` gave none. */
+    if (openFailed) return open || closed;
+
     var seen = Object.create(null);
     var tasks = [];
     function take(res) {
@@ -989,25 +1058,96 @@ function loadDatedTasks() {
   });
 }
 
-if (typeof FHData !== "undefined" && FHData.wire) {
-  FHData.wire(loadDatedTasks(), "scheduled work", function (data) {
-    datedTasks = (data.tasks || []).filter(function (t) { return t && t.due_at; });
-    datedTasks.sort(function (a, b) { return new Date(a.due_at) - new Date(b.due_at); });
-    loaded = true;
-    selectedId = null;
-    paintAll();
-    var todayStart = startOfDay(new Date());
-    var todayN = tasksOn(todayStart).length;
-    var nowMs = Date.now();
-    var later = datedTasks.filter(function (t) {
-      return new Date(t.due_at).getTime() > nowMs && !sameDay(new Date(t.due_at), todayStart);
-    }).length;
-    return "live schedule · " + todayN + " today" +
-      (later > 0 ? " · " + later + " dated later" : "");
-  });
-}
+/* data.js carries `defer` (see its tag above), so FHData does not exist yet
+   while this script is being parsed. The guard below used to be a bare
+   `typeof` test sitting at the top level: it failed every single time, the
+   schedule was never asked for, and the calendar painted a convincing empty
+   week forever with nothing on screen to say so. Every deferred script runs
+   before DOMContentLoaded, so the first read waits for that event. The
+   coverage read moves in with it, so both rail reads fire once the page and
+   the data layer are both really there.
 
-(function loadCoverage() {
+   The guard stays — but it can no longer fail quietly. If the data layer is
+   genuinely missing, the screen says so out loud. An empty calendar and a
+   calendar that was never asked must never look the same. */
+document.addEventListener("DOMContentLoaded", function () {
+
+  if (typeof FHData !== "undefined" && FHData.wire) {
+    var read = loadDatedTasks();
+
+    /* NO TIMEOUT IS PUT ON THE READ ITSELF, ON PURPOSE. Cutting a slow but
+       perfectly healthy read short would turn "your connection is slow" into
+       "the schedule failed" — the same kind of lie as the bug above, just
+       pointing the other way. What this timer does is change the WORDING, so a
+       read that never answers stops looking like one that is about to. Nothing
+       is marked failed, no number is invented, and if the read does come back
+       the page paints normally and this wording disappears on its own. */
+    var SLOW_AFTER_MS = 15000;
+    setTimeout(function () {
+      if (loaded || loadFailed) return;
+      readSlow = true;
+      paintAll();
+      if (FHData.banner) {
+        FHData.banner("sample", "Still waiting on your appointments \u2014 the schedule " +
+          "has not come back yet. This screen is not empty, it is unanswered. If it stays " +
+          "like this, reload the page.", "appointments");
+      }
+    }, SLOW_AFTER_MS);
+
+    var wired = FHData.wire(read, "appointments", function (data) {
+      datedTasks = (data.tasks || []).filter(function (t) { return t && t.due_at; });
+      datedTasks.sort(function (a, b) { return new Date(a.due_at) - new Date(b.due_at); });
+      loaded = true;
+      selectedId = null;
+      paintAll();
+      var todayStart = startOfDay(new Date());
+      var todayN = tasksOn(todayStart).length;
+      var nowMs = Date.now();
+      var later = datedTasks.filter(function (t) {
+        return new Date(t.due_at).getTime() > nowMs && !sameDay(new Date(t.due_at), todayStart);
+      }).length;
+      /* Even the note that rides on the banner has to be honest. If only half
+         the schedule came back, this must not say "live schedule" — the tone is
+         corrected to a warning just below, and if that ever failed to run, the
+         words alone still stop a person trusting the screen. */
+      if (doneFailed) {
+        return "schedule incomplete \u2014 completed calls did not load \u00b7 " +
+          todayN + " still open today";
+      }
+      return "live schedule · " + todayN + " today" +
+        (later > 0 ? " · " + later + " dated later" : "");
+    });
+
+    /* THE PARTIAL FAILURE, SAID OUT LOUD. wire() has just painted a mint-green
+       "these are database rows" banner, because from where it stands the read
+       succeeded. It did not — half of it did. Chaining off wire()'s own promise
+       (rather than off `read`) guarantees this runs after that banner exists, so
+       it replaces it rather than racing it. Same key, so it is one message, not
+       two contradictory ones. */
+    wired.then(function () {
+      if (!doneFailed || loadFailed) return;
+      if (FHData.banner) {
+        FHData.banner("error", "Some of your completed calls could not be loaded, so this " +
+          "week is incomplete. What is still open is right. Anything already finished may be " +
+          "missing, which is why Booked, Done and Show rate show a dash instead of a number. " +
+          "Reload the page, and tell your advisor if it keeps happening.", "appointments");
+      }
+    });
+    /* wire() puts the reason on screen, but it does not hand this file back a
+       pass/fail, and the tiles and the timeline would otherwise sit on their
+       "still loading" wording with no way to know it was final. Watch the same
+       promise so a failed read reads as failed, not as a quiet empty day. */
+    read.then(function (res) {
+      if (!res || !res.ok) { loadFailed = true; paintAll(); }
+    }).catch(function () { loadFailed = true; paintAll(); });
+  } else {
+    dataLayerMissing();
+  }
+
+  loadCoverage();
+});
+
+function loadCoverage() {
   var cov = document.getElementById("covList");
   if (!cov) return;
   var t = "";
@@ -1036,7 +1176,31 @@ if (typeof FHData !== "undefined" && FHData.wire) {
   }).catch(function () {
     cov.innerHTML = '<div class="cov-row"><span class="cov-name" style="color:var(--ink2)">Coverage unavailable — clock in on Staff &amp; Teams.</span></div>';
   });
-})();
+}
+
+/* The one failure FHData cannot report, because reporting is FHData's job:
+   the data layer itself never arrived. Say it in the same place a data
+   problem is always said — the strip across the bottom of the screen — and in
+   the same words a person can act on. */
+function dataLayerMissing() {
+  loadFailed = true;
+  paintAll();
+  var el = document.getElementById("fh-data-banner");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "fh-data-banner";
+    el.setAttribute("role", "status");
+    document.body.appendChild(el);
+  }
+  el.style.cssText =
+    "position:fixed;left:0;right:0;bottom:0;z-index:2147482000;padding:7px 14px;" +
+    "background:#F2A69B;color:#0A0A0A;" +
+    "font:600 11px/1.4 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.05em;text-align:center";
+  el.textContent = "We could not load your schedule — the page did not finish loading, " +
+    "so nothing was ever asked for. This calendar is not empty, it is unread. " +
+    "Reload the page, and tell your advisor if it keeps happening.";
+  document.documentElement.style.setProperty("--fh-statusbar", (el.offsetHeight || 32) + "px");
+}
 
 var joinBtn0 = document.getElementById("unJoin");
 var fileBtn0 = document.getElementById("unFile");

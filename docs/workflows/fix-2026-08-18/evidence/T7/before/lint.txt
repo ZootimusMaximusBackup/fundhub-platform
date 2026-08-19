@@ -1,0 +1,6 @@
+
+> fundhub-platform@0.0.1 lint
+> node scripts/lint.mjs
+
+lint: 1295 file(s) and inline script(s) parse clean
+EXIT=0

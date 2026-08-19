@@ -130,17 +130,28 @@ describe("task role routing", () => {
     assert.equal(db.tasks[0].assignee_role, "admin");
   });
 
-  test("comms.mjs routes the Cal.com booking task to closer", async () => {
+  test("comms.mjs routes the booking task to closer, and labels it honestly", async () => {
     const { onBookingCreated } = await import("../handlers/comms.mjs");
     // Fixture from comms.test.mjs's booking case: resolveClient matches on email.
     const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com" }] });
     await onBookingCreated({
       id: "evt-booking-1", orgId: "org-1", clientId: "cl-1", name: "booking.created",
+      // *** NO `source` KEY, ON PURPOSE. DO NOT ADD ONE. ***
+      // This payload names no origin, which is the case the assertion below
+      // exists to pin down. Adding `source: "calcom"` to the fixture makes that
+      // assertion prove only that the payload round-trips — it stops proving
+      // anything about what the code decides. It was added once, in T7 round 1,
+      // and that edit is what this comment is here to prevent repeating.
       payload: { email: "a@b.com", bookingUid: "bk-1", startTime: "2026-09-01T15:00:00Z" }
     }, db);
     assert.equal(db.tasks.length, 1, "comms.mjs created no task");
     assert.equal(db.tasks[0].assignee_role, "closer");
-    assert.equal(db.tasks[0].source_workflow, "calcom");
+    // The old hardcoded default was "calcom" — a vendor that has never sent this
+    // system a booking (T7-05). An unnamed source is recorded as "we were not
+    // told", never guessed.
+    assert.equal(db.tasks[0].source_workflow, "unknown",
+      "an unnamed booking source was filled in with a guess");
+    assert.notEqual(db.tasks[0].source_workflow, "calcom");
     assert.equal(db.tasks[0].assignee_staff_id, null);
   });
 

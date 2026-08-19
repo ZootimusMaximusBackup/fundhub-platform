@@ -1,0 +1,4299 @@
+TAP version 13
+# Subtest: three sources, three spellings, one business
+ok 1 - three sources, three spellings, one business # SKIP
+  ---
+  duration_ms: 0.3195
+  type: 'test'
+  ...
+# Subtest: loan totals come from provenance, and count only loan sources
+ok 2 - loan totals come from provenance, and count only loan sources # SKIP
+  ---
+  duration_ms: 0.050209
+  type: 'test'
+  ...
+# Subtest: re-writing the same batch changes nothing
+ok 3 - re-writing the same batch changes nothing # SKIP
+  ---
+  duration_ms: 0.036167
+  type: 'test'
+  ...
+# Subtest: a batch containing the same identity twice does not error
+ok 4 - a batch containing the same identity twice does not error # SKIP
+  ---
+  duration_ms: 0.078708
+  type: 'test'
+  ...
+# Subtest: the dedup index physically prevents a duplicate
+ok 5 - the dedup index physically prevents a duplicate # SKIP
+  ---
+  duration_ms: 0.038666
+  type: 'test'
+  ...
+# Subtest: source_tags cannot be empty — an untagged record is unprovenanced
+ok 6 - source_tags cannot be empty — an untagged record is unprovenanced # SKIP
+  ---
+  duration_ms: 0.071958
+  type: 'test'
+  ...
+# Subtest: ingest runs are logged with their outcome
+ok 7 - ingest runs are logged with their outcome # SKIP
+  ---
+  duration_ms: 0.030458
+  type: 'test'
+  ...
+# Subtest: migration 100 — the table and the view
+    # Subtest: the table, the unique constraint and the view all exist
+    ok 1 - the table, the unique constraint and the view all exist # SKIP
+      ---
+      duration_ms: 0.270709
+      type: 'test'
+      ...
+    # Subtest: the CHECK constraint and DATA_CLASSES cannot drift apart
+    ok 2 - the CHECK constraint and DATA_CLASSES cannot drift apart # SKIP
+      ---
+      duration_ms: 0.044041
+      type: 'test'
+      ...
+    # Subtest: an unknown data class is refused by the database
+    ok 3 - an unknown data class is refused by the database # SKIP
+      ---
+      duration_ms: 0.035709
+      type: 'test'
+      ...
+    # Subtest: *** the default org carries the owner-set windows, signed off ***
+    ok 4 - *** the default org carries the owner-set windows, signed off *** # SKIP
+      ---
+      duration_ms: 0.035125
+      type: 'test'
+      ...
+    # Subtest: *** the month-to-day conversion is never SHORT, per Postgres's calendar ***
+    ok 5 - *** the month-to-day conversion is never SHORT, per Postgres's calendar *** # SKIP
+      ---
+      duration_ms: 0.031917
+      type: 'test'
+      ...
+    # Subtest: a NON-default org keeps its NULL window — one business's call is not another's
+    ok 6 - a NON-default org keeps its NULL window — one business's call is not another's # SKIP
+      ---
+      duration_ms: 0.027833
+      type: 'test'
+      ...
+    # Subtest: the seeded windows drop out of the gaps report, because they are signed off
+    ok 7 - the seeded windows drop out of the gaps report, because they are signed off # SKIP
+      ---
+      duration_ms: 0.133708
+      type: 'test'
+      ...
+    # Subtest: a zero retention period is refused by the column
+    ok 8 - a zero retention period is refused by the column # SKIP
+      ---
+      duration_ms: 0.080291
+      type: 'test'
+      ...
+    # Subtest: two policies for the same class in one org are refused
+    ok 9 - two policies for the same class in one org are refused # SKIP
+      ---
+      duration_ms: 0.241541
+      type: 'test'
+      ...
+    # Subtest: policy rows go when their org goes
+    ok 10 - policy rows go when their org goes # SKIP
+      ---
+      duration_ms: 0.139833
+      type: 'test'
+      ...
+    1..10
+ok 8 - migration 100 — the table and the view
+  ---
+  duration_ms: 1.490167
+  type: 'suite'
+  ...
+# Subtest: a dry run removes nothing
+    # Subtest: *** ROW COUNTS AND CONTENT ARE IDENTICAL BEFORE AND AFTER A DRY RUN ***
+    ok 1 - *** ROW COUNTS AND CONTENT ARE IDENTICAL BEFORE AND AFTER A DRY RUN *** # SKIP
+      ---
+      duration_ms: 0.032792
+      type: 'test'
+      ...
+    # Subtest: a dry run does not blank a payload or a merchant name
+    ok 2 - a dry run does not blank a payload or a merchant name # SKIP
+      ---
+      duration_ms: 0.020833
+      type: 'test'
+      ...
+    1..2
+ok 9 - a dry run removes nothing
+  ---
+  duration_ms: 0.095958
+  type: 'suite'
+  ...
+# Subtest: no retention period means no purge, even under --apply
+    # Subtest: *** --apply ON A FRESHLY MIGRATED POLICY REMOVES NOTHING ***
+    ok 1 - *** --apply ON A FRESHLY MIGRATED POLICY REMOVES NOTHING *** # SKIP
+      ---
+      duration_ms: 0.03125
+      type: 'test'
+      ...
+    # Subtest: a NULL period reaches the reader as an ABSENT key, never a zero
+    ok 2 - a NULL period reaches the reader as an ABSENT key, never a zero # SKIP
+      ---
+      duration_ms: 0.020166
+      type: 'test'
+      ...
+    # Subtest: rows NEWER than the retention period are left alone
+    ok 3 - rows NEWER than the retention period are left alone # SKIP
+      ---
+      duration_ms: 0.018333
+      type: 'test'
+      ...
+    1..3
+ok 10 - no retention period means no purge, even under --apply
+  ---
+  duration_ms: 0.110042
+  type: 'suite'
+  ...
+# Subtest: --apply does what it says, and only what it says
+    # Subtest: delete classes are deleted; de-identify classes keep their row
+    ok 1 - delete classes are deleted; de-identify classes keep their row # SKIP
+      ---
+      duration_ms: 0.038583
+      type: 'test'
+      ...
+    # Subtest: *** de-identifying a bank transaction does not touch the amount ***
+    ok 2 - *** de-identifying a bank transaction does not touch the amount *** # SKIP
+      ---
+      duration_ms: 0.0175
+      type: 'test'
+      ...
+    # Subtest: the credit-report row survives with its outcome tier; the payload is gone
+    ok 3 - the credit-report row survives with its outcome tier; the payload is gone # SKIP
+      ---
+      duration_ms: 0.016667
+      type: 'test'
+      ...
+    # Subtest: re-running is a no-op — an already-purged row is not counted twice
+    ok 4 - re-running is a no-op — an already-purged row is not counted twice # SKIP
+      ---
+      duration_ms: 0.017209
+      type: 'test'
+      ...
+    1..4
+ok 11 - --apply does what it says, and only what it says
+  ---
+  duration_ms: 0.133042
+  type: 'suite'
+  ...
+# Subtest: org scoping is real, and it fails closed
+    # Subtest: *** PURGING ONE ORG LEAVES ANOTHER ORG'S ROWS UNTOUCHED ***
+    ok 1 - *** PURGING ONE ORG LEAVES ANOTHER ORG'S ROWS UNTOUCHED *** # SKIP
+      ---
+      duration_ms: 0.031292
+      type: 'test'
+      ...
+    # Subtest: the org comes off the staff record, and a bad actor gets nothing
+    ok 2 - the org comes off the staff record, and a bad actor gets nothing # SKIP
+      ---
+      duration_ms: 0.017208
+      type: 'test'
+      ...
+    # Subtest: a newly created staff member cannot purge — 'invited' is the default
+    ok 3 - a newly created staff member cannot purge — 'invited' is the default # SKIP
+      ---
+      duration_ms: 0.018333
+      type: 'test'
+      ...
+    1..3
+ok 12 - org scoping is real, and it fails closed
+  ---
+  duration_ms: 0.101041
+  type: 'suite'
+  ...
+# Subtest: the gaps view reports until a human signs off
+    # Subtest: an org with no policy rows is reported once per missing class
+    ok 1 - an org with no policy rows is reported once per missing class # SKIP
+      ---
+      duration_ms: 0.0385
+      type: 'test'
+      ...
+    # Subtest: an UNSET period is reported, and says the runner removes nothing
+    ok 2 - an UNSET period is reported, and says the runner removes nothing # SKIP
+      ---
+      duration_ms: 0.016833
+      type: 'test'
+      ...
+    # Subtest: *** A PERIOD THAT IS SET BUT UNSIGNED IS STILL REPORTED ***
+    ok 3 - *** A PERIOD THAT IS SET BUT UNSIGNED IS STILL REPORTED *** # SKIP
+      ---
+      duration_ms: 0.017167
+      type: 'test'
+      ...
+    # Subtest: signing a class off stops it being reported — and only it
+    ok 4 - signing a class off stops it being reported — and only it # SKIP
+      ---
+      duration_ms: 0.0175
+      type: 'test'
+      ...
+    1..4
+ok 13 - the gaps view reports until a human signs off
+  ---
+  duration_ms: 0.131583
+  type: 'suite'
+  ...
+# Subtest: affiliate economics
+ok 14 - affiliate economics # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.200875
+  type: 'suite'
+  ...
+# Subtest: agent registry
+ok 15 - agent registry # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.1955
+  type: 'suite'
+  ...
+# Subtest: the alerts table can be written and read back by this store
+ok 16 - the alerts table can be written and read back by this store # SKIP
+  ---
+  duration_ms: 0.502833
+  type: 'test'
+  ...
+# Subtest: every kind and severity this module exports is one the CHECK constraints accept
+ok 17 - every kind and severity this module exports is one the CHECK constraints accept # SKIP
+  ---
+  duration_ms: 0.096
+  type: 'test'
+  ...
+# Subtest: re-raising the same condition does not stack a second row
+ok 18 - re-raising the same condition does not stack a second row # SKIP
+  ---
+  duration_ms: 0.049959
+  type: 'test'
+  ...
+# Subtest: THE INDEX, NOT THE CODE: a raw INSERT bypassing this module is refused too
+ok 19 - THE INDEX, NOT THE CODE: a raw INSERT bypassing this module is refused too # SKIP
+  ---
+  duration_ms: 0.100958
+  type: 'test'
+  ...
+# Subtest: a NULL dedupe_key opts out of dedupe — NULLs do not collide
+ok 20 - a NULL dedupe_key opts out of dedupe — NULLs do not collide # SKIP
+  ---
+  duration_ms: 0.043625
+  type: 'test'
+  ...
+# Subtest: resolving RELEASES the condition, so it can be raised again later
+ok 21 - resolving RELEASES the condition, so it can be raised again later # SKIP
+  ---
+  duration_ms: 0.085833
+  type: 'test'
+  ...
+# Subtest: the first acknowledgement wins and a second call is a true no-op, not an error
+ok 22 - the first acknowledgement wins and a second call is a true no-op, not an error # SKIP
+  ---
+  duration_ms: 0.03225
+  type: 'test'
+  ...
+# Subtest: dismissing keeps the reason, and dismissed is not resolved
+ok 23 - dismissing keeps the reason, and dismissed is not resolved # SKIP
+  ---
+  duration_ms: 0.144333
+  type: 'test'
+  ...
+# Subtest: a dismissal with no reason stores NULL rather than an invented one
+ok 24 - a dismissal with no reason stores NULL rather than an invented one # SKIP
+  ---
+  duration_ms: 0.210708
+  type: 'test'
+  ...
+# Subtest: another org cannot read one of these alerts
+ok 25 - another org cannot read one of these alerts # SKIP
+  ---
+  duration_ms: 0.178458
+  type: 'test'
+  ...
+# Subtest: another org cannot resolve one of these alerts
+ok 26 - another org cannot resolve one of these alerts # SKIP
+  ---
+  duration_ms: 0.033375
+  type: 'test'
+  ...
+# Subtest: openAlerts and alertsForClient are both scoped to the org
+ok 27 - openAlerts and alertsForClient are both scoped to the org # SKIP
+  ---
+  duration_ms: 0.022333
+  type: 'test'
+  ...
+# Subtest: deleting a client takes its alerts with it
+ok 28 - deleting a client takes its alerts with it # SKIP
+  ---
+  duration_ms: 0.018834
+  type: 'test'
+  ...
+# Subtest: every rule this module exports is one 079's CHECK accepts
+ok 29 - every rule this module exports is one 079's CHECK accepts # SKIP
+  ---
+  duration_ms: 0.021042
+  type: 'test'
+  ...
+# Subtest: a trigger ships OFF and UNSET unless the caller says otherwise
+ok 30 - a trigger ships OFF and UNSET unless the caller says otherwise # SKIP
+  ---
+  duration_ms: 0.020875
+  type: 'test'
+  ...
+# Subtest: setting the same rule twice updates in place rather than creating a second threshold
+ok 31 - setting the same rule twice updates in place rather than creating a second threshold # SKIP
+  ---
+  duration_ms: 0.018875
+  type: 'test'
+  ...
+# Subtest: a threshold outside the column's range is refused before it reaches the CHECK
+ok 32 - a threshold outside the column's range is refused before it reaches the CHECK # SKIP
+  ---
+  duration_ms: 0.01925
+  type: 'test'
+  ...
+# Subtest: enabledTriggers returns only the switched-on rules for that org
+ok 33 - enabledTriggers returns only the switched-on rules for that org # SKIP
+  ---
+  duration_ms: 0.019375
+  type: 'test'
+  ...
+# Subtest: an owner switching a rule on gets an alert; switching it off gets nothing
+ok 34 - an owner switching a rule on gets an alert; switching it off gets nothing # SKIP
+  ---
+  duration_ms: 0.021417
+  type: 'test'
+  ...
+# Subtest: an enabled rule with an UNSET threshold writes nothing at all
+ok 35 - an enabled rule with an UNSET threshold writes nothing at all # SKIP
+  ---
+  duration_ms: 0.019416
+  type: 'test'
+  ...
+# Subtest: running the same evaluation twice leaves one alert, not two
+ok 36 - running the same evaluation twice leaves one alert, not two # SKIP
+  ---
+  duration_ms: 0.018625
+  type: 'test'
+  ...
+# Subtest: alerts has no delivery columns — this is a record, not a message
+ok 37 - alerts has no delivery columns — this is a record, not a message # SKIP
+  ---
+  duration_ms: 0.022042
+  type: 'test'
+  ...
+# Subtest: accounts and principals
+ok 38 - accounts and principals # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.227625
+  type: 'suite'
+  ...
+# Subtest: migration shape: every auth column and table landed
+ok 39 - migration shape: every auth column and table landed # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.443584
+  type: 'test'
+  ...
+# Subtest: staff email is unique per org, case-insensitively
+ok 40 - staff email is unique per org, case-insensitively # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.049583
+  type: 'test'
+  ...
+# Subtest: staff.status is constrained to the three legal values
+ok 41 - staff.status is constrained to the three legal values # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.040583
+  type: 'test'
+  ...
+# Subtest: full journey: invite -> accept -> login -> verify -> revoke
+ok 42 - full journey: invite -> accept -> login -> verify -> revoke # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.084042
+  type: 'test'
+  ...
+# Subtest: the database stores no plaintext password and no live token
+ok 43 - the database stores no plaintext password and no live token # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.039667
+  type: 'test'
+  ...
+# Subtest: sessions expire, and expiry is enforced by the database not the caller
+ok 44 - sessions expire, and expiry is enforced by the database not the caller # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.075042
+  type: 'test'
+  ...
+# Subtest: expiry slides forward on each use
+ok 45 - expiry slides forward on each use # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.029667
+  type: 'test'
+  ...
+# Subtest: a suspended staff member's live sessions die on the next request
+ok 46 - a suspended staff member's live sessions die on the next request # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.135792
+  type: 'test'
+  ...
+# Subtest: suspendStaff revokes every live session at once
+ok 47 - suspendStaff revokes every live session at once # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.197542
+  type: 'test'
+  ...
+# Subtest: an invite token is single-use
+ok 48 - an invite token is single-use # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.165417
+  type: 'test'
+  ...
+# Subtest: an expired invite token is refused
+ok 49 - an expired invite token is refused # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.034084
+  type: 'test'
+  ...
+# Subtest: password reset issues a working token and kills existing sessions
+ok 50 - password reset issues a working token and kills existing sessions # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.023667
+  type: 'test'
+  ...
+# Subtest: an invite token cannot be redeemed at the reset endpoint
+ok 51 - an invite token cannot be redeemed at the reset endpoint # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.020458
+  type: 'test'
+  ...
+# Subtest: rate limiting trips by email after the configured failures
+ok 52 - rate limiting trips by email after the configured failures # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.020125
+  type: 'test'
+  ...
+# Subtest: a successful login resets that identity's failure counter
+ok 53 - a successful login resets that identity's failure counter # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.021
+  type: 'test'
+  ...
+# Subtest: rate limiting trips by ip across different emails
+ok 54 - rate limiting trips by ip across different emails # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.020167
+  type: 'test'
+  ...
+# Subtest: attempts outside the window no longer count
+ok 55 - attempts outside the window no longer count # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.019875
+  type: 'test'
+  ...
+# Subtest: revokeAllForStaff can spare the current session
+ok 56 - revokeAllForStaff can spare the current session # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.019
+  type: 'test'
+  ...
+# Subtest: expireSessions clears rows past the grace window and leaves live ones
+ok 57 - expireSessions clears rows past the grace window and leaves live ones # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.019542
+  type: 'test'
+  ...
+# Subtest: the role catalog is populated and carries the owner role
+ok 58 - the role catalog is populated and carries the owner role # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.018625
+  type: 'test'
+  ...
+# Subtest: updated_at triggers fire on the new tables
+ok 59 - updated_at triggers fire on the new tables # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.018333
+  type: 'test'
+  ...
+# Subtest: portal magic-link sign-in
+ok 60 - portal magic-link sign-in # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.195333
+  type: 'suite'
+  ...
+# Subtest: shell.js roles vs the staff_roles catalog
+ok 61 - shell.js roles vs the staff_roles catalog # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.27
+  type: 'suite'
+  ...
+# Subtest: founding staff seed
+ok 62 - founding staff seed # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.19875
+  type: 'suite'
+  ...
+# Subtest: bank_account_id is a real foreign key on both tables
+ok 63 - bank_account_id is a real foreign key on both tables # SKIP
+  ---
+  duration_ms: 0.301292
+  type: 'test'
+  ...
+# Subtest: an invented account uuid is refused, not accepted in silence
+ok 64 - an invented account uuid is refused, not accepted in silence # SKIP
+  ---
+  duration_ms: 0.041834
+  type: 'test'
+  ...
+# Subtest: revoking a bank login leaves no transaction or bill pointing at nothing
+ok 65 - revoking a bank login leaves no transaction or bill pointing at nothing # SKIP
+  ---
+  duration_ms: 0.035208
+  type: 'test'
+  ...
+# Subtest: deleting one account does not touch another account's rows
+ok 66 - deleting one account does not touch another account's rows # SKIP
+  ---
+  duration_ms: 0.079958
+  type: 'test'
+  ...
+# Subtest: no transaction or bill anywhere points at a missing account
+ok 67 - no transaction or bill anywhere points at a missing account # SKIP
+  ---
+  duration_ms: 0.036958
+  type: 'test'
+  ...
+# Subtest: 096 and 097 exist with the columns the writer names
+ok 68 - 096 and 097 exist with the columns the writer names # SKIP
+  ---
+  duration_ms: 0.504667
+  type: 'test'
+  ...
+# Subtest: bank_accounts still has NO account or routing number column
+ok 69 - bank_accounts still has NO account or routing number column # SKIP
+  ---
+  duration_ms: 0.045333
+  type: 'test'
+  ...
+# Subtest: a hand-entered account round-trips, and unknown survives as NULL
+ok 70 - a hand-entered account round-trips, and unknown survives as NULL # SKIP
+  ---
+  duration_ms: 0.037959
+  type: 'test'
+  ...
+# Subtest: a stated entity_kind is recorded with its provenance
+ok 71 - a stated entity_kind is recorded with its provenance # SKIP
+  ---
+  duration_ms: 0.079333
+  type: 'test'
+  ...
+# Subtest: two hand-entered accounts with the same mask both survive
+ok 72 - two hand-entered accounts with the same mask both survive # SKIP
+  ---
+  duration_ms: 0.0405
+  type: 'test'
+  ...
+# Subtest: 097 REFUSES an APR in percent units at the database
+ok 73 - 097 REFUSES an APR in percent units at the database # SKIP
+  ---
+  duration_ms: 0.078209
+  type: 'test'
+  ...
+# Subtest: the writer converts percent units so the constraint never fires in practice
+ok 74 - the writer converts percent units so the constraint never fires in practice # SKIP
+  ---
+  duration_ms: 0.0325
+  type: 'test'
+  ...
+# Subtest: one cycle per account — a second save updates rather than duplicates
+ok 75 - one cycle per account — a second save updates rather than duplicates # SKIP
+  ---
+  duration_ms: 0.13725
+  type: 'test'
+  ...
+# Subtest: a statement cycle cannot be attached to a savings account
+ok 76 - a statement cycle cannot be attached to a savings account # SKIP
+  ---
+  duration_ms: 0.204334
+  type: 'test'
+  ...
+# Subtest: an account in another org is invisible and unwritable
+ok 77 - an account in another org is invisible and unwritable # SKIP
+  ---
+  duration_ms: 0.162584
+  type: 'test'
+  ...
+# Subtest: holdings replace, and quantity keeps its fractional precision
+ok 78 - holdings replace, and quantity keeps its fractional precision # SKIP
+  ---
+  duration_ms: 0.029541
+  type: 'test'
+  ...
+# Subtest: importing from the mock lands accounts, cycles, holdings and transactions
+ok 79 - importing from the mock lands accounts, cycles, holdings and transactions # SKIP
+  ---
+  duration_ms: 0.024875
+  type: 'test'
+  ...
+# Subtest: an unknown BANKING_PROVIDER refuses the import outright
+ok 80 - an unknown BANKING_PROVIDER refuses the import outright # SKIP
+  ---
+  duration_ms: 0.022083
+  type: 'test'
+  ...
+# Subtest: key rotation against a real database
+    # Subtest: the rows start on v1 and decrypt
+    ok 1 - the rows start on v1 and decrypt # SKIP
+      ---
+      duration_ms: 0.291959
+      type: 'test'
+      ...
+    # Subtest: *** ROTATE, THEN DECRYPT, reading the bytes back out of Postgres ***
+    ok 2 - *** ROTATE, THEN DECRYPT, reading the bytes back out of Postgres *** # SKIP
+      ---
+      duration_ms: 0.042041
+      type: 'test'
+      ...
+    # Subtest: *** NO PLAINTEXT ANYWHERE IN THE TABLE, checked against the database itself ***
+    ok 3 - *** NO PLAINTEXT ANYWHERE IN THE TABLE, checked against the database itself *** # SKIP
+      ---
+      duration_ms: 0.035917
+      type: 'test'
+      ...
+    # Subtest: no plaintext staging column was added or left behind
+    ok 4 - no plaintext staging column was added or left behind # SKIP
+      ---
+      duration_ms: 0.032875
+      type: 'test'
+      ...
+    # Subtest: *** NO DOWNTIME: a half-rotated table reads correctly on both keys at once ***
+    ok 5 - *** NO DOWNTIME: a half-rotated table reads correctly on both keys at once *** # SKIP
+      ---
+      duration_ms: 0.02975
+      type: 'test'
+      ...
+    # Subtest: re-running finishes the job and leaves the already-moved rows alone
+    ok 6 - re-running finishes the job and leaves the already-moved rows alone # SKIP
+      ---
+      duration_ms: 0.029333
+      type: 'test'
+      ...
+    # Subtest: a row with no credential is skipped rather than counted as a failure
+    ok 7 - a row with no credential is skipped rather than counted as a failure # SKIP
+      ---
+      duration_ms: 0.1385
+      type: 'test'
+      ...
+    # Subtest: another org's credentials are not touched
+    ok 8 - another org's credentials are not touched # SKIP
+      ---
+      duration_ms: 0.078792
+      type: 'test'
+      ...
+    1..8
+ok 81 - key rotation against a real database
+  ---
+  duration_ms: 1.135875
+  type: 'suite'
+  ...
+# Subtest: entity_kind — unknown is the default and unknown is not personal
+    # Subtest: an account inserted without an entity_kind is 'unknown', never 'personal'
+    ok 1 - an account inserted without an entity_kind is 'unknown', never 'personal' # SKIP
+      ---
+      duration_ms: 0.295083
+      type: 'test'
+      ...
+    # Subtest: the column default read from the catalog is literally 'unknown'
+    ok 2 - the column default read from the catalog is literally 'unknown' # SKIP
+      ---
+      duration_ms: 0.547541
+      type: 'test'
+      ...
+    # Subtest: 'personal' and 'business' are accepted when a basis is given
+    ok 3 - 'personal' and 'business' are accepted when a basis is given # SKIP
+      ---
+      duration_ms: 0.121041
+      type: 'test'
+      ...
+    # Subtest: an invented entity_kind is rejected by the database, not just by code
+    ok 4 - an invented entity_kind is rejected by the database, not just by code # SKIP
+      ---
+      duration_ms: 0.044333
+      type: 'test'
+      ...
+    # Subtest: classifying an account without saying how we know is rejected
+    ok 5 - classifying an account without saying how we know is rejected # SKIP
+      ---
+      duration_ms: 0.033416
+      type: 'test'
+      ...
+    # Subtest: an invented entity_kind_source is rejected
+    ok 6 - an invented entity_kind_source is rejected # SKIP
+      ---
+      duration_ms: 0.076708
+      type: 'test'
+      ...
+    1..6
+ok 82 - entity_kind — unknown is the default and unknown is not personal
+  ---
+  duration_ms: 1.4245
+  type: 'suite'
+  ...
+# Subtest: plaid_items — a row is never connected by default
+    # Subtest: link_state defaults to 'unlinked' and no consent is on record
+    ok 1 - link_state defaults to 'unlinked' and no consent is on record # SKIP
+      ---
+      duration_ms: 0.11075
+      type: 'test'
+      ...
+    # Subtest: an invented link_state is rejected
+    ok 2 - an invented link_state is rejected # SKIP
+      ---
+      duration_ms: 0.178416
+      type: 'test'
+      ...
+    # Subtest: there is no plaintext access token column to select by accident
+    ok 3 - there is no plaintext access token column to select by accident # SKIP
+      ---
+      duration_ms: 0.170208
+      type: 'test'
+      ...
+    # Subtest: the same Plaid Item cannot be linked twice in one org
+    ok 4 - the same Plaid Item cannot be linked twice in one org # SKIP
+      ---
+      duration_ms: 0.043042
+      type: 'test'
+      ...
+    1..4
+ok 83 - plaid_items — a row is never connected by default
+  ---
+  duration_ms: 0.726167
+  type: 'suite'
+  ...
+# Subtest: bank_accounts — unknown balances survive as NULL
+    # Subtest: an account with no reported balances stores NULL, not 0
+    ok 1 - an account with no reported balances stores NULL, not 0 # SKIP
+      ---
+      duration_ms: 0.042125
+      type: 'test'
+      ...
+    # Subtest: a negative balance is storable — an overdrawn account is real data
+    ok 2 - a negative balance is storable — an overdrawn account is real data # SKIP
+      ---
+      duration_ms: 0.018458
+      type: 'test'
+      ...
+    # Subtest: balances are integer cents, not dollars
+    ok 3 - balances are integer cents, not dollars # SKIP
+      ---
+      duration_ms: 0.02475
+      type: 'test'
+      ...
+    # Subtest: re-reading the same Plaid account updates rather than duplicating
+    ok 4 - re-reading the same Plaid account updates rather than duplicating # SKIP
+      ---
+      duration_ms: 0.018125
+      type: 'test'
+      ...
+    # Subtest: hand-entered accounts are not blocked by that uniqueness rule
+    ok 5 - hand-entered accounts are not blocked by that uniqueness rule # SKIP
+      ---
+      duration_ms: 0.017041
+      type: 'test'
+      ...
+    # Subtest: deleting the bank login deletes the accounts underneath it
+    ok 6 - deleting the bank login deletes the accounts underneath it # SKIP
+      ---
+      duration_ms: 0.017791
+      type: 'test'
+      ...
+    # Subtest: there is no full account number or routing number column
+    ok 7 - there is no full account number or routing number column # SKIP
+      ---
+      duration_ms: 0.016833
+      type: 'test'
+      ...
+    1..7
+ok 84 - bank_accounts — unknown balances survive as NULL
+  ---
+  duration_ms: 0.220708
+  type: 'suite'
+  ...
+# Subtest: 085 and 086 created the tables and columns the code writes to
+ok 85 - 085 and 086 created the tables and columns the code writes to # SKIP
+  ---
+  duration_ms: 0.920291
+  type: 'test'
+  ...
+# Subtest: recurring_bills refuses a bill that is not an outflow
+ok 86 - recurring_bills refuses a bill that is not an outflow # SKIP
+  ---
+  duration_ms: 0.116958
+  type: 'test'
+  ...
+# Subtest: bank_transactions refuses a zero amount and a row with no date at all
+ok 87 - bank_transactions refuses a zero amount and a row with no date at all # SKIP
+  ---
+  duration_ms: 0.0755
+  type: 'test'
+  ...
+# Subtest: recurring_bills refuses both-null and both-set for the next-date pair
+ok 88 - recurring_bills refuses both-null and both-set for the next-date pair # SKIP
+  ---
+  duration_ms: 0.174125
+  type: 'test'
+  ...
+# Subtest: detected_as_of has no DEFAULT, so the write time cannot stand in for the evaluation time
+ok 89 - detected_as_of has no DEFAULT, so the write time cannot stand in for the evaluation time # SKIP
+  ---
+  duration_ms: 0.081083
+  type: 'test'
+  ...
+# Subtest: the same provider id twice on one account is refused by the database itself
+ok 90 - the same provider id twice on one account is refused by the database itself # SKIP
+  ---
+  duration_ms: 0.231667
+  type: 'test'
+  ...
+# Subtest: a pending row that later posts UPDATEs in place rather than becoming a second charge
+ok 91 - a pending row that later posts UPDATEs in place rather than becoming a second charge # SKIP
+  ---
+  duration_ms: 0.205166
+  type: 'test'
+  ...
+# Subtest: a real bank_transactions history detects, and pg's own types survive the trip
+ok 92 - a real bank_transactions history detects, and pg's own types survive the trip # SKIP
+  ---
+  duration_ms: 0.152
+  type: 'test'
+  ...
+# Subtest: re-running detection UPSERTS the bill instead of accumulating one row per run
+ok 93 - re-running detection UPSERTS the bill instead of accumulating one row per run # SKIP
+  ---
+  duration_ms: 0.210417
+  type: 'test'
+  ...
+# Subtest: a monthly bill and an annual renewal coexist as two rows on one account
+ok 94 - a monthly bill and an annual renewal coexist as two rows on one account # SKIP
+  ---
+  duration_ms: 0.154917
+  type: 'test'
+  ...
+# Subtest: evidence links survive as rows and vanish with the transaction they point at
+ok 95 - evidence links survive as rows and vanish with the transaction they point at # SKIP
+  ---
+  duration_ms: 0.034625
+  type: 'test'
+  ...
+# Subtest: no stored bill anywhere claims a next date off only two occurrences
+ok 96 - no stored bill anywhere claims a next date off only two occurrences # SKIP
+  ---
+  duration_ms: 0.024333
+  type: 'test'
+  ...
+# Subtest: saveDetection writes bills, candidates and their evidence in one go
+ok 97 - saveDetection writes bills, candidates and their evidence in one go # SKIP
+  ---
+  duration_ms: 0.022542
+  type: 'test'
+  ...
+# Subtest: listRecurringBills hides the low-confidence guesses unless asked by name
+ok 98 - listRecurringBills hides the low-confidence guesses unless asked by name # SKIP
+  ---
+  duration_ms: 0.019875
+  type: 'test'
+  ...
+# Subtest: a bill read out of the real table reaches the cash-flow projector intact
+ok 99 - a bill read out of the real table reaches the cash-flow projector intact # SKIP
+  ---
+  duration_ms: 0.02
+  type: 'test'
+  ...
+# Subtest: getBillEvidence returns the actual charges behind a stored bill
+ok 100 - getBillEvidence returns the actual charges behind a stored bill # SKIP
+  ---
+  duration_ms: 0.019042
+  type: 'test'
+  ...
+# Subtest: re-saving replaces evidence rather than accumulating it
+ok 101 - re-saving replaces evidence rather than accumulating it # SKIP
+  ---
+  duration_ms: 0.019125
+  type: 'test'
+  ...
+# Subtest: saveDetection can be told to store only the confident set
+ok 102 - saveDetection can be told to store only the confident set # SKIP
+  ---
+  duration_ms: 0.018834
+  type: 'test'
+  ...
+# Subtest: saveDetection refuses to write without an org — tenancy is the caller's to assert
+ok 103 - saveDetection refuses to write without an org — tenancy is the caller's to assert # SKIP
+  ---
+  duration_ms: 0.01925
+  type: 'test'
+  ...
+# Subtest: one org cannot read another org's bills
+ok 104 - one org cannot read another org's bills # SKIP
+  ---
+  duration_ms: 0.019917
+  type: 'test'
+  ...
+# Subtest: every stored bill obeys the invariants its migration promises
+ok 105 - every stored bill obeys the invariants its migration promises # SKIP
+  ---
+  duration_ms: 0.02
+  type: 'test'
+  ...
+# Subtest: cashflow_reminders has NO delivery columns — nothing here can send
+ok 106 - cashflow_reminders has NO delivery columns — nothing here can send # SKIP
+  ---
+  duration_ms: 0.457792
+  type: 'test'
+  ...
+# Subtest: no trigger on cashflow_reminders does anything but stamp updated_at
+ok 107 - no trigger on cashflow_reminders does anything but stamp updated_at # SKIP
+  ---
+  duration_ms: 0.045791
+  type: 'test'
+  ...
+# Subtest: every REMINDER_KINDS value is accepted by the CHECK constraint
+ok 108 - every REMINDER_KINDS value is accepted by the CHECK constraint # SKIP
+  ---
+  duration_ms: 0.037166
+  type: 'test'
+  ...
+# Subtest: every SUBJECT_KINDS value is accepted by the CHECK constraint
+ok 109 - every SUBJECT_KINDS value is accepted by the CHECK constraint # SKIP
+  ---
+  duration_ms: 0.076667
+  type: 'test'
+  ...
+# Subtest: a kind the module does not know is refused BY THE DATABASE too
+ok 110 - a kind the module does not know is refused BY THE DATABASE too # SKIP
+  ---
+  duration_ms: 0.040167
+  type: 'test'
+  ...
+# Subtest: an empty body or label is refused by the database, not just by the module
+ok 111 - an empty body or label is refused by the database, not just by the module # SKIP
+  ---
+  duration_ms: 0.080042
+  type: 'test'
+  ...
+# Subtest: writing the identical reminder twice yields ONE row, and says it did not create
+ok 112 - writing the identical reminder twice yields ONE row, and says it did not create # SKIP
+  ---
+  duration_ms: 0.03375
+  type: 'test'
+  ...
+# Subtest: the dedupe is enforced by POSTGRES — a raw insert bypassing the module also fails
+ok 113 - the dedupe is enforced by POSTGRES — a raw insert bypassing the module also fails # SKIP
+  ---
+  duration_ms: 0.135958
+  type: 'test'
+  ...
+# Subtest: rewording the body does NOT create a second reminder
+ok 114 - rewording the body does NOT create a second reminder # SKIP
+  ---
+  duration_ms: 0.197959
+  type: 'test'
+  ...
+# Subtest: a different instant, subject, kind or client IS a different reminder
+ok 115 - a different instant, subject, kind or client IS a different reminder # SKIP
+  ---
+  duration_ms: 0.156041
+  type: 'test'
+  ...
+# Subtest: dueReminders returns what has come due and nothing that has not
+ok 116 - dueReminders returns what has come due and nothing that has not # SKIP
+  ---
+  duration_ms: 0.030125
+  type: 'test'
+  ...
+# Subtest: a reminder due at exactly asOf IS due — the boundary, both sides
+ok 117 - a reminder due at exactly asOf IS due — the boundary, both sides # SKIP
+  ---
+  duration_ms: 0.024875
+  type: 'test'
+  ...
+# Subtest: reading a reminder does not mark it as anything
+ok 118 - reading a reminder does not mark it as anything # SKIP
+  ---
+  duration_ms: 0.021166
+  type: 'test'
+  ...
+# Subtest: dueReminders can be narrowed to one client
+ok 119 - dueReminders can be narrowed to one client # SKIP
+  ---
+  duration_ms: 0.023917
+  type: 'test'
+  ...
+# Subtest: forClient returns acknowledged reminders too, newest first
+ok 120 - forClient returns acknowledged reminders too, newest first # SKIP
+  ---
+  duration_ms: 0.022291
+  type: 'test'
+  ...
+# Subtest: acknowledging removes it from the due list and records who and when
+ok 121 - acknowledging removes it from the due list and records who and when # SKIP
+  ---
+  duration_ms: 0.020041
+  type: 'test'
+  ...
+# Subtest: the FIRST acknowledgement wins — a second call does not overwrite it
+ok 122 - the FIRST acknowledgement wins — a second call does not overwrite it # SKIP
+  ---
+  duration_ms: 0.019625
+  type: 'test'
+  ...
+# Subtest: a half-written acknowledgement is refused by the database
+ok 123 - a half-written acknowledgement is refused by the database # SKIP
+  ---
+  duration_ms: 0.022375
+  type: 'test'
+  ...
+# Subtest: acknowledging something that is not in this org is a 404, not a silent no-op
+ok 124 - acknowledging something that is not in this org is a 404, not a silent no-op # SKIP
+  ---
+  duration_ms: 0.02
+  type: 'test'
+  ...
+# Subtest: every read is scoped to the org — another org sees nothing
+ok 125 - every read is scoped to the org — another org sees nothing # SKIP
+  ---
+  duration_ms: 0.021375
+  type: 'test'
+  ...
+# Subtest: deleting a client takes its reminders with it
+ok 126 - deleting a client takes its reminders with it # SKIP
+  ---
+  duration_ms: 0.019292
+  type: 'test'
+  ...
+# Subtest: a reminder for a client that does not exist is refused
+ok 127 - a reminder for a client that does not exist is refused # SKIP
+  ---
+  duration_ms: 0.021875
+  type: 'test'
+  ...
+# Subtest: missing ids, empty text and bad timestamps are refused before any SQL runs
+ok 128 - missing ids, empty text and bad timestamps are refused before any SQL runs # SKIP
+  ---
+  duration_ms: 0.021583
+  type: 'test'
+  ...
+# Subtest: a bare epoch number is refused as a timestamp — seconds and milliseconds look alike
+ok 129 - a bare epoch number is refused as a timestamp — seconds and milliseconds look alike # SKIP
+  ---
+  duration_ms: 0.019667
+  type: 'test'
+  ...
+# Subtest: a nonsense limit is refused rather than passed to SQL
+ok 130 - a nonsense limit is refused rather than passed to SQL # SKIP
+  ---
+  duration_ms: 0.019209
+  type: 'test'
+  ...
+# Subtest: dueReminders honours its limit
+ok 131 - dueReminders honours its limit # SKIP
+  ---
+  duration_ms: 0.019708
+  type: 'test'
+  ...
+# Subtest: recordReminders output is directly storable, and re-running stores nothing new
+ok 132 - recordReminders output is directly storable, and re-running stores nothing new # SKIP
+  ---
+  duration_ms: 0.019292
+  type: 'test'
+  ...
+# Subtest: a refusal from the model reaches the table as a real row
+ok 133 - a refusal from the model reaches the table as a real row # SKIP
+  ---
+  duration_ms: 0.02475
+  type: 'test'
+  ...
+# Subtest: migration 101: the anchor is a schema fact
+    # Subtest: the trigger fills subject_client_id on an INSERT that never mentions it
+    ok 1 - the trigger fills subject_client_id on an INSERT that never mentions it # SKIP
+      ---
+      duration_ms: 0.379208
+      type: 'test'
+      ...
+    # Subtest: subject_client_id is not a foreign key, per the database catalog
+    ok 2 - subject_client_id is not a foreign key, per the database catalog # SKIP
+      ---
+      duration_ms: 0.065625
+      type: 'test'
+      ...
+    # Subtest: *** THE ORPHAN BUG: deleting the client leaves the ledger findable ***
+    ok 3 - *** THE ORPHAN BUG: deleting the client leaves the ledger findable *** # SKIP
+      ---
+      duration_ms: 0.095958
+      type: 'test'
+      ...
+    # Subtest: the SET NULL update does not clear the anchor
+    ok 4 - the SET NULL update does not clear the anchor # SKIP
+      ---
+      duration_ms: 0.046333
+      type: 'test'
+      ...
+    1..4
+ok 134 - migration 101: the anchor is a schema fact
+  ---
+  duration_ms: 0.941542
+  type: 'suite'
+  ...
+# Subtest: migration 102: the audit record refuses a bad row
+    # Subtest: a completed client_erasure that kept nothing is rejected by the database
+    ok 1 - a completed client_erasure that kept nothing is rejected by the database # SKIP
+      ---
+      duration_ms: 0.119583
+      type: 'test'
+      ...
+    # Subtest: a kept entry with no written reason is rejected
+    ok 2 - a kept entry with no written reason is rejected # SKIP
+      ---
+      duration_ms: 0.110958
+      type: 'test'
+      ...
+    # Subtest: a throwaway reason is rejected
+    ok 3 - a throwaway reason is rejected # SKIP
+      ---
+      duration_ms: 0.089084
+      type: 'test'
+      ...
+    # Subtest: an unattributed request is rejected
+    ok 4 - an unattributed request is rejected # SKIP
+      ---
+      duration_ms: 0.148958
+      type: 'test'
+      ...
+    # Subtest: a bank_revoke must name an item and a client_erasure must not
+    ok 5 - a bank_revoke must name an item and a client_erasure must not # SKIP
+      ---
+      duration_ms: 0.182792
+      type: 'test'
+      ...
+    # Subtest: an invented kind is rejected
+    ok 6 - an invented kind is rejected # SKIP
+      ---
+      duration_ms: 0.441875
+      type: 'test'
+      ...
+    # Subtest: the audit record survives its subject being deleted
+    ok 7 - the audit record survives its subject being deleted # SKIP
+      ---
+      duration_ms: 0.09475
+      type: 'test'
+      ...
+    1..7
+ok 135 - migration 102: the audit record refuses a bad row
+  ---
+  duration_ms: 1.483
+  type: 'suite'
+  ...
+# Subtest: revoke against a real database
+    # Subtest: *** revoking removes the login and cascades the accounts, and KEEPS the ledger ***
+    ok 1 - *** revoking removes the login and cascades the accounts, and KEEPS the ledger *** # SKIP
+      ---
+      duration_ms: 0.212875
+      type: 'test'
+      ...
+    # Subtest: another org's login is not found
+    ok 2 - another org's login is not found # SKIP
+      ---
+      duration_ms: 0.0465
+      type: 'test'
+      ...
+    1..2
+ok 136 - revoke against a real database
+  ---
+  duration_ms: 0.379417
+  type: 'suite'
+  ...
+# Subtest: 088 + 089 seeded the default org with all three thresholds
+ok 137 - 088 + 089 seeded the default org with all three thresholds # SKIP
+  ---
+  duration_ms: 0.458125
+  type: 'test'
+  ...
+# Subtest: the confidence floor is REACHABLE — above the detector's ceiling it confirms nothing
+ok 138 - the confidence floor is REACHABLE — above the detector's ceiling it confirms nothing # SKIP
+  ---
+  duration_ms: 0.047333
+  type: 'test'
+  ...
+# Subtest: the floor is the detector's HIGH band, not its PRESENTABLE band — two different questions
+ok 139 - the floor is the detector's HIGH band, not its PRESENTABLE band — two different questions # SKIP
+  ---
+  duration_ms: 0.041375
+  type: 'test'
+  ...
+# Subtest: the reader returns NUMBERS, not the strings the driver hands back
+ok 140 - the reader returns NUMBERS, not the strings the driver hands back # SKIP
+  ---
+  duration_ms: 0.079125
+  type: 'test'
+  ...
+# Subtest: what the reader returns is accepted by the model without a throw
+ok 141 - what the reader returns is accepted by the model without a throw # SKIP
+  ---
+  duration_ms: 0.04175
+  type: 'test'
+  ...
+# Subtest: a NULL column produces an ABSENT key, not a zero
+ok 142 - a NULL column produces an ABSENT key, not a zero # SKIP
+  ---
+  duration_ms: 0.077542
+  type: 'test'
+  ...
+# Subtest: an unset settlement lead makes the model REFUSE an initiate-by date
+ok 143 - an unset settlement lead makes the model REFUSE an initiate-by date # SKIP
+  ---
+  duration_ms: 0.031959
+  type: 'test'
+  ...
+# Subtest: a zero settlement lead is a DECISION and is honoured — the other side of it
+ok 144 - a zero settlement lead is a DECISION and is honoured — the other side of it # SKIP
+  ---
+  duration_ms: 0.146542
+  type: 'test'
+  ...
+# Subtest: an org with no settings row at all gets {} — and no row is created by reading
+ok 145 - an org with no settings row at all gets {} — and no row is created by reading # SKIP
+  ---
+  duration_ms: 0.207458
+  type: 'test'
+  ...
+# Subtest: loadThresholds is scoped to the org and demands one
+ok 146 - loadThresholds is scoped to the org and demands one # SKIP
+  ---
+  duration_ms: 0.176667
+  type: 'test'
+  ...
+# Subtest: out-of-range thresholds are refused by CHECK constraints
+ok 147 - out-of-range thresholds are refused by CHECK constraints # SKIP
+  ---
+  duration_ms: 0.031083
+  type: 'test'
+  ...
+# Subtest: confidence_floor is a FRACTION — 80 is refused, 0.8 is not
+ok 148 - confidence_floor is a FRACTION — 80 is refused, 0.8 is not # SKIP
+  ---
+  duration_ms: 0.027667
+  type: 'test'
+  ...
+# Subtest: settings are removed with their org rather than left orphaned
+ok 149 - settings are removed with their org rather than left orphaned # SKIP
+  ---
+  duration_ms: 0.021833
+  type: 'test'
+  ...
+# Subtest: every seeded threshold is reported as awaiting sign-off
+ok 150 - every seeded threshold is reported as awaiting sign-off # SKIP
+  ---
+  duration_ms: 0.021042
+  type: 'test'
+  ...
+# Subtest: signing a value off stops it being reported — and only it
+ok 151 - signing a value off stops it being reported — and only it # SKIP
+  ---
+  duration_ms: 0.021583
+  type: 'test'
+  ...
+# Subtest: an org with no settings row is itself reported as a gap
+ok 152 - an org with no settings row is itself reported as a gap # SKIP
+  ---
+  duration_ms: 0.024583
+  type: 'test'
+  ...
+# Subtest: the reader does not blindly trust the database — a bad stored value raises
+ok 153 - the reader does not blindly trust the database — a bad stored value raises # SKIP
+  ---
+  duration_ms: 0.021875
+  type: 'test'
+  ...
+# Subtest: the confidence CHECK constraint is back on after the test above
+ok 154 - the confidence CHECK constraint is back on after the test above # SKIP
+  ---
+  duration_ms: 0.020542
+  type: 'test'
+  ...
+# Subtest: module invariants
+ok 155 - module invariants # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.87275
+  type: 'suite'
+  ...
+# Subtest: every partner-scoped table has row security enabled AND forced
+ok 156 - every partner-scoped table has row security enabled AND forced # SKIP DATABASE_URL is not set — this asks a live database about its own schema
+  ---
+  duration_ms: 0.344791
+  type: 'test'
+  ...
+# Subtest: no table has row security enabled with zero policies
+ok 157 - no table has row security enabled with zero policies # SKIP DATABASE_URL is not set — this asks a live database about its own schema
+  ---
+  duration_ms: 0.047
+  type: 'test'
+  ...
+# Subtest: consent gate
+ok 158 - consent gate # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.205
+  type: 'suite'
+  ...
+# Subtest: contracts — uploaded PDFs, fields and several signers
+ok 159 - contracts — uploaded PDFs, fields and several signers # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.205458
+  type: 'suite'
+  ...
+# Subtest: contracts — the full lifecycle
+ok 160 - contracts — the full lifecycle # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.214334
+  type: 'suite'
+  ...
+# Subtest: contracts — sending and chasing
+ok 161 - contracts — sending and chasing # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.222625
+  type: 'suite'
+  ...
+# Subtest: contracts — the tamper refusal
+ok 162 - contracts — the tamper refusal # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.213292
+  type: 'suite'
+  ...
+# Subtest: a client gets one conversation per channel no matter how many messages arrive
+ok 163 - a client gets one conversation per channel no matter how many messages arrive # SKIP
+  ---
+  duration_ms: 0.523208
+  type: 'test'
+  ...
+# Subtest: a different channel for the same client is a separate thread
+ok 164 - a different channel for the same client is a separate thread # SKIP
+  ---
+  duration_ms: 0.048583
+  type: 'test'
+  ...
+# Subtest: the database itself refuses a second row for one (client, channel) pair
+ok 165 - the database itself refuses a second row for one (client, channel) pair # SKIP
+  ---
+  duration_ms: 0.037666
+  type: 'test'
+  ...
+# Subtest: sentiment stays NULL through every write the store makes
+ok 166 - sentiment stays NULL through every write the store makes # SKIP
+  ---
+  duration_ms: 0.039541
+  type: 'test'
+  ...
+# Subtest: a later write with no summary does not erase the summary already stored
+ok 167 - a later write with no summary does not erase the summary already stored # SKIP
+  ---
+  duration_ms: 0.095167
+  type: 'test'
+  ...
+# Subtest: an older pulse arriving late does not rewind the thread's clock
+ok 168 - an older pulse arriving late does not rewind the thread's clock # SKIP
+  ---
+  duration_ms: 0.035459
+  type: 'test'
+  ...
+# Subtest: a pulse-less write does not blank a pulse time already known
+ok 169 - a pulse-less write does not blank a pulse time already known # SKIP
+  ---
+  duration_ms: 2.619334
+  type: 'test'
+  ...
+# Subtest: listConversations puts the most recently active thread first and the never-pulsed one last
+ok 170 - listConversations puts the most recently active thread first and the never-pulsed one last # SKIP
+  ---
+  duration_ms: 0.939708
+  type: 'test'
+  ...
+# Subtest: linkMessage fills in the messages.conversation_id that comms.mjs used to leave NULL
+ok 171 - linkMessage fills in the messages.conversation_id that comms.mjs used to leave NULL # SKIP
+  ---
+  duration_ms: 1.988042
+  type: 'test'
+  ...
+# Subtest: linkMessage refuses to attach a message to another client's thread
+ok 172 - linkMessage refuses to attach a message to another client's thread # SKIP
+  ---
+  duration_ms: 0.521625
+  type: 'test'
+  ...
+# Subtest: an inbound SMS threads itself: the messages row points at the client's sms conversation
+ok 173 - an inbound SMS threads itself: the messages row points at the client's sms conversation # SKIP
+  ---
+  duration_ms: 0.341167
+  type: 'test'
+  ...
+# Subtest: redelivering the same inbound SMS keeps one message, one thread, and the original pulse time
+ok 174 - redelivering the same inbound SMS keeps one message, one thread, and the original pulse time # SKIP
+  ---
+  duration_ms: 0.037542
+  type: 'test'
+  ...
+# Subtest: a completed call threads onto the voice channel it already writes to messages
+ok 175 - a completed call threads onto the voice channel it already writes to messages # SKIP
+  ---
+  duration_ms: 0.671417
+  type: 'test'
+  ...
+# Subtest: an inbound SMS from an unrecognised number is stored but threads to nothing
+ok 176 - an inbound SMS from an unrecognised number is stored but threads to nothing # SKIP
+  ---
+  duration_ms: 0.285583
+  type: 'test'
+  ...
+# Subtest: creative generation
+ok 177 - creative generation # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.196167
+  type: 'suite'
+  ...
+# Subtest: demo mode isolation
+ok 178 - demo mode isolation # SKIP
+  ---
+  duration_ms: 0.278
+  type: 'test'
+  ...
+# Subtest: registers a document and version 1 against real SQL
+ok 179 - registers a document and version 1 against real SQL # SKIP
+  ---
+  duration_ms: 0.459583
+  type: 'test'
+  ...
+# Subtest: same source event twice = one document (real unique index)
+ok 180 - same source event twice = one document (real unique index) # SKIP
+  ---
+  duration_ms: 0.044334
+  type: 'test'
+  ...
+# Subtest: regenerating appends version 2 and leaves version 1 byte-for-byte intact
+ok 181 - regenerating appends version 2 and leaves version 1 byte-for-byte intact # SKIP
+  ---
+  duration_ms: 0.040917
+  type: 'test'
+  ...
+# Subtest: the version history is visible and ordered newest first
+ok 182 - the version history is visible and ordered newest first # SKIP
+  ---
+  duration_ms: 0.07625
+  type: 'test'
+  ...
+# Subtest: documents cannot be deleted
+ok 183 - documents cannot be deleted # SKIP
+  ---
+  duration_ms: 0.039166
+  type: 'test'
+  ...
+# Subtest: version history cannot be deleted
+ok 184 - version history cannot be deleted # SKIP
+  ---
+  duration_ms: 0.076833
+  type: 'test'
+  ...
+# Subtest: a stored artifact cannot be overwritten in place
+ok 185 - a stored artifact cannot be overwritten in place # SKIP
+  ---
+  duration_ms: 0.028916
+  type: 'test'
+  ...
+# Subtest: delivery and signature columns stay writable on a stored version
+ok 186 - delivery and signature columns stay writable on a stored version # SKIP
+  ---
+  duration_ms: 0.134583
+  type: 'test'
+  ...
+# Subtest: the kind enum rejects anything outside the four classes
+ok 187 - the kind enum rejects anything outside the four classes # SKIP
+  ---
+  duration_ms: 0.201417
+  type: 'test'
+  ...
+# Subtest: a checksum without an algorithm prefix is rejected
+ok 188 - a checksum without an algorithm prefix is rejected # SKIP
+  ---
+  duration_ms: 0.152209
+  type: 'test'
+  ...
+# Subtest: a delivery with no channel is rejected
+ok 189 - a delivery with no channel is rejected # SKIP
+  ---
+  duration_ms: 0.045208
+  type: 'test'
+  ...
+# Subtest: delivery is recorded on the version and mirrored to the registry row
+ok 190 - delivery is recorded on the version and mirrored to the registry row # SKIP
+  ---
+  duration_ms: 0.02875
+  type: 'test'
+  ...
+# Subtest: a signature is recorded once and cannot be overwritten
+ok 191 - a signature is recorded once and cannot be overwritten # SKIP
+  ---
+  duration_ms: 0.022
+  type: 'test'
+  ...
+# Subtest: the portal read is one statement and returns newest version each
+ok 192 - the portal read is one statement and returns newest version each # SKIP
+  ---
+  duration_ms: 0.019875
+  type: 'test'
+  ...
+# Subtest: no read path returns a storage key — against the real column lists
+ok 193 - no read path returns a storage key — against the real column lists # SKIP
+  ---
+  duration_ms: 0.021
+  type: 'test'
+  ...
+# Subtest: resolveStorageTarget is the only path back to a storage key
+ok 194 - resolveStorageTarget is the only path back to a storage key # SKIP
+  ---
+  duration_ms: 0.019292
+  type: 'test'
+  ...
+# Subtest: one event generates all five UnderwriteIQ deliverables, and replays none of them
+ok 195 - one event generates all five UnderwriteIQ deliverables, and replays none of them # SKIP
+  ---
+  duration_ms: 0.019
+  type: 'test'
+  ...
+# Subtest: registering under a second org does not collide on the same logical key
+ok 196 - registering under a second org does not collide on the same logical key # SKIP
+  ---
+  duration_ms: 0.018833
+  type: 'test'
+  ...
+# Subtest: GET /api/documents/<id>
+ok 197 - GET /api/documents/<id> # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.239167
+  type: 'suite'
+  ...
+# Subtest: entitlements
+ok 198 - entitlements # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.199208
+  type: 'suite'
+  ...
+# Subtest: dead-letter queue
+ok 199 - dead-letter queue # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.205625
+  type: 'suite'
+  ...
+# Subtest: soft pull ledger
+ok 200 - soft pull ledger # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.314833
+  type: 'suite'
+  ...
+# Subtest: card-stacking round emitter (pg)
+ok 201 - card-stacking round emitter (pg) # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.216875
+  type: 'suite'
+  ...
+# Subtest: company-activity
+ok 202 - company-activity # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.218208
+  type: 'suite'
+  ...
+# Subtest: full journey persists to Postgres and replay is idempotent
+ok 203 - full journey persists to Postgres and replay is idempotent # SKIP
+  ---
+  duration_ms: 5.097125
+  type: 'test'
+  ...
+# Subtest: comms events persist to Postgres and replay is idempotent
+ok 204 - comms events persist to Postgres and replay is idempotent # SKIP
+  ---
+  duration_ms: 0.3145
+  type: 'test'
+  ...
+# Subtest: inbound sms: a text from a known number creates the thread and joins the message to it
+ok 205 - inbound sms: a text from a known number creates the thread and joins the message to it # SKIP
+  ---
+  duration_ms: 0.380458
+  type: 'test'
+  ...
+# Subtest: inbound sms: a second text joins the SAME thread, it does not mint another
+ok 206 - inbound sms: a second text joins the SAME thread, it does not mint another # SKIP
+  ---
+  duration_ms: 0.0865
+  type: 'test'
+  ...
+# Subtest: inbound sms: a redelivery of the same message does not become a second message
+ok 207 - inbound sms: a redelivery of the same message does not become a second message # SKIP
+  ---
+  duration_ms: 0.043167
+  type: 'test'
+  ...
+# Subtest: inbound email: a client's own reply lands on their email thread, subject and all
+ok 208 - inbound email: a client's own reply lands on their email thread, subject and all # SKIP
+  ---
+  duration_ms: 0.040375
+  type: 'test'
+  ...
+# Subtest: inbound email: a second email joins the same email thread
+ok 209 - inbound email: a second email joins the same email thread # SKIP
+  ---
+  duration_ms: 0.046375
+  type: 'test'
+  ...
+# Subtest: inbound: a message from a stranger is recorded but threads to nobody, and mints no client
+ok 210 - inbound: a message from a stranger is recorded but threads to nobody, and mints no client # SKIP
+  ---
+  duration_ms: 0.0385
+  type: 'test'
+  ...
+# Subtest: inbound sms: STOP still records an opt-out, and the thread still gets the message
+ok 211 - inbound sms: STOP still records an opt-out, and the thread still gets the message # SKIP
+  ---
+  duration_ms: 0.080542
+  type: 'test'
+  ...
+# Subtest: mailgun: an email from a client's own address emits message.inbound as well as mail.response
+ok 212 - mailgun: an email from a client's own address emits message.inbound as well as mail.response
+  ---
+  duration_ms: 1.072334
+  type: 'test'
+  ...
+# Subtest: mailgun: a bank's forwarded statement does NOT become a message in the client's thread
+ok 213 - mailgun: a bank's forwarded statement does NOT become a message in the client's thread
+  ---
+  duration_ms: 0.348375
+  type: 'test'
+  ...
+# Subtest: inquiry-gate handler
+ok 214 - inquiry-gate handler # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.227292
+  type: 'suite'
+  ...
+# Subtest: money-chain writers
+ok 215 - money-chain writers # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.218
+  type: 'suite'
+  ...
+# Subtest: hiring read endpoints
+ok 216 - hiring read endpoints # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.20375
+  type: 'suite'
+  ...
+# Subtest: hiring pipeline
+ok 217 - hiring pipeline # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.204416
+  type: 'suite'
+  ...
+# Subtest: /api/finance/bank-accounts
+ok 218 - /api/finance/bank-accounts # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.19325
+  type: 'suite'
+  ...
+# Subtest: bills + cashflow endpoints against real Postgres
+ok 219 - bills + cashflow endpoints against real Postgres # SKIP DATABASE_URL not set
+  ---
+  duration_ms: 0.237333
+  type: 'suite'
+  ...
+# Subtest: GET /api/campaigns/* — the campaign-manager query strings
+ok 220 - GET /api/campaigns/* — the campaign-manager query strings # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.201875
+  type: 'suite'
+  ...
+# Subtest: read/banking-surface: a staff session from ANOTHER org cannot read this client
+ok 221 - read/banking-surface: a staff session from ANOTHER org cannot read this client # SKIP
+  ---
+  duration_ms: 0.414917
+  type: 'test'
+  ...
+# Subtest: read/banking-surface: the client's OWN org still reads normally
+ok 222 - read/banking-surface: the client's OWN org still reads normally # SKIP
+  ---
+  duration_ms: 0.047708
+  type: 'test'
+  ...
+# Subtest: read/finance-os: a staff session from ANOTHER org cannot read this client
+ok 223 - read/finance-os: a staff session from ANOTHER org cannot read this client # SKIP
+  ---
+  duration_ms: 0.038292
+  type: 'test'
+  ...
+# Subtest: read/finance-os: the client's OWN org still reads normally
+ok 224 - read/finance-os: the client's OWN org still reads normally # SKIP
+  ---
+  duration_ms: 0.080875
+  type: 'test'
+  ...
+# Subtest: read/tradelines: a staff session from ANOTHER org cannot read this client
+ok 225 - read/tradelines: a staff session from ANOTHER org cannot read this client # SKIP
+  ---
+  duration_ms: 0.043791
+  type: 'test'
+  ...
+# Subtest: read/tradelines: the client's OWN org still reads normally
+ok 226 - read/tradelines: the client's OWN org still reads normally # SKIP
+  ---
+  duration_ms: 0.076583
+  type: 'test'
+  ...
+# Subtest: banking/accounts: a staff session from ANOTHER org cannot read this client
+ok 227 - banking/accounts: a staff session from ANOTHER org cannot read this client # SKIP
+  ---
+  duration_ms: 0.033083
+  type: 'test'
+  ...
+# Subtest: banking/accounts: the client's OWN org still reads normally
+ok 228 - banking/accounts: the client's OWN org still reads normally # SKIP
+  ---
+  duration_ms: 0.136042
+  type: 'test'
+  ...
+# Subtest: read/banking-surface actually returns the balance to the right org
+ok 229 - read/banking-surface actually returns the balance to the right org # SKIP
+  ---
+  duration_ms: 0.196667
+  type: 'test'
+  ...
+# Subtest: a session whose org is missing is refused, not silently empty
+ok 230 - a session whose org is missing is refused, not silently empty # SKIP
+  ---
+  duration_ms: 0.992042
+  type: 'test'
+  ...
+# Subtest: banking/accounts refuses a cross-org WRITE, not only a read
+ok 231 - banking/accounts refuses a cross-org WRITE, not only a read # SKIP
+  ---
+  duration_ms: 0.050833
+  type: 'test'
+  ...
+# Subtest: /api/contracts endpoints
+ok 232 - /api/contracts endpoints # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.235625
+  type: 'suite'
+  ...
+# Subtest: conversations: a missing client_id is 400 invalid_parameter, never an unscoped firehose
+ok 233 - conversations: a missing client_id is 400 invalid_parameter, never an unscoped firehose
+  ---
+  duration_ms: 5.26575
+  type: 'test'
+  ...
+# Subtest: conversations: a malformed client_id is 400 rather than a 500 from Postgres
+ok 234 - conversations: a malformed client_id is 400 rather than a 500 from Postgres
+  ---
+  duration_ms: 0.288208
+  type: 'test'
+  ...
+# Subtest: conversations: a well-formed client_id is bound as a parameter, never interpolated
+ok 235 - conversations: a well-formed client_id is bound as a parameter, never interpolated
+  ---
+  duration_ms: 0.152083
+  type: 'test'
+  ...
+# Subtest: conversations: the panel's six columns and the NULLS LAST order are in the query
+ok 236 - conversations: the panel's six columns and the NULLS LAST order are in the query
+  ---
+  duration_ms: 0.274291
+  type: 'test'
+  ...
+# Subtest: conversations: pagination asks for limit+1 so hasMore is real and not a second count query
+ok 237 - conversations: pagination asks for limit+1 so hasMore is real and not a second count query
+  ---
+  duration_ms: 0.095834
+  type: 'test'
+  ...
+# Subtest: conversations: a role outside the staff set is 403 and never reaches the database
+ok 238 - conversations: a role outside the staff set is 403 and never reaches the database
+  ---
+  duration_ms: 0.103791
+  type: 'test'
+  ...
+# Subtest: conversations: every staff role the dashboard is used by is admitted
+ok 239 - conversations: every staff role the dashboard is used by is admitted
+  ---
+  duration_ms: 0.221667
+  type: 'test'
+  ...
+# Subtest: conversations: a non-GET method is 405 and is rejected before auth
+ok 240 - conversations: a non-GET method is 405 and is rejected before auth
+  ---
+  duration_ms: 0.17425
+  type: 'test'
+  ...
+# Subtest: conversations: no session is a 401, and returns no rows
+ok 241 - conversations: no session is a 401, and returns no rows
+  ---
+  duration_ms: 0.322083
+  type: 'test'
+  ...
+# Subtest: conversations: a signed-in closer gets this client's threads and only this client's
+ok 242 - conversations: a signed-in closer gets this client's threads and only this client's # SKIP
+  ---
+  duration_ms: 0.156708
+  type: 'test'
+  ...
+# Subtest: conversations: every column the pre-call panel renders comes back
+ok 243 - conversations: every column the pre-call panel renders comes back # SKIP
+  ---
+  duration_ms: 0.032792
+  type: 'test'
+  ...
+# Subtest: conversations: a thread that never pulsed sorts LAST, not first
+ok 244 - conversations: a thread that never pulsed sorts LAST, not first # SKIP
+  ---
+  duration_ms: 0.024125
+  type: 'test'
+  ...
+# Subtest: conversations: sentiment is unknown today and arrives as null, not a default
+ok 245 - conversations: sentiment is unknown today and arrives as null, not a default # SKIP
+  ---
+  duration_ms: 0.023208
+  type: 'test'
+  ...
+# Subtest: conversations: an unknown client is an empty list with ok:true, not a 404
+ok 246 - conversations: an unknown client is an empty list with ok:true, not a 404 # SKIP
+  ---
+  duration_ms: 0.02025
+  type: 'test'
+  ...
+# Subtest: conversations: a signed-in caller with no client_id still gets 400, not everyone's threads
+ok 247 - conversations: a signed-in caller with no client_id still gets 400, not everyone's threads # SKIP
+  ---
+  duration_ms: 0.020459
+  type: 'test'
+  ...
+# Subtest: conversations: a signed-in caller with a malformed client_id gets 400, not a 500
+ok 248 - conversations: a signed-in caller with a malformed client_id gets 400, not a 500 # SKIP
+  ---
+  duration_ms: 0.021083
+  type: 'test'
+  ...
+# Subtest: creative read endpoints
+ok 249 - creative read endpoints # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.217042
+  type: 'suite'
+  ...
+# Subtest: runtime probe set is non-empty and covers the P0 client endpoint
+ok 250 - runtime probe set is non-empty and covers the P0 client endpoint
+  ---
+  duration_ms: 26.983
+  type: 'test'
+  ...
+# Subtest: cross-org deny: dashboard/client
+ok 251 - cross-org deny: dashboard/client # SKIP
+  ---
+  duration_ms: 0.389
+  type: 'test'
+  ...
+# Subtest: cross-org deny: dashboard/clients
+ok 252 - cross-org deny: dashboard/clients # SKIP
+  ---
+  duration_ms: 0.115875
+  type: 'test'
+  ...
+# Subtest: cross-org deny: tasks GET by client_id
+ok 253 - cross-org deny: tasks GET by client_id # SKIP
+  ---
+  duration_ms: 1.285542
+  type: 'test'
+  ...
+# Subtest: cross-org deny: tasks PATCH by id
+ok 254 - cross-org deny: tasks PATCH by id # SKIP
+  ---
+  duration_ms: 0.070917
+  type: 'test'
+  ...
+# Subtest: cross-org deny: banking/accounts
+ok 255 - cross-org deny: banking/accounts # SKIP
+  ---
+  duration_ms: 0.112917
+  type: 'test'
+  ...
+# Subtest: cross-org deny: banking/revoke
+ok 256 - cross-org deny: banking/revoke # SKIP
+  ---
+  duration_ms: 0.036625
+  type: 'test'
+  ...
+# Subtest: cross-org deny: banking/sync-accounts
+ok 257 - cross-org deny: banking/sync-accounts # SKIP
+  ---
+  duration_ms: 0.162625
+  type: 'test'
+  ...
+# Subtest: cross-org deny: finance/alerts
+ok 258 - cross-org deny: finance/alerts # SKIP
+  ---
+  duration_ms: 0.210542
+  type: 'test'
+  ...
+# Subtest: cross-org deny: finance/bank-accounts
+ok 259 - cross-org deny: finance/bank-accounts # SKIP
+  ---
+  duration_ms: 0.352834
+  type: 'test'
+  ...
+# Subtest: cross-org deny: finance/bills
+ok 260 - cross-org deny: finance/bills # SKIP
+  ---
+  duration_ms: 0.074375
+  type: 'test'
+  ...
+# Subtest: cross-org deny: finance/cards
+ok 261 - cross-org deny: finance/cards # SKIP
+  ---
+  duration_ms: 0.035625
+  type: 'test'
+  ...
+# Subtest: cross-org deny: finance/cashflow
+ok 262 - cross-org deny: finance/cashflow # SKIP
+  ---
+  duration_ms: 0.02525
+  type: 'test'
+  ...
+# Subtest: cross-org deny: finance/crs-pull
+ok 263 - cross-org deny: finance/crs-pull # SKIP
+  ---
+  duration_ms: 0.02275
+  type: 'test'
+  ...
+# Subtest: cross-org deny: finance/entities
+ok 264 - cross-org deny: finance/entities # SKIP
+  ---
+  duration_ms: 0.021333
+  type: 'test'
+  ...
+# Subtest: cross-org deny: finance/liabilities
+ok 265 - cross-org deny: finance/liabilities # SKIP
+  ---
+  duration_ms: 0.024167
+  type: 'test'
+  ...
+# Subtest: cross-org deny: finance/model
+ok 266 - cross-org deny: finance/model # SKIP
+  ---
+  duration_ms: 0.029583
+  type: 'test'
+  ...
+# Subtest: cross-org deny: finance/soft-pull
+ok 267 - cross-org deny: finance/soft-pull # SKIP
+  ---
+  duration_ms: 0.021084
+  type: 'test'
+  ...
+# Subtest: cross-org deny: finance/subscriptions
+ok 268 - cross-org deny: finance/subscriptions # SKIP
+  ---
+  duration_ms: 0.019833
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/agent-context
+ok 269 - cross-org deny: read/agent-context # SKIP
+  ---
+  duration_ms: 0.022
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/banking-surface
+ok 270 - cross-org deny: read/banking-surface # SKIP
+  ---
+  duration_ms: 0.019833
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/call-outcomes
+ok 271 - cross-org deny: read/call-outcomes # SKIP
+  ---
+  duration_ms: 0.021042
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/closer-call
+ok 272 - cross-org deny: read/closer-call # SKIP
+  ---
+  duration_ms: 0.021958
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/closer-deck
+ok 273 - cross-org deny: read/closer-deck # SKIP
+  ---
+  duration_ms: 0.019792
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/closer-now
+ok 274 - cross-org deny: read/closer-now # SKIP
+  ---
+  duration_ms: 0.019709
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/commissions
+ok 275 - cross-org deny: read/commissions # SKIP
+  ---
+  duration_ms: 0.024292
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/contracts
+ok 276 - cross-org deny: read/contracts # SKIP
+  ---
+  duration_ms: 0.020417
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/conversations
+ok 277 - cross-org deny: read/conversations # SKIP
+  ---
+  duration_ms: 0.019583
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/customer-insights
+ok 278 - cross-org deny: read/customer-insights # SKIP
+  ---
+  duration_ms: 0.020541
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/documents
+ok 279 - cross-org deny: read/documents # SKIP
+  ---
+  duration_ms: 0.01875
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/entitlements
+ok 280 - cross-org deny: read/entitlements # SKIP
+  ---
+  duration_ms: 0.01975
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/failed-events
+ok 281 - cross-org deny: read/failed-events # SKIP
+  ---
+  duration_ms: 0.085375
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/finance-ask
+ok 282 - cross-org deny: read/finance-ask # SKIP
+  ---
+  duration_ms: 0.029625
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/finance-command
+ok 283 - cross-org deny: read/finance-command # SKIP
+  ---
+  duration_ms: 0.02225
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/finance-os
+ok 284 - cross-org deny: read/finance-os # SKIP
+  ---
+  duration_ms: 0.08525
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/funding-rounds
+ok 285 - cross-org deny: read/funding-rounds # SKIP
+  ---
+  duration_ms: 0.023833
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/inbox
+ok 286 - cross-org deny: read/inbox # SKIP
+  ---
+  duration_ms: 0.019333
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/inquiries
+ok 287 - cross-org deny: read/inquiries # SKIP
+  ---
+  duration_ms: 0.030042
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/inquiry-cases
+ok 288 - cross-org deny: read/inquiry-cases # SKIP
+  ---
+  duration_ms: 0.018542
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/invoices
+ok 289 - cross-org deny: read/invoices # SKIP
+  ---
+  duration_ms: 0.049917
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/lender-matches
+ok 290 - cross-org deny: read/lender-matches # SKIP
+  ---
+  duration_ms: 0.10725
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/messages
+ok 291 - cross-org deny: read/messages # SKIP
+  ---
+  duration_ms: 0.05175
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/money-map
+ok 292 - cross-org deny: read/money-map # SKIP
+  ---
+  duration_ms: 0.045667
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/portal-contracts
+ok 293 - cross-org deny: read/portal-contracts # SKIP
+  ---
+  duration_ms: 0.046916
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/portal-summary
+ok 294 - cross-org deny: read/portal-summary # SKIP
+  ---
+  duration_ms: 0.044833
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/proxy-sessions
+ok 295 - cross-org deny: read/proxy-sessions # SKIP
+  ---
+  duration_ms: 0.040833
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/repair-cases
+ok 296 - cross-org deny: read/repair-cases # SKIP
+  ---
+  duration_ms: 0.04325
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/search
+ok 297 - cross-org deny: read/search # SKIP
+  ---
+  duration_ms: 0.040542
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/tradelines
+ok 298 - cross-org deny: read/tradelines # SKIP
+  ---
+  duration_ms: 0.040125
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/transactions
+ok 299 - cross-org deny: read/transactions # SKIP
+  ---
+  duration_ms: 0.04
+  type: 'test'
+  ...
+# Subtest: cross-org deny: read/underwrite
+ok 300 - cross-org deny: read/underwrite # SKIP
+  ---
+  duration_ms: 0.039958
+  type: 'test'
+  ...
+# Subtest: own org still reads dashboard/client
+ok 301 - own org still reads dashboard/client # SKIP
+  ---
+  duration_ms: 0.040417
+  type: 'test'
+  ...
+# Subtest: demo logins
+ok 302 - demo logins # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.208334
+  type: 'suite'
+  ...
+# Subtest: POST /api/documents-upload
+ok 303 - POST /api/documents-upload # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.207333
+  type: 'suite'
+  ...
+# Subtest: /api/finance/alerts (real postgres)
+ok 304 - /api/finance/alerts (real postgres) # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.201
+  type: 'suite'
+  ...
+# Subtest: /api/read/finance-command
+ok 305 - /api/read/finance-command # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.201417
+  type: 'suite'
+  ...
+# Subtest: /api/finance/entities
+ok 306 - /api/finance/entities # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.199416
+  type: 'suite'
+  ...
+# Subtest: /api/finance/liabilities (real postgres)
+ok 307 - /api/finance/liabilities (real postgres) # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.203167
+  type: 'suite'
+  ...
+# Subtest: /api/finance/soft-pull
+ok 308 - /api/finance/soft-pull # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.199584
+  type: 'suite'
+  ...
+# Subtest: inbox: the company comes from the session and is the only scope there is
+ok 309 - inbox: the company comes from the session and is the only scope there is
+  ---
+  duration_ms: 1.173375
+  type: 'test'
+  ...
+# Subtest: inbox: a session with no company binds null and can match nothing
+ok 310 - inbox: a session with no company binds null and can match nothing
+  ---
+  duration_ms: 0.128375
+  type: 'test'
+  ...
+# Subtest: inbox: the company is never taken from the query string
+ok 311 - inbox: the company is never taken from the query string
+  ---
+  duration_ms: 0.079792
+  type: 'test'
+  ...
+# Subtest: inbox: the page is chosen from conversations alone, so an index can serve it
+ok 312 - inbox: the page is chosen from conversations alone, so an index can serve it
+  ---
+  duration_ms: 0.220083
+  type: 'test'
+  ...
+# Subtest: inbox: the sort matches the expression idx_conversations_activity indexes
+ok 313 - inbox: the sort matches the expression idx_conversations_activity indexes
+  ---
+  duration_ms: 0.104667
+  type: 'test'
+  ...
+# Subtest: inbox: the Needs-reply tab filters in the database, not in the browser
+ok 314 - inbox: the Needs-reply tab filters in the database, not in the browser
+  ---
+  duration_ms: 0.149292
+  type: 'test'
+  ...
+# Subtest: inbox: only an explicit 1 or true turns the filter on
+ok 315 - inbox: only an explicit 1 or true turns the filter on
+  ---
+  duration_ms: 0.2415
+  type: 'test'
+  ...
+# Subtest: inbox: the row carries what a list item renders without a second request
+ok 316 - inbox: the row carries what a list item renders without a second request
+  ---
+  duration_ms: 0.332208
+  type: 'test'
+  ...
+# Subtest: inbox: threads with no messages yet are still listed
+ok 317 - inbox: threads with no messages yet are still listed
+  ---
+  duration_ms: 0.258125
+  type: 'test'
+  ...
+# Subtest: inbox: pagination asks for limit+1 so hasMore is real
+ok 318 - inbox: pagination asks for limit+1 so hasMore is real
+  ---
+  duration_ms: 0.181167
+  type: 'test'
+  ...
+# Subtest: inbox: a role outside the staff set is 403 and never reaches the database
+ok 319 - inbox: a role outside the staff set is 403 and never reaches the database
+  ---
+  duration_ms: 0.049125
+  type: 'test'
+  ...
+# Subtest: inbox: a non-GET method is 405 and is rejected before auth
+ok 320 - inbox: a non-GET method is 405 and is rejected before auth
+  ---
+  duration_ms: 0.037875
+  type: 'test'
+  ...
+# Subtest: inbox: no session is a 401
+ok 321 - inbox: no session is a 401
+  ---
+  duration_ms: 0.128875
+  type: 'test'
+  ...
+# Subtest: inbox: the newest thread is first and every one of this company's is listed
+ok 322 - inbox: the newest thread is first and every one of this company's is listed # SKIP
+  ---
+  duration_ms: 0.024166
+  type: 'test'
+  ...
+# Subtest: inbox: a thread with no messages is listed with an honest empty preview
+ok 323 - inbox: a thread with no messages is listed with an honest empty preview # SKIP
+  ---
+  duration_ms: 0.025584
+  type: 'test'
+  ...
+# Subtest: inbox: needs_reply is 'they spoke last', and a staff reply clears it
+ok 324 - inbox: needs_reply is 'they spoke last', and a staff reply clears it # SKIP
+  ---
+  duration_ms: 0.021375
+  type: 'test'
+  ...
+# Subtest: inbox: another company's threads are not in this company's inbox
+ok 325 - inbox: another company's threads are not in this company's inbox # SKIP
+  ---
+  duration_ms: 0.019833
+  type: 'test'
+  ...
+# Subtest: inbox: sentiment comes back null rather than invented
+ok 326 - inbox: sentiment comes back null rather than invented # SKIP
+  ---
+  duration_ms: 0.019708
+  type: 'test'
+  ...
+# Subtest: POST /api/inquiries — active-shift gate
+ok 327 - POST /api/inquiries — active-shift gate # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.219167
+  type: 'suite'
+  ...
+# Subtest: GET /api/read/inquiries
+ok 328 - GET /api/read/inquiries # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.442375
+  type: 'suite'
+  ...
+# Subtest: PUT refuses a body with a single-brace tag
+ok 329 - PUT refuses a body with a single-brace tag # SKIP
+  ---
+  duration_ms: 1.726417
+  type: 'test'
+  ...
+# Subtest: PUT refuses a single-brace tag on an email subject, inside a condition branch
+ok 330 - PUT refuses a single-brace tag on an email subject, inside a condition branch # SKIP
+  ---
+  duration_ms: 0.074459
+  type: 'test'
+  ...
+# Subtest: PUT accepts a clean, double-braced body and it round-trips through GET
+ok 331 - PUT accepts a clean, double-braced body and it round-trips through GET # SKIP
+  ---
+  duration_ms: 0.043542
+  type: 'test'
+  ...
+# Subtest: no credential at all is refused
+ok 332 - no credential at all is refused # SKIP
+  ---
+  duration_ms: 0.082458
+  type: 'test'
+  ...
+# Subtest: portal magic-link endpoints
+ok 333 - portal magic-link endpoints # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.221333
+  type: 'suite'
+  ...
+# Subtest: messages: a missing conversation_id is 400, never every message in the company
+ok 334 - messages: a missing conversation_id is 400, never every message in the company
+  ---
+  duration_ms: 0.691041
+  type: 'test'
+  ...
+# Subtest: messages: status=blocked without conversation_id is an org-scoped blocked list
+ok 335 - messages: status=blocked without conversation_id is an org-scoped blocked list
+  ---
+  duration_ms: 0.282791
+  type: 'test'
+  ...
+# Subtest: messages: a status other than blocked still requires conversation_id
+ok 336 - messages: a status other than blocked still requires conversation_id
+  ---
+  duration_ms: 0.08175
+  type: 'test'
+  ...
+# Subtest: messages: a malformed conversation_id is 400 rather than a 500 out of Postgres
+ok 337 - messages: a malformed conversation_id is 400 rather than a 500 out of Postgres
+  ---
+  duration_ms: 0.273375
+  type: 'test'
+  ...
+# Subtest: messages: the conversation id is bound as a parameter, never interpolated
+ok 338 - messages: the conversation id is bound as a parameter, never interpolated
+  ---
+  duration_ms: 0.098375
+  type: 'test'
+  ...
+# Subtest: messages: the org is bound from the session, and a session with none binds null
+ok 339 - messages: the org is bound from the session, and a session with none binds null
+  ---
+  duration_ms: 0.295667
+  type: 'test'
+  ...
+# Subtest: messages: the thread view's columns are selected
+ok 340 - messages: the thread view's columns are selected
+  ---
+  duration_ms: 0.266667
+  type: 'test'
+  ...
+# Subtest: messages: to_address is not returned to the screen
+ok 341 - messages: to_address is not returned to the screen
+  ---
+  duration_ms: 0.714625
+  type: 'test'
+  ...
+# Subtest: messages: newest first — a thread read wants the end of the history
+ok 342 - messages: newest first — a thread read wants the end of the history
+  ---
+  duration_ms: 0.459792
+  type: 'test'
+  ...
+# Subtest: messages: pagination asks for limit+1 so hasMore is real
+ok 343 - messages: pagination asks for limit+1 so hasMore is real
+  ---
+  duration_ms: 0.250375
+  type: 'test'
+  ...
+# Subtest: messages: a role outside the staff set is 403 and never reaches the database
+ok 344 - messages: a role outside the staff set is 403 and never reaches the database
+  ---
+  duration_ms: 0.060167
+  type: 'test'
+  ...
+# Subtest: messages: every staff role the inbox is used by is admitted
+ok 345 - messages: every staff role the inbox is used by is admitted
+  ---
+  duration_ms: 0.717542
+  type: 'test'
+  ...
+# Subtest: messages: a non-GET method is 405 and is rejected before auth
+ok 346 - messages: a non-GET method is 405 and is rejected before auth
+  ---
+  duration_ms: 0.102916
+  type: 'test'
+  ...
+# Subtest: messages: no session is a 401, and returns no rows
+ok 347 - messages: no session is a 401, and returns no rows
+  ---
+  duration_ms: 0.322792
+  type: 'test'
+  ...
+# Subtest: messages: a signed-in staff member sees both sides of the thread
+ok 348 - messages: a signed-in staff member sees both sides of the thread # SKIP
+  ---
+  duration_ms: 0.137416
+  type: 'test'
+  ...
+# Subtest: messages: a staff reply carries its author's name; a client's message carries none
+ok 349 - messages: a staff reply carries its author's name; a client's message carries none # SKIP
+  ---
+  duration_ms: 0.035625
+  type: 'test'
+  ...
+# Subtest: messages: another company's thread returns nothing, not its messages
+ok 350 - messages: another company's thread returns nothing, not its messages # SKIP
+  ---
+  duration_ms: 0.025167
+  type: 'test'
+  ...
+# Subtest: messages: an unknown conversation is an empty answer, not a 404
+ok 351 - messages: an unknown conversation is an empty answer, not a 404 # SKIP
+  ---
+  duration_ms: 0.026625
+  type: 'test'
+  ...
+# Subtest: requireActiveShift against real Postgres
+ok 352 - requireActiveShift against real Postgres # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.214083
+  type: 'suite'
+  ...
+# Subtest: /api/pii — reveal
+ok 353 - /api/pii — reveal # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.210709
+  type: 'suite'
+  ...
+# Subtest: GET /api/dashboard/pipeline?key=sales returns that pipeline's stages and cards
+ok 354 - GET /api/dashboard/pipeline?key=sales returns that pipeline's stages and cards # SKIP
+  ---
+  duration_ms: 0.482625
+  type: 'test'
+  ...
+# Subtest: GET /api/dashboard/pipeline?key=funding_card_stacking returns that pipeline's stages and cards
+ok 355 - GET /api/dashboard/pipeline?key=funding_card_stacking returns that pipeline's stages and cards # SKIP
+  ---
+  duration_ms: 0.053458
+  type: 'test'
+  ...
+# Subtest: GET /api/dashboard/pipeline?key=funding_altfin returns that pipeline's stages and cards
+ok 356 - GET /api/dashboard/pipeline?key=funding_altfin returns that pipeline's stages and cards # SKIP
+  ---
+  duration_ms: 0.040709
+  type: 'test'
+  ...
+# Subtest: GET /api/dashboard/pipeline?key=optimization returns that pipeline's stages and cards
+ok 357 - GET /api/dashboard/pipeline?key=optimization returns that pipeline's stages and cards # SKIP
+  ---
+  duration_ms: 0.089375
+  type: 'test'
+  ...
+# Subtest: GET /api/dashboard/pipeline?key=inquiry_removal returns that pipeline's stages and cards
+ok 358 - GET /api/dashboard/pipeline?key=inquiry_removal returns that pipeline's stages and cards # SKIP
+  ---
+  duration_ms: 0.047792
+  type: 'test'
+  ...
+# Subtest: GET /api/dashboard/pipeline?key=ar_collections returns that pipeline's stages and cards
+ok 359 - GET /api/dashboard/pipeline?key=ar_collections returns that pipeline's stages and cards # SKIP
+  ---
+  duration_ms: 0.087291
+  type: 'test'
+  ...
+# Subtest: GET /api/dashboard/pipeline?key=affiliates_white_label returns that pipeline's stages and cards
+ok 360 - GET /api/dashboard/pipeline?key=affiliates_white_label returns that pipeline's stages and cards # SKIP
+  ---
+  duration_ms: 0.034542
+  type: 'test'
+  ...
+# Subtest: GET /api/dashboard/pipeline?key=hiring returns that pipeline's stages and cards
+ok 361 - GET /api/dashboard/pipeline?key=hiring returns that pipeline's stages and cards # SKIP
+  ---
+  duration_ms: 0.144958
+  type: 'test'
+  ...
+# Subtest: an unknown pipeline key is a 404, not a silent empty board
+ok 362 - an unknown pipeline key is a 404, not a silent empty board # SKIP
+  ---
+  duration_ms: 0.21575
+  type: 'test'
+  ...
+# Subtest: no credential at all is refused
+ok 363 - no credential at all is refused # SKIP
+  ---
+  duration_ms: 0.173042
+  type: 'test'
+  ...
+# Subtest: a non-GET method is refused before touching the database
+ok 364 - a non-GET method is refused before touching the database # SKIP
+  ---
+  duration_ms: 0.032667
+  type: 'test'
+  ...
+# Subtest: principal reads
+ok 365 - principal reads # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.622791
+  type: 'suite'
+  ...
+# Subtest: /api/shifts
+ok 366 - /api/shifts # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.222792
+  type: 'suite'
+  ...
+# Subtest: /api/finance/subscriptions + /api/finance/cards
+ok 367 - /api/finance/subscriptions + /api/finance/cards # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.209834
+  type: 'suite'
+  ...
+# Subtest: PATCH /api/tasks — active-shift gate
+ok 368 - PATCH /api/tasks — active-shift gate # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.410666
+  type: 'suite'
+  ...
+# Subtest: mailgun-events: with a signing key set, an UNSIGNED request is REJECTED
+ok 369 - mailgun-events: with a signing key set, an UNSIGNED request is REJECTED
+  ---
+  duration_ms: 0.785416
+  type: 'test'
+  ...
+# Subtest: mailgun-events: with NO signing key configured, an unsigned request is STILL rejected
+ok 370 - mailgun-events: with NO signing key configured, an unsigned request is STILL rejected
+  ---
+  duration_ms: 0.124625
+  type: 'test'
+  ...
+# Subtest: mailgun inbound: with NO signing key configured, an unsigned bank email is STILL rejected
+ok 371 - mailgun inbound: with NO signing key configured, an unsigned bank email is STILL rejected
+  ---
+  duration_ms: 0.141667
+  type: 'test'
+  ...
+# Subtest: mailgun-events: a signature made with the WRONG key is rejected
+ok 372 - mailgun-events: a signature made with the WRONG key is rejected
+  ---
+  duration_ms: 0.365166
+  type: 'test'
+  ...
+# Subtest: mailgun-events: a complaint arriving UNSIGNED is rejected and writes no opt-out
+ok 373 - mailgun-events: a complaint arriving UNSIGNED is rejected and writes no opt-out
+  ---
+  duration_ms: 0.068542
+  type: 'test'
+  ...
+# Subtest: mailgun inbound: an unsigned bank email is still rejected
+ok 374 - mailgun inbound: an unsigned bank email is still rejected
+  ---
+  duration_ms: 0.098584
+  type: 'test'
+  ...
+# Subtest: twilio-status: an UNSIGNED status callback is rejected before any query
+ok 375 - twilio-status: an UNSIGNED status callback is rejected before any query
+  ---
+  duration_ms: 0.289916
+  type: 'test'
+  ...
+# Subtest: twilio-status: a signature over a DIFFERENT body is rejected
+ok 376 - twilio-status: a signature over a DIFFERENT body is rejected
+  ---
+  duration_ms: 0.249166
+  type: 'test'
+  ...
+# Subtest: router: the two delivery-status providers are reachable and are not the inbound ones
+ok 377 - router: the two delivery-status providers are reachable and are not the inbound ones
+  ---
+  duration_ms: 0.289166
+  type: 'test'
+  ...
+# Subtest: twilio-status: a delivered callback moves exactly that one row
+ok 378 - twilio-status: a delivered callback moves exactly that one row # SKIP
+  ---
+  duration_ms: 0.1735
+  type: 'test'
+  ...
+# Subtest: twilio-status: a failed callback records the carrier error on that row only
+ok 379 - twilio-status: a failed callback records the carrier error on that row only # SKIP
+  ---
+  duration_ms: 0.037125
+  type: 'test'
+  ...
+# Subtest: twilio-status: an in-flight callback moves nothing
+ok 380 - twilio-status: an in-flight callback moves nothing # SKIP
+  ---
+  duration_ms: 0.028625
+  type: 'test'
+  ...
+# Subtest: twilio-status: a receipt for an unknown message is acknowledged but reported unmatched
+ok 381 - twilio-status: a receipt for an unknown message is acknowledged but reported unmatched # SKIP
+  ---
+  duration_ms: 0.022375
+  type: 'test'
+  ...
+# Subtest: mailgun-events: a complained event writes an opt-out for that client on the email channel
+ok 382 - mailgun-events: a complained event writes an opt-out for that client on the email channel # SKIP
+  ---
+  duration_ms: 0.020208
+  type: 'test'
+  ...
+# Subtest: mailgun-events: a complaint raises a task naming the template that drew it
+ok 383 - mailgun-events: a complaint raises a task naming the template that drew it # SKIP
+  ---
+  duration_ms: 0.019375
+  type: 'test'
+  ...
+# Subtest: mailgun-events: Mailgun retrying the same complaint files one task, not two
+ok 384 - mailgun-events: Mailgun retrying the same complaint files one task, not two # SKIP
+  ---
+  duration_ms: 0.01875
+  type: 'test'
+  ...
+# Subtest: mailgun-events: the angle brackets on a message id do not stop it matching
+ok 385 - mailgun-events: the angle brackets on a message id do not stop it matching # SKIP
+  ---
+  duration_ms: 0.023333
+  type: 'test'
+  ...
+# Subtest: mailgun-events: a permanent failure is bounced, a temporary one is only failed
+ok 386 - mailgun-events: a permanent failure is bounced, a temporary one is only failed # SKIP
+  ---
+  duration_ms: 0.018875
+  type: 'test'
+  ...
+# Subtest: mailgun-events: an opened event changes no delivery state
+ok 387 - mailgun-events: an opened event changes no delivery state # SKIP
+  ---
+  duration_ms: 0.018292
+  type: 'test'
+  ...
+# Subtest: mailgun inbound: a delivery event sent to the INBOUND url is routed, not classified as a bank email
+ok 388 - mailgun inbound: a delivery event sent to the INBOUND url is routed, not classified as a bank email # SKIP
+  ---
+  duration_ms: 0.01775
+  type: 'test'
+  ...
+# Subtest: logging attempts moves the counter and records who worked the row
+ok 389 - logging attempts moves the counter and records who worked the row # SKIP
+  ---
+  duration_ms: 0.342875
+  type: 'test'
+  ...
+# Subtest: a note joins the timeline without inflating the attempt count
+ok 390 - a note joins the timeline without inflating the attempt count # SKIP
+  ---
+  duration_ms: 0.052625
+  type: 'test'
+  ...
+# Subtest: confirming sets a timestamp as well as the free-text status
+ok 391 - confirming sets a timestamp as well as the free-text status # SKIP
+  ---
+  duration_ms: 0.042958
+  type: 'test'
+  ...
+# Subtest: reopening a confirmed row clears the confirmation
+ok 392 - reopening a confirmed row clears the confirmation # SKIP
+  ---
+  duration_ms: 19.881083
+  type: 'test'
+  ...
+# Subtest: the attempt log is not disturbed by status changes
+ok 393 - the attempt log is not disturbed by status changes # SKIP
+  ---
+  duration_ms: 0.15675
+  type: 'test'
+  ...
+# Subtest: PostGrid delivery webhook → call clock
+ok 394 - PostGrid delivery webhook → call clock # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.215417
+  type: 'suite'
+  ...
+# Subtest: inquiry send + doc flip
+ok 395 - inquiry send + doc flip # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.210625
+  type: 'suite'
+  ...
+# Subtest: invoices against real Postgres
+ok 396 - invoices against real Postgres # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.221875
+  type: 'suite'
+  ...
+# Subtest: roster covers all seven product types and every sample row names its bureaus
+ok 397 - roster covers all seven product types and every sample row names its bureaus # SKIP
+  ---
+  duration_ms: 0.3155
+  type: 'test'
+  ...
+# Subtest: listLenders: Demo Mode OFF hides samples, ON reveals them
+ok 398 - listLenders: Demo Mode OFF hides samples, ON reveals them # SKIP
+  ---
+  duration_ms: 0.046666
+  type: 'test'
+  ...
+# Subtest: matchForClient: Demo Mode OFF equals the real-lender-only result
+ok 399 - matchForClient: Demo Mode OFF equals the real-lender-only result # SKIP
+  ---
+  duration_ms: 0.03825
+  type: 'test'
+  ...
+# Subtest: matchForClient: Demo Mode ON is strictly larger
+ok 400 - matchForClient: Demo Mode ON is strictly larger # SKIP
+  ---
+  duration_ms: 0.039833
+  type: 'test'
+  ...
+# Subtest: a TransUnion-blocked client still matches Equifax-only and Experian-only lenders
+ok 401 - a TransUnion-blocked client still matches Equifax-only and Experian-only lenders # SKIP
+  ---
+  duration_ms: 0.0405
+  type: 'test'
+  ...
+# Subtest: the CSV export never carries a sample lender, even with Demo Mode ON
+ok 402 - the CSV export never carries a sample lender, even with Demo Mode ON # SKIP
+  ---
+  duration_ms: 0.037542
+  type: 'test'
+  ...
+# Subtest: the database rejects 18.99 — the column takes a fraction, not a percentage
+ok 403 - the database rejects 18.99 — the column takes a fraction, not a percentage # SKIP
+  ---
+  duration_ms: 0.541625
+  type: 'test'
+  ...
+# Subtest: the APR CHECK rejects a rate above 1 and below 0, and accepts the full legal range
+ok 404 - the APR CHECK rejects a rate above 1 and below 0, and accepts the full legal range # SKIP
+  ---
+  duration_ms: 0.05475
+  type: 'test'
+  ...
+# Subtest: a NULL minimum payment survives the round trip and never lands as 0
+ok 405 - a NULL minimum payment survives the round trip and never lands as 0 # SKIP
+  ---
+  duration_ms: 0.043875
+  type: 'test'
+  ...
+# Subtest: a REPORTED zero stays zero and is distinguishable from unknown
+ok 406 - a REPORTED zero stays zero and is distinguishable from unknown # SKIP
+  ---
+  duration_ms: 0.087083
+  type: 'test'
+  ...
+# Subtest: money is stored as integer cents, exactly, with no float drift
+ok 407 - money is stored as integer cents, exactly, with no float drift # SKIP
+  ---
+  duration_ms: 0.043208
+  type: 'test'
+  ...
+# Subtest: the money CHECKs refuse a negative amount on both tables
+ok 408 - the money CHECKs refuse a negative amount on both tables # SKIP
+  ---
+  duration_ms: 0.075208
+  type: 'test'
+  ...
+# Subtest: payment_status is constrained to the seven values the parser can produce
+ok 409 - payment_status is constrained to the seven values the parser can produce # SKIP
+  ---
+  duration_ms: 0.029709
+  type: 'test'
+  ...
+# Subtest: getLiabilityHistory returns the series newest-first and getCurrentLiability its head
+ok 410 - getLiabilityHistory returns the series newest-first and getCurrentLiability its head # SKIP
+  ---
+  duration_ms: 0.14175
+  type: 'test'
+  ...
+# Subtest: the ordering key is as_of, not created_at — a backfill does not become current
+ok 411 - the ordering key is as_of, not created_at — a backfill does not become current # SKIP
+  ---
+  duration_ms: 0.215958
+  type: 'test'
+  ...
+# Subtest: the projection agrees with the series it projects
+ok 412 - the projection agrees with the series it projects # SKIP
+  ---
+  duration_ms: 1.240708
+  type: 'test'
+  ...
+# Subtest: re-reading the same observation date corrects it rather than growing a duplicate
+ok 413 - re-reading the same observation date corrects it rather than growing a duplicate # SKIP
+  ---
+  duration_ms: 0.084375
+  type: 'test'
+  ...
+# Subtest: a later file that omits the APR does not erase the rate we already knew
+ok 414 - a later file that omits the APR does not erase the rate we already knew # SKIP
+  ---
+  duration_ms: 0.058375
+  type: 'test'
+  ...
+# Subtest: one current position per card, and the cards stay separate
+ok 415 - one current position per card, and the cards stay separate # SKIP
+  ---
+  duration_ms: 0.054375
+  type: 'test'
+  ...
+# Subtest: a history row points at the current-position row that stands
+ok 416 - a history row points at the current-position row that stands # SKIP
+  ---
+  duration_ms: 0.046583
+  type: 'test'
+  ...
+# Subtest: the three writes are one unit on the handle production actually passes
+ok 417 - the three writes are one unit on the handle production actually passes # SKIP
+  ---
+  duration_ms: 0.046333
+  type: 'test'
+  ...
+# Subtest: the link is written with the series row, not bolted on afterwards
+ok 418 - the link is written with the series row, not bolted on afterwards # SKIP
+  ---
+  duration_ms: 0.124834
+  type: 'test'
+  ...
+# Subtest: an observation orphaned by an earlier interrupted write is repaired by the next one
+ok 419 - an observation orphaned by an earlier interrupted write is repaired by the next one # SKIP
+  ---
+  duration_ms: 0.036542
+  type: 'test'
+  ...
+# Subtest: as_of is NOT NULL — an observation that cannot be placed in time is refused
+ok 420 - as_of is NOT NULL — an observation that cannot be placed in time is refused # SKIP
+  ---
+  duration_ms: 0.025666
+  type: 'test'
+  ...
+# Subtest: a position cannot exist without a card behind it
+ok 421 - a position cannot exist without a card behind it # SKIP
+  ---
+  duration_ms: 0.02325
+  type: 'test'
+  ...
+# Subtest: ingestCrsLiabilities records positions against the cards they belong to
+ok 422 - ingestCrsLiabilities records positions against the cards they belong to # SKIP
+  ---
+  duration_ms: 0.022125
+  type: 'test'
+  ...
+# Subtest: re-ingesting the same pull is idempotent
+ok 423 - re-ingesting the same pull is idempotent # SKIP
+  ---
+  duration_ms: 0.022
+  type: 'test'
+  ...
+# Subtest: getLiabilityHistory returns [] for a card with no observations — not a zero balance
+ok 424 - getLiabilityHistory returns [] for a card with no observations — not a zero balance # SKIP
+  ---
+  duration_ms: 0.025041
+  type: 'test'
+  ...
+# Subtest: createTask
+ok 425 - createTask # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.196458
+  type: 'suite'
+  ...
+# Subtest: a parsed file becomes one mail_universe row per record, with the whole record in fields
+ok 426 - a parsed file becomes one mail_universe row per record, with the whole record in fields # SKIP
+  ---
+  duration_ms: 2.012584
+  type: 'test'
+  ...
+# Subtest: a record's blank columns are absent from fields — nothing is filled in on the way to the database
+ok 427 - a record's blank columns are absent from fields — nothing is filled in on the way to the database # SKIP
+  ---
+  duration_ms: 0.0555
+  type: 'test'
+  ...
+# Subtest: the warnings for a record's blank columns come back with that record's index
+ok 428 - the warnings for a record's blank columns come back with that record's index # SKIP
+  ---
+  duration_ms: 0.04075
+  type: 'test'
+  ...
+# Subtest: fields jsonb round-trips punctuation, quotes and non-ASCII exactly as the file sent them
+ok 429 - fields jsonb round-trips punctuation, quotes and non-ASCII exactly as the file sent them # SKIP
+  ---
+  duration_ms: 0.083958
+  type: 'test'
+  ...
+# Subtest: a freshly ingested record arrives un-suppressed with no suppression reason — the suppression pass runs later
+ok 430 - a freshly ingested record arrives un-suppressed with no suppression reason — the suppression pass runs later # SKIP
+  ---
+  duration_ms: 0.048833
+  type: 'test'
+  ...
+# Subtest: ingest leaves responded_at and outcome_tier NULL — the response path owns those
+ok 431 - ingest leaves responded_at and outcome_tier NULL — the response path owns those # SKIP
+  ---
+  duration_ms: 0.084583
+  type: 'test'
+  ...
+# Subtest: re-ingesting the same file inserts nothing and leaves the row count unchanged
+ok 432 - re-ingesting the same file inserts nothing and leaves the row count unchanged # SKIP
+  ---
+  duration_ms: 0.030584
+  type: 'test'
+  ...
+# Subtest: the database itself refuses a second row for one record_slug
+ok 433 - the database itself refuses a second row for one record_slug # SKIP
+  ---
+  duration_ms: 0.147291
+  type: 'test'
+  ...
+# Subtest: re-ingesting a file does not un-suppress a record that a later pass suppressed
+ok 434 - re-ingesting a file does not un-suppress a record that a later pass suppressed # SKIP
+  ---
+  duration_ms: 1.363334
+  type: 'test'
+  ...
+# Subtest: re-ingesting a file does not forget that a record already responded
+ok 435 - re-ingesting a file does not forget that a record already responded # SKIP
+  ---
+  duration_ms: 0.176167
+  type: 'test'
+  ...
+# Subtest: a corrected re-drop merges its columns into fields instead of emptying the ones it left out
+ok 436 - a corrected re-drop merges its columns into fields instead of emptying the ones it left out # SKIP
+  ---
+  duration_ms: 0.038708
+  type: 'test'
+  ...
+# Subtest: a re-ingest that carries no campaign does not blank the campaign already recorded
+ok 437 - a re-ingest that carries no campaign does not blank the campaign already recorded # SKIP
+  ---
+  duration_ms: 0.0255
+  type: 'test'
+  ...
+# Subtest: a record ingested with no campaign stores NULL rather than an empty string
+ok 438 - a record ingested with no campaign stores NULL rather than an empty string # SKIP
+  ---
+  duration_ms: 0.024084
+  type: 'test'
+  ...
+# Subtest: a row with no record_slug is refused while every other row in the batch still lands
+ok 439 - a row with no record_slug is refused while every other row in the batch still lands # SKIP
+  ---
+  duration_ms: 0.020458
+  type: 'test'
+  ...
+# Subtest: a value Postgres cannot store in jsonb fails that row alone and the batch carries on
+ok 440 - a value Postgres cannot store in jsonb fails that row alone and the batch carries on # SKIP
+  ---
+  duration_ms: 0.019625
+  type: 'test'
+  ...
+# Subtest: the failure reason never carries the database's message, because that message quotes consumer data
+ok 441 - the failure reason never carries the database's message, because that message quotes consumer data # SKIP
+  ---
+  duration_ms: 0.019584
+  type: 'test'
+  ...
+# Subtest: every row given is accounted for: inserted plus updated plus skipped equals the batch size
+ok 442 - every row given is accounted for: inserted plus updated plus skipped equals the batch size # SKIP
+  ---
+  duration_ms: 0.019209
+  type: 'test'
+  ...
+# Subtest: a record_slug already held by another org is refused rather than overwritten
+ok 443 - a record_slug already held by another org is refused rather than overwritten # SKIP
+  ---
+  duration_ms: 0.019333
+  type: 'test'
+  ...
+# Subtest: a refused cross-org row does not stop the rest of that org's batch
+ok 444 - a refused cross-org row does not stop the rest of that org's batch # SKIP
+  ---
+  duration_ms: 0.01775
+  type: 'test'
+  ...
+# Subtest: an empty batch is a no-op that writes nothing
+ok 445 - an empty batch is a no-op that writes nothing # SKIP
+  ---
+  duration_ms: 0.018041
+  type: 'test'
+  ...
+# Subtest: a caller that knows the real slug column can name it, and that column is used
+ok 446 - a caller that knows the real slug column can name it, and that column is used # SKIP
+  ---
+  duration_ms: 0.022458
+  type: 'test'
+  ...
+# Subtest: a column named purl is recognised as the slug when no slug column was named
+ok 447 - a column named purl is recognised as the slug when no slug column was named # SKIP
+  ---
+  duration_ms: 0.024
+  type: 'test'
+  ...
+# Subtest: ingest writes no rows to any table other than mail_universe
+ok 448 - ingest writes no rows to any table other than mail_universe # SKIP
+  ---
+  duration_ms: 0.019417
+  type: 'test'
+  ...
+# Subtest: a slug off a public URL becomes a mail_responses row and stamps the record
+ok 449 - a slug off a public URL becomes a mail_responses row and stamps the record # SKIP
+  ---
+  duration_ms: 0.547542
+  type: 'test'
+  ...
+# Subtest: an uppercase minted slug typed back in lowercase still resolves — people do not shift-lock
+ok 450 - an uppercase minted slug typed back in lowercase still resolves — people do not shift-lock # SKIP
+  ---
+  duration_ms: 0.052209
+  type: 'test'
+  ...
+# Subtest: recordResponse never returns mail_universe.fields — the caller is a public landing page
+ok 451 - recordResponse never returns mail_universe.fields — the caller is a public landing page # SKIP
+  ---
+  duration_ms: 0.041583
+  type: 'test'
+  ...
+# Subtest: a suppressed record still resolves: suppression governs mailing, not whether a holder may be answered
+ok 452 - a suppressed record still resolves: suppression governs mailing, not whether a holder may be answered # SKIP
+  ---
+  duration_ms: 0.083667
+  type: 'test'
+  ...
+# Subtest: an unknown slug is a typed 404 and creates nothing — a record that was never mailed cannot respond
+ok 453 - an unknown slug is a typed 404 and creates nothing — a record that was never mailed cannot respond # SKIP
+  ---
+  duration_ms: 0.044417
+  type: 'test'
+  ...
+# Subtest: a hostile slug is refused without reaching the database and without being echoed back
+ok 454 - a hostile slug is refused without reaching the database and without being echoed back # SKIP
+  ---
+  duration_ms: 0.078166
+  type: 'test'
+  ...
+# Subtest: the same QR scanned twice is one response, and the second call reports deduped rather than failing
+ok 455 - the same QR scanned twice is one response, and the second call reports deduped rather than failing # SKIP
+  ---
+  duration_ms: 0.031084
+  type: 'test'
+  ...
+# Subtest: the anonymous dedupe is enforced by the database, not only by the guard SELECT
+ok 456 - the anonymous dedupe is enforced by the database, not only by the guard SELECT # SKIP
+  ---
+  duration_ms: 0.142792
+  type: 'test'
+  ...
+# Subtest: a response that carries a provider_ref is kept alongside an anonymous one on the same channel
+ok 457 - a response that carries a provider_ref is kept alongside an anonymous one on the same channel # SKIP
+  ---
+  duration_ms: 0.212875
+  type: 'test'
+  ...
+# Subtest: re-importing a call log does not double-count: the provider_ref index adjudicates
+ok 458 - re-importing a call log does not double-count: the provider_ref index adjudicates # SKIP
+  ---
+  duration_ms: 0.162
+  type: 'test'
+  ...
+# Subtest: a record may respond on two different channels and the log keeps both
+ok 459 - a record may respond on two different channels and the log keeps both # SKIP
+  ---
+  duration_ms: 0.029583
+  type: 'test'
+  ...
+# Subtest: a later response advances responded_at — the denormalised pair keeps the most recent
+ok 460 - a later response advances responded_at — the denormalised pair keeps the most recent # SKIP
+  ---
+  duration_ms: 0.02375
+  type: 'test'
+  ...
+# Subtest: a backdated import does not drag responded_at backwards
+ok 461 - a backdated import does not drag responded_at backwards # SKIP
+  ---
+  duration_ms: 0.023667
+  type: 'test'
+  ...
+# Subtest: a clientId from another org is refused rather than linking a response across orgs
+ok 462 - a clientId from another org is refused rather than linking a response across orgs # SKIP
+  ---
+  duration_ms: 0.022417
+  type: 'test'
+  ...
+# Subtest: a tracked number belonging to another campaign is refused — misattribution is the failure it exists to prevent
+ok 463 - a tracked number belonging to another campaign is refused — misattribution is the failure it exists to prevent # SKIP
+  ---
+  duration_ms: 0.020375
+  type: 'test'
+  ...
+# Subtest: MAIL_OUTCOME_TIERS is not invented: every value is a seeded stage key of the sales pipeline
+ok 464 - MAIL_OUTCOME_TIERS is not invented: every value is a seeded stage key of the sales pipeline # SKIP
+  ---
+  duration_ms: 0.019917
+  type: 'test'
+  ...
+# Subtest: setOutcomeTier writes the record and the newest response, keeping the denormalised pair in step
+ok 465 - setOutcomeTier writes the record and the newest response, keeping the denormalised pair in step # SKIP
+  ---
+  duration_ms: 0.02
+  type: 'test'
+  ...
+# Subtest: setOutcomeTier on a record with no logged response still labels the record and says so
+ok 466 - setOutcomeTier on a record with no logged response still labels the record and says so # SKIP
+  ---
+  duration_ms: 0.020083
+  type: 'test'
+  ...
+# Subtest: setOutcomeTier with null clears the label back to unknown, which is a reachable state
+ok 467 - setOutcomeTier with null clears the label back to unknown, which is a reachable state # SKIP
+  ---
+  duration_ms: 0.0205
+  type: 'test'
+  ...
+# Subtest: setOutcomeTier is idempotent: applying the same tier twice changes nothing
+ok 468 - setOutcomeTier is idempotent: applying the same tier twice changes nothing # SKIP
+  ---
+  duration_ms: 0.021416
+  type: 'test'
+  ...
+# Subtest: setOutcomeTier on a record that does not exist is a typed 404, not a silent no-op
+ok 469 - setOutcomeTier on a record that does not exist is a typed 404, not a silent no-op # SKIP
+  ---
+  duration_ms: 0.019375
+  type: 'test'
+  ...
+# Subtest: attribution counts what exists: loaded, suppressed, mailable and responded are real numbers
+ok 470 - attribution counts what exists: loaded, suppressed, mailable and responded are real numbers # SKIP
+  ---
+  duration_ms: 0.02
+  type: 'test'
+  ...
+# Subtest: attribution returns mailed as null with a reason — nothing in this repo records a piece entering the post
+ok 471 - attribution returns mailed as null with a reason — nothing in this repo records a piece entering the post # SKIP
+  ---
+  duration_ms: 0.020291
+  type: 'test'
+  ...
+# Subtest: attribution returns funded as null, NOT 0, while no response is linked to a client
+ok 472 - attribution returns funded as null, NOT 0, while no response is linked to a client # SKIP
+  ---
+  duration_ms: 0.019583
+  type: 'test'
+  ...
+# Subtest: attribution reports a real funded count once the client linkage exists
+ok 473 - attribution reports a real funded count once the client linkage exists # SKIP
+  ---
+  duration_ms: 0.019458
+  type: 'test'
+  ...
+# Subtest: attribution on a campaign with no records is all zeroes and no campaign row, not an error
+ok 474 - attribution on a campaign with no records is all zeroes and no campaign row, not an error # SKIP
+  ---
+  duration_ms: 0.018916
+  type: 'test'
+  ...
+# Subtest: attribution carries the campaign row's vendor-stated quantity, which is not a count of rows
+ok 475 - attribution carries the campaign row's vendor-stated quantity, which is not a count of rows # SKIP
+  ---
+  duration_ms: 0.019166
+  type: 'test'
+  ...
+# Subtest: attribution says so when it could not scope to an org rather than quietly counting every org
+ok 476 - attribution says so when it could not scope to an org rather than quietly counting every org # SKIP
+  ---
+  duration_ms: 0.024708
+  type: 'test'
+  ...
+# Subtest: assignSlugs: every record in the campaign that has no slug gets one, and it is a well-formed slug
+ok 477 - assignSlugs: every record in the campaign that has no slug gets one, and it is a well-formed slug # SKIP
+  ---
+  duration_ms: 0.429041
+  type: 'test'
+  ...
+# Subtest: assignSlugs: re-running assigns nothing, because a slug that may already be printed is never rewritten
+ok 478 - assignSlugs: re-running assigns nothing, because a slug that may already be printed is never rewritten # SKIP
+  ---
+  duration_ms: 0.649
+  type: 'test'
+  ...
+# Subtest: assignSlugs: a vendor-issued slug survives the pass untouched
+ok 479 - assignSlugs: a vendor-issued slug survives the pass untouched # SKIP
+  ---
+  duration_ms: 0.128584
+  type: 'test'
+  ...
+# Subtest: assignSlugs: losing a race to the unique index retries instead of failing the batch
+ok 480 - assignSlugs: losing a race to the unique index retries instead of failing the batch # SKIP
+  ---
+  duration_ms: 0.262459
+  type: 'test'
+  ...
+# Subtest: assignSlugs: record ids scoped to a campaign do not touch a record belonging to another campaign
+ok 481 - assignSlugs: record ids scoped to a campaign do not touch a record belonging to another campaign # SKIP
+  ---
+  duration_ms: 0.076917
+  type: 'test'
+  ...
+# Subtest: lookupBySlug: a minted slug resolves to exactly its own record
+ok 482 - lookupBySlug: a minted slug resolves to exactly its own record # SKIP
+  ---
+  duration_ms: 0.108375
+  type: 'test'
+  ...
+# Subtest: lookupBySlug: a slug typed in the wrong case off a printed page still resolves
+ok 483 - lookupBySlug: a slug typed in the wrong case off a printed page still resolves # SKIP
+  ---
+  duration_ms: 0.039041
+  type: 'test'
+  ...
+# Subtest: lookupBySlug: an unknown slug is null rather than an exception, because a mistyped URL is a 404
+ok 484 - lookupBySlug: an unknown slug is null rather than an exception, because a mistyped URL is a 404 # SKIP
+  ---
+  duration_ms: 0.154125
+  type: 'test'
+  ...
+# Subtest: lookupBySlug: a SQL payload arriving from a public URL returns null and leaves the table intact
+ok 485 - lookupBySlug: a SQL payload arriving from a public URL returns null and leaves the table intact # SKIP
+  ---
+  duration_ms: 0.215792
+  type: 'test'
+  ...
+# Subtest: lookupBySlug: a suppressed record still resolves, because suppression governs mailing and not answering
+ok 486 - lookupBySlug: a suppressed record still resolves, because suppression governs mailing and not answering # SKIP
+  ---
+  duration_ms: 0.161458
+  type: 'test'
+  ...
+# Subtest: a mail record whose email matches a client is suppressed as an existing client
+ok 487 - a mail record whose email matches a client is suppressed as an existing client # SKIP
+  ---
+  duration_ms: 0.507792
+  type: 'test'
+  ...
+# Subtest: a client is matched on phone digits even though the CRM stores the number formatted
+ok 488 - a client is matched on phone digits even though the CRM stores the number formatted # SKIP
+  ---
+  duration_ms: 0.050334
+  type: 'test'
+  ...
+# Subtest: a live TCPA opt-out is reported as the more specific reason, and a START keyword takes it back
+ok 489 - a live TCPA opt-out is reported as the more specific reason, and a START keyword takes it back # SKIP
+  ---
+  duration_ms: 0.042958
+  type: 'test'
+  ...
+# Subtest: a record that already responded is suppressed as a prior responder
+ok 490 - a record that already responded is suppressed as a prior responder # SKIP
+  ---
+  duration_ms: 0.086375
+  type: 'test'
+  ...
+# Subtest: the same person on a reused list is suppressed even though the two files name the column differently
+ok 491 - the same person on a reused list is suppressed even though the two files name the column differently # SKIP
+  ---
+  duration_ms: 0.045209
+  type: 'test'
+  ...
+# Subtest: a name-and-address record with no email or phone is suppressed as unidentifiable rather than mailed
+ok 492 - a name-and-address record with no email or phone is suppressed as unidentifiable rather than mailed # SKIP
+  ---
+  duration_ms: 0.077583
+  type: 'test'
+  ...
+# Subtest: a record nobody in the CRM matches and nobody has responded for comes back clear
+ok 493 - a record nobody in the CRM matches and nobody has responded for comes back clear # SKIP
+  ---
+  duration_ms: 0.031583
+  type: 'test'
+  ...
+# Subtest: a real database error is treated as suppressed, never as clear to mail
+ok 494 - a real database error is treated as suppressed, never as clear to mail # SKIP
+  ---
+  duration_ms: 0.152834
+  type: 'test'
+  ...
+# Subtest: assertDroppable refuses a record id that resolves to nothing
+ok 495 - assertDroppable refuses a record id that resolves to nothing # SKIP
+  ---
+  duration_ms: 0.20825
+  type: 'test'
+  ...
+# Subtest: assertDroppable refuses every record in a campaign that is still on compliance hold
+ok 496 - assertDroppable refuses every record in a campaign that is still on compliance hold # SKIP
+  ---
+  duration_ms: 0.152083
+  type: 'test'
+  ...
+# Subtest: assertDroppable refuses a record whose campaign_id has no campaign row behind it at all
+ok 497 - assertDroppable refuses a record whose campaign_id has no campaign row behind it at all # SKIP
+  ---
+  duration_ms: 0.029084
+  type: 'test'
+  ...
+# Subtest: assertDroppable refuses a suppressed record and reports the reason that was stored
+ok 498 - assertDroppable refuses a suppressed record and reports the reason that was stored # SKIP
+  ---
+  duration_ms: 0.026667
+  type: 'test'
+  ...
+# Subtest: assertDroppable refuses a record that is clear in the table but suppressed on a live re-check
+ok 499 - assertDroppable refuses a record that is clear in the table but suppressed on a live re-check # SKIP
+  ---
+  duration_ms: 0.019458
+  type: 'test'
+  ...
+# Subtest: assertDroppable returns quietly for a clear record in an approved campaign, and returns no consumer data
+ok 500 - assertDroppable returns quietly for a clear record in an approved campaign, and returns no consumer data # SKIP
+  ---
+  duration_ms: 0.018708
+  type: 'test'
+  ...
+# Subtest: applySuppression writes a reason from the closed vocabulary for every record it suppresses
+ok 501 - applySuppression writes a reason from the closed vocabulary for every record it suppresses # SKIP
+  ---
+  duration_ms: 0.018083
+  type: 'test'
+  ...
+# Subtest: applySuppression is re-runnable: a second pass suppresses nothing and rewrites nothing
+ok 502 - applySuppression is re-runnable: a second pass suppresses nothing and rewrites nothing # SKIP
+  ---
+  duration_ms: 0.018125
+  type: 'test'
+  ...
+# Subtest: applySuppression never un-suppresses: a hand-entered reason it does not recognise survives the pass
+ok 503 - applySuppression never un-suppresses: a hand-entered reason it does not recognise survives the pass # SKIP
+  ---
+  duration_ms: 0.019208
+  type: 'test'
+  ...
+# Subtest: applySuppression leaves a record it has no reason to suppress alone, so the pass can say yes as well as no
+ok 504 - applySuppression leaves a record it has no reason to suppress alone, so the pass can say yes as well as no # SKIP
+  ---
+  duration_ms: 0.021042
+  type: 'test'
+  ...
+# Subtest: applySuppression is scoped to one campaign and does not reach into another
+ok 505 - applySuppression is scoped to one campaign and does not reach into another # SKIP
+  ---
+  duration_ms: 0.018875
+  type: 'test'
+  ...
+# Subtest: compose: a reply on an open thread is sent and lands in that same thread
+ok 506 - compose: a reply on an open thread is sent and lands in that same thread # SKIP
+  ---
+  duration_ms: 0.478
+  type: 'test'
+  ...
+# Subtest: compose: the message records who sent it
+ok 507 - compose: the message records who sent it # SKIP
+  ---
+  duration_ms: 0.048333
+  type: 'test'
+  ...
+# Subtest: compose: no conversation id starts one, and a second message reuses it
+ok 508 - compose: no conversation id starts one, and a second message reuses it # SKIP
+  ---
+  duration_ms: 0.041334
+  type: 'test'
+  ...
+# Subtest: compose: a client who asked us to stop does not get a staff reply either
+ok 509 - compose: a client who asked us to stop does not get a staff reply either # SKIP
+  ---
+  duration_ms: 0.089542
+  type: 'test'
+  ...
+# Subtest: compose: an overnight text is held until the window opens, not failed
+ok 510 - compose: an overnight text is held until the window opens, not failed # SKIP
+  ---
+  duration_ms: 0.042833
+  type: 'test'
+  ...
+# Subtest: compose: quiet hours do not apply to email
+ok 511 - compose: quiet hours do not apply to email # SKIP
+  ---
+  duration_ms: 0.090958
+  type: 'test'
+  ...
+# Subtest: compose: restricted wording is blocked and raises a task for a human
+ok 512 - compose: restricted wording is blocked and raises a task for a human # SKIP
+  ---
+  duration_ms: 0.034833
+  type: 'test'
+  ...
+# Subtest: compose: another company's conversation cannot be replied to
+ok 513 - compose: another company's conversation cannot be replied to # SKIP
+  ---
+  duration_ms: 0.371584
+  type: 'test'
+  ...
+# Subtest: compose: another company's client cannot be messaged
+ok 514 - compose: another company's client cannot be messaged # SKIP
+  ---
+  duration_ms: 0.353292
+  type: 'test'
+  ...
+# Subtest: compose: a voice thread cannot be replied to by typing
+ok 515 - compose: a voice thread cannot be replied to by typing # SKIP
+  ---
+  duration_ms: 0.209333
+  type: 'test'
+  ...
+# Subtest: compose: an empty or over-long body is refused and nothing is queued
+ok 516 - compose: an empty or over-long body is refused and nothing is queued # SKIP
+  ---
+  duration_ms: 0.034125
+  type: 'test'
+  ...
+# Subtest: compose: the same idempotency key sends once and returns the first message
+ok 517 - compose: the same idempotency key sends once and returns the first message # SKIP
+  ---
+  duration_ms: 0.027791
+  type: 'test'
+  ...
+# Subtest: compose: without a key, two identical replies are two real messages
+ok 518 - compose: without a key, two identical replies are two real messages # SKIP
+  ---
+  duration_ms: 0.033459
+  type: 'test'
+  ...
+# Subtest: compose: a sent text files the staff_events row the seam was built for
+ok 519 - compose: a sent text files the staff_events row the seam was built for # SKIP
+  ---
+  duration_ms: 0.021667
+  type: 'test'
+  ...
+# Subtest: compose: a blocked text files no telemetry — it is not a text anyone sent
+ok 520 - compose: a blocked text files no telemetry — it is not a text anyone sent # SKIP
+  ---
+  duration_ms: 0.02325
+  type: 'test'
+  ...
+# Subtest: compose: an email files no staff_events row, because there is no kind for one
+ok 521 - compose: an email files no staff_events row, because there is no kind for one # SKIP
+  ---
+  duration_ms: 0.020166
+  type: 'test'
+  ...
+# Subtest: replay() over the same event log sends ZERO messages
+ok 522 - replay() over the same event log sends ZERO messages # SKIP
+  ---
+  duration_ms: 0.392333
+  type: 'test'
+  ...
+# Subtest: n-06: a client who opted out during the sleep gets nothing
+ok 523 - n-06: a client who opted out during the sleep gets nothing # SKIP
+  ---
+  duration_ms: 0.04825
+  type: 'test'
+  ...
+# Subtest: an SMS queued at 23:00 ET is still queued at 23:05 and sends after 11:00 ET
+ok 524 - an SMS queued at 23:00 ET is still queued at 23:05 and sends after 11:00 ET # SKIP
+  ---
+  duration_ms: 0.042916
+  type: 'test'
+  ...
+# Subtest: restricted wording is blocked, raises a task, and reaches no provider
+ok 525 - restricted wording is blocked, raises a task, and reaches no provider # SKIP
+  ---
+  duration_ms: 0.0415
+  type: 'test'
+  ...
+# Subtest: two dispatchers racing the same message produce exactly one send
+ok 526 - two dispatchers racing the same message produce exactly one send # SKIP
+  ---
+  duration_ms: 0.759167
+  type: 'test'
+  ...
+# Subtest: the claim UPDATE returns zero rows on the second attempt
+ok 527 - the claim UPDATE returns zero rows on the second attempt # SKIP
+  ---
+  duration_ms: 0.10025
+  type: 'test'
+  ...
+# Subtest: the destination and the rendered subject are recorded when the message is queued
+ok 528 - the destination and the rendered subject are recorded when the message is queued # SKIP
+  ---
+  duration_ms: 0.168083
+  type: 'test'
+  ...
+# Subtest: message.queued is emitted once, and a replay does not emit it again
+ok 529 - message.queued is emitted once, and a replay does not emit it again # SKIP
+  ---
+  duration_ms: 0.336292
+  type: 'test'
+  ...
+# Subtest: the claim statement is valid SQL against the real schema
+ok 530 - the claim statement is valid SQL against the real schema # SKIP
+  ---
+  duration_ms: 0.774375
+  type: 'test'
+  ...
+# Subtest: claims a due message and marks it sending
+ok 531 - claims a due message and marks it sending # SKIP
+  ---
+  duration_ms: 0.063041
+  type: 'test'
+  ...
+# Subtest: claimDue accepts a clock function returning epoch milliseconds — the journey runner's virtual clock shape
+ok 532 - claimDue accepts a clock function returning epoch milliseconds — the journey runner's virtual clock shape # SKIP
+  ---
+  duration_ms: 0.043542
+  type: 'test'
+  ...
+# Subtest: a virtual epoch-ms clock set before a message's schedule leaves it queued
+ok 533 - a virtual epoch-ms clock set before a message's schedule leaves it queued # SKIP
+  ---
+  duration_ms: 0.10175
+  type: 'test'
+  ...
+# Subtest: a virtual epoch-ms clock at or after a message's schedule claims it
+ok 534 - a virtual epoch-ms clock at or after a message's schedule claims it # SKIP
+  ---
+  duration_ms: 0.044709
+  type: 'test'
+  ...
+# Subtest: claimDue also accepts now as a bare epoch-ms number or a Date, not only a function
+ok 535 - claimDue also accepts now as a bare epoch-ms number or a Date, not only a function # SKIP
+  ---
+  duration_ms: 0.0795
+  type: 'test'
+  ...
+# Subtest: a NULL scheduled_at means due immediately
+ok 536 - a NULL scheduled_at means due immediately # SKIP
+  ---
+  duration_ms: 0.031292
+  type: 'test'
+  ...
+# Subtest: a message scheduled in the future is not claimed
+ok 537 - a message scheduled in the future is not claimed # SKIP
+  ---
+  duration_ms: 0.140375
+  type: 'test'
+  ...
+# Subtest: a message past the attempt cap is never claimed again
+ok 538 - a message past the attempt cap is never claimed again # SKIP
+  ---
+  duration_ms: 0.214458
+  type: 'test'
+  ...
+# Subtest: an inbound message is never claimed
+ok 539 - an inbound message is never claimed # SKIP
+  ---
+  duration_ms: 0.165292
+  type: 'test'
+  ...
+# Subtest: two dispatchers cannot claim the same message
+ok 540 - two dispatchers cannot claim the same message # SKIP
+  ---
+  duration_ms: 0.0295
+  type: 'test'
+  ...
+# Subtest: the routing table answers the dispatcher's lookup
+ok 541 - the routing table answers the dispatcher's lookup # SKIP
+  ---
+  duration_ms: 0.024667
+  type: 'test'
+  ...
+# Subtest: the columns 110 added are writable with the values the dispatcher uses
+ok 542 - the columns 110 added are writable with the values the dispatcher uses # SKIP
+  ---
+  duration_ms: 0.02125
+  type: 'test'
+  ...
+# Subtest: the outbound queue
+ok 543 - the outbound queue # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.69
+  type: 'suite'
+  ...
+# Subtest: 1. a simulated inbound SMS creates the thread and joins the message to it
+ok 544 - 1. a simulated inbound SMS creates the thread and joins the message to it # SKIP
+  ---
+  duration_ms: 0.32525
+  type: 'test'
+  ...
+# Subtest: 2. it appears in the inbox, marked as waiting on us
+ok 545 - 2. it appears in the inbox, marked as waiting on us # SKIP
+  ---
+  duration_ms: 0.05
+  type: 'test'
+  ...
+# Subtest: 3. a staff reply goes out through dispatch
+ok 546 - 3. a staff reply goes out through dispatch # SKIP
+  ---
+  duration_ms: 0.038916
+  type: 'test'
+  ...
+# Subtest: 4. the thread shows both messages, in reading order, with both authors
+ok 547 - 4. the thread shows both messages, in reading order, with both authors # SKIP
+  ---
+  duration_ms: 0.041792
+  type: 'test'
+  ...
+# Subtest: 5. the inbox no longer shows the thread as waiting — we answered it
+ok 548 - 5. the inbox no longer shows the thread as waiting — we answered it # SKIP
+  ---
+  duration_ms: 0.041459
+  type: 'test'
+  ...
+# Subtest: seeds every parsed template into a real message_templates table
+ok 549 - seeds every parsed template into a real message_templates table # SKIP
+  ---
+  duration_ms: 0.300333
+  type: 'test'
+  ...
+# Subtest: re-running is idempotent — same row count, all updates, no duplicates
+ok 550 - re-running is idempotent — same row count, all updates, no duplicates # SKIP
+  ---
+  duration_ms: 0.045166
+  type: 'test'
+  ...
+# Subtest: an edited doc body overwrites the stored row rather than adding one
+ok 551 - an edited doc body overwrites the stored row rather than adding one # SKIP
+  ---
+  duration_ms: 0.038708
+  type: 'test'
+  ...
+# Subtest: channel split and compliance flags land as specified
+ok 552 - channel split and compliance flags land as specified # SKIP
+  ---
+  duration_ms: 0.075584
+  type: 'test'
+  ...
+# Subtest: no row was seeded with an empty body
+ok 553 - no row was seeded with an empty body # SKIP
+  ---
+  duration_ms: 0.040333
+  type: 'test'
+  ...
+# Subtest: stored copy is byte-identical to the source doc — nothing was rewritten
+ok 554 - stored copy is byte-identical to the source doc — nothing was rewritten # SKIP
+  ---
+  duration_ms: 0.076334
+  type: 'test'
+  ...
+# Subtest: source_doc is recorded for every row
+ok 555 - source_doc is recorded for every row # SKIP
+  ---
+  duration_ms: 0.030458
+  type: 'test'
+  ...
+# Subtest: sweeper: a text held overnight is sent once the window has opened
+ok 556 - sweeper: a text held overnight is sent once the window has opened # SKIP
+  ---
+  duration_ms: 0.84075
+  type: 'test'
+  ...
+# Subtest: sweeper: it does NOT send messages no person wrote
+ok 557 - sweeper: it does NOT send messages no person wrote # SKIP
+  ---
+  duration_ms: 0.122459
+  type: 'test'
+  ...
+# Subtest: sweeper: every message is re-checked on the way out, not trusted
+ok 558 - sweeper: every message is re-checked on the way out, not trusted # SKIP
+  ---
+  duration_ms: 0.082375
+  type: 'test'
+  ...
+# Subtest: sweeper: an empty queue is one cheap pass, not ten
+ok 559 - sweeper: an empty queue is one cheap pass, not ten # SKIP
+  ---
+  duration_ms: 0.074042
+  type: 'test'
+  ...
+# Subtest: sweeper: it works through more than one batch, but stops at the cap
+ok 560 - sweeper: it works through more than one batch, but stops at the cap # SKIP
+  ---
+  duration_ms: 0.209
+  type: 'test'
+  ...
+# Subtest: sweeper: a broken pass reports rather than throwing
+ok 561 - sweeper: a broken pass reports rather than throwing # SKIP
+  ---
+  duration_ms: 0.153292
+  type: 'test'
+  ...
+# Subtest: sweeper: netlify.toml schedules it, and on the same cron the module declares
+ok 562 - sweeper: netlify.toml schedules it, and on the same cron the module declares
+  ---
+  duration_ms: 0.685333
+  type: 'test'
+  ...
+# Subtest: sweeper: releasing held texts did not depend on the workflow engine
+ok 563 - sweeper: releasing held texts did not depend on the workflow engine
+  ---
+  duration_ms: 243.40675
+  type: 'test'
+  ...
+# Subtest: spend ceilings
+ok 564 - spend ceilings # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.208375
+  type: 'suite'
+  ...
+# Subtest: partner scope
+ok 565 - partner scope # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.216208
+  type: 'suite'
+  ...
+# Subtest: commas inbox (real Postgres)
+ok 566 - commas inbox (real Postgres) # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.204208
+  type: 'suite'
+  ...
+# Subtest: revealSsn against real Postgres
+    # Subtest: a successful reveal returns the SSN and leaves exactly one log row
+    ok 1 - a successful reveal returns the SSN and leaves exactly one log row # SKIP
+      ---
+      duration_ms: 0.231417
+      type: 'test'
+      ...
+    # Subtest: *** THE ONE THAT MATTERS: a failure AFTER the log write rolls the log row back ***
+    ok 2 - *** THE ONE THAT MATTERS: a failure AFTER the log write rolls the log row back *** # SKIP
+      ---
+      duration_ms: 0.97325
+      type: 'test'
+      ...
+    # Subtest: the rollback is complete — a later successful reveal still logs exactly once
+    ok 3 - the rollback is complete — a later successful reveal still logs exactly once # SKIP
+      ---
+      duration_ms: 0.060125
+      type: 'test'
+      ...
+    # Subtest: a reveal for a client with no SSN logs nothing
+    ok 4 - a reveal for a client with no SSN logs nothing # SKIP
+      ---
+      duration_ms: 0.043708
+      type: 'test'
+      ...
+    # Subtest: concurrent reveals each leave their own row
+    ok 5 - concurrent reveals each leave their own row # SKIP
+      ---
+      duration_ms: 0.109292
+      type: 'test'
+      ...
+    1..5
+ok 567 - revealSsn against real Postgres
+  ---
+  duration_ms: 1.82125
+  type: 'suite'
+  ...
+# Subtest: erasure against a real database
+    # Subtest: a hard DELETE of the client would be refused — which is why we de-identify
+    ok 1 - a hard DELETE of the client would be refused — which is why we de-identify # SKIP
+      ---
+      duration_ms: 7.509166
+      type: 'test'
+      ...
+    # Subtest: *** the erasure completes and the audit row satisfies every CHECK in 102 ***
+    ok 2 - *** the erasure completes and the audit row satisfies every CHECK in 102 *** # SKIP
+      ---
+      duration_ms: 0.065542
+      type: 'test'
+      ...
+    # Subtest: the identifying values are gone and the row is retained as a pseudonym
+    ok 3 - the identifying values are gone and the row is retained as a pseudonym # SKIP
+      ---
+      duration_ms: 0.03875
+      type: 'test'
+      ...
+    # Subtest: the identity record and the bank credentials are gone
+    ok 4 - the identity record and the bank credentials are gone # SKIP
+      ---
+      duration_ms: 0.09425
+      type: 'test'
+      ...
+    # Subtest: the ledger is kept, scrubbed of who it was about but not of the money
+    ok 5 - the ledger is kept, scrubbed of who it was about but not of the money # SKIP
+      ---
+      duration_ms: 0.037625
+      type: 'test'
+      ...
+    # Subtest: the access log is kept: the values went, the record of who read them stayed
+    ok 6 - the access log is kept: the values went, the record of who read them stayed # SKIP
+      ---
+      duration_ms: 0.027792
+      type: 'test'
+      ...
+    # Subtest: the record can be read back after the fact
+    ok 7 - the record can be read back after the fact # SKIP
+      ---
+      duration_ms: 0.159958
+      type: 'test'
+      ...
+    1..7
+ok 568 - erasure against a real database
+  ---
+  duration_ms: 8.29325
+  type: 'suite'
+  ...
+# Subtest: erasure finds a client whose row was ALREADY hard-deleted
+    # Subtest: *** the scenario the whole batch exists for ***
+    ok 1 - *** the scenario the whole batch exists for *** # SKIP
+      ---
+      duration_ms: 0.082208
+      type: 'test'
+      ...
+    1..1
+ok 569 - erasure finds a client whose row was ALREADY hard-deleted
+  ---
+  duration_ms: 0.281167
+  type: 'suite'
+  ...
+# Subtest: uq_shifts_one_open exists, is UNIQUE, and covers only open shifts
+ok 570 - uq_shifts_one_open exists, is UNIQUE, and covers only open shifts # SKIP
+  ---
+  duration_ms: 1.055959
+  type: 'test'
+  ...
+# Subtest: the pre-existing idx_shifts_open is NOT unique — this is the defect 060 exists for
+ok 571 - the pre-existing idx_shifts_open is NOT unique — this is the defect 060 exists for # SKIP
+  ---
+  duration_ms: 0.121916
+  type: 'test'
+  ...
+# Subtest: the database itself refuses a second open shift for one staff member
+ok 572 - the database itself refuses a second open shift for one staff member # SKIP
+  ---
+  duration_ms: 0.0725
+  type: 'test'
+  ...
+# Subtest: clockIn opens exactly one shift, with ended_at NULL and the staff member's own org
+ok 573 - clockIn opens exactly one shift, with ended_at NULL and the staff member's own org # SKIP
+  ---
+  duration_ms: 0.170917
+  type: 'test'
+  ...
+# Subtest: clocking in twice is a 409, and the second attempt creates nothing
+ok 574 - clocking in twice is a 409, and the second attempt creates nothing # SKIP
+  ---
+  duration_ms: 0.116167
+  type: 'test'
+  ...
+# Subtest: one person's open shift does not block anybody else's
+ok 575 - one person's open shift does not block anybody else's # SKIP
+  ---
+  duration_ms: 0.353958
+  type: 'test'
+  ...
+# Subtest: clockIn for a staff member who is not in the given org is a 404, not a shift under the wrong org
+ok 576 - clockIn for a staff member who is not in the given org is a 404, not a shift under the wrong org # SKIP
+  ---
+  duration_ms: 0.0515
+  type: 'test'
+  ...
+# Subtest: clockIn for a staff id that does not exist is a 404 rather than a foreign key crash
+ok 577 - clockIn for a staff id that does not exist is a 404 rather than a foreign key crash # SKIP
+  ---
+  duration_ms: 0.153291
+  type: 'test'
+  ...
+# Subtest: currentShift returns the open shift while it is open
+ok 578 - currentShift returns the open shift while it is open # SKIP
+  ---
+  duration_ms: 0.207959
+  type: 'test'
+  ...
+# Subtest: clockOut ends the shift and currentShift then reports nobody on the clock
+ok 579 - clockOut ends the shift and currentShift then reports nobody on the clock # SKIP
+  ---
+  duration_ms: 0.159166
+  type: 'test'
+  ...
+# Subtest: clocking out twice is a 409 and cannot move an already-recorded end time
+ok 580 - clocking out twice is a 409 and cannot move an already-recorded end time # SKIP
+  ---
+  duration_ms: 0.033833
+  type: 'test'
+  ...
+# Subtest: a closed shift does not block the next one — the index is partial on ended_at IS NULL
+ok 581 - a closed shift does not block the next one — the index is partial on ended_at IS NULL # SKIP
+  ---
+  duration_ms: 0.023084
+  type: 'test'
+  ...
+# Subtest: autoCloseStale ends an idle shift at its last activity, not when the sweep ran
+ok 582 - autoCloseStale ends an idle shift at its last activity, not when the sweep ran # SKIP
+  ---
+  duration_ms: 0.019875
+  type: 'test'
+  ...
+# Subtest: autoCloseStale leaves a long shift alone while it is still active — §14 is inactivity
+ok 583 - autoCloseStale leaves a long shift alone while it is still active — §14 is inactivity # SKIP
+  ---
+  duration_ms: 0.019292
+  type: 'test'
+  ...
+# Subtest: the sweep's own audit rows are not activity — a stale shift cannot look busy
+ok 584 - the sweep's own audit rows are not activity — a stale shift cannot look busy # SKIP
+  ---
+  duration_ms: 0.018792
+  type: 'test'
+  ...
+# Subtest: every auto-closed shift leaves a staff_events row saying software closed it, on what assumption
+ok 585 - every auto-closed shift leaves a staff_events row saying software closed it, on what assumption # SKIP
+  ---
+  duration_ms: 0.018709
+  type: 'test'
+  ...
+# Subtest: autoCloseStale leaves a shift that is still within the threshold alone
+ok 586 - autoCloseStale leaves a shift that is still within the threshold alone # SKIP
+  ---
+  duration_ms: 0.022167
+  type: 'test'
+  ...
+# Subtest: a second sweep closes nothing and does not write a second audit row
+ok 587 - a second sweep closes nothing and does not write a second audit row # SKIP
+  ---
+  duration_ms: 0.020167
+  type: 'test'
+  ...
+# Subtest: auto-closing frees the staff member to clock in again — an abandoned shift no longer locks them out
+ok 588 - auto-closing frees the staff member to clock in again — an abandoned shift no longer locks them out # SKIP
+  ---
+  duration_ms: 0.019
+  type: 'test'
+  ...
+# Subtest: a shift closed with no evidence is marked on the row, not only in the audit event
+ok 589 - a shift closed with no evidence is marked on the row, not only in the audit event # SKIP
+  ---
+  duration_ms: 0.021541
+  type: 'test'
+  ...
+# Subtest: a human clock-out leaves closed_by NULL — the normal case stays unmarked
+ok 590 - a human clock-out leaves closed_by NULL — the normal case stays unmarked # SKIP
+  ---
+  duration_ms: 0.019833
+  type: 'test'
+  ...
+# Subtest: the database refuses a closed_by nobody agreed on
+ok 591 - the database refuses a closed_by nobody agreed on # SKIP
+  ---
+  duration_ms: 0.023875
+  type: 'test'
+  ...
+# Subtest: autoCloseStale with real telemetry flowing
+ok 592 - autoCloseStale with real telemetry flowing # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.22175
+  type: 'suite'
+  ...
+# Subtest: a logged event becomes one staff_events row on the real kind/detail columns
+ok 593 - a logged event becomes one staff_events row on the real kind/detail columns # SKIP
+  ---
+  duration_ms: 0.383708
+  type: 'test'
+  ...
+# Subtest: every kind in EVENT_KINDS is actually writable against the real table
+ok 594 - every kind in EVENT_KINDS is actually writable against the real table # SKIP
+  ---
+  duration_ms: 0.045417
+  type: 'test'
+  ...
+# Subtest: the stored org_id is the staff row's own, not whatever the caller passed
+ok 595 - the stored org_id is the staff row's own, not whatever the caller passed # SKIP
+  ---
+  duration_ms: 0.038459
+  type: 'test'
+  ...
+# Subtest: shift_id is nullable and a null one is an honest row, not a failure
+ok 596 - shift_id is nullable and a null one is an honest row, not a failure # SKIP
+  ---
+  duration_ms: 0.628667
+  type: 'test'
+  ...
+# Subtest: a shift_id that does not exist loses the telemetry row, not the calling action
+ok 597 - a shift_id that does not exist loses the telemetry row, not the calling action # SKIP
+  ---
+  duration_ms: 0.283125
+  type: 'test'
+  ...
+# Subtest: a staff member from another org is refused rather than filed across tenants
+ok 598 - a staff member from another org is refused rather than filed across tenants # SKIP
+  ---
+  duration_ms: 0.082167
+  type: 'test'
+  ...
+# Subtest: an unknown staff id is refused without a foreign key error reaching the caller
+ok 599 - an unknown staff id is refused without a foreign key error reaching the caller # SKIP
+  ---
+  duration_ms: 0.183791
+  type: 'test'
+  ...
+# Subtest: an unknown kind never reaches the free-text column
+ok 600 - an unknown kind never reaches the free-text column # SKIP
+  ---
+  duration_ms: 0.367333
+  type: 'test'
+  ...
+# Subtest: staff_events.kind has no CHECK and no catalog — the vocabulary is only enforced in code
+ok 601 - staff_events.kind has no CHECK and no catalog — the vocabulary is only enforced in code # SKIP
+  ---
+  duration_ms: 1.063917
+  type: 'test'
+  ...
+# Subtest: social, onboarding and metering
+ok 602 - social, onboarding and metering # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.211917
+  type: 'suite'
+  ...
+# Subtest: the database refuses a card number in the token column, whatever writes it
+ok 603 - the database refuses a card number in the token column, whatever writes it # SKIP
+  ---
+  duration_ms: 0.487958
+  type: 'test'
+  ...
+# Subtest: the database refuses anything but four digits in last4
+ok 604 - the database refuses anything but four digits in last4 # SKIP
+  ---
+  duration_ms: 0.047792
+  type: 'test'
+  ...
+# Subtest: the database refuses an impossible expiry
+ok 605 - the database refuses an impossible expiry # SKIP
+  ---
+  duration_ms: 0.038292
+  type: 'test'
+  ...
+# Subtest: there is no column on client_cards that could hold a card number or a security code
+ok 606 - there is no column on client_cards that could hold a card number or a security code # SKIP
+  ---
+  duration_ms: 0.081083
+  type: 'test'
+  ...
+# Subtest: putClientCard stores an instrument and refreshing it neither erases nor reinstates
+ok 607 - putClientCard stores an instrument and refreshing it neither erases nor reinstates # SKIP
+  ---
+  duration_ms: 0.042375
+  type: 'test'
+  ...
+# Subtest: removeClientCard keeps the first removal date and never throws on a second call
+ok 608 - removeClientCard keeps the first removal date and never throws on a second call # SKIP
+  ---
+  duration_ms: 0.0835
+  type: 'test'
+  ...
+# Subtest: a token already on file for another client is refused, not silently handed over
+ok 609 - a token already on file for another client is refused, not silently handed over # SKIP
+  ---
+  duration_ms: 0.0325
+  type: 'test'
+  ...
+# Subtest: putClientCard refuses a PAN before it reaches the database
+ok 610 - putClientCard refuses a PAN before it reaches the database # SKIP
+  ---
+  duration_ms: 0.147208
+  type: 'test'
+  ...
+# Subtest: startSubscription opens a live version and getSubscriptionAt finds it
+ok 611 - startSubscription opens a live version and getSubscriptionAt finds it # SKIP
+  ---
+  duration_ms: 0.206542
+  type: 'test'
+  ...
+# Subtest: an unrecorded price is stored as NULL and stays NULL
+ok 612 - an unrecorded price is stored as NULL and stays NULL # SKIP
+  ---
+  duration_ms: 0.167791
+  type: 'test'
+  ...
+# Subtest: the database refuses a second live subscription for the same client
+ok 613 - the database refuses a second live subscription for the same client # SKIP
+  ---
+  duration_ms: 0.0315
+  type: 'test'
+  ...
+# Subtest: changeTier closes the live version and opens its successor in one statement
+ok 614 - changeTier closes the live version and opens its successor in one statement # SKIP
+  ---
+  duration_ms: 0.025542
+  type: 'test'
+  ...
+# Subtest: changeTier carries the card and the processor reference forward
+ok 615 - changeTier carries the card and the processor reference forward # SKIP
+  ---
+  duration_ms: 0.024958
+  type: 'test'
+  ...
+# Subtest: the same processor reference may repeat down the version chain but not across two live rows
+ok 616 - the same processor reference may repeat down the version chain but not across two live rows # SKIP
+  ---
+  duration_ms: 0.021542
+  type: 'test'
+  ...
+# Subtest: a live row's price cannot be updated — the trigger sends you to open a version
+ok 617 - a live row's price cannot be updated — the trigger sends you to open a version # SKIP
+  ---
+  duration_ms: 0.024584
+  type: 'test'
+  ...
+# Subtest: the status a row reports and the cancellation it carries cannot disagree
+ok 618 - the status a row reports and the cancellation it carries cannot disagree # SKIP
+  ---
+  duration_ms: 0.020958
+  type: 'test'
+  ...
+# Subtest: cancelSubscription records when they asked, separately from when it ends
+ok 619 - cancelSubscription records when they asked, separately from when it ends # SKIP
+  ---
+  duration_ms: 0.023166
+  type: 'test'
+  ...
+# Subtest: the date they asked and the date it ends stay separate when the end date is known
+ok 620 - the date they asked and the date it ends stay separate when the end date is known # SKIP
+  ---
+  duration_ms: 0.020583
+  type: 'test'
+  ...
+# Subtest: a client who cancels can sign up again
+ok 621 - a client who cancels can sign up again # SKIP
+  ---
+  duration_ms: 0.022542
+  type: 'test'
+  ...
+# Subtest: a genuine double-booking is refused in words, not a constraint name
+ok 622 - a genuine double-booking is refused in words, not a constraint name # SKIP
+  ---
+  duration_ms: 0.02025
+  type: 'test'
+  ...
+# Subtest: a plan change that loses a race says so in words, and says nothing was saved
+ok 623 - a plan change that loses a race says so in words, and says nothing was saved # SKIP
+  ---
+  duration_ms: 0.02225
+  type: 'test'
+  ...
+# Subtest: the period window must be a real window or absent entirely
+ok 624 - the period window must be a real window or absent entirely # SKIP
+  ---
+  duration_ms: 0.0225
+  type: 'test'
+  ...
+# Subtest: a subscription physically cannot point at another client's card
+ok 625 - a subscription physically cannot point at another client's card # SKIP
+  ---
+  duration_ms: 0.021
+  type: 'test'
+  ...
+# Subtest: attachCard moves the instrument without opening a version, and refuses a removed one
+ok 626 - attachCard moves the instrument without opening a version, and refuses a removed one # SKIP
+  ---
+  duration_ms: 0.022834
+  type: 'test'
+  ...
+# Subtest: a card that paid for something cannot be deleted out from under it
+ok 627 - a card that paid for something cannot be deleted out from under it # SKIP
+  ---
+  duration_ms: 0.020417
+  type: 'test'
+  ...
+# Subtest: upsert stores a line and re-running updates rather than duplicating
+ok 628 - upsert stores a line and re-running updates rather than duplicating # SKIP
+  ---
+  duration_ms: 0.31425
+  type: 'test'
+  ...
+# Subtest: a later pull that omits the APR does not erase the known rate
+ok 629 - a later pull that omits the APR does not erase the known rate # SKIP
+  ---
+  duration_ms: 0.045541
+  type: 'test'
+  ...
+# Subtest: a line with no account_ref inserts rather than merging into another card
+ok 630 - a line with no account_ref inserts rather than merging into another card # SKIP
+  ---
+  duration_ms: 0.03825
+  type: 'test'
+  ...
+# Subtest: ingestCrsResult reads the lines out of a stored pull
+ok 631 - ingestCrsResult reads the lines out of a stored pull # SKIP
+  ---
+  duration_ms: 0.0385
+  type: 'test'
+  ...
+# Subtest: the schema refuses a negative limit and an out-of-range APR
+ok 632 - the schema refuses a negative limit and an out-of-range APR # SKIP
+  ---
+  duration_ms: 0.547
+  type: 'test'
+  ...
+# Subtest: UnderwriteIQ chain: sim client → CRS emit → decision stamp → engine report → u-02 readiness
+ok 633 - UnderwriteIQ chain: sim client → CRS emit → decision stamp → engine report → u-02 readiness # SKIP
+  ---
+  duration_ms: 0.805917
+  type: 'test'
+  ...
+# Subtest: end-to-end verification harness
+ok 634 - end-to-end verification harness # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.198917
+  type: 'suite'
+  ...
+# Subtest: invoice-writing workflows against real Postgres
+ok 635 - invoice-writing workflows against real Postgres # SKIP no DATABASE_URL
+  ---
+  duration_ms: 0.217542
+  type: 'suite'
+  ...
+1..635
+# tests 640
+# suites 72
+# pass 50
+# fail 0
+# cancelled 0
+# skipped 590
+# todo 0
+# duration_ms 1260.311333
+EXIT=0

@@ -1,0 +1,1237 @@
+{
+  "generated_at": "2026-08-19T02:43:36.872Z",
+  "db_target": "aws-1-us-west-2.pooler.supabase.com/postgres",
+  "excluded_client_id": "9af65808-a619-4e65-ae91-239766a006b7",
+  "results": {
+    "q1_tables_named_bookings": {
+      "sql": "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_name = 'bookings'",
+      "row_count": 0,
+      "rows": []
+    },
+    "q1_tables_containing_book": {
+      "sql": "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_name ILIKE '%book%' AND table_schema NOT IN ('pg_catalog','information_schema') ORDER BY table_schema, table_name",
+      "row_count": 1,
+      "rows": [
+        {
+          "table_schema": "public",
+          "table_name": "v_partner_book",
+          "table_type": "VIEW"
+        }
+      ]
+    },
+    "q2_v_partner_book_exists": {
+      "sql": "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_name = 'v_partner_book'",
+      "row_count": 1,
+      "rows": [
+        {
+          "table_schema": "public",
+          "table_name": "v_partner_book",
+          "table_type": "VIEW"
+        }
+      ]
+    },
+    "q2_v_partner_book_count": {
+      "sql": "SELECT count(*)::int AS row_count FROM v_partner_book",
+      "row_count": 1,
+      "rows": [
+        {
+          "row_count": 0
+        }
+      ]
+    },
+    "q3_total": {
+      "sql": "SELECT count(*)::int AS total FROM tasks WHERE title = 'Strategy session booked'",
+      "row_count": 1,
+      "rows": [
+        {
+          "total": 16
+        }
+      ]
+    },
+    "q3_by_source_workflow": {
+      "sql": "SELECT source_workflow, count(*)::int AS n FROM tasks WHERE title = 'Strategy session booked' GROUP BY source_workflow ORDER BY n DESC",
+      "row_count": 1,
+      "rows": [
+        {
+          "source_workflow": "calcom",
+          "n": 16
+        }
+      ]
+    },
+    "q3_due_at_nonnull": {
+      "sql": "SELECT count(*) FILTER (WHERE due_at IS NOT NULL)::int AS with_due_at, count(*) FILTER (WHERE due_at IS NULL)::int AS null_due_at, min(due_at) AS min_due_at, max(due_at) AS max_due_at FROM tasks WHERE title = 'Strategy session booked'",
+      "row_count": 1,
+      "rows": [
+        {
+          "with_due_at": 16,
+          "null_due_at": 0,
+          "min_due_at": "2026-08-12T17:30:00.000Z",
+          "max_due_at": "2026-08-19T03:00:00.000Z"
+        }
+      ]
+    },
+    "q3_by_phoenix_date": {
+      "sql": "SELECT (due_at AT TIME ZONE 'America/Phoenix')::date AS phoenix_date, count(*)::int AS n FROM tasks WHERE title = 'Strategy session booked' AND due_at IS NOT NULL GROUP BY 1 ORDER BY 1",
+      "row_count": 7,
+      "rows": [
+        {
+          "phoenix_date": "2026-08-12T07:00:00.000Z",
+          "n": 1
+        },
+        {
+          "phoenix_date": "2026-08-13T07:00:00.000Z",
+          "n": 1
+        },
+        {
+          "phoenix_date": "2026-08-14T07:00:00.000Z",
+          "n": 4
+        },
+        {
+          "phoenix_date": "2026-08-15T07:00:00.000Z",
+          "n": 3
+        },
+        {
+          "phoenix_date": "2026-08-16T07:00:00.000Z",
+          "n": 3
+        },
+        {
+          "phoenix_date": "2026-08-17T07:00:00.000Z",
+          "n": 2
+        },
+        {
+          "phoenix_date": "2026-08-18T07:00:00.000Z",
+          "n": 2
+        }
+      ]
+    },
+    "q3_on_2026_08_18_phoenix": {
+      "sql": "SELECT count(*)::int AS n FROM tasks WHERE title = 'Strategy session booked' AND (due_at AT TIME ZONE 'America/Phoenix')::date = DATE '2026-08-18'",
+      "row_count": 1,
+      "rows": [
+        {
+          "n": 2
+        }
+      ]
+    },
+    "q3_on_2026_08_14_phoenix": {
+      "sql": "SELECT count(*)::int AS n FROM tasks WHERE title = 'Strategy session booked' AND (due_at AT TIME ZONE 'America/Phoenix')::date = DATE '2026-08-14'",
+      "row_count": 1,
+      "rows": [
+        {
+          "n": 4
+        }
+      ]
+    },
+    "q3_rows_excluding_forbidden": {
+      "sql": "SELECT id, due_at, (due_at AT TIME ZONE 'America/Phoenix') AS due_at_phoenix, source_workflow, body, client_id FROM tasks WHERE title = 'Strategy session booked' AND (client_id IS DISTINCT FROM $1::uuid) ORDER BY due_at NULLS LAST, id",
+      "row_count": 16,
+      "rows": [
+        {
+          "id": "0d9c9f57-e67c-4e03-8015-10b871e969df",
+          "due_at": "2026-08-12T17:30:00.000Z",
+          "due_at_phoenix": "2026-08-12T17:30:00.000Z",
+          "source_workflow": "calcom",
+          "body": "58986827-e0f0-48c5-9969-30337cf21dc3",
+          "client_id": "8fec7a8c-34a8-410c-b602-cc65242d7496"
+        },
+        {
+          "id": "d886c9e8-35fe-4d64-a26e-df7893f47fd2",
+          "due_at": "2026-08-13T18:00:00.000Z",
+          "due_at_phoenix": "2026-08-13T18:00:00.000Z",
+          "source_workflow": "calcom",
+          "body": "a2357766-84cf-4f6d-8cf5-3eedc3c09b62",
+          "client_id": "a52219cc-ec34-4087-8a3c-16be1d064f6e"
+        },
+        {
+          "id": "85b61d15-d6d3-4e59-937d-41b28f0fdcde",
+          "due_at": "2026-08-14T18:00:00.000Z",
+          "due_at_phoenix": "2026-08-14T18:00:00.000Z",
+          "source_workflow": "calcom",
+          "body": "d57cd1ee-7d25-4835-8dc5-2d50600cda46",
+          "client_id": "64cbce0f-78e6-42a2-ae84-674944fb0458"
+        },
+        {
+          "id": "743f300d-797f-4407-af5b-02dc677a6008",
+          "due_at": "2026-08-14T22:30:00.000Z",
+          "due_at_phoenix": "2026-08-14T22:30:00.000Z",
+          "source_workflow": "calcom",
+          "body": "7ad12b2a-30fd-4895-8166-c82f4b877d3d",
+          "client_id": "b0f3a99b-246a-44ff-861e-dac7e9042428"
+        },
+        {
+          "id": "16e4c565-81d7-4b71-8eff-2e1f88a8c109",
+          "due_at": "2026-08-15T00:00:00.000Z",
+          "due_at_phoenix": "2026-08-15T00:00:00.000Z",
+          "source_workflow": "calcom",
+          "body": "8ff72166-c30f-4f7d-a3b5-9d3e30cec204",
+          "client_id": "fcb6ba27-3577-4c29-a819-5c9eed4fdf41"
+        },
+        {
+          "id": "8a188bbc-e060-4c89-95f7-23d0f928dc49",
+          "due_at": "2026-08-15T01:00:00.000Z",
+          "due_at_phoenix": "2026-08-15T01:00:00.000Z",
+          "source_workflow": "calcom",
+          "body": "e0f59381-c1dd-4b40-8738-f30a16f087ad",
+          "client_id": "9bcbdd19-1fee-410d-8a8d-357ca7c2acee"
+        },
+        {
+          "id": "ac9bf15e-c118-4e90-9e20-f332f6069866",
+          "due_at": "2026-08-15T16:30:00.000Z",
+          "due_at_phoenix": "2026-08-15T16:30:00.000Z",
+          "source_workflow": "calcom",
+          "body": "7576aa17-7cf3-4399-b90c-c29c879d743a",
+          "client_id": "0e1b8b02-df5b-4711-b216-690e0676b870"
+        },
+        {
+          "id": "2042b639-e964-4e28-9d85-13b45c3e6384",
+          "due_at": "2026-08-15T18:00:00.000Z",
+          "due_at_phoenix": "2026-08-15T18:00:00.000Z",
+          "source_workflow": "calcom",
+          "body": "fc46bfca-8260-41f9-9563-53e548cd7145",
+          "client_id": "ec5f4923-7b2e-4ddf-a947-5637b2239499"
+        },
+        {
+          "id": "442e99be-42f6-4dfc-b4f1-326803928fd1",
+          "due_at": "2026-08-15T19:00:00.000Z",
+          "due_at_phoenix": "2026-08-15T19:00:00.000Z",
+          "source_workflow": "calcom",
+          "body": "7f417b37-1193-4092-a99c-f4573d93b549",
+          "client_id": "a40ade2b-6bde-4dca-a65a-439e8b99993a"
+        },
+        {
+          "id": "a195e716-b90c-4656-9d5c-c1ac9c75efc2",
+          "due_at": "2026-08-16T17:30:00.000Z",
+          "due_at_phoenix": "2026-08-16T17:30:00.000Z",
+          "source_workflow": "calcom",
+          "body": "7ed956b6-f8a9-41b0-bc95-ca7e57ac6d1f",
+          "client_id": "55bffcc3-46c0-4d23-93a8-bfe63af15b65"
+        },
+        {
+          "id": "1b4d4b5b-d120-4680-bd2c-f695354ee84d",
+          "due_at": "2026-08-16T19:00:00.000Z",
+          "due_at_phoenix": "2026-08-16T19:00:00.000Z",
+          "source_workflow": "calcom",
+          "body": "3aa5c8e7-3c6f-4a9c-afe1-524c6010883c",
+          "client_id": "83d74f77-dc76-4a87-939a-72b89590b2e9"
+        },
+        {
+          "id": "1a19d10f-5cb9-456a-b292-254c50f69bfc",
+          "due_at": "2026-08-16T21:00:00.000Z",
+          "due_at_phoenix": "2026-08-16T21:00:00.000Z",
+          "source_workflow": "calcom",
+          "body": "da41d474-c7dd-4eb0-8484-273ddf1756c6",
+          "client_id": "0d9284e3-cd58-42d3-8093-e2fe9555c266"
+        },
+        {
+          "id": "72e10731-62f8-4886-89ed-379c49ad0506",
+          "due_at": "2026-08-17T17:00:00.000Z",
+          "due_at_phoenix": "2026-08-17T17:00:00.000Z",
+          "source_workflow": "calcom",
+          "body": "2b8ab71c-d882-4bf9-860c-36da6c802658",
+          "client_id": "ca2bc6c4-5e5e-4a5a-832a-8129b73195f3"
+        },
+        {
+          "id": "bc843d8d-ac8d-4b8b-be5f-fe2651a9ec44",
+          "due_at": "2026-08-17T20:00:00.000Z",
+          "due_at_phoenix": "2026-08-17T20:00:00.000Z",
+          "source_workflow": "calcom",
+          "body": "899871a2-f1de-46e3-94c2-af24d3162699",
+          "client_id": "89f234f6-cf92-4a82-883c-0f0f2b9ca093"
+        },
+        {
+          "id": "c31d7a41-1c8d-4fc9-8771-784b82ed7a81",
+          "due_at": "2026-08-18T16:30:00.000Z",
+          "due_at_phoenix": "2026-08-18T16:30:00.000Z",
+          "source_workflow": "calcom",
+          "body": "0ab7f311-b7ad-4d6e-b14d-9117ddcbe365",
+          "client_id": "44bcaf5f-ad35-4fc7-987f-5efcc72e54ed"
+        },
+        {
+          "id": "d5300a31-7620-4abf-8ca7-c9295d1ebbaf",
+          "due_at": "2026-08-19T03:00:00.000Z",
+          "due_at_phoenix": "2026-08-19T03:00:00.000Z",
+          "source_workflow": "calcom",
+          "body": "5508ab7f-b520-48e3-b3ab-be9173a90f1d",
+          "client_id": "edca0767-88e9-4cf4-8837-47382049503a"
+        }
+      ]
+    },
+    "q3_forbidden_client_rowcount_only": {
+      "sql": "SELECT count(*)::int AS suppressed_rows_for_excluded_client FROM tasks WHERE title = 'Strategy session booked' AND client_id = $1::uuid",
+      "row_count": 1,
+      "rows": [
+        {
+          "suppressed_rows_for_excluded_client": 0
+        }
+      ]
+    },
+    "q4_events_columns": {
+      "sql": "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'events' AND table_schema='public' ORDER BY ordinal_position",
+      "row_count": 11,
+      "rows": [
+        {
+          "column_name": "id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "org_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "name",
+          "data_type": "text"
+        },
+        {
+          "column_name": "version",
+          "data_type": "integer"
+        },
+        {
+          "column_name": "idempotency_key",
+          "data_type": "text"
+        },
+        {
+          "column_name": "client_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "payload",
+          "data_type": "jsonb"
+        },
+        {
+          "column_name": "replayed_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "is_demo",
+          "data_type": "boolean"
+        }
+      ]
+    },
+    "q4_booking_created_total": {
+      "sql": "SELECT count(*)::int AS n FROM events WHERE name = 'booking.created'",
+      "row_count": 1,
+      "rows": [
+        {
+          "n": 31
+        }
+      ]
+    },
+    "q4_booking_created_by_payload_source": {
+      "sql": "SELECT payload->>'source' AS payload_source, count(*)::int AS n FROM events WHERE name = 'booking.created' GROUP BY 1 ORDER BY n DESC",
+      "row_count": 4,
+      "rows": [
+        {
+          "payload_source": "clickfunnels",
+          "n": 27
+        },
+        {
+          "payload_source": "gauntlet-all",
+          "n": 2
+        },
+        {
+          "payload_source": "gauntlet",
+          "n": 1
+        },
+        {
+          "payload_source": "sim",
+          "n": 1
+        }
+      ]
+    },
+    "q4_event_names_like_booking": {
+      "sql": "SELECT name, count(*)::int AS n FROM events WHERE name ILIKE '%book%' GROUP BY 1 ORDER BY n DESC",
+      "row_count": 3,
+      "rows": [
+        {
+          "name": "booking.created",
+          "n": 31
+        },
+        {
+          "name": "booking.cancelled",
+          "n": 1
+        },
+        {
+          "name": "booking.noshow",
+          "n": 1
+        }
+      ]
+    },
+    "q5_webhook_captures_exists": {
+      "sql": "SELECT table_schema, table_name FROM information_schema.tables WHERE table_name = 'webhook_captures'",
+      "row_count": 1,
+      "rows": [
+        {
+          "table_schema": "public",
+          "table_name": "webhook_captures"
+        }
+      ]
+    },
+    "q5_by_provider": {
+      "sql": "SELECT provider, count(*)::int AS n, max(created_at) AS latest_created_at FROM webhook_captures GROUP BY provider ORDER BY n DESC",
+      "row_count": 1,
+      "rows": [
+        {
+          "provider": "clickfunnels",
+          "n": 452,
+          "latest_created_at": "2026-08-18T21:46:13.099Z"
+        }
+      ]
+    },
+    "q5_total": {
+      "sql": "SELECT count(*)::int AS total, max(created_at) AS latest_created_at FROM webhook_captures",
+      "row_count": 1,
+      "rows": [
+        {
+          "total": 452,
+          "latest_created_at": "2026-08-18T21:46:13.099Z"
+        }
+      ]
+    },
+    "q6_plaid_items_exists": {
+      "sql": "SELECT table_schema, table_name FROM information_schema.tables WHERE table_name = 'plaid_items'",
+      "row_count": 1,
+      "rows": [
+        {
+          "table_schema": "public",
+          "table_name": "plaid_items"
+        }
+      ]
+    },
+    "q6_plaid_items_count": {
+      "sql": "SELECT count(*)::int AS n FROM plaid_items",
+      "row_count": 1,
+      "rows": [
+        {
+          "n": 0
+        }
+      ]
+    },
+    "q7_call_outcomes_columns": {
+      "sql": "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'call_outcomes' AND table_schema='public' ORDER BY ordinal_position",
+      "row_count": 18,
+      "rows": [
+        {
+          "column_name": "id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "org_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "client_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "staff_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "task_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "booking_ref",
+          "data_type": "text"
+        },
+        {
+          "column_name": "outcome",
+          "data_type": "text"
+        },
+        {
+          "column_name": "belief_failed",
+          "data_type": "text"
+        },
+        {
+          "column_name": "cash_collected_cents",
+          "data_type": "integer"
+        },
+        {
+          "column_name": "transaction_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "recording_url",
+          "data_type": "text"
+        },
+        {
+          "column_name": "duration_seconds",
+          "data_type": "integer"
+        },
+        {
+          "column_name": "notes",
+          "data_type": "text"
+        },
+        {
+          "column_name": "logged_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone"
+        },
+        {
+          "column_name": "is_demo",
+          "data_type": "boolean"
+        },
+        {
+          "column_name": "checklist",
+          "data_type": "jsonb"
+        }
+      ]
+    },
+    "q7_call_outcomes_total": {
+      "sql": "SELECT count(*)::int AS n FROM call_outcomes",
+      "row_count": 1,
+      "rows": [
+        {
+          "n": 6
+        }
+      ]
+    },
+    "q8_dispute_letters_count": {
+      "sql": "SELECT count(*)::int AS n FROM dispute_letters",
+      "row_count": 1,
+      "rows": [
+        {
+          "n": 0
+        }
+      ]
+    },
+    "q8_first_delivery_at_location": {
+      "sql": "SELECT table_name, column_name FROM information_schema.columns WHERE column_name = 'first_delivery_at' AND table_schema='public' ORDER BY table_name",
+      "row_count": 1,
+      "rows": [
+        {
+          "table_name": "inquiry_removal_cases",
+          "column_name": "first_delivery_at"
+        }
+      ]
+    },
+    "q9_schema_migrations_columns": {
+      "sql": "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'schema_migrations' AND table_schema='public' ORDER BY ordinal_position",
+      "row_count": 2,
+      "rows": [
+        {
+          "column_name": "key",
+          "data_type": "text"
+        },
+        {
+          "column_name": "applied_at",
+          "data_type": "timestamp with time zone"
+        }
+      ]
+    },
+    "q9_schema_migrations_count": {
+      "sql": "SELECT count(*)::int AS n FROM schema_migrations",
+      "row_count": 1,
+      "rows": [
+        {
+          "n": 162
+        }
+      ]
+    },
+    "q9_latest_migrations": {
+      "sql": "SELECT * FROM schema_migrations ORDER BY 1 DESC LIMIT 15",
+      "row_count": 15,
+      "rows": [
+        {
+          "key": "seed/011_followup_sms_pack.sql",
+          "applied_at": "2026-08-16T05:30:16.184Z"
+        },
+        {
+          "key": "seed/010_bs_sms_precall.sql",
+          "applied_at": "2026-08-16T03:09:25.729Z"
+        },
+        {
+          "key": "seed/009_u02_funding_delivery_template.sql",
+          "applied_at": "2026-08-16T03:09:56.542Z"
+        },
+        {
+          "key": "seed/008_contract_messages.sql",
+          "applied_at": "2026-08-02T15:28:45.529Z"
+        },
+        {
+          "key": "seed/007_portal_magic_link_template.sql",
+          "applied_at": "2026-08-02T15:28:45.219Z"
+        },
+        {
+          "key": "seed/007_payment_link_template.sql",
+          "applied_at": "2026-08-02T15:28:44.899Z"
+        },
+        {
+          "key": "seed/007_contract_templates.sql",
+          "applied_at": "2026-08-02T15:28:44.579Z"
+        },
+        {
+          "key": "seed/006_message_templates_source_doc.sql",
+          "applied_at": "2026-07-31T02:24:53.163Z"
+        },
+        {
+          "key": "seed/002_pipelines.sql",
+          "applied_at": "2026-07-31T02:24:53.163Z"
+        },
+        {
+          "key": "schema/020_auth.sql",
+          "applied_at": "2026-07-31T02:24:53.163Z"
+        },
+        {
+          "key": "schema/010_outbound_calls.sql",
+          "applied_at": "2026-07-31T02:24:53.163Z"
+        },
+        {
+          "key": "schema/009_staff_targets.sql",
+          "applied_at": "2026-07-31T02:24:53.163Z"
+        },
+        {
+          "key": "schema/008_opt_out.sql",
+          "applied_at": "2026-07-31T02:24:53.163Z"
+        },
+        {
+          "key": "schema/007_cards_unique.sql",
+          "applied_at": "2026-07-31T02:24:53.163Z"
+        },
+        {
+          "key": "schema/006_tasks_idempotency.sql",
+          "applied_at": "2026-07-31T02:24:53.163Z"
+        }
+      ]
+    },
+    "q10_tasks_columns": {
+      "sql": "SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = 'tasks' AND table_schema='public' ORDER BY ordinal_position",
+      "row_count": 15,
+      "rows": [
+        {
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "org_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "client_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "assignee",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "title",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "body",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "due_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "source_workflow",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "done",
+          "data_type": "boolean",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_name": "assignee_role",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "assignee_staff_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "meeting_url",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_name": "is_demo",
+          "data_type": "boolean",
+          "is_nullable": "NO"
+        }
+      ]
+    },
+    "q10_meeting_url_present": {
+      "sql": "SELECT count(*)::int AS n FROM information_schema.columns WHERE table_name='tasks' AND table_schema='public' AND column_name='meeting_url'",
+      "row_count": 1,
+      "rows": [
+        {
+          "n": 1
+        }
+      ]
+    },
+    "q7_with_booking_ref": {
+      "sql": "SELECT count(*) FILTER (WHERE booking_ref IS NOT NULL AND booking_ref <> '')::int AS with_booking_ref, count(*) FILTER (WHERE booking_ref IS NULL OR booking_ref = '')::int AS without_booking_ref, count(*)::int AS total FROM call_outcomes",
+      "row_count": 1,
+      "rows": [
+        {
+          "with_booking_ref": 0,
+          "without_booking_ref": 6,
+          "total": 6
+        }
+      ]
+    },
+    "q7_booking_ref_values": {
+      "sql": "SELECT id, booking_ref, task_id, outcome, logged_at FROM call_outcomes WHERE client_id IS DISTINCT FROM $1::uuid ORDER BY logged_at NULLS LAST",
+      "row_count": 1,
+      "rows": [
+        {
+          "id": "c54cc851-a49d-409b-a737-203d4962107a",
+          "booking_ref": null,
+          "task_id": null,
+          "outcome": "downsell",
+          "logged_at": "2026-08-18T16:21:10.261Z"
+        }
+      ]
+    },
+    "q8_inquiry_removal_cases_total": {
+      "sql": "SELECT count(*)::int AS total, count(*) FILTER (WHERE first_delivery_at IS NOT NULL)::int AS with_first_delivery_at, min(first_delivery_at) AS min_fda, max(first_delivery_at) AS max_fda FROM inquiry_removal_cases",
+      "row_count": 1,
+      "rows": [
+        {
+          "total": 3,
+          "with_first_delivery_at": 0,
+          "min_fda": null,
+          "max_fda": null
+        }
+      ]
+    },
+    "q8_inquiry_tables": {
+      "sql": "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND table_name ILIKE '%inquir%' ORDER BY table_name",
+      "row_count": 4,
+      "rows": [
+        {
+          "table_name": "inquiry_attempts"
+        },
+        {
+          "table_name": "inquiry_log"
+        },
+        {
+          "table_name": "inquiry_prep"
+        },
+        {
+          "table_name": "inquiry_removal_cases"
+        }
+      ]
+    },
+    "q8_dispute_letter_tables": {
+      "sql": "SELECT table_name FROM information_schema.tables WHERE table_schema='public' AND (table_name ILIKE '%dispute%' OR table_name ILIKE '%letter%') ORDER BY table_name",
+      "row_count": 4,
+      "rows": [
+        {
+          "table_name": "dispute_cases"
+        },
+        {
+          "table_name": "dispute_items"
+        },
+        {
+          "table_name": "dispute_letters"
+        },
+        {
+          "table_name": "dispute_responses"
+        }
+      ]
+    },
+    "q4_source_probe_or_calcom": {
+      "sql": "SELECT count(*) FILTER (WHERE payload->>'source' = 'calcom')::int AS calcom, count(*) FILTER (WHERE payload->>'source' = 'probe')::int AS probe, count(*) FILTER (WHERE payload->>'source' IS NULL)::int AS null_source FROM events WHERE name = 'booking.created'",
+      "row_count": 1,
+      "rows": [
+        {
+          "calcom": 0,
+          "probe": 0,
+          "null_source": 0
+        }
+      ]
+    },
+    "q4_booking_created_by_source_and_demo": {
+      "sql": "SELECT payload->>'source' AS payload_source, is_demo, count(*)::int AS n, min(created_at) AS first_seen, max(created_at) AS last_seen FROM events WHERE name='booking.created' GROUP BY 1,2 ORDER BY n DESC",
+      "row_count": 4,
+      "rows": [
+        {
+          "payload_source": "clickfunnels",
+          "is_demo": false,
+          "n": 27,
+          "first_seen": "2026-08-12T23:22:27.558Z",
+          "last_seen": "2026-08-18T21:46:13.047Z"
+        },
+        {
+          "payload_source": "gauntlet-all",
+          "is_demo": false,
+          "n": 2,
+          "first_seen": "2026-08-13T07:22:36.400Z",
+          "last_seen": "2026-08-13T07:22:42.217Z"
+        },
+        {
+          "payload_source": "gauntlet",
+          "is_demo": false,
+          "n": 1,
+          "first_seen": "2026-08-13T00:17:21.417Z",
+          "last_seen": "2026-08-13T00:17:21.417Z"
+        },
+        {
+          "payload_source": "sim",
+          "is_demo": false,
+          "n": 1,
+          "first_seen": "2026-08-13T00:39:43.595Z",
+          "last_seen": "2026-08-13T00:39:43.595Z"
+        }
+      ]
+    },
+    "q2_view_definition": {
+      "sql": "SELECT pg_get_viewdef('v_partner_book'::regclass, true) AS definition",
+      "row_count": 1,
+      "rows": [
+        {
+          "definition": " SELECT org_id,\n    partner_id,\n    count(*)::integer AS clients\n   FROM clients c\n  WHERE partner_id IS NOT NULL\n  GROUP BY org_id, partner_id;"
+        }
+      ]
+    },
+    "q9_latest_migrations_dir": {
+      "sql": "SELECT key, applied_at FROM schema_migrations WHERE key LIKE 'migrations/%' ORDER BY key DESC LIMIT 12",
+      "row_count": 12,
+      "rows": [
+        {
+          "key": "migrations/176_company_brain_upload_reviews.sql",
+          "applied_at": "2026-08-18T03:51:18.241Z"
+        },
+        {
+          "key": "migrations/175_company_brain_threads.sql",
+          "applied_at": "2026-08-18T03:51:17.951Z"
+        },
+        {
+          "key": "migrations/174_company_brain_uploads.sql",
+          "applied_at": "2026-08-18T03:51:17.656Z"
+        },
+        {
+          "key": "migrations/173_specialist_role_name.sql",
+          "applied_at": "2026-08-18T00:06:17.932Z"
+        },
+        {
+          "key": "migrations/172_wl_marketing.sql",
+          "applied_at": "2026-08-17T23:27:04.693Z"
+        },
+        {
+          "key": "migrations/171_content.sql",
+          "applied_at": "2026-08-17T22:14:42.061Z"
+        },
+        {
+          "key": "migrations/170_call_outcome_checklist.sql",
+          "applied_at": "2026-08-17T22:14:41.749Z"
+        },
+        {
+          "key": "migrations/169_contract_template_placeholders.sql",
+          "applied_at": "2026-08-17T00:39:59.833Z"
+        },
+        {
+          "key": "migrations/168_retire_ghl_agents.sql",
+          "applied_at": "2026-08-16T05:30:05.390Z"
+        },
+        {
+          "key": "migrations/167_dispute_authorization_consent.sql",
+          "applied_at": "2026-08-16T02:04:05.546Z"
+        },
+        {
+          "key": "migrations/166_customer_insights.sql",
+          "applied_at": "2026-08-16T00:53:37.279Z"
+        },
+        {
+          "key": "migrations/165_messages_attachments.sql",
+          "applied_at": "2026-08-14T19:22:24.816Z"
+        }
+      ]
+    },
+    "q9_most_recently_applied": {
+      "sql": "SELECT key, applied_at FROM schema_migrations ORDER BY applied_at DESC LIMIT 12",
+      "row_count": 12,
+      "rows": [
+        {
+          "key": "migrations/176_company_brain_upload_reviews.sql",
+          "applied_at": "2026-08-18T03:51:18.241Z"
+        },
+        {
+          "key": "migrations/175_company_brain_threads.sql",
+          "applied_at": "2026-08-18T03:51:17.951Z"
+        },
+        {
+          "key": "migrations/174_company_brain_uploads.sql",
+          "applied_at": "2026-08-18T03:51:17.656Z"
+        },
+        {
+          "key": "migrations/173_specialist_role_name.sql",
+          "applied_at": "2026-08-18T00:06:17.932Z"
+        },
+        {
+          "key": "migrations/172_wl_marketing.sql",
+          "applied_at": "2026-08-17T23:27:04.693Z"
+        },
+        {
+          "key": "migrations/171_content.sql",
+          "applied_at": "2026-08-17T22:14:42.061Z"
+        },
+        {
+          "key": "migrations/170_call_outcome_checklist.sql",
+          "applied_at": "2026-08-17T22:14:41.749Z"
+        },
+        {
+          "key": "migrations/169_contract_template_placeholders.sql",
+          "applied_at": "2026-08-17T00:39:59.833Z"
+        },
+        {
+          "key": "seed/011_followup_sms_pack.sql",
+          "applied_at": "2026-08-16T05:30:16.184Z"
+        },
+        {
+          "key": "migrations/168_retire_ghl_agents.sql",
+          "applied_at": "2026-08-16T05:30:05.390Z"
+        },
+        {
+          "key": "seed/009_u02_funding_delivery_template.sql",
+          "applied_at": "2026-08-16T03:09:56.542Z"
+        },
+        {
+          "key": "seed/010_bs_sms_precall.sql",
+          "applied_at": "2026-08-16T03:09:25.729Z"
+        }
+      ]
+    },
+    "q9_migration_146": {
+      "sql": "SELECT key, applied_at FROM schema_migrations WHERE key LIKE 'migrations/146%'",
+      "row_count": 1,
+      "rows": [
+        {
+          "key": "migrations/146_tasks_meeting_url.sql",
+          "applied_at": "2026-08-05T00:51:26.432Z"
+        }
+      ]
+    },
+    "q9_counts_by_dir": {
+      "sql": "SELECT split_part(key,'/',1) AS dir, count(*)::int AS n FROM schema_migrations GROUP BY 1 ORDER BY 1",
+      "row_count": 3,
+      "rows": [
+        {
+          "dir": "migrations",
+          "n": 143
+        },
+        {
+          "dir": "schema",
+          "n": 10
+        },
+        {
+          "dir": "seed",
+          "n": 9
+        }
+      ]
+    },
+    "q3_rows_excluding_forbidden_text_tz": {
+      "sql": "SELECT id::text AS id, to_char(due_at AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS due_at_utc, to_char(due_at AT TIME ZONE 'America/Phoenix', 'YYYY-MM-DD HH24:MI') AS due_at_phoenix, source_workflow, body, client_id::text AS client_id, meeting_url IS NOT NULL AS has_meeting_url, assignee_role, done FROM tasks WHERE title = 'Strategy session booked' AND client_id IS DISTINCT FROM $1::uuid ORDER BY due_at NULLS LAST, id",
+      "row_count": 16,
+      "rows": [
+        {
+          "id": "0d9c9f57-e67c-4e03-8015-10b871e969df",
+          "due_at_utc": "2026-08-12T17:30:00Z",
+          "due_at_phoenix": "2026-08-12 10:30",
+          "source_workflow": "calcom",
+          "body": "58986827-e0f0-48c5-9969-30337cf21dc3",
+          "client_id": "8fec7a8c-34a8-410c-b602-cc65242d7496",
+          "has_meeting_url": false,
+          "assignee_role": "closer",
+          "done": false
+        },
+        {
+          "id": "d886c9e8-35fe-4d64-a26e-df7893f47fd2",
+          "due_at_utc": "2026-08-13T18:00:00Z",
+          "due_at_phoenix": "2026-08-13 11:00",
+          "source_workflow": "calcom",
+          "body": "a2357766-84cf-4f6d-8cf5-3eedc3c09b62",
+          "client_id": "a52219cc-ec34-4087-8a3c-16be1d064f6e",
+          "has_meeting_url": false,
+          "assignee_role": "closer",
+          "done": false
+        },
+        {
+          "id": "85b61d15-d6d3-4e59-937d-41b28f0fdcde",
+          "due_at_utc": "2026-08-14T18:00:00Z",
+          "due_at_phoenix": "2026-08-14 11:00",
+          "source_workflow": "calcom",
+          "body": "d57cd1ee-7d25-4835-8dc5-2d50600cda46",
+          "client_id": "64cbce0f-78e6-42a2-ae84-674944fb0458",
+          "has_meeting_url": false,
+          "assignee_role": "closer",
+          "done": false
+        },
+        {
+          "id": "743f300d-797f-4407-af5b-02dc677a6008",
+          "due_at_utc": "2026-08-14T22:30:00Z",
+          "due_at_phoenix": "2026-08-14 15:30",
+          "source_workflow": "calcom",
+          "body": "7ad12b2a-30fd-4895-8166-c82f4b877d3d",
+          "client_id": "b0f3a99b-246a-44ff-861e-dac7e9042428",
+          "has_meeting_url": false,
+          "assignee_role": "closer",
+          "done": false
+        },
+        {
+          "id": "16e4c565-81d7-4b71-8eff-2e1f88a8c109",
+          "due_at_utc": "2026-08-15T00:00:00Z",
+          "due_at_phoenix": "2026-08-14 17:00",
+          "source_workflow": "calcom",
+          "body": "8ff72166-c30f-4f7d-a3b5-9d3e30cec204",
+          "client_id": "fcb6ba27-3577-4c29-a819-5c9eed4fdf41",
+          "has_meeting_url": false,
+          "assignee_role": "closer",
+          "done": false
+        },
+        {
+          "id": "8a188bbc-e060-4c89-95f7-23d0f928dc49",
+          "due_at_utc": "2026-08-15T01:00:00Z",
+          "due_at_phoenix": "2026-08-14 18:00",
+          "source_workflow": "calcom",
+          "body": "e0f59381-c1dd-4b40-8738-f30a16f087ad",
+          "client_id": "9bcbdd19-1fee-410d-8a8d-357ca7c2acee",
+          "has_meeting_url": false,
+          "assignee_role": "closer",
+          "done": false
+        },
+        {
+          "id": "ac9bf15e-c118-4e90-9e20-f332f6069866",
+          "due_at_utc": "2026-08-15T16:30:00Z",
+          "due_at_phoenix": "2026-08-15 09:30",
+          "source_workflow": "calcom",
+          "body": "7576aa17-7cf3-4399-b90c-c29c879d743a",
+          "client_id": "0e1b8b02-df5b-4711-b216-690e0676b870",
+          "has_meeting_url": false,
+          "assignee_role": "closer",
+          "done": false
+        },
+        {
+          "id": "2042b639-e964-4e28-9d85-13b45c3e6384",
+          "due_at_utc": "2026-08-15T18:00:00Z",
+          "due_at_phoenix": "2026-08-15 11:00",
+          "source_workflow": "calcom",
+          "body": "fc46bfca-8260-41f9-9563-53e548cd7145",
+          "client_id": "ec5f4923-7b2e-4ddf-a947-5637b2239499",
+          "has_meeting_url": false,
+          "assignee_role": "closer",
+          "done": false
+        },
+        {
+          "id": "442e99be-42f6-4dfc-b4f1-326803928fd1",
+          "due_at_utc": "2026-08-15T19:00:00Z",
+          "due_at_phoenix": "2026-08-15 12:00",
+          "source_workflow": "calcom",
+          "body": "7f417b37-1193-4092-a99c-f4573d93b549",
+          "client_id": "a40ade2b-6bde-4dca-a65a-439e8b99993a",
+          "has_meeting_url": false,
+          "assignee_role": "closer",
+          "done": false
+        },
+        {
+          "id": "a195e716-b90c-4656-9d5c-c1ac9c75efc2",
+          "due_at_utc": "2026-08-16T17:30:00Z",
+          "due_at_phoenix": "2026-08-16 10:30",
+          "source_workflow": "calcom",
+          "body": "7ed956b6-f8a9-41b0-bc95-ca7e57ac6d1f",
+          "client_id": "55bffcc3-46c0-4d23-93a8-bfe63af15b65",
+          "has_meeting_url": false,
+          "assignee_role": "closer",
+          "done": false
+        },
+        {
+          "id": "1b4d4b5b-d120-4680-bd2c-f695354ee84d",
+          "due_at_utc": "2026-08-16T19:00:00Z",
+          "due_at_phoenix": "2026-08-16 12:00",
+          "source_workflow": "calcom",
+          "body": "3aa5c8e7-3c6f-4a9c-afe1-524c6010883c",
+          "client_id": "83d74f77-dc76-4a87-939a-72b89590b2e9",
+          "has_meeting_url": false,
+          "assignee_role": "closer",
+          "done": false
+        },
+        {
+          "id": "1a19d10f-5cb9-456a-b292-254c50f69bfc",
+          "due_at_utc": "2026-08-16T21:00:00Z",
+          "due_at_phoenix": "2026-08-16 14:00",
+          "source_workflow": "calcom",
+          "body": "da41d474-c7dd-4eb0-8484-273ddf1756c6",
+          "client_id": "0d9284e3-cd58-42d3-8093-e2fe9555c266",
+          "has_meeting_url": false,
+          "assignee_role": "closer",
+          "done": false
+        },
+        {
+          "id": "72e10731-62f8-4886-89ed-379c49ad0506",
+          "due_at_utc": "2026-08-17T17:00:00Z",
+          "due_at_phoenix": "2026-08-17 10:00",
+          "source_workflow": "calcom",
+          "body": "2b8ab71c-d882-4bf9-860c-36da6c802658",
+          "client_id": "ca2bc6c4-5e5e-4a5a-832a-8129b73195f3",
+          "has_meeting_url": false,
+          "assignee_role": "closer",
+          "done": false
+        },
+        {
+          "id": "bc843d8d-ac8d-4b8b-be5f-fe2651a9ec44",
+          "due_at_utc": "2026-08-17T20:00:00Z",
+          "due_at_phoenix": "2026-08-17 13:00",
+          "source_workflow": "calcom",
+          "body": "899871a2-f1de-46e3-94c2-af24d3162699",
+          "client_id": "89f234f6-cf92-4a82-883c-0f0f2b9ca093",
+          "has_meeting_url": false,
+          "assignee_role": "closer",
+          "done": false
+        },
+        {
+          "id": "c31d7a41-1c8d-4fc9-8771-784b82ed7a81",
+          "due_at_utc": "2026-08-18T16:30:00Z",
+          "due_at_phoenix": "2026-08-18 09:30",
+          "source_workflow": "calcom",
+          "body": "0ab7f311-b7ad-4d6e-b14d-9117ddcbe365",
+          "client_id": "44bcaf5f-ad35-4fc7-987f-5efcc72e54ed",
+          "has_meeting_url": false,
+          "assignee_role": "closer",
+          "done": false
+        },
+        {
+          "id": "d5300a31-7620-4abf-8ca7-c9295d1ebbaf",
+          "due_at_utc": "2026-08-19T03:00:00Z",
+          "due_at_phoenix": "2026-08-18 20:00",
+          "source_workflow": "calcom",
+          "body": "5508ab7f-b520-48e3-b3ab-be9173a90f1d",
+          "client_id": "edca0767-88e9-4cf4-8837-47382049503a",
+          "has_meeting_url": false,
+          "assignee_role": "closer",
+          "done": false
+        }
+      ]
+    },
+    "q3_phoenix_date_text": {
+      "sql": "SELECT to_char(due_at AT TIME ZONE 'America/Phoenix', 'YYYY-MM-DD') AS phoenix_date, count(*)::int AS n FROM tasks WHERE title = 'Strategy session booked' AND due_at IS NOT NULL GROUP BY 1 ORDER BY 1",
+      "row_count": 7,
+      "rows": [
+        {
+          "phoenix_date": "2026-08-12",
+          "n": 1
+        },
+        {
+          "phoenix_date": "2026-08-13",
+          "n": 1
+        },
+        {
+          "phoenix_date": "2026-08-14",
+          "n": 4
+        },
+        {
+          "phoenix_date": "2026-08-15",
+          "n": 3
+        },
+        {
+          "phoenix_date": "2026-08-16",
+          "n": 3
+        },
+        {
+          "phoenix_date": "2026-08-17",
+          "n": 2
+        },
+        {
+          "phoenix_date": "2026-08-18",
+          "n": 2
+        }
+      ]
+    },
+    "q3_min_max_text": {
+      "sql": "SELECT to_char(min(due_at) AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS min_due_at_utc, to_char(max(due_at) AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"') AS max_due_at_utc, to_char(min(due_at) AT TIME ZONE 'America/Phoenix','YYYY-MM-DD HH24:MI') AS min_due_at_phoenix, to_char(max(due_at) AT TIME ZONE 'America/Phoenix','YYYY-MM-DD HH24:MI') AS max_due_at_phoenix FROM tasks WHERE title = 'Strategy session booked'",
+      "row_count": 1,
+      "rows": [
+        {
+          "min_due_at_utc": "2026-08-12T17:30:00Z",
+          "max_due_at_utc": "2026-08-19T03:00:00Z",
+          "min_due_at_phoenix": "2026-08-12 10:30",
+          "max_due_at_phoenix": "2026-08-18 20:00"
+        }
+      ]
+    },
+    "q10_meeting_url_fill_rate": {
+      "sql": "SELECT count(*)::int AS total, count(meeting_url)::int AS with_meeting_url FROM tasks WHERE title = 'Strategy session booked'",
+      "row_count": 1,
+      "rows": [
+        {
+          "total": 16,
+          "with_meeting_url": 0
+        }
+      ]
+    },
+    "q5_webhook_captures_columns": {
+      "sql": "SELECT column_name, data_type FROM information_schema.columns WHERE table_name='webhook_captures' AND table_schema='public' ORDER BY ordinal_position",
+      "row_count": 7,
+      "rows": [
+        {
+          "column_name": "id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "org_id",
+          "data_type": "uuid"
+        },
+        {
+          "column_name": "provider",
+          "data_type": "text"
+        },
+        {
+          "column_name": "headers",
+          "data_type": "jsonb"
+        },
+        {
+          "column_name": "raw_body",
+          "data_type": "text"
+        },
+        {
+          "column_name": "parsed",
+          "data_type": "jsonb"
+        },
+        {
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone"
+        }
+      ]
+    }
+  }
+}

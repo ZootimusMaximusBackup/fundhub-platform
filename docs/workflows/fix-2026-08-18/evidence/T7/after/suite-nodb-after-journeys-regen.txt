@@ -1,0 +1,14 @@
+# after/suite-nodb-after-journeys-regen.txt — TRIMMED for the repo.
+# Full run was    37285 lines. Kept: every failure line and the TAP summary.
+
+not ok 33 - the extraction is faithful to the code
+not ok 1886 - the expected list is exactly what db/ holds — it cannot drift silently
+not ok 2148 - an endpoint excused from the org filter still passes the session's org to its store
+# tests 5653
+# suites 416
+# pass 5647
+# fail 3
+# cancelled 0
+# skipped 3
+# todo 0
+# duration_ms 16080.971084

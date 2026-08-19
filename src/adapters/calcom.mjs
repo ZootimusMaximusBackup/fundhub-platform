@@ -7,6 +7,26 @@
 //
 // Cal.com signature: X-Cal-Signature-256 = hex HMAC-SHA256(rawBody, secret).
 // No prefix variants documented in the Cal.com spec — accept raw hex only.
+//
+// ┌──────────────────────────────────────────────────────────────────────────┐
+// │ READ THIS BEFORE "FIXING" THE 401 FROM /api/webhooks/cal(com).           │
+// │                                                                         │
+// │ Checked against the live site on 2026-08-18: the public booking page    │
+// │ apply.fundhub.ai/funding-book-call is NOT Cal.com. It is a ClickFunnels │
+// │ page running ClickFunnels' own appointment scheduler on top of Cronofy  │
+// │ Elements (api.cronofy.com). The string "cal.com" appears nowhere on it. │
+// │ Meeting type: "Funding Strategy Meeting", 30 minutes, Google Meet.      │
+// │                                                                         │
+// │ So Cal.com has never had a sender, and CALCOM_WEBHOOK_SECRET is unset.  │
+// │ verifyCalcomSignature's `if (!secret) return false` is FAIL-CLOSED BY   │
+// │ DESIGN: with no key configured every unsigned POST must be refused. The │
+// │ 401 is a correct adapter behaving correctly — not a bug. Do not weaken  │
+// │ it, and do not add a fallback that accepts unsigned bookings.           │
+// │                                                                         │
+// │ Live booking rows arrive through ClickFunnels instead (booking.created  │
+// │ events carry payload->>'source' = 'clickfunnels'). This adapter stays   │
+// │ wired and tested so it works the day a Cal.com sender is configured.    │
+// └──────────────────────────────────────────────────────────────────────────┘
 
 import crypto from "node:crypto";
 import { emit } from "../events/bus.mjs";

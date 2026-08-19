@@ -1,0 +1,125 @@
+{
+  "localStorageFlags": {
+    "fh_role": "owner",
+    "fh_token": "<len 43, starts 1noI>"
+  },
+  "apiTasksRequestsAttempted": [
+    "/api/tasks?done=false&limit=200"
+  ],
+  "apiCalls": [
+    {
+      "m": "GET",
+      "u": "/api/auth/session",
+      "s": 200
+    },
+    {
+      "m": "GET",
+      "u": "/api/shifts?roster=1",
+      "s": 200
+    },
+    {
+      "m": "GET",
+      "u": "/api/health",
+      "s": 200
+    },
+    {
+      "m": "GET",
+      "u": "/api/org-brand",
+      "s": 200
+    },
+    {
+      "m": "GET",
+      "u": "/api/tasks?done=false&limit=200",
+      "s": 200
+    }
+  ],
+  "consoleErrors": [],
+  "banners": [],
+  "bodyMentionsSchedule": {
+    "scheduledWork": [],
+    "sample": [],
+    "demo": []
+  },
+  "liveTaskQueueCall": {
+    "ok": true,
+    "source": "api",
+    "error": null,
+    "taskCount": 69,
+    "withDueAt": 17
+  },
+  "apiTasksAfterDirectCall": [
+    "/api/tasks?done=false&limit=200"
+  ],
+  "demozoneGeom": {
+    "present": true,
+    "sectionRect": {
+      "top": 0,
+      "h": 0,
+      "w": 0
+    },
+    "toggleRect": {
+      "top": 0,
+      "h": 0,
+      "w": 0
+    },
+    "sectionDisplay": "none",
+    "sectionVisibility": "visible",
+    "sectionOverflow": "visible",
+    "docScrollHeight": 900,
+    "windowInnerHeight": 900,
+    "bodyOverflowY": "hidden",
+    "shellOverflow": {
+      "display": "flex",
+      "h": 900,
+      "overflow": "visible"
+    },
+    "bodyHidden": true,
+    "elementAtToggleCenter": "DIV#.side-top"
+  },
+  "toggleClick": {
+    "error": "TimeoutError: locator.click: Timeout 8000ms exceeded.\nCall log:\n  - waiting for locator('#demoToggle')\n    - locator resolved to <button id=\"demoToggle\" class=\"demo-div\" aria-expanded=\"false\">…</butto"
+  },
+  "afterToggle": {
+    "bodyHidden": true,
+    "aria": "false",
+    "sectionClass": "demozone",
+    "acts": [
+      {
+        "tag": "SPAN",
+        "text": "Move one booking",
+        "cursor": "auto",
+        "visible": false
+      },
+      {
+        "tag": "SPAN",
+        "text": "Reschedule the other",
+        "cursor": "auto",
+        "visible": false
+      }
+    ],
+    "errbarVisible": {
+      "w": 0,
+      "h": 0,
+      "top": 0
+    }
+  },
+  "joinCallGeom": {
+    "present": true,
+    "disabled": true,
+    "rect": {
+      "w": 0,
+      "h": 0,
+      "top": 0
+    },
+    "display": "none",
+    "visibility": "visible",
+    "opacity": "0.45",
+    "parentDisplay": "flex",
+    "upNextClass": "upnext",
+    "upNextRect": {
+      "w": 310,
+      "h": 265
+    },
+    "outerHTML": "<button type=\"button\" class=\"un-join\" id=\"unJoin\" disabled=\"\" title=\"No call link on this appointment\">Join Call</button>"
+  }
+}

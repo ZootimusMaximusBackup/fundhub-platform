@@ -1,0 +1,77 @@
+src/affiliates/economics.pg.test.mjs:19:1 :: affiliate economics
+src/affiliates/economics.pg.test.mjs:239:3 :: a more specific rule wins: affiliate override beats tier default
+src/banking/recurring.pg.test.mjs:303:1 :: detected_as_of has no DEFAULT, so the write time cannot stand in for the evaluation time
+src/compliance/invariants.pg.test.mjs:108:3 :: THE LEAK TEST: an unscoped session reads zero rows from every module table
+src/compliance/invariants.pg.test.mjs:119:3 :: THE LEAK TEST: partner B reads zero rows of partner A's data
+src/compliance/invariants.pg.test.mjs:33:1 :: module invariants
+src/contracts/lifecycle.pg.test.mjs:29:1 :: contracts — the full lifecycle
+src/creative/generate.pg.test.mjs:109:3 :: a partner cannot write a job owned by another partner
+src/creative/generate.pg.test.mjs:28:1 :: creative generation
+src/creative/generate.pg.test.mjs:87:3 :: partner B cannot see partner A's generation jobs
+src/creative/generate.pg.test.mjs:97:3 :: an unscoped read returns nothing rather than everything
+src/funding/card-stacking-rounds.pg.test.mjs:110:3 :: four-stage walk + funded guard + closeout fee
+src/funding/card-stacking-rounds.pg.test.mjs:15:1 :: card-stacking round emitter (pg)
+src/galaxy/company-activity.pg.test.mjs:24:1 :: company-activity
+src/galaxy/company-activity.pg.test.mjs:73:3 :: hides demo staff when Demo Mode is off; money KPIs never include demo cash
+src/hiring/hiring-endpoints.pg.test.mjs:148:3 :: the application detail shows the FULL score history, not just the latest
+src/hiring/hiring-endpoints.pg.test.mjs:162:3 :: application detail requires an id and 404s on an unknown one
+src/hiring/hiring-endpoints.pg.test.mjs:36:1 :: hiring read endpoints
+src/http/creative-endpoints.pg.test.mjs:46:1 :: creative read endpoints
+src/http/creative-endpoints.pg.test.mjs:75:5 :: action-log — returns nothing for a partner who owns none of it
+src/http/creative-endpoints.pg.test.mjs:75:5 :: action-log?state=revertible — returns nothing for a partner who owns none of it
+src/http/creative-endpoints.pg.test.mjs:75:5 :: approvals — returns nothing for a partner who owns none of it
+src/http/creative-endpoints.pg.test.mjs:75:5 :: approvals?state=blocked — returns nothing for a partner who owns none of it
+src/http/creative-endpoints.pg.test.mjs:75:5 :: brand-kits — returns nothing for a partner who owns none of it
+src/http/creative-endpoints.pg.test.mjs:75:5 :: brand-kits?state — returns nothing for a partner who owns none of it
+src/http/creative-endpoints.pg.test.mjs:75:5 :: campaign list — returns nothing for a partner who owns none of it
+src/http/creative-endpoints.pg.test.mjs:75:5 :: campaign list?platform — returns nothing for a partner who owns none of it
+src/http/creative-endpoints.pg.test.mjs:75:5 :: connections — returns nothing for a partner who owns none of it
+src/http/creative-endpoints.pg.test.mjs:75:5 :: fatigue — returns nothing for a partner who owns none of it
+src/http/creative-endpoints.pg.test.mjs:75:5 :: fatigue?state=refresh — returns nothing for a partner who owns none of it
+src/http/creative-endpoints.pg.test.mjs:75:5 :: jobs — returns nothing for a partner who owns none of it
+src/http/creative-endpoints.pg.test.mjs:75:5 :: jobs?state — returns nothing for a partner who owns none of it
+src/http/creative-endpoints.pg.test.mjs:75:5 :: library — returns nothing for a partner who owns none of it
+src/http/creative-endpoints.pg.test.mjs:75:5 :: library?kind+format — returns nothing for a partner who owns none of it
+src/http/creative-endpoints.pg.test.mjs:75:5 :: library?state=blocked — returns nothing for a partner who owns none of it
+src/http/creative-endpoints.pg.test.mjs:75:5 :: spend — returns nothing for a partner who owns none of it
+src/http/creative-endpoints.pg.test.mjs:84:3 :: campaign detail runs and is scoped
+src/http/demo-logins.pg.test.mjs:121:3 :: the demo client has entitlements, so the client portal read is not empty
+src/http/demo-logins.pg.test.mjs:132:3 :: the demo partner owns at least one client, so partner scope has a book
+src/http/demo-logins.pg.test.mjs:143:3 :: WITH THE SWITCH OFF: not one of the nine can sign in
+src/http/demo-logins.pg.test.mjs:160:3 :: WITH THE SWITCH OFF: no session row was minted for any of them
+src/http/demo-logins.pg.test.mjs:186:3 :: WITH THE SWITCH ON: all nine sign in, into the right token space
+src/http/demo-logins.pg.test.mjs:42:1 :: demo logins
+src/http/demo-logins.pg.test.mjs:84:3 :: all three demo principals exist with their subject row attached
+src/http/finance-command.pg.test.mjs:22:1 :: /api/read/finance-command
+src/http/finance-command.pg.test.mjs:70:3 :: aggregates cash and credit for a client
+src/http/finance-command.pg.test.mjs:79:3 :: an entity that does not belong to the given client is refused
+src/http/finance-command.pg.test.mjs:94:3 :: an invalid days value is rejected
+src/http/finance-entities.pg.test.mjs:22:1 :: /api/finance/entities
+src/http/finance-entities.pg.test.mjs:60:3 :: create adds a row scoped to the client and org
+src/http/finance-entities.pg.test.mjs:73:3 :: rejects an invalid kind
+src/http/finance-entities.pg.test.mjs:81:3 :: archive is idempotent and keeps the row
+src/http/finance-entities.pg.test.mjs:95:3 :: GET lists entities for the client, archived first
+src/http/inbox-read.pg.test.mjs:288:1 :: inbox: sentiment comes back null rather than invented
+src/http/inquiries-write.pg.test.mjs:51:1 :: POST /api/inquiries — active-shift gate
+src/inquiry-ops/send.pg.test.mjs:15:1 :: inquiry send + doc flip
+src/messaging/cutover-acceptance.pg.test.mjs:152:1 :: replay() over the same event log sends ZERO messages
+src/messaging/cutover-acceptance.pg.test.mjs:235:1 :: an SMS queued at 23:00 ET is still queued at 23:05 and sends after 11:00 ET
+src/messaging/cutover-acceptance.pg.test.mjs:319:1 :: two dispatchers racing the same message produce exactly one send
+src/messaging/dispatch.pg.test.mjs:186:1 :: the routing table answers the dispatcher's lookup
+src/messaging/outbox.pg.test.mjs:132:3 :: drain — the call nothing was making
+src/messaging/outbox.pg.test.mjs:143:5 :: it drains a whole backlog, bounded by the batch size
+src/messaging/outbox.pg.test.mjs:173:3 :: the switch is a row, not an environment variable
+src/messaging/outbox.pg.test.mjs:216:5 :: THE DAILY CAP STOPS A RUNAWAY
+src/messaging/outbox.pg.test.mjs:28:1 :: the outbound queue
+src/messaging/staff-sweeper.pg.test.mjs:167:1 :: sweeper: it works through more than one batch, but stops at the cap
+src/shifts/telemetry-wiring.pg.test.mjs:122:3 :: the business action itself puts a row in staff_events — telemetry is no longer decorative
+src/shifts/telemetry-wiring.pg.test.mjs:132:3 :: a shift stays open while events keep arriving, however long it has run
+src/shifts/telemetry-wiring.pg.test.mjs:165:3 :: it closes once the events stop, at the last one — not at the moment of the sweep
+src/shifts/telemetry-wiring.pg.test.mjs:191:3 :: with the telemetry flowing, a busy shift and an abandoned one are told apart in one sweep
+src/shifts/telemetry-wiring.pg.test.mjs:220:3 :: work logged off the clock does not hold somebody else's shift open
+src/shifts/telemetry-wiring.pg.test.mjs:47:1 :: autoCloseStale with real telemetry flowing
+src/social/social.pg.test.mjs:22:1 :: social, onboarding and metering
+src/social/social.pg.test.mjs:364:3 :: usage events are partner-isolated
+src/subscriptions/store.pg.test.mjs:115:1 :: there is no column on client_cards that could hold a card number or a security code
+src/workflows/invoice-workflows.pg.test.mjs:124:3 :: DS-02 completes: invoice written AND the letters/email/tag steps after it run
+src/workflows/invoice-workflows.pg.test.mjs:36:1 :: invoice-writing workflows against real Postgres

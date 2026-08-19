@@ -202,6 +202,24 @@ export async function logCallOutcome(db, input) {
   return { row: res.rows[0], created: true };
 }
 
+/* A booking task is found by its TITLE, not by a vendor name.
+
+   This used to filter `source_workflow = 'calcom'`. That column held the string
+   "calcom" on every booking task, including the 27 that actually arrived from
+   ClickFunnels — measured live 2026-08-18: 27 clickfunnels booking.created
+   events, 0 from Cal.com, ever. T7 corrected the column to record the real
+   origin, which would have left this query hunting for a value that no longer
+   exists and quietly returning nothing — an empty "calls you have not logged"
+   list on Closer Call, My Numbers and Sales Floor, with real overdue calls in
+   the table.
+
+   The title is the stable key: src/handlers/comms.mjs writes every booking task
+   as "Strategy session booked" / "…rescheduled" from one shared constant, and
+   its own four lookups match on the same `Strategy session%` prefix. Matching a
+   vendor label here was always coupling this screen to which company happened
+   to send the webhook, which is not what "a closer owes a call outcome" means. */
+const BOOKING_TASK_TITLE_LIKE = "Strategy session%";
+
 /** Closer tasks past due with no disposition row. */
 export async function listUnloggedCalls(db, { orgId, staffId = null, limit = 50 } = {}) {
   if (!orgId) throw new CallOutcomeError("orgId is required", { status: 403 });
@@ -211,6 +229,8 @@ export async function listUnloggedCalls(db, { orgId, staffId = null, limit = 50 
     params.push(staffId);
     staffClause = `AND (t.assignee_staff_id = $${params.length} OR t.assignee_staff_id IS NULL)`;
   }
+  params.push(BOOKING_TASK_TITLE_LIKE);
+  const titleParam = `$${params.length}`;
   params.push(Math.min(Math.max(Number(limit) || 50, 1), 200));
 
   const r = await db.query(
@@ -229,7 +249,7 @@ export async function listUnloggedCalls(db, { orgId, staffId = null, limit = 50 
        LEFT JOIN call_outcomes o ON o.task_id = t.id AND o.org_id = t.org_id
       WHERE t.org_id = $1
         AND t.assignee_role = 'closer'
-        AND t.source_workflow = 'calcom'
+        AND t.title LIKE ${titleParam}
         AND t.due_at IS NOT NULL
         AND t.due_at < now()
         AND o.id IS NULL

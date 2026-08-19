@@ -28,7 +28,7 @@ flowchart TD
     CAN --> A_social[social — 4 routes]
     CAN --> A_top_level[Everything else — 7 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 125 routes]
+    WHO -->|Yes| CANT[Blocked — 126 routes]
     CANT --> B_auth[Signing in and out — 4 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_chat[chat — 4 blocked]
@@ -47,13 +47,13 @@ flowchart TD
     CANT --> B_repair[repair — 2 blocked]
     CANT --> B_social[social — 1 blocked]
     CANT --> B_staff[staff — 2 blocked]
-    CANT --> B_top_level[Everything else — 24 blocked]
+    CANT --> B_top_level[Everything else — 25 blocked]
     WHO -->|Yes| UNV[UNVERIFIED — 2 routes whose gate could not be traced]
 ```
 
 ## What they can reach
 
-**48 of 175 routes.**
+**48 of 176 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -113,7 +113,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**125 of 175 routes.**
+**126 of 176 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -127,6 +127,7 @@ flowchart TD
 | `/api/banking/accounts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/banking/revoke` | GET, POST | owner, admin |
 | `/api/banking/sync-accounts` | POST | owner, admin, sales_manager |
+| `/api/bookings` | GET | staff |
 | `/api/call-outcomes` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/chat/ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/chat/messages` | GET, POST | staff |
