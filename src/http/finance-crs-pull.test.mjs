@@ -174,3 +174,140 @@ test("crs-pull forwards a consent refusal from the queue step", async () => {
   assert.equal(res.body.code, "consent_required");
   assert.match(res.body.error, /consent/);
 });
+
+/* ── THE SIMULATION FENCE AT THE ENDPOINT ───────────────────────────────────
+   Finding T3-13. The whole design is in src/finance/crs-pull.mjs; these tests
+   cover only what the handler itself decides: how it reads `simulate`, what it
+   passes on, what it stamps on the ledger row, and what it tells the caller. */
+
+test("crs-pull passes simulate:true through and stamps the ledger reason", async () => {
+  let queued = null;
+  let ran = null;
+  const res = mockRes();
+  await handler(
+    { method: "POST", body: { client_id: CLIENT, bureau: "TU", simulate: true } },
+    res,
+    deps({
+      requestSoftPull: async (_db, args) => {
+        queued = args;
+        return { created: true, request: { id: REQUEST, status: "queued" } };
+      },
+      runCrsPull: async (_db, args) => {
+        ran = args;
+        return {
+          ok: true, simulated: true, crsResultId: "crs-sim-1",
+          request: { id: REQUEST }, bureausPulled: ["TU"]
+        };
+      }
+    })
+  );
+
+  assert.equal(res.statusCode, 200);
+  assert.equal(ran.simulate, true);
+  assert.equal(res.body.simulated, true);
+  assert.match(queued.reason, /SIMULATED/,
+    "the pull history reads soft_pull_requests.reason long before anyone opens the payload");
+});
+
+test("crs-pull without simulate runs a real pull, exactly as before", async () => {
+  let ran = null;
+  const res = mockRes();
+  await handler(
+    { method: "POST", body: { client_id: CLIENT, bureau: "TU" } },
+    res,
+    deps({
+      runCrsPull: async (_db, args) => {
+        ran = args;
+        return { ok: true, crsResultId: "crs-1", request: { id: REQUEST }, bureausPulled: ["TU"] };
+      }
+    })
+  );
+  assert.equal(res.statusCode, 200);
+  assert.equal(ran.simulate, false);
+  assert.equal(res.body.simulated, false);
+});
+
+test("crs-pull refuses an unreadable simulate before any ledger row exists", async () => {
+  for (const value of ["true", "yes", 1, 0, "false", {}]) {
+    let queued = false;
+    let ran = false;
+    const res = mockRes();
+    await handler(
+      { method: "POST", body: { client_id: CLIENT, bureau: "TU", simulate: value } },
+      res,
+      deps({
+        requestSoftPull: async () => { queued = true; return { created: true, request: { id: REQUEST } }; },
+        runCrsPull: async () => { ran = true; return { ok: true }; }
+      })
+    );
+    assert.equal(res.statusCode, 400, JSON.stringify(value));
+    assert.equal(res.body.code, "simulate_invalid");
+    assert.equal(queued, false, "no ledger row may be opened for a request being refused");
+    assert.equal(ran, false, "and nothing may run");
+  }
+});
+
+test("crs-pull reports the run's own answer, not the caller's request", async () => {
+  // A replay reports what was stored. A caller asking for a real pull cannot be
+  // handed a rehearsal labelled as real, and vice versa.
+  const res = mockRes();
+  await handler(
+    { method: "POST", body: { client_id: CLIENT, bureau: "TU", simulate: true } },
+    res,
+    deps({
+      runCrsPull: async () => ({
+        ok: true, simulated: false, crsResultId: "crs-1",
+        request: { id: REQUEST }, bureausPulled: ["TU"]
+      })
+    })
+  );
+  assert.equal(res.body.simulated, false);
+});
+
+test("the consent gate still refuses first when a simulation is asked for", async () => {
+  let ran = false;
+  const res = mockRes();
+  await handler(
+    { method: "POST", body: { client_id: CLIENT, bureau: "TU", simulate: true } },
+    res,
+    deps({
+      requestSoftPull: async () => {
+        throw new SoftPullError("no soft-pull consent on file for this client — capture consent before requesting a pull", {
+          status: 403,
+          code: "consent_required"
+        });
+      },
+      runCrsPull: async () => { ran = true; return { ok: true }; }
+    })
+  );
+  assert.equal(res.statusCode, 403);
+  assert.equal(res.body.code, "consent_required");
+  assert.equal(ran, false, "a rehearsal is still a pull: no consent, no run");
+});
+
+test("a setter cannot rehearse a pull either", async () => {
+  const res = mockRes();
+  await handler(
+    { method: "POST", body: { client_id: CLIENT, bureau: "TU", simulate: true } },
+    res,
+    deps({ requirePrincipal: async () => staff("setter") })
+  );
+  assert.equal(res.statusCode, 403);
+});
+
+test("a failed simulation says it was a simulation", async () => {
+  const res = mockRes();
+  await handler(
+    { method: "POST", body: { client_id: CLIENT, bureau: "EX", simulate: true } },
+    res,
+    deps({
+      runCrsPull: async () => ({
+        ok: false, simulated: true, code: "identity_required",
+        reason: "no identity on file for this client — a credit report cannot be ordered"
+      })
+    })
+  );
+  assert.equal(res.statusCode, 422);
+  assert.equal(res.body.code, "identity_required");
+  assert.equal(res.body.simulated, true);
+});

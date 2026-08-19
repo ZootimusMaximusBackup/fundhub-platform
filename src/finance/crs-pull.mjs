@@ -27,6 +27,65 @@
 // beside the data. All three failing is not a result: the request is closed as
 // failed and no row is written, because a row with no payload would read as "we
 // pulled and they have no credit".
+//
+// REHEARSING A PULL WITHOUT TOUCHING A BUREAU (`simulate: true`).
+//
+// On the live site the configured host is the CRS production host and live
+// pulls are on, so the first tap that clears the consent gate and the identity
+// gate is a real bureau request against a real person. Nobody could walk the
+// screen once before doing that to somebody. `simulate: true` fixes that, and
+// it replaces EXACTLY ONE THING: the crs.orderPrequal() call at THE FENCE
+// below. Everything on the near side of that line still happens for real —
+// the consent gate (already passed in requestSoftPull before this function is
+// called), the ledger claim, the CRS configuration check, the SSN decryption
+// and its access-log row, the identity gate, the stored result row, the
+// tradeline ingest, the tier engine and both events.
+//
+// THREE STATES, NOT TWO. `simulate` is read by simulationModeFor(): exactly
+// `true` simulates, absent/null/`false` is a real pull, and ANYTHING ELSE
+// refuses the pull outright. A value nobody can read as a clear yes or a clear
+// no must not fall to either — falling to "real" would put a bureau request on
+// someone's file that the caller never asked for, and falling to "simulated"
+// would hand back a fabricated report to somebody who wanted a real one.
+//
+// THE STAMP. A simulated pull is stamped in five places, and the stored payload
+// is the authority — a replay re-reads the stamp off the row rather than
+// trusting the caller's argument:
+//   crs_results.provider            "crs_softview_simulated", not "crs_softview"
+//   crs_results.provider_result_id  "crs-simulated-bundle:<hash>"
+//   result.simulated                true, plus result.simulatedNotice
+//   result.environment              "sandbox" — see WHY SANDBOX below
+//   both event payloads             simulated: true
+//
+// WHY THE STAMP REUSES THE WORD "sandbox". `result.environment` is not read as
+// "which machine answered"; every reader of it in this repo reads it as "may I
+// paint this as the client's own credit file", and the answer they already
+// recognise is the string "sandbox" (src/http/client-detail.mjs:76 and :242
+// both skip on it). A simulated payload is unsafe to paint for exactly the same
+// reason a sandbox fixture is, so it says the word those readers already know
+// instead of inventing a second one every reader would have to be taught. The
+// true host class is not lost — it is kept beside it as result.hostEnvironment.
+// `result.simulated` is what tells a simulated payload apart from a genuine
+// sandbox pull.
+//
+// AND WHY THAT DOES NOT BLANK A SCREEN. The skip in client-detail.mjs walks
+// backwards through the client's pull history for the newest result it is
+// allowed to paint, so a simulated pull lands in the history without hiding the
+// real pull underneath it. What a rehearsal will NOT do is paint new numbers on
+// the client screen — see WHAT A SIMULATED PULL DELIBERATELY DOES NOT DO.
+//
+// WHAT A SIMULATED PULL DELIBERATELY DOES NOT DO. Two things, both because they
+// would leave fabricated data somewhere that cannot carry the stamp:
+//
+//   1. It invents no numbers. The canned bureau answer has no scores, no
+//      tradelines, no inquiries and no public records — see
+//      simulatedBureauResponse. Every step still runs, including the tradeline
+//      ingest; there is simply nothing for it to insert.
+//   2. It does not write clients.outcome_tier — see persistOutcomeTier.
+//
+// So a rehearsal proves the whole path works and changes no number anyone acts
+// on. The tier it produces will be MANUAL_REVIEW, because a file with no scores
+// is what the engine was handed.
 
 import { createHash } from "node:crypto";
 import { emit } from "../events/bus.mjs";
@@ -40,6 +99,7 @@ import {
 import { createCrsClient, CrsError } from "./crs-client.mjs";
 import {
   activeBureausFromEnv,
+  assertIdentityAllowed,
   CrsIdentityError,
   identityForBureau,
   isoBirthDate,
@@ -60,6 +120,17 @@ import { revealSsn, PiiError } from "../pii/index.mjs";
  *  product name nobody has confirmed would be a guess stored as fact. */
 export const CRS_PROVIDER = "crs_softview";
 
+/** The provider namespace a SIMULATED pull stores instead of CRS_PROVIDER.
+ *  A different namespace, not a flag beside the same one: `crs_results.provider`
+ *  is the column that answers "who produced this file", and the honest answer
+ *  for a simulated pull is "nobody did". It also keeps the two apart in the
+ *  unique index on (org_id, provider, provider_result_id), so a simulation can
+ *  never collide with, or be mistaken for, a real provider response. */
+export const CRS_SIMULATED_PROVIDER = "crs_softview_simulated";
+
+/** One spelling of the marker, used everywhere a sentence can be stored. */
+export const SIMULATED_MARKER = "SIMULATED — no credit bureau was contacted";
+
 /** What `reason` a pull requested by the paid diagnostic records in the ledger. */
 export const DIAGNOSTIC_PULL_REASON =
   "automated tri-bureau soft pull after the paid credit diagnostic";
@@ -79,15 +150,77 @@ export function environmentFor(host) {
  * RequestIDs are trimmed, sorted, encoded unambiguously and hashed. No fallback
  * exists: without at least one provider RequestID there is no provider result
  * identity and the result must not be stored.
+ *
+ * `simulated` changes only the prefix. The prefix is the point: a stored
+ * identity beginning "crs-simulated-bundle:" says what it is in a database
+ * dump, a CSV export and a support ticket, none of which will have loaded the
+ * jsonb payload to look at `result.simulated`.
  */
-export function providerResultIdFor({ requestIds = {} } = {}) {
+export function providerResultIdFor({ requestIds = {}, simulated = false } = {}) {
   const ids = Object.values(requestIds)
     .filter((id) => typeof id === "string" && id.trim())
     .map((id) => id.trim())
     .sort();
   if (ids.length === 0) return null;
   const digest = createHash("sha256").update(JSON.stringify(ids)).digest("hex");
-  return `crs-request-bundle:${digest}`;
+  return `${simulated ? "crs-simulated-bundle" : "crs-request-bundle"}:${digest}`;
+}
+
+/**
+ * simulationModeFor — read the `simulate` argument as one of three answers.
+ *
+ * "real"      absent, null, or exactly false — order the bureau, as always.
+ * "simulated" exactly true — run the whole path, replace the vendor call.
+ * "refuse"    anything else. Not a default, a refusal: see THREE STATES in the
+ *             file header. "true" the string, 1, "yes", {} and every other
+ *             near-miss land here, because a caller who cannot say which one
+ *             they meant must not have one picked for them.
+ */
+export function simulationModeFor(simulate) {
+  if (simulate === undefined || simulate === null || simulate === false) return "real";
+  if (simulate === true) return "simulated";
+  return "refuse";
+}
+
+/**
+ * simulatedBureauResponse — what the fence returns instead of the vendor.
+ *
+ * Deliberately the SHAPE of a bureau answer with NOTHING IN IT: no scores, no
+ * tradelines, no inquiries, no public records. That is not laziness, it is the
+ * whole safety argument.
+ *
+ * A fabricated score or a fabricated tradeline does not stay inside the stamped
+ * `crs_results` row. Tradelines are ingested into the `tradelines` table, which
+ * has no simulated column and is read by the funding waterfall as available
+ * credit; invented lines there would move a funding number on a real person.
+ * Scores feed the tri-merge panel and the tier engine. So the rehearsal proves
+ * that every step RUNS, and refuses to invent the one thing — the numbers —
+ * that anyone downstream could act on. `pickCreditScore` over an empty array
+ * yields null for every bureau, and null means unknown and survives as null.
+ *
+ * `requestId` is the soft-pull ledger row's uuid, which is unique per request
+ * and stable across a retry of the same request. That gives the bundle identity
+ * both properties it needs: two rehearsals never collide, and a replay of one
+ * rehearsal re-derives the same identity.
+ */
+export function simulatedBureauResponse({ bureau, requestId } = {}) {
+  return {
+    ok: true,
+    bureau,
+    requestId: `SIMULATED:${requestId}:${bureau}`,
+    status: 0,
+    blocked: false,
+    error: null,
+    report: {
+      simulated: true,
+      simulatedNotice: SIMULATED_MARKER,
+      creditFiles: [],
+      scores: [],
+      tradelines: [],
+      inquiries: [],
+      publicRecords: []
+    }
+  };
 }
 
 function identityForTier({ identity, realIdentity, merged }) {
@@ -98,8 +231,20 @@ function identityForTier({ identity, realIdentity, merged }) {
   return null;
 }
 
-async function persistOutcomeTier(db, { clientId, crsResultId, outcomeTier }) {
-  await db.query(`UPDATE clients SET outcome_tier = $2 WHERE id = $1`, [clientId, outcomeTier]);
+/* A SIMULATED PULL NEVER WRITES clients.outcome_tier.
+   Every other place a simulated pull lands can carry the stamp beside it. That
+   column cannot: it is one bare word on the real person's record, read by the
+   sales cockpit as this client's standing, with nowhere to say where it came
+   from. A rehearsal that wrote MANUAL_REVIEW over a real tier would be exactly
+   the "a screen mistakes it for real" failure this fence exists to prevent, and
+   it would also be silently destructive — the tier it overwrote is not kept.
+   The tier engine still runs on a simulated pull, and the tier it produced is
+   still recorded on the simulated crs_results row and in both event payloads,
+   where the stamp travels with it. */
+async function persistOutcomeTier(db, { clientId, crsResultId, outcomeTier, simulated = false }) {
+  if (!simulated) {
+    await db.query(`UPDATE clients SET outcome_tier = $2 WHERE id = $1`, [clientId, outcomeTier]);
+  }
   await db.query(
     `UPDATE crs_results
         SET outcome_tier = COALESCE(outcome_tier, $2),
@@ -119,6 +264,12 @@ async function finishStored(db, {
   runTierEngine = runTierEngineFromCrsResult
 }) {
   const merged = stored.crsResult.result || {};
+  /* THE STORED PAYLOAD IS THE AUTHORITY ON WHETHER THIS WAS SIMULATED, not any
+     argument passed in. A replay comes back through here carrying the original
+     row, and reading the caller's flag would let a replay launder a simulated
+     result into a real-looking one. Read the stamp off the thing that was
+     stored, every time. */
+  const simulated = merged.simulated === true;
   const tierIdentity = identityForTier({ identity, realIdentity, merged });
   const tierResult = runTierEngine(merged, {
     submittedName: submittedNameFromIdentity(tierIdentity),
@@ -135,8 +286,14 @@ async function finishStored(db, {
   await persistOutcomeTier(db, {
     clientId,
     crsResultId: stored.crsResult.id,
-    outcomeTier
+    outcomeTier,
+    simulated
   });
+
+  /* The stamp is added to the event payload only when it is true. A real pull's
+     payload keeps the exact shape it has always had, so every stored event ever
+     written means the same thing: no `simulated` key is a real pull. */
+  const stamp = simulated ? { simulated: true, simulatedNotice: SIMULATED_MARKER } : {};
 
   const inquiries = newInquiriesFor(merged);
   const analysis = await emit(db, "analysis.completed", {
@@ -146,7 +303,8 @@ async function finishStored(db, {
     scores: merged.scores || { ex: null, eq: null, tu: null },
     bureaus: merged.bureaus || {},
     inquiries,
-    outcomeTier
+    outcomeTier,
+    ...stamp
   }, {
     orgId,
     clientId,
@@ -158,7 +316,8 @@ async function finishStored(db, {
     requestId,
     source: "crs",
     outcomeTier,
-    fundingEstimate
+    fundingEstimate,
+    ...stamp
   }, {
     orgId,
     clientId,
@@ -167,6 +326,7 @@ async function finishStored(db, {
 
   return {
     ok: true,
+    simulated,
     crsResultId: stored.crsResult.id,
     request: stored.request,
     replayed: !!stored.replayed,
@@ -245,6 +405,9 @@ export async function loadClientIdentity(db, {
  * @param {object} [opts.env]
  * @param {Function} [opts.fetchImpl]
  * @param {string[]} [opts.bureaus]
+ * @param {boolean} [opts.simulate]  Exactly `true` rehearses the pull without
+ *   contacting a bureau. Absent or `false` is a real pull. Anything else
+ *   refuses — see simulationModeFor.
  */
 export async function runCrsPull(db, {
   orgId,
@@ -256,9 +419,16 @@ export async function runCrsPull(db, {
   fetchImpl,
   bureaus,
   accessedBy = PULL_ACTOR,
+  simulate,
   runTierEngine = runTierEngineFromCrsResult
 } = {}) {
   if (!orgId || !clientId) throw new TypeError("runCrsPull: orgId and clientId are required");
+  /* Resolved once, at the top, from the argument alone. Never from an
+     environment variable, never from the host, never from anything this
+     function reads later — a pull is simulated because a caller said so in this
+     call, or it is not simulated. */
+  const mode = simulationModeFor(simulate);
+  const simulated = mode === "simulated";
   /* REQUIRED, not optional. The ledger row is what makes a pull attributable and
      what stops a second one running; coordinateCrsResult() will not store a
      result without it, and quietly falling back to a path that does would put an
@@ -275,6 +445,22 @@ export async function runCrsPull(db, {
   if (String(ledger.org_id) !== String(orgId) || String(ledger.client_id) !== String(clientId)) {
     throw new SoftPullError("soft pull request belongs to a different org or client", { status: 409 });
   }
+
+  /* An unreadable `simulate` closes the ledger row and stops. It is refused
+     here rather than at the top of the function so that the row this caller
+     opened is closed on the way out — a request left at 'queued' blocks every
+     later pull for this client (090's one-open-per-client index), so refusing
+     without closing would turn a typo into a locked-out client. */
+  if (mode === "refuse") {
+    return finishFailed(db, {
+      requestId,
+      code: "simulate_ambiguous",
+      reason: "refusing the pull — `simulate` must be exactly true or false; " +
+        "a value that is neither is not read as either",
+      simulated: false
+    });
+  }
+
   if (ledger.status === "fulfilled") {
     const prior = (await db.query(
       `SELECT id, org_id, client_id, provider, provider_result_id, result, outcome_tier, created_at
@@ -283,6 +469,25 @@ export async function runCrsPull(db, {
     )).rows[0];
     if (!prior || !prior.provider || !prior.provider_result_id) {
       throw new SoftPullError("fulfilled request has no anchored provider result", { status: 409 });
+    }
+    /* A REPLAY MUST ANSWER THE QUESTION THAT WAS ASKED.
+       Reuse an idempotency key across a rehearsal and a real pull and the same
+       ledger row answers both. Handing the stored row back either way would let
+       a real pull be "satisfied" by a rehearsal that never contacted anyone —
+       the caller would be told a bureau answered when none did. Refused in both
+       directions, so neither mode can be quietly served the other's result. */
+    const priorSimulated = prior.result?.simulated === true;
+    if (priorSimulated !== simulated) {
+      return {
+        ok: false,
+        simulated,
+        code: "simulation_mismatch",
+        reason: priorSimulated
+          ? "this request was already answered by a SIMULATED pull and cannot be replayed as a real bureau pull — start a new request"
+          : "this request was already answered by a real bureau pull and cannot be replayed as a simulation — start a new request",
+        request: null,
+        crsResultId: null
+      };
     }
     const replayed = await coordinateCrsResult(db, {
       orgId,
@@ -326,12 +531,16 @@ export async function runCrsPull(db, {
     return finishFailed(db, {
       requestId,
       code: "not_configured",
-      reason: `CRS is not configured — missing ${crs.config.missing.join(", ")}`
+      reason: `CRS is not configured — missing ${crs.config.missing.join(", ")}`,
+      simulated
     });
   }
 
   const host = crs.host;
-  const environment = environmentFor(host);
+  const hostEnvironment = environmentFor(host);
+  /* See WHY THE STAMP REUSES THE WORD "sandbox" in the file header. The host
+     class is not discarded — it rides along as result.hostEnvironment. */
+  const environment = simulated ? "sandbox" : hostEnvironment;
 
   /* The real client is loaded ONLY when the host is production. On sandbox the
      vendor's canned people are used and the client's SSN is never decrypted,
@@ -344,7 +553,8 @@ export async function runCrsPull(db, {
       return finishFailed(db, {
         requestId,
         code: "identity_required",
-        reason: "no identity on file for this client — a credit report cannot be ordered"
+        reason: "no identity on file for this client — a credit report cannot be ordered",
+        simulated
       });
     }
   }
@@ -361,7 +571,7 @@ export async function runCrsPull(db, {
       });
     } catch (e) {
       if (e instanceof CrsIdentityError) {
-        return finishFailed(db, { requestId, code: e.code, reason: e.message });
+        return finishFailed(db, { requestId, code: e.code, reason: e.message, simulated });
       }
       throw e;
     }
@@ -369,20 +579,40 @@ export async function runCrsPull(db, {
       return finishFailed(db, {
         requestId,
         code: "identity_required",
-        reason: "no identity on file for this client — a credit report cannot be ordered"
+        reason: "no identity on file for this client — a credit report cannot be ordered",
+        simulated
       });
     }
 
     let out;
     try {
-      out = await crs.orderPrequal({ bureau, identity: bureauIdentity });
+      /* ═══ THE FENCE ═══
+         This is the only line in the pull that reaches a credit bureau, and it
+         is the only line a simulation replaces. Everything above it has already
+         run for real on both paths: the ledger claim, the CRS configuration
+         check, the SSN decryption and its access-log row, and the identity
+         gate. Everything below it runs for real on both paths too.
+
+         The simulated branch calls assertIdentityAllowed itself because that
+         gate normally lives INSIDE orderPrequal (src/finance/crs-client.mjs,
+         "THE GATE" in orderPrequal), and skipping the vendor call would
+         otherwise skip the gate with it. On the production host identityForBureau
+         has already run the same check, so this is a second pass; on the sandbox
+         host it is the only one. A fence that quietly relaxes a gate is not a
+         rehearsal of the real flow, it is a different flow. */
+      if (simulated) {
+        assertIdentityAllowed({ host, bureau, identity: bureauIdentity, env });
+        out = simulatedBureauResponse({ bureau, requestId });
+      } else {
+        out = await crs.orderPrequal({ bureau, identity: bureauIdentity });
+      }
     } catch (e) {
       /* A refused identity or an unconfigured client is a fault about the whole
          pull, not weather at one bureau. Stopping means the same refused
          identity is never offered to the other two. */
       if (e instanceof CrsIdentityError
           || (e instanceof CrsError && e.code === "not_configured")) {
-        return finishFailed(db, { requestId, code: e.code, reason: e.message });
+        return finishFailed(db, { requestId, code: e.code, reason: e.message, simulated });
       }
       if (e instanceof CrsError) { errors[bureau] = e.message; continue; }
       throw e;
@@ -398,20 +628,33 @@ export async function runCrsPull(db, {
     return finishFailed(db, {
       requestId,
       code: "no_reports",
-      reason: detail ? `no bureau returned a report — ${detail}` : "no bureau returned a report"
+      reason: detail ? `no bureau returned a report — ${detail}` : "no bureau returned a report",
+      simulated
     });
   }
 
-  const providerResultId = providerResultIdFor({ requestIds });
+  const providerResultId = providerResultIdFor({ requestIds, simulated });
   if (!providerResultId) {
     return finishFailed(db, {
       requestId,
       code: "provider_result_id_required",
-      reason: "CRS returned reports without any RequestID; the result cannot be safely stored"
+      reason: "CRS returned reports without any RequestID; the result cannot be safely stored",
+      simulated
     });
   }
 
-  const merged = mergeBureauReports({ reports, errors, requestIds, environment });
+  /* The stamp goes on the payload here, after the merge rather than through it:
+     mergeBureauReports maps bureau reports and has no business knowing whether
+     a pull happened. Spreading it on afterwards also means a real payload keeps
+     byte-for-byte the shape it has always had. */
+  const merged = simulated
+    ? {
+        ...mergeBureauReports({ reports, errors, requestIds, environment }),
+        simulated: true,
+        simulatedNotice: SIMULATED_MARKER,
+        hostEnvironment
+      }
+    : mergeBureauReports({ reports, errors, requestIds, environment });
 
   /* ONE ROW, ONE TRANSACTION. Storing the result, closing the request and
      ingesting the tradelines either all land or none do. A replay of the same
@@ -423,7 +666,7 @@ export async function runCrsPull(db, {
       orgId,
       clientId,
       requestId,
-      provider: CRS_PROVIDER,
+      provider: simulated ? CRS_SIMULATED_PROVIDER : CRS_PROVIDER,
       providerResultId,
       result: merged,
       outcomeTier: null
@@ -434,7 +677,7 @@ export async function runCrsPull(db, {
        already fulfilled or contested, and stamping 'failed' over that would
        overwrite a good record with a wrong one. */
     if (e instanceof SoftPullError) {
-      return { ok: false, code: "not_stored", reason: e.message, request: null, crsResultId: null };
+      return { ok: false, simulated, code: "not_stored", reason: e.message, request: null, crsResultId: null };
     }
     throw e;
   }
@@ -454,7 +697,7 @@ export async function runCrsPull(db, {
    Closing the ledger row matters more than it looks: a row left at 'queued'
    blocks the next request (090's one-open-per-client index), so a pull that
    quietly died would lock the client out of ever being pulled again. */
-async function finishFailed(db, { requestId, reason, code }) {
+async function finishFailed(db, { requestId, reason, code, simulated = false }) {
   let closed = null;
   if (requestId) {
     try {
@@ -465,5 +708,5 @@ async function finishFailed(db, { requestId, reason, code }) {
       if (!(e instanceof SoftPullError)) throw e;
     }
   }
-  return { ok: false, code: code || "failed", reason, request: closed, crsResultId: null };
+  return { ok: false, simulated, code: code || "failed", reason, request: closed, crsResultId: null };
 }

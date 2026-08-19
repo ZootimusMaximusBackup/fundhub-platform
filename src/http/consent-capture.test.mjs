@@ -8,6 +8,7 @@
 // pass, because each of them is a way the gate could be opened by accident:
 //
 //   * org scoping comes from the session and a body/query org is ignored;
+//   * a staff principal cannot reach a client outside their own org;
 //   * a client principal can only ever act on themself;
 //   * the role gate is a real second call and refuses roles outside the set;
 //   * the consent WORDS are never taken from the request body.
@@ -38,10 +39,12 @@ const realQuery = db.query;
 let calls = [];
 
 /* stubDb — route by SQL text. `session` describes who the caller is; null means
-   no valid session at all. Anything the handler asks beyond the session lookup
-   is answered from `answers`, a list of [pattern, result] pairs consulted in
-   order, defaulting to an empty result set. */
-function stubDb({ session = null, answers = [] } = {}) {
+   no valid session at all. `owns` answers the org check the endpoint performs
+   against `clients` — true means the named client really is in the caller's
+   org, false means they are not and the endpoint must refuse. Anything else the
+   handler asks is answered from `answers`, a list of [pattern, result] pairs
+   consulted in order, defaulting to an empty result set. */
+function stubDb({ session = null, owns = true, answers = [] } = {}) {
   calls = [];
   db.query = async (text, params) => {
     calls.push({ text, params });
@@ -62,6 +65,14 @@ function stubDb({ session = null, answers = [] } = {}) {
         name: "A Staffer", status: pick("status", "active"), active_flag: "true"
       }] };
     }
+    /* The org check — `SELECT 1 FROM clients WHERE id = $1 AND org_id = $2`.
+       Routed here rather than left to `answers` so that every case in this file
+       keeps its existing outcome without having to know the query exists; the
+       cases that want the refusal pass owns:false. It cannot collide with the
+       consent reads: OWNS matches "FROM clients WHERE id" and SELECT matches
+       "FROM client_consents", and neither string contains the other. */
+    if (OWNS.test(text)) return { rows: owns ? [{ "?column?": 1 }] : [] };
+
     for (const [pattern, result] of answers) {
       if (pattern.test(text)) return typeof result === "function" ? result(params) : result;
     }
@@ -108,6 +119,7 @@ const consentRow = (over = {}) => ({
 const INSERT = /INSERT INTO client_consents/i;
 const SELECT = /FROM client_consents/i;
 const UPDATE = /UPDATE client_consents/i;
+const OWNS = /FROM clients WHERE id/i;
 
 // ── DATABASE_URL really is unset ───────────────────────────────────────────
 
@@ -259,6 +271,118 @@ describe("org scoping", () => {
     assert.equal(res.statusCode, 400);
     assert.match(res.body.error, /org_id is required/);
     assert.ok(!calls.some((c) => SELECT.test(c.text) || INSERT.test(c.text)));
+  });
+});
+
+// ── a staff principal cannot cross into another company ────────────────────
+
+describe("the client must be in the caller's own org", () => {
+  /* THE HOLE THIS CLOSES. ownsClient() used to return `true` for ANY staff
+     principal, with no query at all, while api/finance/soft-pull.mjs and
+     api/finance/crs-pull.mjs both checked the clients row. Because the write
+     stamps the CALLER's org onto the consent, an employee at org A could file a
+     consent naming org B's consumer — and since a consent is what unlocks a
+     credit pull, the looser endpoint was a way around the stricter one.
+
+     GET AND POST ARE TESTED SEPARATELY AND THAT IS THE POINT, not duplication.
+     ownsClient() is now async, so a call site that forgot its `await` gets a
+     Promise back, and a Promise is truthy — `!promise` is false and the refusal
+     never fires. One missed await disables the check on exactly one method
+     while the other method's test still passes. */
+
+  test("GET for a client outside the session's org is a 403 and reads no consent", async () => {
+    stubDb({ session: { orgId: ORG, role: "closer" }, owns: false });
+    const res = mkRes();
+    await handler(mkReq({ query: { client_id: OTHER_CLIENT } }), res);
+
+    assert.equal(res.statusCode, 403, "a staff session reached another company's client");
+    assert.equal(res.body.error, "forbidden");
+    assert.ok(!calls.some((c) => SELECT.test(c.text)),
+      "another company's consent history was read before the refusal");
+  });
+
+  test("POST for a client outside the session's org is a 403 and writes nothing", async () => {
+    stubDb({ session: { orgId: ORG, role: "closer" }, owns: false });
+    const res = mkRes();
+    await handler(mkReq({
+      method: "POST",
+      body: { client_id: OTHER_CLIENT, capture_method: "typed", granted_name: "Dana Client" }
+    }), res);
+
+    assert.equal(res.statusCode, 403, "a staff session recorded a consent for another company's client");
+    assert.ok(!calls.some((c) => INSERT.test(c.text)),
+      "a consent row was written naming a client the caller does not have");
+  });
+
+  test("a revoke for a client outside the session's org is a 403 and revokes nothing", async () => {
+    // The revoke path is scoped by org inside revokeConsent() as well, but the
+    // client named on the request is checked here first — otherwise the 403 and
+    // the 409 leak apart and tell a prober which uuids are real.
+    stubDb({ session: { orgId: ORG, role: "closer" }, owns: false });
+    const res = mkRes();
+    await handler(mkReq({
+      method: "POST",
+      body: {
+        client_id: OTHER_CLIENT, action: "revoke",
+        consent_id: CONSENT_ID, reason: "client withdrew on a call"
+      }
+    }), res);
+
+    assert.equal(res.statusCode, 403);
+    assert.ok(!calls.some((c) => UPDATE.test(c.text)));
+  });
+
+  test("the org check is scoped by the SESSION's org, not by anything in the request", async () => {
+    stubDb({ session: { orgId: ORG, role: "closer" }, answers: [[INSERT, { rows: [consentRow()] }]] });
+    const res = mkRes();
+    await handler(mkReq({
+      method: "POST",
+      body: { client_id: CLIENT, org_id: OTHER_ORG, capture_method: "checkbox" }
+    }), res);
+
+    assert.equal(res.statusCode, 200);
+    const check = calls.find((c) => OWNS.test(c.text));
+    assert.ok(check, "the endpoint did not check the client against an org at all");
+    assert.equal(check.params[0], CLIENT);
+    assert.equal(check.params[1], ORG, "the request's org was used to scope the check");
+  });
+
+  test("the check runs before anything is read or written, on GET and on POST", async () => {
+    for (const req of [
+      mkReq({ query: { client_id: CLIENT } }),
+      mkReq({ method: "POST", body: { client_id: CLIENT, capture_method: "checkbox" } })
+    ]) {
+      stubDb({
+        session: { role: "closer" },
+        answers: [[SELECT, { rows: [consentRow()] }], [INSERT, { rows: [consentRow()] }]]
+      });
+      const res = mkRes();
+      await handler(req, res);
+      assert.equal(res.statusCode, 200);
+
+      const owns = calls.findIndex((c) => OWNS.test(c.text));
+      const touch = calls.findIndex((c) => SELECT.test(c.text) || INSERT.test(c.text));
+      assert.ok(owns >= 0, `${req.method} skipped the org check entirely`);
+      assert.ok(owns < touch, `${req.method} touched client_consents before checking the org`);
+    }
+  });
+
+  test("the consent org check is the same query the soft-pull endpoint runs", async () => {
+    /* Same idea as the role-set test above: the two endpoints have to stay
+       identical, because the consent is what unlocks the pull. Comparing the
+       source text catches a drift that no behavioural test would, since both
+       files would still pass their own suites while checking different things. */
+    const fs = await import("node:fs");
+    const url = await import("node:url");
+    const path = await import("node:path");
+    const here = path.dirname(url.fileURLToPath(import.meta.url));
+    const read = (p) => fs.readFileSync(path.resolve(here, p), "utf8");
+    const QUERY = "SELECT 1 FROM clients WHERE id = $1 AND org_id = $2";
+
+    for (const f of ["../../api/consent/capture.mjs", "../../api/finance/soft-pull.mjs"]) {
+      assert.ok(read(f).includes(QUERY),
+        `${f} no longer scopes its client check by org with the shared query`);
+    }
   });
 });
 

@@ -115,7 +115,12 @@ async function handleGet(req, res, principal, orgId) {
   if (!isUuid(q.client_id)) {
     return res.status(400).json({ ok: false, error: "client_id must be a uuid" });
   }
-  if (!ownsClient(principal, q.client_id)) {
+  // AWAITED. ownsClient() is async, and an un-awaited call returns a Promise,
+  // which is truthy — `!promise` is false, so the refusal never fires and the
+  // check is silently switched off. Both call sites in this file are awaited;
+  // src/http/consent-capture.test.mjs proves it on GET and on POST separately,
+  // because one missed await would leave the other test passing.
+  if (!(await ownsClient(principal, q.client_id))) {
     return res.status(403).json({ ok: false, error: "forbidden" });
   }
   const kind = normalizeKind(q.kind);
@@ -143,7 +148,8 @@ async function handlePost(req, res, principal, orgId) {
   if (!isUuid(body.client_id)) {
     return res.status(400).json({ ok: false, error: "client_id must be a uuid" });
   }
-  if (!ownsClient(principal, body.client_id)) {
+  // AWAITED — see the note on the same call in handleGet().
+  if (!(await ownsClient(principal, body.client_id))) {
     return res.status(403).json({ ok: false, error: "forbidden" });
   }
   const kind = normalizeKind(body.kind);
@@ -212,13 +218,31 @@ async function handlePost(req, res, principal, orgId) {
   return res.status(200).json({ ok: true, consent });
 }
 
-/* ownsClient — a staff principal may act on any client in their org; a client
-   principal may act only on themself. accounts.client_id is the binding, and it
-   is the session's copy of it, not the body's. Lifted from
-   api/finance/soft-pull.mjs so the two endpoints answer identically — a consent
-   endpoint looser than the pull endpoint it gates would be a way around it. */
-function ownsClient(principal, clientId) {
-  if (principal.kind === "staff") return true;
+/* ownsClient — a staff principal may act on any client IN THEIR ORG, and the
+   org is CHECKED, not assumed; a client principal may act only on themself.
+   accounts.client_id is the binding, and it is the session's copy of it, not
+   the body's.
+
+   THE ORG CHECK IS THE POINT, NOT A FORMALITY. This function used to return
+   `true` for any staff principal with no query at all, while the comment above
+   it claimed it was lifted from api/finance/soft-pull.mjs and answered
+   identically. It did not. The pull endpoint next door and
+   api/finance/crs-pull.mjs both run `SELECT 1 FROM clients WHERE id = $1 AND
+   org_id = $2`; this one ran nothing. The effect was that an employee at org A
+   could name org B's consumer and have a consent row written, stamped with org
+   A — and because a consent is the thing that unlocks a credit pull, the
+   endpoint that was supposed to be no looser than the pull endpoint was in fact
+   the way around it. The query below is now the same query, word for word, and
+   src/http/consent-capture.test.mjs asserts that the two files still match. */
+async function ownsClient(principal, clientId) {
+  if (principal.kind === "staff") {
+    if (!principal.orgId) return false;
+    const r = await db.query(
+      `SELECT 1 FROM clients WHERE id = $1 AND org_id = $2`,
+      [String(clientId).trim(), principal.orgId]
+    );
+    return r.rows.length > 0;
+  }
   return !!principal.clientId && String(principal.clientId) === String(clientId).trim();
 }
 

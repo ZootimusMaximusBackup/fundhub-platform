@@ -1,7 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert";
 
-import { runCrsPull, providerResultIdFor } from "./crs-pull.mjs";
+import {
+  runCrsPull,
+  providerResultIdFor,
+  simulationModeFor,
+  simulatedBureauResponse,
+  CRS_PROVIDER,
+  CRS_SIMULATED_PROVIDER
+} from "./crs-pull.mjs";
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const CLIENT = "22222222-2222-4222-8222-222222222222";
@@ -45,6 +52,10 @@ function fakeDb(initialRequest) {
     clients,
     async query(sql, params = []) {
       if (/pg_advisory_xact_lock/.test(sql)) return { rows: [] };
+
+      // loadClientIdentity's lookup. No row means no identity on file, which
+      // is the refusal this file's gate tests want.
+      if (/FROM clients c/.test(sql)) return { rows: [] };
 
       if (/FROM soft_pull_requests WHERE id = \$1/.test(sql)) {
         const row = requests.get(params[0]);
@@ -291,4 +302,336 @@ test("runCrsPull requires a ledger request before touching the client", async ()
     /requestId is required/
   );
   assert.deepEqual(client.calls, []);
+});
+
+/* ── THE SIMULATION FENCE ───────────────────────────────────────────────────
+   Finding T3-13: on the live site the host is the CRS production host and live
+   pulls are on, so the first tap past the gates is a real bureau request
+   against a real person. `simulate: true` rehearses the whole path with the
+   vendor call — and only the vendor call — replaced.
+
+   Every client below throws if orderPrequal is reached. "No bureau was
+   contacted" is the claim these tests exist to prove, and a client that
+   returns a canned answer instead of throwing would prove nothing. */
+
+const PRODUCTION_HOST = "mware.crscreditapi.com";
+const SANDBOX_HOST = "api-sandbox.stitchcredit.com";
+
+function forbiddenClient(host = SANDBOX_HOST) {
+  const calls = [];
+  return {
+    calls,
+    host,
+    config: { missing: [] },
+    isConfigured: () => true,
+    async orderPrequal({ bureau }) {
+      calls.push(bureau);
+      throw new Error(`a credit bureau was contacted during a simulated pull (${bureau})`);
+    }
+  };
+}
+
+/** A real person, shaped as loadClientIdentity returns one. Never a fixture. */
+function realIdentity() {
+  return {
+    firstName: "DANA",
+    middleName: "",
+    lastName: "OKONKWO",
+    suffix: "",
+    birthDate: "1984-03-19",
+    ssn: "412556677",
+    email: "dana@example.test",
+    addresses: [{
+      borrowerResidencyType: "Current",
+      addressLine1: "88 CEDAR ST",
+      addressLine2: "",
+      city: "AUSTIN",
+      state: "TX",
+      postalCode: "78701"
+    }]
+  };
+}
+
+test("simulationModeFor reads exactly three answers and guesses at nothing", () => {
+  assert.equal(simulationModeFor(undefined), "real");
+  assert.equal(simulationModeFor(null), "real");
+  assert.equal(simulationModeFor(false), "real");
+  assert.equal(simulationModeFor(true), "simulated");
+
+  // Every near-miss refuses. None of these may be read as a yes OR as a no.
+  for (const value of ["true", "TRUE", "1", 1, "yes", "on", "false", "0", 0, {}, [], "" ]) {
+    assert.equal(simulationModeFor(value), "refuse", JSON.stringify(value));
+  }
+});
+
+test("a simulated pull contacts no bureau and is stamped everywhere it lands", async () => {
+  const db = fakeDb(request("request-sim"));
+  const client = forbiddenClient(PRODUCTION_HOST);
+
+  const out = await runCrsPull(db, {
+    orgId: ORG,
+    clientId: CLIENT,
+    requestId: "request-sim",
+    client,
+    bureaus: ["TU"],
+    simulate: true,
+    identity: realIdentity(),
+    env: { CRS_ALLOW_LIVE: "1" }
+  });
+
+  assert.equal(out.ok, true);
+  assert.equal(out.simulated, true);
+  assert.deepEqual(client.calls, [], "no bureau may be ordered on a simulated pull");
+
+  // The stored row: provider namespace, bundle identity, and the payload stamp.
+  assert.equal(db.results.length, 1);
+  const stored = db.results[0];
+  assert.equal(stored.provider, CRS_SIMULATED_PROVIDER);
+  assert.notEqual(stored.provider, CRS_PROVIDER);
+  assert.match(stored.provider_result_id, /^crs-simulated-bundle:/);
+  assert.equal(stored.result.simulated, true);
+  assert.match(stored.result.simulatedNotice, /SIMULATED/);
+
+  // The word every existing reader already distrusts, plus the true host class
+  // beside it. src/http/client-detail.mjs skips on `environment === "sandbox"`.
+  assert.equal(stored.result.environment, "sandbox");
+  assert.equal(stored.result.hostEnvironment, "production");
+
+  // Nothing was invented. Unknown stays null; it is never defaulted to zero.
+  assert.deepEqual(stored.result.scores, { ex: null, eq: null, tu: null });
+  assert.deepEqual(stored.result.tradelines, []);
+  assert.deepEqual(stored.result.inquiries, []);
+  assert.equal(out.tradelinesIngested, 0);
+
+  // The ledger closed for real, and both events fired carrying the stamp.
+  assert.equal(db.requests.get("request-sim").status, "fulfilled");
+  assert.deepEqual(db.events.map((e) => e.name), ["analysis.completed", "decision.rendered"]);
+  assert.equal(db.events[0].payload.simulated, true);
+  assert.equal(db.events[1].payload.simulated, true);
+
+  // The tier engine ran for real — but its answer never touched the client.
+  assert.ok(out.outcomeTier, "the tier engine must still run");
+  assert.equal(stored.outcome_tier, out.outcomeTier);
+  assert.equal(db.clients.get(CLIENT).outcome_tier, null,
+    "a simulated pull must never overwrite the client's outcome tier");
+});
+
+test("a real pull is unchanged — no stamp anywhere, and the client tier is written", async () => {
+  const db = fakeDb(request("request-real"));
+  const client = fakeClient({ TU: { ok: true, requestId: "REQ-REAL", report: report(700) } });
+
+  const out = await runCrsPull(db, {
+    orgId: ORG, clientId: CLIENT, requestId: "request-real", client, bureaus: ["TU"]
+  });
+
+  assert.equal(out.ok, true);
+  assert.equal(out.simulated, false);
+  assert.deepEqual(client.calls, ["TU"], "a real pull still orders the bureau");
+
+  const stored = db.results[0];
+  assert.equal(stored.provider, CRS_PROVIDER);
+  assert.match(stored.provider_result_id, /^crs-request-bundle:/);
+  assert.equal("simulated" in stored.result, false);
+  assert.equal("hostEnvironment" in stored.result, false);
+  assert.equal(stored.result.environment, "sandbox", "the host class, as before");
+  assert.equal("simulated" in db.events[0].payload, false);
+  assert.equal("simulated" in db.events[1].payload, false);
+  assert.equal(db.clients.get(CLIENT).outcome_tier, out.outcomeTier);
+});
+
+test("simulate: false is a real pull, exactly as omitting it is", async () => {
+  const db = fakeDb(request("request-false"));
+  const client = fakeClient({ TU: { ok: true, requestId: "REQ-F", report: report(690) } });
+  const out = await runCrsPull(db, {
+    orgId: ORG, clientId: CLIENT, requestId: "request-false", client,
+    bureaus: ["TU"], simulate: false
+  });
+  assert.equal(out.ok, true);
+  assert.equal(out.simulated, false);
+  assert.deepEqual(client.calls, ["TU"]);
+});
+
+test("an unreadable simulate refuses the pull and closes the ledger row", async () => {
+  for (const value of ["true", 1, "yes", {}]) {
+    const id = `request-ambiguous-${JSON.stringify(value)}`;
+    const db = fakeDb(request(id));
+    const client = forbiddenClient(PRODUCTION_HOST);
+
+    const out = await runCrsPull(db, {
+      orgId: ORG, clientId: CLIENT, requestId: id, client, bureaus: ["TU"], simulate: value
+    });
+
+    assert.equal(out.ok, false, JSON.stringify(value));
+    assert.equal(out.code, "simulate_ambiguous");
+    assert.equal(out.simulated, false);
+    assert.deepEqual(client.calls, [], "an unreadable flag must never reach a bureau");
+    assert.equal(db.results.length, 0, "and must store nothing");
+    assert.equal(db.requests.get(id).status, "failed",
+      "the row must close, or it blocks every later pull for this client");
+  }
+});
+
+test("no environment variable can turn a simulation on", async () => {
+  const db = fakeDb(request("request-env"));
+  const client = fakeClient({ TU: { ok: true, requestId: "REQ-ENV", report: report(710) } });
+
+  // Every spelling somebody might reach for. The pull is real regardless: the
+  // only input that simulates is the `simulate` argument on this call.
+  const out = await runCrsPull(db, {
+    orgId: ORG, clientId: CLIENT, requestId: "request-env", client, bureaus: ["TU"],
+    env: {
+      CRS_SIMULATE: "1", SIMULATE: "true", CRS_DRY_RUN: "1",
+      CRS_SANDBOX: "on", ADAPTERS_DRY_RUN: "1", NODE_ENV: "test"
+    }
+  });
+
+  assert.equal(out.simulated, false);
+  assert.equal(db.results[0].result.simulated, undefined);
+  assert.deepEqual(client.calls, ["TU"]);
+});
+
+test("the identity gate still refuses first on a simulated pull", async () => {
+  // No identity on file. The refusal must come from the gate, not from the fence.
+  const db = fakeDb(request("request-no-identity"));
+  const client = forbiddenClient(PRODUCTION_HOST);
+  const out = await runCrsPull(db, {
+    orgId: ORG, clientId: CLIENT, requestId: "request-no-identity", client,
+    bureaus: ["TU"], simulate: true, env: { CRS_ALLOW_LIVE: "1" }
+  });
+  assert.equal(out.ok, false);
+  assert.equal(out.code, "identity_required");
+  assert.equal(out.simulated, true);
+  assert.equal(db.results.length, 0);
+  assert.equal(db.requests.get("request-no-identity").status, "failed");
+});
+
+test("a simulated pull does not relax CRS_ALLOW_LIVE or the sandbox fixture rule", async () => {
+  // Production host with the live switch off is still refused. The fence makes
+  // the vendor call skippable; it does not make any gate skippable.
+  const off = fakeDb(request("request-live-off"));
+  const offOut = await runCrsPull(off, {
+    orgId: ORG, clientId: CLIENT, requestId: "request-live-off",
+    client: forbiddenClient(PRODUCTION_HOST), bureaus: ["TU"],
+    simulate: true, identity: realIdentity(), env: {}
+  });
+  assert.equal(offOut.ok, false);
+  assert.equal(offOut.code, "production_host_refused");
+  assert.equal(off.results.length, 0);
+
+  // A vendor test fixture offered to the production host is still refused.
+  const fixture = fakeDb(request("request-fixture"));
+  const fixtureOut = await runCrsPull(fixture, {
+    orgId: ORG, clientId: CLIENT, requestId: "request-fixture",
+    client: forbiddenClient(PRODUCTION_HOST), bureaus: ["TU"],
+    simulate: true,
+    identity: { ...realIdentity(), ssn: "666321120" },
+    env: { CRS_ALLOW_LIVE: "1" }
+  });
+  assert.equal(fixtureOut.ok, false);
+  assert.equal(fixtureOut.code, "test_identity_on_production");
+  assert.equal(fixture.results.length, 0);
+});
+
+test("a simulated pull is not configuration-exempt", async () => {
+  const db = fakeDb(request("request-unconfigured"));
+  const client = {
+    host: PRODUCTION_HOST,
+    config: { missing: ["CRS_API_USERNAME"] },
+    isConfigured: () => false,
+    async orderPrequal() { throw new Error("must not be reached"); }
+  };
+  const out = await runCrsPull(db, {
+    orgId: ORG, clientId: CLIENT, requestId: "request-unconfigured", client,
+    bureaus: ["TU"], simulate: true
+  });
+  assert.equal(out.ok, false);
+  assert.equal(out.code, "not_configured");
+  assert.equal(out.simulated, true);
+});
+
+test("a replay must answer the question that was asked, both ways round", async () => {
+  const db = fakeDb(request("request-replay"));
+  const client = forbiddenClient(PRODUCTION_HOST);
+  const env = { CRS_ALLOW_LIVE: "1" };
+
+  const first = await runCrsPull(db, {
+    orgId: ORG, clientId: CLIENT, requestId: "request-replay", client,
+    bureaus: ["TU"], simulate: true, identity: realIdentity(), env
+  });
+  assert.equal(first.ok, true);
+
+  // Same ledger row, now asked for a REAL pull. Handing back the rehearsal
+  // would tell the caller a bureau answered when none did.
+  const asReal = await runCrsPull(db, {
+    orgId: ORG, clientId: CLIENT, requestId: "request-replay", client,
+    bureaus: ["TU"], identity: realIdentity(), env
+  });
+  assert.equal(asReal.ok, false);
+  assert.equal(asReal.code, "simulation_mismatch");
+  assert.deepEqual(client.calls, []);
+
+  // Replayed as a simulation, it is the same rehearsal and stays stamped.
+  const asSim = await runCrsPull(db, {
+    orgId: ORG, clientId: CLIENT, requestId: "request-replay", client,
+    bureaus: ["TU"], simulate: true, identity: realIdentity(), env
+  });
+  assert.equal(asSim.ok, true);
+  assert.equal(asSim.simulated, true);
+  assert.equal(asSim.replayed, true);
+  assert.equal(asSim.crsResultId, first.crsResultId);
+  assert.equal(db.results.length, 1);
+  assert.equal(db.clients.get(CLIENT).outcome_tier, null);
+
+  // And the mirror: a real result cannot be replayed as a simulation.
+  db.requests.set("request-real-replay", request("request-real-replay"));
+  const realClient = fakeClient({ TU: { ok: true, requestId: "REQ-RR", report: report(705) } });
+  await runCrsPull(db, {
+    orgId: ORG, clientId: CLIENT, requestId: "request-real-replay", client: realClient,
+    bureaus: ["TU"]
+  });
+  const mirrored = await runCrsPull(db, {
+    orgId: ORG, clientId: CLIENT, requestId: "request-real-replay", client: realClient,
+    bureaus: ["TU"], simulate: true
+  });
+  assert.equal(mirrored.ok, false);
+  assert.equal(mirrored.code, "simulation_mismatch");
+});
+
+test("two rehearsals of the same client do not collide", async () => {
+  const db = fakeDb(request("request-sim-a"));
+  db.requests.set("request-sim-b", request("request-sim-b"));
+  const env = { CRS_ALLOW_LIVE: "1" };
+
+  const a = await runCrsPull(db, {
+    orgId: ORG, clientId: CLIENT, requestId: "request-sim-a",
+    client: forbiddenClient(PRODUCTION_HOST), bureaus: ["TU"],
+    simulate: true, identity: realIdentity(), env
+  });
+  const b = await runCrsPull(db, {
+    orgId: ORG, clientId: CLIENT, requestId: "request-sim-b",
+    client: forbiddenClient(PRODUCTION_HOST), bureaus: ["TU"],
+    simulate: true, identity: realIdentity(), env
+  });
+
+  assert.equal(a.ok, true);
+  assert.equal(b.ok, true);
+  assert.equal(db.results.length, 2);
+  assert.notEqual(db.results[0].provider_result_id, db.results[1].provider_result_id);
+});
+
+test("the canned answer carries no bureau data and no vendor request id", () => {
+  const out = simulatedBureauResponse({ bureau: "EX", requestId: "request-1" });
+  assert.equal(out.ok, true);
+  assert.equal(out.bureau, "EX");
+  assert.match(out.requestId, /^SIMULATED:/);
+  assert.equal(out.report.simulated, true);
+  assert.deepEqual(out.report.scores, []);
+  assert.deepEqual(out.report.tradelines, []);
+  assert.deepEqual(out.report.inquiries, []);
+  assert.deepEqual(out.report.publicRecords, []);
+
+  // The bundle identity a simulation stores announces itself in plain text.
+  const identity = providerResultIdFor({ requestIds: { EX: out.requestId }, simulated: true });
+  assert.match(identity, /^crs-simulated-bundle:/);
+  assert.notEqual(identity, providerResultIdFor({ requestIds: { EX: out.requestId } }));
 });

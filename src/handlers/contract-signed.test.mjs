@@ -197,8 +197,18 @@ describe("registration", () => {
     );
     registerAll();
     const handlers = getHandlers("contract.signed");
-    assert.equal(handlers.length, 1);
-    assert.equal(handlers[0], onContractSigned);
+    /* Two listeners now, not one. This one delivers the signed copy and raises
+       the task; src/handlers/contract-consent.mjs is the second, and it writes
+       the soft-pull consent row a signed SOFT-PULL-CONSENT earns (owner call,
+       2026-08-19 — it reverses the "NO CONSENT ROW" note at the top of
+       contract-signed.mjs, which is left in place as the record of the earlier
+       decision). They are independent: src/events/bus.mjs runs each in
+       isolation, so neither can break the other. Assert on membership rather
+       than on a count, so the next handler to subscribe does not fail this. */
+    assert.ok(
+      handlers.includes(onContractSigned),
+      "this handler must still be on contract.signed after boot"
+    );
   });
 
   test("register() alone is enough, and registering twice adds one handler", () => {

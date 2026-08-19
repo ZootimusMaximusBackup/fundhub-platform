@@ -1,0 +1,283 @@
+{
+  "base": "https://fundhub.ai",
+  "at": "2026-08-19T06:53:06.019Z",
+  "steps": [
+    {
+      "step": "ccp-load",
+      "url": "https://fundhub.ai/app/client-control-panel.html?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521"
+    },
+    {
+      "step": "ccp-dom",
+      "shown": {
+        "scoreLine": "EX — · EQ — · TU —",
+        "hasUtil": false,
+        "pullButtons": [
+          {
+            "label": "Pull TransUnion →",
+            "disabled": false,
+            "title": null
+          },
+          {
+            "label": "Pull Experian →",
+            "disabled": false,
+            "title": null
+          },
+          {
+            "label": "Pull Equifax →",
+            "disabled": false,
+            "title": null
+          }
+        ],
+        "disabledButtons": [
+          {
+            "label": "Open Bank Inbox ↗",
+            "title": "Not wired on this screen"
+          },
+          {
+            "label": "GHL Contact ↗",
+            "title": "GHL cut over — use Messaging"
+          },
+          {
+            "label": "Raw Report ↗",
+            "title": "Raw bureau PDF not linked here yet"
+          }
+        ],
+        "consentLink": [
+          "☑Consent"
+        ]
+      }
+    },
+    {
+      "step": "pull-TransUnion",
+      "calls": [
+        {
+          "m": "POST",
+          "u": "/api/finance/crs-pull",
+          "s": 422,
+          "body": "{\"ok\":false,\"error\":\"no identity on file for this client — a credit report cannot be ordered\",\"code\":\"identity_required\",\"bureau\":\"TU\"}"
+        }
+      ],
+      "banner": "Consent"
+    },
+    {
+      "step": "pull-Experian",
+      "calls": [
+        {
+          "m": "POST",
+          "u": "/api/finance/crs-pull",
+          "s": 422,
+          "body": "{\"ok\":false,\"error\":\"no identity on file for this client — a credit report cannot be ordered\",\"code\":\"identity_required\",\"bureau\":\"EX\"}"
+        }
+      ],
+      "banner": "Consent"
+    },
+    {
+      "step": "pull-Equifax",
+      "calls": [
+        {
+          "m": "POST",
+          "u": "/api/finance/crs-pull",
+          "s": 422,
+          "body": "{\"ok\":false,\"error\":\"no identity on file for this client — a credit report cannot be ordered\",\"code\":\"identity_required\",\"bureau\":\"EQ\"}"
+        }
+      ],
+      "banner": "Consent"
+    },
+    {
+      "step": "underwrite-test",
+      "status": 200,
+      "body": "{\"ok\":true,\"clientId\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"engine\":{\"name\":\"underwrite_iq_lite\",\"upstreamCommit\":\"71656f0fe1083429f52eeb0aa095cce076a6b33c\",\"pure\":false,\"purityNote\":\"computeUnderwrite reads the system clock to age tradelines; a line with no stored open date reads as unseasoned\"},\"underwrite\":{\"fundable\":false,\"primary_bureau\":\"experian\",\"metrics\":{\"score\":0,\"utilization_pct\":null,\"negative_accounts\":null,\"late_payment_events\":null,\"inquiries\":{\"ex\":0,\"eq\":0,\"tu\":0,\"total\":0}},\"per_bureau\":{\"experian\":{\"key\":\"experian\",\"label\":\"Experian\",\"available\":false,\"score\":0,\"util\":null,\"neg\":null,\"lates\":null,\"inquiries\":0,\"tradelines\":[],\"highestRevolvingLimit\":0,\"highestInstallmentAmount\":0,\"hasAnyRevolving\":false,\"hasAnyInstallment\":false,\"thinFile\":true,\"fileAllNegative\":false,\"canCardStack\":false,\"canLoanStack\":false,\"canDualStack\":false,\"cardFunding\":0,\"loanFunding\":0,\"totalPersonalFunding\":0,\"fundable\":false,\"positiveTradelinesCount\":0},\"equifax\":{\"key\":\"equifax\",\"label\":\"Equifax\",\"available\":false,\"score\":0,\"util\":null,\"neg\":null,\"lates\":null,\"inquiries\":0,\"tradelines\":[],\"highestRevolvingLimit\":0,\"highestInstallmentAmount\":0,\"hasAnyRevolving\":false,\"hasAnyInstallment\":false,\"thinFile\":true,\"fileAllNegative\":false,\"canCardStack\":false,\"canLoanStack\":false,\"canDualStack\":false,\"cardFunding\":0,\"loanFunding\":0,\"totalPersonalFunding\":0,\"fundable\":false,\"positiveTradelinesCount\":0},\"transunion\":{\"key\":\"transunion\",\"label\":\"TransUnion\",\"available\":false,\"score\":0,\"util\":null,\"neg\":null,\"lates\":null,\"inquiries\":0,\"tradelines\":[],\"highestRevolvingLimit\":0,\"highestInstallmentAmount\":0,\"hasAnyRevolving\":false,\"hasAnyInstallment\":false,\"thinFile\":true,\"fileAllNegative\":false,\"canCardStack\":false,\"canLoanStack\":false,\"canDualStack\":false,\"cardFunding\":0,\"loanFunding\":0,\"totalPersonalFunding\":0,\"fundable\":false,\"positiveTradelinesCount\":0}},\"personal\":{\"highest_revolving_limit\":0,\"highest_installment_amount\":0,\"can_card_stack\":false,\"can_loan_stack\":false,\"can_dual_stack\":false,\"card_funding\":0,\"loan_funding\":0,\"total_personal_funding\":0},\"business\":{\"business_age_months\":null,\"can_business_fund\":false,\"business_multiplier\":0,\"business_funding\":0},\"totals\":{\"total_personal_funding\":0,\"total_business_funding\":0,\"total_combined_funding\":0},\"optimization\":{\"needs_util_reduction\":false,\"target_util_pct\":null,\"needs_new_primary_revolving\":true,\"needs_inquiry_cleanup\":false,\"needs_negative_cleanup\":false,\"needs_file_buildout\":true,\"thin_file\":true,\"file_all"
+    },
+    {
+      "step": "underwrite-sim",
+      "status": 404,
+      "body": "{\"ok\":false,\"error\":\"client_not_found\"}"
+    },
+    {
+      "step": "consent-capture",
+      "cc": {
+        "url": "/app/consent-capture.html?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+        "fields": [
+          {
+            "id": "ccName",
+            "name": null,
+            "type": "text",
+            "label": "Name they typed or signed — required for typed and signed"
+          },
+          {
+            "id": "ccExpires",
+            "name": null,
+            "type": "date",
+            "label": "Expires — optional. Leave empty if it does not expire."
+          },
+          {
+            "id": "fh-shell-search-input",
+            "name": null,
+            "type": "search",
+            "label": null
+          },
+          {
+            "id": "fh-chat-input",
+            "name": null,
+            "type": "text",
+            "label": null
+          }
+        ],
+        "buttons": [
+          "‹‹",
+          "Home▾",
+          "Sales▾",
+          "Funding▾",
+          "Client ops▾",
+          "Watch▾",
+          "Automation▾",
+          "Marketing▾",
+          "Admin▾",
+          "Portals▾",
+          "☰",
+          "Search⌘K",
+          "Sign out",
+          "They typed their name\n                Strongest record. Use in the portal or on a shared screen.",
+          "They ticked a box\n                Use when they clicked to agree and typed nothing.",
+          "They signed\n                Draw in the box below. A typed name alone is not a signature.",
+          "Clear",
+          "Record consent",
+          "Withdraw",
+          "Chat",
+          "Close",
+          "Ask system",
+          "Knowledge",
+          "Message",
+          "Ask"
+        ]
+      }
+    }
+  ],
+  "api": [
+    {
+      "m": "GET",
+      "u": "/api/read/lender-matches?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "s": 200,
+      "body": "{\"ok\":true,\"client_id\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"match_count\":0,\"summary\":{\"lender_count\":0,\"match_count\":0,\"skipped_count\":0,\"sensitive_bureaus\":[],\"client_state\":null},\"matches\":[],\"skipped\":[]}"
+    },
+    {
+      "m": "GET",
+      "u": "/api/read/inquiry-cases",
+      "s": 200,
+      "body": "{\"ok\":true,\"cases\":[{\"id\":\"e235efc2-2223-4d31-9a24-2a57313fce34\",\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"client_id\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"funding_round_id\":null,\"case_id\":\"IRC-1787069712644\",\"case_status\":\"Queued\",\"selected_bureaus_raw\":null,\"ghl_contact_id\":null,\"ai_call_scheduled_for\":null,\"ai_call_status\":null,\"request_source\":\"client_control_panel\",\"requested_by\":\"Chris Stanbridge\",\"requested_at\":\"2026-08-18T16:15:12.670Z\",\"assigned_remover\":null,\"fraud_alert_after\":null,\"closed_at\":null,\"remover_notes\":null,\"inquiry_remover_user_id\":null,\"open_inquiry_count\":0,\"master_call_state\":null,\"hold_duration_display\":null,\"completed_at\":null,\"created_at\":\"2026-08-18T16:15:12.670Z\",\"updated_at\":\"2026-08-18T16:15:12.670Z\",\"external_case_id\":null,\"call_batch_id\":null,\"voice_provider\":null,\"attempt_count\":0,\"hold_started_at\":null,\"live_agent_reached_at\":null,\"rep_hando"
+    },
+    {
+      "m": "GET",
+      "u": "/api/auth/session",
+      "s": 200,
+      "body": "{\"ok\":true,\"principal\":\"staff\",\"staff\":{\"id\":\"30a3f059-97ca-406a-b72f-f13a606e543b\",\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"role\":\"owner\",\"email\":\"owner@fundhub.ai\",\"name\":\"TEST — Owner Role\",\"status\":\"active\"}}"
+    },
+    {
+      "m": "GET",
+      "u": "/api/read/agent-context?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "s": 200,
+      "body": "{\"ok\":true,\"context\":{\"conversation\":{\"id\":\"a7afedb9-048c-4488-9900-68f44a620ff2\",\"channel\":\"email\",\"summary\":null,\"agent_code\":null,\"agent_halted_at\":null,\"agent_halt_reason\":null,\"last_pulse_at\":\"2026-08-18T21:43:28.135Z\"},\"recent_messages\":[{\"id\":\"52f39bbe-24a5-4164-a330-b49944311b47\",\"direction\":\"outbound\",\"channel\":\"email\",\"body\":\"Hi TEST,\\n\\nHere is your link to sign in to your Fundhub portal:\\n\\nhttps://fundhub.ai/portal-login.html?t=G4Ozt02p1ejFhmJv6KBU4GStn1-ia8sPXjeTwHxvfOE\\n\\nThe link works once and expires in 15 minutes. If it has expired, go back to the sign-in page and ask for a new one.\\n\\nIf you did not ask to sign in, you can ignore this email. Nobody can use the link without opening it from your inbox.\\n\\n— Fundhub\",\"subject\":\"Your Fundhub sign-in link\",\"sender_kind\":\"system\",\"sender_agent_code\":null,\"created_at\":\"2026-08-18T16:00:52.037Z\"},{\"id\":\"c6a67a2d-444b-450e-bf6"
+    },
+    {
+      "m": "GET",
+      "u": "/api/dashboard/clients?limit=200",
+      "s": 200,
+      "body": "{\"ok\":true,\"count\":37,\"clients\":[{\"id\":\"0bfedb2d-24fd-4bdb-8e63-0cc95b771da7\",\"first_name\":\"E2E\",\"last_name\":\"Aff A2P\",\"email\":\"e2e+aff-a2p18b@fundhub.ai\",\"outcome_tier\":null,\"funded\":false,\"funded_amount\":null,\"is_demo\":false,\"custom_fields\":{\"crs_paid\":false,\"deposit_paid\":false,\"sale_closed\":false,\"total_funding_estimate\":null},\"transactions\":{\"count\":0,\"latest_product\":null,\"latest_amount\":null,\"latest_status\":null},\"crs_count\":0,\"task_count\":0,\"last_message\":{\"channel\":null,\"direction\":null,\"at\":null},\"created_at\":\"2026-08-18T21:47:29.764Z\"},{\"id\":\"9d4126b4-c3a3-4dd7-bfc0-94fdfed545cb\",\"first_name\":\"E2E\",\"last_name\":\"Aff A2P\",\"email\":\"e2e+aff-a2p18@fundhub.ai\",\"outcome_tier\":null,\"funded\":false,\"funded_amount\":null,\"is_demo\":false,\"custom_fields\":{\"crs_paid\":false,\"deposit_paid\":false,\"sale_closed\":false,\"total_funding_estimate\":null},\"transactions\":{\"count\":0,\"latest_product\":null,"
+    },
+    {
+      "m": "GET",
+      "u": "/api/dashboard/client?id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "s": 200,
+      "body": "{\"ok\":true,\"client\":{\"id\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"first_name\":\"TEST\",\"last_name\":\"Client Role\",\"email\":\"stanbridgejchris+e2e-fire@gmail.com\",\"phone\":\"+16616180865\",\"outcome_tier\":null,\"funded\":false,\"funded_amount\":null,\"days_to_fund\":null,\"channel_source\":null,\"tags\":[\"inquiry:completed\"],\"pipeline_ids\":[],\"dnd_sms\":false,\"dnd_email\":false,\"dnd_voice\":false,\"consent_sms\":false,\"custom_fields\":{\"crs_paid\":true,\"crs_status\":\"Requested\",\"sale_closed\":true,\"deposit_paid\":true,\"analyzer_path\":\"Funding\",\"crs_pull_scope\":\"consumer_only\",\"crm_archived_at\":\"2026-08-18T21:45:03.377Z\",\"ghl_link_dry_run\":true,\"round_hold_reason\":\"Awaiting CRS\",\"employee_next_action\":\"Apply for Funding\",\"ready_for_next_round\":true},\"created_at\":\"2026-08-16T10:22:56.488Z\",\"updated_at\":\"2026-08-18T21:45:03.420Z\"},\"transactions\":[{\"id\":\"f499f694-4571-49e2-"
+    },
+    {
+      "m": "GET",
+      "u": "/api/health",
+      "s": 200,
+      "body": "{\"ok\":true,\"db\":\"up\",\"state\":\"up\",\"migrations\":169,\"expected\":167,\"pending\":0,\"error\":null,\"checkedAt\":\"2026-08-19T06:53:27.455Z\"}"
+    },
+    {
+      "m": "GET",
+      "u": "/api/org-brand",
+      "s": 200,
+      "body": "{\"ok\":true,\"brand\":{\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"slug\":\"fundhub\",\"entity_name\":\"Fundhub\",\"wordmark_url\":null,\"ink\":\"#0A0A0A\",\"paper\":\"#FCFCFC\",\"ramp\":[\"#F2A69B\",\"#F5CE8F\",\"#F2E39B\",\"#A8D8B0\",\"#A9C6E8\",\"#C4B3E5\"],\"display_face\":\"Inter\",\"mono_face\":\"JetBrains Mono\"}}"
+    },
+    {
+      "m": "POST",
+      "u": "/api/finance/crs-pull",
+      "s": 422,
+      "body": "{\"ok\":false,\"error\":\"no identity on file for this client — a credit report cannot be ordered\",\"code\":\"identity_required\",\"bureau\":\"TU\"}"
+    },
+    {
+      "m": "POST",
+      "u": "/api/finance/crs-pull",
+      "s": 422,
+      "body": "{\"ok\":false,\"error\":\"no identity on file for this client — a credit report cannot be ordered\",\"code\":\"identity_required\",\"bureau\":\"EX\"}"
+    },
+    {
+      "m": "POST",
+      "u": "/api/finance/crs-pull",
+      "s": 422,
+      "body": "{\"ok\":false,\"error\":\"no identity on file for this client — a credit report cannot be ordered\",\"code\":\"identity_required\",\"bureau\":\"EQ\"}"
+    },
+    {
+      "m": "GET",
+      "u": "/api/read/underwrite?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521",
+      "s": 200,
+      "body": "{\"ok\":true,\"clientId\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"engine\":{\"name\":\"underwrite_iq_lite\",\"upstreamCommit\":\"71656f0fe1083429f52eeb0aa095cce076a6b33c\",\"pure\":false,\"purityNote\":\"computeUnderwrite reads the system clock to age tradelines; a line with no stored open date reads as unseasoned\"},\"underwrite\":{\"fundable\":false,\"primary_bureau\":\"experian\",\"metrics\":{\"score\":0,\"utilization_pct\":null,\"negative_accounts\":null,\"late_payment_events\":null,\"inquiries\":{\"ex\":0,\"eq\":0,\"tu\":0,\"total\":0}},\"per_bureau\":{\"experian\":{\"key\":\"experian\",\"label\":\"Experian\",\"available\":false,\"score\":0,\"util\":null,\"neg\":null,\"lates\":null,\"inquiries\":0,\"tradelines\":[],\"highestRevolvingLimit\":0,\"highestInstallmentAmount\":0,\"hasAnyRevolving\":false,\"hasAnyInstallment\":false,\"thinFile\":true,\"fileAllNegative\":false,\"canCardStack\":false,\"canLoanStack\":false,\"canDualStack\":false,\"cardFunding\":0,\"loanFunding\":0,\"to"
+    },
+    {
+      "m": "GET",
+      "u": "/api/read/underwrite?client_id=41a3199f-1835-4ac8-91c0-d4f37bd92037",
+      "s": 404,
+      "body": "{\"ok\":false,\"error\":\"client_not_found\"}"
+    },
+    {
+      "m": "GET",
+      "u": "/api/auth/session",
+      "s": 200,
+      "body": "{\"ok\":true,\"principal\":\"staff\",\"staff\":{\"id\":\"30a3f059-97ca-406a-b72f-f13a606e543b\",\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"role\":\"owner\",\"email\":\"owner@fundhub.ai\",\"name\":\"TEST — Owner Role\",\"status\":\"active\"}}"
+    },
+    {
+      "m": "GET",
+      "u": "/api/consent/capture?client_id=8556bedc-46e1-4d85-b0cd-a24adfee1521&kind=soft_pull_consent",
+      "s": 200,
+      "body": "{\"ok\":true,\"kind\":\"soft_pull_consent\",\"disclosure\":{\"version\":\"soft-pull-v1\",\"title\":\"Soft Pull Authorization\",\"text\":\"I authorize Fundhub to obtain my consumer credit report through a soft inquiry.\\n\\nA soft inquiry does not affect my credit score and is not visible to lenders reviewing my file.\\n\\nI understand this authorization stays in effect until it expires or until I withdraw it, and that I may withdraw it at any time, for any reason, without giving a reason.\\n\\nI understand that withdrawing it does not undo a report already obtained, and does not affect anything already done with a report obtained while this authorization was in effect.\"},\"status\":{\"valid\":true,\"reason\":\"valid\",\"consent\":{\"id\":\"935649c6-5b7e-4f9a-bba4-cbe06e2fc65b\",\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"client_id\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"kind\":\"soft_pull_consent\",\"consent_text\":\"I author"
+    },
+    {
+      "m": "GET",
+      "u": "/api/health",
+      "s": 200,
+      "body": "{\"ok\":true,\"db\":\"up\",\"state\":\"up\",\"migrations\":169,\"expected\":167,\"pending\":0,\"error\":null,\"checkedAt\":\"2026-08-19T06:53:46.511Z\"}"
+    },
+    {
+      "m": "GET",
+      "u": "/api/org-brand",
+      "s": 200,
+      "body": "{\"ok\":true,\"brand\":{\"org_id\":\"fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\",\"slug\":\"fundhub\",\"entity_name\":\"Fundhub\",\"wordmark_url\":null,\"ink\":\"#0A0A0A\",\"paper\":\"#FCFCFC\",\"ramp\":[\"#F2A69B\",\"#F5CE8F\",\"#F2E39B\",\"#A8D8B0\",\"#A9C6E8\",\"#C4B3E5\"],\"display_face\":\"Inter\",\"mono_face\":\"JetBrains Mono\"}}"
+    }
+  ],
+  "writes": [
+    {
+      "m": "POST",
+      "u": "/api/finance/crs-pull",
+      "body": "{\"client_id\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"bureau\":\"TU\"}"
+    },
+    {
+      "m": "POST",
+      "u": "/api/finance/crs-pull",
+      "body": "{\"client_id\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"bureau\":\"EX\"}"
+    },
+    {
+      "m": "POST",
+      "u": "/api/finance/crs-pull",
+      "body": "{\"client_id\":\"8556bedc-46e1-4d85-b0cd-a24adfee1521\",\"bureau\":\"EQ\"}"
+    }
+  ],
+  "console": [
+    "Failed to load resource: the server responded with a status of 422 ()",
+    "Failed to load resource: the server responded with a status of 422 ()",
+    "Failed to load resource: the server responded with a status of 422 ()",
+    "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+}

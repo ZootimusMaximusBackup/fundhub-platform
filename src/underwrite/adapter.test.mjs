@@ -18,6 +18,15 @@ import { test, describe } from "node:test";
 import assert from "node:assert";
 
 import { toBureaus, toEngineTradelines, clientUtilizationPct, BUREAUS } from "./adapter.mjs";
+// The engine, the reader and the seed, all real. The last two blocks in this
+// file check the adapter's claims against what actually happens downstream and
+// upstream of it, rather than against a fixture written to agree with them.
+// None of these touches a database at import time — src/db.mjs builds its pool
+// lazily, on the first query.
+import { computeUnderwrite } from "./engine.mjs";
+import { triMerge } from "../http/client-detail.mjs";
+import { normalizeFromCrs } from "../tradelines/index.mjs";
+import { buildSimulatedCrsPayload } from "../demo/simulate-client.mjs";
 
 /* A `tradelines` row (054). Cents, and NULL is allowed on every measure. */
 const line = (over = {}) => ({
@@ -186,10 +195,12 @@ describe("toBureaus — which bureaus are supplied, and what is recorded missing
     assert.ok(fields.includes("inquiries"));
 
     // The consequence is spelled out where it is lost, not left for a reader to
-    // work out from the engine's source.
+    // work out from the engine's source. WHICH consequence it has to name is
+    // asserted further down, against the engine itself; this only pins that the
+    // sentence mentions `fundable` at all.
     const neg = out.missing.experian.find((m) => m.field === "negatives");
     assert.match(neg.effect, /fundable/,
-      "the record must say that an unentered negatives count is what lets a client read as fundable");
+      "the record must say what an unentered negatives count does to `fundable`");
   });
 
   test("entered values are read from the live custom-field names", () => {
@@ -278,5 +289,138 @@ describe("toBureaus — which bureaus are supplied, and what is recorded missing
     assert.deepEqual(out.available, []);
     assert.equal(out.businessAgeMonths, null);
     assert.ok(Array.isArray(out.missing.client));
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   THE RECORDED EFFECT OF A GAP MUST BE WHAT THE ENGINE ACTUALLY DOES
+
+   These `effect` sentences are not internal notes. They are read by an operator
+   off a screen, and they are the only explanation anyone gets for why a client
+   shows $0. Three of them stated the OPPOSITE of the engine's behaviour until
+   2026-08-19: they said an unentered count is read as zero and therefore helps
+   the client, when in fact it is kept as null and fails every `=== 0` gate the
+   engine has, which withholds funding.
+
+   A wrong sentence here is worse than no sentence: it sends an operator looking
+   for a credit problem that does not exist. So each claim below is checked
+   against the engine's own output rather than against itself.
+
+   `opened` dates here follow the rule in ./fixtures.test.mjs: null (never
+   seasoned) or 1990 (seasoned for centuries). Never a date near the 24-month
+   boundary, which would make these tests start failing on their own.
+   ═══════════════════════════════════════════════════════════════════════════════ */
+describe("what a gap costs, checked against the engine and not against itself", () => {
+  const scoredCrs = [crs(SCORES)];
+  const clean = { crs_negative_items_count: 0, crs_late_payments_count: 0 };
+
+  test("an unentered negatives count reads NOT fundable — it is not mistaken for a clean file", () => {
+    const withCount = toBureaus({ crsResults: scoredCrs, tradelines: [line()], customFields: clean });
+    const without = toBureaus({ crsResults: scoredCrs, tradelines: [line()], customFields: {} });
+
+    assert.equal(computeUnderwrite(withCount.bureaus, null).fundable, true,
+      "a MEASURED zero, with a 720 score and 25% utilization, is fundable");
+    assert.equal(computeUnderwrite(without.bureaus, null).fundable, false,
+      "an UNMEASURED zero is not — null fails `neg === 0`");
+
+    const effect = without.missing.experian.find((m) => m.field === "negatives").effect;
+    assert.match(effect, /NOT fundable/,
+      "the sentence must tell the operator the client reads NOT fundable, which is what happens");
+    assert.doesNotMatch(effect, /counts 0|reports zero/i,
+      "the engine does not count 0 here — saying so sends the operator looking for the wrong problem");
+  });
+
+  test("an unentered late-payment count WITHHOLDS loan funding rather than granting it", () => {
+    const loan = line({ kind: "installment", credit_limit_cents: 2_000_000, opened_on: "1990-01-01" });
+    const withCount = toBureaus({ crsResults: scoredCrs, tradelines: [loan], customFields: clean });
+    const without = toBureaus({ crsResults: scoredCrs, tradelines: [loan], customFields: {} });
+
+    assert.equal(computeUnderwrite(withCount.bureaus, null).personal.can_loan_stack, true,
+      "a $20,000 seasoned installment loan and a measured zero lates can loan-stack");
+    assert.equal(computeUnderwrite(without.bureaus, null).personal.loan_funding, 0,
+      "with the count unknown the same loan produces nothing");
+
+    const effect = without.missing.experian.find((m) => m.field === "late_payment_events").effect;
+    assert.match(effect, /withheld/,
+      "the sentence must say the funding is withheld, not that a condition is met");
+  });
+
+  test("one bureau's unentered inquiry count makes the WHOLE total unknown, not that bureau's zero", () => {
+    const out = toBureaus({
+      crsResults: scoredCrs,
+      tradelines: [line()],
+      customFields: { crs_inquiries_ex: 3, crs_inquiries_eq: 2 } // transunion left blank
+    });
+    const metrics = computeUnderwrite(out.bureaus, null).metrics;
+    assert.equal(metrics.inquiries.tu, null, "the blank bureau's slot is unknown, not 0");
+    assert.equal(metrics.inquiries.total, null,
+      "and the total refuses to add up — 3 + 2 + unknown is not 5");
+
+    const effect = out.missing.transunion.find((m) => m.field === "inquiries").effect;
+    assert.match(effect, /whole inquiry total/,
+      "the sentence must say one blank bureau blanks the whole figure");
+    assert.doesNotMatch(effect, /could only raise the total/,
+      "there is no total to raise — it is unknown");
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   THE DEMO SEED'S OWN PAYLOAD, PLANTED RAW
+
+   Every other test in this file plants an already-flat fixture. That is what let
+   a seed writing its scores into a key no reader reads ship green: the demo
+   client showed score 0 and $0 funding on UnderwriteIQ and nothing failed.
+
+   So this one takes the seed's REAL output — buildSimulatedCrsPayload(), the
+   same function POST /api/demo/simulate stores — normalizes its tradelines
+   through the REAL ingest normalizer, and reads the result. No database, no
+   emit step, no hand-written fixture in the middle. If the seed and the reader
+   ever disagree about where a score lives again, this fails.
+
+   (The seeded open dates are 2019-2022 and only get older, so nothing here can
+   drift across the engine's 24-month seasoning boundary.)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+describe("the demo seed writes a payload this adapter can actually read", () => {
+  const payload = buildSimulatedCrsPayload({ email: "sim@demo.fundhub.local", name: "Simulated Client" });
+  const crsRow = { result: payload, created_at: "2026-08-19T00:00:00Z" };
+  // The real normalizer, so this proves the stored rows and not a guess at them.
+  const stored = normalizeFromCrs(crsRow);
+
+  test("all three bureau scores are where triMerge looks for them", () => {
+    const scores = triMerge([crsRow]);
+    assert.equal(scores.experian, 718);
+    assert.equal(scores.equifax, 724);
+    assert.equal(scores.transunion, 731);
+    assert.equal(scores.source, "crs_results");
+  });
+
+  test("the payload never stamps itself `sandbox`", () => {
+    assert.notEqual(String(payload.environment || "").toLowerCase(), "sandbox",
+      "triMerge skips a sandbox row whole (src/http/client-detail.mjs:76), which would " +
+      "put the demo client back at score 0 with everything else here still correct");
+  });
+
+  test("the four seeded lines normalize with a limit, a balance, a rate and an open date", () => {
+    assert.equal(stored.length, 4);
+    for (const row of stored) {
+      assert.ok(row.credit_limit_cents > 0, `${row.lender} must carry a limit`);
+      assert.ok(row.balance_cents !== null, `${row.lender} must carry a balance`);
+      assert.ok(row.apr !== null, `${row.lender} must carry a rate — an unpriced line sorts last`);
+      assert.match(row.opened_on, /^\d{4}-\d{2}-\d{2}$/, `${row.lender} must carry an open date`);
+      assert.ok(row.account_ref, `${row.lender} must carry an account_ref or its position cannot attach`);
+    }
+  });
+
+  test("planted raw, the seed produces three available bureaus and real funding", () => {
+    const out = toBureaus({ tradelines: stored, crsResults: [crsRow], customFields: {} });
+    assert.deepEqual(out.available, BUREAUS,
+      "all three bureaus answered in the seeded pull — none may be lost on the way in");
+
+    const underwrite = computeUnderwrite(out.bureaus, out.businessAgeMonths);
+    assert.equal(underwrite.metrics.score, 731, "TransUnion is the highest of the three");
+    // $25,000 is the largest seasoned open revolving limit; the engine multiplies
+    // it by 5.5, and with no bureau fundable yet there is no 1/3 scaling.
+    assert.equal(underwrite.totals.total_combined_funding, 412500,
+      "the headline figure the demo client showed as $0");
   });
 });

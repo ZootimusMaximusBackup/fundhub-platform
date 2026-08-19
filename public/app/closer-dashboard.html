@@ -855,8 +855,22 @@ window.FHCloserView = (function () {
       badge; that is worse than not wiring them.
    3. NOTHING IS INVENTED. Deal math, per-card minimums, today's pipeline and
       the shift stats have no source here. They stay dashes, not fake dollars.
+
+   AND WHY THE WHOLE BLOCK WAITS FOR DOMContentLoaded:
+
+   data.js carries `defer` (its tag is right above this one), so window.FHData
+   does not exist yet while this inline block is being PARSED. The guard a few
+   lines down — `if (!window.FHData || !window.FHCloserView) return;` — therefore
+   fired on every single load and returned before anything asked the server for
+   this client's figures. Proven live 2026-08-18: the five result boxes read
+   "—" and the screen made four requests, none of them for deal data.
+
+   Every deferred script runs BEFORE DOMContentLoaded, so waiting for that event
+   is what lets the guard see the loaded FHData instead of an empty window. Same
+   fix and same reason as public/app/client-control-panel.html:669-675. Do not
+   remove `defer` and do not add a loader — the ordering is already guaranteed.
    ═══════════════════════════════════════════════════════════════════════════ */
-(function () {
+document.addEventListener("DOMContentLoaded", function () {
   "use strict";
 
   function tickClock() {
@@ -1244,7 +1258,7 @@ window.FHCloserView = (function () {
 
   load(false);
   loadLenderMatches();
-})();
+});
 </script>
 </body>
 </html>
