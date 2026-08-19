@@ -200,6 +200,20 @@
     });
   }
 
+  // Every failure modal must carry this. Losing it is how somebody ends up applying
+  // from the office IP address.
+  var NOT_ROUTED_WARNING =
+    '<p style="color:#71717A;margin-top:8px">Browser routing is <b>NOT</b> active and the ' +
+    "bank application was <b>not</b> opened. Do not apply from your normal internet " +
+    "connection — the bank will see the wrong location.</p>";
+
+  function nextStepBlock(text) {
+    if (!text) return "";
+    return '<p style="margin:8px 0 0;padding:8px 10px;background:#FEF3C7;' +
+      'border:1px solid #FCD34D;border-radius:8px"><b>What to do next:</b> ' +
+      esc(text) + "</p>";
+  }
+
   /**
    * Launch Apply for a lender/application.
    * opts: { clientId, lenderId?, applicationId?, lenderName? }
@@ -230,18 +244,19 @@
             // Failure fallback. There are no working proxy settings to show here —
             // the session never came up — so do NOT print a host, username or
             // password that was never geo-verified. Show what to do instead.
+            // 401/403 are written by the auth gate before the handler runs, so they
+            // never carry next_step — cover them here rather than show a bare code.
             var nextStep = (d && d.next_step) || null;
+            if (!nextStep) {
+              nextStep = (pack.http === 401 || pack.http === 403)
+                ? "Your sign-in has expired or your role cannot use Apply. Sign in again, then try Apply."
+                : "Try Apply again. If it keeps failing, tell the owner what this message says.";
+            }
             showModal(
               "Could not start Apply proxy",
               "<p>" + esc((d && (d.message || d.error)) || ("HTTP " + pack.http)) + "</p>" +
-              (nextStep
-                ? '<p style="margin:8px 0 0;padding:8px 10px;background:#FEF3C7;' +
-                  'border:1px solid #FCD34D;border-radius:8px"><b>What to do next:</b> ' +
-                  esc(nextStep) + "</p>"
-                : "") +
-              '<p style="color:#71717A;margin-top:8px">Browser routing is <b>NOT</b> active and the ' +
-              "bank application was <b>not</b> opened. Do not apply from your normal internet " +
-              "connection — the bank will see the wrong location.</p>",
+              nextStepBlock(nextStep) +
+              NOT_ROUTED_WARNING,
               [{ label: "Close", onClick: hideModal, primary: true }]
             );
             return;
@@ -331,9 +346,14 @@
           });
         });
     }).catch(function (err) {
+      // Same title as the modal above, so it must carry the same warning — otherwise
+      // a dropped connection produces a box that looks identical minus the one
+      // sentence that stops somebody applying from their own address.
       showModal(
         "Could not start Apply proxy",
-        "<p>" + esc(err && err.message ? err.message : "Network error") + "</p>",
+        "<p>" + esc(err && err.message ? err.message : "Network error") + "</p>" +
+        nextStepBlock("Check your internet connection, then try Apply again.") +
+        NOT_ROUTED_WARNING,
         [{ label: "Close", onClick: hideModal, primary: true }]
       );
     });

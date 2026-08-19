@@ -100,6 +100,16 @@ export default async function handler(req, res, deps = {}) {
         if (body[k] !== undefined) patch[k] = body[k];
       }
     }
+    // The screen posts every empty box as "". `lenders.name` is NOT NULL with a
+    // non-empty check (db/migrations/138_lenders.sql:60), so a cleared Name box
+    // reached Postgres and came back as a raw 500. Refuse it in words instead.
+    if (patch.name !== undefined && String(patch.name).trim() === "") {
+      return res.status(400).json({
+        ok: false,
+        error: "name_required",
+        message: "Name is required."
+      });
+    }
     if (patch.active != null) {
       patch.active = patch.active === true || patch.active === "true" || patch.active === 1;
     }

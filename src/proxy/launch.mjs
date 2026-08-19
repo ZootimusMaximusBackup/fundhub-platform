@@ -98,16 +98,34 @@ export async function launchProxySession(db, {
     status: "verifying"
   });
 
-  const launched = await launchCredentials({
-    city: loc.city,
-    state: loc.state,
-    sessid,
-    env,
-    fetchFn
-  });
+  // If anything between here and the status update throws, the row is left at
+  // 'verifying' forever — nothing in this repo sweeps stale 'verifying' rows
+  // (endProxySession only touches 'active'). Always close the row.
+  let launched;
+  try {
+    launched = await launchCredentials({
+      city: loc.city,
+      state: loc.state,
+      sessid,
+      env,
+      fetchFn
+    });
+  } catch (cause) {
+    await updateProxySession(db, {
+      orgId,
+      id: pending.id,
+      patch: {
+        status: "failed",
+        errorCode: "launch_threw",
+        errorMessage: cause?.message || "Proxy launch threw",
+        endedAt: new Date().toISOString()
+      }
+    }).catch(() => {});
+    throw cause;
+  }
 
   if (!launched.ok) {
-    await updateProxySession(db, {
+    const closed = await updateProxySession(db, {
       orgId,
       id: pending.id,
       patch: {
@@ -123,7 +141,9 @@ export async function launchProxySession(db, {
       launched.message || "Proxy launch failed",
       launched.error === "oxylabs_credentials_missing" ? 503 : 422
     );
-    err.sessionId = pending.id;
+    // Only quote a session id the audit row actually reflects. A zero-row UPDATE
+    // would otherwise hand back an id still sitting at status='verifying'.
+    err.sessionId = closed ? pending.id : null;
     err.attempts = launched.attempts || [];
     throw err;
   }

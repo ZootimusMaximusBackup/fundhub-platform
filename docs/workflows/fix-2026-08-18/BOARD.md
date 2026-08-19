@@ -1025,3 +1025,62 @@ on per-lane scratch Postgres databases (`fundhub_t8b`, `fh_t8c`) — never `fund
   optional; money columns are plain **dollars** and blank stays unknown, never `$0`.
 - `npx tsc --noEmit` cannot run — this repo has no TypeScript config anywhere, so the command just
   prints its help text. Pre-existing.
+
+### T8 — second pass, after a 12-agent adversarial audit (2026-08-19)
+
+The first pass was audited by 12 agents told to break it, not confirm it. They were right about a
+lot. Corrections below are in commit 2 of this branch. **The audit's blunt summary stands: none of
+the 11 items is fully closed.** Honest per-item status:
+
+| item | status | why |
+|---|---|---|
+| T8-01 launcher 503 | `blocked` | fails more honestly and leaves a record, but still fails — needs the two Oxylabs keys |
+| T8-02 no connect-a-bank button | `handed off` | Finance OS page, not a T8 file; backend proven and specced above |
+| T8-03 deleted money desk | `handed off` | Finance OS page |
+| T8-04 rollback would not help | `done` | answered from git history — `evidence/T8/T8-04-answer.md`. Both old versions have ZERO bank-linking code and are built around one client. Rolling back does not give a company screen. |
+| T8-05 "company money" loads a client | `handed off` | page-side; no T8 file contributes |
+| T8-06 subscriptions page deleted | `handed off` | page, and re-adding it is a new surface = owner's call |
+| T8-07 empty subscriptions bucket | `handed off` | backend already exists and is routed; page needs wiring |
+| T8-08 unproven write buttons | `partial` | ~3 of ~13 owned write controls proven. Live re-walk was **owner only** — admin, setter and partner were never walked. Do not read this as done. |
+| T8-09 conveyor never moves | `blocked` | only the proxy hop was touched. Inquiry-removal, letters, bank-fill and apply hops are untouched and still broken. Was missing from the first manifest — that was an omission. |
+| T8-10 zero lenders | `blocked` | import path proven; the real list is still not imported |
+| T8-11 manual fallback never appears | `blocked` | **still true.** Advice text was added to the failure box; the manual proxy-settings screen is still reachable only on a successful launch. Calling this fixed was an over-claim and the changelog has been corrected. |
+
+#### Defects the audit found in T8's own first-pass fix — all now fixed
+1. `src/adapters/oxylabs.mjs` returned no `message` for missing credentials, so the audit row's
+   `error_message` just repeated `error_code` and the advisor's box dropped from naming the two
+   missing keys to a generic "Proxy launch failed". **The new record recorded that a launch failed
+   but not why.** Fixed: the adapter now carries the sentence, and a test asserts it.
+2. `api/proxy/launch.mjs` filed the wrong-city warning under `geo_mismatch`, a code nothing in the
+   repo emits, so it could never reach a screen. Fixed: one honest line on `geo_unavailable` covering
+   both real causes (wrong place / never answered), dead key removed.
+3. No catch-all next step, so a 401 showed the single word "unauthorized". Fixed both server-side
+   (fallback line) and client-side (401/403 gets a sign-in line).
+4. The second failure box in `public/app/proxy-apply.js` (dropped connection) had **no** "routing is
+   NOT active" warning at all — same title as the good box, missing the sentence that stops somebody
+   applying from the office address. Fixed; both boxes share one constant now.
+5. `src/proxy/launch.mjs` could strand a row at `status='verifying'` forever — nothing sweeps them.
+   Fixed with a try/catch that always closes the row. A zero-row UPDATE also went unnoticed and the
+   response still quoted a session id; it now returns `session_id: null` instead of pointing at a
+   row that does not say what happened.
+6. `api/lenders.mjs`: clearing the Name box and pressing Save produced a raw 500. Fixed — 400
+   "Name is required." Not reachable today (zero lenders = no Save buttons), will be the day the
+   list loads.
+
+#### Browser check — now done (was owed under §6 item 4, and was missing)
+`evidence/T8/playwright-failure-modals.md` + screenshot. All three failure paths driven in a real
+browser. A stub server is used because the live site has zero lenders, so there is no Apply button
+to press there — stated rather than skipped.
+
+#### ⚠️ Two new requests for other threads
+1. **Privacy / erasure owner (`src/privacy/erasure.mjs` — not a T8 file). Treat as high.**
+   `proxy_sessions` stores `requested_city` / `requested_state`. Erasure clears the client fields
+   those were copied from but never touches these rows, and the erase receipt lists them in
+   **neither** the "removed" nor the "kept, and why" column — so the receipt understates what is
+   still held. T8 did not create the columns, but T8 made refused launches write rows, so this is
+   now reachable far more often. Either clear those two columns on erase or disclose them.
+2. **Test-runner owner (`scripts/run-suite.mjs`, `.github/workflows/tests.yml` — not T8 files).**
+   The runner stops at the first failing ordinary test, and two already fail on `main`. So it never
+   reaches any `.pg.test.mjs`, and the job that would run them is marked non-blocking. **The 23 new
+   lender database tests therefore do not run in CI** — they were run by hand on a scratch Postgres.
+   Nothing will notice if these fixes are undone. Fix or quarantine the two failures.

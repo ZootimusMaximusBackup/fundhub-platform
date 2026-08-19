@@ -315,6 +315,11 @@ export async function launchCredentials({
     return {
       ok: false,
       error: "oxylabs_credentials_missing",
+      // A `message` is required, not decoration: launchProxySession stores
+      // `message || error` on the audit row and throws `message || "Proxy launch
+      // failed"`. Without it the row's error_message just repeats error_code and
+      // the advisor is told nothing about WHICH credential is absent.
+      message: `Oxylabs credentials are not set (${cfg.missing.join(", ")}). See docs/STILL-MISSING.md.`,
       missing: cfg.missing,
       host: cfg.host,
       port: cfg.port
@@ -324,7 +329,13 @@ export async function launchCredentials({
   const requestedCity = normalizeCity(city);
   const requestedState = normalizeState(state);
   if (!requestedCity && !requestedState) {
-    return { ok: false, error: "client_location_missing", host: cfg.host, port: cfg.port };
+    return {
+      ok: false,
+      error: "client_location_missing",
+      message: "Client has no city or state on file. Cannot geo-target.",
+      host: cfg.host,
+      port: cfg.port
+    };
   }
 
   const attempts = [];

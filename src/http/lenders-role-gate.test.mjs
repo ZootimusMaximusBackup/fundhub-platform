@@ -150,3 +150,30 @@ describe("lender database: the role gate", () => {
       "owner-scope decision (docs/workflows/lenders-role-lock-2026-08-17.md).");
   });
 });
+
+/* Blank Name box on Save. The screen posts every empty field as "", and
+   lenders.name is NOT NULL with a non-empty check (db/migrations/138_lenders.sql:60),
+   so a cleared Name box used to reach Postgres and surface as a raw 500. No
+   database is needed to prove the refusal — it happens before any store call. */
+describe("lender save refuses a blank name in words, not with a 500", () => {
+  test("owner clearing the Name box gets 400 name_required", async () => {
+    const res = makeRes();
+    await writeLenders(
+      {
+        method: "POST",
+        headers: AUTH,
+        body: {
+          action: "save",
+          id: "11111111-1111-4111-8111-111111111111",
+          patch: { name: "   " }
+        }
+      },
+      res,
+      { db: makeDb("owner") }
+    );
+    assert.equal(res.statusCode, 400,
+      "a cleared Name box must be refused in words before it reaches the database");
+    assert.equal(res.body.error, "name_required");
+    assert.equal(res.body.message, "Name is required.");
+  });
+});

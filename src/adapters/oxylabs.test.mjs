@@ -110,6 +110,12 @@ test("launchCredentials fails closed when env credentials are unset", async () =
   });
   assert.equal(out.ok, false);
   assert.equal(out.error, "oxylabs_credentials_missing");
+  // launchProxySession stores `message || error` on the audit row and throws
+  // `message || "Proxy launch failed"`. Without a message the row's error_message
+  // just repeats error_code and the advisor is told nothing useful.
+  assert.match(out.message, /OXYLABS_USERNAME/);
+  assert.match(out.message, /OXYLABS_PASSWORD/);
+  assert.deepEqual(out.missing, ["OXYLABS_USERNAME", "OXYLABS_PASSWORD"]);
 });
 
 test("launchCredentials succeeds on city match", async () => {
