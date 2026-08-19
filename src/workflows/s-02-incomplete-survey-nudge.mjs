@@ -20,8 +20,19 @@ import { addTags } from "./tags.mjs";
 
 export const EMAIL_TEMPLATE_KEY = "EMAIL-S02-FINISH-APPLICATION";
 
-async function surveyCompleted(db, clientId) {
-  const r = await db.query(`SELECT DISTINCT name FROM events WHERE client_id = $1 AND name = ANY($2)`, [clientId, ["survey.submitted"]]);
+// Match on client_id OR on the email inside the event payload. Capture sources
+// that predate T14-11 wrote survey.submitted with client_id NULL, which made the
+// client_id-only check unsatisfiable — so this job nudged people who had in fact
+// finished the survey. The email arm covers those rows.
+export async function surveyCompleted(db, clientId, email) {
+  const addr = String(email || "").trim().toLowerCase();
+  // Param order stays [clientId, names, ...] so the shared pg fake keeps matching.
+  const r = await db.query(
+    `SELECT DISTINCT name FROM events
+      WHERE name = ANY($2)
+        AND (client_id = $1 OR ($3 <> '' AND lower(payload->>'email') = $3))`,
+    [clientId, ["survey.submitted"], addr]
+  );
   return r.rows.some((row) => row.name === "survey.submitted");
 }
 
@@ -31,7 +42,8 @@ export async function handle({ event, db, step }) {
 
   await step.sleep("wait-20-min", "20m");
 
-  const completed = await step.run("check-survey-complete", () => surveyCompleted(db, clientId));
+  const leadEmail = (event.payload || {}).email || null;
+  const completed = await step.run("check-survey-complete", () => surveyCompleted(db, clientId, leadEmail));
   if (completed) {
     await step.run("tag-survey-complete", () => addTags(db, clientId, ["survey:complete"]));
     return { done: true, nudged: false };

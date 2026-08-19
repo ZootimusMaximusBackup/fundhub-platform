@@ -1,0 +1,12 @@
+{
+  "note": "T14-01 second pass. Each case sets fh_booking_v1 then loads the fixed fragment and reads the page.",
+  "run_at": "2026-08-19",
+  "cases": {
+    "no key at all":                  { "headline": "We've Got Your Application.", "claimsBooked": false, "calendarShown": false, "prepShown": false },
+    "slot picked, form never filled": { "headline": "We've Got Your Application.", "claimsBooked": false, "calendarShown": false, "prepShown": false },
+    "stale record from last week":    { "headline": "We've Got Your Application.", "claimsBooked": false, "calendarShown": false, "prepShown": false },
+    "call already happened":          { "headline": "We've Got Your Application.", "claimsBooked": false, "calendarShown": false, "prepShown": false },
+    "real fresh booking":             { "headline": "Your Call Is Booked.",        "claimsBooked": true,  "calendarShown": true,  "prepShown": true }
+  },
+  "verdict": "only a real, recent, still-upcoming booking is claimed as booked"
+}

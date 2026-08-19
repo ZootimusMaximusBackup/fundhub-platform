@@ -59,6 +59,8 @@
   .success .chk{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray)}
   .success h2{margin-top:12px;font-size:24px;letter-spacing:-.02em}
   .success p{margin-top:10px;color:var(--gray);font-size:15.5px}
+  .problem{display:none;margin:4px 0 16px;padding:13px 15px;border:1px solid #B91C1C;border-radius:8px;background:#FEF2F2;color:#B91C1C;font-size:14px;line-height:1.5}
+  .problem a{color:#B91C1C;text-decoration:underline}
   footer{border-top:1px solid var(--line);padding:28px 0;font-size:13px;color:var(--gray)}
   footer a{text-decoration:underline}
 </style>
@@ -76,7 +78,7 @@
   <div class="wrap">
     <div class="eyebrow">Enrollment application</div>
     <h1>Start your enrollment.</h1>
-    <p class="lede">Tell us which program you want and how to reach you. We follow up with payment options and portal access. Education only — no financing arranged on this page.</p>
+    <p class="lede">Tell us which program you want and how to reach you. We follow up with payment options and next steps. Education only — no financing arranged on this page.</p>
     <p class="price">Tuition · $5,000 per program · <a href="/education/refund/" style="text-decoration:underline">Refund policy</a></p>
 
     <form class="appform" id="enroll-form" novalidate>
@@ -112,14 +114,18 @@
         <div>— Programs are educational only and are not legal, financial, or tax advice.</div>
         <div>— We do not perform credit repair services or contact bureaus on your behalf.</div>
       </div>
+      <div class="problem" id="submit-problem" role="alert">
+        We could not send your request just now. Nothing was saved, so please press the button again. If it keeps failing, email <a href="mailto:support@fundhub.ai">support@fundhub.ai</a> and we will take your details directly.
+      </div>
       <button type="submit" class="btn" id="submit-btn">Submit enrollment application</button>
       <p class="disclaim">By submitting, you ask Fundhub Education to contact you about enrollment and payment for the selected program. This is not a completed purchase until payment is confirmed.</p>
     </form>
 
     <div class="success" id="success" role="status">
       <div class="chk">✓ Received</div>
-      <h2>You're enrolled in the queue</h2>
-      <p>Your portal credentials are on the way once payment is confirmed. We will email next steps to the address you provided.</p>
+      <h2>We have your request</h2>
+      <p>You have not been charged, and this is not a completed purchase. A member of our team will contact you at the address you gave us to talk through the program and how payment works.</p>
+      <p>Program materials are not available yet. Nobody is enrolled and no login is issued until we have spoken with you.</p>
       <p style="margin-top:18px"><a href="/education/" class="btn" style="display:inline-block;width:auto;padding:10px 18px">Back to Education</a></p>
     </div>
   </div>
@@ -127,7 +133,7 @@
 
 <footer>
   <div class="wrap">
-    Questions? <a href="mailto:support@fundhubeducation.com">support@fundhubeducation.com</a>
+    Questions? <a href="mailto:support@fundhub.ai">support@fundhub.ai</a>
     · <a href="/education/terms/">Terms</a>
     · <a href="/education/privacy/">Privacy</a>
   </div>
@@ -175,17 +181,30 @@
       page_url: location.href,
       submitted_at: new Date().toISOString()
     };
-    // Optional: paste a GHL / webhook URL to receive leads
-    var WEBHOOK = '';
-    if (WEBHOOK.indexOf('http') === 0) {
-      fetch(WEBHOOK, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(function () {});
-    }
+    // The success panel is shown ONLY after the server says the request was
+    // stored. This page used to show it on a 500ms timer with nothing sent
+    // anywhere, so every applicant was told they had enrolled and was then
+    // silently dropped. Never put that timer back.
+    var problem = document.getElementById('submit-problem');
+    problem.style.display = 'none';
 
-    setTimeout(function () {
-      document.getElementById('enroll-form').style.display = 'none';
-      document.getElementById('success').style.display = 'block';
-      document.getElementById('success').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 500);
+    fetch('/api/public/education-enroll', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (data) {
+        if (!r.ok || !data || data.ok !== true) throw new Error('not_ok');
+        document.getElementById('enroll-form').style.display = 'none';
+        document.getElementById('success').style.display = 'block';
+        document.getElementById('success').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    }).catch(function () {
+      problem.style.display = 'block';
+      problem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      btn.disabled = false;
+      btn.textContent = 'Try again';
+    });
   });
 })();
 </script>

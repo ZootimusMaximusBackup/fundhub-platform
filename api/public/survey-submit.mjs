@@ -11,6 +11,8 @@ import {
   answersByPayloadKey,
 } from "../../src/survey/cf-question-map.mjs";
 import { safeError } from "../../src/http/health.mjs";
+import { defaultOrgId } from "../../src/events/bus.mjs";
+import { resolveClient } from "../../src/handlers/client-lifecycle.mjs";
 
 const KNOWN_PAYLOAD_KEYS = new Set(
   CF_SURVEY_QUESTIONS.filter((q) => q.type !== "contact").map((q) => q.payloadKey)
@@ -86,6 +88,28 @@ export function parseSurveySubmitBody(body) {
   };
 }
 
+/** Find-or-create the client behind a survey submission. Never throws: a capture
+ * that cannot resolve a client must still record its events rather than 500. */
+async function resolveSurveyClient(database, parsed, deps = {}) {
+  const resolve = deps.resolveClient || resolveClient;
+  const orgOf = deps.defaultOrgId || defaultOrgId;
+  try {
+    const orgId = deps.orgId || (await orgOf(database));
+    if (!orgId) return null;
+    return await resolve(database, {
+      orgId,
+      payload: {
+        email: parsed.email,
+        name: parsed.name,
+        phone: parsed.phone,
+        source: parsed.source,
+      },
+    });
+  } catch {
+    return null;
+  }
+}
+
 /** Emit + classify. `deps.emit` injectable for tests. */
 export async function runSurveySubmit(parsed, deps = {}) {
   const emitFn = deps.emit || emit;
@@ -97,6 +121,14 @@ export async function runSurveySubmit(parsed, deps = {}) {
   const redirect = SURVEY_REDIRECTS[qualification] || SURVEY_REDIRECTS.MANUAL_REVIEW;
 
   ensure();
+
+  // T14-11: the two events below used to land with client_id NULL, so nothing
+  // downstream could tie them back to a person. S-02's "did they finish the
+  // survey?" check reads events by client_id and could therefore never find the
+  // survey.submitted row — every lead got nudged, including people who finished.
+  // Resolve (or create) the client first and stamp both events with the id.
+  const clientId = await resolveSurveyClient(database, parsed, deps);
+
   const idemBase = `website-survey:${parsed.email}:${Date.now()}`;
   const entryPayload = {
     email: parsed.email,
@@ -108,6 +140,7 @@ export async function runSurveySubmit(parsed, deps = {}) {
   };
   const entry = await emitFn(database, "entry.captured", entryPayload, {
     idempotencyKey: `${idemBase}:entry`,
+    clientId,
   });
   const survey = await emitFn(
     database,
@@ -120,13 +153,14 @@ export async function runSurveySubmit(parsed, deps = {}) {
       source: parsed.source,
       answers: parsed.answers,
     },
-    { idempotencyKey: `${idemBase}:survey` }
+    { idempotencyKey: `${idemBase}:survey`, clientId }
   );
 
   return {
     ok: true,
     qualification,
     redirect,
+    clientId,
     deduped: !!(entry.deduped || survey.deduped),
   };
 }
