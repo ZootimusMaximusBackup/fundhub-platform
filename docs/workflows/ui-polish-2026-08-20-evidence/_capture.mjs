@@ -196,6 +196,53 @@ for (const [screen, role] of Object.entries(SCREENS)) {
   await ctx.close();
 }
 
+const closerContext = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+await closerContext.addInitScript(() => {
+  localStorage.setItem("fh_role", "closer");
+  localStorage.setItem("fh_token", "ui-polish-proof");
+});
+await closerContext.route("**/api/**", (route) => {
+  if (route.request().url().includes("/api/auth/session")) {
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ok: true,
+        staff: {
+          id: "proof", name: "DEMO closer",
+          email: "closer@demo.fundhub.local", role: "closer", org_id: "org-proof"
+        }
+      })
+    });
+  }
+  return route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify(apiBody())
+  });
+});
+const contractsAsCloser = await closerContext.newPage();
+await contractsAsCloser.goto(`${base}/app/contracts.html`, { waitUntil: "domcontentloaded" });
+await contractsAsCloser.waitForTimeout(700);
+const contractsRoleProof = await contractsAsCloser.evaluate(() => ({
+  finalPath: location.pathname,
+  contractNavVisible: Array.from(document.querySelectorAll("a.navitem"))
+    .some((item) => item.getAttribute("href") === "contracts.html" &&
+      getComputedStyle(item).display !== "none"),
+  wordingVisible: document.body.innerText.includes("Contract wording")
+}));
+await contractsAsCloser.screenshot({
+  path: path.join(AFTER, "contracts", "closer-1440-fold.png"),
+  fullPage: false
+});
+report.roleProofs = { contractsAsCloser: contractsRoleProof };
+if (contractsRoleProof.finalPath.endsWith("/contracts.html") ||
+    contractsRoleProof.contractNavVisible ||
+    contractsRoleProof.wordingVisible) {
+  report.failures.push("contracts.html: closer can still reach owner/admin wording");
+}
+await closerContext.close();
+
 await browser.close();
 server.close();
 fs.writeFileSync(path.join(HERE, "measurements.json"), JSON.stringify(report, null, 2));
