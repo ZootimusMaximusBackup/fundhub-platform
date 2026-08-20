@@ -46,6 +46,7 @@ async function authedContext(request) {
 test.describe("Company Brain — chat, upload, approval gating", () => {
   test("the screen is a wide chat, not a tiny box", async ({ page }) => {
     await liveStaffLogin(page, OWNER);
+    await expect(page).toHaveURL(/\/app\/[^/]+\.html(?:[?#]|$)/, { timeout: 30_000 });
     await page.goto(`${BASE}/app/company-brain.html`, { waitUntil: "domcontentloaded" });
     await page.setViewportSize({ width: 1440, height: 900 });
 

@@ -57,8 +57,26 @@ test.describe("live affiliate onboard", () => {
     await expect(page.locator("#pform")).toBeVisible();
   });
 
-  test("aff:apply_form fake identity shows received", async ({ page }) => {
+  test("aff:apply_form submits the live form without a production write", async ({ page, request }) => {
     test.info().annotations.push({ type: "req", description: "aff:apply_form" });
+    const methodGate = await request.get(`${BASE}/api/public/partner-apply`);
+    expect(methodGate.status()).toBe(405);
+    expect(methodGate.headers().allow).toBe("POST");
+
+    let submitted = null;
+    await page.route("**/api/public/partner-apply", async (route) => {
+      submitted = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          email: "e2e+aff-onboard@fundhub.ai",
+          kind: "affiliate",
+          referral_url: `${BASE}/start?ref=READONLY`
+        })
+      });
+    });
     page.on("dialog", (d) => d.accept());
     await page.goto(`${BASE}/affiliates/`, { waitUntil: "domcontentloaded" });
     await waitBootGone(page);
@@ -73,6 +91,15 @@ test.describe("live affiliate onboard", () => {
     await page.locator("#pform button[type=submit]").click();
     await expect(page.locator("#success")).toBeVisible({ timeout: 20_000 });
     await expect(page.locator("#success")).toContainText(/login/i);
+    expect(submitted).toEqual({
+      name: "E2E Aff Onboard",
+      email: "e2e+aff-onboard@fundhub.ai",
+      phone: "5550100199",
+      company: "E2E Aff Test Co",
+      track: "affiliate",
+      audience: "Fake list for live Playwright only",
+      sms_consent: true
+    });
   });
 
   test("aff:own_login dashboard and session", async ({ page, request }) => {
@@ -90,8 +117,15 @@ test.describe("live affiliate onboard", () => {
     await expect(page.locator("body")).toContainText(/YOUR REFERRAL LINK/i);
     await expect(page.locator("#reflink")).toBeVisible();
     await expect(page.locator("#copyLink")).toBeVisible();
-    await expect(page.locator("#funnel")).toBeVisible();
-    await expect(page.locator("#funnel")).toContainText(/clicks|sign-ups|funded/i);
+    const funnel = page.locator("#funnel");
+    await expect(funnel).toBeVisible();
+    if (await funnel.evaluate((el) => el.classList.contains("empty"))) {
+      await expect(funnel).toHaveText("Nothing to show yet. Waiting for your referral figures.");
+    } else {
+      await expect(funnel).toContainText(/clicks/i);
+      await expect(funnel).toContainText(/sign-ups|referred/i);
+      await expect(funnel).toContainText(/funded|converted/i);
+    }
 
     const token = await page.evaluate(() => {
       try { return localStorage.getItem("fh_token") || ""; } catch { return ""; }

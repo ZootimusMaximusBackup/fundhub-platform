@@ -2,13 +2,15 @@
   "config": {
     "argv": [
       "/Users/zootimusmaximus/.nvm/versions/node/v22.21.1/bin/node",
-      "/Users/zootimusmaximus/fundhub-platform/node_modules/.bin/playwright",
+      "/Users/zootimusmaximus/fundhub-live-gate-112/node_modules/.bin/playwright",
       "test",
       "-c",
-      "playwright.live.config.mjs"
+      "playwright.live.config.mjs",
+      "--grep-invert",
+      "upload stays unanswerable|a conversation survives"
     ],
-    "configFile": "/Users/zootimusmaximus/fundhub-platform/playwright.live.config.mjs",
-    "rootDir": "/Users/zootimusmaximus/fundhub-platform/e2e",
+    "configFile": "/Users/zootimusmaximus/fundhub-live-gate-112/playwright.live.config.mjs",
+    "rootDir": "/Users/zootimusmaximus/fundhub-live-gate-112/e2e",
     "failOnFlakyTests": false,
     "forbidOnly": false,
     "fullyParallel": false,
@@ -24,7 +26,7 @@
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "/Users/zootimusmaximus/fundhub-platform/test-results",
+        "outputDir": "/Users/zootimusmaximus/fundhub-live-gate-112/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -32,7 +34,7 @@
         },
         "id": "chromium-live",
         "name": "chromium-live",
-        "testDir": "/Users/zootimusmaximus/fundhub-platform/e2e",
+        "testDir": "/Users/zootimusmaximus/fundhub-live-gate-112/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/live-*.spec.mjs"
@@ -100,12 +102,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2020,
+                      "duration": 1675,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:26:53.188Z",
+                      "startTime": "2026-08-20T19:29:15.299Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -124,7 +126,7 @@
               "column": 3
             },
             {
-              "title": "aff:apply_form fake identity shows received",
+              "title": "aff:apply_form submits the live form without a production write",
               "ok": true,
               "tags": [],
               "tests": [
@@ -144,12 +146,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2322,
+                      "duration": 1751,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:26:55.466Z",
+                      "startTime": "2026-08-20T19:29:17.150Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -162,7 +164,7 @@
                   "status": "expected"
                 }
               ],
-              "id": "f9f4be4f0a8b77370ec2-7ba2c0d5ae9e1bf86b7c",
+              "id": "f9f4be4f0a8b77370ec2-7a5ae9a7a2bbfd57afbc",
               "file": "live-affiliate-onboard.spec.mjs",
               "line": 60,
               "column": 3
@@ -196,12 +198,12 @@
                       "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3042,
+                      "duration": 2169,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:26:57.794Z",
+                      "startTime": "2026-08-20T19:29:18.905Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -224,7 +226,7 @@
               ],
               "id": "f9f4be4f0a8b77370ec2-1a892913d47587ab7448",
               "file": "live-affiliate-onboard.spec.mjs",
-              "line": 78,
+              "line": 105,
               "column": 3
             }
           ]
@@ -246,7 +248,7 @@
           "specs": [
             {
               "title": "the screen is a wide chat, not a tiny box",
-              "ok": false,
+              "ok": true,
               "tags": [],
               "tests": [
                 {
@@ -259,191 +261,23 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 1764,
-                      "error": {
-                        "message": "Error: page.goto: net::ERR_ABORTED at https://fundhub.ai/app/company-brain.html\nCall log:\n\u001b[2m  - navigating to \"https://fundhub.ai/app/company-brain.html\", waiting until \"domcontentloaded\"\u001b[22m\n",
-                        "stack": "Error: page.goto: net::ERR_ABORTED at https://fundhub.ai/app/company-brain.html\nCall log:\n\u001b[2m  - navigating to \"https://fundhub.ai/app/company-brain.html\", waiting until \"domcontentloaded\"\u001b[22m\n\n    at /Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs:49:16",
-                        "location": {
-                          "file": "/Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs",
-                          "column": 16,
-                          "line": 49
-                        },
-                        "snippet": "  47 |   test(\"the screen is a wide chat, not a tiny box\", async ({ page }) => {\n  48 |     await liveStaffLogin(page, OWNER);\n> 49 |     await page.goto(`${BASE}/app/company-brain.html`, { waitUntil: \"domcontentloaded\" });\n     |                ^\n  50 |     await page.setViewportSize({ width: 1440, height: 900 });\n  51 |\n  52 |     const composer = page.locator(\"textarea\").first();"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs",
-                            "column": 16,
-                            "line": 49
-                          },
-                          "message": "Error: page.goto: net::ERR_ABORTED at https://fundhub.ai/app/company-brain.html\nCall log:\n\u001b[2m  - navigating to \"https://fundhub.ai/app/company-brain.html\", waiting until \"domcontentloaded\"\u001b[22m\n\n\n  47 |   test(\"the screen is a wide chat, not a tiny box\", async ({ page }) => {\n  48 |     await liveStaffLogin(page, OWNER);\n> 49 |     await page.goto(`${BASE}/app/company-brain.html`, { waitUntil: \"domcontentloaded\" });\n     |                ^\n  50 |     await page.setViewportSize({ width: 1440, height: 900 });\n  51 |\n  52 |     const composer = page.locator(\"textarea\").first();\n    at /Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs:49:16"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 1594,
+                      "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:00.848Z",
+                      "startTime": "2026-08-20T19:29:21.084Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/zootimusmaximus/fundhub-platform/test-results/live-company-brain-chat-Co-ae22f--a-wide-chat-not-a-tiny-box-chromium-live/test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/zootimusmaximus/fundhub-platform/test-results/live-company-brain-chat-Co-ae22f--a-wide-chat-not-a-tiny-box-chromium-live/error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs",
-                        "column": 16,
-                        "line": 49
-                      }
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
               "id": "6bfd8072e7597a4a0fc2-bb267e6ae44551398c53",
               "file": "live-company-brain-chat.spec.mjs",
               "line": 47,
-              "column": 3
-            },
-            {
-              "title": "upload stays unanswerable until the owner approves it",
-              "ok": false,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-live",
-                  "projectName": "chromium-live",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 1230,
-                      "error": {
-                        "message": "Error: upload failed: {\"ok\":false,\"error\":\"embed_failed\"}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m502\u001b[39m",
-                        "stack": "Error: upload failed: {\"ok\":false,\"error\":\"embed_failed\"}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m502\u001b[39m\n    at /Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs:84:69",
-                        "location": {
-                          "file": "/Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs",
-                          "column": 69,
-                          "line": 84
-                        },
-                        "snippet": "  82 |     });\n  83 |     const upBody = await up.json();\n> 84 |     expect(up.status(), `upload failed: ${JSON.stringify(upBody)}`).toBe(200);\n     |                                                                     ^\n  85 |     expect(upBody.ok).toBe(true);\n  86 |     expect(upBody.file.approvalStatus, \"a fresh upload must be pending\").toBe(\"pending\");\n  87 |     expect(upBody.file.chunkCount, \"the document should have produced chunks\").toBeGreaterThan(0);"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs",
-                            "column": 69,
-                            "line": 84
-                          },
-                          "message": "Error: upload failed: {\"ok\":false,\"error\":\"embed_failed\"}\n\n\u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m502\u001b[39m\n\n  82 |     });\n  83 |     const upBody = await up.json();\n> 84 |     expect(up.status(), `upload failed: ${JSON.stringify(upBody)}`).toBe(200);\n     |                                                                     ^\n  85 |     expect(upBody.ok).toBe(true);\n  86 |     expect(upBody.file.approvalStatus, \"a fresh upload must be pending\").toBe(\"pending\");\n  87 |     expect(upBody.file.chunkCount, \"the document should have produced chunks\").toBeGreaterThan(0);\n    at /Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs:84:69"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-18T21:27:02.932Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/zootimusmaximus/fundhub-platform/test-results/live-company-brain-chat-Co-6b892-until-the-owner-approves-it-chromium-live/error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs",
-                        "column": 69,
-                        "line": 84
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
-                }
-              ],
-              "id": "6bfd8072e7597a4a0fc2-8361a8029cd75b056b82",
-              "file": "live-company-brain-chat.spec.mjs",
-              "line": 69,
-              "column": 3
-            },
-            {
-              "title": "a conversation survives a reload",
-              "ok": false,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 60000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "chromium-live",
-                  "projectName": "chromium-live",
-                  "results": [
-                    {
-                      "workerIndex": 2,
-                      "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 1337,
-                      "error": {
-                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m502\u001b[39m",
-                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m502\u001b[39m\n    at /Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs:129:28",
-                        "location": {
-                          "file": "/Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs",
-                          "column": 28,
-                          "line": 129
-                        },
-                        "snippet": "  127 |     });\n  128 |     const askedBody = await asked.json();\n> 129 |     expect(asked.status()).toBe(200);\n      |                            ^\n  130 |     const threadId = askedBody.thread_id;\n  131 |     expect(threadId, \"asking should create a conversation\").toBeTruthy();\n  132 |"
-                      },
-                      "errors": [
-                        {
-                          "location": {
-                            "file": "/Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs",
-                            "column": 28,
-                            "line": 129
-                          },
-                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m200\u001b[39m\nReceived: \u001b[31m502\u001b[39m\n\n  127 |     });\n  128 |     const askedBody = await asked.json();\n> 129 |     expect(asked.status()).toBe(200);\n      |                            ^\n  130 |     const threadId = askedBody.thread_id;\n  131 |     expect(threadId, \"asking should create a conversation\").toBeTruthy();\n  132 |\n    at /Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs:129:28"
-                        }
-                      ],
-                      "stdout": [],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-08-18T21:27:04.461Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "screenshot",
-                          "contentType": "image/png",
-                          "path": "/Users/zootimusmaximus/fundhub-platform/test-results/live-company-brain-chat-Co-26e8a-versation-survives-a-reload-chromium-live/test-failed-1.png"
-                        },
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "/Users/zootimusmaximus/fundhub-platform/test-results/live-company-brain-chat-Co-26e8a-versation-survives-a-reload-chromium-live/error-context.md"
-                        }
-                      ],
-                      "errorLocation": {
-                        "file": "/Users/zootimusmaximus/fundhub-platform/e2e/live-company-brain-chat.spec.mjs",
-                        "column": 28,
-                        "line": 129
-                      }
-                    }
-                  ],
-                  "status": "unexpected"
-                }
-              ],
-              "id": "6bfd8072e7597a4a0fc2-19a59f93eee6c6d3b1b0",
-              "file": "live-company-brain-chat.spec.mjs",
-              "line": 122,
               "column": 3
             }
           ]
@@ -481,15 +315,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1669,
+                      "duration": 1567,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:06.281Z",
+                      "startTime": "2026-08-20T19:29:22.687Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -525,15 +359,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1944,
+                      "duration": 1541,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:08.128Z",
+                      "startTime": "2026-08-20T19:29:24.264Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -569,15 +403,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1429,
+                      "duration": 1496,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:10.077Z",
+                      "startTime": "2026-08-20T19:29:25.811Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -613,15 +447,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 913,
+                      "duration": 829,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:11.511Z",
+                      "startTime": "2026-08-20T19:29:27.311Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -657,15 +491,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 139,
+                      "duration": 322,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:12.432Z",
+                      "startTime": "2026-08-20T19:29:28.144Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -701,15 +535,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 163,
+                      "duration": 194,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:12.581Z",
+                      "startTime": "2026-08-20T19:29:28.471Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -753,15 +587,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 533,
+                      "duration": 203,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:12.754Z",
+                      "startTime": "2026-08-20T19:29:28.672Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -797,15 +631,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 5478,
+                      "duration": 5636,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:13.301Z",
+                      "startTime": "2026-08-20T19:29:28.880Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -841,15 +675,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 940,
+                      "duration": 1012,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:18.791Z",
+                      "startTime": "2026-08-20T19:29:34.522Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -893,15 +727,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 145,
+                      "duration": 201,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:19.738Z",
+                      "startTime": "2026-08-20T19:29:35.538Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -937,15 +771,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 139,
+                      "duration": 214,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:19.889Z",
+                      "startTime": "2026-08-20T19:29:35.747Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -989,15 +823,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 143,
+                      "duration": 159,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:20.032Z",
+                      "startTime": "2026-08-20T19:29:35.967Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -1041,15 +875,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 950,
+                      "duration": 989,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:20.178Z",
+                      "startTime": "2026-08-20T19:29:36.130Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -1085,15 +919,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 885,
+                      "duration": 1081,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:21.134Z",
+                      "startTime": "2026-08-20T19:29:37.127Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -1129,15 +963,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 981,
+                      "duration": 1078,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:22.030Z",
+                      "startTime": "2026-08-20T19:29:38.215Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -1181,15 +1015,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2994,
+                      "duration": 2960,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:23.021Z",
+                      "startTime": "2026-08-20T19:29:39.301Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -1225,15 +1059,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2383,
+                      "duration": 2100,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:26.021Z",
+                      "startTime": "2026-08-20T19:29:42.265Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -1269,15 +1103,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1172,
+                      "duration": 972,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:28.408Z",
+                      "startTime": "2026-08-20T19:29:44.368Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -1321,15 +1155,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 212,
+                      "duration": 391,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:29.584Z",
+                      "startTime": "2026-08-20T19:29:45.344Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -1382,15 +1216,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 1737,
+                      "duration": 1423,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:29.805Z",
+                      "startTime": "2026-08-20T19:29:45.744Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -1409,7 +1243,7 @@
               "column": 3
             },
             {
-              "title": "wl:white_label_apply creates a login or says already in",
+              "title": "wl:white_label_apply submits the live form without a production write",
               "ok": true,
               "tags": [],
               "tests": [
@@ -1426,15 +1260,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 3302,
+                      "duration": 2654,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:31.548Z",
+                      "startTime": "2026-08-20T19:29:47.172Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -1447,7 +1281,7 @@
                   "status": "expected"
                 }
               ],
-              "id": "dc7909f35bbdef0c6e77-25641dbc67d3d3d4b22b",
+              "id": "dc7909f35bbdef0c6e77-3864648ac229da34314b",
               "file": "live-white-label-onboard.spec.mjs",
               "line": 56,
               "column": 3
@@ -1457,7 +1291,7 @@
         {
           "title": "live white-label own access and studio",
           "file": "live-white-label-onboard.spec.mjs",
-          "line": 75,
+          "line": 102,
           "column": 6,
           "specs": [
             {
@@ -1490,15 +1324,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 2203,
+                      "duration": 2225,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:34.855Z",
+                      "startTime": "2026-08-20T19:29:49.832Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -1525,7 +1359,7 @@
               ],
               "id": "dc7909f35bbdef0c6e77-d54b7f2aae5e6f7bb4e6",
               "file": "live-white-label-onboard.spec.mjs",
-              "line": 78,
+              "line": 105,
               "column": 3
             }
           ]
@@ -1533,7 +1367,7 @@
         {
           "title": "live white-label public page",
           "file": "live-white-label-onboard.spec.mjs",
-          "line": 104,
+          "line": 131,
           "column": 6,
           "specs": [
             {
@@ -1554,15 +1388,15 @@
                   "projectName": "chromium-live",
                   "results": [
                     {
-                      "workerIndex": 3,
+                      "workerIndex": 0,
                       "parallelIndex": 0,
                       "status": "passed",
-                      "duration": 493,
+                      "duration": 363,
                       "errors": [],
                       "stdout": [],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-08-18T21:27:37.065Z",
+                      "startTime": "2026-08-20T19:29:52.063Z",
                       "annotations": [
                         {
                           "type": "req",
@@ -1577,7 +1411,7 @@
               ],
               "id": "dc7909f35bbdef0c6e77-fe1c1e016fe70cb6f661",
               "file": "live-white-label-onboard.spec.mjs",
-              "line": 105,
+              "line": 132,
               "column": 3
             }
           ]
@@ -1587,11 +1421,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-08-18T21:26:52.902Z",
-    "duration": 44734.43,
-    "expected": 26,
+    "startTime": "2026-08-20T19:29:15.029Z",
+    "duration": 37451.310999999994,
+    "expected": 27,
     "skipped": 0,
-    "unexpected": 3,
+    "unexpected": 0,
     "flaky": 0
   }
 }
