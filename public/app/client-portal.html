@@ -76,6 +76,7 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
    the call, so this cannot hide behind funding-snapshot. */
 .video-card{padding:0;overflow:hidden;display:flex;flex-direction:column}
 .player{position:relative;width:100%;aspect-ratio:16/9;max-height:min(420px,52vw);border-radius:0;background:linear-gradient(135deg,#0A0A0A,#1C1C20);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.player:has(.video-empty:not([hidden])){max-height:min(360px,52vw)}
 .player .ghost{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .player .ghost .logo{width:42%;max-width:280px;aspect-ratio:2698/543;filter:invert(1);opacity:.12}
 .playbtn{position:relative;width:64px;height:64px;border-radius:50%;border:0;background:rgba(252,252,252,.94);color:var(--ink);font-size:var(--fs-title);line-height:1;display:flex;align-items:center;justify-content:center;padding-left:4px;transition:transform .14s,background .14s}
