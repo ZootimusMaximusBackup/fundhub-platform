@@ -339,7 +339,7 @@ function publicBaseUrl(env = process.env) {
  * Soft-pull price is never closer-editable (owner law).
  */
 export async function sendDeckSoftPull(db, {
-  orgId, clientId, staffId, checkoutBaseUrl, env = process.env
+  orgId, clientId, staffId, staffRole = null, checkoutBaseUrl, env = process.env
 }) {
   const offer = getOffer("SOFT_PULL");
   if (!offer) {
@@ -371,6 +371,8 @@ export async function sendDeckSoftPull(db, {
       description: offer.name,
       amountCents: offer.priceCents,
       createdByStaffId: staffId,
+      createdByRole: staffRole,
+      productCode: offer.productCode,
       checkoutBaseUrl,
       env
     });
@@ -447,7 +449,8 @@ export async function sendDeckSoftPull(db, {
 
 /** E-book downsell — closer sets the price. Empty PDF placeholder until Chris swaps it. */
 export async function sendDeckEbook(db, {
-  orgId, clientId, staffId, amountCents, checkoutBaseUrl, description = null, env = process.env
+  orgId, clientId, staffId, staffRole = null, amountCents,
+  checkoutBaseUrl, description = null, env = process.env
 }) {
   const cents = Number(amountCents);
   if (!Number.isInteger(cents) || cents < 100 || cents > 50000000) {
@@ -473,6 +476,7 @@ export async function sendDeckEbook(db, {
       description: label,
       amountCents: cents,
       createdByStaffId: staffId,
+      createdByRole: staffRole,
       checkoutBaseUrl,
       env
     });
@@ -528,7 +532,8 @@ function paymentPurpose(offer) {
 }
 
 export async function sendDeckPayLink(db, {
-  orgId, clientId, staffId, offerKey, checkoutBaseUrl, env = process.env
+  orgId, clientId, staffId, staffRole = null, offerKey,
+  saleMotion = null, checkoutBaseUrl, env = process.env
 }) {
   const offer = getOffer(offerKey);
   if (!offer) {
@@ -542,6 +547,12 @@ export async function sendDeckPayLink(db, {
   }
   const purpose = paymentPurpose(offer);
   const description = offer.name;
+  if (offer.key !== "FUNDING_DFY" && saleMotion !== "downsell" && saleMotion !== "upsell") {
+    throw new CloserDeckError(
+      "Choose downsell or upsell before creating this payment link.",
+      { status: 400, code: "sale_motion_required" }
+    );
+  }
   let link;
   try {
     link = await createPaymentLink(db, {
@@ -551,6 +562,9 @@ export async function sendDeckPayLink(db, {
       description,
       amountCents: offer.priceCents,
       createdByStaffId: staffId,
+      createdByRole: staffRole,
+      productCode: offer.productCode,
+      saleMotion: offer.key === "FUNDING_DFY" ? null : saleMotion,
       checkoutBaseUrl,
       env
     });

@@ -26,6 +26,7 @@ export const UWIQ_DELIVERABLES_CONTENTS = Object.freeze([
  * @property {boolean} financing  Commas financing offered
  * @property {boolean} letters  DS-02 / letter pack may fire for this offer
  * @property {"diagnostic"|"deposit"|"repair"|"custom"} paymentPurpose
+ * @property {string} productCode  products.code; durable identity for payment links
  * @property {string} [contractTemplateKey]  contract_templates.template_key to send on close
  * @property {string[]} [contents]
  */
@@ -39,6 +40,7 @@ export const OFFERS = Object.freeze({
     financing: false,
     letters: false,
     paymentPurpose: "diagnostic",
+    productCode: "diagnostic",
     contractTemplateKey: "SOFT-PULL-CONSENT"
   }),
   FUNDING_DFY: Object.freeze({
@@ -49,6 +51,7 @@ export const OFFERS = Object.freeze({
     financing: false,
     letters: false,
     paymentPurpose: "deposit",
+    productCode: "card-stacking-dfy",
     contractTemplateKey: "FUNDING-AGREEMENT"
   }),
   REPAIR_DFY: Object.freeze({
@@ -58,6 +61,7 @@ export const OFFERS = Object.freeze({
     financing: true,
     letters: true,
     paymentPurpose: "repair",
+    productCode: "repair-bundle",
     contractTemplateKey: "CREDIT-REPAIR-AGREEMENT"
   }),
   REPAIR_TRIAL: Object.freeze({
@@ -67,6 +71,7 @@ export const OFFERS = Object.freeze({
     financing: true,
     letters: true,
     paymentPurpose: "repair",
+    productCode: "repair-trial",
     contractTemplateKey: "REPAIR-TRIAL-AGREEMENT"
   }),
   UWIQ_DELIVERABLES: Object.freeze({
@@ -78,6 +83,7 @@ export const OFFERS = Object.freeze({
     financing: true,
     letters: true,
     paymentPurpose: "custom",
+    productCode: "consulting-package",
     contents: UWIQ_DELIVERABLES_CONTENTS
   }),
   FUNDING_MASTERY: Object.freeze({
@@ -86,7 +92,8 @@ export const OFFERS = Object.freeze({
     priceCents: 500000,
     financing: true,
     letters: false,
-    paymentPurpose: "custom"
+    paymentPurpose: "custom",
+    productCode: "funding-mastery"
   })
 });
 
@@ -187,6 +194,7 @@ export function offersForClient() {
       successFeePercent: o.successFeePercent ?? null,
       financing: o.financing,
       letters: o.letters,
+      productCode: o.productCode,
       contractTemplateKey: o.contractTemplateKey ?? null,
       contents: o.contents ? [...o.contents] : null
     };

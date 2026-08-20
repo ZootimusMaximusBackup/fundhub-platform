@@ -27,7 +27,7 @@ export const BACK_END = "back_end";
 /** amount_basis values, split by which basis may use them. Mirrors the CHECK
  *  constraint in 013_commission_rules.sql — these are formulas, not config. */
 export const AMOUNT_BASES = Object.freeze({
-  [FRONT_END]: ["sale_price", "deposit_collected", "cash_collected"],
+  [FRONT_END]: ["sale_price", "deposit_collected", "cash_collected", "paid_amount"],
   [BACK_END]: ["amount_funded", "amount_approved", "success_fee"]
 });
 
@@ -44,9 +44,10 @@ const iso = (v) => (v instanceof Date ? v.toISOString() : new Date(v).toISOStrin
  *   success_fee       — this round's funded amount at the percent frozen on the
  *                       SALE, never the product's current default
  *
- * `payments` and `round` may be omitted; the bases they feed come back as 0.
+ * `payments` may be omitted and produces zero collected cash. Missing sale or
+ * round values stay null because an unknown amount must never become zero.
  */
-export function resolveAmounts({ sale = null, payments = [], round = null } = {}) {
+export function resolveAmounts({ sale = null, payments = [], payment = null, round = null } = {}) {
   const deposits = payments
     .filter((p) => p.kind === "deposit")
     .reduce((a, p) => a + toCents(p.amount), 0);
@@ -60,12 +61,17 @@ export function resolveAmounts({ sale = null, payments = [], round = null } = {}
   const feePct = sale?.agreed_success_fee_percent;
 
   return {
-    sale_price: sale ? toCents(sale.agreed_price) : 0,
+    sale_price: sale?.agreed_price == null ? null : toCents(sale.agreed_price),
     deposit_collected: deposits,
     cash_collected: cash,
-    amount_funded: funded,
-    amount_approved: round ? toCents(round.approved_amount) : 0,
-    success_fee: feePct === null || feePct === undefined ? 0 : percentOf(funded, feePct)
+    paid_amount: payment?.amount == null ? null : toCents(payment.amount),
+    amount_funded: round?.funded_amount == null ? null : funded,
+    amount_approved: round?.approved_amount == null ? null : toCents(round.approved_amount),
+    success_fee: feePct === null || feePct === undefined
+      ? 0
+      : round?.funded_amount == null
+        ? null
+        : percentOf(funded, feePct)
   };
 }
 
@@ -176,6 +182,7 @@ export function computeCommission(input) {
     client = null,
     round = null,
     payments = [],
+    payment = null,
     attributions = [],
     rules = [],
     occurredAt,
@@ -194,7 +201,7 @@ export function computeCommission(input) {
   // Falls back to occurredAt only when there is no sale to date it from (a manual
   // adjustment).
   const asOf = input.asOf || sale?.sold_at || occurredAt;
-  const amounts = input.amounts || resolveAmounts({ sale, payments, round });
+  const amounts = input.amounts || resolveAmounts({ sale, payments, payment, round });
 
   const drafts = [];
   const warnings = [];
@@ -222,6 +229,7 @@ export function computeCommission(input) {
     const ctx = {
       basis,
       product_id: sale?.product_id ?? product?.id ?? null,
+      sale_motion: input.saleMotion ?? payment?.sale_motion ?? sale?.sale_motion ?? null,
       role: attribution.role,
       staff_id: attribution.staff_id
     };
@@ -252,7 +260,7 @@ export function computeCommission(input) {
       }
 
       const baseCents = amounts[rule.amount_basis];
-      if (baseCents === undefined) {
+      if (baseCents === undefined || baseCents === null) {
         warnings.push({
           code: "unknown_amount_basis",
           message: `no value available for amount_basis ${rule.amount_basis}`,
@@ -286,6 +294,7 @@ export function computeCommission(input) {
         client_id: client?.id ?? sale?.client_id ?? null,
         client_code: client?.client_code ?? null,
         sale_id: sale?.id ?? null,
+        sale_payment_id: payment?.id ?? null,
         funding_round_id: round?.id ?? null,
         product_id: ctx.product_id,
         product_name_at_earning: product?.name ?? null,
@@ -362,6 +371,7 @@ export function snapshotRule(rule) {
       per_unit_amount: t.per_unit_amount ?? null
     })),
     amount_basis: rule.amount_basis,
+    sale_motion: rule.sale_motion ?? null,
     min_amount: rule.min_amount ?? null,
     max_amount: rule.max_amount ?? null,
     product_id: rule.product_id ?? null,
@@ -400,6 +410,7 @@ export function reverseDraft(row, { reason, portion = 1, occurredAt = null, key 
     client_id: row.client_id ?? null,
     client_code: row.client_code ?? null,
     sale_id: row.sale_id ?? null,
+    sale_payment_id: row.sale_payment_id ?? null,
     funding_round_id: row.funding_round_id ?? null,
     product_id: row.product_id ?? null,
     product_name_at_earning: row.product_name_at_earning ?? null,

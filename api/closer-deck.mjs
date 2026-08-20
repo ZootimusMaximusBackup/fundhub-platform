@@ -70,6 +70,7 @@ export default async function handler(req, res, deps = {}) {
         orgId,
         clientId,
         staffId: staff.id,
+        staffRole: staff.role,
         checkoutBaseUrl: process.env.COMMAS_CHECKOUT_BASE_URL,
         env: process.env
       });
@@ -81,6 +82,7 @@ export default async function handler(req, res, deps = {}) {
         orgId,
         clientId,
         staffId: staff.id,
+        staffRole: staff.role,
         amountCents: body.amount_cents,
         description: body.description || null,
         checkoutBaseUrl: process.env.COMMAS_CHECKOUT_BASE_URL
@@ -93,7 +95,9 @@ export default async function handler(req, res, deps = {}) {
         orgId,
         clientId,
         staffId: staff.id,
+        staffRole: staff.role,
         offerKey: body.offer_key,
+        saleMotion: body.sale_motion || null,
         checkoutBaseUrl: process.env.COMMAS_CHECKOUT_BASE_URL
       });
       return res.status(200).json({ ok: true, action: "send_pay_link", ...result });

@@ -93,13 +93,13 @@ describe("money-chain writers", { skip: !HAS_DB ? "no DATABASE_URL" : false }, (
 
     frontRuleId = (await db.query(
       `INSERT INTO commission_rules (
-         org_id, name, basis, stacking, role, product_id,
+         org_id, name, basis, stacking, role, staff_id, product_id,
          calc_method, flat_amount, amount_basis, effective_from, active
        ) VALUES (
-         $1, 'MC closer flat deposit', 'front_end', 'base', 'closer', $2,
+         $1, 'MC closer flat deposit', 'front_end', 'base', 'closer', $3, $2,
          'flat', 500.00, 'deposit_collected', '2020-01-01', true
        ) RETURNING id`,
-      [org, fundingProductId]
+      [org, fundingProductId, closerId]
     )).rows[0].id;
 
     backRuleId = (await db.query(
@@ -339,9 +339,9 @@ describe("money-chain writers", { skip: !HAS_DB ? "no DATABASE_URL" : false }, (
         WHERE funding_round_id = $1 AND basis = 'back_end'`,
       [rounds[0].id]
     )).rows;
-    assert.equal(back.length, 1, "one back-end ledger row");
-    assert.equal(back[0].staff_id, advisorId);
-    assert.equal(Number(back[0].amount), 125);
+    assert.equal(back.length, 2, "closer and advisor each earn their configured funded rate");
+    assert.equal(Number(back.find((row) => row.staff_id === advisorId)?.amount), 125);
+    assert.equal(Number(back.find((row) => row.staff_id === closerId)?.amount), 125);
 
     await replay(db, {});
     assert.equal(
@@ -353,7 +353,7 @@ describe("money-chain writers", { skip: !HAS_DB ? "no DATABASE_URL" : false }, (
         `SELECT count(*)::int n FROM commission_ledger WHERE funding_round_id = $1 AND basis = 'back_end'`,
         [rounds[0].id]
       )).rows[0].n,
-      1
+      2
     );
 
     const frRes = await call(`/api/read/funding-rounds?client_id=${client.id}`);

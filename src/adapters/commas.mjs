@@ -243,7 +243,14 @@ export function normalizeCommasEvent(body) {
        the row `ref` points at, which needs a database. processCommasInboxRow
        fills it in before the product is decided. Declared here so the shape of
        a normalized event is the same whether or not that lookup happened. */
-    purpose: null
+    purpose: null,
+    productId: null,
+    productCode: null,
+    saleId: null,
+    saleMotion: null,
+    paymentLinkId: null,
+    closerId: null,
+    salesManagerId: null
   };
 }
 
@@ -326,8 +333,18 @@ export const PURPOSE_PRODUCT = Object.freeze({
   diagnostic: "crs"
 });
 
+const PRODUCT_CODE_BUCKET = Object.freeze({
+  diagnostic: "crs",
+  "card-stacking-dfy": "deposit",
+  "consulting-package": "diy"
+});
+
 // Product bucket from a normalized event: "crs" | "deposit" | "success_fee" | "diy" | "unmatched".
 export function productOf(evt) {
+  const productCode = String((evt && evt.productCode) || "").trim().toLowerCase();
+  if (Object.prototype.hasOwnProperty.call(PRODUCT_CODE_BUCKET, productCode)) {
+    return PRODUCT_CODE_BUCKET[productCode];
+  }
   const purpose = String((evt && evt.purpose) || "").trim().toLowerCase();
   if (Object.prototype.hasOwnProperty.call(PURPOSE_PRODUCT, purpose)) return PURPOSE_PRODUCT[purpose];
   if (nameMatches(evt.name, PRODUCT.CRS.nameIncludes)) return "crs";
@@ -515,15 +532,26 @@ export async function handleCommasWebhook({ db, rawBody, signatureHeader, secret
 async function loadPaymentLink(db, { linkRef, sessionId }) {
   if (linkRef) {
     const byRef = await db.query(
-      `SELECT id, org_id, client_id, purpose FROM payment_links WHERE link_ref = $1 LIMIT 1`,
+      `SELECT pl.id, pl.org_id, pl.client_id, pl.purpose,
+              pl.product_id, p.code AS product_code, pl.sale_id, pl.sale_motion,
+              pl.closer_staff_id, pl.sales_manager_staff_id
+         FROM payment_links pl
+         LEFT JOIN products p ON p.id = pl.product_id
+        WHERE pl.link_ref = $1
+        LIMIT 1`,
       [String(linkRef)]
     );
     if (byRef.rows[0]) return byRef.rows[0];
   }
   if (sessionId) {
     const bySession = await db.query(
-      `SELECT id, org_id, client_id, purpose FROM payment_links
-        WHERE provider = 'commas' AND commas_session_id = $1 LIMIT 1`,
+      `SELECT pl.id, pl.org_id, pl.client_id, pl.purpose,
+              pl.product_id, p.code AS product_code, pl.sale_id, pl.sale_motion,
+              pl.closer_staff_id, pl.sales_manager_staff_id
+         FROM payment_links pl
+         LEFT JOIN products p ON p.id = pl.product_id
+        WHERE pl.provider = 'commas' AND pl.commas_session_id = $1
+        LIMIT 1`,
       [String(sessionId)]
     );
     if (bySession.rows[0]) return bySession.rows[0];
@@ -644,7 +672,16 @@ export async function processCommasInboxRow(row, db) {
      facts the payload cannot be trusted for: what the money was FOR
      (purpose → the product bucket) and WHOSE it is (client_id). */
   const link = await loadPaymentLink(db, { linkRef: evt.ref, sessionId: evt.itemId });
-  if (link && link.org_id === row.org_id && link.purpose) evt.purpose = String(link.purpose);
+  if (link && link.org_id === row.org_id) {
+    if (link.purpose) evt.purpose = String(link.purpose);
+    evt.paymentLinkId = link.id || null;
+    evt.productId = link.product_id || null;
+    evt.productCode = link.product_code || null;
+    evt.saleId = link.sale_id || null;
+    evt.saleMotion = link.sale_motion || null;
+    evt.closerId = link.closer_staff_id || null;
+    evt.salesManagerId = link.sales_manager_staff_id || null;
+  }
 
   const canonical = mapToCanonical(evt);
 
@@ -673,6 +710,13 @@ export async function processCommasInboxRow(row, db) {
          `product` above can be read back to its evidence instead of being
          taken on faith. */
       purpose: evt.purpose,
+      productId: evt.productId,
+      productCode: evt.productCode,
+      saleId: evt.saleId,
+      saleMotion: evt.saleMotion,
+      paymentLinkId: evt.paymentLinkId,
+      closerId: evt.closerId,
+      salesManagerId: evt.salesManagerId,
       itemId: evt.itemId,
       dueBy: evt.dueBy, // dispute response deadline, when the event carries one
       source: "commas"

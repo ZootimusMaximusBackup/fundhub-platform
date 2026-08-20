@@ -16,6 +16,7 @@ const rule = (over = {}) => ({
   basis: "front_end",
   stacking: "base",
   product_id: null,
+  sale_motion: null,
   role: null,
   staff_id: null,
   calc_method: "percent",
@@ -72,6 +73,24 @@ test("matchesScope: NULL means 'all' and matches anything", () => {
   assert.equal(matchesScope(rule({ product_id: OTHER_PRODUCT }), CTX), false);
   assert.equal(matchesScope(rule({ role: "funding_advisor" }), CTX), false);
   assert.equal(matchesScope(rule({ staff_id: "staff-someone-else" }), CTX), false);
+});
+
+test("matchesScope: a motion rule needs the exact durable sale motion", () => {
+  const downsell = rule({ sale_motion: "downsell" });
+  assert.equal(matchesScope(downsell, { ...CTX, sale_motion: "downsell" }), true);
+  assert.equal(matchesScope(downsell, { ...CTX, sale_motion: "upsell" }), false);
+  assert.equal(matchesScope(downsell, { ...CTX, sale_motion: null }), false);
+});
+
+test("selectBaseRule: motion-specific pay beats a general product rule", () => {
+  const productRule = rule({ id: "product", product_id: PRODUCT });
+  const motionRule = rule({ id: "motion", role: "closer", sale_motion: "downsell" });
+  const picked = selectBaseRule(
+    [productRule, motionRule],
+    { ...CTX, sale_motion: "downsell" },
+    JULY
+  );
+  assert.equal(picked.id, "motion");
 });
 
 test("selectBaseRule: the most specific rule wins", () => {
