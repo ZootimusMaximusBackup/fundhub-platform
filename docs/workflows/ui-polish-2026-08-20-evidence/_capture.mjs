@@ -154,6 +154,12 @@ for (const [screen, role] of Object.entries(SCREENS)) {
           ...rect("#cpSignSubmit"),
           visibleInFold: sign.getBoundingClientRect().bottom <= height
         } : null,
+        portalLayout: sign ? {
+          player: rect("#player"),
+          videoCard: rect(".video-card"),
+          signCard: rect("#dispute-auth-card"),
+          playerHeight: getComputedStyle(document.getElementById("player")).height
+        } : null,
         editor: editor ? {
           visibility: getComputedStyle(editor).visibility,
           pointerEvents: getComputedStyle(editor).pointerEvents
