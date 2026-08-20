@@ -12,6 +12,17 @@ import { requireClientInOrg } from "../../src/http/client-scope.mjs";
 import { requireSessionOrg } from "../../src/http/session-org.mjs";
 import { safeError } from "../../src/http/health.mjs";
 import { getActiveCaseForClient } from "../../src/inquiry-ops/cases.mjs";
+import { consentStatus } from "../../src/consent/index.mjs";
+import { deriveNextAction, sanitizeBlockerLabels } from "../../src/fulfillment/next-action.mjs";
+import { gatherDetailSignals } from "../../src/fulfillment/read-signals.mjs";
+
+/* Demo rows are shown on the page as they always were, but they never drive a
+   derived answer. Only an explicit true counts as demo, so a NULL or a missing
+   column leaves a row in — a real row wrongly dropped is worse than a demo row
+   wrongly kept, and the demo seed always sets the flag. */
+function realOnly(rows) {
+  return Array.isArray(rows) ? rows.filter((r) => !(r && r.is_demo === true)) : [];
+}
 
 export default async function handler(req, res) {
   // A signed-in client (or any non-staff principal) is refused here. Do this
@@ -89,13 +100,13 @@ export default async function handler(req, res) {
       ),
       db.query(
         `SELECT id, assignee_role, assignee_staff_id, title, body, due_at, done,
-                source_workflow, created_at
+                source_workflow, created_at, is_demo
          FROM tasks WHERE client_id = $1 AND org_id = $2 ORDER BY created_at DESC`,
         [id, orgId]
       ),
       db.query(
         `SELECT id, round_number, status, product, submitted_amount, approved_amount,
-                funded_amount, hold_reason, conditions, created_at
+                funded_amount, hold_reason, conditions, created_at, is_demo
          FROM funding_rounds WHERE client_id = $1 AND org_id = $2
          ORDER BY round_number DESC`,
         [id, orgId]
@@ -143,6 +154,75 @@ export default async function handler(req, res) {
       inquiry_removal_case = null;
     }
 
+    /* FULFILLMENT — what should someone do about this client next.
+       READ ONLY, and DELIBERATELY OPTIONAL. Everything below is wrapped so that
+       any failure — a derivation error, a table that is not there yet, a
+       consent read that times out — returns this endpoint's response EXACTLY as
+       it was before this block existed. The three new keys are ABSENT on
+       failure, never blank and never a guess, so today's display survives.
+
+       Nearly every signal is already in hand: the client row carries
+       custom_fields, tags and outcome_tier; taskRes, roundRes and the active
+       inquiry case are already loaded; open_blockers comes from
+       clientDetailExtras. Only consent, the demo-filtered credit count, the
+       identity packet, the dispute rows and the funding card need reading, and
+       gatherDetailSignals() does all five in one parallel round.
+
+       consentStatus() is passed in rather than called there so this endpoint
+       uses the SAME function src/finance/soft-pulls.mjs:306-314 gates the pull
+       on. The screen and the button cannot disagree.
+
+       GATE A, AT THE SOURCE. This endpoint also returns the RAW open_blockers
+       array from clientDetailExtras, and the client control panel paints that
+       array directly — in the pre-existing Blockers panel, and again in the new
+       control block when no derivation arrives. Both printed the task title as
+       written, so a client with no recorded permission had one panel saying
+       "Funding intake — pull CRS" while the panel below it said "waiting on
+       written permission". Relabelling per panel failed three times.
+
+       So the RELABEL HAPPENS HERE, ONCE, on the array this endpoint emits, and
+       the derivation is handed the already-safe array. Every consumer — both
+       panels, the pipeline lens, and anything built later — gets the safe label
+       without having to know it should ask. sanitizeBlockerLabels() is
+       idempotent and never throws; its header carries the rule. */
+    let fulfillment = null;
+    /* Fail closed. Until the consent read comes back, this client's written
+       permission is UNCHECKED, so anything failing below still ships the safe
+       label rather than the raw one. */
+    let open_blockers = sanitizeBlockerLabels(extras.open_blockers, { consentValid: null });
+    try {
+      const gathered = await gatherDetailSignals(db, { orgId, clientId: id, consentStatus });
+      /* true / false / null, where null means the consent read failed. Same
+         three-state rule the derivation applies to this signal: anything that
+         is not the shape consentStatus() returns is "we did not ask", not "no". */
+      const consentValid =
+        gathered && gathered.consent && typeof gathered.consent.valid === "boolean"
+          ? gathered.consent.valid
+          : null;
+      open_blockers = sanitizeBlockerLabels(extras.open_blockers, { consentValid });
+      fulfillment = deriveNextAction({
+        ...gathered,
+        custom_fields:  client.custom_fields,
+        tags:           client.tags,
+        outcome_tier:   client.outcome_tier,
+        // getActiveCaseForClient already returns ACTIVE cases only.
+        inquiry_cases:  inquiry_removal_case ? [inquiry_removal_case] : [],
+        /* DEMO ROWS NEVER DRIVE A DERIVED ANSWER.
+           The list path already excludes them in SQL (src/fulfillment/read-signals.mjs,
+           OPEN_TASKS_SQL and ROUNDS_SQL). These two queries are pre-existing and feed
+           the rest of today's page, so they are left exactly as they are and the demo
+           rows are dropped here instead — an adversary found a real client carrying a
+           demo funding round, and the new block printed "Approved $99,999" for it while
+           the lens correctly showed nothing. Filtered here, both surfaces agree. */
+        tasks:          realOnly(taskRes.rows),
+        funding_rounds: realOnly(roundRes.rows),
+        open_blockers
+      });
+    } catch (err) {
+      console.warn("[fulfillment] next action unavailable for client detail:", err && err.message);
+      fulfillment = null;
+    }
+
     res.status(200).json(redact({
       ok: true,
       client,
@@ -155,7 +235,23 @@ export default async function handler(req, res) {
       inquiry_removal_case,
       // Derived, never stored — see src/http/client-detail.mjs for why each of
       // these explains rather than recomputes.
-      ...extras
+      ...extras,
+      /* AFTER ...extras on purpose — this replaces the raw open_blockers that
+         spread carries. Same rows, same ids, same details; only a pull-credit
+         label on a client without established permission is rewritten, and the
+         words on the record survive on `recorded_label`. See the Gate A block
+         above. */
+      open_blockers,
+      /* Derived, never stored. Absent entirely when the derivation could not
+         run — see the block above. `next_action_degraded` true means one signal
+         could not be read, so the screen should fall back to today's display
+         rather than trust a partial answer. */
+      ...(fulfillment ? {
+        next_action:          fulfillment.next_action,
+        active_blockers:      fulfillment.active_blockers,
+        funding_round:        fulfillment.funding_round,
+        next_action_degraded: fulfillment.degraded
+      } : {})
     }));
   } catch (err) {
     if (CLIENT_DATA_ERRORS.has(err && err.code)) {

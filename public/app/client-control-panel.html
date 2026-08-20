@@ -123,6 +123,9 @@
   .na-main{font-size:var(--fs-title);font-weight:800;line-height:1.3;color:var(--text);letter-spacing:-.01em;}
   .na-why{font-size:var(--fs-caption);font-weight:700;letter-spacing:1px;text-transform:uppercase;
     color:var(--text-dim);margin-bottom:6px;}
+  /* The value saved on the record, kept OUT of the big line above and shown
+     here instead — quiet, and labelled as a saved value, never an instruction. */
+  .na-saved{font-size:var(--fs-caption);line-height:1.45;color:var(--text-faint);margin:6px 0 0;}
   .blockers-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
   .blockers-title{font-size:var(--fs-body);font-weight:800;color:var(--red);}
   .blocker-card{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--amber-line);border-radius:6px;padding:9px 12px;margin-bottom:8px;}
@@ -330,6 +333,22 @@
   
   
 
+  /* ---------- control panel — the Airtable mirror ------------------------
+     One read-only block: what to do next, what is stopping it, and where the
+     funding round stands. No button lives in here and nothing in it writes.
+     Every rule below is new. Nothing above it was changed. */
+  .cp-next{border-bottom:1px solid var(--paper-dim);padding-bottom:11px;margin-bottom:11px;}
+  .cp-why{font-size:var(--fs-body);line-height:1.45;color:var(--text-dim);margin:6px 0 0;}
+  .cp-note{font-size:var(--fs-caption);line-height:1.45;color:var(--amber);margin:6px 0 0;}
+  .cp-sec{margin-top:12px;}
+  .cp-sec-title{font-size:var(--fs-caption);font-weight:700;letter-spacing:1px;text-transform:uppercase;
+    color:var(--text-dim);margin-bottom:8px;}
+  .cp-count{font-family:'JetBrains Mono',monospace;font-weight:800;letter-spacing:0;color:var(--text-faint);}
+  .cp-empty{font-size:var(--fs-body);color:var(--text-dim);margin:0;}
+  /* a high blocker keeps the same card, in the red the panel above it uses */
+  .blocker-card.is-high{border-left-color:var(--red-line);}
+  .blocker-flag{font-size:var(--fs-caption);line-height:1.45;color:var(--amber);margin-top:5px;}
+
   @media (max-width:480px){
     /* .topbar-right ran past the right edge of a phone screen and clipped
        the LIVE pill off entirely — same fix as pipeline.html: the clock is
@@ -470,6 +489,7 @@
             <div>
               <div class="na-eyebrow">Next Action</div>
               <div class="na-main" id="ccp-next-action">—</div>
+              <p class="na-saved" id="ccp-saved" hidden></p>
             </div>
             <div class="blocker-age-wrap" id="ccp-blocker-age-wrap" hidden>
               <span class="blocker-age" id="ccp-blocker-age"></span>
@@ -481,6 +501,51 @@
           <div id="ccp-blocker-list"></div>
           <div class="status-chip-row" id="ccp-chips">
             <div class="status-chip neutral"><span class="dot"></span><span id="ccp-chip-credit">Credit —</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── CONTROL PANEL ─────────────────────────────────────────────────
+           Chris's Airtable control panel, mirrored on the screen that already
+           exists. READ AND DISPLAY ONLY — no button, no form, no write.
+
+           Three facts, in his order: what to do next, what is stopping it,
+           and where the funding round stands with its finalized state.
+
+           Every value is worked out from the client's own records by
+           src/fulfillment/next-action.mjs and arrives on
+           GET /api/dashboard/client. When that read is not there, or could
+           not be worked out, the big line says so in plain words — never a
+           blank, and never a step nobody worked out. -->
+      <div class="group">
+        <div class="group-title">Control panel</div>
+
+        <div class="cp-next">
+          <div class="na-eyebrow">Next action</div>
+          <div class="na-main" id="ccp-cp-action">—</div>
+          <p class="cp-why" id="ccp-cp-why" hidden></p>
+          <p class="na-saved" id="ccp-cp-saved" hidden></p>
+          <p class="cp-note" id="ccp-cp-note" hidden></p>
+        </div>
+
+        <div class="cp-sec">
+          <div class="cp-sec-title">Active blockers <span class="cp-count" id="ccp-cp-blocker-count"></span></div>
+          <div id="ccp-cp-blockers"><p class="cp-empty">Open a client file to see what is blocking it.</p></div>
+        </div>
+
+        <div class="cp-sec">
+          <div class="cp-sec-title">Funding round</div>
+          <div class="kv-grid">
+            <div class="kv"><div class="kv-label">Round</div><div class="kv-value" id="ccp-cp-round-number">—</div></div>
+            <div class="kv"><div class="kv-label">Finalized</div><div class="kv-value" id="ccp-cp-round-final">—</div></div>
+            <div class="kv"><div class="kv-label">Status</div><div class="kv-value" id="ccp-cp-round-status">—</div></div>
+            <!-- No amount on file stays a dash: unknown is never painted as a
+                 number. A zero that really is recorded prints as $0, because
+                 hiding a recorded zero behind a dash would call a known fact
+                 unknown. money() below, and pipeline.html moneyText(), are the
+                 same rule — src/http/client-panel-screen.test.mjs proves it. -->
+            <div class="kv"><div class="kv-label">Approved</div><div class="kv-value mono" id="ccp-cp-round-amount">—</div></div>
+            <div class="kv"><div class="kv-label">On hold because</div><div class="kv-value" id="ccp-cp-round-hold">—</div></div>
           </div>
         </div>
       </div>
@@ -703,6 +768,156 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
 <script defer src="data.js"></script>
 <script src="proxy-apply.js"></script>
 <script>
+/* FH-CCP-BEGIN
+   THE TWO DECISIONS ON THIS SCREEN THAT CAN QUIETLY BECOME A LIE, kept pure
+   and out of the DOM so they can be run with no browser by
+   src/http/client-panel-screen.test.mjs — the same technique as
+   pipeline.html's FH-LENS block. No DOM, no network, nothing that writes. */
+(function () {
+  "use strict";
+
+  var UNKNOWN = "—";
+
+  /* ── MONEY: THE UNIT IS WHOLE DOLLARS ────────────────────────────────────
+     Every money value this screen shows is DOLLARS. Not cents. Traced, not
+     assumed:
+
+       funding_rounds.approved_amount and clients.funded_amount —
+         numeric(14,2), db/schema/001_init.sql:58 and :127. node-postgres
+         registers no parser for numeric (type 1700), so both arrive in
+         JavaScript as a STRING: "50000.00" means $50,000. The demo seed
+         writes funded_amount 47500.00 for a funded client
+         (db/migrations/094_demo_logins.sql:227), which is $47,500.
+       custom_fields.total_funding_estimate / analyzer_prequal_amount —
+         written in dollars as a NUMBER by
+         src/handlers/client-lifecycle.mjs:449, from crs.mjs's fundingEstimate;
+         the fixture in src/adapters/crs.test.mjs:63 pins it at 80000 for an
+         $80,000 pre-approval.
+
+     THESE ARE EXCEPTIONS TO CLAUDE.md §12's "money is integer cents". §12
+     describes src/commissions/money.mjs, and that module converts INTO cents
+     at its own door: src/commissions/calculate.mjs:59 calls
+     toCents(round.funded_amount), which multiplies by 100 — proof the column
+     holds dollars. Cents never leave src/commissions/.
+
+     ONE RULE, BOTH SCREENS. public/app/pipeline.html moneyText() applies
+     exactly this rule and returns null where this returns the dash.
+     src/http/client-panel-screen.test.mjs fails if the two ever format the
+     same value differently again.
+
+     Unknown — null, undefined, a blank, a word, a wrong type — is a dash.
+     Never 0 for unknown: a zero would be a claim that the amount is nothing,
+     and unknown is not nothing. A RECORDED zero is a fact and prints as $0. */
+  function money(v) {
+    try {
+      if (v === null || v === undefined) return UNKNOWN;
+      var dollars;
+      if (typeof v === "number") {
+        if (!isFinite(v)) return UNKNOWN;
+        dollars = v;
+      } else if (typeof v === "string") {
+        var t = v.trim();
+        if (!/^-?\d+(\.\d+)?$/.test(t)) return UNKNOWN;
+        dollars = Number(t);
+        if (!isFinite(dollars)) return UNKNOWN;
+      } else {
+        return UNKNOWN;
+      }
+      return "$" + Math.round(dollars).toLocaleString("en-US");
+    } catch (e) {
+      return UNKNOWN;
+    }
+  }
+
+  /* ── THE TILES THAT WERE ALREADY HERE KEEP THE RULE THEY ALREADY HAD ──────
+     Prequal, Total Approved and the two income-per-year lines are not part of
+     this work. They shipped with the rule below and they keep it, byte for
+     byte, so nothing on the screen moved that nobody asked to move:
+
+       a recorded zero  → a dash (money() above prints "$0")
+       a negative       → a dash (money() above printed "$-500", plainly wrong)
+
+     Whether a recorded zero on those tiles ought to read "$0" or a dash is a
+     real question and it is Chris's to answer, not this change's. Until he
+     does, they read exactly as they read on main.
+
+     money() above stays the single shared rule for the two NEW money values —
+     this page's funding-round approved amount and pipeline.html's — and
+     src/http/client-panel-screen.test.mjs pins both rules. */
+  function tileMoney(n) {
+    if (n == null || n === "") return UNKNOWN;
+    var v = Number(n);
+    if (!isFinite(v) || v <= 0) return UNKNOWN;
+    return "$" + Math.round(v).toLocaleString("en-US");
+  }
+
+  /* ── NEXT ACTION: COMPLIANCE GATE A LIVES ON THIS LINE ───────────────────
+     The big line may ONLY ever show a step the system worked out. It may
+     never show custom_fields.employee_next_action.
+
+     WHY. That stored string is written by workflows that never look at
+     consent — src/workflows/s-06-post-call-funding-purchased.mjs:42 and
+     src/workflows/c-05-pre-funding-review.mjs:44 both write the literal
+     "Pull CRS". src/fulfillment/next-action.mjs refuses "Pull CRS" unless
+     consent is KNOWN VALID (guardConsentBeforePull), and turns a refusal into
+     degraded:true with next_action:null. Painting the stored string when the
+     answer came back degraded therefore puts "Pull CRS" on screen for exactly
+     the client whose consent could NOT be established. Degraded is the worst
+     possible moment to trust stale text, not the moment to fall back to it.
+
+     THE STORED VALUE IS NOT THROWN AWAY. It comes back as `saved`, for a
+     quiet labelled line underneath, so staff keep the information and simply
+     stop being told to act on it. It is returned only when it exists and
+     differs from the worked-out line.
+
+     THREE ANSWERS, ALL THREE IN WORDS. The big slot is never blank and never
+     a bare dash. A bare dash beside a "Saved on the record: Pull CRS" line
+     reads as though the dash were hiding the real instruction, which is the
+     one impression this slot must never give.
+
+     Returns { main, saved }. Never throws.
+       main  — the worked-out step;
+               or NONE_APPLIES when the answer WAS worked out and no step on
+               the list applies to this file;
+               or NOT_WORKED_OUT when nothing was worked out at all.
+       saved — "" or the labelled saved line. */
+  var NOT_WORKED_OUT = "Not worked out yet.";
+  var NONE_APPLIES = "No step applies right now.";
+  var SAVED_PREFIX = "Saved on the record: ";
+
+  function nextAction(fx, cf) {
+    var stored = "";
+    var label = "";
+    var workedOut = false;
+    try {
+      if (cf && cf.employee_next_action != null) stored = String(cf.employee_next_action).trim();
+    } catch (e) { stored = ""; }
+    try {
+      // deriveNextAction() never returns a label alongside degraded:true, so a
+      // label here is always an answer the gates already cleared.
+      workedOut = !!(fx && fx.degraded !== true);
+      if (workedOut && fx.next_action && fx.next_action.label != null) {
+        label = String(fx.next_action.label).trim();
+      }
+    } catch (e) { label = ""; workedOut = false; }
+
+    var main = label ? label : (workedOut ? NONE_APPLIES : NOT_WORKED_OUT);
+    var saved = (stored && stored !== main) ? (SAVED_PREFIX + stored) : "";
+    return { main: main, saved: saved };
+  }
+
+  window.FHClientPanel = {
+    UNKNOWN: UNKNOWN,
+    NOT_WORKED_OUT: NOT_WORKED_OUT,
+    NONE_APPLIES: NONE_APPLIES,
+    SAVED_PREFIX: SAVED_PREFIX,
+    money: money,
+    tileMoney: tileMoney,
+    nextAction: nextAction
+  };
+})();
+/* FH-CCP-END */
+
 // data.js carries `defer` (see its tag above), so FHData does not exist yet
 // while this script is being parsed — reading the client id from it here threw,
 // and the throw killed the rest of this block before the client file was ever
@@ -721,12 +936,14 @@ document.addEventListener("DOMContentLoaded", function () {
     var node = $(id);
     if (node) node.textContent = dash(v);
   }
-  function money(n) {
-    if (n == null || n === "") return "—";
-    var v = Number(n);
-    if (!isFinite(v) || v <= 0) return "—";
-    return "$" + Math.round(v).toLocaleString("en-US");
-  }
+  // The money rule and the next-action rule both live in the FH-CCP block at
+  // the top of this script, so a test can run them with no browser.
+  var FHCP = window.FHClientPanel;
+  // `money` is the rule the tiles on this page already had — unchanged from
+  // main. `roundMoney` is the shared whole-dollars rule, and the ONLY thing it
+  // paints is the new funding-round amount. See FH-CCP-BEGIN for both.
+  var money = FHCP.tileMoney;
+  var roundMoney = FHCP.money;
   function moneyYr(row) {
     if (!row || row.annual == null) return "—";
     var m = money(row.annual);
@@ -819,6 +1036,221 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  /* ── CONTROL PANEL ────────────────────────────────────────────────────────
+     Read and display only. Nothing here writes, and nothing here decides
+     anything: the answer is worked out on the server by
+     src/fulfillment/next-action.mjs and this code only paints what it sent.
+
+     THE FALLBACK RULE, which is the whole point of the wrapping below: a
+     value we were given gets shown; a value we were NOT given falls back to
+     exactly what this page showed before this block existed. Never a blank,
+     never a stuck spinner, never a thrown error. */
+
+  /* Reads the derived answer off the client payload without trusting its
+     shape. Returns null in two cases, and both mean the same thing here —
+     fall back to what this page showed before:
+       1. the read layer did not send one at all (older payloads do not carry
+          it, and that is not an error), or
+       2. what it sent is not the shape the contract promises. A reply we
+          cannot read is NOT the same as a reply saying "nothing to do", so it
+          is refused rather than read as an answer. */
+  function obj(v) { return v && typeof v === "object" && !Array.isArray(v); }
+  function slot(v) { return v == null || obj(v); }
+  function fulfillment(d) {
+    try {
+      if (!d || typeof d !== "object") return null;
+      var f = d.fulfillment;
+      if (!obj(f)) {
+        if (!("next_action" in d) && !("active_blockers" in d)) return null;
+        /* GET /api/dashboard/client sends these four at the top level
+           (api/dashboard/client.mjs), and spells the last one
+           next_action_degraded there. Both spellings are accepted so this
+           block cannot go blind if the key is ever renamed. */
+        f = {
+          next_action: d.next_action,
+          active_blockers: d.active_blockers,
+          funding_round: d.funding_round,
+          degraded: d.next_action_degraded != null ? d.next_action_degraded : d.degraded
+        };
+      }
+      if (!slot(f.next_action)) return null;
+      if (!slot(f.funding_round)) return null;
+      if (f.active_blockers != null && !Array.isArray(f.active_blockers)) return null;
+      if (f.degraded != null && typeof f.degraded !== "boolean") return null;
+      return {
+        next_action: obj(f.next_action) ? f.next_action : null,
+        active_blockers: Array.isArray(f.active_blockers) ? f.active_blockers : [],
+        funding_round: obj(f.funding_round) ? f.funding_round : null,
+        degraded: f.degraded === true
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /* The one sentence a fraud alert must always carry. Nothing in this system
+     ever takes the alert off, so no screen may imply that someone or
+     something will. Phase 0 findings, row 1. */
+  var FRAUD_NEVER_CLEARS =
+    "Nothing in this system takes a fraud alert off. A person has to clear it with the credit bureau, " +
+    "then update this file by hand.";
+
+  /* Paints the big slot and the quiet saved-value line under it. Used by BOTH
+     the panel at the top of this page and the control panel below it, so the
+     two can never disagree.
+
+     COMPLIANCE GATE A. The big slot only ever carries a step the system
+     worked out — never custom_fields.employee_next_action, which is written
+     without any consent check and can say "Pull CRS". The rule and the reason
+     are in the FH-CCP block at the top of this script.
+
+     Returns the { main, saved } pair so the caller can word its own reason
+     line around it. Never throws. */
+  function paintNextAction(mainId, savedId, fx, cf) {
+    var a;
+    try {
+      a = FHCP.nextAction(fx, cf);
+    } catch (e) {
+      a = { main: FHCP.NOT_WORKED_OUT, saved: "" };
+    }
+    setText(mainId, a.main);
+    var el = $(savedId);
+    if (el) {
+      el.textContent = a.saved;
+      el.hidden = !a.saved;
+    }
+    return a;
+  }
+
+  function cpBlockerCard(b) {
+    var card = document.createElement("div");
+    card.className = "blocker-card" + (b && b.severity === "high" ? " is-high" : "");
+    var reason = document.createElement("div");
+    reason.className = "blocker-reason";
+    reason.textContent = dash(b && (b.label || b.key));
+    card.appendChild(reason);
+    if (b && b.detail) {
+      var detail = document.createElement("div");
+      detail.className = "blocker-detail";
+      detail.textContent = String(b.detail);
+      card.appendChild(detail);
+    }
+    if (b && (b.key === "fraud_alert" || b.kind === "fraud_alert")) {
+      var flag = document.createElement("div");
+      flag.className = "blocker-flag";
+      flag.textContent = FRAUD_NEVER_CLEARS;
+      card.appendChild(flag);
+    }
+    return card;
+  }
+
+  function paintControlPanelInner(fx, d, cf) {
+    var list = $("ccp-cp-blockers");
+    var why = $("ccp-cp-why");
+    var note = $("ccp-cp-note");
+    var count = $("ccp-cp-blocker-count");
+    var derived = fx ? fx.next_action : null;
+
+    // 1. Next action — the loudest line in the block. It only ever carries a
+    //    step the system worked out; anything saved on the record goes in the
+    //    quiet line under it, labelled. GATE A — see paintNextAction above.
+    var act = paintNextAction("ccp-cp-action", "ccp-cp-saved", fx, cf);
+    if (why) {
+      var line = "";
+      if (derived && derived.why) line = String(derived.why);
+      else if (!fx) line = "We did not work out a next step for this file.";
+      else if (fx.degraded) line = "Part of this file could not be read, so we did not work out the next step.";
+      else line = "No step on the list applies to this file right now.";
+      if (act.saved) line += " Nothing here is telling anyone to do the saved value below.";
+      why.textContent = line;
+      why.hidden = !line;
+    }
+
+    // 2. Active blockers. An answer we were given is used as given, empty
+    //    included — an empty list means none, not "not read". With no answer
+    //    at all we show today's list instead.
+    var rows = [];
+    if (fx) rows = fx.active_blockers.slice();
+    else if (d && Array.isArray(d.open_blockers)) rows = d.open_blockers.slice();
+    if (list) {
+      list.textContent = "";
+      if (!rows.length) {
+        var none = document.createElement("p");
+        none.className = "cp-empty";
+        none.textContent = "Nothing is blocking this file.";
+        list.appendChild(none);
+      } else {
+        rows.forEach(function (b) { list.appendChild(cpBlockerCard(b)); });
+      }
+    }
+    if (count) count.textContent = rows.length ? String(rows.length) : "";
+
+    // The fraud sentence normally rides on the fraud blocker card. If the
+    // next step is to clear the alert and no such card came through, it goes
+    // under the big line instead, so it is never missing from a fraud file.
+    if (note) {
+      var sawFraud = rows.some(function (b) {
+        return b && (b.key === "fraud_alert" || b.kind === "fraud_alert");
+      });
+      var needNote = !!(derived && derived.key === "clear_fraud_alert") && !sawFraud;
+      note.textContent = needNote ? FRAUD_NEVER_CLEARS : "";
+      note.hidden = !needNote;
+    }
+
+    /* 3. Funding round, with its finalized state beside it.
+          COMPLIANCE GATE B. Only the WORKED-OUT round is painted here. The raw
+          newest row is never read, and that is the whole point: the raw row
+          carries funding money for anybody who has a row at all, including a
+          REPAIR_ONLY client who never bought funding. The tier whitelist that
+          refuses a funding chip — fundingChipsAllowed() in
+          src/fulfillment/next-action.mjs, the same three tiers from
+          src/config/product-path.mjs — now also decides whether a round comes
+          back at all, so a repair-only file gets null here and shows nothing.
+          Reading the raw row as a fallback would walk straight around that
+          gate, so there is no fallback.
+          With no worked-out round these stay dashes rather than being guessed.
+          The round number, status and hold reason a client does have are still
+          on this page in the tiles that always showed them. */
+    var round = fx ? fx.funding_round : null;
+    var num = null, status = null, hold = null, amount = null, finalized = null;
+    if (round) {
+      num = round.number;
+      status = round.status;
+      hold = round.hold_reason;
+      amount = round.approved_amount;
+      finalized = round.finalized === true ? true : round.finalized === false ? false : null;
+    }
+    setText("ccp-cp-round-number", num == null || num === "" ? "" : "Round " + num);
+    setText("ccp-cp-round-status", status);
+    setText("ccp-cp-round-hold", hold);
+    setText("ccp-cp-round-amount", roundMoney(amount));
+    setText("ccp-cp-round-final", finalized === true ? "Yes" : finalized === false ? "No" : "");
+  }
+
+  function paintControlPanel(fx, d, cf) {
+    try {
+      paintControlPanelInner(fx, d, cf);
+    } catch (e) {
+      // Last resort. Still not a blank — and still not the saved value in the
+      // big line: painting it here was the same GATE A leak as the main path.
+      // Passing null for the worked-out answer is the honest thing to say,
+      // because nothing was worked out.
+      try {
+        var fell = paintNextAction("ccp-cp-action", "ccp-cp-saved", null, cf);
+        var why = $("ccp-cp-why");
+        if (why) {
+          why.textContent = "This block could not be worked out, so no step is being suggested." +
+            (fell.saved ? " Nothing here is telling anyone to do the saved value below." : "");
+          why.hidden = false;
+        }
+        var note = $("ccp-cp-note");
+        if (note) { note.textContent = ""; note.hidden = true; }
+        var list = $("ccp-cp-blockers");
+        if (list) list.textContent = "";
+      } catch (e2) { /* nothing left to do; the page keeps its dashes */ }
+    }
+  }
+
   function wireLinks(id) {
     if (!id) return;
     var q = encodeURIComponent(id);
@@ -886,7 +1318,13 @@ document.addEventListener("DOMContentLoaded", function () {
     setText("ccp-facts-funded", c.funded === true ? "Yes" : c.funded === false ? "No" : "");
     setText("ccp-last-pull", when(tm.asOf || (d.crs_results && d.crs_results[0] && d.crs_results[0].created_at)));
 
-    setText("ccp-next-action", cf.employee_next_action);
+    /* The worked-out step drives this slot, and only ever the worked-out step,
+       so this line and the control panel below can never say different things.
+       With nothing sent, or only a partial answer, it says so in plain words
+       and the value saved on the record goes in the quiet line under it.
+       GATE A — see paintNextAction. */
+    var fx = fulfillment(d);
+    paintNextAction("ccp-next-action", "ccp-saved", fx, cf);
     var hold = cf.round_hold_reason || (latestRound && latestRound.hold_reason) || "";
     setText("ccp-hold-reason", hold);
     setText("ccp-credit-status", cf.crs_status || cf.analyzer_status);
@@ -895,6 +1333,7 @@ document.addEventListener("DOMContentLoaded", function () {
     setText("ccp-income-eq", moneyYr(inc.equifax));
 
     paintBlockers(d.open_blockers, hold);
+    paintControlPanel(fx, d, cf);
 
     setText("ccp-footer-org", c.org_id ? ("ORG: " + c.org_id) : "ORG: —");
     setText("ccp-footer-id", c.id);
