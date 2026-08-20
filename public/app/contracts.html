@@ -13,6 +13,10 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+/* This whole screen is owner/admin-only. Keep it out of view until shell.js
+   confirms the current session may open it, so a direct visit cannot flash the
+   wording panel before the shell routes a closer away. */
+html:not(.fh-page-access-confirmed) body{visibility:hidden}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 a{color:inherit;text-decoration:none}
 button,input,select,textarea{font:inherit;color:inherit}

@@ -159,6 +159,8 @@ describe("app shell — the lists this test reads", () => {
     assert.deepEqual(HIRING_ONLY, ["hiring.html"]);
     assert.deepEqual(ADVISOR_ONLY, ["lenders.html"]);
     assert.deepEqual(CONSENT_DESK_ONLY, ["consent-capture.html"]);
+    assert.ok(OWNER_ADMIN_ONLY.includes("contracts.html"),
+      "the contract wording screen must stay owner/admin-only");
     /* ADMIN_BLOCKED is written out as a literal so shellList() can read it, which
        means it could drift from PORTAL_ONLY. It must still contain all of it:
        a client portal is not an employee desk for an admin any more than for a
@@ -281,11 +283,12 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
     assert.ok(!visible.includes("sales-floor.html"));
   });
 
-  test("a closer sees the staff surface plus closer desk, not the sales floor", () => {
+  test("a closer sees the closer desk, not contract wording or the sales floor", () => {
     const visible = visibleFor(CLOSER_TABS);
     assert.deepEqual([...visible].sort(), [...menuTabs(CLOSER_TABS)].sort());
     assert.ok(visible.includes("closer-call.html"));
     assert.ok(visible.includes("my-numbers.html"));
+    assert.ok(!visible.includes("contracts.html"));
     assert.ok(!visible.includes("consent-capture.html"));
     assert.ok(!visible.includes("sales-floor.html"));
     assert.ok(!visible.includes("lenders.html"));
@@ -337,6 +340,8 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
   test("an admin does not keep the client-facing portals or partner Home", () => {
     const visible = visibleFor(ADMIN_TABS);
     assert.deepEqual([...visible].sort(), [...menuTabs(ADMIN_TABS)].sort());
+    assert.ok(visible.includes("contracts.html"),
+      "an admin must keep the contract wording screen");
     for (const s of ADMIN_BLOCKED) {
       assert.ok(!visible.includes(s),
         `an admin must not be offered ${s} — it is a principal's screen, not an employee desk`);
