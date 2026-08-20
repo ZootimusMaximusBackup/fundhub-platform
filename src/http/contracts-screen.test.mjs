@@ -20,6 +20,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { ROUTES } from "../../netlify/functions/api.mjs";
+import { OWNER_ADMIN_ACTIONS } from "../../api/contracts.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.resolve(HERE, "../../public");
@@ -72,6 +73,14 @@ describe("the Contracts screen (public/app/contracts.html)", () => {
     assert.match(CRM, /FHData\.write\("\/api\/contracts"/);
   });
 
+  test("every wording write on the page stays owner/admin-gated on the server", () => {
+    for (const action of [
+      "create_template", "save_template", "archive_template", "upload_template", "save_fields"
+    ]) {
+      assert.ok(OWNER_ADMIN_ACTIONS.has(action), `${action} lost its owner/admin server gate`);
+    }
+  });
+
   test("this page writes wordings, it does not send to a client", () => {
     assert.equal(/id="selClient"/.test(CRM), false, "client picker must leave this admin page");
     assert.equal(/<h2>Send a contract<\/h2>/.test(CRM), false, "send form must leave this admin page");
@@ -101,19 +110,23 @@ describe("the Contracts screen (public/app/contracts.html)", () => {
     assert.match(CRM, /id="tBody"/, "no editor for the contract wording");
   });
 
-  /* WAS: the card was display:none and revealed only for owner/admin.
-     Owner decision 2026-08-17 — the wording library IS this screen, so it
-     renders for every staff role and there is nothing left to reveal.
-     THE WRITE GATE DID NOT MOVE: OWNER_ADMIN_ACTIONS in api/contracts.mjs
-     still refuses a narrower role's save, and the badge still says so, so a
-     closer is told rather than silently refused. The role-visibility question
-     for the nav row itself is recorded on the batch board as Q1. */
-  test("the wording card is the screen, so it renders without a role check", () => {
+  test("the wording panel stays hidden until the resolved session may open the page", () => {
     assert.match(CRM, /id="tplCard"/);
-    assert.equal(/id="tplCard"[^>]*style="display:none/.test(CRM), false,
-      "the wording card must not be hidden — it is the whole screen now");
-    assert.match(CRM, /owner &amp; admin/,
-      "the card must still tell a narrower role that saving is owner/admin only");
+    assert.match(CRM,
+      /html:not\(\.fh-page-access-confirmed\) body\{visibility:hidden\}/,
+      "the protected page can paint before the shell confirms access");
+
+    const pass2 = SHELL.indexOf("/* ---- pass 2: the session, authoritative ---- */");
+    const redirect = SHELL.indexOf("if (ok.indexOf(PAGE) === -1)", pass2);
+    const reveal = SHELL.indexOf('classList.add("fh-page-access-confirmed")', pass2);
+    assert.ok(pass2 >= 0 && redirect > pass2 && reveal > redirect,
+      "the shell must route a refused role away before revealing the page");
+
+    const pass1 = SHELL.slice(
+      SHELL.indexOf("/* ---- pass 1: the hint"),
+      pass2);
+    assert.equal(pass1.includes("fh-page-access-confirmed"), false,
+      "a cached role hint must never reveal this protected page");
   });
 
   test("live wordings never paint the sample-markup banner", () => {
