@@ -436,6 +436,22 @@ html.fh-side-mini .app-shell {
     max-width: 100% !important;
     min-width: 0 !important;
   }
+  /* Any named header that receives the shared account controls must own their
+     full height. Fixed-height bars used to let the chip paint over the page. */
+  :is(.topbar, .top, .page-hd, body > header, .app > header, .app-shell > header):has(#fh-shell-chip) {
+    height: auto !important;
+    min-height: 57px;
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    row-gap: 8px;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+  .topbar-right:has(#fh-shell-chip) {
+    width: 100%;
+    flex-basis: 100%;
+    flex-wrap: wrap !important;
+  }
 
   /* Bigger touch targets for the nav itself. */
   .navitem { padding-top: 11px; padding-bottom: 11px; }
