@@ -392,7 +392,7 @@
       var note = items.length
         ? ""
         : '<p class="note">' + (rec.reason || "No Meet recordings in the last 7 days.") + "</p>";
-      var refreshLabel = rec.drive_ready ? "Refresh from Drive" : "Drive not connected";
+      var refreshLabel = rec.drive_ready ? "Sync recordings from Drive" : "Drive not connected";
       panel.innerHTML = "<h3>Today's recordings</h3>" + (rows || "") + note +
         '<div style="margin-top:12px"><button type="button" id="fh-drive-refresh" ' +
         'style="font-family:var(--sans);font-size:12.5px;padding:7px 13px;border:1px solid var(--line);background:var(--paper);border-radius:7px;cursor:pointer">' +

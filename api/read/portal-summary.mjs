@@ -1,7 +1,7 @@
 // GET /api/read/portal-summary — client-safe file summary for the portal.
 //
-// Returns pre-qual amount from custom_fields. Clients read their own file only;
-// staff may pass ?client_id= when previewing the portal.
+// Returns pre-qual and client-safe document metadata. Clients read their own file
+// only; staff may pass ?client_id= when previewing the portal.
 
 import { db } from "../../src/db.mjs";
 import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
@@ -62,6 +62,18 @@ export default async function handler(req, res) {
       return res.status(404).json({ ok: false, error: "client_not_found" });
     }
 
+    const documentsRes = await db.query(
+      `SELECT id, document_key, kind, subtype, title, mime_type, byte_size,
+              generated_at, delivered_at, delivery_channel, delivery_status,
+              signature_required, signed_at, created_at
+         FROM documents
+        WHERE org_id = $1::uuid
+          AND client_id = $2::uuid
+        ORDER BY created_at DESC
+        LIMIT 50`,
+      [orgId, clientId]
+    );
+
     const cf = client.custom_fields || {};
     const prequalAmount = prequalFromCustomFields(cf);
 
@@ -70,7 +82,8 @@ export default async function handler(req, res) {
       prequal_amount: prequalAmount,
       prequal_display: formatPrequalUsd(prequalAmount),
       soft_pull_complete: cf.crs_paid === true
-        || String(cf.analyzer_status || "").toLowerCase() === "complete"
+        || String(cf.analyzer_status || "").toLowerCase() === "complete",
+      documents: documentsRes.rows
     }));
   } catch (err) {
     return res.status(500).json({

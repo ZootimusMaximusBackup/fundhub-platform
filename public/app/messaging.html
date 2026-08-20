@@ -523,7 +523,6 @@
     <section class="ctx-col">
 
       <div class="ctx-card">
-        <div class="ctx-name" id="ctxName">No one selected</div>
         <div class="ctx-role" id="ctxRole">Pick a conversation to see who it is with.</div>
         <div style="margin-top:8px;" id="ctxRows"></div>
       </div>
@@ -1035,7 +1034,7 @@
       state.hasMore = res.data.hasMore === true;
       state.rows = res.data.items || [];
       FHData.banner("real", state.rows.length
-        ? "live conversations · " + state.rows.length
+        ? "live conversations"
         : "connected · no conversations in the database yet", "conversations");
       paintList();
       // Keep the open thread selected across a refresh; if it is gone, drop it.
@@ -1119,7 +1118,7 @@
     $("composeChannel").textContent = row.channel === "email" ? "Email" : "Text";
     paintQuietNote(row.channel);
     $("composeBody").disabled = false;
-    $("composeBody").placeholder = "Write to " + V.displayName(row) + "…";
+    $("composeBody").placeholder = "Write a message…";
     /* The box opens empty and disabled-looking until the person's record
        answers. It is filled in by paintContext below, from the SAME client read
        the right rail already makes — a second call for the same fact would be
@@ -1164,14 +1163,12 @@
 
   function paintContext(row) {
     if (!row) {
-      $("ctxName").textContent = "No one selected";
       $("ctxRole").textContent = "Pick a conversation to see who it is with.";
       $("ctxRows").innerHTML = "";
       $("ctxThreads").innerHTML = '<div class="empty-box">Pick a conversation first.</div>';
       $("ctxLinks").innerHTML = '<div class="empty-box">Pick a conversation first.</div>';
       return;
     }
-    $("ctxName").textContent = V.displayName(row);
     $("ctxRole").textContent = "Talking to us on " + String(row.channel || "").toLowerCase() + ".";
     $("ctxRows").innerHTML =
       '<div class="ctx-row"><span class="k">Last activity</span><span class="v">' +
@@ -1184,7 +1181,6 @@
         var cl = (res && res.ok && res.data && res.data.client) || {};
         var extra = "";
         if (cl.email) extra += '<div class="ctx-row"><span class="k">Email</span><span class="v">' + V.esc(cl.email) + "</span></div>";
-        if (cl.phone) extra += '<div class="ctx-row"><span class="k">Phone</span><span class="v">' + V.esc(cl.phone) + "</span></div>";
         if (extra) $("ctxRows").insertAdjacentHTML("beforeend", extra);
         /* Fill the destination box from their file. Only if nobody has typed
            over it — a late-arriving read must not wipe what somebody is in the

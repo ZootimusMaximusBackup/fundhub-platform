@@ -267,7 +267,7 @@ table.grid th:nth-child(3),table.grid th:nth-child(5),table.grid th:nth-child(6)
           <div class="card-hd"><div class="eyebrow">PRODUCTS</div>
             <div class="spacer"></div><span class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">CLICK A ROW TO EDIT</span></div>
           <div style="overflow-x:auto"><table class="grid">
-            <thead><tr><th>Product</th><th>Category</th><th>Default price</th><th>Variable</th><th>Min</th><th>Max</th><th>Rails</th></tr></thead>
+            <thead><tr><th>Product</th><th>Category</th><th>Price</th><th>Variable</th><th>Rails</th></tr></thead>
             <tbody id="prodBody"></tbody>
           </table></div>
         </div>
@@ -284,7 +284,7 @@ table.grid th:nth-child(3),table.grid th:nth-child(5),table.grid th:nth-child(6)
             <div class="eyebrow" style="margin-bottom:7px">WHY RATES ARE NEVER OVERWRITTEN</div>
             <div class="note" style="max-width:80ch;margin-bottom:10px">
               A commission rate is a dated fact, not a setting. Changing one <strong>closes the current version</strong>
-              — its effective-to date is stamped the day before the new rate starts — and <strong>opens a new version</strong>.
+              when the new rate starts and <strong>opens a new version</strong>.
               Nothing is destroyed. A payout that already accrued keeps pointing at the version that was open the day it
               was earned, so re-running last quarter's ledger produces last quarter's numbers.
             </div>
@@ -392,20 +392,44 @@ var TODAY=new Date().toISOString().slice(0,10);   /* §6: read, not typed */
    typed in — MONTH_START also bounds the month-to-date sum below. */
 var MONTH_START=(function(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-01'})();
 var MONTH_LABEL=new Date().toLocaleDateString('en-US',{month:'long',year:'numeric'}).toLowerCase();
-function dayBefore(iso){
-  var p=iso.split('-').map(Number);
-  var d=new Date(Date.UTC(p[0],p[1]-1,p[2]));
-  d.setUTCDate(d.getUTCDate()-1);
-  return d.toISOString().slice(0,10);
-}
-
 /* ══ PRODUCTS — start empty; /api/read/products fills when live ══════════ */
 var PRODUCTS=[];
 
-/* ══ COMMISSION RULES — no live rules read on this screen yet.
-   Rate edits below stay in this browser only and are not saved. ═══════════ */
+/* ══ COMMISSION RULES — effective-dated rows from /api/commission-rules. ══ */
 var RULES=[];
+var RULES_ERROR='';
 function activeV(r){return r.versions.filter(function(v){return v.to===null})[0]||r.versions[r.versions.length-1]}
+function dateOnly(v){return v?String(v).slice(0,10):null}
+function roleLabel(v){return String(v||'Everyone').replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase()})}
+function ruleGroups(rows){
+  var groups={};
+  (rows||[]).forEach(function(row){
+    var key=[row.name,row.basis,row.stacking,row.product_id||'*',row.role||'*',
+      row.staff_id||'*',row.calc_method,row.amount_basis].join('|');
+    if(!groups[key]){
+      groups[key]={
+        id:row.id,name:row.name||'Commission rule',
+        side:row.basis==='front_end'?'Front-end':'Back-end',
+        scope:row.product_name||'All products',
+        who:row.staff_name||roleLabel(row.role),
+        kind:row.calc_method==='flat_per_unit'?'per-unit':row.calc_method,
+        tiers:row.tiers||[],versions:[]
+      };
+    }
+    var rate=row.calc_method==='percent'?Number(row.percent):
+      (row.flat_amount==null?null:Number(row.flat_amount));
+    groups[key].versions.push({
+      rowId:row.id,rate:rate,from:dateOnly(row.effective_from),
+      to:dateOnly(row.effective_to),by:'—',why:row.notes||'—'
+    });
+  });
+  return Object.keys(groups).map(function(key){
+    var rule=groups[key];
+    rule.versions.sort(function(a,b){return String(a.from).localeCompare(String(b.from))});
+    rule.versions.forEach(function(v,i){v.v=i+1});
+    return rule;
+  });
+}
 
 /* ══ WHO A RULE AFFECTS ═══════════════════════════════════════════════════
    Read straight off the ledger rows that name this rule, so the header
@@ -429,6 +453,7 @@ function impactStr(r){
 function rateStr(r,v){
   if(r.kind==='tiered') return 'tiered';
   if(r.kind==='per-unit') return '$'+v.rate+'/unit';
+  if(r.kind==='flat') return money(v.rate);
   return v.rate+'%';
 }
 
@@ -439,15 +464,14 @@ var ST_CLS={Paid:'b-ok',Approved:'b-info',Accrued:'b-warn'};
 /* ══ RENDER ══════════════════════════════════════════════════════════════ */
 function renderProducts(){
   document.getElementById('prodBody').innerHTML=PRODUCTS.map(function(p){
+    var price = p.min !== p.max ? money(p.min)+' – '+money(p.max) : money(p.price);
     return '<tr class="clik" data-p="'+p.id+'">'+
       '<td><div style="font-weight:600">'+esc(p.name)+'</div><div class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em">'+p.id+'</div></td>'+
       '<td><span class="badge b-gray">'+esc(p.cat)+'</span></td>'+
-      '<td class="money">'+money(p.price)+'</td>'+
+      '<td class="money">'+price+'</td>'+
       '<td>'+(p.variable?'<span class="badge b-info">Variable</span>':'<span class="badge b-gray">Fixed</span>')+'</td>'+
-      '<td class="money" style="color:'+(p.variable?'inherit':'var(--gray2)')+'">'+money(p.min)+'</td>'+
-      '<td class="money" style="color:'+(p.variable?'inherit':'var(--gray2)')+'">'+money(p.max)+'</td>'+
       '<td style="font-size:var(--fs-caption);color:var(--gray)">'+(p.rails&&p.rails.length?esc(p.rails.join(' · ')):'<span title="No rails source">—</span>')+'</td></tr>';
-  }).join('')||'<tr><td colspan="7" class="empty">No products on file yet.</td></tr>';
+  }).join('')||'<tr><td colspan="5" class="empty">No products on file yet.</td></tr>';
   document.querySelectorAll('#prodBody tr[data-p]').forEach(function(tr){
     tr.addEventListener('click',function(){openProduct(tr.dataset.p)});
   });
@@ -484,10 +508,31 @@ function renderRules(){
     if(r.kind==='tiered'){
       tiers='<div class="tierbox"><div class="eyebrow" style="margin-bottom:6px">TIERS</div>'+
         r.tiers.map(function(t,i){
+          var tierRate=t.percent!=null?Number(t.percent)+'%':
+            (t.flat_amount!=null?money(Number(t.flat_amount)):
+              (t.per_unit_amount!=null?money(Number(t.per_unit_amount))+'/unit':'—'));
           return '<div class="tierrow"><span class="badge b-accent">T'+(i+1)+'</span>'+
-            '<span class="tb">'+money(t.lo)+' → '+(t.hi==null?'no ceiling':money(t.hi))+'</span>'+
-            '<span class="money">'+t.rate+'%</span></div>';
+            '<span class="tb">'+money(Number(t.min_amount||0))+' → '+
+              (t.max_amount==null?'no ceiling':money(Number(t.max_amount)))+'</span>'+
+            '<span class="money">'+tierRate+'</span></div>';
         }).join('')+'</div>';
+    }
+
+    var actions='<div style="display:flex;gap:9px;margin-top:11px;flex-wrap:wrap;align-items:center">'+
+      '<button class="btn sm mono" data-led="'+r.id+'">See these payouts →</button>'+
+      '<span class="note" style="align-self:center">Tier changes stay read-only until tier version writes are supported.</span></div>';
+    if(r.kind!=='tiered'){
+      actions='<div style="display:flex;gap:9px;margin-top:11px;flex-wrap:wrap;align-items:center">'+
+        '<button class="btn sm mono dark" data-chg="'+r.id+'">Change rate</button>'+
+        '<button class="btn sm mono" data-led="'+r.id+'">See these payouts →</button>'+
+        '<span class="note" style="align-self:center">Closes v'+av.v+' and opens v'+(av.v+1)+'. The old version stays on the ledger.</span></div>'+
+        '<div class="editline" id="el-'+r.id+'"><div class="grid2">'+
+        '<div class="field"><label>New rate'+(r.kind==='per-unit'||r.kind==='flat'?' ($)':' (%)')+'</label>'+
+        '<input class="num" type="number" step="0.01" min="0" id="nr-'+r.id+'" value="'+(av.rate==null?'':av.rate)+'"></div>'+
+        '<div class="field"><label>Effective from</label><input type="date" id="nd-'+r.id+'" value="'+TODAY+'"></div>'+
+        '<div class="field" style="grid-column:1/-1"><label>Reason</label><input id="nw-'+r.id+'" placeholder="Why this changed — shows on the ledger"></div></div>'+
+        '<div style="display:flex;gap:9px;margin-top:11px"><button class="btn sm mono dark" data-save="'+r.id+'">Close v'+av.v+' · open v'+(av.v+1)+'</button>'+
+        '<button class="btn sm mono" data-cancel="'+r.id+'">Cancel</button></div></div>';
     }
 
     return '<div class="rule" data-r="'+r.id+'">'+
@@ -508,25 +553,11 @@ function renderRules(){
           ' version'+(r.versions.length===1?'':'s')+', v'+av.v+' open since '+av.from+'</summary>'+
         '<table class="vtable"><thead><tr><th>Version</th><th>Rate</th><th>Effective from</th><th>Effective to</th><th>State</th><th>Reason</th></tr></thead><tbody>'+vrows+'</tbody></table>'+
         '</details>'+
-        '<div style="display:flex;gap:9px;margin-top:11px;flex-wrap:wrap;align-items:center">'+
-          '<button class="btn sm mono dark" data-chg="'+r.id+'">Change rate</button>'+
-          '<button class="btn sm mono" data-led="'+r.id+'">See these payouts →</button>'+
-          '<span class="note" style="align-self:center">Closes v'+av.v+' and opens v'+(av.v+1)+'. The old version stays on the ledger.</span>'+
-        '</div>'+
-        '<div class="editline" id="el-'+r.id+'">'+
-          '<div class="grid2">'+
-            '<div class="field"><label>New rate'+(r.kind==='per-unit'?' ($/unit)':(r.kind==='percent'?' (%)':''))+'</label>'+
-              '<input class="num" type="number" step="0.1" min="0" id="nr-'+r.id+'" value="'+(av.rate==null?'':av.rate)+'"'+(r.kind==='tiered'?' disabled':'')+'>'+
-              (r.kind==='tiered'?'<span class="hint">EDIT THE TIER TABLE ABOVE — A TIERED RULE VERSIONS AS A WHOLE</span>':'')+'</div>'+
-            '<div class="field"><label>Effective from</label><input type="date" id="nd-'+r.id+'" value="'+TODAY+'"></div>'+
-            '<div class="field" style="grid-column:1/-1"><label>Reason</label><input id="nw-'+r.id+'" placeholder="Why this changed — shows on the ledger"></div>'+
-          '</div>'+
-          '<div style="display:flex;gap:9px;margin-top:11px">'+
-            '<button class="btn sm mono dark" data-save="'+r.id+'">Close v'+av.v+' · open v'+(av.v+1)+'</button>'+
-            '<button class="btn sm mono" data-cancel="'+r.id+'">Cancel</button></div>'+
-        '</div>'+
+        actions+
       '</div></div>';
-  }).join('')||'<div class="empty">Commission rules are not held on this screen. Payouts already earned are on the payout ledger — use "View payout ledger" at the top of the page.</div>';
+  }).join('')||(RULES_ERROR
+    ? '<div class="empty" role="alert">Commission rules could not be loaded. Try again.</div>'
+    : '<div class="empty">No commission rules are on file yet. Payouts already earned are on the payout ledger — use "View payout ledger" at the top of the page.</div>');
 
   document.querySelectorAll('.rule-hd').forEach(function(h){
     h.addEventListener('click',function(){h.parentElement.classList.toggle('open')});
@@ -564,13 +595,38 @@ function renderRules(){
       var nw=document.getElementById('nw-'+id).value.trim()||'Rate change';
       if(r.kind!=='tiered'&&(isNaN(nr)||nr<0)){alert('Enter a valid rate.');return}
       if(nd<=av.from){alert('The new version must start after the current version began ('+av.from+').');return}
-      av.to=dayBefore(nd);                                   /* close, do not overwrite */
-      r.versions.push({v:av.v+1,rate:r.kind==='tiered'?null:nr,from:nd,to:null,by:'Chris Stanbridge',why:nw});
-      renderRules(); renderStats();
-      var el=document.querySelector('.rule[data-r="'+id+'"]'); if(el) el.classList.add('open');
+      b.disabled=true;
+      FHData.write('/api/commission-rules',{
+        rule_id:av.rowId,effective_from:nd,rate:nr,reason:nw
+      }).then(function(res){
+        b.disabled=false;
+        if(!res||!res.ok){alert('Could not change the rate: '+((res&&res.error)||'request failed'));return}
+        loadCommissionRules(id);
+      });
     });
   });
-  document.getElementById('kRules').textContent=RULES.length;
+  document.getElementById('kRules').textContent=RULES_ERROR?'—':RULES.length;
+}
+
+function loadCommissionRules(reopenId){
+  if(typeof FHData==='undefined'||typeof FHData.commissionRules!=='function') return Promise.resolve();
+  return FHData.commissionRules().then(function(res){
+    if(!res||!res.ok){
+      RULES_ERROR=(res&&res.error)||'read_failed';
+      RULES.length=0;
+      renderRules();
+      return;
+    }
+    RULES_ERROR='';
+    var mapped=ruleGroups((res.data&&res.data.rules)||[]);
+    RULES.length=0;
+    Array.prototype.push.apply(RULES,mapped);
+    renderRules();
+    if(reopenId){
+      var el=document.querySelector('.rule[data-r="'+reopenId+'"]');
+      if(el) el.classList.add('open');
+    }
+  });
 }
 
 function renderLedger(){
@@ -789,8 +845,10 @@ document.addEventListener("DOMContentLoaded", function () {
     Array.prototype.push.apply(PRODUCTS, mapped);
     try { renderProducts(); } catch (e) { return null; }
 
-    return "live product ladder · " + rows.length + " products · rails have no source";
+    return "live product ladder · rails have no source";
   });
+
+  loadCommissionRules();
 
   function ledgerFromApi(r) {
     var st = String(r.status || "").toLowerCase();

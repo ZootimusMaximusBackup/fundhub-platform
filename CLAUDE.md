@@ -209,6 +209,8 @@ Flagged changes ship only after explicit human approval. Never draft customer-fa
 
 **Conventions.** Simplest thing that works, no speculative abstraction. No new dependencies without asking. Match existing patterns in the file you are editing over your own preference. Never commit secrets — no keys, tokens, or PII in code, fixtures, or logs. Delete dead code you create.
 
+**Annotated screenshots (owner-set 2026-08-19).** Every screenshot shown to Chris for a decision, review, or fix-proof **must** be marked up before it counts as done. Draw **red boxes** (and arrows when helpful) on the exact element being discussed. Number marks when there are multiple (`1`, `2`, `3`…). Include one caption line per mark in a legend on the image. An unmarked screenshot is an incomplete deliverable — do not send it, embed it in review docs, or treat it as evidence. Applies to all audits, review sheets, and fixer before/after proof. Tooling: `docs/workflows/*-evidence/_mark-shots.mjs` + `_apply-marks.py`.
+
 ## 9. Task report
 
 End every completed task with this, in this order:

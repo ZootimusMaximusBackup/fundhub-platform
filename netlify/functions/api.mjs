@@ -61,6 +61,7 @@ import webhooks from "../../api/webhooks/[provider].mjs";
 import readCommissions from "../../api/read/commissions.mjs";
 import readInvoices from "../../api/read/invoices.mjs";
 import readDocuments from "../../api/read/documents.mjs";
+import readBankInbox from "../../api/read/bank-inbox.mjs";
 import readFundingRounds from "../../api/read/funding-rounds.mjs";
 import readAffiliates from "../../api/read/affiliates.mjs";
 import readPartners from "../../api/read/partners.mjs";
@@ -198,6 +199,8 @@ import agentsWrite from "../../api/agents.mjs";
 import agentCall from "../../api/agent-call.mjs";
 import pipelineCards from "../../api/pipeline-cards.mjs";
 import productsWrite from "../../api/products.mjs";
+import clientNotes from "../../api/client-notes.mjs";
+import commissionRules from "../../api/commission-rules.mjs";
 import lendersWrite from "../../api/lenders.mjs";
 import lenderObservationsWrite from "../../api/lender-observations.mjs";
 import applicationsWrite from "../../api/applications.mjs";
@@ -273,6 +276,8 @@ export const ROUTES = {
   /* Products & Commissions product ladder edits. ROLE_SETS.FINANCE — prices are
      configuration, same gate as other money-config writes. */
   "products": productsWrite,
+  "client-notes": clientNotes,
+  "commission-rules": commissionRules,
   /* Lender database maintenance + CSV import. ROLE_SETS.STAFF. */
   "lenders": lendersWrite,
   /* Bureau observation log + mismatch review. ROLE_SETS.STAFF. */
@@ -314,6 +319,7 @@ export const ROUTES = {
   "read/commissions": readCommissions,
   "read/invoices": readInvoices,
   "read/documents": readDocuments,
+  "read/bank-inbox": readBankInbox,
   "read/funding-rounds": readFundingRounds,
   "read/lenders": readLenders,
   "read/lender-matches": readLenderMatches,

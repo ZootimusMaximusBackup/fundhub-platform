@@ -644,6 +644,7 @@ function paintStats() {
   if (showEl) { showEl.textContent = "—"; showEl.className = "v"; }
   if (!loaded) {
     if (bookedEl) bookedEl.textContent = "—";
+    if (bookedEl && bookedEl.closest(".stat")) bookedEl.closest(".stat").hidden = false;
     if (doneEl) doneEl.textContent = "—";
     if (leftEl) leftEl.textContent = "—";
     return;
@@ -656,7 +657,10 @@ function paintStats() {
      is worse than no number at all, because nobody knows to doubt it. Dash.
      "Left today" only counts still-open work, which did come back, so it
      stays a real number. */
-  if (bookedEl) bookedEl.textContent = doneFailed ? "\u2014" : String(dayTasks.length);
+  if (bookedEl) {
+    bookedEl.textContent = doneFailed ? "\u2014" : String(dayTasks.length);
+    if (bookedEl.closest(".stat")) bookedEl.closest(".stat").hidden = !doneFailed && dayTasks.length === 0;
+  }
   if (doneEl) doneEl.textContent = doneFailed ? "\u2014" : String(doneN);
   if (leftEl) leftEl.textContent = String(leftN);
 }
@@ -767,7 +771,7 @@ function paintDay() {
       var done = !!it.t.done;
       var isNext = selectedId && it.t.id === selectedId;
       var cls = "evt" + (done ? " done past" : "") + (isNext ? " next" : "");
-      html += '<div class="' + cls + '">' +
+      html += '<div class="' + cls + '" data-task-id="' + esc(it.t.id) + '">' +
         '<div class="evt-time">' + esc(clockTime(it.d)) + "</div>" +
         '<div class="evt-main">' +
           '<div class="evt-client">' + esc(displayName(it.t)) + "</div>" +
@@ -1004,6 +1008,16 @@ if (thenList) {
   });
 }
 
+var dayWrap = document.querySelector(".day-wrap");
+if (dayWrap) {
+  dayWrap.addEventListener("click", function (e) {
+    var eventBlock = e.target.closest(".evt");
+    if (!eventBlock || !eventBlock.dataset.taskId) return;
+    selectedId = eventBlock.dataset.taskId;
+    paintAll();
+  });
+}
+
 tickClock();
 setInterval(tickClock, 1000);
 paintAll();
@@ -1111,10 +1125,10 @@ document.addEventListener("DOMContentLoaded", function () {
          corrected to a warning just below, and if that ever failed to run, the
          words alone still stop a person trusting the screen. */
       if (doneFailed) {
-        return "schedule incomplete \u2014 completed calls did not load \u00b7 " +
-          todayN + " still open today";
+        return "schedule incomplete \u2014 completed calls did not load" +
+          (todayN ? " \u00b7 " + todayN + " still open today" : "");
       }
-      return "live schedule · " + todayN + " today" +
+      return "live schedule" + (todayN ? " · " + todayN + " today" : "") +
         (later > 0 ? " · " + later + " dated later" : "");
     });
 

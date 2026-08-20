@@ -30,12 +30,12 @@ flowchart TD
     CAN --> A_finance[Finance — 4 routes]
     CAN --> A_partner_marketing[partner-marketing — 5 routes]
     CAN --> A_public[public — 6 routes]
-    CAN --> A_read[Reading data — 36 routes]
+    CAN --> A_read[Reading data — 37 routes]
     CAN --> A_repair[repair — 3 routes]
     CAN --> A_social[social — 6 routes]
-    CAN --> A_top_level[Everything else — 23 routes]
+    CAN --> A_top_level[Everything else — 24 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 60 routes]
+    WHO -->|Yes| CANT[Blocked — 61 routes]
     CANT --> B_auth[Signing in and out — 4 blocked]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_brand[brand — 1 blocked]
@@ -53,13 +53,13 @@ flowchart TD
     CANT --> B_read[Reading data — 13 blocked]
     CANT --> B_social[social — 1 blocked]
     CANT --> B_staff[staff — 2 blocked]
-    CANT --> B_top_level[Everything else — 10 blocked]
+    CANT --> B_top_level[Everything else — 11 blocked]
     WHO -->|Yes| UNV[UNVERIFIED — 2 routes whose gate could not be traced]
 ```
 
 ## What they can reach
 
-**123 of 185 routes.**
+**125 of 188 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -86,6 +86,7 @@ flowchart TD
 | `/api/chat/ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/chat/messages` | GET, POST | staff |
 | `/api/chat/peers` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/client-notes` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/climate` | OPTIONS | anyone |
 | `/api/climate/config` | — | anyone |
 | `/api/climate/geocode` | OPTIONS | anyone |
@@ -141,6 +142,7 @@ flowchart TD
 | `/api/read/agent-shadow-log` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/ai-bureau-config` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/bank-inbox` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/call-outcomes` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/closer-call` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/closer-now` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -195,7 +197,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**60 of 185 routes.**
+**61 of 188 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -209,6 +211,7 @@ flowchart TD
 | `/api/brand/review` | POST | employees: owner, admin<br>plus: partner |
 | `/api/chat/portal-message` | POST | client |
 | `/api/closer-deck` | POST | closer, sales_manager, owner, admin |
+| `/api/commission-rules` | GET, POST | owner, admin, sales_manager |
 | `/api/company-brain/reviews` | GET, POST | owner |
 | `/api/company-brain/sync` | GET, POST | owner, admin, sales_manager |
 | `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |

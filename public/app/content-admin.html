@@ -354,7 +354,6 @@ table.grid tr:last-child td{border-bottom:0}
               <div class="eyebrow">CN-03 <span class="sep">/</span> LOCKED TILE EDITOR</div>
               <div class="spacer"></div>
               <span class="badge b-gray mono">drives “Unlock More”</span>
-              <button class="btn dark mono sm" id="saveTilesBtn" type="button" hidden>Save tiles</button>
             </div>
             <div class="card-bd">
               <div id="tileEditors"></div>
@@ -675,11 +674,10 @@ function tilePayload(){
 function saveAll(){
   if(!canWrite()) return;
   var btn = document.getElementById('saveBtn');
-  var btn2 = document.getElementById('saveTilesBtn');
-  btn.disabled = true; btn2.disabled = true;
+  btn.disabled = true;
   btn.textContent = 'Saving…';
   FHData.write('/api/content/tiles', { action:'save', tiles: tilePayload(), map: MAP }).then(function(res){
-    btn.disabled = false; btn2.disabled = false;
+    btn.disabled = false;
     btn.textContent = 'Save changes';
     if(!res.ok){
       showNotice(res.error || 'The save did not go through. Try again.');
@@ -808,9 +806,7 @@ function boot(){
       }
       applyBundle(d);
       document.getElementById('saveBtn').hidden = false;
-      document.getElementById('saveTilesBtn').hidden = false;
       document.getElementById('saveBtn').addEventListener('click', saveAll);
-      document.getElementById('saveTilesBtn').addEventListener('click', saveAll);
       wireUpload();
       paintAll();
       showNotice('');

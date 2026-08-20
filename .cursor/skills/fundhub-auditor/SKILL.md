@@ -22,7 +22,7 @@ That is the Fixer skill (`fundhub-fixer`).
 3. **Output is findings + evidence paths**, not essays. No "everything looks good" paragraphs. No 2,000-line reports.
 4. **No PASS without observable evidence.** Screenshot, DOM assertion, network response, or database row. "The code looks like it should work" = **UNVERIFIED**, not PASS.
 5. **Ground truth is written before you check.** Every step's "working" definition lives in `docs/journeys/` (`*-intended.md`). If it is missing, stop and ask — do not invent it. Do not create a second root `journeys.md`.
-6. **Failure output is capped.** For each failure: journey name, step, expected, observed, evidence path. Keep the failure block short (~20 lines). Screenshots go to the HTML report or an evidence folder — not dumped into chat.
+6. **Failure output is capped.** For each failure: journey name, step, expected, observed, evidence path. Keep the failure block short (~20 lines). Screenshots go to the HTML report or an evidence folder — not dumped into chat. **Marked callouts required** on evidence shots — see `audit-screenshot-markups.mdc` (`*-MARKED.png`).
 
 ## Three-step workflow
 

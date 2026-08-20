@@ -139,8 +139,9 @@ describe("the Documents screen — sent contracts (moved here from Contracts)", 
       "an unknown kind must not be filed as a soft-pull authorization");
   });
 
-  test("it never paints a sample banner over real rows", () => {
-    assert.match(DOCS, /return "live documents · " \+ mapped\.length/);
+  test("it never paints a sample banner or duplicate record count over real rows", () => {
+    assert.match(DOCS, /return "live documents"/);
+    assert.doesNotMatch(DOCS, /live documents · " \+ mapped\.length \+ " records/);
     assert.equal(/if \(!rows\.length\) return null/.test(DOCS), false);
   });
 });
