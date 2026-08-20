@@ -45,4 +45,7 @@ test("the browser proof reads fixtures and always registers cleanup", () => {
   const requiredLive = text("playwright.live.config.mjs");
   assert.match(requiredLive, /testMatch: \["\*\*\/live-\*\.spec\.mjs"\]/);
   assert.doesNotMatch(requiredLive, /launch-proof-live/);
+
+  const localBrowser = text("playwright.config.mjs");
+  assert.match(localBrowser, /testIgnore: \["\*\*\/launch-proof-live\.spec\.mjs"\]/);
 });

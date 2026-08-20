@@ -239,7 +239,7 @@ Change manifest:
 - `src/http/launch-proof-chain.pg.test.mjs` — rollback-only real-Postgres proof. Call and Present handlers write to `call_outcomes`; the actual agent-context handler reads each marker; the next runtime turn sends the same marker to a model spy through the real `system` request.
 - `scripts/launch-proof-fixtures.mjs` — fixed-id E2E fixtures with exact marker checks and cleanup. The script refuses unmarked collisions.
 - `src/http/launch-proof-fixtures.test.mjs` — source guard for fixture labels, inactive tier status, exact cleanup predicates, and separation from the required live suite.
-- `e2e/launch-proof-live.spec.mjs` and `playwright.launch-proof.config.mjs` — deployed-site read proof for Pipeline, commission rules, and a client Portal session. The spec registers cleanup and never clicks move, archive, rate edit, send, pull, letter, payment, or delete actions.
+- `e2e/launch-proof-live.spec.mjs`, `playwright.launch-proof.config.mjs`, and the one-line `playwright.config.mjs` ignore — deployed-site read proof for Pipeline, commission rules, and a client Portal session, isolated from both existing suites. The spec registers cleanup and never clicks move, archive, rate edit, send, pull, letter, payment, or delete actions.
 
 Safety:
 - Pipeline creates a new marked E2E client and card. It never updates a real card or stage.
