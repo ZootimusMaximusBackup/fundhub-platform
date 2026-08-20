@@ -289,6 +289,9 @@ jobs:
           psql "$MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 \
             -c "ALTER ROLE fundhub_app LOGIN PASSWORD 'ci_not_a_secret';"
 
+      - name: Prove Call and Present context chain
+        run: node --test src/http/launch-proof-chain.pg.test.mjs
+
       - name: Run the suite against Postgres
         run: npm test
 
