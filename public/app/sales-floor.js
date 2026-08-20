@@ -96,7 +96,7 @@
   function paintOfferStack(d) {
     var body = $("#fh-offer-stack .ostbody");
     if (!body) return;
-    var html = stackTable(d.offer_stack, "The offer stack is not in this response yet.");
+    var html = stackTable(d.offer_stack, "Offer details are not available yet.");
     var un = d.offer_stack_unattributed;
     if (un && (un.items || []).length) {
       html += '<div class="sech" style="margin-top:24px"><span class="eyebrow">' +
@@ -166,7 +166,7 @@
       '<div class="funnel">' + tiles + "</div>" +
       '<p class="say"><b>Do this.</b> ' + esc(c.action || "Nothing assigned") + "</p>" +
       '<div style="margin-top:16px">' +
-      stackTable(c.offer_stack, "This closer's offer stack is not in this response yet.") +
+      stackTable(c.offer_stack, "This closer's offer details are not available yet.") +
       "</div>";
 
     var prev = $("#fh-closer-prev");
@@ -392,7 +392,7 @@
       var note = items.length
         ? ""
         : '<p class="note">' + (rec.reason || "No Meet recordings in the last 7 days.") + "</p>";
-      var refreshLabel = rec.drive_ready ? "Sync recordings from Drive" : "Drive not connected";
+      var refreshLabel = "Sync recordings from Drive";
       panel.innerHTML = "<h3>Today's recordings</h3>" + (rows || "") + note +
         '<div style="margin-top:12px"><button type="button" id="fh-drive-refresh" ' +
         'style="font-family:var(--sans);font-size:12.5px;padding:7px 13px;border:1px solid var(--line);background:var(--paper);border-radius:7px;cursor:pointer">' +

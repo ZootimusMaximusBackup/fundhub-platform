@@ -44,7 +44,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .topbar h1{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
 .topbar .crumb{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
-.content{padding:22px 24px 40px;flex:1}
+.content{padding:24px 24px 40px;flex:1}
 .card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .card+.card{margin-top:14px}
 .card-hd{padding:13px 16px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -99,7 +99,15 @@ th[data-s="age"]{text-align:right}
 .foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
 .empty{padding:26px 16px;text-align:center;color:var(--gray2);font-size:var(--fs-body)}
 .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:var(--fs-caption);color:var(--gray);padding:12px 16px;border-top:1px solid var(--line);background:var(--soft)}
+.card-hd .spacer{display:none}
 @media(max-width:1000px){.stats,.classbar{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){
+  .stats,.classbar{grid-template-columns:1fr}
+  .tabs{display:grid;grid-template-columns:1fr;padding:0;overflow:visible}
+  .tab{width:100%;margin:0;text-align:left;border-bottom:1px solid var(--line)}
+  .card-hd{align-items:stretch}
+  .card-hd select,.card-hd input{width:100%!important;min-height:40px}
+}
 </style>
 <script defer src="shell.js"></script>
 <script src="demo-client-bootstrap.js"></script>

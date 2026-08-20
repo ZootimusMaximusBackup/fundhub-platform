@@ -356,12 +356,10 @@
        room org + LIVE status need. */
     .clock{display:none;}
     .topbar-right{gap:8px;}
-    /* shell.js's role/sign-out chip floats fixed under the header, and this
-       screen's client name sits right under the header too, with nothing
-       between — same fix as messaging.html's conversation list: pad the
-       content down instead of moving the chip (moving it would just cover
-       the next thing instead of this one). */
-    .record-head{padding-top:56px;}
+    main{display:flex;flex-direction:column;overflow-y:auto;background:var(--paper);}
+    .main-col,.side-col{width:100%;overflow:visible;padding:16px;}
+    .kv-grid,.details-grid{grid-template-columns:1fr;}
+    .record-head{padding-top:16px;}
   }
 </style>
 <script defer src="shell.js"></script>

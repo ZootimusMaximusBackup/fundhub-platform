@@ -79,6 +79,12 @@
     .clock{display:none;}
     .topbar-right{gap:8px;}
   }
+  @media (max-width:1600px){
+    /* The full clock plus org, live state, Search and account controls do not
+       fit beside the title at laptop width. The clock is the expendable item;
+       hiding it keeps the page title and controls readable without overlap. */
+    .clock{display:none;}
+  }
 
   /* rail code eyebrow on each rail tab */
   .rail-tab .rt-code{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.14em;opacity:.65;margin-right:1px;}

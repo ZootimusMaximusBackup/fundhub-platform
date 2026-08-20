@@ -41,20 +41,17 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
-.topbar{min-height:57px;flex:0 0 auto;display:flex;align-items:center;gap:14px;padding:8px 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20;flex-wrap:nowrap}
+.topbar{min-height:57px;flex:0 0 auto;display:flex;align-items:center;gap:16px;padding:8px 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20;flex-wrap:wrap}
 .topbar h1,.topbar .btn{white-space:nowrap}
-/* Clear Search + Sign-out chip so "+ Add product" is actually clickable.
-   --fh-shell-top-clearance is set by shell.js layoutShellChrome(). */
-@media (min-width:1201px){ .topbar{padding-right:var(--fh-shell-top-clearance, 520px)} }
 .topbar h1{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
 .topbar .crumb{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
 /* UI-STANDARDS §1: cap the content column at --fh-maxw (.fh-maxw on the div).
    width:100% keeps it filling the column below 1280px — a flex item with auto
    inline margins is not stretched, so without this it would shrink to fit. */
-.content{padding:22px 24px 40px;flex:1;width:100%}
+.content{padding:24px 24px 40px;flex:1;width:100%}
 .card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.card+.card{margin-top:14px}
+.card+.card{margin-top:16px}
 .card-hd{padding:13px 16px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .card-bd{padding:16px}
 .hair{height:2px;background:var(--spectrum);border-radius:1px}
@@ -151,8 +148,8 @@ table.grid th:nth-child(3),table.grid th:nth-child(5),table.grid th:nth-child(6)
 .stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
 .stat .sv{font-family:var(--mono);font-size:var(--fs-metric);font-variant-numeric:tabular-nums;font-weight:600;margin-top:8px;letter-spacing:-.02em}
 .stat .sd{font-size:var(--fs-caption);color:var(--gray);margin-top:2px}
-.editor{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:92vw;background:#fff;border-left:1px solid var(--line);box-shadow:-14px 0 40px rgba(0,0,0,.10);transform:translateX(102%);transition:transform .2s ease;z-index:60;display:flex;flex-direction:column}
-.editor.open{transform:none}
+.editor{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:92vw;background:#fff;border-left:1px solid var(--line);box-shadow:-14px 0 40px rgba(0,0,0,.10);transform:translateX(102%);transition:transform .2s ease;z-index:60;display:flex;flex-direction:column;visibility:hidden;pointer-events:none}
+.editor.open{transform:none;visibility:visible;pointer-events:auto}
 .editor-hd{padding:15px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
 .editor-bd{padding:18px;overflow-y:auto;flex:1}
 .editor-ft{padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:9px}

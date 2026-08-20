@@ -772,7 +772,8 @@
         /* The menu button is fixed at top-left, which is exactly where a page
            title sits. Without this the ☰ lands on top of "Hiring", "Pipeline"
            and so on. 58px = 10 left + 40 button + 8 gap. */
-        ".topbar,.top,.page-hd{padding-left:58px!important;flex-wrap:wrap!important}" +
+        ".topbar,.top,.page-hd,body>header,.app>header,.app-shell>header{" +
+          "padding-left:58px!important;flex-wrap:wrap!important}" +
         /* The 58px above is real width taken out of a 390px row, which pushed
            the right-hand action group (.topbar-right) off the edge on
            inquiry-remover and ops-admin. Wrapping lets that group drop to a
@@ -1634,7 +1635,9 @@
 
   function placeInHeader(el) {
     var right = document.querySelector(".topbar-right");
-    var bar = document.querySelector(".topbar, .top, .page-hd");
+    var bar = document.querySelector(
+      ".topbar, .top, .page-hd, body > header, .app > header, .app-shell > header"
+    );
     if (right) {
       right.appendChild(el);
       el.setAttribute("data-fh-in-header", "1");

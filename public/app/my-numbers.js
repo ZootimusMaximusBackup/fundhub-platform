@@ -74,7 +74,7 @@
     }
     if (!os) {
       body.innerHTML = head +
-        '<div class="st-msg">The offer stack did not come back from /api/read/my-numbers.</div>';
+        '<div class="st-msg">The offer details could not be loaded. Try again in a moment.</div>';
       return;
     }
     if (periodNote && os.period && os.period.label) {
