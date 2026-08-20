@@ -13,10 +13,113 @@ import { buildCommasCheckoutUrl } from "../adapters/commas.mjs";
 import { createCheckoutSession, checkoutConfig } from "../payments/commas-api.mjs";
 
 const PURPOSES = new Set(["deposit", "diagnostic", "repair", "custom"]);
+const SALE_MOTIONS = new Set(["downsell", "upsell"]);
 const OPEN_STATUSES = ["created", "sent"];
 
 export function generateLinkRef() {
   return `pl_${crypto.randomBytes(12).toString("hex")}`;
+}
+
+async function resolveLinkContext(db, {
+  orgId,
+  clientId,
+  productId = null,
+  productCode = null,
+  saleId = null,
+  saleMotion = null,
+  createdByStaffId = null,
+  createdByRole = null
+}) {
+  let product = null;
+  if (productId || productCode) {
+    const result = await db.query(
+      `SELECT id, code
+         FROM products
+        WHERE org_id = $1
+          AND (($2::uuid IS NOT NULL AND id = $2) OR ($3::text IS NOT NULL AND lower(code) = lower($3)))
+        ORDER BY CASE WHEN id = $2 THEN 0 ELSE 1 END
+        LIMIT 1`,
+      [orgId, productId, productCode]
+    );
+    product = result.rows[0] || null;
+    if (!product) throw new TypeError("createPaymentLink: product identity is not in this org");
+    if (productId && productCode && String(product.code).toLowerCase() !== String(productCode).toLowerCase()) {
+      throw new TypeError("createPaymentLink: product id and code do not match");
+    }
+  }
+  let sale = null;
+  if (saleId) {
+    const result = await db.query(
+      `SELECT s.id, s.product_id, s.sale_motion, p.code AS product_code
+         FROM sales s
+         JOIN products p ON p.id = s.product_id
+        WHERE s.id = $1 AND s.org_id = $2 AND s.client_id = $3
+        LIMIT 1`,
+      [saleId, orgId, clientId]
+    );
+    sale = result.rows[0] || null;
+    if (!sale) throw new TypeError("createPaymentLink: sale is not for this client and org");
+    if (product && String(sale.product_id) !== String(product.id)) {
+      throw new TypeError("createPaymentLink: sale and product identity do not match");
+    }
+    if (saleMotion != null && sale.sale_motion !== saleMotion) {
+      throw new TypeError("createPaymentLink: sale and sale motion do not match");
+    }
+  } else if (product) {
+    sale = (await db.query(
+      `SELECT id, product_id
+         FROM sales
+        WHERE org_id = $1 AND client_id = $2 AND product_id = $3
+          AND status = 'active'
+          AND sale_motion IS NOT DISTINCT FROM $4::text
+        ORDER BY sold_at DESC
+        LIMIT 1`,
+      [orgId, clientId, product.id, saleMotion]
+    )).rows[0] || null;
+  }
+  if (saleMotion && !product && !sale) {
+    throw new TypeError("createPaymentLink: downsell/upsell links require product identity");
+  }
+
+  let closerStaffId = createdByRole === "closer" ? createdByStaffId : null;
+  let salesManagerStaffId = createdByRole === "sales_manager" ? createdByStaffId : null;
+
+  if (sale) {
+    const attrs = (await db.query(
+      `SELECT staff_id, role
+         FROM sale_attributions
+        WHERE sale_id = $1 AND role IN ('closer', 'sales_manager')
+        ORDER BY attributed_at DESC`,
+      [sale.id]
+    )).rows;
+    closerStaffId ||= attrs.find((row) => row.role === "closer")?.staff_id || null;
+    salesManagerStaffId ||= attrs.find((row) => row.role === "sales_manager")?.staff_id || null;
+  }
+
+  if ((product || sale) && (!closerStaffId || !salesManagerStaffId)) {
+    const recentActors = (await db.query(
+      `SELECT DISTINCT ON (s.role) s.id AS staff_id, s.role
+         FROM call_outcomes co
+         JOIN staff s ON s.id = co.staff_id AND s.org_id = co.org_id
+        WHERE co.org_id = $1
+          AND co.client_id = $2
+          AND co.logged_at >= now() - interval '24 hours'
+          AND s.role IN ('closer', 'sales_manager')
+          AND s.status = 'active'
+        ORDER BY s.role, co.logged_at DESC`,
+      [orgId, clientId]
+    )).rows;
+    closerStaffId ||= recentActors.find((row) => row.role === "closer")?.staff_id || null;
+    salesManagerStaffId ||= recentActors.find((row) => row.role === "sales_manager")?.staff_id || null;
+  }
+
+  return {
+    productId: product?.id || sale?.product_id || null,
+    productCode: product?.code || sale?.product_code || null,
+    saleId: sale?.id || null,
+    closerStaffId,
+    salesManagerStaffId
+  };
 }
 
 /** createPaymentLink — mints a checkout URL and records the ask.
@@ -24,7 +127,9 @@ export function generateLinkRef() {
  *  Fall back to COMMAS_CHECKOUT_BASE_URL query links only for tests / legacy. */
 export async function createPaymentLink(db, {
   orgId, clientId, purpose, description = null, amountCents,
-  currency = "USD", createdByStaffId = null, checkoutBaseUrl,
+  currency = "USD", createdByStaffId = null, createdByRole = null,
+  productId = null, productCode = null, saleId = null, saleMotion = null,
+  checkoutBaseUrl,
   env = process.env, fetchImpl = fetch
 }) {
   if (!orgId) throw new TypeError("createPaymentLink: orgId is required");
@@ -38,6 +143,20 @@ export async function createPaymentLink(db, {
   if (!Number.isInteger(amountCents) || amountCents <= 0) {
     throw new RangeError(`createPaymentLink: amountCents must be a positive integer, got ${amountCents}`);
   }
+  if (saleMotion != null && !SALE_MOTIONS.has(saleMotion)) {
+    throw new TypeError("createPaymentLink: saleMotion must be downsell or upsell");
+  }
+
+  const context = await resolveLinkContext(db, {
+    orgId,
+    clientId,
+    productId,
+    productCode,
+    saleId,
+    saleMotion,
+    createdByStaffId,
+    createdByRole
+  });
 
   const linkRef = generateLinkRef();
   const title = String(description || purpose).trim();
@@ -50,7 +169,14 @@ export async function createPaymentLink(db, {
       amountCents,
       productTitle: title,
       productDescription: purpose === "diagnostic" ? "UnderwriteIQ soft-pull assessment" : null,
-      metadata: { link_ref: linkRef, client_id: clientId, org_id: orgId },
+      metadata: {
+        link_ref: linkRef,
+        client_id: clientId,
+        org_id: orgId,
+        product_id: context.productId,
+        sale_id: context.saleId,
+        sale_motion: saleMotion
+      },
       env,
       fetchImpl
     });
@@ -79,10 +205,16 @@ export async function createPaymentLink(db, {
   const result = await db.query(
     `INSERT INTO payment_links
        (org_id, client_id, purpose, description, amount_cents, currency,
-        link_ref, checkout_url, created_by_staff_id, commas_session_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+        link_ref, checkout_url, created_by_staff_id, commas_session_id,
+        product_id, sale_id, sale_motion, closer_staff_id, sales_manager_staff_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
      RETURNING *`,
-    [orgId, clientId, purpose, description, amountCents, currency, linkRef, checkoutUrl, createdByStaffId, commasSessionId]
+    [
+      orgId, clientId, purpose, description, amountCents, currency,
+      linkRef, checkoutUrl, createdByStaffId, commasSessionId,
+      context.productId, context.saleId, saleMotion,
+      context.closerStaffId, context.salesManagerStaffId
+    ]
   );
   return result.rows[0];
 }

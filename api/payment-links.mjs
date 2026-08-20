@@ -1,7 +1,8 @@
 // /api/payment-links — the CRM's "create a payment link" action.
 //
 //   GET  ?client_id=<uuid>                                    → { ok, items }
-//   POST { action: "create", client_id, purpose, description?, price | price_cents }
+//   POST { action: "create", client_id, purpose, description?, price | price_cents,
+//          product_id?, sale_id?, sale_motion? }
 //   POST { action: "send",   id }
 //   POST { action: "expire", id }
 //
@@ -173,6 +174,12 @@ export default async function handler(req, res, deps = {}) {
         if (!(await ownsClient(orgId, body.client_id))) {
           return res.status(403).json({ ok: false, error: "forbidden" });
         }
+        if (body.product_id != null && !isUuid(body.product_id)) {
+          return res.status(400).json({ ok: false, error: "product_id must be a uuid" });
+        }
+        if (body.sale_id != null && !isUuid(body.sale_id)) {
+          return res.status(400).json({ ok: false, error: "sale_id must be a uuid" });
+        }
         /* Refuse only when there is NO way to mint a link. Gating on
            COMMAS_CHECKOUT_BASE_URL alone refused every request while the key
            that actually works sat set and unread, because
@@ -197,6 +204,10 @@ export default async function handler(req, res, deps = {}) {
           amountCents,
           currency: body.currency ?? "USD",
           createdByStaffId: staff.id,
+          createdByRole: staff.role,
+          productId: body.product_id ?? null,
+          saleId: body.sale_id ?? null,
+          saleMotion: body.sale_motion ?? null,
           checkoutBaseUrl,
           env,
           fetchImpl

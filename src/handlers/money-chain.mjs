@@ -34,7 +34,6 @@ import {
   SQL_RULES_IN_FORCE,
   SQL_ATTRIBUTIONS_FOR_SALE,
   SQL_SALE_CONTEXT,
-  SQL_PAYMENTS_FOR_SALE,
   SQL_SALE_FOR_ROUND,
   SQL_RESOLVE_PRODUCT,
   SQL_LINK_ROUND_TO_SALE,
@@ -114,8 +113,15 @@ function saleExternalRef(event) {
   return null;
 }
 
-export async function resolveProductId(db, orgId, { productName, productBucket } = {}) {
+export async function resolveProductId(db, orgId, { productId, productName, productBucket } = {}) {
   if (!orgId) return null;
+  if (productId) {
+    const exact = await db.query(
+      `SELECT id FROM products WHERE id = $1 AND org_id = $2 LIMIT 1`,
+      [productId, orgId]
+    );
+    return exact.rows[0]?.id || null;
+  }
   if (productName) {
     const r = await db.query(SQL_RESOLVE_PRODUCT, [orgId, String(productName)]);
     if (r.rows[0]?.product_id) return r.rows[0].product_id;
@@ -147,11 +153,26 @@ export async function ensureSale(db, event, { productBucket = null } = {}) {
 
   const p = event.payload || {};
   const productId = await resolveProductId(db, orgId, {
+    productId: p.productId || null,
     productName: p.productName || p.product || null,
     productBucket: productBucket || p.product || null
   });
   const product = await loadProduct(db, productId);
   if (!product) return { sale: null, created: false, product: null, clientId };
+
+  if (p.saleId) {
+    const exact = await db.query(
+      `SELECT * FROM sales
+        WHERE id = $1 AND org_id = $2 AND client_id = $3 AND product_id = $4
+          AND sale_motion IS NOT DISTINCT FROM $5::text
+        LIMIT 1`,
+      [p.saleId, orgId, clientId, product.id, p.saleMotion || null]
+    );
+    if (exact.rows[0]) {
+      return { sale: exact.rows[0], created: false, product, clientId };
+    }
+    return { sale: null, created: false, product, clientId, conflict: true };
+  }
 
   const ext = saleExternalRef(event);
 
@@ -170,6 +191,15 @@ export async function ensureSale(db, event, { productBucket = null } = {}) {
         );
         return { sale: null, created: false, product, clientId, conflict: true };
       }
+      if (
+        String(existing.rows[0].product_id) !== String(product.id) ||
+        (existing.rows[0].sale_motion ?? null) !== (p.saleMotion ?? null)
+      ) {
+        console.warn(
+          `[money-chain] sale external_ref ${ext} has conflicting product or motion — refusing attach`
+        );
+        return { sale: null, created: false, product, clientId, conflict: true };
+      }
       return { sale: existing.rows[0], created: false, product, clientId };
     }
   }
@@ -177,8 +207,9 @@ export async function ensureSale(db, event, { productBucket = null } = {}) {
   const prior = await db.query(
     `SELECT * FROM sales
       WHERE org_id = $1 AND client_id = $2 AND product_id = $3 AND status = 'active'
+        AND sale_motion IS NOT DISTINCT FROM $4::text
       ORDER BY sold_at DESC LIMIT 1`,
-    [orgId, clientId, product.id]
+    [orgId, clientId, product.id, p.saleMotion || null]
   );
   if (prior.rows[0]) {
     return { sale: prior.rows[0], created: false, product, clientId };
@@ -207,14 +238,14 @@ export async function ensureSale(db, event, { productBucket = null } = {}) {
   const ins = await db.query(
     `INSERT INTO sales (
        org_id, client_id, product_id, agreed_price, agreed_success_fee_percent,
-       currency, sold_at, status, external_ref, notes
-     ) VALUES ($1,$2,$3,$4,$5,'USD',$6,'active',$7,$8)
+       currency, sold_at, status, external_ref, notes, sale_motion
+     ) VALUES ($1,$2,$3,$4,$5,'USD',$6,'active',$7,$8,$9)
      ON CONFLICT (org_id, external_ref) WHERE external_ref IS NOT NULL
      DO NOTHING
      RETURNING *`,
     [
       orgId, clientId, product.id, agreed, feePct, soldAt, ext,
-      p.notes || `source:${event.name}`
+      p.notes || `source:${event.name}`, p.saleMotion || null
     ]
   );
   if (ins.rows[0]) {
@@ -237,44 +268,84 @@ export async function ensureSale(db, event, { productBucket = null } = {}) {
 export async function ensureAttributions(db, { orgId, saleId, event, basisHint = null } = {}) {
   if (!orgId || !saleId) return { written: 0 };
   const p = event.payload || {};
-  const list = [];
+  const candidates = [];
 
   if (Array.isArray(p.attributions)) {
     for (const a of p.attributions) {
       if (!a?.staffId) continue;
-      list.push({
+      candidates.push({
         staffId: a.staffId,
-        role: a.role || (a.basis === "back_end" ? "funding_advisor" : "closer"),
-        basis: a.basis || basisHint || "front_end",
+        role: a.role || null,
+        basis: a.basis || basisHint || null,
         split: a.splitPercent != null ? Number(a.splitPercent) : 100
       });
     }
   }
 
   if (p.closerId) {
-    list.push({
-      staffId: p.closerId,
-      role: "closer",
-      basis: "front_end",
-      split: p.closerSplit != null ? Number(p.closerSplit) : 100
-    });
+    for (const basis of ["front_end", "back_end"]) {
+      candidates.push({
+        staffId: p.closerId,
+        role: "closer",
+        basis,
+        split: p.closerSplit != null ? Number(p.closerSplit) : 100
+      });
+    }
+  }
+  if (p.salesManagerId) {
+    for (const basis of ["front_end", "back_end"]) {
+      candidates.push({
+        staffId: p.salesManagerId,
+        role: "sales_manager",
+        basis,
+        split: p.salesManagerSplit != null ? Number(p.salesManagerSplit) : 100
+      });
+    }
   }
   if (p.advisorId) {
-    list.push({
+    candidates.push({
       staffId: p.advisorId,
       role: "funding_advisor",
       basis: "back_end",
       split: p.advisorSplit != null ? Number(p.advisorSplit) : 100
     });
   }
-  if (p.staffId && list.length === 0) {
-    const basis = basisHint || (event.name === "round.funded" ? "back_end" : "front_end");
-    list.push({
+  if (p.staffId && candidates.length === 0) {
+    candidates.push({
       staffId: p.staffId,
-      role: basis === "back_end" ? "funding_advisor" : "closer",
-      basis,
+      role: null,
+      basis: basisHint,
       split: 100
     });
+  }
+
+  const list = [];
+  const seen = new Set();
+  for (const candidate of candidates) {
+    const staff = (await db.query(
+      `SELECT id, role
+         FROM staff
+        WHERE id = $1 AND org_id = $2 AND status = 'active'
+        LIMIT 1`,
+      [candidate.staffId, orgId]
+    )).rows[0];
+    if (!staff) continue;
+    if (candidate.role && candidate.role !== staff.role) continue;
+
+    const role = staff.role;
+    const bases = candidate.basis
+      ? [candidate.basis]
+      : role === "closer" || role === "sales_manager"
+        ? ["front_end", "back_end"]
+        : role === "funding_advisor"
+          ? ["back_end"]
+          : [];
+    for (const basis of bases) {
+      const key = `${staff.id}|${role}|${basis}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      list.push({ staffId: staff.id, role, basis, split: candidate.split });
+    }
   }
 
   let written = 0;
@@ -289,13 +360,13 @@ export async function ensureAttributions(db, { orgId, saleId, event, basisHint =
     );
     if (exists.rows[0]) continue;
 
-    // Replay / second staff at 100%: if this basis already sums to ~100%, skip
-    // rather than throwing and killing a morning replay job.
+    // Replay / second staff at 100%: split limits are independent per role.
+    // A closer at 100% must not block a real sales manager at 100%.
     const basisSum = await db.query(
       `SELECT COALESCE(SUM(split_percent), 0)::float AS s
          FROM sale_attributions
-        WHERE sale_id = $1 AND basis = $2`,
-      [saleId, a.basis]
+        WHERE sale_id = $1 AND basis = $2 AND role = $3`,
+      [saleId, a.basis, a.role]
     );
     const already = Number(basisSum.rows[0]?.s) || 0;
     if (already + Number(a.split) > 100.0001) continue;
@@ -324,10 +395,10 @@ async function findTransactionId(db, orgId, providerRef) {
 }
 
 export async function ensureSalePayment(db, event, {
-  saleId, kind, amount = null
+  saleId, productId, paymentLinkId = null, saleMotion = null, kind, amount = null
 } = {}) {
   const orgId = event.orgId;
-  if (!orgId || !saleId) return { payment: null, created: false };
+  if (!orgId || !saleId || !productId) return { payment: null, created: false };
 
   const p = event.payload || {};
   const paid = amount != null ? Number(amount)
@@ -345,13 +416,14 @@ export async function ensureSalePayment(db, event, {
 
   const ins = await db.query(
     `INSERT INTO sale_payments (
-       org_id, sale_id, transaction_id, kind, amount, paid_at, notes, source_event_id
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+       org_id, sale_id, transaction_id, product_id, payment_link_id, sale_motion,
+       kind, amount, paid_at, notes, source_event_id
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
      ON CONFLICT DO NOTHING
      RETURNING *`,
     [
-      orgId, saleId, transactionId, kind, paid, paidAt,
-      p.notes || `source:${event.name}`, sourceEventId
+      orgId, saleId, transactionId, productId, paymentLinkId, saleMotion,
+      kind, paid, paidAt, p.notes || `source:${event.name}`, sourceEventId
     ]
   );
   if (ins.rows[0]) return { payment: ins.rows[0], created: true };
@@ -390,7 +462,7 @@ async function insertDrafts(db, drafts) {
   return inserted;
 }
 
-export async function writeFrontEndCommissions(db, { saleId, event } = {}) {
+export async function writeFrontEndCommissions(db, { saleId, payment = null, event } = {}) {
   if (!saleId) return { inserted: 0, warnings: [], drafts: [] };
 
   const ctx = await db.query(SQL_SALE_CONTEXT, [saleId]);
@@ -398,7 +470,25 @@ export async function writeFrontEndCommissions(db, { saleId, event } = {}) {
   if (!saleRow) return { inserted: 0, warnings: [{ code: "no_sale" }], drafts: [] };
 
   const attributions = (await db.query(SQL_ATTRIBUTIONS_FOR_SALE, [saleId])).rows;
-  const payments = (await db.query(SQL_PAYMENTS_FOR_SALE, [saleId])).rows;
+  let paymentRow = payment;
+  if (paymentRow?.id) {
+    paymentRow = (await db.query(
+      `SELECT id, sale_id, transaction_id, product_id, payment_link_id, sale_motion,
+              kind, amount, paid_at
+         FROM sale_payments
+        WHERE id = $1 AND sale_id = $2
+        LIMIT 1`,
+      [paymentRow.id, saleId]
+    )).rows[0] || null;
+  }
+  if (!paymentRow) {
+    return {
+      inserted: 0,
+      warnings: [{ code: "no_payment", sale_id: saleId }],
+      drafts: []
+    };
+  }
+  const payments = [paymentRow];
   const asOf = saleRow.sold_at || new Date().toISOString();
   const rules = await loadRules(db, saleRow.org_id, "front_end", asOf);
   const product = {
@@ -415,10 +505,13 @@ export async function writeFrontEndCommissions(db, { saleId, event } = {}) {
     product,
     client,
     payments,
+    payment: paymentRow,
     attributions,
     rules,
     occurredAt,
-    sourceEvent: event.name
+    sourceEvent: event.name,
+    saleMotion: paymentRow.sale_motion,
+    eventRef: paymentRow.id
   });
 
   const inserted = await insertDrafts(db, drafts);
@@ -445,6 +538,13 @@ export async function writeBackEndCommissions(db, { roundId, event } = {}) {
     [roundId]
   )).rows[0];
   if (!round) return { inserted: 0, warnings: [{ code: "no_round" }], drafts: [] };
+  if (round.status !== "funded" || round.funded_amount == null) {
+    return {
+      inserted: 0,
+      warnings: [{ code: "missing_funded_amount", funding_round_id: roundId }],
+      drafts: []
+    };
+  }
 
   const attributions = (await db.query(SQL_ATTRIBUTIONS_FOR_SALE, [saleId])).rows;
   const asOf = saleRow.sold_at || new Date().toISOString();
@@ -523,12 +623,19 @@ async function recordPurchase(event, db, { productBucket, paymentKind }) {
 
   const pay = await ensureSalePayment(db, event, {
     saleId: sale.id,
+    productId: sale.product_id,
+    paymentLinkId: event.payload?.paymentLinkId || null,
+    saleMotion: event.payload?.saleMotion || sale.sale_motion || null,
     kind: paymentKind
   });
 
   let commission = { inserted: 0, warnings: [] };
   try {
-    commission = await writeFrontEndCommissions(db, { saleId: sale.id, event });
+    commission = await writeFrontEndCommissions(db, {
+      saleId: sale.id,
+      payment: pay.payment,
+      event
+    });
   } catch (err) {
     // Replay of adversarial / typo'd huge amounts must not kill the bus.
     if (err && (err.name === "RangeError" || /out of range/i.test(String(err.message || "")))) {
@@ -587,9 +694,9 @@ export async function onSaleClosedMoney(event, db) {
 }
 
 /**
- * payment.received — attach money to an existing sale when one is findable,
- * re-fire front-end commission, grant entitlements. Does not invent a sale
- * for unmatched products; deposit.paid / sale.closed / diagnostic.paid own that.
+ * payment.received — attach money to an existing sale, or create one only when
+ * our payment link carries durable product identity. Unknown/unlinked products
+ * still do not invent a sale.
  */
 export async function onPaymentReceivedMoney(event, db) {
   const orgId = event.orgId;
@@ -606,29 +713,96 @@ export async function onPaymentReceivedMoney(event, db) {
   }
 
   const p = event.payload || {};
-  const bucket = p.product || null;
+  let linkContext = null;
+  if (p.paymentLinkId) {
+    linkContext = (await db.query(
+      `SELECT id, product_id, sale_id, sale_motion,
+              closer_staff_id, sales_manager_staff_id
+         FROM payment_links
+        WHERE id = $1 AND org_id = $2 AND client_id = $3
+        LIMIT 1`,
+      [p.paymentLinkId, orgId, clientId]
+    )).rows[0] || null;
+    if (!linkContext) {
+      return {
+        done: false,
+        reason: "payment_link_context_conflict",
+        detail: "the payment link is not for this client and org"
+      };
+    }
+  }
+  const paymentPayload = {
+    ...p,
+    paymentLinkId: linkContext?.id || p.paymentLinkId || null,
+    productId: linkContext?.product_id || p.productId || null,
+    saleId: linkContext?.sale_id || p.saleId || null,
+    saleMotion: linkContext?.sale_motion || p.saleMotion || null,
+    closerId: linkContext?.closer_staff_id || p.closerId || null,
+    salesManagerId: linkContext?.sales_manager_staff_id || p.salesManagerId || null
+  };
+  const paymentEvent = { ...event, payload: paymentPayload };
+  const bucket = paymentPayload.product || null;
   const ext = saleExternalRef(event);
 
   let sale = null;
-  if (ext) {
+  if (paymentPayload.saleId) {
     sale = (await db.query(
-      `SELECT * FROM sales WHERE org_id = $1 AND external_ref = $2 LIMIT 1`,
-      [orgId, ext]
+      `SELECT * FROM sales
+        WHERE id = $1 AND org_id = $2 AND client_id = $3
+          AND ($4::uuid IS NULL OR product_id = $4)
+          AND sale_motion IS NOT DISTINCT FROM $5::text
+        LIMIT 1`,
+      [
+        paymentPayload.saleId,
+        orgId,
+        clientId,
+        paymentPayload.productId,
+        paymentPayload.saleMotion
+      ]
+    )).rows[0] || null;
+    if (!sale) {
+      return {
+        done: false,
+        reason: "sale_context_conflict",
+        detail: "the stored sale does not match this client, product, and motion"
+      };
+    }
+  }
+  if (ext) {
+    sale ||= (await db.query(
+      `SELECT * FROM sales
+        WHERE org_id = $1 AND external_ref = $2 AND client_id = $3
+          AND ($4::uuid IS NULL OR product_id = $4)
+          AND sale_motion IS NOT DISTINCT FROM $5::text
+        LIMIT 1`,
+      [
+        orgId,
+        ext,
+        clientId,
+        paymentPayload.productId,
+        paymentPayload.saleMotion
+      ]
     )).rows[0] || null;
   }
   if (!sale) {
     const productId = await resolveProductId(db, orgId, {
-      productName: p.productName || p.product || null,
+      productId: paymentPayload.productId,
+      productName: paymentPayload.productName || paymentPayload.product || null,
       productBucket: bucket
     });
     if (productId) {
       sale = (await db.query(
         `SELECT * FROM sales
           WHERE org_id = $1 AND client_id = $2 AND product_id = $3 AND status = 'active'
+            AND sale_motion IS NOT DISTINCT FROM $4::text
           ORDER BY sold_at DESC LIMIT 1`,
-        [orgId, clientId, productId]
+        [orgId, clientId, productId, paymentPayload.saleMotion]
       )).rows[0] || null;
     }
+  }
+
+  if (!sale && paymentPayload.paymentLinkId && paymentPayload.productId) {
+    ({ sale } = await ensureSale(db, paymentEvent, { productBucket: bucket }));
   }
 
   if (!sale && (bucket === "success_fee" || bucket === "unmatched" || !bucket)) {
@@ -644,7 +818,8 @@ export async function onPaymentReceivedMoney(event, db) {
 
   if (!sale) {
     const productId = await resolveProductId(db, orgId, {
-      productName: p.productName || null,
+      productId: paymentPayload.productId,
+      productName: paymentPayload.productName || null,
       productBucket: bucket
     });
     const product = await loadProduct(db, productId);
@@ -652,11 +827,38 @@ export async function onPaymentReceivedMoney(event, db) {
     return { done: true, saleId: null, entitlements, reason: "no_sale_yet" };
   }
 
+  if (paymentPayload.paymentLinkId) {
+    await db.query(
+      `UPDATE payment_links
+          SET sale_id = COALESCE(sale_id, $2)
+        WHERE id = $1 AND org_id = $3
+          AND (sale_id IS NULL OR sale_id = $2)`,
+      [paymentPayload.paymentLinkId, sale.id, orgId]
+    );
+  }
+
+  await ensureAttributions(db, {
+    orgId,
+    saleId: sale.id,
+    event: paymentEvent,
+    basisHint: "front_end"
+  });
+
   const kind = paymentKindFor(bucket, "payment.received");
-  const pay = await ensureSalePayment(db, event, { saleId: sale.id, kind });
-  const commission = await writeFrontEndCommissions(db, { saleId: sale.id, event });
+  const pay = await ensureSalePayment(db, paymentEvent, {
+    saleId: sale.id,
+    productId: sale.product_id,
+    paymentLinkId: paymentPayload.paymentLinkId,
+    saleMotion: paymentPayload.saleMotion || sale.sale_motion || null,
+    kind
+  });
+  const commission = await writeFrontEndCommissions(db, {
+    saleId: sale.id,
+    payment: pay.payment,
+    event: paymentEvent
+  });
   const product = await loadProduct(db, sale.product_id);
-  const entitlements = await grantForPurchase(db, event, { clientId, product });
+  const entitlements = await grantForPurchase(db, paymentEvent, { clientId, product });
 
   return {
     done: true,
@@ -819,9 +1021,17 @@ export async function onRoundFundedMoney(event, db) {
     };
   }
 
-  const fundedAmount = p.fundedAmount != null ? Number(p.fundedAmount)
-    : (p.approvedAmount != null ? Number(p.approvedAmount) : null);
+  const fundedAmount = p.fundedAmount != null
+    ? Number(p.fundedAmount)
+    : (round.funded_amount != null ? Number(round.funded_amount) : null);
   const approvedAmount = p.approvedAmount != null ? Number(p.approvedAmount) : null;
+  if (!Number.isFinite(fundedAmount) || fundedAmount <= 0) {
+    return {
+      done: false,
+      reason: "missing_funded_amount",
+      detail: "round.funded requires the actual fundedAmount; approved amount is not a substitute"
+    };
+  }
 
   const updated = await db.query(
     `UPDATE funding_rounds

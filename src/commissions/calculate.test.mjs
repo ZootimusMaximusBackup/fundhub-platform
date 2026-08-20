@@ -70,6 +70,12 @@ const rule = (over = {}) => ({
 });
 
 const deposit = (amount = "3000.00") => ({ kind: "deposit", amount });
+const paid = (id, amount, saleMotion) => ({
+  id,
+  kind: "installment",
+  amount,
+  sale_motion: saleMotion
+});
 
 // ---------------------------------------------------------------------------
 // resolveAmounts
@@ -110,10 +116,10 @@ test("resolveAmounts: no success fee agreed means no success fee owed", () => {
   assert.equal(a.success_fee, 0);
 });
 
-test("resolveAmounts: missing payments and round give zeroes, not crashes", () => {
+test("resolveAmounts: missing collections are zero while an unknown funded amount stays null", () => {
   const a = resolveAmounts({ sale: sale() });
   assert.equal(a.deposit_collected, 0);
-  assert.equal(a.amount_funded, 0);
+  assert.equal(a.amount_funded, null);
 });
 
 // ---------------------------------------------------------------------------
@@ -229,6 +235,65 @@ test("front end: client and employee codes are carried onto the ledger row", () 
   });
   assert.equal(drafts[0].client_code, "FH-000042");
   assert.equal(drafts[0].employee_code, "EMP-000001");
+});
+
+test("front end: downsell pays on this exact payment and records its identity", () => {
+  const payment = paid("payment-downsell", "1000.00", "downsell");
+  const { drafts, warnings } = computeFrontEnd({
+    org_id: ORG,
+    sale: sale({ sale_motion: "downsell" }), product, client,
+    payment,
+    payments: [payment],
+    attributions: [attribution()],
+    rules: [rule({
+      role: "closer",
+      sale_motion: "downsell",
+      calc_method: "percent",
+      percent: 20,
+      flat_amount: null,
+      amount_basis: "paid_amount"
+    })],
+    occurredAt: SOLD_AT,
+    sourceEvent: "payment.received",
+    eventRef: payment.id
+  });
+
+  assert.equal(drafts.length, 1);
+  assert.equal(drafts[0].amount, "200.00");
+  assert.equal(drafts[0].base_amount, "1000.00");
+  assert.equal(drafts[0].sale_payment_id, payment.id);
+  assert.equal(drafts[0].rule_snapshot.sale_motion, "downsell");
+  assert.deepEqual(warnings, []);
+});
+
+test("front end: upsell pays the closer but does not invent a manager upsell rule", () => {
+  const payment = paid("payment-upsell", "500.00", "upsell");
+  const { drafts, warnings } = computeFrontEnd({
+    org_id: ORG,
+    sale: sale({ sale_motion: "upsell" }), product, client,
+    payment,
+    payments: [payment],
+    attributions: [
+      attribution(),
+      attribution({ staff_id: "staff-manager", role: "sales_manager" })
+    ],
+    rules: [rule({
+      role: "closer",
+      sale_motion: "upsell",
+      calc_method: "percent",
+      percent: 20,
+      flat_amount: null,
+      amount_basis: "paid_amount"
+    })],
+    occurredAt: SOLD_AT,
+    sourceEvent: "payment.received",
+    eventRef: payment.id
+  });
+
+  assert.equal(drafts.length, 1);
+  assert.equal(drafts[0].staff_id, CLOSER);
+  assert.equal(drafts[0].amount, "100.00");
+  assert.ok(warnings.some((w) => w.code === "no_base_rule" && w.role === "sales_manager"));
 });
 
 // ---------------------------------------------------------------------------
@@ -652,6 +717,39 @@ test("eventRef lets a rule earn again on a later payment when that is intended",
   const first = computeFrontEnd({ ...input, eventRef: "pay-1" }).drafts[0];
   const second = computeFrontEnd({ ...input, eventRef: "pay-2" }).drafts[0];
   assert.notEqual(first.idempotency_key, second.idempotency_key);
+});
+
+test("two real part-payments get distinct ledger keys and keep their payment ids", () => {
+  const commissionRule = rule({
+    role: "closer",
+    sale_motion: "downsell",
+    calc_method: "percent",
+    percent: 20,
+    flat_amount: null,
+    amount_basis: "paid_amount"
+  });
+  const calculate = (payment) => computeFrontEnd({
+    org_id: ORG,
+    sale: sale({ sale_motion: "downsell" }), product, client,
+    payment,
+    payments: [payment],
+    attributions: [attribution()],
+    rules: [commissionRule],
+    occurredAt: SOLD_AT,
+    sourceEvent: "payment.received",
+    eventRef: payment.id
+  }).drafts[0];
+
+  const first = calculate(paid("part-payment-1", "400.00", "downsell"));
+  const second = calculate(paid("part-payment-2", "600.00", "downsell"));
+  const replay = calculate(paid("part-payment-1", "400.00", "downsell"));
+
+  assert.notEqual(first.idempotency_key, second.idempotency_key);
+  assert.equal(first.idempotency_key, replay.idempotency_key);
+  assert.equal(first.sale_payment_id, "part-payment-1");
+  assert.equal(second.sale_payment_id, "part-payment-2");
+  assert.equal(first.amount, "80.00");
+  assert.equal(second.amount, "120.00");
 });
 
 // ---------------------------------------------------------------------------

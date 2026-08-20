@@ -42,7 +42,7 @@ SELECT a.id, a.sale_id, a.staff_id, a.employee_code, a.role, a.basis,
 
 /** Params: $1 sale_id. */
 export const SQL_SALE_CONTEXT = `
-SELECT s.id, s.org_id, s.client_id, s.product_id, s.agreed_price,
+SELECT s.id, s.org_id, s.client_id, s.product_id, s.sale_motion, s.agreed_price,
        s.agreed_success_fee_percent, s.currency, s.sold_at, s.status,
        p.name  AS product_name,
        p.category AS product_category,
@@ -54,7 +54,8 @@ SELECT s.id, s.org_id, s.client_id, s.product_id, s.agreed_price,
 
 /** Params: $1 sale_id. */
 export const SQL_PAYMENTS_FOR_SALE = `
-SELECT id, sale_id, transaction_id, kind, amount, paid_at
+SELECT id, sale_id, transaction_id, product_id, payment_link_id, sale_motion,
+       kind, amount, paid_at
   FROM sale_payments
  WHERE sale_id = $1
  ORDER BY paid_at`;
@@ -100,16 +101,16 @@ RETURNING sale_id`;
 export const SQL_INSERT_LEDGER = `
 INSERT INTO commission_ledger (
   org_id, staff_id, employee_code, client_id, client_code,
-  sale_id, funding_round_id, product_id, product_name_at_earning,
+  sale_id, sale_payment_id, funding_round_id, product_id, product_name_at_earning,
   basis, role, rule_id, rule_snapshot, stacking,
   base_amount, split_percent, amount, currency,
   status, earned_at, reverses_ledger_id, source_event, idempotency_key, notes
 ) VALUES (
   $1, $2, $3, $4, $5,
-  $6, $7, $8, $9,
-  $10, $11, $12, $13, $14,
-  $15, $16, $17, $18,
-  $19, $20, $21, $22, $23, $24
+  $6, $7, $8, $9, $10,
+  $11, $12, $13, $14, $15,
+  $16, $17, $18, $19,
+  $20, $21, $22, $23, $24, $25
 )
 ON CONFLICT (org_id, idempotency_key) WHERE idempotency_key IS NOT NULL
 DO NOTHING
@@ -119,7 +120,7 @@ RETURNING id`;
  *  from a draft without counting placeholders. */
 export const LEDGER_INSERT_COLUMNS = Object.freeze([
   "org_id", "staff_id", "employee_code", "client_id", "client_code",
-  "sale_id", "funding_round_id", "product_id", "product_name_at_earning",
+  "sale_id", "sale_payment_id", "funding_round_id", "product_id", "product_name_at_earning",
   "basis", "role", "rule_id", "rule_snapshot", "stacking",
   "base_amount", "split_percent", "amount", "currency",
   "status", "earned_at", "reverses_ledger_id", "source_event", "idempotency_key", "notes"

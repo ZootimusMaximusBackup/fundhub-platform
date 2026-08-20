@@ -55,3 +55,15 @@ test("present cockpit can send soft pull and variable-price e-book", () => {
   assert.ok(presentJs.includes("ebookDollars"));
   assert.ok(presentJs.includes("amount_cents"));
 });
+
+test("non-funding pay links require an explicit downsell or upsell choice", () => {
+  assert.ok(presentJs.includes('id="fh-sale-motion"'));
+  assert.ok(presentJs.includes('value="downsell"'));
+  assert.ok(presentJs.includes('value="upsell"'));
+  assert.ok(presentJs.includes("sale_motion: action === \"send_pay_link\" ? selectedSaleMotion() : null"));
+  assert.doesNotMatch(
+    presentJs,
+    /selectedOfferKey\(\)\s*===\s*"FUNDING_DFY"\s*\?\s*null\s*:\s*"downsell"/,
+    "motion must not be derived from the selected product"
+  );
+});

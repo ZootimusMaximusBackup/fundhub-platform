@@ -93,7 +93,7 @@
     idx: 0, tier: null, edu: false, forceRepair: false, rung: 0, temp: 0,
     checks: {}, costNum: "", obj: null, showRef: false, toast: "", clientOnly: false,
     survey: {}, engine: { available: false, reason: "engine data unavailable", fico: {}, reasons: [] },
-    offers: [], softPull: null, ebookDollars: "", loaded: false, error: null,
+    offers: [], softPull: null, ebookDollars: "", saleMotion: "", loaded: false, error: null,
     contractOpen: false, contractWordings: [], contractTplId: "", contractLink: "",
     contractMsg: "", contractBusy: false
   };
@@ -135,6 +135,9 @@
       return "REPAIR_DFY";
     }
     return "FUNDING_DFY";
+  }
+  function selectedSaleMotion() {
+    return selectedOfferKey() === "FUNDING_DFY" ? null : (state.saleMotion || null);
   }
   function resolveContractTemplateKey() {
     if (state.tier === "FUNDING_PLUS_REPAIR") return "REPAIR-AND-FUNDING-AGREEMENT";
@@ -576,6 +579,14 @@
 
       if (code() === "S-23") {
         html += '<div><span class="mono">Live actions</span><div style="margin-top:6px;display:flex;flex-direction:column;gap:5px">';
+        if (selectedOfferKey() !== "FUNDING_DFY") {
+          html += '<label class="mono" for="fh-sale-motion">Sale motion</label>';
+          html += '<select id="fh-sale-motion" style="width:100%;border:1px solid var(--line);background:transparent;padding:6px 8px;font-size:12px">';
+          html += '<option value="">Choose downsell or upsell</option>';
+          html += '<option value="downsell"' + (state.saleMotion === "downsell" ? " selected" : "") + ">Downsell</option>";
+          html += '<option value="upsell"' + (state.saleMotion === "upsell" ? " selected" : "") + ">Upsell</option>";
+          html += "</select>";
+        }
         html += ckBtn("Send agreement + pay link", "pay", true);
         html += ckBtn("Send contract", "contract", false);
         if (state.contractOpen) {
@@ -690,6 +701,11 @@
       ebook.addEventListener("input", function (e) { state.ebookDollars = e.target.value; });
       ebook.addEventListener("keydown", function (e) { e.stopPropagation(); });
     }
+    var saleMotion = document.getElementById("fh-sale-motion");
+    if (saleMotion) {
+      saleMotion.addEventListener("change", function (e) { state.saleMotion = e.target.value; });
+      saleMotion.addEventListener("keydown", function (e) { e.stopPropagation(); });
+    }
     var tpl = document.getElementById("fh-contract-tpl");
     if (tpl) {
       tpl.addEventListener("change", function (e) { state.contractTplId = e.target.value; render(); });
@@ -779,6 +795,7 @@
       action: action,
       client_id: contactId,
       offer_key: action === "generate_letters" && state.edu ? "UWIQ_DELIVERABLES" : selectedOfferKey(),
+      sale_motion: action === "send_pay_link" ? selectedSaleMotion() : null,
       edu: state.edu,
       force_repair: state.forceRepair,
       tier: state.tier,
@@ -836,7 +853,12 @@
       if (!Number.isFinite(cents) || cents < 100) { toast("Enter an e-book price first."); return; }
       fire("send_ebook", { amount_cents: cents }); return;
     }
-    if (a === "pay") { fire("send_pay_link"); return; }
+    if (a === "pay") {
+      if (selectedOfferKey() !== "FUNDING_DFY" && !selectedSaleMotion()) {
+        toast("Choose downsell or upsell first."); return;
+      }
+      fire("send_pay_link"); return;
+    }
     if (a === "contract") { openContractSend(); return; }
     if (a === "contract-go") { sendContractNow(); return; }
     if (a === "contract-copy") {

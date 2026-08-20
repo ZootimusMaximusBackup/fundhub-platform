@@ -13,13 +13,13 @@
 
 /** Scope specificity weights. Chosen so the ordering is exactly:
  *
- *    staff+product (6) > staff+role (5) > staff (4)
- *      > product+role (3) > product (2) > role (1) > global (0)
+ *    staff-scoped rules beat every non-staff rule; within either group,
+ *    motion beats product, product beats role, and each scope stacks.
  *
  *  i.e. a rule naming a person always beats a rule that does not, and within
  *  each level a product-specific rule beats a role-specific one.
  */
-export const SCOPE_WEIGHT = Object.freeze({ staff: 4, product: 2, role: 1 });
+export const SCOPE_WEIGHT = Object.freeze({ staff: 8, motion: 4, product: 2, role: 1 });
 
 const norm = (v) => (v === null || v === undefined ? null : String(v).toLowerCase());
 const time = (v) => (v instanceof Date ? v.getTime() : new Date(v).getTime());
@@ -28,6 +28,7 @@ const time = (v) => (v instanceof Date ? v.getTime() : new Date(v).getTime());
 export function ruleSpecificity(rule) {
   return (
     (rule.staff_id ? SCOPE_WEIGHT.staff : 0) +
+    (rule.sale_motion ? SCOPE_WEIGHT.motion : 0) +
     (rule.product_id ? SCOPE_WEIGHT.product : 0) +
     (rule.role ? SCOPE_WEIGHT.role : 0)
   );
@@ -50,10 +51,11 @@ export function isEffective(rule, asOf) {
 /**
  * Does the rule's scope cover this person on this deal?
  * A NULL scope column means "all", so it matches anything.
- * ctx: { product_id, role, staff_id }
+ * ctx: { product_id, sale_motion, role, staff_id }
  */
 export function matchesScope(rule, ctx) {
   if (rule.product_id && norm(rule.product_id) !== norm(ctx.product_id)) return false;
+  if (rule.sale_motion && norm(rule.sale_motion) !== norm(ctx.sale_motion)) return false;
   if (rule.role && norm(rule.role) !== norm(ctx.role)) return false;
   if (rule.staff_id && norm(rule.staff_id) !== norm(ctx.staff_id)) return false;
   return true;

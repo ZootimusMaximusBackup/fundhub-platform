@@ -3,7 +3,8 @@
 import { test, describe } from "node:test";
 import assert from "node:assert";
 import {
-  BUCKET_TO_CODE, paymentKindFor, nothingUnlockedReason, NOTHING_UNLOCKED
+  BUCKET_TO_CODE, paymentKindFor, nothingUnlockedReason, NOTHING_UNLOCKED,
+  ensureAttributions
 } from "./money-chain.mjs";
 
 describe("money-chain helpers", () => {
@@ -54,5 +55,81 @@ describe("money-chain says why nothing unlocked", () => {
   test("the log line is one greppable prefix", () => {
     // Anyone chasing a locked portal greps for this exact string.
     assert.equal(NOTHING_UNLOCKED, "[money-chain] nothing unlocked");
+  });
+});
+
+describe("money-chain attribution", () => {
+  function attributionDb() {
+    const staff = new Map([
+      ["closer-1", { id: "closer-1", role: "closer" }],
+      ["manager-1", { id: "manager-1", role: "sales_manager" }]
+    ]);
+    const rows = [];
+    return {
+      rows,
+      query: async (sql, params) => {
+        const text = String(sql);
+        if (/FROM staff/i.test(text)) {
+          const row = staff.get(params[0]);
+          return { rows: row ? [row] : [] };
+        }
+        if (/SELECT 1 FROM sale_attributions/i.test(text)) {
+          const [saleId, staffId, role, basis] = params;
+          return {
+            rows: rows.some((r) =>
+              r.sale_id === saleId && r.staff_id === staffId &&
+              r.role === role && r.basis === basis
+            ) ? [{ "?column?": 1 }] : []
+          };
+        }
+        if (/SUM\(split_percent\)/i.test(text)) {
+          const [saleId, basis, role] = params;
+          const total = rows
+            .filter((r) => r.sale_id === saleId && r.basis === basis && r.role === role)
+            .reduce((sum, r) => sum + r.split_percent, 0);
+          return { rows: [{ s: total }] };
+        }
+        if (/INSERT INTO sale_attributions/i.test(text)) {
+          const [org_id, sale_id, staff_id, role, basis, split_percent] = params;
+          const row = { id: `attr-${rows.length + 1}`, org_id, sale_id, staff_id, role, basis, split_percent };
+          rows.push(row);
+          return { rows: [{ id: row.id }] };
+        }
+        throw new Error(`unhandled SQL: ${text.slice(0, 100)}`);
+      }
+    };
+  }
+
+  test("a real closer and manager each receive their own front- and back-end credit", async () => {
+    const db = attributionDb();
+    const result = await ensureAttributions(db, {
+      orgId: "org-1",
+      saleId: "sale-1",
+      event: {
+        payload: { closerId: "closer-1", salesManagerId: "manager-1" }
+      }
+    });
+
+    assert.equal(result.written, 4);
+    assert.deepEqual(
+      db.rows.map((r) => `${r.role}:${r.basis}`).sort(),
+      [
+        "closer:back_end",
+        "closer:front_end",
+        "sales_manager:back_end",
+        "sales_manager:front_end"
+      ]
+    );
+  });
+
+  test("missing actors remain unattributed", async () => {
+    const db = attributionDb();
+    const result = await ensureAttributions(db, {
+      orgId: "org-1",
+      saleId: "sale-1",
+      event: { payload: {} }
+    });
+    assert.equal(result.written, 0);
+    assert.deepEqual(db.rows, []);
   });
 });

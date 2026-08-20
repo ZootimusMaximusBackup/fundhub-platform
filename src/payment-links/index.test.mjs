@@ -17,7 +17,12 @@ const BASE_URL = "https://pay.commas.io/c/onboarding";
    issues. Real WHERE semantics (org scoping, status guards) are re-implemented
    here on purpose — a fake that always returns the row you gave it cannot
    catch a query that forgot its own WHERE clause. */
-function fakeDb() {
+function fakeDb({
+  products = [],
+  sales = [],
+  attributions = [],
+  recentActors = []
+} = {}) {
   const rows = [];
   let n = 0;
   return {
@@ -25,14 +30,60 @@ function fakeDb() {
     query: async (sql, params) => {
       const text = String(sql);
 
+      if (/SELECT id, code[\s\S]*FROM products/i.test(text)) {
+        const [org_id, product_id, product_code] = params;
+        const product = products.find((p) =>
+          p.org_id === org_id &&
+          ((product_id && p.id === product_id) ||
+           (product_code && String(p.code).toLowerCase() === String(product_code).toLowerCase()))
+        );
+        return { rows: product ? [{ id: product.id, code: product.code }] : [] };
+      }
+
+      if (/SELECT s\.id, s\.product_id, s\.sale_motion/i.test(text)) {
+        const [sale_id, org_id, client_id] = params;
+        const sale = sales.find((s) =>
+          s.id === sale_id && s.org_id === org_id && s.client_id === client_id
+        );
+        if (!sale) return { rows: [] };
+        const product = products.find((p) => p.id === sale.product_id);
+        return { rows: [{ ...sale, product_code: product?.code || null }] };
+      }
+
+      if (/SELECT id, product_id[\s\S]*FROM sales/i.test(text)) {
+        const [org_id, client_id, product_id, sale_motion] = params;
+        const sale = sales.find((s) =>
+          s.org_id === org_id && s.client_id === client_id &&
+          s.product_id === product_id && s.status === "active" &&
+          (s.sale_motion ?? null) === (sale_motion ?? null)
+        );
+        return { rows: sale ? [{ id: sale.id, product_id: sale.product_id }] : [] };
+      }
+
+      if (/FROM sale_attributions/i.test(text)) {
+        const [sale_id] = params;
+        return { rows: attributions.filter((a) => a.sale_id === sale_id) };
+      }
+
+      if (/FROM call_outcomes co/i.test(text)) {
+        return { rows: recentActors };
+      }
+
       if (/^\s*INSERT INTO payment_links/i.test(text)) {
-        const [org_id, client_id, purpose, description, amount_cents, currency, link_ref, checkout_url, created_by_staff_id, commas_session_id = null] = params;
+        const [
+          org_id, client_id, purpose, description, amount_cents, currency,
+          link_ref, checkout_url, created_by_staff_id, commas_session_id = null,
+          product_id = null, sale_id = null, sale_motion = null,
+          closer_staff_id = null, sales_manager_staff_id = null
+        ] = params;
         const row = {
           id: `pl-${++n}`, org_id, client_id, purpose, description,
           amount_cents, currency, status: "created",
           link_ref, checkout_url, provider: "commas",
           commas_session_id, paid_amount_cents: null,
-          created_by_staff_id, created_at: new Date().toISOString(),
+          created_by_staff_id, product_id, sale_id, sale_motion,
+          closer_staff_id, sales_manager_staff_id,
+          created_at: new Date().toISOString(),
           sent_at: null, paid_at: null, expired_at: null
         };
         rows.push(row);
@@ -182,6 +233,86 @@ describe("createPaymentLink", () => {
     assert.equal(link.checkout_url, "https://www.fanbasis.com/agency-checkout/x/N1test");
     assert.equal(link.commas_session_id, "N1test");
     assert.equal(link.amount_cents, 100);
+  });
+
+  test("stores a staff-declared motion and product with the creating closer", async () => {
+    const product = { id: "product-1", org_id: ORG, code: "repair-bundle" };
+    const db = fakeDb({ products: [product] });
+    const link = await mint(db, {
+      orgId: ORG,
+      clientId: CLIENT,
+      purpose: "repair",
+      description: "Repair",
+      amountCents: 100000,
+      productCode: product.code,
+      saleMotion: "downsell",
+      createdByStaffId: "closer-1",
+      createdByRole: "closer",
+      checkoutBaseUrl: BASE_URL
+    });
+
+    assert.equal(link.product_id, product.id);
+    assert.equal(link.sale_motion, "downsell");
+    assert.equal(link.closer_staff_id, "closer-1");
+    assert.equal(link.sales_manager_staff_id, null);
+  });
+
+  test("copies real closer and manager attribution from the exact sale", async () => {
+    const product = { id: "product-1", org_id: ORG, code: "repair-bundle" };
+    const sale = {
+      id: "sale-1", org_id: ORG, client_id: CLIENT, product_id: product.id,
+      sale_motion: "upsell", status: "active"
+    };
+    const db = fakeDb({
+      products: [product],
+      sales: [sale],
+      attributions: [
+        { sale_id: sale.id, staff_id: "closer-1", role: "closer" },
+        { sale_id: sale.id, staff_id: "manager-1", role: "sales_manager" }
+      ]
+    });
+    const link = await mint(db, {
+      orgId: ORG,
+      clientId: CLIENT,
+      purpose: "repair",
+      description: "Repair",
+      amountCents: 100000,
+      saleId: sale.id,
+      saleMotion: "upsell",
+      checkoutBaseUrl: BASE_URL
+    });
+
+    assert.equal(link.sale_id, sale.id);
+    assert.equal(link.product_id, product.id);
+    assert.equal(link.sale_motion, "upsell");
+    assert.equal(link.closer_staff_id, "closer-1");
+    assert.equal(link.sales_manager_staff_id, "manager-1");
+  });
+
+  test("refuses motion without product identity or with a conflicting sale", async () => {
+    const db = fakeDb();
+    await assert.rejects(
+      mint(db, {
+        orgId: ORG, clientId: CLIENT, purpose: "custom", description: "Package",
+        amountCents: 100000, saleMotion: "downsell", checkoutBaseUrl: BASE_URL
+      }),
+      /require product identity/
+    );
+
+    const product = { id: "product-1", org_id: ORG, code: "repair-bundle" };
+    const sale = {
+      id: "sale-1", org_id: ORG, client_id: CLIENT, product_id: product.id,
+      sale_motion: "downsell", status: "active"
+    };
+    const saleDb = fakeDb({ products: [product], sales: [sale] });
+    await assert.rejects(
+      mint(saleDb, {
+        orgId: ORG, clientId: CLIENT, purpose: "repair", description: "Repair",
+        amountCents: 100000, saleId: sale.id, saleMotion: "upsell",
+        checkoutBaseUrl: BASE_URL
+      }),
+      /sale and sale motion do not match/
+    );
   });
 });
 
