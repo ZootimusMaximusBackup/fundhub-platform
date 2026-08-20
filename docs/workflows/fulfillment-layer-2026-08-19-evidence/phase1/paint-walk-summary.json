@@ -1,0 +1,290 @@
+[
+ {
+  "screen": "affiliate.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "agent-editor.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "automations.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "brand-studio.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "calendar.html",
+  "same_hash": false,
+  "diff_pixels": 44,
+  "noise_main": 0,
+  "noise_branch": 44,
+  "errors": 0
+ },
+ {
+  "screen": "campaign-manager.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "client-control-panel.html",
+  "same_hash": false,
+  "diff_pixels": 1113052,
+  "noise_main": 0,
+  "noise_branch": 0,
+  "errors": 0
+ },
+ {
+  "screen": "client-portal.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "closer-call.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "closer-dashboard.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "company-brain.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "consent-capture.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "content-admin.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "contracts.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "creative-factory.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "documents.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "finance-os.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "galaxy.html",
+  "same_hash": false,
+  "diff_pixels": 526,
+  "noise_main": 613,
+  "noise_branch": 279,
+  "errors": 0
+ },
+ {
+  "screen": "hiring.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "index.html",
+  "same_hash": false,
+  "diff_pixels": 49664,
+  "noise_main": 0,
+  "noise_branch": 0,
+  "errors": 0
+ },
+ {
+  "screen": "inquiry-remover.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "journeys.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "lenders.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "messaging.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "my-numbers.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "ops-admin.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "partner-galaxy.html",
+  "same_hash": false,
+  "diff_pixels": 267,
+  "noise_main": 138,
+  "noise_branch": 129,
+  "errors": 0
+ },
+ {
+  "screen": "payment-success.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "pipeline.html",
+  "same_hash": false,
+  "diff_pixels": 49664,
+  "noise_main": 0,
+  "noise_branch": 0,
+  "errors": 0
+ },
+ {
+  "screen": "present.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "products-commissions.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "sales-floor.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "social-studio.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "soft-pull-approve.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "staff-teams.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ },
+ {
+  "screen": "template-editor.html",
+  "same_hash": true,
+  "diff_pixels": 0,
+  "noise_main": null,
+  "noise_branch": null,
+  "errors": 0
+ }
+]

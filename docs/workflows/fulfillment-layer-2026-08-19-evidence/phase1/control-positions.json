@@ -1,0 +1,413 @@
+{
+  "pipeline.html": {
+    "counts": {
+      "main": 17,
+      "branch": 19,
+      "same": 12,
+      "moved": 5,
+      "added": 2,
+      "removed": 0
+    },
+    "moved": [
+      {
+        "label": "⌕",
+        "id": null,
+        "main": {
+          "tag": "div",
+          "id": null,
+          "label": "⌕",
+          "x": 242,
+          "y": 92,
+          "w": 230,
+          "h": 34
+        },
+        "branch": {
+          "tag": "div",
+          "id": null,
+          "label": "⌕",
+          "x": 417,
+          "y": 93,
+          "w": 230,
+          "h": 34
+        },
+        "dx": 175,
+        "dy": 1,
+        "dw": 0,
+        "dh": 0
+      },
+      {
+        "label": "Search name, phone, or email",
+        "id": "q",
+        "main": {
+          "tag": "input",
+          "id": "q",
+          "label": "Search name, phone, or email",
+          "x": 270,
+          "y": 98,
+          "w": 191,
+          "h": 22
+        },
+        "branch": {
+          "tag": "input",
+          "id": "q",
+          "label": "Search name, phone, or email",
+          "x": 445,
+          "y": 99,
+          "w": 191,
+          "h": 22
+        },
+        "dx": 175,
+        "dy": 1,
+        "dw": 0,
+        "dh": 0
+      },
+      {
+        "label": "⚟ Filter0",
+        "id": "filterBtn",
+        "main": {
+          "tag": "button",
+          "id": "filterBtn",
+          "label": "⚟ Filter0",
+          "x": 480,
+          "y": 89,
+          "w": 75,
+          "h": 40
+        },
+        "branch": {
+          "tag": "button",
+          "id": "filterBtn",
+          "label": "⚟ Filter0",
+          "x": 655,
+          "y": 90,
+          "w": 75,
+          "h": 40
+        },
+        "dx": 175,
+        "dy": 1,
+        "dw": 0,
+        "dh": 0
+      },
+      {
+        "label": "Archive",
+        "id": "fhDrawerDel",
+        "main": {
+          "tag": "button",
+          "id": "fhDrawerDel",
+          "label": "Archive",
+          "x": 1651,
+          "y": 153,
+          "w": 82,
+          "h": 40
+        },
+        "branch": {
+          "tag": "button",
+          "id": "fhDrawerDel",
+          "label": "Archive",
+          "x": 1651,
+          "y": 155,
+          "w": 82,
+          "h": 40
+        },
+        "dx": 0,
+        "dy": 2,
+        "dw": 0,
+        "dh": 0
+      },
+      {
+        "label": "Close",
+        "id": "fhDrawerClose",
+        "main": {
+          "tag": "button",
+          "id": "fhDrawerClose",
+          "label": "Close",
+          "x": 1738,
+          "y": 153,
+          "w": 66,
+          "h": 40
+        },
+        "branch": {
+          "tag": "button",
+          "id": "fhDrawerClose",
+          "label": "Close",
+          "x": 1738,
+          "y": 155,
+          "w": 66,
+          "h": 40
+        },
+        "dx": 0,
+        "dy": 2,
+        "dw": 0,
+        "dh": 0
+      }
+    ],
+    "added": [
+      {
+        "tag": "button",
+        "id": "lensBoard",
+        "label": "Board",
+        "x": 243,
+        "y": 90,
+        "w": 66,
+        "h": 40
+      },
+      {
+        "tag": "button",
+        "id": "lensFulfillment",
+        "label": "Fulfillment",
+        "x": 309,
+        "y": 90,
+        "w": 99,
+        "h": 40
+      }
+    ],
+    "removed": []
+  },
+  "client-control-panel.html": {
+    "counts": {
+      "main": 23,
+      "branch": 23,
+      "same": 14,
+      "moved": 9,
+      "added": 0,
+      "removed": 0
+    },
+    "moved": [
+      {
+        "label": "Pull TransUnion →",
+        "id": "ccp-pull-tu",
+        "main": {
+          "tag": "button",
+          "id": "ccp-pull-tu",
+          "label": "Pull TransUnion →",
+          "x": 259,
+          "y": 958,
+          "w": 849,
+          "h": 42
+        },
+        "branch": {
+          "tag": "button",
+          "id": "ccp-pull-tu",
+          "label": "Pull TransUnion →",
+          "x": 259,
+          "y": 1561,
+          "w": 849,
+          "h": 42
+        },
+        "dx": 0,
+        "dy": 603,
+        "dw": 0,
+        "dh": 0
+      },
+      {
+        "label": "Pull Experian →",
+        "id": "ccp-pull-ex",
+        "main": {
+          "tag": "button",
+          "id": "ccp-pull-ex",
+          "label": "Pull Experian →",
+          "x": 259,
+          "y": 1007,
+          "w": 849,
+          "h": 42
+        },
+        "branch": {
+          "tag": "button",
+          "id": "ccp-pull-ex",
+          "label": "Pull Experian →",
+          "x": 259,
+          "y": 1610,
+          "w": 849,
+          "h": 42
+        },
+        "dx": 0,
+        "dy": 603,
+        "dw": 0,
+        "dh": 0
+      },
+      {
+        "label": "Pull Equifax →",
+        "id": "ccp-pull-eq",
+        "main": {
+          "tag": "button",
+          "id": "ccp-pull-eq",
+          "label": "Pull Equifax →",
+          "x": 259,
+          "y": 1056,
+          "w": 849,
+          "h": 42
+        },
+        "branch": {
+          "tag": "button",
+          "id": "ccp-pull-eq",
+          "label": "Pull Equifax →",
+          "x": 259,
+          "y": 1659,
+          "w": 849,
+          "h": 42
+        },
+        "dx": 0,
+        "dy": 603,
+        "dw": 0,
+        "dh": 0
+      },
+      {
+        "label": "Generate Apps →",
+        "id": "ccp-generate-apps",
+        "main": {
+          "tag": "button",
+          "id": "ccp-generate-apps",
+          "label": "Generate Apps →",
+          "x": 259,
+          "y": 1105,
+          "w": 849,
+          "h": 42
+        },
+        "branch": {
+          "tag": "button",
+          "id": "ccp-generate-apps",
+          "label": "Generate Apps →",
+          "x": 259,
+          "y": 1708,
+          "w": 849,
+          "h": 42
+        },
+        "dx": 0,
+        "dy": 603,
+        "dw": 0,
+        "dh": 0
+      },
+      {
+        "label": "Issue Inquiry Removal →",
+        "id": "ccp-issue-ir",
+        "main": {
+          "tag": "button",
+          "id": "ccp-issue-ir",
+          "label": "Issue Inquiry Removal →",
+          "x": 259,
+          "y": 1154,
+          "w": 849,
+          "h": 42
+        },
+        "branch": {
+          "tag": "button",
+          "id": "ccp-issue-ir",
+          "label": "Issue Inquiry Removal →",
+          "x": 259,
+          "y": 1757,
+          "w": 849,
+          "h": 42
+        },
+        "dx": 0,
+        "dy": 603,
+        "dw": 0,
+        "dh": 0
+      },
+      {
+        "label": "Agent context collapsed by default ⌄",
+        "id": null,
+        "main": {
+          "tag": "button",
+          "id": null,
+          "label": "Agent context collapsed by default ⌄",
+          "x": 259,
+          "y": 1244,
+          "w": 849,
+          "h": 40
+        },
+        "branch": {
+          "tag": "button",
+          "id": null,
+          "label": "Agent context collapsed by default ⌄",
+          "x": 259,
+          "y": 1847,
+          "w": 849,
+          "h": 40
+        },
+        "dx": 0,
+        "dy": 603,
+        "dw": 0,
+        "dh": 0
+      },
+      {
+        "label": "Credit & Hold Status collapsed ⌄",
+        "id": null,
+        "main": {
+          "tag": "button",
+          "id": null,
+          "label": "Credit & Hold Status collapsed ⌄",
+          "x": 259,
+          "y": 1334,
+          "w": 849,
+          "h": 40
+        },
+        "branch": {
+          "tag": "button",
+          "id": null,
+          "label": "Credit & Hold Status collapsed ⌄",
+          "x": 259,
+          "y": 1937,
+          "w": 849,
+          "h": 40
+        },
+        "dx": 0,
+        "dy": 603,
+        "dw": 0,
+        "dh": 0
+      },
+      {
+        "label": "Details collapsed by default ⌄",
+        "id": null,
+        "main": {
+          "tag": "button",
+          "id": null,
+          "label": "Details collapsed by default ⌄",
+          "x": 259,
+          "y": 1424,
+          "w": 849,
+          "h": 40
+        },
+        "branch": {
+          "tag": "button",
+          "id": null,
+          "label": "Details collapsed by default ⌄",
+          "x": 259,
+          "y": 2027,
+          "w": 849,
+          "h": 40
+        },
+        "dx": 0,
+        "dy": 603,
+        "dw": 0,
+        "dh": 0
+      },
+      {
+        "label": "Documents collapsed by default ⌄",
+        "id": null,
+        "main": {
+          "tag": "button",
+          "id": null,
+          "label": "Documents collapsed by default ⌄",
+          "x": 259,
+          "y": 1514,
+          "w": 849,
+          "h": 40
+        },
+        "branch": {
+          "tag": "button",
+          "id": null,
+          "label": "Documents collapsed by default ⌄",
+          "x": 259,
+          "y": 2117,
+          "w": 849,
+          "h": 40
+        },
+        "dx": 0,
+        "dy": 603,
+        "dw": 0,
+        "dh": 0
+      }
+    ],
+    "added": [],
+    "removed": []
+  }
+}
