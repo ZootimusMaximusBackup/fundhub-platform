@@ -217,3 +217,36 @@ Repository-wide blockers observed in the full suite and not changed by this simp
 - Journey extraction still cannot trace the pre-existing `finance/crs-pull` and `gifts/message-blaster` gate shapes.
 - `api/read/company-brain-affiliate.mjs` fails the pre-existing org-scope source check.
 - `api/social/generate.mjs` fails the pre-existing outbound-fetch fence.
+
+## Launch-proof gap closure — 2026-08-20
+
+**Branch:** `cursor/launch-proof-gaps-89ad`
+**Status:** implementation complete; focused, real-Postgres CI, live 31/31, and human browser proof pending.
+
+Task list:
+
+| Unit | Owner | Status |
+|---|---|---|
+| One-database Call → context → model-request proof | this cloud run | implemented, test pending |
+| One-database Present → context → model-request proof | this cloud run | implemented, test pending |
+| Marked Pipeline card/drawer fixture | this cloud run | implemented, live proof pending |
+| Inactive read-only tier fixture | this cloud run | implemented, live proof pending |
+| Real e2e client Portal session with cleanup | this cloud run | implemented, live proof pending |
+| Existing required live suite | this cloud run | pending |
+| Human browser walk after 100/100 | this cloud run | pending |
+
+Change manifest:
+- `src/http/launch-proof-chain.pg.test.mjs` — rollback-only real-Postgres proof. Call and Present handlers write to `call_outcomes`; the actual agent-context handler reads each marker; the next runtime turn sends the same marker to a model spy through the real `system` request.
+- `scripts/launch-proof-fixtures.mjs` — fixed-id E2E fixtures with exact marker checks and cleanup. The script refuses unmarked collisions.
+- `src/http/launch-proof-fixtures.test.mjs` — source guard for fixture labels, inactive tier status, exact cleanup predicates, and separation from the required live suite.
+- `e2e/launch-proof-live.spec.mjs` and `playwright.launch-proof.config.mjs` — deployed-site read proof for Pipeline, commission rules, and a client Portal session. The spec registers cleanup and never clicks move, archive, rate edit, send, pull, letter, payment, or delete actions.
+
+Safety:
+- Pipeline creates a new marked E2E client and card. It never updates a real card or stage.
+- The tier rule is `active=false`, uses a fixed E2E name, and is read only.
+- Portal uses a client account named `E2E LAUNCH PROOF TEST FIXTURE` at the allowed `e2e+aff-*` address. Account sessions and login attempts are removed with the client.
+- The database integration proof uses one transaction and ends with `ROLLBACK`.
+- No Present or Call product file changed. No commission formula or rate changed.
+
+Evidence folder:
+- `docs/workflows/launch-proof-2026-08-20-evidence/`
