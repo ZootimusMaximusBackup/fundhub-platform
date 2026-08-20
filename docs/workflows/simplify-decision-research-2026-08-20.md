@@ -221,25 +221,26 @@ Repository-wide blockers observed in the full suite and not changed by this simp
 ## Launch-proof gap closure — 2026-08-20
 
 **Branch:** `cursor/launch-proof-gaps-89ad`
-**Status:** implementation complete; focused, real-Postgres CI, live 31/31, and human browser proof pending.
+**Status:** proof support complete. Rollback-only real-Postgres chain passed. Live 31/31 and human browser proof are blocked because this cloud run has no live database or login credentials.
 
 Task list:
 
 | Unit | Owner | Status |
 |---|---|---|
-| One-database Call → context → model-request proof | this cloud run | implemented, test pending |
-| One-database Present → context → model-request proof | this cloud run | implemented, test pending |
-| Marked Pipeline card/drawer fixture | this cloud run | implemented, live proof pending |
-| Inactive read-only tier fixture | this cloud run | implemented, live proof pending |
-| Real e2e client Portal session with cleanup | this cloud run | implemented, live proof pending |
-| Existing required live suite | this cloud run | pending |
-| Human browser walk after 100/100 | this cloud run | pending |
+| One-database Call → context → model-request proof | this cloud run | **done — real PostgreSQL PASS** |
+| One-database Present → context → model-request proof | this cloud run | **done — real PostgreSQL PASS** |
+| Marked Pipeline card/drawer fixture | this cloud run | implemented; live proof blocked by missing database and login |
+| Inactive read-only tier fixture | this cloud run | implemented; live proof blocked by missing database and login |
+| Real e2e client Portal session with cleanup | this cloud run | implemented; live proof blocked by missing database and password |
+| Existing required live suite | this cloud run | blocked by missing staff password; not run |
+| Human browser walk after 100/100 | this cloud run | blocked because the live gate could not run |
 
 Change manifest:
 - `src/http/launch-proof-chain.pg.test.mjs` — rollback-only real-Postgres proof. Call and Present handlers write to `call_outcomes`; the actual agent-context handler reads each marker; the next runtime turn sends the same marker to a model spy through the real `system` request.
 - `scripts/launch-proof-fixtures.mjs` — fixed-id E2E fixtures with exact marker checks and cleanup. The script refuses unmarked collisions.
 - `src/http/launch-proof-fixtures.test.mjs` — source guard for fixture labels, inactive tier status, exact cleanup predicates, and separation from the required live suite.
 - `e2e/launch-proof-live.spec.mjs`, `playwright.launch-proof.config.mjs`, and the one-line `playwright.config.mjs` ignore — deployed-site read proof for Pipeline, commission rules, and a client Portal session, isolated from both existing suites. The spec registers cleanup and never clicks move, archive, rate edit, send, pull, letter, payment, or delete actions.
+- `.github/workflows/tests.yml` — uses the pgvector PostgreSQL image required by existing migrations and runs the focused chain proof before older full-suite failures.
 
 Safety:
 - Pipeline creates a new marked E2E client and card. It never updates a real card or stage.
@@ -250,3 +251,5 @@ Safety:
 
 Evidence folder:
 - `docs/workflows/launch-proof-2026-08-20-evidence/`
+- Real-Postgres run: `https://github.com/ZootimusMaximusBackup/fundhub-platform/actions/runs/32422552899`; focused Call + Present step passed.
+- Live fixture rows were not created. No unmarked or mocked screenshot is presented as live evidence.
