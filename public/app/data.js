@@ -161,9 +161,16 @@ window.FHData = (function () {
   }
 
   return {
-    /* GET /api/dashboard/clients → data.clients[] */
-    clients: function (limit) {
-      return get("/api/dashboard/clients?limit=" + encodeURIComponent(limit || 200));
+    /* GET /api/dashboard/clients → data.clients[]
+
+       opts.fulfillment asks that endpoint to ALSO work out each client's next
+       action and the six rollup tiles. It is OPT-IN because that costs eleven
+       extra reads and only the pipeline page's Fulfillment lens uses them.
+       Called with no opts — as every other screen calls it — the request and
+       the reply are byte for byte what they have always been. */
+    clients: function (limit, opts) {
+      return get("/api/dashboard/clients?limit=" + encodeURIComponent(limit || 200) +
+                 (opts && opts.fulfillment ? "&fulfillment=1" : ""));
     },
     /* GET /api/dashboard/client?id= → data.client, .transactions, .crs_results,
        .messages, .tasks */

@@ -7,6 +7,12 @@ import { requireDashboardAccess } from "../../src/http/dashboard-auth.mjs";
 import { boundedLimit, requireRole, ROLE_SETS } from "../../src/http/read-api.mjs";
 import { requireSessionOrg } from "../../src/http/session-org.mjs";
 import { orgDemoModeEnabled } from "../../src/demo/exclude-demo.mjs";
+import { deriveNextAction } from "../../src/fulfillment/next-action.mjs";
+import {
+  gatherListSignals,
+  signalsForListRow,
+  listRollups
+} from "../../src/fulfillment/read-signals.mjs";
 
 const SQL = `
   SELECT
@@ -18,6 +24,15 @@ const SQL = `
     c.funded,
     c.funded_amount,
     c.is_demo,
+    /* The RAW blob and the RAW tag array, lifted for the fulfillment
+       derivation. NEITHER IS ADDED TO THE RESPONSE — the mapper below still
+       builds exactly the custom_fields object it always has. They are lifted
+       because that mapper coerces a missing crs_paid to false (Phase 0 defect
+       7), which turns "we do not know" into "no", and the derivation has to see
+       the blank as a blank. Both are plain columns on clients, which is grouped
+       by its primary key, so no join and no aggregate changes. */
+    c.custom_fields                                   AS custom_fields_raw,
+    c.tags                                            AS tags_raw,
     -- custom_fields flags
     (c.custom_fields->>'crs_paid')::boolean          AS crs_paid,
     (c.custom_fields->>'deposit_paid')::boolean       AS deposit_paid,
@@ -48,6 +63,15 @@ const SQL = `
   ORDER BY c.created_at DESC
   LIMIT $2
 `;
+
+/* Did the caller ask for the fulfillment derivation? Opt-in, and OFF by
+   default: absent, blank or anything unrecognised means no. Same words
+   api/finance/cards.mjs:152 already uses for a boolean query flag, so the two
+   read the same. A missing `req.query` is a caller that asked for nothing. */
+function wantsFulfillment(query) {
+  const raw = String((query && query.fulfillment) ?? "").trim().toLowerCase();
+  return raw === "1" || raw === "true" || raw === "yes";
+}
 
 export default async function handler(req, res) {
   // Staff session first; the DASHBOARD_SECRET gate stays as the fallback until
@@ -104,7 +128,69 @@ export default async function handler(req, res) {
       },
       created_at: r.created_at,
     }));
-    res.status(200).json({ ok: true, count: clients.length, clients });
+
+    /* FULFILLMENT — the next-action chip per client, plus the six tiles.
+       READ ONLY, and OPT-IN.
+
+       OPT-IN, BECAUSE MOST CALLERS DO NOT WANT IT. This block costs ELEVEN
+       extra reads — ten signal reads plus the tile count. They are constant,
+       not per client, so there is no N+1 here; but this endpoint is also the
+       client picker on the Client Control Panel, which uses none of them. So
+       it runs only when the caller asks for it with `?fulfillment=1`. Without
+       that parameter this handler makes exactly the three reads it made before
+       this work existed and answers exactly the body it answered before —
+       every new key absent, `rollups` absent. Only the pipeline page's
+       Fulfillment lens asks (public/app/data.js, FHData.clients).
+
+       ONE PASS, NEVER A LOOP. gatherListSignals() answers for the entire page
+       in one round of parallel statements keyed on `client_id = ANY(...)`.
+       Nothing here queries per client.
+
+       ALL OR NOTHING. The whole block is wrapped, and the answers are
+       ASSEMBLED IN FULL BEFORE ANY OF THEM IS ATTACHED. deriveNextAction()
+       never throws, but signalsForListRow() reads the client row, so a row
+       that refuses part-way through the page would otherwise leave the clients
+       before it carrying the new keys and the clients after it without them.
+       A half-answered list is worse than an unanswered one — a screen cannot
+       tell "no action" from "we never got there". Assemble, then attach, so a
+       failure anywhere leaves `clients` exactly as it was mapped above, leaves
+       every new key ABSENT and leaves the tiles out too.
+
+       NOT REUSED, ON PURPOSE: `crs_count` above has no is_demo filter (Phase 0)
+       and the mapped `custom_fields` turns unknown into false. The derivation
+       reads a separately counted, demo-filtered credit total and the raw blob
+       instead. Neither existing field is changed — both bugs are Chris's for a
+       later batch. */
+    let rollups = null;
+    if (wantsFulfillment(req.query)) {
+      try {
+        const [signals, tiles] = await Promise.all([
+          gatherListSignals(db, { orgId, clientIds: rows.map((r) => r.id) }),
+          listRollups(db, { orgId, demoOn })
+        ]);
+        // Assemble first. Nothing below this line can fail part-way.
+        const derived = rows.map(
+          (r) => deriveNextAction(signalsForListRow(r, signals.get(String(r.id))))
+        );
+        derived.forEach((d, i) => {
+          clients[i].next_action          = d.next_action;
+          clients[i].active_blockers      = d.active_blockers;
+          clients[i].funding_round        = d.funding_round;
+          clients[i].next_action_degraded = d.degraded;
+        });
+        rollups = tiles;
+      } catch (err) {
+        console.warn("[fulfillment] next action unavailable for client list:", err && err.message);
+        rollups = null;
+      }
+    }
+
+    res.status(200).json({
+      ok: true,
+      count: clients.length,
+      clients,
+      ...(rollups ? { rollups } : {})
+    });
   } catch (err) {
     res.status(500).json({ ok: false, error: err.message });
   }

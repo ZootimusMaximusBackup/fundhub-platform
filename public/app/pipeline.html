@@ -297,6 +297,116 @@
     aspect-ratio:2698/543;background:var(--logo) no-repeat center/contain;
     filter:invert(1);opacity:.05;pointer-events:none;z-index:0;}
   .nominal{display:flex;align-items:center;gap:7px;margin-left:auto;}
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     FULFILLMENT LENS — a second way of looking at THIS page. Not a new screen,
+     not a new tab, not a new menu row. Off by default.
+
+     Every selector below is either new and prefixed (.fh-lens*, .lens-switch,
+     .lr-*, .fh-chip) or an [hidden] variant of an existing class. An [hidden]
+     variant can only bite once something sets hidden on that element, and the
+     only thing that ever does is the lens toggle. Lens off ⇒ nothing here
+     matches ⇒ the board renders exactly as it did before.
+     ══════════════════════════════════════════════════════════════════════════ */
+  .board-row[hidden]{display:none;}
+  .search[hidden],.filter-btn[hidden],.filter-chips[hidden],.board-summary[hidden]{display:none;}
+
+  .lens-switch{display:flex;align-items:center;border:1px solid var(--line);border-radius:7px;
+    overflow:hidden;flex-shrink:0;}
+  .lens-switch button{border:0;background:var(--surface);font-family:var(--sans);font-size:var(--fs-body);
+    color:var(--text-dim);padding:5px 10px;cursor:pointer;}
+  .lens-switch button + button{border-left:1px solid var(--line);}
+  .lens-switch button:hover{color:var(--text);}
+  .lens-switch button.on{background:var(--ink);color:#fff;font-weight:700;}
+
+  .fh-lens{flex:1;min-height:0;min-width:0;overflow:auto;background:var(--board);padding:12px 14px 22px;}
+  .fh-lens[hidden]{display:none;}
+  .fh-lens-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;}
+  .fh-lens-tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 11px 10px;}
+  .fh-lens-tile .lt-k{display:block;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.1em;
+    text-transform:uppercase;color:var(--text-faint);}
+  .fh-lens-tile b{display:block;font-size:var(--fs-metric);font-weight:800;letter-spacing:-.02em;
+    margin-top:3px;color:var(--text);}
+  .fh-lens-tile .lt-note{display:block;font-size:var(--fs-caption);color:var(--text-dim);margin-top:4px;line-height:1.4;}
+
+  .fh-lens-bar{display:flex;align-items:center;gap:8px;margin:12px 0 0;font-size:var(--fs-body);color:var(--text-dim);}
+  .fh-lens-bar[hidden]{display:none;}
+  .fh-lens-clear{background:transparent;border:0;font-family:var(--sans);font-size:var(--fs-body);
+    color:var(--text-dim);text-decoration:underline;cursor:pointer;}
+  .fh-lens-clear:hover{color:var(--ink2);}
+  .fh-lens-note{font-family:var(--mono);font-size:var(--fs-body);letter-spacing:.06em;color:var(--text-faint);
+    margin:26px auto;max-width:470px;text-align:center;line-height:1.7;}
+  .fh-lens-note[hidden]{display:none;}
+
+  .fh-lens-list{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+  .fh-lens-row{display:flex;align-items:flex-start;gap:10px;background:var(--surface);
+    border:1px solid var(--line);border-radius:10px;padding:8px 10px;}
+  .fh-lens-row.filtered{display:none;}
+  .lr-main{flex:1;min-width:0;}
+  .lr-name{font-size:var(--fs-body);font-weight:700;color:var(--text);line-height:1.25;}
+  .lr-why{font-size:var(--fs-caption);color:var(--text-dim);margin-top:2px;line-height:1.45;}
+  .lr-side{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;max-width:48%;}
+  .fh-chip{font-family:var(--sans);font-size:var(--fs-caption);font-weight:700;border-radius:6px;padding:3px 9px;
+    background:var(--info-bg);border:1px solid var(--info-line);color:var(--ink2);cursor:pointer;white-space:nowrap;}
+  .fh-chip:hover{border-color:var(--gray2);}
+  .fh-chip.on{background:var(--ink);border-color:var(--ink);color:#fff;}
+  .fh-chip.unknown{background:var(--paper);border-color:var(--line);color:var(--text-dim);font-weight:600;}
+  .lr-blockers{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;}
+  .lr-blocker{font-size:var(--fs-caption);border-radius:5px;padding:2px 6px;background:var(--warn-bg);
+    border:1px solid var(--warn-line);color:var(--ink2);white-space:nowrap;}
+  .lr-blocker.high{background:var(--alert-bg);border-color:var(--alert-line);}
+  .lr-round{font-family:var(--mono);font-size:var(--fs-caption);color:var(--text-faint);text-align:right;}
+
+  /* ── ON A PHONE ──────────────────────────────────────────────────────────
+     Both the filter bar and the lens row are built as one horizontal line,
+     and on a 390px screen one line is not enough room for either of them.
+
+     Measured at 390, before this block: the filter bar wanted 481px of a
+     390px screen, so the search box collapsed to a bare icon with a 4px
+     input, "$50,000 est." was cut at the screen edge and "— held" sat 53px
+     past it; and on the lens, 82 coloured labels landed on top of the
+     sentence beside them with 21 of those running off the card. At 1440 both
+     numbers were already zero.
+
+     EVERY RULE IS INSIDE THIS QUERY. At 1440 not one of them matches, so the
+     desktop rendering of this screen is exactly what it was. Nothing is
+     removed and nothing is reordered at any width — the same controls, in the
+     same order, allowed to use a second and third line instead of being
+     squeezed off the edge of the first.
+
+     640px, not the 480px used higher up this file, because the squeeze starts
+     well above a phone: at 390 the bar overflows by 91px and the search box is
+     unusable long before that. */
+  @media (max-width: 640px) {
+    /* THE FILTER BAR WRAPS INSTEAD OF SQUEEZING. Three lines: the view switch,
+       then the search with the Filter button, then the summary. */
+    .filterbar{flex-wrap:wrap;row-gap:7px;}
+    .filterbar .lens-switch{flex:1 0 100%;}
+    .filterbar .lens-switch button{flex:1;}
+    /* The search stops being a fixed 230px that shrinks to nothing, and
+       becomes the line's stretch instead — it is the widest it has ever been
+       at this width, not the narrowest. */
+    .filterbar .search{width:auto;flex:1 1 auto;min-width:0;}
+    .filter-chips{flex-wrap:wrap;}
+    /* The spacer is what pushed the summary off the right edge. On a phone
+       there is nothing to push against, so it stands down and the summary
+       takes a full line of its own. */
+    .filter-spacer{display:none;}
+    .board-summary{flex:1 0 100%;flex-wrap:wrap;}
+    /* Each figure stays whole. Wrapping BETWEEN them is fine; wrapping inside
+       one is what chopped "$50,000" in half. */
+    .board-summary > span{white-space:nowrap;}
+
+    /* THE LENS ROW STACKS. The chip and the coloured labels sit under the
+       sentence instead of beside it, so a label wider than half the phone has
+       somewhere to go and stops landing on top of the words next to it. */
+    .fh-lens-row{flex-direction:column;align-items:stretch;gap:6px;}
+    .lr-side{align-items:flex-start;max-width:100%;}
+    .lr-blockers{justify-content:flex-start;}
+    .lr-blocker{white-space:normal;}
+    .fh-chip{white-space:normal;text-align:left;}
+    .lr-round{text-align:left;}
+  }
 </style>
 <script defer src="shell.js"></script>
 </head>
@@ -400,6 +510,12 @@
 
   <!-- FILTERS — one control; active filters surface as chips -->
   <div class="filterbar">
+    <!-- LENS SWITCH — the same page, looked at two ways. Board is the default
+         and is exactly what this page has always shown. -->
+    <div class="lens-switch" id="lensSwitch" role="group" aria-label="View">
+      <button type="button" id="lensBoard" class="on" aria-pressed="true">Board</button>
+      <button type="button" id="lensFulfillment" aria-pressed="false">Fulfillment</button>
+    </div>
     <div class="search"><span>⌕</span><input id="q" value="" placeholder="Search name, phone, or email"></div>
     <button class="filter-btn" id="filterBtn" aria-expanded="false">⚟ Filter<span class="fb-n" id="filterN" hidden>0</span></button>
     <div class="filter-chips" id="filterChips"></div>
@@ -512,6 +628,35 @@
     </div>
   </aside>
   </div>
+
+  <!-- ══ FULFILLMENT LENS ═══════════════════════════════════════════════════
+       A sibling of .board-row, hidden until the switch above turns it on. The
+       board is never rebuilt, never re-queried and never re-sorted by any of
+       this: turning the lens on hides .board-row, turning it off shows it
+       again with every card, column, listener and scroll position where it
+       was. Nothing in here writes. It reads /api/dashboard/clients and paints.
+
+       Tiles start on a dash and stay on a dash until a real number arrives.
+       "Ready" and "Total Approved" have no honest source (Phase 0 §5), so
+       they carry a sentence saying so rather than a zero, which would be a
+       claim nobody can stand behind.
+       ═════════════════════════════════════════════════════════════════════ -->
+  <section class="fh-lens" id="fhLens" hidden aria-label="Fulfillment lens">
+    <div class="fh-lens-tiles">
+      <div class="fh-lens-tile"><span class="lt-k">Total clients</span><b id="ltTotalClients">—</b><span class="lt-note" id="ltTotalClientsNote"></span></div>
+      <div class="fh-lens-tile"><span class="lt-k">Needs Pull</span><b id="ltNeedsPull">—</b><span class="lt-note" id="ltNeedsPullNote"></span></div>
+      <div class="fh-lens-tile"><span class="lt-k">Action Needed</span><b id="ltActionNeeded">—</b><span class="lt-note" id="ltActionNeededNote"></span></div>
+      <div class="fh-lens-tile"><span class="lt-k">Ready</span><b id="ltReady">—</b><span class="lt-note" id="ltReadyNote"></span></div>
+      <div class="fh-lens-tile"><span class="lt-k">Total Prequal</span><b id="ltTotalPrequal">—</b><span class="lt-note" id="ltTotalPrequalNote"></span></div>
+      <div class="fh-lens-tile"><span class="lt-k">Total Approved</span><b id="ltTotalApproved">—</b><span class="lt-note" id="ltTotalApprovedNote"></span></div>
+    </div>
+    <div class="fh-lens-bar" id="fhLensBar" hidden>
+      <span id="fhLensBarText"></span>
+      <button type="button" class="fh-lens-clear" id="fhLensClear">Show all</button>
+    </div>
+    <div class="fh-lens-note" id="fhLensStatus">Loading the client list&hellip;</div>
+    <div class="fh-lens-list" id="fhLensList"></div>
+  </section>
 
   <div class="fh-del-modal" id="fhDelModal" role="dialog" aria-modal="true" aria-labelledby="fhDelTitle">
     <div class="fh-del-card">
@@ -1779,6 +1924,592 @@ restore();
     load("R-01", "Sales");
     loadRailCounts("R-01");
   });
+})();
+</script>
+
+<!-- ══ FULFILLMENT LENS ══════════════════════════════════════════════════════
+     Chris's option A. The client list with a next-action chip on each row, the
+     six rollup tiles, and click-a-chip-to-filter — on the page that already
+     exists, behind a switch.
+
+     READ AND DISPLAY ONLY. One GET (/api/dashboard/clients, already routed and
+     already called by this page's neighbours through FHData.clients). No write,
+     no new route, no new screen.
+
+     It runs LAST and it never touches the board. The board IIFE above owns
+     .board and everything in it; this script only sets `hidden` on .board-row
+     and reads elements it created itself.
+
+     WHAT IT EXPECTS BACK, and what it does when it is not there:
+       client.next_action     { key, label, why }        missing ⇒ neutral chip
+       client.active_blockers [{ key, label, severity }] missing ⇒ no pills
+       client.funding_round   { number, status, hold_reason,
+                                approved_amount, finalized }  missing ⇒ no line
+       data.rollups           the six tiles               missing ⇒ six dashes,
+                                                          list still renders
+       data.rollups.needs_consent  how many paid clients are waiting on written
+                              permission. It is the SENTENCE under "Needs Pull",
+                              never a seventh tile.  missing ⇒ no sentence
+     Every one of those is guarded, and the whole paint is inside try/catch, so
+     a shape that does not arrive costs a dash — never a blank row and never a
+     crash that takes the board down with it.
+
+     THE LIST IS ONE PAGE; THE TILES COUNT EVERYONE. This lens asks for a page
+     of clients (see loadOnce below) while rollups.total_clients counts the
+     whole org. When the page comes back short of that total, "Total clients"
+     carries a sentence saying how many the list is showing. No paging control
+     was added — Chris approved a list and six tiles, and this only stops the
+     screen making a claim it cannot back up.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script>
+(function () {
+  "use strict";
+
+  /* FH-LENS-BEGIN */
+  /* The decisions, with no DOM in them, so they can be unit-tested the way
+     FHPipelineSummary above is. Nothing in this block reads `document`. */
+
+  var UNKNOWN_KEY = "not_enough_information";
+  var NONE_APPLIES_KEY = "none_applies";
+
+  /* ── TWO ANSWERS THAT ARE NOT A STEP, AND THEY ARE NOT THE SAME ANSWER ───
+     An empty cell would read as "nothing to do", so both of these are real
+     chips with real words. But they do not mean the same thing:
+
+       NONE_APPLIES_CHIP — the read layer WORKED THIS FILE OUT and no step on
+         Chris's list applies to it. That is a finished answer, and it is
+         often the correct one: a repair-only client has no funding step, by
+         design. Saying so is not a fault report.
+       NEUTRAL_CHIP — nothing was worked out. Either the file could not be
+         read, or the reply did not arrive in a shape we can trust.
+
+     THE WORDS ARE THE CLIENT CONTROL PANEL'S OWN, COPIED EXACTLY — NONE_APPLIES
+     and NOT_WORKED_OUT in the FH-CCP block of
+     public/app/client-control-panel.html. One client, one answer, whichever
+     screen it is read on. Telling staff on the list that we could not work a
+     client out, while that same client's file says no step applies, makes
+     behaviour Chris signed off look like a fault — and it read that way for
+     six real clients, his repair-only one among them.
+
+     They are two separate keys, not one key with two labels, because the chip
+     is also the filter: one key would file both answers under whichever label
+     happened to be first on screen and count them as one pile. */
+  var NEUTRAL_CHIP = {
+    key: UNKNOWN_KEY,
+    label: "Not worked out yet.",
+    why: "We could not work out a next step from what is on this client's file.",
+    neutral: true
+  };
+  var NONE_APPLIES_CHIP = {
+    key: NONE_APPLIES_KEY,
+    label: "No step applies right now.",
+    why: "No step on the list applies to this file right now.",
+    neutral: true
+  };
+
+  function isObj(v) { return typeof v === "object" && v !== null && !Array.isArray(v); }
+  function str(v) {
+    if (typeof v !== "string") return null;
+    var t = v.trim();
+    return t === "" ? null : t;
+  }
+
+  /* ── MONEY: THE UNIT IS WHOLE DOLLARS ────────────────────────────────────
+     Both money values this screen shows are DOLLARS. Not cents. Traced, not
+     assumed:
+
+       funding_rounds.approved_amount — numeric(14,2), db/schema/001_init.sql:127.
+         node-postgres registers no parser for numeric (type 1700), so it
+         arrives in JavaScript as a STRING: "50000.00" means $50,000.
+       rollups.total_prequal — SUM of custom_fields.total_funding_estimate cast
+         to numeric (src/fulfillment/read-signals.mjs:438), so also a STRING of
+         dollars. The stored field itself is written in dollars as a NUMBER:
+         src/handlers/client-lifecycle.mjs:449 saves crs.mjs's fundingEstimate,
+         which the fixture in src/adapters/crs.test.mjs:63 pins at 80000 for an
+         $80,000 pre-approval.
+
+     THESE TWO ARE EXCEPTIONS TO CLAUDE.md §12's "money is integer cents".
+     §12 describes src/commissions/money.mjs, and that module converts INTO
+     cents at its own door: src/commissions/calculate.mjs:59 calls
+     toCents(round.funded_amount), which multiplies by 100 — proof the column
+     holds dollars. Cents never leave src/commissions/.
+
+     ONE RULE, BOTH SCREENS. public/app/client-control-panel.html money()
+     applies exactly this rule, and src/http/client-panel-screen.test.mjs
+     fails if the two ever format the same value differently again.
+
+     Anything that is not a number or a plain numeric string — null, undefined,
+     a blank, a word, a wrong type — is UNKNOWN and comes back null so the
+     caller prints a dash. Never 0 for unknown: a zero would be a claim that
+     the amount is nothing, and unknown is not nothing. A RECORDED zero is a
+     fact and does print, as $0. */
+  function moneyText(v) {
+    if (v === null || v === undefined) return null;
+    // A { cents: N } wrapper is the one shape here that really is cents.
+    if (isObj(v)) {
+      if (!("cents" in v)) return null;
+      var c = v.cents;
+      if (typeof c !== "number" || !isFinite(c)) return null;
+      return "$" + Math.round(c / 100).toLocaleString("en-US");
+    }
+    var dollars;
+    if (typeof v === "number") {
+      if (!isFinite(v)) return null;
+      dollars = v;
+    } else if (typeof v === "string") {
+      var t = v.trim();
+      if (!/^-?\d+(\.\d+)?$/.test(t)) return null;
+      dollars = Number(t);
+      if (!isFinite(dollars)) return null;
+    } else {
+      return null;
+    }
+    return "$" + Math.round(dollars).toLocaleString("en-US");
+  }
+
+  /** Did the read layer work this file out?
+
+      ONLY AN EXPLICIT `false` SAYS SO. api/dashboard/clients.mjs attaches
+      next_action_degraded to every row alongside the answer itself, all four
+      keys together or none of them, so a row that was derived always carries
+      the flag. Absent, null, or any other shape is UNKNOWN — and unknown must
+      survive as unknown. Reading a missing flag as "worked out" would put
+      "No step applies right now." on a client nobody worked out, which is the
+      more dangerous of the two wrong answers: it reads as an all-clear.
+      `degraded` is accepted as a second spelling for the same reason the
+      Client Control Panel accepts it — so this cannot go blind if the key is
+      ever renamed. */
+  function workedOut(client) {
+    if (!isObj(client)) return false;
+    var d = client.next_action_degraded;
+    if (d == null) d = client.degraded;
+    return d === false;
+  }
+
+  /** One client -> the chip to show. Never null, never blank, never throws. */
+  function chipOf(client) {
+    try {
+      var na = client ? client.next_action : null;
+      // A reply we cannot read is not a reply saying "nothing to do".
+      if (na != null && !isObj(na)) return NEUTRAL_CHIP;
+      if (isObj(na)) {
+        var key = str(na.key), label = str(na.label);
+        if (key && label) {
+          return { key: key, label: label, why: str(na.why) || NEUTRAL_CHIP.why, neutral: false };
+        }
+      }
+      return workedOut(client) ? NONE_APPLIES_CHIP : NEUTRAL_CHIP;
+    } catch (e) {
+      return NEUTRAL_CHIP;
+    }
+  }
+
+  /** How many clients sit under each chip. Used for the filter bar's count. */
+  function chipCounts(clients) {
+    var out = {};
+    (Array.isArray(clients) ? clients : []).forEach(function (c) {
+      var k = chipOf(c).key;
+      out[k] = (out[k] || 0) + 1;
+    });
+    return out;
+  }
+
+  /** A person's name from whatever the row actually carries. */
+  function nameOf(client) {
+    if (!isObj(client)) return "Unnamed client";
+    var direct = str(client.name);
+    if (direct) return direct;
+    var both = [str(client.first_name), str(client.last_name)].filter(Boolean).join(" ");
+    if (both) return both;
+    return str(client.email) || "Unnamed client";
+  }
+
+  /** active_blockers, passed through as-is minus anything unreadable. */
+  function blockersOf(client) {
+    var arr = client && client.active_blockers;
+    if (!Array.isArray(arr)) return [];
+    var out = [];
+    arr.forEach(function (b) {
+      if (!isObj(b)) return;
+      var label = str(b.label) || str(b.key);
+      if (!label) return;
+      out.push({ label: label, severity: b.severity === "high" ? "high" : "normal" });
+    });
+    return out;
+  }
+
+  /** funding_round -> one line, or null when there is no round to describe.
+
+      COMPLIANCE GATE B. The only value ever passed in here is
+      client.funding_round, and the server refuses to send that key for any
+      tier outside the three funding tiers — fundingChipsAllowed() in
+      src/fulfillment/next-action.mjs, the same whitelist the chips use. So a
+      REPAIR_ONLY row arrives with null, this returns null, and the row shows
+      no round and no approved amount. Never read a raw funding_rounds row
+      here: that walks straight around the gate. */
+  function roundText(round) {
+    if (!isObj(round)) return null;
+    var bits = [];
+    if (typeof round.number === "number" && isFinite(round.number)) bits.push("Round " + round.number);
+    var status = str(round.status);
+    if (status) bits.push(status);
+    var hold = str(round.hold_reason);
+    if (hold) bits.push("held: " + hold);
+    var money = moneyText(round.approved_amount);
+    if (bits.length === 0 && money === null) return null;
+    bits.push("approved " + (money === null ? "—" : money));
+    return bits.join(" · ");
+  }
+
+  /* THE SIX TILES. `unknownNote` is the sentence a tile carries when it has no
+     number — Phase 0 §5 proved "Ready" and "Total Approved" have no honest
+     source today, and a 0 in either would be a false statement, so they say
+     what they are instead. */
+  var TILES = {
+    total_clients:  { kind: "count",
+      unknownNote: "Not measured yet." },
+    needs_pull:     { kind: "count",
+      unknownNote: "Not measured yet." },
+    action_needed:  { kind: "count",
+      unknownNote: "Not measured yet." },
+    ready:          { kind: "count",
+      unknownNote: "No honest source yet. Nothing in the system records this, so there is no number to show. A zero here would be a false claim." },
+    total_prequal:  { kind: "money",
+      unknownNote: "Not measured yet." },
+    total_approved: { kind: "money",
+      unknownNote: "No honest source yet. No bank approval has ever been recorded. A zero here would be a false claim." }
+  };
+
+  /* How many clients contributed to Total Prequal. It is one client's number
+     today (Phase 0 §5), so the tile must never read as a company total. */
+  function prequalContributors(rollups) {
+    if (!isObj(rollups)) return null;
+    var keys = ["total_prequal_clients", "total_prequal_client_count", "total_prequal_count"];
+    for (var i = 0; i < keys.length; i++) {
+      var v = rollups[keys[i]];
+      if (typeof v === "number" && isFinite(v)) return v;
+    }
+    return null;
+  }
+
+  /** One tile -> { value, note }. Unknown is always a dash plus a sentence.
+   *
+   *  `shown` is how many clients the list underneath actually got back. It is
+   *  only used by the "Total clients" tile — see the note there. Leave it out
+   *  and no tile says anything about it. */
+  function rollupText(rollups, id, shown) {
+    var tile = TILES[id];
+    if (!tile) return { value: "—", note: "" };
+    if (!isObj(rollups)) {
+      return { value: "—", note: "The totals did not come back with the list." };
+    }
+    var raw = rollups[id];
+    var value = null;
+    if (tile.kind === "count") {
+      if (typeof raw === "number" && isFinite(raw)) value = String(raw);
+    } else {
+      value = moneyText(raw);
+    }
+    if (value === null) return { value: "—", note: tile.unknownNote };
+
+    if (id === "total_prequal") {
+      var n = prequalContributors(rollups);
+      return {
+        value: value,
+        note: n === null
+          ? "This is not a company total. We could not tell how many clients it came from."
+          : ("From " + n + " client" + (n === 1 ? "" : "s") + ". This is not a company total.")
+      };
+    }
+
+    /* "Needs Pull" counts only clients whose written permission is live, the
+       same rule the chip and the pull button use. The ones it leaves out have
+       paid and have nothing pulled, but nobody may touch their credit yet — so
+       they are named here rather than quietly lost. NOT a seventh tile. */
+    if (id === "needs_pull") {
+      var waiting = rollups.needs_consent;
+      if (typeof waiting === "number" && isFinite(waiting) && waiting > 0) {
+        return {
+          value: value,
+          note: waiting + " more " + (waiting === 1 ? "is" : "are") +
+                " waiting on written permission first."
+        };
+      }
+      return { value: value, note: "" };
+    }
+
+    /* THE TILE COUNTS THE WHOLE BOOK. THE LIST UNDER IT DOES NOT.
+       loadOnce() asks for one page of clients; this number counts every client
+       in the org, with no cap. At 47 clients the two are the same and nobody
+       notices. Above the page size the tile sits over a list that cannot show
+       everyone, and until this sentence existed nothing on screen said so.
+       One sentence, only when the two numbers actually disagree. No second
+       tile, and no paging. */
+    if (id === "total_clients") {
+      if (typeof shown === "number" && isFinite(shown) && shown < raw) {
+        return {
+          value: value,
+          note: "The list below shows " + shown + " of these " + raw + "."
+        };
+      }
+      return { value: value, note: "" };
+    }
+    return { value: value, note: "" };
+  }
+
+  window.FHFulfillmentLens = {
+    UNKNOWN_KEY: UNKNOWN_KEY,
+    NONE_APPLIES_KEY: NONE_APPLIES_KEY,
+    NEUTRAL_CHIP: NEUTRAL_CHIP,
+    NONE_APPLIES_CHIP: NONE_APPLIES_CHIP,
+    moneyText: moneyText,
+    chipOf: chipOf,
+    chipCounts: chipCounts,
+    nameOf: nameOf,
+    blockersOf: blockersOf,
+    roundText: roundText,
+    rollupText: rollupText,
+    TILE_IDS: Object.keys(TILES)
+  };
+  /* FH-LENS-END */
+
+  var L = window.FHFulfillmentLens;
+
+  var lensEl   = document.getElementById("fhLens");
+  var boardRow = document.querySelector(".board-row");
+  var btnLens  = document.getElementById("lensFulfillment");
+  var btnBoard = document.getElementById("lensBoard");
+  if (!lensEl || !boardRow || !btnLens || !btnBoard) return;
+
+  var listEl   = document.getElementById("fhLensList");
+  var statusEl = document.getElementById("fhLensStatus");
+  var barEl    = document.getElementById("fhLensBar");
+  var barText  = document.getElementById("fhLensBarText");
+  var clearEl  = document.getElementById("fhLensClear");
+
+  /* Board-only chrome. Search, the filter control, its chips and the card /
+     money / held summary all describe the BOARD; none of them means anything
+     while the lens is up. They are hidden, and each one's previous `hidden`
+     value is remembered so switching back restores it exactly — the filter
+     panel does not spring open, an already-hidden Archive button stays
+     hidden, and no filter is re-applied or cleared. */
+  var boardOnly = [];
+  [".search", "#filterBtn", "#filterChips", ".board-summary", "#filterPanel"].forEach(function (sel) {
+    var el = document.querySelector(sel);
+    if (el) boardOnly.push(el);
+  });
+  var priorHidden = null;
+
+  var TILE_EL = {
+    total_clients:  ["ltTotalClients",  "ltTotalClientsNote"],
+    needs_pull:     ["ltNeedsPull",     "ltNeedsPullNote"],
+    action_needed:  ["ltActionNeeded",  "ltActionNeededNote"],
+    ready:          ["ltReady",         "ltReadyNote"],
+    total_prequal:  ["ltTotalPrequal",  "ltTotalPrequalNote"],
+    total_approved: ["ltTotalApproved", "ltTotalApprovedNote"]
+  };
+
+  var activeChip = null;
+  var loaded = false;
+  var loadedClients = [];
+
+  function note(text) {
+    if (!statusEl) return;
+    statusEl.textContent = text;
+    statusEl.hidden = false;
+  }
+  function hideNote() { if (statusEl) statusEl.hidden = true; }
+
+  function paintTiles(rollups, shown) {
+    Object.keys(TILE_EL).forEach(function (id) {
+      var out = L.rollupText(rollups, id, shown);
+      var v = document.getElementById(TILE_EL[id][0]);
+      var n = document.getElementById(TILE_EL[id][1]);
+      if (v) v.textContent = out.value;
+      if (n) n.textContent = out.note;
+    });
+  }
+
+  function rowEl(client) {
+    var chip = L.chipOf(client);
+
+    var row = document.createElement("div");
+    row.className = "fh-lens-row";
+    row.dataset.action = chip.key;
+    if (client && client.id) row.dataset.clientId = client.id;
+
+    var main = document.createElement("div");
+    main.className = "lr-main";
+    var nameEl = document.createElement("div");
+    nameEl.className = "lr-name";
+    nameEl.textContent = L.nameOf(client);   // client data: textContent, never innerHTML
+    main.appendChild(nameEl);
+    var whyEl = document.createElement("div");
+    whyEl.className = "lr-why";
+    whyEl.textContent = chip.why;
+    main.appendChild(whyEl);
+    row.appendChild(main);
+
+    var side = document.createElement("div");
+    side.className = "lr-side";
+
+    var btn = document.createElement("button");
+    btn.type = "button";
+    // Both answers that are not a step are drawn quiet, so a real step never
+    // has to compete with one for attention.
+    btn.className = "fh-chip" + (chip.neutral ? " unknown" : "");
+    btn.dataset.action = chip.key;
+    btn.textContent = chip.label;
+    btn.title = chip.neutral
+      ? "Show only clients whose row says: " + chip.label
+      : "Show only clients whose next action is " + chip.label;
+    side.appendChild(btn);
+
+    var blockers = L.blockersOf(client);
+    if (blockers.length) {
+      var box = document.createElement("div");
+      box.className = "lr-blockers";
+      blockers.forEach(function (b) {
+        var pill = document.createElement("span");
+        pill.className = "lr-blocker" + (b.severity === "high" ? " high" : "");
+        pill.textContent = b.label;
+        box.appendChild(pill);
+      });
+      side.appendChild(box);
+    }
+
+    var line = L.roundText(client && client.funding_round);
+    if (line) {
+      var roundEl = document.createElement("div");
+      roundEl.className = "lr-round";
+      roundEl.textContent = line;
+      side.appendChild(roundEl);
+    }
+
+    row.appendChild(side);
+    return row;
+  }
+
+  function applyChipFilter() {
+    var rows = [].slice.call(listEl.querySelectorAll(".fh-lens-row"));
+    var shown = 0;
+    rows.forEach(function (r) {
+      var hit = !activeChip || r.dataset.action === activeChip;
+      r.classList.toggle("filtered", !hit);
+      if (hit) shown++;
+    });
+    listEl.querySelectorAll(".fh-chip").forEach(function (c) {
+      c.classList.toggle("on", !!activeChip && c.dataset.action === activeChip);
+    });
+    if (!activeChip) {
+      if (barEl) barEl.hidden = true;
+      return;
+    }
+    var label = activeChip;
+    var first = listEl.querySelector('.fh-lens-row[data-action="' + activeChip + '"] .fh-chip');
+    if (first) label = first.textContent;
+    if (barText) {
+      barText.textContent = 'Showing only "' + label + '" — ' + shown +
+        " of " + rows.length + " client" + (rows.length === 1 ? "" : "s") + ".";
+    }
+    if (barEl) barEl.hidden = false;
+  }
+
+  function paintList(clients) {
+    loadedClients = Array.isArray(clients) ? clients : [];
+    while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
+    if (!loadedClients.length) {
+      note("No clients came back for this org.");
+      return;
+    }
+    loadedClients.forEach(function (c) { listEl.appendChild(rowEl(c)); });
+    hideNote();
+    applyChipFilter();
+  }
+
+  function failNote(res) {
+    var src = (res && res.source) || "error";
+    if (src === "demo") return "Demo session. The client list was not read from the database.";
+    if (src === "unauthorized") return "You are not signed in, so the client list cannot load.";
+    if (src === "nodb") return "The database is not reachable right now, so the list cannot load.";
+    return "Could not load the client list (" + src +
+           (res && res.error ? ": " + res.error : "") + ").";
+  }
+
+  // One read, the first time the lens is opened. The board's own loads are
+  // untouched and nothing here re-requests a pipeline.
+  function loadOnce() {
+    if (loaded) return;
+    loaded = true;
+    if (typeof FHData === "undefined" || !FHData.clients) {
+      note("The client list could not be requested on this page.");
+      return;
+    }
+    note("Loading the client list…");
+    /* { fulfillment: true } is what asks the endpoint to work out the chips and
+       the tiles. It is opt-in — that work costs eleven extra reads and this
+       lens is the only screen that uses them, so every other caller of
+       FHData.clients() still gets the plain client list it always got. */
+    FHData.clients(200, { fulfillment: true }).then(function (res) {
+      try {
+        if (!res || !res.ok || !res.data) {
+          paintTiles(null);
+          note(failNote(res));
+          return;
+        }
+        /* Tiles first: if the rollups are missing the list must still paint.
+           The tiles are told how many clients came back, so "Total clients"
+           can say when the list underneath is showing fewer than it counts. */
+        var shown = Array.isArray(res.data.clients) ? res.data.clients.length : null;
+        try { paintTiles(res.data.rollups, shown); } catch (e) { paintTiles(null, null); }
+        paintList(res.data.clients);
+      } catch (e) {
+        note("Something went wrong building this view. The board is unaffected — switch back to Board.");
+      }
+    });
+  }
+
+  function setLens(on) {
+    try {
+      if (on) {
+        if (priorHidden === null) {
+          priorHidden = boardOnly.map(function (el) { return el.hidden; });
+          boardOnly.forEach(function (el) { el.hidden = true; });
+        }
+        boardRow.hidden = true;
+        lensEl.hidden = false;
+      } else {
+        if (priorHidden !== null) {
+          boardOnly.forEach(function (el, i) { el.hidden = priorHidden[i]; });
+          priorHidden = null;
+        }
+        lensEl.hidden = true;
+        boardRow.hidden = false;
+      }
+      btnLens.classList.toggle("on", on);
+      btnBoard.classList.toggle("on", !on);
+      btnLens.setAttribute("aria-pressed", String(on));
+      btnBoard.setAttribute("aria-pressed", String(!on));
+      if (on) loadOnce();
+    } catch (e) {
+      // Any failure leaves the board where it was. Never a blank page.
+    }
+  }
+
+  btnLens.addEventListener("click", function () { setLens(true); });
+  btnBoard.addEventListener("click", function () { setLens(false); });
+
+  // Click a chip to filter to it. Click the same chip again to clear.
+  listEl.addEventListener("click", function (ev) {
+    var chip = ev.target && ev.target.closest && ev.target.closest(".fh-chip");
+    if (!chip) return;
+    var key = chip.dataset.action;
+    activeChip = (activeChip === key) ? null : key;
+    applyChipFilter();
+  });
+  if (clearEl) {
+    clearEl.addEventListener("click", function () { activeChip = null; applyChipFilter(); });
+  }
 })();
 </script>
 <script>

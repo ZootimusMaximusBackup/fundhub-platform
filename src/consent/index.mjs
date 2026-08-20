@@ -110,6 +110,22 @@ const VALID_PREDICATE = `
   AND (expires_at IS NULL OR expires_at > now())
   AND granted_at <= now()`;
 
+/* The same fragment, exported, so a reader that CANNOT call consentStatus()
+   still cannot fork the rule.
+
+   ADDITIVE ONLY — nothing in this module's behaviour changes and the constant
+   above remains the one definition. It is exported because a list screen asking
+   "which of these 500 clients has live permission" cannot call consentStatus()
+   500 times, and the only alternative to exporting is a second hand-typed copy
+   of a credit-pull gate sitting in a dashboard read. This header's own warning
+   is the reason: that copy would drift, and it would drift in the direction of
+   allowing a pull.
+
+   A caller using this MUST also mirror consentStatus()'s ORDER BY — valid rows
+   first, then newest granted_at, then id — or it will judge a different row
+   than the gate does. src/fulfillment/read-signals.mjs is the one caller. */
+export const CONSENT_VALID_SQL = VALID_PREDICATE;
+
 const blank = (v) => typeof v !== "string" || !v.trim();
 const trimmed = (v) => (typeof v === "string" ? v.trim() : v);
 
