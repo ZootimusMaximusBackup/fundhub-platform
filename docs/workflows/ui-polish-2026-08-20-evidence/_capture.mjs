@@ -168,6 +168,11 @@ for (const [screen, role] of Object.entries(SCREENS)) {
   if (role !== "client" && checks["390"].chip?.position === "fixed") {
     report.failures.push(`${screen}: account chip is still fixed on phone`);
   }
+  const account = checks["390"].account;
+  const header = checks["390"].header;
+  if (account && header && account.bottom > header.bottom) {
+    report.failures.push(`${screen}: phone header does not reserve account space`);
+  }
   const title = checks["390"].title;
   const menu = checks["390"].menuButton;
   if (title && menu &&
@@ -177,6 +182,9 @@ for (const [screen, role] of Object.entries(SCREENS)) {
   }
   if (/\/api\/read\/my-numbers/i.test(checks["1440"].bodyText)) {
     report.failures.push(`${screen}: raw API path is visible`);
+  }
+  if (screen === "client-portal.html" && !checks["1440"].signButton?.visibleInFold) {
+    report.failures.push(`${screen}: desktop sign button is below the fold`);
   }
   report.screens[screen] = { role, errors, checks };
   await ctx.close();

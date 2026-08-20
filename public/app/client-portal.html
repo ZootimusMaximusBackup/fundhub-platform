@@ -174,18 +174,18 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 /* Onboarding sign box — client authorizes Fundhub to prepare dispute letters.
    Not a credit pull. Hidden after a live consent is on file. */
 .sign-auth-card{border:1px solid var(--ink);padding:16px 18px}
-.sign-auth-card .card-title{text-transform:none;letter-spacing:0;font-size:var(--fs-title);font-weight:800;color:var(--text)}
+.sign-auth-card .card-title{text-transform:none;letter-spacing:0;font-size:var(--fs-title);font-weight:800;color:var(--text);margin-bottom:8px}
 .sign-auth-card.is-signed{border-color:var(--green-line);background:var(--green-bg)}
 .sign-auth-lede{font-size:var(--fs-body);color:var(--text-dim);line-height:1.5;margin-bottom:8px;max-width:62ch}
 .sign-auth-words{white-space:pre-wrap;font-size:var(--fs-body);line-height:1.65;color:var(--text);
   background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:10px;
   max-height:120px;overflow-y:auto;margin-bottom:8px}
-#cpSignPad{display:block;width:100%;height:96px;touch-action:none;cursor:crosshair;
+#cpSignPad{display:block;width:100%;height:64px;touch-action:none;cursor:crosshair;
   border:1px dashed var(--gray2);border-radius:6px;background:#fff}
-.sign-auth-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;margin-bottom:12px}
+.sign-auth-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px;margin-bottom:8px}
 .sign-auth-hint{font-size:var(--fs-body);color:var(--text-dim)}
-.sign-auth-field{margin-bottom:12px}
-.sign-auth-field label{display:block;font-weight:600;font-size:var(--fs-caption);margin-bottom:5px}
+.sign-auth-field{margin-bottom:8px}
+.sign-auth-field label{display:block;font-weight:600;font-size:var(--fs-caption);margin-bottom:2px}
 .sign-auth-input{width:100%;border:1px solid var(--line);border-radius:6px;padding:9px 11px;font:inherit;background:#fff}
 .sign-auth-input:focus{outline:2px solid var(--info);outline-offset:-1px}
 .sign-auth-msg{margin-top:10px;font-weight:600;font-size:var(--fs-body);border-radius:6px;padding:10px 12px;display:none}
@@ -328,6 +328,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
 .booked .bk-d{font-size:var(--fs-body);color:var(--text-dim)}
 
 @media(max-width:760px){
+  header.topbar{height:auto;min-height:52px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px;row-gap:8px}
   .tiles{grid-template-columns:1fr}
   .rail{grid-template-columns:1fr}
   .promo-side{flex:1 1 100%}
