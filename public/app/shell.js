@@ -1645,7 +1645,22 @@
       el.setAttribute("data-fh-in-header", "1");
       return true;
     }
-    return false;
+    /* Some surviving screens have no named top bar. Their account chip used
+       to fall back to position:fixed and cover page content on phones. Give
+       those screens one shared, in-flow account row instead. Search and the
+       chip reuse the same row, so it reserves real space exactly once. */
+    var row = document.getElementById("fh-shell-account-row");
+    if (!row) {
+      var host = document.querySelector(".shell, .main, .content, main, .app-shell, .app");
+      if (!host) return false;
+      row = document.createElement("div");
+      row.id = "fh-shell-account-row";
+      row.className = "fh-shell-account-row";
+      host.insertBefore(row, host.firstChild);
+    }
+    row.appendChild(el);
+    el.setAttribute("data-fh-in-header", "1");
+    return true;
   }
 
   function mountChip(staff, demo) {

@@ -35,6 +35,7 @@ import { fileURLToPath } from "node:url";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const APP = path.resolve(HERE, "../../public/app");
 const SHELL_SRC = fs.readFileSync(path.join(APP, "shell.js"), "utf8");
+const SIDEBAR_CSS = fs.readFileSync(path.join(APP, "crm-sidebar.css"), "utf8");
 
 /* ── the shell's own lists, lifted from the source ────────────────────────── */
 
@@ -192,6 +193,11 @@ describe("app shell — the lists this test reads", () => {
     );
     for (const s of NAV_HIDDEN) {
       assert.ok(ALL.includes(s), `${s} left the menu but is missing from ALL — typing the URL would bounce`);
+      assert.match(
+        SIDEBAR_CSS,
+        new RegExp(`\\[href=["']${s.replace(".", "\\.")}["']\\]`),
+        `${s} is runtime-hidden but missing from the first-paint CSS — its menu row can flash before shell.js runs`
+      );
     }
     for (const s of KEEP_ON_MENU) {
       assert.ok(!NAV_HIDDEN.includes(s), `${s} must stay on the menu`);

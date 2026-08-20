@@ -37,7 +37,7 @@ const SALES_FLOOR = ["sales-floor.html"];
 /* The lender database. ROLE_SETS.LENDERS at the API (owner, admin,
    funding_advisor) and ADVISOR_ONLY in shell.js — owner decision 2026-08-17. */
 const ADVISOR_ONLY = ["lenders.html"];
-const OWNER_ADMIN_ONLY = ["journeys.html"];
+const OWNER_ADMIN_ONLY = ["journeys.html", "contracts.html"];
 const HIRING_ONLY = ["hiring.html"];
 const PORTAL_ONLY = ["client-portal.html", "affiliate.html"];
 

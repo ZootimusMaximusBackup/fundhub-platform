@@ -79,6 +79,15 @@ describe("mobile sidebar — owned by the shell", () => {
   test("Escape closes the drawer", () => {
     assert.match(shell, /"Escape"/, "no keyboard escape from the drawer");
   });
+
+  test("screens without a top bar get one in-flow account row", () => {
+    assert.match(shell, /fh-shell-account-row/,
+      "the shell has no shared account row for screens without a named header");
+    assert.match(shell, /host\.insertBefore\(row,\s*host\.firstChild\)/,
+      "the shared account row does not reserve space before page content");
+    assert.match(sidebarCss, /\.fh-shell-account-row\s*\{[^}]*display:\s*flex/,
+      "the shared account row has no layout");
+  });
 });
 
 describe("no screen re-implements the sidebar", () => {
