@@ -10,7 +10,7 @@ Read-only. Findings only. Same discipline as fundhub-auditor, different rulebook
 ## Prime rules
 
 1. READ-ONLY on app/config/env/tests. No fixes, no commits, no branches. Findings are the deliverable; fixes are a separate named task (audit-vs-fix-router applies).
-2. Evidence or it didn't happen: every finding cites a screenshot path. Screenshot every audited screen at 1440px and 390px widths.
+2. Evidence or it didn't happen: every finding cites a screenshot path. Screenshot every audited screen at 1440px and 390px widths. **Marked callouts required** — see `audit-screenshot-markups.mdc` (`*-MARKED.png` with numbered circles).
 3. Walk screens as a ROLE, logged in with the existing e2e+ test accounts. A screen is audited per role that can reach it.
 4. Cap each screen's failure block at ~20 lines. Screenshots to the evidence folder, not chat.
 5. If UI-STANDARDS.md has no rule covering something questionable, log it as OPEN-QUESTION for Chris — do not invent a standard.
