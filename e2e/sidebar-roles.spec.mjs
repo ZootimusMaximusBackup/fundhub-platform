@@ -37,8 +37,8 @@ const SALES_FLOOR = ["sales-floor.html"];
 /* The lender database. ROLE_SETS.LENDERS at the API (owner, admin,
    funding_advisor) and ADVISOR_ONLY in shell.js — owner decision 2026-08-17. */
 const ADVISOR_ONLY = ["lenders.html"];
-const OWNER_ADMIN_ONLY = ["journeys.html", "contracts.html"];
-const HIRING_ONLY = ["hiring.html"];
+const OWNER_ADMIN_ONLY = ["contracts.html"];
+const RETIRED = ["journeys.html", "hiring.html"];
 const PORTAL_ONLY = ["client-portal.html", "affiliate.html"];
 
 async function waitForGate(page) {
@@ -96,7 +96,7 @@ test.describe("sidebar role visibility", () => {
     const hrefs = await visibleNavHrefs(page);
     expectIncludes(hrefs, CLOSER_DESK);
     expectIncludes(hrefs, ["pipeline.html", "closer-dashboard.html"]);
-    expectExcludes(hrefs, [...SALES_FLOOR, ...OWNER_ADMIN_ONLY, ...HIRING_ONLY, ...PORTAL_ONLY, ...ADVISOR_ONLY]);
+    expectExcludes(hrefs, [...SALES_FLOOR, ...OWNER_ADMIN_ONLY, ...RETIRED, ...PORTAL_ONLY, ...ADVISOR_ONLY]);
     for (const h of hrefs) expect(SCREENS.has(h), `broken nav link ${h}`).toBe(true);
   });
 
@@ -104,14 +104,15 @@ test.describe("sidebar role visibility", () => {
     await openScreen(page, "/app/pipeline.html", SALES_MANAGER);
     const hrefs = await visibleNavHrefs(page);
     expectIncludes(hrefs, SALES_FLOOR);
-    expectExcludes(hrefs, [...CLOSER_DESK, ...OWNER_ADMIN_ONLY, ...HIRING_ONLY, ...PORTAL_ONLY, ...ADVISOR_ONLY]);
+    expectExcludes(hrefs, [...CLOSER_DESK, ...OWNER_ADMIN_ONLY, ...RETIRED, ...PORTAL_ONLY, ...ADVISOR_ONLY]);
     for (const h of hrefs) expect(SCREENS.has(h), `broken nav link ${h}`).toBe(true);
   });
 
-  test("owner sees closer desk, sales floor, hiring, and owner-only rows", async ({ page }) => {
+  test("owner sees the active desks and owner-only rows, not retired rows", async ({ page }) => {
     await openScreen(page, "/app/pipeline.html", OWNER);
     const hrefs = await visibleNavHrefs(page);
-    expectIncludes(hrefs, [...CLOSER_DESK, ...SALES_FLOOR, ...OWNER_ADMIN_ONLY, ...HIRING_ONLY, ...ADVISOR_ONLY]);
+    expectIncludes(hrefs, [...CLOSER_DESK, ...SALES_FLOOR, ...OWNER_ADMIN_ONLY, ...ADVISOR_ONLY]);
+    expectExcludes(hrefs, RETIRED);
     for (const h of hrefs) expect(SCREENS.has(h), `broken nav link ${h}`).toBe(true);
   });
 
@@ -119,7 +120,7 @@ test.describe("sidebar role visibility", () => {
     await openScreen(page, "/app/pipeline.html", FUNDING_ADVISOR);
     const hrefs = await visibleNavHrefs(page);
     expectIncludes(hrefs, ["pipeline.html", ...ADVISOR_ONLY]);
-    expectExcludes(hrefs, [...CLOSER_DESK, ...SALES_FLOOR, ...OWNER_ADMIN_ONLY, ...HIRING_ONLY, ...PORTAL_ONLY]);
+    expectExcludes(hrefs, [...CLOSER_DESK, ...SALES_FLOOR, ...OWNER_ADMIN_ONLY, ...RETIRED, ...PORTAL_ONLY]);
     for (const h of hrefs) expect(SCREENS.has(h), `broken nav link ${h}`).toBe(true);
   });
 
@@ -127,7 +128,7 @@ test.describe("sidebar role visibility", () => {
     await openScreen(page, "/app/pipeline.html", SETTER);
     const hrefs = await visibleNavHrefs(page);
     expectIncludes(hrefs, ["pipeline.html"]);
-    expectExcludes(hrefs, [...CLOSER_DESK, ...SALES_FLOOR, ...OWNER_ADMIN_ONLY, ...PORTAL_ONLY, ...ADVISOR_ONLY]);
+    expectExcludes(hrefs, [...CLOSER_DESK, ...SALES_FLOOR, ...OWNER_ADMIN_ONLY, ...RETIRED, ...PORTAL_ONLY, ...ADVISOR_ONLY]);
     for (const h of hrefs) expect(SCREENS.has(h), `broken nav link ${h}`).toBe(true);
   });
 });
@@ -143,14 +144,14 @@ test.describe("sidebar fixed geometry", () => {
     expect(a.width).toBeLessThanOrEqual(250);
 
     // Navigate via a real sidebar link — geometry must not jump.
-    await page.locator('aside.side a.navitem[href*="galaxy.html"], aside.side a.navitem[data-fh-href*="galaxy.html"]').first().click();
-    await page.waitForURL(/galaxy\.html/);
+    await page.locator('aside.side a.navitem[href="closer-dashboard.html"]').click();
+    await page.waitForURL(/closer-dashboard\.html/);
     await waitForGate(page);
     const b = await sideBox(page);
     expect(b).toEqual(a);
 
-    await page.locator('aside.side a.navitem[href*="finance-os.html"], aside.side a.navitem[data-fh-href*="finance-os.html"]').first().click();
-    await page.waitForURL(/finance-os\.html/);
+    await page.locator('aside.side a.navitem[href="sales-floor.html"]').click();
+    await page.waitForURL(/sales-floor\.html/);
     await waitForGate(page);
     const c = await sideBox(page);
     expect(c).toEqual(a);
@@ -164,11 +165,11 @@ test.describe("sidebar fixed geometry", () => {
     expect(d.width).toBe(a.width);
   });
 
-  test("section order matches the documented Sales-first structure", async ({ page }) => {
+  test("section order matches the simplified shell structure", async ({ page }) => {
     await openScreen(page, "/app/pipeline.html", OWNER);
     await waitForGate(page);
     const heads = await page.locator("aside.side .navhead").allTextContents();
     const labels = heads.map((h) => h.replace("▾", "").trim());
-    expect(labels.slice(0, 4)).toEqual(["Sales", "Funding", "Client ops", "Watch"]);
+    expect(labels.slice(0, 4)).toEqual(["Home", "Sales", "Funding", "Client ops"]);
   });
 });
