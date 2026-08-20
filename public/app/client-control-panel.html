@@ -356,10 +356,14 @@
        room org + LIVE status need. */
     .clock{display:none;}
     .topbar-right{gap:8px;}
+    .record-head{padding:16px;flex-direction:column;align-items:stretch;}
+    .record-id{flex-direction:column;align-items:stretch;gap:8px;}
+    .record-pick{width:100%;}
+    .record-pick select{width:100%;min-width:0;max-width:none;}
+    .record-fields{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))!important;}
     main{display:flex;flex-direction:column;overflow-y:auto;background:var(--paper);}
     .main-col,.side-col{width:100%;overflow:visible;padding:16px;}
     .kv-grid,.details-grid{grid-template-columns:1fr;}
-    .record-head{padding-top:16px;}
   }
 </style>
 <script defer src="shell.js"></script>

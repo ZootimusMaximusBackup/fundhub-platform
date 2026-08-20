@@ -121,8 +121,7 @@ for (const [screen, role] of Object.entries(SCREENS)) {
       fullPage: false
     });
     checks[viewport.name] = await page.evaluate(({ width, height }) => {
-      const rect = (selector) => {
-        const el = document.querySelector(selector);
+      const rectOf = (el) => {
         if (!el) return null;
         const r = el.getBoundingClientRect();
         return {
@@ -131,6 +130,7 @@ for (const [screen, role] of Object.entries(SCREENS)) {
           width: Math.round(r.width), height: Math.round(r.height)
         };
       };
+      const rect = (selector) => rectOf(document.querySelector(selector));
       const chip = document.getElementById("fh-shell-chip");
       const title = document.querySelector(
         ".topbar h1, header h1, header .eyebrow, header .brand, .page-hd h1"
@@ -146,7 +146,8 @@ for (const [screen, role] of Object.entries(SCREENS)) {
           inHeader: chip.getAttribute("data-fh-in-header") === "1",
           parent: chip.parentElement?.className || chip.parentElement?.tagName || ""
         } : null,
-        titleLeft: title ? Math.round(title.getBoundingClientRect().left) : null,
+        title: rectOf(title),
+        menuButton: rect("#fh-mobile-menu"),
         header: rect(".topbar, body > header, .app > header, .app-shell > header"),
         account: rect("#fh-shell-chip"),
         signButton: sign ? {
@@ -167,8 +168,12 @@ for (const [screen, role] of Object.entries(SCREENS)) {
   if (role !== "client" && checks["390"].chip?.position === "fixed") {
     report.failures.push(`${screen}: account chip is still fixed on phone`);
   }
-  if (checks["390"].titleLeft !== null && checks["390"].titleLeft < 50) {
-    report.failures.push(`${screen}: phone title starts under menu button`);
+  const title = checks["390"].title;
+  const menu = checks["390"].menuButton;
+  if (title && menu &&
+      title.left < menu.right && title.right > menu.left &&
+      title.top < menu.bottom && title.bottom > menu.top) {
+    report.failures.push(`${screen}: phone title overlaps menu button`);
   }
   if (/\/api\/read\/my-numbers/i.test(checks["1440"].bodyText)) {
     report.failures.push(`${screen}: raw API path is visible`);
