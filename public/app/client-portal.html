@@ -47,13 +47,6 @@ header.topbar{background:var(--ink);color:var(--dark-text);display:flex;align-it
 .who-pill{display:flex;align-items:center;gap:8px;font-size:var(--fs-body);color:var(--dark-text)}
 .avatar{width:26px;height:26px;border-radius:50%;background:var(--dark-line);display:flex;align-items:center;justify-content:center;font-size:var(--fs-caption);font-weight:700}
 
-/* wireframe-only state switch — not production chrome */
-.statesw{display:flex;align-items:center;gap:7px;border:1px dashed #3F3F46;border-radius:20px;padding:3px 4px 3px 10px}
-.statesw .lb{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.14em;text-transform:uppercase;color:#71717A}
-.statesw button{background:transparent;border:0;border-radius:14px;padding:4px 10px;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.1em;text-transform:uppercase;color:var(--dark-text-dim)}
-.statesw button.on{background:var(--paper);color:var(--ink);font-weight:700}
-/* Designer STATE toggle — staff only. Clients must never see it. */
-body:not(.portal-staff) .statesw{display:none}
 /* Funding blocks — hidden when this client has no funding-snapshot. */
 body.no-funding .funding-only{display:none !important}
 /* Pre-call placeholders — shown until funding-snapshot (or staff In progress). */
@@ -338,7 +331,6 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
   .tiles{grid-template-columns:1fr}
   .rail{grid-template-columns:1fr}
   .promo-side{flex:1 1 100%}
-  .statesw .lb{display:none}
   .step .lbl{font-size:var(--fs-caption)}
   .player{max-height:min(280px,56vw)}
   .video-title{font-size:var(--fs-title)}
@@ -355,12 +347,6 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
       <div class="sub">Client Portal</div>
     </div>
     <div class="spacer"></div>
-    <div class="statesw" role="group" aria-label="Wireframe state">
-      <span class="lb">State</span>
-      <button id="st-precall" class="on" type="button">Before call</button>
-      <button id="st-progress" type="button">In progress</button>
-      <button id="st-funded" type="button">Just funded</button>
-    </div>
     <div class="who-pill">
       <div class="avatar" id="who-av">—</div>
       <span id="who-name">—</span>
@@ -1285,99 +1271,6 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   });
 })();
-
-/* ── the three page states ──────────────────────────────────────────────────
-   BEFORE CALL : portal is open, no funding claims, no dummy files.
-   IN PROGRESS : round approved sample, nothing promoted, catalog tiles locked.
-   JUST FUNDED : the money landed, repair DFY promoted above the fold.
-   ─────────────────────────────────────────────────────────────────────────── */
-(function(){
-  var bPre  = document.getElementById('st-precall'),
-      bProg = document.getElementById('st-progress'),
-      bFund = document.getElementById('st-funded'),
-      promo = document.getElementById('promo'),
-      stepper = document.getElementById('stepper');
-
-  var COPY = {
-    progress:{
-      sub:"Here's where things stand on your funding.",
-      eyebrow:'Current Status',
-      main:'Your funding file is open. Amounts show here when a round is approved on your file.',
-      feeNote:'10% of what funds — due when the money lands',
-      feeVal:'—'
-    },
-    funded:{
-      sub:'Your funding landed. Here\'s what\'s next.',
-      eyebrow:'Funded',
-      main:'Your round funded. Exact amounts come from your file — this preview does not invent a dollar amount.',
-      feeNote:'10% of what funded — due now that the money landed',
-      feeVal:'—'
-    }
-  };
-
-  function setEmptyFlags(precall){
-    document.body.classList.toggle('no-funding', precall);
-    document.body.classList.toggle('no-docs', precall);
-    document.body.classList.toggle('no-own', precall);
-  }
-
-  function setState(mode){
-    var funded = mode === 'funded';
-    var precall = mode === 'precall';
-    var c = funded ? COPY.funded : COPY.progress;
-
-    if (bPre) bPre.classList.toggle('on', precall);
-    bProg.classList.toggle('on', mode === 'progress');
-    bFund.classList.toggle('on', funded);
-
-    setEmptyFlags(precall);
-
-    var sub = document.getElementById('greeting-sub');
-    if (sub && !precall) sub.textContent = c.sub;
-    if (!precall) {
-      document.getElementById('sb-eyebrow').textContent = c.eyebrow;
-      var sbMain = document.getElementById('sb-main');
-      if (sbMain) sbMain.textContent = c.main;
-      var feeRow = document.getElementById('fee-row');
-      if (feeRow) feeRow.hidden = false;
-      var feeNote = document.getElementById('fee-note');
-      var feeVal = document.getElementById('fee-val');
-      if (feeNote) feeNote.textContent = c.feeNote;
-      if (feeVal) feeVal.textContent = c.feeVal;
-    } else {
-      var feeRowOff = document.getElementById('fee-row');
-      if (feeRowOff) feeRowOff.hidden = true;
-    }
-
-    if (!precall && stepper) {
-      var s = {
-        approved: stepper.querySelector('[data-step="approved"]'),
-        funded:   stepper.querySelector('[data-step="funded"]'),
-        final:    stepper.querySelector('[data-step="final"]')
-      };
-      if(funded){
-        s.approved.className = 'step done'; s.approved.querySelector('.dot').textContent = '✓';
-        s.funded.className   = 'step done'; s.funded.querySelector('.dot').textContent   = '✓';
-        s.final.className    = 'step current'; s.final.querySelector('.dot').textContent = '●';
-      } else {
-        s.approved.className = 'step current'; s.approved.querySelector('.dot').textContent = '●';
-        s.funded.className   = 'step future';  s.funded.querySelector('.dot').textContent   = '6';
-        s.final.className    = 'step future';  s.final.querySelector('.dot').textContent    = '7';
-      }
-    }
-
-    promo.classList.toggle('on', funded);
-    var repairTile = document.querySelector('.tile[data-tile="REPAIR_DFY"]');
-    if(repairTile) repairTile.classList.toggle('hidden', funded);
-
-    document.querySelectorAll('.funded-only').forEach(function(el){ el.hidden = !funded; });
-  }
-
-  if (bPre) bPre.addEventListener('click', function(){ setState('precall'); });
-  bProg.addEventListener('click', function(){ setState('progress'); });
-  bFund.addEventListener('click', function(){ setState('funded'); });
-  setState('precall');
-})();
 </script>
 <script defer src="data.js"></script>
 <script>
@@ -1433,11 +1326,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     catch (e) { return ""; }
   }
 
-  function markStaffChrome() {
-    if (STAFF_ROLES[roleHint()]) document.body.classList.add("portal-staff");
-    else document.body.classList.remove("portal-staff");
-  }
-
   function setFundingVisible(hasFunding) {
     document.body.classList.toggle("no-funding", !hasFunding);
   }
@@ -1458,15 +1346,9 @@ document.addEventListener("DOMContentLoaded", async function () {
       return;
     }
     setOwnVisible(true);
-    /* NO DOWNLOAD BUTTON. It never had one that worked — grep this file for
-       "dl-btn" and the only other hits are two CSS rules; there was no click
-       handler at all. Nor is there anything for one to call: GET
-       /api/read/documents admits staff only (api/read/documents.mjs), and GET
-       /api/documents/<id> takes an HMAC-signed link that nothing mints for a
-       client. A control that cannot finish must not render — the same rule
-       paintTile() already applies to Unlock below. So say where the file
-       really comes from, in the wording paintDocsNotListed() already uses for
-       this same absence a few lines down. */
+    /* Portal summary returns client-safe file metadata, not a download URL.
+       Keep the honest On file state until a client-authorized signed download
+       exists; never render a control that cannot finish. */
     list.innerHTML = rows.map(function (r) {
       return '<div class="own own-real"><div><div class="on-t">' + r.name +
         '</div><div class="on-d">On your account · ask your advisor in chat for a copy</div></div>' +
@@ -1629,20 +1511,13 @@ document.addEventListener("DOMContentLoaded", async function () {
         '<span class="dr-s have">On file</span></div>';
     }).join("");
   }
-  /* AUDIT 2026-08-17: a client account cannot read this list at all — the route
-     behind it is open to staff sessions only. The old empty state, "No files
-     yet · They show here when they are on file", is a promise the portal can
-     never keep for them, and the failed read painted a red "could not load"
-     strip as if something were broken. Nothing is broken. Say what is true and
-     give the one thing the client can actually do. */
-  function paintDocsNotListed() {
+  function paintStaffDocsLink(clientId) {
     var pane = document.getElementById("tp-docs");
     if (!pane) return;
     pane.innerHTML = '<div class="doc-row"><div>' +
-      '<div class="dr-n">Your files are not listed here</div>' +
-      '<div class="dr-m">Letters, reports and anything else on your file are sent to you ' +
-      'by your advisor. Ask in chat and they will send you a copy.</div></div>' +
-      '<span class="dr-s">—</span></div>';
+      '<div class="dr-n">Staff documents live in Documents</div>' +
+      '<div class="dr-m"><a href="documents.html?client_id=' + encodeURIComponent(clientId) +
+      '">Open this client in Documents</a></div></div><span class="dr-s">↗</span></div>';
   }
   function paintMessages(rows) {
     var pane = document.getElementById("tp-msg");
@@ -1713,8 +1588,6 @@ document.addEventListener("DOMContentLoaded", async function () {
       return (s && s.client_id) ? String(s.client_id) : "";
     });
   }
-
-  markStaffChrome();
 
   var clientId = null;
   try {
@@ -1807,6 +1680,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   FHData.wire(FHData.portalSummary(clientId ? { client_id: clientId } : {}),
     "portal-summary", function (data) {
+      if (!STAFF_ROLES[roleHint()]) paintDocs(data.documents || []);
       var amt = data.prequal_display;
       var row = document.getElementById("sb-prequal-row");
       var el = document.getElementById("sb-prequal-amt");
@@ -1823,34 +1697,9 @@ document.addEventListener("DOMContentLoaded", async function () {
       return "live pre-qual · " + amt;
     });
 
-  /* AUDIT 2026-08-17 (client, CRITICAL). GET /api/read/documents is gated to
-     staff sessions, so a client account gets 401 here every single time. That
-     is not a read that failed — it is a read that was never open to them.
-     FHData.wire()'s failure path can only reach explain(), which speaks in
-     "we could not load this" terms and reads as an outage. So this read is
-     driven by hand: staff opening the portal with ?id= keep the ordinary
-     explain() wording (for them a 401 really is a stale session), and a client
-     gets the honest state instead of a red strip. No gate widened, no route
-     added — whether a client should be able to read their own documents is the
-     owner's call and is on the board as an open question. */
-  if (STAFF_ROLES[roleHint()]) {
-    FHData.documents({ client_id: clientId, limit: 200 }).then(function (res) {
-      if (res && res.ok && res.data) {
-        var items = res.data.items || [];
-        paintDocs(items);
-        FHData.banner("real", items.length
-          ? "live documents · " + items.length + " on file"
-          : "live documents · none on file", "documents");
-        return;
-      }
-      FHData.explain(res, "documents");
-    }, function (e) {
-      FHData.explain({ source: "offline", error: (e && e.message) || "read failed" }, "documents");
-    });
-  } else {
-    paintDocsNotListed();
-    FHData.banner("sample", "your files are not listed here — your advisor sends them", "documents");
-  }
+  /* Clients get their own document metadata from portal-summary above. Staff
+     use the one master Documents home instead of a duplicate portal list. */
+  if (STAFF_ROLES[roleHint()]) paintStaffDocsLink(clientId);
 
   FHData.wire(FHData.entitlements({ client_id: clientId, limit: 200 }),
     "entitlements", function (data) {

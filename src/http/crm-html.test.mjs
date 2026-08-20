@@ -44,7 +44,8 @@ test("client-portal.html ships no sample people and no fake upload or video", ()
   assert.ok(html.includes('FHData.param("client_id")'), "must accept ?client_id=");
   assert.ok(html.includes("FHData.uploadFiles"), "real upload stays on FHData.uploadFiles");
   assert.ok(html.includes("FHData.entitlements"), "must keep the portal entitlements read");
-  assert.ok(html.includes("FHData.documents"), "docs must come from the existing documents read");
+  assert.ok(html.includes("FHData.portalSummary"), "docs must come from the client-safe portal summary");
+  assert.ok(!html.includes("FHData.documents"), "client portal must not call the staff documents read");
 });
 
 test("client-control-panel.html binds the live URL client and does not fake a pull", () => {
@@ -156,7 +157,8 @@ test("ops, affiliate, and partner galaxy do not ship sample people as live", () 
   assert.ok(/var RULES\s*=\s*\[\s*\]/.test(pc), "rules must start empty");
   assert.ok(pc.includes("var LEDGER=[]"));
   assert.ok(pc.includes("no commission rows yet"));
-  assert.ok(pc.includes("stay in this browser only"));
+  assert.ok(pc.includes("/api/commission-rules"), "commission edits must persist through the effective-dated rules API");
+  assert.ok(!pc.includes("stay in this browser only"), "commission edits must not pretend to save only in the browser");
 });
 
 test("documents.html does not seed sample people before the live read", () => {

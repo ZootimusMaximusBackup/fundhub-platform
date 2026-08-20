@@ -58,6 +58,43 @@ test.describe("products & commissions", () => {
     });
     await expect(page.locator("body")).not.toContainText("Sales · Card Stacking · Repair");
   });
+
+  test("tiered rules use API fields and do not show unsupported edit controls", async ({ page }) => {
+    await openScreen(page, "/app/products-commissions.html", OWNER, {
+      "/api/read/products": { ok: true, count: 0, items: [] },
+      "/api/read/commissions": { ok: true, count: 0, items: [] },
+      "/api/commission-rules": {
+        ok: true, count: 1, rules: [{
+          id: "77777777-7777-4777-8777-777777777777", name: "Tiered closer rule",
+          basis: "front_end", stacking: "base", product_id: null, product_name: null,
+          role: "closer", staff_id: null, staff_name: null, calc_method: "tiered",
+          amount_basis: "deposit_collected", effective_from: "2026-08-20T00:00:00Z",
+          effective_to: null, notes: "Owner-set", tiers: [{
+            min_amount: "1000.00", max_amount: "5000.00", percent: "10.00",
+            flat_amount: null, per_unit_amount: null
+          }]
+        }]
+      }
+    });
+    await page.getByRole("button", { name: "Commission rules", exact: true }).click();
+    await page.locator(".rule-hd").click();
+    await expect(page.locator(".tierbox")).toContainText("$1,000 → $5,000");
+    await expect(page.locator(".tierbox")).toContainText("10%");
+    await expect(page.getByRole("button", { name: "Change rate", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /Close v/ })).toHaveCount(0);
+  });
+
+  test("commission read failure is not painted as zero rules", async ({ page }) => {
+    await openScreen(page, "/app/products-commissions.html", OWNER, {
+      "/api/read/products": { ok: true, count: 0, items: [] },
+      "/api/read/commissions": { ok: true, count: 0, items: [] },
+      "/api/commission-rules": { ok: false, error: "read_failed" }
+    });
+    await page.getByRole("button", { name: "Commission rules", exact: true }).click();
+    await expect(page.getByRole("alert")).toContainText("Commission rules could not be loaded");
+    await expect(page.locator("#ruleList")).not.toContainText("No commission rules are on file yet");
+    await expect(page.locator("#kRules")).toHaveText("—");
+  });
 });
 
 test.describe("client control panel open buttons", () => {
@@ -76,13 +113,40 @@ test.describe("client control panel open buttons", () => {
     await expect(page.locator('[data-open="ghl"]')).toBeDisabled();
   });
 
-  test("Raw Report opens documents", async ({ page }) => {
+  test("Raw Report stays hidden until a real report file exists", async ({ page }) => {
     await openScreen(page, `/app/client-control-panel.html?id=${CLIENT_ID}`, OWNER);
+    await expect(page.getByRole('button', { name: 'Raw Report', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Raw Report', exact: true })).toHaveCount(0);
+    await expect(page.getByText('Raw Report', { exact: true })).toHaveCount(0);
+  });
+
+  test("Save notes writes the open client and the typed note", async ({ page }) => {
+    const writes = [];
+    await openScreen(page, `/app/client-control-panel.html?id=${CLIENT_ID}`, OWNER, {
+      "/api/client-notes": async (route) => {
+        writes.push(JSON.parse(route.request().postData() || "{}"));
+        return json(route, { ok: true, client: { id: CLIENT_ID, staff_notes: "Call Friday." } });
+      }
+    });
+    await page.locator('[aria-controls="details-body"]').click();
+    await page.locator("#notes").fill("Call Friday.");
+    await page.locator("#notes-save").click();
+    await expect(page.locator("#notes-status")).toContainText("Saved to this client file.");
+    expect(writes).toEqual([{ client_id: CLIENT_ID, notes: "Call Friday." }]);
+  });
+
+  test("Open Bank Inbox shows this client's bank messages", async ({ page }) => {
+    await openScreen(page, `/app/client-control-panel.html?id=${CLIENT_ID}`, OWNER, {
+      "/api/read/bank-inbox": {
+        ok: true, count: 1, items: [{
+          subject: "Deposit received", body_preview: "Funding deposit cleared."
+        }]
+      }
+    });
     await page.locator("#more-menu summary, details.more > summary").click();
-    const btn = page.locator('[data-open="raw"]');
-    await expect(btn).toBeVisible();
-    await btn.click();
-    await expect(page).toHaveURL(/documents\.html/);
+    await page.locator("#ccp-bank-inbox-open").click();
+    await expect(page.locator("#ccp-bank-inbox")).toContainText("Deposit received");
+    await expect(page.locator("#ccp-bank-inbox")).toContainText("Funding deposit cleared.");
   });
 });
 
@@ -127,5 +191,31 @@ test.describe("calendar Join Call and Client file", () => {
       }
     });
     await expect(page.locator("#unJoin")).toBeDisabled();
+  });
+
+  test("clicking a calendar event makes it Up Next", async ({ page }) => {
+    const firstDue = new Date();
+    firstDue.setHours(firstDue.getHours() + 1);
+    const pickedDue = new Date();
+    pickedDue.setHours(pickedDue.getHours() + 2);
+    await openScreen(page, "/app/calendar.html", OWNER, {
+      "/api/tasks": {
+        ok: true,
+        tasks: [
+          {
+            id: "task-first", client_id: CLIENT_ID, client_name: "First Client",
+            title: "First calendar event", due_at: firstDue.toISOString(), done: false
+          },
+          {
+            id: "task-event", client_id: CLIENT_ID, client_name: "Dana Whitfield",
+            title: "Calendar event pick", body: "Picked from the day grid",
+            due_at: pickedDue.toISOString(), done: false
+          }
+        ]
+      }
+    });
+    await page.locator('.evt[data-task-id="task-event"]').click();
+    await expect(page.locator("#unClient")).toContainText("Dana Whitfield");
+    await expect(page.locator("#unBody")).toContainText("Calendar event pick");
   });
 });

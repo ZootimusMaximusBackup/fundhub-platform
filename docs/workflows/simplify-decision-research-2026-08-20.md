@@ -134,3 +134,86 @@ Workflow 1 already matches this decision:
 - Item 44 keeps Send contract on both Call cockpit and Present.
 
 These surfaces may be repaired when Chris names a specific defect. They are **not** cleanup or redundancy targets. Extra dashboards and fake/dead controls outside this flow remain in scope.
+
+## Implementation manifest — 2026-08-20
+
+**Status:** independent-review repairs complete; ready for parent review with the held items and repository-wide baseline failures below.
+**COMPLIANCE REVIEW REQUIRED:** Item 32 changes the Specialist credit-repair letter display from an editable-looking box to read-only. Letter generation and sending were not changed.
+
+Implemented decisions:
+- Rows 1–12, 17–21, 24, 29, 31, 33, 35, and 41: removed only the named duplicate, dead, demo, or prerequisite-free controls.
+- Row 16: one Price column now shows a single fixed price or a real range.
+- Rows 22, 23, 25–28, and 32: fixed the label or wired the existing job to real data and writes.
+- Row 30: pay/unlock remains hidden without a real checkout URL.
+- Rows 13–15, 34, 36–40, and 42–45 remain split by actor or work moment.
+- Row 37 stays intact: client sessions now receive their own file metadata from the session-bound `portal-summary` read and do not call the staff-only Documents read. Row 41 removes only the duplicate staff door and sends staff to the filtered Documents home.
+- The simplify work did not edit Present, Call cockpit, closer-context, context-fetcher, pay-link, credit, offer, or disposition files. The pending merge was advanced to `origin/main` at `e09d6263`; it is the only source of the staged Contracts permission and live-gate files.
+
+App and route files changed:
+- `public/app/pipeline.html`
+- `public/app/client-control-panel.html`
+- `public/app/messaging.html`
+- `public/app/documents.html`
+- `public/app/inquiry-remover.html`
+- `public/app/calendar.html`
+- `public/app/products-commissions.html`
+- `public/app/content-admin.html`
+- `public/app/staff-teams.html`
+- `public/app/sales-floor.html`
+- `public/app/sales-floor.js`
+- `public/app/client-portal.html`
+- `public/app/data.js`
+- `api/read/bank-inbox.mjs` (new)
+- `api/read/portal-summary.mjs`
+- `api/client-notes.mjs` (new)
+- `api/commission-rules.mjs` (new)
+- `netlify/functions/api.mjs`
+
+Commission configuration:
+- `db/migrations/246_owner_commission_rates_20260820.sql` adds effective-dated 2026-08-20 rows for closer 16.67% of collected deposit, closer 0.25% of funded amount, manager 5% of collected deposit, and manager 0.25% of funded amount.
+- `db/expected-migrations.mjs` was regenerated.
+- No manager upsell rule was invented.
+- The closer 20% downsell/upsell and manager 5% downsell formulas are owner-set but remain pending. They need a durable `sale_motion` plus product identity source; ordinary cash collected, UI labels, default prices, agreed amounts, and requested amounts are not safe substitutes.
+- **End-to-end blocker:** part payments can reuse the same commission ledger key, so a later payment can collide with the earlier payment.
+- **End-to-end blocker:** closer and `sales_manager` attribution is not assigned automatically on every supported sale/funding event. The four dated rules are safe configuration, but missing attribution can prevent a real payout row from being created.
+- Funded commission uses `funding_rounds.funded_amount` only. This diff contains no fallback to approved, agreed, or requested amounts.
+
+Tests, journeys, and evidence changed:
+- `src/http/simplify-implementation.test.mjs` (new)
+- `src/http/pipeline-screen.test.mjs`
+- `src/http/documents-screen.test.mjs`
+- `src/http/crm-html.test.mjs`
+- `e2e/controls-persist.spec.mjs`
+- `e2e/client-portal-ux.spec.mjs`
+- Generated `docs/journeys/*-actual.md` pages and `docs/journeys/README.md`
+- `docs/journeys/CHANGELOG.md`
+- `docs/workflows/simplify-implementation-2026-08-20-evidence/_mark-proof.py`
+- `docs/workflows/simplify-implementation-2026-08-20-evidence/shots/calendar-event-click-MARKED.png`
+
+Verification recorded so far:
+- Focused handler and screen tests: 129 passed, 0 failed, 0 skipped. The Bank Inbox, notes, commission, and portal-summary tests call the real handlers and prove missing auth, denied roles, missing org, session-org scope, and route registration.
+- Client Portal browser suite: 10 passed, 0 failed. The client file check proves the staff-only Documents read was never requested.
+- Named repair browser checks: 6 passed, 0 failed after the two commission checks were corrected to open the Commission Rules tab. These prove real tier field names, hidden tiered write controls, the read-error state, Raw Report absence, notes save, and Bank Inbox.
+- Syntax lint: 1,368 files and inline scripts parse clean.
+- Generated journey check: all 9 files are up to date.
+- `npx tsc --noEmit`: unavailable because this repository has no `tsconfig.json`; the command prints TypeScript help and exits 1.
+- Full repository suite baseline: 6,270 passed, 3 failed, 3 skipped. All three failures are the unrelated blockers listed below.
+- Calendar automated proof remains **UNVERIFIED**. Attempt 2 visibly selected Dana Whitfield and repainted Up Next, but its expected copy was wrong. No third run was made under the stuck rule. The existing marked screenshot remains observational evidence only: `shots/calendar-event-click-MARKED.png`.
+
+Commit-safe simplify set:
+- App/API: the 13 screen/script files, four handlers, and route table listed above.
+- Data: `db/migrations/246_owner_commission_rates_20260820.sql`, `db/expected-migrations.mjs`.
+- Tests: `src/http/simplify-implementation.test.mjs`, `src/http/crm-html.test.mjs`, `src/http/pipeline-screen.test.mjs`, `src/http/documents-screen.test.mjs`, `e2e/client-portal-ux.spec.mjs`, `e2e/controls-persist.spec.mjs`.
+- Records: generated journey actuals/README, `docs/journeys/CHANGELOG.md`, this board, and `docs/workflows/simplify-implementation-2026-08-20-evidence/`.
+
+Exclude from the simplify commit:
+- `package.json`.
+- Notion/lender work: `scripts/notion-lenders-to-csv.mjs`, `scripts/notion-scrape/lenders-extract.mjs`, `src/lenders/notion-lenders-extract.test.mjs`.
+- Old audit/review packs: `docs/workflows/display-redundancy-2026-08-19*`, `docs/workflows/simplify-review-2026-08-19*`.
+- UI standards, SMS, and offer research: `docs/workflows/ui-standards-audit-2026-08-20*`, `docs/workflows/sms-audit-2026-08-20.md`, `docs/workflows/slo-offers-architecture-2026-08-20.md`.
+- The staged Contracts permission and live-gate files are `origin/main` carry-in from the pending merge, not simplify changes.
+
+Repository-wide blockers observed in the full suite and not changed by this simplify scope:
+- Journey extraction still cannot trace the pre-existing `finance/crs-pull` and `gifts/message-blaster` gate shapes.
+- `api/read/company-brain-affiliate.mjs` fails the pre-existing org-scope source check.
+- `api/social/generate.mjs` fails the pre-existing outbound-fetch fence.

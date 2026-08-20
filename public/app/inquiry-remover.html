@@ -369,7 +369,7 @@
 
     <div class="section fh-maxw">
       <div class="section-title">Queue by Bureau</div>
-      <div class="bureau-row">
+      <div class="bureau-row" id="bureau-row" hidden>
         <button type="button" class="bureau-chip" data-bureau="Equifax" aria-pressed="false">
           <div class="bn">Equifax</div>
           <div class="bc zero">0</div>
@@ -386,6 +386,7 @@
           <div class="bs">none in queue</div>
         </button>
       </div>
+      <div id="no-open-inquiries" hidden>No open inquiries</div>
       <div class="filter-note" id="filter-note" role="status" aria-live="polite"></div>
     </div>
 
@@ -406,11 +407,6 @@
           <tr><td colspan="8" style="color:var(--text-dim)">Loading cases…</td></tr>
         </tbody>
       </table>
-    </div>
-
-    <div class="section fh-maxw" id="cases-panel" hidden>
-      <div class="section-title">Active Cases</div>
-      <div id="cases-list"></div>
     </div>
 
     <div class="section fh-maxw">
@@ -1160,6 +1156,13 @@ window.__fhQueueReady = (function () {
   }
   function paintBureaus(byBureau) {
     byBureau = byBureau || {};
+    var total = Object.keys(byBureau).reduce(function (sum, key) {
+      return sum + Number(byBureau[key] || 0);
+    }, 0);
+    var bureauRow = document.getElementById('bureau-row');
+    var emptyState = document.getElementById('no-open-inquiries');
+    if (bureauRow) bureauRow.hidden = total === 0;
+    if (emptyState) emptyState.hidden = total !== 0;
     [].slice.call(document.querySelectorAll('.bureau-chip[data-bureau]')).forEach(function (c) {
       var bc = c.querySelector('.bc');
       var bs = c.querySelector('.bs');
@@ -1194,76 +1197,6 @@ window.__fhQueueReady = (function () {
     return '';
   }
 
-  function renderCases(cases) {
-    var panel = document.getElementById('cases-panel');
-    var list = document.getElementById('cases-list');
-    if (!panel || !list) return;
-    if (!cases.length) { panel.hidden = true; list.innerHTML = ''; return; }
-    panel.hidden = false;
-    list.innerHTML = '';
-    cases.forEach(function (c) {
-      var box = document.createElement('div');
-      box.className = 'case-detail';
-      box.dataset.caseId = c.id || '';
-      var hold = c.hold_duration_display || (c.master_call_state === 'holding' ? '…' : '—');
-      var inqs = (c.inquiries || []).map(function (i) {
-        return '<div style="font-size:var(--fs-body);margin:3px 0;">' +
-          esc(i.bureau || '—') + ' · ' + esc(i.inquiry_name || i.inquiry || '—') +
-          ' · <span class="call-state ' + callStateClass(i.call_state) + '">' +
-          esc(callStateLabel(i.call_state)) + '</span>' +
-          (i.is_open === false ? ' · cleared' : '') + '</div>';
-      }).join('');
-      box.innerHTML =
-        '<div class="cd-title">' + esc(c.client_name || '(unnamed)') +
-          ' · <span class="status-pill progress">' + esc(c.case_status || 'Open') + '</span></div>' +
-        '<div class="cd-meta">' +
-          esc(c.selected_bureaus_raw || '—') +
-          ' · call: <span class="call-state ' + callStateClass(c.master_call_state) + '">' +
-          esc(callStateLabel(c.master_call_state)) + '</span>' +
-          ' · hold <span class="hold-time">' + esc(hold) + '</span>' +
-          ' · open inquiries ' + esc(c.open_inquiry_count == null ? 0 : c.open_inquiry_count) +
-        '</div>' +
-        (inqs || '<div class="cd-meta">No linked inquiries yet</div>') +
-        '<div class="case-actions">' +
-          '<button type="button" class="primary" data-case-act="mark_cleared">Mark Cleared</button>' +
-          '<button type="button" data-case-act="close">Close Case</button>' +
-        '</div>';
-      list.appendChild(box);
-    });
-
-    list.onclick = function (ev) {
-      var btn = ev.target.closest('[data-case-act]');
-      if (!btn) return;
-      var box = btn.closest('.case-detail');
-      if (!box || !box.dataset.caseId) return;
-      var action = btn.getAttribute('data-case-act');
-      var body = { id: box.dataset.caseId, action: action };
-      if (action === 'close') {
-        if (!window.confirm('Close this inquiry-removal case?')) return;
-        body.reason = 'closed_by_rep';
-      }
-      btn.disabled = true;
-      fetch('/api/inquiry-cases', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body)
-      }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-        .then(function (out) {
-          if (!out.ok || !out.j || !out.j.ok) {
-            FHData.banner('error', 'case action failed — ' + ((out.j && out.j.error) || 'unknown'), 'inquiry-cases');
-            btn.disabled = false;
-            return;
-          }
-          FHData.banner('real', 'case updated · ' + action, 'inquiry-cases');
-          location.reload();
-        }).catch(function () {
-          FHData.banner('error', 'case action failed — network', 'inquiry-cases');
-          btn.disabled = false;
-        });
-    };
-  }
-
   return domReady.then(function () {
     table = queueTable();
     if (!table || !window.FHData) return;
@@ -1271,15 +1204,7 @@ window.__fhQueueReady = (function () {
   });
 
   function runLoad() {
-  return Promise.all([
-    FHData.inquiries({ limit: 200 }),
-    FHData.inquiryCases ? FHData.inquiryCases({ limit: 100, active: 1 }) : Promise.resolve({ ok: false })
-  ]).then(function (pair) {
-    var res = pair[0];
-    var casesRes = pair[1];
-    if (casesRes && casesRes.ok) {
-      renderCases((casesRes.data && casesRes.data.cases) || []);
-    }
+  return FHData.inquiries({ limit: 200 }).then(function (res) {
     if (!res.ok) { showQueueStatus('Could not load the inquiry queue.'); FHData.explain(res, 'inquiry queue'); return; }
     var items = (res.data && res.data.items) || [];
     if (!items.length) {
@@ -1925,7 +1850,7 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
         '</div>' +
         '<div class="case-col">' +
           '<h4>Generated letter (draft)</h4>' +
-          '<div class="case-letter"><textarea class="letter-edit">' + esc(letter.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 8000)) + '</textarea></div>' +
+          '<div class="case-letter"><textarea class="letter-edit" readonly>' + esc(letter.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 8000)) + '</textarea></div>' +
           '<p style="font-size:var(--fs-caption);color:var(--text-dim);margin:6px 0 0">Draft only — nothing sends until you press send below.</p>' +
           '<button type="button" class="qbtn" data-act="generate-letters" style="margin-top:8px">Generate letters</button>' +
           '<p class="gen-result" style="font-size:var(--fs-caption);color:var(--text-dim);margin:6px 0 0"></p>' +
@@ -1933,7 +1858,7 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
         '<div class="case-col">' +
           '<h4>Identity packet</h4>' +
           '<p style="font-size:var(--fs-body);color:var(--text-dim)">Docs: ' + esc(docsLabel(C)) + '. SSN stays masked; reveal uses /api/pii with an audit reason.</p>' +
-          '<button type="button" class="qbtn" data-act="packet">Download packet</button>' +
+          '<a class="qbtn" href="documents.html?client_id=' + encodeURIComponent(C.client_id || "") + '">Open documents</a>' +
           '<h4 style="margin-top:14px">Send</h4>' +
           (blocked
             ? '<p style="font-size:var(--fs-body);color:var(--red)">Send disabled — identity packet incomplete. Collection is chasing uploads.</p>'
@@ -2074,10 +1999,6 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
             btn.disabled = false;
             btn.textContent = "failed";
           });
-          return;
-        }
-        if (act === "packet") {
-          if (C.client_id) window.open("/api/read/documents?client_id=" + encodeURIComponent(C.client_id), "_blank");
           return;
         }
         if (act === "send") {

@@ -1,4 +1,4 @@
-// Client portal — go-live UX gates (funding suppress, pay honesty, state toggle, included tile).
+// Client portal — go-live UX gates (funding suppress, pay honesty, real states, included tile).
 import { test, expect } from "@playwright/test";
 import { CLIENT_ID, json } from "./harness.mjs";
 
@@ -29,6 +29,7 @@ const OWNER_SESSION = {
 };
 
 async function openPortal(page, session, entitlements, { settleMs = 600 } = {}) {
+  const calls = { staffDocuments: 0 };
   await page.addInitScript((s) => {
     localStorage.setItem("fh_token", "e2e-token");
     localStorage.setItem("fh_role", (s.staff && s.staff.role) || "owner");
@@ -40,6 +41,19 @@ async function openPortal(page, session, entitlements, { settleMs = 600 } = {}) 
     if (url.includes("/api/auth/session") || /\/api\/session\b/.test(url)) {
       return json(route, session);
     }
+    if (url.includes("/api/read/documents")) {
+      calls.staffDocuments += 1;
+      return json(route, { ok: false, error: "forbidden" }, 403);
+    }
+    if (url.includes("/api/read/portal-summary")) {
+      return json(route, {
+        ok: true, prequal_amount: null, prequal_display: null, soft_pull_complete: false,
+        documents: [{
+          id: "doc-1", document_key: "bank-statement", title: "Client bank statement",
+          mime_type: "application/pdf", created_at: "2026-08-20T12:00:00Z"
+        }]
+      });
+    }
     if (url.includes("entitlement")) {
       return json(route, { ok: true, items: entitlements });
     }
@@ -49,6 +63,7 @@ async function openPortal(page, session, entitlements, { settleMs = 600 } = {}) 
   await page.goto(`/app/client-portal.html?id=${CLIENT_ID}`);
   await page.waitForLoadState("domcontentloaded");
   if (settleMs > 0) await page.waitForTimeout(settleMs);
+  return calls;
 }
 
 test.describe("client portal go-live UX", () => {
@@ -81,6 +96,13 @@ test.describe("client portal go-live UX", () => {
     await expect(page.locator(".action-card")).toBeHidden();
   });
 
+  test("client files come from the client-safe portal summary", async ({ page }) => {
+    const calls = await openPortal(page, CLIENT_SESSION, []);
+    await expect(page.locator("#tp-docs")).toContainText("Client bank statement");
+    expect(calls.staffDocuments).toBe(0);
+    await expect(page.locator("#tp-docs")).not.toContainText("Open this client in Documents");
+  });
+
   test("unlock tiles match the offer catalog", async ({ page }) => {
     await openPortal(page, CLIENT_SESSION, []);
     await expect(page.locator('[data-tile="SOFT_PULL"] .tp')).toHaveText("$32");
@@ -100,13 +122,12 @@ test.describe("client portal go-live UX", () => {
     await expect(page.locator(".prog-card.funding-only .sb-main")).toHaveText(/funding file is open/i);
   });
 
-  test("staff can see the designer STATE toggle", async ({ page }) => {
+  test("staff do not get the removed designer state switcher", async ({ page }) => {
     await openPortal(page, OWNER_SESSION, [
       { entitlement_code: "funding-snapshot", active: true }
     ]);
-    await expect(page.locator("body")).toHaveClass(/portal-staff/);
-    await expect(page.locator(".statesw")).toBeVisible();
-    await expect(page.locator("#st-precall")).toBeVisible();
+    await expect(page.locator(".statesw")).toHaveCount(0);
+    await expect(page.locator("#st-precall")).toHaveCount(0);
   });
 
   test("included letter pack shows View status, not Unlock", async ({ page }) => {
@@ -125,15 +146,11 @@ test.describe("client portal go-live UX", () => {
     await expect(page.locator("#um-go")).toHaveText(/Close/i);
   });
 
-  test("pay modal never hangs on a fake checkout spinner", async ({ page }) => {
+  test("pay stays hidden when no checkout exists", async ({ page }) => {
     await openPortal(page, CLIENT_SESSION, []);
 
-    await page.locator('[data-tile="FUNDING_MASTERY"] [data-unlock="FUNDING_MASTERY"]').click();
-    await expect(page.locator("#unlock-modal")).toHaveClass(/on/);
-    await page.locator("#um-go").click();
-    await expect(page.locator("#um-go")).toHaveText(/Checkout not available/i);
-    await expect(page.locator("#um-pay-msg")).toContainText(/not available yet/i);
-    await expect(page.locator("#um-talk")).toBeVisible();
+    await expect(page.locator('[data-tile="FUNDING_MASTERY"] [data-unlock="FUNDING_MASTERY"]')).toBeHidden();
+    await expect(page.locator("#unlock-modal")).not.toHaveClass(/on/);
   });
 
   test("chat opens before the call and asks for questions", async ({ page }) => {

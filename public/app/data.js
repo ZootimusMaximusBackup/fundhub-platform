@@ -244,6 +244,7 @@ window.FHData = (function () {
     },
 
     commissions:     function (p) { return this.read("commissions", p); },
+    commissionRules: function () { return get("/api/commission-rules"); },
     invoices:        function (p) { return this.read("invoices", p); },
     documents:       function (p) { return this.read("documents", p); },
     fundingRounds:   function (p) { return this.read("funding-rounds", p); },

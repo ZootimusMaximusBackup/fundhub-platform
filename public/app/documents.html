@@ -186,7 +186,6 @@ th[data-s="age"]{text-align:right}
         <div class="stat"><div class="eyebrow">DC-00 <span class="sep">/</span> TOTAL</div><div class="sv" id="kTotal">0</div><div class="sd">across four classes</div></div>
         <div class="stat"><div class="eyebrow">DC-00 <span class="sep">/</span> AWAITING SIGNATURE</div><div class="sv" id="kSign">0</div><div class="sd">sent, not signed</div></div>
         <div class="stat"><div class="eyebrow">DC-00 <span class="sep">/</span> UNDELIVERED</div><div class="sv" id="kUndel">0</div><div class="sd">generated, never sent</div></div>
-        <div class="stat"><div class="eyebrow">DC-00 <span class="sep">/</span> OLDEST PENDING</div><div class="sv" id="kOld">—</div><div class="sd" id="kOldWho">—</div></div>
       </div>
 
       <div class="classbar" id="classbar"></div>
@@ -378,14 +377,6 @@ function renderStats(){
   document.getElementById('kTotal').textContent=DOCS.length;
   document.getElementById('kSign').textContent=DOCS.filter(function(d){return d.sig==='awaiting'}).length;
   document.getElementById('kUndel').textContent=DOCS.filter(function(d){return d.gen==='generated'&&d.del==='not_sent'}).length;
-  var pend=DOCS.filter(pending).sort(function(a,b){return b.age-a.age});
-  if(pend.length){
-    document.getElementById('kOld').textContent=pend[0].age+'d';
-    document.getElementById('kOldWho').textContent=pend[0].doc+' · '+pend[0].client;
-  } else {
-    document.getElementById('kOld').textContent='—';
-    document.getElementById('kOldWho').textContent=DOCS.length?'Nothing pending':'No documents on file yet';
-  }
   var stale=DOCS.filter(function(d){return pending(d)&&d.age>=14}).length;
   document.getElementById('staleTxt').textContent=stale+' past 14 days';
   document.getElementById('staleChip').className='chip '+(stale?'bad':'on');
@@ -678,8 +669,8 @@ renderTabs(); renderClassbar(); render();
       try { redraw(); } catch (e) { return null; }   // class cards + table + tiles, all from DOCS
       decorateContracts();                           // one extra call, then the badges appear
 
-      return "live documents · " + mapped.length + " records" +
-             (data.hasMore ? " (first 200)" : "") +
+      return "live documents" +
+             (data.hasMore ? " · showing first 200" : "") +
              (skipped ? " · " + skipped + " not in this list" : "");
     });
   });

@@ -38,11 +38,11 @@ flowchart TD
     CAN --> A_privacy[privacy — 1 route]
     CAN --> A_proxy[proxy — 2 routes]
     CAN --> A_public[public — 6 routes]
-    CAN --> A_read[Reading data — 48 routes]
+    CAN --> A_read[Reading data — 49 routes]
     CAN --> A_repair[repair — 3 routes]
     CAN --> A_social[social — 7 routes]
     CAN --> A_staff[staff — 2 routes]
-    CAN --> A_top_level[Everything else — 33 routes]
+    CAN --> A_top_level[Everything else — 35 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 2 routes]
     CANT --> B_chat[chat — 1 blocked]
@@ -52,7 +52,7 @@ flowchart TD
 
 ## What they can reach
 
-**181 of 185 routes.**
+**184 of 188 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -87,10 +87,12 @@ flowchart TD
 | `/api/chat/ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/chat/messages` | GET, POST | staff |
 | `/api/chat/peers` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/client-notes` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/climate` | OPTIONS | anyone |
 | `/api/climate/config` | — | anyone |
 | `/api/climate/geocode` | OPTIONS | anyone |
 | `/api/closer-deck` | POST | closer, sales_manager, owner, admin |
+| `/api/commission-rules` | GET, POST | owner, admin, sales_manager |
 | `/api/company-brain/reviews` | GET, POST | owner |
 | `/api/company-brain/sync` | GET, POST | owner, admin, sales_manager |
 | `/api/company-brain/threads` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -178,6 +180,7 @@ flowchart TD
 | `/api/read/agent-shadow-log` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/ai-bureau-config` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/bank-inbox` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/banking-surface` | GET | owner, admin, sales_manager |
 | `/api/read/call-outcomes` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/closer-call` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -246,7 +249,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**2 of 185 routes.**
+**2 of 188 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

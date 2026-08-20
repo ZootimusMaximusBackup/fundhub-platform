@@ -499,9 +499,6 @@
 
           <div class="na-why" id="ccp-why-label" hidden>Why it hasn't happened</div>
           <div id="ccp-blocker-list"></div>
-          <div class="status-chip-row" id="ccp-chips">
-            <div class="status-chip neutral"><span class="dot"></span><span id="ccp-chip-credit">Credit —</span></div>
-          </div>
         </div>
       </div>
 
@@ -637,6 +634,7 @@
           <div class="kv-label" style="margin-bottom:5px;">Notes (editable)</div>
           <textarea class="notes-box" id="notes"
             placeholder="No notes yet — add context for the next person who opens this file."></textarea>
+          <button class="link-btn" type="button" id="notes-save">Save notes</button>
           <div class="notes-status is-idle" id="notes-status" role="status" aria-live="polite">
             <span class="sd"></span><span class="stxt"></span>
           </div>
@@ -688,22 +686,8 @@
         <div class="more-body">
           <a class="link-btn" id="ccp-link-lenders" href="lenders.html">Open Funding Matrix <span class="arrow">↗</span></a>
           <a class="link-btn" id="ccp-link-present2" href="present.html">Open Credit Snapshot <span class="arrow">↗</span></a>
-          <button class="link-btn" type="button" disabled title="Not wired on this screen">Open Bank Inbox <span class="arrow">↗</span></button>
-          <!-- GHL Contact was deleted 2026-08-19. GoHighLevel is cut over to
-               Messaging, so the button had no destination left to point at and
-               a permanently dead control is worse than no control.
-
-               Raw Report STAYS DISABLED, deliberately. A bureau pull stores a
-               crs_results row and nothing else — src/finance/crs-pull.mjs writes
-               no `documents` row, and there is no raw-report subtype in
-               src/documents/kinds.mjs to write one under. The only way to reach
-               a document's bytes is api/documents/[id].mjs, which refuses
-               without a signature, and no readable GET endpoint mints one
-               (/api/read/documents strips storage_key by design). So there is
-               nothing on the wire to link. Enabling it would be a live-looking
-               control over nothing, which is exactly what this file's comments
-               were written to stop. -->
-          <button class="link-btn" type="button" disabled title="Raw bureau PDF not linked here yet">Raw Report <span class="arrow">↗</span></button>
+          <button class="link-btn" id="ccp-bank-inbox-open" type="button">Open Bank Inbox <span class="arrow">↗</span></button>
+          <div id="ccp-bank-inbox" hidden></div>
         </div>
       </details>
 
@@ -729,7 +713,7 @@
     <span>FUNDHUB-CCP · live</span>
     <span id="ccp-footer-org">ORG: —</span>
     <span id="ccp-footer-id">—</span>
-    <span>notes do not save from this screen</span>
+    <span>notes save to this client file</span>
   </footer>
 
 </div>
@@ -741,7 +725,7 @@
 </script>
 
 <script>
-/* Groups fold. Notes are read-only — there is no notes write on this screen. */
+/* Groups fold. */
 document.querySelectorAll('.group-title.tog').forEach(function(t){
   t.addEventListener('click', function(){
     var body = document.getElementById(t.getAttribute('aria-controls'));
@@ -750,18 +734,6 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
     body.hidden = open;
   });
 });
-(function(){
-  var ta = document.getElementById('notes');
-  if (!ta) return;
-  ta.readOnly = true;
-  ta.placeholder = 'No notes on file.';
-  var box = document.getElementById('notes-status');
-  if (box) {
-    box.className = 'notes-status';
-    var txt = box.querySelector('.stxt');
-    if (txt) txt.textContent = 'notes do not save from this screen';
-  }
-})();
 </script>
 
 <!-- Live file only. Missing fields stay a dash. Never a sample person. -->
@@ -1306,7 +1278,6 @@ document.addEventListener("DOMContentLoaded", function () {
     setText("ccp-card-use", cardUse(d.utilisation));
     setText("ccp-scores", scores);
     setText("ccp-facts-scores", scores);
-    setText("ccp-chip-credit", "Credit " + scores);
 
     var rounds = d.funding_rounds || [];
     var latestRound = rounds[0];
@@ -1341,14 +1312,90 @@ document.addEventListener("DOMContentLoaded", function () {
     var ta = $("notes");
     if (ta) ta.value = cf.notes || cf.staff_notes || "";
 
-    banner("real", "live file · " + (name || c.id || "this client") +
-      " · " + (d.transactions || []).length + " payments · " +
+    banner("real", "live file · " + (d.transactions || []).length + " payments · " +
       (d.messages || []).length + " messages");
   }
 
   var id = FHData.param("id") || FHData.param("client_id");
   wireLinks(id);
   if (!id) setText("ccp-name", "");
+
+  (function wireNotes() {
+    var notes = $("notes");
+    var save = $("notes-save");
+    var status = $("notes-status");
+    var text = status && status.querySelector(".stxt");
+    function say(message, state) {
+      if (!status) return;
+      status.className = "notes-status " + (state || "is-idle");
+      if (text) text.textContent = message;
+    }
+    if (!notes || !save) return;
+    if (!id) {
+      notes.disabled = true;
+      save.disabled = true;
+      say("Open a client file before adding notes.", "is-idle");
+      return;
+    }
+    say("Notes are saved only when you press Save notes.", "is-idle");
+    save.addEventListener("click", function () {
+      save.disabled = true;
+      say("Saving…", "is-idle");
+      FHData.write("/api/client-notes", { client_id: id, notes: notes.value }).then(function (res) {
+        save.disabled = false;
+        if (!res || !res.ok) {
+          say((res && res.error) || "Notes did not save. Try again.", "is-error");
+          return;
+        }
+        say("Saved to this client file.", "is-saved");
+      });
+    });
+  })();
+
+  (function wireBankInbox() {
+    var open = $("ccp-bank-inbox-open");
+    var box = $("ccp-bank-inbox");
+    var loadedInbox = false;
+    if (!open || !box) return;
+    if (!id) {
+      open.hidden = true;
+      return;
+    }
+    open.addEventListener("click", function () {
+      box.hidden = !box.hidden;
+      if (box.hidden || loadedInbox) return;
+      box.textContent = "Loading bank messages…";
+      FHData.read("bank-inbox", { client_id: id, limit: 100 }).then(function (res) {
+        box.textContent = "";
+        if (!res || !res.ok) {
+          box.textContent = "Bank messages could not be loaded.";
+          return;
+        }
+        var items = (res.data && res.data.items) || [];
+        loadedInbox = true;
+        if (!items.length) {
+          box.textContent = "No bank messages for this client.";
+          return;
+        }
+        var list = document.createElement("div");
+        list.className = "facts-list";
+        items.forEach(function (item) {
+          var row = document.createElement("div");
+          row.className = "fact-row";
+          var key = document.createElement("span");
+          key.className = "k";
+          key.textContent = item.subject || item.from_address || "Bank message";
+          var value = document.createElement("span");
+          value.className = "v";
+          value.textContent = item.body_preview || item.classification || item.received_at || "Received";
+          row.appendChild(key);
+          row.appendChild(value);
+          list.appendChild(row);
+        });
+        box.appendChild(list);
+      });
+    });
+  })();
 
   (function mountClientPicker() {
     var sel = $("ccp-pick");

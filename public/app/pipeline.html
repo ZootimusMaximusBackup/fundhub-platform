@@ -98,13 +98,9 @@
   .rail-tab{flex-shrink:0;}
   .rail-tab{display:flex;align-items:center;gap:7px;padding:7px 12px 8px;border-radius:6px 6px 0 0;cursor:default;
     font-size:var(--fs-body);font-weight:600;color:var(--dark-text-dim);white-space:nowrap;position:relative;}
-  .rail-tab .rt-count{font-family:var(--mono);font-size:var(--fs-caption);background:var(--card);color:var(--dark-text-dim);
-    padding:1px 6px;border-radius:9px;}
   .rail-tab:hover{color:var(--dark-text);background:#151513;}
   .rail-tab.active{background:var(--board);color:var(--text);font-weight:700;}
-  .rail-tab.active .rt-count{background:var(--ink);color:var(--dark-text);}
   .rail-tab.empty{color:var(--gray);}
-  .rail-tab.empty .rt-count{background:transparent;border:1px dashed var(--cardline);color:var(--gray);}
 
   /* ---------- filter bar ---------- */
   .filterbar{background:var(--surface);border-bottom:1px solid var(--line);flex-shrink:0;
@@ -134,7 +130,6 @@
   .filterpanel{background:var(--paper);border-bottom:1px solid var(--line);flex-shrink:0;
     display:flex;align-items:center;gap:8px;padding:7px 14px;}
   .filterpanel[hidden]{display:none;}
-  #boardArchiveTop[hidden]{display:none;}
   .fp-clear{margin-left:4px;background:transparent;border:0;font-family:var(--sans);font-size:var(--fs-body);
     color:var(--text-dim);text-decoration:underline;cursor:pointer;}
   .fp-clear:hover{color:var(--ink2);}
@@ -189,7 +184,6 @@
   .fh-del-actions button{border:1px solid var(--line);border-radius:8px;padding:8px 12px;font:700 var(--fs-body) var(--sans);cursor:pointer;background:var(--paper)}
   .fh-del-actions .go{background:#6E2A22;color:#fff;border-color:#6E2A22}
   .fh-del-actions .go:disabled{opacity:.4;cursor:not-allowed}
-  #boardArchiveTop{margin-left:8px}
   .board{display:flex;gap:10px;padding:10px 14px 14px;align-items:stretch;height:100%;position:relative;width:max-content;}
 
   .col{width:238px;flex-shrink:0;background:var(--paper-dim);border:1px solid var(--line);border-radius:8px;
@@ -498,14 +492,14 @@
 
   <!-- RAIL SWITCHER -->
   <nav class="railbar">
-    <div class="rail-tab active" data-rail="R-01"><span class="rt-code">R-01</span>Sales <span class="rt-count">—</span></div>
-    <div class="rail-tab" data-rail="R-02"><span class="rt-code">R-02</span>Funding: Card Stacking <span class="rt-count">—</span></div>
-    <div class="rail-tab" data-rail="R-03"><span class="rt-code">R-03</span>Funding: Alt-Fin (Lendflow) <span class="rt-count">—</span></div>
-    <div class="rail-tab" data-rail="R-04"><span class="rt-code">R-04</span>Optimization (Repair) Rounds <span class="rt-count">—</span></div>
-    <div class="rail-tab" data-rail="R-05"><span class="rt-code">R-05</span>Inquiry Removal <span class="rt-count">—</span></div>
-    <div class="rail-tab" data-rail="R-06"><span class="rt-code">R-06</span>AR / Collections <span class="rt-count">—</span></div>
-    <div class="rail-tab" data-rail="R-08"><span class="rt-code">R-08</span>Affiliates + White Label <span class="rt-count">—</span></div>
-    <div class="rail-tab" data-rail="R-09"><span class="rt-code">R-09</span>Hiring <span class="rt-count">—</span></div>
+    <div class="rail-tab active" data-rail="R-01"><span class="rt-code">R-01</span>Sales</div>
+    <div class="rail-tab" data-rail="R-02"><span class="rt-code">R-02</span>Funding: Card Stacking</div>
+    <div class="rail-tab" data-rail="R-03"><span class="rt-code">R-03</span>Funding: Alt-Fin (Lendflow)</div>
+    <div class="rail-tab" data-rail="R-04"><span class="rt-code">R-04</span>Optimization (Repair) Rounds</div>
+    <div class="rail-tab" data-rail="R-05"><span class="rt-code">R-05</span>Inquiry Removal</div>
+    <div class="rail-tab" data-rail="R-06"><span class="rt-code">R-06</span>AR / Collections</div>
+    <div class="rail-tab" data-rail="R-08"><span class="rt-code">R-08</span>Affiliates + White Label</div>
+    <div class="rail-tab" data-rail="R-09"><span class="rt-code">R-09</span>Hiring</div>
   </nav>
 
   <!-- FILTERS — one control; active filters surface as chips -->
@@ -524,7 +518,6 @@
       <span><b id="sumCount">—</b> cards</span>
       <span><b id="sumMoney">—</b> est.</span>
       <span class="held-n" id="sumHeld" title="the pipeline API does not return hold status">— held</span>
-      <button type="button" class="filter-btn" id="boardArchiveTop" hidden title="Archive selected contact">Archive</button>
     </div>
   </div>
   <div class="filterpanel" id="filterPanel" hidden>
@@ -1159,18 +1152,6 @@ restore();
     if (sumMoneyEl) sumMoneyEl.textContent = totals ? usd(totals.money) : "—";
   }
 
-  /* FH-RAILCOUNT-BEGIN */
-  // Same rule as setSummary: a rail's count is real (from the API, summed the
-  // same way fhPipelineSummary sums a column) or it is a dash. Never the
-  // 82/33/15/44/27/75/0 the tabs used to carry printed once at page load and
-  // never touched again.
-  function setRailCount(rail, n) {
-    var el = document.querySelector('.rail-tab[data-rail="' + rail + '"] .rt-count');
-    if (el) el.textContent = String(n);
-  }
-  window.setRailCount = setRailCount;
-  /* FH-RAILCOUNT-END */
-
   function initials(name) {
     var parts = String(name).trim().split(/\s+/);
     return ((parts[0] || "?")[0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
@@ -1258,101 +1239,10 @@ restore();
     return card;
   }
 
-  var matchPanel = null;
-  function showLenderMatches(c) {
-    if (!matchPanel) {
-      matchPanel = document.createElement("div");
-      matchPanel.id = "fh-lender-match-panel";
-      matchPanel.style.cssText =
-        "position:fixed;right:16px;bottom:48px;z-index:2147482100;width:min(360px,92vw);" +
-        "background:#fff;border:1px solid #E4E4E7;border-radius:10px;padding:12px 14px;" +
-        "box-shadow:0 12px 40px rgba(0,0,0,.18);font:var(--fs-body)/1.4 var(--sans,system-ui)";
-      document.body.appendChild(matchPanel);
-    }
-    matchPanel.innerHTML =
-      "<div style=\"font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;color:#71717A\">" +
-      "Round planning · Apply</div>" +
-      "<div style=\"font-weight:600;margin-top:6px\"></div>" +
-      "<div class=\"fh-mm-body\" style=\"margin-top:8px;color:#71717A\">Loading…</div>" +
-      "<div class=\"fh-mm-apply\" style=\"margin-top:10px;display:flex;flex-direction:column;gap:6px\"></div>" +
-      "<div style=\"margin-top:10px\"><a class=\"fh-mm-lenders\" href=\"#\" style=\"font-size:var(--fs-body)\">Open Lenders for this client ↗</a></div>" +
-      "<div style=\"margin-top:6px\"><a class=\"fh-mm-call\" href=\"#\" style=\"font-size:var(--fs-body)\">Open call cockpit ↗</a></div>" +
-      "<div style=\"margin-top:6px\"><a class=\"fh-mm-present\" href=\"#\" style=\"font-size:var(--fs-body)\">Present ↗</a></div>";
-    matchPanel.querySelector("div[style*=\"font-weight\"]").textContent = c.name || "Client";
-    matchPanel.querySelector(".fh-mm-lenders").href =
-      "lenders.html?client_id=" + encodeURIComponent(c.client_id);
-    matchPanel.querySelector(".fh-mm-call").href =
-      "closer-call.html?client_id=" + encodeURIComponent(c.client_id);
-    matchPanel.querySelector(".fh-mm-present").href =
-      "present.html?contact=" + encodeURIComponent(c.client_id);
-    var body = matchPanel.querySelector(".fh-mm-body");
-    var applyBox = matchPanel.querySelector(".fh-mm-apply");
-    var q = "client_id=" + encodeURIComponent(c.client_id);
-    var t = "";
-    try { t = localStorage.getItem("fh_token") || ""; } catch (e) {}
-    var headers = { accept: "application/json" };
-    if (t) headers.authorization = "Bearer " + t;
-    fetch("/api/read/lender-matches?" + q, { headers: headers })
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        if (!d || !d.ok) {
-          body.textContent = "Could not load matches.";
-          return;
-        }
-        var n = d.match_count || 0;
-        if (n === 0) {
-          body.textContent = (d.summary && d.summary.lender_count === 0)
-            ? "Lender list is empty — import CSV on the Lenders screen."
-            : "No lenders fit this client's state / inquiry profile.";
-          return;
-        }
-        body.textContent = n + " lender" + (n === 1 ? "" : "s") + " fit. Apply opens a verified residential proxy near the client, then the bank URL.";
-        applyBox.innerHTML = "";
-        (d.matches || []).slice(0, 8).forEach(function (m) {
-          var row = document.createElement("div");
-          row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid #F4F4F5";
-          var label = document.createElement("div");
-          label.style.cssText = "font-size:var(--fs-body);min-width:0";
-          label.textContent =
-            (m.priority_tier != null ? ("T" + m.priority_tier + " · ") : "") +
-            (m.name || "?") +
-            (m.bureaus_pulled ? (" · " + m.bureaus_pulled) : "");
-          row.appendChild(label);
-          if (m.application_url && m.id && window.FHProxyApply) {
-            var btn = document.createElement("button");
-            btn.type = "button";
-            btn.textContent = "Apply";
-            btn.setAttribute("data-fh-apply", "1");
-            btn.style.cssText =
-              "flex:0 0 auto;border:1px solid #18181B;background:#18181B;color:#fff;border-radius:6px;" +
-              "padding:5px 10px;font:600 11px/1 system-ui;cursor:pointer";
-            btn.addEventListener("click", function (ev) {
-              ev.preventDefault();
-              ev.stopPropagation();
-              window.FHProxyApply.applyToLender({
-                clientId: c.client_id,
-                lenderId: m.id,
-                lenderName: m.name || "Lender"
-              });
-            });
-            row.appendChild(btn);
-          } else {
-            var miss = document.createElement("span");
-            miss.style.cssText = "font-size:var(--fs-caption);color:#A1A1AA";
-            miss.textContent = m.application_url ? "—" : "No URL";
-            row.appendChild(miss);
-          }
-          applyBox.appendChild(row);
-        });
-      })
-      .catch(function () { body.textContent = "Could not load matches."; });
-  }
-
   var drawerClient = null;
   var drawerEl = document.getElementById("fhDrawer");
   var drawerBody = document.getElementById("fhDrawerBody");
   var drawerName = document.getElementById("fhDrawerName");
-  var boardArchiveTop = document.getElementById("boardArchiveTop");
   var delModal = document.getElementById("fhDelModal");
   var delInput = document.getElementById("fhDelInput");
   var delGo = document.getElementById("fhDelGo");
@@ -1372,7 +1262,6 @@ restore();
       drawerEl.setAttribute("aria-hidden", "true");
     }
     drawerClient = null;
-    if (boardArchiveTop) boardArchiveTop.hidden = true;
   }
 
   function row(label, value) {
@@ -1522,22 +1411,6 @@ restore();
     if (book.title) call.appendChild(rowAlways("What", book.title));
     drawerBody.appendChild(call);
 
-    var scores = sec("Scores");
-    var grid = document.createElement("div");
-    grid.className = "fh-drawer-grid";
-    [["EX", tm.experian], ["EQ", tm.equifax], ["TU", tm.transunion]].forEach(function (pair) {
-      var st = document.createElement("div");
-      st.className = "fh-drawer-stat";
-      var b = document.createElement("b");
-      b.textContent = pair[1] == null ? "—" : String(pair[1]);
-      var sp = document.createElement("span");
-      sp.textContent = pair[0];
-      st.appendChild(b); st.appendChild(sp);
-      grid.appendChild(st);
-    });
-    scores.appendChild(grid);
-    drawerBody.appendChild(scores);
-
     var said = surveyAnswer(cf, "cf_svy_self_reported_fico") || c.survey_fico || null;
     var biz = (data && data.business_credit) || {};
     var inc = (data && data.income_estimates) || {};
@@ -1592,8 +1465,6 @@ restore();
       drawerEl.classList.add("open");
       drawerEl.setAttribute("aria-hidden", "false");
     }
-    if (boardArchiveTop) boardArchiveTop.hidden = false;
-
     if (typeof FHData !== "undefined" && FHData.client) {
       FHData.client(c.client_id).then(function (res) {
         if (!drawerClient || drawerClient.client_id !== c.client_id) return;
@@ -1690,11 +1561,6 @@ restore();
   }
   if (document.getElementById("fhDrawerDel")) {
     document.getElementById("fhDrawerDel").addEventListener("click", function () {
-      if (drawerClient) openDeleteConfirm(drawerClient);
-    });
-  }
-  if (boardArchiveTop) {
-    boardArchiveTop.addEventListener("click", function () {
       if (drawerClient) openDeleteConfirm(drawerClient);
     });
   }
@@ -1826,7 +1692,6 @@ restore();
   function applyBoard(stages, rail, label, key) {
     var r = paint(stages, key);
     setSummary(fhPipelineSummary(stages));
-    setRailCount(rail, fhPipelineSummary(stages).count);
     if (typeof window.rebuildOwnerOptions === "function") {
       try { window.rebuildOwnerOptions(); } catch (e) {}
     }
@@ -1835,8 +1700,7 @@ restore();
         "live board · " + label.toLowerCase() +
         " · no cards on this rail yet — stages are ready, nobody has been placed here");
     } else {
-      banner("real", "live board · " + label.toLowerCase() + " pipeline · " + r.shown +
-                     " cards across " + r.stageCount + " stage" + (r.stageCount === 1 ? "" : "s"));
+      banner("real", "live board · " + label.toLowerCase() + " pipeline");
     }
   }
 
@@ -1883,26 +1747,6 @@ restore();
     });
   }
 
-    // Every rail's tab count, on page load — not just whichever pipeline is
-  // active. One request answers all of them. This used to fetch each rail's
-  // entire board (every stage, every card, up to 500 rows) purely to take the
-  // length, which cost eight full board reads per page load for eight numbers.
-  // A rail whose count does not come back keeps the "—" it starts on: the same
-  // rule setSummary follows, unknown is a dash, never a fabricated 0.
-  // `skipRail` is the one load() is already fetching for the initial paint,
-  // so its tab is left to the real board response.
-  function loadRailCounts(skipRail) {
-    FHData.pipelineCounts().then(function (res) {
-      if (!res.ok || !res.data || !res.data.counts) return;
-      var counts = res.data.counts;
-      Object.keys(PIPELINE_KEYS).forEach(function (rail) {
-        if (rail === skipRail) return;
-        var n = counts[PIPELINE_KEYS[rail]];
-        if (typeof n === "number") setRailCount(rail, n);
-      });
-    });
-  }
-
   // Exposed so the rail-tab click handler (defined earlier in the page) can
   // drive the same loader. currentKey / invalidate are used by drag + MOVE.
   window.FHPipelineBoard = {
@@ -1922,7 +1766,6 @@ restore();
   // follow and never queue in front of the board the user is looking at.
   document.addEventListener("DOMContentLoaded", function () {
     load("R-01", "Sales");
-    loadRailCounts("R-01");
   });
 })();
 </script>

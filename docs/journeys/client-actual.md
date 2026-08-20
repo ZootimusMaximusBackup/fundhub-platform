@@ -28,7 +28,7 @@ flowchart TD
     CAN --> A_read[Reading data — 3 routes]
     CAN --> A_top_level[Everything else — 6 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 153 routes]
+    WHO -->|Yes| CANT[Blocked — 156 routes]
     CANT --> B_auth[Signing in and out — 4 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_brand[brand — 1 blocked]
@@ -46,17 +46,17 @@ flowchart TD
     CANT --> B_partner_marketing[partner-marketing — 5 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
-    CANT --> B_read[Reading data — 46 blocked]
+    CANT --> B_read[Reading data — 47 blocked]
     CANT --> B_repair[repair — 3 blocked]
     CANT --> B_social[social — 7 blocked]
     CANT --> B_staff[staff — 2 blocked]
-    CANT --> B_top_level[Everything else — 27 blocked]
+    CANT --> B_top_level[Everything else — 29 blocked]
     WHO -->|Yes| UNV[UNVERIFIED — 2 routes whose gate could not be traced]
 ```
 
 ## What they can reach
 
-**30 of 185 routes.**
+**30 of 188 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -98,7 +98,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**153 of 185 routes.**
+**156 of 188 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -127,7 +127,9 @@ flowchart TD
 | `/api/chat/ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/chat/messages` | GET, POST | staff |
 | `/api/chat/peers` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/client-notes` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/closer-deck` | POST | closer, sales_manager, owner, admin |
+| `/api/commission-rules` | GET, POST | owner, admin, sales_manager |
 | `/api/company-brain/reviews` | GET, POST | owner |
 | `/api/company-brain/sync` | GET, POST | owner, admin, sales_manager |
 | `/api/company-brain/threads` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -200,6 +202,7 @@ flowchart TD
 | `/api/read/agent-shadow-log` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/ai-bureau-config` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/bank-inbox` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/banking-surface` | GET | owner, admin, sales_manager |
 | `/api/read/call-outcomes` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/closer-call` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
