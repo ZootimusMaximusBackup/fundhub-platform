@@ -68,18 +68,9 @@
        documents below. Move that gate in api/message-templates.mjs and this
        row has to move with it. */
     "template-editor.html",
-    /* contracts.html is the contract generator — write a contract once, send it
-       to any client, watch it come back signed. None of that needs a developer.
-
-       DELIBERATELY NOT IN OWNER_ADMIN_ONLY, and that is not an oversight — it is
-       the same call template-editor.html one row up already carries, for the
-       same reason. Its read (read/contracts) and its send action are
-       ROLE_SETS.STAFF: a closer sending a funding agreement to the client they
-       are working is the ordinary case this screen exists for. The narrower
-       gates are INSIDE it — writing contract wording and voiding a contract are
-       owner/admin in api/contracts.mjs, and the screen hides those controls from
-       everybody else, the same one-screen-two-gates shape this file documents
-       above. Move a gate there and this row has to move with it. */
+    /* contracts.html is the owner/admin contract-wording library. Ordinary
+       staff still send contracts from the client flow; they do not open the
+       screen that creates, uploads or changes the wording. */
     "contracts.html",
     /* lenders.html — funding advisor maintenance surface for the seven Airtable
        lender product tables (+ bureau mismatch review). ROLE_SETS.LENDERS at
@@ -157,6 +148,7 @@
     /* journeys.html — api/journeys/ask.mjs and api/journeys/store.mjs both
        gate on requireRole("owner", "admin"); the nav row matches. */
     "journeys.html",
+    "contracts.html",
     /* Beta screens stay off the shared STAFF rail (owner decision 2026-08-17).
        This list is subtracted inside staffTabs() and NOWHERE ELSE, so it says
        nothing about the three principal roles, whose ROLE_TABS entries are
@@ -1970,6 +1962,7 @@
       location.replace(withClient(homeUrl(role, ok), currentClient()));
       return;
     }
+    document.documentElement.classList.add("fh-page-access-confirmed");
     settleClicks(ok);
     onReady(function () {
       gateLinks(ok, role);

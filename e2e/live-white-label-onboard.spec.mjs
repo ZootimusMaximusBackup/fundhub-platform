@@ -53,9 +53,27 @@ test.describe("live white-label website entry", () => {
     await expect(page.locator('#p-track option[value="white_label"]')).toHaveCount(1);
   });
 
-  test("wl:white_label_apply creates a login or says already in", async ({ page }) => {
+  test("wl:white_label_apply submits the live form without a production write", async ({ page, request }) => {
     req(test.info(), "wl:white_label_apply");
     const email = "e2e+wl-onboard@fundhub.ai";
+    const methodGate = await request.get(`${BASE}/api/public/partner-apply`);
+    expect(methodGate.status()).toBe(405);
+    expect(methodGate.headers().allow).toBe("POST");
+
+    let submitted = null;
+    await page.route("**/api/public/partner-apply", async (route) => {
+      submitted = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          email,
+          kind: "partner",
+          site_url: `${BASE}/sites/read-only`
+        })
+      });
+    });
     await page.goto(`${BASE}/affiliates/`, { waitUntil: "domcontentloaded" });
     await assertSiteUp(page);
     await expect(page.locator("#pform")).toBeVisible({ timeout: 20_000 });
@@ -69,6 +87,15 @@ test.describe("live white-label website entry", () => {
     await page.locator('#pform button[type="submit"]').click();
     await expect(page.locator("#success")).toBeVisible({ timeout: 20_000 });
     await expect(page.locator("#success")).toContainText(/login/i);
+    expect(submitted).toEqual({
+      name: "E2E White Label",
+      email,
+      phone: "5550100199",
+      company: "E2E WL Book LLC",
+      track: "white_label",
+      audience: "e2e fake book of clients",
+      sms_consent: true
+    });
   });
 });
 
