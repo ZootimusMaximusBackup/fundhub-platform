@@ -75,7 +75,8 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
    Full-width welcome to the portal. Always shown — access is granted before
    the call, so this cannot hide behind funding-snapshot. */
 .video-card{padding:0;overflow:hidden;display:flex;flex-direction:column}
-.player{position:relative;width:100%;aspect-ratio:16/9;max-height:min(420px,52vw);border-radius:0;background:linear-gradient(135deg,#0A0A0A,#1C1C20);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.player{position:relative;width:100%;height:360px;border-radius:0;background:linear-gradient(135deg,#0A0A0A,#1C1C20);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.player:has(.video-empty:not([hidden])){height:56px}
 .player .ghost{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .player .ghost .logo{width:42%;max-width:280px;aspect-ratio:2698/543;filter:invert(1);opacity:.12}
 .playbtn{position:relative;width:64px;height:64px;border-radius:50%;border:0;background:rgba(252,252,252,.94);color:var(--ink);font-size:var(--fs-title);line-height:1;display:flex;align-items:center;justify-content:center;padding-left:4px;transition:transform .14s,background .14s}
@@ -173,26 +174,26 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 
 /* Onboarding sign box — client authorizes Fundhub to prepare dispute letters.
    Not a credit pull. Hidden after a live consent is on file. */
-.sign-auth-card{border:1px solid var(--ink)}
-.sign-auth-card .card-title{text-transform:none;letter-spacing:0;font-size:var(--fs-title);font-weight:800;color:var(--text)}
+.sign-auth-card{border:1px solid var(--ink);padding:16px 18px}
+.sign-auth-card .card-title{text-transform:none;letter-spacing:0;font-size:var(--fs-title);font-weight:800;color:var(--text);margin-bottom:8px}
 .sign-auth-card.is-signed{border-color:var(--green-line);background:var(--green-bg)}
-.sign-auth-lede{font-size:var(--fs-body);color:var(--text-dim);line-height:1.5;margin-bottom:12px;max-width:62ch}
+.sign-auth-lede{font-size:var(--fs-body);color:var(--text-dim);line-height:1.5;margin-bottom:8px;max-width:62ch}
 .sign-auth-words{white-space:pre-wrap;font-size:var(--fs-body);line-height:1.65;color:var(--text);
-  background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:14px;
-  max-height:200px;overflow-y:auto;margin-bottom:14px}
-#cpSignPad{display:block;width:100%;height:160px;touch-action:none;cursor:crosshair;
+  background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:10px;
+  max-height:120px;overflow-y:auto;margin-bottom:8px}
+#cpSignPad{display:block;width:100%;height:96px;touch-action:none;cursor:crosshair;
   border:1px dashed var(--gray2);border-radius:6px;background:#fff}
-.sign-auth-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px;margin-bottom:12px}
+.sign-auth-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px;margin-bottom:8px}
 .sign-auth-hint{font-size:var(--fs-body);color:var(--text-dim)}
-.sign-auth-field{margin-bottom:12px}
-.sign-auth-field label{display:block;font-weight:600;font-size:var(--fs-caption);margin-bottom:5px}
+.sign-auth-field{margin-bottom:8px}
+.sign-auth-field label{display:block;font-weight:600;font-size:var(--fs-caption);margin-bottom:2px}
 .sign-auth-input{width:100%;border:1px solid var(--line);border-radius:6px;padding:9px 11px;font:inherit;background:#fff}
 .sign-auth-input:focus{outline:2px solid var(--info);outline-offset:-1px}
 .sign-auth-msg{margin-top:10px;font-weight:600;font-size:var(--fs-body);border-radius:6px;padding:10px 12px;display:none}
 .sign-auth-msg.show{display:block}
 .sign-auth-msg.ok{color:var(--green);background:var(--green-bg)}
 .sign-auth-msg.err{color:var(--red);background:var(--red-bg)}
-#cpSignSubmit{width:100%;max-width:440px;background:var(--ink);color:#fff;border:none}
+#cpSignSubmit{width:100%;max-width:none;background:var(--ink);color:#fff;border:none}
 #cpSignSubmit:hover{background:var(--ink2);border-color:transparent}
 .sign-auth-link{display:inline-block;margin-top:12px;font-size:var(--fs-body);font-weight:700;color:var(--blue);
   text-decoration:underline;text-underline-offset:2px}
@@ -328,11 +329,12 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
 .booked .bk-d{font-size:var(--fs-body);color:var(--text-dim)}
 
 @media(max-width:760px){
+  header.topbar{height:auto;min-height:52px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px;row-gap:8px}
   .tiles{grid-template-columns:1fr}
   .rail{grid-template-columns:1fr}
   .promo-side{flex:1 1 100%}
   .step .lbl{font-size:var(--fs-caption)}
-  .player{max-height:min(280px,56vw)}
+  .player{height:56vw;max-height:280px}
   .video-title{font-size:var(--fs-title)}
 }
 </style>
@@ -1863,7 +1865,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   function ensurePadSized() {
     if (padState.sized) return;
     var cssW = Math.max(canvas.clientWidth, 280);
-    var cssH = 160;
+    var cssH = Math.max(canvas.clientHeight, 96);
     var ratio = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.floor(cssW * ratio);
     canvas.height = Math.floor(cssH * ratio);

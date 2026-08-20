@@ -772,7 +772,8 @@
         /* The menu button is fixed at top-left, which is exactly where a page
            title sits. Without this the ☰ lands on top of "Hiring", "Pipeline"
            and so on. 58px = 10 left + 40 button + 8 gap. */
-        ".topbar,.top,.page-hd{padding-left:58px!important;flex-wrap:wrap!important}" +
+        ".topbar,.top,.page-hd,body>header,.app>header,.app-shell>header{" +
+          "padding-left:58px!important;flex-wrap:wrap!important}" +
         /* The 58px above is real width taken out of a 390px row, which pushed
            the right-hand action group (.topbar-right) off the edge on
            inquiry-remover and ops-admin. Wrapping lets that group drop to a
@@ -1634,7 +1635,9 @@
 
   function placeInHeader(el) {
     var right = document.querySelector(".topbar-right");
-    var bar = document.querySelector(".topbar, .top, .page-hd");
+    var bar = document.querySelector(
+      ".topbar, .top, .page-hd, body > header, .app > header, .app-shell > header"
+    );
     if (right) {
       right.appendChild(el);
       el.setAttribute("data-fh-in-header", "1");
@@ -1645,7 +1648,22 @@
       el.setAttribute("data-fh-in-header", "1");
       return true;
     }
-    return false;
+    /* Some surviving screens have no named top bar. Their account chip used
+       to fall back to position:fixed and cover page content on phones. Give
+       those screens one shared, in-flow account row instead. Search and the
+       chip reuse the same row, so it reserves real space exactly once. */
+    var row = document.getElementById("fh-shell-account-row");
+    if (!row) {
+      var host = document.querySelector(".shell, .main, .content, main, .app-shell, .app");
+      if (!host) return false;
+      row = document.createElement("div");
+      row.id = "fh-shell-account-row";
+      row.className = "fh-shell-account-row";
+      host.insertBefore(row, host.firstChild);
+    }
+    row.appendChild(el);
+    el.setAttribute("data-fh-in-header", "1");
+    return true;
   }
 
   function mountChip(staff, demo) {

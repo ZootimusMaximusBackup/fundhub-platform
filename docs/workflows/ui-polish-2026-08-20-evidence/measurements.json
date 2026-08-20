@@ -1,0 +1,1671 @@
+{
+  "at": "2026-08-20T22:10:03.464Z",
+  "screens": {
+    "closer-dashboard.html": {
+      "role": "closer",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar-right"
+          },
+          "title": {
+            "left": 58,
+            "top": 8,
+            "right": 264,
+            "bottom": 28,
+            "width": 206,
+            "height": 20
+          },
+          "menuButton": null,
+          "header": {
+            "left": 0,
+            "top": 0,
+            "right": 390,
+            "bottom": 240,
+            "width": 390,
+            "height": 240
+          },
+          "account": {
+            "left": 66,
+            "top": 131,
+            "right": 374,
+            "bottom": 231,
+            "width": 308,
+            "height": 100
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "✕\nSALES\n▾\n▤\nPipeline\n★\nCloser Dashboard\n☎\nCall cockpit\n＃\nMy numbers\n▦\nCalendar\nCLIENT OPS\n▾\nAUTOMATION\n▾\nfundhub\n☰\nFundhub\n/\nCloser Dashboard\nThu, Aug 20, 6:10:04 PM EDT\nSearch\nCtrl K\nDEMO closer · closer · 10 tabs\nLIVE\nSign out\nDC DEMO closer\ncloser\nDEAL CALCULATORS\n\nOpen from a client.\n\nthese numbers are estimates — confirm the final terms with the lender\nOpen from a client.\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar-right"
+          },
+          "title": {
+            "left": 244,
+            "top": 6,
+            "right": 448,
+            "bottom": 38,
+            "width": 204,
+            "height": 32
+          },
+          "menuButton": null,
+          "header": {
+            "left": 228,
+            "top": 0,
+            "right": 1440,
+            "bottom": 44,
+            "width": 1212,
+            "height": 44
+          },
+          "account": {
+            "left": 908,
+            "top": -7,
+            "right": 1424,
+            "bottom": 51,
+            "width": 516,
+            "height": 58
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "‹‹\nSALES\n▾\n▤\nPipeline\n★\nCloser Dashboard\n☎\nCall cockpit\n＃\nMy numbers\n▦\nCalendar\nCLIENT OPS\n▾\nAUTOMATION\n▾\nfundhub\nFundhub\n/\nCloser Dashboard\nThu, Aug 20, 6:10:04 PM EDT\nSearch\nCtrl K\nDEMO closer · closer · 10 tabs\nLIVE\nSign out\nDC DEMO closer\ncloser\nDEAL CALCULATORS\n\nOpen from a client.\n\nthese numbers are estimates — confirm the final terms with the lender\nOpen from a client.\nChat"
+        }
+      }
+    },
+    "closer-call.html": {
+      "role": "closer",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "fh-shell-account-row"
+          },
+          "title": {
+            "left": 22,
+            "top": 170,
+            "right": 175,
+            "bottom": 190,
+            "width": 153,
+            "height": 20
+          },
+          "menuButton": null,
+          "header": null,
+          "account": {
+            "left": 16,
+            "top": 58,
+            "right": 374,
+            "bottom": 142,
+            "width": 358,
+            "height": 84
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "Search\nCtrl K\nDEMO closer · closer · 10 tabs\nLIVE\nSign out\n✕\nSALES\n▾\n▤\nPipeline\n★\nCloser Dashboard\n☎\nCall cockpit\n＃\nMy numbers\n▦\nCalendar\nCLIENT OPS\n▾\nAUTOMATION\n▾\nfundhub\n☰\nC-01 / CLOSER\n—\nCLOSER\nNo call right now\nNo booked call right now.\n—\nJoin call\nWHAT THEY CAN GET\nPull status on file\nCONSERVATIVE\n—\nWaiting on UnderwriteIQ\nREALISTIC · ROUND 1\n—\nWaiting on UnderwriteIQ\nAFTER OPTIMIZATION\n—\nWaiting on UnderwriteIQ\n\nLive numbers only — no sample funding story.\n\nWHERE THEY STAND\nTri-merge\t—\nUtilization\t—\nInquiries · 6mo\t—\nDerogatories\t—\nChase 5/24\t—\nCredit facts load from the live file.\nTHE DEAL\nDeposit today\t—\nSuccess fee · 10%\t—\nNet cash to them\t—\nMonthly min\t—\nDownsell\t—\nTell them about month 14. On minimum payments the balance starts growing. Skipping this is what causes refunds.\nPRE-CALL CONTEXT\n\nLoads from the live file when a client id is in the URL.\n\nWANTS\n—\nFOR\n—\nGUESSED FICO\n—\nLAST MESSAGE\n—\nNo sample story. Live survey + pull only.\nUP NEXT\n—\nNo upcoming booked calls\nCalendar tasks show here\nBEFORE YOU CLOSE\nCall is recorded\nPersonal guarantee\nMonth-14 cliff\nBank decides, not us\n\nNever: guaranteed · won't affect credit · we have relationships · 0% forever\n\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "fh-shell-account-row"
+          },
+          "title": {
+            "left": 250,
+            "top": 94,
+            "right": 403,
+            "bottom": 114,
+            "width": 153,
+            "height": 20
+          },
+          "menuButton": null,
+          "header": null,
+          "account": {
+            "left": 908,
+            "top": 8,
+            "right": 1424,
+            "bottom": 66,
+            "width": 516,
+            "height": 58
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "Search\nCtrl K\nDEMO closer · closer · 10 tabs\nLIVE\nSign out\n‹‹\nSALES\n▾\n▤\nPipeline\n★\nCloser Dashboard\n☎\nCall cockpit\n＃\nMy numbers\n▦\nCalendar\nCLIENT OPS\n▾\nAUTOMATION\n▾\nfundhub\nC-01 / CLOSER\n—\nCLOSER\nNo call right now\nNo booked call right now.\n—\nJoin call\nWHAT THEY CAN GET\nPull status on file\nCONSERVATIVE\n—\nWaiting on UnderwriteIQ\nREALISTIC · ROUND 1\n—\nWaiting on UnderwriteIQ\nAFTER OPTIMIZATION\n—\nWaiting on UnderwriteIQ\n\nLive numbers only — no sample funding story.\n\nWHERE THEY STAND\nTri-merge\t—\nUtilization\t—\nInquiries · 6mo\t—\nDerogatories\t—\nChase 5/24\t—\nCredit facts load from the live file.\nTHE DEAL\nDeposit today\t—\nSuccess fee · 10%\t—\nNet cash to them\t—\nMonthly min\t—\nDownsell\t—\nTell them about month 14. On minimum payments the balance starts growing. Skipping this is what causes refunds.\nPRE-CALL CONTEXT\n\nLoads from the live file when a client id is in the URL.\n\nWANTS\n—\nFOR\n—\nGUESSED FICO\n—\nLAST MESSAGE\n—\nNo sample story. Live survey + pull only.\nUP NEXT\n—\nNo upcoming booked calls\nCalendar tasks show here\nBEFORE YOU CLOSE\nCall is recorded\nPersonal guarantee\nMonth-14 cliff\nBank decides, not us\n\nNever: guaranteed · won't affect credit · we have relationships · 0% forever\n\nChat"
+        }
+      }
+    },
+    "my-numbers.html": {
+      "role": "closer",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "fh-shell-account-row"
+          },
+          "title": {
+            "left": 22,
+            "top": 170,
+            "right": 215,
+            "bottom": 190,
+            "width": 193,
+            "height": 20
+          },
+          "menuButton": null,
+          "header": null,
+          "account": {
+            "left": 16,
+            "top": 58,
+            "right": 374,
+            "bottom": 142,
+            "width": 358,
+            "height": 84
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "Search\nCtrl K\nDEMO closer · closer · 10 tabs\nLIVE\nSign out\n✕\nSALES\n▾\n▤\nPipeline\n★\nCloser Dashboard\n☎\nCall cockpit\n＃\nMy numbers\n▦\nCalendar\nCLIENT OPS\n▾\nAUTOMATION\n▾\nfundhub\n☰\nC-02 / MY NUMBERS\nOFF SHIFT\nDEMO CLOSER\nCASH COLLECTED · THIS MONTH\n—\nNo monthly target set\nRANK\n—/—\n—\n0\nTarget —\nStretch —\nOFFER STACK\nevery product you sell\nThe offer details could not be loaded. Try again in a moment.\n\nTHIS MONTH\nvs last month\nDEPOSITS CLOSED\n—\nCLOSE RATE\n—\nSHOW RATE\n—\nDOWNSELLS\n—\nDEPOSIT → FUNDED\n—\nFirst-class metric\nAVG FUNDED\n—\nCALLS HELD\n—\n0 no-shows\nUNLOGGED\n—\n\nThese are your live numbers. A dash means the value is not known yet.\n\nMONEY\nCommission plan comes from the ledger — missing stays a dash\nPAID OUT\n—\ncommission_ledger · paid\nPENDING FUNDING\n—\nearned/approved\nAT RISK\n—\nNot computed yet\nSTREAK\na day counts when you close at least one\nStreak needs a working-day calendar — not built\nTEAM · THIS MONTH\n\nNo closer dispositions logged this month yet.\n\nCALL QUALITY\n\nCall recording and transcription do not exist yet.\n\nCompliance phrase counts use the same gate — schema call_compliance_flags is ready.\n\nOWED BY YOU\nclears automatically when done\n—\nNothing owed\nUnlogged calls and quiet deposits will land here\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "fh-shell-account-row"
+          },
+          "title": {
+            "left": 250,
+            "top": 94,
+            "right": 443,
+            "bottom": 114,
+            "width": 193,
+            "height": 20
+          },
+          "menuButton": null,
+          "header": null,
+          "account": {
+            "left": 908,
+            "top": 8,
+            "right": 1424,
+            "bottom": 66,
+            "width": 516,
+            "height": 58
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "Search\nCtrl K\nDEMO closer · closer · 10 tabs\nLIVE\nSign out\n‹‹\nSALES\n▾\n▤\nPipeline\n★\nCloser Dashboard\n☎\nCall cockpit\n＃\nMy numbers\n▦\nCalendar\nCLIENT OPS\n▾\nAUTOMATION\n▾\nfundhub\nC-02 / MY NUMBERS\nOFF SHIFT\nDEMO CLOSER\nCASH COLLECTED · THIS MONTH\n—\nNo monthly target set\nRANK\n—/—\n—\n0\nTarget —\nStretch —\nOFFER STACK\nevery product you sell\nPRODUCT\nUNITS SOLD\nAMOUNT SOLD\nCASH COLLECTED\nThe offer details could not be loaded. Try again in a moment.\n\nTHIS MONTH\nvs last month\nDEPOSITS CLOSED\n—\nCLOSE RATE\n—\nSHOW RATE\n—\nDOWNSELLS\n—\nDEPOSIT → FUNDED\n—\nFirst-class metric\nAVG FUNDED\n—\nCALLS HELD\n—\n0 no-shows\nUNLOGGED\n—\n\nThese are your live numbers. A dash means the value is not known yet.\n\nMONEY\nCommission plan comes from the ledger — missing stays a dash\nPAID OUT\n—\ncommission_ledger · paid\nPENDING FUNDING\n—\nearned/approved\nAT RISK\n—\nNot computed yet\nSTREAK\na day counts when you close at least one\nStreak needs a working-day calendar — not built\nTEAM · THIS MONTH\n\nNo closer dispositions logged this month yet.\n\nCALL QUALITY\n\nCall recording and transcription do not exist yet.\n\nCompliance phrase counts use the same gate — schema call_compliance_flags is ready.\n\nOWED BY YOU\nclears automatically when done\n—\nNothing owed\nUnlogged calls and quiet deposits will land here\nChat"
+        }
+      }
+    },
+    "sales-floor.html": {
+      "role": "sales_manager",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "fh-shell-account-row"
+          },
+          "title": {
+            "left": 22,
+            "top": 181,
+            "right": 156,
+            "bottom": 220,
+            "width": 134,
+            "height": 39
+          },
+          "menuButton": null,
+          "header": null,
+          "account": {
+            "left": 16,
+            "top": 58,
+            "right": 374,
+            "bottom": 158,
+            "width": 358,
+            "height": 100
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "Search\nCtrl K\nDEMO sales_manager · sales_manager · 11 tabs\nLIVE\nSign out\n✕\nSALES\n▾\n▤\nPipeline\n★\nCloser Dashboard\n▣\nSales floor\n▦\nCalendar\nCLIENT OPS\n▾\nAUTOMATION\n▾\nADMIN\n▾\nfundhub\n☰\nM-01 / SALES FLOOR\n0 CLOSERS ON SHIFT\nDEMO SALES_MANAGER\nTODAY\n—\nBooked — · Held — · No daily target\nFUNDED, NOT JUST SOLD\n—\nOf deposits taken this period\n0\nNo daily target\nWHERE THE FUNNEL LEAKS\nThis month\nBOOKED\n—\n \nHELD\n—\n \nDEPOSITS\n—\n \nFUNDED\n—\n \nDOWNSELLS\n—\n—\n\nLive funnel counts load here. Empty means none logged this month.\n\nEVERYTHING THE FLOOR SOLD\nEvery offer · this month\n\nOffer details are not available yet.\n\nYOUR CLOSERS\nCash · close rate · funded rate · what to do\nCLOSER\nCLOSE\nDO THIS\nNo closers on this board\nLive staff only\nONE CLOSER AT A TIME\nPick a name, click a row, or use the arrows\n\nNo closers on this board yet.\n\nWHICH BELIEF FAILED\n\nLive objection counts load here. Empty means none logged this month.\n\nNo belief_failed values logged yet — dispositions with a belief will fill this.\n\nThis period vs last period. A count alone is not a trend — the second number is last period.\n\nWHERE IT IS COMING FROM\nSOURCE\nHELD\nCLOSE\nDESIRE\n\nNo source cuts yet — need dispositions joined to utm_campaign / setter.\n\nFlag a belief × source pattern to marketing. Stores a row only — nothing is sent externally.\nToday's recordings\nTODAY'S RECORDINGS\n\nNo Meet recordings in the last 7 days.\n\nSync recordings from Drive\nCOMPLIANCE\n\nCall recording and transcription do not exist yet.\n\nDEALS GOING COLD\n\nNo cold deposits (7+ days quiet, not funded).\n\nFLOOR DISCIPLINE\nCalls not logged\nPast-due closer tasks without a disposition\n—\nShifts started late\n—\nFollow-ups overdue\n—\nAvg time to log after a call\n—\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "fh-shell-account-row"
+          },
+          "title": {
+            "left": 250,
+            "top": 94,
+            "right": 453,
+            "bottom": 114,
+            "width": 203,
+            "height": 20
+          },
+          "menuButton": null,
+          "header": null,
+          "account": {
+            "left": 760,
+            "top": 8,
+            "right": 1424,
+            "bottom": 66,
+            "width": 664,
+            "height": 58
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "Search\nCtrl K\nDEMO sales_manager · sales_manager · 11 tabs\nLIVE\nSign out\n‹‹\nSALES\n▾\n▤\nPipeline\n★\nCloser Dashboard\n▣\nSales floor\n▦\nCalendar\nCLIENT OPS\n▾\nAUTOMATION\n▾\nADMIN\n▾\nfundhub\nM-01 / SALES FLOOR\n0 CLOSERS ON SHIFT\nDEMO SALES_MANAGER\nTODAY\n—\nBooked — · Held — · No daily target\nFUNDED, NOT JUST SOLD\n—\nOf deposits taken this period\n0\nNo daily target\nWHERE THE FUNNEL LEAKS\nThis month\nBOOKED\n—\n \nHELD\n—\n \nDEPOSITS\n—\n \nFUNDED\n—\n \nDOWNSELLS\n—\n—\n\nLive funnel counts load here. Empty means none logged this month.\n\nEVERYTHING THE FLOOR SOLD\nEvery offer · this month\n\nOffer details are not available yet.\n\nYOUR CLOSERS\nCash · close rate · funded rate · what to do\nCLOSER\nCALLS\nCLOSE\nFUNDED\nCASH\nDO THIS\nNo closers on this board\nLive staff only\nONE CLOSER AT A TIME\nPick a name, click a row, or use the arrows\n\nNo closers on this board yet.\n\nWHICH BELIEF FAILED\n\nLive objection counts load here. Empty means none logged this month.\n\nNo belief_failed values logged yet — dispositions with a belief will fill this.\n\nThis period vs last period. A count alone is not a trend — the second number is last period.\n\nWHERE IT IS COMING FROM\nSOURCE\nHELD\nCLOSE\nDESIRE\n\nNo source cuts yet — need dispositions joined to utm_campaign / setter.\n\nFlag a belief × source pattern to marketing. Stores a row only — nothing is sent externally.\nToday's recordings\nTODAY'S RECORDINGS\n\nNo Meet recordings in the last 7 days.\n\nSync recordings from Drive\nCOMPLIANCE\n\nCall recording and transcription do not exist yet.\n\nDEALS GOING COLD\n\nNo cold deposits (7+ days quiet, not funded).\n\nFLOOR DISCIPLINE\nCalls not logged\nPast-due closer tasks without a disposition\n—\nShifts started late\n—\nFollow-ups overdue\n—\nAvg time to log after a call\n—\nChat"
+        }
+      }
+    },
+    "pipeline.html": {
+      "role": "setter",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar-right"
+          },
+          "title": {
+            "left": 58,
+            "top": 8,
+            "right": 201,
+            "bottom": 28,
+            "width": 143,
+            "height": 20
+          },
+          "menuButton": null,
+          "header": {
+            "left": 0,
+            "top": 0,
+            "right": 390,
+            "bottom": 233,
+            "width": 390,
+            "height": 233
+          },
+          "account": {
+            "left": 66,
+            "top": 125,
+            "right": 374,
+            "bottom": 225,
+            "width": 308,
+            "height": 100
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "✕\nSALES\n▾\n▤\nPipeline\n★\nCloser Dashboard\n▦\nCalendar\nCLIENT OPS\n▾\nAUTOMATION\n▾\nfundhub\n☰\nFundhub\n/\nPipeline\nORG: FUNDHUB\nLIVE\nSearch\nCtrl K\nDEMO setter · setter · 8 tabs\nLIVE\nSign out\nR-01\nSales\nR-02\nFunding: Card Stacking\nR-03\nFunding: Alt-Fin (Lendflow)\nR-04\nOptimization (Repair) Rounds\nR-05\nInquiry Removal\nR-06\nAR / Collections\nR-08\nAffiliates + White Label\nR-09\nHiring\nBoard\nFulfillment\n⌕\n⚟ Filter\n0 cards\n$0 est.\n— held\n—\nArchive\nClose\n\nSelect a card.\n\nfundhub-pipeline · v1\norg: fundhub\nrail: sales\ndrag a card to change stage · move to change rail\nsystems nominal · fundhub.ai\nlive board · sales · no cards on this rail yet — stages are ready, nobody has been placed here\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar-right"
+          },
+          "title": {
+            "left": 244,
+            "top": 12,
+            "right": 387,
+            "bottom": 32,
+            "width": 143,
+            "height": 20
+          },
+          "menuButton": null,
+          "header": {
+            "left": 228,
+            "top": 0,
+            "right": 1440,
+            "bottom": 44,
+            "width": 1212,
+            "height": 44
+          },
+          "account": {
+            "left": 919,
+            "top": -7,
+            "right": 1424,
+            "bottom": 51,
+            "width": 505,
+            "height": 58
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "‹‹\nSALES\n▾\n▤\nPipeline\n★\nCloser Dashboard\n▦\nCalendar\nCLIENT OPS\n▾\nAUTOMATION\n▾\nfundhub\nFundhub\n/\nPipeline\nORG: FUNDHUB\nLIVE\nSearch\nCtrl K\nDEMO setter · setter · 8 tabs\nLIVE\nSign out\nR-01\nSales\nR-02\nFunding: Card Stacking\nR-03\nFunding: Alt-Fin (Lendflow)\nR-04\nOptimization (Repair) Rounds\nR-05\nInquiry Removal\nR-06\nAR / Collections\nR-08\nAffiliates + White Label\nR-09\nHiring\nBoard\nFulfillment\n⌕\n⚟ Filter\n0 cards\n$0 est.\n— held\n—\nArchive\nClose\n\nSelect a card.\n\nfundhub-pipeline · v1\norg: fundhub\nrail: sales\ndrag a card to change stage · move to change rail\nsystems nominal · fundhub.ai\nlive board · sales · no cards on this rail yet — stages are ready, nobody has been placed here\nChat"
+        }
+      }
+    },
+    "client-control-panel.html": {
+      "role": "funding_advisor",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar-right"
+          },
+          "title": {
+            "left": 58,
+            "top": 8,
+            "right": 280,
+            "bottom": 28,
+            "width": 222,
+            "height": 20
+          },
+          "menuButton": null,
+          "header": {
+            "left": 0,
+            "top": 0,
+            "right": 390,
+            "bottom": 234,
+            "width": 390,
+            "height": 234
+          },
+          "account": {
+            "left": 66,
+            "top": 125,
+            "right": 374,
+            "bottom": 225,
+            "width": 308,
+            "height": 100
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "✕\nSALES\n▾\nFUNDING\n▾\nCLIENT OPS\n▾\n◎\nClient Control Panel\n✉\nMessaging\n▧\nDocuments\n⊘\nSpecialist\nAUTOMATION\n▾\nfundhub\n☰\n/\nClient Control Panel\nORG: FUNDHUB\nLIVE\nSearch\nCtrl K\nDEMO funding_advisor · funding_advisor · 9 tabs\nLIVE\nSign out\n—\nNo client open — pick one below.\nCLIENT\nNo clients on file\nMAIN STATUS\n—\nPREQUAL\n—\nTOTAL APPROVED\n—\nOPEN INQUIRIES\n—\nINQUIRY REMOVAL\n—\nSCORES\n—\nCARD USE\n—\nFUNDING ROUND\n—\nNEXT ACTION\n—\nCONTROL PANEL\nNEXT ACTION\n—\nACTIVE BLOCKERS\n\nOpen a client file to see what is blocking it.\n\nFUNDING ROUND\nROUND\n—\nFINALIZED\n—\nSTATUS\n—\nAPPROVED\n—\nON HOLD BECAUSE\n—\nNEED ACTION\n\nClients with an open inquiry removal case. Pick one to open the file.\n\nNo open inquiry removal cases.\nACTIONS\n\nPull one bureau at a time. Generate Apps refreshes the lender apply list for this file.\n\nOpen a client file to see whether a bureau pull is allowed.\n\nRecord consent for this client\n↗\nPull TransUnion\n→\nPull Experian\n→\nPull Equifax\n→\nGenerate Apps\n→\nIssue Inquiry Removal\n→\n\nPick a client first.\n\nAGENT CONTEXT\ncollapsed by default ⌄\nCREDIT & HOLD STATUS\ncollapsed ⌄\nDETAILS\ncollapsed by default ⌄\nDOCUMENTS\ncollapsed by default ⌄\nFUNDING · APPLY\nAPPLY DOOR\nPick a client first.\n\nShows lenders that fit this file. Apply opens the bank page when a URL is on file.\n\nQUICK LAUNCH\n\nThese open the live file. Bureau pulls stay on the closer deck.\n\nOpen Pipeline\n↗\nOpen Messaging\n↗\nOpen Inquiry Remover\n↗\nMore\n⌄\nSYSTEM FACTS\ncollapsed ⌄\nFUNDHUB-CCP · live\nORG: —\n—\nnotes save to this client file\nno client open — pick a client from the list\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar-right"
+          },
+          "title": {
+            "left": 244,
+            "top": -2,
+            "right": 405,
+            "bottom": 46,
+            "width": 161,
+            "height": 48
+          },
+          "menuButton": null,
+          "header": {
+            "left": 228,
+            "top": 0,
+            "right": 1440,
+            "bottom": 44,
+            "width": 1212,
+            "height": 44
+          },
+          "account": {
+            "left": 882,
+            "top": -7,
+            "right": 1578,
+            "bottom": 51,
+            "width": 695,
+            "height": 58
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "‹‹\nSALES\n▾\nFUNDING\n▾\nCLIENT OPS\n▾\n◎\nClient Control Panel\n✉\nMessaging\n▧\nDocuments\n⊘\nSpecialist\nAUTOMATION\n▾\nfundhub\n/\nClient Control Panel\nORG: FUNDHUB\nThu, Aug 20, 6:10:12 PM EDT\nLIVE\nSearch\nCtrl K\nDEMO funding_advisor · funding_advisor · 9 tabs\nLIVE\nSign out\n—\nNo client open — pick one below.\nCLIENT\nNo clients on file\nMAIN STATUS\n—\nPREQUAL\n—\nTOTAL APPROVED\n—\nOPEN INQUIRIES\n—\nINQUIRY REMOVAL\n—\nSCORES\n—\nCARD USE\n—\nFUNDING ROUND\n—\nNEXT ACTION\n—\nCONTROL PANEL\nNEXT ACTION\n—\nACTIVE BLOCKERS\n\nOpen a client file to see what is blocking it.\n\nFUNDING ROUND\nROUND\n—\nFINALIZED\n—\nSTATUS\n—\nAPPROVED\n—\nON HOLD BECAUSE\n—\nNEED ACTION\n\nClients with an open inquiry removal case. Pick one to open the file.\n\nNo open inquiry removal cases.\nACTIONS\n\nPull one bureau at a time. Generate Apps refreshes the lender apply list for this file.\n\nOpen a client file to see whether a bureau pull is allowed.\n\nRecord consent for this client\n↗\nPull TransUnion\n→\nPull Experian\n→\nPull Equifax\n→\nGenerate Apps\n→\nIssue Inquiry Removal\n→\n\nPick a client first.\n\nAGENT CONTEXT\ncollapsed by default ⌄\nCREDIT & HOLD STATUS\ncollapsed ⌄\nDETAILS\ncollapsed by default ⌄\nDOCUMENTS\ncollapsed by default ⌄\nFUNDING · APPLY\nAPPLY DOOR\nPick a client first.\n\nShows lenders that fit this file. Apply opens the bank page when a URL is on file.\n\nQUICK LAUNCH\n\nThese open the live file. Bureau pulls stay on the closer deck.\n\nOpen Pipeline\n↗\nOpen Messaging\n↗\nOpen Inquiry Remover\n↗\nMore\n⌄\nSYSTEM FACTS\ncollapsed ⌄\nFUNDHUB-CCP · live\nORG: —\n—\nnotes save to this client file\nno client open — pick a client from the list\nChat"
+        }
+      }
+    },
+    "documents.html": {
+      "role": "funding_advisor",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar"
+          },
+          "title": {
+            "left": 119,
+            "top": 8,
+            "right": 227,
+            "bottom": 38,
+            "width": 109,
+            "height": 30
+          },
+          "menuButton": null,
+          "header": {
+            "left": 0,
+            "top": 0,
+            "right": 390,
+            "bottom": 291,
+            "width": 390,
+            "height": 291
+          },
+          "account": {
+            "left": 66,
+            "top": 182,
+            "right": 366,
+            "bottom": 282,
+            "width": 300,
+            "height": 100
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "✕\nSALES\n▾\nFUNDING\n▾\nCLIENT OPS\n▾\n◎\nClient Control Panel\n✉\nMessaging\n▧\nDocuments\n⊘\nSpecialist\nAUTOMATION\n▾\nfundhub\n☰\nWORK\nDocuments\n0 PAST 14 DAYS\nPENDING ONLY\nSearch\nCtrl K\nDEMO funding_advisor · funding_advisor · 9 tabs\nLIVE\nSign out\nDC-00 / TOTAL\n0\nacross four classes\nDC-00 / AWAITING SIGNATURE\n0\nsent, not signed\nDC-00 / UNDELIVERED\n0\ngenerated, never sent\nDC-A / CLASS\nSoft-pull authorizations\n0\n0 pending · 0 settled\nconsent to pull — nothing runs without one\nDC-B / CLASS\nContracts\n0\n0 pending · 0 settled\nfunding agreements · repair engagement · partner licenses\nDC-C / CLASS\nInvoices\n0\n0 pending · 0 settled\nissued against a product at point of sale\nDC-D / CLASS\nUnderwriteIQ deliverables\n0\n0 pending · 0 settled\nthe five reports the client actually receives\nALL\nSOFT-PULL AUTHORIZATIONS\nCONTRACTS\nINVOICES\nUNDERWRITEIQ DELIVERABLES\nDC-01 / ALL DOCUMENTS\nAny status\nNot generated\nGeneration failed\nNot delivered\nBounced\nAwaiting signature\nSignature expired\nDOCUMENT\tCLIENT\tCLASS\tGENERATED\tDELIVERED\tSIGNATURE\tAGE PENDING ↓\tCONTRACT\nNo documents on file yet.\ncomplete\nin progress · awaiting a counterparty\nfailed, bounced, expired, or aged past its window\nnot applicable to this class\nAGE COUNTS FROM THE LAST STATE CHANGE, NOT FROM CREATION\nsystems nominal · fundhub.ai\nno documents on file yet\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar"
+          },
+          "title": {
+            "left": 313,
+            "top": 14,
+            "right": 421,
+            "bottom": 44,
+            "width": 109,
+            "height": 30
+          },
+          "menuButton": null,
+          "header": {
+            "left": 228,
+            "top": 0,
+            "right": 1440,
+            "bottom": 133,
+            "width": 1212,
+            "height": 133
+          },
+          "account": {
+            "left": 260,
+            "top": 66,
+            "right": 955,
+            "bottom": 124,
+            "width": 695,
+            "height": 58
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "‹‹\nSALES\n▾\nFUNDING\n▾\nCLIENT OPS\n▾\n◎\nClient Control Panel\n✉\nMessaging\n▧\nDocuments\n⊘\nSpecialist\nAUTOMATION\n▾\nfundhub\nWORK\nDocuments\n0 PAST 14 DAYS\nPENDING ONLY\nSearch\nCtrl K\nDEMO funding_advisor · funding_advisor · 9 tabs\nLIVE\nSign out\nDC-00 / TOTAL\n0\nacross four classes\nDC-00 / AWAITING SIGNATURE\n0\nsent, not signed\nDC-00 / UNDELIVERED\n0\ngenerated, never sent\nDC-A / CLASS\nSoft-pull authorizations\n0\n0 pending · 0 settled\nconsent to pull — nothing runs without one\nDC-B / CLASS\nContracts\n0\n0 pending · 0 settled\nfunding agreements · repair engagement · partner licenses\nDC-C / CLASS\nInvoices\n0\n0 pending · 0 settled\nissued against a product at point of sale\nDC-D / CLASS\nUnderwriteIQ deliverables\n0\n0 pending · 0 settled\nthe five reports the client actually receives\nALL\nSOFT-PULL AUTHORIZATIONS\nCONTRACTS\nINVOICES\nUNDERWRITEIQ DELIVERABLES\nDC-01 / ALL DOCUMENTS\nAny status\nNot generated\nGeneration failed\nNot delivered\nBounced\nAwaiting signature\nSignature expired\nDOCUMENT\tCLIENT\tCLASS\tGENERATED\tDELIVERED\tSIGNATURE\tAGE PENDING ↓\tCONTRACT\nNo documents on file yet.\ncomplete\nin progress · awaiting a counterparty\nfailed, bounced, expired, or aged past its window\nnot applicable to this class\nAGE COUNTS FROM THE LAST STATE CHANGE, NOT FROM CREATION\nsystems nominal · fundhub.ai\nno documents on file yet\nChat"
+        }
+      }
+    },
+    "contracts.html": {
+      "role": "owner",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar"
+          },
+          "title": {
+            "left": 128,
+            "top": 8,
+            "right": 309,
+            "bottom": 38,
+            "width": 181,
+            "height": 30
+          },
+          "menuButton": null,
+          "header": {
+            "left": 0,
+            "top": 0,
+            "right": 390,
+            "bottom": 205,
+            "width": 390,
+            "height": 205
+          },
+          "account": {
+            "left": 66,
+            "top": 96,
+            "right": 366,
+            "bottom": 196,
+            "width": 300,
+            "height": 100
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "✕\nSALES\n▾\nFUNDING\n▾\nCLIENT OPS\n▾\nAUTOMATION\n▾\nMARKETING\n▾\nADMIN\n▾\n⚇\nStaff & Teams\n⛁\nProducts & Commissions\n✒\nContract templates\nPORTALS\n▾\nfundhub\n☰\nSETUP\nContract templates\n— LIVE\nSearch\nCtrl K\nDEMO owner · owner · 18 tabs\nLIVE\nSign out\nHOW THIS WORKS\n\nBuild a contract once. Use it many times. Upload a PDF, or type the words here. Add the blanks people fill in. Say who has to sign.\n\nStaff pick it later. When they send a contract from a client’s screen, this one shows up in their list. They never have to write it again.\n\nTo see contracts you already sent, and who has signed them, go to Documents.\n\nContract wording\nOWNER & ADMIN\nUpload a PDF\nNew wording\n\nChanging the words here does not change any contract that has already been sent. Those are locked. New sends use the new words.\n\nSHORT NAME\tNAME\tSTATE\nNo wordings yet. Press “New wording”.\nfundhub\n·\ncontracts\nlive wordings · 0\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar"
+          },
+          "title": {
+            "left": 322,
+            "top": 13,
+            "right": 503,
+            "bottom": 43,
+            "width": 181,
+            "height": 30
+          },
+          "menuButton": null,
+          "header": {
+            "left": 228,
+            "top": 0,
+            "right": 1440,
+            "bottom": 57,
+            "width": 1212,
+            "height": 57
+          },
+          "account": {
+            "left": 921,
+            "top": -1,
+            "right": 1416,
+            "bottom": 57,
+            "width": 495,
+            "height": 58
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "‹‹\nSALES\n▾\nFUNDING\n▾\nCLIENT OPS\n▾\nAUTOMATION\n▾\nMARKETING\n▾\nADMIN\n▾\n⚇\nStaff & Teams\n⛁\nProducts & Commissions\n✒\nContract templates\nPORTALS\n▾\nfundhub\nSETUP\nContract templates\n— LIVE\nSearch\nCtrl K\nDEMO owner · owner · 18 tabs\nLIVE\nSign out\nHOW THIS WORKS\n\nBuild a contract once. Use it many times. Upload a PDF, or type the words here. Add the blanks people fill in. Say who has to sign.\n\nStaff pick it later. When they send a contract from a client’s screen, this one shows up in their list. They never have to write it again.\n\nTo see contracts you already sent, and who has signed them, go to Documents.\n\nContract wording\nOWNER & ADMIN\nUpload a PDF\nNew wording\n\nChanging the words here does not change any contract that has already been sent. Those are locked. New sends use the new words.\n\nSHORT NAME\tNAME\tSTATE\nNo wordings yet. Press “New wording”.\nfundhub\n·\ncontracts\nlive wordings · 0\nChat"
+        }
+      }
+    },
+    "client-portal.html": {
+      "role": "client",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar"
+          },
+          "title": {
+            "left": 58,
+            "top": 9,
+            "right": 268,
+            "bottom": 33,
+            "width": 210,
+            "height": 24
+          },
+          "menuButton": null,
+          "header": {
+            "left": 0,
+            "top": 0,
+            "right": 390,
+            "bottom": 152,
+            "width": 390,
+            "height": 152
+          },
+          "account": {
+            "left": 66,
+            "top": 42,
+            "right": 366,
+            "bottom": 142,
+            "width": 300,
+            "height": 100
+          },
+          "signButton": {
+            "left": 43,
+            "top": 1134,
+            "right": 347,
+            "bottom": 1204,
+            "width": 304,
+            "height": 70,
+            "visibleInFold": false
+          },
+          "portalLayout": {
+            "player": {
+              "left": 25,
+              "top": 277,
+              "right": 365,
+              "bottom": 333,
+              "width": 340,
+              "height": 56
+            },
+            "videoCard": {
+              "left": 24,
+              "top": 276,
+              "right": 366,
+              "bottom": 570,
+              "width": 342,
+              "height": 294
+            },
+            "signCard": {
+              "left": 24,
+              "top": 586,
+              "right": 366,
+              "bottom": 1221,
+              "width": 342,
+              "height": 635
+            },
+            "playerHeight": "56px"
+          },
+          "editor": null,
+          "bodyText": "Client Portal\n—\n—\nDEMO client · client · 1 tab\nLIVE\nSign out\nWelcome to your Fundhub portal\nWe could not load your file. Use the link we sent you, or sign in again.\n\nWelcome video is not available\n\nCP-01 / START HERE\nFUNDHUB PORTAL\nWelcome to the Fundhub portal\nA short hello: what this page is, what happens on your call, and how to use this portal so you are not guessing.\n—\nSign to authorize dispute letters\n\nThis lets Fundhub prepare dispute letters for you. It is not a credit pull. Draw your signature, type your legal name, then press the button.\n\nSign in to load the legal wording and record your signature.\nYour legal name\nDraw your signature\nClear\nDraw your signature. An empty box does not count.\nI sign to authorize Fundhub to prepare my dispute letters\nf\nJoin the Fundhub wins group\nThis is where we post wins. Come say hi before your call.\nBEFORE YOUR CALL\nYour file is open. Watch the welcome, join the wins group, and bring questions. Funding steps show up after we talk.\n●\nBooked\n2\nDiagnostic Paid\n3\nDocs Received\n4\nRound Started\n5\nRound Submitted\n6\nRound Approved\n7\nRound Funded\n8\nFile Finalized\nWHAT YOU OWN\nYours to keep — always here, always downloadable\nNothing to download yet\nYour reports land here after your call and credit pull. Nothing is missing — we have not run those yet.\nAfter your call, this list fills in on its own.\nUNLOCK MORE\nList prices — final amount is set on your call, except the $32 soft pull\n🔒\nLOCKED\nUnderwriteIQ soft-pull assessment\nA soft inquiry so we can see your file. Price is fixed.\n$32\nTalk to an advisor\n🔒\nLOCKED\nFunding, done-for-you\nWe run the funding round with you. Plus 10% of what funds, due when money lands.\n$3,000\nTalk to an advisor\n🔒\nLOCKED\nCredit repair, done-for-you\nRepair work run for you. Price is set on the call.\n$1,000\nTalk to an advisor\n🔒\nLOCKED\nRepair test run (first round, done for you)\nOne round to start. Price is set on the call.\n$200\nTalk to an advisor\n🔒\nLOCKED\nUnderwriteIQ Deliverables Package\nReport, letter pack, roadmap, funding snapshot, lender list, and the mini course.\n$1,000+\nTalk to an advisor\n🔒\nLOCKED\nFunding Mastery course (A to Z)\nThe course. Price is set on the call.\n$5,000\nTalk to an advisor\n›\nAccount & history\nPayments · Agreements · Documents · Activity · Messages\nYOUR FUNDING ADVISOR\n—\nName not shown here\nLooks after your file\nYour round, your documents, a payment — your advisor is who you want. Use the chat button in the corner and they will get it. No charge, no pitch.\nWANT MORE FUNDING?\nSALES CONVERSATION\n20 minutes on what a bigger approval would take, and what it would cost.\nAsk for a call\nfundhub client portal\n·\nquestions? text us anytime\nMetro 2 Dispute Letter Pack — Rounds 2 & 3\n✕\n\nPRICE\n$450\nAsk an advisor about this\n\nOnline checkout is not available yet. Ask an advisor in chat and we will send you a payment link.\n\nYour call\n✕\n\nYou're booked\nWe could not load your file. Use the link we sent you, or sign in again.\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar"
+          },
+          "title": {
+            "left": 24,
+            "top": 13,
+            "right": 234,
+            "bottom": 37,
+            "width": 210,
+            "height": 24
+          },
+          "menuButton": null,
+          "header": {
+            "left": 0,
+            "top": 0,
+            "right": 1440,
+            "bottom": 52,
+            "width": 1440,
+            "height": 52
+          },
+          "account": {
+            "left": 921,
+            "top": -4,
+            "right": 1416,
+            "bottom": 54,
+            "width": 495,
+            "height": 58
+          },
+          "signButton": {
+            "left": 373,
+            "top": 823,
+            "right": 1067,
+            "bottom": 869,
+            "width": 694,
+            "height": 46,
+            "visibleInFold": true
+          },
+          "portalLayout": {
+            "player": {
+              "left": 355,
+              "top": 153,
+              "right": 1085,
+              "bottom": 209,
+              "width": 730,
+              "height": 56
+            },
+            "videoCard": {
+              "left": 354,
+              "top": 152,
+              "right": 1086,
+              "bottom": 391,
+              "width": 732,
+              "height": 239
+            },
+            "signCard": {
+              "left": 354,
+              "top": 407,
+              "right": 1086,
+              "bottom": 886,
+              "width": 732,
+              "height": 478
+            },
+            "playerHeight": "56px"
+          },
+          "editor": null,
+          "bodyText": "Client Portal\n—\n—\nDEMO client · client · 1 tab\nLIVE\nSign out\nWelcome to your Fundhub portal\nWe could not load your file. Use the link we sent you, or sign in again.\n\nWelcome video is not available\n\nCP-01 / START HERE\nFUNDHUB PORTAL\nWelcome to the Fundhub portal\nA short hello: what this page is, what happens on your call, and how to use this portal so you are not guessing.\n—\nSign to authorize dispute letters\n\nThis lets Fundhub prepare dispute letters for you. It is not a credit pull. Draw your signature, type your legal name, then press the button.\n\nSign in to load the legal wording and record your signature.\nYour legal name\nDraw your signature\nClear\nDraw your signature. An empty box does not count.\nI sign to authorize Fundhub to prepare my dispute letters\nf\nJoin the Fundhub wins group\nThis is where we post wins. Come say hi before your call.\nJoin on Facebook\nBEFORE YOUR CALL\nYour file is open. Watch the welcome, join the wins group, and bring questions. Funding steps show up after we talk.\n●\nBooked\n2\nDiagnostic Paid\n3\nDocs Received\n4\nRound Started\n5\nRound Submitted\n6\nRound Approved\n7\nRound Funded\n8\nFile Finalized\nWHAT YOU OWN\nYours to keep — always here, always downloadable\nNothing to download yet\nYour reports land here after your call and credit pull. Nothing is missing — we have not run those yet.\nAfter your call, this list fills in on its own.\nUNLOCK MORE\nList prices — final amount is set on your call, except the $32 soft pull\n🔒\nLOCKED\nUnderwriteIQ soft-pull assessment\nA soft inquiry so we can see your file. Price is fixed.\n$32\nTalk to an advisor\n🔒\nLOCKED\nFunding, done-for-you\nWe run the funding round with you. Plus 10% of what funds, due when money lands.\n$3,000\nTalk to an advisor\n🔒\nLOCKED\nCredit repair, done-for-you\nRepair work run for you. Price is set on the call.\n$1,000\nTalk to an advisor\n🔒\nLOCKED\nRepair test run (first round, done for you)\nOne round to start. Price is set on the call.\n$200\nTalk to an advisor\n🔒\nLOCKED\nUnderwriteIQ Deliverables Package\nReport, letter pack, roadmap, funding snapshot, lender list, and the mini course.\n$1,000+\nTalk to an advisor\n🔒\nLOCKED\nFunding Mastery course (A to Z)\nThe course. Price is set on the call.\n$5,000\nTalk to an advisor\n›\nAccount & history\nPayments · Agreements · Documents · Activity · Messages\nYOUR FUNDING ADVISOR\n—\nName not shown here\nLooks after your file\nYour round, your documents, a payment — your advisor is who you want. Use the chat button in the corner and they will get it. No charge, no pitch.\nWANT MORE FUNDING?\nSALES CONVERSATION\n20 minutes on what a bigger approval would take, and what it would cost.\nAsk for a call\nfundhub client portal\n·\nquestions? text us anytime\nMetro 2 Dispute Letter Pack — Rounds 2 & 3\n✕\n\nPRICE\n$450\nAsk an advisor about this\n\nOnline checkout is not available yet. Ask an advisor in chat and we will send you a payment link.\n\nYour call\n✕\n\nYou're booked\nWe could not load your file. Use the link we sent you, or sign in again.\nChat"
+        }
+      }
+    },
+    "messaging.html": {
+      "role": "funding_advisor",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar-right"
+          },
+          "title": {
+            "left": 58,
+            "top": 8,
+            "right": 220,
+            "bottom": 28,
+            "width": 162,
+            "height": 20
+          },
+          "menuButton": null,
+          "header": {
+            "left": 0,
+            "top": 0,
+            "right": 390,
+            "bottom": 250,
+            "width": 390,
+            "height": 250
+          },
+          "account": {
+            "left": 66,
+            "top": 141,
+            "right": 374,
+            "bottom": 241,
+            "width": 308,
+            "height": 100
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "✕\nSALES\n▾\nFUNDING\n▾\nCLIENT OPS\n▾\n◎\nClient Control Panel\n✉\nMessaging\n▧\nDocuments\n⊘\nSpecialist\nAUTOMATION\n▾\nfundhub\n☰\nFundhub\n/\nMessaging\nORG: FUNDHUB\nLIVE\nSearch\nCtrl K\nDEMO funding_advisor · funding_advisor · 9 tabs\nLIVE\nSign out\n⌕\nAll 0\nNeeds reply 0\nNothing is waiting on a reply. Everything has been answered.\n—\nNo conversation open\nPick one on the left to read it.\nPick a conversation on the left to read it.\n—\nA reply goes out on the same channel the conversation is on.\nSend this one to\nSend\nYour name is saved on anything you send from here. Every message is checked before it goes out.\nPick a conversation to see who it is with.\nTHEIR OTHER THREADS\nPick a conversation first.\nOPEN ELSEWHERE\nfundhub-messaging · v1\norg: fundhub\nthread: none open\nsystems nominal · fundhub.ai\nconnected · no conversations in the database yet\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar-right"
+          },
+          "title": {
+            "left": 244,
+            "top": 12,
+            "right": 406,
+            "bottom": 32,
+            "width": 162,
+            "height": 20
+          },
+          "menuButton": null,
+          "header": {
+            "left": 228,
+            "top": 0,
+            "right": 1440,
+            "bottom": 44,
+            "width": 1212,
+            "height": 44
+          },
+          "account": {
+            "left": 884,
+            "top": -7,
+            "right": 1579,
+            "bottom": 51,
+            "width": 695,
+            "height": 58
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "‹‹\nSALES\n▾\nFUNDING\n▾\nCLIENT OPS\n▾\n◎\nClient Control Panel\n✉\nMessaging\n▧\nDocuments\n⊘\nSpecialist\nAUTOMATION\n▾\nfundhub\nFundhub\n/\nMessaging\nORG: FUNDHUB\nThu, Aug 20, 6:10:17 PM EDT\nLIVE\nSearch\nCtrl K\nDEMO funding_advisor · funding_advisor · 9 tabs\nLIVE\nSign out\n⌕\nAll 0\nNeeds reply 0\nNothing is waiting on a reply. Everything has been answered.\n—\nNo conversation open\nPick one on the left to read it.\nPick a conversation on the left to read it.\n—\nA reply goes out on the same channel the conversation is on.\nSend this one to\nSend\nYour name is saved on anything you send from here. Every message is checked before it goes out.\nPick a conversation to see who it is with.\nTHEIR OTHER THREADS\nPick a conversation first.\nOPEN ELSEWHERE\nfundhub-messaging · v1\norg: fundhub\nthread: none open\nsystems nominal · fundhub.ai\nconnected · no conversations in the database yet\nChat"
+        }
+      }
+    },
+    "calendar.html": {
+      "role": "closer",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar-right"
+          },
+          "title": {
+            "left": 58,
+            "top": 8,
+            "right": 208,
+            "bottom": 28,
+            "width": 150,
+            "height": 20
+          },
+          "menuButton": null,
+          "header": {
+            "left": 0,
+            "top": 0,
+            "right": 390,
+            "bottom": 284,
+            "width": 390,
+            "height": 284
+          },
+          "account": {
+            "left": 66,
+            "top": 175,
+            "right": 374,
+            "bottom": 275,
+            "width": 308,
+            "height": 100
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "✕\nSALES\n▾\n▤\nPipeline\n★\nCloser Dashboard\n☎\nCall cockpit\n＃\nMy numbers\n▦\nCalendar\nCLIENT OPS\n▾\nAUTOMATION\n▾\nfundhub\n☰\nFundhub\n/\nCalendar\nORG: FUNDHUB\nThu, Aug 20, 6:10:19 PM EDT\nLIVE\nSearch\nCtrl K\nDEMO closer · closer · 10 tabs\nLIVE\nSign out\nDay\nWeek\n‹\n›\nToday\nThursday, August 20\nDONE\n0\nNO-SHOW\n—\nSHOW RATE\n—\nLEFT TODAY\n0\nTHIS WEEK · AUG 16 – AUG 22\nSUN\n16\n—\nMON\n17\n—\nTUE\n18\n—\nWED\n19\n—\nTHU\n20\n—\nFRI\n21\n—\nSAT\n22\n—\nTODAY — THURSDAY, AUGUST 20\n—\nNothing booked.\nUP NEXT\n—\nno call linked\nNothing up next\nDated work from the task queue paints here when one is due.\nBEFORE YOU DIAL\nNo briefing on file.\nClient file\nTHEN\nNothing else dated after Up Next.\nCA-03 / WHO'S ON TODAY\nNobody clocked in right now.\nfundhub-calendar · v1\norg: fundhub\nthursday, august 20 · 0 booked · 0 left\ncontext loads 15 minutes before every call\nsystems nominal · fundhub.ai\nlive schedule\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar-right"
+          },
+          "title": {
+            "left": 244,
+            "top": 12,
+            "right": 394,
+            "bottom": 32,
+            "width": 150,
+            "height": 20
+          },
+          "menuButton": null,
+          "header": {
+            "left": 228,
+            "top": 0,
+            "right": 1440,
+            "bottom": 44,
+            "width": 1212,
+            "height": 44
+          },
+          "account": {
+            "left": 908,
+            "top": -7,
+            "right": 1424,
+            "bottom": 51,
+            "width": 516,
+            "height": 58
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "‹‹\nSALES\n▾\n▤\nPipeline\n★\nCloser Dashboard\n☎\nCall cockpit\n＃\nMy numbers\n▦\nCalendar\nCLIENT OPS\n▾\nAUTOMATION\n▾\nfundhub\nFundhub\n/\nCalendar\nORG: FUNDHUB\nThu, Aug 20, 6:10:19 PM EDT\nLIVE\nSearch\nCtrl K\nDEMO closer · closer · 10 tabs\nLIVE\nSign out\nDay\nWeek\n‹\n›\nToday\nThursday, August 20\nDONE\n0\nNO-SHOW\n—\nSHOW RATE\n—\nLEFT TODAY\n0\nTHIS WEEK · AUG 16 – AUG 22\nSUN\n16\n—\nMON\n17\n—\nTUE\n18\n—\nWED\n19\n—\nTHU\n20\n—\nFRI\n21\n—\nSAT\n22\n—\nTODAY — THURSDAY, AUGUST 20\n—\nNothing booked.\nUP NEXT\n—\nno call linked\nNothing up next\nDated work from the task queue paints here when one is due.\nBEFORE YOU DIAL\nNo briefing on file.\nClient file\nTHEN\nNothing else dated after Up Next.\nCA-03 / WHO'S ON TODAY\nNobody clocked in right now.\nfundhub-calendar · v1\norg: fundhub\nthursday, august 20 · 0 booked · 0 left\ncontext loads 15 minutes before every call\nsystems nominal · fundhub.ai\nlive schedule\nChat"
+        }
+      }
+    },
+    "template-editor.html": {
+      "role": "setter",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar"
+          },
+          "title": {
+            "left": 186,
+            "top": 8,
+            "right": 328,
+            "bottom": 38,
+            "width": 142,
+            "height": 30
+          },
+          "menuButton": null,
+          "header": {
+            "left": 0,
+            "top": 0,
+            "right": 390,
+            "bottom": 243,
+            "width": 390,
+            "height": 243
+          },
+          "account": {
+            "left": 66,
+            "top": 134,
+            "right": 366,
+            "bottom": 234,
+            "width": 300,
+            "height": 100
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "✕\nSALES\n▾\nCLIENT OPS\n▾\nAUTOMATION\n▾\n✎\nMessage Copy\nfundhub\n☰\nAUTOMATION\nMessage Copy\n— NO MESSAGES YET\nSearch\nCtrl K\nDEMO setter · setter · 8 tabs\nLIVE\nSign out\nLOADING\nPick a message on the left to read or edit it.\nMESSAGES\n—\npieces of copy you can edit\nTEXTS\n—\nsent as SMS\nEMAILS\n—\nsent as email\nSWITCHED OFF\n—\nwaiting on approval\nDRAFT HAZARD\n—\nplaceholder copy — blocked from send\nHOW THIS WORKS\nsystems nominal · fundhub.ai\nNo message copy has been added yet.\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar"
+          },
+          "title": {
+            "left": 380,
+            "top": 14,
+            "right": 522,
+            "bottom": 44,
+            "width": 142,
+            "height": 30
+          },
+          "menuButton": null,
+          "header": {
+            "left": 228,
+            "top": 0,
+            "right": 1440,
+            "bottom": 133,
+            "width": 1212,
+            "height": 133
+          },
+          "account": {
+            "left": 260,
+            "top": 66,
+            "right": 765,
+            "bottom": 124,
+            "width": 505,
+            "height": 58
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "‹‹\nSALES\n▾\nCLIENT OPS\n▾\nAUTOMATION\n▾\n✎\nMessage Copy\nfundhub\nAUTOMATION\nMessage Copy\n— NO MESSAGES YET\nSearch\nCtrl K\nDEMO setter · setter · 8 tabs\nLIVE\nSign out\nLOADING\nPick a message on the left to read or edit it.\nMESSAGES\n—\npieces of copy you can edit\nTEXTS\n—\nsent as SMS\nEMAILS\n—\nsent as email\nSWITCHED OFF\n—\nwaiting on approval\nDRAFT HAZARD\n—\nplaceholder copy — blocked from send\nHOW THIS WORKS\nsystems nominal · fundhub.ai\nNo message copy has been added yet.\nChat"
+        }
+      }
+    },
+    "inquiry-remover.html": {
+      "role": "inquiry_specialist",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar-right"
+          },
+          "title": {
+            "left": 58,
+            "top": 8,
+            "right": 218,
+            "bottom": 28,
+            "width": 160,
+            "height": 20
+          },
+          "menuButton": null,
+          "header": {
+            "left": 0,
+            "top": 0,
+            "right": 390,
+            "bottom": 300,
+            "width": 390,
+            "height": 300
+          },
+          "account": {
+            "left": 66,
+            "top": 175,
+            "right": 374,
+            "bottom": 291,
+            "width": 308,
+            "height": 116
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "✕\nSALES\n▾\nCLIENT OPS\n▾\n◎\nClient Control Panel\n✉\nMessaging\n▧\nDocuments\n⊘\nSpecialist\nAUTOMATION\n▾\nfundhub\n☰\n/\nSpecialist\nORG: FUNDHUB\nThu, Aug 20, 6:10:22 PM EDT\nLIVE\nSearch\nCtrl K\nDEMO inquiry_specialist · inquiry_specialist · 8 tabs\nLIVE\nSign out\nInquiries\nRepair\nDI DEMO inquiry_specialist\nSpecialist\nNEED ME\n0\nWORKED\n0\nCALLS\n0\nCONFIRMED\n0\nQUEUE BY BUREAU\nEQUIFAX\n0\nnone in queue\nTRANSUNION\n0\nnone in queue\nEXPERIAN\n0\nnone in queue\nNo open inquiries\nINQUIRY REMOVAL CASES\n\nClick a row to upload an FTC or police report, review the letter, and send. Nothing mails until you press send. The system never files an FTC report for you.\n\nCLIENT\tBUREAU\tITEMS\tSTATUS\tDOCS\tDELIVERY\tCALL\tROUND\nNo active cases.\nWORK QUEUE\nCLIENT\tBUREAU\tINQUIRY\tCALL STATE\tHOLD\tATTEMPTS\tSTATUS\nNo inquiries in the database yet.\nRECENT LETTERS ISSUED\nNo letters issued yet\nThis list fills when a letter actually goes out.\nAll letters\n↗\nFUNDHUB-SPECIALIST · v1\nORG: fundhub\nDI DEMO inquiry_specialist\nupdates as the queue changes\nNo inquiries in the database yet.\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar-right"
+          },
+          "title": {
+            "left": 244,
+            "top": 12,
+            "right": 404,
+            "bottom": 32,
+            "width": 160,
+            "height": 20
+          },
+          "menuButton": null,
+          "header": {
+            "left": 228,
+            "top": 0,
+            "right": 1440,
+            "bottom": 44,
+            "width": 1212,
+            "height": 44
+          },
+          "account": {
+            "left": 881,
+            "top": -7,
+            "right": 1640,
+            "bottom": 51,
+            "width": 759,
+            "height": 58
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "‹‹\nSALES\n▾\nCLIENT OPS\n▾\n◎\nClient Control Panel\n✉\nMessaging\n▧\nDocuments\n⊘\nSpecialist\nAUTOMATION\n▾\nfundhub\n/\nSpecialist\nORG: FUNDHUB\nThu, Aug 20, 6:10:22 PM EDT\nLIVE\nSearch\nCtrl K\nDEMO inquiry_specialist · inquiry_specialist · 8 tabs\nLIVE\nSign out\nInquiries\nRepair\nDI DEMO inquiry_specialist\nSpecialist\nNEED ME\n0\nWORKED\n0\nCALLS\n0\nCONFIRMED\n0\nQUEUE BY BUREAU\nEQUIFAX\n0\nnone in queue\nTRANSUNION\n0\nnone in queue\nEXPERIAN\n0\nnone in queue\nNo open inquiries\nINQUIRY REMOVAL CASES\n\nClick a row to upload an FTC or police report, review the letter, and send. Nothing mails until you press send. The system never files an FTC report for you.\n\nCLIENT\tBUREAU\tITEMS\tSTATUS\tDOCS\tDELIVERY\tCALL\tROUND\nNo active cases.\nWORK QUEUE\nCLIENT\tBUREAU\tINQUIRY\tCALL STATE\tHOLD\tATTEMPTS\tSTATUS\nNo inquiries in the database yet.\nRECENT LETTERS ISSUED\nNo letters issued yet\nThis list fills when a letter actually goes out.\nAll letters\n↗\nFUNDHUB-SPECIALIST · v1\nORG: fundhub\nDI DEMO inquiry_specialist\nupdates as the queue changes\nNo inquiries in the database yet.\nChat"
+        }
+      }
+    },
+    "staff-teams.html": {
+      "role": "sales_manager",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar"
+          },
+          "title": {
+            "left": 130,
+            "top": 8,
+            "right": 261,
+            "bottom": 38,
+            "width": 131,
+            "height": 30
+          },
+          "menuButton": null,
+          "header": {
+            "left": 0,
+            "top": 0,
+            "right": 390,
+            "bottom": 253,
+            "width": 390,
+            "height": 253
+          },
+          "account": {
+            "left": 66,
+            "top": 144,
+            "right": 366,
+            "bottom": 244,
+            "width": 300,
+            "height": 100
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": {
+            "visibility": "visible",
+            "pointerEvents": "auto"
+          },
+          "bodyText": "✕\nSALES\n▾\nCLIENT OPS\n▾\nAUTOMATION\n▾\nADMIN\n▾\n⚇\nStaff & Teams\n⛁\nProducts & Commissions\nfundhub\n☰\nSETUP\nStaff & Teams\n— ON SHIFT\n+ ADD PERSON\nSearch\nCtrl K\nDEMO sales_manager · sales_manager · 11 tabs\nLIVE\nSign out\nST-00 / HEADCOUNT\n0\non the roster\nST-00 / ON SHIFT\n—\nclocked in right now\nST-00 / CONSENT\n—\nmonitoring consent on file\nST-00 / PENDING\n0\ninvited, not yet active\nROSTER\nPERMISSIONS\nCLOCK & CONSENT\nTELEMETRY\nST-01 / ROSTER\nPERMISSIONS →\nAll roles\nOwner\nSales Manager\nCloser\nFunding Advisor\nInquiry Specialist\nAffiliate\nPERSON\tROLE\tCONSENT\tCLOCK\tSTATUS\nNo one matches that filter.\n0 people are hidden from this list (owner and seeded test logins).\nsystems nominal · fundhub.ai\nST-05 / EDIT PERSON\n—\n✕\nFIRST NAME\nLAST NAME\nEMAIL\nPHONE\nEMPLOYEE CODE\nNOT ISSUED BY THIS SYSTEM\nROLE\nOwner\nAdmin\nSales Manager\nCloser\nFunding Advisor\nInquiry Specialist\nSetter\nSTART DATE\nST-06 / STATE\nMonitoring consent on file\nOwner only. On = signed form received. Off = revoke to NULL — Hubstaff ingest skips.\nST-07 / EFFECTIVE PERMISSIONS\nNot available on this screen. What this person's role may do is set in the system's code and checked by the server on every action. This screen cannot read that list and cannot change it.\nSAVE\nCANCEL\nREVOKE LOGIN\nno staff on the roster yet\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar"
+          },
+          "title": {
+            "left": 324,
+            "top": 14,
+            "right": 455,
+            "bottom": 44,
+            "width": 131,
+            "height": 30
+          },
+          "menuButton": null,
+          "header": {
+            "left": 228,
+            "top": 0,
+            "right": 1440,
+            "bottom": 133,
+            "width": 1212,
+            "height": 133
+          },
+          "account": {
+            "left": 260,
+            "top": 66,
+            "right": 924,
+            "bottom": 124,
+            "width": 664,
+            "height": 58
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": {
+            "visibility": "visible",
+            "pointerEvents": "auto"
+          },
+          "bodyText": "‹‹\nSALES\n▾\nCLIENT OPS\n▾\nAUTOMATION\n▾\nADMIN\n▾\n⚇\nStaff & Teams\n⛁\nProducts & Commissions\nfundhub\nSETUP\nStaff & Teams\n— ON SHIFT\n+ ADD PERSON\nSearch\nCtrl K\nDEMO sales_manager · sales_manager · 11 tabs\nLIVE\nSign out\nST-00 / HEADCOUNT\n0\non the roster\nST-00 / ON SHIFT\n—\nclocked in right now\nST-00 / CONSENT\n—\nmonitoring consent on file\nST-00 / PENDING\n0\ninvited, not yet active\nROSTER\nPERMISSIONS\nCLOCK & CONSENT\nTELEMETRY\nST-01 / ROSTER\nPERMISSIONS →\nAll roles\nOwner\nSales Manager\nCloser\nFunding Advisor\nInquiry Specialist\nAffiliate\nPERSON\tROLE\tCONSENT\tCLOCK\tSTATUS\nNo one matches that filter.\n0 people are hidden from this list (owner and seeded test logins).\nsystems nominal · fundhub.ai\nST-05 / EDIT PERSON\n—\n✕\nFIRST NAME\nLAST NAME\nEMAIL\nPHONE\nEMPLOYEE CODE\nNOT ISSUED BY THIS SYSTEM\nROLE\nOwner\nAdmin\nSales Manager\nCloser\nFunding Advisor\nInquiry Specialist\nSetter\nSTART DATE\nST-06 / STATE\nMonitoring consent on file\nOwner only. On = signed form received. Off = revoke to NULL — Hubstaff ingest skips.\nST-07 / EFFECTIVE PERMISSIONS\nNot available on this screen. What this person's role may do is set in the system's code and checked by the server on every action. This screen cannot read that list and cannot change it.\nSAVE\nCANCEL\nREVOKE LOGIN\nno staff on the roster yet\nChat"
+        }
+      }
+    },
+    "products-commissions.html": {
+      "role": "sales_manager",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar"
+          },
+          "title": {
+            "left": 58,
+            "top": 40,
+            "right": 295,
+            "bottom": 70,
+            "width": 237,
+            "height": 30
+          },
+          "menuButton": null,
+          "header": {
+            "left": 0,
+            "top": 0,
+            "right": 390,
+            "bottom": 333,
+            "width": 390,
+            "height": 333
+          },
+          "account": {
+            "left": 66,
+            "top": 224,
+            "right": 366,
+            "bottom": 324,
+            "width": 300,
+            "height": 100
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": {
+            "visibility": "hidden",
+            "pointerEvents": "none"
+          },
+          "bodyText": "✕\nSALES\n▾\nCLIENT OPS\n▾\nAUTOMATION\n▾\nADMIN\n▾\n⚇\nStaff & Teams\n⛁\nProducts & Commissions\nfundhub\n☰\nSETUP\nProducts & Commissions\nVIEW PAYOUT LEDGER →\n+ ADD PRODUCT\nSearch\nCtrl K\nDEMO sales_manager · sales_manager · 11 tabs\nLIVE\nSign out\nPRODUCTS\n0\nno products on file yet\nACTIVE RULES\n0\nfront-end and back-end\nACCRUED\n$0\nowed, not yet paid\nPAID MTD\n$0\naugust 2026\nPRODUCTS\nCOMMISSION RULES\nPRODUCTS\nCLICK A ROW TO EDIT\nPRODUCT\tCATEGORY\tPRICE\tVARIABLE\tRAILS\nNo products on file yet.\nsystems nominal · fundhub.ai\nno products on file yet · no commission rows yet\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar"
+          },
+          "title": {
+            "left": 324,
+            "top": 14,
+            "right": 561,
+            "bottom": 44,
+            "width": 237,
+            "height": 30
+          },
+          "menuButton": null,
+          "header": {
+            "left": 228,
+            "top": 0,
+            "right": 1440,
+            "bottom": 133,
+            "width": 1212,
+            "height": 133
+          },
+          "account": {
+            "left": 260,
+            "top": 66,
+            "right": 924,
+            "bottom": 124,
+            "width": 664,
+            "height": 58
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": {
+            "visibility": "hidden",
+            "pointerEvents": "none"
+          },
+          "bodyText": "‹‹\nSALES\n▾\nCLIENT OPS\n▾\nAUTOMATION\n▾\nADMIN\n▾\n⚇\nStaff & Teams\n⛁\nProducts & Commissions\nfundhub\nSETUP\nProducts & Commissions\nVIEW PAYOUT LEDGER →\n+ ADD PRODUCT\nSearch\nCtrl K\nDEMO sales_manager · sales_manager · 11 tabs\nLIVE\nSign out\nPRODUCTS\n0\nno products on file yet\nACTIVE RULES\n0\nfront-end and back-end\nACCRUED\n$0\nowed, not yet paid\nPAID MTD\n$0\naugust 2026\nPRODUCTS\nCOMMISSION RULES\nPRODUCTS\nCLICK A ROW TO EDIT\nPRODUCT\tCATEGORY\tPRICE\tVARIABLE\tRAILS\nNo products on file yet.\nsystems nominal · fundhub.ai\nno products on file yet · no commission rows yet\nChat"
+        }
+      }
+    },
+    "agent-editor.html": {
+      "role": "admin",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar"
+          },
+          "title": {
+            "left": 186,
+            "top": 8,
+            "right": 303,
+            "bottom": 38,
+            "width": 117,
+            "height": 30
+          },
+          "menuButton": null,
+          "header": {
+            "left": 0,
+            "top": 0,
+            "right": 390,
+            "bottom": 251,
+            "width": 390,
+            "height": 251
+          },
+          "account": {
+            "left": 66,
+            "top": 142,
+            "right": 374,
+            "bottom": 242,
+            "width": 308,
+            "height": 100
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "✕\nSALES\n▾\nFUNDING\n▾\nCLIENT OPS\n▾\nAUTOMATION\n▾\n◈\nAgent Editor\n✎\nMessage Copy\nMARKETING\n▾\nADMIN\n▾\nfundhub\n☰\nAUTOMATION\nAgent Editor\n0 LIVE · 0 SHADOW\n+ NEW AGENT\nSearch\nCtrl K\nDEMO admin · admin · 17 tabs\nLIVE\nSign out\nAGENTS\n0\nregistry is empty\nLIVE\n0\nacting on real clients\nSHADOW\n0\nlogging, not sending\nBREACHES 7D\n0\nguardrail blocks\nNo agents in the registry yet.\nsystems nominal · fundhub.ai\nno staff rows · Pick a person · no agent registry rows yet\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar"
+          },
+          "title": {
+            "left": 380,
+            "top": 14,
+            "right": 497,
+            "bottom": 44,
+            "width": 117,
+            "height": 30
+          },
+          "menuButton": null,
+          "header": {
+            "left": 228,
+            "top": 0,
+            "right": 1440,
+            "bottom": 133,
+            "width": 1212,
+            "height": 133
+          },
+          "account": {
+            "left": 260,
+            "top": 66,
+            "right": 755,
+            "bottom": 124,
+            "width": 495,
+            "height": 58
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "‹‹\nSALES\n▾\nFUNDING\n▾\nCLIENT OPS\n▾\nAUTOMATION\n▾\n◈\nAgent Editor\n✎\nMessage Copy\nMARKETING\n▾\nADMIN\n▾\nfundhub\nAUTOMATION\nAgent Editor\n0 LIVE · 0 SHADOW\n+ NEW AGENT\nSearch\nCtrl K\nDEMO admin · admin · 17 tabs\nLIVE\nSign out\nAGENTS\n0\nregistry is empty\nLIVE\n0\nacting on real clients\nSHADOW\n0\nlogging, not sending\nBREACHES 7D\n0\nguardrail blocks\nNo agents in the registry yet.\nsystems nominal · fundhub.ai\nno staff rows · Pick a person · no agent registry rows yet\nChat"
+        }
+      }
+    },
+    "lenders.html": {
+      "role": "funding_advisor",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar-right"
+          },
+          "title": {
+            "left": 58,
+            "top": 8,
+            "right": 199,
+            "bottom": 28,
+            "width": 141,
+            "height": 20
+          },
+          "menuButton": null,
+          "header": {
+            "left": 0,
+            "top": 0,
+            "right": 390,
+            "bottom": 195,
+            "width": 390,
+            "height": 195
+          },
+          "account": {
+            "left": 66,
+            "top": 86,
+            "right": 366,
+            "bottom": 186,
+            "width": 300,
+            "height": 100
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "✕\nSALES\n▾\nFUNDING\n▾\n⬡\nLenders\nCLIENT OPS\n▾\nAUTOMATION\n▾\nfundhub\n☰\nFundhub\n/\nLenders\nLIVE\nSearch\nCtrl K\nDEMO funding_advisor · funding_advisor · 9 tabs\nLIVE\nSign out\nThe lender list starts empty on purpose. Export the seven Airtable product tables, then Import CSV here.\nLENDER LIST\nBUREAU MISMATCH QUEUE\nAI BUREAU CONFIG\nPRODUCT TABLE\nAll\nOnlineBizCC\nInBranchBizCC\nBizLOC_Stated\nBizLOC_Documented\nPersonalCC\nPersonalLoans\nPersonalLOC\nBUREAU PULLED\nPRIORITY TIER\nAll\n1\n2\n3\nSTATUS\nAll\nActive\nInactive\nELIGIBLE STATE\nSEARCH\nApply filters\nExport CSV\nImport CSV\nAdd blank row\nLenders\nEmpty — import from Airtable\nNAME\tTABLE\tBUREAUS\tREQUIREMENTS\tTIER\tSTATUS\tSTATE\tUPDATED\tAPPLY\t\nNo lenders yet. Import a CSV from Airtable.\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar-right"
+          },
+          "title": {
+            "left": 252,
+            "top": 27,
+            "right": 393,
+            "bottom": 47,
+            "width": 141,
+            "height": 20
+          },
+          "menuButton": null,
+          "header": {
+            "left": 228,
+            "top": 0,
+            "right": 1440,
+            "bottom": 75,
+            "width": 1212,
+            "height": 75
+          },
+          "account": {
+            "left": 721,
+            "top": 8,
+            "right": 1416,
+            "bottom": 66,
+            "width": 695,
+            "height": 58
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "‹‹\nSALES\n▾\nFUNDING\n▾\n⬡\nLenders\nCLIENT OPS\n▾\nAUTOMATION\n▾\nfundhub\nFundhub\n/\nLenders\nLIVE\nSearch\nCtrl K\nDEMO funding_advisor · funding_advisor · 9 tabs\nLIVE\nSign out\nThe lender list starts empty on purpose. Export the seven Airtable product tables, then Import CSV here.\nLENDER LIST\nBUREAU MISMATCH QUEUE\nAI BUREAU CONFIG\nPRODUCT TABLE\nAll\nOnlineBizCC\nInBranchBizCC\nBizLOC_Stated\nBizLOC_Documented\nPersonalCC\nPersonalLoans\nPersonalLOC\nBUREAU PULLED\nPRIORITY TIER\nAll\n1\n2\n3\nSTATUS\nAll\nActive\nInactive\nELIGIBLE STATE\nSEARCH\nApply filters\nExport CSV\nImport CSV\nAdd blank row\nLenders\nEmpty — import from Airtable\nNAME\tTABLE\tBUREAUS\tREQUIREMENTS\tTIER\tSTATUS\tSTATE\tUPDATED\tAPPLY\t\nNo lenders yet. Import a CSV from Airtable.\nChat"
+        }
+      }
+    },
+    "content-admin.html": {
+      "role": "admin",
+      "errors": [],
+      "checks": {
+        "390": {
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "pageScrollWidth": 390,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar"
+          },
+          "title": {
+            "left": 130,
+            "top": 8,
+            "right": 206,
+            "bottom": 38,
+            "width": 76,
+            "height": 30
+          },
+          "menuButton": null,
+          "header": {
+            "left": 0,
+            "top": 0,
+            "right": 390,
+            "bottom": 253,
+            "width": 390,
+            "height": 253
+          },
+          "account": {
+            "left": 66,
+            "top": 96,
+            "right": 366,
+            "bottom": 196,
+            "width": 300,
+            "height": 100
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "✕\nSALES\n▾\nFUNDING\n▾\nCLIENT OPS\n▾\nAUTOMATION\n▾\nMARKETING\n▾\n▭\nContent\nADMIN\n▾\nfundhub\n☰\nSETUP\nContent\nSAVED\nSAVE CHANGES\nSearch\nCtrl K\nDEMO admin · admin · 17 tabs\nLIVE\nSign out\nCN-00 / VIDEOS\n0\nin the library\nCN-00 / TIERS MAPPED\n0/0\nplus a default\nCN-00 / LOCKED TILES\n0\nin this editor, unsaved\nCN-00 / LAST UPLOAD\n—\nno videos yet\nCN-01 / VIDEO LIBRARY\n0 VIDEOS\n▶\nUpload a welcome video\nMP4, MOV, or WebM. The file is stored, then listed below.\nCHOOSE FILE\nUPLOAD\nNo videos yet. Upload one above and it will stay after you reload.\nCN-02 / TIER ASSIGNMENT\nONE VIDEO PER TIER\nDefault\nno tier mapped\n— none —\nA client sees the video mapped to the tier they bought. Anyone on a tier with no mapping falls through to the default.\nCN-03 / LOCKED TILE EDITOR\nDRIVES “UNLOCK MORE”\nNo locked tiles on file for this company yet.\n⚠\nNothing is showing. The portal drops the “Unlock More” section entirely.\nCN-04 / PREVIEW\nDEFAULT\nCLIENT PORTAL\n▶\nNo welcome video set\nDEFAULT\nUNLOCK MORE\nNo locked tiles are showing. The portal hides the section entirely.\npreview · falling through to the default video\nsystems nominal · fundhub.ai\nChat"
+        },
+        "1440": {
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          },
+          "pageScrollWidth": 1440,
+          "noPageOverflow": true,
+          "chip": {
+            "position": "static",
+            "inHeader": true,
+            "parent": "topbar"
+          },
+          "title": {
+            "left": 324,
+            "top": 22,
+            "right": 400,
+            "bottom": 52,
+            "width": 76,
+            "height": 30
+          },
+          "menuButton": null,
+          "header": {
+            "left": 228,
+            "top": 0,
+            "right": 1440,
+            "bottom": 75,
+            "width": 1212,
+            "height": 75
+          },
+          "account": {
+            "left": 921,
+            "top": 8,
+            "right": 1416,
+            "bottom": 66,
+            "width": 495,
+            "height": 58
+          },
+          "signButton": null,
+          "portalLayout": null,
+          "editor": null,
+          "bodyText": "‹‹\nSALES\n▾\nFUNDING\n▾\nCLIENT OPS\n▾\nAUTOMATION\n▾\nMARKETING\n▾\n▭\nContent\nADMIN\n▾\nfundhub\nSETUP\nContent\nSAVED\nSAVE CHANGES\nSearch\nCtrl K\nDEMO admin · admin · 17 tabs\nLIVE\nSign out\nCN-00 / VIDEOS\n0\nin the library\nCN-00 / TIERS MAPPED\n0/0\nplus a default\nCN-00 / LOCKED TILES\n0\nin this editor, unsaved\nCN-00 / LAST UPLOAD\n—\nno videos yet\nCN-01 / VIDEO LIBRARY\n0 VIDEOS\n▶\nUpload a welcome video\nMP4, MOV, or WebM. The file is stored, then listed below.\nCHOOSE FILE\nUPLOAD\nNo videos yet. Upload one above and it will stay after you reload.\nCN-02 / TIER ASSIGNMENT\nONE VIDEO PER TIER\nDefault\nno tier mapped\n— none —\nA client sees the video mapped to the tier they bought. Anyone on a tier with no mapping falls through to the default.\nCN-03 / LOCKED TILE EDITOR\nDRIVES “UNLOCK MORE”\nNo locked tiles on file for this company yet.\n⚠\nNothing is showing. The portal drops the “Unlock More” section entirely.\nCN-04 / PREVIEW\nDEFAULT\nCLIENT PORTAL\n▶\nNo welcome video set\nDEFAULT\nUNLOCK MORE\nNo locked tiles are showing. The portal hides the section entirely.\npreview · falling through to the default video\nsystems nominal · fundhub.ai\nChat"
+        }
+      }
+    }
+  },
+  "failures": [],
+  "roleProofs": {
+    "contractsAsCloser": {
+      "finalPath": "/app/closer-dashboard.html",
+      "contractNavVisible": false,
+      "wordingVisible": false
+    }
+  }
+}

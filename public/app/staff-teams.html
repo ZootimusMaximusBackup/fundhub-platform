@@ -39,14 +39,14 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
-.topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+.topbar{min-height:57px;flex:0 0 auto;display:flex;align-items:center;gap:16px;padding:8px 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20;flex-wrap:wrap}
 .topbar h1{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
 .topbar .crumb{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
-.content{padding:22px 24px 40px;flex:1;width:100%}
+.content{padding:24px 24px 40px;flex:1;width:100%}
 
 .card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.card+.card{margin-top:14px}
+.card+.card{margin-top:16px}
 .card-hd{padding:13px 16px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .card-hd .t{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
 .card-bd{padding:16px}
@@ -152,6 +152,13 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
 .foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
 .empty{padding:24px 16px;text-align:center;color:var(--gray2);font-size:var(--fs-body)}
 @media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
+@media(max-width:640px){
+  .tabs{display:grid;grid-template-columns:1fr;padding:0}
+  .tab{width:100%;margin:0;text-align:left;border-bottom:1px solid var(--line)}
+  .card-hd{align-items:stretch}
+  .card-hd select,.card-hd input{width:100%!important}
+  #toAdvanced{width:100%}
+}
 </style>
 <script defer src="shell.js"></script>
 </head>

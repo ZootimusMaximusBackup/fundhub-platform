@@ -219,6 +219,30 @@ html.fh-side-mini .app-shell {
 .side.mini .navhead .chev { display: none; }
 
 .navlist { display: flex; flex-direction: column; }
+
+/* Owner-set retired menu rows stay reachable by direct URL, but never paint in
+   the rail. This stylesheet loads before the deferred shell, so the rows are
+   hidden on the first frame instead of flashing while the session resolves.
+   Keep this list in lockstep with shell.js NAV_HIDDEN; the nav test checks it. */
+.navitem:is(
+  [href="finance-os.html"],
+  [href="consent-capture.html"],
+  [href="company-brain.html"],
+  [href="galaxy.html"],
+  [href="partner-galaxy.html"],
+  [href="ops-admin.html"],
+  [href="automations.html"],
+  [href="journeys.html"],
+  [href="brand-studio.html"],
+  [href="campaign-manager.html"],
+  [href="social-studio.html"],
+  [href="creative-factory.html"],
+  [href="hiring.html"],
+  [href="affiliate.html"]
+) {
+  display: none !important;
+}
+
 .navitem {
   display: flex;
   align-items: center;
@@ -291,6 +315,25 @@ html.fh-side-mini .app-shell {
   inset: 0;
   background: rgba(0, 0, 0, .45);
   z-index: 390;
+}
+
+/* Shared account row for screens that do not have a named top bar. It stays
+   in normal page flow, so account and search controls never cover content. */
+.fh-shell-account-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-height: 57px;
+  padding: 8px 16px;
+  background: var(--paper, #FCFCFC);
+  border-bottom: 1px solid var(--line, #E4E4E7);
+  box-sizing: border-box;
+  flex-wrap: wrap;
+}
+.fh-shell-account-row #fh-shell-search-btn,
+.fh-shell-account-row #fh-shell-chip {
+  margin-left: 0 !important;
 }
 
 /* ---------------------------------------------------------------------------
@@ -382,6 +425,9 @@ html.fh-side-mini .app-shell {
     min-width: 0 !important;
     flex-shrink: 1 !important;
   }
+  .fh-shell-account-row #fh-shell-chip {
+    margin-left: 0 !important;
+  }
   .topbar,
   .topbar-right,
   .top,
@@ -389,6 +435,22 @@ html.fh-side-mini .app-shell {
     flex-wrap: wrap !important;
     max-width: 100% !important;
     min-width: 0 !important;
+  }
+  /* Any named header that receives the shared account controls must own their
+     full height. Fixed-height bars used to let the chip paint over the page. */
+  :is(.topbar, .top, .page-hd, body > header, .app > header, .app-shell > header):has(#fh-shell-chip) {
+    height: auto !important;
+    min-height: 57px;
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    row-gap: 8px;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+  .topbar-right:has(#fh-shell-chip) {
+    width: 100%;
+    flex-basis: 100%;
+    flex-wrap: wrap !important;
   }
 
   /* Bigger touch targets for the nav itself. */

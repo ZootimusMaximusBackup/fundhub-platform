@@ -168,7 +168,7 @@ html{ font-size:100%; }        /* = the reader's browser default, normally 16px 
 }
 :is(.app, .app-shell, .shell, .main, .fh-maxw) :is(.sv, .vl, .big),
 :is(.app, .app-shell) :is(.big-tile .val, .kpi .vl, .band .bv,
-  .un-mins, .fh-num, .fos-value){
+  .un-mins, .fh-num, .fos-value, .rf-value){
   font-size:var(--fs-metric) !important;
   font-variant-numeric:tabular-nums;
 }

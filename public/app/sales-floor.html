@@ -37,8 +37,8 @@ body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:
 header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;position:sticky;top:0;background:var(--paper);z-index:20}
 .hl,.hr{display:flex;align-items:center;gap:12px}
 
-.shell{padding:24px 22px;max-width:1280px;margin:0 auto}
-.sec{margin-bottom:26px}
+.shell{padding:24px;max-width:1280px;margin:0 auto}
+.sec{margin-bottom:24px}
 .sech{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
 .note{font-size:11.5px;color:var(--gray2)}
 .say{font-size:12.5px;color:var(--gray);margin-top:11px;padding-left:13px;border-left:2px solid var(--warn)}
@@ -56,8 +56,8 @@ header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-
 .marks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--gray2);margin-top:7px;position:relative}
 
 /* funnel */
-.funnel{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.f{background:var(--paper);padding:15px 16px}
+.funnel{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;background:transparent;border:0;border-radius:10px;overflow:visible}
+.f{background:var(--paper);padding:16px;border:1px solid var(--line);border-radius:10px}
 .f .lb{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
 .f .vl{font-size:25px;font-weight:500;letter-spacing:-.025em;margin-top:5px;font-variant-numeric:tabular-nums}
 .f .cv{font-size:11.5px;margin-top:3px;color:var(--gray)}
@@ -76,7 +76,7 @@ header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-
 
 /* two col */
 .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.panel{border:1px solid var(--line);border-radius:10px;padding:17px 18px;background:var(--paper)}
+.panel{border:1px solid var(--line);border-radius:10px;padding:16px;background:var(--paper)}
 .panel h3{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:13px}
 
 .row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13px}
@@ -99,7 +99,7 @@ header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-
 
 @media(max-width:1080px){.funnel{grid-template-columns:repeat(3,1fr)}.rhead,.rrow{grid-template-columns:1.4fr 62px 70px 82px 1fr}.rhead .h5,.rrow .c5{display:none}}
 @media(max-width:860px){.two{grid-template-columns:1fr}}
-@media(max-width:640px){.funnel{grid-template-columns:1fr}.rhead,.rrow{grid-template-columns:1fr 70px 84px}.rhead .h2,.rrow .c2,.rhead .h4,.rrow .c4{display:none}}
+@media(max-width:640px){.funnel{grid-template-columns:1fr!important}.rhead,.rrow{grid-template-columns:1fr 70px 84px}.rhead .h2,.rrow .c2,.rhead .h4,.rrow .c4{display:none}}
 
 /* offer stack — its own container class so the roster stays the first .rost */
 .ostack{border:1px solid var(--line);border-radius:10px;overflow:hidden}

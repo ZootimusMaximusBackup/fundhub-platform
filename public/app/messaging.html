@@ -92,6 +92,7 @@
        still scrolls its own content, same as it already did in its column. */
     main{display:flex;flex-direction:column;height:auto;overflow-y:auto;}
     .convo-col,.thread-col,.ctx-col{max-height:60vh;overflow-y:auto;flex:none;}
+    .ctx-col{padding-bottom:80px;}
   }
   @media (max-width:480px){
     /* No padding above .convo-list here on purpose. It used to carry
@@ -259,7 +260,7 @@
   .compose-input{flex:1;border:1px solid var(--line);border-radius:8px;padding:9px 11px;min-height:54px;
     font-size:var(--fs-body);color:var(--text-faint);background:var(--paper);}
   .compose-actions{display:flex;flex-direction:column;gap:6px;}
-  .send-btn{background:var(--ink);color:#fff;border:none;border-radius:7px;padding:9px 20px;font-weight:700;font-size:var(--fs-body);}
+  .send-btn{background:var(--ink);color:#fff;border:none;border-radius:7px;padding:9px 20px;min-height:44px;font-weight:700;font-size:var(--fs-body);}
   .tmpl-btn{background:var(--surface);color:var(--text-dim);border:1px solid var(--line);border-radius:7px;
     padding:5px 12px;font-weight:600;font-size:var(--fs-body);}
   .sending-as{display:flex;align-items:center;gap:6px;font-size:var(--fs-caption);color:var(--text-dim);margin-top:7px;}

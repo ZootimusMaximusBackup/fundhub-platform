@@ -41,7 +41,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 
   .main{flex:1;min-width:0;display:flex;flex-direction:column}
-.topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+.topbar{min-height:57px;flex:0 0 auto;display:flex;align-items:center;gap:16px;padding:8px 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20;flex-wrap:wrap}
 .topbar h1{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
 .topbar .crumb{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
@@ -84,7 +84,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .swrow .swl .n{font-size:var(--fs-body);font-weight:500}
 .swrow .swl .d{font-size:var(--fs-caption);color:var(--gray);line-height:1.4}
 
-.layout{display:grid;grid-template-columns:296px minmax(0,1fr);gap:14px;align-items:start}
+.layout{display:grid;grid-template-columns:296px minmax(0,1fr);gap:16px;align-items:start}
 .alist{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;position:sticky;top:71px}
 .agrp{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.14em;text-transform:uppercase;color:var(--gray);padding:11px 14px 7px;background:var(--soft);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
 .agrp::before{content:"";width:16px;height:2px;background:var(--spectrum);border-radius:1px}
@@ -147,9 +147,8 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 .srun .st{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);flex:0 0 74px;letter-spacing:.04em}
 .srun .sb{flex:1;min-width:0}
 .srun .so{color:var(--gray);font-size:var(--fs-caption);line-height:1.5;margin-top:3px}
-.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
-.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
-.stat::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum)}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px;position:relative;overflow:hidden}
 .stat .sv{font-family:var(--mono);font-size:var(--fs-metric);font-variant-numeric:tabular-nums;font-weight:600;margin-top:8px;letter-spacing:-.02em}
 .stat .sd{font-size:var(--fs-caption);color:var(--gray);margin-top:2px}
 .foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
@@ -229,7 +228,7 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
     <div class="topbar">
       <span class="crumb">Automation</span><h1>Message Copy</h1>
       <div class="spacer"></div>
-      <span class="chip on" id="liveChip"><span class="cd"></span><span id="liveTxt">— loading</span></span>
+      <span class="chip on" id="liveChip"><span class="cd"></span><span id="liveTxt">— checking messages</span></span>
     </div>
 
     <div class="content fh-maxw">
@@ -780,7 +779,10 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
   document.addEventListener("DOMContentLoaded", function () {
     FHData.wire(FHData.messageTemplates({ limit: 200 }), "message copy", function (data) {
       rows = (data && data.items) || [];
-      if (!rows.length) return null;
+      if (!rows.length) {
+        $("liveTxt").textContent = "— no messages yet";
+        return "No message copy has been added yet.";
+      }
       renderList();
       if (sel) { sel = rows.filter(function (r) { return r.id === sel.id; })[0] || null; }
       renderEditor();

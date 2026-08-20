@@ -355,13 +355,16 @@
        the least useful of the three on a phone, dropping it buys back the
        room org + LIVE status need. */
     .clock{display:none;}
-    .topbar-right{gap:8px;}
-    /* shell.js's role/sign-out chip floats fixed under the header, and this
-       screen's client name sits right under the header too, with nothing
-       between — same fix as messaging.html's conversation list: pad the
-       content down instead of moving the chip (moving it would just cover
-       the next thing instead of this one). */
-    .record-head{padding-top:56px;}
+    header.topbar{height:auto;min-height:44px;flex-wrap:wrap;gap:8px;padding-top:8px;padding-bottom:8px;}
+    .topbar-right{width:100%;gap:8px;flex-wrap:wrap;}
+    .record-head{padding:16px;flex-direction:column;align-items:stretch;}
+    .record-id{flex-direction:column;align-items:stretch;gap:8px;}
+    .record-pick{width:100%;}
+    .record-pick select{width:100%;min-width:0;max-width:none;}
+    .record-fields{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+    main{display:flex;flex-direction:column;overflow-y:auto;background:var(--paper);}
+    .main-col,.side-col{width:100%;overflow:visible;padding:16px;}
+    .kv-grid,.details-grid{grid-template-columns:1fr;}
   }
 </style>
 <script defer src="shell.js"></script>
