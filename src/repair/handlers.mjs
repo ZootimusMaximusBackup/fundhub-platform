@@ -1,15 +1,35 @@
 // Event handlers for repair.* — move cards; never invent specialist review.
+// Also queue the matching repair email (email only — owner §2.4).
 
 import { moveRepairCard, stallRepairCard, EVENT_STAGE } from "./pipeline.mjs";
 import { canLeaveIntake } from "./croa.mjs";
 import { isBreached } from "./sla.mjs";
 import { logDecision } from "../metro2/rounds/store.mjs";
+import { notifyRepairEmail } from "./notify.mjs";
 
 export async function onRepairEvent(db, event) {
   const name = event?.name || event?.type;
   const orgId = event.orgId || event.payload?.orgId;
   const clientId = event.clientId || event.payload?.clientId;
   if (!name || !orgId || !clientId) return { ok: false, reason: "missing_ids" };
+
+  // Retake is email-only — do not move the optimization card.
+  if (name === "repair.response.retake") {
+    const email = await notifyRepairEmail(db, {
+      name,
+      orgId,
+      clientId,
+      payload: event.payload || {}
+    }).catch((err) => ({ sent: false, reason: String(err?.message || err) }));
+    if (db?.query) {
+      await logDecision(db, {
+        orgId, clientId, caseId: event.payload?.caseId,
+        decision: name,
+        payload: event.payload || {}
+      }).catch(() => {});
+    }
+    return { ok: true, emailOnly: true, email };
+  }
 
   if (name === "repair.docs.complete" || name === "repair.enrolled") {
     // Leaving intake requires CROA gate when advancing past intake
@@ -39,11 +59,23 @@ export async function onRepairEvent(db, event) {
         payload: event.payload || {}
       }).catch(() => {});
     }
-    return { ok: true, ...r };
+    const email = await notifyRepairEmail(db, {
+      name,
+      orgId,
+      clientId,
+      payload: event.payload || {}
+    }).catch((err) => ({ sent: false, reason: String(err?.message || err) }));
+    return { ok: true, ...r, email };
   }
 
   const moved = await moveRepairCard(db, { orgId, clientId, stageKey });
-  return { ok: !!moved?.moved, moved, stageKey };
+  const email = await notifyRepairEmail(db, {
+    name,
+    orgId,
+    clientId,
+    payload: event.payload || {}
+  }).catch((err) => ({ sent: false, reason: String(err?.message || err) }));
+  return { ok: !!moved?.moved, moved, stageKey, email };
 }
 
 export function evaluateSlaBreach(card) {

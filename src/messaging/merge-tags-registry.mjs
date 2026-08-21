@@ -83,6 +83,11 @@ export const CONTEXT_PREFIXES = Object.freeze([
     prefix: "magic_link.",
     only: "EMAIL-PORTAL-MAGIC-LINK",
     supplied_by: "src/auth/magic-link.mjs"
+  }),
+  Object.freeze({
+    prefix: "repair.",
+    only: "EMAIL-REPAIR-*",
+    supplied_by: "src/repair/notify.mjs"
   })
 ]);
 
