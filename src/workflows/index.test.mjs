@@ -66,14 +66,14 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
   const disk = idsOnDisk();
   const expected = disk.size - Object.keys(DELIBERATELY_UNSERVED).length;
 
-  /* 53 since the incomplete-survey nudge and the inquiry call sweeper were
-     switched on by the owner (2026-08-19). Was pinned at 51, which is the
-     number that made the drift look intentional.
+  /* 54 since AI-SET-01 Josh setter was registered (2026-08-21). Was 53 after
+     the incomplete-survey nudge and the inquiry call sweeper were switched on
+     (2026-08-19).
 
      The count stays pinned as well as derived: registering a function is how a
      job starts running, and Inngest executes functions in production today, so
      it should cost somebody a line in a test. */
-  assert.equal(functions.length, 53, `expected 53, got ${functions.length}`);
+  assert.equal(functions.length, 54, `expected 54, got ${functions.length}`);
   assert.equal(functions.length, expected,
     `${disk.size} workflows on disk, ${Object.keys(DELIBERATELY_UNSERVED).length} deliberately unserved, ` +
     `so ${expected} should be served — but ${functions.length} are`);

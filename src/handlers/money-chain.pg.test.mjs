@@ -185,8 +185,12 @@ describe("money-chain writers", { skip: !HAS_DB ? "no DATABASE_URL" : false }, (
     const pays = (await db.query(
       `SELECT * FROM sale_payments WHERE sale_id = $1`, [sales[0].id]
     )).rows;
-    assert.ok(pays.length >= 1, "at least one sale_payment");
+    assert.ok(pays.length >= 1, "deposit.paid must write sale_payments when a sale exists");
     assert.ok(pays.some((p) => p.kind === "deposit" && Number(p.amount) === 3000));
+    assert.ok(
+      pays.every((p) => String(p.product_id) === String(sales[0].product_id)),
+      "sale_payments.product_id must copy the sale row"
+    );
 
     const attrs = (await db.query(
       `SELECT * FROM sale_attributions WHERE sale_id = $1 AND basis = 'front_end'`,
@@ -369,6 +373,39 @@ describe("money-chain writers", { skip: !HAS_DB ? "no DATABASE_URL" : false }, (
     const commBody = await json(commRes);
     const items = commBody.items || [];
     assert.ok(items.some((i) => i.basis === "back_end" && Number(i.amount) === 125));
+  });
+
+  test("deposit.paid writes sale_payments for an existing sale (BLK-008)", async () => {
+    const email = `${MARK}.blk008@example.com`;
+    await emit(db, "deposit.paid", {
+      email, product: "deposit", productName: "Consulting Services Deposit",
+      amount: 3000, providerRef: `${MARK}_blk008_a`, closerId, source: "commas"
+    }, { orgId: org, idempotencyKey: `${MARK}:blk008-a` });
+
+    const client = (await db.query(`SELECT id FROM clients WHERE email = $1`, [email])).rows[0];
+    assert.ok(client, "client created");
+    const sale = (await db.query(
+      `SELECT * FROM sales WHERE client_id = $1 ORDER BY sold_at DESC LIMIT 1`, [client.id]
+    )).rows[0];
+    assert.ok(sale, "sale exists");
+
+    const firstPays = (await db.query(
+      `SELECT * FROM sale_payments WHERE sale_id = $1`, [sale.id]
+    )).rows;
+    assert.equal(firstPays.length, 1, "deposit.paid writes sale_payments when it creates the sale");
+    assert.equal(String(firstPays[0].product_id), String(sale.product_id));
+
+    await emit(db, "deposit.paid", {
+      email, product: "deposit", productName: "Consulting Services Deposit",
+      amount: 500, providerRef: `${MARK}_blk008_b`, closerId, source: "commas"
+    }, { orgId: org, clientId: client.id, idempotencyKey: `${MARK}:blk008-b` });
+
+    const pays = (await db.query(
+      `SELECT * FROM sale_payments WHERE sale_id = $1 ORDER BY paid_at`, [sale.id]
+    )).rows;
+    assert.equal(pays.length, 2, "deposit.paid writes sale_payments when a sale already exists");
+    assert.ok(pays.every((p) => String(p.product_id) === String(sale.product_id)));
+    assert.ok(pays.some((p) => p.kind === "deposit" && Number(p.amount) === 500));
   });
 
   test("payment.received against an existing sale writes sale_payments once on replay", async () => {

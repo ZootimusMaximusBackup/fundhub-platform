@@ -36,6 +36,22 @@ test("s-04b: only confirm when no startTime", async () => {
   assert.equal(res.skippedReminders, "no_start_time");
 });
 
+test("s-04b: confirm SMS prints a human time, not raw ISO-Z", async () => {
+  const iso = "2026-08-23T02:49:58.390Z";
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+15551234567", custom_fields: {} }],
+    templates: sms()
+  });
+  await handle({
+    event: ev("booking.created", { startTime: iso }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+  const confirm = db.messages.find((m) => m.template_key === SMS_CONFIRM);
+  assert.ok(confirm);
+  assert.doesNotMatch(confirm.rendered_body, /2026-08-23T02:49:58/);
+  assert.match(confirm.rendered_body, /Aug/);
+});
+
 test("s-04b: stops before 24h reminder if call already held", async () => {
   const db = pgFake({
     clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],

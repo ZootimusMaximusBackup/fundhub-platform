@@ -20,9 +20,12 @@ function appointmentContext(payload = {}) {
   const startTime = payload.startTime || payload.start_time || null;
   const meeting =
     payload.meetingUrl || payload.meeting_url || payload.meeting_location || null;
+  const timezone =
+    payload.tzid || payload.timezone || payload.tz || payload.time_zone || null;
   return {
     appointment: {
       start_time: startTime,
+      timezone,
       meeting_location: meeting
     }
   };
