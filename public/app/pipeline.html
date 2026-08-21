@@ -185,11 +185,13 @@
   .fh-del-card{width:min(400px,100%);background:#fff;border-radius:12px;border:1px solid var(--line);padding:18px}
   .fh-del-card h3{margin:0 0 8px;font-size:var(--fs-title);font-weight:800}
   .fh-del-card p{margin:0 0 12px;font-size:var(--fs-body);color:var(--text-dim);line-height:1.45}
-  .fh-del-card input{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:var(--fs-body);margin-bottom:12px}
+  .fh-del-card input,.fh-del-card select{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:var(--fs-body);margin-bottom:12px;background:#fff}
+  .fh-del-card label{display:block;font-size:var(--fs-caption);font-weight:700;color:var(--text-dim);margin:0 0 4px}
   .fh-del-actions{display:flex;gap:8px;justify-content:flex-end}
   .fh-del-actions button{border:1px solid var(--line);border-radius:8px;padding:8px 12px;font:700 var(--fs-body) var(--sans);cursor:pointer;background:var(--paper)}
   .fh-del-actions .go{background:#6E2A22;color:#fff;border-color:#6E2A22}
   .fh-del-actions .go:disabled{opacity:.4;cursor:not-allowed}
+  .fh-new-actions .go{background:var(--ink);color:#fff;border-color:var(--ink)}
   .board{display:flex;gap:10px;padding:10px 14px 14px;align-items:stretch;height:100%;position:relative;width:max-content;}
 
   .col{width:238px;flex-shrink:0;background:var(--paper-dim);border:1px solid var(--line);border-radius:8px;
@@ -518,6 +520,7 @@
     </div>
     <div class="search"><span>⌕</span><input id="q" value="" placeholder="Search name, phone, or email"></div>
     <button class="filter-btn" id="filterBtn" aria-expanded="false">⚟ Filter<span class="fb-n" id="filterN" hidden>0</span></button>
+    <button type="button" class="filter-btn" id="fhNewClient">New Client</button>
     <div class="filter-chips" id="filterChips"></div>
     <div class="filter-spacer"></div>
     <div class="board-summary">
@@ -665,6 +668,34 @@
       <div class="fh-del-actions">
         <button type="button" id="fhDelCancel">Cancel</button>
         <button type="button" class="go" id="fhDelGo" disabled>Archive</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="fh-del-modal" id="fhNewModal" role="dialog" aria-modal="true" aria-labelledby="fhNewTitle">
+    <div class="fh-del-card">
+      <h3 id="fhNewTitle">New Client</h3>
+      <p>Same save as the apply form. They land on the Sales board.</p>
+      <label for="fhNewName">Name</label>
+      <input id="fhNewName" type="text" autocomplete="name" maxlength="120" placeholder="Full name">
+      <label for="fhNewEmail">Email</label>
+      <input id="fhNewEmail" type="email" autocomplete="email" maxlength="160" placeholder="name@email.com">
+      <label for="fhNewPhone">Phone</label>
+      <input id="fhNewPhone" type="tel" autocomplete="tel" maxlength="40" placeholder="5551234567">
+      <label for="fhNewProduct">Product</label>
+      <select id="fhNewProduct">
+        <option value="">Pick a product</option>
+        <option value="diagnostic">UnderwriteIQ soft-pull</option>
+        <option value="card-stacking-dfy">Funding, done-for-you</option>
+        <option value="repair-bundle">Credit repair, done-for-you</option>
+        <option value="repair-trial">Repair test run</option>
+        <option value="consulting-package">UnderwriteIQ package</option>
+        <option value="funding-mastery">Funding Mastery course</option>
+      </select>
+      <p class="fh-new-err" id="fhNewErr" role="alert"></p>
+      <div class="fh-del-actions fh-new-actions">
+        <button type="button" id="fhNewCancel">Cancel</button>
+        <button type="button" class="go" id="fhNewGo">Save</button>
       </div>
     </div>
   </div>
@@ -1041,6 +1072,81 @@ fClear.addEventListener('click',function(){
   applyFilters(); syncChips();
 });
 syncChips();
+
+/* ---------- New Client on this board (same door as the apply form) ---------- */
+(function(){
+  var openBtn=document.getElementById('fhNewClient');
+  var modal=document.getElementById('fhNewModal');
+  var nameEl=document.getElementById('fhNewName');
+  var emailEl=document.getElementById('fhNewEmail');
+  var phoneEl=document.getElementById('fhNewPhone');
+  var productEl=document.getElementById('fhNewProduct');
+  var errEl=document.getElementById('fhNewErr');
+  var cancelBtn=document.getElementById('fhNewCancel');
+  var goBtn=document.getElementById('fhNewGo');
+  if(!openBtn||!modal||!goBtn) return;
+
+  function showErr(msg){
+    errEl.textContent=msg||'';
+    errEl.classList.toggle('show', !!msg);
+  }
+  function closeNew(){
+    modal.classList.remove('open');
+    showErr('');
+    goBtn.disabled=false;
+    goBtn.textContent='Save';
+  }
+  function openNew(){
+    nameEl.value=''; emailEl.value=''; phoneEl.value=''; productEl.value='';
+    showErr('');
+    goBtn.disabled=false;
+    goBtn.textContent='Save';
+    modal.classList.add('open');
+    setTimeout(function(){ nameEl.focus(); }, 0);
+  }
+  function reloadBoard(){
+    var t=document.querySelector('.rail-tab.active');
+    if(!window.FHPipelineBoard || !t) return;
+    window.FHPipelineBoard.invalidate();
+    var name=(t.textContent||'').replace(/^\s*R-\d+\s*/,'').trim() || 'Sales';
+    window.FHPipelineBoard.load(t.dataset.rail, name);
+  }
+  openBtn.addEventListener('click', openNew);
+  cancelBtn.addEventListener('click', closeNew);
+  modal.addEventListener('click', function(e){ if(e.target===modal) closeNew(); });
+  goBtn.addEventListener('click', function(){
+    if(typeof FHData === 'undefined' || !FHData.write){
+      showErr('Could not save yet. Refresh and try again.');
+      return;
+    }
+    var name=String(nameEl.value||'').trim();
+    var email=String(emailEl.value||'').trim();
+    var phone=String(phoneEl.value||'').trim();
+    var product=String(productEl.value||'').trim();
+    if(!name || !email || !phone || !product){
+      showErr('Fill in name, email, phone, and product.');
+      return;
+    }
+    goBtn.disabled=true;
+    goBtn.textContent='Saving…';
+    showErr('');
+    FHData.write('/api/pipeline-clients', {
+      name: name,
+      email: email,
+      phone: phone,
+      product: product
+    }).then(function(res){
+      if(!res || !res.ok){
+        goBtn.disabled=false;
+        goBtn.textContent='Save';
+        showErr((res && (res.error || res.message)) || 'Could not save this client.');
+        return;
+      }
+      closeNew();
+      reloadBoard();
+    });
+  });
+})();
 
 /* ---------- last activity: hover tooltip, built from the card's own .c-foot ---------- */
 var tip=document.createElement('div');
@@ -2143,7 +2249,7 @@ restore();
      panel does not spring open, an already-hidden Archive button stays
      hidden, and no filter is re-applied or cleared. */
   var boardOnly = [];
-  [".search", "#filterBtn", "#filterChips", ".board-summary", "#filterPanel"].forEach(function (sel) {
+  [".search", "#filterBtn", "#fhNewClient", "#filterChips", ".board-summary", "#filterPanel"].forEach(function (sel) {
     var el = document.querySelector(sel);
     if (el) boardOnly.push(el);
   });

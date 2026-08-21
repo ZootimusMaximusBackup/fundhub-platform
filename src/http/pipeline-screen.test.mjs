@@ -81,6 +81,16 @@ describe("public/app/pipeline.html — screen wiring", () => {
     assert.match(HTML, /id="sumMoney"/);
   });
 
+  test("New Client lives on this board and posts to the funnel door", () => {
+    assert.match(HTML, /id="fhNewClient"/);
+    assert.match(HTML, /id="fhNewName"/);
+    assert.match(HTML, /id="fhNewEmail"/);
+    assert.match(HTML, /id="fhNewPhone"/);
+    assert.match(HTML, /id="fhNewProduct"/);
+    assert.match(HTML, /\/api\/pipeline-clients/);
+    assert.ok(!/pipeline-new-client\.html/.test(HTML), "must not add a new screen");
+  });
+
   test("held stays an honest dash — the API has no hold field for a card to invent", () => {
     assert.match(HTML, /id="sumHeld"[^>]*>— held</);
   });
@@ -592,7 +602,7 @@ describe("public/app/pipeline.html — the phone layout", () => {
     assert.match(css, /\.board-summary\{flex:1 0 100%/, "the summary needs a line of its own");
     assert.match(css, /\.filterbar \.search\{[^}]*flex:1 1 auto/,
       "the search must stretch rather than shrink to an icon");
-    for (const gone of [".search{display:none", "#filterBtn{display:none", ".lens-switch{display:none",
+    for (const gone of [".search{display:none", "#filterBtn{display:none", "#fhNewClient{display:none", ".lens-switch{display:none",
                         ".board-summary{display:none", ".filter-btn{display:none"]) {
       assert.ok(!css.includes(gone), "a control was hidden on a phone rather than given room: " + gone);
     }

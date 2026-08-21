@@ -1,0 +1,52 @@
+{
+  "b5-new-client-modal-1440.png": {
+    "legend": "New Client on Pipeline",
+    "marks": [
+      {
+        "n": "1",
+        "caption": "New Client button on this board",
+        "box": {
+          "x": 737,
+          "y": 90,
+          "w": 104,
+          "h": 40
+        }
+      },
+      {
+        "n": "2",
+        "caption": "Name, email, phone, product",
+        "box": {
+          "x": 520,
+          "y": 213,
+          "w": 400,
+          "h": 474
+        }
+      },
+      {
+        "n": "3",
+        "caption": "Save uses the same door as the apply form",
+        "box": {
+          "x": 837,
+          "y": 628,
+          "w": 64,
+          "h": 40
+        }
+      }
+    ]
+  },
+  "b5-new-client-after-1440.png": {
+    "legend": "After Save",
+    "marks": [
+      {
+        "n": "1",
+        "caption": "New Client still on the board",
+        "box": {
+          "x": 737,
+          "y": 90,
+          "w": 104,
+          "h": 40
+        }
+      }
+    ]
+  }
+}
