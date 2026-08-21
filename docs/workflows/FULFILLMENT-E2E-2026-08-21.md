@@ -6,9 +6,9 @@
 
 **Fixer note (B1 ghost booking, 2026-08-21):** Overnight looked like a ghost because the check stopped too soon, and one probe used a bad column name. A new plus-tag book on `apply.fundhub.ai` landed a client, a booking, and the booked text (`SMS-BS01-01-BOOKED`) inside two minutes. The calendar form webhook now also fires `booking.created` with the email, so Fundhub does not have to wait on the later appointment ping. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b1-ghost-booking.json` and `fixer/shots/b1-thankyou-1440-MARKED.png`. `SMS-S04-01-CONFIRM` still did not queue.
 
-**Fixer note (B3 Present pay link, 2026-08-21):** Overnight the S-23 button never called the server. The page stopped the click when the sale pick was empty. The click now always asks the server to send the pay link. A plus-tag click on Present made a payment_links row with a checkout link. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b3-pay-link.json` and `fixer/shots/b3-s23-1440-MARKED.png`.
-
 **Fixer note (B2 deposit save, 2026-08-21):** Live production was already on the money-chain fix (`f8ff02bc`). One plus-tag `deposit.paid` (no card) wrote `sale_payments` with a real product id, then granted `funding-snapshot`. No closer was on that probe, so the commission book stayed empty. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b2-deposit-save.json`. Never touched the forbidden file.
+
+**Fixer note (B3 Present pay link, 2026-08-21):** Overnight the S-23 button never called the server. The page stopped the click when the sale pick was empty. The click now always asks the server to send the pay link. A plus-tag click on Present made a payment_links row with a checkout link. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b3-pay-link.json` and `fixer/shots/b3-s23-1440-MARKED.png`.
 
 **Live:** `https://fundhub.ai` · funnel `https://apply.fundhub.ai`  
 **Evidence:** `docs/workflows/fulfillment-e2e-2026-08-21-evidence/`  

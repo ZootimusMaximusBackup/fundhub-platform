@@ -1,4 +1,234 @@
 {
+  "nav-owner-before-1440.png": {
+    "legend": "owner menu before (1440)",
+    "marks": [
+      {
+        "n": "1",
+        "caption": "Client Control Panel is under Client ops",
+        "box": {
+          "x": 0,
+          "y": 414,
+          "w": 228,
+          "h": 33
+        }
+      },
+      {
+        "n": "2",
+        "caption": "Agent Editor is still in the menu",
+        "box": {
+          "x": 0,
+          "y": 590,
+          "w": 228,
+          "h": 35
+        }
+      },
+      {
+        "n": "3",
+        "caption": "Marketing group header",
+        "box": {
+          "x": 0,
+          "y": 661,
+          "w": 228,
+          "h": 40
+        }
+      }
+    ]
+  },
+  "nav-closer-before-1440.png": {
+    "legend": "closer menu before (1440)",
+    "marks": [
+      {
+        "n": "1",
+        "caption": "Client Control Panel is under Client ops",
+        "box": {
+          "x": 0,
+          "y": 305,
+          "w": 228,
+          "h": 33
+        }
+      }
+    ]
+  },
+  "nav-sales_manager-before-1440.png": {
+    "legend": "sales_manager menu before (1440)",
+    "marks": [
+      {
+        "n": "1",
+        "caption": "Client Control Panel is under Client ops",
+        "box": {
+          "x": 0,
+          "y": 272,
+          "w": 228,
+          "h": 33
+        }
+      }
+    ]
+  },
+  "nav-owner-after-1440.png": {
+    "legend": "owner menu after (1440)",
+    "marks": [
+      {
+        "n": "1",
+        "caption": "Client Control Panel now sits under Funding, after Lenders",
+        "box": {
+          "x": 0,
+          "y": 371,
+          "w": 228,
+          "h": 33
+        }
+      },
+      {
+        "n": "2",
+        "caption": "Funding group (Lenders then Client Control Panel)",
+        "box": {
+          "x": 0,
+          "y": 298,
+          "w": 228,
+          "h": 106
+        }
+      },
+      {
+        "n": "3",
+        "caption": "Client ops no longer holds Client Control Panel",
+        "box": {
+          "x": 0,
+          "y": 408,
+          "w": 228,
+          "h": 140
+        }
+      },
+      {
+        "n": "4",
+        "caption": "Automation group — Agent Editor gone from the menu",
+        "box": {
+          "x": 0,
+          "y": 550,
+          "w": 228,
+          "h": 73
+        }
+      }
+    ]
+  },
+  "nav-closer-after-1440.png": {
+    "legend": "closer menu after (1440)",
+    "marks": [
+      {
+        "n": "1",
+        "caption": "Client Control Panel now sits under Funding, after Lenders",
+        "box": {
+          "x": 0,
+          "y": 305,
+          "w": 228,
+          "h": 33
+        }
+      },
+      {
+        "n": "2",
+        "caption": "Funding group (Lenders then Client Control Panel)",
+        "box": {
+          "x": 0,
+          "y": 265,
+          "w": 228,
+          "h": 73
+        }
+      },
+      {
+        "n": "3",
+        "caption": "Client ops no longer holds Client Control Panel",
+        "box": {
+          "x": 0,
+          "y": 341,
+          "w": 228,
+          "h": 140
+        }
+      },
+      {
+        "n": "4",
+        "caption": "Automation group — Agent Editor gone from the menu",
+        "box": {
+          "x": 0,
+          "y": 484,
+          "w": 228,
+          "h": 73
+        }
+      }
+    ]
+  },
+  "nav-sales_manager-after-1440.png": {
+    "legend": "sales_manager menu after (1440)",
+    "marks": [
+      {
+        "n": "1",
+        "caption": "Client Control Panel now sits under Funding, after Lenders",
+        "box": {
+          "x": 0,
+          "y": 272,
+          "w": 228,
+          "h": 33
+        }
+      },
+      {
+        "n": "2",
+        "caption": "Funding group (Lenders then Client Control Panel)",
+        "box": {
+          "x": 0,
+          "y": 232,
+          "w": 228,
+          "h": 73
+        }
+      },
+      {
+        "n": "3",
+        "caption": "Client ops no longer holds Client Control Panel",
+        "box": {
+          "x": 0,
+          "y": 308,
+          "w": 228,
+          "h": 140
+        }
+      },
+      {
+        "n": "4",
+        "caption": "Automation group — Agent Editor gone from the menu",
+        "box": {
+          "x": 0,
+          "y": 451,
+          "w": 228,
+          "h": 73
+        }
+      }
+    ]
+  },
+  "b1-funnel-before-1440.png": {
+    "legend": "B1 funnel before book",
+    "marks": [
+      {
+        "n": "1",
+        "caption": "Book-call page before picking a time",
+        "box": {
+          "x": 400,
+          "y": 151,
+          "w": 640,
+          "h": 49
+        }
+      }
+    ]
+  },
+  "b1-thankyou-1440.png": {
+    "legend": "B1 thank-you after book click",
+    "marks": [
+      {
+        "n": "1",
+        "caption": "Thank-you / booked copy",
+        "box": {
+          "x": 400,
+          "y": 191,
+          "w": 640,
+          "h": 49
+        }
+      }
+    ]
+  },
   "b3-s23-1440.png": {
     "legend": "B3 Present S-23 pay link",
     "marks": [
