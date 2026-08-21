@@ -17,18 +17,22 @@ const contract = {
 };
 
 describe("repair croa", () => {
-  it("holds intake inside 3 business days", () => {
+  it("still computes the 3-business-day calendar date", () => {
     // Friday Aug 7 2026 → +3 biz = Wed Aug 12
-    const release = croaReleaseDate("2026-08-07");
-    assert.equal(release, "2026-08-12");
-    const gate = canLeaveIntake({ enrolledAt: "2026-08-07", asOf: "2026-08-10", contract });
-    assert.equal(gate.ok, false);
-    assert.equal(gate.reason, "croa_3_day_hold");
+    assert.equal(croaReleaseDate("2026-08-07"), "2026-08-12");
   });
 
-  it("releases after 3 business days with complete contract", () => {
-    const gate = canLeaveIntake({ enrolledAt: "2026-08-07", asOf: "2026-08-12", contract });
+  it("does not hold intake on the calendar when the contract is complete", () => {
+    // Owner 2026-08-21: 3-day hold removed from the send path.
+    const gate = canLeaveIntake({ enrolledAt: "2026-08-07", asOf: "2026-08-10", contract });
     assert.equal(gate.ok, true);
+    assert.equal(gate.releaseDate, "2026-08-12");
+  });
+
+  it("still refuses an incomplete contract", () => {
+    const gate = canLeaveIntake({ enrolledAt: "2026-08-07", asOf: "2026-08-12", contract: {} });
+    assert.equal(gate.ok, false);
+    assert.equal(gate.reason, "contract_incomplete");
   });
 
   it("addBusinessDays skips weekends", () => {

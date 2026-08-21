@@ -70,6 +70,7 @@ import { violationsByBureauFromMergedCrs } from "../metro2/diy/from-crs.mjs";
 import { generateLetter } from "../metro2/letters/generate.mjs";
 import { createCase, insertItems, saveLetter } from "../metro2/rounds/store.mjs";
 import { loadClientReturnAddress } from "../inquiry-ops/call-scheduler.mjs";
+import { hasDisputeAuthorization } from "./dispute-auth.mjs";
 import { onRepairEvent } from "./handlers.mjs";
 
 const BUREAU_CODES = Object.freeze(["TU", "EX", "EQ"]);
@@ -204,6 +205,9 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
   if (!orgId || !clientId) return { ok: false, reason: "missing_ids" };
   if (!ROUNDS.includes(round)) return { ok: false, reason: "invalid_round", round };
 
+  const authorized = await hasDisputeAuthorization(db, { orgId, clientId });
+  if (!authorized) return { ok: false, reason: "no_authorization" };
+
   const result = await newestCreditFile(db, { orgId, clientId });
   if (!result) return { ok: false, reason: "no_credit_file" };
 
@@ -290,7 +294,8 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
       caseId: caseRow.id,
       letterId: savedLetter.id,
       ruleIds: letter.ruleIds || [],
-      itemCount: claims.length
+      itemCount: claims.length,
+      body_text: letter.text || ""
     });
   }
 

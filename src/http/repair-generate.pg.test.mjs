@@ -140,7 +140,7 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
   /* A client with a real name and a real postal address. Both come from the
      fixture, never from the module under test — the whole point is that a name
      is never fabricated when one is absent. */
-  async function buildClient({ result = null, withAddress = true, name = ["Real", "Person"] } = {}) {
+  async function buildClient({ result = null, withAddress = true, name = ["Real", "Person"], authorized = true } = {}) {
     clientId = (await db.query(
       `INSERT INTO clients (org_id, email, first_name, last_name)
        VALUES ($1,$2,$3,$4) RETURNING id`, [orgId, EMAIL, name[0], name[1]]
@@ -151,6 +151,19 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
         [orgId, clientId, JSON.stringify([
           { address_line1: "412 Pecan St", address_city: "Austin", address_state: "TX", address_zip: "78701" }
         ])]
+      );
+    }
+    if (authorized) {
+      await db.query(
+        `INSERT INTO client_consents (
+           org_id, client_id, kind, consent_version, consent_text,
+           capture_method, granted_name, granted_by_kind, granted_by_staff_id
+         ) VALUES (
+           $1::uuid, $2::uuid, 'dispute_authorization', 'dispute-auth-v1',
+           'I authorize Fundhub to prepare dispute letters for my review.',
+           'typed', $3, 'staff', $4::uuid
+         )`,
+        [orgId, clientId, `${name[0]} ${name[1]}`, staffId]
       );
     }
     if (result) {
@@ -181,7 +194,7 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
 
     otherStaffId = (await db.query(
       `INSERT INTO staff (org_id, name, role, email, status)
-       VALUES ($1,'PG Closer','closer',$2,'active') RETURNING id`,
+       VALUES ($1,'PG Setter','setter',$2,'active') RETURNING id`,
       [orgId, OTHER_STAFF_EMAIL]
     )).rows[0].id;
     ({ token: otherToken } = await createSession(db, { staffId: otherStaffId, orgId }));
@@ -191,6 +204,21 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
   after(async () => {
     await wipeAll();
     await close();
+  });
+
+  test("no dispute authorization: refuses before looking at the credit file", async () => {
+    await wipeClient();
+    await buildClient({
+      result: { bureausPulled: ["EQ"], bureaus: { EQ: equifaxReport() } },
+      authorized: false
+    });
+
+    const r = await post({ client_id: clientId });
+
+    assert.equal(r.code, 200);
+    assert.equal(r.body.ok, false);
+    assert.equal(r.body.reason, "no_authorization");
+    assert.equal(await countRows("dispute_letters"), 0);
   });
 
   test("no credit file on record: refuses, and writes no dispute rows at all", async () => {
@@ -300,13 +328,13 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
     assert.equal(await countRows("dispute_letters"), letters1, "no duplicate letter");
   });
 
-  test("a role outside owner/admin/inquiry_specialist is refused with 403", async () => {
+  test("a role outside owner/admin/closer/inquiry_specialist is refused with 403", async () => {
     await wipeClient();
     await buildClient({ result: { bureausPulled: ["EQ"], bureaus: { EQ: equifaxReport() } } });
 
     const r = await post({ client_id: clientId }, otherToken);
 
-    assert.equal(r.code, 403, "a closer may not generate dispute letters");
+    assert.equal(r.code, 403, "a setter may not generate dispute letters");
     assert.equal(r.body.ok, false);
     assert.equal(await countRows("dispute_letters"), 0,
       "the gate stops the write, not just the response");

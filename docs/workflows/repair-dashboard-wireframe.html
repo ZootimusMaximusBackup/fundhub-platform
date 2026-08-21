@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Repair dashboard — wireframe (WS-E visual contract)</title>
+<style>
+  /* ===== Fundhub brand tokens (copied from public/app/fundhub-brand.css) ===== */
+  :root{
+    --spectrum:linear-gradient(90deg,#F2A69B 0%,#F5CE8F 20%,#F2E39B 40%,#A8D8B0 60%,#A9C6E8 80%,#C4B3E5 100%);
+    --paper:#FCFCFC; --ink:#0A0A0A; --gray:#52525B; --line:#E4E4E7; --soft:#F4F4F5;
+    --ok:#A8D8B0; --warn:#F5CE8F; --alert:#F2A69B; --info:#A9C6E8; --accent:#C4B3E5;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
+    --sans:'Inter',system-ui,-apple-system,sans-serif;
+    --fs-metric:2rem; --fs-title:1.25rem; --fs-body:1rem; --fs-caption:.8125rem;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:400 var(--fs-body)/1.45 var(--sans)}
+  button{font:inherit;cursor:pointer}
+  button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  /* ===== wireframe chrome (NOT part of the build) ===== */
+  .wf-bar{background:var(--ink);color:#fff;font:500 12px/1 var(--mono);padding:9px 16px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+  .wf-bar b{font-weight:700;letter-spacing:.04em}
+  .wf-states{margin-left:auto;display:flex;gap:6px}
+  .wf-states button{background:transparent;color:#fff;border:1px solid #3f3f46;border-radius:6px;padding:5px 10px;font:600 11px var(--mono)}
+  .wf-states button[aria-pressed="true"]{background:#fff;color:var(--ink);border-color:#fff}
+
+  /* ===== page frame ===== */
+  .frame{max-width:1180px;margin:0 auto;padding:20px 18px 60px}
+  .crumb{font:500 var(--fs-caption) var(--sans);color:var(--gray);margin:2px 0 12px}
+  .crumb b{color:var(--ink);font-weight:600}
+  .spec{font:600 10px var(--mono);color:var(--gray);background:var(--soft);border:1px solid var(--line);border-radius:5px;padding:2px 6px;vertical-align:1px;white-space:nowrap}
+
+  .panel{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(10,10,10,.04),0 2px 8px rgba(10,10,10,.06)}
+  .panel::before{content:"";display:block;height:3px;background:var(--spectrum)}
+  .panel-head{display:flex;align-items:baseline;gap:10px;padding:16px 18px 0}
+  .panel-head h1{margin:0;font:700 var(--fs-title) var(--sans);letter-spacing:-.01em}
+  .panel-head .sub{color:var(--gray);font-size:var(--fs-caption)}
+
+  /* ===== tiles ===== */
+  .tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;padding:14px 18px 16px}
+  .tile{border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:12px 12px 10px}
+  .tile .n{font:700 var(--fs-metric)/1 var(--mono)}
+  .tile .l{margin-top:6px;font:600 var(--fs-caption) var(--sans);color:var(--gray)}
+  .tile.hot{background:#fff}
+  .tile.hot .n{color:var(--ink)}
+  .tile .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:1px}
+
+  /* ===== table ===== */
+  .twrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;min-width:900px}
+  thead th{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--gray);text-align:left;padding:8px 12px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--soft)}
+  tbody td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tbody tr.row{cursor:pointer}
+  tbody tr.row:hover{background:var(--soft)}
+  td.name{font-weight:600}
+  td .mini{display:block;font:500 11px var(--mono);color:var(--gray);margin-top:2px}
+  .mono{font-family:var(--mono);font-size:.875rem}
+
+  .stage{display:inline-block;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:3px 10px;font:600 12px var(--sans);color:var(--gray);white-space:nowrap}
+
+  /* chips — spec §8, first match wins, one per client */
+  .chip{display:inline-block;border-radius:999px;padding:4px 11px;font:700 12px var(--sans);color:var(--ink);white-space:nowrap;border:1px solid transparent}
+  .chip.needs_agreement{background:var(--alert)}
+  .chip.review_answer{background:var(--accent)}
+  .chip.send_letters{background:var(--info)}
+  .chip.stuck{background:#fff;border-color:var(--alert);color:#6E2A22}
+  .chip.waiting{background:var(--soft);border-color:var(--line);color:var(--gray);font-weight:600}
+  .chip.round_done{background:var(--warn)}
+  .chip.trial_done{background:var(--spectrum)}
+  .chip.none{background:none;color:var(--gray);font-weight:500}
+
+  /* warning dots — secondary, coexist with the chip */
+  .wdot{display:inline-flex;align-items:center;gap:5px;margin-left:8px;font:600 11px var(--mono);color:#6E2A22;white-space:nowrap}
+  .wdot::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--alert);border:1px solid #6E2A22}
+
+  .due{font:600 .875rem var(--mono);white-space:nowrap}
+  .due.late{color:#6E2A22}
+  .due.dim{color:var(--gray);font-weight:500}
+
+  /* ===== expanded row ===== */
+  tr.expand td{background:var(--soft);padding:16px 18px 18px}
+  .xgrid{display:grid;grid-template-columns:1.1fr 1.1fr .9fr;gap:14px}
+  .xcard{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .xcard h3{margin:0 0 8px;font:700 12px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--gray)}
+  .xcard ul{margin:0;padding:0;list-style:none}
+  .xcard li{padding:7px 0;border-bottom:1px dashed var(--line);font-size:.9rem}
+  .xcard li:last-child{border-bottom:0}
+  .tag{font:600 10px var(--mono);border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--gray);margin-left:6px;white-space:nowrap}
+  .tag.del{background:var(--ok);border-color:var(--ok);color:var(--ink)}
+  .tag.strong{background:var(--warn);border-color:var(--warn);color:var(--ink)}
+  .tag.mod{background:var(--soft)}
+  .tag.furn{background:var(--accent);border-color:var(--accent);color:var(--ink)}
+  .xact{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;font:600 13px var(--sans);color:var(--ink)}
+  .btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+
+  /* ===== exceptions panel ===== */
+  .exc{margin:18px 18px 20px;border:1px solid var(--line);border-radius:10px;background:var(--paper)}
+  .exc h2{margin:0;padding:12px 14px;font:700 12px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--gray);border-bottom:1px solid var(--line)}
+  .exc .erow{display:flex;align-items:center;gap:12px;padding:12px 14px;flex-wrap:wrap}
+  .exc .erow .who{font-weight:600}
+  .exc .erow .meta{font:500 12px var(--mono);color:var(--gray)}
+  .exc .erow .sp{flex:1}
+
+  /* ===== letter drawer · spec §8.3 ===== */
+  .ldrawer{position:fixed;inset:0;display:none;z-index:50}
+  .ldrawer.open{display:block}
+  .ldrawer .scrim{position:absolute;inset:0;background:rgba(10,10,10,.35)}
+  .ldrawer .pane{position:absolute;top:0;right:0;bottom:0;width:min(560px,94vw);background:#fff;border-left:1px solid var(--line);box-shadow:-8px 0 24px rgba(10,10,10,.12);display:flex;flex-direction:column}
+  .ldrawer .pane::before{content:"";display:block;height:3px;background:var(--spectrum)}
+  .lhead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 16px 12px;border-bottom:1px solid var(--line)}
+  .lhead .t{font:700 var(--fs-body) var(--sans)}
+  .lhead .m{font:500 11px var(--mono);color:var(--gray);margin-top:3px}
+  .lbody{flex:1;overflow:auto;padding:16px;background:var(--paper)}
+  .letter{background:#fff;border:1px solid var(--line);border-radius:10px;padding:22px 24px;font:400 .9rem/1.6 var(--sans);white-space:pre-wrap;max-width:52ch}
+  .lfoot{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);align-items:center}
+
+  /* tiles as filters · press to filter, press again to clear */
+  .tile[role="button"]{cursor:pointer}
+  .tile[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+  tr.row.filtered-out{display:none}
+  tr.row.active-row{background:var(--soft)}
+
+  /* signature in the letter — typed-name capture from the signed repair contract (migration 124) */
+  .letter .sig{font:italic 400 1.45rem 'Snell Roundhand','Segoe Script','Brush Script MT',cursive;display:inline-block;margin:2px 0 3px}
+  .letter .sigmeta{font:500 11px var(--mono);color:var(--gray)}
+
+  /* typed-confirm modal — same pattern as pipeline's #fhDelModal (archive: disclosure + type-to-confirm) */
+  .cmodal{position:fixed;inset:0;display:none;z-index:60;align-items:center;justify-content:center}
+  .cmodal.open{display:flex}
+  .cmodal .cscrim{position:absolute;inset:0;background:rgba(10,10,10,.35)}
+  .ccard{position:relative;background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;width:min(420px,92vw);box-shadow:0 8px 32px rgba(10,10,10,.18)}
+  .ccard h3{margin:0 0 8px;font:700 var(--fs-body) var(--sans)}
+  .ccard p{margin:0 0 12px;color:var(--gray);font-size:.9rem}
+  .ccard input{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:600 13px var(--mono)}
+  .cact{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+
+  /* ===== four states — spec §8 ===== */
+  /* empty + error hide everything live; loading keeps tiles visible showing em-dashes (never fake zeros) */
+  .state-empty .live,.state-error .live{display:none}
+  .state-loading .twrap,.state-loading .exc{display:none}
+  .state-loading .tiles .n{color:transparent;position:relative}
+  .state-loading .tiles .n::before{content:"—";color:var(--gray);position:absolute;left:0}
+  .stateblock{display:none;padding:34px 18px 40px;text-align:center;color:var(--gray)}
+  .stateblock .big{font:700 var(--fs-title) var(--sans);color:var(--ink);margin-bottom:6px}
+  .state-empty #st-empty{display:block}
+  .state-error #st-error{display:block}
+  .state-loading #st-loading{display:block}
+  .skel{height:14px;border-radius:6px;background:linear-gradient(90deg,var(--soft),var(--line),var(--soft));max-width:520px;margin:10px auto}
+  @media (max-width:760px){.tiles{grid-template-columns:repeat(2,1fr)}.xgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- wireframe controls — NOT part of the build -->
+<div class="wf-bar">
+  <b>WIREFRAME</b><span>visual contract for WS-E · spec §8–§9 · this black bar and the state buttons are not part of the build</span>
+  <div class="wf-states" role="group" aria-label="Demo the four states">
+    <button aria-pressed="true"  onclick="setState('loaded',this)">Loaded</button>
+    <button aria-pressed="false" onclick="setState('loading',this)">Loading</button>
+    <button aria-pressed="false" onclick="setState('empty',this)">Empty</button>
+    <button aria-pressed="false" onclick="setState('error',this)">Error</button>
+  </div>
+</div>
+
+<div class="frame" id="app">
+  <p class="crumb">Specialist screen &rsaquo; <b>Repair</b> <span class="spec">tab in inquiry-remover.html · spec §2.6</span></p>
+
+  <div class="panel">
+    <div class="panel-head">
+      <h1>Repair desk</h1>
+      <span class="sub">one look tells you what needs doing — no task assignment</span>
+    </div>
+
+    <!-- ===== TILES · spec §8.1 — em-dash until loaded, math must equal the table ===== -->
+    <div class="tiles live">
+      <div class="tile hot" role="button" tabindex="0" aria-pressed="false" data-filter="need"><div class="n">4</div><div class="l"><span class="dot" style="background:var(--alert)"></span>Need me</div></div>
+      <div class="tile" role="button" tabindex="0" aria-pressed="false" data-filter="ready"><div class="n">1</div><div class="l"><span class="dot" style="background:var(--info)"></span>Ready to send</div></div>
+      <div class="tile" role="button" tabindex="0" aria-pressed="false" data-filter="wait"><div class="n">1</div><div class="l"><span class="dot" style="background:var(--line)"></span>Waiting on bureau</div></div>
+      <div class="tile" role="button" tabindex="0" aria-pressed="false" data-filter="stuck"><div class="n">1</div><div class="l"><span class="dot" style="background:var(--alert)"></span>Stuck</div></div>
+      <div class="tile" role="button" tabindex="0" aria-pressed="false" data-filter="trial"><div class="n">1</div><div class="l"><span class="dot" style="background:var(--warn)"></span>Trial ending</div></div>
+    </div>
+
+    <!-- ===== TABLE · spec §8.2 · fields from §9 ===== -->
+    <div class="twrap live">
+      <table>
+        <thead>
+          <tr>
+            <th>Client</th><th>Program</th><th>Round</th><th>Stage</th><th>Needs <span class="spec">§8 chips</span></th><th>Due</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <tr class="row" data-set="need">
+            <td class="name">Marcus Reed<span class="mini">enrolled Aug 21</span></td>
+            <td class="mono">trial</td>
+            <td class="mono">1 / 2</td>
+            <td><span class="stage">Getting started</span></td>
+            <td><span class="chip needs_agreement">Needs agreement</span></td>
+            <td class="due dim">—</td>
+          </tr>
+
+          <tr class="row" data-set="need">
+            <td class="name">Dana Okafor<span class="mini">answer uploaded Aug 20</span></td>
+            <td class="mono">full</td>
+            <td class="mono">2 / 6</td>
+            <td><span class="stage">Answer received</span></td>
+            <td><span class="chip review_answer">Read their answer</span></td>
+            <td class="due dim">—</td>
+          </tr>
+
+          <tr class="row" data-set="need ready">
+            <td class="name">Luis Herrera<span class="mini">letters made Aug 21</span></td>
+            <td class="mono">trial</td>
+            <td class="mono">1 / 2</td>
+            <td><span class="stage">Letters made</span></td>
+            <td><span class="chip send_letters">Send letters</span><span class="wdot">no furnisher address</span></td>
+            <td class="due dim">—</td>
+          </tr>
+
+          <!-- expanded row · spec §8.3–8.4 -->
+          <tr class="expand"><td colspan="6">
+            <div class="xgrid">
+              <div class="xcard">
+                <h3>Items <span class="spec">deletion → strong → moderate</span></h3>
+                <ul>
+                  <li>Portfolio Recovery <span class="mono">····4821</span> <span class="tag del">deletion</span> <span class="tag">M2-007 · M2-012</span></li>
+                  <li>Capital One <span class="mono">····9932</span> <span class="tag strong">strong</span> <span class="tag">M2-003</span></li>
+                  <li>Midland Credit <span class="mono">····1105</span> <span class="tag mod">moderate</span> <span class="tag">M2-019</span></li>
+                </ul>
+              </div>
+              <div class="xcard">
+                <h3>Letters this round <span class="spec">click one to read · §8.3</span></h3>
+                <ul>
+                  <li role="button" tabindex="0" onclick="openLetter(event)" style="cursor:pointer">Experian · R1 <span class="tag">ready</span></li>
+                  <li role="button" tabindex="0" onclick="openLetter(event)" style="cursor:pointer">Equifax · R1 <span class="tag">ready</span></li>
+                  <li role="button" tabindex="0" onclick="openLetter(event)" style="cursor:pointer">TransUnion · R1 <span class="tag">ready</span></li>
+                  <li role="button" tabindex="0" onclick="openLetter(event)" style="cursor:pointer">Portfolio Recovery <span class="tag furn">furnisher</span> <span class="tag">ready</span></li>
+                  <li style="color:#6E2A22">Midland skipped — <span class="mono">no_furnisher_address</span></li>
+                </ul>
+              </div>
+              <div class="xcard">
+                <h3>Timeline <span class="spec">repair_decision_log</span></h3>
+                <ul class="mono" style="font-size:.8rem">
+                  <li>Aug 19 · enrolled — trial</li>
+                  <li>Aug 20 · soft pull — 3 bureaus</li>
+                  <li>Aug 21 · letters generated — 4</li>
+                </ul>
+              </div>
+            </div>
+            <div class="xact">
+              <button class="btn primary">Send letters</button>
+              <button class="btn" disabled>Stage letters</button>
+              <button class="btn" onclick="openPull(event)">Soft pull</button>
+              <button class="btn">Clean personal info</button>
+              <span class="spec" style="align-self:center">Send = mail:true human press · §1</span>
+            </div>
+          </td></tr>
+
+          <tr class="row" data-set="stuck">
+            <td class="name">Priya Nair<span class="mini">mailed Aug 9</span></td>
+            <td class="mono">full</td>
+            <td class="mono">3 / 6</td>
+            <td><span class="stage">In the mail</span></td>
+            <td><span class="chip stuck">Stuck</span></td>
+            <td class="due late">12 days in transit</td>
+          </tr>
+
+          <tr class="row" data-set="wait">
+            <td class="name">Tom Barnett<span class="mini">mailed Aug 14</span></td>
+            <td class="mono">full</td>
+            <td class="mono">1 / 6</td>
+            <td><span class="stage">Waiting on the bureau</span></td>
+            <td><span class="chip waiting">Waiting on the bureau</span></td>
+            <td class="due">9 days left</td>
+          </tr>
+
+          <tr class="row" data-set="need">
+            <td class="name">Aisha Cole<span class="mini">round closed Aug 21</span></td>
+            <td class="mono">full</td>
+            <td class="mono">2 / 6</td>
+            <td><span class="stage">Round done</span></td>
+            <td><span class="chip round_done">Round done — next?</span></td>
+            <td class="due dim">—</td>
+          </tr>
+
+          <tr class="row" data-set="trial">
+            <td class="name">Ray Delgado<span class="mini">trial finished Aug 18</span></td>
+            <td class="mono">trial<span class="mini">upsell open</span></td>
+            <td class="mono">2 / 2</td>
+            <td><span class="stage">Program complete</span></td>
+            <td><span class="chip trial_done">Trial done — sales</span></td>
+            <td class="due dim">—</td>
+          </tr>
+
+          <tr class="row" data-set="">
+            <td class="name">Nina Park<span class="mini">pulled Aug 21</span></td>
+            <td class="mono">full</td>
+            <td class="mono">4 / 6</td>
+            <td><span class="stage">Analyzing</span></td>
+            <td><span class="chip none">—</span><span class="wdot">no address on file</span></td>
+            <td class="due dim">—</td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ===== EXCEPTIONS · spec §8.5 — keep the existing panel ===== -->
+    <div class="exc live">
+      <h2>Needs a human read <span class="spec">parse confidence &lt; 0.85 · confirm_parse</span></h2>
+      <div class="erow">
+        <span class="who">Dana Okafor</span>
+        <span class="meta">Equifax answer · round 1 · confidence 0.71 · 2 of 3 accounts matched</span>
+        <span class="sp"></span>
+        <button class="btn primary">Read &amp; confirm</button>
+        <button class="btn">Mark as checked</button>
+      </div>
+    </div>
+
+    <!-- ===== the other three states · spec §8 "four states" ===== -->
+    <div class="stateblock" id="st-loading">
+      <div class="big">&nbsp;</div>
+      <div class="skel" style="width:60%"></div>
+      <div class="skel" style="width:80%"></div>
+      <div class="skel" style="width:70%"></div>
+      <p style="font-size:var(--fs-caption)">Tiles show em-dashes while loading. Never a fake zero.</p>
+    </div>
+    <div class="stateblock" id="st-empty">
+      <div class="big">No repair clients yet.</div>
+      <p>Close a client on repair and they land here on their own.</p>
+    </div>
+    <div class="stateblock" id="st-error">
+      <div class="big">Couldn't load the repair desk.</div>
+      <p><button class="btn primary" style="margin-top:6px">Retry</button></p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===== letter drawer · spec §8.3 — body already ships in the detail payload, no new endpoint ===== -->
+<div class="ldrawer" id="ldrawer" aria-hidden="true">
+  <div class="scrim" onclick="closeLetter()"></div>
+  <div class="pane" role="dialog" aria-label="Letter">
+    <div class="lhead">
+      <div>
+        <div class="t">Experian · Round 1</div>
+        <div class="m">target: bureau · rules M2-007 · M2-012 · M2-003 · status ready</div>
+      </div>
+      <button class="btn" onclick="closeLetter()">Close</button>
+    </div>
+    <div class="lbody">
+      <div class="letter">Luis Herrera
+[street address from pii_identity]
+[city, state zip]
+
+Experian
+P.O. Box 4500
+Allen, TX 75013
+
+Re: Request for investigation — file of Luis Herrera
+
+To whom it may concern,
+
+I am writing about information in my file that is being reported inaccurately.
+
+Portfolio Recovery, account ending 4821: the reported balance and status do not match the account's actual condition, and the fields your furnisher supplied fail Metro 2 format requirements. Investigate this account and correct or delete it.
+
+Capital One, account ending 9932: the date of first delinquency is reported inconsistently across your file. Verify the accurate date with the furnisher or remove the item.
+
+Under FCRA §611 you must complete a reasonable investigation and respond in writing.
+
+Sincerely,
+
+<span class="sig">Luis Herrera</span>
+Luis Herrera
+<span class="sigmeta">Signed electronically · Aug 19, 2026 · from the signed repair agreement</span></div>
+    </div>
+    <div class="lfoot">
+      <button class="btn primary">Send this one</button>
+      <span class="spec">mail:true · human press · §1</span>
+      <span style="flex:1"></span>
+      <span class="spec">wireframe sample — real body comes from letters[].html</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== soft-pull confirm · same pattern as pipeline #fhDelModal: plain-words disclosure + type-to-confirm ===== -->
+<div class="cmodal" id="pullModal" role="dialog" aria-modal="true" aria-labelledby="pullTitle" aria-hidden="true">
+  <div class="cscrim" onclick="closePull()"></div>
+  <div class="ccard">
+    <h3 id="pullTitle">Soft pull this client's credit?</h3>
+    <p>Pulls all three bureaus through UnderwriteIQ. Soft inquiry — never touches their score. The pull is logged to the client file. Type <b>PULL</b> to confirm.</p>
+    <input id="pullInput" type="text" autocomplete="off" spellcheck="false" placeholder="Type PULL" oninput="pullCheck()">
+    <div class="cact">
+      <button class="btn" onclick="closePull()">Cancel</button>
+      <button class="btn primary" id="pullGo" disabled onclick="closePull()">Pull</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Wireframe-only: demo the four states from spec §8. Not part of the build.
+  function setState(s, btn){
+    var app = document.getElementById('app');
+    app.className = 'frame state-' + s;
+    document.querySelectorAll('.wf-states button').forEach(function(b){ b.setAttribute('aria-pressed', b===btn ? 'true' : 'false'); });
+  }
+  // Letter drawer · spec §8.3
+  function openLetter(e){ e.stopPropagation(); var d=document.getElementById('ldrawer'); d.classList.add('open'); d.setAttribute('aria-hidden','false'); }
+  function closeLetter(){ var d=document.getElementById('ldrawer'); d.classList.remove('open'); d.setAttribute('aria-hidden','true'); }
+  document.addEventListener('keydown', function(e){
+    if(e.key==='Escape'){ closeLetter(); return; }
+    if((e.key==='Enter'||e.key===' ') && e.target.getAttribute && e.target.getAttribute('role')==='button'){ e.preventDefault(); e.target.click(); }
+  });
+
+  // Soft-pull confirm — mirrors pipeline's fhDelModal (type-to-confirm, go disabled until typed)
+  function openPull(e){ e.stopPropagation(); var m=document.getElementById('pullModal'); m.classList.add('open'); m.setAttribute('aria-hidden','false'); document.getElementById('pullInput').value=''; pullCheck(); document.getElementById('pullInput').focus(); }
+  function closePull(){ var m=document.getElementById('pullModal'); m.classList.remove('open'); m.setAttribute('aria-hidden','true'); }
+  function pullCheck(){ document.getElementById('pullGo').disabled = document.getElementById('pullInput').value.trim() !== 'PULL'; }
+
+  // Row expand: the detail block moves to sit directly under whichever row you press. Press again to close.
+  var expandRow = document.querySelector('tr.expand');
+  var allRows = document.querySelectorAll('tr.row');
+  allRows.forEach(function(r){
+    r.addEventListener('click', function(){
+      var openHere = (expandRow.previousElementSibling === r) && expandRow.style.display !== 'none';
+      allRows.forEach(function(x){ x.classList.remove('active-row'); });
+      r.parentNode.insertBefore(expandRow, r.nextSibling);
+      expandRow.style.display = openHere ? 'none' : '';
+      if(!openHere) r.classList.add('active-row');
+    });
+  });
+
+  // Tiles filter the table. Press to filter, press the same tile again to show all.
+  var tiles = document.querySelectorAll('.tile[data-filter]');
+  tiles.forEach(function(t){
+    function fire(){
+      var on = t.getAttribute('aria-pressed') === 'true';
+      tiles.forEach(function(x){ x.setAttribute('aria-pressed','false'); });
+      expandRow.style.display='none';
+      allRows.forEach(function(r){ r.classList.remove('active-row'); });
+      if(on){ allRows.forEach(function(r){ r.classList.remove('filtered-out'); }); return; }
+      t.setAttribute('aria-pressed','true');
+      var f = t.getAttribute('data-filter');
+      allRows.forEach(function(r){
+        var sets = (r.getAttribute('data-set')||'').split(' ');
+        r.classList.toggle('filtered-out', sets.indexOf(f) === -1);
+      });
+    }
+    t.addEventListener('click', fire);
+  });
+</script>
+</body>
+</html>

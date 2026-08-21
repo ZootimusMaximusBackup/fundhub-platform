@@ -112,6 +112,7 @@ import marketingFlagsWrite from "../../api/marketing-flags.mjs";
 import bankingSyncAccounts from "../../api/banking/sync-accounts.mjs";
 import inquiries from "../../api/inquiries.mjs";
 import repairExceptions from "../../api/repair/exceptions.mjs";
+import repairEnroll from "../../api/repair/enroll.mjs";
 import repairGenerate from "../../api/repair/generate.mjs";
 import repairSend from "../../api/repair/send.mjs";
 import pii from "../../api/pii.mjs";
@@ -512,6 +513,7 @@ export const ROUTES = {
   // security number. Left exactly as written; routing it does not widen it.
   "inquiries": inquiries,
   "repair/exceptions": repairExceptions,
+  "repair/enroll": repairEnroll,
   "repair/generate": repairGenerate,
   "repair/send": repairSend,
   "pii": pii,
