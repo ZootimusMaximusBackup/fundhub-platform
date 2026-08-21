@@ -28,7 +28,7 @@ flowchart TD
     CAN --> A_creative[Creative Factory — 7 routes]
     CAN --> A_dashboard[The dashboard — 7 routes]
     CAN --> A_documents[Documents — 1 route]
-    CAN --> A_finance[Finance — 5 routes]
+    CAN --> A_finance[Finance — 6 routes]
     CAN --> A_partner_marketing[partner-marketing — 5 routes]
     CAN --> A_public[public — 6 routes]
     CAN --> A_read[Reading data — 38 routes]
@@ -36,8 +36,8 @@ flowchart TD
     CAN --> A_social[social — 6 routes]
     CAN --> A_top_level[Everything else — 25 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 59 routes]
-    CANT --> B_auth[Signing in and out — 4 blocked]
+    WHO -->|Yes| CANT[Blocked — 61 routes]
+    CANT --> B_auth[Signing in and out — 5 blocked]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_brand[brand — 1 blocked]
     CANT --> B_chat[chat — 1 blocked]
@@ -45,6 +45,7 @@ flowchart TD
     CANT --> B_content[content — 2 blocked]
     CANT --> B_demo[demo — 2 blocked]
     CANT --> B_finance[Finance — 5 blocked]
+    CANT --> B_gifts[gifts — 1 blocked]
     CANT --> B_hiring[Hiring — 7 blocked]
     CANT --> B_journeys[journeys — 2 blocked]
     CANT --> B_partner_brand[partner-brand — 1 blocked]
@@ -55,12 +56,11 @@ flowchart TD
     CANT --> B_social[social — 1 blocked]
     CANT --> B_staff[staff — 2 blocked]
     CANT --> B_top_level[Everything else — 11 blocked]
-    WHO -->|Yes| UNV[UNVERIFIED — 2 routes whose gate could not be traced]
 ```
 
 ## What they can reach
 
-**128 of 189 routes.**
+**129 of 190 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -116,6 +116,7 @@ flowchart TD
 | `/api/documents-upload` | POST | staff, client |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
 | `/api/finance/alerts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/finance/crs-pull` | POST | owner, admin, closer, funding_advisor |
 | `/api/finance/entities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/finance/liabilities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/finance/model` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -201,7 +202,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**59 of 189 routes.**
+**61 of 190 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -209,6 +210,7 @@ flowchart TD
 | `/api/auth/admin-reset` | POST | owner, admin |
 | `/api/auth/invite` | POST | owner, admin |
 | `/api/auth/staff-role` | POST | owner, admin |
+| `/api/auth/staff-update` | POST | owner, admin |
 | `/api/auth/suspend` | POST | owner, admin |
 | `/api/banking/revoke` | GET, POST | owner, admin |
 | `/api/banking/sync-accounts` | POST | owner, admin, sales_manager |
@@ -226,6 +228,7 @@ flowchart TD
 | `/api/finance/cards` | GET, POST | owner, admin, sales_manager |
 | `/api/finance/cashflow` | GET, POST | owner, admin, sales_manager |
 | `/api/finance/subscriptions` | GET, POST | owner, admin, sales_manager |
+| `/api/gifts/message-blaster` | GET, HEAD | affiliate, partner |
 | `/api/hiring/application` | GET | owner, admin |
 | `/api/hiring/bench` | GET | owner, admin |
 | `/api/hiring/candidates` | GET | owner, admin |
@@ -267,13 +270,7 @@ flowchart TD
 
 ## UNVERIFIED
 
-The gate on these could not be traced from the code, so this page does not claim
-either way whether this journey reaches them. Each one is a question for a human.
-
-| Route | Methods | Who the code lets in |
-|---|---|---|
-| `/api/finance/crs-pull` | POST | — |
-| `/api/gifts/message-blaster` | GET, HEAD | — |
+_None — every route's gate was traced to its source._
 
 ## How to check this yourself
 

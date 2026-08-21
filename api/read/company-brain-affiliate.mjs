@@ -33,8 +33,9 @@ export default async function handler(req, res, deps = {}) {
   const role = String(principal.role || principal.kind || "").trim().toLowerCase();
   if (!requireRole(res, { role }, AFFILIATE_BRAIN_ROLES)) return;
 
-  const orgId = principal.orgId || principal.org_id;
-  if (!orgId) return res.status(403).json({ ok: false, error: "no_org_scope" });
+  if (!(principal.org_id || principal.orgId)) {
+    return res.status(403).json({ ok: false, error: "no_org_scope" });
+  }
 
   const question = String((req.body && req.body.question) || "").trim();
   if (!question) return res.status(400).json({ ok: false, error: "question_required" });
@@ -43,7 +44,8 @@ export default async function handler(req, res, deps = {}) {
   }
 
   const found = await retrieve(database, {
-    orgId,
+    /* Session org — same shape the org-scope test pins (`orgId: …org_id`). */
+    orgId: principal.org_id || principal.orgId,
     role,
     query: question,
     limit: Number((req.body && req.body.limit) || 8),

@@ -3,7 +3,7 @@
 # Agent trigger map
 
 Which canonical event wakes which automation. "Agent" here means a registered Inngest function —
-the 53 workflow ports in `src/workflows/`, read off their real `createFunction` triggers.
+the 54 workflow ports in `src/workflows/`, read off their real `createFunction` triggers.
 (The AG-xx prompt-driven agents in `wireframes/agent-editor.html` are a UI mock with no code behind
 them yet, and are deliberately not drawn here.)
 
@@ -21,6 +21,7 @@ flowchart LR
   e_analysis_completed --> w_u_04_promote_crs_primary["u-04-promote-crs-primary"]
   e_analysis_completed --> w_u_05_data_health_monitor["u-05-data-health-monitor"]
   e_booking_created(["booking.created"])
+  e_booking_created --> w_ai_set_01_josh_setter["ai-set-01-josh-setter"]
   e_booking_created --> w_ai_set_04_3way_handoff["ai-set-04-3way-handoff"]
   e_booking_created --> w_bs_01_precall_launcher["bs-01-precall-launcher"]
   e_booking_created --> w_dpc_02_call_outcome_enforcement["dpc-02-call-outcome-enforcement"]
@@ -89,7 +90,7 @@ flowchart LR
 | event | functions | triggered |
 |---|---|---|
 | `analysis.completed` | 8 | `af-02-referral-ownership-capture`, `c-02-inquiry-created`, `c-06-crs-results-router`, `dpc-01-analyzer-lock`, `u-02-analyzer-complete-delivery`, `u-03-crs-snapshot-sync`, `u-04-promote-crs-primary`, `u-05-data-health-monitor` |
-| `booking.created` | 7 | `ai-set-04-3way-handoff`, `bs-01-precall-launcher`, `dpc-02-call-outcome-enforcement`, `dpc-05-no-progress-escalation`, `n-03-hot-nurture`, `s-04-call-booked`, `s-04b-booking-reminders` |
+| `booking.created` | 8 | `ai-set-01-josh-setter`, `ai-set-04-3way-handoff`, `bs-01-precall-launcher`, `dpc-02-call-outcome-enforcement`, `dpc-05-no-progress-escalation`, `n-03-hot-nurture`, `s-04-call-booked`, `s-04b-booking-reminders` |
 | `booking.noshow` | 1 | `s-05a-no-show-recovery` |
 | `call.completed` | 4 | `ai-set-03-no-answer-cadence`, `ds-01-repair-referral`, `n-03-hot-nurture`, `s-08-post-call-funding-declined` |
 | `deposit.paid` | 2 | `c-02b-inquiry-removal-requested`, `s-06-post-call-funding-purchased` |

@@ -37,11 +37,14 @@ const BUREAUS = new Set(["TU", "EX", "EQ"]);
 
 export default async function handler(req, res, deps = {}) {
   const database = deps.db ?? db;
-  const requirePrincipalFn = deps.requirePrincipal ?? requirePrincipal;
   const requestSoftPullFn = deps.requestSoftPull ?? requestSoftPull;
   const runCrsPullFn = deps.runCrsPull ?? runCrsPull;
 
-  const principal = await requirePrincipalFn(req, res, ["staff"], { db: database });
+  /* Literal `requirePrincipal(req, res, ["staff"]` must stay in this file so
+     scripts/journeys/extract.mjs can read the gate. Do not rename the call. */
+  const principal = deps.requirePrincipal
+    ? await deps.requirePrincipal(req, res, ["staff"], { db: database })
+    : await requirePrincipal(req, res, ["staff"], { db: database });
   if (!principal) return;
 
   if (principal.kind !== "staff" || !CRS_PULL_ROLES.has(String(principal.role || "").toLowerCase())) {

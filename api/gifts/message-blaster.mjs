@@ -13,8 +13,11 @@ export default async function handler(req, res, deps = {}) {
     return res.status(405).json({ ok: false, error: "method_not_allowed" });
   }
 
-  const gate = deps.requirePrincipal || requirePrincipal;
-  const principal = await gate(req, res, ["affiliate", "partner"], deps);
+  /* Literal `requirePrincipal(req, res, ["affiliate", "partner"]` must stay so
+     scripts/journeys/extract.mjs can read the gate. Do not rename the call. */
+  const principal = deps.requirePrincipal
+    ? await deps.requirePrincipal(req, res, ["affiliate", "partner"], deps)
+    : await requirePrincipal(req, res, ["affiliate", "partner"], deps);
   if (!principal) return;
 
   const asset = (deps.resolveMessageBlasterAsset || resolveMessageBlasterAsset)();
