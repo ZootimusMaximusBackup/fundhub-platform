@@ -8,6 +8,8 @@
 
 **Fixer note (B2 deposit save, 2026-08-21):** Live production was already on the money-chain fix (`f8ff02bc`). One plus-tag `deposit.paid` (no card) wrote `sale_payments` with a real product id, then granted `funding-snapshot`. No closer was on that probe, so the commission book stayed empty. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b2-deposit-save.json`. Never touched the forbidden file.
 
+**Fixer note (B3 Present pay link, 2026-08-21):** Overnight the S-23 button never called the server. The page stopped the click when the sale pick was empty. The click now always asks the server to send the pay link. A plus-tag click on Present made a payment_links row with a checkout link. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b3-pay-link.json` and `fixer/shots/b3-s23-1440-MARKED.png`.
+
 **Live:** `https://fundhub.ai` · funnel `https://apply.fundhub.ai`  
 **Evidence:** `docs/workflows/fulfillment-e2e-2026-08-21-evidence/`  
 **Forbidden file:** `9af65808-…` — never opened, never written  
@@ -59,8 +61,8 @@
 | W1-03 | Credit pulled | **FAIL** | Pull button was enabled. Click produced **no** `/api/finance/crs-pull` network hit. `crs_results` still 0. `shots/w1k-pull-1440-MARKED.png` | `public/app/client-control-panel.html:585` + `api/finance/crs-pull.mjs`. Identity gate still applies. **Fix:** capture legal name / DOB / address / SSN on CCP, then make Pull actually POST and write `crs_results`. |
 | W1-04 | Underwrite paints real numbers | **FAIL** | Present: “YOUR NUMBERS ARE NOT ON THIS FILE YET.” No score-like digits on CCP. | Needs a `crs_results` row first. Then CCP/`api/dashboard/client.mjs` must paint those scores. |
 | W1-05 | next_action after consent/pull | **QUESTION** | Before: `get_consent`. After consent row: follow-up GET returned `next_action: null`. Could be a paint bug or a missing fulfillment flag. Not guessing PASS. `dumps/followup-na.json` | |
-| W2-01 | Pay link from Present | **FAIL** | Reached **S-23**. Clicked **Send agreement + pay link**. **Zero** `/api/closer-deck` or `/api/payment-links` calls. `shots/w2-s23-1440-MARKED.png` · `dumps/w2-s23.json` | `public/app/present.js:590` / `:860` → `api/closer-deck.mjs:93`. **Fix:** that button must POST `send_pay_link` and return a checkout URL. |
-| W2-02 | payment_links row | **FAIL** | 0 rows for Gauntlet (`checkout_url` column exists; first query used a missing `url` column — adversary fixed that; still 0 rows) | Same as W2-01. |
+| W2-01 | Pay link from Present | **PASS** | `fixer/shots/b3-s23-1440-MARKED.png` · plus-tag Present S-23. Click **Send agreement + pay link** POSTed `/api/closer-deck` `send_pay_link` (200). `fixer/b3-pay-link.json`. |
+| W2-02 | payment_links row | **PASS** | `fixer/b3-pay-link.json` · plus-tag client `4b659a62-…`, payment_links `3e13a7f4-…` status sent, checkout link present. |
 | W2-03 | Payment row saves (BLK-008) | **PASS** | `fixer/b2-deposit-save.json` · plus-tag client `4b659a62-…`, sale_payments `3078b6e5-…` kind deposit amount 3000 with product_id matching the sale (`c087bdd2-…` card-stacking-dfy). No new product_id NOT NULL. Production was already on `f8ff02bc`. | |
 | W2-04 | Commission row | **FAIL** | Payment saved. Ledger still 0 for this probe — no closer was named on the event, so nobody was owed a cut. 9 commission rules are active. | Name a closer on `deposit.paid` if a ledger row is required. |
 | W2-05 | Entitlement granted | **PASS** | `fixer/b2-deposit-save.json` · entitlements row `5fd327f3-…` code `funding-snapshot` for the same plus-tag client. | |
@@ -103,7 +105,7 @@
 | `SMS-S04-01-CONFIRM` | passed | Still silent after B1 `booking.created` |
 | `SMS-BS01-01-BOOKED` | passed | Queued for B1 plus-tag (`fixer/b1-ghost-booking.json`) |
 | `EMAIL-PORTAL-MAGIC-LINK` | passed | Not requested for the missing new client |
-| `CONTRACT-SEND-EMAIL` | passed | Present S-23 click did not reach the API |
+| `CONTRACT-SEND-EMAIL` | passed | Pay link from S-23 now reaches the API. Contract send is a different button and was not this prove. |
 | `INVOICE-SENT-EMAIL` | passed | No dashboard invoice |
 | `AR-PP1` … `AR-PP6` | passed | No AR workflow to send them |
 | Receipt templates | — | No saved payment |
@@ -116,7 +118,7 @@
 - W3-d was first marked PASS because a file stored. It is a generic upload, not attached to a case. Recoded **QUESTION**.
 - W3-c check is Setter Josh, not a bureau. Recoded **QUESTION**.
 - W5-10/11 empty mismatch with one org is not isolation. Recoded **QUESTION**.
-- W2-02 first SQL used `url`; real column is `checkout_url`. Still 0 rows. FAIL stands.
+- W2-02 first SQL used `url`; real column is `checkout_url`. Overnight had 0 rows. B3 plus-tag click wrote a row with a checkout link. Now PASS.
 - W1-03 network array empty: either the click missed or the page swallowed it. FAIL stands (no `crs_results`).
 - Did not charge a card. BLK-008 proof is the **01:08Z failed_events**, not a new charge. That is the last live money attempt.
 
