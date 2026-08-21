@@ -1,0 +1,32 @@
+{
+  "b1-funnel-before-1440.png": {
+    "legend": "B1 funnel before book",
+    "marks": [
+      {
+        "n": "1",
+        "caption": "Book-call page before picking a time",
+        "box": {
+          "x": 400,
+          "y": 151,
+          "w": 640,
+          "h": 49
+        }
+      }
+    ]
+  },
+  "b1-thankyou-1440.png": {
+    "legend": "B1 thank-you after book click",
+    "marks": [
+      {
+        "n": "1",
+        "caption": "Thank-you / booked copy",
+        "box": {
+          "x": 400,
+          "y": 191,
+          "w": 640,
+          "h": 49
+        }
+      }
+    ]
+  }
+}
