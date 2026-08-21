@@ -39,6 +39,7 @@ import { n02WarmNurture } from './n-02-warm-nurture.mjs';
 import { n03HotNurture } from './n-03-hot-nurture.mjs';
 import { n04PostFundingNurture } from './n-04-post-funding-nurture.mjs';
 import { n06RenewalSecondWave } from './n-06-renewal-second-wave.mjs';
+import { repairBureauResponseReader } from './repair-bureau-response.mjs';
 import { roundStartedClientNotify } from './round-started-client-notify.mjs';
 import { s01NewLeadIntake } from './s-01-new-lead-intake.mjs';
 import { s02IncompleteSurveyNudge } from './s-02-incomplete-survey-nudge.mjs';
@@ -122,6 +123,7 @@ export const functions = [
   n03HotNurture,
   n04PostFundingNurture,
   n06RenewalSecondWave,
+  repairBureauResponseReader,
   roundStartedClientNotify,
   s01NewLeadIntake,
   /* Chases a lead who started an application and stopped: 20-minute sleep, then
