@@ -15,6 +15,7 @@ const REPAIR_EVENTS = [
   "repair.response.received",
   "repair.response.parsed",
   "repair.parse.low_confidence",
+  "repair.response.retake",
   "repair.round.complete",
   "repair.round.escalated",
   "repair.program.complete",

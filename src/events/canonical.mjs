@@ -103,6 +103,7 @@ export const CANONICAL_EVENTS = [
   "repair.response.received",
   "repair.response.parsed",
   "repair.parse.low_confidence",
+  "repair.response.retake",
   "repair.item.deleted",
   "repair.item.verified",
   "repair.item.updated",
