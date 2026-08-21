@@ -1759,35 +1759,41 @@ document.addEventListener("DOMContentLoaded", function () {
     pullBtns.forEach(function (spec) {
       var btn = $(spec.id);
       if (!btn) return;
-      if (!id) {
-        btn.disabled = true;
-        return;
+      if (!id) btn.disabled = true;
+    });
+    /* One listener on the document, not on each button. A later paint that
+       rebuilds the Actions group used to leave enabled buttons with no click
+       handler, so Pull looked live and posted nothing. Identity / consent
+       gates still run on the server. This post never sends simulate. */
+    document.addEventListener("click", function (e) {
+      var btn = e.target && e.target.closest ? e.target.closest("button[id]") : null;
+      if (!btn) return;
+      var spec = null;
+      for (var i = 0; i < pullBtns.length; i++) {
+        if (pullBtns[i].id === btn.id) { spec = pullBtns[i]; break; }
       }
-      btn.addEventListener("click", function () {
-        btn.disabled = true;
-        say("Pulling " + spec.label + "…");
-        fetch("/api/finance/crs-pull", {
-          method: "POST",
-          headers: tokenHeaders(),
-          body: JSON.stringify({ client_id: id, bureau: spec.bureau })
-        }).then(function (r) { return r.json().then(function (d) { return { status: r.status, data: d }; }); })
-          .then(function (out) {
-            btn.disabled = false;
-            var d = out.data || {};
-            if (!d.ok) {
-              say(pullFailure(out, spec.label));
-              // A consent refusal means the line above the buttons is stale —
-              // re-read it rather than leaving it claiming the pull was fine.
-              if (d.code === "consent_required") checkConsent();
-              return;
-            }
-            say(spec.label + " pull finished. Refresh the file to see the stored report.");
-          })
-          .catch(function () {
-            btn.disabled = false;
-            say("Could not reach the pull service.");
-          });
-      });
+      if (!spec || !id || btn.disabled) return;
+      btn.disabled = true;
+      say("Pulling " + spec.label + "…");
+      fetch("/api/finance/crs-pull", {
+        method: "POST",
+        headers: tokenHeaders(),
+        body: JSON.stringify({ client_id: id, bureau: spec.bureau })
+      }).then(function (r) { return r.json().then(function (d) { return { status: r.status, data: d }; }); })
+        .then(function (out) {
+          btn.disabled = false;
+          var d = out.data || {};
+          if (!d.ok) {
+            say(pullFailure(out, spec.label));
+            if (d.code === "consent_required") checkConsent();
+            return;
+          }
+          say(spec.label + " pull finished. Refresh the file to see the stored report.");
+        })
+        .catch(function () {
+          btn.disabled = false;
+          say("Could not reach the pull service.");
+        });
     });
     checkConsent();
 
