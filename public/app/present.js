@@ -853,12 +853,7 @@
       if (!Number.isFinite(cents) || cents < 100) { toast("Enter an e-book price first."); return; }
       fire("send_ebook", { amount_cents: cents }); return;
     }
-    if (a === "pay") {
-      if (selectedOfferKey() !== "FUNDING_DFY" && !selectedSaleMotion()) {
-        toast("Choose downsell or upsell first."); return;
-      }
-      fire("send_pay_link"); return;
-    }
+    if (a === "pay") { fire("send_pay_link"); return; }
     if (a === "contract") { openContractSend(); return; }
     if (a === "contract-go") { sendContractNow(); return; }
     if (a === "contract-copy") {
