@@ -303,12 +303,29 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
   // touch neither the tables nor the card.
   if (stored.length === 0 && casesWritten === 0
     && skipped.length > 0 && skipped.every((s) => s.reason === "already_generated")) {
+    const prior = await db.query(
+      `SELECT dl.id, dl.bureau, dl.case_id, dl.body_text, dl.rule_ids
+         FROM dispute_letters dl
+         JOIN dispute_cases dc ON dc.id = dl.case_id
+        WHERE dl.org_id = $1::uuid AND dl.client_id = $2::uuid
+          AND dc.round = $3
+          AND dl.status IN ('generated', 'ready', 'queued', 'sent')
+        ORDER BY dl.bureau`,
+      [orgId, clientId, round]
+    );
+    const letters = prior.rows.map((row) => ({
+      bureau: row.bureau,
+      caseId: row.case_id,
+      letterId: row.id,
+      ruleIds: row.rule_ids || [],
+      body_text: row.body_text || ""
+    }));
     return {
       ok: true,
       already_generated: true,
       round,
       caseIds,
-      letters: [],
+      letters,
       skipped,
       identity_complete: identity.complete
     };

@@ -863,9 +863,15 @@
     }
     var payload = gen.data || {};
     state.stagedLetters = Array.isArray(payload.letters) ? payload.letters : [];
-    state.repairMsg = state.stagedLetters.length
-      ? ("Staged " + state.stagedLetters.length + " letter(s). Review, then Send now.")
-      : (payload.already_generated ? "Letters were already staged for this round." : "No new letters stored.");
+    if (state.stagedLetters.length) {
+      state.repairMsg = payload.already_generated
+        ? ("Already staged — " + state.stagedLetters.length + " letter(s) ready. Review, then Send now.")
+        : ("Staged " + state.stagedLetters.length + " letter(s). Review, then Send now.");
+    } else {
+      state.repairMsg = payload.already_generated
+        ? "Letters were already staged for this round, but none came back to show."
+        : "No new letters stored.";
+    }
     render();
   }
 
