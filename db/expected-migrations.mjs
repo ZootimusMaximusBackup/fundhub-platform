@@ -178,6 +178,7 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/246_owner_commission_rates_20260820.sql",
   "migrations/247_commission_money_chain_identity.sql",
   "migrations/248_owner_motion_commission_rates_20260820.sql",
+  "migrations/249_staff_profile_fields.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql",
   "seed/007_contract_templates.sql",

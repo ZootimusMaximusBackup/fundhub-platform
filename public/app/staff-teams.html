@@ -557,8 +557,11 @@ function openEditor(id){
   document.getElementById('ed_code').value=p.code;
   document.getElementById('ed_role').value=p.role;
   document.getElementById('ed_start').value=p.start;
-  ['ed_first','ed_last','ed_email','ed_phone','ed_start'].forEach(function(i){
+  ['ed_code'].forEach(function(i){
     document.getElementById(i).readOnly=true;
+  });
+  ['ed_first','ed_last','ed_email','ed_phone','ed_start'].forEach(function(i){
+    document.getElementById(i).readOnly=false;
   });
   setSw('ed_consent',p.consent);
   document.getElementById('edReset').style.display = p.email ? '' : 'none';
@@ -607,40 +610,85 @@ document.getElementById('edSave').addEventListener('click',function(){
     start:document.getElementById('ed_start').value,
     consent:getSw('ed_consent')};
   if(selId){
-    rec={role:rec.role,consent:rec.consent};
     var p=PEOPLE.filter(function(x){return String(x.id)===String(selId)})[0];
+    if(!p || !p.staffId){
+      alert('This row is not a real login.');
+      return;
+    }
+    function applyLocalProfile(st){
+      if(st && st.name){
+        var sp=st.name.indexOf(' ');
+        p.first=sp>0?st.name.slice(0,sp):st.name;
+        p.last=sp>0?st.name.slice(sp+1):'';
+      }
+      if(st && st.email) p.email=st.email;
+      if(st && Object.prototype.hasOwnProperty.call(st,'phone')) p.phone=st.phone||'—';
+      if(st && Object.prototype.hasOwnProperty.call(st,'start_date')) p.start=st.start_date||'—';
+      if(st && st.employee_code) p.code=st.employee_code;
+    }
     function finishEdit(){
-      if(p && p.staffId && typeof window.FHMonitoringConsent === 'function' && window.__FH_IS_OWNER){
+      if(typeof window.FHMonitoringConsent === 'function' && window.__FH_IS_OWNER){
         var want = !!rec.consent;
         var had = !!p.consent;
         if(want !== had){
           window.FHMonitoringConsent(p.staffId, want ? 'grant' : 'revoke').then(function(){
-            Object.keys(rec).forEach(function(k){ if(k!=='consent'&&k!=='consentAt') p[k]=rec[k]; });
+            p.role=rec.role;
             closeEditor(); renderAll();
           });
           return;
         }
       }
+      p.role=rec.role;
       closeEditor(); renderAll();
     }
+    var fullName=(rec.first+' '+rec.last).trim();
+    var profileChanged=fullName!==(p.first+' '+p.last).trim()
+      ||rec.email!==p.email
+      ||rec.phone!==p.phone
+      ||rec.start!==p.start;
     var nextRole=ROLE_KEY[rec.role];
-    if(p && p.staffId && nextRole && rec.role !== p.role){
-      if(typeof FHData==='undefined'||!FHData.write){alert('Not available — the data layer has not loaded.');return}
-      var saveBtn=document.getElementById('edSave');
-      saveBtn.disabled=true; saveBtn.textContent='Saving…';
-      FHData.write('/api/auth/staff-role',{staff_id:p.staffId,role:nextRole}).then(function(res){
-        saveBtn.disabled=false; saveBtn.textContent='Save';
+    var roleChanged=nextRole && rec.role !== p.role;
+    if(typeof FHData==='undefined'||!FHData.write){alert('Not available — the data layer has not loaded.');return}
+    var saveBtn=document.getElementById('edSave');
+    saveBtn.disabled=true; saveBtn.textContent='Saving…';
+    var chain=Promise.resolve({ok:true});
+    if(profileChanged){
+      chain=chain.then(function(){
+        return FHData.write('/api/auth/staff-update',{
+          staff_id:p.staffId,
+          name:fullName,
+          email:rec.email,
+          phone:rec.phone==='—'?'':rec.phone,
+          start_date:rec.start==='—'?'':rec.start
+        });
+      }).then(function(res){
         if(!res.ok){
-          alert('Could not save the job: '+(res.error||'unknown error')+
+          throw new Error('Could not save their details: '+(res.error||'unknown error')+
             (res.source==='unauthorized'?' — sign in as owner.':''));
-          return;
+        }
+        applyLocalProfile(res.data && res.data.staff);
+        return res;
+      });
+    }
+    if(roleChanged){
+      chain=chain.then(function(){
+        return FHData.write('/api/auth/staff-role',{staff_id:p.staffId,role:nextRole});
+      }).then(function(res){
+        if(!res.ok){
+          throw new Error('Could not save the job: '+(res.error||'unknown error')+
+            (res.source==='unauthorized'?' — sign in as owner.':''));
         }
         p.role=rec.role;
-        finishEdit();
+        return res;
       });
-      return;
     }
-    finishEdit();
+    chain.then(function(){
+      saveBtn.disabled=false; saveBtn.textContent='Save';
+      finishEdit();
+    }).catch(function(err){
+      saveBtn.disabled=false; saveBtn.textContent='Save';
+      alert(err && err.message ? err.message : 'Could not save.');
+    });
     return;
   }
   var roleKey=ROLE_KEY[rec.role];
@@ -970,11 +1018,11 @@ renderAll();
         self: self,
         first: sp > 0 ? name.slice(0, sp) : name,
         last:  sp > 0 ? name.slice(sp + 1) : "",
-        code: "—",
+        code: s.employee_code || "—",
         role: role,
         email: s.email || "",
-        phone: "—",
-        start: "—",
+        phone: s.phone || "—",
+        start: s.start_date ? String(s.start_date).slice(0, 10) : "—",
         active: s.status === "active",
         status: s.status || "",
         consent: (Object.prototype.hasOwnProperty.call(s, "monitoring_consent_at") ? !!s.monitoring_consent_at : null),
