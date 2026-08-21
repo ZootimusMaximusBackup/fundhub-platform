@@ -72,7 +72,7 @@ export default async function handler(req, res) {
       const demoOn = await orgDemoModeEnabled(database, orgOf(staff));
       const demoHide = demoHideSql(demoOn);
       return database.query(`SELECT s.id, s.name, s.email, s.role, s.status, s.assignment_order,
-           s.last_assigned_at, s.created_at,
+           s.last_assigned_at, s.created_at, s.phone, s.start_date, s.employee_code,
            s.monitoring_consent_at, s.hubstaff_user_id,
            (SELECT count(*)::int FROM tasks t
              WHERE t.assignee_staff_id = s.id AND t.done = false) AS open_tasks,

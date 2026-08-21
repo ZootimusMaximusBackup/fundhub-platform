@@ -245,3 +245,59 @@ export async function setStaffRole(db, { actor, staffId, role } = {}) {
   if (!staff) return { ok: false, status: 404, error: "staff_not_found" };
   return { ok: true, staff };
 }
+
+// updateStaffProfile — owner/admin edits name, login email, phone, start date.
+// Does not change role (setStaffRole) or status (suspendStaff).
+export async function updateStaffProfile(db, { actor, staffId, name, email, phone, startDate } = {}) {
+  if (!actor || !INVITER_ROLES.includes(String(actor.role || "").toLowerCase())) {
+    return { ok: false, status: 403, error: "forbidden" };
+  }
+  if (!actor.org_id) return { ok: false, status: 403, error: "forbidden" };
+
+  const current = (await db.query(
+    `SELECT id, role, email FROM staff WHERE id = $1 AND org_id = $2`,
+    [staffId, actor.org_id]
+  )).rows[0];
+  if (!current) return { ok: false, status: 404, error: "staff_not_found" };
+  if (String(current.role || "").toLowerCase() === "owner") {
+    return { ok: false, status: 400, error: "cannot_change_owner" };
+  }
+
+  const nextName = String(name || "").trim();
+  if (!nextName) return { ok: false, status: 400, error: "name_required" };
+
+  const normEmail = normalizeEmail(email);
+  if (!normEmail || !normEmail.includes("@")) {
+    return { ok: false, status: 400, error: "valid_email_required" };
+  }
+
+  const dup = (await db.query(
+    `SELECT id FROM staff WHERE org_id = $1 AND lower(email) = $2 AND id <> $3 LIMIT 1`,
+    [actor.org_id, normEmail, staffId]
+  )).rows[0];
+  if (dup) return { ok: false, status: 409, error: "email_taken" };
+
+  const nextPhone = String(phone || "").trim() || null;
+  const rawStart = String(startDate || "").trim();
+  let nextStart = null;
+  if (rawStart) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(rawStart)) {
+      return { ok: false, status: 400, error: "start_date_invalid" };
+    }
+    nextStart = rawStart;
+  }
+
+  const staff = (await db.query(
+    `UPDATE staff
+        SET name = $2,
+            email = $3,
+            phone = $4,
+            start_date = $5,
+            updated_at = now()
+      WHERE id = $1 AND org_id = $6
+      RETURNING id, email, name, role, status, phone, start_date, employee_code`,
+    [staffId, nextName, normEmail, nextPhone, nextStart, actor.org_id]
+  )).rows[0];
+  if (!staff) return { ok: false, status: 404, error: "staff_not_found" };
+  return { ok: true, staff };
+}

@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert";
 import {
   inviteStaff, acceptInvite, resetPassword, requestPasswordReset,
-  setPasswordWithToken, suspendStaff, setStaffRole, roleIsKnown, INVITER_ROLES
+  setPasswordWithToken, suspendStaff, setStaffRole, updateStaffProfile, roleIsKnown, INVITER_ROLES
 } from "./invite.mjs";
 import { hashToken } from "./session.mjs";
 import { verifyPassword } from "./hash.mjs";
@@ -21,14 +21,34 @@ function fakeDb({ existingStaff = null, catalogShape = true, roleKnown = true, c
       if (/FROM orgs/.test(sql)) return { rows: [{ id: "org-1" }] };
       if (/information_schema\.columns/.test(sql)) return { rows: [{ ok: catalogShape }] };
       if (/FROM staff_roles/.test(sql)) return { rows: roleKnown ? [{ "?column?": 1 }] : [] };
-      if (/SELECT id, role FROM staff/.test(sql)) {
-        return { rows: existingStaff ? [{ id: existingStaff.id, role: existingStaff.role || "closer" }] : [] };
+      if (/SELECT id, role(?:, email)? FROM staff/.test(sql)) {
+        return { rows: existingStaff ? [{
+          id: existingStaff.id,
+          role: existingStaff.role || "closer",
+          email: existingStaff.email || "a@b.c"
+        }] : [] };
       }
       if (/SELECT id, status, name, role FROM staff/.test(sql)) return { rows: existingStaff ? [existingStaff] : [] };
       if (/SELECT id, status FROM staff/.test(sql)) return { rows: existingStaff ? [existingStaff] : [] };
       if (/UPDATE staff SET role =/.test(sql)) {
         if (!existingStaff) return { rows: [] };
         return { rows: [{ id: existingStaff.id, email: "a@b.c", name: "A", role: params[1], status: "invited" }] };
+      }
+      if (/UPDATE staff\s+SET name =/.test(sql)) {
+        if (!existingStaff) return { rows: [] };
+        return { rows: [{
+          id: existingStaff.id,
+          email: params[2],
+          name: params[1],
+          role: existingStaff.role || "closer",
+          status: "active",
+          phone: params[3],
+          start_date: params[4],
+          employee_code: "EMP-000099"
+        }] };
+      }
+      if (/SELECT id FROM staff WHERE org_id = \$1 AND lower\(email\)/.test(sql)) {
+        return { rows: [] };
       }
       if (/INSERT INTO staff /.test(sql)) {
         return { rows: [{ id: "staff-new", email: params[3], name: params[1], role: params[2], status: "invited" }] };
@@ -266,6 +286,37 @@ test("setStaffRole requires owner/admin, refuses owner rows, and writes the new 
 
   const missing = await setStaffRole(fakeDb({ existingStaff: null }), {
     actor: OWNER, staffId: "nope", role: "closer"
+  });
+  assert.equal(missing.status, 404);
+});
+
+test("updateStaffProfile requires owner/admin, refuses owner rows, and writes profile fields", async () => {
+  const denied = await updateStaffProfile(fakeDb(), {
+    actor: { role: "closer" }, staffId: "x", name: "A B", email: "a@b.c"
+  });
+  assert.equal(denied.status, 403);
+
+  const changeOwner = await updateStaffProfile(fakeDb({ existingStaff: { id: "own", role: "owner", email: "o@b.c" } }), {
+    actor: OWNER, staffId: "own", name: "Owner Name", email: "o@b.c"
+  });
+  assert.equal(changeOwner.status, 400);
+  assert.equal(changeOwner.error, "cannot_change_owner");
+
+  const db = fakeDb({ existingStaff: { id: "staff-9", role: "sales_manager", email: "sarah.b@fundhub.ai" } });
+  const out = await updateStaffProfile(db, {
+    actor: OWNER,
+    staffId: "staff-9",
+    name: "Sarah Whitfield",
+    email: "sarah.b@fundhub.ai",
+    phone: "+1 480 555 0114",
+    startDate: "2023-09-18"
+  });
+  assert.equal(out.ok, true);
+  assert.equal(out.staff.name, "Sarah Whitfield");
+  assert.ok(db.stmts().some((s) => /UPDATE staff\s+SET name =/.test(s)));
+
+  const missing = await updateStaffProfile(fakeDb({ existingStaff: null }), {
+    actor: OWNER, staffId: "nope", name: "A B", email: "a@b.c"
   });
   assert.equal(missing.status, 404);
 });

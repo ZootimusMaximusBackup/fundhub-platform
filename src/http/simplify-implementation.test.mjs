@@ -133,7 +133,8 @@ test("the remaining approved simplify rows stay enforced", () => {
 
   const staff = text("public/app/staff-teams.html");
   assert.doesNotMatch(staff, /id="ed_active"|id="ed_clock"/);
-  assert.match(staff, /\['ed_first','ed_last','ed_email','ed_phone','ed_start'\][\s\S]*readOnly=true/);
+  assert.match(staff, /\/api\/auth\/staff-update/);
+  assert.match(staff, /\['ed_first','ed_last','ed_email','ed_phone','ed_start'\][\s\S]*readOnly=false/);
 });
 
 test("owner-set commission rows use percent units and do not invent manager upsell", () => {

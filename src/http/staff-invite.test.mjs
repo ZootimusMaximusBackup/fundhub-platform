@@ -20,7 +20,14 @@ test("invite and suspend are owner/admin gates and use the existing auth module"
   assert.ok(suspend.includes("staff.org_id") || suspend.includes("actor: staff"));
   assert.ok(routes.includes('"auth/invite"'));
   assert.ok(routes.includes('"auth/staff-role"'));
+  assert.ok(routes.includes('"auth/staff-update"'));
   assert.ok(routes.includes('"auth/suspend"'));
+});
+
+test("staff-update is owner/admin and uses updateStaffProfile", () => {
+  const update = fs.readFileSync(path.join(ROOT, "api/auth/staff-update.mjs"), "utf8");
+  assert.ok(update.includes('requireRole("owner", "admin")'));
+  assert.ok(update.includes("updateStaffProfile"));
 });
 
 test("staff-role is owner/admin and uses setStaffRole", () => {
@@ -44,6 +51,7 @@ test("staff roster hides seed furniture", () => {
 test("staff-teams persists a role change and tells how many people are hidden", () => {
   const html = fs.readFileSync(path.join(ROOT, "public/app/staff-teams.html"), "utf8");
   assert.ok(html.includes("/api/auth/staff-role"));
+  assert.ok(html.includes("/api/auth/staff-update"));
   assert.ok(html.includes("hiddenLine"));
   assert.ok(html.includes("notify_email"));
   assert.ok(html.includes("7 days"));

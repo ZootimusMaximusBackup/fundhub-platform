@@ -3,6 +3,9 @@
 ## Credit Repair / Education
 - [ ] **Update repair system + education** from `docs/metro2/AI-CREDIT-REPAIR-LETTER-GENERATION-PROMPT.md` (captured 2026-08-14 from the Haitian CEO letter-generator PDF). Dispute fields, not categories. Cross-bureau forensic audit + timing safeguard. **COMPLIANCE REVIEW REQUIRED** before any live letter or education page uses it. Not wired yet.
 
+## Staff & Teams
+- [ ] **ST-07 Effective permissions** — leave as copy only. Role rules live in server code; this screen cannot show or edit them. Change access by changing **Role**, not a permission matrix. Only revisit if we later publish a real role→action list from code.
+
 ## UX/UI Refinement (High Priority)
 - [ ] Once/twice pass through all Finance OS screens (v1 + v2)
 - [ ] Refine cards UI — clear labeling, no overcomplication
