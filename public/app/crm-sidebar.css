@@ -238,8 +238,14 @@ html.fh-side-mini .app-shell {
   [href="social-studio.html"],
   [href="creative-factory.html"],
   [href="hiring.html"],
-  [href="affiliate.html"]
+  [href="affiliate.html"],
+  [href="agent-editor.html"],
+  [href="content-admin.html"]
 ) {
+  display: none !important;
+}
+
+.navgroup[data-fh-section="marketing"] {
   display: none !important;
 }
 
