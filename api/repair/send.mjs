@@ -53,17 +53,24 @@ export default async function handler(req, res, deps = {}) {
     const mailSender = wantMail
       ? async (letter) => {
           const sent = await mailFn({
-            bureau: letter.bureau,
+            db: database,
+            bureau: letter.target === "furnisher" ? null : letter.bureau,
+            furnisherName: letter.furnisherName || letter.furnisher || null,
+            to: letter.to || null,
             from,
             identity: body.identity || null,
             pdf: letter.pdf || letter.pdfBase64,
             html: letter.html,
-            description: letter.description || `Repair letter ${letter.bureau}`,
+            description: letter.description
+              || (letter.target === "furnisher"
+                ? `Repair furnisher letter ${letter.furnisherName || letter.bureau}`
+                : `Repair letter ${letter.bureau}`),
             metadata: {
               orgId,
               clientId,
               staffId: staff.id,
               letterId: letter.letterId || letter.letter_id || null,
+              target: letter.target || "bureau",
               stack: "repair"
             },
             env: deps.env,

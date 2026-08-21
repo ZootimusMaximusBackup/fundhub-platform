@@ -49,4 +49,4 @@ export function collectorsFromViolations(violationsByBureau = {}) {
   return [...seen.values()];
 }
 
-export { COLLECTION_VALIDATION_RULES };
+export { COLLECTION_VALIDATION_RULES, isCollectorFinding };

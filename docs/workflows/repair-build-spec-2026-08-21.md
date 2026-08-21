@@ -35,7 +35,7 @@ Five workstreams. A is the front door and unblocks the demo. B is the engine. C 
 | WS | Name | Depends on | Can start |
 |----|------|-----------|-----------|
 | A | Enrollment, money, fire button | claimed | Cursor · `feature/repair-enroll-fire` | rebuilding + shipping |
-| B | Engine: six rounds + furnisher letters | nothing | now |
+| B | Engine: six rounds + furnisher letters | claimed · `feature/repair-ws-b-engine` | PR ready (unit-proved B1–B3) |
 | C | Inbound: doors, response agent, parse loop | uploads go-live (prereq P1–P2) | now (code), live after prereqs |
 | D | Repair emails | event names in A/B (already listed here) | now |
 | E | Dashboard tab | data contract in §9 (build against it with stub rows) | now |

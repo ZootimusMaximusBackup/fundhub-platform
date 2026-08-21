@@ -1,4 +1,5 @@
 // Per-item round state. Rounds advance per item, not per letter.
+// Bureau sequence is R1–R6; trial programs cap earlier via roundsCap (repair_programs).
 
 export const ITEM_STATUS = Object.freeze({
   OPEN: "open",
@@ -11,15 +12,33 @@ export const ITEM_STATUS = Object.freeze({
   ESCALATED: "escalated"
 });
 
-export const ROUNDS = Object.freeze(["R1", "R2", "R3"]);
+/** Full bureau round ladder (full program). Trial uses a prefix via roundsCap. */
+export const BUREAU_ROUNDS = Object.freeze(["R1", "R2", "R3", "R4", "R5", "R6"]);
 
-export function nextRound(round) {
-  const i = ROUNDS.indexOf(String(round || "R1").toUpperCase());
-  if (i < 0 || i >= ROUNDS.length - 1) return null;
-  return ROUNDS[i + 1];
+/** @deprecated Prefer BUREAU_ROUNDS — kept as alias for callers that imported ROUNDS. */
+export const ROUNDS = BUREAU_ROUNDS;
+
+/**
+ * Next bureau round under a program cap (default 6).
+ * R1→R2→…→R`cap`→null. Trial cap 2 blocks R3+.
+ */
+export function nextRound(round, roundsCap = 6) {
+  const cap = Math.min(Math.max(Number(roundsCap) || 6, 1), BUREAU_ROUNDS.length);
+  const sequence = BUREAU_ROUNDS.slice(0, cap);
+  const i = sequence.indexOf(String(round || "R1").toUpperCase());
+  if (i < 0 || i >= sequence.length - 1) return null;
+  return sequence[i + 1];
 }
 
-/** Case status from its items. */
+/** True when `round` is allowed under the program cap (FURNISHER always allowed). */
+export function roundAllowed(round, roundsCap = 6) {
+  const r = String(round || "").toUpperCase();
+  if (r === "FURNISHER") return true;
+  const cap = Math.min(Math.max(Number(roundsCap) || 6, 1), BUREAU_ROUNDS.length);
+  const idx = BUREAU_ROUNDS.indexOf(r);
+  return idx >= 0 && idx < cap;
+}
+
 export function caseStatusFromItems(items = []) {
   if (!items.length) return "open";
   const openish = items.some((it) =>
@@ -34,28 +53,30 @@ export function caseStatusFromItems(items = []) {
 
 /**
  * Apply a confirmed parse outcome to one item.
- * verified → escalate to next round (status escalated + round bumped)
- * deleted/updated → closed
- * unaddressed → stay open but mark unaddressed (strengthens R2/R3)
+ * Cap hit → closed + blocked_at_cap (trial → upsell path).
  */
-export function applyItemOutcome(item, outcome) {
+export function applyItemOutcome(item, outcome, opts = {}) {
+  const roundsCap = opts.roundsCap == null ? 6 : opts.roundsCap;
   const o = String(outcome || "").toLowerCase();
   const base = { ...item, outcome: o, updated: true };
   if (o === "deleted") return { ...base, status: ITEM_STATUS.DELETED };
   if (o === "updated") return { ...base, status: ITEM_STATUS.UPDATED };
   if (o === "unaddressed") return { ...base, status: ITEM_STATUS.UNADDRESSED };
   if (o === "verified") {
-    const nr = nextRound(item.round);
-    if (!nr) return { ...base, status: ITEM_STATUS.CLOSED, round: item.round };
+    const nr = nextRound(item.round, roundsCap);
+    if (!nr) {
+      return {
+        ...base,
+        status: ITEM_STATUS.CLOSED,
+        round: item.round,
+        blocked_at_cap: true
+      };
+    }
     return { ...base, status: ITEM_STATUS.ESCALATED, round: nr };
   }
   return base;
 }
 
-/**
- * Before R2/R3 dispatch: if item gone from latest report, kill letter and close.
- * @returns {{ proceed: boolean, item, reason? }}
- */
 export function preDispatchRecheck(item, latestReportItems = []) {
   const key = `${item.creditor || ""}|${item.account_last4 || ""}|${item.rule_id || item.ruleId || ""}`;
   const stillThere = latestReportItems.some((r) => {
@@ -72,7 +93,6 @@ export function preDispatchRecheck(item, latestReportItems = []) {
   return { proceed: true, item };
 }
 
-/** Items that need a next-round letter. */
 export function itemsNeedingEscalation(items = []) {
   return items.filter((it) => it.status === ITEM_STATUS.ESCALATED || it.status === ITEM_STATUS.VERIFIED);
 }

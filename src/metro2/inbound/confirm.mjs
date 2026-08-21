@@ -1,6 +1,7 @@
 // Human confirmation gate before escalation. Wrong parse is expensive.
 
 import { advanceAfterParse } from "../rounds/advance.mjs";
+import { needsUpsellPending, markUpsellPending } from "../rounds/program-cap.mjs";
 import { logDecision } from "../rounds/store.mjs";
 
 const DEFAULT_THRESHOLD = 0.85;
@@ -16,7 +17,9 @@ export async function confirmParse(db, {
   parseResult,
   confirmedOutcomes,
   confirmedBy,
-  threshold = DEFAULT_THRESHOLD
+  threshold = DEFAULT_THRESHOLD,
+  roundsCap = 6,
+  staffId = null
 }) {
   if (!parseResult) return { ok: false, reason: "no_parse" };
 
@@ -40,7 +43,7 @@ export async function confirmParse(db, {
   }
 
   const outcomes = confirmedOutcomes || parseResult.outcomes;
-  const advanced = advanceAfterParse({ items, outcomes });
+  const advanced = advanceAfterParse({ items, outcomes, roundsCap });
   if (db) {
     await logDecision(db, {
       orgId,
@@ -54,7 +57,13 @@ export async function confirmParse(db, {
       }
     });
   }
-  return { ok: true, ...advanced, confidence: parseResult.confidence };
+
+  let upsell = null;
+  if (db && needsUpsellPending({ items: advanced.items, roundsCap, log: advanced.log })) {
+    upsell = await markUpsellPending(db, { orgId, clientId, staffId: staffId || confirmedBy });
+  }
+
+  return { ok: true, ...advanced, confidence: parseResult.confidence, upsell };
 }
 
 export { DEFAULT_THRESHOLD };

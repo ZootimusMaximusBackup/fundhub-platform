@@ -1,13 +1,36 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { nextRound, caseStatusFromItems, applyItemOutcome, preDispatchRecheck } from "./state.mjs";
+import {
+  nextRound,
+  roundAllowed,
+  caseStatusFromItems,
+  applyItemOutcome,
+  preDispatchRecheck
+} from "./state.mjs";
 import { advanceAfterParse, filterForDispatch } from "./advance.mjs";
+import { needsUpsellPending } from "./program-cap.mjs";
 
 describe("rounds state", () => {
-  it("nextRound advances R1→R2→R3→null", () => {
+  it("nextRound advances R1→…→R6→null under full cap", () => {
     assert.equal(nextRound("R1"), "R2");
     assert.equal(nextRound("R2"), "R3");
-    assert.equal(nextRound("R3"), null);
+    assert.equal(nextRound("R3"), "R4");
+    assert.equal(nextRound("R4"), "R5");
+    assert.equal(nextRound("R5"), "R6");
+    assert.equal(nextRound("R6"), null);
+  });
+
+  it("nextRound respects trial rounds_cap=2 (B2)", () => {
+    assert.equal(nextRound("R1", 2), "R2");
+    assert.equal(nextRound("R2", 2), null);
+    assert.equal(roundAllowed("R3", 2), false);
+    assert.equal(roundAllowed("R2", 2), true);
+    assert.equal(roundAllowed("FURNISHER", 2), true);
+  });
+
+  it("full client advances past R2", () => {
+    assert.equal(nextRound("R2", 6), "R3");
+    assert.equal(roundAllowed("R4", 6), true);
   });
 
   it("mixed outcomes: one deleted neighbour escalates", () => {
@@ -55,8 +78,40 @@ describe("rounds state", () => {
     );
   });
 
-  it("applyItemOutcome verified at R3 closes", () => {
-    const r = applyItemOutcome({ status: "sent", round: "R3" }, "verified");
+  it("applyItemOutcome verified at R6 closes", () => {
+    const r = applyItemOutcome({ status: "sent", round: "R6" }, "verified");
     assert.equal(r.status, "closed");
+    assert.equal(r.blocked_at_cap, true);
+  });
+
+  it("trial cap at R2 blocks R3 and marks blocked_at_cap (B2)", () => {
+    const r = applyItemOutcome({ status: "sent", round: "R2" }, "verified", { roundsCap: 2 });
+    assert.equal(r.status, "closed");
+    assert.equal(r.blocked_at_cap, true);
+    assert.equal(r.round, "R2");
+  });
+
+  it("needsUpsellPending true for trial at R2 with open items (B2)", () => {
+    assert.equal(
+      needsUpsellPending({
+        roundsCap: 2,
+        items: [{ status: "open", round: "R2" }]
+      }),
+      true
+    );
+    assert.equal(
+      needsUpsellPending({
+        roundsCap: 2,
+        log: [{ blocked_at_cap: true }]
+      }),
+      true
+    );
+    assert.equal(
+      needsUpsellPending({
+        roundsCap: 6,
+        items: [{ status: "open", round: "R2" }]
+      }),
+      false
+    );
   });
 });

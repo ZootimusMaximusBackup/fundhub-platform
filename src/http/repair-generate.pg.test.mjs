@@ -346,7 +346,7 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
     assert.equal(r.body.error, "client_id_required");
   });
 
-  test("a round outside the R1/R2/R3/FURNISHER set is a 400", async () => {
+  test("a round outside the R1–R6/FURNISHER set is a 400", async () => {
     await wipeClient();
     await buildClient({ result: { bureausPulled: ["EQ"], bureaus: { EQ: equifaxReport() } } });
     const r = await post({ client_id: clientId, round: "R9" });
