@@ -1,0 +1,233 @@
+{
+  "started": "2026-08-21T05:09:24.595Z",
+  "email_is_plus": true,
+  "forbidden_touched": false,
+  "wait_ms": 120000,
+  "ui": {
+    "url": "https://apply.fundhub.ai/thank-you",
+    "slot": {
+      "clicked": true,
+      "text": "Select time 11:00 AM - 11:30 AM (MST)"
+    },
+    "filled": {
+      "name": true,
+      "email": true,
+      "phone": true
+    },
+    "bookedClick": true,
+    "thankYou": true,
+    "body_preview": "CONFIRMED · FUNDING PATH You're All Set. Your Call Is Booked. We'll see you then. Here's what to expect. You took the first real step toward getting funded. Check your email for the confirmation and calendar invite. WHAT HAPPENS ON THE CALL 01 A live Google Meet with your funding advisor We go through your business and your file together. No pitch deck, no runaround. 02 We run your soft pull on th",
+    "shots": [
+      "fixer/shots/b1-funnel-before-1440-MARKED.png",
+      "fixer/shots/b1-thankyou-1440-MARKED.png"
+    ]
+  },
+  "elapsed_ms": 74095,
+  "polls": [
+    {
+      "at_ms": 470,
+      "found": false
+    },
+    {
+      "at_ms": 10909,
+      "found": false
+    },
+    {
+      "at_ms": 21388,
+      "found": false
+    },
+    {
+      "at_ms": 31851,
+      "found": false
+    },
+    {
+      "at_ms": 42311,
+      "found": false
+    },
+    {
+      "at_ms": 52765,
+      "found": false
+    },
+    {
+      "at_ms": 63355,
+      "found": false
+    },
+    {
+      "at_ms": 73825,
+      "found": true,
+      "client_id": "0bf376a7-2c51-426a-a749-5206886b3459"
+    }
+  ],
+  "client": {
+    "id": "0bf376a7-2c51-426a-a749-5206886b3459",
+    "created_at": "2026-08-21T05:10:54.804Z",
+    "name": "B1 Ghost Book"
+  },
+  "events": [
+    {
+      "id": "60d5903c-b8e9-4030-8944-1f289e471b70",
+      "name": "entry.captured",
+      "client_id": null,
+      "has_email": true,
+      "start_time": null,
+      "created_at": "2026-08-21T05:10:54.649Z"
+    },
+    {
+      "id": "59ba9fbc-d676-4165-b845-4f9d5c426e5e",
+      "name": "entry.captured",
+      "client_id": null,
+      "has_email": true,
+      "start_time": null,
+      "created_at": "2026-08-21T05:10:54.816Z"
+    },
+    {
+      "id": "a57c50ce-28a9-48f1-b4e1-7518c47645f4",
+      "name": "entry.captured",
+      "client_id": null,
+      "has_email": true,
+      "start_time": null,
+      "created_at": "2026-08-21T05:10:55.784Z"
+    },
+    {
+      "id": "91438ea3-1554-4c6e-ae88-12cb43087467",
+      "name": "entry.captured",
+      "client_id": null,
+      "has_email": true,
+      "start_time": null,
+      "created_at": "2026-08-21T05:10:56.105Z"
+    }
+  ],
+  "bookings": [],
+  "messages": [],
+  "booking_created_with_email": true,
+  "confirm_queued": true,
+  "pass": true,
+  "finished": "2026-08-21T05:10:56.457Z",
+  "followup": {
+    "at": "2026-08-21T05:13:30.199Z",
+    "note": "First poll stopped when the client row appeared (~74s). Booking event and row landed ~1s later. Booked SMS queued ~46s after that. Full picture inside 2 minutes of the thank-you page.",
+    "client": {
+      "id": "0bf376a7-2c51-426a-a749-5206886b3459",
+      "created_at": "2026-08-21T05:10:54.804Z",
+      "name": "B1 Ghost Book"
+    },
+    "events": [
+      {
+        "id": "60d5903c-b8e9-4030-8944-1f289e471b70",
+        "name": "entry.captured",
+        "client_id": null,
+        "has_email": true,
+        "start_time": null,
+        "created_at": "2026-08-21T05:10:54.649Z"
+      },
+      {
+        "id": "59ba9fbc-d676-4165-b845-4f9d5c426e5e",
+        "name": "entry.captured",
+        "client_id": null,
+        "has_email": true,
+        "start_time": null,
+        "created_at": "2026-08-21T05:10:54.816Z"
+      },
+      {
+        "id": "a57c50ce-28a9-48f1-b4e1-7518c47645f4",
+        "name": "entry.captured",
+        "client_id": null,
+        "has_email": true,
+        "start_time": null,
+        "created_at": "2026-08-21T05:10:55.784Z"
+      },
+      {
+        "id": "91438ea3-1554-4c6e-ae88-12cb43087467",
+        "name": "entry.captured",
+        "client_id": null,
+        "has_email": true,
+        "start_time": null,
+        "created_at": "2026-08-21T05:10:56.105Z"
+      },
+      {
+        "id": "f82e5dad-393f-463c-af4a-517bfef03098",
+        "name": "booking.created",
+        "client_id": null,
+        "has_email": true,
+        "start_time": "2026-08-21T18:00:00.000Z",
+        "created_at": "2026-08-21T05:10:56.728Z"
+      },
+      {
+        "id": "7ae3a15f-c717-4a1f-8078-c4618c0dd5cc",
+        "name": "entry.captured",
+        "client_id": null,
+        "has_email": true,
+        "start_time": null,
+        "created_at": "2026-08-21T05:10:56.848Z"
+      },
+      {
+        "id": "d46b1ebf-cf43-48dd-a60f-ff5d835ec65e",
+        "name": "entry.captured",
+        "client_id": null,
+        "has_email": true,
+        "start_time": null,
+        "created_at": "2026-08-21T05:10:57.268Z"
+      },
+      {
+        "id": "108f02bb-7eab-401c-93db-8b328532d3ee",
+        "name": "entry.captured",
+        "client_id": null,
+        "has_email": true,
+        "start_time": null,
+        "created_at": "2026-08-21T05:10:57.556Z"
+      },
+      {
+        "id": "55f3ac47-e469-42aa-a0f9-eff12980bc49",
+        "name": "entry.captured",
+        "client_id": null,
+        "has_email": true,
+        "start_time": null,
+        "created_at": "2026-08-21T05:10:57.752Z"
+      },
+      {
+        "id": "67f4f8cd-48b3-48e2-9a4f-ffaee97b3af5",
+        "name": "entry.captured",
+        "client_id": null,
+        "has_email": true,
+        "start_time": null,
+        "created_at": "2026-08-21T05:10:58.237Z"
+      },
+      {
+        "id": "73e8e4d5-7863-430e-afa8-3ff83f65b652",
+        "name": "entry.captured",
+        "client_id": null,
+        "has_email": true,
+        "start_time": null,
+        "created_at": "2026-08-21T05:10:58.456Z"
+      },
+      {
+        "id": "13359a07-d608-4698-9c86-3ba44b55324c",
+        "name": "entry.captured",
+        "client_id": null,
+        "has_email": true,
+        "start_time": null,
+        "created_at": "2026-08-21T05:10:58.953Z"
+      }
+    ],
+    "bookings": [
+      {
+        "id": "3c48d701-a305-4d43-90f6-e599320bcfea",
+        "client_id": "0bf376a7-2c51-426a-a749-5206886b3459",
+        "status": "booked",
+        "starts_at": "2026-08-21T18:00:00.000Z",
+        "created_at": "2026-08-21T05:10:57.206Z",
+        "attendee_is_plus": true
+      }
+    ],
+    "messages": [
+      {
+        "id": "c2c1ebf4-e4a6-4671-b069-7a88f454c7d5",
+        "channel": "sms",
+        "template_key": "SMS-BS01-01-BOOKED",
+        "status": "queued",
+        "created_at": "2026-08-21T05:11:42.301Z"
+      }
+    ]
+  },
+  "sms_s04_confirm": false
+}

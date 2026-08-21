@@ -4,6 +4,8 @@
 
 **Fixer note (nav, 2026-08-21):** Nav is not a W-row. A PR is open that hides Agent Editor and Content from the menu, drops the Marketing header, moves Client Control Panel under Funding (after Lenders), and strips BETA tags. URLs still work. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/`. No W-row flipped for this.
 
+**Fixer note (B1 ghost booking, 2026-08-21):** Overnight looked like a ghost because the check stopped too soon, and one probe used a bad column name. A new plus-tag book on `apply.fundhub.ai` landed a client, a booking, and the booked text (`SMS-BS01-01-BOOKED`) inside two minutes. The calendar form webhook now also fires `booking.created` with the email, so Fundhub does not have to wait on the later appointment ping. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b1-ghost-booking.json` and `fixer/shots/b1-thankyou-1440-MARKED.png`. `SMS-S04-01-CONFIRM` still did not queue.
+
 **Live:** `https://fundhub.ai` · funnel `https://apply.fundhub.ai`  
 **Evidence:** `docs/workflows/fulfillment-e2e-2026-08-21-evidence/`  
 **Forbidden file:** `9af65808-…` — never opened, never written  
@@ -18,14 +20,14 @@
 
 ## Can this system take a real customer A to Z today?
 
-**No.** The public site can say a call is booked while Fundhub never gets a file. Money still dies on `sale_payments.product_id`. There is only one company in the database. The dispute wheel never turns. Invoices and AR are not a staff click path.
+**No.** Staff still cannot create a file on Pipeline. Money still dies on `sale_payments.product_id`. There is only one company in the database. The dispute wheel never turns. Invoices and AR are not a staff click path. The funnel book-a-call path **does** write a client now if you wait two minutes.
 
 ---
 
 ## The 5 things that will waste Chris's time tomorrow
 
-1. **The thank-you page is a ghost.** `apply.fundhub.ai` said “You’re All Set. Your Call Is Booked.” Fundhub wrote **zero** clients, **zero** events, **zero** messages for that email. A human would think they started. They did not.
-2. **Staff cannot create a client on the dashboard.** Pipeline has Filter / MOVE / DEL. No New Client. Intake is supposed to be the funnel — and the funnel did not land.
+1. **The thank-you page looked like a ghost overnight.** Re-run with a plus-tag and a two-minute wait: Fundhub did write the client, the booking, and the booked text. The calendar form webhook is also mapped so that write happens on the first booking ping. (Staff still cannot create a client on Pipeline — that is W1-01 / B5.)
+2. **Staff cannot create a client on the dashboard.** Pipeline has Filter / MOVE / DEL. No New Client. Intake is the funnel. The funnel now lands if you wait.
 3. **Deposit still does not save.** Last live `deposit.paid` at **01:08 UTC** (about 6:08pm PT, hours before this run) still failed: `null value in column "product_id" of relation "sale_payments"`. Commissions and unlocks never start. (BLK-008.)
 4. **There is only one org** (`fundhub`). Staff-teams can add a person to *this* company. Nothing on the dashboard makes a second agency. Cross-company isolation was not testable. Empty “no mismatched invoices” is not a wall.
 5. **AR / invoice / bureau repair are not a click path.** No “Invoice this client.” AR-01..04 are not built. Repair send refuses unless it would really mail. AG-04 is Setter Josh, not a bureau agent, and no screen starts the call.
@@ -47,8 +49,8 @@
 |---|---|---|---|---|
 | W1-00 | Staff sign-in | **PASS** | `shots/w1-00-login-1440-MARKED.png` · landed on pipeline | |
 | W1-01 | Create client on the dashboard | **FAIL** | `shots/w1-01-pipeline-1440-MARKED.png` · also CCP, sales floor, closer dashboard, ops admin. No Add/New/Create client. | `public/app/pipeline.html` (board only). Clients are inserted in `src/handlers/client-lifecycle.mjs:207` from funnel events. **Fix:** add a dashboard New Client form, *or* stop asking staff to create files here. |
-| W1-01b | Funnel booking fallback | **QUESTION** | `shots/w1-01b-funnel-1440-MARKED.png` · UI: “CONFIRMED · You’re All Set.” Not a dashboard create. | |
-| W1-01c | CRM row for that plus-tagged email | **FAIL** | `dumps/orphan-booking-probe.json` · 0 new clients, 0 events, 0 bookings, 0 messages in 20 minutes | Booking page is ClickFunnels/Cronofy (`src/adapters/calcom.mjs:14-28`). Fundhub only learns from a ClickFunnels webhook. **Fix:** make that webhook emit `booking.created` with email so `resolveClient` inserts a row. Until then the thank-you page is a lie. |
+| W1-01b | Funnel booking fallback | **PASS** | `fixer/shots/b1-thankyou-1440-MARKED.png` · UI: “You’re All Set. Your Call Is Booked.” Plus-tag book. Not a dashboard create. | |
+| W1-01c | CRM row for that plus-tagged email | **PASS** | `fixer/b1-ghost-booking.json` · client `0bf376a7-…`, `booking.created` with email + start time, bookings row, `SMS-BS01-01-BOOKED` queued. Overnight probe used a missing column and stopped before the webhook. | Calendar form `form_submission` with a start time now emits `booking.created` (`src/adapters/clickfunnels.mjs`). A later appointment ping for the same slot does not create a second booking. |
 | KW-00 | Keep walking on Gauntlet `a7a383e0` | **QUESTION** | `client.json` · plus-tagged, not the forbidden file | |
 | W1-02a | next_action before consent | **QUESTION** | API: `get_consent` / “Get Consent” on Gauntlet. Not a brand-new file. `shots/w1k-ccp-1440-MARKED.png` | |
 | W1-02 | Authorization recorded | **PASS** *(adversary recode)* | Continue walk first said FAIL (bad SQL column `method`). DB row **is** there: `client_consents` `abdf617f-…` kind `soft_pull_consent` at 04:33:44Z. UI: “Consent recorded.” `dumps/adversary.json` · `shots/w1k-consent-1440-MARKED.png` | |
@@ -85,8 +87,8 @@
 | W5-05..09 | URL / queue / invoice isolation | **BLOCKED** | Cannot steal org B’s client by URL if org B does not exist | |
 | W5-10/11 | SQL org mismatches | **QUESTION** *(adversary)* | 0 mismatched entitlement/invoice org_ids. Vacuous with one org. Not a wall. | |
 | W6-imap | IMAP landing | **BLOCKED** | No `IMAP_HOST` / `IMAP_USER` / `IMAP_PASS` / `GMAIL_APP_PASSWORD`. Cannot open Gmail. | |
-| W6-templates | Why templates stay silent | **QUESTION** / **FAIL** | All **237** templates have `compliance_passed=true` (`dumps/w6-templates.json`). Silence is **wiring**, not the compliance flag. Tonight’s ghost booking queued **nothing**. `SMS-S04-01-CONFIRM` and `CONTRACT-SEND-EMAIL` were silent in the 3-hour window this walk cared about. `SMS-BS01-01-BOOKED` appears on **other** files, not the missing new client. | Ghost booking (W1-01c). Money-spine also blocked by W2-03. AR templates cannot fire because AR workflows do not exist. |
-| W6 money-spine | Booking confirm, contract, receipt, invoice, AR | **FAIL** | Confirm email/SMS did not queue for the new booking. Receipt/invoice/AR never ran. Contract send not clicked to completion (`Send contract` lives on S-23; pay-link click did not POST). | |
+| W6-templates | Why templates stay silent | **QUESTION** | All **237** templates have `compliance_passed=true`. B1 plus-tag book queued `SMS-BS01-01-BOOKED`. `SMS-S04-01-CONFIRM` still silent. Contract/receipt/AR still not this booking. `fixer/b1-ghost-booking.json` | Money-spine also blocked by W2-03. AR templates cannot fire because AR workflows do not exist. |
+| W6 money-spine | Booking confirm, contract, receipt, invoice, AR | **FAIL** | Booked SMS (`SMS-BS01-01-BOOKED`) queued for the B1 plus-tag. `SMS-S04-01-CONFIRM` still silent. Receipt/invoice/AR never ran. Contract send still needs S-23. | |
 
 ---
 
@@ -96,8 +98,8 @@
 
 | Template | Flag | Tonight |
 |---|---|---|
-| `SMS-S04-01-CONFIRM` | passed | Silent — no `booking.created` |
-| `SMS-BS01-01-BOOKED` | passed | Fires for files that actually book into Fundhub; **not** for tonight’s ghost booking |
+| `SMS-S04-01-CONFIRM` | passed | Still silent after B1 `booking.created` |
+| `SMS-BS01-01-BOOKED` | passed | Queued for B1 plus-tag (`fixer/b1-ghost-booking.json`) |
 | `EMAIL-PORTAL-MAGIC-LINK` | passed | Not requested for the missing new client |
 | `CONTRACT-SEND-EMAIL` | passed | Present S-23 click did not reach the API |
 | `INVOICE-SENT-EMAIL` | passed | No dashboard invoice |

@@ -15,7 +15,7 @@
 // └────────────────────────────────────────────────────────────────────────────┘
 
 import crypto from "node:crypto";
-import { emit } from "../events/bus.mjs";
+import { emit, defaultOrgId } from "../events/bus.mjs";
 
 // --- 1. Signature verification (fail-closed) --------------------------------
 // ClickFunnels 2.0 (official): HMAC-SHA256(secret, `${timestamp}.${rawBody}`)
@@ -297,9 +297,47 @@ export function normalizeClickFunnelsEvent(body) {
   };
 }
 
+function isFormSubmissionType(type) {
+  return String(type || "").includes("form_submission");
+}
+
+/** Same calendar slot from the form post and the later appointment webhook. */
+async function findBookingBySlot(db, orgId, email, startTime) {
+  if (!orgId || !email || !startTime) return null;
+  const { rows } = await db.query(
+    `SELECT id, client_id, provider_uid
+       FROM bookings
+      WHERE org_id = $1
+        AND lower(attendee_email) = $2
+        AND starts_at IS NOT DISTINCT FROM $3::timestamptz
+      LIMIT 1`,
+    [orgId, String(email).toLowerCase(), startTime]
+  );
+  return rows[0] || null;
+}
+
+async function promoteBookingUid(db, { orgId, existing, nextUid, meetingUrl }) {
+  if (!existing || !nextUid || existing.provider_uid === nextUid) return;
+  await db.query(
+    `UPDATE bookings
+        SET provider_uid = $1,
+            meeting_url = COALESCE($2, meeting_url)
+      WHERE org_id = $3 AND id = $4`,
+    [nextUid, meetingUrl || null, orgId, existing.id]
+  );
+  if (existing.client_id && existing.provider_uid) {
+    await db.query(
+      `UPDATE tasks SET body = $1 WHERE client_id = $2 AND body = $3`,
+      [nextUid, existing.client_id, existing.provider_uid]
+    );
+  }
+}
+
 // --- 3. Map a normalized event to canonical events (pure) -------------------
 // Appointments → booking.* only (never entry.captured).
-// Opt-in / form submissions → entry.captured (+ survey.submitted when answers).
+// Calendar form posts (form_submission with a start time) → booking.created.
+//   The thank-you page can paint before appointments/scheduled_event.created.
+// Other opt-in / form submissions → entry.captured (+ survey.submitted when answers).
 // Returns [] when there is no email (nothing to emit).
 export function mapToCanonical(evt) {
   if (!evt || !evt.email) return [];
@@ -308,6 +346,7 @@ export function mapToCanonical(evt) {
   if (type === APPOINTMENT_CREATED) return [{ name: "booking.created" }];
   if (type === APPOINTMENT_RESCHEDULED) return [{ name: "booking.rescheduled" }];
   if (type === APPOINTMENT_CANCELED) return [{ name: "booking.cancelled" }];
+  if (isFormSubmissionType(type) && evt.startTime) return [{ name: "booking.created" }];
 
   const out = [];
   out.push({ name: "entry.captured" });
@@ -421,6 +460,22 @@ export async function handleClickFunnelsWebhook({
     }
 
     const idKey = evt.id ? `clickfunnels:${evt.id}:${c.name}` : undefined;
+
+    if (c.name === "booking.created") {
+      const orgId = await defaultOrgId(db);
+      const existing = await findBookingBySlot(db, orgId, evt.email, evt.startTime);
+      if (existing) {
+        await promoteBookingUid(db, {
+          orgId,
+          existing,
+          nextUid: payload.bookingUid,
+          meetingUrl: payload.meetingUrl
+        });
+        emitted.push({ name: c.name, id: existing.id, deduped: true });
+        continue;
+      }
+    }
+
     const res = await emit(db, c.name, payload, { idempotencyKey: idKey });
     emitted.push({ name: c.name, id: res.id, deduped: res.deduped });
   }
