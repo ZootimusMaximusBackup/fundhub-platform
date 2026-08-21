@@ -291,10 +291,10 @@ If you want that to change, three decisions are enough to start:
    one.
 3. **What they are allowed to do without asking.** Rolling back a deploy and
    running the migrate command should both be on that list; they are safe and
-   they are reversible or additive. Three things must always wait for you, per
-   the project's own rules: anything that **deletes data**, anything that
-   **points the site at a different database**, and switching on
-   `INNGEST_EVENT_KEY`, which makes 47 automated workflows go live at once.
+   they are reversible or additive. Two things must always wait for you, per
+   the project's own rules: anything that **deletes data**, and anything that
+   **points the site at a different database**. `INNGEST_EVENT_KEY` stays **ON
+   permanently** (owner-set 2026-08-20) — never disable it.
 
 Write those three answers down here when you have them.
 
