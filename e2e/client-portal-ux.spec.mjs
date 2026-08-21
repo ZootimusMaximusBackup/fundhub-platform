@@ -146,6 +146,44 @@ test.describe("client portal go-live UX", () => {
     await expect(page.locator("#um-go")).toHaveText(/Close/i);
   });
 
+  test("unlocked deliverables tile opens course modules in place", async ({ page }) => {
+    await openPortal(page, CLIENT_SESSION, [
+      { entitlement_code: "credit-optimization-roadmap", active: true }
+    ]);
+
+    const tile = page.locator('[data-tile="UWIQ_DELIVERABLES"]');
+    await expect(tile.locator(".lockrow")).toHaveText(/Unlocked/i);
+    await expect(tile.locator("[data-course-toggle='UWIQ_DELIVERABLES']")).toHaveText(/Open/i);
+    await expect(tile.locator("[data-status]")).toHaveCount(0);
+    await expect(tile.locator(".tile-course")).toBeHidden();
+
+    await tile.locator("[data-course-toggle='UWIQ_DELIVERABLES']").click();
+    await expect(tile).toHaveClass(/is-open/);
+    await expect(tile.locator(".tile-course")).toBeVisible();
+    await expect(tile.locator(".tile-course")).toContainText(/How To Use This/i);
+    await expect(tile.locator("[data-course-toggle='UWIQ_DELIVERABLES']")).toHaveText(/Close/i);
+    await expect(page.locator("#unlock-modal")).not.toHaveClass(/on/);
+
+    await tile.locator(".tc-mod summary").first().click();
+    await expect(tile.locator(".tc-mod").first()).toHaveAttribute("open", "");
+    await expect(tile.locator(".tc-empty").first()).toContainText(/Video will show here/i);
+  });
+
+  test("unlocked Funding Mastery tile expands the same way", async ({ page }) => {
+    await openPortal(page, CLIENT_SESSION, [
+      { entitlement_code: "funding-mastery-course", active: true }
+    ]);
+
+    const tile = page.locator('[data-tile="FUNDING_MASTERY"]');
+    await expect(tile.locator(".lockrow")).toHaveText(/Unlocked/i);
+    await expect(tile.locator("[data-course-toggle='FUNDING_MASTERY']")).toHaveText(/Open/i);
+
+    await tile.click({ position: { x: 24, y: 24 } });
+    await expect(tile).toHaveClass(/is-open/);
+    await expect(tile.locator(".tile-course")).toBeVisible();
+    await expect(tile.locator(".tile-course")).toContainText(/Funding Mastery/i);
+  });
+
   test("pay stays hidden when no checkout exists", async ({ page }) => {
     await openPortal(page, CLIENT_SESSION, []);
 

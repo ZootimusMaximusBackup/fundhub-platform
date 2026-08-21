@@ -230,6 +230,21 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .btn-advise{background:none;border:0;padding:0;font-size:var(--fs-body);font-weight:600;color:var(--text-dim);text-decoration:underline;text-underline-offset:2px}
 .btn-advise:hover{color:var(--text)}
 .tile.hidden{display:none}
+/* Course tiles (UWIQ deliverables + Funding Mastery): unlock stays the same
+   tile; Open expands modules under it. Other tiles unchanged. */
+.tile.is-course:not(.locked){cursor:pointer}
+.tile.is-course:not(.locked):hover{border-color:var(--ink)}
+.tile.is-open{grid-column:1/-1;overflow:visible;cursor:default}
+.tile-course{display:none;flex-direction:column;gap:8px;margin-top:4px;padding-top:12px;border-top:1px solid var(--line)}
+.tile.is-open .tile-course{display:flex}
+.tile-course .tc-label{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint)}
+.tile-course .tc-mod{border:1px solid var(--line);border-radius:8px;background:var(--paper);overflow:hidden}
+.tile-course .tc-mod>summary{list-style:none;cursor:pointer;padding:10px 12px;font-size:var(--fs-body);font-weight:700;color:var(--text)}
+.tile-course .tc-mod>summary::-webkit-details-marker{display:none}
+.tile-course .tc-mod>summary:focus-visible{outline:2px solid var(--blue-line);outline-offset:-2px}
+.tile-course .tc-mod[open]>summary{border-bottom:1px solid var(--line)}
+.tile-course .tc-vid{padding:12px;min-height:120px;display:flex;align-items:center;justify-content:center;background:var(--soft)}
+.tile-course .tc-empty{margin:0;font-size:var(--fs-body);color:var(--text-dim);text-align:center;max-width:36ch;line-height:1.45}
 
 /* promoted offer — only in the funded state, above the fold, larger */
 .promo{display:none;border:1px solid var(--accent);border-radius:14px;padding:0;margin-bottom:16px;overflow:hidden;background:var(--surface)}
@@ -602,6 +617,14 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
               <button class="btn-unlock" type="button" data-unlock="UWIQ_DELIVERABLES" hidden>Unlock</button>
               <button class="btn-advise" type="button" data-book="UnderwriteIQ Deliverables Package">Talk to an advisor</button>
             </div>
+            <div class="tile-course" hidden>
+              <div class="tc-label">How To Use This · mini course</div>
+              <details class="tc-mod"><summary>1 · Your Credit Analysis Report</summary><div class="tc-vid"><p class="tc-empty">Video will show here when it is ready.</p></div></details>
+              <details class="tc-mod"><summary>2 · Your dispute letter pack</summary><div class="tc-vid"><p class="tc-empty">Video will show here when it is ready.</p></div></details>
+              <details class="tc-mod"><summary>3 · Your Credit Optimization Roadmap</summary><div class="tc-vid"><p class="tc-empty">Video will show here when it is ready.</p></div></details>
+              <details class="tc-mod"><summary>4 · Your Funding Snapshot</summary><div class="tc-vid"><p class="tc-empty">Video will show here when it is ready.</p></div></details>
+              <details class="tc-mod"><summary>5 · Your Bank and Lender Match List</summary><div class="tc-vid"><p class="tc-empty">Video will show here when it is ready.</p></div></details>
+            </div>
           </article>
 
           <article class="tile locked" data-tile="FUNDING_MASTERY">
@@ -612,6 +635,19 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             <div class="tacts">
               <button class="btn-unlock" type="button" data-unlock="FUNDING_MASTERY" hidden>Unlock</button>
               <button class="btn-advise" type="button" data-book="Funding Mastery course (A to Z)">Talk to an advisor</button>
+            </div>
+            <div class="tile-course" hidden>
+              <div class="tc-label">Funding Mastery · modules</div>
+              <details class="tc-mod"><summary>1 · Foundations</summary><div class="tc-vid"><p class="tc-empty">Video will show here when it is ready.</p></div></details>
+              <details class="tc-mod"><summary>2 · Your file and reports</summary><div class="tc-vid"><p class="tc-empty">Video will show here when it is ready.</p></div></details>
+              <details class="tc-mod"><summary>3 · Credit optimization</summary><div class="tc-vid"><p class="tc-empty">Video will show here when it is ready.</p></div></details>
+              <details class="tc-mod"><summary>4 · Lender matching</summary><div class="tc-vid"><p class="tc-empty">Video will show here when it is ready.</p></div></details>
+              <details class="tc-mod"><summary>5 · Application sequence</summary><div class="tc-vid"><p class="tc-empty">Video will show here when it is ready.</p></div></details>
+              <details class="tc-mod"><summary>6 · Funding execution</summary><div class="tc-vid"><p class="tc-empty">Video will show here when it is ready.</p></div></details>
+              <details class="tc-mod"><summary>7 · Follow-through</summary><div class="tc-vid"><p class="tc-empty">Video will show here when it is ready.</p></div></details>
+              <details class="tc-mod"><summary>8 · Scaling what worked</summary><div class="tc-vid"><p class="tc-empty">Video will show here when it is ready.</p></div></details>
+              <details class="tc-mod"><summary>9 · Common stalls</summary><div class="tc-vid"><p class="tc-empty">Video will show here when it is ready.</p></div></details>
+              <details class="tc-mod"><summary>10 · Long-term playbook</summary><div class="tc-vid"><p class="tc-empty">Video will show here when it is ready.</p></div></details>
             </div>
           </article>
 
@@ -1147,8 +1183,10 @@ document.addEventListener("DOMContentLoaded", async function () {
     REPAIR_DFY:        "metro2-letter-pack",
     REPAIR_TRIAL:      "metro2-letter-pack",
     UWIQ_DELIVERABLES: "credit-optimization-roadmap",
-    FUNDING_MASTERY:   null
+    FUNDING_MASTERY:   "funding-mastery-course"
   };
+  /* Only these two open a course accordion. Other included tiles keep View status. */
+  var COURSE_TILES = { UWIQ_DELIVERABLES: 1, FUNDING_MASTERY: 1 };
   var OWN_CODES = [
     { code: "credit-analysis-report", name: "Credit Analysis Report" },
     { code: "credit-optimization-roadmap", name: "Credit Optimization Roadmap" },
@@ -1209,28 +1247,64 @@ document.addEventListener("DOMContentLoaded", async function () {
     }).join("");
   }
 
+  function setCourseOpen(tile, open) {
+    var panel = tile.querySelector(".tile-course");
+    var btn = tile.querySelector("[data-course-toggle]");
+    if (open) {
+      tile.classList.add("is-open");
+      if (panel) panel.hidden = false;
+      if (btn) btn.textContent = "Close";
+    } else {
+      tile.classList.remove("is-open");
+      if (panel) {
+        panel.hidden = true;
+        var mods = panel.querySelectorAll("details.tc-mod");
+        for (var i = 0; i < mods.length; i++) mods[i].open = false;
+      }
+      if (btn) btn.textContent = "Open";
+    }
+  }
+
   function paintTile(tile, included) {
     var lockrow = tile.querySelector(".lockrow");
-    var unlockBtn = tile.querySelector("[data-unlock], [data-status]");
+    var unlockBtn = tile.querySelector("[data-unlock], [data-status], [data-course-toggle]");
     var key = tile.getAttribute("data-tile");
     var canBuy = !!(key && PRODUCTS[key] && PRODUCTS[key].checkoutUrl);
+    var isCourse = !!(key && COURSE_TILES[key]);
     if (included) {
       tile.classList.remove("locked");
-      if (lockrow) lockrow.textContent = "Included";
+      if (lockrow) lockrow.textContent = isCourse ? "Unlocked" : "Included";
       if (unlockBtn && key) {
-        unlockBtn.textContent = "View status";
-        unlockBtn.removeAttribute("data-unlock");
-        unlockBtn.setAttribute("data-status", key);
-        unlockBtn.classList.remove("btn-unlock");
-        unlockBtn.classList.add("btn-advise");
-        unlockBtn.hidden = false;
+        if (isCourse) {
+          unlockBtn.textContent = tile.classList.contains("is-open") ? "Close" : "Open";
+          unlockBtn.removeAttribute("data-unlock");
+          unlockBtn.removeAttribute("data-status");
+          unlockBtn.setAttribute("data-course-toggle", key);
+          unlockBtn.classList.remove("btn-advise");
+          unlockBtn.classList.add("btn-unlock");
+          unlockBtn.hidden = false;
+          tile.classList.add("is-course");
+        } else {
+          unlockBtn.textContent = "View status";
+          unlockBtn.removeAttribute("data-unlock");
+          unlockBtn.removeAttribute("data-course-toggle");
+          unlockBtn.setAttribute("data-status", key);
+          unlockBtn.classList.remove("btn-unlock");
+          unlockBtn.classList.add("btn-advise");
+          unlockBtn.hidden = false;
+          tile.classList.remove("is-course", "is-open");
+          setCourseOpen(tile, false);
+        }
       }
     } else {
       tile.classList.add("locked");
+      tile.classList.remove("is-course", "is-open");
+      setCourseOpen(tile, false);
       if (lockrow) lockrow.innerHTML = '<span class="lk">🔒</span> Locked';
       if (unlockBtn && key) {
         unlockBtn.textContent = "Unlock";
         unlockBtn.removeAttribute("data-status");
+        unlockBtn.removeAttribute("data-course-toggle");
         unlockBtn.setAttribute("data-unlock", key);
         unlockBtn.classList.add("btn-unlock");
         unlockBtn.classList.remove("btn-advise");
@@ -1240,6 +1314,22 @@ document.addEventListener("DOMContentLoaded", async function () {
       }
     }
   }
+
+  document.addEventListener("click", function (e) {
+    var courseBtn = e.target.closest("[data-course-toggle]");
+    if (courseBtn) {
+      e.preventDefault();
+      var fromBtn = courseBtn.closest("article.tile");
+      if (fromBtn && !fromBtn.classList.contains("locked")) {
+        setCourseOpen(fromBtn, !fromBtn.classList.contains("is-open"));
+      }
+      return;
+    }
+    var courseTileTap = e.target.closest("article.tile.is-course:not(.locked)");
+    if (!courseTileTap) return;
+    if (e.target.closest("[data-book], .btn-advise, a, details, summary, .tile-course")) return;
+    setCourseOpen(courseTileTap, !courseTileTap.classList.contains("is-open"));
+  });
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
