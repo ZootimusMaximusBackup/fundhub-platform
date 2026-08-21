@@ -212,7 +212,7 @@
         var body = '<span class="t">' + (o.urgency || "—") + "</span><div><b>" +
           (o.title || "") + "</b><em>" + (o.detail || "") + "</em></div>";
         if (o.client_id) {
-          var href = "closer-call.html?client_id=" + encodeURIComponent(o.client_id);
+          var href = "closer-dashboard.html?client_id=" + encodeURIComponent(o.client_id);
           if (o.task_id) href += "&task_id=" + encodeURIComponent(o.task_id);
           return '<a class="todo" href="' + href + '">' + body + "</a>";
         }

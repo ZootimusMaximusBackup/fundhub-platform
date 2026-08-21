@@ -1,4 +1,4 @@
-// Call cockpit payload — everything the closer needs for one client on one call.
+// Closer Dashboard live-call payload — everything needed for one client on one call.
 // Assembles existing reads; does not invent credit or money numbers.
 
 import { countUnlogged, listUnloggedCalls } from "./call-outcomes.mjs";
@@ -6,6 +6,8 @@ import { formatUsdFromCents, monthWindow } from "./metrics.mjs";
 import { toCents } from "../commissions/money.mjs";
 import { matchForClient } from "../lenders/store.mjs";
 import { triMerge } from "../http/client-detail.mjs";
+import { toBureaus } from "../underwrite/adapter.mjs";
+import { computeUnderwrite } from "../underwrite/engine.mjs";
 
 function money(n) {
   if (n == null || !Number.isFinite(Number(n))) return null;
@@ -44,6 +46,8 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
     goneQuiet,
     card,
     crs,
+    tradelines,
+    liabilities,
     underwriteHint,
     conv,
     messages,
@@ -84,6 +88,18 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
       `SELECT result, created_at FROM crs_results
         WHERE client_id = $1 AND org_id = $2
         ORDER BY created_at DESC LIMIT 1`,
+      [clientId, orgId]
+    ),
+    db.query(
+      `SELECT * FROM tradelines
+        WHERE client_id = $1 AND org_id = $2
+        ORDER BY apr ASC NULLS LAST, lender ASC`,
+      [clientId, orgId]
+    ),
+    db.query(
+      `SELECT * FROM card_liabilities
+        WHERE client_id = $1 AND org_id = $2
+        ORDER BY as_of DESC`,
       [clientId, orgId]
     ),
     db.query(
@@ -145,6 +161,16 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
   const staffRow = await db.query(`SELECT name FROM staff WHERE id = $1 AND org_id = $2`, [staffId, orgId]);
 
   const credit = summarizeCrs(crs.rows[0]);
+  const underwriteAdapter = toBureaus({
+    tradelines: tradelines.rows,
+    liabilities: liabilities.rows,
+    crsResults: crs.rows,
+    customFields: client.custom_fields || {}
+  });
+  const underwriteData = computeUnderwrite(
+    underwriteAdapter.bureaus,
+    underwriteAdapter.businessAgeMonths
+  );
   const precall = buildPrecall({
     client,
     conversations: conv.rows,
@@ -203,7 +229,7 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
     },
     credit,
     underwrite: {
-      hint: "Load live UnderwriteIQ via GET /api/read/underwrite?client_id=",
+      ...underwriteData,
       funding_round_id: underwriteHint.rows[0]?.id || null,
       matched_lenders: Number(lenders.match_count || lenders.matches?.length || 0),
       lenders: lenders.matches || [],
@@ -300,7 +326,7 @@ function summarizeCrs(row) {
       ?? (typeof result.inquiries === "number" ? result.inquiries : null)
     ),
     derogatories: result.derogatories ?? result.derogs ?? null,
-    note: "Full UnderwriteIQ projections come from /api/read/underwrite — this block only mirrors the stored CRS payload."
+    note: "Scores come from triMerge over the stored CRS payload; UnderwriteIQ projections sit beside this block in the same closer-call response."
   };
 }
 

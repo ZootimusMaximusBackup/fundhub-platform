@@ -176,11 +176,54 @@
   footer.statusbar .ghost{position:absolute;left:2vw;right:2vw;top:50%;transform:translateY(-50%);
     aspect-ratio:2698/543;background:var(--logo) no-repeat center/contain;
     filter:invert(1);opacity:.05;pointer-events:none;z-index:0;}
+  .call-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
+  .call-toolbar .hl,.call-toolbar .hr{display:flex;align-items:center;gap:10px;}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim);}
+  .eyebrow::before{content:"";display:inline-block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;margin-right:9px;vertical-align:middle;}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:4px 9px;border:1px solid var(--line);border-radius:20px;color:var(--text-dim);white-space:nowrap;}
+  .chip .cd{width:6px;height:6px;border-radius:50%;}.chip.on .cd{background:var(--ok);}
+  .cockpit-wrap{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:20px;align-items:start;}
+  .cockpit-main{min-width:0;}
+  .call-cockpit .who{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
+  .call-cockpit .who h1{font-size:22px;font-weight:600;letter-spacing:-.02em;margin:0;}
+  .call-cockpit .who .meta{font-size:12.5px;color:var(--text-dim);margin-top:3px;}
+  .call-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+  .call-cockpit button,.logbar button{font-family:var(--sans);font-size:12.5px;padding:7px 13px;border:1px solid var(--line);background:var(--surface);border-radius:7px;cursor:pointer;color:var(--text);}
+  .call-cockpit button:hover,.logbar button:hover{border-color:var(--gray2);background:var(--soft);}
+  .call-cockpit button.k,.logbar button.k{border-color:var(--ink);background:var(--ink);color:var(--paper);}
+  .call-cockpit button:disabled{cursor:not-allowed;color:var(--text-faint);}
+  .sec{margin-bottom:24px;}.sech{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:11px;}
+  .bands{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .band{border:1px solid var(--line);border-radius:10px;padding:14px 15px;background:var(--surface);}
+  .band .bl{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);}
+  .band .bv{font-size:24px;font-weight:600;letter-spacing:-.03em;margin-top:5px;font-variant-numeric:tabular-nums;}
+  .band .bn{font-size:12px;color:var(--text-dim);margin-top:4px;line-height:1.4;}
+  .lever{font-size:13px;color:var(--text-dim);margin-top:12px;line-height:1.45;}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .panel{border:1px solid var(--line);border-radius:10px;padding:15px 16px;background:var(--surface);}
+  .panel h3,.ctx h3,.rail h4{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);font-weight:500;margin:0 0 10px;}
+  .panel table{width:100%;border-collapse:collapse;font-size:13px;}.panel td{padding:5px 0;}.panel td:first-child{color:var(--text-dim);}.panel td:last-child{text-align:right;font-variant-numeric:tabular-nums;}.panel .hi{font-weight:600;}
+  .ctx{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;}.ctx p{font-size:14px;line-height:1.6;margin:0;}
+  .ctxg{display:grid;grid-template-columns:repeat(2,1fr);gap:12px 18px;margin-top:14px;}.ctxg div span{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);margin-bottom:3px;}.ctxg div b{font-weight:500;font-size:14px;}
+  .flag,.cliff{margin-top:12px;padding:9px 12px;border-radius:7px;background:var(--warn-bg);border-left:2px solid var(--warn);font-size:12.5px;}
+  .rail{padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:10px;}.rail section{margin-bottom:22px;}.rail section:last-child{margin-bottom:0;}
+  .q{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);font-size:12.5px;}.q:first-of-type{border-top:none;}.q .t{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);flex:0 0 42px;}.q b{font-weight:600;display:block;}.q em{font-style:normal;color:var(--text-dim);font-size:11.5px;display:block;}
+  .disc{list-style:none;margin:0;padding:0;}.disc li{display:flex;gap:8px;align-items:flex-start;font-size:12px;padding:5px 0;color:var(--text-dim);}.disc input{margin-top:2px;accent-color:#0A0A0A;}.never{margin-top:9px;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:var(--alert);line-height:1.7;}
+  .payment-calculator{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-top:22px;}.payment-calculator>summary{cursor:pointer;list-style:none;padding:13px 15px;font-size:13px;font-weight:700;}.payment-calculator>summary::-webkit-details-marker{display:none;}.payment-calculator>summary::before{content:"›";display:inline-block;margin-right:9px;font-family:var(--mono);transition:transform .16s;}.payment-calculator[open]>summary::before{transform:rotate(90deg);}.payment-body{border-top:1px solid var(--line);padding:14px;}
+  .logbar{flex-shrink:0;border-top:1px solid var(--line);background:var(--surface);padding:12px 18px;}.logrow{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:8px;}.logrow .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-right:4px;}.logbar .foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--text-faint);}.logbar .hk{font-family:var(--mono);font-size:9.5px;color:var(--text-faint);margin-right:6px;}
+  @media(max-width:1080px){.cockpit-wrap{grid-template-columns:1fr;}.rail{order:2;}}
+  @media(max-width:720px){.bands,.two,.ctxg,.calc-grid{grid-template-columns:1fr;}}
 </style>
 <script defer src="shell.js"></script>
 <script src="demo-client-bootstrap.js"></script>
 </head>
 <body>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  window.__FH_CLIENT_ID = q.get("client_id") || q.get("id") || null;
+})();
+</script>
 <div class="app">
 
   <!-- ══ SIDEBAR — identical across every wireframe ══ -->
@@ -195,7 +238,6 @@
 <div class="navgroup" data-fh-section="sales"><button class="navhead" type="button">Sales<span class="chev">▾</span></button><div class="navlist">
         <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
         <a class="navitem on" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
-        <a class="navitem" href="closer-call.html"><span class="ico">☎</span><span class="lbl">Call cockpit</span></a>
         <a class="navitem" href="my-numbers.html"><span class="ico">＃</span><span class="lbl">My numbers</span></a>
         <a class="navitem" href="sales-floor.html"><span class="ico">▣</span><span class="lbl">Sales floor</span></a>
         <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
@@ -273,7 +315,82 @@
   </div>
 
   <main>
+    <div class="call-cockpit">
+      <div class="call-toolbar">
+        <div class="hl" data-fh-call-head>
+          <span class="eyebrow">Live call</span>
+          <span class="chip"><span class="cd"></span>—</span>
+        </div>
+        <div class="hr">
+          <span class="chip" data-fh-call-staff><span class="cd" style="background:var(--info)"></span>Closer</span>
+        </div>
+      </div>
 
+      <div class="cockpit-wrap">
+        <div class="cockpit-main">
+          <div class="who">
+            <div>
+              <h1 id="ccp-who-name">Loading…</h1>
+              <div class="meta" id="ccp-who-meta">Open with ?client_id=&lt;uuid&gt;</div>
+            </div>
+            <div class="call-actions">
+              <span class="chip" id="fh-temp-chip" hidden><span class="cd"></span>—</span>
+              <button type="button" class="k" id="fh-join" disabled title="No call link on this appointment">Join call</button>
+              <button type="button" id="fh-present" hidden>Present</button>
+              <button type="button" id="fh-send-contract" hidden>Send contract</button>
+            </div>
+          </div>
+
+          <div id="fh-contract-panel" hidden style="margin:0 0 18px;border:1px solid var(--line);border-radius:10px;padding:14px 16px;background:var(--surface)">
+            <h3 style="font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);font-weight:500;margin:0 0 10px">Send a contract to this person</h3>
+            <label for="fh-contract-tpl" style="display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-bottom:5px">Which wording</label>
+            <select id="fh-contract-tpl" style="width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-size:13px"></select>
+            <div id="fh-contract-blanks"></div>
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+              <button type="button" id="fh-contract-go">Send</button>
+              <button type="button" id="fh-contract-copy" disabled>Copy link</button>
+            </div>
+            <input id="fh-contract-link" readonly style="display:none;margin-top:10px;width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 9px;font-family:var(--mono);font-size:11px;background:var(--soft)">
+            <p id="fh-contract-msg" style="margin-top:8px;font-size:12.5px;color:var(--text-dim)"></p>
+          </div>
+
+          <div class="sec">
+            <div class="sech"><span class="eyebrow">What they can get</span><span class="mono" style="font-size:10px;color:var(--text-faint)">UnderwriteIQ</span></div>
+            <div class="bands">
+              <div class="band"><div class="bl">Conservative</div><div class="bv">—</div><div class="bn">Waiting on UnderwriteIQ</div></div>
+              <div class="band"><div class="bl">Realistic · round 1</div><div class="bv">—</div><div class="bn">Waiting on UnderwriteIQ</div></div>
+              <div class="band"><div class="bl">After optimization</div><div class="bv">—</div><div class="bn">Waiting on UnderwriteIQ</div></div>
+            </div>
+            <p class="lever">Live numbers only — no sample funding story.</p>
+          </div>
+
+          <div class="sec two">
+            <div class="panel">
+              <h3>Where they stand</h3>
+              <table><tr><td>Scores</td><td class="hi">—</td></tr><tr><td>Utilization</td><td>—</td></tr><tr><td>Inquiries · 6mo</td><td>—</td></tr><tr><td>Derogatories</td><td>—</td></tr><tr><td>Pulled</td><td>—</td></tr></table>
+              <div class="cliff" style="background:var(--info-bg);border-left-color:var(--info)">Credit facts load from the live file.</div>
+            </div>
+            <div class="panel">
+              <h3>The deal</h3>
+              <table><tr><td>Latest payment on file</td><td class="hi">—</td></tr><tr><td>Product</td><td>—</td></tr><tr><td>Success fee</td><td>—</td></tr></table>
+            </div>
+          </div>
+
+          <div class="sec">
+            <div class="ctx">
+              <h3>Pre-call context</h3>
+              <p>Loads from the live file when a client id is in the URL.</p>
+              <div class="ctxg">
+                <div><span>Wants</span><b>—</b></div><div><span>For</span><b>—</b></div>
+                <div><span>Guessed FICO</span><b>—</b></div><div><span>Last message</span><b>—</b></div>
+              </div>
+              <div class="flag">No sample story. Live survey + pull only.</div>
+            </div>
+          </div>
+
+          <details class="payment-calculator" id="paymentCalculator">
+            <summary>Payment Calculator</summary>
+            <div class="payment-body">
     <div class="section">
       <div class="section-title eyebrow" id="calcTitle">Deal Calculators</div>
       <div class="calc-client" id="calcClientName" hidden></div>
@@ -396,8 +513,36 @@
         </div>
       </details>
     </div>
+            </div>
+          </details>
+        </div>
+
+        <aside class="rail">
+          <section>
+            <h4>Up next</h4>
+            <div class="q"><span class="t">—</span><div><b>No upcoming booked calls</b><em>Calendar tasks show here</em></div></div>
+          </section>
+          <section>
+            <h4>Before you close</h4>
+            <ul class="disc">
+              <li><input type="checkbox" id="d1"><label for="d1">Call is recorded</label></li>
+              <li><input type="checkbox" id="d2"><label for="d2">Personal guarantee</label></li>
+              <li><input type="checkbox" id="d3"><label for="d3">Month-14 cliff</label></li>
+              <li><input type="checkbox" id="d4"><label for="d4">Bank decides, not us</label></li>
+            </ul>
+            <p class="never">Never: guaranteed · won't affect credit · we have relationships · 0% forever</p>
+          </section>
+        </aside>
+      </div>
+    </div>
 
   </main>
+
+  <div class="logbar" hidden>
+    <div class="logrow"><span class="lbl">Outcome</span><button><span class="hk">1</span>Deposit</button><button><span class="hk">2</span>Downsell</button><button><span class="hk">3</span>Callback</button><button><span class="hk">4</span>No show</button><button><span class="hk">5</span>Not a fit</button></div>
+    <div class="logrow"><span class="lbl">Objection</span><button>Price</button><button>Amount low</button><button>Spouse</button><button>Timing</button><button>Wants guarantee</button><button>None</button></div>
+    <div class="foot"><span>Cash, duration, recording and transcript log themselves</span><button class="k">Save · next call</button></div>
+  </div>
 
   <footer class="statusbar">
     <span class="ghost"></span>
@@ -885,32 +1030,6 @@ document.addEventListener("DOMContentLoaded", function () {
   tickClock();
   setInterval(tickClock, 1000);
 
-  function initials(name) {
-    var p = String(name || "").trim().split(/\s+/).filter(Boolean);
-    if (!p.length) return "—";
-    return p.slice(0, 2).map(function (w) { return w.charAt(0).toUpperCase(); }).join("");
-  }
-  function paintStaff(staff) {
-    var name = (staff && staff.name) || "";
-    var role = staff && staff.role ? String(staff.role).replace(/_/g, " ") : "";
-    var av = document.getElementById("whoAv");
-    var nm = document.getElementById("whoName");
-    var rl = document.getElementById("whoRole");
-    var ini = initials(name);
-    if (av) av.textContent = ini;
-    if (nm) nm.textContent = name || "—";
-    if (rl) rl.textContent = role || "—";
-  }
-  var token = "";
-  try { token = localStorage.getItem("fh_token") || ""; } catch (e) {}
-  fetch("/api/auth/session", {
-    headers: token
-      ? { accept: "application/json", authorization: "Bearer " + token }
-      : { accept: "application/json" }
-  }).then(function (r) { return r.json(); }).then(function (s) {
-    paintStaff(s && s.staff);
-  }).catch(function () { paintStaff(null); });
-
   if (!window.FHData || !window.FHCloserView) return;
 
   var V = window.FHCloserView;
@@ -1246,19 +1365,11 @@ document.addEventListener("DOMContentLoaded", function () {
   });
   askDealMath();
 
-  FHData.read("closer-call", { client_id: clientId }).then(function (res) {
-    var name = res && res.ok && res.data && res.data.client && res.data.client.name;
-    var el = document.getElementById("calcClientName");
-    if (!el || !name) return;
-    el.textContent = name;
-    el.hidden = false;
-    var sub = document.querySelector(".topbar .sub");
-    if (sub) sub.textContent = "Closer Dashboard · " + name;
-  });
-
   load(false);
   loadLenderMatches();
 });
 </script>
+<script src="contract-send.js"></script>
+<script src="closer-call.js"></script>
 </body>
 </html>

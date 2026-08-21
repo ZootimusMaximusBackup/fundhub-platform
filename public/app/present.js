@@ -675,7 +675,7 @@
       var signIn = state.errorSignIn
         ? ' &nbsp;·&nbsp; <a href="' + esc(state.errorSignIn) + '">Sign in as someone else</a>'
         : "";
-      root.innerHTML = '<div class="gate"><span class="mono">Present</span><h1 class="h1" style="margin-top:10px">' + esc(state.error) + "</h1><p class=\"sub\"><a href=\"closer-call.html" + (contactId ? ("?client_id=" + encodeURIComponent(contactId)) : "") + '">Back to the call cockpit</a>' + signIn + '</p></div>';
+      root.innerHTML = '<div class="gate"><span class="mono">Present</span><h1 class="h1" style="margin-top:10px">' + esc(state.error) + "</h1><p class=\"sub\"><a href=\"closer-dashboard.html" + (contactId ? ("?client_id=" + encodeURIComponent(contactId)) : "") + '">Back to Closer Dashboard</a>' + signIn + '</p></div>';
       return;
     }
     if (!state.loaded) {

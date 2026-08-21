@@ -8,7 +8,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const APP = path.resolve(HERE, "../../public/app");
 const presentJs = fs.readFileSync(path.join(APP, "present.js"), "utf8");
 const presentHtml = fs.readFileSync(path.join(APP, "present.html"), "utf8");
-const closerHtml = fs.readFileSync(path.join(APP, "closer-call.html"), "utf8");
+const closerHtml = fs.readFileSync(path.join(APP, "closer-dashboard.html"), "utf8");
 const closerJs = fs.readFileSync(path.join(APP, "closer-call.js"), "utf8");
 
 test("present.html is a fullscreen deck, not a sidebar screen", () => {
@@ -32,13 +32,13 @@ test("letters action is absent on the qualified funding route", () => {
   assert.ok(presentJs.includes("letters_blocked") || presentJs.includes("generate_letters"));
 });
 
-test("closer call cockpit has a Present control that deep-links the contact", () => {
+test("Closer Dashboard has a Present control that deep-links the contact", () => {
   assert.ok(closerHtml.includes('id="fh-present"'));
   assert.ok(closerHtml.includes("Present"));
   assert.ok(closerJs.includes("present.html?contact="));
 });
 
-test("send contract lives on the call cockpit and Present, not the wording page", () => {
+test("send contract lives on Closer Dashboard and Present, not the wording page", () => {
   assert.ok(closerHtml.includes('id="fh-send-contract"'));
   assert.ok(closerHtml.includes("contract-send.js"));
   assert.ok(closerJs.includes("FHContractSend"));

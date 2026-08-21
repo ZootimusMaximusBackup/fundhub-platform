@@ -1,4 +1,4 @@
-/* Shared send helper for Present and the closer-call cockpit.
+/* Shared send helper for Present and Closer Dashboard.
  *
  * Reuses POST /api/contracts { create_draft, then send }. That path already
  * emails through notifySigners (compose/dispatch) when mail is on. This file
