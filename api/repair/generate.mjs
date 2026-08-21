@@ -19,10 +19,10 @@ import { requireRole, isUuid } from "../../src/http/read-api.mjs";
 import { analyzeAndGenerate, ROUNDS } from "../../src/repair/analyze.mjs";
 import { dbDown } from "../../src/http/db-down.mjs";
 
-/* Matches api/repair/exceptions.mjs: the Repair desk is the owner, an admin and
-   the Specialist. Deliberately NOT ROLE_SETS.STAFF — this writes dispute
-   findings and letter bodies for a named consumer. */
-const REPAIR_ROLES = new Set(["owner", "admin", "inquiry_specialist"]);
+/* Matches the enroll + Present fire path: owner, admin, closer, Specialist.
+   Closers must be able to stage letters on the call (repair-build-spec §4.4).
+   Written as requireAuth followed by a SEPARATE requireRole call. */
+const REPAIR_ROLES = new Set(["owner", "admin", "closer", "inquiry_specialist"]);
 
 /* Refusals that describe the client's real situation rather than a bad request.
    They answer 200 with ok:false, the shape src/repair/analyze.mjs returns, so a
@@ -30,8 +30,16 @@ const REPAIR_ROLES = new Set(["owner", "admin", "inquiry_specialist"]);
 const HONEST_REFUSALS = new Set([
   "no_credit_file",
   "no_violations",
-  "missing_identity"
+  "missing_identity",
+  "no_authorization"
 ]);
+
+const HONEST_MESSAGES = Object.freeze({
+  no_credit_file: "No credit file on record for this client.",
+  no_violations: "The credit file looks clean — nothing to dispute.",
+  missing_identity: "Client is missing a legal name on the record.",
+  no_authorization: "No signed dispute authorization on file."
+});
 
 export default async function handler(req, res, deps = {}) {
   const database = deps.db ?? db;
@@ -86,6 +94,12 @@ export default async function handler(req, res, deps = {}) {
 
     if (!result.ok && !HONEST_REFUSALS.has(result.reason)) {
       return res.status(400).json({ ok: false, error: result.reason, ...result });
+    }
+    if (!result.ok && HONEST_REFUSALS.has(result.reason)) {
+      return res.status(200).json({
+        ...result,
+        message: HONEST_MESSAGES[result.reason] || result.reason
+      });
     }
     return res.status(200).json(result);
   } catch (err) {

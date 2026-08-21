@@ -29,6 +29,10 @@ export function croaReleaseDate(enrolledAtIso) {
 
 /**
  * Can the case leave intake?
+ * Contract keys still required. The 3-business-day hold was removed (owner
+ * 2026-08-21) — letters may generate and mail after payment. croaReleaseDate
+ * remains exported for any caller that still wants the calendar math.
+ * COMPLIANCE REVIEW REQUIRED
  * @returns {{ ok: true, releaseDate } | { ok: false, reason, releaseDate? }}
  */
 export function canLeaveIntake({ enrolledAt, asOf, contract }) {
@@ -36,10 +40,7 @@ export function canLeaveIntake({ enrolledAt, asOf, contract }) {
   const missing = REQUIRED_CONTRACT_KEYS.filter((k) => !contract?.[k]);
   if (missing.length) return { ok: false, reason: "contract_incomplete", missing };
   const releaseDate = croaReleaseDate(enrolledAt);
-  const today = String(asOf || new Date().toISOString()).slice(0, 10);
-  if (today < releaseDate) {
-    return { ok: false, reason: "croa_3_day_hold", releaseDate };
-  }
+  void asOf;
   return { ok: true, releaseDate };
 }
 

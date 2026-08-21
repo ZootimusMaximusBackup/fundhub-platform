@@ -95,7 +95,8 @@
     survey: {}, engine: { available: false, reason: "engine data unavailable", fico: {}, reasons: [] },
     offers: [], softPull: null, ebookDollars: "", saleMotion: "", loaded: false, error: null,
     contractOpen: false, contractWordings: [], contractTplId: "", contractLink: "",
-    contractMsg: "", contractBusy: false
+    contractMsg: "", contractBusy: false,
+    stagedLetters: [], repairBusy: false, repairMsg: "", amountPaidDollars: ""
   };
 
   function esc(s) {
@@ -192,6 +193,26 @@
   function lettersOk() {
     var o = offer(selectedOfferKey());
     return !!(o && o.letters);
+  }
+  function isRepairDfyOffer() {
+    var k = selectedOfferKey();
+    return k === "REPAIR_DFY" || k === "REPAIR_TRIAL";
+  }
+  function repairProgramKey() {
+    return selectedOfferKey() === "REPAIR_TRIAL" ? "trial" : "full";
+  }
+  function offerDollars(key) {
+    var o = offer(key || selectedOfferKey());
+    if (!o || o.priceCents == null) return null;
+    return Math.round(Number(o.priceCents)) / 100;
+  }
+  function paidDollarsForEnroll() {
+    var typed = state.amountPaidDollars
+      || (document.getElementById("fh-repair-paid") && document.getElementById("fh-repair-paid").value)
+      || "";
+    var n = parseFloat(String(typed).replace(/[^0-9.]/g, ""));
+    if (Number.isFinite(n) && n >= 0) return n;
+    return offerDollars() || 0;
   }
   function code() { return DECK[Math.min(state.idx, DECK.length - 1)].code; }
   function phase() { return DECK[state.idx].phase; }
@@ -619,7 +640,28 @@
           if (state.contractMsg) html += '<div style="font-size:10.5px;color:var(--gray);margin-top:6px">' + esc(state.contractMsg) + "</div>";
           html += "</div>";
         }
-        if (lettersOk() || state.edu) html += ckBtn(state.edu ? "Send deliverables package now" : "Generate letters and email now", "letters");
+        if (state.edu) {
+          html += ckBtn("Send deliverables package now", "letters");
+        } else if (isRepairDfyOffer()) {
+          html += '<div style="margin-top:4px"><span class="mono">Amount paid today</span>';
+          html += '<input id="fh-repair-paid" value="' + esc(state.amountPaidDollars || String(offerDollars() || "")) + '" placeholder="dollars" style="margin-top:4px;width:100%;background:transparent;border:1px solid var(--line);color:var(--ink);font-family:var(--mono);font-size:11px;padding:7px 9px;outline:none">';
+          html += "</div>";
+          html += ckBtn(state.repairBusy ? "Working…" : "Stage letters", "stage-letters", true);
+          html += ckBtn("Send now", "send-letters", state.stagedLetters.length > 0, state.stagedLetters.length ? "" : " disabled");
+          if (state.repairMsg) html += '<div style="font-size:10.5px;color:var(--gray);margin-top:6px">' + esc(state.repairMsg) + "</div>";
+          if (state.stagedLetters.length) {
+            html += '<div style="margin-top:8px;border:1px solid var(--line);padding:8px;max-height:160px;overflow:auto">';
+            html += '<div class="mono" style="margin-bottom:6px">' + state.stagedLetters.length + " letter(s) staged</div>";
+            state.stagedLetters.forEach(function (L) {
+              html += '<div style="font-size:10.5px;margin-bottom:6px"><b>' + esc(L.bureau) + "</b> · " + (L.itemCount || 0) + " items";
+              if (L.body_text) html += '<div style="color:var(--gray);margin-top:2px;white-space:pre-wrap;max-height:56px;overflow:hidden">' + esc(String(L.body_text).slice(0, 220)) + (L.body_text.length > 220 ? "…" : "") + "</div>";
+              html += "</div>";
+            });
+            html += "</div>";
+          }
+        } else if (lettersOk()) {
+          html += ckBtn("Generate letters and email now", "letters");
+        }
         html += ckBtn("Log disposition and close", "disp");
         html += "</div></div>";
       }
@@ -789,6 +831,79 @@
     });
   }
 
+  async function stageRepairLetters() {
+    if (!window.FHData || !contactId) { toast("No contact on this deck."); return; }
+    if (!isRepairDfyOffer()) { toast("Pick a repair offer first."); return; }
+    var paidEl = document.getElementById("fh-repair-paid");
+    if (paidEl) state.amountPaidDollars = paidEl.value;
+    var price = offerDollars();
+    if (price == null) { toast("No price on this offer."); return; }
+    state.repairBusy = true;
+    state.repairMsg = "Enrolling and staging…";
+    state.stagedLetters = [];
+    render();
+    var enroll = await window.FHData.write("/api/repair/enroll", {
+      client_id: contactId,
+      program: repairProgramKey(),
+      price_total: price,
+      amount_paid: paidDollarsForEnroll()
+    });
+    if (!enroll.ok) {
+      state.repairBusy = false;
+      state.repairMsg = (enroll.error && (enroll.error.message || enroll.error)) || "Could not enroll.";
+      render();
+      return;
+    }
+    var gen = await window.FHData.write("/api/repair/generate", { client_id: contactId, round: "R1" });
+    state.repairBusy = false;
+    if (!gen.ok) {
+      state.repairMsg = "Refused: " + ((gen.error && (gen.error.message || gen.error)) || "Could not stage letters.");
+      render();
+      return;
+    }
+    var payload = gen.data || {};
+    state.stagedLetters = Array.isArray(payload.letters) ? payload.letters : [];
+    state.repairMsg = state.stagedLetters.length
+      ? ("Staged " + state.stagedLetters.length + " letter(s). Review, then Send now.")
+      : (payload.already_generated ? "Letters were already staged for this round." : "No new letters stored.");
+    render();
+  }
+
+  async function sendRepairNow() {
+    if (!window.FHData || !contactId) { toast("No contact on this deck."); return; }
+    if (!state.stagedLetters.length) { toast("Stage letters first."); return; }
+    var letters = [];
+    for (var i = 0; i < state.stagedLetters.length; i++) {
+      var L = state.stagedLetters[i];
+      if (!L || !L.bureau || !L.body_text) {
+        toast("A staged letter is missing its body.");
+        return;
+      }
+      letters.push({
+        bureau: L.bureau,
+        html: L.body_text,
+        letter_id: L.letterId || L.letter_id || null
+      });
+    }
+    state.repairBusy = true;
+    state.repairMsg = "Sending…";
+    render();
+    var r = await window.FHData.write("/api/repair/send", {
+      mail: true,
+      client_id: contactId,
+      letters: letters
+    });
+    state.repairBusy = false;
+    if (!r.ok) {
+      state.repairMsg = (r.error && (r.error.message || r.error)) || "Send failed.";
+      render();
+      return;
+    }
+    state.repairMsg = "Sent. Letters are in the mail queue.";
+    toast("Repair letters sent.");
+    render();
+  }
+
   async function fire(action, extra) {
     if (!window.FHData || !contactId) { toast("No contact on this deck."); return; }
     var body = Object.assign({
@@ -865,6 +980,8 @@
       return;
     }
     if (a === "letters") { fire("generate_letters"); return; }
+    if (a === "stage-letters") { stageRepairLetters(); return; }
+    if (a === "send-letters") { sendRepairNow(); return; }
     if (a === "disp") { fire("log_disposition"); return; }
   });
   window.addEventListener("keydown", function (e) {
