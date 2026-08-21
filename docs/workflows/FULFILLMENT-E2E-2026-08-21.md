@@ -6,6 +6,8 @@
 
 **Fixer note (B1 ghost booking, 2026-08-21):** Overnight looked like a ghost because the check stopped too soon, and one probe used a bad column name. A new plus-tag book on `apply.fundhub.ai` landed a client, a booking, and the booked text (`SMS-BS01-01-BOOKED`) inside two minutes. The calendar form webhook now also fires `booking.created` with the email, so Fundhub does not have to wait on the later appointment ping. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b1-ghost-booking.json` and `fixer/shots/b1-thankyou-1440-MARKED.png`. `SMS-S04-01-CONFIRM` still did not queue.
 
+**Fixer note (B2 deposit save, 2026-08-21):** Live production was already on the money-chain fix (`f8ff02bc`). One plus-tag `deposit.paid` (no card) wrote `sale_payments` with a real product id, then granted `funding-snapshot`. No closer was on that probe, so the commission book stayed empty. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b2-deposit-save.json`. Never touched the forbidden file.
+
 **Live:** `https://fundhub.ai` · funnel `https://apply.fundhub.ai`  
 **Evidence:** `docs/workflows/fulfillment-e2e-2026-08-21-evidence/`  
 **Forbidden file:** `9af65808-…` — never opened, never written  
@@ -20,7 +22,7 @@
 
 ## Can this system take a real customer A to Z today?
 
-**No.** Staff still cannot create a file on Pipeline. Money still dies on `sale_payments.product_id`. There is only one company in the database. The dispute wheel never turns. Invoices and AR are not a staff click path. The funnel book-a-call path **does** write a client now if you wait two minutes.
+**No.** Staff still cannot create a file on Pipeline. There is only one company in the database. The dispute wheel never turns. Invoices and AR are not a staff click path. The funnel book-a-call path **does** write a client now if you wait two minutes. A plus-tag deposit **does** save with a product id.
 
 ---
 
@@ -28,7 +30,7 @@
 
 1. **The thank-you page looked like a ghost overnight.** Re-run with a plus-tag and a two-minute wait: Fundhub did write the client, the booking, and the booked text. The calendar form webhook is also mapped so that write happens on the first booking ping. (Staff still cannot create a client on Pipeline — that is W1-01 / B5.)
 2. **Staff cannot create a client on the dashboard.** Pipeline has Filter / MOVE / DEL. No New Client. Intake is the funnel. The funnel now lands if you wait.
-3. **Deposit still does not save.** Last live `deposit.paid` at **01:08 UTC** (about 6:08pm PT, hours before this run) still failed: `null value in column "product_id" of relation "sale_payments"`. Commissions and unlocks never start. (BLK-008.)
+3. **Deposit now saves.** One live plus-tag `deposit.paid` wrote a payment row with a product id and unlocked `funding-snapshot`. Commission still needs a closer on the sale (W2-04).
 4. **There is only one org** (`fundhub`). Staff-teams can add a person to *this* company. Nothing on the dashboard makes a second agency. Cross-company isolation was not testable. Empty “no mismatched invoices” is not a wall.
 5. **AR / invoice / bureau repair are not a click path.** No “Invoice this client.” AR-01..04 are not built. Repair send refuses unless it would really mail. AG-04 is Setter Josh, not a bureau agent, and no screen starts the call.
 
@@ -59,9 +61,9 @@
 | W1-05 | next_action after consent/pull | **QUESTION** | Before: `get_consent`. After consent row: follow-up GET returned `next_action: null`. Could be a paint bug or a missing fulfillment flag. Not guessing PASS. `dumps/followup-na.json` | |
 | W2-01 | Pay link from Present | **FAIL** | Reached **S-23**. Clicked **Send agreement + pay link**. **Zero** `/api/closer-deck` or `/api/payment-links` calls. `shots/w2-s23-1440-MARKED.png` · `dumps/w2-s23.json` | `public/app/present.js:590` / `:860` → `api/closer-deck.mjs:93`. **Fix:** that button must POST `send_pay_link` and return a checkout URL. |
 | W2-02 | payment_links row | **FAIL** | 0 rows for Gauntlet (`checkout_url` column exists; first query used a missing `url` column — adversary fixed that; still 0 rows) | Same as W2-01. |
-| W2-03 | Payment row saves (BLK-008) | **FAIL** | No `sale_payments` for Gauntlet. Last live errors still `deposit.paid` **product_id NOT NULL** at 01:08:34Z (`failed_events` `d02af3ac-…`). Source on main lists `product_id` in the insert (`src/handlers/money-chain.mjs:418`) with a JS skip if missing (`:401`). Production still threw NOT NULL after that commit (15:50 PT). | **Fix:** deploy the insert that actually binds `sale.product_id`, then prove one live `deposit.paid` writes a row. Do not trust the source file until a new emit succeeds. |
-| W2-04 | Commission row | **FAIL** | 0 ledger rows for this file | `src/handlers/money-chain.mjs:634` runs after payment save. **Fix:** save the payment first. |
-| W2-05 | Entitlement granted | **FAIL** | First query used a missing `product_code` column. Adversary: still not a tonight grant. | `src/handlers/money-chain.mjs:649`. **Fix:** grant after a saved payment. |
+| W2-03 | Payment row saves (BLK-008) | **PASS** | `fixer/b2-deposit-save.json` · plus-tag client `4b659a62-…`, sale_payments `3078b6e5-…` kind deposit amount 3000 with product_id matching the sale (`c087bdd2-…` card-stacking-dfy). No new product_id NOT NULL. Production was already on `f8ff02bc`. | |
+| W2-04 | Commission row | **FAIL** | Payment saved. Ledger still 0 for this probe — no closer was named on the event, so nobody was owed a cut. 9 commission rules are active. | Name a closer on `deposit.paid` if a ledger row is required. |
+| W2-05 | Entitlement granted | **PASS** | `fixer/b2-deposit-save.json` · entitlements row `5fd327f3-…` code `funding-snapshot` for the same plus-tag client. | |
 | W2-06 | Portal tile unlocks | **FAIL** | `/client-portal.html` is 404. Staff portal is `/app/client-portal.html`. Did not open the client’s magic-link session (would hit the forbidden inbox if untagged). | Use `/app/client-portal.html` with a plus-tagged magic link. Unlock still needs a successful payment. |
 | W2-07 | Receipt sends | **FAIL** | No receipt template rows for this file tonight | Needs a saved payment. |
 | W3-a pull inquiries | Inquiries from the pull | **FAIL** | `inquiry_log` empty for Gauntlet | `src/workflows/c-02-inquiry-created.mjs:21` waits on `analysis.completed` + `newInquiries`. **Fix:** complete a real (or simulated) pull that emits that event. |
@@ -87,7 +89,7 @@
 | W5-05..09 | URL / queue / invoice isolation | **BLOCKED** | Cannot steal org B’s client by URL if org B does not exist | |
 | W5-10/11 | SQL org mismatches | **QUESTION** *(adversary)* | 0 mismatched entitlement/invoice org_ids. Vacuous with one org. Not a wall. | |
 | W6-imap | IMAP landing | **BLOCKED** | No `IMAP_HOST` / `IMAP_USER` / `IMAP_PASS` / `GMAIL_APP_PASSWORD`. Cannot open Gmail. | |
-| W6-templates | Why templates stay silent | **QUESTION** | All **237** templates have `compliance_passed=true`. B1 plus-tag book queued `SMS-BS01-01-BOOKED`. `SMS-S04-01-CONFIRM` still silent. Contract/receipt/AR still not this booking. `fixer/b1-ghost-booking.json` | Money-spine also blocked by W2-03. AR templates cannot fire because AR workflows do not exist. |
+| W6-templates | Why templates stay silent | **QUESTION** | All **237** templates have `compliance_passed=true`. B1 plus-tag book queued `SMS-BS01-01-BOOKED`. `SMS-S04-01-CONFIRM` still silent. Contract/receipt/AR still not this booking. `fixer/b1-ghost-booking.json` | AR templates cannot fire because AR workflows do not exist. |
 | W6 money-spine | Booking confirm, contract, receipt, invoice, AR | **FAIL** | Booked SMS (`SMS-BS01-01-BOOKED`) queued for the B1 plus-tag. `SMS-S04-01-CONFIRM` still silent. Receipt/invoice/AR never ran. Contract send still needs S-23. | |
 
 ---
