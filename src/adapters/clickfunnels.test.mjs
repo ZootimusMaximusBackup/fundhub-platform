@@ -271,6 +271,25 @@ test("mapToCanonical: appointment canceled => booking.cancelled only", () => {
   assert.deepEqual(names, ["booking.cancelled"]);
 });
 
+test("mapToCanonical: form_submission with startTime => booking.created only", () => {
+  const names = mapToCanonical({
+    email: "book@example.com",
+    type: "form_submission.created",
+    startTime: "2026-08-13T01:00:00Z",
+    answers: null
+  }).map((c) => c.name);
+  assert.deepEqual(names, ["booking.created"]);
+});
+
+test("mapToCanonical: form_submission without startTime stays entry.captured", () => {
+  const names = mapToCanonical({
+    email: "lead@example.com",
+    type: "form_submission.created",
+    answers: null
+  }).map((c) => c.name);
+  assert.deepEqual(names, ["entry.captured"]);
+});
+
 test("normalizeClickFunnelsEvent: appointment reads data.primary_contact + slot fields", () => {
   const evt = normalizeClickFunnelsEvent({
     id: "appt_99",
@@ -423,6 +442,91 @@ test("handleClickFunnelsWebhook: appointment created => booking.created, calcom-
     rescheduleUid: null,
     source: "clickfunnels"
   });
+});
+
+test("handleClickFunnelsWebhook: form_submission with nested schedule => booking.created with email", async () => {
+  _resetOrgCache(); clearHandlers();
+  const store = [];
+  const seen = [];
+  on("booking.created", (e) => seen.push(e.name));
+  on("entry.captured", (e) => seen.push(e.name));
+  const db = {
+    query(sql, params) {
+      if (/FROM orgs/.test(sql)) return { rows: [{ id: "org-1" }] };
+      if (/INSERT INTO events/.test(sql)) {
+        store.push({ name: params[1], payload: params[5] });
+        return { rows: [{ id: "evt-1" }] };
+      }
+      if (/FROM bookings/.test(sql)) return { rows: [] };
+      return { rows: [] };
+    }
+  };
+  const raw = JSON.stringify({
+    event_type: "form_submission.created",
+    event_id: "fs-book-1",
+    data: {
+      id: 1,
+      data: {
+        contact: { email: "book@example.com" },
+        appointments_schedule_request: {
+          name: "Chris Seam",
+          email: "Book@Example.com",
+          phone_number: "(602) 555-0151",
+          start_on: "2026-08-13T01:00:00Z",
+          end_on: "2026-08-13T01:30:00Z",
+          tzid: "America/Phoenix"
+        }
+      }
+    }
+  });
+  const res = await handleClickFunnelsWebhook({ db, rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
+  assert.equal(res.ok, true);
+  assert.deepEqual(res.emitted.map((e) => e.name), ["booking.created"]);
+  assert.deepEqual(seen, ["booking.created"]);
+  const payload = store.find((r) => r.name === "booking.created")?.payload;
+  assert.equal(payload.email, "book@example.com");
+  assert.equal(payload.startTime, "2026-08-13T01:00:00Z");
+  assert.equal(payload.source, "clickfunnels");
+});
+
+test("handleClickFunnelsWebhook: appointment after same slot does not emit a second booking.created", async () => {
+  _resetOrgCache(); clearHandlers();
+  const seen = [];
+  on("booking.created", (e) => seen.push(e.name));
+  let eventInserts = 0;
+  const db = {
+    query(sql) {
+      if (/FROM orgs/.test(sql)) return { rows: [{ id: "org-1" }] };
+      if (/FROM bookings/.test(sql)) {
+        return { rows: [{ id: "bk-1", client_id: "client-1", provider_uid: "fs-book-1" }] };
+      }
+      if (/UPDATE bookings/.test(sql)) return { rows: [] };
+      if (/UPDATE tasks/.test(sql)) return { rows: [] };
+      if (/INSERT INTO events/.test(sql)) {
+        eventInserts += 1;
+        return { rows: [{ id: "evt-should-not" }] };
+      }
+      return { rows: [] };
+    }
+  };
+  const raw = JSON.stringify({
+    id: "cf_appt_later",
+    event: "appointments/scheduled_event.created",
+    data: {
+      start_on: "2026-08-13T01:00:00Z",
+      end_on: "2026-08-13T01:30:00Z",
+      primary_contact: {
+        email_address: "book@example.com",
+        first_name: "Chris",
+        last_name: "Seam"
+      }
+    }
+  });
+  const res = await handleClickFunnelsWebhook({ db, rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
+  assert.equal(res.ok, true);
+  assert.equal(res.emitted[0].deduped, true);
+  assert.equal(eventInserts, 0);
+  assert.deepEqual(seen, []);
 });
 
 test("handleClickFunnelsWebhook: appointment canceled => booking.cancelled only", async () => {

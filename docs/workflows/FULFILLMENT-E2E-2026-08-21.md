@@ -2,17 +2,17 @@
 
 **Chris reads this in the morning.** Findings + evidence only. No fixes. No deploys.
 
-**Fixer note (B5 New Client, 2026-08-21):** Pipeline now has New Client on the same board. Name, email, phone, product. Save uses the same door as the apply form. A plus-tag click made a clients row, an `entry.captured` event, and a Sales / New Lead card. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b5-new-client.json` and `fixer/shots/b5-new-client-modal-1440-MARKED.png`. Live site gets the button after this merge.
-
 **Fixer note (nav, 2026-08-21):** Nav is not a W-row. A PR is open that hides Agent Editor and Content from the menu, drops the Marketing header, moves Client Control Panel under Funding (after Lenders), and strips BETA tags. URLs still work. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/`. No W-row flipped for this.
 
 **Fixer note (B1 ghost booking, 2026-08-21):** Overnight looked like a ghost because the check stopped too soon, and one probe used a bad column name. A new plus-tag book on `apply.fundhub.ai` landed a client, a booking, and the booked text (`SMS-BS01-01-BOOKED`) inside two minutes. The calendar form webhook now also fires `booking.created` with the email, so Fundhub does not have to wait on the later appointment ping. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b1-ghost-booking.json` and `fixer/shots/b1-thankyou-1440-MARKED.png`. `SMS-S04-01-CONFIRM` still did not queue.
 
-**Fixer note (B4 Pull button, 2026-08-21):** Pull TransUnion now posts to the credit-pull door. A plus-tag click with consent and no identity came back with a real “no identity on file” answer. The identity gate stayed on. No credit file row was written, and no bureau was called. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b4-pull.json` and `fixer/shots/b4-pull-1440-MARKED.png`.
+**Fixer note (B2 deposit save, 2026-08-21):** Live production was already on the money-chain fix (`f8ff02bc`). One plus-tag `deposit.paid` (no card) wrote `sale_payments` with a real product id, then granted `funding-snapshot`. No closer was on that probe, so the commission book stayed empty. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b2-deposit-save.json`. Never touched the forbidden file.
 
 **Fixer note (B3 Present pay link, 2026-08-21):** Overnight the S-23 button never called the server. The page stopped the click when the sale pick was empty. The click now always asks the server to send the pay link. A plus-tag click on Present made a payment_links row with a checkout link. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b3-pay-link.json` and `fixer/shots/b3-s23-1440-MARKED.png`.
 
-**Fixer note (B2 deposit save, 2026-08-21):** Live production was already on the money-chain fix (`f8ff02bc`). One plus-tag `deposit.paid` (no card) wrote `sale_payments` with a real product id, then granted `funding-snapshot`. No closer was on that probe, so the commission book stayed empty. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b2-deposit-save.json`. Never touched the forbidden file.
+**Fixer note (B4 Pull button, 2026-08-21):** Pull TransUnion now posts to the credit-pull door. A plus-tag click with consent and no identity came back with a real “no identity on file” answer. The identity gate stayed on. No credit file row was written, and no bureau was called. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b4-pull.json` and `fixer/shots/b4-pull-1440-MARKED.png`.
+
+**Fixer note (B5 New Client, 2026-08-21):** Pipeline now has New Client on the same board. Name, email, phone, product. Save uses the same door as the apply form. A plus-tag click made a clients row, an `entry.captured` event, and a Sales / New Lead card. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b5-new-client.json` and `fixer/shots/b5-new-client-modal-1440-MARKED.png`. Live site gets the button after this merge.
 
 **Live:** `https://fundhub.ai` · funnel `https://apply.fundhub.ai`  
 **Evidence:** `docs/workflows/fulfillment-e2e-2026-08-21-evidence/`  

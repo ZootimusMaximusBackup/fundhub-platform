@@ -67,3 +67,14 @@ test("non-funding pay links require an explicit downsell or upsell choice", () =
     "motion must not be derived from the selected product"
   );
 });
+
+test("S-23 pay click always POSTs send_pay_link", () => {
+  assert.match(
+    presentJs,
+    /if \(a === "pay"\) \{\s*fire\("send_pay_link"\); return; \}/
+  );
+  assert.doesNotMatch(
+    presentJs,
+    /Choose downsell or upsell first/
+  );
+});

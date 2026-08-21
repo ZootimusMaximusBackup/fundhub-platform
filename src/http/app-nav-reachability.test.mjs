@@ -74,10 +74,8 @@ const KEEP_ON_MENU = [
   "contracts.html",
   "template-editor.html",
   "inquiry-remover.html",
-  "content-admin.html",
   "products-commissions.html",
-  "staff-teams.html",
-  "agent-editor.html"
+  "staff-teams.html"
 ];
 
 function menuTabs(allowed) {
@@ -176,11 +174,13 @@ describe("app shell — the lists this test reads", () => {
       [...NAV_HIDDEN].sort(),
       [
         "affiliate.html",
+        "agent-editor.html",
         "automations.html",
         "brand-studio.html",
         "campaign-manager.html",
         "company-brain.html",
         "consent-capture.html",
+        "content-admin.html",
         "creative-factory.html",
         "finance-os.html",
         "galaxy.html",
