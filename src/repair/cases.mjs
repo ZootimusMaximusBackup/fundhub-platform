@@ -1,5 +1,9 @@
-// Repair desk queue — optimization pipeline cards plus letter counts.
+// Repair desk queue — optimization pipeline cards plus letter counts + §9 signals.
 // List payloads never include letter bodies. Detail does, for a human send.
+// No money fields (§2.11).
+
+import { gatherRepairSignals, gatherRepairDetailSignals } from "./read-repair-signals.mjs";
+import { rollupCounts } from "./lens.mjs";
 
 export const NEED_ME_STAGES = Object.freeze([
   "letters_generated",
@@ -48,9 +52,13 @@ function clientName(row) {
   return n || row.email || "Unnamed";
 }
 
-function mapFile(row) {
+function mapFile(row, signals = {}) {
   const stageKey = row.stage_key;
   const ready = Number(row.letters_ready) || 0;
+  const sent = Number(row.letters_sent) || 0;
+  const due = signals.response_due_at != null
+    ? signals.response_due_at
+    : (row.response_due_at || null);
   return {
     card_id: row.card_id,
     client_id: row.client_id,
@@ -59,13 +67,24 @@ function mapFile(row) {
     stage_key: stageKey,
     stage_label: stageLabel(stageKey),
     updated_at: row.updated_at,
+    entered_at: row.entered_at || null,
     need_me: isNeedMeStage(stageKey),
     round: row.round || null,
     bureaus: Array.isArray(row.bureaus) ? row.bureaus.filter(Boolean) : [],
     letters_ready: ready,
-    letters_sent: Number(row.letters_sent) || 0,
+    letters_sent: sent,
     case_count: Number(row.case_count) || 0,
-    can_send: ready > 0
+    can_send: ready > 0,
+    program: signals.program != null ? signals.program : null,
+    rounds_cap: signals.rounds_cap != null ? signals.rounds_cap : null,
+    program_status: signals.program_status != null ? signals.program_status : null,
+    authorization_ok: signals.authorization_ok,
+    address_ok: signals.address_ok,
+    response_due_at: due,
+    upsell_pending: Boolean(signals.upsell_pending),
+    has_unconfirmed_parse: Boolean(signals.has_unconfirmed_parse),
+    sla_breached: Boolean(signals.sla_breached),
+    no_furnisher_address: Boolean(signals.no_furnisher_address)
   };
 }
 
@@ -77,8 +96,10 @@ SELECT c.id AS card_id,
        cl.email,
        ps.key AS stage_key,
        c.updated_at,
+       c.entered_at,
        dc.round,
        dc.bureaus,
+       dc.response_due_at,
        COALESCE(dc.case_count, 0) AS case_count,
        COALESCE(dl.letters_ready, 0) AS letters_ready,
        COALESCE(dl.letters_sent, 0) AS letters_sent
@@ -89,7 +110,8 @@ SELECT c.id AS card_id,
   LEFT JOIN LATERAL (
     SELECT COUNT(*)::int AS case_count,
            MAX(round) AS round,
-           ARRAY_AGG(DISTINCT bureau) AS bureaus
+           ARRAY_AGG(DISTINCT bureau) AS bureaus,
+           MIN(response_due_at) AS response_due_at
       FROM dispute_cases
      WHERE org_id = c.org_id
        AND client_id = c.client_id
@@ -105,6 +127,19 @@ SELECT c.id AS card_id,
  WHERE c.org_id = $1::uuid
 `;
 
+async function attachSignals(db, orgId, rows) {
+  const base = (rows || []).map((row) => ({
+    client_id: row.client_id,
+    stage_key: row.stage_key,
+    entered_at: row.entered_at,
+    updated_at: row.updated_at,
+    response_due_at: row.response_due_at || null
+  }));
+  const ids = base.map((b) => b.client_id).filter(Boolean);
+  const signals = await gatherRepairSignals(db, { orgId, clientIds: ids, files: base });
+  return (rows || []).map((row) => mapFile(row, signals.get(String(row.client_id)) || {}));
+}
+
 export async function listRepairCases(db, { orgId, limit = 100 } = {}) {
   if (!orgId) throw new Error("orgId required");
   const cap = Math.min(Math.max(Number(limit) || 100, 1), 200);
@@ -114,29 +149,52 @@ export async function listRepairCases(db, { orgId, limit = 100 } = {}) {
      LIMIT $3`,
     [orgId, [...NEED_ME_STAGES], cap]
   );
-  const files = (r.rows || []).map(mapFile);
+  const files = await attachSignals(db, orgId, r.rows || []);
+  const rollups = rollupCounts(files);
   return {
     files,
-    need_me: countNeedMe(files),
-    ready: files.filter((f) => f.stage_key === "ready_to_send" || f.can_send).length,
-    waiting: files.filter((f) => f.stage_key === "awaiting_response" || f.stage_key === "in_transit").length,
-    stalled: files.filter((f) => f.stage_key === "stalled").length
+    need_me: rollups.need_me,
+    ready: rollups.ready,
+    waiting: rollups.waiting,
+    stalled: rollups.stalled,
+    trial_ending: rollups.trial_ending
   };
+}
+
+const LETTERS_SQL_WITH_TARGET = `
+SELECT id, bureau, round, status, body_text, rule_ids, target
+  FROM dispute_letters
+ WHERE org_id = $1::uuid AND client_id = $2::uuid
+ ORDER BY created_at DESC
+ LIMIT 50`;
+
+const LETTERS_SQL_FALLBACK = `
+SELECT id, bureau, round, status, body_text, rule_ids
+  FROM dispute_letters
+ WHERE org_id = $1::uuid AND client_id = $2::uuid
+ ORDER BY created_at DESC
+ LIMIT 50`;
+
+async function loadLetters(db, orgId, clientId) {
+  try {
+    return await db.query(LETTERS_SQL_WITH_TARGET, [orgId, clientId]);
+  } catch (err) {
+    const msg = String(err && err.message || err);
+    if (/target|column/i.test(msg)) {
+      return db.query(LETTERS_SQL_FALLBACK, [orgId, clientId]);
+    }
+    throw err;
+  }
 }
 
 export async function getRepairCase(db, { orgId, clientId } = {}) {
   if (!orgId) throw new Error("orgId required");
   if (!clientId) throw new Error("clientId required");
   const fileRes = await db.query(`${LIST_SQL} AND c.client_id = $2::uuid LIMIT 1`, [orgId, clientId]);
-  const file = fileRes.rows[0] ? mapFile(fileRes.rows[0]) : null;
-  const lettersRes = await db.query(
-    `SELECT id, bureau, round, status, body_text, rule_ids
-       FROM dispute_letters
-      WHERE org_id = $1::uuid AND client_id = $2::uuid
-      ORDER BY created_at DESC
-      LIMIT 50`,
-    [orgId, clientId]
-  );
+  const files = await attachSignals(db, orgId, fileRes.rows || []);
+  const file = files[0] || null;
+
+  const lettersRes = await loadLetters(db, orgId, clientId);
   const itemsRes = await db.query(
     `SELECT id, rule_id, severity, field, creditor, account_last4, round, status, outcome
        FROM dispute_items
@@ -151,19 +209,27 @@ export async function getRepairCase(db, { orgId, clientId } = {}) {
       LIMIT 100`,
     [orgId, clientId]
   );
+
+  const detailSignals = await gatherRepairDetailSignals(db, { orgId, clientId });
+
   const letters = (lettersRes.rows || []).map((row) => ({
     id: row.id,
     bureau: row.bureau,
     round: row.round,
     status: row.status,
     rule_ids: row.rule_ids || [],
+    target: row.target != null ? row.target : null,
     html: READY_LETTER.has(row.status) ? row.body_text || "" : null,
     can_send: READY_LETTER.has(row.status) && Boolean(row.body_text)
   }));
+
   return {
     file,
     letters,
     items: itemsRes.rows || [],
-    can_send: letters.some((l) => l.can_send)
+    can_send: letters.some((l) => l.can_send),
+    timeline: detailSignals.timeline || [],
+    signer_name: detailSignals.signer_name != null ? detailSignals.signer_name : null,
+    signed_at: detailSignals.signed_at != null ? detailSignals.signed_at : null
   };
 }

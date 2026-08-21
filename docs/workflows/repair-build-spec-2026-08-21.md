@@ -34,11 +34,11 @@ Five workstreams. A is the front door and unblocks the demo. B is the engine. C 
 
 | WS | Name | Depends on | Can start |
 |----|------|-----------|-----------|
-| A | Enrollment, money, fire button | merged · #129/#130 | live |
-| B | Engine: six rounds + furnisher letters | merged · #133 | live on main |
+| A | Enrollment, money, fire button | merged | live |
+| B | Engine: six rounds + furnisher letters | merged · #133 | live |
 | C | Inbound: doors, response agent, parse loop | merged · #132 | live after P1–P3 |
-| D | Repair emails | shipping · #131 | templates + wiring |
-| E | Dashboard tab | pending · #134 | desk tab |
+| D | Repair emails | merged · #131 | live |
+| E | Dashboard tab | shipping · #134 | desk tab |
 
 Merge order if conflicts: B → A → C → D → E. A and B both touch `src/repair/analyze.mjs`; B owns the furnisher loop, A owns the authorization gate — they are different functions in the same file, coordinate on the board.
 
