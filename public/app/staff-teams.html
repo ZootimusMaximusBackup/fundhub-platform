@@ -556,7 +556,7 @@ function openEditor(id){
   document.getElementById('ed_phone').value=p.phone;
   document.getElementById('ed_code').value=p.code;
   document.getElementById('ed_role').value=p.role;
-  document.getElementById('ed_start').value=p.start;
+  document.getElementById('ed_start').value=(p.start && p.start!=='—') ? String(p.start).slice(0,10) : '';
   ['ed_code'].forEach(function(i){
     document.getElementById(i).readOnly=true;
   });
@@ -623,7 +623,9 @@ document.getElementById('edSave').addEventListener('click',function(){
       }
       if(st && st.email) p.email=st.email;
       if(st && Object.prototype.hasOwnProperty.call(st,'phone')) p.phone=st.phone||'—';
-      if(st && Object.prototype.hasOwnProperty.call(st,'start_date')) p.start=st.start_date||'—';
+      if(st && Object.prototype.hasOwnProperty.call(st,'start_date')){
+        p.start=st.start_date ? String(st.start_date).slice(0,10) : '—';
+      }
       if(st && st.employee_code) p.code=st.employee_code;
     }
     function finishEdit(){
