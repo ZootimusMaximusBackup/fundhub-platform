@@ -1,6 +1,7 @@
 import { registerRepairHandlers } from '../repair/register.mjs';
 registerRepairHandlers();
 import { af02ReferralOwnershipCapture } from './af-02-referral-ownership-capture.mjs';
+import { aiSet01JoshSetter } from './ai-set-01-josh-setter.mjs';
 import { aiSet03NoAnswerCadence } from './ai-set-03-no-answer-cadence.mjs';
 import { aiSet043WayHandoff } from './ai-set-04-3way-handoff.mjs';
 import { at01FirstTouchCapture } from './at-01-first-touch-capture.mjs';
@@ -56,6 +57,7 @@ import { u05DataHealthMonitor } from './u-05-data-health-monitor.mjs';
 
 export const functions = [
   af02ReferralOwnershipCapture,
+  aiSet01JoshSetter,
   aiSet03NoAnswerCadence,
   aiSet043WayHandoff,
   at01FirstTouchCapture,

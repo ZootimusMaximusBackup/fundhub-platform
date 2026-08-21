@@ -35,6 +35,50 @@ import { isDraftTemplateRow } from "../messaging/draft-guard.mjs";
    and addressFor() in src/messaging/dispatch.mjs. */
 const ADDRESS_BY_CHANNEL = { email: "email", sms: "phone", voice: "phone" };
 
+const FUNDHUB_TZ = "America/Phoenix";
+
+function looksLikeIsoInstant(value) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value);
+}
+
+/* Confirm / reminder SMS used to print the raw ISO (`2026-08-23T02:49:58.390Z`).
+   formatWhen in the inquiry-remover desk view has no timezone, so this helper
+   is the one merge tags use. Zone: client tz → booking tz → America/Phoenix. */
+export function formatAppointmentStart(iso, timeZone) {
+  if (iso == null || iso === "") return iso;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  const opts = {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short"
+  };
+  try {
+    return d.toLocaleString("en-US", { ...opts, timeZone: timeZone || FUNDHUB_TZ });
+  } catch {
+    return d.toLocaleString("en-US", { ...opts, timeZone: FUNDHUB_TZ });
+  }
+}
+
+function resolveAppointmentTimeZone(ctx = {}) {
+  const contact = ctx.contact || {};
+  const appointment = ctx.appointment || {};
+  return (
+    contact.timezone ||
+    contact.time_zone ||
+    contact.tz ||
+    contact.tzid ||
+    appointment.timezone ||
+    appointment.tz ||
+    appointment.tzid ||
+    FUNDHUB_TZ
+  );
+}
+
 // Merge-tag context for the ported GHL copy, which merges `{{contact.*}}` — first name,
 // business name, the pre-approval amount. Every call site in src/workflows passes no
 // `context`, so without this those tags resolve to nothing (and before the renderer fix
@@ -119,8 +163,18 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
   const mergeContext = {
     ...base,
     ...context,
-    contact: { ...(base.contact || {}), ...(context.contact || {}) }
+    contact: { ...(base.contact || {}), ...(context.contact || {}) },
+    appointment: { ...(base.appointment || {}), ...(context.appointment || {}) }
   };
+  if (looksLikeIsoInstant(mergeContext.appointment.start_time)) {
+    mergeContext.appointment = {
+      ...mergeContext.appointment,
+      start_time: formatAppointmentStart(
+        mergeContext.appointment.start_time,
+        resolveAppointmentTimeZone(mergeContext)
+      )
+    };
+  }
   const rendered = renderTemplate(row.body, mergeContext);
 
   // THE SUBJECT IS RENDERED, NOT COPIED. It carries the same {{contact.*}} tags

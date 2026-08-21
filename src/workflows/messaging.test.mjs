@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { sendTemplated } from "./messaging.mjs";
+import { sendTemplated, formatAppointmentStart } from "./messaging.mjs";
 
 // In-memory DB fake covering message_templates, messages, opt_outs, and the client
 // record sendTemplated reads merge-tag context from.
@@ -296,6 +296,33 @@ test("a broken telemetry write does NOT fail the send it observes", async () => 
   assert.equal(db.messages.length, 1, "the message is the record; it must survive a broken observer");
   assert.equal(db.events.length, 0);
   assert.ok(lines.some((l) => /\[telemetry\].*write_failed/.test(l)), JSON.stringify(lines));
+});
+
+test("formatAppointmentStart: ISO-Z becomes a human string, not raw ISO", () => {
+  const iso = "2026-08-23T02:49:58.390Z";
+  const human = formatAppointmentStart(iso, "America/Phoenix");
+  assert.notEqual(human, iso);
+  assert.doesNotMatch(human, /T\d{2}:\d{2}:\d{2}/);
+  assert.match(human, /Aug/);
+  assert.match(human, /7:49/);
+});
+
+test("sendTemplated: appointment.start_time ISO-Z renders as a human time", async () => {
+  const iso = "2026-08-23T02:49:58.390Z";
+  const db = pgFake({
+    templates: [tpl("SMS-S04-01-CONFIRM", "booked for {{appointment.start_time}}")],
+    clients: [{ id: "cl-1", first_name: "Chris", last_name: "S", email: "a@b.com", phone: "+15551234567", custom_fields: {} }]
+  });
+  await sendTemplated(db, {
+    ...BASE,
+    templateKey: "SMS-S04-01-CONFIRM",
+    context: { appointment: { start_time: iso } }
+  });
+  const body = db.messages[0].rendered_body;
+  assert.notEqual(body, `booked for ${iso}`);
+  assert.doesNotMatch(body, /2026-08-23T02:49:58/);
+  assert.match(body, /booked for /);
+  assert.match(body, /Aug/);
 });
 
 test("the rendered body is never copied into the telemetry detail", async () => {

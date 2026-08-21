@@ -4,7 +4,7 @@ import { test, describe } from "node:test";
 import assert from "node:assert";
 import {
   BUCKET_TO_CODE, paymentKindFor, nothingUnlockedReason, NOTHING_UNLOCKED,
-  ensureAttributions
+  ensureAttributions, ensureSalePayment
 } from "./money-chain.mjs";
 
 describe("money-chain helpers", () => {
@@ -131,5 +131,40 @@ describe("money-chain attribution", () => {
     });
     assert.equal(result.written, 0);
     assert.deepEqual(db.rows, []);
+  });
+});
+
+describe("ensureSalePayment", () => {
+  test("INSERT copies product_id from the sale so deposit.paid can write sale_payments", async () => {
+    const calls = [];
+    const db = {
+      query: async (sql, params) => {
+        const text = String(sql);
+        calls.push({ sql: text, params });
+        if (/FROM transactions/i.test(text)) return { rows: [] };
+        if (/INSERT INTO sale_payments/i.test(text)) {
+          return { rows: [{ id: "pay-1", product_id: params[3] }] };
+        }
+        throw new Error(`unhandled SQL: ${text.slice(0, 100)}`);
+      }
+    };
+
+    const result = await ensureSalePayment(db, {
+      id: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee",
+      orgId: "org-1",
+      name: "deposit.paid",
+      payload: { amount: 3000 }
+    }, {
+      saleId: "sale-1",
+      productId: "prod-from-sale",
+      kind: "deposit"
+    });
+
+    assert.equal(result.created, true);
+    assert.equal(result.payment?.id, "pay-1");
+    const ins = calls.find((c) => /INSERT INTO sale_payments/i.test(c.sql));
+    assert.ok(ins, "deposit.paid must INSERT sale_payments when a sale exists");
+    assert.match(ins.sql, /product_id/, "INSERT must include product_id (live NOT NULL)");
+    assert.equal(ins.params[3], "prod-from-sale");
   });
 });
