@@ -10,6 +10,8 @@
 
 **Fixer note (B3 Present pay link, 2026-08-21):** Overnight the S-23 button never called the server. The page stopped the click when the sale pick was empty. The click now always asks the server to send the pay link. A plus-tag click on Present made a payment_links row with a checkout link. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b3-pay-link.json` and `fixer/shots/b3-s23-1440-MARKED.png`.
 
+**Fixer note (B4 Pull button, 2026-08-21):** Pull TransUnion now posts to the credit-pull door. A plus-tag click with consent and no identity came back with a real “no identity on file” answer. The identity gate stayed on. No credit file row was written, and no bureau was called. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b4-pull.json` and `fixer/shots/b4-pull-1440-MARKED.png`.
+
 **Live:** `https://fundhub.ai` · funnel `https://apply.fundhub.ai`  
 **Evidence:** `docs/workflows/fulfillment-e2e-2026-08-21-evidence/`  
 **Forbidden file:** `9af65808-…` — never opened, never written  
@@ -58,7 +60,7 @@
 | KW-00 | Keep walking on Gauntlet `a7a383e0` | **QUESTION** | `client.json` · plus-tagged, not the forbidden file | |
 | W1-02a | next_action before consent | **QUESTION** | API: `get_consent` / “Get Consent” on Gauntlet. Not a brand-new file. `shots/w1k-ccp-1440-MARKED.png` | |
 | W1-02 | Authorization recorded | **PASS** *(adversary recode)* | Continue walk first said FAIL (bad SQL column `method`). DB row **is** there: `client_consents` `abdf617f-…` kind `soft_pull_consent` at 04:33:44Z. UI: “Consent recorded.” `dumps/adversary.json` · `shots/w1k-consent-1440-MARKED.png` | |
-| W1-03 | Credit pulled | **FAIL** | Pull button was enabled. Click produced **no** `/api/finance/crs-pull` network hit. `crs_results` still 0. `shots/w1k-pull-1440-MARKED.png` | `public/app/client-control-panel.html:585` + `api/finance/crs-pull.mjs`. Identity gate still applies. **Fix:** capture legal name / DOB / address / SSN on CCP, then make Pull actually POST and write `crs_results`. |
+| W1-03 | Credit pulled | **PASS** *(request fires; identity gate held)* | `fixer/b4-pull.json` · plus-tag CCP. Click **Pull TransUnion** POSTed `/api/finance/crs-pull`. Server said no identity on file (`identity_required`). No `crs_results` row. `fixer/shots/b4-pull-1440-MARKED.png`. |
 | W1-04 | Underwrite paints real numbers | **FAIL** | Present: “YOUR NUMBERS ARE NOT ON THIS FILE YET.” No score-like digits on CCP. | Needs a `crs_results` row first. Then CCP/`api/dashboard/client.mjs` must paint those scores. |
 | W1-05 | next_action after consent/pull | **QUESTION** | Before: `get_consent`. After consent row: follow-up GET returned `next_action: null`. Could be a paint bug or a missing fulfillment flag. Not guessing PASS. `dumps/followup-na.json` | |
 | W2-01 | Pay link from Present | **PASS** | `fixer/shots/b3-s23-1440-MARKED.png` · plus-tag Present S-23. Click **Send agreement + pay link** POSTed `/api/closer-deck` `send_pay_link` (200). `fixer/b3-pay-link.json`. |
@@ -119,7 +121,7 @@
 - W3-c check is Setter Josh, not a bureau. Recoded **QUESTION**.
 - W5-10/11 empty mismatch with one org is not isolation. Recoded **QUESTION**.
 - W2-02 first SQL used `url`; real column is `checkout_url`. Overnight had 0 rows. B3 plus-tag click wrote a row with a checkout link. Now PASS.
-- W1-03 network array empty: either the click missed or the page swallowed it. FAIL stands (no `crs_results`).
+- W1-03 network array empty overnight: the click missed. Re-click POSTed. Identity gate held. No `crs_results`. W1-04 stays FAIL.
 - Did not charge a card. BLK-008 proof is the **01:08Z failed_events**, not a new charge. That is the last live money attempt.
 
 ---

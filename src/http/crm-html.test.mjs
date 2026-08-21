@@ -63,6 +63,9 @@ test("client-control-panel.html binds the live URL client and does not fake a pu
   assert.ok(/Pull Equifax/.test(html), "must show the Equifax pull");
   assert.ok(/Generate Apps/.test(html), "must show Generate Apps");
   assert.ok(html.includes("/api/finance/crs-pull"), "bureau pulls must call the real CRS run endpoint");
+  assert.match(html, /fetch\("\/api\/finance\/crs-pull"/);
+  assert.match(html, /JSON\.stringify\(\{ client_id: id, bureau: spec\.bureau \}\)/);
+  assert.ok(!/JSON\.stringify\(\{[^}]*simulate/.test(html), "CCP must not send simulate on a staff pull");
   assert.ok(html.includes("/api/read/lender-matches"), "Generate Apps must refresh the live lender match list");
 });
 
