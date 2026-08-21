@@ -19,8 +19,8 @@ test("crm.html sends people to /app/ and does not turn demo on", () => {
 const APP = path.resolve(HERE, "../../public/app");
 const SAMPLE_PEOPLE = /Dana Reyes|Derek Owusu|Marcus Webb|voided check/i;
 
-test("client control panel and closer cockpit ship no sample people", () => {
-  for (const file of ["client-control-panel.html", "closer-call.html"]) {
+test("client control panel and merged closer dashboard ship no sample people", () => {
+  for (const file of ["client-control-panel.html", "closer-dashboard.html"]) {
     const html = fs.readFileSync(path.join(APP, file), "utf8");
     assert.ok(!SAMPLE_PEOPLE.test(html), file + " still has sample furniture");
   }
@@ -77,13 +77,19 @@ test("sales-floor.html does not ship a hardcoded manager name or fake cash", () 
   assert.ok(!/\$54k/.test(html), "funnel leak copy must not invent success fees");
 });
 
-test("closer-call Join stays off until a meeting link exists", () => {
-  const html = fs.readFileSync(path.join(APP, "closer-call.html"), "utf8");
+test("Closer Dashboard Join stays off until a meeting link exists", () => {
+  const html = fs.readFileSync(path.join(APP, "closer-dashboard.html"), "utf8");
   const js = fs.readFileSync(path.join(APP, "closer-call.js"), "utf8");
   assert.ok(html.includes('id="fh-join"'));
   assert.ok(html.includes("disabled"));
   assert.ok(js.includes("join_url"));
   assert.ok(!/JSON\.stringify\(credit\.scores\)/.test(js));
+});
+
+test("old closer-call URL preserves its full query when it redirects", () => {
+  const html = fs.readFileSync(path.join(APP, "closer-call.html"), "utf8");
+  assert.match(html, /closer-dashboard\.html"\s*\+\s*location\.search\s*\+\s*location\.hash/);
+  assert.ok(!html.includes('src="shell.js"'), "the redirect stub must run before the app shell");
 });
 
 test("app clocks are not frozen on Jul 26", () => {

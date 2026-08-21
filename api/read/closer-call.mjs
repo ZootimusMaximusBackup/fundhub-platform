@@ -1,4 +1,4 @@
-// GET /api/read/closer-call?client_id= — live call cockpit payload.
+// GET /api/read/closer-call?client_id= — Closer Dashboard live-call payload.
 
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";

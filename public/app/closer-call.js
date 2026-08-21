@@ -1,4 +1,4 @@
-/* closer-call.js — wire the call cockpit to /api/read/closer-call + disposition POST. */
+/* closer-call.js — wire Closer Dashboard's live-call tools to the fixed read + disposition POST. */
 (function () {
   "use strict";
 
@@ -14,6 +14,20 @@
 
   function $(sel) { return document.querySelector(sel); }
   function text(el, v) { if (el) el.textContent = v == null || v === "" ? "—" : String(v); }
+  function paintStaff(staff) {
+    var staffName = (staff && staff.name) || "";
+    var initials = staffName.trim().split(/\s+/).filter(Boolean).slice(0, 2)
+      .map(function (part) { return part.charAt(0).toUpperCase(); }).join("") || "—";
+    text(document.getElementById("whoAv"), initials);
+    text(document.getElementById("whoName"), staffName);
+    text(document.getElementById("whoRole"), (staff && staff.role) || "closer");
+  }
+  function loadSessionStaff() {
+    return fetch("/api/auth/session", { credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (body) { if (body && body.ok) paintStaff(body.staff || {}); })
+      .catch(function () {});
+  }
   function money(cents) {
     if (cents == null || !Number.isFinite(Number(cents))) return "—";
     return (Number(cents) / 100).toLocaleString("en-US", {
@@ -66,8 +80,8 @@
     var precall = data.precall || {};
     var deal = data.deal || {};
 
-    text($("header .hl .eyebrow"), "C-01 / Closer");
-    var shiftChip = $("header .hl .chip");
+    text($("[data-fh-call-head] .eyebrow"), "Live call");
+    var shiftChip = $("[data-fh-call-head] .chip");
     if (shiftChip) {
       if (staff.shift && staff.shift.on_shift) {
         shiftChip.className = "chip on";
@@ -77,16 +91,24 @@
         shiftChip.innerHTML = '<span class="cd"></span>' + (staff.shift && staff.shift.reason ? staff.shift.reason : "Off shift");
       }
     }
-    var nameChip = $("header .hr .chip");
+    var nameChip = $("[data-fh-call-staff]");
     if (nameChip) nameChip.innerHTML = '<span class="cd" style="background:var(--info)"></span>' + (staff.name || "Closer");
+    paintStaff(staff);
 
     text($(".who h1"), client.name);
     var meta = client.business_name || "";
     if (client.age_months != null) meta += (meta ? " · " : "") + client.age_months + " mo in business";
     if (client.pipeline) meta += (meta ? " · " : "") + (client.pipeline.stage_name || client.pipeline.stage_key);
     text($(".who .meta"), meta || "—");
+    var calcClient = document.getElementById("calcClientName");
+    if (calcClient) {
+      text(calcClient, client.name);
+      calcClient.hidden = false;
+    }
+    var dashboardSub = document.querySelector(".topbar .sub");
+    if (dashboardSub && client.name) dashboardSub.textContent = "Closer Dashboard · " + client.name;
 
-    // Funding bands — filled from underwrite live fetch below; placeholders honest.
+    // Funding bands come from this same canonical cockpit payload.
     var bands = document.querySelectorAll(".bands .band");
     bands.forEach(function (b) {
       var bv = b.querySelector(".bv");
@@ -103,6 +125,7 @@
           ? "No lenders match this file yet."
           : n + " lender" + (n === 1 ? "" : "s") + " match this file.");
     }
+    paintUnderwrite(data.underwrite || {});
 
     // Credit panel
     var tables = document.querySelectorAll(".panel table");
@@ -366,7 +389,7 @@
       try { sessionStorage.removeItem("fh_pending_disposition"); } catch (e) {}
       var next = (state.data && state.data.up_next && state.data.up_next[0]);
       if (next && next.client_id) {
-        location.href = "closer-call.html?client_id=" + encodeURIComponent(next.client_id) +
+        location.href = "closer-dashboard.html?client_id=" + encodeURIComponent(next.client_id) +
           (next.task_id ? "&task_id=" + encodeURIComponent(next.task_id) : "");
       } else {
         location.href = "my-numbers.html";
@@ -376,67 +399,33 @@
     }
   }
 
-  async function loadUnderwrite() {
-    if (!clientId || !window.FHData) return;
-    var r = await window.FHData.read("underwrite", { client_id: clientId });
-    if (!r.ok || !r.data) return;
-    var d = r.data;
+  function paintUnderwrite(uw) {
     var bands = document.querySelectorAll(".bands .band");
-    // /api/read/underwrite returns buildReport(): dollars live on d.underwrite
-    // (lite_banner_funding, personal.*, totals.*). There is no funding/projections
-    // key — older paint looked for those and always dashed.
-    var uw = d.underwrite || {};
     var personal = uw.personal || {};
     var totals = uw.totals || {};
     function dollarsToCents(v) {
       if (v == null || !Number.isFinite(Number(v))) return null;
       return Math.round(Number(v) * 100);
     }
-    var cons = dollarsToCents(
-      uw.lite_banner_funding != null ? uw.lite_banner_funding : personal.card_funding
-    );
-    var real = dollarsToCents(
-      totals.total_personal_funding != null
-        ? totals.total_personal_funding
-        : personal.total_personal_funding
-    );
+    var cons = dollarsToCents(uw.lite_banner_funding);
+    var realDollars = totals.total_personal_funding != null
+      ? totals.total_personal_funding
+      : personal.total_personal_funding;
+    var real = dollarsToCents(realDollars);
     var opt = dollarsToCents(
-      totals.total_combined_funding != null ? totals.total_combined_funding : real
+      totals.total_combined_funding != null ? totals.total_combined_funding : realDollars
     );
     function setBand(i, cents, note) {
-      var b = bands[i]; if (!b) return;
-      var bv = b.querySelector(".bv"); var bn = b.querySelector(".bn");
-      if (cents == null) {
-        if (bv) bv.textContent = "—";
-        if (bn) bn.textContent = note || "Not in UnderwriteIQ response";
-      } else {
-        if (bv) bv.textContent = money(cents);
-        if (bn) bn.textContent = note || "";
-      }
-    }
-    var has = cons != null || real != null || opt != null;
-    if (!has) {
-      setBand(0, null, "No conservative number yet");
-      setBand(1, null, "Open Client Control Panel for the full report");
-      setBand(2, null, "No optimized number yet");
-      var lever = $(".lever");
-      if (lever && Array.isArray(d.suggestions)) {
-        lever.textContent = d.suggestions.slice(0, 2).map(function (s) {
-          return typeof s === "string" ? s : (s.text || s.sentence || "");
-        }).filter(Boolean).join(" ") || "See underwrite suggestions on the client file.";
-      }
-      return;
+      var b = bands[i];
+      if (!b) return;
+      var bv = b.querySelector(".bv");
+      var bn = b.querySelector(".bn");
+      if (bv) bv.textContent = cents == null ? "—" : money(cents);
+      if (bn) bn.textContent = cents == null ? "Not in UnderwriteIQ response" : note;
     }
     setBand(0, cons, "Conservative");
     setBand(1, real, "Realistic · round 1");
     setBand(2, opt, "After optimization");
-    var leverOk = $(".lever");
-    if (leverOk && Array.isArray(d.suggestions) && d.suggestions.length) {
-      var tip = d.suggestions.slice(0, 2).map(function (s) {
-        return typeof s === "string" ? s : (s.text || s.sentence || "");
-      }).filter(Boolean).join(" ");
-      if (tip) leverOk.textContent = tip;
-    }
   }
 
   async function resolveClient() {
@@ -460,6 +449,7 @@
 
   async function boot() {
     if (!window.FHData) { setEmpty("data.js failed to load", "error"); return; }
+    loadSessionStaff();
     hideLiveControls();
     var q = new URLSearchParams(location.search);
     state.taskId = q.get("task_id") || null;
@@ -474,7 +464,6 @@
     }
     paint(r.data);
     showLiveControls();
-    loadUnderwrite();
 
     var join = document.getElementById("fh-join");
     if (join) {

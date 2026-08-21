@@ -65,7 +65,6 @@ const KEEP_ON_MENU = [
   "pipeline.html",
   "client-control-panel.html",
   "closer-dashboard.html",
-  "closer-call.html",
   "my-numbers.html",
   "sales-floor.html",
   "calendar.html",
@@ -152,7 +151,7 @@ describe("app shell — the lists this test reads", () => {
     for (const s of ALL) {
       assert.ok(HTML.has(s), `shell.js lists ${s} but public/app/${s} does not exist`);
     }
-    assert.deepEqual([...CLOSER_DESK_ONLY].sort(), ["closer-call.html", "my-numbers.html"].sort());
+    assert.deepEqual(CLOSER_DESK_ONLY, ["my-numbers.html"]);
     assert.deepEqual(SALES_FLOOR_ONLY, ["sales-floor.html"]);
     assert.deepEqual([...PORTAL_ONLY].sort(), ["affiliate.html", "client-portal.html"].sort());
     assert.deepEqual(HIRING_ONLY, ["hiring.html"]);
@@ -285,14 +284,13 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
     assert.deepEqual([...visible].sort(), [...menuTabs(ADVISOR_TABS)].sort());
     assert.ok(visible.includes("lenders.html"));
     assert.ok(!visible.includes("consent-capture.html"));
-    assert.ok(!visible.includes("closer-call.html"));
     assert.ok(!visible.includes("sales-floor.html"));
   });
 
   test("a closer sees the closer desk, not contract wording or the sales floor", () => {
     const visible = visibleFor(CLOSER_TABS);
     assert.deepEqual([...visible].sort(), [...menuTabs(CLOSER_TABS)].sort());
-    assert.ok(visible.includes("closer-call.html"));
+    assert.ok(visible.includes("closer-dashboard.html"));
     assert.ok(visible.includes("my-numbers.html"));
     assert.ok(!visible.includes("contracts.html"));
     assert.ok(!visible.includes("consent-capture.html"));
@@ -306,7 +304,6 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
     assert.ok(visible.includes("sales-floor.html"));
     assert.ok(visible.includes("staff-teams.html"));
     assert.ok(visible.includes("products-commissions.html"));
-    assert.ok(!visible.includes("closer-call.html"));
     assert.ok(!visible.includes("my-numbers.html"));
     assert.ok(!visible.includes("ops-admin.html"));
     assert.ok(!visible.includes("lenders.html"));

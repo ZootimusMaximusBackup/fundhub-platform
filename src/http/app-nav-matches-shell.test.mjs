@@ -31,13 +31,15 @@ const APP = path.resolve(HERE, "../../public/app");
 /* Screens with no inline sidebar at all, and why:
    index.html           — a 22-line forwarder, shell.js sends each role to its home
    client-portal        — client-facing, deliberately carries no staff navigation
-   present.html         — fullscreen closer deck; opened from the call cockpit, no shell.js
+   present.html         — fullscreen closer deck; opened from Closer Dashboard, no shell.js
+   closer-call.html     — backward-compatible redirect to Closer Dashboard
    payment-success.html — public post-payment thank-you; no CRM shell, no staff nav
    soft-pull-approve.html — public signed-link consent page; no CRM shell, no staff nav
    *.fragment.html      — a fragment, not a screen */
 const NO_SIDEBAR = new Set([
   "index.html",
   "client-portal.html",
+  "closer-call.html",
   "present.html",
   "payment-success.html",
   "soft-pull-approve.html"

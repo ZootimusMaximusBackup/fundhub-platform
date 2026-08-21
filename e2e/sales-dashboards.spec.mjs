@@ -168,8 +168,8 @@ test("sales-floor Your closers shows Chris, not sample names", async ({ page }) 
   await expect(page.locator("body")).not.toContainText("Devon isn't lazy");
 });
 
-test("closer-call requires client_id and shows disposition hotkeys", async ({ page }) => {
-  await openScreen(page, `/app/closer-call.html?client_id=${CLIENT_ID}`, CLOSER, salesHandlers());
+test("Closer Dashboard with client_id shows disposition hotkeys", async ({ page }) => {
+  await openScreen(page, `/app/closer-dashboard.html?client_id=${CLIENT_ID}`, CLOSER, salesHandlers());
   await expect(page.locator("body")).toBeVisible();
   await expect(page.locator("h1").first()).toBeVisible();
   await expect(page.locator("#fh-join")).toBeDisabled();
@@ -177,16 +177,16 @@ test("closer-call requires client_id and shows disposition hotkeys", async ({ pa
   await expect(page.locator("#fh-present")).toBeVisible();
 });
 
-test("closer-call without client_id shows empty when no current call", async ({ page }) => {
-  await openScreen(page, "/app/closer-call.html", CLOSER, salesHandlers());
+test("Closer Dashboard without client_id shows empty when no current call", async ({ page }) => {
+  await openScreen(page, "/app/closer-dashboard.html", CLOSER, salesHandlers());
   await expect(page.locator("#ccp-who-name")).toHaveText("No call right now");
   await expect(page.locator("body")).toContainText("No booked call right now");
   await expect(page.locator(".logbar")).toBeHidden();
   await expect(page.locator("#fh-present")).toBeHidden();
 });
 
-test("closer-call without client_id loads the current call from closer-now", async ({ page }) => {
-  await openScreen(page, "/app/closer-call.html", CLOSER, {
+test("Closer Dashboard without client_id loads the current call from closer-now", async ({ page }) => {
+  await openScreen(page, "/app/closer-dashboard.html", CLOSER, {
     ...salesHandlers(),
     "/api/read/closer-now": {
       ok: true,
@@ -217,10 +217,12 @@ test("my-numbers header is the session closer, not Marcus or Elena", async ({ pa
 test("closer-dashboard without a client is honest empty", async ({ page }) => {
   await freezeClock(page, "2026-08-16T20:00:00Z");
   await openScreen(page, "/app/closer-dashboard.html", CLOSER, salesHandlers());
+  await expect(page.locator("#paymentCalculator")).not.toHaveAttribute("open", "");
+  await page.locator("#paymentCalculator > summary").click();
   await expect(page.locator("#calcGate")).toBeVisible();
   await expect(page.locator("#calcGate")).toHaveText("Open from a client.");
   await expect(page.locator("#whoName")).toHaveText("Casey Reed");
-  // Today's Pipeline was cut 2026-08-17 (owner-set): the Call cockpit's "Up next"
+  // Today's Pipeline was cut 2026-08-17 (owner-set): Closer Dashboard's "Up next"
   // is the same tasks table, five rows deep instead of two.
   await expect(page.locator("#todayPipe")).toHaveCount(0);
   await expect(page.locator("body")).not.toContainText("no closer shift endpoint");

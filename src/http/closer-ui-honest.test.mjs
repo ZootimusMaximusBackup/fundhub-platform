@@ -17,11 +17,12 @@ function read(file) {
 
 test("closer-dashboard.html default markup has no sample people", () => {
   const html = read("closer-dashboard.html");
+  const callJs = read("closer-call.js");
   assert.ok(!SAMPLE_PEOPLE.test(html), "sample person still in closer-dashboard.html");
   assert.ok(!/Sun Jul 26/.test(html), "July sample clock still in the header");
   assert.match(html, /Open from a client\./);
   assert.match(html, /id="whoName"/);
-  assert.match(html, /\/api\/auth\/session/);
+  assert.match(html, /src="closer-call\.js"/);
   assert.match(html, /\.calc-grid\[hidden\]/);
   // The four shift tiles (Calls Today / Kept / Collected / Pace) were cut from the
   // call surface 2026-08-17 — owner-set. They were `hidden` and never unhidden, so
@@ -29,15 +30,18 @@ test("closer-dashboard.html default markup has no sample people", () => {
   assert.ok(!/stat-tile/.test(html), "the closer shift tiles are back on the dashboard");
   assert.ok(!/id="todayPipe"/.test(html), "Today's Pipeline is back — the cockpit owns booked calls");
   assert.match(html, /id="calcClientName"/);
-  assert.match(html, /FHData\.read\("closer-call"/);
+  assert.match(callJs, /FHData\.read\("closer-call"/);
+  assert.doesNotMatch(callJs, /FHData\.read\("underwrite"/);
   assert.match(html, /FHData\.read\("deal-math"/);
+  assert.match(html, /<details class="payment-calculator" id="paymentCalculator">/);
 });
 
 test("closer-dashboard.html binds live clock and session, not a sample who", () => {
   const html = read("closer-dashboard.html");
+  const callJs = read("closer-call.js");
   assert.match(html, /function tickClock/);
   assert.match(html, /new Date\(\)\.toLocaleString/);
-  assert.match(html, /paintStaff/);
+  assert.match(callJs, /getElementById\("whoName"\)/);
   assert.match(html, /FHData\.read\("tradelines"/);
   assert.match(html, /FHData\.read\("lender-matches"/);
   assert.ok(!/SAMPLE —/.test(html), "deal math still labeled SAMPLE");

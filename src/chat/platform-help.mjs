@@ -8,8 +8,8 @@ const ENTRIES = [
     title: "Send a contract",
     keywords: ["contract", "send contract", "esign", "agreement", "sign"],
     answer:
-      "Open the call cockpit or Present for this person. Pick a wording, press Send, then copy the sign link. An email also goes if mail is on. Wordings themselves are written on the Contracts page.",
-    href: "/app/closer-call.html"
+      "Open Closer Dashboard or Present for this person. Pick a wording, press Send, then copy the sign link. An email also goes if mail is on. Wordings themselves are written on the Contracts page.",
+    href: "/app/closer-dashboard.html"
   },
   {
     id: "soft-pull",

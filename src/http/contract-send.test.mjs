@@ -15,7 +15,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC = path.resolve(HERE, "../../public");
 const HELPER = fs.readFileSync(path.join(PUBLIC, "app/contract-send.js"), "utf8");
 const CRM = fs.readFileSync(path.join(PUBLIC, "app/contracts.html"), "utf8");
-const CLOSER = fs.readFileSync(path.join(PUBLIC, "app/closer-call.html"), "utf8");
+const CLOSER = fs.readFileSync(path.join(PUBLIC, "app/closer-dashboard.html"), "utf8");
 const PRESENT = fs.readFileSync(path.join(PUBLIC, "app/present.html"), "utf8");
 const PRESENT_JS = fs.readFileSync(path.join(PUBLIC, "app/present.js"), "utf8");
 
@@ -44,14 +44,14 @@ describe("FHContractSend (public/app/contract-send.js)", () => {
   });
 });
 
-describe("where Send lives after the split", () => {
+describe("where Send lives after the screen merge", () => {
   test("the wording page does not pick a client or send", () => {
     assert.equal(/id="selClient"/.test(CRM), false);
     assert.equal(/<h2>Send a contract<\/h2>/.test(CRM), false);
     assert.equal(/action: "create_draft"/.test(CRM), false);
   });
 
-  test("the call cockpit and Present load the helper and offer Send", () => {
+  test("Closer Dashboard and Present load the helper and offer Send", () => {
     assert.match(CLOSER, /src="contract-send\.js"/);
     assert.match(CLOSER, /id="fh-send-contract"/);
     assert.match(PRESENT, /src="contract-send\.js"/);

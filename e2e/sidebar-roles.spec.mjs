@@ -32,7 +32,7 @@ const SETTER = {
   }
 };
 
-const CLOSER_DESK = ["closer-call.html", "my-numbers.html"];
+const CLOSER_DESK = ["my-numbers.html"];
 const SALES_FLOOR = ["sales-floor.html"];
 /* The lender database. ROLE_SETS.LENDERS at the API (owner, admin,
    funding_advisor) and ADVISOR_ONLY in shell.js — owner decision 2026-08-17. */

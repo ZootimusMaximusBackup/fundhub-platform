@@ -42,10 +42,10 @@ test("Claude answers the Ask tab when a key is present", async () => {
   const out = await answerStaffQuestion({
     question: "how do I send a contract",
     env: KEYED,
-    fetchImpl: anthropicReply("Open the call cockpit, pick a wording, press Send.")
+    fetchImpl: anthropicReply("Open Closer Dashboard, pick a wording, press Send.")
   });
   assert.equal(out.source, "claude");
-  assert.equal(out.text, "Open the call cockpit, pick a wording, press Send.");
+  assert.equal(out.text, "Open Closer Dashboard, pick a wording, press Send.");
   assert.equal(out.thin, false);
 });
 
@@ -64,7 +64,7 @@ test("no Claude key degrades to the old keyword answer", async () => {
     env: {}
   });
   assert.equal(out.source, "platform_help");
-  assert.match(out.text, /call cockpit/);
+  assert.match(out.text, /Closer Dashboard/);
 });
 
 test("an Anthropic error degrades instead of throwing", async () => {

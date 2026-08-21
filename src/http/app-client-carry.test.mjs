@@ -397,10 +397,10 @@ describe("shell.js — a query string does not open a hole in the gate", () => {
   });
 
   test("an allowed row keeps its client and stays visible", async () => {
-    const a = anchor("closer-call.html");
+    const a = anchor("closer-dashboard.html");
     await runShell({ role: "closer", page: "closer-dashboard.html",
                      search: "?client_id=" + CID, links: [a] });
-    assert.equal(a.href, "closer-call.html?client_id=" + CID);
+    assert.equal(a.href, "closer-dashboard.html?client_id=" + CID);
     assert.notEqual(a.li.style.display, "none");
   });
 });
