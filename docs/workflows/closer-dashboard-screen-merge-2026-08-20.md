@@ -1,5 +1,7 @@
 # Closer Dashboard screen merge — 2026-08-20
 
+**Build spec (law):** [`docs/CLOSER-DASHBOARD-SCREEN-MERGE-BUILD-SPEC.md`](../CLOSER-DASHBOARD-SCREEN-MERGE-BUILD-SPEC.md)
+
 ## Shared context
 
 - Owner-approved result: one screen named **Closer Dashboard** at `public/app/closer-dashboard.html`.
