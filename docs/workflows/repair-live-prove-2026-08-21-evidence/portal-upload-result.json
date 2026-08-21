@@ -1,0 +1,120 @@
+{
+  "ok": true,
+  "apiStatus": 200,
+  "apiBody": {
+    "ok": true,
+    "documents": [
+      {
+        "id": "ae246832-bc17-4337-ad9c-1e8c92630256",
+        "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+        "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+        "document_key": "bureau_response|other|8556bedc-46e1-4d85-b0cd-a24adfee1521|1504b64f-967c-4695-aed7-43f1ba7727c3",
+        "kind": "bureau_response",
+        "subtype": "other",
+        "title": "Uploaded Document",
+        "invoice_id": null,
+        "current_version": 1,
+        "current_version_id": "7f7a80fe-d639-42e7-8947-e4495e63dcc2",
+        "mime_type": "image/png",
+        "byte_size": "70",
+        "checksum": "sha256:c414cd0e204de974f73753c7e28d7638e7b3691bb8b1a2bab6b25bb7fed7ce77",
+        "generated_by": "client:55d85886-0ca8-4e1e-825a-f9b218ed12c2",
+        "generated_at": "2026-08-21T23:29:26.489Z",
+        "delivered_at": null,
+        "delivery_channel": null,
+        "delivery_status": "not_delivered",
+        "signature_required": false,
+        "signed_at": null,
+        "signer_name": null,
+        "signature_ref": null,
+        "expires_at": null,
+        "metadata": {
+          "uploaded_by": {
+            "id": "55d85886-0ca8-4e1e-825a-f9b218ed12c2",
+            "kind": "client"
+          },
+          "original_filename": "bureau.png"
+        },
+        "created_at": "2026-08-21T23:29:26.531Z",
+        "updated_at": "2026-08-21T23:29:26.694Z",
+        "expired": false,
+        "download": {
+          "url": "https://fundhub.ai/api/documents/ae246832-bc17-4337-ad9c-1e8c92630256?v=7f7a80fe-d639-42e7-8947-e4495e63dcc2&exp=1787355866&sig=83e3b56670982408a9fc52f03cc9b084364705fa13670851a4a30540ffb4750c",
+          "path": "/api/documents/ae246832-bc17-4337-ad9c-1e8c92630256?v=7f7a80fe-d639-42e7-8947-e4495e63dcc2&exp=1787355866&sig=83e3b56670982408a9fc52f03cc9b084364705fa13670851a4a30540ffb4750c",
+          "expiresAt": 1787355866,
+          "expiresAtIso": "2026-08-21T23:44:26.000Z"
+        }
+      }
+    ]
+  },
+  "ui": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "documents": [
+        {
+          "id": "a2d95e6b-f0d9-4bc9-9402-612b3cf8bf83",
+          "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+          "client_id": "8556bedc-46e1-4d85-b0cd-a24adfee1521",
+          "document_key": "bureau_response|other|8556bedc-46e1-4d85-b0cd-a24adfee1521|3294ee07-088c-415a-9e09-50a768ee6cf8",
+          "kind": "bureau_response",
+          "subtype": "other",
+          "title": "Uploaded Document",
+          "invoice_id": null,
+          "current_version": 1,
+          "current_version_id": "50bf21bb-713f-4009-92a0-96d534b145de",
+          "mime_type": "image/png",
+          "byte_size": "70",
+          "checksum": "sha256:c414cd0e204de974f73753c7e28d7638e7b3691bb8b1a2bab6b25bb7fed7ce77",
+          "generated_by": "client:55d85886-0ca8-4e1e-825a-f9b218ed12c2",
+          "generated_at": "2026-08-21T23:29:27.313Z",
+          "delivered_at": null,
+          "delivery_channel": null,
+          "delivery_status": "not_delivered",
+          "signature_required": false,
+          "signed_at": null,
+          "signer_name": null,
+          "signature_ref": null,
+          "expires_at": null,
+          "metadata": {
+            "uploaded_by": {
+              "id": "55d85886-0ca8-4e1e-825a-f9b218ed12c2",
+              "kind": "client"
+            },
+            "original_filename": "_upload-bureau.png"
+          },
+          "created_at": "2026-08-21T23:29:27.354Z",
+          "updated_at": "2026-08-21T23:29:27.484Z",
+          "expired": false,
+          "download": {
+            "url": "https://fundhub.ai/api/documents/a2d95e6b-f0d9-4bc9-9402-612b3cf8bf83?v=50bf21bb-713f-4009-92a0-96d534b145de&exp=1787355867&sig=7cd27a46440f972ecc8ed51d2a927ee219c67148c28fe331d689c82adc305290",
+            "path": "/api/documents/a2d95e6b-f0d9-4bc9-9402-612b3cf8bf83?v=50bf21bb-713f-4009-92a0-96d534b145de&exp=1787355867&sig=7cd27a46440f972ecc8ed51d2a927ee219c67148c28fe331d689c82adc305290",
+            "expiresAt": 1787355867,
+            "expiresAtIso": "2026-08-21T23:44:27.000Z"
+          }
+        }
+      ]
+    }
+  },
+  "docs": [
+    {
+      "id": "a2d95e6b-f0d9-4bc9-9402-612b3cf8bf83",
+      "kind": "bureau_response",
+      "created_at": "2026-08-21 23:29:27.354331+00",
+      "has_key": true
+    },
+    {
+      "id": "ae246832-bc17-4337-ad9c-1e8c92630256",
+      "kind": "bureau_response",
+      "created_at": "2026-08-21 23:29:26.53142+00",
+      "has_key": true
+    }
+  ],
+  "doorInfo": {
+    "doorDisplay": "block",
+    "btnText": "Upload bureau response",
+    "hasInput": true,
+    "inputHtml": "<input type=\"file\" data-file-input=\"\" multiple=\"\" hidden=\"\" accept=\".pdf,.png,.jpg,.jpeg,.heic\" style=\"\">",
+    "doorsHtml": "\n          <div class=\"upload-door door-funding\" data-kind=\"client_upload\">\n            <div class=\"door-title\">Funding documents</div>\n            <button class=\"upload-btn\" type=\"button\" data-upload-btn=\"\">Upload funding docs</button>\n            <input type=\"file\" data-file-input=\"\" multiple=\"\" hidden=\"\" accept=\".pdf,.png,.jpg,.jpeg,.heic\" style=\"\">\n          </div>\n          <div class=\"upload-door door-inquiry\" data-kind=\"inquiry_doc\">\n            <div class=\"door-title\">Inquiry documents</"
+  }
+}

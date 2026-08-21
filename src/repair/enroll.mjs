@@ -1,7 +1,11 @@
 // Insert/update repair_programs and emit repair.enrolled.
 // HTTP path calls onRepairEvent directly (handlers are not on the bus here).
 
+import { grant } from "../entitlements/entitlements.mjs";
 import { onRepairEvent } from "./handlers.mjs";
+
+/** Portal bureau-response door keys off this catalog code (client-portal doors). */
+const REPAIR_ENTITLEMENT = "metro2-letter-pack";
 
 export class RepairEnrollError extends Error {
   constructor(message, { status = 400, code = "repair_enroll" } = {}) {
@@ -73,6 +77,15 @@ export async function enrollRepairProgram(db, {
     throw new RepairEnrollError("could not save repair program", { status: 500, code: "enroll_failed" });
   }
 
+  const entitlement = await grant(db, {
+    orgId,
+    clientId,
+    code: REPAIR_ENTITLEMENT,
+    grantedBy: staffId || null,
+    reason: `repair_enroll:${row.program}`,
+    reinstate: true
+  });
+
   const event = await onRepairEvent(db, {
     name: "repair.enrolled",
     orgId,
@@ -96,6 +109,7 @@ export async function enrollRepairProgram(db, {
       amount_paid: Number(row.amount_paid),
       status: row.status
     },
+    entitlement,
     event
   };
 }
