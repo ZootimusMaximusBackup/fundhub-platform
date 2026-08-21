@@ -198,6 +198,7 @@ import messagesOutbound from "../../api/messages-outbound.mjs";
 import agentsWrite from "../../api/agents.mjs";
 import agentCall from "../../api/agent-call.mjs";
 import pipelineCards from "../../api/pipeline-cards.mjs";
+import pipelineClients from "../../api/pipeline-clients.mjs";
 import productsWrite from "../../api/products.mjs";
 import clientNotes from "../../api/client-notes.mjs";
 import commissionRules from "../../api/commission-rules.mjs";
@@ -273,6 +274,9 @@ export const ROUTES = {
   /* Pipeline board card moves. Shift-gated STAFF write. Drag and MOVE used to
      rearrange the DOM and stash positions in sessionStorage. */
   "pipeline-cards": pipelineCards,
+  /* Pipeline New Client. Same door as the funnel: resolveClient + entry.captured.
+     Shift-gated STAFF write. Modal on the existing board — no new screen. */
+  "pipeline-clients": pipelineClients,
   /* Products & Commissions product ladder edits. ROLE_SETS.FINANCE — prices are
      configuration, same gate as other money-config writes. */
   "products": productsWrite,

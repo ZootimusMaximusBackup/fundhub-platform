@@ -12,6 +12,8 @@
 
 **Fixer note (B4 Pull button, 2026-08-21):** Pull TransUnion now posts to the credit-pull door. A plus-tag click with consent and no identity came back with a real “no identity on file” answer. The identity gate stayed on. No credit file row was written, and no bureau was called. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b4-pull.json` and `fixer/shots/b4-pull-1440-MARKED.png`.
 
+**Fixer note (B5 New Client, 2026-08-21):** Pipeline now has New Client on the same board. Name, email, phone, product. Save uses the same door as the apply form. A plus-tag click made a clients row, an `entry.captured` event, and a Sales / New Lead card. Proof: `docs/workflows/fulfillment-e2e-2026-08-21-evidence/fixer/b5-new-client.json` and `fixer/shots/b5-new-client-modal-1440-MARKED.png`. Live site gets the button after this merge.
+
 **Live:** `https://fundhub.ai` · funnel `https://apply.fundhub.ai`  
 **Evidence:** `docs/workflows/fulfillment-e2e-2026-08-21-evidence/`  
 **Forbidden file:** `9af65808-…` — never opened, never written  
@@ -26,14 +28,14 @@
 
 ## Can this system take a real customer A to Z today?
 
-**No.** Staff still cannot create a file on Pipeline. There is only one company in the database. The dispute wheel never turns. Invoices and AR are not a staff click path. The funnel book-a-call path **does** write a client now if you wait two minutes. A plus-tag deposit **does** save with a product id.
+**No.** There is still only one company in the database. The dispute wheel never turns. Invoices and AR are not a staff click path. Staff **can** add a client on Pipeline. The funnel book-a-call path **does** write a client now if you wait two minutes. A plus-tag deposit **does** save with a product id.
 
 ---
 
 ## The 5 things that will waste Chris's time tomorrow
 
-1. **The thank-you page looked like a ghost overnight.** Re-run with a plus-tag and a two-minute wait: Fundhub did write the client, the booking, and the booked text. The calendar form webhook is also mapped so that write happens on the first booking ping. (Staff still cannot create a client on Pipeline — that is W1-01 / B5.)
-2. **Staff cannot create a client on the dashboard.** Pipeline has Filter / MOVE / DEL. No New Client. Intake is the funnel. The funnel now lands if you wait.
+1. **The thank-you page looked like a ghost overnight.** Re-run with a plus-tag and a two-minute wait: Fundhub did write the client, the booking, and the booked text. The calendar form webhook is also mapped so that write happens on the first booking ping.
+2. **Staff can create a client on Pipeline now.** New Client is on the board. A plus-tag save wrote the file. Live site shows the button after this merge.
 3. **Deposit now saves.** One live plus-tag `deposit.paid` wrote a payment row with a product id and unlocked `funding-snapshot`. Commission still needs a closer on the sale (W2-04).
 4. **There is only one org** (`fundhub`). Staff-teams can add a person to *this* company. Nothing on the dashboard makes a second agency. Cross-company isolation was not testable. Empty “no mismatched invoices” is not a wall.
 5. **AR / invoice / bureau repair are not a click path.** No “Invoice this client.” AR-01..04 are not built. Repair send refuses unless it would really mail. AG-04 is Setter Josh, not a bureau agent, and no screen starts the call.
@@ -54,7 +56,7 @@
 | ID | Step | Result | Evidence | If FAIL: file+line · one-sentence fix |
 |---|---|---|---|---|
 | W1-00 | Staff sign-in | **PASS** | `shots/w1-00-login-1440-MARKED.png` · landed on pipeline | |
-| W1-01 | Create client on the dashboard | **FAIL** | `shots/w1-01-pipeline-1440-MARKED.png` · also CCP, sales floor, closer dashboard, ops admin. No Add/New/Create client. | `public/app/pipeline.html` (board only). Clients are inserted in `src/handlers/client-lifecycle.mjs:207` from funnel events. **Fix:** add a dashboard New Client form, *or* stop asking staff to create files here. |
+| W1-01 | Create client on the dashboard | **PASS** | `fixer/shots/b5-new-client-modal-1440-MARKED.png` · plus-tag New Client on Pipeline. Client `c71a02f3-…`, `entry.captured`, Sales / New Lead card. `fixer/b5-new-client.json`. Live button lands after merge. | |
 | W1-01b | Funnel booking fallback | **PASS** | `fixer/shots/b1-thankyou-1440-MARKED.png` · UI: “You’re All Set. Your Call Is Booked.” Plus-tag book. Not a dashboard create. | |
 | W1-01c | CRM row for that plus-tagged email | **PASS** | `fixer/b1-ghost-booking.json` · client `0bf376a7-…`, `booking.created` with email + start time, bookings row, `SMS-BS01-01-BOOKED` queued. Overnight probe used a missing column and stopped before the webhook. | Calendar form `form_submission` with a start time now emits `booking.created` (`src/adapters/clickfunnels.mjs`). A later appointment ping for the same slot does not create a second booking. |
 | KW-00 | Keep walking on Gauntlet `a7a383e0` | **QUESTION** | `client.json` · plus-tagged, not the forbidden file | |

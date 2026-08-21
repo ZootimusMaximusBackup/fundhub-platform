@@ -34,7 +34,7 @@ flowchart TD
     CAN --> A_read[Reading data — 38 routes]
     CAN --> A_repair[repair — 2 routes]
     CAN --> A_social[social — 6 routes]
-    CAN --> A_top_level[Everything else — 24 routes]
+    CAN --> A_top_level[Everything else — 25 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 59 routes]
     CANT --> B_auth[Signing in and out — 4 blocked]
@@ -60,7 +60,7 @@ flowchart TD
 
 ## What they can reach
 
-**127 of 188 routes.**
+**128 of 189 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -135,6 +135,7 @@ flowchart TD
 | `/api/partner-marketing/usage` | GET | staff, partner |
 | `/api/payment-links` | GET, POST | owner, admin, sales_manager, closer |
 | `/api/pipeline-cards` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/pipeline-clients` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/public/affiliate-click` | POST | anyone |
 | `/api/public/education-enroll` | POST | anyone |
 | `/api/public/partner-apply` | POST | anyone |
@@ -200,7 +201,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**59 of 188 routes.**
+**59 of 189 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
