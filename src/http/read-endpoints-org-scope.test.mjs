@@ -113,7 +113,7 @@ const NO_ORG_COLUMN = new Map([
 /* An allow-listed endpoint must still prove it hands the SESSION's org to
    whatever does its scoping. Without this, "it's scoped in the store" becomes
    an unfalsifiable claim that survives the call site being changed. */
-const DELEGATES_SESSION_ORG = /orgId:\s*staff\.org_id/;
+const DELEGATES_SESSION_ORG = /orgId:\s*(?:staff|principal)\.org_id/;
 
 /* COMMENTS ARE STRIPPED BEFORE ANY MATCHING, and that is not tidiness.
    Every fix in this area carries a long comment QUOTING the defective SQL it

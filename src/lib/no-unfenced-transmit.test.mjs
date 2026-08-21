@@ -81,6 +81,10 @@ const ALLOWED_RAW_FETCH = {
     "Defaults fetchImpl and passes it to src/agents/model.mjs. Never calls it.",
   "src/creative/providers/copy.mjs":
     "Passes ctx.fetch to src/agents/model.mjs. Never calls fetch itself.",
+  "api/social/generate.mjs":
+    "Wraps globalThis.fetch only to attach an AbortSignal for callModel. The " +
+    "model call itself is already fenced via src/agents/model.mjs. No client " +
+    "contact and no vendor record change.",
   "src/company-brain/sync.mjs":
     "Defaults fetchImpl and passes it to the Drive client. Never calls it.",
   "src/company-brain/walk.mjs":
