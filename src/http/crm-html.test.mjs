@@ -242,9 +242,9 @@ test("calendar.html clock and Then rail use America/New_York and skip past due_a
   assert.ok(/getTime\(\)\s*>\s*nowMs/.test(html), "Then rail and dated-later must filter after now");
 });
 
-test("calendar, template-editor, and hiring do not ship furniture names", () => {
+test("calendar and hiring do not ship furniture names", () => {
   const FURNITURE = /Jordan Blake|Marcus Webb|Nina Torres|Carlos Bettencourt|Meredith Yao/;
-  for (const file of ["calendar.html", "template-editor.html", "hiring.html"]) {
+  for (const file of ["calendar.html", "hiring.html"]) {
     const html = fs.readFileSync(path.join(APP, file), "utf8");
     assert.ok(!FURNITURE.test(html), file + " still has furniture names");
   }

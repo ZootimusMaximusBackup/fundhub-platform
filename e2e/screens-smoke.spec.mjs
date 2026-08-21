@@ -24,7 +24,6 @@ const SCREENS = [
   "/app/staff-teams.html",
   "/app/ops-admin.html",
   "/app/agent-editor.html",
-  "/app/template-editor.html",
   "/app/automations.html",
   "/app/journeys.html",
   "/app/campaign-manager.html",

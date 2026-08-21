@@ -102,7 +102,7 @@ const pages = [
   "my-numbers.html", "sales-floor.html", "calendar.html", "present.html", "command-center.html",
   "ops-admin.html", "automations.html", "messaging.html", "contracts.html", "finance-os.html",
   "brand-studio.html", "galaxy.html", "documents.html", "lenders.html", "products-commissions.html",
-  "agent-editor.html", "template-editor.html", "journeys.html", "campaign-manager.html",
+  "agent-editor.html", "journeys.html", "campaign-manager.html",
   "social-studio.html", "creative-factory.html", "content-admin.html", "hiring.html",
   "company-brain.html", "subscriptions.html", "soft-pull-approve.html",
   "payment-success.html", "closer-call.html", "index.html"

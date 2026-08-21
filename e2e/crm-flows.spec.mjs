@@ -36,42 +36,6 @@ test.describe("contracts screen", () => {
   });
 });
 
-test.describe("template editor", () => {
-  test("loads message templates", async ({ page }) => {
-    await openScreen(page, "/app/template-editor.html", OWNER, {
-      "/api/read/message-templates": {
-        ok: true, count: 1, items: [{
-          id: "11111111-1111-4111-8111-111111111111",
-          template_key: "welcome_sms", name: "Welcome", channel: "sms",
-          subject: null, body: "hello", compliance_passed: false
-        }]
-      }
-    });
-    await expect(page.locator("body")).toBeVisible();
-  });
-
-  test("save posts to message-templates when a row is edited", async ({ page }) => {
-    const writes = [];
-    await openScreen(page, "/app/template-editor.html", OWNER, {
-      "/api/read/message-templates": {
-        ok: true, items: [{
-          id: "11111111-1111-4111-8111-111111111111",
-          template_key: "welcome_sms", name: "Welcome", channel: "sms",
-          subject: null, body: "hello", compliance_passed: true
-        }]
-      },
-      "/api/message-templates": async (route, { method }) => {
-        if (method === "POST") {
-          writes.push(JSON.parse(route.request().postData() || "{}"));
-          return json(route, { ok: true });
-        }
-        return json(route, { ok: true });
-      }
-    });
-    await expect(page.locator("body")).toBeVisible();
-  });
-});
-
 test.describe("finance OS", () => {
   for (const hash of ["", "#credit", "#banking"]) {
     test(`opens with client_id${hash || " (hub)"}`, async ({ page }) => {

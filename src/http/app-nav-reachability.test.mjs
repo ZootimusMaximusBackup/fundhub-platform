@@ -71,7 +71,6 @@ const KEEP_ON_MENU = [
   "messaging.html",
   "documents.html",
   "contracts.html",
-  "template-editor.html",
   "inquiry-remover.html",
   "products-commissions.html",
   "staff-teams.html"

@@ -35,7 +35,7 @@ const ROLES = {
     ...OWNER,
     screens: [
       "pipeline.html", "finance-os.html", "ops-admin.html",
-      "template-editor.html", "agent-editor.html", "brand-studio.html",
+      "agent-editor.html", "brand-studio.html",
       "staff-teams.html", "company-brain.html", "lenders.html",
       "consent-capture.html", "hiring.html", "galaxy.html"
     ]
@@ -45,7 +45,7 @@ const ROLES = {
     staff: { id: "staff-admin", name: "Admin", email: "admin@fundhub.ai", role: "admin", org_id: "org-1", status: "active" },
     screens: [
       "pipeline.html", "finance-os.html", "ops-admin.html",
-      "template-editor.html", "agent-editor.html", "staff-teams.html",
+      "agent-editor.html", "staff-teams.html",
       "company-brain.html", "lenders.html", "galaxy.html"
     ],
     ownerOnly: ["hiring.html"] // hiring is owner/admin — admin allowed; keep for contrast vs closer
