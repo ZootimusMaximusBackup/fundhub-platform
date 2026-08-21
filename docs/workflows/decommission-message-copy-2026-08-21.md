@@ -12,7 +12,7 @@ templates stay (messaging still sends copy).
 | Remove from shell `ALL` | this session | done |
 | Delete `public/app/template-editor.html` | this session | done |
 | Update reachability / crm-html / e2e lists | this session | done |
-| Prove: rail clean, URL gone | this session | pending — needs deploy |
+| Prove: rail clean, URL gone | this session | done — live 404 + owner rail has no Message Copy / Automation |
 
 ## Change manifest
 
