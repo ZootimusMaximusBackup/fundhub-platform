@@ -7,12 +7,9 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // WHY THIS EXISTS
 //
-// Nothing on this site could start a phone call. The Agent Editor showed two
-// agents as LIVE "acting on real clients on Voice"; neither had ever spoken to
-// anyone, because there was no code anywhere in this repository that posts to
-// Bland. api/inquiry.mjs proxies to a Vercel app that vendor/inquiry-remover/
-// README.md records as never deployed, so its 503 "not_configured" was not a
-// missing setting — there was no host to point it at.
+// Nothing on this site could start a phone call from the Agent Editor until
+// this route. Bureau inquiry dials live on /api/inquiry (in-repo). This route
+// is for client-facing agents only (AG-04 style).
 //
 // This is the in-house replacement seam. It is deliberately small: it decides
 // WHETHER a call may happen and records that it did. The transmission itself is

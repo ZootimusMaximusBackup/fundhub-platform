@@ -3,16 +3,12 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // WHY THIS FILE EXISTS
 //
-// Before it, nothing in this repository could start a phone call. src/adapters/
-// bland.mjs listens for Bland's completed-call webhook and nothing ever caused
-// one; api/inquiry.mjs proxies to a Vercel app that vendor/inquiry-remover/
-// README.md says was never deployed. The only code that has ever dialled lives
-// in vendor/inquiry-remover/, is parked, and speaks a script hardcoded in a JS
-// file — so editing an agent's prompt in the Agent Editor changed nothing about
-// what a real call said, and editing the file changed nothing about the screen.
+// Bland voice for Fundhub. Two call shapes:
+//   1. placeCall — Agent Editor scripts (`agents.prompt`) to a person's phone
+//   2. placeConfiguredCall — bureau IVR configs built in-repo from
+//      vendor/inquiry-remover prompts (used by api/inquiry.mjs)
 //
-// This closes that: the task Bland speaks is `agents.prompt`, read from the
-// database row the Agent Editor writes. One store, one source of truth.
+// Both transmit only through this provider (CLAUDE.md §12).
 //
 //
 // WHY IT LIVES IN src/messaging/providers/
@@ -243,8 +239,102 @@ export async function placeCall({
   return { ...success(callId), callId, reason: "placed" };
 }
 
+/**
+ * placeConfiguredCall — full Bland payload (bureau IVR, request_data, etc.).
+ * Used by inquiry bureau dials. Same fence as placeCall.
+ */
+export async function placeConfiguredCall({
+  phoneNumber,
+  task,
+  requestData = null,
+  voice = null,
+  waitForGreeting = true,
+  maxDuration = null,
+  transferNumber = null,
+  metadata = null,
+  webhookUrl = null,
+  env = process.env,
+  fetchImpl
+} = {}) {
+  if (!String(env.BLAND_API_KEY || "").trim()) {
+    return {
+      ...rejection("The phone system is not connected on this deployment, so no call can be placed."),
+      callId: null, reason: "not_configured"
+    };
+  }
+  const to = normalizePhone(phoneNumber);
+  if (!to) {
+    return {
+      ...rejection("No usable phone number for this call."),
+      callId: null, reason: "no_phone"
+    };
+  }
+  if (!task || !String(task).trim()) {
+    return {
+      ...rejection("No script for this call."),
+      callId: null, reason: "no_task"
+    };
+  }
+
+  const body = {
+    phone_number: to,
+    task: String(task),
+    wait_for_greeting: waitForGreeting !== false,
+    webhook: webhookUrl || String(env.BLAND_WEBHOOK_URL || "").trim() || DEFAULT_WEBHOOK_URL,
+    metadata: { ...(metadata || {}), source: "fundhub-inquiry-bureau" }
+  };
+  if (requestData && typeof requestData === "object") body.request_data = requestData;
+  if (voice) body.voice = String(voice);
+  if (transferNumber) body.transfer_phone_number = String(transferNumber);
+  if (maxDuration != null && Number.isFinite(Number(maxDuration))) {
+    body.max_duration = Number(maxDuration);
+  }
+
+  const res = await postJson(`${BLAND_API_BASE}/calls`, {
+    headers: { Authorization: String(env.BLAND_API_KEY).trim() },
+    body: JSON.stringify(body),
+    env,
+    fetchImpl,
+    what: "bland bureau call"
+  });
+
+  if (res.blocked) {
+    return {
+      status: "blocked", providerMessageId: null, callId: null,
+      error: "Outbound sending is switched off on this deployment, so no call was placed.",
+      retryable: true, blocked: true, reason: "dry_run"
+    };
+  }
+  if (res.status === 0) {
+    return { ...failure(res.error || "The phone system could not be reached."), callId: null, reason: "transport" };
+  }
+  const verdict = classify(res.status);
+  if (verdict.status !== "sent") {
+    return {
+      status: verdict.status,
+      providerMessageId: null,
+      callId: null,
+      error: redact(typeof res.body === "string" ? res.body : JSON.stringify(res.body || {})),
+      retryable: verdict.retryable,
+      reason: "bland_rejected"
+    };
+  }
+  const payload = typeof res.body === "string" ? safeJson(res.body) : (res.body || {});
+  const callId = payload.call_id || payload.callId || payload.id || null;
+  if (!callId) {
+    return {
+      status: "failed", providerMessageId: null, callId: null,
+      error: "The phone system accepted the call but did not return a call id.",
+      retryable: false, reason: "no_call_id"
+    };
+  }
+  return { ...success(callId), callId, reason: "placed" };
+}
+
 function safeJson(text) {
   try { return JSON.parse(text); } catch { return {}; }
 }
 
-export default { PROVIDER, placeCall, readiness, agentReadiness, normalizePhone };
+export default {
+  PROVIDER, placeCall, placeConfiguredCall, readiness, agentReadiness, normalizePhone
+};

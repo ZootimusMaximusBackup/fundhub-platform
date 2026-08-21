@@ -1972,6 +1972,9 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
           portalBlock +
           '<div class="case-actions">' +
             '<button type="button" class="primary" data-act="send" ' + (blocked ? "disabled" : "") + '>Send</button>' +
+            '<button type="button" data-act="call-bureau"' +
+              (C.call_fired_at ? ' disabled title="Call already started"' : "") +
+            '>Call bureau</button>' +
             '<button type="button" data-act="cleared">Mark cleared</button>' +
             '<button type="button" data-act="close">Close</button>' +
           '</div>' +
@@ -2032,6 +2035,27 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
       btn.addEventListener("click", function (e) {
         e.stopPropagation();
         var act = btn.getAttribute("data-act");
+        if (act === "call-bureau") {
+          btn.disabled = true;
+          btn.textContent = "Calling…";
+          fetch("/api/inquiry?action=launch", {
+            method: "POST",
+            headers: headers(true),
+            body: JSON.stringify({ id: C.id })
+          }).then(function (r) { return r.json(); }).then(function (d) {
+            if (!d.ok) {
+              btn.disabled = false;
+              btn.textContent = d.message || d.error || "Call failed";
+              return;
+            }
+            btn.textContent = "Call started";
+            load();
+          }).catch(function () {
+            btn.disabled = false;
+            btn.textContent = "Call failed";
+          });
+          return;
+        }
         if (act === "cleared" || act === "close") {
           postCase({
             action: act === "cleared" ? "mark_cleared" : "close",

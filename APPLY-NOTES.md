@@ -35,7 +35,7 @@ ZootimusMaximusBackup/fundhub-platform**.
 | Key | Value |
 |---|---|
 | `DATABASE_URL` | Neon **pooled** connection string, with `?sslmode=require` |
-| `INQUIRY_API_SECRET` | gitignored `.env` / Netlify. Phone inquiry is on hold; this does not turn calls on. |
+| `FUNDHUB_REP_NUMBER` | gitignored `.env` / Netlify. Transfer line for bureau AI calls (`/api/inquiry`). |
 | `DASHBOARD_SECRET` | optional — keeps the old `dashboard.html?key=` links working |
 
 Redeploy after setting envs.

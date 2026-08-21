@@ -71,8 +71,6 @@ const ALLOWED_RAW_FETCH = {
     "Asks a language model a question. No client contact, no vendor record.",
   "api/journeys/ask.mjs":
     "Staff-facing question to a language model. No client contact.",
-  "api/inquiry.mjs":
-    "Proxy to the vendored inquiry runtime; already 503s when unconfigured.",
   "src/adapters/oxylabs.mjs":
     "Location lookup against a scraping proxy. No client data leaves.",
 

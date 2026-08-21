@@ -509,6 +509,7 @@ already warns the number has never been stable; this is why.
   fixed and proven in a browser; the live press is Chris's call.
 - **`INQUIRY_API_BASE` is not set.** Phone inquiry is deliberately on hold, so the Call and
   Hold columns stay blank by design. **Not a bug — do not "fix" it.**
+  **Superseded 2026-08-21 — owner: everything live; unconfigured dialer is a FAIL to wire, not an on-hold choice.**
 - ~~**Nothing triggers letter generation, and there is no button.**~~ **CLOSED — owner decision,
   2026-08-19.** The trigger is a **"Generate letters" action on the case detail view of the
   Specialist desk** — the case the Specialist already has open. Existing screen, existing
