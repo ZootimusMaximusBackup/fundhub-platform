@@ -88,6 +88,7 @@
   .sk{height:14px;background:var(--paper-dim);border-radius:4px;max-width:160px;}
   .repair-empty{padding:28px 16px;text-align:center;color:var(--text-dim);font-size:var(--fs-body);}
   .repair-empty a{color:var(--text);font-weight:700;}
+  .repair-empty .big{font:700 var(--fs-title)/1.2 'Inter',sans-serif;color:var(--text);margin-bottom:6px;}
   #repairNote{font-size:var(--fs-body);color:var(--text-dim);margin:0 0 10px;}
   .repair-err{padding:16px;border:1px solid var(--red-line);background:var(--red-bg);color:var(--red);border-radius:8px;font-size:var(--fs-body);}
   #pane-repair[hidden],#pane-inquiries[hidden],#repair-exceptions[hidden]{display:none;}
@@ -95,6 +96,65 @@
   .stat-tiles[hidden]{display:none!important;}
   .stat-label{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:2px;}
   .stat-value{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:var(--fs-metric);font-variant-numeric:tabular-nums;}
+  /* Repair desk tiles as filters · wireframe §8.1 */
+  #repair-stats .stat-tile[role="button"]{cursor:pointer;text-align:left;min-width:96px;}
+  #repair-stats .stat-tile[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);}
+  #repair-stats .stat-tile:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+  .repair-chip{display:inline-block;border-radius:999px;padding:4px 11px;font:700 12px 'Inter',sans-serif;color:var(--ink);white-space:nowrap;border:1px solid transparent;}
+  .repair-chip.needs_agreement{background:var(--alert);}
+  .repair-chip.review_answer{background:var(--accent);}
+  .repair-chip.send_letters{background:var(--info);}
+  .repair-chip.stuck{background:#fff;border-color:var(--alert);color:var(--red);}
+  .repair-chip.waiting_on_bureau{background:var(--soft);border-color:var(--line);color:var(--gray);font-weight:600;}
+  .repair-chip.round_done{background:var(--warn);}
+  .repair-chip.trial_done{background:var(--spectrum);}
+  .repair-chip.none{background:none;color:var(--gray);font-weight:500;}
+  .repair-wdot{display:inline-flex;align-items:center;gap:5px;margin-left:6px;font:600 11px 'JetBrains Mono',monospace;color:var(--red);white-space:nowrap;}
+  .repair-wdot::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--alert);border:1px solid var(--red);}
+  .repair-due{font:600 .875rem 'JetBrains Mono',monospace;white-space:nowrap;}
+  .repair-due.late{color:var(--red);}
+  .repair-due.dim{color:var(--gray);font-weight:500;}
+  tr.repair-row.filtered-out{display:none;}
+  tr.repair-row.active-row td{background:var(--soft);}
+  tr.repair-expand td{background:var(--soft);padding:16px 18px 18px;}
+  .repair-xgrid{display:grid;grid-template-columns:1.1fr 1.1fr .9fr;gap:14px;}
+  @media (max-width:760px){.repair-xgrid{grid-template-columns:1fr;}}
+  .repair-xcard{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;}
+  .repair-xcard h3{margin:0 0 8px;font:700 12px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--gray);}
+  .repair-xcard ul{margin:0;padding:0;list-style:none;}
+  .repair-xcard li{padding:7px 0;border-bottom:1px dashed var(--line);font-size:.9rem;}
+  .repair-xcard li:last-child{border-bottom:0;}
+  .repair-xcard li[role="button"]{cursor:pointer;}
+  .repair-tag{font:600 10px 'JetBrains Mono',monospace;border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--gray);margin-left:6px;white-space:nowrap;}
+  .repair-tag.del{background:var(--ok);border-color:var(--ok);color:var(--ink);}
+  .repair-tag.strong{background:var(--warn);border-color:var(--warn);color:var(--ink);}
+  .repair-tag.mod{background:var(--soft);}
+  .repair-tag.furn{background:var(--accent);border-color:var(--accent);color:var(--ink);}
+  .repair-ldrawer{position:fixed;inset:0;display:none;z-index:50;}
+  .repair-ldrawer.open{display:block;}
+  .repair-ldrawer .scrim{position:absolute;inset:0;background:rgba(10,10,10,.35);}
+  .repair-ldrawer .pane{position:absolute;top:0;right:0;bottom:0;width:min(560px,94vw);background:#fff;border-left:1px solid var(--line);box-shadow:-8px 0 24px rgba(10,10,10,.12);display:flex;flex-direction:column;}
+  .repair-ldrawer .pane::before{content:"";display:block;height:3px;background:var(--spectrum);}
+  .repair-lhead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 16px 12px;border-bottom:1px solid var(--line);}
+  .repair-lhead .t{font:700 var(--fs-body) 'Inter',sans-serif;}
+  .repair-lhead .m{font:500 11px 'JetBrains Mono',monospace;color:var(--gray);margin-top:3px;}
+  .repair-lbody{flex:1;overflow:auto;padding:16px;background:var(--paper);}
+  .repair-letter{background:#fff;border:1px solid var(--line);border-radius:10px;padding:22px 24px;font:400 .9rem/1.6 'Inter',sans-serif;white-space:pre-wrap;max-width:52ch;}
+  .repair-letter .sig{font:italic 400 1.45rem 'Snell Roundhand','Segoe Script','Brush Script MT',cursive;display:inline-block;margin:2px 0 3px;}
+  .repair-letter .sigmeta{font:500 11px 'JetBrains Mono',monospace;color:var(--gray);}
+  .repair-lfoot{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);align-items:center;}
+  .repair-cmodal{position:fixed;inset:0;display:none;z-index:60;align-items:center;justify-content:center;}
+  .repair-cmodal.open{display:flex;}
+  .repair-cmodal .cscrim{position:absolute;inset:0;background:rgba(10,10,10,.35);}
+  .repair-ccard{position:relative;background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;width:min(420px,92vw);box-shadow:0 8px 32px rgba(10,10,10,.18);}
+  .repair-ccard h3{margin:0 0 8px;font:700 var(--fs-body) 'Inter',sans-serif;}
+  .repair-ccard p{margin:0 0 12px;color:var(--gray);font-size:.9rem;}
+  .repair-ccard input{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:600 13px 'JetBrains Mono',monospace;}
+  .repair-cact{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;}
+  #repairStateBlock{display:none;padding:34px 18px 40px;text-align:center;color:var(--gray);}
+  #pane-repair.state-empty #repairStateBlock,#pane-repair.state-error #repairStateBlock{display:block;}
+  #pane-repair.state-empty #repairTableWrap,#pane-repair.state-error #repairTableWrap{display:none;}
+  #pane-repair.state-loading #repairTableWrap{opacity:.55;}
 
   main{flex:1;overflow-y:auto;padding:22px 24px 20px;background:var(--paper);}
   main::-webkit-scrollbar{width:8px;}
@@ -355,10 +415,11 @@
       <div class="stat-tile"><div class="stat-label">Confirmed</div><div class="stat-value" data-stat="confirmed">—</div></div>
     </div>
     <div class="stat-tiles" id="repair-stats" hidden>
-      <div class="stat-tile"><div class="stat-label">Need me</div><div class="stat-value" id="repairNeedMe">—</div></div>
-      <div class="stat-tile"><div class="stat-label">Ready to send</div><div class="stat-value" id="repairReady">—</div></div>
-      <div class="stat-tile"><div class="stat-label">Waiting</div><div class="stat-value" id="repairWaiting">—</div></div>
-      <div class="stat-tile"><div class="stat-label">Stuck</div><div class="stat-value" id="repairStalled">—</div></div>
+      <div class="stat-tile" role="button" tabindex="0" aria-pressed="false" data-filter="need"><div class="stat-label">Need me</div><div class="stat-value" id="repairNeedMe">—</div></div>
+      <div class="stat-tile" role="button" tabindex="0" aria-pressed="false" data-filter="ready"><div class="stat-label">Ready to send</div><div class="stat-value" id="repairReady">—</div></div>
+      <div class="stat-tile" role="button" tabindex="0" aria-pressed="false" data-filter="wait"><div class="stat-label">Waiting on bureau</div><div class="stat-value" id="repairWaiting">—</div></div>
+      <div class="stat-tile" role="button" tabindex="0" aria-pressed="false" data-filter="stuck"><div class="stat-label">Stuck</div><div class="stat-value" id="repairStalled">—</div></div>
+      <div class="stat-tile" role="button" tabindex="0" aria-pressed="false" data-filter="trial"><div class="stat-label">Trial ending</div><div class="stat-value" id="repairTrial">—</div></div>
     </div>
   </div>
 
@@ -430,25 +491,62 @@
 
     <div id="pane-repair" role="tabpanel" aria-labelledby="tab-repair" hidden>
       <div class="section fh-maxw" id="repair-exceptions" hidden>
-        <div class="section-title">Stuck files</div>
+        <div class="section-title">Needs a human read</div>
         <div id="repairExceptionsList"></div>
       </div>
       <div class="section fh-maxw">
-        <div class="section-title">Repair files</div>
-        <p id="repairNote">Click a row to see letters. Nothing mails until you press Send letters.</p>
+        <div class="section-title">Repair desk</div>
+        <p id="repairNote">One look tells you what needs doing. Press a tile to filter. Nothing mails until you press Send.</p>
         <div id="repairErr" class="repair-err" hidden></div>
-        <table class="queue" id="repairTable">
-          <thead>
-            <tr>
-              <th>Client</th><th>Round</th><th>Stage</th><th>Letters ready</th><th>Sent</th>
-            </tr>
-          </thead>
-          <tbody id="repairBody">
-            <tr><td colspan="5"><div class="sk"></div></td></tr>
-            <tr><td colspan="5"><div class="sk"></div></td></tr>
-            <tr><td colspan="5"><div class="sk"></div></td></tr>
-          </tbody>
-        </table>
+        <div id="repairStateBlock" class="repair-empty" hidden></div>
+        <div id="repairTableWrap">
+          <table class="queue" id="repairTable">
+            <thead>
+              <tr>
+                <th>Client</th><th>Program</th><th>Round</th><th>Stage</th><th>Needs</th><th>Due</th>
+              </tr>
+            </thead>
+            <tbody id="repairBody">
+              <tr><td colspan="6"><div class="sk"></div></td></tr>
+              <tr><td colspan="6"><div class="sk"></div></td></tr>
+              <tr><td colspan="6"><div class="sk"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Letter drawer · spec §8.3 -->
+    <div class="repair-ldrawer" id="repairLetterDrawer" aria-hidden="true">
+      <div class="scrim" data-repair-close-letter></div>
+      <div class="pane" role="dialog" aria-label="Letter">
+        <div class="repair-lhead">
+          <div>
+            <div class="t" id="repairLetterTitle">Letter</div>
+            <div class="m" id="repairLetterMeta"></div>
+          </div>
+          <button type="button" class="qbtn" data-repair-close-letter>Close</button>
+        </div>
+        <div class="repair-lbody"><div class="repair-letter" id="repairLetterBody"></div></div>
+        <div class="repair-lfoot">
+          <button type="button" class="primary" id="repairLetterSendOne" disabled>Send this one</button>
+          <span style="flex:1"></span>
+          <button type="button" class="qbtn" data-repair-close-letter>Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Soft-pull confirm · type PULL (pipeline archive pattern) -->
+    <div class="repair-cmodal" id="repairPullModal" role="dialog" aria-modal="true" aria-labelledby="repairPullTitle" aria-hidden="true">
+      <div class="cscrim" data-repair-close-pull></div>
+      <div class="repair-ccard">
+        <h3 id="repairPullTitle">Soft pull this client's credit?</h3>
+        <p>Pulls all three bureaus through UnderwriteIQ. Soft inquiry — never touches their score. The pull is logged to the client file. Type <b>PULL</b> to confirm.</p>
+        <input id="repairPullInput" type="text" autocomplete="off" spellcheck="false" placeholder="Type PULL">
+        <div class="repair-cact">
+          <button type="button" class="qbtn" data-repair-close-pull>Cancel</button>
+          <button type="button" class="primary" id="repairPullGo" disabled>Pull</button>
+        </div>
       </div>
     </div>
 
@@ -2127,6 +2225,100 @@ fetch("/api/auth/session", {
   paintStaff(s && s.staff);
 }).catch(function () { paintStaff(null); });
 
+/* FH-REPAIR-LENS-BEGIN — pure helpers mirrored from src/repair/lens.mjs */
+(function () {
+  var CHIPS = [
+    { key: "needs_agreement", label: "Needs agreement" },
+    { key: "review_answer", label: "Read their answer" },
+    { key: "send_letters", label: "Send letters" },
+    { key: "stuck", label: "Stuck" },
+    { key: "waiting_on_bureau", label: "Waiting on the bureau" },
+    { key: "round_done", label: "Round done — next?" },
+    { key: "trial_done", label: "Trial done — sales" },
+    { key: "none", label: "—" }
+  ];
+  var CHIP_BY_KEY = {};
+  CHIPS.forEach(function (c) { CHIP_BY_KEY[c.key] = c; });
+  function num(v) { var n = Number(v); return Number.isFinite(n) ? n : 0; }
+  function truthy(v) { return v === true; }
+  function deriveChip(row) {
+    row = row || {};
+    if (row.authorization_ok === false) return CHIP_BY_KEY.needs_agreement;
+    if (truthy(row.has_unconfirmed_parse)) return CHIP_BY_KEY.review_answer;
+    var ready = num(row.letters_ready);
+    var sent = num(row.letters_sent);
+    if ((ready > 0 && sent === 0) || (row.can_send === true && sent === 0)) return CHIP_BY_KEY.send_letters;
+    var stage = String(row.stage_key || "");
+    if (stage === "stalled" || truthy(row.sla_breached)) return CHIP_BY_KEY.stuck;
+    if (stage === "in_transit" || stage === "awaiting_response") return CHIP_BY_KEY.waiting_on_bureau;
+    if (stage === "round_complete") return CHIP_BY_KEY.round_done;
+    if (truthy(row.upsell_pending) || String(row.program_status || "") === "upsell_pending") return CHIP_BY_KEY.trial_done;
+    return CHIP_BY_KEY.none;
+  }
+  function dueWords(responseDueAt, asOf) {
+    if (!responseDueAt) return { text: "—", tone: "dim" };
+    var due = new Date(responseDueAt).getTime();
+    var now = new Date(asOf || Date.now()).getTime();
+    if (!Number.isFinite(due) || !Number.isFinite(now)) return { text: "—", tone: "dim" };
+    var diffDays = Math.round((due - now) / 86400000);
+    if (diffDays > 0) return { text: "due in " + diffDays + (diffDays === 1 ? " day" : " days"), tone: "ok" };
+    if (diffDays === 0) return { text: "due today", tone: "ok" };
+    var overdue = Math.abs(diffDays);
+    return { text: "overdue " + overdue + (overdue === 1 ? " day" : " days"), tone: "late" };
+  }
+  function roundLabel(row) {
+    row = row || {};
+    var cap = num(row.rounds_cap);
+    var raw = row.round == null ? "" : String(row.round);
+    var m = raw.match(/R(\d+)/i);
+    var n = m ? Number(m[1]) : null;
+    if (n != null && cap > 0) return n + " / " + cap;
+    if (n != null) return String(n);
+    if (cap > 0) return "— / " + cap;
+    return raw || "—";
+  }
+  function tileSets(row, chip) {
+    var c = chip || deriveChip(row);
+    var sets = [];
+    var stage = String((row && row.stage_key) || "");
+    if (c.key === "needs_agreement" || c.key === "review_answer" || c.key === "send_letters" || c.key === "round_done" || (row && row.need_me === true)) sets.push("need");
+    if (c.key === "send_letters" || stage === "ready_to_send" || (num(row && row.letters_ready) > 0 && num(row && row.letters_sent) === 0)) sets.push("ready");
+    if (c.key === "waiting_on_bureau" || stage === "awaiting_response" || stage === "in_transit") sets.push("wait");
+    if (c.key === "stuck" || stage === "stalled" || truthy(row && row.sla_breached)) sets.push("stuck");
+    if (c.key === "trial_done" || truthy(row && row.upsell_pending)) sets.push("trial");
+    return sets;
+  }
+  function warningDots(row) {
+    var out = [];
+    if (row && row.address_ok === false) out.push({ key: "no_address", label: "no address on file" });
+    if (row && row.no_furnisher_address === true) out.push({ key: "no_furnisher_address", label: "no furnisher address" });
+    return out;
+  }
+  function timelineLine(row) {
+    row = row || {};
+    var action = String(row.action || row.decision || "").trim();
+    var ts = row.ts || row.created_at || null;
+    var when = "";
+    if (ts) {
+      var d = new Date(ts);
+      if (Number.isFinite(d.getTime())) {
+        when = d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Los_Angeles" });
+      }
+    }
+    var words = action ? action.replace(/[._]/g, " ").replace(/\s+/g, " ").trim() : "update";
+    return when ? when + " · " + words : words;
+  }
+  window.FHRepairLens = {
+    deriveChip: deriveChip,
+    dueWords: dueWords,
+    roundLabel: roundLabel,
+    tileSets: tileSets,
+    warningDots: warningDots,
+    timelineLine: timelineLine
+  };
+})();
+/* FH-REPAIR-LENS-END */
+
 /* Specialist desk: Inquiries / Repair toggle. Repair loads on first open. */
 (function deskToggle() {
   var tabs = document.querySelectorAll(".desk-tab");
@@ -2158,14 +2350,24 @@ fetch("/api/auth/session", {
 
 function loadRepairDesk() {
   var V = window.FHInquiryView;
+  var L = window.FHRepairLens;
+  var pane = document.getElementById("pane-repair");
   var body = document.getElementById("repairBody");
   var err = document.getElementById("repairErr");
+  var stateBlock = document.getElementById("repairStateBlock");
   var need = document.getElementById("repairNeedMe");
   var ready = document.getElementById("repairReady");
   var waiting = document.getElementById("repairWaiting");
   var stalled = document.getElementById("repairStalled");
+  var trial = document.getElementById("repairTrial");
+  var filterTiles = document.querySelectorAll("#repair-stats .stat-tile[data-filter]");
+  var activeFilter = null;
+  var loadedFiles = [];
+  var pullClientId = null;
+  var letterSendCtx = null;
   var tok = "";
   try { tok = localStorage.getItem("fh_token") || ""; } catch (e) {}
+
   function headers(json) {
     var h = { accept: "application/json" };
     if (tok) h.authorization = "Bearer " + tok;
@@ -2176,54 +2378,268 @@ function loadRepairDesk() {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
+  function setPaneState(name) {
+    if (!pane) return;
+    pane.classList.remove("state-loading", "state-empty", "state-error", "state-loaded");
+    if (name) pane.classList.add("state-" + name);
+  }
+  function dashTiles() {
+    [need, ready, waiting, stalled, trial].forEach(function (el) {
+      if (el) el.textContent = "—";
+    });
+  }
   function setTiles(d) {
-    if (need) need.textContent = d.need_me != null ? String(d.need_me) : "0";
-    if (ready) ready.textContent = d.ready != null ? String(d.ready) : "0";
-    if (waiting) waiting.textContent = d.waiting != null ? String(d.waiting) : "0";
-    if (stalled) stalled.textContent = d.stalled != null ? String(d.stalled) : "0";
+    function n(v) { return v == null ? "—" : String(v); }
+    if (need) need.textContent = n(d.need_me);
+    if (ready) ready.textContent = n(d.ready);
+    if (waiting) waiting.textContent = n(d.waiting);
+    if (stalled) stalled.textContent = n(d.stalled);
+    if (trial) trial.textContent = n(d.trial_ending);
   }
   function showErr(msg) {
     if (!err) return;
     err.hidden = false;
     err.textContent = msg;
   }
-  if (err) err.hidden = true;
+  function clearErr() {
+    if (err) { err.hidden = true; err.textContent = ""; }
+  }
+  function showStateMessage(html) {
+    if (!stateBlock) return;
+    stateBlock.hidden = false;
+    stateBlock.innerHTML = html;
+  }
+  function hideStateMessage() {
+    if (!stateBlock) return;
+    stateBlock.hidden = true;
+    stateBlock.innerHTML = "";
+  }
+
+  function closeLetterDrawer() {
+    var d = document.getElementById("repairLetterDrawer");
+    if (!d) return;
+    d.classList.remove("open");
+    d.setAttribute("aria-hidden", "true");
+    letterSendCtx = null;
+  }
+  function openLetterDrawer(letter, file, signerName, signedAt) {
+    var d = document.getElementById("repairLetterDrawer");
+    if (!d) return;
+    var title = document.getElementById("repairLetterTitle");
+    var meta = document.getElementById("repairLetterMeta");
+    var bodyEl = document.getElementById("repairLetterBody");
+    var sendOne = document.getElementById("repairLetterSendOne");
+    var name = (V && V.bureauLabel) ? V.bureauLabel(letter.bureau) : (letter.bureau || "Letter");
+    if (title) title.textContent = name + " · " + (letter.round || "");
+    if (meta) {
+      meta.textContent = "target: " + (letter.target || "bureau") +
+        " · rules " + ((letter.rule_ids || []).join(" · ") || "—") +
+        " · status " + (letter.status || "—");
+    }
+    var html = letter.html || "";
+    if (signerName && bodyEl) {
+      var sigDate = signedAt
+        ? new Date(signedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Los_Angeles" })
+        : "";
+      html += "\n\n<span class=\"sig\">" + esc(signerName) + "</span>\n" +
+        esc(signerName) + "\n<span class=\"sigmeta\">Signed electronically" +
+        (sigDate ? " · " + esc(sigDate) : "") + " · from the signed repair agreement</span>";
+    }
+    if (bodyEl) bodyEl.innerHTML = html;
+    letterSendCtx = { clientId: file && file.client_id, letter: letter };
+    if (sendOne) {
+      sendOne.disabled = !(letter && letter.can_send && letter.html);
+      sendOne.onclick = function () {
+        if (!letterSendCtx || !V) return;
+        var req;
+        try {
+          req = V.buildRepairSendRequest({
+            clientId: letterSendCtx.clientId,
+            mail: true,
+            letters: [letterSendCtx.letter]
+          });
+        } catch (e) {
+          showErr(e.message || "Could not send");
+          return;
+        }
+        sendOne.disabled = true;
+        sendOne.textContent = "Sending…";
+        fetch(req.path, { method: req.method, headers: headers(true), body: JSON.stringify(req.body) })
+          .then(function (r) { return r.json(); })
+          .then(function (out) {
+            sendOne.textContent = "Send this one";
+            sendOne.disabled = false;
+            if (out && out.ok) {
+              closeLetterDrawer();
+              loadRepairDesk();
+            } else {
+              showErr((out && (out.error || out.message)) || "Send failed");
+            }
+          })
+          .catch(function () {
+            sendOne.textContent = "Send this one";
+            sendOne.disabled = false;
+            showErr("Send failed");
+          });
+      };
+    }
+    d.classList.add("open");
+    d.setAttribute("aria-hidden", "false");
+  }
+
+  function pullCheck() {
+    var go = document.getElementById("repairPullGo");
+    var input = document.getElementById("repairPullInput");
+    if (go && input) go.disabled = input.value.trim() !== "PULL";
+  }
+  function closePull() {
+    var m = document.getElementById("repairPullModal");
+    if (!m) return;
+    m.classList.remove("open");
+    m.setAttribute("aria-hidden", "true");
+    pullClientId = null;
+  }
+  function openPull(clientId) {
+    pullClientId = clientId;
+    var m = document.getElementById("repairPullModal");
+    var input = document.getElementById("repairPullInput");
+    if (!m) return;
+    if (input) input.value = "";
+    pullCheck();
+    m.classList.add("open");
+    m.setAttribute("aria-hidden", "false");
+    if (input) input.focus();
+  }
+  function runSoftPull() {
+    if (!pullClientId) return;
+    var clientId = pullClientId;
+    var go = document.getElementById("repairPullGo");
+    if (go) { go.disabled = true; go.textContent = "Pulling…"; }
+    var bureaus = ["EX", "EQ", "TU"];
+    var i = 0;
+    function next() {
+      if (i >= bureaus.length) {
+        if (go) { go.textContent = "Pull"; go.disabled = false; }
+        closePull();
+        return;
+      }
+      var bureau = bureaus[i++];
+      fetch("/api/finance/crs-pull", {
+        method: "POST",
+        headers: headers(true),
+        body: JSON.stringify({ client_id: clientId, bureau: bureau })
+      }).then(function () { next(); }).catch(function () { next(); });
+    }
+    next();
+  }
+
+  document.querySelectorAll("[data-repair-close-letter]").forEach(function (el) {
+    el.addEventListener("click", closeLetterDrawer);
+  });
+  document.querySelectorAll("[data-repair-close-pull]").forEach(function (el) {
+    el.addEventListener("click", closePull);
+  });
+  var pullInput = document.getElementById("repairPullInput");
+  if (pullInput) pullInput.addEventListener("input", pullCheck);
+  var pullGo = document.getElementById("repairPullGo");
+  if (pullGo) pullGo.addEventListener("click", runSoftPull);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { closeLetterDrawer(); closePull(); }
+  });
+
+  function applyFilter(filterKey) {
+    activeFilter = filterKey;
+    filterTiles.forEach(function (t) {
+      t.setAttribute("aria-pressed", t.getAttribute("data-filter") === filterKey ? "true" : "false");
+    });
+    if (!body) return;
+    body.querySelectorAll("tr.repair-row").forEach(function (tr) {
+      if (!filterKey) {
+        tr.classList.remove("filtered-out");
+        return;
+      }
+      var sets = (tr.getAttribute("data-set") || "").split(/\s+/);
+      tr.classList.toggle("filtered-out", sets.indexOf(filterKey) === -1);
+    });
+    var open = body.querySelector("tr.repair-expand");
+    if (open) open.remove();
+    body.querySelectorAll("tr.repair-row.active-row").forEach(function (r) {
+      r.classList.remove("active-row");
+      r.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  filterTiles.forEach(function (t) {
+    function fire() {
+      var key = t.getAttribute("data-filter");
+      var on = t.getAttribute("aria-pressed") === "true";
+      applyFilter(on ? null : key);
+    }
+    t.addEventListener("click", fire);
+    t.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fire(); }
+    });
+  });
+
+  clearErr();
+  setPaneState("loading");
+  dashTiles();
+  hideStateMessage();
+  if (body) {
+    body.innerHTML =
+      '<tr><td colspan="6"><div class="sk"></div></td></tr>' +
+      '<tr><td colspan="6"><div class="sk"></div></td></tr>' +
+      '<tr><td colspan="6"><div class="sk"></div></td></tr>';
+  }
 
   fetch("/api/read/repair-cases", { headers: headers() }).then(function (r) {
     return r.json().then(function (d) { return { http: r.status, d: d }; });
   }).then(function (pack) {
     if (!pack.d || pack.d.ok !== true) {
-      setTiles({ need_me: "—", ready: "—", waiting: "—", stalled: "—" });
-      if (need) need.textContent = "—";
-      showErr(pack.http === 403
-        ? "This queue is for staff on this desk."
-        : "Could not load repair files. Try again.");
-      if (body) {
-        body.innerHTML = '<tr><td colspan="5" class="repair-empty">The list is empty until the load works.</td></tr>';
-      }
+      dashTiles();
+      setPaneState("error");
+      showStateMessage(
+        '<div class="big">Couldn\'t load</div>' +
+        '<p><button type="button" class="primary" id="repairRetry">Retry</button></p>'
+      );
+      var retry = document.getElementById("repairRetry");
+      if (retry) retry.addEventListener("click", function () { loadRepairDesk(); });
+      if (pack.http === 403) showErr("This queue is for staff on this desk.");
       return;
     }
+    clearErr();
     setTiles(pack.d);
-    var files = pack.d.files || [];
-    if (!files.length) {
-      if (body) {
-        body.innerHTML = '<tr><td colspan="5" class="repair-empty">No repair files yet. A client shows up here after they start repair. <a href="pipeline.html">Open Pipeline</a></td></tr>';
-      }
+    loadedFiles = pack.d.files || [];
+    if (!loadedFiles.length) {
+      setPaneState("empty");
+      showStateMessage('<div class="big">No repair clients yet.</div><p>Close a client on repair and they land here on their own.</p>');
+      if (body) body.innerHTML = "";
       return;
     }
+    setPaneState("loaded");
+    hideStateMessage();
     if (!body) return;
-    body.innerHTML = files.map(function (f) {
+    body.innerHTML = loadedFiles.map(function (f) {
+      var chip = L.deriveChip(f);
+      var due = L.dueWords(f.response_due_at);
+      var sets = L.tileSets(f, chip).join(" ");
+      var dots = L.warningDots(f).map(function (d) {
+        return '<span class="repair-wdot">' + esc(d.label) + "</span>";
+      }).join("");
       var pill = (V && V.repairStagePill)
         ? V.repairStagePill(f.stage_key)
         : { cls: "", text: f.stage_label || "—" };
-      return '<tr class="case-main" data-repair-row="' + esc(f.client_id) + '" tabindex="0">' +
-        "<td>" + esc(f.name) + "</td>" +
-        "<td>" + esc(f.round || "—") + "</td>" +
+      return '<tr class="case-main repair-row" data-repair-row="' + esc(f.client_id) +
+        '" data-set="' + esc(sets) + '" tabindex="0" aria-expanded="false">' +
+        '<td class="name">' + esc(f.name) + "</td>" +
+        '<td class="mono">' + esc(f.program || "—") + "</td>" +
+        '<td class="mono">' + esc(L.roundLabel(f)) + "</td>" +
         '<td><span class="status-pill ' + pill.cls + '">' + esc(pill.text) + "</span></td>" +
-        "<td>" + String(f.letters_ready || 0) + "</td>" +
-        "<td>" + String(f.letters_sent || 0) + "</td>" +
+        '<td><span class="repair-chip ' + esc(chip.key) + '">' + esc(chip.label) + "</span>" + dots + "</td>" +
+        '<td class="repair-due ' + esc(due.tone) + '">' + esc(due.text) + "</td>" +
         "</tr>";
     }).join("");
+    if (activeFilter) applyFilter(activeFilter);
     body.querySelectorAll("[data-repair-row]").forEach(function (tr) {
       tr.addEventListener("click", function () { toggleRepairRow(tr); });
       tr.addEventListener("keydown", function (e) {
@@ -2231,10 +2647,14 @@ function loadRepairDesk() {
       });
     });
   }).catch(function () {
-    showErr("Could not load repair files. Try again.");
-    if (body) {
-      body.innerHTML = '<tr><td colspan="5" class="repair-empty">The list is empty until the load works.</td></tr>';
-    }
+    dashTiles();
+    setPaneState("error");
+    showStateMessage(
+      '<div class="big">Couldn\'t load</div>' +
+      '<p><button type="button" class="primary" id="repairRetry">Retry</button></p>'
+    );
+    var retry = document.getElementById("repairRetry");
+    if (retry) retry.addEventListener("click", function () { loadRepairDesk(); });
   });
 
   fetch("/api/repair/exceptions", { headers: headers() }).then(function (r) {
@@ -2282,102 +2702,210 @@ function loadRepairDesk() {
           });
       });
     });
-  /* Leave the stuck panel hidden if the read fails. This is NOT a role problem, and
-     the comment that used to sit here said it was: Specialist, owner and admin all
-     pass /api/repair/exceptions. The panel is empty because both lists it reads are
-     always empty today — nothing ever marks a repair card stalled, and nothing ever
-     writes a bureau reply. The 2026-08-18 audit read the old comment and recorded
-     T4-05 as a permissions fault. It is not one. */
   }).catch(function () { });
 
   function toggleRepairRow(tr) {
     var id = tr.getAttribute("data-repair-row");
     var open = tr.getAttribute("aria-expanded") === "true";
     var next = tr.nextElementSibling;
-    if (next && next.classList.contains("case-detail-row")) next.remove();
+    if (next && next.classList.contains("repair-expand")) next.remove();
+    body.querySelectorAll("tr.repair-row.active-row").forEach(function (r) {
+      if (r !== tr) {
+        r.classList.remove("active-row");
+        r.setAttribute("aria-expanded", "false");
+        var n2 = r.nextElementSibling;
+        if (n2 && n2.classList.contains("repair-expand")) n2.remove();
+      }
+    });
     if (open) {
       tr.setAttribute("aria-expanded", "false");
+      tr.classList.remove("active-row");
       return;
     }
     tr.setAttribute("aria-expanded", "true");
+    tr.classList.add("active-row");
     var detail = document.createElement("tr");
-    detail.className = "case-detail-row";
-    detail.innerHTML = '<td colspan="5"><div class="case-detail">Loading letters…</div></td>';
+    detail.className = "repair-expand";
+    detail.innerHTML = '<td colspan="6"><div class="lt-detail">Loading…</div></td>';
     tr.parentNode.insertBefore(detail, tr.nextSibling);
     fetch("/api/read/repair-cases?client_id=" + encodeURIComponent(id), { headers: headers() })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d || d.ok !== true) {
-          detail.innerHTML = '<td colspan="5"><div class="repair-err">Could not load this file.</div></td>';
+          detail.innerHTML = '<td colspan="6"><div class="repair-err">Could not load this file.</div></td>';
           return;
         }
+        var file = d.file || {};
         var letters = d.letters || [];
         var items = d.items || [];
+        var timeline = d.timeline || [];
         var sendable = letters.filter(function (l) { return l.can_send && l.html; });
-        var letterHtml = letters.length
-          ? letters.map(function (l) {
-              var name = (V && V.bureauLabel) ? V.bureauLabel(l.bureau) : l.bureau;
-              return '<div class="letter-row"><div><div class="lt-name">' + esc(name) +
-                " · " + esc(l.round || "") + '</div><div class="lt-detail">' +
-                esc(l.status) + "</div></div></div>";
-            }).join("")
-          : '<div class="repair-empty">No letters ready. Analysis has to finish first.</div>';
         var itemHtml = items.length
-          ? "<ul>" + items.slice(0, 12).map(function (it) {
-              return "<li>" + esc(it.creditor || it.rule_id) + " · " + esc(it.rule_id) +
-                " · " + esc(it.status) + "</li>";
+          ? "<ul>" + items.slice(0, 20).map(function (it) {
+              var sev = String(it.severity || "");
+              var tagCls = sev === "deletion" ? "del" : (sev === "strong" ? "strong" : "mod");
+              return "<li>" + esc(it.creditor || it.rule_id) +
+                (it.account_last4 ? ' <span class="mono">····' + esc(it.account_last4) + "</span>" : "") +
+                ' <span class="repair-tag ' + tagCls + '">' + esc(sev || "item") + "</span>" +
+                ' <span class="repair-tag">' + esc(it.rule_id || "") + "</span></li>";
             }).join("") + "</ul>"
-          : "<p class=\"lt-detail\">No dispute items on this file yet.</p>";
-        var sendBtn = sendable.length
-          ? '<div class="case-actions"><button type="button" class="primary" data-act="repair-send">Send letters</button></div>'
-          : "";
-        detail.innerHTML = '<td colspan="5"><div class="case-expand">' +
-          '<div class="case-col"><h4>Items</h4>' + itemHtml + "</div>" +
-          '<div class="case-col"><h4>Letters</h4>' + letterHtml + sendBtn +
-          '<p class="lt-detail" data-send-msg></p></div></div></td>';
-        var btn = detail.querySelector("[data-act=repair-send]");
-        if (!btn) return;
-        btn.addEventListener("click", function () {
-          var req;
-          try {
-            req = V.buildRepairSendRequest({
-              clientId: id,
-              mail: true,
-              letters: sendable
-            });
-          } catch (e) {
-            var slot = detail.querySelector("[data-send-msg]");
-            if (slot) slot.textContent = e.message || "invalid";
-            return;
+          : '<p class="lt-detail">No dispute items on this file yet.</p>';
+        var letterHtml = letters.length
+          ? "<ul>" + letters.map(function (l, idx) {
+              var name = (V && V.bureauLabel) ? V.bureauLabel(l.bureau) : (l.bureau || "Letter");
+              var furn = l.target === "furnisher" ? ' <span class="repair-tag furn">furnisher</span>' : "";
+              return '<li role="button" tabindex="0" data-letter-idx="' + idx + '">' +
+                esc(name) + " · " + esc(l.round || "") +
+                ' <span class="repair-tag">' + esc(l.status || "") + "</span>" + furn + "</li>";
+            }).join("") + "</ul>"
+          : '<p class="lt-detail">No letters ready. Analysis has to finish first.</p>';
+        var timeHtml = timeline.length
+          ? '<ul class="mono" style="font-size:.8rem">' + timeline.map(function (t) {
+              return "<li>" + esc(t.words || L.timelineLine(t)) + "</li>";
+            }).join("") + "</ul>"
+          : '<p class="lt-detail">No timeline yet.</p>';
+        detail.innerHTML =
+          '<td colspan="6"><div class="repair-xgrid">' +
+          '<div class="repair-xcard"><h3>Items</h3>' + itemHtml + "</div>" +
+          '<div class="repair-xcard"><h3>Letters this round</h3>' + letterHtml + "</div>" +
+          '<div class="repair-xcard"><h3>Timeline</h3>' + timeHtml + "</div>" +
+          '</div><div class="case-actions" style="margin-top:14px">' +
+          '<button type="button" class="primary" data-act="repair-send"' + (sendable.length ? "" : " disabled") + ">Send</button>" +
+          '<button type="button" data-act="repair-stage">Stage</button>' +
+          '<button type="button" data-act="repair-pull">Soft pull</button>' +
+          '<button type="button" data-act="repair-clean">Clean personal info</button>' +
+          '<button type="button" data-act="repair-enroll">Enroll</button>' +
+          '<p class="lt-detail" data-send-msg></p></div></td>';
+
+        detail.querySelectorAll("[data-letter-idx]").forEach(function (li) {
+          function open() {
+            var idx = Number(li.getAttribute("data-letter-idx"));
+            openLetterDrawer(letters[idx], file, d.signer_name, d.signed_at);
           }
-          btn.disabled = true;
-          btn.textContent = "Sending…";
-          fetch(req.path, { method: req.method, headers: headers(true), body: JSON.stringify(req.body) })
-            .then(function (r) { return r.json(); })
-            .then(function (out) {
-              btn.disabled = false;
-              if (out && out.ok) {
-                btn.textContent = "Sent";
-                loadRepairDesk();
-              } else {
-                btn.textContent = "Send letters";
-                var slot = detail.querySelector("[data-send-msg]");
-                if (slot) slot.textContent = (out && (out.error || out.message)) || "Send failed";
-              }
-            })
-            .catch(function () {
-              btn.disabled = false;
-              btn.textContent = "Send letters";
-              var slot = detail.querySelector("[data-send-msg]");
-              if (slot) slot.textContent = "Send failed";
-            });
+          li.addEventListener("click", function (e) { e.stopPropagation(); open(); });
+          li.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); open(); }
+          });
         });
+
+        var sendBtn = detail.querySelector("[data-act=repair-send]");
+        if (sendBtn && sendable.length) {
+          sendBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            var req;
+            try {
+              req = V.buildRepairSendRequest({ clientId: id, mail: true, letters: sendable });
+            } catch (errSend) {
+              var slot = detail.querySelector("[data-send-msg]");
+              if (slot) slot.textContent = errSend.message || "invalid";
+              return;
+            }
+            sendBtn.disabled = true;
+            sendBtn.textContent = "Sending…";
+            fetch(req.path, { method: req.method, headers: headers(true), body: JSON.stringify(req.body) })
+              .then(function (r) { return r.json(); })
+              .then(function (out) {
+                sendBtn.disabled = false;
+                if (out && out.ok) {
+                  sendBtn.textContent = "Sent";
+                  loadRepairDesk();
+                } else {
+                  sendBtn.textContent = "Send";
+                  var slot = detail.querySelector("[data-send-msg]");
+                  if (slot) slot.textContent = (out && (out.error || out.message)) || "Send failed";
+                }
+              })
+              .catch(function () {
+                sendBtn.disabled = false;
+                sendBtn.textContent = "Send";
+              });
+          });
+        }
+        var stageBtn = detail.querySelector("[data-act=repair-stage]");
+        if (stageBtn) {
+          stageBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            stageBtn.disabled = true;
+            stageBtn.textContent = "Staging…";
+            fetch("/api/repair/generate", {
+              method: "POST",
+              headers: headers(true),
+              body: JSON.stringify({ client_id: id })
+            }).then(function (r) { return r.json(); }).then(function (out) {
+              stageBtn.disabled = false;
+              stageBtn.textContent = "Stage";
+              var slot = detail.querySelector("[data-send-msg]");
+              if (slot) slot.textContent = (out && out.ok) ? "Letters staged." : ((out && (out.reason || out.error)) || "Stage failed");
+              if (out && out.ok) loadRepairDesk();
+            }).catch(function () {
+              stageBtn.disabled = false;
+              stageBtn.textContent = "Stage";
+            });
+          });
+        }
+        var pullBtn = detail.querySelector("[data-act=repair-pull]");
+        if (pullBtn) {
+          pullBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            openPull(id);
+          });
+        }
+        var cleanBtn = detail.querySelector("[data-act=repair-clean]");
+        if (cleanBtn) {
+          cleanBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            var slot = detail.querySelector("[data-send-msg]");
+            if (!window.confirm("Clean personal info for this client? Owner/admin only. This cannot be undone.")) return;
+            cleanBtn.disabled = true;
+            fetch("/api/privacy/erasure", {
+              method: "POST",
+              headers: headers(true),
+              body: JSON.stringify({
+                client_id: id,
+                confirm_client_id: id,
+                reason: "Specialist desk Clean personal info"
+              })
+            }).then(function (r) { return r.json().then(function (d2) { return { status: r.status, d: d2 }; }); })
+              .then(function (pack2) {
+                cleanBtn.disabled = false;
+                if (slot) {
+                  slot.textContent = (pack2.d && pack2.d.ok)
+                    ? "Personal info cleaned."
+                    : ((pack2.d && (pack2.d.error || pack2.d.message)) || "Could not clean (owner/admin only).");
+                }
+              })
+              .catch(function () {
+                cleanBtn.disabled = false;
+                if (slot) slot.textContent = "Could not clean.";
+              });
+          });
+        }
+        var enrollBtn = detail.querySelector("[data-act=repair-enroll]");
+        if (enrollBtn) {
+          enrollBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            enrollBtn.disabled = true;
+            fetch("/api/repair/enroll", {
+              method: "POST",
+              headers: headers(true),
+              body: JSON.stringify({ client_id: id, program: "trial", price_total: 200, amount_paid: 200 })
+            }).then(function (r) { return r.json(); }).then(function (out) {
+              enrollBtn.disabled = false;
+              var slot = detail.querySelector("[data-send-msg]");
+              if (slot) slot.textContent = (out && out.ok) ? "Enrolled in trial." : ((out && (out.error || out.message)) || "Enroll failed");
+              if (out && out.ok) loadRepairDesk();
+            }).catch(function () {
+              enrollBtn.disabled = false;
+            });
+          });
+        }
       })
       .catch(function () {
-        detail.innerHTML = '<td colspan="5"><div class="repair-err">Could not load this file.</div></td>';
+        detail.innerHTML = '<td colspan="6"><div class="repair-err">Could not load this file.</div></td>';
       });
   }
 }
+
 </script>
 </body>
 </html>

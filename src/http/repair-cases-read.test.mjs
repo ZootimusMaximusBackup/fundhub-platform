@@ -1,4 +1,5 @@
 // GET /api/read/repair-cases — stubbed database. No Postgres.
+// Pins §9 signals: program/auth/trial_ending, no money, detail timeline/signer/target.
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
@@ -18,13 +19,26 @@ function makeRes() {
   return res;
 }
 
-function makeDb({ session = {}, files = [], letters = [], items = [] } = {}) {
+function makeDb({
+  session = {},
+  files = [],
+  letters = [],
+  items = [],
+  programs = [],
+  consents = [],
+  identity = [],
+  dues = [],
+  unconfirmed = [],
+  timeline = [],
+  contracts = []
+} = {}) {
   const calls = [];
   return {
     calls,
     async query(sql, params) {
       calls.push({ sql, params });
-      if (sql.includes("UPDATE sessions")) {
+      const text = String(sql);
+      if (text.includes("UPDATE sessions")) {
         if (session === null) return { rows: [] };
         return {
           rows: [{
@@ -36,16 +50,25 @@ function makeDb({ session = {}, files = [], letters = [], items = [] } = {}) {
           }]
         };
       }
-      if (sql.includes("FROM cards") && sql.includes("AND c.client_id")) {
+      if (/FROM repair_programs/i.test(text)) return { rows: programs };
+      if (/FROM client_consents/i.test(text)) return { rows: consents };
+      if (/FROM pii_identity/i.test(text)) return { rows: identity };
+      if (/MIN\(response_due_at\)/i.test(text) && /client_id = ANY/i.test(text) && /GROUP BY client_id/i.test(text)) {
+        return { rows: dues };
+      }
+      if (/FROM dispute_responses/i.test(text)) return { rows: unconfirmed };
+      if (/FROM repair_decision_log/i.test(text)) return { rows: timeline };
+      if (/FROM contracts/i.test(text)) return { rows: contracts };
+      if (text.includes("FROM cards") && text.includes("AND c.client_id")) {
         return { rows: files };
       }
-      if (sql.includes("FROM cards")) {
+      if (text.includes("FROM cards")) {
         return { rows: files };
       }
-      if (sql.includes("FROM dispute_letters")) {
+      if (text.includes("FROM dispute_letters")) {
         return { rows: letters };
       }
-      if (sql.includes("FROM dispute_items")) {
+      if (text.includes("FROM dispute_items")) {
         return { rows: items };
       }
       throw new Error("stub db: unexpected query:\n" + sql);
@@ -59,6 +82,23 @@ const req = (over = {}) => ({
   query: {},
   ...over
 });
+
+const baseFile = {
+  card_id: "card-1",
+  client_id: CLIENT,
+  first_name: "Pat",
+  last_name: "Lee",
+  email: "pat@example.com",
+  stage_key: "ready_to_send",
+  updated_at: "2026-08-17T00:00:00Z",
+  entered_at: "2026-08-17T00:00:00Z",
+  round: "R1",
+  bureaus: ["EX"],
+  response_due_at: null,
+  case_count: 1,
+  letters_ready: 2,
+  letters_sent: 0
+};
 
 describe("GET /api/read/repair-cases", () => {
   test("refuses an unknown method", async () => {
@@ -79,33 +119,43 @@ describe("GET /api/read/repair-cases", () => {
     assert.equal(res.statusCode, 403);
   });
 
-  test("lists repair files scoped to the session org", async () => {
+  test("lists repair files with program/auth and trial_ending — no money", async () => {
     const db = makeDb({
-      files: [{
-        card_id: "card-1",
+      files: [baseFile],
+      programs: [{
         client_id: CLIENT,
-        first_name: "Pat",
-        last_name: "Lee",
-        email: "pat@example.com",
-        stage_key: "ready_to_send",
-        updated_at: "2026-08-17T00:00:00Z",
-        round: "R1",
-        bureaus: ["EX"],
-        case_count: 1,
-        letters_ready: 2,
-        letters_sent: 0
-      }]
+        program: "trial",
+        rounds_cap: 2,
+        status: "upsell_pending"
+      }],
+      consents: [{ client_id: CLIENT, is_valid: true }],
+      identity: [{ client_id: CLIENT, address_ok: true }]
     });
     const res = makeRes();
     await handler(req(), res, { db });
     assert.equal(res.statusCode, 200);
     assert.equal(res.body.ok, true);
     assert.equal(res.body.files.length, 1);
-    assert.equal(res.body.files[0].name, "Pat Lee");
-    assert.equal(res.body.files[0].can_send, true);
-    assert.equal(res.body.need_me, 1);
+    const f = res.body.files[0];
+    assert.equal(f.name, "Pat Lee");
+    assert.equal(f.program, "trial");
+    assert.equal(f.rounds_cap, 2);
+    assert.equal(f.authorization_ok, true);
+    assert.equal(f.upsell_pending, true);
+    assert.equal(res.body.trial_ending, 1);
+    assert.ok(!("price_total" in f));
+    assert.ok(!("amount_paid" in f));
+    assert.ok(!("price_total" in res.body));
+    assert.ok(!("amount_paid" in res.body));
+
+    const programCall = db.calls.find((c) => /FROM repair_programs/i.test(c.sql));
+    assert.ok(programCall);
+    assert.ok(!/price_total/i.test(programCall.sql));
+    assert.ok(!/amount_paid/i.test(programCall.sql));
+
     const listCall = db.calls.find((c) => c.sql.includes("FROM cards") && c.sql.includes("LIMIT"));
     assert.equal(listCall.params[0], ORG);
+    assert.match(listCall.sql, /response_due_at/);
   });
 
   test("rejects a bad client_id", async () => {
@@ -114,29 +164,17 @@ describe("GET /api/read/repair-cases", () => {
     assert.equal(res.statusCode, 400);
   });
 
-  test("detail returns sendable letters for one client in the session org", async () => {
+  test("detail returns timeline, signer, target, and sendable letters", async () => {
     const db = makeDb({
-      files: [{
-        card_id: "card-1",
-        client_id: CLIENT,
-        first_name: "Pat",
-        last_name: "Lee",
-        email: "pat@example.com",
-        stage_key: "ready_to_send",
-        updated_at: "2026-08-17T00:00:00Z",
-        round: "R1",
-        bureaus: ["EX"],
-        case_count: 1,
-        letters_ready: 1,
-        letters_sent: 0
-      }],
+      files: [baseFile],
       letters: [{
         id: "letter-1",
         bureau: "EX",
         round: "R1",
         status: "ready",
         body_text: "Dear Experian",
-        rule_ids: ["M2-005"]
+        rule_ids: ["M2-005"],
+        target: "bureau"
       }],
       items: [{
         id: "item-1",
@@ -148,6 +186,18 @@ describe("GET /api/read/repair-cases", () => {
         round: "R1",
         status: "open",
         outcome: null
+      }],
+      programs: [{ client_id: CLIENT, program: "full", rounds_cap: 6, status: "active" }],
+      consents: [{ client_id: CLIENT, is_valid: true }],
+      identity: [{ client_id: CLIENT, address_ok: true }],
+      timeline: [{
+        ts: "2026-08-21T10:00:00Z",
+        action: "letters_generated",
+        payload: {}
+      }],
+      contracts: [{
+        signer_name: "Pat Lee",
+        signed_at: "2026-08-19T12:00:00Z"
       }]
     });
     const res = makeRes();
@@ -156,6 +206,12 @@ describe("GET /api/read/repair-cases", () => {
     assert.equal(res.body.can_send, true);
     assert.equal(res.body.letters[0].html, "Dear Experian");
     assert.equal(res.body.letters[0].can_send, true);
+    assert.equal(res.body.letters[0].target, "bureau");
+    assert.equal(res.body.signer_name, "Pat Lee");
+    assert.ok(res.body.signed_at);
+    assert.ok(Array.isArray(res.body.timeline));
+    assert.equal(res.body.timeline.length, 1);
+    assert.ok(!("price_total" in (res.body.file || {})));
     const orgBinds = db.calls.filter((c) => c.sql.includes("org_id = $1")).map((c) => c.params[0]);
     assert.ok(orgBinds.length >= 2);
     assert.ok(orgBinds.every((id) => id === ORG));
