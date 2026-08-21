@@ -5,6 +5,7 @@ import { db } from "../../src/db.mjs";
 import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
 import { SUPER_ROLES } from "../../src/http/middleware/requireRole.mjs";
 import { isUuid } from "../../src/http/read-api.mjs";
+import { confirmHeldParse } from "../../src/repair/parse-loop.mjs";
 
 const ALLOWED = new Set(["owner", "admin", "inquiry_specialist", ...SUPER_ROLES]);
 
@@ -60,16 +61,19 @@ export default async function handler(req, res) {
     catch { return res.status(400).json({ ok: false, error: "invalid_json" }); }
     if (body.action === "confirm_parse" && body.responseId) {
       try {
-        await db.query(
-          `UPDATE dispute_responses
-              SET confirmed = true, confirmed_at = now(), confirmed_by = $2
-            WHERE id = $1 AND org_id = $3`,
-          [body.responseId, principal.staffId || null, orgId]
-        );
+        const result = await confirmHeldParse(db, {
+          orgId,
+          responseId: body.responseId,
+          confirmedBy: principal.staffId || null,
+          confirmedOutcomes: body.outcomes || body.confirmedOutcomes || null
+        });
+        if (!result.ok) {
+          return res.status(400).json({ ok: false, error: result.reason || "confirm_failed" });
+        }
+        return res.status(200).json({ ok: true, ...result });
       } catch (e) {
         return res.status(500).json({ ok: false, error: String(e.message || e) });
       }
-      return res.status(200).json({ ok: true });
     }
     return res.status(400).json({ ok: false, error: "unsupported_action" });
   }

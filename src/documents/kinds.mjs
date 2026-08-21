@@ -13,7 +13,9 @@ export const KINDS = Object.freeze({
   CONTRACT: "contract",                   // funding agreement, repair engagement, partner license
   INVOICE_DOCUMENT: "invoice_document",   // the rendered artifact for an invoices row
   DELIVERABLE: "deliverable",             // the five UnderwriteIQ deliverables
-  CLIENT_UPLOAD: "client_upload"          // a file the CLIENT sent us — see 118_client_uploads.sql
+  CLIENT_UPLOAD: "client_upload",         // a file the CLIENT sent us — see 118_client_uploads.sql
+  BUREAU_RESPONSE: "bureau_response",     // bureau reply photo/PDF — repair portal door (251)
+  INQUIRY_DOC: "inquiry_doc"              // FTC / inquiry supporting docs — inquiry portal door (251)
 });
 
 export const ALL_KINDS = Object.freeze(Object.values(KINDS));
@@ -61,6 +63,15 @@ export const SUBTYPES = Object.freeze({
     "tax_return",
     "additional_fraud_docs",
     "other"
+  ]),
+  bureau_response: Object.freeze([
+    "bureau_letter",
+    "other"
+  ]),
+  inquiry_doc: Object.freeze([
+    "ftc_report",
+    "id_document",
+    "other"
   ])
 });
 
@@ -92,6 +103,8 @@ export const SUBTYPE_TITLES = Object.freeze({
   proof_of_income: "Proof of Income",
   tax_return: "Tax Return",
   additional_fraud_docs: "Additional documentation — fraud / identity theft cases",
+  bureau_letter: "Bureau Response Letter",
+  ftc_report: "FTC Identity Theft Report",
   other: "Uploaded Document"
 });
 

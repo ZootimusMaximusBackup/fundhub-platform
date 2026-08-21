@@ -45,11 +45,13 @@ import { storeAndRegister } from "../src/documents/register.mjs";
 import { getDocument } from "../src/documents/retrieve.mjs";
 import { storeFromEnv } from "../src/documents/store.mjs";
 import { KINDS, isKnownSubtype } from "../src/documents/kinds.mjs";
+import { isPortalUploadKind } from "../src/repair/upload-doors.mjs";
 import { validateUpload, maxUploadBytes } from "../src/documents/upload-validate.mjs";
 import { emit } from "../src/events/bus.mjs";
 import { safeError } from "../src/http/health.mjs";
 
 const DEFAULT_SUBTYPE = "other";
+const DEFAULT_KIND = KINDS.CLIENT_UPLOAD;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -88,8 +90,10 @@ export default async function handler(req, res) {
     if (!belongs.rows[0]) return res.status(404).json({ ok: false, error: "no such client" });
   }
 
+  const kindRaw = typeof fields.kind === "string" ? fields.kind.trim() : "";
+  const kind = isPortalUploadKind(kindRaw) ? kindRaw : DEFAULT_KIND;
   const subtypeRaw = typeof fields.subtype === "string" ? fields.subtype.trim() : "";
-  const subtype = subtypeRaw && isKnownSubtype(KINDS.CLIENT_UPLOAD, subtypeRaw) ? subtypeRaw : DEFAULT_SUBTYPE;
+  const subtype = subtypeRaw && isKnownSubtype(kind, subtypeRaw) ? subtypeRaw : DEFAULT_SUBTYPE;
 
   const maxBytes = maxUploadBytes();
   const store = storeFromEnv();
@@ -112,7 +116,7 @@ export default async function handler(req, res) {
       const { document, version } = await storeAndRegister(db, store, {
         orgId,
         clientId,
-        kind: KINDS.CLIENT_UPLOAD,
+        kind,
         subtype,
         discriminator: cryptoRandomId(),
         body: file.buffer,

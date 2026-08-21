@@ -115,6 +115,7 @@ import repairExceptions from "../../api/repair/exceptions.mjs";
 import repairEnroll from "../../api/repair/enroll.mjs";
 import repairGenerate from "../../api/repair/generate.mjs";
 import repairSend from "../../api/repair/send.mjs";
+import repairInboundMail from "../../api/repair/inbound-mail.mjs";
 import pii from "../../api/pii.mjs";
 import shifts from "../../api/shifts.mjs";
 import bookings from "../../api/bookings.mjs";
@@ -516,6 +517,7 @@ export const ROUTES = {
   "repair/enroll": repairEnroll,
   "repair/generate": repairGenerate,
   "repair/send": repairSend,
+  "repair/inbound-mail": repairInboundMail,
   "pii": pii,
   "shifts": shifts,
   /* Calendar bookings, GET only. Routed in the same commit as the handler,

@@ -22,13 +22,16 @@ export const DEFAULT_MAX_TOKENS = 600;
  */
 export async function callModel({
   system, user, env = process.env, fetchImpl = globalThis.fetch,
-  model = DEFAULT_MODEL, maxTokens = DEFAULT_MAX_TOKENS
+  model = DEFAULT_MODEL, maxTokens = DEFAULT_MAX_TOKENS,
+  media = []
 } = {}) {
+  const mediaParts = Array.isArray(media) ? media.filter(Boolean) : [];
   const request = {
     model,
     system: String(system || ""),
     user: String(user || ""),
-    max_tokens: maxTokens
+    max_tokens: maxTokens,
+    media_count: mediaParts.length
   };
 
   const key = env && env.ANTHROPIC_API_KEY;
@@ -60,6 +63,7 @@ export async function callModel({
   }
 
   try {
+    const userContent = buildUserContent(request.user, mediaParts);
     const res = await fetchImpl("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -71,7 +75,7 @@ export async function callModel({
         model: request.model,
         max_tokens: request.max_tokens,
         system: request.system,
-        messages: [{ role: "user", content: request.user }]
+        messages: [{ role: "user", content: userContent }]
       })
     });
 
@@ -100,6 +104,23 @@ export async function callModel({
       usage: { input_tokens: 0, output_tokens: 0 }
     };
   }
+}
+
+function buildUserContent(userText, mediaParts = []) {
+  if (!mediaParts.length) return String(userText || "");
+  const parts = [];
+  for (const m of mediaParts) {
+    const data = m.dataBase64 || m.data;
+    const mediaType = m.mediaType || m.media_type || "image/jpeg";
+    if (!data) continue;
+    if (m.type === "document" || mediaType === "application/pdf") {
+      parts.push({ type: "document", source: { type: "base64", media_type: mediaType, data } });
+    } else {
+      parts.push({ type: "image", source: { type: "base64", media_type: mediaType, data } });
+    }
+  }
+  parts.push({ type: "text", text: String(userText || "") });
+  return parts;
 }
 
 function extractText(raw) {
