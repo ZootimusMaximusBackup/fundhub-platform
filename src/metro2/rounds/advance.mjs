@@ -8,17 +8,29 @@ import {
 } from "./state.mjs";
 
 /**
- * @param {{ items: object[], outcomes: { itemId: string, outcome: string }[], latestReportItems?: object[] }} input
+ * @param {{
+ *   items: object[],
+ *   outcomes: { itemId: string, outcome: string }[],
+ *   latestReportItems?: object[],
+ *   roundsCap?: number
+ * }} input
  */
-export function advanceAfterParse({ items, outcomes, latestReportItems = [] }) {
+export function advanceAfterParse({ items, outcomes, latestReportItems = [], roundsCap = 6 }) {
   const byId = new Map((items || []).map((it) => [String(it.id), { ...it }]));
   const log = [];
   for (const row of outcomes || []) {
     const it = byId.get(String(row.itemId));
     if (!it) continue;
-    const next = applyItemOutcome(it, row.outcome);
+    const next = applyItemOutcome(it, row.outcome, { roundsCap });
     byId.set(String(row.itemId), next);
-    log.push({ itemId: row.itemId, from: it.status, to: next.status, round: next.round, outcome: row.outcome });
+    log.push({
+      itemId: row.itemId,
+      from: it.status,
+      to: next.status,
+      round: next.round,
+      outcome: row.outcome,
+      blocked_at_cap: !!next.blocked_at_cap
+    });
   }
   const updated = [...byId.values()];
   return {
@@ -29,9 +41,7 @@ export function advanceAfterParse({ items, outcomes, latestReportItems = [] }) {
   };
 }
 
-/**
- * Gate R2/R3 letters: drop items that vanished on a fresh pull.
- */
+/** Gate R2+ letters: drop items that vanished on a fresh pull. */
 export function filterForDispatch(items, latestReportItems = []) {
   const keep = [];
   const closed = [];

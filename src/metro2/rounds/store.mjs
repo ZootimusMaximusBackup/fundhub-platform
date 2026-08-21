@@ -30,13 +30,21 @@ export async function insertItems(db, caseRow, items = []) {
 }
 
 export async function saveLetter(db, {
-  caseId, orgId, clientId, bureau, round, bodyText, fingerprint, ruleIds, status = "generated"
+  caseId, orgId, clientId, bureau, round, bodyText, fingerprint, ruleIds,
+  status = "generated",
+  target = "bureau",
+  furnisherAddressId = null
 }) {
   const r = await db.query(
     `INSERT INTO dispute_letters
-       (case_id, org_id, client_id, bureau, round, status, body_text, fingerprint, rule_ids)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-    [caseId, orgId, clientId, bureau, round, status, bodyText, fingerprint || [], ruleIds || []]
+       (case_id, org_id, client_id, bureau, round, status, body_text, fingerprint, rule_ids,
+        target, furnisher_address_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+    [
+      caseId, orgId, clientId, bureau, round, status, bodyText, fingerprint || [], ruleIds || [],
+      target || "bureau",
+      furnisherAddressId || null
+    ]
   );
   return r.rows[0];
 }

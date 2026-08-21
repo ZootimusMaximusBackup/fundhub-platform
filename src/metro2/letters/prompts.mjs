@@ -5,9 +5,19 @@ export const ROUND = Object.freeze({
   R1: "R1",
   R2: "R2",
   R3: "R3",
+  R4: "R4",
+  R5: "R5",
+  R6: "R6",
   FURNISHER: "FURNISHER"
 });
 
+/** Rounds 4–6 cycle R2/R3 prompt pools (spec D3). */
+export function promptPoolRound(round) {
+  const r = String(round || ROUND.R1).toUpperCase();
+  if (r === ROUND.R4 || r === ROUND.R6) return ROUND.R2;
+  if (r === ROUND.R5) return ROUND.R3;
+  return r;
+}
 const OPENINGS = Object.freeze({
   [ROUND.R1]: Object.freeze([
     "I am writing to dispute inaccurate information on my credit file.",
@@ -79,7 +89,7 @@ const CLOSINGS = Object.freeze({
 });
 
 function poolFor(table, round) {
-  const key = String(round || ROUND.R1).toUpperCase();
+  const key = promptPoolRound(round);
   return table[key] || table[ROUND.R1];
 }
 
@@ -94,25 +104,31 @@ export function closingFor(seed = 0, round = ROUND.R1) {
 }
 
 export function roundInstructions(round) {
-  switch (String(round || "").toUpperCase()) {
+  const actual = String(round || ROUND.R1).toUpperCase();
+  const pool = promptPoolRound(actual);
+  const label = actual === ROUND.FURNISHER
+    ? "furnisher"
+    : (/^R(\d+)$/.exec(actual)?.[1] || "1");
+
+  switch (pool) {
     case ROUND.R2:
       return {
-        round: ROUND.R2,
-        roundLabel: "2",
+        round: actual,
+        roundLabel: label,
         hooks: ["FCRA § 611(a)(7)", "FCRA § 611(a)(6)(B)(iii)", "15 U.S.C. § 1681s-2(b)"],
         tone: "MOV demand + furnisher escalation",
-        lead: "I already sent a Round 1 dispute. Your response marked items as verified, or you did not answer, without telling me the method of verification.",
+        lead: "I already sent a prior dispute. Your response marked items as verified, or you did not answer, without telling me the method of verification.",
         demand: "Under FCRA section 611(a)(7), describe the method of verification for each item — who you contacted, what records they sent, and what you compared. Under section 611(a)(6)(B)(iii), give me each furnisher's name, address, and telephone number.",
         ask: "If you cannot produce that method, delete the items. I will then dispute the same items with the furnisher.",
         next: "If the furnisher also fails, I will file with the Consumer Financial Protection Bureau. This letter is not a CFPB complaint and not a lawsuit."
       };
     case ROUND.R3:
       return {
-        round: ROUND.R3,
-        roundLabel: "3",
+        round: actual,
+        roundLabel: label,
         hooks: ["FCRA § 611(a)(5)(A)", "15 U.S.C. § 1681n", "15 U.S.C. § 1681o"],
         tone: "Last bureau letter / 15-day deletion demand",
-        lead: "This is my last letter to your bureau on these items before I file with the CFPB and my state attorney general.",
+        lead: "This is a further notice to your bureau on these items before I file with the CFPB and my state attorney general.",
         demand: "Under FCRA section 611(a)(5)(A), delete each item you cannot verify. I demand deletion within 15 days of this letter.",
         ask: "Send written confirmation of every deletion to the address above.",
         next: "Rights under 15 U.S.C. § 1681n and § 1681o stay reserved. This is not a lawsuit and not a CFPB filing. Those come next if you still fail."
@@ -132,7 +148,7 @@ export function roundInstructions(round) {
     default:
       return {
         round: ROUND.R1,
-        roundLabel: "1",
+        roundLabel: label,
         hooks: ["15 U.S.C. § 1681e(b)", "FCRA § 611(a)(1)"],
         tone: "30-day reinvestigation + method of verification request",
         lead: "The items below have Metro 2 reporting defects that make my file inaccurate or misleading.",

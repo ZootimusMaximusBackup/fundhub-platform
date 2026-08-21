@@ -90,6 +90,27 @@ function formatViolationParagraph(v) {
 }
 
 /**
+ * Prior bureau answers become evidence in R2+ letters (spec §5.5 / B3).
+ */
+export function formatPriorEvidence(priorResponses = []) {
+  const lines = [];
+  for (const pr of priorResponses || []) {
+    if (!pr) continue;
+    const dateRaw = pr.date || pr.respondedAt || pr.created_at || null;
+    const date = dateRaw ? String(dateRaw).slice(0, 10) : "an earlier date";
+    const outcome = String(pr.outcome || "verified").toLowerCase();
+    const last4 = String(pr.accountLast4 || pr.account_last4 || "xxxx").replace(/\D/g, "").slice(-4) || "xxxx";
+    const excerpt = String(pr.rawExcerpt || pr.raw_text || "").trim().replace(/\s+/g, " ").slice(0, 200);
+    let line = `On ${date} you responded '${outcome}' for account ending ${last4}`;
+    if (excerpt && excerpt.toLowerCase() !== outcome) {
+      line += `: "${excerpt}"`;
+    }
+    lines.push(`${line}.`);
+  }
+  return lines;
+}
+
+/**
  * Build letter plain text.
  * @param {{
  *   violations: object[],
@@ -98,7 +119,8 @@ function formatViolationParagraph(v) {
  *   round?: string,
  *   seed?: string|number,
  *   undated?: boolean,
- *   date?: string|null
+ *   date?: string|null,
+ *   priorResponses?: object[]
  * }} opts
  */
 export function buildLetterText(opts = {}) {
@@ -125,9 +147,13 @@ export function buildLetterText(opts = {}) {
   const ssn4 = lastFourSsn(identity);
 
   const paragraphs = ordered.map((v) => formatViolationParagraph(v)).filter(Boolean);
+  const evidenceLines = formatPriorEvidence(opts.priorResponses);
+  const evidenceBlock = evidenceLines.length
+    ? ["PRIOR BUREAU RESPONSE (evidence):", ...evidenceLines].join("\n")
+    : null;
   const citationBlock = resolvedCitationBlock(ordered);
   const ruleIdList = ordered.map((v) => v.ruleId).join(", ");
-  const reSubject = instr.round === ROUND.FURNISHER
+  const reSubject = String(round).toUpperCase() === ROUND.FURNISHER
     ? "Furnisher Metro 2 dispute"
     : `Round ${instr.roundLabel || String(instr.round).replace(/^R/, "")} Metro 2 dispute`;
 
@@ -141,11 +167,27 @@ export function buildLetterText(opts = {}) {
   headerLines.push("", bureauName(bureau), "", `Re: ${reSubject} — ${ruleIdList}`);
   const header = headerLines.filter((l, i, a) => !(l === "" && a[i - 1] === "")).join("\n");
 
+  const withEvidence = (parts) => {
+    if (!evidenceBlock) return parts;
+    const out = [];
+    let inserted = false;
+    for (const part of parts) {
+      out.push(part);
+      if (!inserted && (part === open || part === instr.lead)) {
+        out.push("");
+        out.push(evidenceBlock);
+        inserted = true;
+      }
+    }
+    if (!inserted) out.push("", evidenceBlock);
+    return out;
+  };
+
   let body;
   if (attempt % 3 === 1) {
-    body = [open, "", instr.lead, "", instr.demand, "", ...paragraphs.flatMap((p) => [p, ""]), instr.ask].join("\n");
+    body = withEvidence([open, "", instr.lead, "", instr.demand, "", ...paragraphs.flatMap((p) => [p, ""]), instr.ask]).join("\n");
   } else if (attempt % 3 === 2) {
-    body = [
+    body = withEvidence([
       instr.lead,
       "",
       instr.demand,
@@ -157,9 +199,9 @@ export function buildLetterText(opts = {}) {
       ...paragraphs.flatMap((p) => [p, ""]),
       "",
       instr.next
-    ].join("\n");
+    ]).join("\n");
   } else {
-    body = [
+    body = withEvidence([
       open,
       "",
       instr.demand,
@@ -169,7 +211,7 @@ export function buildLetterText(opts = {}) {
       instr.lead,
       "",
       instr.next
-    ].join("\n");
+    ]).join("\n");
   }
 
   return [
