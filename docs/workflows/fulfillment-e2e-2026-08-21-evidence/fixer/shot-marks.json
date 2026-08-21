@@ -1,0 +1,32 @@
+{
+  "b3-s23-1440.png": {
+    "legend": "B3 Present S-23 pay link",
+    "marks": [
+      {
+        "n": "1",
+        "caption": "Send agreement + pay link",
+        "box": {
+          "x": 1113,
+          "y": 428,
+          "w": 315,
+          "h": 40
+        }
+      }
+    ]
+  },
+  "b3-s23-after-1440.png": {
+    "legend": "B3 after pay click",
+    "marks": [
+      {
+        "n": "1",
+        "caption": "After Send agreement + pay link",
+        "box": {
+          "x": 1113,
+          "y": 428,
+          "w": 315,
+          "h": 40
+        }
+      }
+    ]
+  }
+}
