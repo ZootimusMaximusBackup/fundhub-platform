@@ -12,7 +12,10 @@ Subject line one
 
  Body line with {{sender_name}}.
 
- Unsubscribe
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## EM-02   [folder: T - Series (Testimonials)]
@@ -21,12 +24,22 @@ Subject with no name in the header
 
  Body only.
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
+
 ================================================================================
 ## EM-DUP   First Of Two      [folder: (root)]
 ================================================================================
 Shared key, different copy A
 
  Body A.
+
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## EM-DUP   Second Of Two      [folder: F-Series (Funding Round Emails F1–F23)]
@@ -35,12 +48,10 @@ Shared key, different copy B
 
  Body B.
 
-================================================================================
-## EM-SAME   Identical Twin      [folder: (root)]
-================================================================================
-Shared key, identical copy
+– Josh
+FundHub.ai
 
- Same body.
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## EM-SAME   Identical Twin      [folder: (root)]
@@ -48,6 +59,23 @@ Shared key, identical copy
 Shared key, identical copy
 
  Same body.
+
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
+
+================================================================================
+## EM-SAME   Identical Twin      [folder: (root)]
+================================================================================
+Shared key, identical copy
+
+ Same body.
+
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## EM-04 Single Space Header   [folder: (root)]
@@ -56,7 +84,18 @@ Subject line
 
  Body line.
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
+
 ================================================================================
 ## EM-EMPTY   Nothing Below      [folder: (root)]
 ================================================================================
 Only a subject, no body
+
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
+

@@ -23,7 +23,7 @@ SELECT
   'SMS-BS01-02-PRECALL',
   'sms',
   NULL,
-  'Hey {{contact.first_name}}, Fundhub here. Quick check-in before your call — reply if you have questions or need to reschedule. Looking forward to it. Reply STOP to opt out.',
+  'Hey {{contact.first_name}}, Josh from Fundhub here. Quick check-in before your call — reply if you have questions or need to reschedule. Looking forward to it. Reply STOP to opt out.',
   true
 FROM orgs o
 ON CONFLICT (org_id, template_key) DO UPDATE SET

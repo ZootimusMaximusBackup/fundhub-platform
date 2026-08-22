@@ -47,7 +47,7 @@ SELECT
   || E'If it has expired, go back to the sign-in page and ask for a new one.\n\n'
   || E'If you did not ask to sign in, you can ignore this email. '
   || E'Nobody can use the link without opening it from your inbox.\n\n'
-  || E'— Fundhub',
+  || E'— Josh',
   true
 FROM orgs o
 ON CONFLICT (org_id, template_key) DO NOTHING;

@@ -25,9 +25,9 @@ CROSS JOIN (VALUES
   ('SMS-NOBOOK-01',
    'Hey {{contact.first_name}}, it''s Fundhub. Your file is ready — grab a time so we can walk you through what it supports: {{custom_values.booking_link}} Reply STOP to opt out.'),
   ('SMS-NOBOOK-02',
-   'Hey {{contact.first_name}}, Fundhub here. Still worth a look — same file, wrong order of apps is usually the ceiling. Book here: {{custom_values.booking_link}} Reply STOP to opt out.'),
+   'Hey {{contact.first_name}}, Josh from Fundhub here. Still worth a look — same file, wrong order of apps is usually the ceiling. Book here: {{custom_values.booking_link}} Reply STOP to opt out.'),
   ('SMS-NOBOOK-03',
-   'Last nudge from Fundhub, {{contact.first_name}}. Want help mapping your cleanest path? {{custom_values.booking_link}} Reply STOP to opt out.')
+   'Last nudge from Josh at Fundhub, {{contact.first_name}}. Want help mapping your cleanest path? {{custom_values.booking_link}} Reply STOP to opt out.')
 ) AS k(template_key, body)
 ON CONFLICT (org_id, template_key) DO UPDATE SET
   body = EXCLUDED.body,

@@ -35,7 +35,9 @@
     "notion:files": "node scripts/notion-pull-files.mjs",
     "notion:resume": "node scripts/notion-resume-pull.mjs",
     "notion:verify": "node scripts/notion-legacy-verify.mjs",
-    "notion:all": "node scripts/notion-legacy-all.mjs"
+    "notion:all": "node scripts/notion-legacy-all.mjs",
+    "lenders:audit": "node scripts/lenders-audit/run.mjs",
+    "lenders:audit:apply": "node scripts/lenders-audit/apply-manifest.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "^10.7.11",

@@ -10,7 +10,9 @@ import assert from "node:assert";
 import {
   signUnsubscribeUrl, verifyUnsubscribeToken, verifyUnsubscribeRequest,
   withUnsubscribeFooter, unsubscribeSecret,
-  UNSUBSCRIBE_MAX_TTL_SECONDS, UNSUBSCRIBE_LINK_SOURCE
+  UNSUBSCRIBE_MAX_TTL_SECONDS, UNSUBSCRIBE_LINK_SOURCE,
+  formatRepPhone, emailRepPhone, EMAIL_SIGNER_NAME, EMAIL_SIGNER_TITLE,
+  EMAIL_TAGLINE, EMAIL_WORDMARK, EMAIL_LOGO_PATH, EMAIL_SIGNATURE_PATH
 } from "./unsubscribe.mjs";
 
 const SECRET = "unit-test-secret-0123456789abcdef0123456789abcdef";
@@ -123,18 +125,61 @@ test("a soft-pull consent link can never be replayed as an unsubscribe link", ()
 
 /* ── the footer ──────────────────────────────────────────────────────────── */
 
-test("a plain-text body gets a plain-text footer, not markup", () => {
-  const out = withUnsubscribeFooter("Hello there.", "https://fundhub.ai/unsubscribe.html?x=1");
-  assert.ok(out.startsWith("Hello there."), "the approved copy is untouched at the front");
-  assert.ok(out.includes("https://fundhub.ai/unsubscribe.html?x=1"));
-  assert.ok(!/<a /.test(out), "a raw anchor in a text body renders as literal angle brackets");
+test("a plain-text body becomes a branded HTML email with Josh footer + quiet Unsubscribe", () => {
+  const out = withUnsubscribeFooter(
+    "Hello there.",
+    "https://fundhub.ai/unsubscribe.html?x=1",
+    { FUNDHUB_REP_NUMBER: "+15613048368", APP_BASE_URL: "https://fundhub.ai" }
+  );
+  assert.ok(out.includes("Hello there."), "the approved copy is still present");
+  assert.ok(/<!DOCTYPE html|<html/i.test(out), "plain copy is wrapped so Resend sends HTML");
+  assert.ok(out.includes('Unsubscribe</a>'), "the control is a labeled link");
+  assert.ok(out.includes("padding:5px 12px"), "Unsubscribe is a quiet outlined pill, not a black brick");
+  assert.ok(out.includes("border:1px solid #d1d5db"), "outlined control, not a filled black button");
+  assert.ok(!out.includes("background:#111827"), "no giant black Unsubscribe brick");
+  assert.ok(!/text-transform:uppercase/i.test(out), "title stays sentence case — not ALL CAPS");
+  assert.ok(!/Georgia|'Times New Roman'/i.test(out), "Josh is normal weight sans, not giant serif");
+  assert.ok(out.includes("font:400 14px/1.3 'Inter'"), "Josh uses brand Inter sans");
+  assert.ok(out.includes("fonts.googleapis.com/css2?family=Inter"), "shell loads Inter for email clients");
+  assert.ok(out.includes("Funding Intelligence for Entrepreneurs"), "tagline rides with the footer");
+  assert.ok(out.includes(EMAIL_TAGLINE), "tagline uses Fundhub.ai brand casing");
+  assert.ok(!out.includes("FundHub"), "never the wrong brand casing");
+  assert.ok(out.includes(EMAIL_SIGNER_NAME), "signed by Josh");
+  assert.ok(out.includes(EMAIL_SIGNER_TITLE), "executive title with Fundhub.ai");
+  assert.ok(EMAIL_SIGNER_TITLE.includes("Fundhub.ai"), "title uses Fundhub.ai, not FundHub");
+  assert.ok(!/client care|customer service|support/i.test(out), "no support-desk framing");
+  assert.ok(out.includes("(561) 304-8368"), "Fundhub number is visible");
+  assert.ok(out.includes("Fundhub.ai"), "brand includes .ai — not a bare fundhub. logo");
+  assert.ok(EMAIL_WORDMARK === "fundhub.ai", "wordmark casing is fundhub.ai");
+  assert.ok(out.includes(EMAIL_SIGNATURE_PATH), "handwritten signature is in the footer");
+  assert.match(
+    out,
+    new RegExp(`${EMAIL_SIGNATURE_PATH.replace(/\./g, "\\.")}[\\s\\S]*?${EMAIL_SIGNER_NAME}`),
+    "signature leads the personal block"
+  );
+  assert.ok(!out.includes(EMAIL_LOGO_PATH), "no floating fundhub. PNG — brand lives in title/tagline");
+  assert.ok(!/\nUnsubscribe: https:\/\//.test(out), "no raw URL dump under the copy");
 });
 
-test("an HTML body gets an anchor, so the link is clickable", () => {
+test("an HTML body gets the professional footer injected before </body>", () => {
   const body = "<html><body><p>Hello</p></body></html>";
-  const out = withUnsubscribeFooter(body, "https://fundhub.ai/unsubscribe.html?x=1");
+  const out = withUnsubscribeFooter(
+    body,
+    "https://fundhub.ai/unsubscribe.html?x=1",
+    { FUNDHUB_REP_NUMBER: "+15613048368", APP_BASE_URL: "https://fundhub.ai" }
+  );
   assert.ok(out.includes('<a href="https://fundhub.ai/unsubscribe.html?x=1"'));
-  assert.ok(out.startsWith(body), "the approved copy is untouched at the front");
+  assert.ok(out.includes("Unsubscribe</a>"));
+  assert.ok(out.includes("padding:5px 12px"));
+  assert.ok(out.includes("<p>Hello</p>"), "the approved copy is still present");
+  assert.ok(out.includes(EMAIL_SIGNER_NAME));
+  assert.ok(out.includes(EMAIL_SIGNATURE_PATH));
+  assert.ok(out.includes(EMAIL_SIGNER_TITLE));
+});
+
+test("formatRepPhone turns E.164 into a readable US number", () => {
+  assert.equal(formatRepPhone("+15613048368"), "(561) 304-8368");
+  assert.equal(emailRepPhone({ FUNDHUB_REP_NUMBER: "+15613048368" }), "(561) 304-8368");
 });
 
 test("a body that already carries the link is left alone", () => {

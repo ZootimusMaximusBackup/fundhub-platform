@@ -242,9 +242,11 @@
   /* compose */
   .compose{background:var(--surface);border-top:1px solid var(--line);padding:9px 16px 10px;flex-shrink:0;}
   .compose-top{display:flex;align-items:center;gap:6px;margin-bottom:7px;}
+  .ch-toggle{display:flex;align-items:center;gap:4px;}
   .ch-btn{font-size:var(--fs-caption);font-weight:700;padding:4px 11px;border-radius:6px;border:1px solid var(--line);
-    background:var(--surface);color:var(--text-dim);}
+    background:var(--surface);color:var(--text-dim);cursor:pointer;font-family:inherit;}
   .ch-btn.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .ch-btn:disabled{opacity:.45;cursor:default;}
   .compose-note{margin-left:auto;font-size:var(--fs-caption);color:var(--text-faint);display:flex;align-items:center;gap:6px;}
   .compose-note .pausetag{background:var(--accent-bg);color:var(--ink2);border:1px solid var(--accent-line);
     border-radius:4px;padding:1px 6px;font-size:var(--fs-caption);font-weight:700;}
@@ -478,8 +480,11 @@
 
       <div class="compose">
         <div class="compose-top">
-          <span class="ch-btn active" id="composeChannel">&mdash;</span>
-          <span class="compose-note" id="composeNote">A reply goes out on the same channel the conversation is on.</span>
+          <div class="ch-toggle" id="composeChannelToggle" hidden>
+            <button type="button" class="ch-btn" data-channel="email" id="chEmail">Email</button>
+            <button type="button" class="ch-btn" data-channel="sms" id="chText">Text</button>
+          </div>
+          <span class="compose-note" id="composeNote">Switch Email or Text to open that conversation.</span>
         </div>
         <!-- The texting-hours rule, stated BEFORE anything is typed. Hidden on
              email threads, where it does not apply. -->
@@ -1053,7 +1058,7 @@
     $("thAv").textContent = "—";
     $("thread").innerHTML = '<div class="empty-box">Pick a conversation on the left to read it.</div>';
     $("footName").textContent = "none open";
-    $("composeChannel").textContent = "—";
+    paintChannelToggle(null);
     paintQuietNote(null);
     $("composeBody").disabled = true;
     $("composeBody").value = "";
@@ -1105,6 +1110,93 @@
     el.className = "quiet-note" + (notice.closed ? " closed" : "");
   }
 
+  /* Email / Text toggle. One conversation per channel. Switching does not
+     change the send channel on the open thread — it opens (or starts) the
+     other conversation for the same person. */
+  function paintChannelToggle(channel) {
+    var wrap = $("composeChannelToggle");
+    if (!channel || (channel !== "email" && channel !== "sms")) {
+      wrap.hidden = true;
+      $("chEmail").classList.remove("active");
+      $("chText").classList.remove("active");
+      $("chEmail").disabled = true;
+      $("chText").disabled = true;
+      return;
+    }
+    wrap.hidden = false;
+    $("chEmail").disabled = false;
+    $("chText").disabled = false;
+    $("chEmail").classList.toggle("active", channel === "email");
+    $("chText").classList.toggle("active", channel === "sms");
+  }
+
+  function openEmptyChannel(row) {
+    state.selected = row;
+    paintList();
+    $("thName").textContent = V.displayName(row);
+    $("thSub").textContent = (row.channel === "email" ? "EMAIL" : "SMS") + " · no thread yet";
+    $("thAv").textContent = V.initials(row);
+    $("footName").textContent = V.displayName(row);
+    paintChannelToggle(row.channel);
+    paintQuietNote(row.channel);
+    $("composeBody").disabled = false;
+    $("composeBody").value = "";
+    $("composeBody").placeholder = "Write to " + V.displayName(row) + "…";
+    $("composeTo").disabled = false;
+    $("composeTo").value = "";
+    $("composeTo").placeholder = row.channel === "email"
+      ? "name@example.com" : "+15551234567";
+    paintTo();
+    $("thread").innerHTML = row.channel === "email"
+      ? '<div class="empty-box">No emails with them yet. Your reply below would be the first.</div>'
+      : '<div class="empty-box">No texts with them yet. Your reply below would be the first.</div>';
+    paintContext(row);
+  }
+
+  function switchChannel(channel) {
+    var row = state.selected;
+    if (!row || !row.client_id) return;
+    if (channel !== "email" && channel !== "sms") return;
+    if ((row.channel === "email" ? "email" : "sms") === channel && row.id) {
+      paintChannelToggle(channel);
+      return;
+    }
+    if (state.sending) return;
+
+    $("thread").innerHTML = '<div class="empty-box">Opening ' +
+      (channel === "email" ? "email" : "text") + " conversation…</div>";
+    paintChannelToggle(channel);
+
+    return FHData.conversations({ client_id: row.client_id, limit: 50 }).then(function (res) {
+      if (!state.selected || state.selected.client_id !== row.client_id) return;
+      var items = (res.ok && res.data && res.data.items) || [];
+      var match = items.filter(function (t) {
+        return String(t.channel || "").toLowerCase() === channel;
+      })[0];
+      if (match) {
+        openThread({
+          id: match.id,
+          client_id: row.client_id,
+          channel: match.channel,
+          first_name: row.first_name,
+          last_name: row.last_name,
+          needs_reply: match.needs_reply === true,
+          last_at: match.last_at || match.last_pulse_at,
+          last_pulse_at: match.last_pulse_at
+        });
+        return;
+      }
+      openEmptyChannel({
+        id: null,
+        client_id: row.client_id,
+        channel: channel,
+        first_name: row.first_name,
+        last_name: row.last_name,
+        needs_reply: false
+      });
+    });
+  }
+
   function openThread(row) {
     state.selected = row;
     paintList();
@@ -1114,7 +1206,7 @@
       (row.needs_reply === true ? "waiting on a reply from us" : "no reply owed");
     $("thAv").textContent = V.initials(row);
     $("footName").textContent = V.displayName(row);
-    $("composeChannel").textContent = row.channel === "email" ? "Email" : "Text";
+    paintChannelToggle(row.channel === "email" ? "email" : "sms");
     paintQuietNote(row.channel);
     $("composeBody").disabled = false;
     $("composeBody").placeholder = "Write a message…";
@@ -1130,6 +1222,13 @@
     $("thread").innerHTML = '<div class="empty-box">Loading this conversation…</div>';
 
     paintContext(row);
+
+    if (!row.id) {
+      $("thread").innerHTML = row.channel === "email"
+        ? '<div class="empty-box">No emails with them yet. Your reply below would be the first.</div>'
+        : '<div class="empty-box">No texts with them yet. Your reply below would be the first.</div>';
+      return Promise.resolve();
+    }
 
     return FHData.thread(row.id, 200).then(function (res) {
       if (state.selected !== row) return; // they moved on while this was in flight
@@ -1298,6 +1397,8 @@
   });
 
   $("sendBtn").addEventListener("click", send);
+  $("chEmail").addEventListener("click", function () { switchChannel("email"); });
+  $("chText").addEventListener("click", function () { switchChannel("sms"); });
   // Repaint on every keystroke, so a bad address is caught before anything is
   // written rather than after Send is pressed.
   $("composeTo").addEventListener("input", paintTo);
@@ -1362,21 +1463,7 @@
           openThread(row);
           return;
         }
-        state.selected = row;
-        $("thName").textContent = V.displayName(row);
-        $("thSub").textContent = "SMS · no thread yet";
-        $("thAv").textContent = V.initials(row);
-        $("footName").textContent = V.displayName(row);
-        $("composeChannel").textContent = "Text";
-        paintQuietNote("sms");
-        $("composeBody").disabled = false;
-        $("composeBody").placeholder = "Write to " + V.displayName(row) + "…";
-        $("composeTo").disabled = false;
-        $("composeTo").value = "";
-        $("composeTo").placeholder = "+15551234567";
-        paintTo();
-        $("thread").innerHTML = '<div class="empty-box">No texts with them yet. Your reply below would be the first.</div>';
-        paintContext(row);
+        openEmptyChannel(row);
       });
     }
     /* Deep link from global search: ?conversation_id=<uuid> opens that thread.

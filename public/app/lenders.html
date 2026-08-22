@@ -39,6 +39,8 @@ table.grid{width:100%;border-collapse:collapse}
 table.grid th{font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.12em;text-transform:uppercase;color:var(--gray);text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);background:var(--soft);font-weight:500;white-space:nowrap}
 table.grid td{padding:6px 8px;border-bottom:1px solid var(--line);font-size:var(--fs-body);vertical-align:middle}
 table.grid tr:hover td{background:var(--soft)}
+.lender-logo{width:28px;height:28px;border-radius:6px;object-fit:contain;background:#fff;border:1px solid var(--line);display:block}
+.lender-logo.missing{opacity:.35}
 table.grid input,table.grid select{width:100%;border:1px solid transparent;background:transparent;border-radius:5px;padding:5px 6px;font-size:var(--fs-body)}
 table.grid input:focus,table.grid select:focus{border-color:var(--ink);background:#fff;outline:0}
 table.grid .dirty{background:rgba(245,206,143,.25)}
@@ -185,7 +187,7 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
             <table class="grid" id="lenderTable">
               <thead>
                 <tr>
-                  <th>Name</th><th>Table</th><th>Bureaus</th><th>Requirements</th>
+                  <th></th><th>Name</th><th>Table</th><th>Bureaus</th><th>Requirements</th>
                   <th>Tier</th><th>Status</th><th>State</th><th>Updated</th><th>Apply</th><th></th>
                 </tr>
               </thead>
@@ -336,6 +338,9 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
       var tr = document.createElement("tr");
       tr.dataset.id = L.id;
       tr.innerHTML =
+        '<td>' + (L.logo_path
+          ? '<img class="lender-logo" src="' + esc(L.logo_path) + '" alt="" width="28" height="28"/>'
+          : '<span class="lender-logo missing" aria-hidden="true"></span>') + '</td>' +
         '<td><input data-f="name" value="' + esc(L.name) + '"/></td>' +
         '<td><select data-f="lender_table">' + TABLES.map(function (t) {
           return '<option value="' + t + '"' + (t === L.lender_table ? " selected" : "") + ">" + t + "</option>";

@@ -7,7 +7,7 @@ import { matchLenders } from "./match.mjs";
 import { orgDemoModeEnabled } from "../demo/exclude-demo.mjs";
 
 const SELECT_COLS = `
-  id, org_id, lender_table, name, product_name, application_url, lender_row_url,
+  id, org_id, lender_table, name, product_name, logo_path, application_url, lender_row_url,
   eligible_states,
   bureaus_pulled, business_bureau_pulled, double_pull, multiple_llc_allowed,
   stated_requirements, docs_requested, application_method, approval_speed,
@@ -113,6 +113,7 @@ function stamp(staff) {
 const WRITABLE = new Set([
   ...LENDER_CSV_COLUMNS.filter((c) => c !== "lender_table"),
   "lender_table",
+  "logo_path",
   ...INLINE_EDIT_FIELDS
 ]);
 
@@ -165,6 +166,10 @@ export async function createLender(db, { orgId, row, staff }) {
     cols.push(k);
     vals.push(row[k]);
   }
+  if (row.logo_path !== undefined && !cols.includes("logo_path")) {
+    cols.push("logo_path");
+    vals.push(row.logo_path);
+  }
   const placeholders = vals.map((_, i) => {
     const col = cols[i];
     if (col === "org_id") return `$${i + 1}::uuid`;
@@ -185,12 +190,16 @@ export async function createLender(db, { orgId, row, staff }) {
  * Upsert by (org_id, external_row_id) when present, else insert.
  * @returns {{ imported: number, updated: number, errors: string[] }}
  */
-export async function importLendersCsv(db, { orgId, text, staff }) {
+export async function importLendersCsv(db, { orgId, text, staff, logoByExternalId = null }) {
   const { rows, errors } = parseLenderCsv(text);
   let imported = 0;
   let updated = 0;
   for (const row of rows) {
     try {
+      const logoPath = logoByExternalId && row.external_row_id
+        ? logoByExternalId[row.external_row_id]
+        : undefined;
+      const payload = logoPath ? { ...row, logo_path: logoPath } : row;
       if (row.external_row_id) {
         const existing = await db.query(
           `SELECT id FROM lenders
@@ -202,14 +211,14 @@ export async function importLendersCsv(db, { orgId, text, staff }) {
           await updateLender(db, {
             orgId,
             id: existing.rows[0].id,
-            patch: row,
+            patch: payload,
             staff
           });
           updated++;
           continue;
         }
       }
-      await createLender(db, { orgId, row, staff });
+      await createLender(db, { orgId, row: payload, staff });
       imported++;
     } catch (e) {
       errors.push(`${row.name}: ${e.message || e.code || "failed"}`);

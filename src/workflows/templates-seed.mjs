@@ -85,7 +85,7 @@ export const KNOWN_TEMPLATES = [
   {
     template_key: "SMS-AISET03-MSG1",
     channel: "sms",
-    body: "Hey {{contact.first_name}}, it's Josh from FundHub! I just tried giving you a call about your Strategy Session. Looking at your file — you've been pre-approved for {{contact.analyzer_prequal_amount}} in capital. Just want to make sure your appointment still works? Reply STOP to opt out."
+    body: "Hey {{contact.first_name}}, it's Josh from Fundhub! I just tried giving you a call about your Strategy Session. Looking at your file — you've been pre-approved for {{contact.analyzer_prequal_amount}} in capital. Just want to make sure your appointment still works? Reply STOP to opt out."
   },
   {
     template_key: "SMS-AISET03-MSG2",
@@ -105,12 +105,12 @@ export const KNOWN_TEMPLATES = [
   {
     template_key: "SMS-BS01-01-BOOKED",
     channel: "sms",
-    body: "Hey {{contact.first_name}}, it's Fundhub. You're booked — we'll text you again before the call. Need to move it? Just reply here. Reply STOP to opt out."
+    body: "Hey {{contact.first_name}}, it's Josh from Fundhub. You're booked — we'll text you again before the call. Need to move it? Just reply here. Reply STOP to opt out."
   },
   {
     template_key: "SMS-BS01-02-PRECALL",
     channel: "sms",
-    body: "Hey {{contact.first_name}}, Fundhub here. Quick check-in before your call — reply if you have questions or need to reschedule. Looking forward to it. Reply STOP to opt out."
+    body: "Hey {{contact.first_name}}, Josh from Fundhub here. Quick check-in before your call — reply if you have questions or need to reschedule. Looking forward to it. Reply STOP to opt out."
   },
   {
     template_key: "SMS-BS01-03-DAYOF",
@@ -120,7 +120,7 @@ export const KNOWN_TEMPLATES = [
   {
     template_key: "SMS-S04-01-CONFIRM",
     channel: "sms",
-    body: "Hey {{contact.first_name}}, it's Fundhub. You're booked for {{appointment.start_time}}. Reply CONFIRM so we know you're set. Reschedule: {{custom_values.booking_link}} Reply STOP to opt out."
+    body: "Hey {{contact.first_name}}, it's Josh from Fundhub. You're booked for {{appointment.start_time}}. Reply CONFIRM so we know you're set. Reschedule: {{custom_values.booking_link}} Reply STOP to opt out."
   },
   {
     template_key: "SMS-S04-02-REMIND-24H",
@@ -135,17 +135,17 @@ export const KNOWN_TEMPLATES = [
   {
     template_key: "SMS-NOBOOK-01",
     channel: "sms",
-    body: "Hey {{contact.first_name}}, it's Fundhub. Your file is ready — grab a time so we can walk you through what it supports: {{custom_values.booking_link}} Reply STOP to opt out."
+    body: "Hey {{contact.first_name}}, it's Josh from Fundhub. Your file is ready — grab a time so we can walk you through what it supports: {{custom_values.booking_link}} Reply STOP to opt out."
   },
   {
     template_key: "SMS-NOBOOK-02",
     channel: "sms",
-    body: "Hey {{contact.first_name}}, Fundhub here. Still worth a look — same file, wrong order of apps is usually the ceiling. Book here: {{custom_values.booking_link}} Reply STOP to opt out."
+    body: "Hey {{contact.first_name}}, Josh from Fundhub here. Still worth a look — same file, wrong order of apps is usually the ceiling. Book here: {{custom_values.booking_link}} Reply STOP to opt out."
   },
   {
     template_key: "SMS-NOBOOK-03",
     channel: "sms",
-    body: "Last nudge from Fundhub, {{contact.first_name}}. Want help mapping your cleanest path? {{custom_values.booking_link}} Reply STOP to opt out."
+    body: "Last nudge from Josh at Fundhub, {{contact.first_name}}. Want help mapping your cleanest path? {{custom_values.booking_link}} Reply STOP to opt out."
   },
   {
     template_key: "SMS-DPC04-RESCHEDULE-REBOOKING",

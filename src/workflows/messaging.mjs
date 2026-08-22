@@ -120,7 +120,10 @@ async function clientContext(db, clientId) {
     custom_values: { booking_link: bookingLink },
     calendar: { booking_link: bookingLink },
     // Used by U-02 funding delivery CTA (and any later portal buttons).
-    portal_login_url: portalLoginUrl
+    portal_login_url: portalLoginUrl,
+    // Personified sender for template closings ({{sender_name}}).
+    sender_name: "Josh",
+    sender: { name: "Josh" }
   };
 }
 

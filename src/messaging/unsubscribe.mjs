@@ -184,35 +184,179 @@ export function verifyUnsubscribeRequest(source, { secret = undefined, env = pro
   });
 }
 
+
 /* ── The footer ───────────────────────────────────────────────────────────
    Built here rather than in a provider. The provider contract
    (src/messaging/providers/mailgun.mjs:12-15) is that a provider "never
    mutates the message. No truncation, no appended footer", and three tests
-   hold it to that. So the visible line is appended upstream, at dispatch, and
-   the provider still sends exactly what it is handed.
+   hold it to that. So the visible brand block is appended upstream, at
+   dispatch, and the provider still sends exactly what it is handed.
 
-   TWO SHAPES, because the Resend provider decides between html and text by
-   sniffing the body (src/messaging/providers/resend.mjs:134). A raw <a href>
-   appended to a body that sniffs as plain text would be shown to the reader as
-   literal angle brackets — a visibly broken link, which is worse than the
-   missing one it replaced. */
+   ONE HTML FOOTER for every outbound email: a tight personal signature card
+   (handwritten Josh first, name, title, phone, tagline) plus a quiet
+   Unsubscribe control — not a raw URL under the copy, not a marketing dump.
+
+   Plain-text bodies are wrapped into a simple HTML shell so Resend sends
+   html (it sniffs <!DOCTYPE>/<html>/<table>) and the button can render. */
 const HTML_SNIFF = /<!DOCTYPE\s+html|<html[\s>]|<table[\s>]/i;
+const FOOTER_MARK = "<!-- fundhub-email-footer -->";
 
-export function unsubscribeFooter(url, { html = false } = {}) {
-  const safe = String(url || "");
-  if (!safe) return "";
-  return html
-    ? `\n<p style="margin:24px 0 0;font:400 12px/1.6 Arial,Helvetica,sans-serif;color:#6b7280">` +
-      `Don't want these emails? <a href="${escapeHtml(safe)}" style="color:#6b7280">Unsubscribe</a>.</p>\n`
-    : `\n\n---\nDon't want these emails? Unsubscribe: ${safe}`;
+/** Brand line shown under every outbound email footer. */
+export const EMAIL_TAGLINE = "Fundhub.ai · Funding Intelligence for Entrepreneurs";
+export const EMAIL_SIGNER_NAME = "Josh";
+export const EMAIL_SIGNER_TITLE = "Funding Executive · Fundhub.ai";
+/** Compact text wordmark casing (Fundhub.ai brand law — never FundHub). */
+export const EMAIL_WORDMARK = "fundhub.ai";
+/** Legacy raster path (footer uses the Fundhub.ai text mark in the title/tagline). */
+export const EMAIL_LOGO_PATH = "/assets/email/fundhub-logo.png";
+/** Handwritten-style signature image (absolute URL via emailSignatureUrl). */
+export const EMAIL_SIGNATURE_PATH = "/assets/email/josh-signature.svg";
+/*
+  Brand body face from public/app/fundhub-brand.css --sans.
+  Inter is a Google font (same stack the app loads). Linked in the shell <head>
+  so clients that honor webfonts get Inter; others fall back to system-ui.
+*/
+export const EMAIL_SANS = "'Inter',system-ui,-apple-system,sans-serif";
+
+/** Display the rep number as (561) 304-8368; fall back to FUNDHUB_REP_NUMBER. */
+export function formatRepPhone(raw) {
+  const digits = String(raw || "").replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  return String(raw || "").trim();
 }
 
-/** Append the footer to a body in whichever shape that body already is. */
-export function withUnsubscribeFooter(body, url) {
+export function emailLogoUrl(env = process.env) {
+  const base = String(env.APP_BASE_URL || env.URL || "https://fundhub.ai").replace(/\/+$/, "");
+  return `${base}${EMAIL_LOGO_PATH}`;
+}
+
+export function emailSignatureUrl(env = process.env) {
+  const base = String(env.APP_BASE_URL || env.URL || "https://fundhub.ai").replace(/\/+$/, "");
+  return `${base}${EMAIL_SIGNATURE_PATH}`;
+}
+
+export function emailRepPhone(env = process.env) {
+  return formatRepPhone(env.FUNDHUB_REP_NUMBER || env.TWILIO_SEND_FROM || "+15613048368");
+}
+
+export function emailRepTelHref(env = process.env) {
+  const digits = String(env.FUNDHUB_REP_NUMBER || env.TWILIO_SEND_FROM || "+15613048368").replace(/\D/g, "");
+  const e164 = digits.length === 10 ? `+1${digits}` : digits.startsWith("1") ? `+${digits}` : `+${digits}`;
+  return `tel:${e164}`;
+}
+
+/**
+ * Premium personal-signature footer (HTML). Handwritten Josh first, then
+ * name / title / phone / tagline as one tight block, plus a quiet outlined
+ * Unsubscribe control (still a real link).
+ */
+export function unsubscribeFooter(url, { html = false, env = process.env } = {}) {
+  const safe = String(url || "");
+  if (!safe) return "";
+  const phone = emailRepPhone(env);
+  const tel = emailRepTelHref(env);
+  const signature = emailSignatureUrl(env);
+
+  if (!html) {
+    return (
+      `\n\n---\n` +
+      `${EMAIL_SIGNER_NAME}\n${EMAIL_SIGNER_TITLE}\n` +
+      `${phone}\n` +
+      `${EMAIL_TAGLINE}\n` +
+      `Don't want these emails? Unsubscribe: ${safe}`
+    );
+  }
+
+  const href = escapeHtml(safe);
+  const sigSrc = escapeHtml(signature);
+  const phoneLabel = escapeHtml(phone);
+  const telHref = escapeHtml(tel);
+
+  return (
+    `${FOOTER_MARK}\n` +
+    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" ` +
+    `style="margin:20px 0 0;border-collapse:collapse;border-top:1px solid #e5e7eb">` +
+    `<tr><td style="padding:16px 0 0 0;text-align:left">` +
+
+    /* Handwritten signature leads — personal email, not a brand dump. */
+    `<img src="${sigSrc}" width="118" height="40" alt="" ` +
+    `style="display:block;margin:0 0 2px;width:118px;height:auto;border:0;outline:none" />` +
+
+    `<p style="margin:0;font:400 14px/1.3 ${EMAIL_SANS};color:#111827">` +
+    `${escapeHtml(EMAIL_SIGNER_NAME)}` +
+    `</p>` +
+    `<p style="margin:1px 0 0;font:400 12px/1.35 ${EMAIL_SANS};color:#6b7280">` +
+    `${escapeHtml(EMAIL_SIGNER_TITLE)}` +
+    `</p>` +
+
+    `<p style="margin:8px 0 0;font:400 13px/1.35 ${EMAIL_SANS};color:#374151">` +
+    `<a href="${telHref}" style="color:#374151;text-decoration:none">${phoneLabel}</a>` +
+    `</p>` +
+
+    /* One quiet tagline line (linked) — no second redundant fundhub.ai link. */
+    `<p style="margin:6px 0 0;font:400 11px/1.45 ${EMAIL_SANS};color:#9ca3af">` +
+    `<a href="https://fundhub.ai" target="_blank" rel="noopener noreferrer" ` +
+    `style="color:#9ca3af;text-decoration:none">${escapeHtml(EMAIL_TAGLINE)}</a>` +
+    `</p>` +
+
+    /* Outlined pill — clearly clickable, not a giant black brick. */
+    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" ` +
+    `style="margin:12px 0 0;border-collapse:collapse">` +
+    `<tr><td style="border:1px solid #d1d5db;border-radius:999px;background:#ffffff">` +
+    `<a href="${href}" target="_blank" rel="noopener noreferrer" ` +
+    `style="display:inline-block;padding:5px 12px;font:400 11px/1.2 ${EMAIL_SANS};` +
+    `color:#6b7280;text-decoration:none;border-radius:999px">` +
+    `Unsubscribe` +
+    `</a>` +
+    `</td></tr></table>` +
+
+    `</td></tr></table>\n`
+  );
+}
+
+/** Wrap plain copy in a clean one-column email shell (optional footer slot). */
+export function ensureHtmlEmailBody(body, footerHtml = "") {
+  const text = String(body ?? "");
+  if (HTML_SNIFF.test(text)) {
+    if (footerHtml) {
+      if (/<\/body>/i.test(text)) return text.replace(/<\/body>/i, `${footerHtml}</body>`);
+      return text + footerHtml;
+    }
+    return text;
+  }
+  const escaped = escapeHtml(text).replace(/\r\n|\r|\n/g, "<br>\n");
+  return (
+    `<!DOCTYPE html><html><head><meta charset="utf-8" />` +
+    `<meta name="viewport" content="width=device-width, initial-scale=1" />` +
+    /* Inter = brand --sans; Google-hosted so email clients that allow webfonts match the app. */
+    `<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />` +
+    `</head><body style="margin:0;padding:0;background:#f4f4f5;font-family:${EMAIL_SANS}">` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f5;border-collapse:collapse">` +
+    `<tr><td align="center" style="padding:24px 12px">` +
+    `<table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" ` +
+    `style="width:560px;max-width:100%;background:#ffffff;border-collapse:collapse;` +
+    `border:1px solid #e5e7eb;border-radius:10px">` +
+    `<tr><td style="padding:28px 28px 8px 28px;font:400 15px/1.55 ${EMAIL_SANS};color:#111827">` +
+    `${escaped}` +
+    `</td></tr>` +
+    `<tr><td style="padding:0 28px 28px 28px">${footerHtml}</td></tr>` +
+    `</table></td></tr></table></body></html>`
+  );
+}
+
+/** Append the professional footer. Always ships HTML so the button can render. */
+export function withUnsubscribeFooter(body, url, env = process.env) {
   const text = String(body ?? "");
   if (!url) return text;
-  if (text.includes(String(url))) return text; // already carries its own link
-  return text + unsubscribeFooter(url, { html: HTML_SNIFF.test(text) });
+  if (text.includes(String(url))) return text;
+  if (text.includes(FOOTER_MARK)) return text;
+  const footer = unsubscribeFooter(url, { html: true, env });
+  return ensureHtmlEmailBody(text, footer);
 }
 
 function escapeHtml(s) {
