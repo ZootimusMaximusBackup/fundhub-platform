@@ -47,7 +47,15 @@ Waiting on Chris pick (letter or mix).
 - `e2e/client-portal-ux.spec.mjs` — expand tests for both course tiles
 - Videos: honest empty slots (“Video will show here when it is ready”) until real lesson files exist
 
+## Ship (2026-08-21)
+
+- Status: **blocked on Netlify credits** — code is on `main` (`48482eab`), live site still old hash
+- Files: portal HTML + e2e + this board (committed + pushed)
+- Mock `public/course-expand-mock.html`: removed (local preview only; not customer surface)
+- CLI/API deploy error: `Account credit usage exceeded - new deploys are blocked until credits are added`
+- After credits: one production deploy from `main`, then prove Open on unlocked UWIQ + Funding Mastery tiles at `/app/client-portal.html`
+
 ## Left for later
 
 - Real lesson videos / Content Admin wiring into `.tc-vid`
-- Live Playwright 100 + human click on deployed site (after deploy)
+- Live prove after credits + deploy
