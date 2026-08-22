@@ -1,0 +1,2311 @@
+{
+  "generated_at": "2026-08-21",
+  "method": "static HTML + companion .js label extract; handlers not invented; JS-paint gaps marked LIVE-EXPAND",
+  "screens": {
+    "closer-dashboard.html": {
+      "workflow": "W1",
+      "nav_hidden": false,
+      "protected": false,
+      "sources": [
+        "public/app/closer-dashboard.html"
+      ],
+      "static_control_count": 33,
+      "sequence_rows": 35,
+      "controls": [
+        {
+          "id": "fh-join",
+          "label": "No call link on this appointment"
+        },
+        {
+          "id": "fh-present",
+          "label": "Present"
+        },
+        {
+          "id": "fh-send-contract",
+          "label": "Send contract"
+        },
+        {
+          "id": "fh-contract-go",
+          "label": "Send"
+        },
+        {
+          "id": "fh-contract-copy",
+          "label": "Copy link"
+        },
+        {
+          "id": "",
+          "label": "1 Deposit"
+        },
+        {
+          "id": "",
+          "label": "2 Downsell"
+        },
+        {
+          "id": "",
+          "label": "3 Callback"
+        },
+        {
+          "id": "",
+          "label": "4 No show"
+        },
+        {
+          "id": "",
+          "label": "5 Not a fit"
+        },
+        {
+          "id": "",
+          "label": "Price"
+        },
+        {
+          "id": "",
+          "label": "Amount low"
+        },
+        {
+          "id": "",
+          "label": "Spouse"
+        },
+        {
+          "id": "",
+          "label": "Timing"
+        },
+        {
+          "id": "",
+          "label": "Wants guarantee"
+        },
+        {
+          "id": "",
+          "label": "None"
+        },
+        {
+          "id": "",
+          "label": "Save · next call"
+        },
+        {
+          "id": "calcGate",
+          "label": "#calcGate"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "fh-temp-chip",
+          "label": "#fh-temp-chip"
+        },
+        {
+          "id": "fh-join",
+          "label": "#fh-join"
+        },
+        {
+          "id": "fh-present",
+          "label": "#fh-present"
+        },
+        {
+          "id": "fh-send-contract",
+          "label": "#fh-send-contract"
+        },
+        {
+          "id": "fh-contract-panel",
+          "label": "#fh-contract-panel"
+        },
+        {
+          "id": "fh-contract-tpl",
+          "label": "#fh-contract-tpl"
+        },
+        {
+          "id": "fh-contract-blanks",
+          "label": "#fh-contract-blanks"
+        },
+        {
+          "id": "fh-contract-go",
+          "label": "#fh-contract-go"
+        },
+        {
+          "id": "fh-contract-copy",
+          "label": "#fh-contract-copy"
+        },
+        {
+          "id": "fh-contract-link",
+          "label": "#fh-contract-link"
+        },
+        {
+          "id": "fh-contract-msg",
+          "label": "#fh-contract-msg"
+        },
+        {
+          "id": "calcTitle",
+          "label": "#calcTitle"
+        },
+        {
+          "id": "calcClientName",
+          "label": "#calcClientName"
+        },
+        {
+          "id": "calcGrid",
+          "label": "#calcGrid"
+        }
+      ]
+    },
+    "my-numbers.html": {
+      "workflow": "W1",
+      "nav_hidden": false,
+      "protected": false,
+      "sources": [
+        "public/app/my-numbers.html",
+        "public/app/my-numbers.js"
+      ],
+      "static_control_count": 2,
+      "sequence_rows": 4,
+      "controls": [
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "fh-stage",
+          "label": "#fh-stage"
+        }
+      ]
+    },
+    "sales-floor.html": {
+      "workflow": "W1",
+      "nav_hidden": false,
+      "protected": false,
+      "sources": [
+        "public/app/sales-floor.html",
+        "public/app/sales-floor.js"
+      ],
+      "static_control_count": 14,
+      "sequence_rows": 16,
+      "controls": [
+        {
+          "id": "fh-closer-prev",
+          "label": "Previous closer"
+        },
+        {
+          "id": "fh-closer-next",
+          "label": "Next closer"
+        },
+        {
+          "id": "fh-flag-mkt",
+          "label": "fh-flag-mkt"
+        },
+        {
+          "id": "fh-recordings-jump",
+          "label": "Today\\'s recordings"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "fh-stage",
+          "label": "#fh-stage"
+        },
+        {
+          "id": "fh-offer-stack",
+          "label": "#fh-offer-stack"
+        },
+        {
+          "id": "fh-closer-focus",
+          "label": "#fh-closer-focus"
+        },
+        {
+          "id": "fh-recordings",
+          "label": "#fh-recordings"
+        },
+        {
+          "id": "fh-closer-prev",
+          "label": "#fh-closer-prev"
+        },
+        {
+          "id": "fh-closer-next",
+          "label": "#fh-closer-next"
+        },
+        {
+          "id": "fh-flag-mkt",
+          "label": "#fh-flag-mkt"
+        },
+        {
+          "id": "fh-recordings-jump",
+          "label": "#fh-recordings-jump"
+        },
+        {
+          "id": "fh-drive-refresh",
+          "label": "#fh-drive-refresh"
+        }
+      ]
+    },
+    "pipeline.html": {
+      "workflow": "W1",
+      "nav_hidden": false,
+      "protected": false,
+      "sources": [
+        "public/app/pipeline.html"
+      ],
+      "static_control_count": 15,
+      "sequence_rows": 17,
+      "controls": [
+        {
+          "id": "lensBoard",
+          "label": "Board"
+        },
+        {
+          "id": "lensFulfillment",
+          "label": "Fulfillment"
+        },
+        {
+          "id": "filterBtn",
+          "label": "⚟ Filter 0"
+        },
+        {
+          "id": "fhNewClient",
+          "label": "New Client"
+        },
+        {
+          "id": "filterClear",
+          "label": "Clear all"
+        },
+        {
+          "id": "fhDrawerDel",
+          "label": "Archive"
+        },
+        {
+          "id": "fhDrawerClose",
+          "label": "Close"
+        },
+        {
+          "id": "fhLensClear",
+          "label": "Show all"
+        },
+        {
+          "id": "fhDelCancel",
+          "label": "Cancel"
+        },
+        {
+          "id": "fhDelGo",
+          "label": "Archive"
+        },
+        {
+          "id": "fhNewCancel",
+          "label": "Cancel"
+        },
+        {
+          "id": "fhNewGo",
+          "label": "Save"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "boardStatus",
+          "label": "#boardStatus"
+        },
+        {
+          "id": "board",
+          "label": "#board"
+        }
+      ]
+    },
+    "client-control-panel.html": {
+      "workflow": "W2",
+      "nav_hidden": false,
+      "protected": false,
+      "sources": [
+        "public/app/client-control-panel.html"
+      ],
+      "static_control_count": 24,
+      "sequence_rows": 26,
+      "controls": [
+        {
+          "id": "ccp-approve-copy",
+          "label": "Copy link"
+        },
+        {
+          "id": "ccp-pull-tu",
+          "label": "Pull TransUnion →"
+        },
+        {
+          "id": "ccp-pull-ex",
+          "label": "Pull Experian →"
+        },
+        {
+          "id": "ccp-pull-eq",
+          "label": "Pull Equifax →"
+        },
+        {
+          "id": "ccp-generate-apps",
+          "label": "Generate Apps →"
+        },
+        {
+          "id": "ccp-issue-ir",
+          "label": "Issue Inquiry Removal →"
+        },
+        {
+          "id": "",
+          "label": "Agent context collapsed by default ⌄"
+        },
+        {
+          "id": "",
+          "label": "Credit &amp; Hold Status collapsed ⌄"
+        },
+        {
+          "id": "",
+          "label": "Details collapsed by default ⌄"
+        },
+        {
+          "id": "notes-save",
+          "label": "Save notes"
+        },
+        {
+          "id": "",
+          "label": "Documents collapsed by default ⌄"
+        },
+        {
+          "id": "ccp-bank-inbox-open",
+          "label": "Open Bank Inbox ↗"
+        },
+        {
+          "id": "",
+          "label": "System Facts collapsed ⌄"
+        },
+        {
+          "id": "ccp-consent-link",
+          "label": "Record consent for this client ↗"
+        },
+        {
+          "id": "ccp-link-pipeline",
+          "label": "Open Pipeline ↗"
+        },
+        {
+          "id": "ccp-link-present",
+          "label": "Open Closer Deck ↗"
+        },
+        {
+          "id": "ccp-link-messaging",
+          "label": "Open Messaging ↗"
+        },
+        {
+          "id": "ccp-link-ir",
+          "label": "Open Inquiry Remover ↗"
+        },
+        {
+          "id": "ccp-link-lenders",
+          "label": "Open Funding Matrix ↗"
+        },
+        {
+          "id": "ccp-link-present2",
+          "label": "Open Credit Snapshot ↗"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "fh-funding-apply",
+          "label": "#fh-funding-apply"
+        },
+        {
+          "id": "fh-funding-apply-status",
+          "label": "#fh-funding-apply-status"
+        },
+        {
+          "id": "fh-funding-apply-list",
+          "label": "#fh-funding-apply-list"
+        }
+      ]
+    },
+    "messaging.html": {
+      "workflow": "W2",
+      "nav_hidden": false,
+      "protected": false,
+      "sources": [
+        "public/app/messaging.html"
+      ],
+      "static_control_count": 8,
+      "sequence_rows": 10,
+      "controls": [
+        {
+          "id": "",
+          "label": "All &mdash;"
+        },
+        {
+          "id": "",
+          "label": "Needs reply &mdash;"
+        },
+        {
+          "id": "sendBtn",
+          "label": "Send"
+        },
+        {
+          "id": "demoToggle",
+          "label": "Reference who-sent-it colour key ▾"
+        },
+        {
+          "id": " + encodeURIComponent(row.client_id) +\n      ",
+          "label": "Their file &#8599;"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "sendBtn",
+          "label": "#sendBtn"
+        },
+        {
+          "id": "sendStatus",
+          "label": "#sendStatus"
+        }
+      ]
+    },
+    "calendar.html": {
+      "workflow": "W1",
+      "nav_hidden": false,
+      "protected": false,
+      "sources": [
+        "public/app/calendar.html"
+      ],
+      "static_control_count": 5,
+      "sequence_rows": 7,
+      "controls": [
+        {
+          "id": "unJoin",
+          "label": "No call link on this appointment"
+        },
+        {
+          "id": "unFile",
+          "label": "No client linked"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "unJoin",
+          "label": "#unJoin"
+        },
+        {
+          "id": "unFile",
+          "label": "#unFile"
+        }
+      ]
+    },
+    "documents.html": {
+      "workflow": "W2",
+      "nav_hidden": false,
+      "protected": false,
+      "sources": [
+        "public/app/documents.html"
+      ],
+      "static_control_count": 6,
+      "sequence_rows": 8,
+      "controls": [
+        {
+          "id": "pendingBtn",
+          "label": "Pending only"
+        },
+        {
+          "id": "",
+          "label": "Open PDF"
+        },
+        {
+          "id": "",
+          "label": "Remind"
+        },
+        {
+          "id": "",
+          "label": "Void"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "pendingBtn",
+          "label": "#pendingBtn"
+        }
+      ]
+    },
+    "company-brain.html": {
+      "workflow": "W3",
+      "nav_hidden": true,
+      "protected": false,
+      "sources": [
+        "public/app/company-brain.html"
+      ],
+      "static_control_count": 11,
+      "sequence_rows": 13,
+      "controls": [
+        {
+          "id": "newChat",
+          "label": "New chat"
+        },
+        {
+          "id": "railToggle",
+          "label": "Show your chats"
+        },
+        {
+          "id": "docsBtn",
+          "label": "Documents 0"
+        },
+        {
+          "id": "attachBtn",
+          "label": "Add a document"
+        },
+        {
+          "id": "askBtn",
+          "label": "Send"
+        },
+        {
+          "id": "docsClose",
+          "label": "Close documents"
+        },
+        {
+          "id": "refreshDocs",
+          "label": "Refresh"
+        },
+        {
+          "id": "refreshReviews",
+          "label": "Refresh"
+        },
+        {
+          "id": "",
+          "label": "Approve"
+        },
+        {
+          "id": "",
+          "label": "Turn down"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        }
+      ]
+    },
+    "ops-admin.html": {
+      "workflow": "W3",
+      "nav_hidden": true,
+      "protected": false,
+      "sources": [
+        "public/app/ops-admin.html"
+      ],
+      "static_control_count": 7,
+      "sequence_rows": 9,
+      "controls": [
+        {
+          "id": "period-btn",
+          "label": "Last 7 Days ▾"
+        },
+        {
+          "id": "",
+          "label": "Money KPIs · AR · compliance"
+        },
+        {
+          "id": "",
+          "label": "People staff, comp &amp; consent"
+        },
+        {
+          "id": "outboxSend",
+          "label": "Send what is waiting"
+        },
+        {
+          "id": "outboxToggle",
+          "label": "Pause sending"
+        },
+        {
+          "id": "outboxInvoices",
+          "label": "Email unsent invoices"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        }
+      ]
+    },
+    "galaxy.html": {
+      "workflow": "W3",
+      "nav_hidden": true,
+      "protected": false,
+      "sources": [
+        "public/app/galaxy.html"
+      ],
+      "static_control_count": 1,
+      "sequence_rows": 3,
+      "controls": [
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        }
+      ]
+    },
+    "agent-editor.html": {
+      "workflow": "W3",
+      "nav_hidden": true,
+      "protected": false,
+      "sources": [
+        "public/app/agent-editor.html"
+      ],
+      "static_control_count": 9,
+      "sequence_rows": 11,
+      "controls": [
+        {
+          "id": "promoteBtn",
+          "label": "Promote to live"
+        },
+        {
+          "id": "demoteBtn",
+          "label": "Return to shadow"
+        },
+        {
+          "id": "saveBtn",
+          "label": "Save agent"
+        },
+        {
+          "id": "revertBtn",
+          "label": "Revert"
+        },
+        {
+          "id": "",
+          "label": "✓ '+e+'"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "saveBtn",
+          "label": "#saveBtn"
+        },
+        {
+          "id": "revertBtn",
+          "label": "#revertBtn"
+        },
+        {
+          "id": "saveNote",
+          "label": "#saveNote"
+        }
+      ]
+    },
+    "automations.html": {
+      "workflow": "W3",
+      "nav_hidden": true,
+      "protected": false,
+      "sources": [
+        "public/app/automations.html"
+      ],
+      "static_control_count": 1,
+      "sequence_rows": 3,
+      "controls": [
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        }
+      ]
+    },
+    "products-commissions.html": {
+      "workflow": "W3",
+      "nav_hidden": false,
+      "protected": false,
+      "sources": [
+        "public/app/products-commissions.html"
+      ],
+      "static_control_count": 11,
+      "sequence_rows": 13,
+      "controls": [
+        {
+          "id": "ledgerLink",
+          "label": "View payout ledger →"
+        },
+        {
+          "id": "",
+          "label": "Products"
+        },
+        {
+          "id": "",
+          "label": "Commission rules"
+        },
+        {
+          "id": "ledgerBack",
+          "label": "← Back to rules"
+        },
+        {
+          "id": "edSave",
+          "label": "Save"
+        },
+        {
+          "id": "edCancel",
+          "label": "Cancel"
+        },
+        {
+          "id": "",
+          "label": "See these payouts →"
+        },
+        {
+          "id": "",
+          "label": "Change rate"
+        },
+        {
+          "id": "",
+          "label": "Close v'+av.v+' · open v'+(av.v+1)+'"
+        },
+        {
+          "id": "",
+          "label": "Cancel"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        }
+      ]
+    },
+    "staff-teams.html": {
+      "workflow": "W3",
+      "nav_hidden": false,
+      "protected": false,
+      "sources": [
+        "public/app/staff-teams.html"
+      ],
+      "static_control_count": 11,
+      "sequence_rows": 13,
+      "controls": [
+        {
+          "id": "",
+          "label": "Roster"
+        },
+        {
+          "id": "",
+          "label": "Permissions"
+        },
+        {
+          "id": "",
+          "label": "Clock &amp; consent"
+        },
+        {
+          "id": "",
+          "label": "Telemetry"
+        },
+        {
+          "id": "toAdvanced",
+          "label": "Permissions →"
+        },
+        {
+          "id": "teleRefresh",
+          "label": "Refresh"
+        },
+        {
+          "id": "edSave",
+          "label": "Save"
+        },
+        {
+          "id": "edCancel",
+          "label": "Cancel"
+        },
+        {
+          "id": "edReset",
+          "label": "Reset password"
+        },
+        {
+          "id": "edDeact",
+          "label": "Revoke login"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        }
+      ]
+    },
+    "inquiry-remover.html": {
+      "workflow": "W2",
+      "nav_hidden": false,
+      "protected": false,
+      "sources": [
+        "public/app/inquiry-remover.html"
+      ],
+      "static_control_count": 18,
+      "sequence_rows": 20,
+      "controls": [
+        {
+          "id": "tab-inquiries",
+          "label": "Inquiries"
+        },
+        {
+          "id": "tab-repair",
+          "label": "Repair"
+        },
+        {
+          "id": "",
+          "label": "Equifax 0 none in queue"
+        },
+        {
+          "id": "",
+          "label": "TransUnion 0 none in queue"
+        },
+        {
+          "id": "",
+          "label": "Experian 0 none in queue"
+        },
+        {
+          "id": "",
+          "label": "Close"
+        },
+        {
+          "id": "repairLetterSendOne",
+          "label": "Send this one"
+        },
+        {
+          "id": "",
+          "label": "Cancel"
+        },
+        {
+          "id": "repairPullGo",
+          "label": "Pull"
+        },
+        {
+          "id": "repairRetry",
+          "label": "Retry"
+        },
+        {
+          "id": "",
+          "label": "Mark as checked"
+        },
+        {
+          "id": "",
+          "label": "Send"
+        },
+        {
+          "id": "",
+          "label": "Stage"
+        },
+        {
+          "id": "",
+          "label": "Soft pull"
+        },
+        {
+          "id": "",
+          "label": "Clean personal info"
+        },
+        {
+          "id": "",
+          "label": "Enroll"
+        },
+        {
+          "id": "",
+          "label": "Open Experian upload ↗"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        }
+      ]
+    },
+    "affiliate.html": {
+      "workflow": "W3",
+      "nav_hidden": true,
+      "protected": false,
+      "sources": [
+        "public/app/affiliate.html"
+      ],
+      "static_control_count": 11,
+      "sequence_rows": 13,
+      "controls": [
+        {
+          "id": "copyLink",
+          "label": "Copy link"
+        },
+        {
+          "id": "copyCode",
+          "label": "Copy code"
+        },
+        {
+          "id": "brainBtn",
+          "label": "Ask"
+        },
+        {
+          "id": "blasterBtn",
+          "label": "Download Message Blaster"
+        },
+        {
+          "id": "",
+          "label": "Referred leads"
+        },
+        {
+          "id": "",
+          "label": "Payouts"
+        },
+        {
+          "id": "",
+          "label": "Terms"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "blasterCard",
+          "label": "#blasterCard"
+        },
+        {
+          "id": "blasterBtn",
+          "label": "#blasterBtn"
+        },
+        {
+          "id": "blasterStatus",
+          "label": "#blasterStatus"
+        }
+      ]
+    },
+    "client-portal.html": {
+      "workflow": "W3",
+      "nav_hidden": false,
+      "protected": false,
+      "sources": [
+        "public/app/client-portal.html"
+      ],
+      "static_control_count": 20,
+      "sequence_rows": 22,
+      "controls": [
+        {
+          "id": "cpSignClear",
+          "label": "Clear"
+        },
+        {
+          "id": "cpSignSubmit",
+          "label": "I sign to authorize Fundhub to prepare my dispute letters"
+        },
+        {
+          "id": "",
+          "label": "Ask about this"
+        },
+        {
+          "id": "",
+          "label": "Unlock now"
+        },
+        {
+          "id": "",
+          "label": "Upload funding docs"
+        },
+        {
+          "id": "",
+          "label": "Upload inquiry docs"
+        },
+        {
+          "id": "",
+          "label": "Upload bureau response"
+        },
+        {
+          "id": "",
+          "label": "Unlock"
+        },
+        {
+          "id": "",
+          "label": "Talk to an advisor"
+        },
+        {
+          "id": "",
+          "label": "Payments"
+        },
+        {
+          "id": "",
+          "label": "Agreements"
+        },
+        {
+          "id": "",
+          "label": "Documents"
+        },
+        {
+          "id": "",
+          "label": "Activity"
+        },
+        {
+          "id": "",
+          "label": "Messages"
+        },
+        {
+          "id": "",
+          "label": "Ask for a call"
+        },
+        {
+          "id": "um-x",
+          "label": "Close"
+        },
+        {
+          "id": "um-go",
+          "label": "Unlock — pay now"
+        },
+        {
+          "id": "um-talk",
+          "label": "Ask an advisor about this"
+        },
+        {
+          "id": "bm-x",
+          "label": "Close"
+        },
+        {
+          "id": "",
+          "label": "Review &amp; sign"
+        }
+      ]
+    },
+    "partner-galaxy.html": {
+      "workflow": "W3",
+      "nav_hidden": true,
+      "protected": false,
+      "sources": [
+        "public/app/partner-galaxy.html"
+      ],
+      "static_control_count": 5,
+      "sequence_rows": 7,
+      "controls": [
+        {
+          "id": "blasterBtn",
+          "label": "Download"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "blasterGift",
+          "label": "#blasterGift"
+        },
+        {
+          "id": "blasterBtn",
+          "label": "#blasterBtn"
+        },
+        {
+          "id": "blasterStatus",
+          "label": "#blasterStatus"
+        }
+      ]
+    },
+    "brand-studio.html": {
+      "workflow": "W3",
+      "nav_hidden": true,
+      "protected": false,
+      "sources": [
+        "public/app/brand-studio.html"
+      ],
+      "static_control_count": 21,
+      "sequence_rows": 23,
+      "controls": [
+        {
+          "id": "resetBtn",
+          "label": "Reset"
+        },
+        {
+          "id": "clearLogo",
+          "label": "Use text"
+        },
+        {
+          "id": "rampPreset",
+          "label": "Presets"
+        },
+        {
+          "id": "verifyBtn",
+          "label": "Verify"
+        },
+        {
+          "id": "",
+          "label": "copy"
+        },
+        {
+          "id": "copyTxt",
+          "label": "copy"
+        },
+        {
+          "id": "createPagesBtn",
+          "label": "Create pages from selected funnels"
+        },
+        {
+          "id": "suiteOnBtn",
+          "label": "Turn on for this partner"
+        },
+        {
+          "id": "suiteOffBtn",
+          "label": "Turn off"
+        },
+        {
+          "id": "genCopyBtn",
+          "label": "Write page copy"
+        },
+        {
+          "id": "genLogoBtn",
+          "label": "Make a wordmark from the name"
+        },
+        {
+          "id": "saveBtn",
+          "label": "Save &amp; apply"
+        },
+        {
+          "id": "submitBtn",
+          "label": "Submit for approval"
+        },
+        {
+          "id": "",
+          "label": "Use this version"
+        },
+        {
+          "id": "",
+          "label": "Publish"
+        },
+        {
+          "id": "",
+          "label": "Unpublish"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "approvalChip",
+          "label": "#approvalChip"
+        },
+        {
+          "id": "approvalTxt",
+          "label": "#approvalTxt"
+        },
+        {
+          "id": "saveBtn",
+          "label": "#saveBtn"
+        },
+        {
+          "id": "saveMsg",
+          "label": "#saveMsg"
+        }
+      ]
+    },
+    "campaign-manager.html": {
+      "workflow": "W3",
+      "nav_hidden": true,
+      "protected": false,
+      "sources": [
+        "public/app/campaign-manager.html"
+      ],
+      "static_control_count": 23,
+      "sequence_rows": 25,
+      "controls": [
+        {
+          "id": "reloadBtn",
+          "label": "Reload"
+        },
+        {
+          "id": "syncMetaBtn",
+          "label": "Pull campaigns, ad sets, ads and spend from Meta."
+        },
+        {
+          "id": "dwClose",
+          "label": "Close campaign detail"
+        },
+        {
+          "id": "cPrev",
+          "label": "‹ prev"
+        },
+        {
+          "id": "cNext",
+          "label": "next ›"
+        },
+        {
+          "id": "",
+          "label": "Stop spending"
+        },
+        {
+          "id": "",
+          "label": "Start spending again"
+        },
+        {
+          "id": "",
+          "label": "Change daily budget"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "reloadBtn",
+          "label": "#reloadBtn"
+        },
+        {
+          "id": "syncMetaBtn",
+          "label": "#syncMetaBtn"
+        },
+        {
+          "id": "syncMetaMsg",
+          "label": "#syncMetaMsg"
+        },
+        {
+          "id": "dwTitle",
+          "label": "#dwTitle"
+        },
+        {
+          "id": "dwSub",
+          "label": "#dwSub"
+        },
+        {
+          "id": "dwClose",
+          "label": "#dwClose"
+        },
+        {
+          "id": "dwBody",
+          "label": "#dwBody"
+        },
+        {
+          "id": "cPrev",
+          "label": "#cPrev"
+        },
+        {
+          "id": "cNext",
+          "label": "#cNext"
+        },
+        {
+          "id": "dwCursor",
+          "label": "#dwCursor"
+        },
+        {
+          "id": "dwDays",
+          "label": "#dwDays"
+        },
+        {
+          "id": "dwMetrics",
+          "label": "#dwMetrics"
+        },
+        {
+          "id": "dwChart",
+          "label": "#dwChart"
+        },
+        {
+          "id": "dwTip",
+          "label": "#dwTip"
+        }
+      ]
+    },
+    "social-studio.html": {
+      "workflow": "W3",
+      "nav_hidden": true,
+      "protected": false,
+      "sources": [
+        "public/app/social-studio.html"
+      ],
+      "static_control_count": 28,
+      "sequence_rows": 30,
+      "controls": [
+        {
+          "id": "composeTop",
+          "label": "Write a post"
+        },
+        {
+          "id": "",
+          "label": "Connected accounts — —"
+        },
+        {
+          "id": "",
+          "label": "Waiting to post — —"
+        },
+        {
+          "id": "",
+          "label": "Needs a rewrite — —"
+        },
+        {
+          "id": "",
+          "label": "Could not be sent — —"
+        },
+        {
+          "id": "",
+          "label": "Sent — —"
+        },
+        {
+          "id": "ssGenBtn",
+          "label": "Write 3 posts for me"
+        },
+        {
+          "id": "oauthFb",
+          "label": "Connect Facebook"
+        },
+        {
+          "id": "oauthIg",
+          "label": "Connect Instagram"
+        },
+        {
+          "id": "oauthLi",
+          "label": "Connect LinkedIn"
+        },
+        {
+          "id": "runScreen",
+          "label": "Check the wording"
+        },
+        {
+          "id": "queueBtn",
+          "label": "Queue post"
+        },
+        {
+          "id": "publishDueBtn",
+          "label": "Send anything due now"
+        },
+        {
+          "id": "clearComposer",
+          "label": "Clear the form"
+        },
+        {
+          "id": "",
+          "label": "Waiting 0"
+        },
+        {
+          "id": "",
+          "label": "Needs a rewrite 0"
+        },
+        {
+          "id": "",
+          "label": "Could not be sent 0"
+        },
+        {
+          "id": "",
+          "label": "Sent 0"
+        },
+        {
+          "id": "",
+          "label": "Send history 0"
+        },
+        {
+          "id": "drawerClose",
+          "label": "Close"
+        },
+        {
+          "id": "",
+          "label": "Approve it"
+        },
+        {
+          "id": "",
+          "label": "Refuse it"
+        },
+        {
+          "id": "",
+          "label": "Queue it"
+        },
+        {
+          "id": "",
+          "label": "Throw it away"
+        },
+        {
+          "id": "",
+          "label": "See the details"
+        },
+        {
+          "id": "",
+          "label": "Throw this post away"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "approvalBody",
+          "label": "#approvalBody"
+        }
+      ]
+    },
+    "creative-factory.html": {
+      "workflow": "W3",
+      "nav_hidden": true,
+      "protected": false,
+      "sources": [
+        "public/app/creative-factory.html"
+      ],
+      "static_control_count": 24,
+      "sequence_rows": 26,
+      "controls": [
+        {
+          "id": "genBtn",
+          "label": "Enqueue generation"
+        },
+        {
+          "id": "runJobsBtn",
+          "label": "Run queued jobs now"
+        },
+        {
+          "id": "",
+          "label": "Approve"
+        },
+        {
+          "id": "",
+          "label": "Reject"
+        },
+        {
+          "id": "",
+          "label": "Archive"
+        },
+        {
+          "id": "dwClose",
+          "label": "Close detail"
+        },
+        {
+          "id": "",
+          "label": "‹ prev"
+        },
+        {
+          "id": "",
+          "label": "next ›"
+        },
+        {
+          "id": "",
+          "label": "all' + cnt(jobs.length) + '"
+        },
+        {
+          "id": "",
+          "label": "=0?'on':'') + '\">' + st + cnt(n) + '"
+        },
+        {
+          "id": "",
+          "label": "Approve this brand"
+        },
+        {
+          "id": "",
+          "label": "Send it back"
+        },
+        {
+          "id": "",
+          "label": "Open the full creative"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "apprRail",
+          "label": "#apprRail"
+        },
+        {
+          "id": "apprLimit",
+          "label": "#apprLimit"
+        },
+        {
+          "id": "apprTable",
+          "label": "#apprTable"
+        },
+        {
+          "id": "apprBody",
+          "label": "#apprBody"
+        },
+        {
+          "id": "apprPager",
+          "label": "#apprPager"
+        },
+        {
+          "id": "flagBody",
+          "label": "#flagBody"
+        },
+        {
+          "id": "dwEyebrow",
+          "label": "#dwEyebrow"
+        },
+        {
+          "id": "dwTitle",
+          "label": "#dwTitle"
+        },
+        {
+          "id": "dwClose",
+          "label": "#dwClose"
+        },
+        {
+          "id": "dwBody",
+          "label": "#dwBody"
+        }
+      ]
+    },
+    "hiring.html": {
+      "workflow": "W3",
+      "nav_hidden": true,
+      "protected": false,
+      "sources": [
+        "public/app/hiring.html"
+      ],
+      "static_control_count": 11,
+      "sequence_rows": 13,
+      "controls": [
+        {
+          "id": "",
+          "label": "all stages '+pool.length+'"
+        },
+        {
+          "id": "",
+          "label": "all '+pool.length+'"
+        },
+        {
+          "id": "",
+          "label": "A valid kind of decision that nothing in the system produces yet."
+        },
+        {
+          "id": "dcAdvance",
+          "label": "Advance"
+        },
+        {
+          "id": "dcReject",
+          "label": "Reject"
+        },
+        {
+          "id": "dcTbl",
+          "label": "#dcTbl"
+        },
+        {
+          "id": "dcStage",
+          "label": "#dcStage"
+        },
+        {
+          "id": "dcAdvance",
+          "label": "#dcAdvance"
+        },
+        {
+          "id": "dcReason",
+          "label": "#dcReason"
+        },
+        {
+          "id": "dcReject",
+          "label": "#dcReject"
+        },
+        {
+          "id": "dcMsg",
+          "label": "#dcMsg"
+        }
+      ]
+    },
+    "finance-os.html": {
+      "workflow": "W2",
+      "nav_hidden": true,
+      "protected": false,
+      "sources": [
+        "public/app/finance-os.html"
+      ],
+      "static_control_count": 1,
+      "sequence_rows": 3,
+      "controls": [
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        }
+      ]
+    },
+    "journeys.html": {
+      "workflow": "W3",
+      "nav_hidden": true,
+      "protected": false,
+      "sources": [
+        "public/app/journeys.html"
+      ],
+      "static_control_count": 26,
+      "sequence_rows": 28,
+      "controls": [
+        {
+          "id": "undo",
+          "label": "Undo"
+        },
+        {
+          "id": "savever",
+          "label": "Save version"
+        },
+        {
+          "id": "runreal",
+          "label": "Test against the code"
+        },
+        {
+          "id": "apply",
+          "label": "Apply to code"
+        },
+        {
+          "id": "",
+          "label": "Step"
+        },
+        {
+          "id": "",
+          "label": "Simulate"
+        },
+        {
+          "id": "",
+          "label": "History"
+        },
+        {
+          "id": "",
+          "label": "Add a step here"
+        },
+        {
+          "id": "asksend",
+          "label": "Make the change"
+        },
+        {
+          "id": "reject",
+          "label": "Throw it away"
+        },
+        {
+          "id": "accept",
+          "label": "Keep it"
+        },
+        {
+          "id": "discard",
+          "label": "Discard"
+        },
+        {
+          "id": "applybar",
+          "label": "Apply to code"
+        },
+        {
+          "id": "",
+          "label": "Move up"
+        },
+        {
+          "id": "",
+          "label": "Move down"
+        },
+        {
+          "id": "",
+          "label": "Delete"
+        },
+        {
+          "id": "sgo",
+          "label": "Make the change"
+        },
+        {
+          "id": "runhere",
+          "label": "Run from here"
+        },
+        {
+          "id": "simstop",
+          "label": "Stop"
+        },
+        {
+          "id": "simstart",
+          "label": "Run the journey"
+        },
+        {
+          "id": "",
+          "label": "Roll back to this"
+        },
+        {
+          "id": "",
+          "label": "Reverted"
+        },
+        {
+          "id": "",
+          "label": "Put it back"
+        },
+        {
+          "id": "runclose",
+          "label": "Close"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "savever",
+          "label": "#savever"
+        }
+      ]
+    },
+    "template-editor.html": {
+      "workflow": "W3",
+      "nav_hidden": false,
+      "protected": false,
+      "sources": [
+        "public/app/template-editor.html"
+      ],
+      "static_control_count": 18,
+      "sequence_rows": 20,
+      "controls": [
+        {
+          "id": "saveBtn",
+          "label": "Save wording"
+        },
+        {
+          "id": "revertBtn",
+          "label": "Undo my changes"
+        },
+        {
+          "id": "apprBtn",
+          "label": "Approve this wording"
+        },
+        {
+          "id": "tplPrev",
+          "label": "Previous"
+        },
+        {
+          "id": "tplNext",
+          "label": "= pages - 1 ? \" disabled\" : \"\") + '>Next"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "tplList",
+          "label": "#tplList"
+        },
+        {
+          "id": "saveBtn",
+          "label": "#saveBtn"
+        },
+        {
+          "id": "revertBtn",
+          "label": "#revertBtn"
+        },
+        {
+          "id": "saveMsg",
+          "label": "#saveMsg"
+        },
+        {
+          "id": "apprCard",
+          "label": "#apprCard"
+        },
+        {
+          "id": "apprState",
+          "label": "#apprState"
+        },
+        {
+          "id": "apprRead",
+          "label": "#apprRead"
+        },
+        {
+          "id": "apprBtn",
+          "label": "#apprBtn"
+        },
+        {
+          "id": "apprMsg",
+          "label": "#apprMsg"
+        },
+        {
+          "id": "tplPager",
+          "label": "#tplPager"
+        },
+        {
+          "id": "tplPrev",
+          "label": "#tplPrev"
+        },
+        {
+          "id": "tplNext",
+          "label": "#tplNext"
+        }
+      ]
+    },
+    "contracts.html": {
+      "workflow": "W3",
+      "nav_hidden": false,
+      "protected": false,
+      "sources": [
+        "public/app/contracts.html"
+      ],
+      "static_control_count": 22,
+      "sequence_rows": 24,
+      "controls": [
+        {
+          "id": "btnUpload",
+          "label": "Upload a PDF"
+        },
+        {
+          "id": "btnNewTpl",
+          "label": "New wording"
+        },
+        {
+          "id": "btnAddField",
+          "label": "Add a blank"
+        },
+        {
+          "id": "btnSaveTpl",
+          "label": "Save"
+        },
+        {
+          "id": "btnArchive",
+          "label": "Archive"
+        },
+        {
+          "id": "btnCancelTpl",
+          "label": "Cancel"
+        },
+        {
+          "id": "btnAddSigner",
+          "label": "Add a signer"
+        },
+        {
+          "id": "btnSaveFields",
+          "label": "Save boxes"
+        },
+        {
+          "id": "bpDel",
+          "label": "Remove this box"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "tplCard",
+          "label": "#tplCard"
+        },
+        {
+          "id": "btnUpload",
+          "label": "#btnUpload"
+        },
+        {
+          "id": "btnNewTpl",
+          "label": "#btnNewTpl"
+        },
+        {
+          "id": "tplList",
+          "label": "#tplList"
+        },
+        {
+          "id": "tplEditor",
+          "label": "#tplEditor"
+        },
+        {
+          "id": "btnAddField",
+          "label": "#btnAddField"
+        },
+        {
+          "id": "btnSaveTpl",
+          "label": "#btnSaveTpl"
+        },
+        {
+          "id": "btnArchive",
+          "label": "#btnArchive"
+        },
+        {
+          "id": "btnCancelTpl",
+          "label": "#btnCancelTpl"
+        },
+        {
+          "id": "tplMsg",
+          "label": "#tplMsg"
+        },
+        {
+          "id": "btnAddSigner",
+          "label": "#btnAddSigner"
+        },
+        {
+          "id": "btnSaveFields",
+          "label": "#btnSaveFields"
+        }
+      ]
+    },
+    "lenders.html": {
+      "workflow": "W2",
+      "nav_hidden": false,
+      "protected": false,
+      "sources": [
+        "public/app/lenders.html"
+      ],
+      "static_control_count": 22,
+      "sequence_rows": 24,
+      "controls": [
+        {
+          "id": "",
+          "label": "Lender list"
+        },
+        {
+          "id": "",
+          "label": "Bureau mismatch queue"
+        },
+        {
+          "id": "",
+          "label": "AI bureau config"
+        },
+        {
+          "id": "btnFilter",
+          "label": "Apply filters"
+        },
+        {
+          "id": "btnExport",
+          "label": "Export CSV"
+        },
+        {
+          "id": "btnImportToggle",
+          "label": "Import CSV"
+        },
+        {
+          "id": "btnAdd",
+          "label": "Add blank row"
+        },
+        {
+          "id": "btnImportRun",
+          "label": "Import now"
+        },
+        {
+          "id": "btnImportCancel",
+          "label": "Cancel"
+        },
+        {
+          "id": "btnAddBureau",
+          "label": "Add bureau row"
+        },
+        {
+          "id": "",
+          "label": "Save"
+        },
+        {
+          "id": "",
+          "label": "Confirm"
+        },
+        {
+          "id": "",
+          "label": "Corrected"
+        },
+        {
+          "id": "",
+          "label": "Dismiss"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "btnFilter",
+          "label": "#btnFilter"
+        },
+        {
+          "id": "btnExport",
+          "label": "#btnExport"
+        },
+        {
+          "id": "btnImportToggle",
+          "label": "#btnImportToggle"
+        },
+        {
+          "id": "btnAdd",
+          "label": "#btnAdd"
+        },
+        {
+          "id": "btnImportRun",
+          "label": "#btnImportRun"
+        },
+        {
+          "id": "btnImportCancel",
+          "label": "#btnImportCancel"
+        },
+        {
+          "id": "btnAddBureau",
+          "label": "#btnAddBureau"
+        }
+      ]
+    },
+    "content-admin.html": {
+      "workflow": "W3",
+      "nav_hidden": true,
+      "protected": false,
+      "sources": [
+        "public/app/content-admin.html"
+      ],
+      "static_control_count": 6,
+      "sequence_rows": 8,
+      "controls": [
+        {
+          "id": "saveBtn",
+          "label": "Save changes"
+        },
+        {
+          "id": "chooseBtn",
+          "label": "Choose file"
+        },
+        {
+          "id": "doUpload",
+          "label": "Upload"
+        },
+        {
+          "id": "clearUpload",
+          "label": "Clear"
+        },
+        {
+          "id": "saveBtn",
+          "label": "#saveBtn"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        }
+      ]
+    },
+    "consent-capture.html": {
+      "workflow": "W2",
+      "nav_hidden": true,
+      "protected": false,
+      "sources": [
+        "public/app/consent-capture.html"
+      ],
+      "static_control_count": 5,
+      "sequence_rows": 7,
+      "controls": [
+        {
+          "id": "",
+          "label": "They ticked a box Use when they clicked to agree and typed nothing."
+        },
+        {
+          "id": "ccSignClear",
+          "label": "Clear"
+        },
+        {
+          "id": "ccSubmit",
+          "label": "Record consent"
+        },
+        {
+          "id": "",
+          "label": "Withdraw"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        }
+      ]
+    },
+    "present.html": {
+      "workflow": "W1",
+      "nav_hidden": false,
+      "protected": true,
+      "sources": [
+        "public/app/present.html",
+        "public/app/present.js",
+        "public/app/present.js",
+        "public/app/contract-send.js"
+      ],
+      "static_control_count": 9,
+      "sequence_rows": 11,
+      "controls": [
+        {
+          "id": "",
+          "label": "Back"
+        },
+        {
+          "id": "",
+          "label": "Reframes"
+        },
+        {
+          "id": "",
+          "label": "Next screen"
+        },
+        {
+          "id": "fh-cost",
+          "label": "#fh-cost"
+        },
+        {
+          "id": "fh-ebook",
+          "label": "#fh-ebook"
+        },
+        {
+          "id": "fh-sale-motion",
+          "label": "#fh-sale-motion"
+        },
+        {
+          "id": "fh-contract-tpl",
+          "label": "#fh-contract-tpl"
+        },
+        {
+          "id": "fh-contract-link",
+          "label": "#fh-contract-link"
+        },
+        {
+          "id": "fh-repair-paid",
+          "label": "#fh-repair-paid"
+        }
+      ]
+    },
+    "closer-call.html": {
+      "workflow": "W1",
+      "nav_hidden": false,
+      "protected": true,
+      "sources": [
+        "public/app/closer-call.html",
+        "public/app/closer-call.js",
+        "public/app/closer-dashboard.html"
+      ],
+      "static_control_count": 36,
+      "sequence_rows": 2,
+      "controls": [
+        {
+          "id": "",
+          "label": "None"
+        },
+        {
+          "id": "fh-save-next",
+          "label": "Save · next call"
+        },
+        {
+          "id": "fh-join",
+          "label": "No call link on this appointment"
+        },
+        {
+          "id": "fh-present",
+          "label": "Present"
+        },
+        {
+          "id": "fh-send-contract",
+          "label": "Send contract"
+        },
+        {
+          "id": "fh-contract-go",
+          "label": "Send"
+        },
+        {
+          "id": "fh-contract-copy",
+          "label": "Copy link"
+        },
+        {
+          "id": "",
+          "label": "1 Deposit"
+        },
+        {
+          "id": "",
+          "label": "2 Downsell"
+        },
+        {
+          "id": "",
+          "label": "3 Callback"
+        },
+        {
+          "id": "",
+          "label": "4 No show"
+        },
+        {
+          "id": "",
+          "label": "5 Not a fit"
+        },
+        {
+          "id": "",
+          "label": "Price"
+        },
+        {
+          "id": "",
+          "label": "Amount low"
+        },
+        {
+          "id": "",
+          "label": "Spouse"
+        },
+        {
+          "id": "",
+          "label": "Timing"
+        },
+        {
+          "id": "",
+          "label": "Wants guarantee"
+        },
+        {
+          "id": "",
+          "label": "Save · next call"
+        },
+        {
+          "id": "fh-save-next",
+          "label": "#fh-save-next"
+        },
+        {
+          "id": "fh-blank-",
+          "label": "#fh-blank-"
+        },
+        {
+          "id": "calcGate",
+          "label": "#calcGate"
+        },
+        {
+          "id": "fh-side-nav",
+          "label": "#fh-side-nav"
+        },
+        {
+          "id": "fh-temp-chip",
+          "label": "#fh-temp-chip"
+        },
+        {
+          "id": "fh-join",
+          "label": "#fh-join"
+        },
+        {
+          "id": "fh-present",
+          "label": "#fh-present"
+        },
+        {
+          "id": "fh-send-contract",
+          "label": "#fh-send-contract"
+        },
+        {
+          "id": "fh-contract-panel",
+          "label": "#fh-contract-panel"
+        },
+        {
+          "id": "fh-contract-tpl",
+          "label": "#fh-contract-tpl"
+        },
+        {
+          "id": "fh-contract-blanks",
+          "label": "#fh-contract-blanks"
+        },
+        {
+          "id": "fh-contract-go",
+          "label": "#fh-contract-go"
+        },
+        {
+          "id": "fh-contract-copy",
+          "label": "#fh-contract-copy"
+        },
+        {
+          "id": "fh-contract-link",
+          "label": "#fh-contract-link"
+        },
+        {
+          "id": "fh-contract-msg",
+          "label": "#fh-contract-msg"
+        },
+        {
+          "id": "calcTitle",
+          "label": "#calcTitle"
+        },
+        {
+          "id": "calcClientName",
+          "label": "#calcClientName"
+        },
+        {
+          "id": "calcGrid",
+          "label": "#calcGrid"
+        }
+      ]
+    },
+    "soft-pull-approve.html": {
+      "workflow": "W2",
+      "nav_hidden": false,
+      "protected": false,
+      "sources": [
+        "public/app/soft-pull-approve.html"
+      ],
+      "static_control_count": 1,
+      "sequence_rows": 3,
+      "controls": [
+        {
+          "id": "go",
+          "label": "I agree — submit soft-pull approval"
+        }
+      ]
+    },
+    "payment-success.html": {
+      "workflow": "W3",
+      "nav_hidden": false,
+      "protected": false,
+      "sources": [
+        "public/app/payment-success.html"
+      ],
+      "static_control_count": 1,
+      "sequence_rows": 3,
+      "controls": [
+        {
+          "id": "again",
+          "label": "Check again"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "survivor_ALL": 31,
+    "protected_off_ALL": [
+      "present.html",
+      "closer-call.html"
+    ],
+    "extra_off_nav": [
+      "soft-pull-approve.html",
+      "payment-success.html"
+    ],
+    "total_screens_sequenced": 35,
+    "approx_sequence_steps": 500,
+    "note": "Counts are UNVERIFIED inventory for click runs. LIVE-EXPAND rows required on JS-heavy screens."
+  }
+}

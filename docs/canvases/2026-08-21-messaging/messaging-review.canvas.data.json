@@ -1,0 +1,47 @@
+{
+  "edits": {
+    "EMAIL-N01-COLD-NURTURE": {
+      "decision": "KEEP",
+      "subject": "A quick insight most people miss",
+      "body": "Hey {{contact.first_name}},\n\n One thing we’ve learned after reviewing thousands of credit and funding profiles is this:\n\n Most people think approvals are about a single number — a score.\n In reality, lenders look at patterns, structure, and behavior over time .\n\n That’s why two people with similar scores can receive completely different outcomes.\n\n At FundHub, our job is to help entrepreneurs understand how those decisions are actually made — and how to position themselves correctly when the timing is right.\n\n Learn More About Funding Strategy\n\n No pressure — just insight you can use when you’re ready.\n\n fundhub.ai • Funding Intelligence for Entrepreneurs\n\n Unsubscribe",
+      "notes": "WE need to ensure that unsubscribe is a button that people press, instead of a url, i dont mind the basic emails for now but it appears as a link in the email and it loooks like shit, keep"
+    },
+    "SMS-N01-COLD-NURTURE": {
+      "decision": "KEEP",
+      "subject": "(none)",
+      "body": "Hey {{contact.first_name}}, Fundhub here. Most owners we talk to assume their credit profile is the problem. Usually it's the order they applied in. Same file, different sequence, very different result. If you want to see what yours actually supports: {{custom_values.booking_link}} Reply STOP to opt out.",
+      "notes": ""
+    },
+    "EMAIL-S02-FINISH-APPLICATION": {
+      "decision": "KEEP",
+      "subject": "You were halfway through — finish what you started",
+      "body": "Hey {{contact.first_name}},\n\nYou started your Fundhub application and left before it was done. Happens all the time.\n\nThat form is how we map what funding looks realistic for you — or what to fix first if you're not ready yet.\n\nFinish it here while it's still fresh:\n{{custom_values.booking_link}}\n\nTalk soon,\nFundhub",
+      "notes": ""
+    },
+    "EMAIL-N02-WARM-NURTURE": {
+      "decision": "KEEP",
+      "subject": "A small shift that makes a big difference",
+      "body": "Hey {{contact.first_name}},\n\n One thing we see over and over again is that outcomes usually change *before* people feel “ready.”\n\n It’s rarely about doing everything at once. Instead, approvals tend to improve when a few key variables line up — timing, structure, and how lenders interpret recent activity.\n\n That’s why many strong profiles don’t get optimal results right away, while others see meaningful movement after making only a handful of targeted adjustments.\n\n When the timing is right, understanding *where* to focus matters more than doing more.\n\n See How Profiles Are Evaluated\n\n No rush — this is here whenever you want to explore further.\n\n fundhub.ai • Funding Intelligence for Entrepreneurs\n\n Unsubscribe",
+      "notes": ""
+    },
+    "SMS-N02-WARM-NURTURE": {
+      "decision": "KEEP",
+      "subject": "(none)",
+      "body": "Hey {{contact.first_name}}, it's Josh over at Fundhub. You looked at funding with us a while back. Profiles move — and so do the banks. What your file supported then isn't what it supports now. Worth a fresh look: {{custom_values.booking_link}} Reply STOP to opt out.",
+      "notes": ""
+    },
+    "SMS-NOBOOK-01": {
+      "decision": "KEEP",
+      "subject": "(none)",
+      "body": "Hey {{contact.first_name}}, it's Josh over at Fundhub. Your file is ready — grab a time so we can walk you through what it supports: {{custom_values.booking_link}} Reply STOP to opt out.",
+      "notes": ""
+    },
+    "SMS-NOBOOK-02": {
+      "decision": "KEEP",
+      "subject": "(none)",
+      "body": "Hey {{contact.first_name}}, Josh over at Fundhub here. Still worth a look — same file, wrong order of apps is usually the ceiling. Book here: {{custom_values.booking_link}} Reply STOP to opt out.",
+      "notes": ""
+    }
+  },
+  "index": 7
+}

@@ -32,10 +32,10 @@ Want to reactivate your affiliate stream?
 
  {{cta-link}}
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## AF1   Affiliate Activation  Welcome   Link    [folder: (root)]
@@ -45,8 +45,6 @@ AF1 — Affiliate Activation
  You’re officially an affiliate 🎉
 
  Hey {{contact.first_name}},
-
- You’re officially part of the FundHub affiliate program.
  You earn commissions when people use your link, run their Analyzer, and become a paying client.
 
  Your affiliate link
@@ -75,12 +73,11 @@ AF1 — Affiliate Activation
  Want us to help you earn your first commission faster? Reply “SWIPE” and we’ll send more plug-and-play posts.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Affiliate Program
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## AF2   Affiliate Quickstart  Get First Commission    [folder: (root)]
@@ -130,12 +127,11 @@ AF2 — Affiliate Quickstart
  Pro tip: consistency wins. If you share 3x per week, commissions become predictable.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Affiliate Program
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## AF3   You Earned a Commission  Pending Review    [folder: (root)]
@@ -151,7 +147,7 @@ AF3 – Commission Pending Review
 
  Current status: Pending Review 
 
- This simply means our team is verifying the transaction and confirming it 
+ This simply means I'm verifying the transaction and confirming it 
  was attributed to your affiliate link.
 
  Commission Amount:
@@ -183,12 +179,11 @@ AF3 – Commission Pending Review
  Let’s get you your next commission fast.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## AF4   Affiliate Payout Sent   [folder: AF-Series (Affiliate Emails)]
@@ -234,12 +229,11 @@ AF4 – Affiliate Payout Sent
  You’re building a real revenue stream here — keep going.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## AF   [folder: AF-Series (Affiliate Emails)]
@@ -249,8 +243,6 @@ AF1 – You’re Now an Affiliate
  Welcome — you’re now officially an affiliate 🎉
 
  Hey {{contact.first_name}},
-
- Good news — you’re officially part of the FundHub Affiliate Program.
  That means you now earn commissions every time someone uses your link,
  runs their Analyzer, and becomes a client.
 
@@ -293,12 +285,11 @@ AF1 – You’re Now an Affiliate
  Let’s get your first commission this week.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## AR-PP1   Payment Plan Option  Set It Up    [folder: (root)]
@@ -329,12 +320,11 @@ AR-PP1 — Payment Plan Option
  {{payment_link}} 
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Billing
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## AR-PP2   Payment Plan Confirmed  Schedule   Next Paymen   [folder: AR-Series (Billing / Renewal)]
@@ -364,12 +354,11 @@ AR-PP2 — Payment Plan Confirmed
  View / Manage Plan
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Billing
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## AR-PP3   Upcoming Payment Reminder  24 48h    [folder: (root)]
@@ -395,12 +384,11 @@ AR-PP3 — Upcoming Payment Reminder
  Update Payment Method
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Billing
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## AR-PP4   Payment Failed  Action Required    [folder: (root)]
@@ -428,12 +416,11 @@ AR-PP4 — Payment Failed
  If you need help, reply “HELP” and we’ll assist immediately.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Billing
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## AR-PP5   Partial Payment Receipt  Balance Remaining    [folder: (root)]
@@ -467,12 +454,11 @@ AR-PP5 — Partial Payment Receipt
  View Receipt
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Billing
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## AR-PP6   Paid in Full   [folder: AR-Series (Billing / Renewal)]
@@ -512,12 +498,11 @@ AR-PP6 — Paid in Full
  It helps the next entrepreneur trust the process.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Billing
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## AR1    Invoice Sent    [folder: (root)]
@@ -547,12 +532,11 @@ AR1 — Invoice Sent
  If you have any questions or need help, reply to this email and we’ll take care of it.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Billing
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## AR2    Friendly Reminder  Past Due a Little     [folder: AR-Series (Billing / Renewal)]
@@ -582,12 +566,11 @@ AR2 — Friendly Reminder
  If you already took care of it, you can ignore this message. If you need help, reply and we’ll assist.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Billing
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## AR3    Firm Reminder   Payment Plan Option    [folder: (root)]
@@ -617,12 +600,11 @@ AR3 — Firm Reminder
  If you need a payment plan, reply with “PAYMENT PLAN” and we’ll send options.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Billing
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## AR4    Final Notice   Pre-Collections    [folder: (root)]
@@ -649,12 +631,11 @@ AR4 — Final Notice
  If you need a payment plan, reply “PAYMENT PLAN” today so we can lock an arrangement and avoid escalation.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Billing
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-EMAIL-FUNDING-72HR   [folder: BS - Series (Backend Selling)]
@@ -718,6 +699,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-EMAIL-REPAIR-72HR   [folder: BS - Series (Backend Selling)]
@@ -781,6 +766,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-FUND-D1-E1-morning   [folder: BS - Series (Backend Selling)]
@@ -844,6 +833,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-FUND-D1-E2-midmorning   [folder: BS - Series (Backend Selling)]
@@ -907,6 +900,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-FUND-D1-E3-lunch   [folder: BS - Series (Backend Selling)]
@@ -970,6 +967,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-FUND-D1-E4-afternoon   [folder: BS - Series (Backend Selling)]
@@ -1033,6 +1034,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-FUND-D1-E5-evening   [folder: BS - Series (Backend Selling)]
@@ -1096,6 +1101,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-FUND-D1-E6-night   [folder: BS - Series (Backend Selling)]
@@ -1159,6 +1168,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-FUND-D2-E1-morning   [folder: BS - Series (Backend Selling)]
@@ -1222,6 +1235,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-FUND-D2-E2-midmorning   [folder: BS - Series (Backend Selling)]
@@ -1285,6 +1302,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-FUND-D2-E4-afternoon   [folder: BS - Series (Backend Selling)]
@@ -1348,6 +1369,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-FUND-D2-E5-evening   [folder: BS - Series (Backend Selling)]
@@ -1411,6 +1436,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-FUND-D2-E6-night   [folder: BS - Series (Backend Selling)]
@@ -1474,6 +1503,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-FUND-D3-E1-morning   [folder: BS - Series (Backend Selling)]
@@ -1537,6 +1570,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-FUND-D3-E2-midmorning     [folder: BS - Series (Backend Selling)]
@@ -1600,6 +1637,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-FUND-D3-E3-lunch   [folder: BS - Series (Backend Selling)]
@@ -1663,6 +1704,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-FUND-D3-E4-afternoon   [folder: BS - Series (Backend Selling)]
@@ -1726,6 +1771,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-FUND-D3-E5-evening     [folder: BS - Series (Backend Selling)]
@@ -1789,6 +1838,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-FUND-D3-E6-night   [folder: BS - Series (Backend Selling)]
@@ -1852,6 +1905,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-REPAIR-D1-E1-morning   [folder: BS - Series (Backend Selling)]
@@ -1915,6 +1972,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-REPAIR-D1-E2-midmorning   [folder: BS - Series (Backend Selling)]
@@ -1978,6 +2039,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-REPAIR-D1-E3-lunch   [folder: BS - Series (Backend Selling)]
@@ -2041,6 +2106,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-REPAIR-D1-E4-afternoon   [folder: BS - Series (Backend Selling)]
@@ -2104,6 +2173,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-REPAIR-D1-E5-evening   [folder: BS - Series (Backend Selling)]
@@ -2167,6 +2240,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-REPAIR-D2-E6-night     [folder: BS - Series (Backend Selling)]
@@ -2230,6 +2307,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-REPAIR-D3-E1-morning   [folder: BS - Series (Backend Selling)]
@@ -2293,6 +2374,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-REPAIR-D3-E2-midmorning   [folder: BS - Series (Backend Selling)]
@@ -2356,6 +2441,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-REPAIR-D3-E3-lunch   [folder: BS - Series (Backend Selling)]
@@ -2419,6 +2508,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-REPAIR-D3-E4-afternoon   [folder: BS - Series (Backend Selling)]
@@ -2482,6 +2575,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-REPAIR-D3-E5-evening   [folder: BS - Series (Backend Selling)]
@@ -2545,6 +2642,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## BS-REPAIR-D3-E6-night   [folder: BS - Series (Backend Selling)]
@@ -2608,6 +2709,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## Begin LT-Cold-2   [folder: LT - Series (Nurture: Cold / Warm / Hot)]
@@ -2649,12 +2754,11 @@ LT-Cold-2 – Cold Nurture Email #2
  This alone will save you months of guessing.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## C3   2-Hour Reminder  Repair Review Call    [folder: (root)]
@@ -2697,10 +2801,10 @@ RC3 – 2-Hour Reminder (Repair Review)
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## D1   Missing Documents  Initial Request    [folder: (root)]
@@ -2734,8 +2838,10 @@ FundHub.ai
 
  FundHub.ai — Document Verification Department
 
- Unsubscribe
+– Josh
+FundHub.ai
 
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## D2   Follow-Up Document Request  Soft Pressure    [folder: (root)]
@@ -2776,8 +2882,10 @@ FundHub.ai
 
  FundHub.ai • Document Verification Team
 
- Unsubscribe
+– Josh
+FundHub.ai
 
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## D3   Urgent Document Reminder  File On Hold    [folder: (root)]
@@ -2819,12 +2927,14 @@ D3 – Urgent Reminder (File On Hold)
  Thanks for your quick attention,
 
  {{sender_name}}
-FundHub Document Team
+Josh at Fundhub
 
  FundHub.ai • Document Verification Department
 
- Unsubscribe
+– Josh
+FundHub.ai
 
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## D4   Final Request  File Will Be Closed    [folder: (root)]
@@ -2862,12 +2972,14 @@ D4 – Final Document Request
  Thanks for your quick attention,
 
  {{sender_name}}
-FundHub Document Team
+Josh at Fundhub
 
  FundHub.ai • Document Verification Department
 
- Unsubscribe
+– Josh
+FundHub.ai
 
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## DPC-05   72-Hour No-Progress Escalation  Internal Alert   [folder: (root)]
@@ -2892,10 +3004,10 @@ FundHub Document Team
 
  This is a mechanical control alert (72-hour rule). Do not leave records idle.
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## Default - Document Sent   [folder: (root)]
@@ -2915,6 +3027,10 @@ FundHub Document Team
  {{user.name}}
  {{location.name}}
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## F-02   Onboarding Incomplete  ID   Portal Needed    [folder: (root)]
@@ -2939,10 +3055,10 @@ One quick step before we can begin
 
  {{PORTAL_ONBOARDING_LINK}}
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## F-03   Round Submitted  F2 F4 F6 F20    [folder: (root)]
@@ -2967,10 +3083,10 @@ Funding Round {{custom_fields.funding_round_number}} has been submitted
 
  {{CLIENT_PORTAL_URL}}
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## F-04   Round Approvals  F3 F5 F7 F21       [folder: F-Series (Funding Round Emails F1–F23)]
@@ -2997,10 +3113,10 @@ Approvals are in for Funding Round {{custom_fields.funding_round_number}}
 
  {{CLIENT_PORTAL_URL}}
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## F-06   Funding Conditions   Missing Docs   [folder: F-Series (Funding Round Emails F1–F23)]
@@ -3027,10 +3143,10 @@ Funding is now locked — here’s what happens next
 
  {{CLIENT_PORTAL_URL}}
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## F-06   Funding Conditions   Missing Docs      [folder: (root)]
@@ -3053,10 +3169,10 @@ One item is required to continue
 
  {{UPLOAD_LINK}}
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## F-10   Client Funding Inbox Provisioner      [folder: (root)]
@@ -3087,10 +3203,10 @@ Your funding inbox is ready
 
  Once forwarding is set, your file can move faster with fewer missed steps.
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## F2   How Much You Could Actually Get   [folder: F-Series (Funding Round Emails F1–F23)]
@@ -3135,10 +3251,10 @@ F2 – How Much You Could Actually Get
 
  – {{sender_name}}
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## F3   Your Roadmap Is Useless Unless You Do This   [folder: OA - Series (Offer Activation)]
@@ -3187,12 +3303,11 @@ F3 – Roadmap Execution Push
  Talk soon,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FC2   24-Hour Reminder  Funding Review Call    [folder: (root)]
@@ -3239,12 +3354,11 @@ FC2 – 24-Hour Reminder
  See you tomorrow,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FC3   2-Hour Reminder  Funding Review Call    [folder: (root)]
@@ -3280,12 +3394,11 @@ FC3 – 2-Hour Reminder
  Talk soon,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR10   Round 5 Submitted   [folder: OA - Series (Offer Activation)]
@@ -3332,10 +3445,10 @@ FR10 – Round 5 Submitted
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR11 - Round 5 Approvals   [folder: OA - Series (Offer Activation)]
@@ -3381,10 +3494,10 @@ FR11 – Round 5 Approvals
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR12 - Round 6 Submitted   [folder: F-Series (Funding Round Emails F1–F23)]
@@ -3433,10 +3546,10 @@ FR12 – Round 6 Submitted
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR13   Round 6 Approvals   [folder: F-Series (Funding Round Emails F1–F23)]
@@ -3483,10 +3596,10 @@ FR13 – Round 6 Approvals
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR14   Round 7 Submitted   [folder: F-Series (Funding Round Emails F1–F23)]
@@ -3536,10 +3649,10 @@ FR14 – Round 7 Submitted
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR15   Round 7 Approvals   [folder: F-Series (Funding Round Emails F1–F23)]
@@ -3590,10 +3703,10 @@ FR15 – Round 7 Approvals
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR16   Round 8 Submitted   [folder: F-Series (Funding Round Emails F1–F23)]
@@ -3641,10 +3754,10 @@ FR16 – Round 8 Submitted
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR17   Round 8 Approvals   [folder: F-Series (Funding Round Emails F1–F23)]
@@ -3699,10 +3812,10 @@ FR17 – Round 8 Approvals
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR18   Round 9 Submitted   [folder: F-Series (Funding Round Emails F1–F23)]
@@ -3726,7 +3839,7 @@ FR18 – Round 9 Submitted
  Push you closer to your total roadmap potential of 
  ${{analyzer_total_funding_potential}} 
 
- Behind the scenes, our team is managing:
+ Behind the scenes, I'm managing:
 
  Inquiry spacing with extreme precision
 
@@ -3750,10 +3863,10 @@ FR18 – Round 9 Submitted
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR19   Round 9 Approvals   [folder: F-Series (Funding Round Emails F1–F23)]
@@ -3800,12 +3913,11 @@ FR19 – Round 9 Approvals
  You're almost at the finish line — massive work so far.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR1   Welcome To Funding Intake   [folder: OA - Series (Offer Activation)]
@@ -3849,10 +3961,10 @@ FR1 – Welcome To Funding Intake
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR20   Round 10 Submitted   [folder: F-Series (Funding Round Emails F1–F23)]
@@ -3877,7 +3989,7 @@ FR20 – Round 10 Submitted
  Push you toward the final stretch of your total roadmap:
  ${{analyzer_total_funding_potential}} 
 
- Behind the scenes, our team is now:
+ Behind the scenes, I'm now:
 
  Executing precise inquiry spacing
 
@@ -3901,10 +4013,10 @@ FR20 – Round 10 Submitted
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR21   Round 10 Approvals   [folder: F-Series (Funding Round Emails F1–F23)]
@@ -3937,7 +4049,7 @@ FR21 – Round 10 Approvals
  Do NOT activate cards, accept promotions, or change any account settings yet.
  We still need your profile stable while we prepare your totals.
 
- Behind the scenes, our team is now:
+ Behind the scenes, I'm now:
 
  Logging all Round 10 approvals
 
@@ -3956,10 +4068,10 @@ FR21 – Round 10 Approvals
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR22   Total Funding Locked   [folder: F-Series (Funding Round Emails F1–F23)]
@@ -4014,10 +4126,10 @@ FR22 – Total Funding Locked
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR23   Post-Funding Monitoring   [folder: F-Series (Funding Round Emails F1–F23)]
@@ -4089,10 +4201,10 @@ FR23 – Post-Funding Monitoring
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR2   Round 1 Submitted   [folder: OA - Series (Offer Activation)]
@@ -4134,12 +4246,11 @@ FR2 – Round 1 Submitted
  More updates soon,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR3   Round 1 Approvals   [folder: OA - Series (Offer Activation)]
@@ -4184,10 +4295,10 @@ FR3 – Round 1 Approvals
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR4   Round 2 Submitted   [folder: OA - Series (Offer Activation)]
@@ -4226,12 +4337,11 @@ FR4 – Round 2 Submitted
  Great momentum so far — keep an eye out.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR5   Round 2 Approvals   [folder: OA - Series (Offer Activation)]
@@ -4279,10 +4389,10 @@ FR5 – Round 2 Approvals
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR6   Round 3 Submitted   [folder: OA - Series (Offer Activation)]
@@ -4327,10 +4437,10 @@ FR6 – Round 3 Submitted
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR7   Round 3 Approvals   [folder: OA - Series (Offer Activation)]
@@ -4378,10 +4488,10 @@ FR7 – Round 3 Approvals
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR8   Round 4 Submitted   [folder: OA - Series (Offer Activation)]
@@ -4428,10 +4538,10 @@ FR8 – Round 4 Submitted
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## FR9   Round 4 Approvals   [folder: OA - Series (Offer Activation)]
@@ -4479,10 +4589,10 @@ FR9 – Round 4 Approvals
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## Fundhub   Core Email Template  Master  w Template   [folder: (root)]
@@ -4500,11 +4610,12 @@ Funding paused — action needed
  Book the quick call
 
  Note: this can extend your timeline until resolved. We’ll confirm next steps on the call.
-
- fundhub.ai • Funding Intelligence for Entrepreneurs
-
  {{unsubscribe}}
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## GE1   Global Re-Engagement  1  Soft Check-In    [folder: (root)]
@@ -4532,12 +4643,11 @@ GE1 – Quick Check-In
  Talk soon,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## GE2   Global Re-Engagement  2  Curiosity   Market Shift   [folder: GE - Series (Global Re-Engagement)]
@@ -4558,6 +4668,10 @@ GE2 – A Lot Has Changed
  A lot of entrepreneurs are getting approved right now 
  simply because the timing and lender criteria are in their favor.
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## LT-Cold- 2   Cold Nurture Email   [folder: LT - Series (Nurture: Cold / Warm / Hot)]
@@ -4599,12 +4713,11 @@ LT-Cold-2 – Cold Nurture Email #2
  This alone will save you months of guessing.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## LT-Hot-3   Last Call Before Calendar Purge   [folder: LT - Series (Nurture: Cold / Warm / Hot)]
@@ -4646,12 +4759,11 @@ LT-Hot-3 – Last Call Before Calendar Purge
  Either way, I’ll update your file accordingly.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## LT-Warm-1   Warm Nurture Email  1   [folder: LT - Series (Nurture: Cold / Warm / Hot)]
@@ -4699,12 +4811,11 @@ LT-Warm-1 – Warm Nurture #1
  Talk soon,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## LT-Warm-3   Warm Re-Pitch   Momentum   Decision Logic   [folder: LT - Series (Nurture: Cold / Warm / Hot)]
@@ -4749,12 +4860,11 @@ LT-Warm-3 – Warm Nurture #3
  You already have clarity — now you just need a plan.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## N-01   Long-Term Cold Nurture      [folder: (root)]
@@ -4776,10 +4886,10 @@ A quick insight most people miss
 
  No pressure — just insight you can use when you’re ready.
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## N-02   Long-Term Warm Nurture   [folder: N - Series (Nurture Series)]
@@ -4800,10 +4910,10 @@ A small shift that makes a big difference
 
  No rush — this is here whenever you want to explore further.
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## N-03   Long-Term Hot Nurture   [folder: N - Series (Nurture Series)]
@@ -4830,10 +4940,10 @@ Knowing when to move forward
 
  Whether you act now or later, understanding the landscape is always the first step.
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## N-04   Post-Funding Nurture   [folder: N - Series (Nurture Series)]
@@ -4858,10 +4968,10 @@ What comes after funding
 
  Small decisions now shape what’s possible later.
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## N-05   Repair-Complete Nurture   [folder: N - Series (Nurture Series)]
@@ -4886,10 +4996,10 @@ Protect what you just built
 
  Small habits keep your profile strong long-term.
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## N-06   Renewal   Second Wave Funding   [folder: N - Series (Nurture Series)]
@@ -4914,10 +5024,10 @@ When “second-wave” funding makes sense
 
  The right timing can change everything — this is about strategy, not speed.
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## N-07   Global Re-engagement      [folder: (root)]
@@ -4936,10 +5046,10 @@ Quick check-in
 
  No pressure — just a clean next step when you want it.
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## N-08   Analyzer Re-run  6 12 months       [folder: N - Series (Nurture Series)]
@@ -4958,10 +5068,10 @@ Quick Analyzer refresh
 
  If now isn’t the time, no worries — you can re-run it anytime when you’re ready.
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## NS3   Last Chance To Rebook   [folder: OA - Series (Offer Activation)]
@@ -4995,12 +5105,11 @@ NS3 – Last Chance To Rebook
  After this email, your file gets archived.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## OA1   Your Approvals Are Sitting Here Waiting   [folder: OA - Series (Offer Activation)]
@@ -5041,12 +5150,11 @@ OA1 – Your Approvals Are Sitting Here Waiting
  Talk soon,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## OA2   You re Leaving  X On The Table   [folder: OA - Series (Offer Activation)]
@@ -5098,12 +5206,11 @@ OA2 – You're Leaving Money On The Table
  Talk soon,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## P1    We can t start without your ID   Portal   ID Miss   [folder: P - Series (Portal / ID)]
@@ -5125,12 +5232,11 @@ P1 — ID Needed
  If you’re stuck, reply to this email and tell us what’s blocking you — we’ll help fast.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Onboarding Support
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## P2    You re stalling your own funding   Portal   ID    [folder: (root)]
@@ -5154,12 +5260,11 @@ P2 — ID / Portal Still Missing
  If something’s stopping you, reply and tell us what it is — we’ll help fast.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Onboarding Support
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## P3    Should we pause your file    Portal   ID    [folder: (root)]
@@ -5181,12 +5286,11 @@ P3 — Final Notice (ID / Portal)
  Either way, just tell us so we can update your status correctly.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Onboarding Support
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## PC1   Accepted Offer  Funding    [folder: (root)]
@@ -5233,10 +5337,10 @@ PC1 – Accepted Offer (Funding)
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## PC2   Funding Intake Instructions   [folder: OA - Series (Offer Activation)]
@@ -5285,10 +5389,10 @@ PC2 – Funding Intake Instructions
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## PC3   Didn t Buy Funding  Open-Loop Pressure    [folder: (root)]
@@ -5338,10 +5442,10 @@ PC3 – Didn’t Buy Funding
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## PC4   Funding Contract Not Signed   Incomplete   [folder: OA - Series (Offer Activation)]
@@ -5374,10 +5478,10 @@ PC4 – Funding Contract Not Signed
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## PCR1   Accepted Repair Offer  Repair Enrollment Confirm   [folder: OA - Series (Offer Activation)]
@@ -5422,10 +5526,10 @@ PCR1 – Accepted Repair Offer
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## PCR2   Repair Intake Instructions   [folder: OA - Series (Offer Activation)]
@@ -5475,10 +5579,10 @@ PCR2 – Repair Intake Instructions
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## PCR3   Didn t Buy Repair   [folder: OA - Series (Offer Activation)]
@@ -5523,10 +5627,10 @@ PCR3 – Didn’t Buy Repair
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## PCR4   Repair Contract Not Signed   Incomplete   [folder: OA - Series (Offer Activation)]
@@ -5567,10 +5671,10 @@ PCR4 – Repair Contract Not Signed
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## R-02   Repair Round 1 Sent   [folder: R - Series (Repair Emails)]
@@ -5595,34 +5699,10 @@ Repair Round {{custom_fields.repair_round_number}} is in motion
 
  {{CLIENT_PORTAL_URL}}
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
-
-================================================================================
-## R-03   Repair Round 2 Sent   [folder: R - Series (Repair Emails)]
-================================================================================
-Repair Round {{custom_fields.repair_round_number}} is underway
-
- Hey {{contact.first_name}},
-
- We’ve officially moved into Repair Round {{custom_fields.repair_round_number}} on your file.
-
- This round continues the dispute and verification process based on prior responses. As before, timelines vary by bureau and creditor, but updates typically surface over the next few weeks.
-
- You don’t need to take any action right now. You can monitor progress and see next steps inside your client portal.
-
- Open Your Client Portal
-
- If the button doesn’t work, copy/paste this link into your browser:
-
- {{CLIENT_PORTAL_URL}}
-
- fundhub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## R-03   Repair Round 2 Sent   [folder: R - Series (Repair Emails)]
@@ -5643,10 +5723,34 @@ Repair Round {{custom_fields.repair_round_number}} is underway
 
  {{CLIENT_PORTAL_URL}}
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
+================================================================================
+## R-03   Repair Round 2 Sent   [folder: R - Series (Repair Emails)]
+================================================================================
+Repair Round {{custom_fields.repair_round_number}} is underway
+
+ Hey {{contact.first_name}},
+
+ We’ve officially moved into Repair Round {{custom_fields.repair_round_number}} on your file.
+
+ This round continues the dispute and verification process based on prior responses. As before, timelines vary by bureau and creditor, but updates typically surface over the next few weeks.
+
+ You don’t need to take any action right now. You can monitor progress and see next steps inside your client portal.
+
+ Open Your Client Portal
+
+ If the button doesn’t work, copy/paste this link into your browser:
+
+ {{CLIENT_PORTAL_URL}}
+
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## R-05   Repair Round 4 Sent   [folder: R - Series (Repair Emails)]
@@ -5667,10 +5771,10 @@ Repair Round {{custom_fields.repair_round_number}} is underway
 
  {{CLIENT_PORTAL_URL}}
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## R-06   Repair Round 5 Sent   [folder: R - Series (Repair Emails)]
@@ -5691,10 +5795,10 @@ Repair Round {{custom_fields.repair_round_number}} is underway
 
  {{CLIENT_PORTAL_URL}}
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## R-07   Repair Round 6 Sent   [folder: R - Series (Repair Emails)]
@@ -5715,10 +5819,10 @@ Repair Round {{custom_fields.repair_round_number}} is underway
 
  {{CLIENT_PORTAL_URL}}
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## R-09   Legal Action Active  R9    [folder: (root)]
@@ -5741,10 +5845,10 @@ Your file has entered legal review
 
  Updates will appear in your portal as your file progresses.
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## R-10   Legal Resolved  R10    [folder: (root)]
@@ -5764,10 +5868,10 @@ Your legal case has concluded
 
  Please keep an eye on your portal for any final notes tied to completion.
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## RC1   Call Confirmed  Repair Review Call    [folder: (root)]
@@ -5801,12 +5905,11 @@ RC1 – Repair Call Confirmed
  Talk soon,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## RC2   24-Hour Reminder  Repair Review Call    [folder: (root)]
@@ -5851,10 +5954,10 @@ RC2 – 24-Hour Reminder (Repair Review)
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## RER2   A Lot Has Changed Since Your Last Analysis   [folder: GE - Series (Global Re-Engagement)]
@@ -5902,12 +6005,11 @@ RER2 – A Lot Has Changed Since Your Last Analysis
  You’re one quick refresh away from real clarity again.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## RER3    Final Notice Before We Archive Your Old Data    [folder: (root)]
@@ -5947,12 +6049,11 @@ RER3 – Final Notice Before Archive
  Here if you need help with anything,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## RNS1   You Missed Your Repair Strategy Call   [folder: OA - Series (Offer Activation)]
@@ -5995,12 +6096,11 @@ RNS1 – Missed Repair Strategy Call
  Talk soon,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## RNS2   Your Credit File Can t Sit Like This   [folder: OA - Series (Offer Activation)]
@@ -6049,10 +6149,10 @@ RNS2 – Your Credit File Can't Sit Like This
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## RNS3   Last Chance To Get Back On Track   [folder: OA - Series (Offer Activation)]
@@ -6094,10 +6194,10 @@ RNS3 – Last Chance To Get Back On Track
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## RP1   Your Analyzer Says You Need Repair Before Funding   [folder: OA - Series (Offer Activation)]
@@ -6149,12 +6249,11 @@ OA3 – Your File Is Expiring Soon
  Your move,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## RP2   What s Blocking Your Funding Right Now   [folder: OA - Series (Offer Activation)]
@@ -6198,10 +6297,10 @@ RP2 – What's Blocking Your Funding Right Now
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## S-01 New Lead Intake   [folder: S - Series Sales Emails]
@@ -6248,10 +6347,10 @@ S-01 – New Lead Intake
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## S-02  Incomplete Underwrite IQ   [folder: S - Series Sales Emails]
@@ -6260,6 +6359,10 @@ S-01 – New Lead Intake
 
 [DRAFT — KILLED] Owner 2026-08-14: S-02 incomplete nudge retired. Underwrite IQ is a CRS soft-pull engine — there is no customer “incomplete Underwrite IQ” state. Do not approve or send.
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## S-03 Incomplete Booking    [folder: (root)]
@@ -6296,12 +6399,11 @@ S-03 – Incomplete Booking
  Talk soon,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## S-04B Reminder Email  Call Booked    [folder: (root)]
@@ -6329,12 +6431,12 @@ Reminder: Your call is coming up
  iCal/Outlook 
 
  Need to cancel?
- Cancel Appointment 
+ Cancel Appointment
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## S-04  Appointment Confirmation   [folder: S - Series Sales Emails]
@@ -6371,12 +6473,11 @@ S-04 – Appointment Confirmation
  Talk soon,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## S-05 No-Show Recovery   [folder: S - Series Sales Emails]
@@ -6414,10 +6515,10 @@ S-05 – No-Show Recovery
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## S-06 Application Push   [folder: S - Series Sales Emails]
@@ -6455,10 +6556,10 @@ S-06 – Application Push
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## S-07 Sales Status Cleanup   Not a Fit   [folder: S - Series Sales Emails]
@@ -6488,12 +6589,11 @@ S-07 – Not a Fit Right Now
  Wishing you the best,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## S-08  Long-Term Nurture  Cold Start Email   Cold 1    [folder: (root)]
@@ -6546,10 +6646,10 @@ S-08 – Long-Term Nurture (Cold 1)
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## S2   Here s Why You Can t Ignore This  Funding No-Show    [folder: (root)]
@@ -6589,12 +6689,11 @@ NS2 – Here’s Why You Can’t Ignore This
  Talk soon,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## SEND AX-07   Email  Paused New Negative    [folder: (root)]
@@ -6614,11 +6713,12 @@ Funding paused — action needed
  Book the quick call
 
  Note: this may extend your timeline until resolved. We’ll confirm next steps on the call.
-
- fundhub.ai • Funding Intelligence for Entrepreneurs
-
  {{unsubscribe}}
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## T1   Testimonial Request  Soft Ask    [folder: (root)]
@@ -6648,12 +6748,11 @@ T1 – Testimonial Request
  Appreciate you,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Helping Entrepreneurs Access Capital
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## T2   Social Proof Framing Testimonial Request   [folder: T - Series (Testimonials)]
@@ -6695,12 +6794,11 @@ T2 – Your Story Matters
  Thanks again,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Helping Entrepreneurs Access Capital
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## T3   Final Nudge  Reciprocity Frame    [folder: (root)]
@@ -6733,12 +6831,11 @@ T3 – Final Testimonial Nudge
  Thanks again, seriously.
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Helping Entrepreneurs Access Capital
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## U-02   UnderwriteIQ Funding Delivery   [folder: U - Series (Underwrite IQ)]
@@ -6794,10 +6891,12 @@ Your Fundhub file is complete — audit, letters, roadmap, and portal access ins
  Anything in the pack you want walked through — reply to this email.
 
  — The Fundhub Team
- Fundhub.ai • Funding Intelligence for Entrepreneurs
-
  (HTML send body lives in db/seed/009_u02_funding_delivery_template.sql — table layout + button for Gmail/Outlook/Apple Mail.)
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## U-02   UnderwriteIQ Repair Delivery   [folder: U - Series (Underwrite IQ)]
@@ -6852,10 +6951,10 @@ EMAIL — UnderwriteIQ Repair Delivery
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## U-06   Analyzer Follow-Up   Re-Submission   [folder: U - Series (Underwrite IQ)]
@@ -6874,10 +6973,10 @@ Quick action needed to finish your results
 
  {{cta-link}}
 
- fundhub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ##  BS-FUND-D2-E3-lunch   [folder: BS - Series (Backend Selling)]
@@ -6941,6 +7040,10 @@ Discount Light
 
  Privacy          Unsubscribe
 
+– Josh
+FundHub.ai
+
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ##  Begin LT-Cold-3.    [folder: (root)]
@@ -6981,12 +7084,11 @@ LT-Cold-3 – Cold Nurture #3
  from the people who stay stuck.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ##  F1   Fundable  Here s Your Funding Roadmap   [folder: F-Series (Funding Round Emails F1–F23)]
@@ -7040,10 +7142,10 @@ F1 – Fundable Roadmap
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ##  GE3   Global Re-Engagement  3  Final Check-In Before S   [folder: GE - Series (Global Re-Engagement)]
@@ -7077,8 +7179,10 @@ FundHub.ai
 
  FundHub.ai • Smart Funding for Entrepreneurs
 
- Unsubscribe
+– Josh
+FundHub.ai
 
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ##  LT-Hot-2   High-Intent Conversion Push   [folder: LT - Series (Nurture: Cold / Warm / Hot)]
@@ -7123,12 +7227,11 @@ LT-Hot-2 – Hot Nurture #2
  Momentum is earned — and you’ve already earned yours.
 
  – {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ##  RER1   Analyzer Re-Run Request  Stale Profile Refresh    [folder: (root)]
@@ -7168,12 +7271,11 @@ RER1 – Analyzer Re-Run Required
  Talk soon,
 
  {{sender_name}}
+
+– Josh
 FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
-
- Unsubscribe
-
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ##  RP3   Fix This   Unlock Funding Faster   [folder: OA - Series (Offer Activation)]
@@ -7214,9 +7316,10 @@ RP3 – Fix This → Unlock Funding Faster
 
  FundHub.ai
 
- FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
- Unsubscribe
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## EMAIL-C06-DECLINE   Decline — not funding today      [folder: (root)]
@@ -7237,9 +7340,10 @@ Your advisor will walk you through what that looks like and what your projected 
 
 {{sender_name}} FundHub.ai
 
-FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
-Unsubscribe
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## EMAIL-DS01-REPAIR-REFERRAL   Repair referral — unlocks funding      [folder: (root)]
@@ -7264,9 +7368,10 @@ Get started here: {{custom_values.booking_link}}
 
 {{sender_name}} FundHub.ai
 
-FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
-Unsubscribe
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## EMAIL-DS02-DIY-LETTERS-READY   DIY correction letters ready      [folder: (root)]
@@ -7293,9 +7398,10 @@ And if at any point you'd rather have our team run this instead of doing it your
 
 {{sender_name}} FundHub.ai
 
-FundHub.ai • Funding Intelligence for Entrepreneurs
+– Josh
+FundHub.ai
 
-Unsubscribe
+FundHub.ai • Funding Intelligence for Entrepreneurs
 
 ================================================================================
 ## EMAIL-S05A-NOSHOW-RECOVERY   No-show recovery — analysis waiting      [folder: (root)]
@@ -7316,6 +7422,8 @@ If your situation changed and now isn't the right time, just reply and let me kn
 
 {{sender_name}} FundHub.ai
 
+– Josh
+FundHub.ai
+
 FundHub.ai • Funding Intelligence for Entrepreneurs
 
-Unsubscribe

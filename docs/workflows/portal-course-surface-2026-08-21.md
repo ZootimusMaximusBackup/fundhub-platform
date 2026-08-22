@@ -49,13 +49,19 @@ Waiting on Chris pick (letter or mix).
 
 ## Ship (2026-08-21)
 
-- Status: **blocked on Netlify credits** — code is on `main` (`48482eab`), live site still old hash
-- Files: portal HTML + e2e + this board (committed + pushed)
-- Mock `public/course-expand-mock.html`: removed (local preview only; not customer surface)
-- CLI/API deploy error: `Account credit usage exceeded - new deploys are blocked until credits are added`
-- After credits: one production deploy from `main`, then prove Open on unlocked UWIQ + Funding Mastery tiles at `/app/client-portal.html`
+- Status: **LIVE** — course expand is on production
+- Code on `main`: `48482eab` (feature) … `4f52cafa` (credit-block note); `origin/main` matches local HEAD
+- Production deploy published: `6a88ea62a8f1524f4aa37f06` (context production, branch `main`, published `2026-08-22T00:16:56Z`)
+  - URL: https://fundhub.ai
+  - Admin: https://app.netlify.com/projects/transcendent-wisp-888771/deploys/6a88ea62a8f1524f4aa37f06
+- Credits: no longer blocking (deploys accepted again)
+- Follow-up remote build `6a88eb62bb8cefe5b20a50f2` failed build script exit 2 (did not unpublish the ready deploy)
+- Live proof (`https://fundhub.ai/app/client-portal.html`):
+  - HTML shasum matches `public/app/client-portal.html` on main (`2d195722…`)
+  - Markers present: `tile-course` (14), `COURSE_TILES` (2), `data-course-toggle` (6), `funding-mastery-course` (1)
+- Mock `public/course-expand-mock.html`: removed (not customer surface)
 
 ## Left for later
 
 - Real lesson videos / Content Admin wiring into `.tc-vid`
-- Live prove after credits + deploy
+- Human click-prove Open on an unlocked UWIQ + Funding Mastery account (needs a real entitled client login)

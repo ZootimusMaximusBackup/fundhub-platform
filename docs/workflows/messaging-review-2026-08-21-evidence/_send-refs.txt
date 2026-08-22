@@ -1,0 +1,144 @@
+api/payment-links.mjs:248:          templateKey: "payment_link_notice",
+src/repair/response-agent.mjs:8:export const RETAKE_TEMPLATE_KEY = "EMAIL-REPAIR-RETAKE-PHOTO";
+src/repair/response-agent.mjs:9:export const RESPONSE_RESULTS_TEMPLATE_KEY = "EMAIL-REPAIR-RESPONSE-RESULTS";
+src/repair/response-agent.mjs:81:      orgId, clientId, channel: "email", templateKey: RETAKE_TEMPLATE_KEY,
+src/repair/response-agent.mjs:99:      orgId, clientId, channel: "email", templateKey: RESPONSE_RESULTS_TEMPLATE_KEY,
+src/repair/notify.mjs:6:export const EMAIL_REPAIR_WELCOME = "EMAIL-REPAIR-WELCOME";
+src/repair/notify.mjs:7:export const EMAIL_REPAIR_LETTERS_SENT = "EMAIL-REPAIR-LETTERS-SENT";
+src/repair/notify.mjs:8:export const EMAIL_REPAIR_RESPONSE_RESULTS = "EMAIL-REPAIR-RESPONSE-RESULTS";
+src/repair/notify.mjs:9:export const EMAIL_REPAIR_ROUND_ADVANCED = "EMAIL-REPAIR-ROUND-ADVANCED";
+src/repair/notify.mjs:10:export const EMAIL_REPAIR_RETAKE_PHOTO = "EMAIL-REPAIR-RETAKE-PHOTO";
+src/repair/notify.mjs:11:export const EMAIL_REPAIR_TRIAL_COMPLETE_UPSELL = "EMAIL-REPAIR-TRIAL-COMPLETE-UPSELL";
+src/handlers/inquiry-docs.mjs:17:export const EMAIL_TEMPLATE_KEY = "EMAIL-F06-MISSING-DOCS";
+src/handlers/inquiry-docs.mjs:18:export const SMS_TEMPLATE_KEY = "SMS-F06-MISSING-DOCS";
+src/handlers/inquiry-docs.mjs:33:    orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId: `${eventId}:email`
+src/handlers/inquiry-docs.mjs:36:    orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId: `${eventId}:sms`
+src/handlers/comms.mjs:318:const BOOKING_TITLE_PREFIX = "Strategy session";
+src/journeys/runner/synthetic.mjs:47:export const SYNTHETIC_EMAIL_DOMAIN = "runner.fundhub.invalid";
+src/invoices/notify.mjs:23:export const INVOICE_TEMPLATE_KEY = "INVOICE-SENT-EMAIL";
+src/adapters/resend-events.mjs:32:const SVIX_PREFIX = "whsec_";
+src/workflows/n-02-warm-nurture.mjs:20:export const EMAIL_TEMPLATE_KEY = "EMAIL-N02-WARM-NURTURE";
+src/workflows/n-02-warm-nurture.mjs:21:export const SMS_TEMPLATE_KEY = "SMS-N02-WARM-NURTURE";
+src/workflows/n-02-warm-nurture.mjs:33:    sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
+src/workflows/n-02-warm-nurture.mjs:35:    sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId }));
+src/demo/roster.mjs:1:export const DEMO_EMAIL_DOMAIN = "demo.fundhub.local";
+src/sales/closer-deck.mjs:638:    templateKey: EMAIL_TEMPLATE_KEY,
+src/demo/simulate-client.mjs:48:export const DEMO_EMAIL_PREFIX = "sim+";
+src/demo/simulate-client.mjs:49:export const DEMO_EMAIL_DOMAIN = "demo.fundhub.local";
+src/workflows/n-04-post-funding-nurture.mjs:20:export const EMAIL_TEMPLATE_KEY = "EMAIL-N04-POST-FUNDING";
+src/workflows/n-04-post-funding-nurture.mjs:21:export const SMS_TEMPLATE_KEY = "SMS-N04-POST-FUNDING";
+src/workflows/n-04-post-funding-nurture.mjs:30:    sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
+src/workflows/n-04-post-funding-nurture.mjs:32:    sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId }));
+src/messaging/template-usage.mjs:8: *     `const EMAIL_TEMPLATE_KEY = "EMAIL-F03-ROUND-SUBMITTED"`. This is the one
+src/workflows/c-06-crs-results-router.mjs:26:export const DECLINE_EMAIL_TEMPLATE_KEY = "EMAIL-C06-DECLINE";
+src/workflows/c-06-crs-results-router.mjs:27:export const DECLINE_SMS_TEMPLATE_KEY = "SMS-C06-DECLINE";
+src/workflows/c-06-crs-results-router.mjs:166:      sendTemplated(db, { orgId, clientId, channel: "email", templateKey: DECLINE_EMAIL_TEMPLATE_KEY, eventId }));
+src/workflows/c-06-crs-results-router.mjs:168:      sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: DECLINE_SMS_TEMPLATE_KEY, eventId }));
+src/workflows/bs-01-precall-launcher.mjs:65:export const FUNDING_PREFIX = "BS-FUND";
+src/workflows/bs-01-precall-launcher.mjs:66:export const REPAIR_PREFIX = "BS-REPAIR";
+src/workflows/bs-01-precall-launcher.mjs:70:export const SMS_BS01_BOOKED = "SMS-BS01-01-BOOKED";
+src/workflows/bs-01-precall-launcher.mjs:71:export const SMS_BS01_PRECALL = "SMS-BS01-02-PRECALL";
+src/workflows/bs-01-precall-launcher.mjs:72:export const SMS_BS01_DAYOF = "SMS-BS01-03-DAYOF";
+src/workflows/bs-01-precall-launcher.mjs:73:export const SMS_PRECALL_WAIT = "24h";
+src/workflows/bs-01-precall-launcher.mjs:185:      orgId, clientId, channel: "sms", templateKey: SMS_BS01_BOOKED,
+src/workflows/bs-01-precall-launcher.mjs:188:  sent.push({ templateKey: SMS_BS01_BOOKED, ...booked });
+src/workflows/bs-01-precall-launcher.mjs:202:      orgId, clientId, channel: "sms", templateKey: SMS_BS01_PRECALL,
+src/workflows/bs-01-precall-launcher.mjs:205:  sent.push({ templateKey: SMS_BS01_PRECALL, ...precall });
+src/workflows/bs-01-precall-launcher.mjs:225:      orgId, clientId, channel: "sms", templateKey: SMS_BS01_DAYOF,
+src/workflows/bs-01-precall-launcher.mjs:228:  sent.push({ templateKey: SMS_BS01_DAYOF, ...dayof });
+src/workflows/round-started-client-notify.mjs:20:export const SMS_TEMPLATE_KEY = "SMS-ROUND-STARTED-NOTIFY";
+src/workflows/round-started-client-notify.mjs:27:    sendTemplated(db, { orgId: event.orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId: event.id }));
+src/workflows/n-01-cold-nurture.mjs:22:export const EMAIL_TEMPLATE_KEY = "EMAIL-N01-COLD-NURTURE";
+src/workflows/n-01-cold-nurture.mjs:23:export const SMS_TEMPLATE_KEY = "SMS-N01-COLD-NURTURE";
+src/workflows/n-01-cold-nurture.mjs:36:    sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
+src/workflows/n-01-cold-nurture.mjs:38:    sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId }));
+src/workflows/dpc-05-no-progress-escalation.mjs:17:export const EMAIL_TEMPLATE_KEY = "EMAIL-DPC05-NO-PROGRESS-72H";
+src/workflows/dpc-05-no-progress-escalation.mjs:18:export const SMS_TEMPLATE_KEY = "SMS-DPC05-NO-PROGRESS-72H";
+src/workflows/dpc-05-no-progress-escalation.mjs:100:    sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
+src/workflows/dpc-05-no-progress-escalation.mjs:102:    sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId }));
+src/workflows/ai-set-04-3way-handoff.mjs:18:export const SMS_TEMPLATE_KEY = "SMS-AISET04-HANDOFF";
+src/workflows/ai-set-04-3way-handoff.mjs:48:    sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId }));
+src/workflows/ai-set-03-no-answer-cadence.mjs:37:  const msg1 = await step.run("send-msg1", () => sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: MSG1_KEY, eventId: `${eventId}:1` }));
+src/workflows/ai-set-03-no-answer-cadence.mjs:41:  const msg2 = await step.run("send-msg2", () => sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: MSG2_KEY, eventId: `${eventId}:2` }));
+src/workflows/ai-set-03-no-answer-cadence.mjs:45:  const msg3 = await step.run("send-msg3", () => sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: MSG3_KEY, eventId: `${eventId}:3` }));
+src/workflows/f-04-round-approvals.mjs:16:export const EMAIL_TEMPLATE_KEY = "EMAIL-F04-ROUND-APPROVALS";
+src/workflows/f-04-round-approvals.mjs:17:export const SMS_TEMPLATE_KEY = "SMS-F04-ROUND-APPROVALS";
+src/workflows/f-04-round-approvals.mjs:29:    sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
+src/workflows/f-04-round-approvals.mjs:31:    sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId }));
+src/workflows/s-04b-booking-reminders.mjs:13:export const SMS_CONFIRM = "SMS-S04-01-CONFIRM";
+src/workflows/s-04b-booking-reminders.mjs:14:export const SMS_REMIND_24H = "SMS-S04-02-REMIND-24H";
+src/workflows/s-04b-booking-reminders.mjs:15:export const SMS_REMIND_2H = "SMS-S04-03-REMIND-2H";
+src/workflows/s-04b-booking-reminders.mjs:46:      orgId, clientId, channel: "sms", templateKey: SMS_CONFIRM,
+src/workflows/s-04b-booking-reminders.mjs:61:      orgId, clientId, channel: "sms", templateKey: SMS_REMIND_24H,
+src/workflows/s-04b-booking-reminders.mjs:72:      orgId, clientId, channel: "sms", templateKey: SMS_REMIND_2H,
+src/workflows/ds-02-diy-letters.mjs:27:export const EMAIL_TEMPLATE_KEY = "EMAIL-DS02-DIY-LETTERS-READY";
+src/workflows/ds-02-diy-letters.mjs:151:    sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
+src/workflows/ds-01-repair-referral.mjs:29:export const SMS_TEMPLATE_KEY = "SMS-DS01-REPAIR-REFERRAL";
+src/workflows/ds-01-repair-referral.mjs:30:export const EMAIL_TEMPLATE_KEY = "EMAIL-DS01-REPAIR-REFERRAL";
+src/workflows/ds-01-repair-referral.mjs:73:    sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
+src/workflows/ds-01-repair-referral.mjs:75:    sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId }));
+src/workflows/f-02-portal-id-missing.mjs:21:export const EMAIL_TEMPLATE_KEY = "EMAIL-F02-ID-PORTAL-NEEDED";
+src/workflows/f-02-portal-id-missing.mjs:22:export const SMS_TEMPLATE_KEY = "SMS-F02-ID-PORTAL-NEEDED";
+src/workflows/f-02-portal-id-missing.mjs:23:export const EMAIL_FOLLOWUP_TEMPLATE_KEY = "EMAIL-F02-ID-PORTAL-NEEDED-FOLLOWUP";
+src/workflows/f-02-portal-id-missing.mjs:45:    sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId: `${eventId}:1` }));
+src/workflows/f-02-portal-id-missing.mjs:47:    sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId: `${eventId}:1` }));
+src/workflows/f-02-portal-id-missing.mjs:59:    sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_FOLLOWUP_TEMPLATE_KEY, eventId: `${eventId}:2` }));
+src/workflows/f-10-client-funding-inbox-provisioner.mjs:22:export const EMAIL_TEMPLATE_KEY = "EMAIL-F10-INBOX-SETUP";
+src/workflows/f-10-client-funding-inbox-provisioner.mjs:23:export const SMS_TEMPLATE_KEY = "SMS-F10-INBOX-SETUP";
+src/workflows/f-10-client-funding-inbox-provisioner.mjs:62:    sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
+src/workflows/f-10-client-funding-inbox-provisioner.mjs:64:    sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId }));
+src/workflows/f-07-funding-locked.mjs:30:export const EMAIL_TEMPLATE_KEY = "EMAIL-F07-FUNDING-LOCKED";
+src/workflows/f-07-funding-locked.mjs:31:export const SMS_TEMPLATE_KEY = "SMS-F07-FUNDING-LOCKED";
+src/workflows/f-07-funding-locked.mjs:67:    sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
+src/workflows/f-07-funding-locked.mjs:69:    sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId }));
+src/workflows/s-05a-no-show-recovery.mjs:12:export const EMAIL_TEMPLATE_KEY = "EMAIL-S05A-NOSHOW-RECOVERY";
+src/workflows/s-05a-no-show-recovery.mjs:13:export const SMS_TEMPLATE_KEY = "SMS-S05A-NOSHOW-RECOVERY";
+src/workflows/s-05a-no-show-recovery.mjs:26:    sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
+src/workflows/s-05a-no-show-recovery.mjs:28:    sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId }));
+src/workflows/f-03-round-submitted.mjs:19:export const EMAIL_TEMPLATE_KEY = "EMAIL-F03-ROUND-SUBMITTED";
+src/workflows/f-03-round-submitted.mjs:20:export const SMS_TEMPLATE_KEY = "SMS-F03-ROUND-SUBMITTED";
+src/workflows/f-03-round-submitted.mjs:32:    sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
+src/workflows/f-03-round-submitted.mjs:34:    sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId }));
+src/workflows/n-06-renewal-second-wave.mjs:24:export const EMAIL_TEMPLATE_KEY = "EMAIL-N06-RENEWAL";
+src/workflows/n-06-renewal-second-wave.mjs:25:export const SMS_TEMPLATE_KEY = "SMS-N06-RENEWAL";
+src/workflows/n-06-renewal-second-wave.mjs:72:    sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
+src/workflows/n-06-renewal-second-wave.mjs:74:    sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId }));
+src/workflows/s-nobook-chase.mjs:12:export const SMS_NOBOOK_01 = "SMS-NOBOOK-01";
+src/workflows/s-nobook-chase.mjs:13:export const SMS_NOBOOK_02 = "SMS-NOBOOK-02";
+src/workflows/s-nobook-chase.mjs:14:export const SMS_NOBOOK_03 = "SMS-NOBOOK-03";
+src/workflows/s-nobook-chase.mjs:42:      orgId, clientId, channel: "sms", templateKey: SMS_NOBOOK_01,
+src/workflows/s-nobook-chase.mjs:52:      orgId, clientId, channel: "sms", templateKey: SMS_NOBOOK_02,
+src/workflows/s-nobook-chase.mjs:62:      orgId, clientId, channel: "sms", templateKey: SMS_NOBOOK_03,
+src/workflows/dpc-03-inbound-reply-router.mjs:26:export const SMS_RESCHEDULE_TEMPLATE_KEY = "SMS-DPC04-RESCHEDULE-REBOOKING";
+src/workflows/dpc-03-inbound-reply-router.mjs:113:      sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_RESCHEDULE_TEMPLATE_KEY, eventId }));
+src/workflows/n-03-hot-nurture.mjs:20:export const EMAIL_TEMPLATE_KEY = "EMAIL-N03-HOT-NURTURE";
+src/workflows/n-03-hot-nurture.mjs:21:export const SMS_TEMPLATE_KEY = "SMS-N03-HOT-NURTURE";
+src/workflows/n-03-hot-nurture.mjs:33:    sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
+src/workflows/n-03-hot-nurture.mjs:35:    sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId }));
+src/auth/company-email.mjs:4:export const COMPANY_EMAIL_DOMAIN = "fundhub.ai";
+src/workflows/s-02-incomplete-survey-nudge.mjs:21:export const EMAIL_TEMPLATE_KEY = "EMAIL-S02-FINISH-APPLICATION";
+src/workflows/s-02-incomplete-survey-nudge.mjs:53:    sendTemplated(db, { orgId: event.orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId: event.id }));
+src/workflows/f-06-funding-conditions-missing-docs.mjs:25:export const EMAIL_TEMPLATE_KEY = "EMAIL-F06-MISSING-DOCS";
+src/workflows/f-06-funding-conditions-missing-docs.mjs:26:export const SMS_TEMPLATE_KEY = "SMS-F06-MISSING-DOCS";
+src/workflows/f-06-funding-conditions-missing-docs.mjs:50:    sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
+src/workflows/f-06-funding-conditions-missing-docs.mjs:52:    sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId }));
+src/messaging/providers/twilio.mjs:65:const MESSAGING_SERVICE_PREFIX = "MG";
+src/finance/crs-identities.mjs:124:export const NEVER_ISSUED_SSN_PREFIX = "666";
+src/workflows/u-02-analyzer-complete-delivery.mjs:27:export const FUNDING_EMAIL_TEMPLATE_KEY = "EMAIL-U02-ANALYZER-FUNDING-DELIVERY";
+src/workflows/u-02-analyzer-complete-delivery.mjs:28:export const REPAIR_EMAIL_TEMPLATE_KEY = "EMAIL-U02-ANALYZER-REPAIR-DELIVERY";
+src/workflows/u-02-analyzer-complete-delivery.mjs:66:      sendTemplated(db, { orgId, clientId, channel: "email", templateKey: FUNDING_EMAIL_TEMPLATE_KEY, eventId }));
+src/messaging/seed/workflow-audit.mjs:116:// An explicit template_key reference: `template_key: "X"`, `templateKey: 'X'`,
+src/messaging/seed/workflow-audit.mjs:126:   (`templateKey: "X"`). Not one workflow file does that — every one of them
+src/messaging/seed/workflow-audit.mjs:129:     const EMAIL_TEMPLATE_KEY = "EMAIL-F03-ROUND-SUBMITTED";
+src/messaging/seed/workflow-audit.mjs:130:     ... sendTemplated(db, { ..., templateKey: EMAIL_TEMPLATE_KEY })
+src/messaging/seed/workflow-audit.mjs:132:   `EMAIL_TEMPLATE_KEY = "..."` does not match EXPLICIT_KEY_REF (the name ends
+src/verification/journeys/funding.mjs:448:    orgId: ctx.orgId, templateKey: "funding-agreement"
+src/auth/demo-roster.mjs:41:export const DEMO_EMAIL_DOMAIN = "demo.fundhub.local";
+src/auth/magic-link.mjs:63:export const MAGIC_LINK_TEMPLATE_KEY = "EMAIL-PORTAL-MAGIC-LINK";
+src/auth/magic-link.mjs:178:    templateKey: MAGIC_LINK_TEMPLATE_KEY,
+src/company-brain/mime.mjs:8:const IMAGE_PREFIX = "image/";
+src/company-brain/mime.mjs:9:const AUDIO_PREFIX = "audio/";
+src/company-brain/mime.mjs:10:const VIDEO_PREFIX = "video/";
+src/contracts/notify.mjs:57:export const SEND_TEMPLATE_KEY = "CONTRACT-SEND-EMAIL";
+src/contracts/notify.mjs:58:export const REMIND_TEMPLATE_KEY = "CONTRACT-REMIND-EMAIL";
+src/contracts/notify.mjs:286:    templateKey: REMIND_TEMPLATE_KEY,
