@@ -74,51 +74,90 @@ if (IN_NETLIFY_BUILD && NETLIFY_CONTEXT !== "production") {
 
    Set before pool() is ever called. src/db.mjs reads process.env.DATABASE_URL
    lazily on first use, not at import time, so assigning here is what the pool
-   picks up. */
-const ADMIN_URL = process.env.MIGRATION_DATABASE_URL;
-if (ADMIN_URL) {
-  process.env.DATABASE_URL = ADMIN_URL;
-  console.log("→ connecting with MIGRATION_DATABASE_URL (admin/owner identity)");
-} else if (process.env.DATABASE_URL) {
-  console.log("→ MIGRATION_DATABASE_URL not set; falling back to DATABASE_URL");
-  console.log("  If that is now the restricted app role, migrations creating or");
-  console.log("  altering tables will fail with a permission error. See");
-  console.log("  docs/runbooks/postgres-least-privilege.md");
-}
-// Never log either value — both are credentials (CLAUDE.md §11).
+   picks up.
 
-/* Masked Netlify CLI output is not a connection string. `netlify env:get` of a
-   secret prints asterisks (often ending in gres). Exporting that into the shell
-   made this runner try host `base` and die with ENOTFOUND. Refuse that here so
-   a local `netlify deploy --build --prod` cannot feed a fake URL into Postgres.
-   Unset the vars and let the production build inject the real ones. */
-(function assertUnmaskedMigrateUrl() {
+   Local `netlify deploy --build --prod` injects secret env as asterisks
+   (`netlify env:get` does the same). Those strings are not connections — they
+   parsed as host `base` and died with ENOTFOUND. Treat `*` as unset, then read
+   the same names from gitignored `.env` when that file has a real URL. Never
+   log the value. */
+function looksMasked(value) {
+  return typeof value === "string" && value.includes("*");
+}
+
+function usableUrl(value) {
+  if (!value || looksMasked(value)) return "";
+  try {
+    const host = new URL(value).hostname || "";
+    if (!host || host === "base") return "";
+    return value;
+  } catch {
+    return "";
+  }
+}
+
+function urlsFromDotenv() {
+  const envPath = path.join(HERE, "..", ".env");
+  const out = { DATABASE_URL: "", MIGRATION_DATABASE_URL: "" };
+  if (!fs.existsSync(envPath)) return out;
+  for (const line of fs.readFileSync(envPath, "utf8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq <= 0) continue;
+    const key = trimmed.slice(0, eq).trim();
+    if (key !== "DATABASE_URL" && key !== "MIGRATION_DATABASE_URL") continue;
+    let val = trimmed.slice(eq + 1).trim();
+    if (
+      (val.startsWith('"') && val.endsWith('"')) ||
+      (val.startsWith("'") && val.endsWith("'"))
+    ) {
+      val = val.slice(1, -1);
+    }
+    out[key] = val;
+  }
+  return out;
+}
+
+(function resolveMigrateUrl() {
+  let admin = usableUrl(process.env.MIGRATION_DATABASE_URL);
+  let app = usableUrl(process.env.DATABASE_URL);
+  // Only read `.env` when the CLI injected asterisks. Empty means unset, and
+  // tests rely on that staying unset.
+  if (
+    looksMasked(process.env.MIGRATION_DATABASE_URL) ||
+    looksMasked(process.env.DATABASE_URL)
+  ) {
+    const fromFile = urlsFromDotenv();
+    if (looksMasked(process.env.MIGRATION_DATABASE_URL)) {
+      admin = usableUrl(fromFile.MIGRATION_DATABASE_URL) || admin;
+    }
+    if (looksMasked(process.env.DATABASE_URL) || !app) {
+      app = usableUrl(fromFile.DATABASE_URL) || app;
+    }
+  }
+  if (admin) {
+    process.env.DATABASE_URL = admin;
+    console.log("→ connecting with MIGRATION_DATABASE_URL (admin/owner identity)");
+  } else if (app) {
+    process.env.DATABASE_URL = app;
+    console.log("→ MIGRATION_DATABASE_URL not set; falling back to DATABASE_URL");
+    console.log("  If that is now the restricted app role, migrations creating or");
+    console.log("  altering tables will fail with a permission error. See");
+    console.log("  docs/runbooks/postgres-least-privilege.md");
+  }
   const url = process.env.DATABASE_URL || "";
   if (!url) return;
-  if (url.includes("*")) {
+  const ok = usableUrl(url);
+  if (!ok) {
     console.error(
-      "FATAL: DATABASE_URL/MIGRATION_DATABASE_URL looks masked. " +
-        "Do not export `netlify env:get` into the shell. Unset both and let " +
-        "the production build inject the real values."
+      "FATAL: DATABASE_URL/MIGRATION_DATABASE_URL looks masked or is not a " +
+        "real Postgres address. Do not export `netlify env:get` into the shell. " +
+        "Unset both so `.env` or the production build can supply the real values."
     );
     process.exit(1);
   }
-  let host = "";
-  try {
-    host = new URL(url).hostname || "";
-  } catch {
-    console.error(
-      "FATAL: migrate URL is set but is not a real Postgres address. Unset it."
-    );
-    process.exit(1);
-  }
-  if (!host || host === "base") {
-    console.error(
-      `FATAL: migrate refused host "${host || "(empty)"}". That is not Postgres.`
-    );
-    process.exit(1);
-  }
-  console.log(`→ migrate target ${dbTarget(url)}`);
+  console.log(`→ migrate target ${dbTarget(ok)}`);
 })();
 
 function collect() {
@@ -135,9 +174,20 @@ function collect() {
 
 async function main() {
   const p = pool();
-  await p.query(`CREATE TABLE IF NOT EXISTS schema_migrations (
-    key text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now()
-  )`);
+  try {
+    await p.query(`CREATE TABLE IF NOT EXISTS schema_migrations (
+      key text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now()
+    )`);
+  } catch (err) {
+    // App-role fallback: CREATE is denied, but an already-migrated database
+    // still has the table. New files still need the admin URL.
+    try {
+      await p.query(`SELECT 1 FROM schema_migrations LIMIT 1`);
+      console.log("→ schema_migrations already exists; continuing without CREATE");
+    } catch {
+      throw err;
+    }
+  }
   const applied = new Set((await p.query(`SELECT key FROM schema_migrations`)).rows.map((r) => r.key));
 
   let ran = 0;
