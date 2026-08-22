@@ -11,7 +11,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { pool, close } from "../src/db.mjs";
+import { pool, close, dbTarget } from "../src/db.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DIRS = ["schema", "migrations", "seed"];
@@ -86,6 +86,40 @@ if (ADMIN_URL) {
   console.log("  docs/runbooks/postgres-least-privilege.md");
 }
 // Never log either value — both are credentials (CLAUDE.md §11).
+
+/* Masked Netlify CLI output is not a connection string. `netlify env:get` of a
+   secret prints asterisks (often ending in gres). Exporting that into the shell
+   made this runner try host `base` and die with ENOTFOUND. Refuse that here so
+   a local `netlify deploy --build --prod` cannot feed a fake URL into Postgres.
+   Unset the vars and let the production build inject the real ones. */
+(function assertUnmaskedMigrateUrl() {
+  const url = process.env.DATABASE_URL || "";
+  if (!url) return;
+  if (url.includes("*")) {
+    console.error(
+      "FATAL: DATABASE_URL/MIGRATION_DATABASE_URL looks masked. " +
+        "Do not export `netlify env:get` into the shell. Unset both and let " +
+        "the production build inject the real values."
+    );
+    process.exit(1);
+  }
+  let host = "";
+  try {
+    host = new URL(url).hostname || "";
+  } catch {
+    console.error(
+      "FATAL: migrate URL is set but is not a real Postgres address. Unset it."
+    );
+    process.exit(1);
+  }
+  if (!host || host === "base") {
+    console.error(
+      `FATAL: migrate refused host "${host || "(empty)"}". That is not Postgres.`
+    );
+    process.exit(1);
+  }
+  console.log(`→ migrate target ${dbTarget(url)}`);
+})();
 
 function collect() {
   const files = [];
