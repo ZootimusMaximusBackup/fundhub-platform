@@ -205,6 +205,7 @@ import pipelineClients from "../../api/pipeline-clients.mjs";
 import productsWrite from "../../api/products.mjs";
 import clientNotes from "../../api/client-notes.mjs";
 import commissionRules from "../../api/commission-rules.mjs";
+import commissionsWrite from "../../api/commissions.mjs";
 import lendersWrite from "../../api/lenders.mjs";
 import lenderObservationsWrite from "../../api/lender-observations.mjs";
 import applicationsWrite from "../../api/applications.mjs";
@@ -286,6 +287,8 @@ export const ROUTES = {
   "products": productsWrite,
   "client-notes": clientNotes,
   "commission-rules": commissionRules,
+  /* Commission ledger Approve / Mark paid. ROLE_SETS.FINANCE. Does not send money. */
+  "commissions": commissionsWrite,
   /* Lender database maintenance + CSV import. ROLE_SETS.STAFF. */
   "lenders": lendersWrite,
   /* Bureau observation log + mismatch review. ROLE_SETS.STAFF. */

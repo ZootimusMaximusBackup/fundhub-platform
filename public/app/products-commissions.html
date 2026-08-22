@@ -302,10 +302,18 @@ table.grid th:nth-child(3),table.grid th:nth-child(5),table.grid th:nth-child(6)
               <option value="">All statuses</option><option>Accrued</option><option>Approved</option><option>Paid</option>
             </select>
           </div>
+          <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--soft)">
+            <button type="button" class="btn sm dark mono" id="ledgerApprove">Approve selected</button>
+            <button type="button" class="btn sm mono" id="ledgerMarkPaid">Mark paid…</button>
+            <span class="note" id="ledgerActionHint">Select accrued rows to approve. Select approved rows to mark paid (paste ACH / check / payroll id).</span>
+          </div>
           <div style="overflow-x:auto"><table class="grid">
-            <thead><tr><th>Date</th><th>Person</th><th>Client</th><th>Product</th><th>Rule version</th><th>Basis</th><th>Rate</th><th style="text-align:right">Payout</th><th>Status</th></tr></thead>
+            <thead><tr>
+              <th style="width:36px"><input type="checkbox" id="ledgerCheckAll" title="Select all shown"></th>
+              <th>Date</th><th>Person</th><th>Client</th><th>Product</th><th>Rule version</th><th>Basis</th><th>Rate</th><th style="text-align:right">Payout</th><th>Status</th>
+            </tr></thead>
             <tbody id="ledgerBody"></tbody>
-            <tfoot><tr><td colspan="7" style="border-top:2px solid var(--line);font-weight:600">Total shown</td>
+            <tfoot><tr><td colspan="8" style="border-top:2px solid var(--line);font-weight:600">Total shown</td>
               <td class="money" id="ledgerTotal" style="border-top:2px solid var(--line);text-align:right;font-weight:600">$0</td>
               <td style="border-top:2px solid var(--line)"></td></tr></tfoot>
           </table></div>
@@ -629,7 +637,12 @@ function renderLedger(){
   var rows=LEDGER.filter(function(l){return (!pf||l.who===pf)&&(!sf||l.st===sf)});
   document.getElementById('ledgerBody').innerHTML=rows.map(function(l){
     var ruleCell=(l.rule&&l.rule!=='—')?'<span class="badge b-gray">'+esc(l.rule)+(l.ver?(' v'+l.ver):'')+'</span>':'—';
-    return '<tr><td class="mono" style="font-size:var(--fs-body)">'+l.d+'</td>'+
+    var canPick=l.st==='Accrued'||l.st==='Approved';
+    var check=canPick
+      ?'<input type="checkbox" class="ledger-pick" data-id="'+esc(l.id)+'" data-st="'+esc(l.st)+'">'
+      :'';
+    return '<tr data-id="'+esc(l.id||'')+'"><td>'+check+'</td>'+
+      '<td class="mono" style="font-size:var(--fs-body)">'+l.d+'</td>'+
       '<td style="font-weight:500">'+esc(l.who)+'</td>'+
       '<td>'+esc(l.client)+'</td>'+
       '<td style="font-size:var(--fs-body)">'+esc(l.prod)+'</td>'+
@@ -638,14 +651,135 @@ function renderLedger(){
       '<td class="mono" style="font-size:var(--fs-body)">'+esc(l.rate)+'</td>'+
       '<td class="money" style="text-align:right">'+money(l.amt)+'</td>'+
       '<td><span class="badge '+(ST_CLS[l.st]||'b-gray')+'">'+esc(l.st)+'</span></td></tr>';
-  }).join('')||'<tr><td colspan="9" class="empty">'+(LEDGER.length?'Nothing matches that filter.':'No payouts on file.')+'</td></tr>';
+  }).join('')||'<tr><td colspan="10" class="empty">'+(LEDGER.length?'Nothing matches that filter.':'No payouts on file.')+'</td></tr>';
   var tot=rows.reduce(function(a,l){return a+l.amt},0);
   document.getElementById('ledgerTotal').textContent=money(tot);
+  var all=document.getElementById('ledgerCheckAll');
+  if(all) all.checked=false;
 }
+
+function selectedLedgerIds(wantStatus){
+  var ids=[];
+  document.querySelectorAll('#ledgerBody .ledger-pick:checked').forEach(function(el){
+    if(wantStatus && el.getAttribute('data-st')!==wantStatus) return;
+    var id=el.getAttribute('data-id');
+    if(id) ids.push(id);
+  });
+  return ids;
+}
+
+function reloadCommissionLedger(){
+  if(typeof FHData==='undefined'||!FHData.commissions) return Promise.resolve();
+  return FHData.wire(FHData.commissions({ limit: 200 }), "commission ledger", function (data) {
+    var rows = data.items || [];
+    if (typeof LEDGER !== "undefined") {
+      LEDGER.length = 0;
+      Array.prototype.push.apply(LEDGER, rows.map(ledgerFromApiLive));
+    }
+    if (typeof fillPersonFilter === "function") fillPersonFilter();
+    if (typeof renderLedger === "function") try { renderLedger(); } catch (e) {}
+    if (typeof renderStats === "function") try { renderStats(); } catch (e) {}
+    if (typeof renderRules === "function") try { renderRules(); } catch (e) {}
+    if (!rows.length) return "no commission rows yet";
+    var accrued = rows.filter(function (r) { return r.status !== "paid" && r.status !== "void"; })
+                      .reduce(function (a, r) { return a + Number(r.amount || 0); }, 0);
+    var paid = rows.filter(function (r) {
+                     var when = String(r.paid_at || r.earned_at || r.created_at || "").slice(0, 10);
+                     return r.status === "paid" && when >= MONTH_START;
+                   })
+                   .reduce(function (a, r) { return a + Number(r.amount || 0); }, 0);
+    var kA=document.getElementById("kAccrued"); if(kA) kA.textContent=money(accrued);
+    var kP=document.getElementById("kPaid"); if(kP) kP.textContent=money(paid);
+    return "live ledger · " + rows.length + " entries · " + money(accrued) + " accrued";
+  });
+}
+
+function ledgerFromApiLive(r) {
+  var st = String(r.status || "").toLowerCase();
+  var stLabel = st === "paid" ? "Paid"
+    : st === "approved" ? "Approved"
+    : (st === "earned" || st === "accrued") ? "Accrued"
+    : (r.status || "Accrued");
+  var when = r.earned_at || r.created_at || "";
+  var rate = r.split_percent != null && r.split_percent !== "" ? (Number(r.split_percent) + "%") : "—";
+  return {
+    id: r.id || "",
+    d: when ? String(when).slice(0, 10) : "—",
+    who: r.staff_name || r.employee_code || "—",
+    client: "—",
+    prod: r.product_name_at_earning || "—",
+    rule: "—",
+    ver: "",
+    basis: Number(r.basis) || 0,
+    rate: rate,
+    amt: Number(r.amount) || 0,
+    st: stLabel,
+    paid_at: r.paid_at || null
+  };
+}
+
+document.getElementById('ledgerCheckAll').addEventListener('change',function(){
+  var on=this.checked;
+  document.querySelectorAll('#ledgerBody .ledger-pick').forEach(function(el){ el.checked=on; });
+});
+
+document.getElementById('ledgerApprove').addEventListener('click',function(){
+  var ids=selectedLedgerIds('Accrued');
+  var hint=document.getElementById('ledgerActionHint');
+  if(!ids.length){
+    if(hint) hint.textContent='Select one or more Accrued rows first.';
+    return;
+  }
+  if(typeof FHData==='undefined'||!FHData.write){
+    alert('Not available — the data layer has not loaded.');
+    return;
+  }
+  if(hint) hint.textContent='Approving…';
+  FHData.write('/api/commissions',{ action:'approve', ledger_ids:ids }).then(function(res){
+    if(!res||!res.ok){
+      if(hint) hint.textContent=(res&&res.error)||'Approve failed.';
+      return;
+    }
+    if(hint) hint.textContent='Approved '+(res.data&&res.data.updated!=null?res.data.updated:ids.length)+' row(s).';
+    reloadCommissionLedger();
+  });
+});
+
+document.getElementById('ledgerMarkPaid').addEventListener('click',function(){
+  var ids=selectedLedgerIds('Approved');
+  var hint=document.getElementById('ledgerActionHint');
+  if(!ids.length){
+    if(hint) hint.textContent='Select one or more Approved rows first.';
+    return;
+  }
+  var ref=window.prompt('Paste the payout id (ACH / check / payroll batch). This does not send money — it only records that you paid.');
+  if(ref==null) return;
+  ref=String(ref).trim();
+  if(!ref){
+    if(hint) hint.textContent='Payout id is required to mark paid.';
+    return;
+  }
+  if(typeof FHData==='undefined'||!FHData.write){
+    alert('Not available — the data layer has not loaded.');
+    return;
+  }
+  if(hint) hint.textContent='Marking paid…';
+  FHData.write('/api/commissions',{ action:'mark_paid', ledger_ids:ids, payout_ref:ref }).then(function(res){
+    if(!res||!res.ok){
+      if(hint) hint.textContent=(res&&res.error)||'Mark paid failed.';
+      return;
+    }
+    if(hint) hint.textContent='Marked paid '+(res.data&&res.data.updated!=null?res.data.updated:ids.length)+' · ref '+ref;
+    reloadCommissionLedger();
+  });
+});
 
 function renderStats(){
   document.getElementById('kAccrued').textContent=money(LEDGER.filter(function(l){return l.st!=='Paid'}).reduce(function(a,l){return a+l.amt},0));
-  document.getElementById('kPaid').textContent=money(LEDGER.filter(function(l){return l.st==='Paid'&&l.d>=MONTH_START}).reduce(function(a,l){return a+l.amt},0));
+  document.getElementById('kPaid').textContent=money(LEDGER.filter(function(l){
+    var when=l.paid_at?String(l.paid_at).slice(0,10):l.d;
+    return l.st==='Paid'&&when>=MONTH_START;
+  }).reduce(function(a,l){return a+l.amt},0));
 }
 
 /* product editor */
@@ -847,10 +981,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function ledgerFromApi(r) {
     var st = String(r.status || "").toLowerCase();
-    var stLabel = st === "paid" ? "Paid" : st === "approved" ? "Approved" : st === "accrued" ? "Accrued" : (r.status || "Accrued");
+    var stLabel = st === "paid" ? "Paid"
+      : st === "approved" ? "Approved"
+      : (st === "earned" || st === "accrued") ? "Accrued"
+      : (r.status || "Accrued");
     var when = r.earned_at || r.created_at || "";
     var rate = r.split_percent != null && r.split_percent !== "" ? (Number(r.split_percent) + "%") : "—";
     return {
+      id: r.id || "",
       d: when ? String(when).slice(0, 10) : "—",
       who: r.staff_name || r.employee_code || "—",
       client: "—",
@@ -860,7 +998,8 @@ document.addEventListener("DOMContentLoaded", function () {
       basis: Number(r.basis) || 0,
       rate: rate,
       amt: Number(r.amount) || 0,
-      st: stLabel
+      st: stLabel,
+      paid_at: r.paid_at || null
     };
   }
 
@@ -877,10 +1016,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!rows.length) return "no commission rows yet";
     var accrued = rows.filter(function (r) { return r.status !== "paid" && r.status !== "void"; })
                       .reduce(function (a, r) { return a + Number(r.amount || 0); }, 0);
-    /* The tile is labelled PAID MTD, so it counts this month only. Without the
-       bound it summed every paid row ever and the label was false. */
+    /* The tile is labelled PAID MTD, so it counts this month only. Prefer paid_at. */
     var paid = rows.filter(function (r) {
-                     var when = String(r.earned_at || r.created_at || "").slice(0, 10);
+                     var when = String(r.paid_at || r.earned_at || r.created_at || "").slice(0, 10);
                      return r.status === "paid" && when >= MONTH_START;
                    })
                    .reduce(function (a, r) { return a + Number(r.amount || 0); }, 0);
