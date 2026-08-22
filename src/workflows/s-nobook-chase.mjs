@@ -12,6 +12,9 @@ import { sendTemplated } from "./messaging.mjs";
 export const SMS_NOBOOK_01 = "SMS-NOBOOK-01";
 export const SMS_NOBOOK_02 = "SMS-NOBOOK-02";
 export const SMS_NOBOOK_03 = "SMS-NOBOOK-03";
+export const EMAIL_NOBOOK_01 = "EMAIL-NOBOOK-01";
+export const EMAIL_NOBOOK_02 = "EMAIL-NOBOOK-02";
+export const EMAIL_NOBOOK_03 = "EMAIL-NOBOOK-03";
 
 async function hasBooked(db, clientId) {
   const r = await db.query(
@@ -37,31 +40,46 @@ export async function handle({ event, db, step }) {
   if (await step.run("check-booked-1", () => hasBooked(db, clientId))) {
     return { done: true, exitedAt: "after-wait-2h" };
   }
-  const msg1 = await step.run("send-nobook-1", () =>
-    sendTemplated(db, {
+  const msg1 = await step.run("send-nobook-1", async () => ({
+    sms: await sendTemplated(db, {
       orgId, clientId, channel: "sms", templateKey: SMS_NOBOOK_01,
       eventId: `${eventId}:1`
-    }));
+    }),
+    email: await sendTemplated(db, {
+      orgId, clientId, channel: "email", templateKey: EMAIL_NOBOOK_01,
+      eventId: `${eventId}:1e`
+    })
+  }));
 
   await step.sleep("wait-24h", "24h");
   if (await step.run("check-booked-2", () => hasBooked(db, clientId))) {
     return { done: true, exitedAt: "after-msg1", msg1 };
   }
-  const msg2 = await step.run("send-nobook-2", () =>
-    sendTemplated(db, {
+  const msg2 = await step.run("send-nobook-2", async () => ({
+    sms: await sendTemplated(db, {
       orgId, clientId, channel: "sms", templateKey: SMS_NOBOOK_02,
       eventId: `${eventId}:2`
-    }));
+    }),
+    email: await sendTemplated(db, {
+      orgId, clientId, channel: "email", templateKey: EMAIL_NOBOOK_02,
+      eventId: `${eventId}:2e`
+    })
+  }));
 
   await step.sleep("wait-72h", "72h");
   if (await step.run("check-booked-3", () => hasBooked(db, clientId))) {
     return { done: true, exitedAt: "after-msg2", msg1, msg2 };
   }
-  const msg3 = await step.run("send-nobook-3", () =>
-    sendTemplated(db, {
+  const msg3 = await step.run("send-nobook-3", async () => ({
+    sms: await sendTemplated(db, {
       orgId, clientId, channel: "sms", templateKey: SMS_NOBOOK_03,
       eventId: `${eventId}:3`
-    }));
+    }),
+    email: await sendTemplated(db, {
+      orgId, clientId, channel: "email", templateKey: EMAIL_NOBOOK_03,
+      eventId: `${eventId}:3e`
+    })
+  }));
 
   return { done: true, exitedAt: "completed", msg1, msg2, msg3 };
 }

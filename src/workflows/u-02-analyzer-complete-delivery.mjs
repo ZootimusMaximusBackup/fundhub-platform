@@ -19,11 +19,12 @@ import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { resolveOutcomeTier, isFundingPath, isRepairOnlyPath } from "../config/product-path.mjs";
-import { sendTemplated } from "./messaging.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { addTags } from "./tags.mjs";
 import { createTask } from "../lib/create-task.mjs";
 
+// RETIRED 2026-08-22 — owner: "That's all old workflows." Kept for the
+// seed/audit trail; no send site references them.
 export const FUNDING_EMAIL_TEMPLATE_KEY = "EMAIL-U02-ANALYZER-FUNDING-DELIVERY";
 export const REPAIR_EMAIL_TEMPLATE_KEY = "EMAIL-U02-ANALYZER-REPAIR-DELIVERY";
 const SOURCE_WORKFLOW = "u-02-analyzer-complete-delivery";
@@ -57,15 +58,10 @@ export async function handle({ event, db, step }) {
   await step.run("tag-analyzer-complete", () => addTags(db, clientId, ["analyzer:complete"]));
 
   const outcomeTier = await step.run("check-product-path", () => resolveOutcomeTier(db, clientId, event.payload));
-  const orgId = event.orgId;
-  const eventId = event.id;
 
   if (isFundingPath(outcomeTier)) {
     await step.run("tag-path-funding", () => addTags(db, clientId, ["path:funding"]));
-    const email = await step.run("send-funding-delivery", () =>
-      sendTemplated(db, { orgId, clientId, channel: "email", templateKey: FUNDING_EMAIL_TEMPLATE_KEY, eventId }));
-    await step.run("set-funding-delivery-sent", () => mergeCustomFields(db, clientId, { funding_delivery_sent: true }));
-    return { done: true, branch: "funding", email };
+    return { done: true, branch: "funding" };
   }
 
   // REPAIR IS NOT DELIVERED HERE. Under 05/30 the repair letter pack is the paid DIY

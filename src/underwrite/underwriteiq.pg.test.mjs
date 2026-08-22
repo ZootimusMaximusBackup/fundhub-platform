@@ -169,7 +169,7 @@ test("UnderwriteIQ chain: sim client → CRS emit → decision stamp → engine 
   assert.ok(afterU02.tags.includes("analyzer:complete"), "u-02 must tag the client analyzer:complete");
   assert.ok(afterU02.tags.includes("path:funding"), "u-02 must route a funding tier to path:funding");
   assert.equal(afterU02.custom_fields.analyzer_status, "Complete", "u-02 must stamp analyzer_status");
-  assert.equal(afterU02.custom_fields.funding_delivery_sent, true, "u-02 must stamp funding_delivery_sent readiness");
+  assert.equal(afterU02.custom_fields.funding_delivery_sent, undefined, "u-02 delivery email is retired; funding_delivery_sent is not stamped");
 });
 
 /* ═══════════════════════════════════════════════════════════════════════════

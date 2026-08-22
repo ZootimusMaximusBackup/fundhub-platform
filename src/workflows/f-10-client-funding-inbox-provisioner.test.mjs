@@ -14,7 +14,7 @@ test("happy path: no forwarding address yet — sets it, notifies, creates the t
   assert.equal(res.done, true);
   assert.equal(res.forwardingAddress, "monitor+cl-1@fundhub.ai");
   assert.equal(db.clients[0].custom_fields.funding_email_forwarding_address, "monitor+cl-1@fundhub.ai");
-  assert.equal(db.messages.length, 2);
+  assert.equal(db.messages.length, 0, "F-10 email + SMS retired 2026-08-22; inbox setup and task still run");
   assert.equal(res.task.created, true);
 });
 
@@ -31,6 +31,6 @@ test("duplicate delivery: replaying the same event does not double-send or doubl
   const event = ev("round.started", {}, { id: "evt-dup-f10", clientId: "cl-1" });
   await handle({ event, db, step: fakeStep() });
   await handle({ event, db, step: fakeStep() });
-  assert.equal(db.messages.length, 2);
+  assert.equal(db.messages.length, 0, "F-10 email + SMS retired 2026-08-22; replay still sends nothing");
   assert.equal(db.tasks.length, 1);
 });

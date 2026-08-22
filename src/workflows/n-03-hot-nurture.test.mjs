@@ -1,12 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { handle, EMAIL_TEMPLATE_KEY, SMS_TEMPLATE_KEY } from "./n-03-hot-nurture.mjs";
+import { handle, EMAIL_TEMPLATE_KEY, SMS_TEMPLATE_KEY, n03HotNurture } from "./n-03-hot-nurture.mjs";
 import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
 const withTemplates = () => [
   { org_id: "org-1", template_key: EMAIL_TEMPLATE_KEY, channel: "email", body: "Hot nurture email body", compliance_passed: true },
   { org_id: "org-1", template_key: SMS_TEMPLATE_KEY, channel: "sms", body: "Hot nurture sms body", compliance_passed: true }
 ];
+
+test("RETIRED 2026-08-22: both triggers removed and the workflow is disabled", () => {
+  assert.deepEqual(n03HotNurture.opts.triggers, []);
+  assert.equal(n03HotNurture.opts.enabled, false);
+});
 
 test("happy path: hot lead via booking.created gets email + sms", async () => {
   const db = pgFake({

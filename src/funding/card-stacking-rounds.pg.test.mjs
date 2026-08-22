@@ -105,6 +105,7 @@ describe("card-stacking round emitter (pg)", { skip: !HAS_DB ? "no DATABASE_URL"
     assert.equal(STAGE_TO_EVENT.approved, "round.approved");
     assert.equal(STAGE_TO_EVENT.funded, "round.funded");
     assert.equal(STAGE_TO_EVENT.action_required, null);
+    assert.equal(STAGE_TO_EVENT.closed, "round.closeout");
   });
 
   test("four-stage walk + funded guard + closeout fee", async () => {

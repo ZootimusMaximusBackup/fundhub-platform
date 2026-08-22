@@ -88,6 +88,19 @@ export async function markSent(db, { invoiceId, issuedAt = new Date() }) {
   return result.rows[0] ?? null;
 }
 
+/** Mark an invoice as escalated (AR-04 automated collections handoff). */
+export async function markEscalated(db, { invoiceId, escalatedAt = new Date() }) {
+  const result = await db.query(
+    `UPDATE invoices
+        SET status = 'escalated', escalated_at = $2
+      WHERE id = $1
+        AND status = ANY($3)
+     RETURNING *`,
+    [invoiceId, escalatedAt, ["sent", "reminded"]]
+  );
+  return result.rows[0] ?? null;
+}
+
 /** Mark an invoice as paid. Any open rung of the AR ladder may settle. */
 export async function markPaid(db, { invoiceId, paidAt = new Date() }) {
   const result = await db.query(
@@ -119,6 +132,36 @@ export async function voidInvoice(db, { invoiceId, notes = null }) {
 export async function getInvoice(db, { invoiceId }) {
   const result = await db.query(`SELECT * FROM invoices WHERE id = $1`, [invoiceId]);
   return result.rows[0] ?? null;
+}
+
+/** Announce a canonical invoice.* event. Idempotent per invoice id. */
+export async function announceInvoice(db, name, row) {
+  if (!row?.id || !name) return null;
+  const { emit } = await import("../events/bus.mjs");
+  return emit(db, name, {
+    invoiceId: row.id,
+    invoice_number: invoiceDisplayNumber(row),
+    amount_due: row.amount_due,
+    source: row.source || null,
+    invoice_type: row.invoice_type || null,
+    funding_round_id: row.funding_round_id || null,
+    status: row.status || null
+  }, {
+    orgId: row.org_id,
+    clientId: row.client_id,
+    idempotencyKey: `${name}:${row.id}`
+  });
+}
+
+export function invoiceDisplayNumber(row) {
+  if (!row?.id) return "";
+  return `INV-${String(row.id).replace(/-/g, "").slice(0, 8).toUpperCase()}`;
+}
+
+export function formatBalanceDue(amount) {
+  const n = Number(amount);
+  if (!Number.isFinite(n)) return "";
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 }
 
 /** Idempotency key for a success-fee invoice on a funding round. */

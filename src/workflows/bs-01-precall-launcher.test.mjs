@@ -233,13 +233,19 @@ test("idempotency key is per grid cell, so two cells in one run never collide", 
 
 // --- SMS companion (owner 2026-08-15) ---------------------------------------
 
+// SMS_BS01_BOOKED and SMS_BS01_DAYOF stay seeded but are no longer sent by BS-01
+// (owner 2026-08-22 — S-04B owns both the immediate confirm text and the T-2h
+// day-of text; BS-01's own DAYOF send collided with S-04B's REMIND-2H at the
+// identical sleepUntil target, confirmed against the 2026-08-20 live template
+// dump). Left in the fixture so the tests below prove BS-01 does NOT reach for
+// either one.
 const smsTemplates = () => [
   { org_id: "org-1", template_key: SMS_BS01_BOOKED, channel: "sms", body: "booked", compliance_passed: true },
   { org_id: "org-1", template_key: SMS_BS01_PRECALL, channel: "sms", body: "precall", compliance_passed: true },
   { org_id: "org-1", template_key: SMS_BS01_DAYOF, channel: "sms", body: "dayof", compliance_passed: true }
 ];
 
-test("sms: every booking gets three SMS when templates exist, even with no email path", async () => {
+test("sms: every booking gets exactly one pre-call SMS, and never the retired booked or day-of texts", async () => {
   const start = "2026-08-20T18:00:00Z";
   const db = pgFake({
     clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: null, custom_fields: {} }],
@@ -251,13 +257,16 @@ test("sms: every booking gets three SMS when templates exist, even with no email
   });
 
   assert.equal(res.drip, "none");
-  assert.equal(db.messages.length, 3);
-  assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_BS01_BOOKED, SMS_BS01_PRECALL, SMS_BS01_DAYOF]);
+  assert.equal(db.messages.length, 1);
+  assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_BS01_PRECALL]);
+  assert.ok(!db.messages.some((m) => m.template_key === SMS_BS01_BOOKED), "no duplicate booked text");
+  assert.ok(!db.messages.some((m) => m.template_key === SMS_BS01_DAYOF), "no duplicate day-of text — S-04B owns T-2h");
   assert.equal(res.sms.stoppedBecause, null);
+  assert.equal(res.sms.skippedDayOf, "owned_by_s04b");
   assert.ok(db.clients[0].custom_fields.bs_sms_last_sent_ts);
 });
 
-test("sms: skips day-of when booking has no startTime", async () => {
+test("sms: reports no_start_time (not owned_by_s04b) when the booking has no startTime", async () => {
   const db = pgFake({
     clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: null, custom_fields: {} }],
     templates: smsTemplates()
@@ -267,12 +276,13 @@ test("sms: skips day-of when booking has no startTime", async () => {
     db, step: fakeStep()
   });
 
-  assert.equal(db.messages.length, 2);
+  assert.equal(db.messages.length, 1);
+  assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_BS01_PRECALL]);
   assert.equal(res.sms.skippedDayOf, "no_start_time");
   assert.ok(!db.messages.some((m) => m.template_key === SMS_BS01_DAYOF));
 });
 
-test("sms: stops after booked when call already held before precall wake", async () => {
+test("sms: sends nothing when the call is already held before the precall wake", async () => {
   const db = pgFake({
     clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: null, custom_fields: {} }],
     templates: smsTemplates(),
@@ -285,11 +295,10 @@ test("sms: stops after booked when call already held before precall wake", async
 
   assert.equal(res.sms.stoppedBecause, "call_held");
   assert.equal(res.sms.stoppedAt, "sms-precall");
-  assert.equal(db.messages.length, 1);
-  assert.equal(db.messages[0].template_key, SMS_BS01_BOOKED);
+  assert.equal(db.messages.length, 0);
 });
 
-test("sms + email: funding path queues email grid and three SMS together", async () => {
+test("sms + email: funding path queues email grid and the pre-call SMS together", async () => {
   const cells = allCells(FUNDING_PREFIX);
   const db = pgFake({
     clients: [fundingClient()],
@@ -301,7 +310,14 @@ test("sms + email: funding path queues email grid and three SMS together", async
   });
 
   assert.equal(res.drip, "funding");
-  assert.equal(db.messages.length, 21);
-  assert.equal(db.messages.filter((m) => m.channel === "sms").length, 3);
+  assert.equal(db.messages.length, 19);
+  assert.equal(db.messages.filter((m) => m.channel === "sms").length, 1);
   assert.equal(db.messages.filter((m) => m.channel === "email").length, 18);
 });
+
+test("bs-01 listens to booking.created and booking.rescheduled", async () => {
+  const { bs01PrecallLauncher } = await import("./bs-01-precall-launcher.mjs");
+  const names = (bs01PrecallLauncher.opts.triggers || []).map((t) => t.event).sort();
+  assert.deepEqual(names, ["booking.created", "booking.rescheduled"]);
+});
+

@@ -8,7 +8,7 @@
 //   approved        → round.approved
 //   action_required → (none)
 //   funded          → round.funded  (hard-requires funded_amount > 0)
-//   closed          → (none)
+//   closed          → round.closeout  (staff marks the engagement complete)
 //
 // Idempotency key includes roundNumber so round 2 can re-enter the same stages.
 
@@ -24,7 +24,7 @@ export const STAGE_TO_EVENT = Object.freeze({
   approved: "round.approved",
   action_required: null,
   funded: "round.funded",
-  closed: null
+  closed: "round.closeout"
 });
 
 export function eventForStage(stageKey) {
@@ -185,7 +185,8 @@ function buildPayload({
     rail: "card_stacking",
     source: "card_stacking",
     product: PRODUCT,
-    roundNumber
+    roundNumber,
+    engagementComplete: stageKey === "closed"
   };
 }
 

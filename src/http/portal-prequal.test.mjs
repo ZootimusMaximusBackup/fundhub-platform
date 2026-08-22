@@ -43,4 +43,6 @@ test("client portal loads pre-qual from portal-summary", () => {
   const html = readFileSync(path.join(ROOT, "public/app/client-portal.html"), "utf8");
   assert.match(html, /portalSummary/);
   assert.match(html, /sb-prequal-amt/);
+  assert.match(html, /doc-agent-note/);
+  assert.match(html, /doc_agent_message/);
 });

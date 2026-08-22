@@ -26,7 +26,7 @@ async function createAdvisorTaskOnce(db, { orgId, clientId, eventId }) {
       clientId: clientId,
       title: "3-way handoff — advisor follow-up on UnderwriteIQ results",
       sourceWorkflow: SOURCE_WORKFLOW,
-      assigneeRole: "funding_advisor",
+      assigneeRole: "closer",
       eventId: eventId
     });
   return { created: true };

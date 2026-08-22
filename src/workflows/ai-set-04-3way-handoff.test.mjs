@@ -12,6 +12,7 @@ test("happy path: sends the handoff SMS + advisor task", async () => {
   assert.equal(res.done, true);
   assert.equal(db.messages.length, 1);
   assert.equal(res.task.created, true);
+  assert.equal(db.tasks[0].assignee_role, "closer");
 });
 
 test("branch: no start time — no-op", async () => {

@@ -1,5 +1,6 @@
 import { registerRepairHandlers } from '../repair/register.mjs';
 registerRepairHandlers();
+import { arCollections } from './ar-collections.mjs';
 import { af02ReferralOwnershipCapture } from './af-02-referral-ownership-capture.mjs';
 import { aiSet01JoshSetter } from './ai-set-01-josh-setter.mjs';
 import { aiSet03NoAnswerCadence } from './ai-set-03-no-answer-cadence.mjs';
@@ -33,6 +34,7 @@ import { f08PostFundingMonitoring } from './f-08-post-funding-monitoring.mjs';
 import { f09FundingDeclinedNoPath } from './f-09-funding-declined-no-path.mjs';
 import { f10ClientFundingInboxProvisioner } from './f-10-client-funding-inbox-provisioner.mjs';
 import { f11BankEmailEventRouter } from './f-11-bank-email-event-router.mjs';
+import { ghlDocDocumentCheck } from './ghl-doc-document-check.mjs';
 import { inquiryCallSweeper } from './inquiry-call-sweeper.mjs';
 import { n01ColdNurture } from './n-01-cold-nurture.mjs';
 import { n02WarmNurture } from './n-02-warm-nurture.mjs';
@@ -42,13 +44,17 @@ import { n06RenewalSecondWave } from './n-06-renewal-second-wave.mjs';
 import { repairBureauResponseReader } from './repair-bureau-response.mjs';
 import { roundStartedClientNotify } from './round-started-client-notify.mjs';
 import { s01NewLeadIntake } from './s-01-new-lead-intake.mjs';
+import { s00Welcome } from './s-00-welcome.mjs';
 import { s02IncompleteSurveyNudge } from './s-02-incomplete-survey-nudge.mjs';
 import { s04CallBooked } from './s-04-call-booked.mjs';
 import { s04bBookingReminders } from './s-04b-booking-reminders.mjs';
+import { sPortalInvite } from './s-portal-invite.mjs';
 import { s05aNoShowRecovery } from './s-05a-no-show-recovery.mjs';
 import { sNobookChase } from './s-nobook-chase.mjs';
 import { s06PostCallFundingPurchased } from './s-06-post-call-funding-purchased.mjs';
+import { sDocCollection } from './s-doc-collection.mjs';
 import { s08PostCallFundingDeclined } from './s-08-post-call-funding-declined.mjs';
+import { sOfferBucket } from './s-offer-bucket.mjs';
 import { sys01ClientValueCalculator } from './sys-01-client-value-calculator.mjs';
 import { sys01LtvCalculator } from './sys-01-ltv-calculator.mjs';
 import { u02AnalyzerCompleteDelivery } from './u-02-analyzer-complete-delivery.mjs';
@@ -61,6 +67,7 @@ export const functions = [
   aiSet01JoshSetter,
   aiSet03NoAnswerCadence,
   aiSet043WayHandoff,
+  arCollections,
   at01FirstTouchCapture,
   bc01CustomerResponsiveness,
   bc02CustomerFriction,
@@ -112,6 +119,7 @@ export const functions = [
   f09FundingDeclinedNoPath,
   f10ClientFundingInboxProvisioner,
   f11BankEmailEventRouter,
+  ghlDocDocumentCheck,
   /* Bureau dispute calls, every 15 minutes. Its own header said "not registered
      until owner enables the schedule" — that gate was implemented as "leave it
      out of this array", which made it invisible on the Automations screen and
@@ -126,6 +134,7 @@ export const functions = [
   repairBureauResponseReader,
   roundStartedClientNotify,
   s01NewLeadIntake,
+  s00Welcome,
   /* Chases a lead who started an application and stopped: 20-minute sleep, then
      one nudge email if survey.submitted has not fired. entry.captured has 400
      rows and nothing was listening. Owner enabled it 2026-08-19. It emails real
@@ -133,10 +142,13 @@ export const functions = [
   s02IncompleteSurveyNudge,
   s04CallBooked,
   s04bBookingReminders,
+  sPortalInvite,
   sNobookChase,
   s05aNoShowRecovery,
   s06PostCallFundingPurchased,
+  sDocCollection,
   s08PostCallFundingDeclined,
+  sOfferBucket,
   sys01ClientValueCalculator,
   sys01LtvCalculator,
   u02AnalyzerCompleteDelivery,

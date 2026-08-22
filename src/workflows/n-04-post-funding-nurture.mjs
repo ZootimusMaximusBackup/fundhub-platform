@@ -1,16 +1,9 @@
 // N-04 — Post-Funding Nurture.
 // Source: GHL workflow e7607d09-4882-470a-ac56-8ed216c573a8 (ghl-crm-source-of-truth.md).
-// Ports the live [AGENT DRAFT] definition (the sole draft copy for this key; nothing
-// to dedupe against).
-//
-// Original GHL trigger: "Pipeline Stage Changed -> Funding Pipeline -> F23
-// Post-Funding Monitoring", gated on tag client:funding present. F23 is the stage a
-// client enters immediately after round.funded (Spec §5.2 funding pipeline), and
-// having fired round.funded already implies the client:funding gate — so round.funded
-// is both the trigger and the gate here, no separate check needed.
-//
-// SMS copy is confirmed missing in GHL (Chris's tracking note). Wired but gated on a
-// template existing.
+// Spec 4.9 (2026-08-22): fires on staff engagement closeout (`round.closeout`
+// with stage closed), not on round.funded (that instant still belongs to F-07).
+// Money-chain also emits round.closeout per funded round — those payloads have
+// no stage/engagementComplete and are skipped here. n-06 stays on round.funded.
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
@@ -20,7 +13,15 @@ import { sendTemplated } from "./messaging.mjs";
 export const EMAIL_TEMPLATE_KEY = "EMAIL-N04-POST-FUNDING";
 export const SMS_TEMPLATE_KEY = "SMS-N04-POST-FUNDING";
 
+export function isStaffEngagementCloseout(payload = {}) {
+  return payload.stage === "closed" || payload.engagementComplete === true;
+}
+
 export async function handle({ event, db, step }) {
+  if (!isStaffEngagementCloseout(event.payload || {})) {
+    return { sent: false, reason: "not_engagement_closeout" };
+  }
+
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { sent: false, reason: "no_client" };
 
@@ -36,6 +37,6 @@ export async function handle({ event, db, step }) {
 
 export const n04PostFundingNurture = inngest.createFunction(
   { id: "n-04-post-funding-nurture", name: "N-04 — Post-Funding Nurture" },
-  { event: "round.funded" },
+  { event: "round.closeout" },
   ({ event, step }) => handle({ event: event.data, db, step })
 );

@@ -48,6 +48,27 @@ test("client-portal.html ships no sample people and no fake upload or video", ()
   assert.ok(!html.includes("FHData.documents"), "client portal must not call the staff documents read");
 });
 
+test("client-portal offer tiles hide list prices except the fixed $32 soft pull", () => {
+  const html = fs.readFileSync(path.join(APP, "client-portal.html"), "utf8");
+  assert.match(html, /data-tile="SOFT_PULL"[\s\S]*?<div class="tp">\$32<\/div>/);
+  assert.match(html, /data-tile="FUNDING_DFY"[\s\S]*?<div class="tp">On your call<\/div>/);
+  assert.match(html, /data-tile="REPAIR_DFY"[\s\S]*?<div class="tp">On your call<\/div>/);
+  assert.match(html, /data-tile="REPAIR_TRIAL"[\s\S]*?<div class="tp">On your call<\/div>/);
+  assert.match(html, /data-tile="UWIQ_DELIVERABLES"[\s\S]*?<div class="tp">On your call<\/div>/);
+  assert.match(html, /data-tile="FUNDING_MASTERY"[\s\S]*?<div class="tp">On your call<\/div>/);
+  assert.match(html, /class="promo-price">On your call/);
+  assert.ok(!html.includes('price:\'$3,000\''), "must not ship funding list price in PRODUCTS");
+  assert.ok(!html.includes('price:\'$1,000\''), "must not ship repair list price in PRODUCTS");
+  assert.ok(!html.includes('price:\'$200\''), "must not ship trial list price in PRODUCTS");
+  assert.ok(!html.includes('price:\'$5,000\''), "must not ship mastery list price in PRODUCTS");
+  assert.ok(!html.includes('price:\'$1,000+\''), "must not ship deliverables list price in PRODUCTS");
+  assert.ok(!/\$3,000/.test(html), "must not show $3,000 on the client portal");
+  assert.ok(!/\$5,000/.test(html), "must not show $5,000 on the client portal");
+  assert.ok(!/\$1,000\+?/.test(html), "must not show $1,000 list prices on the client portal");
+  assert.ok(!/\$200\b/.test(html), "must not show $200 on the client portal");
+  assert.ok(html.includes("price:'$32'"), "soft pull $32 stays visible");
+});
+
 test("client-control-panel.html binds the live URL client and does not fake a pull", () => {
   const html = fs.readFileSync(path.join(APP, "client-control-panel.html"), "utf8");
   assert.ok(html.includes("FHData.client(id)"), "must read GET /api/dashboard/client");

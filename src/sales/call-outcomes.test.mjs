@@ -40,6 +40,7 @@ function stubDb(handlers = {}) {
       for (const [re, fn] of handlers) {
         if (re.test(sql)) return fn(params, sql);
       }
+      if (/INSERT INTO events/.test(sql)) return { rows: [{ id: "evt-stub" }] };
       return { rows: [] };
     }
   };
@@ -137,4 +138,113 @@ test("logCallOutcome: bad outcome throws CallOutcomeError", async () => {
     }),
     (e) => e instanceof CallOutcomeError && e.status === 400
   );
+});
+
+test("logCallOutcome: emits call.completed with closer disposition after a write", async () => {
+  const org = "11111111-1111-4111-8111-111111111111";
+  const client = "22222222-2222-4222-8222-222222222222";
+  const staff = "33333333-3333-4333-8333-333333333333";
+  const taskId = "44444444-4444-4444-8444-444444444444";
+  let eventInsert;
+  const db = stubDb([
+    [/FROM clients/, () => ({ rows: [{
+      id: client,
+      custom_fields: { closer_deck_disposition: { offer_key: "REPAIR_DFY" } }
+    }] })],
+    [/FROM tasks/, () => ({ rows: [{ id: taskId }] })],
+    [/INSERT INTO call_outcomes/, () => ({
+      rows: [{
+        id: "out-closer-1", org_id: org, client_id: client, staff_id: staff,
+        task_id: taskId, outcome: "not_a_fit", belief_failed: null,
+        cash_collected_cents: 0
+      }]
+    })],
+    [/INSERT INTO events/, (params) => {
+      eventInsert = params;
+      return { rows: [{ id: "evt-closer-1" }] };
+    }]
+  ]);
+  const { created } = await logCallOutcome(db, {
+    orgId: org, clientId: client, staffId: staff, taskId,
+    outcome: "not_a_fit", repairReferral: true
+  });
+  assert.equal(created, true);
+  assert.equal(eventInsert[1], "call.completed");
+  assert.equal(eventInsert[3], "call.completed:closer:out-closer-1");
+  assert.deepEqual(eventInsert[5], {
+    clientId: client,
+    orgId: org,
+    outcome: "not_a_fit",
+    offerKey: "REPAIR_DFY",
+    disposition: "closer",
+    repairReferral: true,
+    declineReason: null,
+    taskId
+  });
+});
+
+test("logCallOutcome: re-save uses the same idempotency key and does not insert a second outcome", async () => {
+  const org = "11111111-1111-4111-8111-111111111111";
+  const client = "22222222-2222-4222-8222-222222222222";
+  const staff = "33333333-3333-4333-8333-333333333333";
+  const taskId = "44444444-4444-4444-8444-444444444444";
+  const existing = {
+    id: "out-existing", org_id: org, client_id: client, staff_id: staff,
+    task_id: taskId, outcome: "callback"
+  };
+  const eventKeys = [];
+  let outcomeInserts = 0;
+  const db = stubDb([
+    [/FROM clients/, () => ({ rows: [{ id: client, custom_fields: {} }] })],
+    [/FROM tasks/, () => ({ rows: [{ id: taskId }] })],
+    [/SELECT \* FROM call_outcomes/, () => ({ rows: [existing] })],
+    [/INSERT INTO call_outcomes/, () => {
+      outcomeInserts += 1;
+      return { rows: [existing] };
+    }],
+    [/INSERT INTO events/, (params) => {
+      eventKeys.push(params[3]);
+      return { rows: [{ id: "evt-existing" }] };
+    }]
+  ]);
+  const first = await logCallOutcome(db, {
+    orgId: org, clientId: client, staffId: staff, taskId, outcome: "callback"
+  });
+  const second = await logCallOutcome(db, {
+    orgId: org, clientId: client, staffId: staff, taskId, outcome: "callback"
+  });
+  assert.equal(first.created, false);
+  assert.equal(second.created, false);
+  assert.equal(outcomeInserts, 0);
+  assert.deepEqual(eventKeys, [
+    "call.completed:closer:out-existing",
+    "call.completed:closer:out-existing"
+  ]);
+  assert.equal(first.row.outcome, "callback");
+  assert.notEqual(eventKeys[0], null);
+});
+
+test("logCallOutcome: closer disposition is never a no-answer value", async () => {
+  const org = "11111111-1111-4111-8111-111111111111";
+  const client = "22222222-2222-4222-8222-222222222222";
+  const staff = "33333333-3333-4333-8333-333333333333";
+  let payload;
+  const db = stubDb([
+    [/FROM clients/, () => ({ rows: [{ id: client, custom_fields: {} }] })],
+    [/INSERT INTO call_outcomes/, () => ({
+      rows: [{
+        id: "out-cb", org_id: org, client_id: client, staff_id: staff,
+        task_id: null, outcome: "callback"
+      }]
+    })],
+    [/INSERT INTO events/, (params) => {
+      payload = params[5];
+      return { rows: [{ id: "evt-cb" }] };
+    }]
+  ]);
+  await logCallOutcome(db, {
+    orgId: org, clientId: client, staffId: staff, outcome: "callback"
+  });
+  assert.equal(payload.disposition, "closer");
+  assert.equal(["no_answer", "no-answer", "voicemail"].includes(payload.disposition), false);
 });

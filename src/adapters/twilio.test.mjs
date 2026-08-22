@@ -129,6 +129,7 @@ test("message.inbound payload has correct shape", async () => {
   assert.equal(payload.sid, "SM_abc123");
   assert.equal(payload.channel, "sms");
   assert.equal(payload.source, "twilio");
+  assert.deepEqual(payload.mediaUrls, []);
 });
 
 // --- not-a-message path ------------------------------------------------------

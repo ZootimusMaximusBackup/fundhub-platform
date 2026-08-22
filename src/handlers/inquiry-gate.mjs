@@ -4,7 +4,10 @@
 //
 // Triggers:
 //   deposit.paid   — pre-funding cleanup (always fires)
-//   round.closeout — between-round cleanup (NOT round.funded)
+//   round.closeout — between-round cleanup (NOT round.funded).
+//                    Money-chain per-round closeout still raises the gate.
+//                    Staff Closed-column / engagement-complete closeout does not
+//                    (N-04 still listens on that payload).
 //
 // One case per bureau with items. Nothing sends from here — draft only.
 
@@ -271,7 +274,14 @@ export async function onDepositPaidGate(event, db) {
   return onInquiryGateTrigger(event, db);
 }
 
+function isEngagementCompleteCloseout(payload = {}) {
+  return payload.stage === "closed" || payload.engagementComplete === true;
+}
+
 export async function onRoundCloseoutGate(event, db) {
+  if (isEngagementCompleteCloseout(event.payload || {})) {
+    return { done: false, reason: "engagement_complete" };
+  }
   return onInquiryGateTrigger(event, db);
 }
 

@@ -19,6 +19,8 @@ import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { currentTemperature } from "../config/lead-temperature.mjs";
 import { sendTemplated } from "./messaging.mjs";
 
+// RETIRED 2026-08-22 — N-01 no longer fires on entry.captured. Kept for the
+// seed/audit trail.
 export const EMAIL_TEMPLATE_KEY = "EMAIL-N01-COLD-NURTURE";
 export const SMS_TEMPLATE_KEY = "SMS-N01-COLD-NURTURE";
 
@@ -40,8 +42,10 @@ export async function handle({ event, db, step }) {
   return { sent: true, email, sms };
 }
 
+// RETIRED 2026-08-22 — entry.captured trigger removed. Long-term cold-nurture
+// copy was landing on leads eleven seconds old.
 export const n01ColdNurture = inngest.createFunction(
   { id: "n-01-cold-nurture", name: "N-01 — Long-Term Cold Nurture" },
-  { event: "entry.captured" },
+  [],
   ({ event, step }) => handle({ event: event.data, db, step })
 );

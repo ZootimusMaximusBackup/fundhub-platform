@@ -126,7 +126,8 @@ export default async function handler(req, res, deps = {}) {
         temperature: body.temperature,
         beliefsCount: body.beliefs_count,
         costOfInaction: body.cost_of_inaction,
-        taskId: isUuid(body.task_id) ? body.task_id : null
+        taskId: isUuid(body.task_id) ? body.task_id : null,
+        repairReferral: body.repair_referral === true || body.repairReferral === true
       });
       return res.status(result.created ? 201 : 200).json({
         ok: true,

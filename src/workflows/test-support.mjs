@@ -18,6 +18,8 @@ export function pgFake(seed = {}) {
   const pipelineStages = seed.pipelineStages || [];
   const cards = seed.cards || [];
   const behaviorScores = seed.behaviorScores || [];
+  const invoices = seed.invoices || [];
+  const crsResults = seed.crsResults || [];
   const messages = [];
   const tasks = [];
   let n = 0;
@@ -26,7 +28,7 @@ export function pgFake(seed = {}) {
     clients.find((c) => c.org_id === org && String(c.email || "").toLowerCase() === String(email).toLowerCase());
 
   return {
-    clients, events, templates, messages, tasks, fundingRounds, applications, inquiryLog, pipelineStages, cards, behaviorScores,
+    clients, events, templates, messages, tasks, fundingRounds, applications, inquiryLog, pipelineStages, cards, behaviorScores, invoices, crsResults,
     async query(sql, params = []) {
       // --- behavior_scores (BC-01/BC-02) ---
       if (/INSERT INTO behavior_scores \(org_id, client_id, responsiveness\)/.test(sql)) {
@@ -134,6 +136,88 @@ export function pgFake(seed = {}) {
         return { rows: c ? [{ custom_fields: c.custom_fields || {} }] : [] };
       }
 
+      // --- clients identity for sendTemplated merge tags ---
+      if (/SELECT first_name, last_name, email, phone, custom_fields FROM clients WHERE id/.test(sql)) {
+        const c = clients.find((c) => c.id === params[0]);
+        return { rows: c ? [{
+          first_name: c.first_name || null,
+          last_name: c.last_name || null,
+          email: c.email || null,
+          phone: c.phone || null,
+          custom_fields: c.custom_fields || {}
+        }] : [] };
+      }
+
+      // --- invoices (AR chase re-check) ---
+      if (/INSERT INTO invoices/.test(sql)) {
+        const sourceEventId = params[4];
+        const idem = params[12];
+        if (idem && invoices.find((i) => i.idempotency_key === idem)) return { rows: [] };
+        if (sourceEventId && invoices.find((i) => i.source_event_id === sourceEventId)) return { rows: [] };
+        const row = {
+          id: "inv-" + ++n,
+          org_id: params[0],
+          client_id: params[1],
+          invoice_type: params[2],
+          source: params[3],
+          source_event_id: params[4],
+          amount_due: params[5],
+          currency: params[6],
+          sale_id: params[7],
+          funding_round_id: params[8],
+          due_at: params[9],
+          provider: params[10],
+          external_ref: params[11],
+          idempotency_key: params[12],
+          notes: params[13],
+          status: "draft"
+        };
+        invoices.push(row);
+        return { rows: [row] };
+      }
+      if (/UPDATE invoices[\s\S]*status = 'sent'/.test(sql)) {
+        const row = invoices.find((i) => i.id === params[0] && i.status === "draft");
+        if (!row) return { rows: [] };
+        row.status = "sent";
+        row.sent_at = params[1];
+        return { rows: [row] };
+      }
+      if (/SELECT \* FROM invoices WHERE id/.test(sql)) {
+        const row = invoices.find((i) => i.id === params[0]);
+        return { rows: row ? [row] : [] };
+      }
+      if (/FROM invoices[\s\S]*client_id/.test(sql) && /success_fee/.test(sql)) {
+        const open = Array.isArray(params[1]) ? params[1] : [];
+        return {
+          rows: invoices.filter((i) =>
+            i.client_id === params[0]
+            && (i.source === "funding_success_fee" || i.invoice_type === "success_fee")
+            && (open.length ? open.includes(i.status) : true))
+        };
+      }
+      if (/UPDATE invoices[\s\S]*status = 'escalated'/.test(sql)) {
+        const row = invoices.find((i) => i.id === params[0]);
+        const allowed = Array.isArray(params[2]) ? params[2] : ["sent", "reminded"];
+        if (!row || !allowed.includes(row.status)) return { rows: [] };
+        row.status = "escalated";
+        row.escalated_at = params[1];
+        return { rows: [row] };
+      }
+      if (/UPDATE invoices[\s\S]*status = 'paid'/.test(sql)) {
+        const row = invoices.find((i) => i.id === params[0]);
+        const allowed = Array.isArray(params[2]) ? params[2] : ["draft", "sent", "reminded", "escalated", "partially_paid"];
+        if (!row || !allowed.includes(row.status)) return { rows: [] };
+        row.status = "paid";
+        row.paid_at = params[1];
+        return { rows: [row] };
+      }
+
+      // --- crs_results (AX-07 snapshot diff) ---
+      if (/FROM crs_results WHERE id/.test(sql)) {
+        const row = crsResults.find((r) => r.id === params[0]);
+        return { rows: row ? [{ result: row.result, id: row.id }] : [] };
+      }
+
       // --- clients.outcome_tier lookup (product-path routing, Rule 4) ---
       if (/SELECT outcome_tier FROM clients WHERE id/.test(sql)) {
         const c = clients.find((c) => c.id === params[0]);
@@ -161,6 +245,10 @@ export function pgFake(seed = {}) {
       }
 
       // --- events (lead-temperature classification + bus emit) ---
+      if (/SELECT COUNT\(\*\)/.test(sql) && /FROM events/.test(sql) && /booking\.created/.test(sql)) {
+        const n = events.filter((e) => e.client_id === params[0] && e.name === "booking.created").length;
+        return { rows: [{ n }] };
+      }
       if (/SELECT DISTINCT name FROM events/.test(sql)) {
         const [clientId, names] = params;
         return { rows: events.filter((e) => e.client_id === clientId && names.includes(e.name)).map((e) => ({ name: e.name })) };

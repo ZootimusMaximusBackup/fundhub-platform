@@ -15,10 +15,11 @@
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
-import { sendTemplated } from "./messaging.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { createTask } from "../lib/create-task.mjs";
 
+// RETIRED 2026-08-22 — inbox routing is set up live on the sales call; no
+// follow-up wanted. Kept for the seed/audit trail; no send site references them.
 export const EMAIL_TEMPLATE_KEY = "EMAIL-F10-INBOX-SETUP";
 export const SMS_TEMPLATE_KEY = "SMS-F10-INBOX-SETUP";
 const SOURCE_WORKFLOW = "f-10-client-funding-inbox-provisioner";
@@ -58,13 +59,9 @@ export async function handle({ event, db, step }) {
 
   const orgId = event.orgId;
   const eventId = event.id;
-  const email = await step.run("send-email", () =>
-    sendTemplated(db, { orgId, clientId, channel: "email", templateKey: EMAIL_TEMPLATE_KEY, eventId }));
-  const sms = await step.run("send-sms", () =>
-    sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: SMS_TEMPLATE_KEY, eventId }));
   const task = await step.run("create-provision-task", () => createTaskOnce(db, { orgId, clientId, eventId }));
 
-  return { done: true, forwardingAddress, email, sms, task };
+  return { done: true, forwardingAddress, task };
 }
 
 export const f10ClientFundingInboxProvisioner = inngest.createFunction(

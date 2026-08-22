@@ -506,7 +506,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             <div class="pwhy"><span class="pulse"></span> Next step after funding — not included yet</div>
           </div>
           <div class="promo-side">
-            <div class="promo-price">$1,000<span class="pu">list · set on the call</span></div>
+            <div class="promo-price">On your call<span class="pu">ask your advisor</span></div>
             <button class="btn-book" type="button" data-book="Credit repair, done-for-you">Ask about this</button>
             <button class="btn-unlock" type="button" data-unlock="REPAIR_DFY" hidden>Unlock now</button>
           </div>
@@ -517,6 +517,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
       <section class="action-card" id="action-card" aria-labelledby="action-title">
         <div class="action-title" id="action-title">Send a file</div>
         <div class="action-sub" id="action-sub">Use the door that matches what you have.</div>
+        <div id="doc-agent-note" class="action-sub" hidden></div>
         <div id="upload-doors" class="upload-doors">
           <div class="upload-door door-funding" data-kind="client_upload">
             <div class="door-title">Funding documents</div>
@@ -560,7 +561,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
       <section class="card" aria-labelledby="unlock-t">
         <div class="sec-hd">
           <div class="card-title" id="unlock-t">Unlock More</div>
-          <span class="sec-note">List prices — final amount is set on your call, except the $32 soft pull</span>
+          <span class="sec-note">Soft pull is $32. Everything else — book a call for pricing</span>
         </div>
         <div class="tiles" id="tiles">
 
@@ -578,8 +579,8 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           <article class="tile locked" data-tile="FUNDING_DFY">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
             <div class="tt">Funding, done-for-you</div>
-            <div class="td">We run the funding round with you. Plus 10% of what funds, due when money lands.</div>
-            <div class="tp">$3,000</div>
+            <div class="td">We run the funding round with you. Plus 10% of what funds, due when money lands. Pricing is set on your call.</div>
+            <div class="tp">On your call</div>
             <div class="tacts">
               <button class="btn-unlock" type="button" data-unlock="FUNDING_DFY" hidden>Unlock</button>
               <button class="btn-advise" type="button" data-book="Funding, done-for-you">Talk to an advisor</button>
@@ -589,8 +590,8 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           <article class="tile locked" data-tile="REPAIR_DFY">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
             <div class="tt">Credit repair, done-for-you</div>
-            <div class="td">Repair work run for you. Price is set on the call.</div>
-            <div class="tp">$1,000</div>
+            <div class="td">Repair work run for you. Pricing is set on your call.</div>
+            <div class="tp">On your call</div>
             <div class="tacts">
               <button class="btn-unlock" type="button" data-unlock="REPAIR_DFY" hidden>Unlock</button>
               <button class="btn-advise" type="button" data-book="Credit repair, done-for-you">Talk to an advisor</button>
@@ -600,8 +601,8 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           <article class="tile locked" data-tile="REPAIR_TRIAL">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
             <div class="tt">Repair test run (first round, done for you)</div>
-            <div class="td">One round to start. Price is set on the call.</div>
-            <div class="tp">$200</div>
+            <div class="td">One round to start. Pricing is set on your call.</div>
+            <div class="tp">On your call</div>
             <div class="tacts">
               <button class="btn-unlock" type="button" data-unlock="REPAIR_TRIAL" hidden>Unlock</button>
               <button class="btn-advise" type="button" data-book="Repair test run (first round, done for you)">Talk to an advisor</button>
@@ -611,8 +612,8 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           <article class="tile locked" data-tile="UWIQ_DELIVERABLES">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
             <div class="tt">UnderwriteIQ Deliverables Package</div>
-            <div class="td">Report, letter pack, roadmap, funding snapshot, lender list, and the mini course.</div>
-            <div class="tp">$1,000+</div>
+            <div class="td">Report, letter pack, roadmap, funding snapshot, lender list, and the mini course. Pricing is set on your call.</div>
+            <div class="tp">On your call</div>
             <div class="tacts">
               <button class="btn-unlock" type="button" data-unlock="UWIQ_DELIVERABLES" hidden>Unlock</button>
               <button class="btn-advise" type="button" data-book="UnderwriteIQ Deliverables Package">Talk to an advisor</button>
@@ -630,8 +631,8 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           <article class="tile locked" data-tile="FUNDING_MASTERY">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
             <div class="tt">Funding Mastery course (A to Z)</div>
-            <div class="td">The course. Price is set on the call.</div>
-            <div class="tp">$5,000</div>
+            <div class="td">The course. Pricing is set on your call.</div>
+            <div class="tp">On your call</div>
             <div class="tacts">
               <button class="btn-unlock" type="button" data-unlock="FUNDING_MASTERY" hidden>Unlock</button>
               <button class="btn-advise" type="button" data-book="Funding Mastery course (A to Z)">Talk to an advisor</button>
@@ -768,7 +769,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
     <p class="mdesc" id="um-desc"></p>
     <div class="price-row">
       <span class="prl">Price</span>
-      <span class="prv" id="um-price">$450</span>
+      <span class="prv" id="um-price">On your call</span>
     </div>
     <div class="modal-acts">
       <!-- AUDIT 2026-08-17 §5: "Unlock — pay now" was shown filled and enabled
@@ -817,8 +818,8 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── product copy, single source for the tiles and the unlock modal.
-   Names and list prices match src/config/offers.mjs. Soft pull is fixed.
-   Every other price is closer-set on the call. ─────── */
+   Soft pull $32 is the only dollar amount shown to clients. Every other
+   offer hides list price — book a call for pricing (owner 2026-08-22). ─────── */
 var PRODUCTS = {
   SOFT_PULL:{
     name:'UnderwriteIQ soft-pull assessment',
@@ -827,28 +828,28 @@ var PRODUCTS = {
   },
   FUNDING_DFY:{
     name:'Funding, done-for-you',
-    price:'$3,000',
-    desc:'We run the funding round with you. List price $3,000, plus 10% of what funds, due when the money lands. Final amount is set on your call.'
+    price:'On your call',
+    desc:'We run the funding round with you. Plus 10% of what funds, due when the money lands. Pricing is set on your call.'
   },
   REPAIR_DFY:{
     name:'Credit repair, done-for-you',
-    price:'$1,000',
-    desc:'Repair work run for you. List price $1,000. Final amount is set on your call.'
+    price:'On your call',
+    desc:'Repair work run for you. Pricing is set on your call.'
   },
   REPAIR_TRIAL:{
     name:'Repair test run (first round, done for you)',
-    price:'$200',
-    desc:'One round to start. List price $200. Final amount is set on your call.'
+    price:'On your call',
+    desc:'One round to start. Pricing is set on your call.'
   },
   UWIQ_DELIVERABLES:{
     name:'UnderwriteIQ Deliverables Package',
-    price:'$1,000+',
-    desc:'Credit Analysis Report, dispute letter pack, Credit Optimization Roadmap, Funding Snapshot, Bank and Lender Match List, and the How To Use This mini course. Price is set on your call.'
+    price:'On your call',
+    desc:'Credit Analysis Report, dispute letter pack, Credit Optimization Roadmap, Funding Snapshot, Bank and Lender Match List, and the How To Use This mini course. Pricing is set on your call.'
   },
   FUNDING_MASTERY:{
     name:'Funding Mastery course (A to Z)',
-    price:'$5,000',
-    desc:'The course, start to finish. List price $5,000. Final amount is set on your call.'
+    price:'On your call',
+    desc:'The course, start to finish. Pricing is set on your call.'
   }
 };
 
@@ -1624,6 +1625,12 @@ document.addEventListener("DOMContentLoaded", async function () {
   FHData.wire(FHData.portalSummary(clientId ? { client_id: clientId } : {}),
     "portal-summary", function (data) {
       if (!STAFF_ROLES[roleHint()]) paintDocs(data.documents || []);
+      var note = document.getElementById("doc-agent-note");
+      if (note) {
+        var msg = data.doc_agent_message;
+        if (msg) { note.hidden = false; note.textContent = msg; }
+        else { note.hidden = true; note.textContent = ""; }
+      }
       var amt = data.prequal_display;
       var row = document.getElementById("sb-prequal-row");
       var el = document.getElementById("sb-prequal-amt");

@@ -17,6 +17,7 @@ import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { currentTemperature } from "../config/lead-temperature.mjs";
 import { sendTemplated } from "./messaging.mjs";
 
+// RETIRED 2026-08-22 — N-03 no longer fires. Kept for the seed/audit trail.
 export const EMAIL_TEMPLATE_KEY = "EMAIL-N03-HOT-NURTURE";
 export const SMS_TEMPLATE_KEY = "SMS-N03-HOT-NURTURE";
 
@@ -37,8 +38,10 @@ export async function handle({ event, db, step }) {
   return { sent: true, email, sms };
 }
 
+// RETIRED 2026-08-22 — both triggers removed and the workflow disabled.
+// Owner: "Every lead is hot. Doesn't mean we assault them."
 export const n03HotNurture = inngest.createFunction(
-  { id: "n-03-hot-nurture", name: "N-03 — Long-Term Hot Nurture" },
-  [{ event: "booking.created" }, { event: "call.completed" }],
+  { id: "n-03-hot-nurture", name: "N-03 — Long-Term Hot Nurture", enabled: false },
+  [],
   ({ event, step }) => handle({ event: event.data, db, step })
 );

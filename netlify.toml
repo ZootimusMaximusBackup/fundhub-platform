@@ -104,9 +104,9 @@
 # @netlify/functions schedule() wrapper so no npm dependency is added
 # (CLAUDE.md §8). Each SWEEP_CRON constant in the named file must match.
 #
-# This is NOT the Inngest engine. INNGEST_EVENT_KEY remains unset and the 47
-# workflow functions remain dormant — turning those on is still an owner
-# decision (CLAUDE.md §11).
+# This is NOT the Inngest engine. The jobs below are Netlify crons.
+# INNGEST_EVENT_KEY stays ON permanently (owner-set 2026-08-20) and the
+# workflow functions run (CLAUDE.md §11).
 # ---------------------------------------------------------------------------
 [functions."staff-message-sweeper"]
   schedule = "*/5 * * * *"

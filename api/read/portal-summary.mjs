@@ -83,6 +83,7 @@ export default async function handler(req, res) {
       prequal_display: formatPrequalUsd(prequalAmount),
       soft_pull_complete: cf.crs_paid === true
         || String(cf.analyzer_status || "").toLowerCase() === "complete",
+      doc_agent_message: cf.doc_agent_message || null,
       documents: documentsRes.rows
     }));
   } catch (err) {

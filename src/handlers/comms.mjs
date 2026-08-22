@@ -238,8 +238,11 @@ export async function onMessageInbound(event, db) {
 }
 
 // call.completed — a finished Bland voice call. Logged as a voice message row.
+// Closer dispositions emit the same event name with disposition: "closer" and
+// no Bland callId — those are not voice rows.
 export async function onCallCompleted(event, db) {
   const p = event.payload || {};
+  if (p.disposition === "closer") return;
   const clientId = event.clientId || null;
   const providerRef = p.callId || null;
   const ins = await db.query(

@@ -64,7 +64,8 @@ export default async function handler(req, res, deps = {}) {
       recordingUrl: body.recording_url || null,
       durationSeconds: body.duration_seconds ?? null,
       notes: body.notes || null,
-      checklist: body.checklist || null
+      checklist: body.checklist || null,
+      repairReferral: body.repair_referral === true || body.repairReferral === true
     });
     return res.status(result.created ? 201 : 200).json({
       ok: true,

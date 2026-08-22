@@ -1,12 +1,15 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { handle, SMS_NOBOOK_01, SMS_NOBOOK_02, SMS_NOBOOK_03 } from "./s-nobook-chase.mjs";
+import { handle, SMS_NOBOOK_01, SMS_NOBOOK_02, SMS_NOBOOK_03, EMAIL_NOBOOK_01, EMAIL_NOBOOK_02, EMAIL_NOBOOK_03 } from "./s-nobook-chase.mjs";
 import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
 const templates = () => [
   { org_id: "org-1", template_key: SMS_NOBOOK_01, channel: "sms", body: "n1", compliance_passed: true },
   { org_id: "org-1", template_key: SMS_NOBOOK_02, channel: "sms", body: "n2", compliance_passed: true },
-  { org_id: "org-1", template_key: SMS_NOBOOK_03, channel: "sms", body: "n3", compliance_passed: true }
+  { org_id: "org-1", template_key: SMS_NOBOOK_03, channel: "sms", body: "n3", compliance_passed: true },
+  { org_id: "org-1", template_key: EMAIL_NOBOOK_01, channel: "email", body: "e1", compliance_passed: true },
+  { org_id: "org-1", template_key: EMAIL_NOBOOK_02, channel: "email", body: "e2", compliance_passed: true },
+  { org_id: "org-1", template_key: EMAIL_NOBOOK_03, channel: "email", body: "e3", compliance_passed: true }
 ];
 
 test("nobook: full cadence when never booked", async () => {
@@ -19,8 +22,10 @@ test("nobook: full cadence when never booked", async () => {
     db, step: fakeStep()
   });
   assert.equal(res.exitedAt, "completed");
-  assert.equal(db.messages.length, 3);
-  assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_NOBOOK_01, SMS_NOBOOK_02, SMS_NOBOOK_03]);
+  assert.equal(db.messages.length, 6);
+  assert.deepEqual(db.messages.map((m) => m.template_key), [
+    SMS_NOBOOK_01, EMAIL_NOBOOK_01, SMS_NOBOOK_02, EMAIL_NOBOOK_02, SMS_NOBOOK_03, EMAIL_NOBOOK_03
+  ]);
 });
 
 test("nobook: exits immediately if already booked", async () => {
@@ -59,5 +64,5 @@ test("nobook: stops mid-cadence when they book after msg1", async () => {
     db, step
   });
   assert.equal(res.exitedAt, "after-msg1");
-  assert.equal(db.messages.length, 1);
+  assert.equal(db.messages.length, 2);
 });

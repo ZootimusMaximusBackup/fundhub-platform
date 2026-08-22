@@ -65,7 +65,7 @@ import { functions as workflowFunctions } from "../../src/workflows/index.mjs";
 /* When a human last walked the emitters below and checked them against the
    code and the live row counts. The manifest is hand-maintained, so this date
    is the honest shelf-life marker on it. */
-export const EMITTER_MANIFEST_VERIFIED_ON = "2026-08-19";
+export const EMITTER_MANIFEST_VERIFIED_ON = "2026-08-22";
 
 /* EVENT_EMITTERS — what actually causes each trigger event to be emitted.
 //
@@ -126,6 +126,13 @@ export const EVENT_EMITTERS = {
     ],
     note: "The 30 bookings on file came in through ClickFunnels. None came from Cal.com."
   },
+  "booking.rescheduled": {
+    emitters: [
+      { how: "The Cal.com booking webhook.", gate: "CALCOM_WEBHOOK_SECRET" },
+      { how: "The ClickFunnels webhook, when the booked slot is moved.", gate: "CLICKFUNNELS_WEBHOOK_SECRET" }
+    ],
+    note: "Cancels in-flight S-04B and BS-01 runs and restarts them on the new start time."
+  },
   "booking.noshow": {
     emitters: [
       { how: "The Cal.com booking webhook. Nothing else emits it.", gate: "CALCOM_WEBHOOK_SECRET" }
@@ -134,9 +141,10 @@ export const EVENT_EMITTERS = {
   },
   "call.completed": {
     emitters: [
-      { how: "The Bland voice webhook, after a call finishes.", gate: "BLAND_WEBHOOK_SECRET" }
+      { how: "The Bland voice webhook, after a call finishes.", gate: "BLAND_WEBHOOK_SECRET" },
+      { how: "A closer saves a call outcome (src/sales/call-outcomes.mjs). No secret gates this.", gate: null }
     ],
-    note: "1 row on file."
+    note: "Closer payloads use disposition: \"closer\" so the no-answer SMS cadence does not fire."
   },
   "diagnostic.paid": {
     emitters: [
@@ -171,7 +179,8 @@ export const EVENT_EMITTERS = {
   },
   "docs.received": {
     emitters: [
-      { how: "A staff member uploads a document (api/documents-upload.mjs). No secret gates this at all.", gate: null }
+      { how: "A staff member or the client uploads a document (api/documents-upload.mjs). No secret gates this at all.", gate: null },
+      { how: "An inbound text with a photo attachment (src/handlers/inbound-mms-docs.mjs).", gate: "TWILIO_AUTH_TOKEN" }
     ],
     note: null
   },
@@ -209,6 +218,19 @@ export const EVENT_EMITTERS = {
       { how: "A staff member drags a card on the funding board (src/funding/card-stacking-rounds.mjs, through src/workflows/cards.mjs). No secret gates this.", gate: null }
     ],
     note: "Every funding-round row on file came from a staff drag, not from Lendflow."
+  },
+  "round.closeout": {
+    emitters: [
+      { how: "A staff member drags the funding card to Closed (src/funding/card-stacking-rounds.mjs, through src/workflows/cards.mjs). No secret gates this.", gate: null },
+      { how: "The money chain, after a round is funded and the closeout row is written (src/handlers/money-chain.mjs). N-04 ignores this shape.", gate: null }
+    ],
+    note: "N-04 only sends when the payload says the engagement is complete (Closed column)."
+  },
+  "invoice.sent": {
+    emitters: [
+      { how: "F-07 marks the success-fee invoice sent after a round is funded (src/workflows/f-07-funding-locked.mjs).", gate: null }
+    ],
+    note: "AR collections listen only for funding success-fee invoices."
   }
 };
 

@@ -218,6 +218,16 @@
             "</span>" + labels[i] + "</button>";
         }).join("");
     }
+    if (logrows.length < 3) {
+      var extra = document.createElement("div");
+      extra.className = "logrow";
+      extra.innerHTML = '<span class="lbl">Repair referral</span>' +
+        '<label for="fh-repair-referral"><input type="checkbox" id="fh-repair-referral"> Yes — send to credit repair</label>';
+      var logbar = document.querySelector(".logbar");
+      var footEl = logbar && logbar.querySelector(".foot");
+      if (logbar && footEl) logbar.insertBefore(extra, footEl);
+      else if (logbar) logbar.appendChild(extra);
+    }
     var foot = $(".logbar .foot");
     if (foot) {
       foot.innerHTML = "<span>Cash comes from the payment record — never typed. Recording/transcript not available yet.</span>" +
@@ -379,7 +389,8 @@
           personal_guarantee: !!(document.getElementById("d2") && document.getElementById("d2").checked),
           month_14_cliff: !!(document.getElementById("d3") && document.getElementById("d3").checked),
           bank_decides: !!(document.getElementById("d4") && document.getElementById("d4").checked)
-        }
+        },
+        repair_referral: !!(document.getElementById("fh-repair-referral") && document.getElementById("fh-repair-referral").checked)
       };
       var r = await window.FHData.write("/api/call-outcomes", body);
       if (!r.ok) {

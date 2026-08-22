@@ -659,7 +659,8 @@ function outcomeForOffer(offerKey) {
 }
 
 export async function logDeckDisposition(db, {
-  orgId, clientId, staffId, offerKey, route, temperature, beliefsCount, costOfInaction, taskId
+  orgId, clientId, staffId, offerKey, route, temperature, beliefsCount, costOfInaction, taskId,
+  repairReferral = false
 }) {
   const offer = getOffer(offerKey);
   if (!offer) {
@@ -681,7 +682,9 @@ export async function logDeckDisposition(db, {
     staffId,
     taskId: taskId || null,
     outcome: outcomeForOffer(offer.key),
-    notes
+    notes,
+    offerKey: offer.key,
+    repairReferral: repairReferral === true
   });
   await mergeCustomFields(db, clientId, {
     closer_deck_disposition: {

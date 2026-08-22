@@ -662,6 +662,8 @@
         } else if (lettersOk()) {
           html += ckBtn("Generate letters and email now", "letters");
         }
+        html += '<label class="mono" style="display:flex;align-items:center;gap:8px;margin:10px 0 6px;font-size:12px;color:var(--ink)">' +
+          '<input type="checkbox" id="fh-repair-referral"> Repair referral</label>';
         html += ckBtn("Log disposition and close", "disp");
         html += "</div></div>";
       }
@@ -988,7 +990,11 @@
     if (a === "letters") { fire("generate_letters"); return; }
     if (a === "stage-letters") { stageRepairLetters(); return; }
     if (a === "send-letters") { sendRepairNow(); return; }
-    if (a === "disp") { fire("log_disposition"); return; }
+    if (a === "disp") {
+      var ref = document.getElementById("fh-repair-referral");
+      fire("log_disposition", { repair_referral: !!(ref && ref.checked) });
+      return;
+    }
   });
   window.addEventListener("keydown", function (e) {
     if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "SELECT")) return;

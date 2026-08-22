@@ -24,7 +24,7 @@ import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { sendTemplated } from "./messaging.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { addTags } from "./tags.mjs";
-import { createInvoice, successFeeKey } from "../invoices/index.mjs";
+import { createInvoice, successFeeKey, markSent, announceInvoice } from "../invoices/index.mjs";
 import { createTask } from "../lib/create-task.mjs";
 
 export const EMAIL_TEMPLATE_KEY = "EMAIL-F07-FUNDING-LOCKED";
@@ -86,6 +86,12 @@ export async function handle({ event, db, step }) {
       sourceEventId: eventId ?? null,
       notes: `round.funded — approved ${approvedAmount} @ ${feePercent}%`,
     }));
+  await step.run("announce-invoice-created", () =>
+    invoice ? announceInvoice(db, "invoice.created", invoice) : null);
+  const sentInvoice = await step.run("mark-invoice-sent", () =>
+    invoice?.id ? markSent(db, { invoiceId: invoice.id }) : null);
+  await step.run("announce-invoice-sent", () =>
+    sentInvoice ? announceInvoice(db, "invoice.sent", sentInvoice) : null);
   const invoiceTask = await step.run("create-invoice-task", () =>
     createTaskOnce(db, { orgId, clientId, eventId, source: INVOICE_TASK_SOURCE, title: `Invoice client — approved ${approvedAmount} @ ${feePercent}% (calculate + send)` }));
   await step.run("set-next-action", () => mergeCustomFields(db, clientId, { last_progress_action: "invoice_sent" }));

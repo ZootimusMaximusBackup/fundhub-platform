@@ -194,6 +194,18 @@ test("call.completed: logs a voice message row", async () => {
   assert.equal(db.messages[0].params[1], "cl-9");
 });
 
+test("call.completed: closer dispositions are not Bland voice rows", async () => {
+  const db = pgFake();
+  await onCallCompleted(ev("call.completed", {
+    disposition: "closer",
+    outcome: "deposit",
+    offerKey: "FUNDING_DFY",
+    repairReferral: false,
+    declineReason: null
+  }, { clientId: "cl-9" }), db);
+  assert.equal(db.messages.length, 0);
+});
+
 test("mail.response: inserts bank_inbox once, replay guard skips the second", async () => {
   const db = pgFake();
   const e = ev("mail.response", { from: "bank@lender.com", subject: "Approved", classification: "APPROVED", source: "mailgun" }, { id: "evt-mail-1" });

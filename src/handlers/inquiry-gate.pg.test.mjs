@@ -7,7 +7,7 @@ import { db, close } from "../db.mjs";
 import { emit, _resetOrgCache } from "../events/bus.mjs";
 import { clearHandlers, getHandlers } from "../events/registry.mjs";
 import { resolveDefaultOrg } from "../auth/org.mjs";
-import { register as registerInquiryGate, onInquiryGateTrigger } from "./inquiry-gate.mjs";
+import { register as registerInquiryGate, onInquiryGateTrigger, onRoundCloseoutGate } from "./inquiry-gate.mjs";
 import { _resetRegistered, registerAll } from "../register-all.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
@@ -197,6 +197,40 @@ describe("inquiry-gate handler", { skip: !HAS_DB ? "no DATABASE_URL" : false }, 
     )).rows[0];
     assert.equal(row.funding_round_id, round.id);
     assert.equal(row.selected_bureaus_raw, "EX");
+  });
+
+  test("engagement-complete round.closeout does not create a case", async () => {
+    clientId = await seedClient("closedrag");
+    await seedCrs(clientId, [
+      { creditorName: "Wells", source: "ex", date: "2024-04-01" }
+    ]);
+    const round = (await db.query(
+      `INSERT INTO funding_rounds (org_id, client_id, round_number, status, funded_amount)
+       VALUES ($1, $2, 1, 'funded', 10000) RETURNING id`,
+      [org, clientId]
+    )).rows[0];
+
+    const res = await onRoundCloseoutGate(
+      {
+        orgId: org,
+        clientId,
+        id: "evt-co-closed",
+        name: "round.closeout",
+        payload: {
+          stage: "closed",
+          engagementComplete: true,
+          fundingRoundId: round.id
+        }
+      },
+      db
+    );
+    assert.equal(res.done, false);
+    assert.equal(res.reason, "engagement_complete");
+    const n = (await db.query(
+      `SELECT count(*)::int AS n FROM inquiry_removal_cases WHERE client_id = $1`,
+      [clientId]
+    )).rows[0].n;
+    assert.equal(n, 0);
   });
 
   test("emit deposit.paid dispatches registered gate handler", async () => {

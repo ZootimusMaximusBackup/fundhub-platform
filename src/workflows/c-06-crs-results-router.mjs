@@ -15,7 +15,6 @@ import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { resolveOutcomeTier, isFundingPath, isRepairOnlyPath } from "../config/product-path.mjs";
 import { addTags } from "./tags.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
-import { sendTemplated } from "./messaging.mjs";
 import { createTask } from "../lib/create-task.mjs";
 import { buildLetterPackForClient } from "../underwrite/letter-pack.mjs";
 import {
@@ -23,6 +22,8 @@ import {
   storeFromEnv
 } from "../underwrite/funding-letter-pdf.mjs";
 
+// RETIRED 2026-08-22 — owner: "We never tell somebody they're declined."
+// Kept for the seed/audit trail; no send site references them.
 export const DECLINE_EMAIL_TEMPLATE_KEY = "EMAIL-C06-DECLINE";
 export const DECLINE_SMS_TEMPLATE_KEY = "SMS-C06-DECLINE";
 const SOURCE_WORKFLOW = "c-06-crs-results-router";
@@ -162,11 +163,7 @@ export async function handle({ event, db, step, detectDecline = isHardDecline, f
       employee_next_action: "Closed/Stop"
     }));
     const task = await step.run("create-decline-task", () => createDeclineTaskOnce(db, { orgId, clientId, eventId }));
-    const email = await step.run("send-decline-email", () =>
-      sendTemplated(db, { orgId, clientId, channel: "email", templateKey: DECLINE_EMAIL_TEMPLATE_KEY, eventId }));
-    const sms = await step.run("send-decline-sms", () =>
-      sendTemplated(db, { orgId, clientId, channel: "sms", templateKey: DECLINE_SMS_TEMPLATE_KEY, eventId }));
-    return { done: true, branch: "decline", task, email, sms };
+    return { done: true, branch: "decline", task };
   }
 
   const outcomeTier = await step.run("check-product-path", () => resolveOutcomeTier(db, clientId, event.payload));

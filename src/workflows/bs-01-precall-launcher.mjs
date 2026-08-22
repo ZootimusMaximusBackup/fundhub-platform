@@ -65,10 +65,15 @@ import { addTags } from "./tags.mjs";
 export const FUNDING_PREFIX = "BS-FUND";
 export const REPAIR_PREFIX = "BS-REPAIR";
 
-// Thin SMS companion (owner 2026-08-15): three texts, no video links, not the
+// Thin SMS companion (owner 2026-08-15): pre-call touches, no video links, not the
 // email 18-cell grid. One set for every booked contact — path split is email-only.
+// 2026-08-22: the immediate booked text moved to S-04B (see runSmsDrip).
+// RETIRED 2026-08-22 — S-04B owns the immediate booked text. Kept for the
+// seed/audit trail; no send site references it.
 export const SMS_BS01_BOOKED = "SMS-BS01-01-BOOKED";
 export const SMS_BS01_PRECALL = "SMS-BS01-02-PRECALL";
+// RETIRED 2026-08-22 — S-04B's SMS-S04-03-REMIND-2H owns the T-2h slot (same
+// sleepUntil target). Kept for the seed/audit trail; no send site references it.
 export const SMS_BS01_DAYOF = "SMS-BS01-03-DAYOF";
 export const SMS_PRECALL_WAIT = "24h";
 export const SMS_DAYOF_OFFSET_MS = 2 * 60 * 60 * 1000;
@@ -174,23 +179,17 @@ async function runDrip({ db, step, orgId, clientId, eventId, prefix }) {
 }
 
 /**
- * Three SMS touches for every booked contact. Independent of funding/repair
+ * Pre-call SMS touches for every booked contact. Independent of funding/repair
  * email path. Stops when the call is held (same gate as the email drip).
  */
 async function runSmsDrip({ db, step, orgId, clientId, eventId, startTime }) {
   const sent = [];
 
-  const booked = await step.run("send-sms-booked", () =>
-    sendTemplated(db, {
-      orgId, clientId, channel: "sms", templateKey: SMS_BS01_BOOKED,
-      eventId: `${eventId}:sms:booked`
-    }));
-  sent.push({ templateKey: SMS_BS01_BOOKED, ...booked });
-  if (booked.sent) {
-    await step.run("stamp-sms-booked", () =>
-      mergeCustomFields(db, clientId, { bs_sms_last_sent_ts: new Date().toISOString() }));
-  }
-
+  // Owner decision 2026-08-22: the immediate "you're booked" text is S-04B's
+  // (SMS-S04-01-CONFIRM) alone. Both workflows listen to booking.created, so
+  // sending SMS-BS01-01-BOOKED here double-texted every booking. BS-01 now owns
+  // only the later pre-call and day-of touches. The key stays exported and the
+  // template stays seeded — nothing sends it.
   await step.sleep("wait-sms-precall", SMS_PRECALL_WAIT);
   const heldPrecall = await step.run("recheck-sms-precall", () => callHappened(db, clientId));
   if (heldPrecall) {
@@ -208,30 +207,14 @@ async function runSmsDrip({ db, step, orgId, clientId, eventId, startTime }) {
       mergeCustomFields(db, clientId, { bs_sms_last_sent_ts: new Date().toISOString() }));
   }
 
-  if (!startTime) {
-    return { sent, stoppedAt: null, stoppedBecause: null, skippedDayOf: "no_start_time" };
-  }
-
-  const target = new Date(new Date(startTime).getTime() - SMS_DAYOF_OFFSET_MS);
-  await step.sleepUntil("wait-sms-dayof", target);
-
-  const heldDayof = await step.run("recheck-sms-dayof", () => callHappened(db, clientId));
-  if (heldDayof) {
-    return { sent, stoppedAt: "sms-dayof", stoppedBecause: "call_held", skippedDayOf: null };
-  }
-
-  const dayof = await step.run("send-sms-dayof", () =>
-    sendTemplated(db, {
-      orgId, clientId, channel: "sms", templateKey: SMS_BS01_DAYOF,
-      eventId: `${eventId}:sms:dayof`
-    }));
-  sent.push({ templateKey: SMS_BS01_DAYOF, ...dayof });
-  if (dayof.sent) {
-    await step.run("stamp-sms-dayof", () =>
-      mergeCustomFields(db, clientId, { bs_sms_last_sent_ts: new Date().toISOString() }));
-  }
-
-  return { sent, stoppedAt: null, stoppedBecause: null, skippedDayOf: null };
+  // Owner decision 2026-08-22 (confirmed against the 2026-08-20 live template
+  // dump): the T-2h day-of text is S-04B's alone (SMS-S04-03-REMIND-2H,
+  // s-04b-booking-reminders.mjs). Both workflows target the identical
+  // sleepUntil(startTime - 2h) moment, so every booking with a start time was
+  // getting two near-identical "your call is coming up" texts back to back.
+  // BS-01 now stops after the +24h precall touch. SMS_BS01_DAYOF stays exported
+  // and the template stays seeded; nothing sends it.
+  return { sent, stoppedAt: null, stoppedBecause: null, skippedDayOf: startTime ? "owned_by_s04b" : "no_start_time" };
 }
 
 export async function handle({ event, db, step }) {
@@ -274,7 +257,20 @@ export async function handle({ event, db, step }) {
 }
 
 export const bs01PrecallLauncher = inngest.createFunction(
-  { id: "bs-01-precall-launcher", name: "BS-01 — Pre-Call Backend Launcher" },
-  { event: "booking.created" },
+  {
+    id: "bs-01-precall-launcher",
+    name: "BS-01 — Pre-Call Backend Launcher",
+    cancelOn: [
+      {
+        event: "booking.rescheduled",
+        if: "event.data.payload.email != null && event.data.payload.email == async.data.payload.email"
+      },
+      {
+        event: "booking.rescheduled",
+        if: "event.data.payload.bookingUid != null && event.data.payload.bookingUid == async.data.payload.bookingUid"
+      }
+    ]
+  },
+  [{ event: "booking.created" }, { event: "booking.rescheduled" }],
   ({ event, step }) => handle({ event: event.data, db, step })
 );

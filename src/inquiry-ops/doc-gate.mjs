@@ -13,6 +13,18 @@ export const PACKET_SUBTYPES = Object.freeze({
   AUTHORIZATION: "soft_pull_consent"
 });
 
+/** Contact-field hold reasons that block funding work (round_hold_reason). */
+export const FUNDING_DOC_HOLD = "Documents Pending Approval";
+export const FUNDING_PAUSED_HOLD = "Funding Paused";
+export const BLOCKING_FUNDING_HOLDS = Object.freeze([
+  FUNDING_DOC_HOLD,
+  FUNDING_PAUSED_HOLD
+]);
+
+export function isBlockingFundingHold(reason) {
+  return BLOCKING_FUNDING_HOLDS.includes(String(reason || ""));
+}
+
 /**
  * @param {object[]} documents  rows with { kind, subtype }
  * @param {{ requireSsn?: boolean }} [opts]

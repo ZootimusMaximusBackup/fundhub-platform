@@ -5,6 +5,7 @@
 // window has passed with no matching call_outcomes row.
 
 import { toCents } from "../commissions/money.mjs";
+import { emit } from "../events/bus.mjs";
 import {
   BELIEF_LABELS,
   normalizeBelief,
@@ -101,7 +102,9 @@ export async function logCallOutcome(db, input) {
     recordingUrl = null,
     durationSeconds = null,
     notes = null,
-    checklist = null
+    checklist = null,
+    offerKey: rawOfferKey = null,
+    repairReferral = false
   } = input || {};
 
   if (!orgId) throw new CallOutcomeError("orgId is required", { status: 403, code: "forbidden" });
@@ -123,12 +126,16 @@ export async function logCallOutcome(db, input) {
   }
 
   const client = await db.query(
-    `SELECT id FROM clients WHERE id = $1 AND org_id = $2`,
+    `SELECT id, custom_fields FROM clients WHERE id = $1 AND org_id = $2`,
     [clientId, orgId]
   );
   if (!client.rows[0]) {
     throw new CallOutcomeError("client not found", { status: 404, code: "not_found" });
   }
+
+  const storedOffer = offerKeyFromCustomFields(client.rows[0].custom_fields);
+  const offerKey = rawOfferKey || storedOffer || null;
+  const isRepairReferral = repairReferral === true;
 
   if (taskId) {
     const t = await db.query(
@@ -152,6 +159,9 @@ export async function logCallOutcome(db, input) {
       [orgId, taskId, bookingRef]
     );
     if (existing.rows[0]) {
+      await emitCloserCallCompleted(db, existing.rows[0], {
+        offerKey, repairReferral: isRepairReferral
+      });
       return { row: existing.rows[0], created: false };
     }
   }
@@ -199,7 +209,37 @@ export async function logCallOutcome(db, input) {
     );
   }
 
+  await emitCloserCallCompleted(db, res.rows[0], {
+    offerKey, repairReferral: isRepairReferral
+  });
+
   return { row: res.rows[0], created: true };
+}
+
+function offerKeyFromCustomFields(raw) {
+  const fields = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : null;
+  const key = fields?.closer_deck_disposition?.offer_key;
+  return key ? String(key) : null;
+}
+
+async function emitCloserCallCompleted(db, row, { offerKey, repairReferral }) {
+  if (!row?.id) return;
+  const clientId = row.client_id;
+  const orgId = row.org_id;
+  await emit(db, "call.completed", {
+    clientId,
+    orgId,
+    outcome: row.outcome,
+    offerKey: offerKey || null,
+    disposition: "closer",
+    repairReferral: repairReferral === true,
+    declineReason: null,
+    taskId: row.task_id || null
+  }, {
+    orgId,
+    clientId,
+    idempotencyKey: `call.completed:closer:${row.id}`
+  });
 }
 
 /* A booking task is found by its TITLE, not by a vendor name.

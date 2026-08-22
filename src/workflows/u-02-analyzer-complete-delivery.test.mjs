@@ -10,8 +10,8 @@ test("happy path: funding path sends the funding letter pack delivery", async ()
   });
   const res = await handle({ event: ev("analysis.completed", {}, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.branch, "funding");
-  assert.equal(db.messages.length, 1);
-  assert.equal(db.clients[0].custom_fields.funding_delivery_sent, true);
+  assert.equal(db.messages.length, 0, "U-02 delivery emails are retired; tags and routing still run");
+  assert.equal(db.clients[0].custom_fields.funding_delivery_sent, undefined);
 });
 
 // Regression (Model drift audit): the production shape. clients.outcome_tier is not
@@ -28,8 +28,8 @@ test("sends the funding delivery from the payload tier when the column is not wr
     db, step: fakeStep()
   });
   assert.equal(res.branch, "funding");
-  assert.equal(db.messages.length, 1);
-  assert.equal(db.clients[0].custom_fields.funding_delivery_sent, true);
+  assert.equal(db.messages.length, 0, "U-02 delivery emails are retired; tags and routing still run");
+  assert.equal(db.clients[0].custom_fields.funding_delivery_sent, undefined);
 });
 
 // REGRESSION (05/30 doc 79-84): the repair letter pack is the PAID DIY product ($1,000
@@ -66,5 +66,5 @@ test("duplicate delivery: replaying does not double-send", async () => {
   const event = ev("analysis.completed", {}, { id: "evt-dup-u02", clientId: "cl-1" });
   await handle({ event, db, step: fakeStep() });
   await handle({ event, db, step: fakeStep() });
-  assert.equal(db.messages.length, 1);
+  assert.equal(db.messages.length, 0, "U-02 delivery emails are retired; replay still sends nothing");
 });

@@ -29,6 +29,23 @@ test("branch: answered calls are ignored", async () => {
   assert.equal(res.done, false);
 });
 
+test("guard: a closer disposition never starts the no-answer cadence", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com" }], templates: withTemplates() });
+  const res = await handle({
+    event: ev("call.completed", {
+      disposition: "closer",
+      outcome: "callback",
+      repairReferral: false,
+      declineReason: null
+    }, { clientId: "cl-1" }),
+    db,
+    step: fakeStep()
+  });
+  assert.equal(res.done, false);
+  assert.equal(res.reason, "not_no_answer");
+  assert.equal(db.messages.length, 0);
+});
+
 test("duplicate delivery: replaying does not double-send", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com" }], templates: withTemplates() });
   const event = ev("call.completed", { disposition: "no_answer" }, { id: "evt-dup-aiset03", clientId: "cl-1" });

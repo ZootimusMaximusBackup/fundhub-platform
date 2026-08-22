@@ -31,7 +31,7 @@ const SPEC = {
   "f-09": "funding_advisor", "f-10": "funding_advisor", "f-11": "funding_advisor",
   "c-05": "funding_advisor", "c-06": "funding_advisor", "dpc-03": "funding_advisor",
   "dpc-05": "funding_advisor", "n-06": "funding_advisor", "u-02": "funding_advisor",
-  "u-05": "funding_advisor", "ai-set-04": "funding_advisor",
+  "u-05": "funding_advisor", "ai-set-04": "closer",
   "c-02": "inquiry_specialist", "c-03": "inquiry_specialist",
   "s-06": "closer", "s-08": "closer",
   "ds-02": "admin"

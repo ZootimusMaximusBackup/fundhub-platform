@@ -8,6 +8,7 @@ import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { addTags } from "./tags.mjs";
+import { detectAndPauseFunding } from "../crs/snapshot-negatives.mjs";
 
 export async function handle({ event, db, step }) {
   if (event.payload?.source !== "crs") return { done: false, reason: "not_crs_source" };
@@ -21,8 +22,15 @@ export async function handle({ event, db, step }) {
     crs_fico_score: event.payload?.scores?.ex ?? null
   }));
   await step.run("tag-crs-snapshot", () => addTags(db, clientId, ["crs:snapshot"]));
+  const ax07 = await step.run("detect-new-negatives", () =>
+    detectAndPauseFunding(db, {
+      orgId: event.orgId,
+      clientId,
+      crsResultId: event.payload?.crsResultId || event.payload?.crs_result_id || null,
+      eventId: event.id
+    }));
 
-  return { done: true };
+  return { done: true, ax07 };
 }
 
 export const u03CrsSnapshotSync = inngest.createFunction(

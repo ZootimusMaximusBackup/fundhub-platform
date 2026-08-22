@@ -16,6 +16,10 @@ test("happy path: fee ready sends email + sms and creates an invoice task", asyn
   assert.equal(res.invoiceTask.created, true);
   assert.equal(db.messages.length, 2);
   assert.equal(db.tasks.length, 1);
+  assert.ok(res.invoice);
+  assert.equal(res.invoice.source, "funding_success_fee");
+  assert.equal(db.invoices.length, 1);
+  assert.equal(db.invoices[0].status, "sent");
 });
 
 test("branch: fee not ready flags ops + creates a fix-fee task, no send", async () => {

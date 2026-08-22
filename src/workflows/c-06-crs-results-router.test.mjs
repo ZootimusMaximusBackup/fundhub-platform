@@ -111,7 +111,7 @@ test("the DECLINE branch is fully wired — it fires the moment the detector ret
   assert.equal(res.branch, "decline");
   assert.deepEqual(db.clients[0].tags, ["hold:declined"]);
   assert.equal(db.clients[0].custom_fields.hard_stop_reason, "disqualified");
-  assert.equal(db.messages.length, 2, "decline email + SMS");
+  assert.equal(db.messages.length, 0, "decline email + SMS retired 2026-08-22; tags and task still run");
   assert.equal(db.tasks.length, 1);
 });
 
@@ -139,7 +139,7 @@ test("flipping HARD_DECLINE_SIGNALS_DEFERRED off (via isHardDecline's own gate, 
   assert.equal(res.branch, "decline");
   assert.deepEqual(db.clients[0].tags, ["hold:declined"]);
   assert.equal(db.clients[0].custom_fields.hard_stop_reason, "disqualified");
-  assert.equal(db.messages.length, 2, "decline email + SMS");
+  assert.equal(db.messages.length, 0, "decline email + SMS retired 2026-08-22; tags and task still run");
   assert.equal(db.tasks.length, 1);
 });
 

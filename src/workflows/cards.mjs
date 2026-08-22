@@ -13,6 +13,7 @@ import {
   guardFundedAmount,
   emitCardStackingRoundTransition
 } from "../funding/card-stacking-rounds.mjs";
+import { isBlockingFundingHold } from "../inquiry-ops/doc-gate.mjs";
 
 export async function moveCardToStage(db, {
   orgId,
@@ -43,6 +44,23 @@ export async function moveCardToStage(db, {
   let resolvedFunded = null;
   let resolvedApproved = approvedAmount != null ? Number(approvedAmount) : null;
   let resolvedRoundNumber = roundNumber != null ? Number(roundNumber) : null;
+
+  // Funding document / new-negative gates block work, not Closed / Action Required.
+  const allowedWhileHeld = stageKey === "closed" || stageKey === "action_required";
+  if (pipelineKey === CARD_STACKING_PIPELINE && !allowedWhileHeld) {
+    const hold = await db.query(
+      `SELECT custom_fields FROM clients WHERE id = $1 LIMIT 1`,
+      [clientId]
+    );
+    const reason = hold.rows[0]?.custom_fields?.round_hold_reason;
+    if (isBlockingFundingHold(reason)) {
+      return {
+        moved: false,
+        reason: "funding_gate_closed",
+        message: `Funding is paused (${reason}). Clear the gate before moving this card.`
+      };
+    }
+  }
 
   // Hard guard BEFORE the card moves — never park a card on funded with no dollars.
   if (pipelineKey === CARD_STACKING_PIPELINE && stageKey === "funded") {

@@ -1,12 +1,16 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { handle, EMAIL_TEMPLATE_KEY, SMS_TEMPLATE_KEY } from "./n-01-cold-nurture.mjs";
+import { handle, EMAIL_TEMPLATE_KEY, SMS_TEMPLATE_KEY, n01ColdNurture } from "./n-01-cold-nurture.mjs";
 import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
 const withTemplates = () => [
   { org_id: "org-1", template_key: EMAIL_TEMPLATE_KEY, channel: "email", body: "Cold nurture email body", compliance_passed: true },
   { org_id: "org-1", template_key: SMS_TEMPLATE_KEY, channel: "sms", body: "Cold nurture sms body", compliance_passed: true }
 ];
+
+test("RETIRED 2026-08-22: entry.captured trigger is not registered", () => {
+  assert.deepEqual(n01ColdNurture.opts.triggers, []);
+});
 
 test("happy path: cold lead (entry.captured only) gets email + sms", async () => {
   const db = pgFake({

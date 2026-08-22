@@ -10,6 +10,7 @@ test("happy path: CRS-sourced analysis.completed syncs the snapshot fields", asy
   assert.equal(db.clients[0].custom_fields.crs_status, "Complete");
   assert.equal(db.clients[0].custom_fields.crs_fico_score, 640);
   assert.deepEqual(db.clients[0].tags, ["crs:snapshot"]);
+  assert.equal(res.ax07.fired, false);
 });
 
 test("branch: non-CRS source (e.g. analyzer estimate) is ignored", async () => {

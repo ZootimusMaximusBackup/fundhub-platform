@@ -103,9 +103,19 @@ test.describe("client portal go-live UX", () => {
     await expect(page.locator("#tp-docs")).not.toContainText("Open this client in Documents");
   });
 
-  test("unlock tiles match the offer catalog", async ({ page }) => {
+  test("unlock tiles hide list prices except the $32 soft pull", async ({ page }) => {
     await openPortal(page, CLIENT_SESSION, []);
     await expect(page.locator('[data-tile="SOFT_PULL"] .tp')).toHaveText("$32");
+    await expect(page.locator('[data-tile="FUNDING_DFY"] .tp')).toHaveText("On your call");
+    await expect(page.locator('[data-tile="REPAIR_DFY"] .tp')).toHaveText("On your call");
+    await expect(page.locator('[data-tile="REPAIR_TRIAL"] .tp')).toHaveText("On your call");
+    await expect(page.locator('[data-tile="UWIQ_DELIVERABLES"] .tp')).toHaveText("On your call");
+    await expect(page.locator('[data-tile="FUNDING_MASTERY"] .tp')).toHaveText("On your call");
+    await expect(page.locator("#promo .promo-price")).toContainText("On your call");
+    await expect(page.locator("#tiles")).not.toContainText("$3,000");
+    await expect(page.locator("#tiles")).not.toContainText("$1,000");
+    await expect(page.locator("#tiles")).not.toContainText("$200");
+    await expect(page.locator("#tiles")).not.toContainText("$5,000");
     await expect(page.locator('[data-tile="FUNDING_DFY"] .tt')).toHaveText(/Funding, done-for-you/i);
     await expect(page.locator('[data-tile="metro2"]')).toHaveCount(0);
     await expect(page.locator('[data-tile="consulting"]')).toHaveCount(0);

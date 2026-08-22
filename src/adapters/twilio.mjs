@@ -38,6 +38,16 @@ export function verifyTwilioSignature(url, params, providedHeader, authToken) {
   }
 }
 
+function mediaUrlsFromParams(params) {
+  const n = params.NumMedia ? Number(params.NumMedia) : 0;
+  const urls = [];
+  for (let i = 0; i < n; i++) {
+    const url = params[`MediaUrl${i}`];
+    if (url) urls.push({ url, contentType: params[`MediaContentType${i}`] || null });
+  }
+  return urls;
+}
+
 // --- 2. Normalize the urlencoded body into a flat event ---------------------
 // Returns a plain object with the fields we care about.
 export function normalizeTwilioEvent(rawBody) {
@@ -55,6 +65,7 @@ export function normalizeTwilioEvent(rawBody) {
     to: params.To || null,
     body: params.Body ?? "",
     numMedia: params.NumMedia ? Number(params.NumMedia) : 0,
+    mediaUrls: mediaUrlsFromParams(params),
     accountSid: params.AccountSid || null,
     // raw params object for signature verification
     _params: params
@@ -97,7 +108,9 @@ export async function handleTwilioWebhook({ db, rawBody, signatureHeader, secret
       body: evt.body,
       sid: evt.sid,
       channel: "sms",
-      source: "twilio"
+      source: "twilio",
+      numMedia: evt.numMedia,
+      mediaUrls: evt.mediaUrls
     };
     const idKey = `twilio:${evt.sid}:${c.name}`;
     const res = await emit(db, c.name, payload, { idempotencyKey: idKey });

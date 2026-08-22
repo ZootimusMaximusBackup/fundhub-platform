@@ -56,6 +56,13 @@ test("present cockpit can send soft pull and variable-price e-book", () => {
   assert.ok(presentJs.includes("amount_cents"));
 });
 
+test("disposition UI has an explicit repair-referral control", () => {
+  assert.ok(presentJs.includes('id="fh-repair-referral"'));
+  assert.ok(presentJs.includes("repair_referral"));
+  assert.ok(closerJs.includes('id="fh-repair-referral"'));
+  assert.ok(closerJs.includes("repair_referral"));
+});
+
 test("non-funding pay links require an explicit downsell or upsell choice", () => {
   assert.ok(presentJs.includes('id="fh-sale-motion"'));
   assert.ok(presentJs.includes('value="downsell"'));

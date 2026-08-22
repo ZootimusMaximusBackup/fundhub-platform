@@ -10,6 +10,7 @@ import { register as registerMoneyChain } from "./handlers/money-chain.mjs";
 import { register as registerCustomerInsights } from "./handlers/customer-insights.mjs";
 import { register as registerInquiryGate } from "./handlers/inquiry-gate.mjs";
 import { register as registerInquiryDocs } from "./handlers/inquiry-docs.mjs";
+import { register as registerInboundMmsDocs } from "./handlers/inbound-mms-docs.mjs";
 import { register as registerCommasDisputes } from "./handlers/commas-disputes.mjs";
 import { register as registerDiagnosticSoftPull } from "./handlers/diagnostic-soft-pull.mjs";
 import { register as registerContractSigned } from "./handlers/contract-signed.mjs";
@@ -26,6 +27,9 @@ export function registerAll() {
   registerCustomerInsights();
   registerInquiryGate();
   registerInquiryDocs();
+  /* Photo texts after the inbound message row exists — same docs.received
+     path as a portal upload. Must not mint a client. */
+  registerInboundMmsDocs();
   /* Chargebacks and refunds → tasks. Registered after the money chain so a
      disputed payment's original payment.received has already been handled;
      these two events never reverse it, but the task text reads better when the

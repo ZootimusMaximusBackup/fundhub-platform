@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert";
 import {
-  createInvoice, markSent, markPaid, voidInvoice, getInvoice,
-  successFeeKey, depositKey
+  createInvoice, markSent, markPaid, voidInvoice, getInvoice, markEscalated,
+  successFeeKey, depositKey, invoiceDisplayNumber, formatBalanceDue
 } from "./index.mjs";
 
 // ---------------------------------------------------------------------------
@@ -79,6 +79,15 @@ function makeDb(rows = []) {
         const row = store.find(r => r.id === id && r.status === "draft");
         if (!row) return { rows: [] };
         row.status = "sent"; row.sent_at = params[1];
+        return { rows: [row] };
+      }
+
+      if (s.startsWith("UPDATE INVOICES") && s.includes("STATUS = 'ESCALATED'")) {
+        const id = params[0];
+        const allowed = Array.isArray(params[2]) ? params[2] : ["sent", "reminded"];
+        const row = store.find(r => r.id === id && allowed.includes(r.status));
+        if (!row) return { rows: [] };
+        row.status = "escalated"; row.escalated_at = params[1];
         return { rows: [row] };
       }
 
@@ -185,6 +194,19 @@ test("markPaid on already-paid row returns null (idempotent guard)", async () =>
   await markPaid(db, { invoiceId: row.id });
   const again = await markPaid(db, { invoiceId: row.id });
   assert.strictEqual(again, null);
+});
+
+test("markEscalated transitions sent → escalated", async () => {
+  const db = makeDb();
+  const row = await createInvoice(db, { orgId: ORG, clientId: CLIENT, invoiceType: "success_fee", amount: 5000 });
+  await markSent(db, { invoiceId: row.id });
+  const esc = await markEscalated(db, { invoiceId: row.id });
+  assert.strictEqual(esc.status, "escalated");
+});
+
+test("invoiceDisplayNumber and formatBalanceDue are stable", () => {
+  assert.equal(invoiceDisplayNumber({ id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" }), "INV-AAAAAAAA");
+  assert.equal(formatBalanceDue(1250), "$1,250.00");
 });
 
 // ---------------------------------------------------------------------------

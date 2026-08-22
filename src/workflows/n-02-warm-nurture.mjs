@@ -17,6 +17,8 @@ import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { currentTemperature } from "../config/lead-temperature.mjs";
 import { sendTemplated } from "./messaging.mjs";
 
+// RETIRED 2026-08-22 — N-02 no longer fires on survey.submitted. Kept for the
+// seed/audit trail. S-NOBOOK owns the post-survey chase alone.
 export const EMAIL_TEMPLATE_KEY = "EMAIL-N02-WARM-NURTURE";
 export const SMS_TEMPLATE_KEY = "SMS-N02-WARM-NURTURE";
 
@@ -37,8 +39,10 @@ export async function handle({ event, db, step }) {
   return { sent: true, email, sms };
 }
 
+// RETIRED 2026-08-22 — survey.submitted trigger removed. Same defect as N-01:
+// long-term copy was landing on brand-new leads. S-NOBOOK owns that chase.
 export const n02WarmNurture = inngest.createFunction(
   { id: "n-02-warm-nurture", name: "N-02 — Long-Term Warm Nurture" },
-  { event: "survey.submitted" },
+  [],
   ({ event, step }) => handle({ event: event.data, db, step })
 );

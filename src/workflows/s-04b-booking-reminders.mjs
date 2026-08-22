@@ -1,8 +1,12 @@
 // S-04B — Booking confirmation + reminders.
 // Source: GHL S-04B (confirm / T-24h / T-2h). Owner 2026-08-15: port SMS leg
 // only — no video links. Stops if the call is already held before a reminder.
+// Owner 2026-08-22: S-04B also owns the single immediate booking-confirm EMAIL
+// (GHL S-04 "Appointment Confirmation"), written fresh — the old copy was
+// Analyzer-era and was never wired.
 //
-// Trigger: booking.created.
+// Trigger: booking.created. Spec 4.10: booking.rescheduled cancels the in-flight
+// run and restarts against the new start_time (same content).
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
@@ -11,6 +15,7 @@ import { sendTemplated } from "./messaging.mjs";
 import { callHappened } from "./dpc-02-call-outcome-enforcement.mjs";
 
 export const SMS_CONFIRM = "SMS-S04-01-CONFIRM";
+export const EMAIL_CONFIRM = "EMAIL-S04-01-CONFIRM";
 export const SMS_REMIND_24H = "SMS-S04-02-REMIND-24H";
 export const SMS_REMIND_2H = "SMS-S04-03-REMIND-2H";
 
@@ -47,14 +52,22 @@ export async function handle({ event, db, step }) {
       eventId: `${eventId}:confirm`, context
     }));
 
+  // Owner decision 2026-08-22: booked stage is one text + Josh dial + one email,
+  // all immediate. Text first, email second; the AI setter dials on its own leg.
+  const confirmEmail = await step.run("send-confirm-email", () =>
+    sendTemplated(db, {
+      orgId, clientId, channel: "email", templateKey: EMAIL_CONFIRM,
+      eventId: `${eventId}:confirm-email`, context
+    }));
+
   if (!startTime) {
-    return { done: true, confirm, skippedReminders: "no_start_time" };
+    return { done: true, confirm, confirmEmail, skippedReminders: "no_start_time" };
   }
 
   const t24 = new Date(new Date(startTime).getTime() - 24 * HOUR);
   await step.sleepUntil("wait-t-minus-24h", t24);
   if (await step.run("recheck-24h", () => callHappened(db, clientId))) {
-    return { done: true, confirm, stoppedAt: "before-24h", stoppedBecause: "call_held" };
+    return { done: true, confirm, confirmEmail, stoppedAt: "before-24h", stoppedBecause: "call_held" };
   }
   const remind24 = await step.run("send-remind-24h", () =>
     sendTemplated(db, {
@@ -65,7 +78,7 @@ export async function handle({ event, db, step }) {
   const t2 = new Date(new Date(startTime).getTime() - 2 * HOUR);
   await step.sleepUntil("wait-t-minus-2h", t2);
   if (await step.run("recheck-2h", () => callHappened(db, clientId))) {
-    return { done: true, confirm, remind24, stoppedAt: "before-2h", stoppedBecause: "call_held" };
+    return { done: true, confirm, confirmEmail, remind24, stoppedAt: "before-2h", stoppedBecause: "call_held" };
   }
   const remind2 = await step.run("send-remind-2h", () =>
     sendTemplated(db, {
@@ -73,11 +86,24 @@ export async function handle({ event, db, step }) {
       eventId: `${eventId}:2h`, context
     }));
 
-  return { done: true, confirm, remind24, remind2 };
+  return { done: true, confirm, confirmEmail, remind24, remind2 };
 }
 
 export const s04bBookingReminders = inngest.createFunction(
-  { id: "s-04b-booking-reminders", name: "S-04B — Booking Confirm + Reminders" },
-  { event: "booking.created" },
+  {
+    id: "s-04b-booking-reminders",
+    name: "S-04B — Booking Confirm + Reminders",
+    cancelOn: [
+      {
+        event: "booking.rescheduled",
+        if: "event.data.payload.email != null && event.data.payload.email == async.data.payload.email"
+      },
+      {
+        event: "booking.rescheduled",
+        if: "event.data.payload.bookingUid != null && event.data.payload.bookingUid == async.data.payload.bookingUid"
+      }
+    ]
+  },
+  [{ event: "booking.created" }, { event: "booking.rescheduled" }],
   ({ event, step }) => handle({ event: event.data, db, step })
 );
