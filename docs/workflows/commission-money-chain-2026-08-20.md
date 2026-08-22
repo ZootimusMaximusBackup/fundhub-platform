@@ -81,5 +81,6 @@ Ground truth:
 
 ## Blockers and open questions
 
+- **Defect (2026-08-22, not fixed).** Scratch verify:e2e run `verify-1787430715910` on `127.0.0.1/fundhub_e2e_scratch`: closer front-end commission was **$500.10**, expected **$500**. Inputs: deposit `$3000`; fixture `MONEY.closerFlatDeposit = 500` and `calc_method: flat` / `flat_amount: 500` in `src/verification/fixtures.mjs`; owner rule from migration `246_owner_commission_rates_20260820.sql` is closer **16.67%** of deposit (`3000 × 16.67% = 500.10`). Do not change commission math in this build.
 - No owner decision is missing for the rates or motion rules.
 - The repository has no durable “this closer reports to this manager” field. This work does not choose a manager by roster position or by “only one active manager”; absent manager context remains unattributed.
