@@ -71,7 +71,7 @@ export async function runIdempotencyJourney(db, ctx, collector) {
   // Full replay — must not throw and must not duplicate
   let replayErr = null;
   try {
-    await replay(db, { orgId: ctx.orgId });
+    await replay(db, { orgId: ctx.orgId, since: new Date(ctx.stamp) });
   } catch (err) {
     replayErr = String(err.message || err);
     collector.fail({

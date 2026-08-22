@@ -815,7 +815,7 @@ export async function runFundingJourney(db, ctx, collector) {
   )).rows[0].n;
   let replayErr = null;
   try {
-    await replay(db, { orgId: ctx.orgId });
+    await replay(db, { orgId: ctx.orgId, since: new Date(ctx.stamp) });
   } catch (err) {
     replayErr = String(err.message || err);
     collector.fail({

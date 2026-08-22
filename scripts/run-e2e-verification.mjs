@@ -3,6 +3,10 @@
 //   1) Playwright role + security UI specs → /tmp/fundhub-verify-ui.json
 //   2) Data-layer pg journeys → docs/END-TO-END-VERIFICATION.md
 //
+// SCRATCH DATABASE ONLY, as fundhub_app. The data-layer refuses a privileged
+// login and refuses any database that already has live client files. It must
+// not be pointed at production: setupContext pauses that company's sending.
+//
 // Usage:
 //   DATABASE_URL=... node scripts/run-e2e-verification.mjs
 //   npm run verify:e2e

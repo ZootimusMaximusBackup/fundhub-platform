@@ -8,6 +8,7 @@ import { _resetOrgCache } from "../events/bus.mjs";
 import { registerAll } from "../register-all.mjs";
 import { resolveDefaultOrg } from "../auth/org.mjs";
 import { createSession } from "../auth/session.mjs";
+import { assertHarnessSafe } from "./scratch-guard.mjs";
 
 export const MARK = "e2e_verify";
 export const CALL_STATES = Object.freeze([
@@ -89,6 +90,7 @@ export async function bootHandlers() {
  */
 export async function setupContext(db) {
   applyDryRunEnv();
+  await assertHarnessSafe(db);
   await bootHandlers();
 
   const orgId = await resolveDefaultOrg(db);
@@ -207,7 +209,8 @@ export async function setupContext(db) {
     [orgId]
   );
 
-  // Keep outbound OFF at the company switch — queue only.
+  // Pause sending on THIS org only. assertHarnessSafe already refused any
+  // database with live client files, so this cannot be production.
   await db.query(
     `INSERT INTO messaging_settings (org_id, outbound_enabled, daily_send_cap)
      VALUES ($1, false, 0)

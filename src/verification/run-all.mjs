@@ -7,6 +7,7 @@ import { db, close } from "../db.mjs";
 import { createCollector } from "./assert.mjs";
 import { writeReport } from "./report.mjs";
 import { setupContext, wipeVerifyArtifacts, wipeClientTree, applyDryRunEnv } from "./fixtures.mjs";
+import { assertHarnessSafe } from "./scratch-guard.mjs";
 import { runFundingJourney } from "./journeys/funding.mjs";
 import { runDiyJourney } from "./journeys/diy.mjs";
 import { runInquiryJourney } from "./journeys/inquiry.mjs";
@@ -39,6 +40,8 @@ export async function runVerification({ write = true } = {}) {
   let ctx;
 
   try {
+    // Refuse live companies and privileged logins BEFORE setupContext writes.
+    await assertHarnessSafe(db);
     ctx = await setupContext(db);
 
     const runners = [
