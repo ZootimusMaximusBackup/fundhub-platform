@@ -196,7 +196,8 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "seed/011_followup_sms_pack.sql",
   "seed/012_s04_booking_confirm_email.sql",
   "seed/013_section4_message_templates.sql",
-  "seed/014_ax07_funding_paused_on.sql"
+  "seed/014_ax07_funding_paused_on.sql",
+  "seed/015_live_template_backfill.sql"
 ]);
 
 export default EXPECTED_MIGRATIONS;
