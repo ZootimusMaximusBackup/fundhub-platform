@@ -3,7 +3,8 @@
 **Status:** play done on live pages. Fail rows named.  
 **Live:** `https://fundhub.ai` · funnel `https://apply.fundhub.ai`  
 **Evidence:** `docs/workflows/company-sim-2026-08-24-evidence/`  
-**Door:** play and prove. Named holes only. No HighLevel. No bureau Pull.
+**Door:** play and prove. Named holes only. No HighLevel. No bureau Pull.  
+**Cursor:** agentic-audit guardrails rule landed at `.cursor/rules/agentic-audit-guardrails.mdc` (2026-08-24).
 
 ## Drive access (2026-08-24 update)
 
@@ -62,15 +63,38 @@ Prove phone **+16616180865** was on Sim Funding. Taken off at 15:39 UTC after an
 - Owner Ops Admin: CEO brief and Chris brief loaded. Pulse moved (90 new clients, 5 booked, 2 deposits). Write tasks pressed once → “Review tasks already on file. LinkedIn: not_configured.” No second hire. Card says no fire / raise / bonus rule.
 - Outbound text **Fundhub prove** delivered to +16616180865 (Twilio). Repair file has an inbound photo (`inbound-mms`).
 
+## Doc Gate — Chris Stanbridge (2026-08-24)
+
+**Client:** `0d04742a-de3e-47fc-b30f-250f986143e2`  
+**Email:** `stanbridgejchris+sim-docgate@gmail.com`  
+**Phone:** `+16616054248` (agent Twilio)  
+**Unlock:** `funding-snapshot`  
+**Evidence:** `docs/workflows/company-sim-2026-08-24-evidence/doc-gate/`
+
+| Check | Result |
+|-------|--------|
+| Gmail access (`stanbridgejchris@gmail.com`) | PASS — FundHub mail listed (plus-tags + docgate) |
+| V1 good ID + SSN + bank | PASS — all three `accept` (after on-file address + date + SSN rules) |
+| V2 wrong Princess ID | PASS — `request_more` |
+| V3 outdated bank | PASS — `request_more` |
+| V4 blurry | PASS — `request_more` |
+| V5 cutoff | PASS — `request_more` |
+| Portal doors / client upload | PASS — live no longer forces `no-docs`; magic-link client upload 200 |
+| Contracts / soft-pull consent | NONE on this file yet — nothing to sign |
+| MMS agent → company | PASS — auth restored from agent transcript store into local `.env` (name only). MMS FROM `+16616054248` TO `+15613048368` delivered. Company number had empty `SmsUrl`; set to `https://fundhub.ai/api/webhooks/twilio`. Inbound message + `inbound-mms` doc on doc-gate client. Evidence: `doc-gate/mms-prove.json`. |
+
+**Code shipped (prod deploy):** portal `no-docs` fix; GHL-DOC now injects client name/address/today into the model prompt (fixes false address / future-date / SSN / ZIP+4 nags).
+
 ## FAIL (named holes)
 
 1. **Apply page** — `apply.fundhub.ai` opens a ClickFunnels placeholder (“SOMETHING AWESOME HERE”). Five files were not booked on that form. They already existed.
 2. **Credit Pull** — skipped on purpose. Live host is not sandbox. Present says “your numbers are not on this file yet.”
-3. **Portal upload doors** — hidden on every live portal. The page always adds `no-docs`, and that hides the whole “Send a file” card. Client cannot upload. Staff already put sim docs on the file.
+3. ~~**Portal upload doors**~~ — **FIXED 2026-08-24.** Live portal no longer forces `no-docs` before entitlements. Doc-gate client sees “Send a file”; client magic-link upload proved.
 4. **Inquiry upload door** — also needs a funding unlock in the page rules. Inquiry-only unlock does not open `inquiry_doc`.
 5. **Present pay link** — “Send agreement + pay link” is on the close screen. Clicking it says pick downsell or upsell, because the file has no credit numbers so it is not treated as Funding DFY. No second send. Pay links from the earlier fulfill still exist.
 6. **Invoice this client** — no button on control panel or Present. Success-fee invoices ($2,500) exist and were emailed from the earlier fulfill.
 7. **Pulse funded count** — briefs say 0 funded files this window. Funding + combo have funded rounds of $25,000 on the file.
+8. ~~**MMS from agent number**~~ — **FIXED 2026-08-24.** Auth restored locally; company Twilio `SmsUrl` was empty (that blocked inbound). MMS + inbound doc proved on doc-gate client.
 
 ## What you check
 
@@ -78,8 +102,13 @@ Prove phone **+16616180865** was on Sim Funding. Taken off at 15:39 UTC after an
 2. Open the five files on the live board. Same names as the table.
 3. Course portal: Funding Mastery says Unlocked.
 
+## Agents restore (2026-08-24)
+
+**FIXED:** AG-04 Setter Josh + AG-09 Inquiry Removal AI set `live` again (were retired by verify:e2e 2026-08-22). VF-LIVE + VF-SHADOW drafted. Bland readiness OK (short prompts kept). No dial. AG-06 / GHL-* untouched.
+
 ## Change manifest
 
 - Evidence only: `w0-snapshot.json`, `plan-play.json`, `plan-retry.json`, `plan-close.json`, `plan-pay.json`, `plan-pay2.json`, `plan-play/*.png`
 - Live DB unchanged this pass except the earlier Sim Funding phone / text permission
 - **Drive OAuth (local, uncommitted):** `src/company-brain/auth.mjs`, `config.mjs`, `drive-client.mjs`, `sync.mjs`, `walk.mjs`, `config.test.mjs`, `.env.example`; env `GOOGLE_DRIVE_OAUTH_TOKEN_PATH` in gitignored `.env`
+- **Doc Gate (2026-08-24, deployed prod):** `public/app/client-portal.html` (stop forcing `no-docs`); `src/handlers/ghl-doc.mjs` + test (inject on-file client context). Evidence under `…/doc-gate/` (`v1-v5-prove.json`, `gmail-prove.json`, `portal-upload-prove.json`, `portal-doors*.png`).

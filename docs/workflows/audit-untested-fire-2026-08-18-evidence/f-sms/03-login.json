@@ -1,9 +1,0 @@
-{
-  "ok": true,
-  "status": 200,
-  "email_kind": "chris@",
-  "has_token": true,
-  "principal": "staff",
-  "role": "owner",
-  "error": null
-}

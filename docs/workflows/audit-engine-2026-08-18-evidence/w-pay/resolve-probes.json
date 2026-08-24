@@ -1,6 +1,0 @@
-{
-  "with_clientId": null,
-  "email_only": null,
-  "w10_no_clientId_no_email": null,
-  "note": "w10_no_clientId_no_email is a read of resolveClient (no email → return null, no insert). with_clientId and email_only are taken from emit rows after emit so we do not double-write GHL."
-}

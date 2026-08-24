@@ -1,7 +1,0 @@
-{
-  "route": "POST https://fundhub.ai/api/webhooks/plaid",
-  "note": "Empty JSON only. Not a Plaid Link session. Not a bank attach.",
-  "status": 404,
-  "error": "unknown provider: plaid",
-  "bodyPreview": "{\"ok\":false,\"error\":\"unknown provider: plaid\"}"
-}

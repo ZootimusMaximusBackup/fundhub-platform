@@ -1,7 +1,0 @@
-{
-  "route": "POST https://fundhub.ai/api/webhooks/ghl",
-  "note": "Empty JSON only. Not a fake GHL workflow body. Not a catch-door.",
-  "status": 404,
-  "error": "unknown provider: ghl",
-  "bodyPreview": "{\"ok\":false,\"error\":\"unknown provider: ghl\"}"
-}

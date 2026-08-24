@@ -1,6 +1,0 @@
-{
-  "status": 409,
-  "ok": false,
-  "message": "This contract is already signed. Nobody is waiting on it.",
-  "error": "already_finished"
-}

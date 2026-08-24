@@ -1,8 +1,0 @@
-src/contracts/sign.mjs:129:    signed_at: contract.signed_at,
-src/contracts/sign.mjs:262:  if (wantSigned && contract.signed_document_id) {
-src/contracts/sign.mjs:263:    const bytes = await fetchDoc(contract.signed_document_id, contract.signed_document_version_id);
-src/contracts/sign.mjs:288: *   6. mirror onto document_versions, emit contract.signed
-src/contracts/sign.mjs:418: * onto the document registry and emits contract.signed. Runs exactly once: the
-src/contracts/sign.mjs:473:        sourceEventId: `contract.signed:${contract.id}`,
-src/contracts/sign.mjs:515:  if (rows[0]) await emitContractEvent(db, "contract.signed", done);
-src/events/canonical.mjs:89:  "contract.signed",

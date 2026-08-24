@@ -1,8 +1,0 @@
-{
-  "tables": 175,
-  "files_scanned": 1271,
-  "dead_no_sql_at_all": [],
-  "runtime_unused_count": 11,
-  "missing_on_live_count": 81,
-  "unwritten_count": 203
-}

@@ -1,8 +1,0 @@
-{
-  "status": 200,
-  "ok": true,
-  "kind": "soft_pull_consent",
-  "status_valid": false,
-  "status_reason": "none_on_file",
-  "history_count": 0
-}

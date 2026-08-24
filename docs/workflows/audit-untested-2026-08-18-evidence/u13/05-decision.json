@@ -1,9 +1,0 @@
-{
-  "FUNDHUB_TEST_PHONE_set": true,
-  "test_client_has_phone": false,
-  "live_file_phone_eq_test_phone": true,
-  "screen_lets_type_to": false,
-  "will_patch_client": false,
-  "will_send": false,
-  "why": "TEST has no phone. Live file phone equals FUNDHUB_TEST_PHONE. Do not text the live file."
-}

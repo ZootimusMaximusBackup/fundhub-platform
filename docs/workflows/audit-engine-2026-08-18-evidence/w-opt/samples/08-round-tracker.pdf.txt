@@ -1,7 +1,0 @@
-ROUND TRACKER
-Round | Bureau | Date mailed | Certified receipt # | Response date | Outcome
-R1 |  |  |  |  |
-R2 |  |  |  |  |
-R3 |  |  |  |  |
-CFPB |  |  |  |  |
-State AG |  |  |  |  |

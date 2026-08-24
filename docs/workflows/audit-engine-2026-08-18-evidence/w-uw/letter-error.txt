@@ -1,6 +1,0 @@
-funding-letter-pdf.mjs did not render a PDF, buffer, or HTML from the engine result.
-Exports tried: persistFundingLetterFiles, loadFundingLetterPdf, pickFundingLetterPdfBase64, isFundingLetterFile.
-isFundingLetterFile(underwrite)=false
-loadFundingLetterPdf EX/EQ/TU = null (no stored funding letter documents for this client).
-This module stores/loads PDFs. It does not generate them from computeUnderwrite output.
-No email sent.

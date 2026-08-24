@@ -1,8 +1,0 @@
-{
-  "screen": "documents",
-  "ranAt": "2026-08-17T18:01:30Z",
-  "rows": [
-    { "line": 342, "sev": "MEDIUM", "verdict": "STILL-OPEN", "evidence": "docs/workflows/ui-audit-evidence/documents/restamp/table-align.json", "note": "7 sizes; Pending only 120x35; Age pending still left/start; 14px off-scale remains." },
-    { "line": 343, "sev": "LOW", "verdict": "STILL-OPEN", "evidence": "docs/workflows/ui-audit-evidence/documents/restamp/1440-after-click.png", "note": "Click All (already active) still DOM-OR-NONE." }
-  ]
-}

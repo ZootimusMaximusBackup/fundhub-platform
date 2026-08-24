@@ -1,8 +1,0 @@
-{
-  "status": 200,
-  "ok": true,
-  "kind": "soft_pull_consent",
-  "status_valid": true,
-  "status_reason": "valid",
-  "consent_id": "7057e732-9411-4512-98b9-23a7a1fe7d77"
-}

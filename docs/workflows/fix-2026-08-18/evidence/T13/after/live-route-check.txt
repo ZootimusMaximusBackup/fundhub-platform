@@ -1,8 +1,0 @@
-# Live check of the new route, run 2026-08-19T11:02:45Z against https://fundhub.ai
-# Proves /api/agent-call does not exist on live yet (it ships with this branch).
-
-POST /api/agent-call  -> HTTP 404
-  body: {"ok":false,"error":"not_found","path":"agent-call"}
-
-POST /api/agents (exists, needs auth) -> HTTP 401
-  body: {"ok":false,"error":"unauthorized"}

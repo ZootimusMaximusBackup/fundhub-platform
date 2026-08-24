@@ -1,8 +1,0 @@
-{
-  "screen": "messaging",
-  "ranAt": "2026-08-17T18:00:43Z",
-  "rows": [
-    { "line": 337, "sev": "MEDIUM", "verdict": "STILL-OPEN", "evidence": "docs/workflows/ui-audit-evidence/messaging/restamp/1440-fold.png", "note": "Send 74x34; All 8 44x22; Needs reply 94x22." },
-    { "line": 338, "sev": "LOW", "verdict": "STILL-OPEN", "evidence": "docs/workflows/ui-audit-evidence/messaging/restamp/1440-fold.png", "note": "Default chip All 8; threads still show 1d/2d." }
-  ]
-}

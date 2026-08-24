@@ -1,7 +1,0 @@
-{
-  "status": 500,
-  "ok": false,
-  "count": null,
-  "removed_ids": null,
-  "error": "update or delete on table \"clients\" violates foreign key constraint \"events_client_id_fkey\" on table \"events\""
-}

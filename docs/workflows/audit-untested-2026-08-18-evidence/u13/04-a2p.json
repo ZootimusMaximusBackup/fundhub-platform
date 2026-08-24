@@ -1,7 +1,0 @@
-{
-  "asked": false,
-  "http": null,
-  "brand_status": null,
-  "bundle_status": null,
-  "error": "TWILIO_SEND_AUTH_TOKEN and TWILIO_AUTH_TOKEN unset — cannot ask Twilio"
-}

@@ -1,6 +1,0 @@
-{"ok":false,"error":"internal_error","message":"cannot execute INSERT in a read-only transaction"}
-POST https://fundhub.ai/api/auth/login -> HTTP 500
-body: {"ok":false,"error":"internal_error","message":"cannot execute INSERT in a read-only transaction"}
-Same 500 with a deliberately wrong password, so it is not a credentials problem.
-GET /api/health -> 200. GET /api/read/contracts?view=templates (no session) -> 401 (normal).
-Captured 2026-08-17 by W1.

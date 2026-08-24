@@ -1,9 +1,0 @@
-{
-  "ranAt": "2026-08-17T21:26:00Z",
-  "command": "npm run test:e2e:live",
-  "passed": 26,
-  "failed": 0,
-  "requiredIds": 31,
-  "score": 100,
-  "note": "26 tests cover the 31 required ids (staff session counted once per role; white-label ids share one test)."
-}

@@ -1,5 +1,0 @@
-{
-  "title": "Fundhub — Automations",
-  "path": "/app/automations.html",
-  "bodyPreview": "‹‹\nSALES\n▾\nFUNDING\n▾\nCLIENT OPS\n▾\nWATCH\n▾\nAUTOMATION\n▾\n◈\nAgent Editor\nBETA\n⇄\nWorkflows\n⇝\nJourneys\nBETA\n✎\nMessage Copy\nMARKETING\n▾\nADMIN\n▾\nPORTALS\n▾\nfundhub\n/\nAutomations\nORG: FUNDHUB\nTue, Aug 18, 5:21:32 PM EDT\nLIVE\nSearch\n⌘K\nChris Stanbridge · owner · 30 tabs\nLIVE\nSign out\nWORKFLOWS\n51\nENGINE\nON\nEVER TRIGGERED\n44 of 51\nRAIL\nAll rails\nAF\nAI-SET\nAT\nBC\nBS\nC\nDPC\nDS\nF\nN\nOTHER\nS\nSYS\nU\n✓\nEngine is on. 44 of 51 workflows have had their trigger event recorded at least once. This screen does not track whether a workflow ran.\nAF\n1 workflow\nWORKFLOW\tTRIGGER\tTRIGGER LAST SEEN\tSTATUS\n▸AF-02 — Referral Ownership Capture\naf-02-referral-ownership-capture\n\ton entry.captured, diagnostic.paid, analysis.completed\tjust now\t\nTRIGGER SEEN\nAI-SET\n2 workflows\nWORKFLOW\tTRIGGER\tTRIGGER LAST SEEN\tSTATUS\n▸AI-SET-03 — "
-}

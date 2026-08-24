@@ -1,8 +1,0 @@
-{
-  "screen": "lenders",
-  "ranAt": "2026-08-17T18:02:15Z",
-  "rows": [
-    { "line": 344, "sev": "MEDIUM", "verdict": "STILL-OPEN", "evidence": "docs/workflows/ui-audit-evidence/lenders/restamp/1440-fold.png", "note": "Dark primary still Add blank row 126x35; empty copy asks Import CSV; buttons 35px." },
-    { "line": 345, "sev": "LOW", "verdict": "STILL-OPEN", "evidence": "docs/workflows/ui-audit-evidence/lenders/restamp/1440-fold.png", "note": "Clock format now matches other screens; header still has no ORG/LIVE chips." }
-  ]
-}
