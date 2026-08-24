@@ -14,7 +14,8 @@
 | comms-logic-map | mapper | done — `docs/workflows/comms-logic-2026-08-23.md` |
 | preflight-1-6 | mapper | done — `docs/workflows/preflight-2026-08-23.md`. Gate 1 fail. Do not book. |
 | fix-noshow-emit | fixer | done in git `ae0f61d8` — **unshipped** (local, not on live) |
-| item-5-one-email-at-book | fixer | done — one confirm email at book; 365-day portal token; **unshipped** |
+| item-5-one-email-at-book | fixer | done in git `b8000636` — **unshipped** |
+| item-6-precall-anchor | fixer | done — first BS-01 touch at T-48h; skip if sooner; **unshipped** |
 
 ## Change manifest — fix-1-confirm-yes
 
@@ -52,3 +53,9 @@
 - Files: `src/auth/magic-link.mjs`, `src/auth/magic-link.test.mjs`, `src/auth/magic-link.pg.test.mjs`, `src/workflows/s-04b-booking-reminders.mjs`, `src/workflows/s-04b-booking-reminders.test.mjs`, `src/workflows/s-portal-invite.mjs`, `src/workflows/s-portal-invite.test.mjs`, `src/workflows/bs-01-precall-launcher.mjs`, `src/workflows/bs-01-precall-launcher.test.mjs`, `src/messaging/merge-tags-registry.mjs`, `db/seed/012_s04_booking_confirm_email.sql`, `db/seed/016_s04_confirm_portal_link.sql`, `db/expected-migrations.mjs`, `docs/journeys/CHANGELOG.md`
 - At book, only `EMAIL-S04-01-CONFIRM` sends. It carries a 365-day single-use portal token. `EMAIL-PORTAL-MAGIC-LINK` does not fire at book. BS-01 D1-E1 kickoff does not fire at book. Self-service login stays 15 minutes.
 - Journeys: changelog only. No new route.
+
+## Change manifest — item-6-precall-anchor
+
+- Files: `src/workflows/bs-01-precall-launcher.mjs`, `src/workflows/bs-01-precall-launcher.test.mjs`, `docs/journeys/CHANGELOG.md`
+- First BS-01 precall SMS and email cell fire 48 hours before the appointment. Later grid cells keep their old gaps from that first fire. A cell whose time is already past is skipped, never sent right away. S-04B 2-hour and AI-SET-04 15-minute texts were not changed.
+- Journeys: changelog only.

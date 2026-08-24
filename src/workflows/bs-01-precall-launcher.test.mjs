@@ -24,6 +24,10 @@ const allCells = (prefix) => gridCells(prefix).map((c) => ({ day: c.day, slot: c
 const fundingClient = () => ({ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING", custom_fields: {} });
 const repairClient = () => ({ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "REPAIR_ONLY", custom_fields: {} });
 
+// Far enough that T-48h and the +71h grid are both still in the future.
+const farStart = () => new Date(Date.now() + 80 * 60 * 60 * 1000).toISOString();
+const soonStart = () => new Date(Date.now() + 36 * 60 * 60 * 1000).toISOString();
+
 // --- grid shape -------------------------------------------------------------
 
 test("grid is a full 3 days x 6 slots — 18 cells, every one addressed", () => {
@@ -99,26 +103,29 @@ test("a cell whose template failed compliance does not resolve", async () => {
 test("happy path: funding-path client runs every populated funding cell", async () => {
   const cells = allCells(FUNDING_PREFIX);
   const db = pgFake({ clients: [fundingClient()], templates: templatesFor(FUNDING_PREFIX, cells) });
-  const res = await handle({ event: ev("booking.created", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  const res = await handle({
+    event: ev("booking.created", { startTime: farStart() }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
 
   assert.equal(res.drip, "funding");
-  assert.equal(db.messages.length, 17, "kickoff D1-E1 does not send at book");
+  assert.equal(db.messages.length, 18);
   assert.deepEqual(res.gaps, []);
-  assert.equal(res.skipped.length, 1);
-  assert.equal(res.skipped[0].reason, "not_at_book");
-  assert.ok(!db.messages.some((m) => /D1-E1/.test(m.template_key)));
+  assert.deepEqual(res.skipped, []);
   assert.deepEqual(db.clients[0].tags.sort(), ["bs:precall", "call:booked"]);
 });
 
 test("branch: repair-only client runs the repair grid", async () => {
   const cells = allCells(REPAIR_PREFIX);
   const db = pgFake({ clients: [repairClient()], templates: templatesFor(REPAIR_PREFIX, cells) });
-  const res = await handle({ event: ev("booking.created", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  const res = await handle({
+    event: ev("booking.created", { startTime: farStart() }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
 
   assert.equal(res.drip, "repair");
-  assert.equal(db.messages.length, 17, "kickoff D1-E1 does not send at book");
+  assert.equal(db.messages.length, 18);
   assert.ok(db.messages.every((m) => m.template_key.startsWith(REPAIR_PREFIX)));
-  assert.ok(!db.messages.some((m) => /D1-E1/.test(m.template_key)));
 });
 
 test("branch: no matching path — tags precall but runs no drip", async () => {
@@ -135,22 +142,26 @@ test("partially-populated grid: sends what exists, reports the rest as gaps, inv
   // point is that the code addresses all 18 and never fabricates the remainder.
   const filled = allCells(FUNDING_PREFIX).slice(0, 11);
   const db = pgFake({ clients: [fundingClient()], templates: templatesFor(FUNDING_PREFIX, filled) });
-  const res = await handle({ event: ev("booking.created", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  const res = await handle({
+    event: ev("booking.created", { startTime: farStart() }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
 
-  assert.equal(db.messages.length, 10, "populated cells send except book-moment kickoff");
+  assert.equal(db.messages.length, 11, "only the cells with real copy send");
   assert.equal(res.gaps.length, 7, "the empty cells are reported, not skipped silently");
-  assert.equal(res.skipped.length, 1);
-  assert.equal(res.sent.length + res.gaps.length + res.skipped.length, 18, "all 18 cells are addressed either way");
+  assert.equal(res.sent.length + res.gaps.length, 18, "all 18 cells are addressed either way");
   for (const g of res.gaps) assert.match(g.keyPrefix, /^BS-FUND-D[123]-E[1-6]$/);
 });
 
 test("empty grid: the whole drip is gaps and no message is invented", async () => {
   const db = pgFake({ clients: [fundingClient()], templates: [] });
-  const res = await handle({ event: ev("booking.created", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  const res = await handle({
+    event: ev("booking.created", { startTime: farStart() }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
   assert.equal(res.drip, "funding");
   assert.equal(db.messages.length, 0);
-  assert.equal(res.gaps.length, 17, "empty cells are gaps; D1-E1 is skipped at book, not invented");
-  assert.equal(res.skipped.length, 1);
+  assert.equal(res.gaps.length, 18);
 });
 
 // --- the recheck exit gate --------------------------------------------------
@@ -162,11 +173,14 @@ test("recheck exits the drip once the call has been held", async () => {
     templates: templatesFor(FUNDING_PREFIX, cells),
     events: [{ client_id: "cl-1", name: "call.completed" }]
   });
-  const res = await handle({ event: ev("booking.created", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  const res = await handle({
+    event: ev("booking.created", { startTime: farStart() }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
 
   assert.equal(res.stoppedBecause, "call_held");
-  assert.equal(res.stoppedAt, "D1-E2", "stops at the first gated wake after the skipped kickoff");
-  assert.equal(db.messages.length, 0, "kickoff did not send at book; pre-call copy stops at the call");
+  assert.equal(res.stoppedAt, "D1-E2", "stops at the first gated wake after the kickoff");
+  assert.equal(db.messages.length, 1, "only the kickoff went out — pre-call copy stops at the call");
   assert.ok(!(db.clients[0].tags || []).includes("call:booked"), "a cut-short drip is not a completed one");
 });
 
@@ -188,7 +202,10 @@ test("recheck gates every later wake, not only the one after the kickoff", async
     sleep: async () => {},
     sleepUntil: async () => {}
   };
-  const res = await handle({ event: ev("booking.created", {}, { clientId: "cl-1" }), db, step });
+  const res = await handle({
+    event: ev("booking.created", { startTime: farStart() }, { clientId: "cl-1" }),
+    db, step
+  });
 
   assert.equal(res.stoppedBecause, "call_held");
   assert.ok(db.messages.length < 18, "the drip stopped rather than sending all 18");
@@ -202,10 +219,13 @@ test("recheck does not read cf_analyzer_recommendation — that field is written
   // field it would pass on exactly the wrong side. The drip must ignore it.
   client.custom_fields = { cf_analyzer_recommendation: "FULL_FUNDING" };
   const db = pgFake({ clients: [client], templates: templatesFor(FUNDING_PREFIX, cells) });
-  const res = await handle({ event: ev("booking.created", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  const res = await handle({
+    event: ev("booking.created", { startTime: farStart() }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
 
   assert.equal(res.stoppedBecause, null, "the recommendation field must not stop the drip");
-  assert.equal(db.messages.length, 17);
+  assert.equal(db.messages.length, 18);
 });
 
 // --- timestamps + idempotency ----------------------------------------------
@@ -213,7 +233,10 @@ test("recheck does not read cf_analyzer_recommendation — that field is written
 test("timestamps: bs_precall_start_ts and bs_email_last_sent_ts are real ISO strings, not 'now'", async () => {
   const cells = allCells(FUNDING_PREFIX);
   const db = pgFake({ clients: [fundingClient()], templates: templatesFor(FUNDING_PREFIX, cells) });
-  await handle({ event: ev("booking.created", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  await handle({
+    event: ev("booking.created", { startTime: farStart() }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
   const cf = db.clients[0].custom_fields;
   assert.ok(cf.bs_precall_start_ts !== "now", "bs_precall_start_ts must not be literal 'now'");
   assert.ok(new Date(cf.bs_precall_start_ts).getFullYear() > 2020);
@@ -223,16 +246,19 @@ test("timestamps: bs_precall_start_ts and bs_email_last_sent_ts are real ISO str
 test("duplicate delivery: replaying does not double-send the drip", async () => {
   const cells = allCells(FUNDING_PREFIX);
   const db = pgFake({ clients: [fundingClient()], templates: templatesFor(FUNDING_PREFIX, cells) });
-  const event = ev("booking.created", {}, { id: "evt-dup-bs01", clientId: "cl-1" });
+  const event = ev("booking.created", { startTime: farStart() }, { id: "evt-dup-bs01", clientId: "cl-1" });
   await handle({ event, db, step: fakeStep() });
   await handle({ event, db, step: fakeStep() });
-  assert.equal(db.messages.length, 17, "per-cell provider_ref keeps a replay idempotent");
+  assert.equal(db.messages.length, 18, "per-cell provider_ref keeps a replay idempotent");
 });
 
 test("idempotency key is per grid cell, so two cells in one run never collide", async () => {
   const cells = allCells(FUNDING_PREFIX);
   const db = pgFake({ clients: [fundingClient()], templates: templatesFor(FUNDING_PREFIX, cells) });
-  await handle({ event: ev("booking.created", {}, { id: "evt-1", clientId: "cl-1" }), db, step: fakeStep() });
+  await handle({
+    event: ev("booking.created", { startTime: farStart() }, { id: "evt-1", clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
   const refs = db.messages.map((m) => m.provider_ref);
   assert.equal(new Set(refs).size, refs.length, "every cell has a distinct provider_ref");
 });
@@ -252,7 +278,7 @@ const smsTemplates = () => [
 ];
 
 test("sms: every booking gets exactly one pre-call SMS, and never the retired booked or day-of texts", async () => {
-  const start = "2026-08-20T18:00:00Z";
+  const start = farStart();
   const db = pgFake({
     clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: null, custom_fields: {} }],
     templates: smsTemplates()
@@ -282,8 +308,8 @@ test("sms: reports no_start_time (not owned_by_s04b) when the booking has no sta
     db, step: fakeStep()
   });
 
-  assert.equal(db.messages.length, 1);
-  assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_BS01_PRECALL]);
+  assert.equal(db.messages.length, 0);
+  assert.equal(res.sms.skippedPrecall, "no_start_time");
   assert.equal(res.sms.skippedDayOf, "no_start_time");
   assert.ok(!db.messages.some((m) => m.template_key === SMS_BS01_DAYOF));
 });
@@ -295,7 +321,7 @@ test("sms: sends nothing when the call is already held before the precall wake",
     events: [{ client_id: "cl-1", name: "call.completed" }]
   });
   const res = await handle({
-    event: ev("booking.created", { startTime: "2026-08-20T18:00:00Z" }, { clientId: "cl-1" }),
+    event: ev("booking.created", { startTime: farStart() }, { clientId: "cl-1" }),
     db, step: fakeStep()
   });
 
@@ -311,24 +337,42 @@ test("sms + email: funding path queues email grid and the pre-call SMS together"
     templates: [...templatesFor(FUNDING_PREFIX, cells), ...smsTemplates()]
   });
   const res = await handle({
-    event: ev("booking.created", { startTime: "2026-08-20T18:00:00Z" }, { clientId: "cl-1" }),
+    event: ev("booking.created", { startTime: farStart() }, { clientId: "cl-1" }),
     db, step: fakeStep()
   });
 
   assert.equal(res.drip, "funding");
-  assert.equal(db.messages.length, 18);
+  assert.equal(db.messages.length, 19);
   assert.equal(db.messages.filter((m) => m.channel === "sms").length, 1);
-  assert.equal(db.messages.filter((m) => m.channel === "email").length, 17);
+  assert.equal(db.messages.filter((m) => m.channel === "email").length, 18);
 });
 
-test("bs-01: D1-E1 kickoff does not send at book", async () => {
+test("bs-01: first precall touch is skipped when the call is sooner than 48 hours", async () => {
   const cells = allCells(FUNDING_PREFIX);
-  const db = pgFake({ clients: [fundingClient()], templates: templatesFor(FUNDING_PREFIX, cells) });
-  const res = await handle({ event: ev("booking.created", {}, { clientId: "cl-1" }), db, step: fakeStep() });
-  assert.equal(res.skipped[0].day, "D1");
-  assert.equal(res.skipped[0].slot, "E1");
-  assert.equal(res.skipped[0].reason, "not_at_book");
+  const db = pgFake({
+    clients: [fundingClient()],
+    templates: [...templatesFor(FUNDING_PREFIX, cells), ...smsTemplates()]
+  });
+  const res = await handle({
+    event: ev("booking.created", { startTime: soonStart() }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+  assert.equal(res.sms.skippedPrecall, "already_past");
+  assert.ok(!db.messages.some((m) => m.template_key === SMS_BS01_PRECALL));
+  assert.ok(res.skipped.some((s) => s.day === "D1" && s.slot === "E1" && s.reason === "already_past"));
   assert.ok(!db.messages.some((m) => /D1-E1/.test(m.template_key)));
+});
+
+test("bs-01: no start time skips the grid and the precall SMS (does not fire at book)", async () => {
+  const cells = allCells(FUNDING_PREFIX);
+  const db = pgFake({
+    clients: [fundingClient()],
+    templates: [...templatesFor(FUNDING_PREFIX, cells), ...smsTemplates()]
+  });
+  const res = await handle({ event: ev("booking.created", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  assert.equal(res.skipped[0].reason, "no_start_time");
+  assert.equal(res.sms.skippedPrecall, "no_start_time");
+  assert.equal(db.messages.length, 0);
 });
 
 test("bs-01 listens to booking.created and booking.rescheduled", async () => {

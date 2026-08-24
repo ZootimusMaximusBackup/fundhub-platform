@@ -75,8 +75,23 @@ export const SMS_BS01_PRECALL = "SMS-BS01-02-PRECALL";
 // RETIRED 2026-08-22 — S-04B's SMS-S04-03-REMIND-2H owns the T-2h slot (same
 // sleepUntil target). Kept for the seed/audit trail; no send site references it.
 export const SMS_BS01_DAYOF = "SMS-BS01-03-DAYOF";
+// RETIRED 2026-08-23 — precall is now T-48h from the appointment, not +24h from book.
 export const SMS_PRECALL_WAIT = "24h";
 export const SMS_DAYOF_OFFSET_MS = 2 * 60 * 60 * 1000;
+export const PRECALL_LEAD_MS = 48 * 60 * 60 * 1000;
+const HOUR = 60 * 60 * 1000;
+
+function waitMs(after) {
+  if (!after) return 0;
+  return Number(String(after).replace(/h$/, "")) * HOUR;
+}
+
+function firstPrecallAt(startTime) {
+  if (startTime == null || startTime === "") return null;
+  const startMs = new Date(startTime).getTime();
+  if (!Number.isFinite(startMs)) return null;
+  return startMs - PRECALL_LEAD_MS;
+}
 
 export const DAYS = ["D1", "D2", "D3"];
 
@@ -150,20 +165,30 @@ export async function resolveCellKey(db, orgId, keyPrefix) {
   return r.rows[0]?.template_key || null;
 }
 
-async function runDrip({ db, step, orgId, clientId, eventId, prefix }) {
+async function runDrip({ db, step, orgId, clientId, eventId, prefix, startTime }) {
   const sent = [];
   const gaps = [];
   const skipped = [];
 
+  // Owner 2026-08-23: first precall touch is 48h before the appointment, not
+  // at book. Later cells keep their grid gaps from that first fire. A cell
+  // whose fire time is already past (call sooner than its lead) is skipped —
+  // never sent immediately.
+  const firstAt = firstPrecallAt(startTime);
+  if (firstAt == null) {
+    return { sent, gaps, skipped: [{ reason: startTime ? "bad_start_time" : "no_start_time" }], stoppedAt: null, stoppedBecause: null };
+  }
+
+  let offsetMs = 0;
   for (const cell of gridCells(prefix)) {
-    // Owner 2026-08-23: D1-E1 kickoff must not fire at book. Item 6 re-anchors
-    // the grid; this only skips the book-moment send.
-    if (cell.day === "D1" && cell.slot === KICKOFF_SLOT) {
-      skipped.push({ day: cell.day, slot: cell.slot, name: cell.name, reason: "not_at_book" });
+    if (cell.after) offsetMs += waitMs(cell.after);
+    const fireAt = firstAt + offsetMs;
+    if (Date.now() >= fireAt) {
+      skipped.push({ day: cell.day, slot: cell.slot, name: cell.name, reason: "already_past" });
       continue;
     }
 
-    if (cell.after) await step.sleep(`wait-${cell.day}-${cell.slot}`, cell.after);
+    await step.sleepUntil(`wait-${cell.day}-${cell.slot}`, new Date(fireAt));
 
     if (cell.gate) {
       const held = await step.run(`recheck-${cell.day}-${cell.slot}`, () => callHappened(db, clientId));
@@ -193,15 +218,20 @@ async function runDrip({ db, step, orgId, clientId, eventId, prefix }) {
 async function runSmsDrip({ db, step, orgId, clientId, eventId, startTime }) {
   const sent = [];
 
-  // Owner decision 2026-08-22: the immediate "you're booked" text is S-04B's
-  // (SMS-S04-01-CONFIRM) alone. Both workflows listen to booking.created, so
-  // sending SMS-BS01-01-BOOKED here double-texted every booking. BS-01 now owns
-  // only the later pre-call and day-of touches. The key stays exported and the
-  // template stays seeded — nothing sends it.
-  await step.sleep("wait-sms-precall", SMS_PRECALL_WAIT);
+  // Owner 2026-08-23: SMS-BS01-02-PRECALL sits 48h before the call, before
+  // S-04B's 24h reminder. If the call is sooner than 48h, skip — do not send now.
+  const fireAt = firstPrecallAt(startTime);
+  if (fireAt == null) {
+    return { sent, stoppedAt: null, stoppedBecause: null, skippedDayOf: startTime ? "owned_by_s04b" : "no_start_time", skippedPrecall: startTime ? "bad_start_time" : "no_start_time" };
+  }
+  if (Date.now() >= fireAt) {
+    return { sent, stoppedAt: null, stoppedBecause: null, skippedDayOf: "owned_by_s04b", skippedPrecall: "already_past" };
+  }
+
+  await step.sleepUntil("wait-sms-precall", new Date(fireAt));
   const heldPrecall = await step.run("recheck-sms-precall", () => callHappened(db, clientId));
   if (heldPrecall) {
-    return { sent, stoppedAt: "sms-precall", stoppedBecause: "call_held", skippedDayOf: null };
+    return { sent, stoppedAt: "sms-precall", stoppedBecause: "call_held", skippedDayOf: null, skippedPrecall: null };
   }
 
   const precall = await step.run("send-sms-precall", () =>
@@ -222,7 +252,7 @@ async function runSmsDrip({ db, step, orgId, clientId, eventId, startTime }) {
   // getting two near-identical "your call is coming up" texts back to back.
   // BS-01 now stops after the +24h precall touch. SMS_BS01_DAYOF stays exported
   // and the template stays seeded; nothing sends it.
-  return { sent, stoppedAt: null, stoppedBecause: null, skippedDayOf: startTime ? "owned_by_s04b" : "no_start_time" };
+  return { sent, stoppedAt: null, stoppedBecause: null, skippedDayOf: "owned_by_s04b", skippedPrecall: null };
 }
 
 export async function handle({ event, db, step }) {
@@ -238,9 +268,10 @@ export async function handle({ event, db, step }) {
 
   // SMS for every booking. Start before (or beside) the email drip so the
   // email kickoff is not delayed by SMS sleeps.
+  const startTime = event.payload?.startTime || event.payload?.start_time || null;
   const smsPromise = runSmsDrip({
     db, step, orgId, clientId, eventId,
-    startTime: event.payload?.startTime || null
+    startTime
   });
 
   let prefix;
@@ -254,7 +285,7 @@ export async function handle({ event, db, step }) {
 
   const [sms, { sent, gaps, skipped, stoppedAt, stoppedBecause }] = await Promise.all([
     smsPromise,
-    runDrip({ db, step, orgId, clientId, eventId, prefix })
+    runDrip({ db, step, orgId, clientId, eventId, prefix, startTime })
   ]);
 
   // Only tag the full run — a drip cut short by the call already happening did not
