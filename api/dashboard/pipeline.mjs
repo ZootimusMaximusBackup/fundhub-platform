@@ -45,7 +45,37 @@ const CARDS_SQL = `
     c.is_demo,
     (c.custom_fields->>'total_funding_estimate') AS total_funding_estimate,
     c.custom_fields->>'cf_svy_self_reported_fico' AS survey_fico_raw,
-    c.custom_fields->>'cf_svy_self_reported_fico_label' AS survey_fico_label
+    c.custom_fields->>'cf_svy_self_reported_fico_label' AS survey_fico_label,
+    EXISTS (
+      SELECT 1
+        FROM conversations conv
+        JOIN LATERAL (
+          SELECT m.direction
+            FROM messages m
+           WHERE m.conversation_id = conv.id
+           ORDER BY m.created_at DESC, m.id DESC
+           LIMIT 1
+        ) last ON true
+       WHERE conv.client_id = c.id
+         AND conv.org_id = p.org_id
+         AND conv.channel IN ('sms', 'text')
+         AND last.direction = 'inbound'
+    ) AS sms_needs_reply,
+    EXISTS (
+      SELECT 1
+        FROM conversations conv
+        JOIN LATERAL (
+          SELECT m.direction
+            FROM messages m
+           WHERE m.conversation_id = conv.id
+           ORDER BY m.created_at DESC, m.id DESC
+           LIMIT 1
+        ) last ON true
+       WHERE conv.client_id = c.id
+         AND conv.org_id = p.org_id
+         AND conv.channel = 'email'
+         AND last.direction = 'inbound'
+    ) AS email_needs_reply
   FROM cards cd
   JOIN pipelines p ON p.id = cd.pipeline_id
   JOIN clients   c ON c.id = cd.client_id AND c.org_id = p.org_id
@@ -96,6 +126,8 @@ export default async function handler(req, res) {
         name: (r.is_demo ? "DEMO · " : "") + ([r.first_name, r.last_name].filter(Boolean).join(" ") || "(unnamed)"),
         email: r.email || null,
         phone: r.phone || null,
+        sms_needs_reply: !!r.sms_needs_reply,
+        email_needs_reply: !!r.email_needs_reply,
         owner: r.owner ?? null,
         entered_at: r.entered_at,
         outcome_tier: r.outcome_tier ?? null,

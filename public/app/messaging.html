@@ -1440,8 +1440,10 @@
   clearThread();
   loadList().then(function () {
     var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    /* Deep link from the pipeline Text button: open this person's SMS thread. */
+    /* Deep link from the pipeline phone/email: open that person's thread. */
     var deepClient = FHData.param("client_id");
+    var deepChannel = String(FHData.param("channel") || "").toLowerCase();
+    if (deepChannel !== "email" && deepChannel !== "sms") deepChannel = "";
     if (deepClient && UUID_RE.test(String(deepClient).trim())) {
       return Promise.all([
         FHData.conversations({ client_id: deepClient, limit: 50 }),
@@ -1450,11 +1452,14 @@
         var items = (pair[0].ok && pair[0].data && pair[0].data.items) || [];
         var cl = (pair[1].ok && pair[1].data && pair[1].data.client) || {};
         var sms = items.filter(function (t) { return /sms|text/i.test(String(t.channel || "")); })[0];
-        var pick = sms || items[0] || null;
+        var email = items.filter(function (t) { return String(t.channel || "") === "email"; })[0];
+        var pick = deepChannel === "email" ? (email || null)
+          : deepChannel === "sms" ? (sms || null)
+          : (sms || items[0] || null);
         var row = {
           id: pick ? pick.id : null,
           client_id: deepClient,
-          channel: (pick && pick.channel) || "sms",
+          channel: (pick && pick.channel) || deepChannel || "sms",
           first_name: cl.first_name || null,
           last_name: cl.last_name || null,
           needs_reply: false

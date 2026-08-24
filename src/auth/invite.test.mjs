@@ -21,11 +21,12 @@ function fakeDb({ existingStaff = null, catalogShape = true, roleKnown = true, c
       if (/FROM orgs/.test(sql)) return { rows: [{ id: "org-1" }] };
       if (/information_schema\.columns/.test(sql)) return { rows: [{ ok: catalogShape }] };
       if (/FROM staff_roles/.test(sql)) return { rows: roleKnown ? [{ "?column?": 1 }] : [] };
-      if (/SELECT id, role(?:, email)? FROM staff/.test(sql)) {
+      if (/SELECT id, role, email, name FROM staff/.test(sql) || /SELECT id, role(?:, email)? FROM staff/.test(sql)) {
         return { rows: existingStaff ? [{
           id: existingStaff.id,
           role: existingStaff.role || "closer",
-          email: existingStaff.email || "a@b.c"
+          email: existingStaff.email || "a@b.c",
+          name: existingStaff.name || "Current Owner"
         }] : [] };
       }
       if (/SELECT id, status, name, role FROM staff/.test(sql)) return { rows: existingStaff ? [existingStaff] : [] };
@@ -44,7 +45,8 @@ function fakeDb({ existingStaff = null, catalogShape = true, roleKnown = true, c
           status: "active",
           phone: params[3],
           start_date: params[4],
-          employee_code: "EMP-000099"
+          employee_code: "EMP-000099",
+          notify_booked_call_sms: params[6] === true
         }] };
       }
       if (/SELECT id FROM staff WHERE org_id = \$1 AND lower\(email\)/.test(sql)) {
@@ -301,6 +303,15 @@ test("updateStaffProfile requires owner/admin, refuses owner rows, and writes pr
   });
   assert.equal(changeOwner.status, 400);
   assert.equal(changeOwner.error, "cannot_change_owner");
+
+  const ownNotify = await updateStaffProfile(fakeDb({
+    existingStaff: { id: "own", role: "owner", email: "o@b.c", name: "Chris Stanbridge" }
+  }), {
+    actor: OWNER, staffId: "own", name: "Chris Stanbridge", email: "o@b.c",
+    phone: "4805550100", notifyBookedCallSms: true
+  });
+  assert.equal(ownNotify.ok, true);
+  assert.equal(ownNotify.staff.notify_booked_call_sms, true);
 
   const db = fakeDb({ existingStaff: { id: "staff-9", role: "sales_manager", email: "sarah.b@fundhub.ai" } });
   const out = await updateStaffProfile(db, {

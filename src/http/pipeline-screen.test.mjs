@@ -109,6 +109,29 @@ describe("public/app/pipeline.html — screen wiring", () => {
   });
 });
 
+describe("public/app/pipeline.html — phone and email open messaging", () => {
+
+  test("cards link phone to the text thread and email to the email thread", () => {
+    assert.match(HTML, /function messagingHref\(clientId, channel\)/);
+    assert.match(HTML, /messaging\.html\?client_id=/);
+    assert.match(HTML, /msgLine\("sms", c\.phone, c\.client_id, c\.sms_needs_reply\)/);
+    assert.match(HTML, /msgLine\("email", c\.email, c\.client_id, c\.email_needs_reply\)/);
+    assert.match(HTML, /contactRow\("Email", "email"/);
+    assert.match(HTML, /contactRow\("Phone", "sms"/);
+  });
+
+  test("a red badge appears only when that channel needs a reply", () => {
+    assert.match(HTML, /c-msg-badge/);
+    assert.match(HTML, /Needs a reply/);
+    assert.match(HTML, /if \(needsReply\)/);
+  });
+
+  test("clicking the number or email does not open the drawer or start a drag", () => {
+    assert.match(HTML, /closest\("\.c-msg"\)/);
+    assert.match(HTML, /e\.target\.closest\('\.c-msg'\)/);
+  });
+});
+
 describe("public/app/pipeline.html — rail tab count duplicates removed", () => {
   test("rail tabs carry names only; count badges and their writer are gone", () => {
     assert.doesNotMatch(HTML, /rt-count|setRailCount|FH-RAILCOUNT/);

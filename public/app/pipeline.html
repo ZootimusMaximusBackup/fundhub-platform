@@ -234,6 +234,13 @@
   .c-amt .unit{font-size:var(--fs-caption);font-weight:400;color:var(--text-faint);}
   .c-age{font-family:var(--mono);font-size:var(--fs-caption);color:var(--text-faint);margin-top:2px;}
   .c-age.old{color:var(--ink2);font-weight:700;}
+  .c-msg{display:flex;align-items:center;gap:6px;margin-top:3px;min-width:0;}
+  .c-msg-link{font-size:var(--fs-caption);color:var(--text-dim);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+  .c-msg-link:hover{color:var(--text);text-decoration:underline;}
+  .c-msg-badge{flex-shrink:0;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--alert);color:#fff;font-family:var(--mono);font-size:10px;font-weight:800;line-height:16px;text-align:center;}
+  .fh-drawer-msg{display:flex;align-items:center;gap:8px;min-width:0;}
+  .fh-drawer-msg a{color:var(--text);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .fh-drawer-msg a:hover{text-decoration:underline;}
 
   .hold-badge{display:flex;align-items:center;gap:5px;margin-top:5px;padding:3px 7px;border-radius:5px;
     font-size:var(--fs-caption);font-weight:700;letter-spacing:.2px;text-transform:uppercase;
@@ -892,7 +899,7 @@ function end(){
 }
 board.addEventListener('pointerdown',function(e){
   var card=e.target.closest('.card');
-  if(!card||e.target.closest('.c-btn.route')||e.button!==0) return;
+  if(!card||e.target.closest('.c-btn.route')||e.target.closest('.c-msg')||e.button!==0) return;
   if(card.closest('.drag-card')) return;
   e.preventDefault();
   startDrag(card,e);
@@ -1314,6 +1321,8 @@ restore();
     top.appendChild(tools);
     card.appendChild(top);
     card.appendChild(div("c-scores", formatScores(c)));
+    card.appendChild(msgLine("sms", c.phone, c.client_id, c.sms_needs_reply));
+    card.appendChild(msgLine("email", c.email, c.client_id, c.email_needs_reply));
 
     var amt = div("c-amt", c.amount == null ? "—" : usd(c.amount) + " ");
     if (c.amount != null) {
@@ -1342,7 +1351,7 @@ restore();
     // Card stacking also keeps the lender match panel as a deep link inside.
     if (c.client_id) {
       card.addEventListener("click", function (ev) {
-        if (ev.target && (ev.target.closest && (ev.target.closest(".c-btn") || ev.target.closest(".grip")))) return;
+        if (ev.target && (ev.target.closest && (ev.target.closest(".c-btn") || ev.target.closest(".grip") || ev.target.closest(".c-msg")))) return;
         openClientDrawer(c);
       });
     }
@@ -1404,24 +1413,56 @@ restore();
     return s;
   }
 
-  function phoneRow(phone, clientId) {
+  function messagingHref(clientId, channel) {
+    return "messaging.html?client_id=" + encodeURIComponent(clientId) + "&channel=" + encodeURIComponent(channel);
+  }
+
+  function msgLine(channel, value, clientId, needsReply) {
+    var wrap = document.createElement("div");
+    wrap.className = "c-msg";
+    if (!value || !clientId) {
+      wrap.textContent = "—";
+      return wrap;
+    }
+    var a = document.createElement("a");
+    a.className = "c-msg-link";
+    a.href = messagingHref(clientId, channel);
+    a.textContent = String(value);
+    a.addEventListener("click", function (ev) { ev.stopPropagation(); });
+    wrap.appendChild(a);
+    if (needsReply) {
+      var badge = document.createElement("span");
+      badge.className = "c-msg-badge";
+      badge.textContent = "1";
+      badge.setAttribute("aria-label", "Needs a reply");
+      wrap.appendChild(badge);
+    }
+    return wrap;
+  }
+
+  function contactRow(label, channel, value, clientId, needsReply) {
     var d = document.createElement("div");
     d.className = "fh-drawer-row";
     var a = document.createElement("span");
-    a.textContent = "Phone";
+    a.textContent = label;
     var right = document.createElement("span");
-    right.style.display = "flex";
-    right.style.alignItems = "center";
-    right.style.gap = "8px";
-    var num = document.createElement("span");
-    num.textContent = phone ? String(phone) : "—";
-    right.appendChild(num);
-    if (clientId && phone) {
-      var btn = document.createElement("a");
-      btn.className = "fh-text-btn";
-      btn.textContent = "Text";
-      btn.href = "messaging.html?client_id=" + encodeURIComponent(clientId);
-      right.appendChild(btn);
+    right.className = "fh-drawer-msg";
+    if (clientId && value) {
+      var link = document.createElement("a");
+      link.href = messagingHref(clientId, channel);
+      link.textContent = String(value);
+      right.appendChild(link);
+      if (needsReply) {
+        var badge = document.createElement("span");
+        badge.className = "c-msg-badge";
+        badge.textContent = "1";
+        badge.setAttribute("aria-label", "Needs a reply");
+        right.appendChild(badge);
+      }
+    } else {
+      var empty = document.createElement("span");
+      empty.textContent = "—";
+      right.appendChild(empty);
     }
     d.appendChild(a);
     d.appendChild(right);
@@ -1510,8 +1551,9 @@ restore();
     var email = client.email || c.email || null;
     var phone = client.phone || c.phone || null;
     var who = sec("Contact");
-    who.appendChild(rowAlways("Email", email));
-    who.appendChild(phoneRow(phone, c.client_id || client.id));
+    var clientId = c.client_id || client.id;
+    who.appendChild(contactRow("Email", "email", email, clientId, c.email_needs_reply || client.email_needs_reply));
+    who.appendChild(contactRow("Phone", "sms", phone, clientId, c.sms_needs_reply || client.sms_needs_reply));
     drawerBody.appendChild(who);
 
     var book = (data && data.latest_booking) || {};

@@ -373,6 +373,16 @@ describe("messaging.html — the texting-hours warning, before anyone types", ()
   });
 });
 
+describe("messaging.html — pipeline deep link", () => {
+
+  test("a client_id link honors channel=email or channel=sms", () => {
+    assert.match(HTML, /FHData\.param\("client_id"\)/);
+    assert.match(HTML, /FHData\.param\("channel"\)/);
+    assert.match(HTML, /deepChannel === "email"/);
+    assert.match(HTML, /deepChannel === "sms"/);
+  });
+});
+
 describe("messaging.html — what happens when there are a lot of conversations", () => {
 
   test("the Needs-reply tab asks the server, so it cannot show a partial answer", () => {

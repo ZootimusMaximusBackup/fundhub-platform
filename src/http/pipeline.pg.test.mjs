@@ -97,6 +97,10 @@ before(async () => {
 
 after(async () => {
   if (!HAS_DB) return;
+  if (clientId) {
+    await db.query(`DELETE FROM messages WHERE client_id = $1`, [clientId]);
+    await db.query(`DELETE FROM conversations WHERE client_id = $1`, [clientId]);
+  }
   await db.query(`DELETE FROM cards WHERE id = ANY($1::uuid[])`, [cardIds]);
   await db.query(`DELETE FROM pipeline_stages WHERE pipeline_id = ANY($1::uuid[])`,
     [Object.values(pipelineIds)]);
@@ -130,6 +134,27 @@ for (const p of PIPELINES) {
         "every other stage must still render as an empty column, not disappear");
     });
 }
+
+test("pipeline cards mark sms/email needs_reply when that person wrote last", { skip: !HAS_DB }, async () => {
+  const sms = (await db.query(
+    `INSERT INTO conversations (org_id, client_id, channel, last_pulse_at)
+     VALUES ($1,$2,'sms', now()) RETURNING id`, [orgId, clientId])).rows[0].id;
+  const email = (await db.query(
+    `INSERT INTO conversations (org_id, client_id, channel, last_pulse_at)
+     VALUES ($1,$2,'email', now()) RETURNING id`, [orgId, clientId])).rows[0].id;
+  await db.query(
+    `INSERT INTO messages (org_id, client_id, conversation_id, direction, channel, rendered_body, status)
+     VALUES ($1,$2,$3,'inbound','sms','any update?','received'),
+            ($1,$2,$4,'outbound','email','thanks','sent')`,
+    [orgId, clientId, sms, email]);
+
+  const res = makeRes();
+  await pipeline(asStaff(token, { key: "sales" }), res);
+  assert.equal(res.statusCode, 200);
+  const card = res.body.stages.find((s) => s.count === 1).cards[0];
+  assert.equal(card.sms_needs_reply, true);
+  assert.equal(card.email_needs_reply, false);
+});
 
 test("an unknown pipeline key is a 404, not a silent empty board", { skip: !HAS_DB }, async () => {
   const res = makeRes();

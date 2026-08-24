@@ -2,7 +2,8 @@
 //
 // { staff_id, name, email, phone?, start_date? } → { ok, staff }
 //
-// Role and login status stay on staff-role and suspend. Owner rows are read-only.
+// Role and login status stay on staff-role and suspend. Owner name/email stay
+// read-only; phone and the booked-call text switch may be saved on the owner.
 
 import { db } from "../../src/db.mjs";
 import { requireRole } from "../../src/http/middleware/requireRole.mjs";
@@ -27,7 +28,10 @@ export default async function handler(req, res) {
     name: body.name,
     email: body.email,
     phone: body.phone,
-    startDate: body.start_date
+    startDate: body.start_date,
+    notifyBookedCallSms: typeof body.notify_booked_call_sms === "boolean"
+      ? body.notify_booked_call_sms
+      : undefined
   });
   if (!result.ok) {
     return res.status(result.status || 400).json({ ok: false, error: result.error });

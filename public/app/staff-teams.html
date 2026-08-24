@@ -364,6 +364,7 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
     <div style="margin-top:18px">
       <div class="eyebrow" style="margin-bottom:6px">ST-06 <span class="sep">/</span> STATE</div>
       <div class="swrow"><div class="swl"><div class="n">Monitoring consent on file</div><div class="d">Owner only. On = signed form received. Off = revoke to NULL — Hubstaff ingest skips.</div></div><div class="sw" id="ed_consent"></div></div>
+      <div class="swrow"><div class="swl"><div class="n">Text when a call is booked</div><div class="d">Off until you flip it. Sends name, phone, email, the score they typed, and survey answers to this person's phone.</div></div><div class="sw" id="ed_booked_sms"></div></div>
     </div>
     <div style="margin-top:18px">
       <div class="eyebrow" style="margin-bottom:6px">ST-07 <span class="sep">/</span> EFFECTIVE PERMISSIONS</div>
@@ -562,6 +563,7 @@ function openEditor(id){
     document.getElementById(i).readOnly=false;
   });
   setSw('ed_consent',p.consent);
+  setSw('ed_booked_sms', p.notifyBookedCallSms);
   document.getElementById('edReset').style.display = p.email ? '' : 'none';
   document.getElementById('edDeact').style.display = '';
   document.getElementById('editor').classList.add('open');
@@ -582,6 +584,7 @@ function openNew(){
   ['ed_first','ed_last','ed_email'].forEach(function(i){document.getElementById(i).readOnly=false;});
   ['ed_phone','ed_start'].forEach(function(i){document.getElementById(i).readOnly=true;});
   setSw('ed_consent',false);
+  setSw('ed_booked_sms',false);
   document.getElementById('edReset').style.display='none';   // no account exists yet
   document.getElementById('edDeact').style.display='none';   // nothing to revoke yet
   document.getElementById('editor').classList.add('open');
@@ -606,7 +609,8 @@ document.getElementById('edSave').addEventListener('click',function(){
     phone:document.getElementById('ed_phone').value.trim(),
     role:document.getElementById('ed_role').value,
     start:document.getElementById('ed_start').value,
-    consent:getSw('ed_consent')};
+    consent:getSw('ed_consent'),
+    notifyBookedCallSms:getSw('ed_booked_sms')};
   if(selId){
     var p=PEOPLE.filter(function(x){return String(x.id)===String(selId)})[0];
     if(!p || !p.staffId){
@@ -621,6 +625,7 @@ document.getElementById('edSave').addEventListener('click',function(){
       }
       if(st && st.email) p.email=st.email;
       if(st && Object.prototype.hasOwnProperty.call(st,'phone')) p.phone=st.phone||'—';
+      if(st && Object.prototype.hasOwnProperty.call(st,'notify_booked_call_sms')) p.notifyBookedCallSms=!!st.notify_booked_call_sms;
       if(st && Object.prototype.hasOwnProperty.call(st,'start_date')){
         p.start=st.start_date ? String(st.start_date).slice(0,10) : '—';
       }
@@ -645,7 +650,8 @@ document.getElementById('edSave').addEventListener('click',function(){
     var profileChanged=fullName!==(p.first+' '+p.last).trim()
       ||rec.email!==p.email
       ||rec.phone!==p.phone
-      ||rec.start!==p.start;
+      ||rec.start!==p.start
+      ||!!rec.notifyBookedCallSms!==!!p.notifyBookedCallSms;
     var nextRole=ROLE_KEY[rec.role];
     var roleChanged=nextRole && rec.role !== p.role;
     if(typeof FHData==='undefined'||!FHData.write){alert('Not available — the data layer has not loaded.');return}
@@ -659,7 +665,8 @@ document.getElementById('edSave').addEventListener('click',function(){
           name:fullName,
           email:rec.email,
           phone:rec.phone==='—'?'':rec.phone,
-          start_date:rec.start==='—'?'':rec.start
+          start_date:rec.start==='—'?'':rec.start,
+          notify_booked_call_sms:!!rec.notifyBookedCallSms
         });
       }).then(function(res){
         if(!res.ok){
@@ -1022,6 +1029,7 @@ renderAll();
         role: role,
         email: s.email || "",
         phone: s.phone || "—",
+        notifyBookedCallSms: s.notify_booked_call_sms === true,
         start: s.start_date ? String(s.start_date).slice(0, 10) : "—",
         active: s.status === "active",
         status: s.status || "",

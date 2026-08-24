@@ -48,6 +48,7 @@ import { s00Welcome } from './s-00-welcome.mjs';
 import { s02IncompleteSurveyNudge } from './s-02-incomplete-survey-nudge.mjs';
 import { s04CallBooked } from './s-04-call-booked.mjs';
 import { s04bBookingReminders } from './s-04b-booking-reminders.mjs';
+import { s04cStaffBookedAlert } from './s-04c-staff-booked-alert.mjs';
 import { sPortalInvite } from './s-portal-invite.mjs';
 import { s05aNoShowRecovery } from './s-05a-no-show-recovery.mjs';
 import { sNobookChase } from './s-nobook-chase.mjs';
@@ -142,6 +143,7 @@ export const functions = [
   s02IncompleteSurveyNudge,
   s04CallBooked,
   s04bBookingReminders,
+  s04cStaffBookedAlert,
   sPortalInvite,
   sNobookChase,
   s05aNoShowRecovery,
