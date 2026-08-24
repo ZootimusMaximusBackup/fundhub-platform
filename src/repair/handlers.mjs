@@ -6,6 +6,7 @@ import { canLeaveIntake } from "./croa.mjs";
 import { isBreached } from "./sla.mjs";
 import { logDecision } from "../metro2/rounds/store.mjs";
 import { notifyRepairEmail } from "./notify.mjs";
+import { requestFreshReassessment } from "../crs/snapshot-negatives.mjs";
 
 export async function onRepairEvent(db, event) {
   const name = event?.name || event?.type;
@@ -75,7 +76,15 @@ export async function onRepairEvent(db, event) {
     clientId,
     payload: event.payload || {}
   }).catch((err) => ({ sent: false, reason: String(err?.message || err) }));
-  return { ok: !!moved?.moved, moved, stageKey, email };
+  let reassess = null;
+  if (name === "repair.program.complete") {
+    reassess = await requestFreshReassessment(db, {
+      orgId,
+      clientId,
+      eventId: event.id || event.payload?.eventId
+    }).catch((err) => ({ ok: false, reason: String(err?.message || err) }));
+  }
+  return { ok: !!moved?.moved, moved, stageKey, email, reassess };
 }
 
 export function evaluateSlaBreach(card) {
