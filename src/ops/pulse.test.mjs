@@ -7,6 +7,7 @@ import {
   loadAdSpend,
   actOnBrain
 } from "./pulse.mjs";
+import { marketingSnapshot } from "./meta-marketing.mjs";
 
 describe("pulse company 8", () => {
   it("maps computeKpis fields and marks missing cost per funded", () => {
@@ -36,7 +37,7 @@ describe("pulse company 8", () => {
 });
 
 describe("gap diagnosis", () => {
-  it("names the short seat from 20/20 and does not invent a booking bar", () => {
+  it("names the short seat from the starting bars and does not invent a booking bar", () => {
     const gaps = diagnoseGaps({
       bars: {
         closer: { target: 20, actual: 4 },
@@ -68,6 +69,28 @@ describe("gap diagnosis", () => {
     assert.match(gaps.notes.join(" "), /Do not hire a setter/);
   });
 
+  it("flags an unpaired closer as a funding-advisor pod gap", () => {
+    const gaps = diagnoseGaps({
+      bars: {
+        closer: { target: 27, actual: 27 },
+        funding_advisor: { target: 27, actual: 27 }
+      },
+      calendar: { packed: false },
+      company_8: { booked_calls: { value: 8, missing: false } },
+      pods: {
+        complete: 2,
+        closer_count: 3,
+        fa_count: 2,
+        unpaired_closers: 1,
+        unpaired_fas: 0,
+        complete_with: "funding_advisor"
+      }
+    });
+    assert.equal(gaps.has_short, true);
+    assert.equal(gaps.short.some((s) => s.seat === "funding_advisor" && s.metric === "pod"), true);
+    assert.match(gaps.notes.join(" "), /finish the pod/);
+  });
+
   it("treats a packed calendar as a closer need", () => {
     const gaps = diagnoseGaps({
       bars: {
@@ -86,11 +109,22 @@ describe("hire profile from gaps", () => {
   it("writes a closer profile and keeps LinkedIn on the closer path", () => {
     const profile = hireProfileFromGaps({
       gaps: { short: [{ seat: "closer", metric: "deposits" }] },
-      calendar: { packed: true }
+      calendar: { packed: false }
     });
     assert.equal(profile.seat, "closer");
     assert.equal(profile.linkedin, true);
     assert.match(profile.lines.join(" "), /Do not hire a setter/);
+    assert.match(profile.lines.join(" "), /tandem/);
+  });
+
+  it("writes a pod profile when the calendar is packed", () => {
+    const profile = hireProfileFromGaps({
+      gaps: { short: [] },
+      calendar: { packed: true }
+    });
+    assert.equal(profile.seat, "pod");
+    assert.equal(profile.linkedin, true);
+    assert.match(profile.lines.join(" "), /closer and one funding advisor/);
   });
 
   it("writes a funding advisor profile without a second job-post path", () => {
@@ -101,6 +135,20 @@ describe("hire profile from gaps", () => {
     assert.equal(profile.seat, "funding_advisor");
     assert.equal(profile.linkedin, false);
     assert.match(profile.linkedin_reason, /no second job-post/);
+  });
+});
+
+describe("marketing snapshot on the pulse", () => {
+  it("attaches spend, cost per booked, and the fail-closed category rule", () => {
+    const marketing = marketingSnapshot({
+      ads: { status: "ok", spend_cents: 20000 },
+      bookedN: 10
+    });
+    assert.equal(marketing.spend_cents, 20000);
+    assert.equal(marketing.cost_per_booked.status, "MEASURED");
+    assert.equal(marketing.special_ad_category.required, true);
+    assert.equal(marketing.special_ad_category.fail_closed, true);
+    assert.match(marketing.note, /does not buy/);
   });
 });
 

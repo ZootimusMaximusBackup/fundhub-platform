@@ -60,8 +60,8 @@ A North Star is the **one number** that says that seat is winning.
 |------|------------|---------|
 | AI setter | Bookings made. Count them. Do not hire this seat. | Yes — count only |
 | Sales manager | Team deposits vs how full the calendar is. A packed calendar means hire a closer. | Hire rule yes. A monthly number is **not** locked this pass. |
-| Closer | **20 deposits / month** is the starting bar. Time-max if they only close: **213** calls (160h) or **106** at half time. | Starting bar yes. 20 is not the ceiling. |
-| Funding advisor | **20 funded files / month** is the starting bar. Time-max if they only fund: **54** files (160h) or **27** at half time. | Starting bar yes. 20 is not the ceiling. 500 is above the 160h math. |
+| Closer | **27 deposits / month per pod.** Time-max if they only close: **213** calls (160h). | They sit in a pod with one funding advisor. |
+| Funding advisor | **27 funded files / month per pod.** Time-max if they only fund: **54** files (160h). | Same bar as the closer. FA desk is the bottleneck. 500 is above the 160h math. |
 | Inquiry remover | Files keep moving on the clock (healthy ~15 days, hard stop 30). | Clock yes. A monthly count is **not** locked. Do not invent one. |
 | Credit repair | Same clock. Letters go out **expedited**, not overnight. | Clock yes. A monthly count is **not** locked. |
 | Owner / CEO | Company health: the eight company numbers already on the dashboard. | Yes — company, not a per-person star |
@@ -81,10 +81,11 @@ Those eight stay. They are how the **company** looks. They are not “eight KPIs
 
 ### After Chris locks this page
 
-**Done 2026-08-24.** Starting bars written. **20 is the starting bar, not the time-max.**
+**Done 2026-08-24.** Starting bars written from desk time (AI-set). **One pod = closer + funding advisor.** Same bar. Not a spoken 20. Not the time-max.
 
-- closer, monthly, deposits = 20 (time-max ~213 calls / ~106 at half time)
-- funding advisor, monthly, funded **count** (`files`) = 20 (time-max ~54 files / ~27 at half time)
+- closer, monthly, deposits = 27 per pod (time-max ~213 calls)
+- funding advisor, monthly, funded **count** (`files`) = 27 per pod (time-max ~54 files / half desk = 27)
+- Company bar = 27 × complete pods. Uneven seats → hire the missing half. Packed calendar → hire a full pod.
 
 Not the hire / fire agent.
 
@@ -120,6 +121,23 @@ Alec’s shop numbers are in [`alec-legacy-strong-kpis-reference-2026-08-23.md`]
 | One “credit commando” | **Two seats:** inquiry remover and credit repair. CRM today is still one Specialist login with an Inquiries / Repair switch. |
 
 Do not invent monthly inquiry or repair counts. Do not copy his $8–$10K.
+
+---
+
+## Offers on the belt
+
+Our prices live in `src/config/offers.mjs`. This table says who owns each offer and what a win is. These are our offers, not Alec’s.
+
+| Offer | Role on the belt | What “win” is |
+|-------|------------------|---------------|
+| Funding DFY ($3,000 deposit + 10% success fee) | Closer deposit → funding advisor | `call_outcomes.outcome = deposit`, then the file is funded |
+| Repair DFY / Repair trial | Closer downsell/upsell → Specialist (repair) | A sale, then repair stages |
+| Soft pull $32 | Diagnostic on the call | Pay link paid |
+| UWIQ pack / Funding Mastery | Upsell / education | `sales.sale_motion` = upsell |
+
+North Stars stay **27 deposits and 27 funded files per pod**. Not 20.
+
+Pointer: [`build-spec-2026-08-22.md`](build-spec-2026-08-22.md) §5B.7
 
 ---
 
@@ -212,7 +230,7 @@ That function returns a **number** for every job in the table.
 | Inquiry | FTC upload | 2 | **4800** | **2400** |
 | Inquiry | get FTC PDF (included — not the upload) | 15 | **640** | **320** |
 
-**20 is the starting bar.** It is not the time ceiling. A closer who only closes can do about **200** calls. A funding advisor who only funds can do about **54** files. **500 funded files in a month is more than 160 hours allow**, unless rounds get shorter or they skip apps.
+**27 deposits and 27 funded files per pod is the starting bar.** They work in tandem. It is not the time ceiling. A closer who only closes can do about **200** calls. A funding advisor who only funds can do about **54** files. **500 funded files in a month is more than 160 hours allow**, unless rounds get shorter or they skip apps.
 
 ---
 
@@ -228,6 +246,18 @@ Owner-set. Not a person typing.
 | Wait after mail before an AI bureau call | **3 business days** (code). Portal: **1 business day**. |
 
 Playwright numbers (calendar 572 ms, Present 69 ms, and the rest) are **screen paint**. They are not “how long a funding round takes.” Kept in [`fundhub-conveyor-kpis-2026-08-23-evidence/ui-times.json`](fundhub-conveyor-kpis-2026-08-23-evidence/ui-times.json) only so nobody mixes them in again.
+
+### Cycle clocks (locked)
+
+These clocks say how long a file may sit. They are not desk minutes. Do not invent monthly inquiry or repair counts.
+
+| Stage | Clock | Who owns it |
+|-------|-------|-------------|
+| Prep before round 1 | 30 days or less (hard stop). Healthy is about 15 days. Hands-on work is a couple of days. | Funding advisor + specialist if needed |
+| Funding rounds | 3–4 rounds (ours). Not Alec’s five. | Funding advisor |
+| Wipe between rounds | Must finish before the next round starts. | Inquiry remover |
+| Alec example round lengths | About 2 weeks / 4 weeks / 2 weeks / 2 weeks / 1 month. Picture only. Not our law. | — |
+| Repair stage clocks | Already in `src/repair/sla.mjs`. | Specialist |
 
 ---
 
@@ -251,14 +281,22 @@ These are screen seconds. They are not the 15-day bureau wait.
 
 ## 11. Still queued (do not build from this file)
 
+**Wired this pass (read only — not the hire / fire agent):**
+
+- Hubstaff + CRM minutes live on the pulse as `measured_minutes`. Code: `src/ops/measure-minutes.mjs`. Need 20 timed samples. MODEL minutes stay. A human must lock them. The brain never overwrites MODEL.
+- Meta = **marketing ads**. Spend is a read from `ad_metrics_daily`. Cost per booked call only when we have 10 booked calls. Category map (`ad_platform_category_map`) must be set before any spend write. Live Marketing API write is unverified. The brain does not buy, pause, or scale ads.
+- LinkedIn = **hiring ads / job post**, not Meta. Packed calendar uses the existing `postJob` path in `src/ops/hire-closer.mjs`. LinkedIn Talent may show `not_configured`. Do not treat Social Studio as the hiring login. Do not add a second job post. Do not call `closeJob`.
+
+**Still queued:**
+
 - Ops hire / fire / assign agent
-- LinkedIn from a KPI
-- Meta from a KPI
 - Hermes training
+- Fire auto-enqueue
+- Raise / bonus dollars
+- Buying or pausing ads
 - Bureau 2FA text handshake
 - Changing the mail default from first class to expedited
 - A second Specialist login for repair
-- Hubstaff hours
 
 ---
 
@@ -267,8 +305,8 @@ These are screen seconds. They are not the 15-day bureau wait.
 If this page is right:
 
 1. The belt above is success.
-2. Closer starting bar is **20** deposits / month. Time-max is ~213 calls (160h).
-3. Funding advisor starting bar is **20** funded / month. Time-max is ~54 files (160h).
+2. Closer starting bar is **27** deposits / month **per pod**. Time-max is ~213 calls (160h).
+3. Funding advisor starting bar is **27** funded / month **per pod**. Time-max is ~54 files (160h). They work in tandem.
 4. Mail wording is **expedited**.
 5. Inquiry and repair stay two seats, one login for now.
 

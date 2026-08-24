@@ -203,3 +203,15 @@ export const CAPACITY = Object.freeze([
     minutes: FTC_PDF_OBTAIN_MINUTES
   })
 ]);
+
+// Starting bars. AI-set 2026-08-24. One pod = one closer + one FA in tandem.
+// Per pod: 27 deposits and 27 funded files. That is half the FA time-max (54).
+// The FA desk is the bottleneck. The closer bar matches so they stay in lockstep.
+// Company bar = 27 × complete pods. Not a spoken 20. Not the time-max.
+export const STARTING_BARS = Object.freeze({
+  closer_deposits: 27,
+  funding_advisor_files: 27,
+  per: "pod",
+  source: SOURCE,
+  set_by: "model-pod-2026-08-24"
+});

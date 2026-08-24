@@ -8,6 +8,7 @@ import {
   hoursForFundingRound,
   monthlyMax,
   CAPACITY,
+  STARTING_BARS,
   DEFAULT_APPS_PER_ROUND,
   DESK_HOURS_PER_MONTH,
   DEFAULT_ROUNDS_PER_FILE,
@@ -75,6 +76,10 @@ describe("role unit times", () => {
     assert.equal(byId.funding_round.theoretical_max, 192);
     assert.equal(byId.funded_file.theoretical_max, 54);
     assert.equal(byId.funded_file.half_time_max, 27);
+    assert.equal(STARTING_BARS.funding_advisor_files, byId.funded_file.half_time_max);
+    assert.equal(STARTING_BARS.closer_deposits, STARTING_BARS.funding_advisor_files);
+    assert.equal(STARTING_BARS.per, "pod");
+    assert.ok(STARTING_BARS.closer_deposits < byId.closer_logged_call.half_time_max);
     assert.equal(byId.repair_client_round.theoretical_max, 1920);
     assert.equal(byId.inquiry_ftc_upload.theoretical_max, 4800);
     assert.equal(byId.ftc_pdf_obtain.minutes, 15);

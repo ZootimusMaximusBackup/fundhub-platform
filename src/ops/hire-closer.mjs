@@ -50,6 +50,10 @@ export function nextWeekdayRange(now = new Date(), n = WEEKDAY_WINDOW) {
   return { start, end: cursor };
 }
 
+export function beltJammed(calendar) {
+  return calendar?.packed === true;
+}
+
 export function packedFromCounts({ closerCount, dueAtCount }) {
   const slots = slotsPerCloserDay();
   const count = Number(closerCount);
@@ -130,16 +134,18 @@ function applyUrl() {
 function closerJobCopy(month) {
   const marker = `${HIRE_MARKER_PREFIX}${month}`;
   return {
-    title: "Closer — Fundhub",
+    title: "Closer — Fundhub (pod with a funding advisor)",
     location: "Remote — United States",
     apply_url: applyUrl(),
     description: [
-      "Closer at Fundhub.",
+      "Closer at Fundhub. You sit in a pod with one funding advisor. You work in tandem.",
       "",
-      "You talk to people who already booked a call. You present the offer and log what happened.",
+      "You talk to people who already booked a call. You present the offer and log the deposit.",
+      "Your funding advisor takes that file through funding rounds.",
       "The setter seat is AI. We do not hire setters.",
       "",
-      "This post opened because the closer calendar is packed. That packed rule is a MODEL count (45-minute close call, 8-hour day). It is not a live stopwatch.",
+      "This post opened because the closer calendar is packed. A closer alone is not a pod. We hire the pair.",
+      "That packed rule is a MODEL count (45-minute close call, 8-hour day). It is not a live stopwatch.",
       "",
       "Marking hired does not create a login. A person must send an invite.",
       "",

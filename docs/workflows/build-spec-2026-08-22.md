@@ -535,11 +535,11 @@ Do **not** build Transfer until Chris names this row as a build.
 
 ### 5B.7 — Conveyor + North Stars → Ops / AI COO v1 (DONE 2026-08-24)
 
-**Status: DONE** for pulse + briefs + hire/LinkedIn + later brain shapes/reads (2026-08-24). Ready to ship, not shipped (deploy not named). Fire / raise / bonus are C-suite task shapes only — no auto-enqueue, no kick, no invented % or $. Ad spend is a read + review task. Hermes stays later.
+**Status: DONE** for pulse + briefs + hire/LinkedIn + later brain shapes/reads (2026-08-24). Code is on this branch. Deploy is named only after this batch ships. Fire / raise / bonus are C-suite task shapes only — no auto-enqueue, no kick, no invented % or $. Ad spend is a read + review task. Hermes stays later.
 
 **This pass built (2026-08-24):**
 
-- Daily pulse: company 8 (`computeKpis`) + 20/20 `staff_targets` bars + MODEL unit clocks
+- Daily pulse: company 8 (`computeKpis`) + 27/27 per-pod `staff_targets` bars + MODEL unit clocks
 - Two briefs: CEO “what needs doing today?” / Chris “what will be done.”
 - Packed calendar → one hire-closer task (`createCsuiteTask` kind=hire, assignee `sales_manager`) + LinkedIn post via existing `src/hiring/linkedin.mjs` `postJob`
 - Fire: helper `createCsuiteTask({ kind: 'fire' })` assignee `owner`. No locked fire trigger. Do not call `suspendStaff`
@@ -555,7 +555,9 @@ Do **not** build Transfer until Chris names this row as a build.
 - Journeys: `docs/journeys/ops-pulse-intended.md` + `-actual.md`
 - Board: `docs/workflows/ops-coo-v1-2026-08-24.md`
 
-**Still later (do not build from this row):** Hermes; fire auto-enqueue (blocked on Chris Q1); raise/bonus auto-enqueue (blocked on Q6/Q7 dollars); buying/pausing ads.
+**Offers on the belt:** [`fundhub-conveyor-kpis-2026-08-23.md`](fundhub-conveyor-kpis-2026-08-23.md) (Offers table). Prices from `src/config/offers.mjs`. North Stars stay **27/27 per pod**.
+
+**Still later (do not build from this row):** Hermes; fire auto-enqueue (blocked on Chris Q1); raise/bonus auto-enqueue (blocked on Q6/Q7 dollars); buying/pausing ads; bureau 2FA handshake; mail default first_class → expedited; second Specialist login. Hubstaff minutes, Meta spend read, and LinkedIn packed-calendar `postJob` are wired as reads — not queued as “do not build.”
 
 **Status was QUEUED.** Spec lock 2026-08-24. The agent v1 above is the named build. Do **not** treat this as a fire/raise/bonus brain.
 
@@ -570,8 +572,7 @@ Do **not** build Transfer until Chris names this row as a build.
 
 - AI setter — count bookings. Never hire setters.
 - Sales manager — team deposits vs calendar fullness. Calendar too full → hire a **closer**.
-- Closer — about **20 deposits / month**.
-- Funding advisor — about **20 funded / month**.
+- Closer + funding advisor — **one pod**. **27 deposits and 27 funded files per pod.** Hire the pair. Never a setter.
 - Inquiry remover and Credit repair — two seats. Same Specialist login today (Inquiries / Repair toggle). Clock: healthy ~15 days, hard cap 30. Do not invent monthly counts.
 - Owner — company health, not a per-seat star.
 
@@ -579,9 +580,9 @@ Do **not** build Transfer until Chris names this row as a build.
 
 **Mail:** expedited. Not overnight.
 
-**Unit job times** (how long one job takes — not the 15/30 day file clock): [`fundhub-conveyor-kpis-2026-08-23.md`](fundhub-conveyor-kpis-2026-08-23.md) §8 and `src/ops/role-unit-times.mjs`. Card app 10 min, funding round 50 min, funded file 175 min, repair 5 min, FTC upload 2 min, close call 45 min. Starting bar is 20. Time-max is 213 closer calls / 54 funded files at 160h.
+**Unit job times** (how long one job takes — not the 15/30 day file clock): [`fundhub-conveyor-kpis-2026-08-23.md`](fundhub-conveyor-kpis-2026-08-23.md) §8 and `src/ops/role-unit-times.mjs`. Card app 10 min, funding round 50 min, funded file 175 min, repair 5 min, FTC upload 2 min, close call 45 min. Starting bar is **27/27 per pod**. Time-max is 213 closer calls / 54 funded files at 160h.
 
-**Starting bars written 2026-08-24.** Closer deposits=20/month and funding advisor funded count=20/month (`files`). Still not the hire / fire agent.
+**Starting bars written 2026-08-24 (AI-set, pods).** Closer deposits=27/pod and funding advisor funded count=27/pod (`files`). Still not the hire / fire agent.
 
 What the later agent will do (still queued):
 
@@ -594,7 +595,7 @@ Capability check — **current CRM cannot run that loop yet**:
 
 - Staff on/off is invite + revoke login only. No employment fire. No reactivate.
 - Hiring can mark `hired` and does **not** create a staff login.
-- LinkedIn can post/close a job (unverified live). Not a switch from a number.
+- LinkedIn hiring on a packed calendar is the existing `postJob` path. Talent may be `not_configured`. Live write unverified. Do not treat Social Studio as the hiring login.
 - No Hermes in this repo. Staff Ask is product help. Company Brain is docs Q&A. Neither acts.
 - Reuse later, do not invent a second copy: `staff_targets`, sales metrics, company dashboard numbers, tasks, hiring stages, LinkedIn post/close.
 
@@ -603,7 +604,7 @@ Still needed before the agent build (do not guess):
 - Chris locks the conveyor spec
 - who is CEO vs Chris on the two briefs if they are not the same person
 - which number crossing which line means hire vs fire vs assign a checklist
-- whether LinkedIn hiring is in v1 or later
+- LinkedIn hiring on packed calendar is in v1 on the existing `postJob` path (Talent may be `not_configured`)
 
 Pointer: [`docs/workflows/ops-kpi-agent-2026-08-22.md`](ops-kpi-agent-2026-08-22.md)
 

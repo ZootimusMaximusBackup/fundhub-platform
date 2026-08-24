@@ -61,7 +61,7 @@ describe("briefs", () => {
   it("CEO voice asks what needs doing and does not invent a fire", () => {
     const text = ceoBrief(pulse);
     assert.match(text, /What needs doing today\?/);
-    assert.match(text, /Hire a closer/);
+    assert.match(text, /Hire a pod/);
     assert.match(text, /Do not hire a setter/);
     assert.match(text, /Cost per funded is missing/);
     assert.match(text, /no fire rule yet/);
@@ -69,6 +69,7 @@ describe("briefs", () => {
     assert.match(text, /no bonus rule yet/);
     assert.match(text, /starting bar of 20/);
     assert.match(text, /Ad spend is not_configured/);
+    assert.match(text, /Discoveries: none yet/);
     assert.doesNotMatch(text, /fire this closer/i);
     assert.doesNotMatch(text, /under 20 deposits/);
   });
@@ -76,7 +77,7 @@ describe("briefs", () => {
   it("owner voice says what will be done and keeps invite as the login path", () => {
     const text = ownerBrief(pulse);
     assert.match(text, /What will be done/);
-    assert.match(text, /Create one hire-closer task/);
+    assert.match(text, /Create one hire-pod task/);
     assert.match(text, /LinkedIn: not_configured/);
     assert.match(text, /invite/);
     assert.match(text, /does not create a login/);

@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import {
   slotsPerCloserDay,
   packedFromCounts,
+  beltJammed,
   nextWeekdayRange,
   loadCalendar,
   actOnPacked,
@@ -36,6 +37,12 @@ describe("hire closer packed rule", () => {
     // 1 closer × 10 slots × 5 days × 0.9 = 45
     assert.equal(packedFromCounts({ closerCount: 1, dueAtCount: 44 }).packed, false);
     assert.equal(packedFromCounts({ closerCount: 1, dueAtCount: 45 }).packed, true);
+  });
+
+  it("beltJammed is the packed calendar flag", () => {
+    assert.equal(beltJammed({ packed: true }), true);
+    assert.equal(beltJammed({ packed: false }), false);
+    assert.equal(beltJammed(null), false);
   });
 
   it("counts five weekdays and skips the weekend", () => {

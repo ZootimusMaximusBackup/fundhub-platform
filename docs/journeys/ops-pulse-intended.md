@@ -9,7 +9,7 @@ Builder wrote this file. Chris approving it is the signature that it is true.
 ```mermaid
 flowchart TD
     OPEN[Owner opens Ops Admin] --> READ[GET pulse — no write]
-    READ --> NUMS[Company 8 + 20/20 bars + MODEL clocks]
+    READ --> NUMS[Company 8 + 27/27 per pod + MODEL clocks]
     NUMS --> CEO[CEO brief: what needs doing today]
     NUMS --> CHRIS[Chris brief: what will be done]
     NUMS --> PACKED{Calendar packed? MODEL count}
@@ -33,7 +33,7 @@ Owner and admin. The AI COO has no login. A closer, setter, or funding advisor d
 One numbers object:
 
 1. The eight company numbers already on the dashboard (reuse the same KPI engine).
-2. The closer 20 deposits / month bar and the funding advisor 20 funded files / month bar from `staff_targets`.
+2. The pod bar: 27 closer deposits and 27 funded files per complete pod (closer + funding advisor) from `staff_targets`, scaled by how many pods exist.
 3. Unit clocks from the MODEL time table. Label them MODEL. Do not claim a live stopwatch.
 
 If a number is not there, say it is missing. Do not invent it.
@@ -49,7 +49,7 @@ Same numbers. Two voices. No invented advice.
 
 When the closer calendar is packed (MODEL rule: 45-minute close call, 8-hour day, next 5 weekdays, 90% full), the owner can create **one** hire-closer task for that month and post the LinkedIn closer job on the **existing** hiring path.
 
-When a seat is short vs the 20/20 bars, the pulse writes a short hire profile (closer vs funding advisor) and one look-at-gaps task this month.
+When a seat is short vs the 27/27 pod bars, or seats are uneven, the pulse writes a hire profile (full pod, or the missing half) and one look-at-gaps task this month.
 
 - Do not hire setters. The setter is AI.
 - Marking hired does not create a login. Invite is how a person gets in.
@@ -59,7 +59,7 @@ When a seat is short vs the 20/20 bars, the pulse writes a short hire profile (c
 
 ## Gaps
 
-From the belt + 20/20 + company 8 bookings only. Say which seat is short. If a number is missing, say missing. Bookings have no monthly bar. Never “hire a setter.”
+From the belt + 27/27 per pod + company 8 bookings only. Say which seat is short, or which half of a pod is missing. If a number is missing, say missing. Bookings have no monthly bar. Never “hire a setter.”
 
 ## Ads
 

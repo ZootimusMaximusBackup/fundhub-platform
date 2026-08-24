@@ -8,6 +8,10 @@ import { computeKpis } from "../dashboard/kpis.mjs";
 import { ROLE_UNITS, CAPACITY } from "./role-unit-times.mjs";
 import { loadCalendar, readLinkedInHireStatus, actOnPacked } from "./hire-closer.mjs";
 import { CSUITE_SOURCE, monthKey, createCsuiteTask } from "./csuite-tasks.mjs";
+import { loadPods, companyBarFromPods } from "./pods.mjs";
+import { learnFromData } from "./discoveries.mjs";
+import { measureMinutes } from "./measure-minutes.mjs";
+import { marketingSnapshot } from "./meta-marketing.mjs";
 
 const PERIODS = new Set(["today", "7d", "30d", "qtd"]);
 
@@ -117,6 +121,7 @@ async function loadBars(db, { orgId, now }) {
       metric: "deposits",
       period: "monthly",
       target: closerTarget,
+      target_per_pod: closerTarget,
       actual: closerActual,
       missing: closerTarget == null ? "closer_deposit_target_missing" : closerActualMissing
     },
@@ -125,8 +130,29 @@ async function loadBars(db, { orgId, now }) {
       metric: "files",
       period: "monthly",
       target: faTarget,
+      target_per_pod: faTarget,
       actual: fundedActual,
       missing: faTarget == null ? "funding_advisor_files_target_missing" : fundedActualMissing
+    }
+  };
+}
+
+function scaleBarsForPods(bars, pods) {
+  if (!bars) return bars;
+  const closerPer = bars.closer?.target_per_pod ?? bars.closer?.target;
+  const faPer = bars.funding_advisor?.target_per_pod ?? bars.funding_advisor?.target;
+  return {
+    closer: {
+      ...bars.closer,
+      target_per_pod: closerPer,
+      target: companyBarFromPods(closerPer, pods),
+      per: "pod"
+    },
+    funding_advisor: {
+      ...bars.funding_advisor,
+      target_per_pod: faPer,
+      target: companyBarFromPods(faPer, pods),
+      per: "pod"
     }
   };
 }
@@ -135,10 +161,42 @@ async function loadBars(db, { orgId, now }) {
  * Which seats are short vs locked bars. Bookings have no monthly bar —
  * we only report the company-8 count. Never hire a setter.
  */
-export function diagnoseGaps({ bars, calendar, company_8 } = {}) {
+export function diagnoseGaps({ bars, calendar, company_8, pods } = {}) {
   const notes = [];
   const short = [];
   const missing = [];
+
+  if (pods) {
+    notes.push(
+      `Pods: ${pods.complete} complete (closer + funding advisor). ${pods.closer_count} closer(s), ${pods.fa_count} funding advisor(s). They work in tandem.`
+    );
+    if (pods.complete_with === "funding_advisor") {
+      short.push({
+        seat: "funding_advisor",
+        metric: "pod",
+        actual: pods.fa_count,
+        target: pods.closer_count,
+        reason: "unpaired_closer"
+      });
+      notes.push(
+        `${pods.unpaired_closers} closer(s) have no funding advisor. Hire a funding advisor to finish the pod. Do not hire a setter.`
+      );
+    } else if (pods.complete_with === "closer") {
+      short.push({
+        seat: "closer",
+        metric: "pod",
+        actual: pods.closer_count,
+        target: pods.fa_count,
+        reason: "unpaired_fa"
+      });
+      notes.push(
+        `${pods.unpaired_fas} funding advisor(s) have no closer. Hire a closer to finish the pod. Do not hire a setter.`
+      );
+    } else if (pods.complete === 0) {
+      short.push({ seat: "pod", metric: "pod", actual: 0, target: 1, reason: "no_pod" });
+      notes.push("No complete pod yet. Hire a closer and a funding advisor together. Do not hire a setter.");
+    }
+  }
 
   const closer = bars?.closer;
   if (!closer || closer.target == null) {
@@ -177,7 +235,7 @@ export function diagnoseGaps({ bars, calendar, company_8 } = {}) {
   }
 
   if (calendar?.packed) {
-    notes.push("Calendar is packed (MODEL). Need another closer. Do not hire a setter.");
+    notes.push("Calendar is packed (MODEL). Hire a full pod (closer + funding advisor). Do not hire a setter.");
     if (!short.some((s) => s.seat === "closer")) {
       short.push({
         seat: "closer",
@@ -185,6 +243,13 @@ export function diagnoseGaps({ bars, calendar, company_8 } = {}) {
         actual: calendar.due_at_count,
         target: calendar.threshold,
         reason: "packed"
+      });
+    }
+    if (!short.some((s) => s.seat === "funding_advisor" && s.metric === "pod")) {
+      short.push({
+        seat: "funding_advisor",
+        metric: "pod",
+        reason: "packed_needs_pod"
       });
     }
   }
@@ -197,36 +262,56 @@ export function diagnoseGaps({ bars, calendar, company_8 } = {}) {
   };
 }
 
-export function hireProfileFromGaps({ gaps, calendar } = {}) {
-  const closerNeed = calendar?.packed === true
-    || (gaps?.short || []).some((s) => s.seat === "closer");
-  const faNeed = (gaps?.short || []).some((s) => s.seat === "funding_advisor" && s.metric === "files");
+export function hireProfileFromGaps({ gaps, calendar, pods } = {}) {
+  const packed = calendar?.packed === true;
+  const finishFa = pods?.complete_with === "funding_advisor"
+    || (gaps?.short || []).some((s) => s.seat === "funding_advisor" && s.metric === "pod");
+  const finishCloser = pods?.complete_with === "closer"
+    || (gaps?.short || []).some((s) => s.seat === "closer" && s.metric === "pod");
+  const closerBar = (gaps?.short || []).some((s) => s.seat === "closer" && s.metric === "deposits");
+  const faBar = (gaps?.short || []).some((s) => s.seat === "funding_advisor" && s.metric === "files");
+  const noPod = (gaps?.short || []).some((s) => s.seat === "pod");
 
-  if (closerNeed) {
+  if (packed || noPod || (closerBar && faBar)) {
     return {
-      seat: "closer",
+      seat: "pod",
       linkedin: true,
       lines: [
-        "Seat: closer.",
-        calendar?.packed
-          ? "Why: the calendar is packed (MODEL count)."
-          : "Why: deposits are under the starting bar this month.",
-        "They talk to people who already booked. They present and log the deposit.",
+        "Hire a pod: one closer and one funding advisor. They work in tandem.",
+        packed
+          ? "Why: the closer calendar is packed (MODEL count). A closer alone will drown the funding desk."
+          : "Why: the belt needs both seats, not one.",
+        "Closer: talks to people who already booked. Logs the deposit.",
+        "Funding advisor: moves that file through funding rounds. Count files, not dollars.",
         "Setter is AI. Do not hire a setter.",
-        "Hired does not create a login. A person must invite."
+        "LinkedIn posts the closer seat on the existing path. Funding advisor is text only.",
+        "Hired does not create a login. A person must invite both."
       ]
     };
   }
-  if (faNeed) {
+  if (finishFa || faBar) {
     return {
       seat: "funding_advisor",
       linkedin: false,
       linkedin_reason: "closer LinkedIn path only — no second job-post provider",
       lines: [
-        "Seat: funding advisor.",
-        "Why: funded files are under the starting bar this month.",
+        "Seat: funding advisor — finish the pod.",
+        "A closer is already on the floor. They work in tandem. Do not hire another closer first.",
         "They move files through funding rounds. Count files, not dollars.",
         "Do not hire a setter. Do not invent a second job-post path."
+      ]
+    };
+  }
+  if (finishCloser || closerBar) {
+    return {
+      seat: "closer",
+      linkedin: true,
+      lines: [
+        "Seat: closer — finish the pod.",
+        "A funding advisor is already on the floor. They work in tandem.",
+        "They talk to people who already booked. They present and log the deposit.",
+        "Setter is AI. Do not hire a setter.",
+        "Hired does not create a login. A person must invite."
       ]
     };
   }
@@ -292,16 +377,35 @@ export async function computePulse(db, { orgId, period = "7d", now = new Date() 
 
   const kpis = await computeKpis(db, { orgId, period: p });
   const eight = companyEight(kpis);
-  const [bars, calendar, linkedin, hireTask, ads] = await Promise.all([
+  const [barsRaw, calendar, linkedin, hireTask, ads, pods, measured_minutes] = await Promise.all([
     loadBars(db, { orgId, now }),
     loadCalendar(db, { orgId, now }),
     readLinkedInHireStatus(db, { orgId, now }),
     existingHireTask(db, { now }),
-    loadAdSpend(db, { orgId, days: kpis.days })
+    loadAdSpend(db, { orgId, days: kpis.days }),
+    loadPods(db, { orgId }),
+    measureMinutes(db, { orgId, days: kpis.days }).catch(() => ({
+      floor: 20,
+      locked: false,
+      note: "Minutes are not locked. MODEL stays until a human locks after enough live samples.",
+      join: {
+        hubstaff_median_minutes: null,
+        hubstaff_n: 0,
+        crm_median_minutes: null,
+        crm_n: 0
+      },
+      actions: []
+    }))
   ]);
 
-  const gaps = diagnoseGaps({ bars, calendar, company_8: eight });
-  const profile = hireProfileFromGaps({ gaps, calendar });
+  const bars = scaleBarsForPods(barsRaw, pods);
+  const gaps = diagnoseGaps({ bars, calendar, company_8: eight, pods });
+  const profile = hireProfileFromGaps({ gaps, calendar, pods });
+  const learning = await learnFromData(db, { orgId, kpis, pods });
+  const marketing = marketingSnapshot({
+    ads,
+    bookedN: eight.booked_calls?.value
+  });
 
   return {
     period: p,
@@ -315,15 +419,19 @@ export async function computePulse(db, { orgId, period = "7d", now = new Date() 
       units: ROLE_UNITS,
       capacity: CAPACITY
     },
+    measured_minutes,
     calendar,
+    pods,
+    learning,
     gaps,
     hire: {
-      recommend: calendar.packed === true,
+      recommend: calendar.packed === true || !!pods.complete_with || pods.complete === 0,
       existing_task_id: hireTask?.id || null,
       linkedin,
       profile
     },
     ads,
+    marketing,
     fire: {
       auto_enqueue: false,
       rule_locked: false,

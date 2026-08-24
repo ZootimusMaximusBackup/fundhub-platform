@@ -9,11 +9,13 @@ flowchart TD
     AUTH -->|not owner/admin| DENY[403]
     AUTH -->|ok| PULSE["computePulse"]
     PULSE --> KPI["computeKpis — company 8"]
-    PULSE --> BARS["staff_targets 20/20 + month counts"]
+    PULSE --> BARS["staff_targets 27/27 per pod × complete pods"]
     PULSE --> CLOCK["role-unit-times MODEL"]
+    PULSE --> MEAS["measureMinutes Hubstaff + CRM — locked false"]
     PULSE --> CAL["loadCalendar MODEL packed rule"]
     PULSE --> GAPS["diagnoseGaps from bars + packed + bookings"]
     PULSE --> ADS["loadAdSpend from ad_metrics_daily"]
+    PULSE --> MKT["marketingSnapshot spend + cost per booked"]
     PULSE --> BRIEF["briefsFromPulse ceo + owner"]
     GET --> NOWRITE[No task insert. No LinkedIn call]
     PAGE --> BTN{Write today’s C-suite tasks}
@@ -45,10 +47,12 @@ flowchart TD
 - Reuses `computeKpis` from `src/dashboard/kpis.mjs`
 - Bars: role-level `staff_targets` monthly closer deposits and funding advisor files. Actuals from `call_outcomes` deposits and `clients.funded` this UTC month. Missing stays missing
 - Clocks: `ROLE_UNITS` / `CAPACITY` with `source: "MODEL"`
-- Calendar: `loadCalendar` in `src/ops/hire-closer.mjs`
-- Gaps: `diagnoseGaps` — closer vs 20 deposits, funding advisor vs 20 files, bookings as a count only. Never hire a setter
+- Measured minutes: `measureMinutes` → `measured_minutes`. Hubstaff `tracked_seconds` plus CRM timestamps. `n` floor 20. `locked: false` always. Does not overwrite MODEL
+- Calendar: `loadCalendar` in `src/ops/hire-closer.mjs`. `beltJammed` is `calendar.packed`
+- Gaps: `diagnoseGaps` — closer vs 27 deposits per pod, funding advisor vs 27 files per pod, uneven seats, bookings as a count only. Never hire a setter
 - Hire profile: `hireProfileFromGaps`. Closer keeps the LinkedIn `postJob` path. Funding advisor is text only
 - Ads: `loadAdSpend` reads `ad_metrics_daily`. Status `ok` or `not_configured` / `missing`. Does not write campaigns
+- Marketing: `marketing` — spend, `cost_per_booked` (need 10 booked calls), `special_ad_category` fail-closed. Live Marketing API write unverified. Does not buy ads
 - Fire / raise / bonus objects are always `{ auto_enqueue: false, rule_locked: false, note: "no … rule yet" }`
 - Does not call `createCsuiteTask`, `postJob`, `inviteStaff`, or `suspendStaff`
 

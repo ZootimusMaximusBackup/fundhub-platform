@@ -20,7 +20,7 @@ export const CSUITE_KINDS = Object.freeze({
   hire: Object.freeze({
     kind: "hire",
     assigneeRole: "sales_manager",
-    title: "Hire a closer — the calendar is packed",
+    title: "Hire a pod — closer + funding advisor (calendar packed)",
     bodyPrefix: "hire-closer:packed:"
   }),
   diagnose: Object.freeze({

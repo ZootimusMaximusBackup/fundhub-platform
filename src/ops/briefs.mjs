@@ -33,7 +33,7 @@ function calendarLine(calendar) {
     return `Calendar: not packed. No closer tasks have a due time in the next ${calendar.window_weekdays} weekdays. MODEL rule (not a live stopwatch).`;
   }
   if (calendar.packed) {
-    return `Calendar: packed. ${due} closer slots in the next ${calendar.window_weekdays} weekdays. ${closers} closer(s). ${slots} MODEL slots per closer per day. Hire a closer. Do not hire a setter.`;
+    return `Calendar: packed. ${due} closer slots in the next ${calendar.window_weekdays} weekdays. ${closers} closer(s). ${slots} MODEL slots per closer per day. Hire a pod (closer + funding advisor). Do not hire a setter.`;
   }
   return `Calendar: not packed. ${due} closer slots vs a MODEL bar of ${calendar.threshold}. ${closers} closer(s).`;
 }
@@ -55,17 +55,28 @@ export function ceoBrief(pulse) {
       ? `Cost per funded is missing${eight.cost_per_funded_cents?.reason ? ` (${eight.cost_per_funded_cents.reason})` : ""}`
       : `Cost per funded: ${formatCents(k.cost_per_funded_cents)}`,
     "",
-    barLine(pulse?.bars?.closer, "Closer starting bar", "deposits"),
-    barLine(pulse?.bars?.funding_advisor, "Funding advisor starting bar", "funded files"),
+    barLine(pulse?.bars?.closer, "Closer starting bar (per pod, company scaled)", "deposits"),
+    barLine(pulse?.bars?.funding_advisor, "Funding advisor starting bar (per pod, company scaled)", "funded files"),
+    pulse?.pods
+      ? `Pods: ${pulse.pods.complete} complete. ${pulse.pods.closer_count} closer(s) and ${pulse.pods.fa_count} funding advisor(s). They work in tandem.`
+      : "Pods: count is missing.",
     "",
     calendarLine(pulse?.calendar),
     "",
+    ...(pulse?.learning?.top?.length
+      ? [
+        "Discoveries (data, not guesses):",
+        ...pulse.learning.top.map((d, i) => `${i + 1}. ${d.headline} ${d.detail}`),
+        `Learned ${pulse.learning.learned}. Not enough data ${pulse.learning.blocked}. Need ${pulse.learning.min_n_rate} for a rate, ${pulse.learning.min_n_time} timed calls for minutes.`,
+        ""
+      ]
+      : ["Discoveries: none yet.", ""]),
     ...(pulse?.gaps?.notes?.length ? ["Gaps:", ...pulse.gaps.notes, ""] : ["Gaps: no gap note yet.", ""]),
     pulse?.hire?.profile?.lines?.length
       ? `Hire profile: ${pulse.hire.profile.lines.join(" ")}`
       : "Hire profile: none this month.",
     pulse?.hire?.recommend
-      ? "Needs doing: create the hire-closer task and post the LinkedIn closer job (once this month)."
+      ? "Needs doing: create the hire-pod task and post the LinkedIn closer job (once this month). The funding advisor is the other half of the pod."
       : "Needs doing: no hire this month from the packed rule.",
     pulse?.ads?.status === "ok"
       ? `Ad spend this window: ${formatCents(pulse.ads.spend_cents)}. Read only. Do not buy ads from here.`
@@ -87,9 +98,12 @@ export function ownerBrief(pulse) {
     "What will be done.",
     "",
     "Watch the eight company numbers. They are company health, not eight scores per person.",
+    pulse?.learning?.top?.[0]
+      ? `Top discovery: ${pulse.learning.top[0].headline} Do not overwrite MODEL times until n is enough.`
+      : "No discovery yet. We learn when the counts are big enough. We do not invent averages.",
     cal.packed
-      ? "The calendar is packed (MODEL count). Create one hire-closer task this month and post the LinkedIn closer job. Do not hire a setter."
-      : "The calendar is not packed. Do not create a hire task from this pulse.",
+      ? "The calendar is packed (MODEL count). Create one hire-pod task this month (closer + funding advisor) and post the LinkedIn closer job. Do not hire a setter."
+      : "The calendar is not packed. Do not create a hire task from this pulse unless a pod is uneven.",
     hire.existing_task_id
       ? `Hire task already on file (${hire.existing_task_id}).`
       : "No hire task on file for this month yet.",

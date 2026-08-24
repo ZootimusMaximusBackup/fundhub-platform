@@ -348,7 +348,8 @@
           <pre class="mono" id="ops-pulse-ceo" style="white-space:pre-wrap;font-size:var(--fs-body);margin:8px 0 14px"></pre>
           <div class="section-meta">Chris — what will be done.</div>
           <pre class="mono" id="ops-pulse-owner" style="white-space:pre-wrap;font-size:var(--fs-body);margin:8px 0 14px"></pre>
-          <p class="empty-note" id="ops-pulse-hire" style="border-top:1px dashed var(--line);margin-top:4px;padding-top:8px"></p>
+          <p class="empty-note" id="ops-pulse-learn" style="border-top:1px dashed var(--line);margin-top:4px;padding-top:8px"></p>
+          <p class="empty-note" id="ops-pulse-hire"></p>
           <p class="empty-note" id="ops-pulse-ads"></p>
           <p class="empty-note" id="ops-pulse-fire"></p>
           <button id="ops-pulse-act" type="button" hidden>Write today’s C-suite tasks</button>
@@ -625,6 +626,7 @@
     var ceo   = document.getElementById('ops-pulse-ceo');
     var own   = document.getElementById('ops-pulse-owner');
     var hire  = document.getElementById('ops-pulse-hire');
+    var learn = document.getElementById('ops-pulse-learn');
     var adsEl = document.getElementById('ops-pulse-ads');
     var fire  = document.getElementById('ops-pulse-fire');
     var act   = document.getElementById('ops-pulse-act');
@@ -654,7 +656,16 @@
     }
     state.hidden = true;
     body.hidden = false;
-    if(meta) meta.textContent = cal.packed ? 'calendar packed (MODEL)' : 'calendar not packed (MODEL)';
+    var learning = pulse.learning || res.data.learning || {};
+    var topLearn = (learning.top && learning.top[0]) || null;
+    if(meta) meta.textContent = topLearn
+      ? ('discovery · ' + (topLearn.source || 'data'))
+      : (cal.packed ? 'calendar packed (MODEL)' : 'calendar not packed (MODEL)');
+    if(learn){
+      learn.textContent = topLearn
+        ? ('Discovery: ' + topLearn.headline)
+        : 'Discovery: not enough data to learn yet. We do not invent averages.';
+    }
     if(ceo) ceo.textContent = briefs.ceo || '';
     if(own) own.textContent = briefs.owner || '';
     if(hire){
