@@ -73,6 +73,54 @@ test("AG-04 row wins over the vendor file when it is ready", async () => {
   assert.equal(placed[0].agent.prompt, dbPrompt);
 });
 
+test("quiet-hours-blocks-or-delays-josh: 11pm Eastern waits until 11am, then dials once", async () => {
+  const placed = [];
+  const sleeps = [];
+  const night = new Date("2026-08-02T03:00:00Z"); // 11pm Eastern
+  const step = {
+    ...fakeStep(),
+    sleepUntil: async (id, date) => { sleeps.push({ id, date }); }
+  };
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: CLIENT_PHONE }]
+  });
+  const res = await handle({
+    event: ev("booking.created", { bookingUid: "bk-night" }, { clientId: "cl-1" }),
+    db,
+    step,
+    placeCallImpl: stubPlaceCall(placed),
+    now: () => night
+  });
+  assert.equal(res.done, true);
+  assert.equal(sleeps.length, 1);
+  assert.equal(sleeps[0].id, "wait-quiet-hours");
+  assert.equal(sleeps[0].date.toISOString(), "2026-08-02T15:00:00.000Z");
+  assert.equal(placed.length, 1, "one call after the wait, not two");
+});
+
+test("quiet-hours-blocks-or-delays-josh: daytime Eastern dials once with no wait", async () => {
+  const placed = [];
+  const sleeps = [];
+  const afternoon = new Date("2026-08-02T18:00:00Z"); // 2pm Eastern
+  const step = {
+    ...fakeStep(),
+    sleepUntil: async (id, date) => { sleeps.push({ id, date }); }
+  };
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: CLIENT_PHONE }]
+  });
+  const res = await handle({
+    event: ev("booking.created", { bookingUid: "bk-day" }, { clientId: "cl-1" }),
+    db,
+    step,
+    placeCallImpl: stubPlaceCall(placed),
+    now: () => afternoon
+  });
+  assert.equal(res.done, true);
+  assert.equal(sleeps.length, 0);
+  assert.equal(placed.length, 1);
+});
+
 test("no phone — placeCall is not invoked", async () => {
   const placed = [];
   const db = pgFake({

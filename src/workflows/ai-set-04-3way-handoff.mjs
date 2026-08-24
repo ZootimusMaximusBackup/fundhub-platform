@@ -52,7 +52,20 @@ export async function handle({ event, db, step }) {
 }
 
 export const aiSet043WayHandoff = inngest.createFunction(
-  { id: "ai-set-04-3way-handoff", name: "AI-SET-04 — 3-Way Text Handoff" },
+  {
+    id: "ai-set-04-3way-handoff",
+    name: "AI-SET-04 — 3-Way Text Handoff",
+    cancelOn: [
+      {
+        event: "booking.cancelled",
+        if: "event.data.payload.bookingUid != null && event.data.payload.bookingUid == async.data.payload.bookingUid"
+      },
+      {
+        event: "booking.cancelled",
+        if: "event.data.payload.email != null && event.data.payload.email == async.data.payload.email"
+      }
+    ]
+  },
   { event: "booking.created" },
   ({ event, step }) => handle({ event: event.data, db, step })
 );

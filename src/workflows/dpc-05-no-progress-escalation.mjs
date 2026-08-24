@@ -105,7 +105,20 @@ export async function handle({ event, db, step }) {
 }
 
 export const dpc05NoProgressEscalation = inngest.createFunction(
-  { id: "dpc-05-no-progress-escalation", name: "DPC-05 — 72-Hour No-Progress Escalation" },
+  {
+    id: "dpc-05-no-progress-escalation",
+    name: "DPC-05 — 72-Hour No-Progress Escalation",
+    cancelOn: [
+      {
+        event: "booking.cancelled",
+        if: "event.data.payload.bookingUid != null && event.data.payload.bookingUid == async.data.payload.bookingUid"
+      },
+      {
+        event: "booking.cancelled",
+        if: "event.data.payload.email != null && event.data.payload.email == async.data.payload.email"
+      }
+    ]
+  },
   { event: "booking.created" },
   ({ event, step }) => handle({ event: event.data, db, step })
 );

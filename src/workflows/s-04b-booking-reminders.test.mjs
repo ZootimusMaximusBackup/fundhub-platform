@@ -89,3 +89,29 @@ test("s-04b listens to booking.created and booking.rescheduled", async () => {
   assert.deepEqual(names, ["booking.created", "booking.rescheduled"]);
 });
 
+function assertCancelsThisBooking(fn) {
+  const rows = (fn.opts.cancelOn || []).filter((c) => c.event === "booking.cancelled");
+  assert.ok(rows.length >= 1, `${fn.opts.id} must stop on booking.cancelled`);
+  assert.ok(
+    rows.some((c) => /payload\.bookingUid/.test(c.if) && /async\.data\.payload\.bookingUid/.test(c.if)),
+    `${fn.opts.id} must match this booking's id, not every client`
+  );
+}
+
+test("cancel-cancels-runs: booking.cancelled stops this booking's in-flight jobs only", async () => {
+  const { s04bBookingReminders } = await import("./s-04b-booking-reminders.mjs");
+  const { bs01PrecallLauncher } = await import("./bs-01-precall-launcher.mjs");
+  const { aiSet043WayHandoff } = await import("./ai-set-04-3way-handoff.mjs");
+  const { dpc05NoProgressEscalation } = await import("./dpc-05-no-progress-escalation.mjs");
+  const { aiSet01JoshSetter } = await import("./ai-set-01-josh-setter.mjs");
+  for (const fn of [
+    s04bBookingReminders,
+    bs01PrecallLauncher,
+    aiSet043WayHandoff,
+    dpc05NoProgressEscalation,
+    aiSet01JoshSetter
+  ]) {
+    assertCancelsThisBooking(fn);
+  }
+});
+

@@ -101,6 +101,14 @@ export const s04bBookingReminders = inngest.createFunction(
       {
         event: "booking.rescheduled",
         if: "event.data.payload.bookingUid != null && event.data.payload.bookingUid == async.data.payload.bookingUid"
+      },
+      {
+        event: "booking.cancelled",
+        if: "event.data.payload.bookingUid != null && event.data.payload.bookingUid == async.data.payload.bookingUid"
+      },
+      {
+        event: "booking.cancelled",
+        if: "event.data.payload.email != null && event.data.payload.email == async.data.payload.email"
       }
     ]
   },

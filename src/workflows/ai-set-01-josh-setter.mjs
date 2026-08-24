@@ -15,6 +15,8 @@ import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { placeCall, agentReadiness, normalizePhone } from "../messaging/providers/bland-voice.mjs";
+import { inQuietHours } from "../messaging/gate.mjs";
+import { nextQuietHoursEnd } from "../messaging/dispatch.mjs";
 
 export const JOSH_CODE = "AG-04";
 export const VENDOR_SETTER_TASK = setterPrompt.SETTER_TASK;
@@ -48,7 +50,7 @@ async function resolvePhone(database, clientId, payload) {
   return normalizePhone(rows[0]?.phone) || normalizePhone(payload?.phone);
 }
 
-export async function handle({ event, db: database, step, placeCallImpl = placeCall, env = process.env }) {
+export async function handle({ event, db: database, step, placeCallImpl = placeCall, env = process.env, now = () => new Date() }) {
   const clientId = await step.run("resolve-client", () => resolveClient(database, event));
   if (!clientId) return { done: false, reason: "no_client" };
 
@@ -56,6 +58,15 @@ export async function handle({ event, db: database, step, placeCallImpl = placeC
   if (!phone) return { done: false, reason: "no_phone" };
 
   const { agent, source } = await step.run("resolve-josh", () => resolveJoshAgent(database, event.orgId));
+
+  // Same 11pm–11am Eastern window as SMS. Memoize the wake time so a replay
+  // after morning does not schedule a second dial.
+  const wakeAt = await step.run("quiet-hours-wake", () => {
+    const when = now();
+    if (!inQuietHours(when)) return null;
+    return nextQuietHoursEnd(when).toISOString();
+  });
+  if (wakeAt) await step.sleepUntil("wait-quiet-hours", new Date(wakeAt));
 
   const call = await step.run("place-josh-call", () => placeCallImpl({
     agent,
@@ -69,7 +80,20 @@ export async function handle({ event, db: database, step, placeCallImpl = placeC
 }
 
 export const aiSet01JoshSetter = inngest.createFunction(
-  { id: "ai-set-01-josh-setter", name: "AI-SET-01 — Josh Setter" },
+  {
+    id: "ai-set-01-josh-setter",
+    name: "AI-SET-01 — Josh Setter",
+    cancelOn: [
+      {
+        event: "booking.cancelled",
+        if: "event.data.payload.bookingUid != null && event.data.payload.bookingUid == async.data.payload.bookingUid"
+      },
+      {
+        event: "booking.cancelled",
+        if: "event.data.payload.email != null && event.data.payload.email == async.data.payload.email"
+      }
+    ]
+  },
   { event: "booking.created" },
   ({ event, step }) => handle({ event: event.data, db, step })
 );
