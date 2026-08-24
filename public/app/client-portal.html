@@ -1703,8 +1703,9 @@ document.addEventListener("DOMContentLoaded", async function () {
       rows.forEach(function (e) { if (e.active) active[e.entitlement_code] = e; });
 
       setFundingVisible(!!active[FUNDING_CODE]);
-      setUploadDoors(doorsFromEntitlementCodes(Object.keys(active)));
-      document.body.classList.add("no-docs");
+      var doorState = doorsFromEntitlementCodes(Object.keys(active));
+      setUploadDoors(doorState);
+      document.body.classList.toggle("no-docs", !(doorState.funding || doorState.inquiry || doorState.bureau_response));
       paintOwn(active);
       if (active[FUNDING_CODE]) {
         var sbLive = document.getElementById("sb-main");
