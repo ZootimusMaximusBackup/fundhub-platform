@@ -498,22 +498,40 @@ regen journey `-actual.md` on a clean tree (earlier regen mixed other routes).
 
 Detail board (pointer): `docs/workflows/commission-payout-crm-2026-08-22.md`
 
-### 5B.5 — Staff payout notice email (closer + sales manager)
+### 5B.5 — Staff payout notice email (closer + sales manager) — BUILT 2026-08-23
 
 When a ledger row is **Mark paid**, email that person:
 - you were paid / distributed
 - amount
 - expect ACH (or named rail) to hit today / on the stated schedule
 
-Hook: `commission.paid` (canonical event exists; **no workflow listener yet**).
-Affiliate has an AF4 “payout sent” template pattern; staff does not.
-Confirm copy with Chris before any live send. ACH is the intended rail.
+**Live wiring:** `commission.paid` → `src/handlers/staff-comp-alerts.mjs` →
+`notifyCommissionPaid` (Resend). Template `EMAIL-COMMISSION-PAID`
+(`db/seed/018_staff_comp_alerts.sql`). Needs staff email on the roster row.
+Code ships with the next deploy; seed is already applied on production DB.
 
-### 5B.6 — Deal-close dopamine reward (closer + sales manager)
+### 5B.6 — Deal-close dopamine reward (closer + sales manager) — BUILT 2026-08-23
 
-When a deal closes, send a short win ping to the closer and the sales manager.
-SMS first. Other channels TBD. Feel: reward / dopamine, not a tax form.
-Not built. Do not invent copy or cadence until Chris names this build.
+When a deal closes (`sale.closed` or `deposit.paid`), SMS win ping to the closer
+and sales manager on that sale (from `sale_attributions` / link actors).
+Template `SMS-DEAL-CLOSE-WIN`. Needs phone on the staff row. Queued like the
+booked-call staff text (same dispatcher path).
+
+### 5B.10 — Staff ACH payout rail (QUEUED — decide before build)
+
+Owner asked about Plaid for company → staff payouts. Current Plaid code in this
+repo is **client bank link only** (Finance OS seams — not implemented to transmit).
+Paying closers is a different product.
+
+Recommended path (owner pick later):
+1. **Near term (already works):** Approve → Mark paid + paste ACH batch id; Melio /
+   bank ACH / payroll outside the CRM. Email (5B.5) tells them money is coming.
+2. **Next:** Melio or similar bill-pay API that pushes ACH to staff bank details
+   stored on `staff` (routing + account, encrypted) — Mark paid auto-fills `payout_ref`.
+3. **Plaid Transfer** (not Plaid Link): company funding account + staff recipients.
+   Heavier compliance (SOC 2, consent). Only after (1)–(2) feel right for weeks.
+
+Do **not** build Transfer until Chris names this row as a build.
 
 ### 5B.7 — Ops pulse: role KPIs → CEO / owner brief → hire / fire / assign (QUEUED)
 
@@ -522,7 +540,7 @@ Not built. Do not invent copy or cadence until Chris names this build.
 
 What it is (plain):
 - Watch leads in, and every role’s numbers, by day and by week.
-- Every role is tracked and audited. Each role has KPIs (owner said eight).
+- Every role is tracked and audited. Company pulse is eight KPIs (locked 2026-08-23). Each seat also has its own short list.
 - From those numbers, tell the **CEO what needs to be done**, and tell **Chris what is going to be done**.
 - Example: calendars filling too fast → hire another closer; same pattern for fulfillment and every other role.
 - Keep an ongoing pulse. Over time the agent learns (Hermes / training). AI should be able to recommend from KPIs without a new product speech each week.
@@ -536,10 +554,18 @@ Capability check already done in that thread — **current CRM cannot run this l
 - Reuse later, do not invent a second copy: `staff_targets` (role/person, daily/weekly/monthly), `src/sales/metrics.mjs`, `GET /api/dashboard/kpis`, `createTask`, hiring stages, LinkedIn post/close.
 
 Needed before it can be built (do not guess):
-- the eight KPIs per role, named
+- the eight KPIs per role, named → **done 2026-08-23:** company 8 + per-role lists (this section + Ops thread plan). Credit Repair is two seats; new login later.
 - who is CEO vs Chris on the two briefs if they are not the same person
 - which metric crossing which line means hire vs fire vs assign a checklist
 - whether LinkedIn hiring is in v1 or later
+
+**Org seats (owner-set 2026-08-23)**
+
+- CEO = `owner`. AI COO = this agent (no login). Sales manager. Closer (client may hear “funding specialist” — same seat). Funding advisor (after the close, not the closer). Inquiry remover and Credit repair = **two people**. Setter = **AI** (count bookings, never hire setters). Calendar-too-full hires a closer.
+
+**Company 8** (already in `GET /api/dashboard/kpis`): new clients, booked calls, show rate, close rate, cash, funded count, funded dollars, cost per funded.
+
+**Role KPIs:** sales manager (booked/held/deposits vs target; closers on shift vs calendar); closer (booked, held, show, deposits, cash vs target, unlogged); funding advisor (need me, submissions, funded count/dollars); inquiry (need me, open cases, removals); credit repair (files in round, letters sent, stuck).
 
 Detail board (pointer): `docs/workflows/ops-kpi-agent-2026-08-22.md`
 

@@ -7,6 +7,7 @@ import { register as registerLifecycle } from "./handlers/client-lifecycle.mjs";
 import { register as registerComms } from "./handlers/comms.mjs";
 import { register as registerPaymentLinks } from "./handlers/payment-links.mjs";
 import { register as registerMoneyChain } from "./handlers/money-chain.mjs";
+import { register as registerStaffCompAlerts } from "./handlers/staff-comp-alerts.mjs";
 import { register as registerCustomerInsights } from "./handlers/customer-insights.mjs";
 import { register as registerInquiryGate } from "./handlers/inquiry-gate.mjs";
 import { register as registerInquiryDocs } from "./handlers/inquiry-docs.mjs";
@@ -24,6 +25,8 @@ export function registerAll() {
   registerComms();
   registerPaymentLinks();
   registerMoneyChain();
+  /* After money-chain so sale_attributions exist when a deal-close win SMS runs. */
+  registerStaffCompAlerts();
   registerCustomerInsights();
   registerInquiryGate();
   registerInquiryDocs();

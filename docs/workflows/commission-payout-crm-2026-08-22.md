@@ -1,28 +1,22 @@
-# Commission payout CRM — 2026-08-22
+# Commission payout CRM — pointer into the CRM repair board
 
-COMPLIANCE REVIEW REQUIRED — commission timing / payout recording.
+**Do not treat this file as a second master list.** The durable backlog lives in:
 
-## Scope (owner-approved)
+**`docs/workflows/build-spec-2026-08-22.md` → section 5B.4 / 5B.5 / 5B.6 / 5B.10**
 
-CRM tracking only: period ledger + Approve + Mark paid with `payout_ref`.
-No auto ACH. Commas stays client-pay-in only.
+That is the shared board for the [CRM build repair process](c0df1039-a500-4f6c-8de3-68e3c82fcf1e) thread.
 
-## Status
+| Id | What | Status |
+|---|---|---|
+| **5B.4** | Approve / Mark paid on Products & Commissions | **Live** on `main` |
+| **5B.5** | Email closer/manager on Mark paid (amount + ACH expected) | **Built** — needs deploy for code; seed live in DB |
+| **5B.6** | Deal-close dopamine SMS for closer + sales manager | **Built** — needs deploy; needs staff phones |
+| **5B.10** | Real ACH rail (Melio / Plaid Transfer) | Queued — see build-spec |
 
-| Unit | Status |
-|---|---|
-| `src/commissions/payout.mjs` | done |
-| `POST /api/commissions` | done |
-| Products & Commissions UI | done |
-| Unit + Postgres proof (rollback) | done |
-| Live deploy + human click | waiting — other threads building; no Netlify yet |
-| Journey `-actual.md` regen | deferred to ship (working tree mixes other routes) |
+COMPLIANCE REVIEW REQUIRED when shipping 5B.5 / 5B.6.
 
-## Files
+## Staff setup so alerts fire
 
-- `src/commissions/payout.mjs` + `payout.test.mjs` + `payout.pg.test.mjs`
-- `api/commissions.mjs`
-- `netlify/functions/api.mjs` (route)
-- `public/app/products-commissions.html`
-- `src/commissions/index.mjs` (re-export)
-- `docs/journeys/*-actual.md` + CHANGELOG
+1. Staff & Teams: each closer/manager needs **email** (payout notice) and **phone** (win SMS).
+2. After Mark paid: they get the email if Resend is live (`MESSAGING_DRY_RUN` off).
+3. After deposit/sale close: they get the SMS if attributed on the sale and phone is set.
