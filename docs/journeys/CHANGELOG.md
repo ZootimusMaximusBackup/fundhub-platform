@@ -1,3 +1,4 @@
+2026-08-23 | client | welcome, portal invite, offer email, and doc request now take a one-shot database lock so a double form ping cannot send twice | form pinged new lead repeatedly and welcome ran more than once | (this commit)
 2026-08-23 | role-closer | closer deposit_collected rate superseded to one sixth | owner chose one sixth not 16.67% | (this commit)
 2026-08-22 | messaging/templates | seed 015 live template backfill of 41 keys so scratch matches production. | live-only rows made funding queue 0 emails look like a code bug | (this commit)
 2026-08-22 | (no `-intended.md` edited; no `-actual.md` moved) | Dragging a card to Closed still emits `round.closeout` for N-04, but inquiry-gate now skips that payload (`stage=closed` / `engagementComplete`) so finishing an engagement does not open a new inquiry case. Money-chain per-round closeout still raises the gate. | Closed-column closeout must not start a new inquiry | (this commit)

@@ -6,7 +6,7 @@ import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { requestMagicLink } from "../auth/magic-link.mjs";
-import { mergeCustomFields } from "./custom-fields.mjs";
+import { claimCustomFieldLock } from "./custom-fields.mjs";
 
 export const LOCK_FIELD = "portal_invite_sent_at";
 
@@ -23,13 +23,9 @@ export async function handle({ event, db, step, requestMagicLinkImpl = requestMa
   });
   if (!email) return { done: false, reason: "no_email" };
 
-  const locked = await step.run("check-portal-invite", async () => {
-    const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
-    return Boolean(r.rows[0]?.custom_fields?.[LOCK_FIELD]);
-  });
-  if (locked) return { done: false, reason: "already_locked" };
-  await step.run("lock-portal-invite", () =>
-    mergeCustomFields(db, clientId, { [LOCK_FIELD]: new Date().toISOString() }));
+  const claimed = await step.run("claim-portal-invite", () =>
+    claimCustomFieldLock(db, clientId, LOCK_FIELD));
+  if (!claimed) return { done: false, reason: "already_locked" };
 
   const issued = await step.run("send-portal-invite", () =>
     requestMagicLinkImpl(db, { email, orgId }));

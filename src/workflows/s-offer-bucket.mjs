@@ -6,7 +6,7 @@ import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { sendTemplated } from "./messaging.mjs";
-import { mergeCustomFields } from "./custom-fields.mjs";
+import { claimCustomFieldLock } from "./custom-fields.mjs";
 
 export const LOCK_FIELD = "offer_bucket_email_sent_at";
 
@@ -43,13 +43,9 @@ export async function handle({ event, db, step }) {
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
 
-  const locked = await step.run("check-offer-email", async () => {
-    const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
-    return Boolean(r.rows[0]?.custom_fields?.[LOCK_FIELD]);
-  });
-  if (locked) return { done: false, reason: "already_locked" };
-  await step.run("lock-offer-email", () =>
-    mergeCustomFields(db, clientId, { [LOCK_FIELD]: new Date().toISOString() }));
+  const claimed = await step.run("claim-offer-email", () =>
+    claimCustomFieldLock(db, clientId, LOCK_FIELD));
+  if (!claimed) return { done: false, reason: "already_locked" };
 
   const email = await step.run("send-offer-email", () =>
     sendTemplated(db, {

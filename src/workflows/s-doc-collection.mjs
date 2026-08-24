@@ -5,7 +5,7 @@ import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { sendTemplated } from "./messaging.mjs";
-import { mergeCustomFields } from "./custom-fields.mjs";
+import { mergeCustomFields, claimCustomFieldLock } from "./custom-fields.mjs";
 import { addTags } from "./tags.mjs";
 import { FUNDING_DOC_HOLD } from "../inquiry-ops/doc-gate.mjs";
 
@@ -17,13 +17,9 @@ export async function handle({ event, db, step }) {
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
 
-  const locked = await step.run("check-doc-request", async () => {
-    const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
-    return Boolean(r.rows[0]?.custom_fields?.[LOCK_FIELD]);
-  });
-  if (locked) return { done: false, reason: "already_locked" };
-  await step.run("lock-doc-request", () =>
-    mergeCustomFields(db, clientId, { [LOCK_FIELD]: new Date().toISOString() }));
+  const claimed = await step.run("claim-doc-request", () =>
+    claimCustomFieldLock(db, clientId, LOCK_FIELD));
+  if (!claimed) return { done: false, reason: "already_locked" };
 
   const orgId = event.orgId;
   const eventId = event.id;

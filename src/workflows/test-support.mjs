@@ -224,6 +224,16 @@ export function pgFake(seed = {}) {
         return { rows: c ? [{ outcome_tier: c.outcome_tier || null }] : [] };
       }
 
+      // --- clients.custom_fields claim (empty-field lock) ---
+      if (/UPDATE clients/.test(sql) && /custom_fields->>/.test(sql) && /RETURNING id/.test(sql)) {
+        const c = clients.find((c) => c.id === params[0]);
+        const field = params[2];
+        if (!c) return { rows: [] };
+        if (c.custom_fields?.[field]) return { rows: [] };
+        c.custom_fields = { ...(c.custom_fields || {}), ...JSON.parse(params[1]) };
+        return { rows: [{ id: c.id }] };
+      }
+
       // --- clients.custom_fields merge (mirrors src/handlers/client-lifecycle.mjs) ---
       if (/UPDATE clients SET custom_fields/.test(sql)) {
         const c = clients.find((c) => c.id === params[0]);

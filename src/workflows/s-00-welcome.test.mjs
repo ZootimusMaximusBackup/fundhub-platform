@@ -46,3 +46,19 @@ test("s-00: second entry.captured does not send again", async () => {
   assert.equal(second.reason, "already_locked");
   assert.equal(db.messages.length, 2);
 });
+
+test("s-00: two pings at once still send welcome only once", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
+    templates: templates()
+  });
+  const [a, b] = await Promise.all([
+    handle({ event: ev("entry.captured", {}, { id: "evt-a", clientId: "cl-1" }), db, step: fakeStep() }),
+    handle({ event: ev("entry.captured", {}, { id: "evt-b", clientId: "cl-1" }), db, step: fakeStep() })
+  ]);
+  const wins = [a, b].filter((r) => r.done).length;
+  const skips = [a, b].filter((r) => r.reason === "already_locked").length;
+  assert.equal(wins, 1);
+  assert.equal(skips, 1);
+  assert.equal(db.messages.length, 2);
+});
