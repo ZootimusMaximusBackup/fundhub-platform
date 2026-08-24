@@ -220,7 +220,7 @@ describe("client detail derivations", () => {
       client: { custom_fields: { call_outcome: "no_show" } },
       tasks: [{
         title: "Strategy session booked",
-        source_workflow: "calcom",
+        source_workflow: "clickfunnels",
         due_at: "2026-08-13T18:00:00.000Z",
         done: false
       }]

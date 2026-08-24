@@ -171,7 +171,7 @@ export async function runFundingJourney(db, ctx, collector) {
     section, journey, role, id: "fund-closer-task",
     claim: "Booking created a closer task",
     count: tasks.length >= 1 ? 1 : 0, expected: 1,
-    file: "src/adapters/calcom.mjs",
+    file: "src/adapters/clickfunnels.mjs",
     opReturnedOk: true
   });
   steps.push({

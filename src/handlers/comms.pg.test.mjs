@@ -45,7 +45,7 @@ test("comms events persist to Postgres and replay is idempotent", { skip: !HAS_D
   await emit(db, "message.inbound", { from: PHONE, body: "yes please", sid: "SM_pg1", channel: "sms", source: "twilio" }, { idempotencyKey: "cpg:sms" });
   await emit(db, "call.completed", { callId: "call_pg1", status: "completed", disposition: "transferred", source: "bland" }, { idempotencyKey: "cpg:call" });
   await emit(db, "mail.response", { from: EMAIL, subject: "Approved", classification: "APPROVED", source: "mailgun" }, { idempotencyKey: "cpg:mail" });
-  await emit(db, "booking.created", { email: EMAIL, name: "Comms Tester", bookingUid: "bk_pg1", startTime: "2026-08-01T15:00:00Z", source: "calcom" }, { idempotencyKey: "cpg:booking" });
+  await emit(db, "booking.created", { email: EMAIL, name: "Comms Tester", bookingUid: "bk_pg1", startTime: "2026-08-01T15:00:00Z", source: "clickfunnels" }, { idempotencyKey: "cpg:booking" });
 
   const clientId = (await db.query(`SELECT id FROM clients WHERE email=$1`, [EMAIL])).rows[0].id;
 
@@ -65,7 +65,7 @@ test("comms events persist to Postgres and replay is idempotent", { skip: !HAS_D
 
   const tasks = (await db.query(`SELECT * FROM tasks WHERE body='bk_pg1'`)).rows;
   assert.equal(tasks.length, 1);
-  assert.equal(tasks[0].source_workflow, "calcom");
+  assert.equal(tasks[0].source_workflow, "clickfunnels");
 
   // replay every stored event — no duplicates
   await replay(db, {});

@@ -40,7 +40,7 @@ export default async function handler(req, res) {
   try {
     await emit(db, "entry.captured", P({ name, phone: `+1555${String(stamp).slice(-7)}`, source: "clickfunnels" }), k("entry"));
     await emit(db, "survey.submitted", P({ answers: { cf_svy_why: "grow the business", clarity: "high" } }), k("survey"));
-    await emit(db, "booking.created", P({ name, bookingUid: `seed_bk_${stamp}`, startTime: new Date(stamp + 864e5).toISOString(), source: "calcom" }), k("booking"));
+    await emit(db, "booking.created", P({ name, bookingUid: `seed_bk_${stamp}`, startTime: new Date(stamp + 864e5).toISOString(), source: "clickfunnels" }), k("booking"));
     await emit(db, "payment.received", P({ productName: "Business Financial Assessment", amount: 32, providerRef: `seed_t32_${stamp}`, source: "commas" }), k("pay32"));
     await emit(db, "diagnostic.paid", P({}), k("diag"));
     await emit(db, "analysis.completed", P({ outcomeTier: tier, scores: { ex: 700, eq: 705, tu: 712 }, utilization: 14 }), k("analysis"));

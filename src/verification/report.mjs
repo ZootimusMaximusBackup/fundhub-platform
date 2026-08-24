@@ -180,7 +180,6 @@ export function writeReport({ collector, meta = {}, journeyNotes = [], credentia
   const credRows = credentials.length ? credentials : [
     { check: "Real ClickFunnels webhook field paths", credential: "Live CF webhook sample + CLICKFUNNELS_WEBHOOK_SECRET" },
     { check: "Real Commas payment.succeeded payload", credential: "COMMAS_WEBHOOK_SECRET + live event sample" },
-    { check: "Real Cal.com booking payload", credential: "CALCOM_WEBHOOK_SECRET + live booking" },
     { check: "Twilio inbound SMS + status callbacks", credential: "TWILIO_AUTH_TOKEN + real MessageSid" },
     { check: "Mailgun inbound bank-email parse", credential: "MAILGUN_WEBHOOK_SIGNING_KEY + real MIME" },
     { check: "Bland AI voice call outcome", credential: "BLAND_WEBHOOK_SECRET + live call" },

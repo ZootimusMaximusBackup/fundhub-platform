@@ -95,7 +95,6 @@ export function gatherRails(env = process.env) {
     commas: "COMMAS_WEBHOOK_SECRET",
     clickfunnels: "CLICKFUNNELS_WEBHOOK_SECRET",
     bland: "BLAND_WEBHOOK_SECRET",
-    calcom: "CALCOM_WEBHOOK_SECRET",
     lendflow: "LENDFLOW_WEBHOOK_SECRET",
     twilio: "TWILIO_AUTH_TOKEN",
     mailgun: "MAILGUN_SIGNING_KEY"

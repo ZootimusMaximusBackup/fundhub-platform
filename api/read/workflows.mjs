@@ -121,23 +121,21 @@ export const EVENT_EMITTERS = {
   },
   "booking.created": {
     emitters: [
-      { how: "The Cal.com booking webhook.", gate: "CALCOM_WEBHOOK_SECRET" },
       { how: "The ClickFunnels webhook, when the funnel books the call itself.", gate: "CLICKFUNNELS_WEBHOOK_SECRET" }
     ],
-    note: "The 30 bookings on file came in through ClickFunnels. None came from Cal.com."
+    note: "Live book page is ClickFunnels. Cal.com was removed 2026-08-23."
   },
   "booking.rescheduled": {
     emitters: [
-      { how: "The Cal.com booking webhook.", gate: "CALCOM_WEBHOOK_SECRET" },
       { how: "The ClickFunnels webhook, when the booked slot is moved.", gate: "CLICKFUNNELS_WEBHOOK_SECRET" }
     ],
     note: "Cancels in-flight S-04B and BS-01 runs and restarts them on the new start time."
   },
   "booking.noshow": {
     emitters: [
-      { how: "The Cal.com booking webhook. Nothing else emits it.", gate: "CALCOM_WEBHOOK_SECRET" }
+      { how: "dpc-02 marks a no-show 5 minutes after the appointment ends, then emits this.", gate: null }
     ],
-    note: "One old row exists and nobody has been able to explain where it came from."
+    note: "Cal.com used to be the only emitter. It was removed 2026-08-23."
   },
   "call.completed": {
     emitters: [

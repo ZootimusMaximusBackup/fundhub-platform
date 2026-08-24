@@ -177,7 +177,7 @@ test("every adapter that exports a webhook handler is reachable through the rout
 });
 
 test("no adapter accepts an unsigned webhook — all fail closed", async () => {
-  const providers = ["commas", "clickfunnels", "bland", "calcom", "twilio", "mailgun", "lendflow"];
+  const providers = ["commas", "clickfunnels", "bland", "twilio", "mailgun", "lendflow"];
   const accepted = [];
   for (const provider of providers) {
     reset();
@@ -189,6 +189,17 @@ test("no adapter accepts an unsigned webhook — all fail closed", async () => {
   }
   assert.deepEqual(accepted, [],
     `adapter(s) accepted an unsigned webhook with no secret configured: ${accepted.join(", ")}`);
+});
+
+test("Cal.com is gone — /api/webhooks/calcom and /cal answer 404", async () => {
+  for (const provider of ["calcom", "cal"]) {
+    reset();
+    const out = await handleWebhook({
+      db: fakeDb(), provider, rawBody: "{}", headers: {},
+      url: `https://x/api/webhooks/${provider}`, env: {}
+    });
+    assert.equal(out.status, 404, `${provider} must not have an adapter`);
+  }
 });
 
 test("mailgun: invalid JSON → 400", async () => {

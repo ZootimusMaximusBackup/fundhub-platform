@@ -440,7 +440,7 @@ describe("/api/bookings + bookings store", { skip: !HAVE_DB ? "no DATABASE_URL" 
     });
     await onBookingCancelled({
       id: "evt-cancel", orgId: orgA, clientId: clientA, name: "booking.cancelled",
-      payload: { email: "bookings_pg_test_client@example.com", bookingUid: "uid-cancel", source: "calcom" }
+      payload: { email: "bookings_pg_test_client@example.com", bookingUid: "uid-cancel", source: "clickfunnels" }
     }, db);
     const cancelled = await findByProviderUid(db, { orgId: orgA, providerUid: "uid-cancel" });
     assert.equal(cancelled.status, "cancelled");

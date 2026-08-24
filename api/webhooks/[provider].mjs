@@ -2,7 +2,6 @@
 //   POST /api/webhooks/commas   → Commas payments
 //   POST /api/webhooks/twilio   → inbound SMS
 //   POST /api/webhooks/mailgun  → bank inbox
-//   POST /api/webhooks/calcom   → bookings
 //   POST /api/webhooks/bland    → voice calls
 //   POST /api/webhooks/clickfunnels → funnel entry/survey
 // Raw body is required (adapters verify signatures over the exact bytes), so the

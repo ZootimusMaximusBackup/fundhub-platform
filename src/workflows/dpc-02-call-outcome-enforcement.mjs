@@ -53,7 +53,7 @@ export async function handle({ event, db, step }) {
   await step.run("set-call-outcome-no-show", () => mergeCustomFields(db, clientId, { call_outcome: "no_show" }));
   await step.run("tag-no-show", () => addTags(db, clientId, ["call:no_show"]));
   const card = await step.run("move-to-no-show", () => moveCardToStage(db, { orgId, clientId, pipelineKey: "sales", stageKey: "lost" }));
-  // Live detector: Cal.com does not emit booking.noshow. S-05A listens to it.
+  // Live detector: emit booking.noshow so S-05A can start.
   const payload = event.payload || {};
   await step.run("emit-booking-noshow", () =>
     emit(db, "booking.noshow", payload, {

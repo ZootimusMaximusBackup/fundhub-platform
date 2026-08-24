@@ -68,7 +68,7 @@ test("register wires funded interview and paid mid check-in", () => {
 
 test("funded round creates a Google Meet interview task for the funding advisor", async () => {
   const db = fakeDb();
-  const env = { INSIGHT_MEET_BOOKING_URL: "https://cal.com/fundhub/post-funding-interview" };
+  const env = { INSIGHT_MEET_BOOKING_URL: "https://apply.fundhub.ai/funding-book-call" };
   const res = await onRoundFundedInsights(
     { id: "evt-funded-1", orgId: "org-1", clientId: "client-1", payload: {} },
     db,
@@ -79,9 +79,9 @@ test("funded round creates a Google Meet interview task for the funding advisor"
   assert.equal(task.title, TASK_TITLE);
   assert.equal(task.assignee_role, ASSIGNEE_ROLE);
   assert.equal(task.source_workflow, SOURCE_WORKFLOW);
-  assert.equal(task.meeting_url, "https://cal.com/fundhub/post-funding-interview");
+  assert.equal(task.meeting_url, "https://apply.fundhub.ai/funding-book-call");
   assert.match(task.body, /Google Meet/);
-  assert.match(task.body, /cal\.com\/fundhub\/post-funding-interview/);
+  assert.match(task.body, /apply\.fundhub\.ai\/funding-book-call/);
   assert.match(task.body, /What almost stopped you/);
   assert.match(task.body, /\[event:evt-funded-1\]/);
 });
@@ -91,7 +91,7 @@ test("booking.created for interview event stamps meeting_url on the post-funding
   await onRoundFundedInsights(
     { id: "evt-funded-2", orgId: "org-1", clientId: "client-1", payload: {} },
     db,
-    { INSIGHT_MEET_BOOKING_URL: "https://cal.com/fundhub/post-funding-interview" }
+    { INSIGHT_MEET_BOOKING_URL: "https://apply.fundhub.ai/funding-book-call" }
   );
   const res = await onInterviewBooked({
     orgId: "org-1",

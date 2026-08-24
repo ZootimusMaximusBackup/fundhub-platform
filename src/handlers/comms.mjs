@@ -6,7 +6,7 @@
 //                                 -> messages row (inbound, channel off the payload)
 //   call.completed  (Bland voice) -> messages row (channel=voice, outbound)
 //   mail.response   (Mailgun)     -> bank_inbox row (classified bank email)
-//   booking.created (Cal.com)     -> tasks row (closer follow-up on the booking)
+//   booking.created (ClickFunnels) -> tasks row (closer follow-up on the booking)
 //
 // Idempotent (Rule 9): messages dedupe on (org, provider_ref) via migration 004;
 // bank_inbox + tasks self-dedupe with a guard SELECT keyed by the event id /

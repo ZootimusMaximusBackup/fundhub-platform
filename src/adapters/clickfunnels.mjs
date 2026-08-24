@@ -58,7 +58,7 @@ function headerValue(headers, name) {
   return undefined;
 }
 
-// Appointment webhook types (ClickFunnels booking calendar — not Cal.com).
+// Appointment webhook types (ClickFunnels booking calendar).
 const APPOINTMENT_CREATED = "appointments/scheduled_event.created";
 const APPOINTMENT_RESCHEDULED = "appointments/scheduled_event.rescheduled";
 const APPOINTMENT_CANCELED = "appointments/scheduled_event.canceled";
@@ -271,7 +271,7 @@ export function normalizeClickFunnelsEvent(body) {
 
   const attribution = pickVisitAttribution(d, b, contact);
 
-  // Appointment slot fields — same names the Cal.com adapter emits downstream.
+  // Appointment slot fields the booking handlers already read.
   const startTime = d.start_on || d.startTime || schedule?.start_on || b.start_on || null;
   const endTime = d.end_on || d.endTime || schedule?.end_on || b.end_on || null;
   const tzid = d.tzid || schedule?.tzid || b.tzid || null;
@@ -434,7 +434,7 @@ export async function handleClickFunnelsWebhook({
       c.name === "booking.rescheduled" ||
       c.name === "booking.cancelled"
     ) {
-      // Same shape as src/adapters/calcom.mjs so booking handlers stay unchanged.
+      // Same booking payload shape the handlers already read.
       payload = {
         bookingUid: evt.bookingUid,
         startTime: evt.startTime,

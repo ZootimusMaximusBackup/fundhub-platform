@@ -22,7 +22,7 @@ printf '%s' 'pick-a-long-secret'  | vercel env add DASHBOARD_SECRET production
 printf '%s' 'production'          | vercel env add NODE_ENV production
 printf '%s' 'fundhub'             | vercel env add DEFAULT_ORG_SLUG production
 ```
-(Provider webhook secrets — COMMAS_WEBHOOK_SECRET, TWILIO_AUTH_TOKEN, MAILGUN_SIGNING_KEY, CALCOM_WEBHOOK_SECRET, BLAND_WEBHOOK_SECRET, CLICKFUNNELS_WEBHOOK_SECRET — add later, only when wiring a live source.)
+(Provider webhook secrets — COMMAS_WEBHOOK_SECRET, TWILIO_AUTH_TOKEN, MAILGUN_SIGNING_KEY, BLAND_WEBHOOK_SECRET, CLICKFUNNELS_WEBHOOK_SECRET — add later, only when wiring a live source.)
 
 ## 4. Deploy
 ```
@@ -83,5 +83,5 @@ Three things worth knowing before the first deploy:
 
 ## Notes
 - No `DASHBOARD_SECRET` set + `NODE_ENV=production` → dashboard endpoints return 401 (fail-closed). Always set the secret.
-- Webhook endpoints live at `POST /api/webhooks/{commas|twilio|mailgun|calcom|bland|clickfunnels}`.
+- Webhook endpoints live at `POST /api/webhooks/{commas|twilio|mailgun|bland|clickfunnels}`.
 - This runs ALONGSIDE the live GHL system — nothing here touches production GHL/Airtable.

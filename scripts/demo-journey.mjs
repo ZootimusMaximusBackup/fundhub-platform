@@ -22,7 +22,7 @@ async function wipe() {
 const steps = [
   ["entry.captured",     { email: EMAIL, name: "Demo Client", phone: "+15551230000", source: "clickfunnels" }],
   ["survey.submitted",   { email: EMAIL, answers: { cf_svy_why: "expand my business", clarity: "high" } }],
-  ["booking.created",    { email: EMAIL, name: "Demo Client", bookingUid: "demo_bk_1", startTime: "2026-08-05T17:00:00Z", source: "calcom" }],
+  ["booking.created",    { email: EMAIL, name: "Demo Client", bookingUid: "demo_bk_1", startTime: "2026-08-05T17:00:00Z", source: "clickfunnels" }],
   ["payment.received",   { email: EMAIL, productName: "Business Financial Assessment", amount: 32, providerRef: "demo_txn_32", source: "commas" }],
   ["diagnostic.paid",    { email: EMAIL }],
   ["analysis.completed", { email: EMAIL, outcomeTier: "FULL_FUNDING", scores: { ex: 735, eq: 728, tu: 740 }, utilization: 12, reasonCodes: ["low_util", "seasoned_tradelines"] }],

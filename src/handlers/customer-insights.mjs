@@ -1,6 +1,6 @@
 // Three collections: start (existing apply survey), mid check-in, ending interview.
-// Google Meet is only for the sales call (Cal.com already stamps meeting_url) and
-// the ending interview. Mid is a phone / AI reach-out, due one week after they pay.
+// Google Meet is only for the sales call and the ending interview.
+// Mid is a phone / AI reach-out, due one week after they pay.
 
 import { on } from "../events/registry.mjs";
 import { createTask } from "../lib/create-task.mjs";
@@ -23,7 +23,7 @@ export function interviewTaskBody(eventId, env = process.env) {
   const lines = [
     bookUrl
       ? `Send the client this booking link (Google Meet is created when they book): ${bookUrl}`
-      : "Book a Google Meet (set INSIGHT_MEET_BOOKING_URL on Netlify for a Cal.com link).",
+      : "Book a Google Meet (set INSIGHT_MEET_BOOKING_URL on Netlify).",
     "Click Record in Google Meet. Ask these questions. Save answers with POST /api/customer-insights (stage=post, channel=google_meet).",
     RECORDING_NOTE,
     "",

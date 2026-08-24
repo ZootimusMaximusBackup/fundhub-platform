@@ -631,7 +631,7 @@ export async function handleMailgunWebhook({ db, body, signingKey }) {
      was the shipped configuration, not a hypothetical.
 
      verifyMailgunSignature already returns false for a missing key; the bug was
-     never calling it. commas/twilio/calcom/bland/clickfunnels all fail closed —
+     never calling it. commas/twilio/bland/clickfunnels all fail closed —
      mailgun was the sole exception, and the file's own header comment claimed
      otherwise. */
   if (!verifyMailgunSignature(evt.timestamp, evt.token, evt.signature, signingKey)) {

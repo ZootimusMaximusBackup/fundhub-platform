@@ -217,7 +217,7 @@ test("mail.response: inserts bank_inbox once, replay guard skips the second", as
 
 test("booking.created: creates a task once (dedup by booking uid), creates client from email", async () => {
   const db = pgFake();
-  const e = ev("booking.created", { email: "lead@x.com", name: "Lead Person", bookingUid: "bk_1", startTime: "2026-08-01T15:00:00Z", source: "calcom" });
+  const e = ev("booking.created", { email: "lead@x.com", name: "Lead Person", bookingUid: "bk_1", startTime: "2026-08-01T15:00:00Z", source: "clickfunnels" });
   await onBookingCreated(e, db);
   await onBookingCreated(e, db);
   assert.equal(db.tasks.length, 1);
@@ -229,7 +229,7 @@ test("booking.created: stores meetingUrl on the task", async () => {
   const db = pgFake();
   const e = ev("booking.created", {
     email: "meet@x.com", name: "Meet Person", bookingUid: "bk_meet", startTime: "2026-08-01T15:00:00Z",
-    source: "calcom", meetingUrl: "https://meet.example.com/abc"
+    source: "clickfunnels", meetingUrl: "https://meet.example.com/abc"
   });
   await onBookingCreated(e, db);
   assert.equal(db.tasks[0].meeting_url, "https://meet.example.com/abc");
@@ -238,11 +238,11 @@ test("booking.created: stores meetingUrl on the task", async () => {
 // booking.rescheduled — updates the existing task in place (no second task).
 test("booking.rescheduled: updates the existing open task's due_at + meeting_url in place", async () => {
   const db = pgFake();
-  const created = ev("booking.created", { email: "resched@x.com", bookingUid: "bk_2", startTime: "2026-08-01T15:00:00Z", source: "calcom" });
+  const created = ev("booking.created", { email: "resched@x.com", bookingUid: "bk_2", startTime: "2026-08-01T15:00:00Z", source: "clickfunnels" });
   await onBookingCreated(created, db);
   const rescheduled = ev("booking.rescheduled", {
     clientId: db.clients[0].id, bookingUid: "bk_2", startTime: "2026-08-02T15:00:00Z",
-    meetingUrl: "https://meet.example.com/new", source: "calcom"
+    meetingUrl: "https://meet.example.com/new", source: "clickfunnels"
   }, { clientId: db.clients[0].id });
   await onBookingRescheduled(rescheduled, db);
   assert.equal(db.tasks.length, 1, "no second task created — the open one was updated");
@@ -255,7 +255,7 @@ test("booking.rescheduled: updates the existing open task's due_at + meeting_url
 test("booking.rescheduled: no open task found → creates one (rescheduled before created seen)", async () => {
   const db = pgFake();
   db.clients.push({ id: "cl-resched", org_id: "org-1", email: "noopen@x.com", tags: [], custom_fields: {} });
-  const e = ev("booking.rescheduled", { clientId: "cl-resched", bookingUid: "bk_3", startTime: "2026-08-03T15:00:00Z", source: "calcom" }, { clientId: "cl-resched" });
+  const e = ev("booking.rescheduled", { clientId: "cl-resched", bookingUid: "bk_3", startTime: "2026-08-03T15:00:00Z", source: "clickfunnels" }, { clientId: "cl-resched" });
   await onBookingRescheduled(e, db);
   assert.equal(db.tasks.length, 1);
   assert.equal(db.tasks[0].body, "bk_3");
@@ -265,10 +265,10 @@ test("booking.rescheduled: no open task found → creates one (rescheduled befor
 // booking.cancelled — closes the open task, tags, sets custom field. No re-nurture task.
 test("booking.cancelled: marks the open task done, tags call:cancelled, sets call_outcome", async () => {
   const db = pgFake();
-  const created = ev("booking.created", { email: "cancel@x.com", bookingUid: "bk_4", startTime: "2026-08-01T15:00:00Z", source: "calcom" });
+  const created = ev("booking.created", { email: "cancel@x.com", bookingUid: "bk_4", startTime: "2026-08-01T15:00:00Z", source: "clickfunnels" });
   await onBookingCreated(created, db);
   const clientId = db.clients[0].id;
-  const cancelled = ev("booking.cancelled", { clientId, bookingUid: "bk_4", source: "calcom" }, { clientId });
+  const cancelled = ev("booking.cancelled", { clientId, bookingUid: "bk_4", source: "clickfunnels" }, { clientId });
   await onBookingCancelled(cancelled, db);
   assert.equal(db.tasks[0].done, true);
   assert.deepEqual(db.clients[0].tags, ["call:booked", "call:cancelled"]);
@@ -277,10 +277,10 @@ test("booking.cancelled: marks the open task done, tags call:cancelled, sets cal
 
 test("booking.cancelled: replay is idempotent (task stays done, tag not duplicated)", async () => {
   const db = pgFake();
-  const created = ev("booking.created", { email: "cancel2@x.com", bookingUid: "bk_5", startTime: "2026-08-01T15:00:00Z", source: "calcom" });
+  const created = ev("booking.created", { email: "cancel2@x.com", bookingUid: "bk_5", startTime: "2026-08-01T15:00:00Z", source: "clickfunnels" });
   await onBookingCreated(created, db);
   const clientId = db.clients[0].id;
-  const cancelled = ev("booking.cancelled", { clientId, bookingUid: "bk_5", source: "calcom" }, { clientId });
+  const cancelled = ev("booking.cancelled", { clientId, bookingUid: "bk_5", source: "clickfunnels" }, { clientId });
   await onBookingCancelled(cancelled, db);
   await onBookingCancelled(cancelled, db);
   assert.equal(db.tasks.length, 1);
@@ -290,10 +290,10 @@ test("booking.cancelled: replay is idempotent (task stays done, tag not duplicat
 // booking.noshow — closes the open task, tags call:no_show, sets call_outcome.
 test("booking.noshow: marks the open task done, tags call:no_show, sets call_outcome", async () => {
   const db = pgFake();
-  const created = ev("booking.created", { email: "noshow@x.com", bookingUid: "bk_6", startTime: "2026-08-01T15:00:00Z", source: "calcom" });
+  const created = ev("booking.created", { email: "noshow@x.com", bookingUid: "bk_6", startTime: "2026-08-01T15:00:00Z", source: "clickfunnels" });
   await onBookingCreated(created, db);
   const clientId = db.clients[0].id;
-  const noshow = ev("booking.noshow", { clientId, bookingUid: "bk_6", source: "calcom" }, { clientId });
+  const noshow = ev("booking.noshow", { clientId, bookingUid: "bk_6", source: "clickfunnels" }, { clientId });
   await onBookingNoshow(noshow, db);
   assert.equal(db.tasks[0].done, true);
   assert.deepEqual(db.clients[0].tags, ["call:booked", "call:no_show"]);
@@ -410,7 +410,7 @@ test("booking.cancelled: a cancellation that DOES match still sets the status", 
   }), db);
   const clientId = db.clients[0].id;
   await onBookingCancelled(ev("booking.cancelled", {
-    clientId, bookingUid: "UID-H", source: "calcom"
+    clientId, bookingUid: "UID-H", source: "clickfunnels"
   }, { clientId, id: "evt-realcancel" }), db);
   assert.equal(db.bookings.length, 1);
   assert.equal(db.bookings[0].status, "cancelled");

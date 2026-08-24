@@ -1,6 +1,6 @@
 // S-05a — No-Show Recovery.
 // Source: GHL sticky "S-05a No-Show Recovery". Trigger: booking.noshow
-// (Cal.com BOOKING_NO_SHOW / MEETING_NO_SHOW). Spec 4.4: four touches,
+// (dpc-02 emits this 5 minutes after a missed ClickFunnels call). Spec 4.4: four touches,
 // email + SMS each. Stop on booking.created. Re-check before each send.
 
 import { inngest } from "./client.mjs";

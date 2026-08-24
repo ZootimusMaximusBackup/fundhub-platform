@@ -72,7 +72,7 @@ const FH = (() => {
       ["Renewal second wave — reach out",                        "n-06", 4,  false],
       ["Inbound reply needs a human",                            "dpc-03", 14, false],
       ["Round approved — confirm terms with client",             "f-04", 3,  true],
-      ["Strategy session booked",                                "calcom", 8, true]
+      ["Strategy session booked",                                "clickfunnels", 8, true]
     ];
     const tasks = TASKS.map((t, i) => {
       const c = clients.find(x => x.id === t[2]);

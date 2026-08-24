@@ -55,7 +55,6 @@ export const MONEY = Object.freeze({
 export const MOCK_SECRETS = Object.freeze({
   COMMAS_WEBHOOK_SECRET: "verify-commas-secret",
   CLICKFUNNELS_WEBHOOK_SECRET: "verify-cf-secret",
-  CALCOM_WEBHOOK_SECRET: "verify-calcom-secret",
   TWILIO_AUTH_TOKEN: "verify-twilio-token",
   MAILGUN_WEBHOOK_SIGNING_KEY: "verify-mailgun-key",
   BLAND_WEBHOOK_SECRET: "verify-bland-secret",

@@ -394,7 +394,7 @@ test("handleClickFunnelsWebhook: a1/a2 referral params flow into entry.captured 
   assert.equal(entryPayload?.a2, "tier2-aff");
 });
 
-test("handleClickFunnelsWebhook: appointment created => booking.created, calcom-shaped payload, no entry.captured", async () => {
+test("handleClickFunnelsWebhook: appointment created => booking.created, no entry.captured", async () => {
   _resetOrgCache(); clearHandlers();
   const store = [];
   const seen = [];

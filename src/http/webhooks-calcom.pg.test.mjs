@@ -46,7 +46,6 @@ const NONCE = `t7-lane-c-${process.pid}-${Date.now()}`;
 const POSTGRID_SECRET = "pg_capture_test_secret";
 const BLAND_SECRET = "bland_capture_test_secret";
 const CF_SECRET = "cf_capture_test_secret";
-const CAL_SECRET = "cal_capture_test_secret";
 
 const hmac = (secret, raw) => crypto.createHmac("sha256", secret).update(raw).digest("hex");
 
@@ -234,38 +233,19 @@ describe("inbound webhook capture (src/http/router.mjs)", { skip: !HAVE_DB ? "no
     );
   });
 
-  /* --- T7-04: /api/webhooks/cal must not 404 ------------------------------- */
-  test("the 'cal' alias reaches the calcom adapter and, unsigned, still writes nothing", async () => {
-    reset();
-    const raw = JSON.stringify({ triggerEvent: "BOOKING_CREATED", payload: { uid: NONCE } });
+  /* --- Cal.com removed 2026-08-23 ------------------------------------------ */
+  test("Cal.com is gone — /api/webhooks/cal and /calcom 404 and write nothing", async () => {
     const before = await totalCaptures();
-
-    const out = await handleWebhook({
-      db, provider: "cal", rawBody: raw, headers: {},
-      url: "https://x/api/webhooks/cal", env: {}
-    });
-    assert.notEqual(out.status, 404, "/api/webhooks/cal must resolve to the calcom adapter");
-    assert.equal(out.status, 401, "no CALCOM_WEBHOOK_SECRET means refuse — fail-closed by design");
-    assert.equal(await totalCaptures(), before, "a refused booking must not be persisted");
-  });
-
-  test("a signed webhook through the 'cal' alias is captured under the canonical provider id", async () => {
-    reset();
-    // Recognised body, ignorable trigger: verifies, emits nothing, touches nothing else.
-    const raw = JSON.stringify({ triggerEvent: "MEETING_ENDED", payload: { uid: NONCE } });
-    const out = await handleWebhook({
-      db, provider: "cal", rawBody: raw,
-      headers: { "x-cal-signature-256": hmac(CAL_SECRET, raw) },
-      url: "https://x/api/webhooks/cal",
-      env: { CALCOM_WEBHOOK_SECRET: CAL_SECRET }
-    });
-    assert.equal(out.status, 200);
-    assert.equal(out.body.reason, "ignored:MEETING_ENDED");
-
-    assert.equal((await capturesFor("cal")).length, 0, "the receipt must use the canonical id, not the alias");
-    const rows = await capturesFor("calcom");
-    assert.equal(rows.length, 1);
-    assert.equal(rows[0].parsed.outcome.reason, "ignored:MEETING_ENDED");
+    for (const provider of ["cal", "calcom"]) {
+      reset();
+      const raw = JSON.stringify({ triggerEvent: "BOOKING_CREATED", payload: { uid: NONCE } });
+      const out = await handleWebhook({
+        db, provider, rawBody: raw, headers: {},
+        url: `https://x/api/webhooks/${provider}`, env: {}
+      });
+      assert.equal(out.status, 404, `${provider} must not have an adapter`);
+    }
+    assert.equal(await totalCaptures(), before, "a dead vendor must not write a receipt");
   });
 
   /* --- EXACTLY ONE ROW PER DELIVERY, IN BOTH CONFIGURATIONS -----------------

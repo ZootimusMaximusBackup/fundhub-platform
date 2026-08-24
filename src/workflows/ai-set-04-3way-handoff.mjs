@@ -2,7 +2,7 @@
 // Source: GHL-System-Map.md AI SETTER section.
 // Audit fix applied (Spec §6 + workflow-coherence-audit.md: "draft, never fires, no
 // trigger, no advisor follow-up. Publish, wire into DPC-03, add advisor message") —
-// this file IS that publish + wiring: real trigger (T-15 off Cal.com), real
+// this file IS that publish + wiring: real trigger (T-15 off the booked start), real
 // compliance-scrubbed copy (Workflow-SMS-Fixes-Ready-to-Paste.md), plus the advisor
 // follow-up task the original lacked.
 //

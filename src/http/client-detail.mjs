@@ -281,7 +281,7 @@ export function latestBooking({ client = {}, tasks = [] } = {}) {
   const rows = [...(tasks || [])].filter((t) => {
     const src = String(t.source_workflow || "");
     const title = String(t.title || "");
-    return src === "calcom" || /booked|strategy session/i.test(title);
+    return src === "clickfunnels" || /booked|strategy session/i.test(title);
   }).sort((a, b) => new Date(b.due_at || b.created_at || 0) - new Date(a.due_at || a.created_at || 0));
   const t = rows[0] || null;
   const when = t && t.due_at ? t.due_at : null;

@@ -12,7 +12,6 @@ import {
 } from "../adapters/commas.mjs";
 import { handleClickFunnelsWebhook } from "../adapters/clickfunnels.mjs";
 import { handleBlandWebhook } from "../adapters/bland.mjs";
-import { handleCalcomWebhook } from "../adapters/calcom.mjs";
 import { handleTwilioWebhook } from "../adapters/twilio.mjs";
 import { handleMailgunWebhook, handleMailgunDeliveryEvent } from "../adapters/mailgun.mjs";
 import { handleTwilioStatusWebhook } from "../adapters/twilio-status.mjs";
@@ -62,7 +61,6 @@ const STD = table({
     env: "CLICKFUNNELS_WEBHOOK_SECRET"
   },
   bland: { fn: handleBlandWebhook, sig: "x-bland-signature", env: "BLAND_WEBHOOK_SECRET" },
-  calcom: { fn: handleCalcomWebhook, sig: "x-cal-signature-256", env: "CALCOM_WEBHOOK_SECRET" },
   /* lendflow was written, tested and documented as live — and never registered
      here, so /api/webhooks/lendflow answered 404. It is the SOLE emitter of
      round.started / round.submitted / round.approved / round.funded, so eight
@@ -80,22 +78,13 @@ const STD = table({
 });
 
 /* PROVIDER ID ALIASES — the URL segment is not always the STD key.
-   netlify/functions/api.mjs slices the path segment verbatim into
-   query.provider, so /api/webhooks/cal arrived here as "cal", missed the STD
-   table and answered 404 — while /api/webhooks/calcom worked. Cal.com's own
-   webhook UI is routinely pointed at the short spelling.
+   Cal.com used to live here as `cal` → `calcom`. Owner deleted that vendor
+   2026-08-23. The table stays (null-prototype) so a later alias cannot inherit
+   Object.prototype the way STD used to. Empty on purpose.
 
-   Fixed by normalising the id BEFORE the lookup rather than by adding a second
-   STD entry, for two reasons: an object literal cannot reference itself while
-   it is being built (so `cal: STD.calcom` is impossible inline), and a second
-   copy of the config would drift from the first. One config, two names.
-
-   Deliberately NOT fixed by adding a `webhooks/cal` key to the ROUTES map in
-   netlify/functions/api.mjs — see the long note at the twilio-status branch
-   below, and src/http/routes.test.mjs, which fails if anyone adds one.
-
-   Null-prototype for the same reason STD is — see the note above it. */
-const PROVIDER_ALIASES = table({ cal: "calcom" });
+   Deliberately NOT fixed by adding extra keys to the ROUTES map in
+   netlify/functions/api.mjs — see src/http/routes.test.mjs. */
+const PROVIDER_ALIASES = table({});
 
 /* IS THE ADAPTER ALREADY WRITING THE RECEIPT?
 
@@ -127,8 +116,8 @@ function adapterWritesItsOwnCapture(provider) {
    large payload, or an authenticated integration that misbehaves, can grow this
    table without bound.
 
-   WHY 64 KiB. Real inbound bodies are nowhere near it: a Cal.com booking is a
-   few KB, a ClickFunnels order 5–15 KB, a Twilio form post under 2 KB, a
+   WHY 64 KiB. Real inbound bodies are nowhere near it: a ClickFunnels order
+   is 5–15 KB, a Twilio form post under 2 KB, a
    Mailgun event ~3 KB. 64 KiB stores every one of those verbatim with room to
    spare, while capping the worst case at 64 KiB per delivery instead of the
    platform's 6 MB request limit. The receipt's job is to prove a delivery
