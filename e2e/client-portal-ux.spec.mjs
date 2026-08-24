@@ -28,7 +28,7 @@ const OWNER_SESSION = {
   }
 };
 
-async function openPortal(page, session, entitlements, { settleMs = 600 } = {}) {
+async function openPortal(page, session, entitlements, { settleMs = 600, portalSummary } = {}) {
   const calls = { staffDocuments: 0 };
   await page.addInitScript((s) => {
     localStorage.setItem("fh_token", "e2e-token");
@@ -48,10 +48,12 @@ async function openPortal(page, session, entitlements, { settleMs = 600 } = {}) 
     if (url.includes("/api/read/portal-summary")) {
       return json(route, {
         ok: true, prequal_amount: null, prequal_display: null, soft_pull_complete: false,
+        scores: { experian: null, equifax: null, transunion: null, experian_business: null },
         documents: [{
           id: "doc-1", document_key: "bank-statement", title: "Client bank statement",
           mime_type: "application/pdf", created_at: "2026-08-20T12:00:00Z"
-        }]
+        }],
+        ...(portalSummary || {})
       });
     }
     if (url.includes("entitlement")) {
@@ -84,6 +86,24 @@ test.describe("client portal go-live UX", () => {
     await expect(page.locator(".prog-card.funding-only .sb-main")).toBeHidden();
     await expect(page.locator("#own-list")).toContainText(/Metro 2 Dispute Letter Pack/i);
     await expect(page.locator("#own-list")).not.toContainText(/Funding Snapshot/i);
+  });
+
+  test("credit scores stay hidden when none are on file", async ({ page }) => {
+    await openPortal(page, CLIENT_SESSION, []);
+    await expect(page.locator("#sb-scores-card")).toBeHidden();
+  });
+
+  test("portal paints 3-bureau and Experian business scores", async ({ page }) => {
+    await openPortal(page, CLIENT_SESSION, [], {
+      portalSummary: {
+        scores: { experian: 720, equifax: 710, transunion: 705, experian_business: 72 }
+      }
+    });
+    await expect(page.locator("#sb-scores-card")).toBeVisible();
+    await expect(page.locator("#sb-score-ex")).toHaveText("720");
+    await expect(page.locator("#sb-score-eq")).toHaveText("710");
+    await expect(page.locator("#sb-score-tu")).toHaveText("705");
+    await expect(page.locator("#sb-score-ex-biz")).toHaveText("72");
   });
 
   test("facebook wins group is on the portal before the call", async ({ page }) => {

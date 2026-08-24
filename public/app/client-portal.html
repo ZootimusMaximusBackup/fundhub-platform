@@ -132,6 +132,10 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .status-line .sb-main{font-size:var(--fs-title);font-weight:700;line-height:1.4;font-variant-numeric:tabular-nums}
 .status-line .sb-main b{font-family:var(--mono)}
 .prog-card .stepper{padding:18px 22px 16px}
+.score-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px}
+@media(min-width:640px){.score-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.score-grid .sb-eyebrow{font-family:var(--mono);font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim);margin-bottom:4px}
+.score-num{font-family:var(--mono);font-size:var(--fs-title);font-weight:800;font-variant-numeric:tabular-nums}
 
 /* ── 3 · what you own ───────────────────────────────────────────────────── */
 .own{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line)}
@@ -491,6 +495,28 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           <div class="step current" data-step="approved"><span class="line"></span><div class="dot">●</div><div class="lbl">Round Approved</div></div>
           <div class="step future" data-step="funded"><span class="line"></span><div class="dot">6</div><div class="lbl">Round Funded</div></div>
           <div class="step future" data-step="final"><span class="line"></span><div class="dot">7</div><div class="lbl">File Finalized</div></div>
+        </div>
+      </section>
+
+      <section class="card" id="sb-scores-card" hidden>
+        <div class="card-title">Your credit scores</div>
+        <div class="score-grid">
+          <div>
+            <div class="sb-eyebrow">Experian</div>
+            <div class="score-num" id="sb-score-ex">—</div>
+          </div>
+          <div>
+            <div class="sb-eyebrow">Equifax</div>
+            <div class="score-num" id="sb-score-eq">—</div>
+          </div>
+          <div>
+            <div class="sb-eyebrow">TransUnion</div>
+            <div class="score-num" id="sb-score-tu">—</div>
+          </div>
+          <div>
+            <div class="sb-eyebrow">Experian business (1–100)</div>
+            <div class="score-num" id="sb-score-ex-biz">—</div>
+          </div>
         </div>
       </section>
 
@@ -1352,6 +1378,24 @@ document.addEventListener("DOMContentLoaded", async function () {
     if (isNaN(d.getTime())) return String(iso);
     return d.toLocaleString();
   }
+  function scoreText(n) {
+    return n == null || n === "" ? "—" : String(n);
+  }
+  function paintPortalScores(scores) {
+    var card = document.getElementById("sb-scores-card");
+    var has = scores && (
+      scores.experian != null
+      || scores.equifax != null
+      || scores.transunion != null
+      || scores.experian_business != null
+    );
+    if (card) card.hidden = !has;
+    if (!has) return;
+    setText("sb-score-ex", scoreText(scores.experian));
+    setText("sb-score-eq", scoreText(scores.equifax));
+    setText("sb-score-tu", scoreText(scores.transunion));
+    setText("sb-score-ex-biz", scoreText(scores.experian_business));
+  }
   function paintIdentity(name, advisor) {
     var n = name && String(name).trim();
     setText("who-name", n ? n : "—");
@@ -1634,6 +1678,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       var amt = data.prequal_display;
       var row = document.getElementById("sb-prequal-row");
       var el = document.getElementById("sb-prequal-amt");
+      paintPortalScores(data.scores || {});
       if (!amt) {
         if (row) row.hidden = true;
         return "live pre-qual · none yet";

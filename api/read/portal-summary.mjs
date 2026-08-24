@@ -1,13 +1,18 @@
 // GET /api/read/portal-summary — client-safe file summary for the portal.
 //
-// Returns pre-qual and client-safe document metadata. Clients read their own file
-// only; staff may pass ?client_id= when previewing the portal.
+// Returns pre-qual, 3-bureau + Experian business scores, and client-safe
+// document metadata. Clients read their own file only; staff may pass
+// ?client_id= when previewing the portal.
 
 import { db } from "../../src/db.mjs";
 import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
 import { ROLE_SETS, requireRole, isUuid, redact } from "../../src/http/read-api.mjs";
 import { safeError } from "../../src/http/health.mjs";
-import { prequalFromCustomFields, formatPrequalUsd } from "../../src/http/portal-prequal.mjs";
+import {
+  formatPrequalUsd,
+  portalCreditScores,
+  prequalFromCustomFields
+} from "../../src/http/portal-prequal.mjs";
 
 export default async function handler(req, res) {
   if (req.method && req.method !== "GET") {
@@ -62,25 +67,49 @@ export default async function handler(req, res) {
       return res.status(404).json({ ok: false, error: "client_not_found" });
     }
 
-    const documentsRes = await db.query(
-      `SELECT id, document_key, kind, subtype, title, mime_type, byte_size,
-              generated_at, delivered_at, delivery_channel, delivery_status,
-              signature_required, signed_at, created_at
-         FROM documents
-        WHERE org_id = $1::uuid
-          AND client_id = $2::uuid
-        ORDER BY created_at DESC
-        LIMIT 50`,
-      [orgId, clientId]
-    );
+    const [documentsRes, crsRes, bizRes] = await Promise.all([
+      db.query(
+        `SELECT id, document_key, kind, subtype, title, mime_type, byte_size,
+                generated_at, delivered_at, delivery_channel, delivery_status,
+                signature_required, signed_at, created_at
+           FROM documents
+          WHERE org_id = $1::uuid
+            AND client_id = $2::uuid
+          ORDER BY created_at DESC
+          LIMIT 50`,
+        [orgId, clientId]
+      ),
+      db.query(
+        `SELECT id, outcome_tier, result, created_at, is_demo
+           FROM crs_results
+          WHERE client_id = $1 AND org_id = $2
+            AND is_demo IS NOT TRUE
+          ORDER BY created_at DESC`,
+        [clientId, orgId]
+      ),
+      db.query(
+        `SELECT name, age_months, entity_data
+           FROM businesses
+          WHERE client_id = $1 AND org_id = $2
+          ORDER BY updated_at DESC
+          LIMIT 5`,
+        [clientId, orgId]
+      )
+    ]);
 
     const cf = client.custom_fields || {};
     const prequalAmount = prequalFromCustomFields(cf);
+    const scores = portalCreditScores({
+      client,
+      crsResults: crsRes.rows,
+      businesses: bizRes.rows
+    });
 
     return res.status(200).json(redact({
       ok: true,
       prequal_amount: prequalAmount,
       prequal_display: formatPrequalUsd(prequalAmount),
+      scores,
       soft_pull_complete: cf.crs_paid === true
         || String(cf.analyzer_status || "").toLowerCase() === "complete",
       doc_agent_message: cf.doc_agent_message || null,

@@ -210,6 +210,8 @@ function clientDatabase({ documents = [] } = {}) {
       return { rows: [{ id: CLIENT, custom_fields: {} }] };
     }
     if (/FROM documents/i.test(sql)) return { rows: documents };
+    if (/FROM crs_results/i.test(sql)) return { rows: [] };
+    if (/FROM businesses/i.test(sql)) return { rows: [] };
     throw new Error("unexpected query: " + sql);
   };
   return calls;
@@ -328,10 +330,17 @@ test("client portal summary ignores requested client ids and returns only sessio
   await portalSummaryHandler(request({ query: { client_id: OTHER_CLIENT } }), res);
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.documents[0].title, "Bank statement");
+  assert.deepEqual(res.body.scores, {
+    experian: null, equifax: null, transunion: null, experian_business: null
+  });
   const clientRead = calls.find((call) => /SELECT id, custom_fields FROM clients/i.test(call.sql));
   const documentRead = calls.find((call) => /FROM documents/i.test(call.sql));
+  const crsRead = calls.find((call) => /FROM crs_results/i.test(call.sql));
+  const bizRead = calls.find((call) => /FROM businesses/i.test(call.sql));
   assert.deepEqual(clientRead.params, [CLIENT, ORG]);
   assert.deepEqual(documentRead.params, [ORG, CLIENT]);
+  assert.deepEqual(crsRead.params, [CLIENT, ORG]);
+  assert.deepEqual(bizRead.params, [CLIENT, ORG]);
 });
 
 test("simplify routes are registered to their actual handlers", () => {
