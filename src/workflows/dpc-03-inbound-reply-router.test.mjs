@@ -85,6 +85,17 @@ test("YES while the call is still booked is a CALL CONFIRMATION, not a sale", as
   assert.equal(db.tasks.length, 0);
 });
 
+test("CONFIRM while the call is still booked is a CALL CONFIRMATION (same as YES)", async () => {
+  for (const body of ["CONFIRM", "confirm", "  Confirm  "]) {
+    const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+1555", custom_fields: { call_outcome: "booked" } }] });
+    const res = await handle({ event: ev("message.inbound", { body, from: "+1555" }, { clientId: "cl-1" }), db, step: fakeStep() });
+    assert.equal(res.decision, "call_confirmed", `"${body}" must confirm the call`);
+    assert.equal(db.clients[0].custom_fields.call_confirmed, true);
+    assert.equal(db.clients[0].custom_fields.decision_status, undefined, "must not close a sale off a confirmation");
+    assert.equal(db.tasks.length, 0);
+  }
+});
+
 test("REGRESSION: a hard-stopped contact cannot trigger the contract+payment task", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+1555", custom_fields: { call_outcome: "showed", hard_stop_reason: "fraud_flag" } }] });
   const res = await handle({ event: ev("message.inbound", { body: "YES", from: "+1555" }, { clientId: "cl-1" }), db, step: fakeStep() });

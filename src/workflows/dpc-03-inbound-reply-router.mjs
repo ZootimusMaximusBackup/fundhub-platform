@@ -8,7 +8,7 @@
 // the second half of this same handler rather than its own file.
 //
 // Trigger: message.inbound (exact canonical match). Parses the reply body for
-// YES / RESCHEDULE / CLOSE keywords (case-insensitive), sets cf_decision_status,
+// YES / CONFIRM / RESCHEDULE / CLOSE keywords (case-insensitive), sets cf_decision_status,
 // and finalizes: YES -> task to send contract + collect payment, move to closed;
 // RESCHEDULE -> real SMS with the booking link (real copy exists,
 // Workflow-SMS-Stragglers.md) + task + setter:reschedule tag; CLOSE -> move to
@@ -38,8 +38,8 @@ async function findClientByPhone(db, orgId, phone) {
 function parseDecision(body) {
   const b = String(body || "").trim().toLowerCase();
   // "stop" is a telco opt-out keyword — must not be consumed here (handled at carrier
-  // layer). YES is disambiguated downstream by call state (doc 3576-3578), not here.
-  if (/\byes\b/.test(b)) return "yes";
+  // layer). YES / CONFIRM are disambiguated downstream by call state (doc 3576-3578), not here.
+  if (/\byes\b/.test(b) || /\bconfirm\b/.test(b)) return "yes";
   if (/\breschedule\b/.test(b)) return "reschedule";
   // 05/30 doc line 3560 lists CLOSE as the only close-file keyword. The bare "no" was
   // invented by this port and is far too broad — "no thanks", "no worries", "not today"
