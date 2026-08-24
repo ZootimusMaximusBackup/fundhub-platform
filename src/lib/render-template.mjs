@@ -45,3 +45,14 @@ export function renderTemplate(body, context = {}) {
     return String(val);
   });
 }
+
+// Confirm-email "Where" is a table row around {{appointment.meeting_location}}.
+// ClickFunnels booking webhooks do not send a join URL, so that tag is empty
+// and the row would print a blank location. Drop the row when the cell is empty.
+// Leave it when a real URL (Cal.com, or a future CF field) is present.
+export function stripEmptyWhereRow(html) {
+  return String(html).replace(
+    /<tr[^>]*>\s*<td[^>]*>\s*Where\s*<\/td>\s*<td[^>]*>\s*<\/td>\s*<\/tr>/gi,
+    ""
+  );
+}

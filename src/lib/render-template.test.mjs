@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { renderTemplate } from "./render-template.mjs";
+import { renderTemplate, stripEmptyWhereRow } from "./render-template.mjs";
 
 test("replaces known tokens", () => {
   assert.equal(renderTemplate("Hello {{first_name}}!", { first_name: "Alice" }), "Hello Alice!");
@@ -97,4 +97,34 @@ test("null context does not throw", () => {
 
 test("empty body passes through", () => {
   assert.equal(renderTemplate("", { foo: "bar" }), "");
+});
+
+const CONFIRM_WHERE_SNIPPET = `<table>
+  <tr>
+    <td>When</td>
+    <td>{{appointment.start_time}}</td>
+  </tr>
+  <tr>
+    <td style="border-top:1px solid #E4E4E7;">Where</td>
+    <td style="border-top:1px solid #E4E4E7;">{{appointment.meeting_location}}</td>
+  </tr>
+</table>`;
+
+test("stripEmptyWhereRow: drops the Where row when the location cell is empty", () => {
+  const rendered = renderTemplate(CONFIRM_WHERE_SNIPPET, {
+    appointment: { start_time: "Tue, Aug 25, 2026, 1:00 PM MST", meeting_location: null }
+  });
+  const out = stripEmptyWhereRow(rendered);
+  assert.match(out, /When/);
+  assert.match(out, /Tue, Aug 25/);
+  assert.doesNotMatch(out, />\s*Where\s*</);
+});
+
+test("stripEmptyWhereRow: keeps the Where row when a join URL is present", () => {
+  const rendered = renderTemplate(CONFIRM_WHERE_SNIPPET, {
+    appointment: { start_time: "Tue, Aug 25, 2026, 1:00 PM MST", meeting_location: "https://meet.example.com/abc" }
+  });
+  const out = stripEmptyWhereRow(rendered);
+  assert.match(out, />\s*Where\s*</);
+  assert.match(out, /https:\/\/meet\.example\.com\/abc/);
 });

@@ -331,3 +331,60 @@ test("the rendered body is never copied into the telemetry detail", async () => 
   const detail = JSON.stringify(db.events[0].detail);
   assert.ok(!/512|denied/.test(detail), `client-facing copy leaked into telemetry: ${detail}`);
 });
+
+const CONFIRM_EMAIL_BODY = `<table>
+  <tr>
+    <td>When</td>
+    <td>{{appointment.start_time}}</td>
+  </tr>
+  <tr>
+    <td>Where</td>
+    <td>{{appointment.meeting_location}}</td>
+  </tr>
+</table>`;
+
+test("sendTemplated: confirm email omits a blank Where row", async () => {
+  const db = pgFake({
+    templates: [{
+      org_id: "org-1",
+      template_key: "EMAIL-S04-01-CONFIRM",
+      channel: "email",
+      subject: "You're booked",
+      body: CONFIRM_EMAIL_BODY,
+      compliance_passed: true
+    }],
+    clients: [{ id: "cl-1", first_name: "Chris", last_name: "S", email: "a@b.com", phone: "+15551234567", custom_fields: {} }]
+  });
+  await sendTemplated(db, {
+    ...BASE,
+    channel: "email",
+    templateKey: "EMAIL-S04-01-CONFIRM",
+    context: { appointment: { start_time: "2026-08-25T20:00:00Z", meeting_location: null } }
+  });
+  const body = db.messages[0].rendered_body;
+  assert.match(body, /When/);
+  assert.doesNotMatch(body, />\s*Where\s*</);
+});
+
+test("sendTemplated: confirm email keeps Where when a join URL is present", async () => {
+  const db = pgFake({
+    templates: [{
+      org_id: "org-1",
+      template_key: "EMAIL-S04-01-CONFIRM",
+      channel: "email",
+      subject: "You're booked",
+      body: CONFIRM_EMAIL_BODY,
+      compliance_passed: true
+    }],
+    clients: [{ id: "cl-1", first_name: "Chris", last_name: "S", email: "a@b.com", phone: "+15551234567", custom_fields: {} }]
+  });
+  await sendTemplated(db, {
+    ...BASE,
+    channel: "email",
+    templateKey: "EMAIL-S04-01-CONFIRM",
+    context: { appointment: { start_time: "2026-08-25T20:00:00Z", meeting_location: "https://meet.example.com/abc" } }
+  });
+  const body = db.messages[0].rendered_body;
+  assert.match(body, />\s*Where\s*</);
+  assert.match(body, /https:\/\/meet\.example\.com\/abc/);
+});

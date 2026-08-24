@@ -21,7 +21,7 @@
 // and no row is ever produced. That is the correct outcome, not a gap to fill
 // with an invented actor. See src/shifts/TELEMETRY-CALLSITES.md.
 import { isOptedOut } from "../lib/opt-out.mjs";
-import { renderTemplate } from "../lib/render-template.mjs";
+import { renderTemplate, stripEmptyWhereRow } from "../lib/render-template.mjs";
 import { logStaffEvent } from "../shifts/telemetry.mjs";
 import { resolveShiftId } from "../shifts/attribution.mjs";
 import { emit } from "../events/bus.mjs";
@@ -181,7 +181,7 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
       )
     };
   }
-  const rendered = renderTemplate(row.body, mergeContext);
+  const rendered = stripEmptyWhereRow(renderTemplate(row.body, mergeContext));
 
   // THE SUBJECT IS RENDERED, NOT COPIED. It carries the same {{contact.*}} tags
   // the body does, and an unrendered subject line is the one part of a message
