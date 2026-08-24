@@ -1,0 +1,63 @@
+---
+description: Hard stops and fences for full agentic company audits (sim + prove)
+alwaysApply: true
+---
+
+# Agentic audit guardrails
+
+**Owner-approved (2026-08-24, doc-gate session):** Fences for a full agentic company audit (act-as-client + staff + docs + mail + phone). Reinforces existing owner laws; does not replace `CLAUDE.md` or the audit/fix skills.
+
+## Hard stops (never without an explicit “GO” in that message)
+
+- Live **credit Pull**
+- Real **card charge**
+- Real **bureau mail / PostGrid**
+- Wipe anything that isn’t clearly **demo**
+- Open forbidden files (e.g. `9af65808`)
+- Put Chris’s **personal prove phone** on a sim client
+- Rotate / re-paste secrets unless that exact key just failed live
+
+## Identity & privacy
+
+- **Plus-tag emails only** for sim people (`+sim-…@`)
+- One dedicated **agent phone** for inbound/outbound sim (`661-605-4248`), never the personal prove line for blasts
+- Raw ID/SSN/bank stay in **gitignored** folders; only blurred packs in evidence when sharing
+- Never print secrets, SSN, full account numbers, or passwords in chat/boards
+
+## Act-as-you limits
+
+- Agent may: read prove Gmail, click portal/magic links, upload docs, sign **sim** contracts, text from the **agent** number
+- Agent may not: change bank passwords, buy numbers without Chris, or treat “Gmail live” as full life-admin access outside FundHub prove paths
+- **One client file** for agentic play; don’t fork five copies of the same person
+
+## Audit vs fix
+
+- **Audit** = read-only prove, write findings to the board
+- **Fix** = only named holes after Chris says fix
+- Never audit-and-fix in one pass; never “turn red green” by editing the test
+- Load the matching skill via `audit-vs-fix-router.mdc` (`fundhub-auditor` / `fundhub-fixer` / `fundhub-builder` / UI / perf)
+
+## Blast / automation safety
+
+- Present / soft-pull / pay-link buttons: **one intentional click**, with idempotency checked
+- Cap outbound SMS/email per run (e.g. max N messages)
+- Product is **live**; `INNGEST_EVENT_KEY` stays **on** — don’t flip live switches “for safety”
+
+## Parallel agents
+
+- Shared board only (`docs/workflows/…`)
+- One lane per thread (Fund / Repair / DocGate / Inquiry / SM)
+- Claim before work; no reminting shared people
+- Cap concurrent agents (~5)
+
+## Prove bar
+
+- Script green ≠ done
+- Live Playwright **100/100** when UI changed
+- Then one **human-like** walk (Chris does exactly one manual pass)
+
+## Doc Check specifically
+
+- Variants must declare expected outcome (**accept** vs **request_more**) before run
+- Wrong accept = FAIL
+- Address on file must match the “good” pack before V1

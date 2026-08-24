@@ -23,6 +23,8 @@ Skill paths:
 - `.cursor/skills/fundhub-ui-auditor/SKILL.md`
 - `.cursor/skills/fundhub-perf-auditor/SKILL.md`
 - `.cursor/skills/fundhub-fixer/SKILL.md`
+- `.cursor/skills/fundhub-builder/SKILL.md`
+- `.cursor/skills/fundhub-orchestrator/SKILL.md` (full loop after plan approval)
 
 Read the matching skill **before** any other work on that request.
 
@@ -40,3 +42,13 @@ Run **Auditor** first. Stop with findings. Wait for Chris to name what to fix. D
 - Audit-and-fix in one pass
 - "While I was auditing I also fixed…"
 - Turning a red test green by editing the test, baseline, or hook during an audit
+
+## How to sequence (owner-set 2026-08-24)
+
+Day work = **Skills + Orchestrator + `docs/workflows/` boards**. Manual sequences. Do not invent a new agent per chore. Do not merge Hygiene + VC into one skill.
+
+Default loop: **Audit → stop → Chris names the fix → Fixer.** Full build-to-done chains load `fundhub-orchestrator` after plan approval.
+
+Parallel work: CLAUDE.md §0 boards; Chris launches the extra chats. Agents coordinate only through the shared board.
+
+**Cursor Automations:** only if Chris explicitly asks for a schedule or event job. Never use Automations for ad-hoc A→B handoffs.
