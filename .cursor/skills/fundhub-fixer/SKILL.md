@@ -59,6 +59,7 @@ Order matters. Do not skip.
 
 - New outbound `fetch` only behind `src/messaging/providers/*` (CLAUDE.md §12).
 - Flag `COMPLIANCE REVIEW REQUIRED` for dispute logic, credit-repair messaging, fee timing, refunds, payment rails, consent, or credit-pull type.
+- **Dangerous:** never `npm run verify:e2e` / scratch harness on live DB; never pause outbound or mass-retire agents “for safety” (CLAUDE.md §12; `src/verification/scratch-guard.mjs`).
 
 ## Done report (plain language)
 

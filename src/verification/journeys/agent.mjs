@@ -3,6 +3,7 @@
 import { emit } from "../../events/bus.mjs";
 import { insertClient } from "../insert-client.mjs";
 import { handleInbound } from "../../agents/runtime.mjs";
+import { assertHarnessSafe } from "../scratch-guard.mjs";
 
 export async function runAgentJourney(db, ctx, collector) {
   const section = "DATA";
@@ -177,7 +178,10 @@ export async function runAgentJourney(db, ctx, collector) {
   // Draft agent does nothing — retire every live/shadow agent in the org so
   // select cannot fall through to another messaging agent.
   // Constraint agents_retired_ck: status='retired' iff retired_at IS NOT NULL.
+  // Belt-and-suspenders: entry already called assertHarnessSafe; refuse again
+  // before mass-retire so a live DB cannot lose AG-04 / AG-09 (2026-08-22).
   if (draftCode) {
+    await assertHarnessSafe(db);
     await db.query(
       `UPDATE agents
           SET status = 'retired', retired_at = now()

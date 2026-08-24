@@ -67,6 +67,7 @@ One line per journey that passed, plus the report path. Done.
 - Never production client records
 - Never print passwords
 - Credentials from gitignored `.env` / Netlify env only (see `secrets-env-law.mdc`)
+- **Dangerous:** never `npm run verify:e2e` / scratch harness on live DB (CLAUDE.md §12; `src/verification/scratch-guard.mjs`)
 
 ## Visual baselines (if present)
 

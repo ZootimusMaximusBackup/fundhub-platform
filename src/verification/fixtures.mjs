@@ -208,8 +208,9 @@ export async function setupContext(db) {
     [orgId]
   );
 
-  // Pause sending on THIS org only. assertHarnessSafe already refused any
-  // database with live client files, so this cannot be production.
+  // Pause sending on THIS org only. Re-check scratch-guard immediately before
+  // the flip so a live DB cannot lose outbound_enabled (2026-08-22).
+  await assertHarnessSafe(db);
   await db.query(
     `INSERT INTO messaging_settings (org_id, outbound_enabled, daily_send_cap)
      VALUES ($1, false, 0)
