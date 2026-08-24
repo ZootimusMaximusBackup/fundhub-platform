@@ -12,12 +12,13 @@ import { sendTemplated } from "./messaging.mjs";
 import { addTags } from "./tags.mjs";
 import {
   getInvoice,
-  markPaid,
   markEscalated,
-  announceInvoice,
   invoiceDisplayNumber,
   formatBalanceDue
 } from "../invoices/index.mjs";
+import { allocatePayment, remainingDueCents, remainingDueAmount, knownCents } from "../invoices/allocate.mjs";
+import { checkoutConfig } from "../payments/commas-api.mjs";
+import { createPaymentLink } from "../payment-links/index.mjs";
 
 export const EMAIL_AR_01 = "EMAIL-AR-01-FIRST-NOTICE";
 export const SMS_AR_01 = "SMS-AR-01-FIRST-NOTICE";
@@ -39,11 +40,47 @@ function stillOpen(row) {
   return OPEN.includes(String(row.status || ""));
 }
 
-function arContext(row, payload = {}) {
+async function arContext(db, row, payload = {}) {
+  const remaining = await remainingDueCents(db, row);
+  const due = remainingDueAmount(remaining);
   return {
     invoice_number: payload.invoice_number || invoiceDisplayNumber(row),
-    balance_due: formatBalanceDue(row.amount_due ?? payload.amount_due)
+    balance_due: formatBalanceDue(due)
   };
+}
+
+async function attachInvoicePayLink(db, row, env) {
+  if (!row?.id) return null;
+  const cfg = checkoutConfig(env || {});
+  if (!cfg.ok) return null;
+  const due = knownCents(row.amount_due);
+  if (due === null || due <= 0) return null;
+  const existing = await db.query(
+    `SELECT id FROM payment_links WHERE invoice_id = $1 LIMIT 1`,
+    [row.id]
+  );
+  if (existing.rows[0]) return existing.rows[0];
+  try {
+    const link = await createPaymentLink(db, {
+      orgId: row.org_id,
+      clientId: row.client_id,
+      purpose: "custom",
+      description: `Success fee ${invoiceDisplayNumber(row)}`,
+      amountCents: due,
+      invoiceId: row.id,
+      fundingRoundId: row.funding_round_id || null,
+      env
+    });
+    if (link && (link.commas_session_id || link.link_ref)) {
+      await db.query(
+        `UPDATE invoices SET external_ref = COALESCE(external_ref, $2) WHERE id = $1`,
+        [row.id, link.commas_session_id || link.link_ref]
+      );
+    }
+    return link;
+  } catch {
+    return null;
+  }
 }
 
 async function sendPair(db, { orgId, clientId, eventId, emailKey, smsKey, context }) {
@@ -58,7 +95,7 @@ async function sendPair(db, { orgId, clientId, eventId, emailKey, smsKey, contex
   return { email, sms };
 }
 
-async function chase({ event, db, step }) {
+async function chase({ event, db, step, env }) {
   const payload = event.payload || {};
   const invoiceId = payload.invoiceId || payload.invoice_id;
   if (!invoiceId) return { done: false, reason: "no_invoice_id" };
@@ -78,10 +115,11 @@ async function chase({ event, db, step }) {
   const first = await step.run("send-ar-01", async () => {
     const row = await getInvoice(db, { invoiceId });
     if (!stillOpen(row)) return { skipped: true, reason: row?.status || "missing" };
+    await attachInvoicePayLink(db, row, env);
     return sendPair(db, {
       orgId, clientId, eventId: `${eventId}:01`,
       emailKey: EMAIL_AR_01, smsKey: SMS_AR_01,
-      context: arContext(row, payload)
+      context: await arContext(db, row, payload)
     });
   });
   if (first.skipped) return { done: true, stoppedAt: "before-ar-01", first };
@@ -93,7 +131,7 @@ async function chase({ event, db, step }) {
     return sendPair(db, {
       orgId, clientId, eventId: `${eventId}:02`,
       emailKey: EMAIL_AR_02, smsKey: SMS_AR_02,
-      context: arContext(row, payload)
+      context: await arContext(db, row, payload)
     });
   });
   if (second.skipped) return { done: true, stoppedAt: "before-ar-02", first, second };
@@ -105,7 +143,7 @@ async function chase({ event, db, step }) {
     return sendPair(db, {
       orgId, clientId, eventId: `${eventId}:03`,
       emailKey: EMAIL_AR_03, smsKey: SMS_AR_03,
-      context: arContext(row, payload)
+      context: await arContext(db, row, payload)
     });
   });
   if (third.skipped) return { done: true, stoppedAt: "before-ar-03", first, second, third };
@@ -121,30 +159,13 @@ async function chase({ event, db, step }) {
   return { done: true, first, second, third, handoff };
 }
 
-async function settleOpenSuccessFee({ event, db, step }) {
-  const clientId = await step.run("resolve-client", () => resolveClient(db, event));
-  if (!clientId) return { done: false, reason: "no_client" };
-
-  return step.run("settle-single-open-invoice", async () => {
-    const r = await db.query(
-      `SELECT * FROM invoices
-        WHERE client_id = $1
-          AND (source = 'funding_success_fee' OR invoice_type = 'success_fee')
-          AND status = ANY($2)`,
-      [clientId, OPEN]
-    );
-    if (r.rows.length !== 1) {
-      return { done: false, reason: r.rows.length === 0 ? "no_open_invoice" : "ambiguous_open_invoices" };
-    }
-    const paid = await markPaid(db, { invoiceId: r.rows[0].id });
-    if (paid) await announceInvoice(db, "invoice.paid", paid);
-    return { done: true, invoiceId: r.rows[0].id, paid: !!paid };
-  });
-}
-
-export async function handle({ event, db, step }) {
-  if (event.name === "payment.received") return settleOpenSuccessFee({ event, db, step });
-  return chase({ event, db, step });
+export async function handle({ event, db, step, env }) {
+  if (event.name === "payment.received") {
+    const clientId = await step.run("resolve-client", () => resolveClient(db, event));
+    return step.run("allocate-payment", () =>
+      allocatePayment(db, { ...event, clientId: clientId || event.clientId || null }));
+  }
+  return chase({ event, db, step, env });
 }
 
 export const arCollections = inngest.createFunction(
@@ -159,5 +180,5 @@ export const arCollections = inngest.createFunction(
     ]
   },
   [{ event: "invoice.sent" }, { event: "payment.received" }],
-  ({ event, step }) => handle({ event: { ...event.data, name: event.name }, db, step })
+  ({ event, step }) => handle({ event: { ...event.data, name: event.name }, db, step, env: process.env })
 );

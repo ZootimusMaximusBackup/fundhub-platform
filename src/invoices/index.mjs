@@ -96,7 +96,7 @@ export async function markEscalated(db, { invoiceId, escalatedAt = new Date() })
       WHERE id = $1
         AND status = ANY($3)
      RETURNING *`,
-    [invoiceId, escalatedAt, ["sent", "reminded"]]
+    [invoiceId, escalatedAt, ["sent", "reminded", "partially_paid"]]
   );
   return result.rows[0] ?? null;
 }

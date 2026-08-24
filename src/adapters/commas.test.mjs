@@ -599,6 +599,49 @@ test("a payment link's ref reaches the emitted payment.received payload", async 
   assert.equal(seenPayload.providerRef, "pay_link_1", "providerRef must be the stable payment id");
 });
 
+const INVOICE_A = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+const ROUND_A = "11111111-2222-4333-8444-555555555555";
+
+test("normalizeCommasEvent: reads invoice_id and funding_round_id from checkout metadata", () => {
+  const fromApi = normalizeCommasEvent({
+    data: { api_metadata: { data: { invoice_id: INVOICE_A, funding_round_id: ROUND_A } } }
+  });
+  assert.equal(fromApi.invoiceId, INVOICE_A);
+  assert.equal(fromApi.fundingRoundId, ROUND_A);
+  const fromMeta = normalizeCommasEvent({
+    data: { metadata: { invoice_id: INVOICE_A, funding_round_id: ROUND_A } }
+  });
+  assert.equal(fromMeta.invoiceId, INVOICE_A);
+  assert.equal(fromMeta.fundingRoundId, ROUND_A);
+  assert.equal(normalizeCommasEvent({ data: {} }).invoiceId, null);
+  assert.equal(
+    normalizeCommasEvent({ data: { metadata: { invoice_id: "inv_vendor_9" } } }).invoiceId,
+    null,
+    "a vendor invoice number is not one of ours"
+  );
+});
+
+test("a payment link's invoice id reaches the emitted payment.received payload", async () => {
+  _resetOrgCache(); clearHandlers();
+  let seenPayload = null;
+  on("payment.received", (e) => { seenPayload = e.payload; });
+  const raw = JSON.stringify({
+    type: "payment.succeeded",
+    id: "txn_inv_1",
+    data: {
+      payment_id: "pay_inv_1",
+      product: { title: "Consulting Success Fee", price: 1000 },
+      fan: { email: "a@b.com" },
+      api_metadata: { data: { link_ref: "pl_inv", invoice_id: INVOICE_A, funding_round_id: ROUND_A } }
+    }
+  });
+  await deliver(fakeDb(), raw);
+  assert.ok(seenPayload, "payment.received never dispatched");
+  assert.equal(seenPayload.invoiceId, INVOICE_A);
+  assert.equal(seenPayload.fundingRoundId, ROUND_A);
+  assert.equal(seenPayload.ref, "pl_inv");
+});
+
 test("a dispute's deadline reaches the payload so the task can carry it", async () => {
   _resetOrgCache(); clearHandlers();
   let seen = null;

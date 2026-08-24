@@ -19,16 +19,19 @@ export function pgFake(seed = {}) {
   const cards = seed.cards || [];
   const behaviorScores = seed.behaviorScores || [];
   const invoices = seed.invoices || [];
+  const invoicePayments = seed.invoicePayments || [];
+  const paymentLinks = seed.paymentLinks || [];
   const crsResults = seed.crsResults || [];
   const messages = [];
   const tasks = [];
   let n = 0;
+  let payN = 0;
 
   const findClientByEmail = (org, email) =>
     clients.find((c) => c.org_id === org && String(c.email || "").toLowerCase() === String(email).toLowerCase());
 
   return {
-    clients, events, templates, messages, tasks, fundingRounds, applications, inquiryLog, pipelineStages, cards, behaviorScores, invoices, crsResults,
+    clients, events, templates, messages, tasks, fundingRounds, applications, inquiryLog, pipelineStages, cards, behaviorScores, invoices, invoicePayments, paymentLinks, crsResults,
     async query(sql, params = []) {
       // --- behavior_scores (BC-01/BC-02) ---
       if (/INSERT INTO behavior_scores \(org_id, client_id, responsiveness\)/.test(sql)) {
@@ -186,6 +189,25 @@ export function pgFake(seed = {}) {
         const row = invoices.find((i) => i.id === params[0]);
         return { rows: row ? [row] : [] };
       }
+      if (/FROM invoices[\s\S]*external_ref = ANY/.test(sql)) {
+        const refs = params[0] || [];
+        const hit = invoices
+          .filter((i) => i.external_ref && refs.includes(i.external_ref))
+          .sort((a, b) => String(a.created_at || "").localeCompare(String(b.created_at || "")));
+        return { rows: hit[0] ? [hit[0]] : [] };
+      }
+      if (/FROM invoices[\s\S]*funding_round_id/.test(sql) && /success_fee/.test(sql)) {
+        const [clientId, roundId, open] = params;
+        const hit = invoices
+          .filter((i) =>
+            i.client_id === clientId
+            && i.funding_round_id === roundId
+            && (i.source === "funding_success_fee" || i.invoice_type === "success_fee")
+            && (!Array.isArray(open) || open.includes(i.status)))
+          .sort((a, b) => String(a.created_at || "").localeCompare(String(b.created_at || ""))
+            || String(a.id).localeCompare(String(b.id)));
+        return { rows: hit[0] ? [hit[0]] : [] };
+      }
       if (/FROM invoices[\s\S]*client_id/.test(sql) && /success_fee/.test(sql)) {
         const open = Array.isArray(params[1]) ? params[1] : [];
         return {
@@ -194,6 +216,53 @@ export function pgFake(seed = {}) {
             && (i.source === "funding_success_fee" || i.invoice_type === "success_fee")
             && (open.length ? open.includes(i.status) : true))
         };
+      }
+      if (/UPDATE invoices[\s\S]*status = 'partially_paid'/.test(sql)) {
+        const row = invoices.find((i) => i.id === params[0]);
+        const allowed = Array.isArray(params[1]) ? params[1] : [];
+        if (!row || (allowed.length && !allowed.includes(row.status))) return { rows: [] };
+        row.status = "partially_paid";
+        return { rows: [row] };
+      }
+      if (/UPDATE invoices SET external_ref = COALESCE/.test(sql)) {
+        const row = invoices.find((i) => i.id === params[0]);
+        if (row && !row.external_ref) row.external_ref = params[1];
+        return { rows: row ? [row] : [] };
+      }
+      if (/FROM invoice_payments WHERE invoice_id/.test(sql) && /SUM/.test(sql)) {
+        const paid = invoicePayments
+          .filter((p) => p.invoice_id === params[0])
+          .reduce((sum, p) => sum + (p.kind === "payment" ? Number(p.amount) : -Number(p.amount)), 0);
+        return { rows: [{ paid }] };
+      }
+      if (/FROM invoice_payments[\s\S]*external_ref/.test(sql)) {
+        const hit = invoicePayments.find((p) => p.org_id === params[0] && p.external_ref === params[1]);
+        return { rows: hit ? [hit] : [] };
+      }
+      if (/INSERT INTO invoice_payments/.test(sql)) {
+        const [org_id, invoice_id, amount, external_ref, source_event_id] = params;
+        if (external_ref && invoicePayments.some((p) => p.org_id === org_id && p.external_ref === external_ref)) {
+          return { rows: [] };
+        }
+        const row = {
+          id: "ip-" + ++payN,
+          org_id, invoice_id, kind: "payment", amount,
+          method: "commas", external_ref, source_event_id
+        };
+        invoicePayments.push(row);
+        return { rows: [row] };
+      }
+      if (/FROM payment_links WHERE invoice_id/.test(sql)) {
+        const hit = paymentLinks.find((p) => p.invoice_id === params[0]);
+        return { rows: hit ? [{ id: hit.id }] : [] };
+      }
+      if (/FROM payment_links[\s\S]*link_ref/.test(sql)) {
+        const hit = paymentLinks.find((p) => p.link_ref === params[0] && p.invoice_id);
+        return { rows: hit ? [{ invoice_id: hit.invoice_id }] : [] };
+      }
+      if (/FROM payment_links[\s\S]*id = \$1/.test(sql)) {
+        const hit = paymentLinks.find((p) => p.id === params[0] && p.invoice_id);
+        return { rows: hit ? [{ invoice_id: hit.invoice_id }] : [] };
       }
       if (/UPDATE invoices[\s\S]*status = 'escalated'/.test(sql)) {
         const row = invoices.find((i) => i.id === params[0]);

@@ -74,7 +74,8 @@ function fakeDb({
           org_id, client_id, purpose, description, amount_cents, currency,
           link_ref, checkout_url, created_by_staff_id, commas_session_id = null,
           product_id = null, sale_id = null, sale_motion = null,
-          closer_staff_id = null, sales_manager_staff_id = null
+          closer_staff_id = null, sales_manager_staff_id = null,
+          invoice_id = null
         ] = params;
         const row = {
           id: `pl-${++n}`, org_id, client_id, purpose, description,
@@ -82,7 +83,7 @@ function fakeDb({
           link_ref, checkout_url, provider: "commas",
           commas_session_id, paid_amount_cents: null,
           created_by_staff_id, product_id, sale_id, sale_motion,
-          closer_staff_id, sales_manager_staff_id,
+          closer_staff_id, sales_manager_staff_id, invoice_id,
           created_at: new Date().toISOString(),
           sent_at: null, paid_at: null, expired_at: null
         };
@@ -233,6 +234,35 @@ describe("createPaymentLink", () => {
     assert.equal(link.checkout_url, "https://www.fanbasis.com/agency-checkout/x/N1test");
     assert.equal(link.commas_session_id, "N1test");
     assert.equal(link.amount_cents, 100);
+  });
+
+  test("invoice id is stored on the link and sent in checkout metadata", async () => {
+    const db = fakeDb();
+    const INVOICE = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+    const ROUND = "11111111-2222-3333-4444-555555555555";
+    let sentMeta = null;
+    const fetchImpl = async (_url, opts) => {
+      sentMeta = JSON.parse(opts.body).metadata;
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({
+          data: { id: "invpay", payment_link: "https://www.fanbasis.com/agency-checkout/x/invpay" }
+        })
+      };
+    };
+    const link = await mint(db, {
+      orgId: ORG, clientId: CLIENT, purpose: "custom",
+      description: "Success fee INV-TEST",
+      amountCents: 100000,
+      invoiceId: INVOICE,
+      fundingRoundId: ROUND,
+      env: { FANBASIS_CHECKOUT_API_KEY: "fb-key" },
+      fetchImpl
+    });
+    assert.equal(link.invoice_id, INVOICE);
+    assert.equal(sentMeta.invoice_id, INVOICE);
+    assert.equal(sentMeta.funding_round_id, ROUND);
   });
 
   test("stores a staff-declared motion and product with the creating closer", async () => {

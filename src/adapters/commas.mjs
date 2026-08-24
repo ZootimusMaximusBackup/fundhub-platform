@@ -212,6 +212,18 @@ export function normalizeCommasEvent(body) {
     asUuidOrNull(d.metadata && d.metadata.client_id) ||
     null;
 
+  /* invoiceId / fundingRoundId — same two bags we fill at mint
+     (src/payment-links/index.mjs). UUID-only, same rule as client_id: a
+     vendor-side invoice number is not one of ours. */
+  const invoiceId =
+    asUuidOrNull(d.api_metadata && d.api_metadata.data && d.api_metadata.data.invoice_id) ||
+    asUuidOrNull(d.metadata && d.metadata.invoice_id) ||
+    null;
+  const fundingRoundId =
+    asUuidOrNull(d.api_metadata && d.api_metadata.data && d.api_metadata.data.funding_round_id) ||
+    asUuidOrNull(d.metadata && d.metadata.funding_round_id) ||
+    null;
+
   /* dueBy — a dispute's response deadline. Missing it is how a chargeback is
      lost by default, so it is carried through to the task rather than left in
      the raw body for somebody to find. */
@@ -236,6 +248,8 @@ export function normalizeCommasEvent(body) {
     email: String(email).trim().toLowerCase(),
     ref: ref ? String(ref) : null,
     clientId,
+    invoiceId,
+    fundingRoundId,
     itemId: itemId ? String(itemId) : null,
     dueBy: dueByRaw ? String(dueByRaw) : null,
     /* purpose — NOT read off the payload, and deliberately so. It is our own
@@ -532,7 +546,7 @@ export async function handleCommasWebhook({ db, rawBody, signatureHeader, secret
 async function loadPaymentLink(db, { linkRef, sessionId }) {
   if (linkRef) {
     const byRef = await db.query(
-      `SELECT pl.id, pl.org_id, pl.client_id, pl.purpose,
+      `SELECT pl.id, pl.org_id, pl.client_id, pl.purpose, pl.invoice_id,
               pl.product_id, p.code AS product_code, pl.sale_id, pl.sale_motion,
               pl.closer_staff_id, pl.sales_manager_staff_id
          FROM payment_links pl
@@ -545,7 +559,7 @@ async function loadPaymentLink(db, { linkRef, sessionId }) {
   }
   if (sessionId) {
     const bySession = await db.query(
-      `SELECT pl.id, pl.org_id, pl.client_id, pl.purpose,
+      `SELECT pl.id, pl.org_id, pl.client_id, pl.purpose, pl.invoice_id,
               pl.product_id, p.code AS product_code, pl.sale_id, pl.sale_motion,
               pl.closer_staff_id, pl.sales_manager_staff_id
          FROM payment_links pl
@@ -681,6 +695,7 @@ export async function processCommasInboxRow(row, db) {
     evt.saleMotion = link.sale_motion || null;
     evt.closerId = link.closer_staff_id || null;
     evt.salesManagerId = link.sales_manager_staff_id || null;
+    if (!evt.invoiceId && link.invoice_id) evt.invoiceId = link.invoice_id;
   }
 
   const canonical = mapToCanonical(evt);
@@ -715,6 +730,8 @@ export async function processCommasInboxRow(row, db) {
       saleId: evt.saleId,
       saleMotion: evt.saleMotion,
       paymentLinkId: evt.paymentLinkId,
+      invoiceId: evt.invoiceId || null,
+      fundingRoundId: evt.fundingRoundId || null,
       closerId: evt.closerId,
       salesManagerId: evt.salesManagerId,
       itemId: evt.itemId,

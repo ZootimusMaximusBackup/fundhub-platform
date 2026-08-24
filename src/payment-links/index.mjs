@@ -129,6 +129,7 @@ export async function createPaymentLink(db, {
   orgId, clientId, purpose, description = null, amountCents,
   currency = "USD", createdByStaffId = null, createdByRole = null,
   productId = null, productCode = null, saleId = null, saleMotion = null,
+  invoiceId = null, fundingRoundId = null,
   checkoutBaseUrl,
   env = process.env, fetchImpl = fetch
 }) {
@@ -175,7 +176,9 @@ export async function createPaymentLink(db, {
         org_id: orgId,
         product_id: context.productId,
         sale_id: context.saleId,
-        sale_motion: saleMotion
+        sale_motion: saleMotion,
+        invoice_id: invoiceId,
+        funding_round_id: fundingRoundId
       },
       env,
       fetchImpl
@@ -206,14 +209,16 @@ export async function createPaymentLink(db, {
     `INSERT INTO payment_links
        (org_id, client_id, purpose, description, amount_cents, currency,
         link_ref, checkout_url, created_by_staff_id, commas_session_id,
-        product_id, sale_id, sale_motion, closer_staff_id, sales_manager_staff_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+        product_id, sale_id, sale_motion, closer_staff_id, sales_manager_staff_id,
+        invoice_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
      RETURNING *`,
     [
       orgId, clientId, purpose, description, amountCents, currency,
       linkRef, checkoutUrl, createdByStaffId, commasSessionId,
       context.productId, context.saleId, saleMotion,
-      context.closerStaffId, context.salesManagerStaffId
+      context.closerStaffId, context.salesManagerStaffId,
+      invoiceId
     ]
   );
   return result.rows[0];
