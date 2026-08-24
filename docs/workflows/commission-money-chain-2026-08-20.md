@@ -81,6 +81,6 @@ Ground truth:
 
 ## Blockers and open questions
 
-- The closer front-end figure is 16.67% of the collected deposit per the owner-set rate in the 2026-08-20 journey changelog. $500.10 on a $3,000 deposit is correct for that rate. The test asserted $500.00, which is one sixth. Open question for the owner: 16.67% or one sixth. Not a code defect.
+- Resolved. Owner chose one sixth, not 16.67%. Superseded by `db/migrations/256_owner_closer_deposit_one_sixth_20260823.sql`. Not a remaining bug.
 - No owner decision is missing for the rates or motion rules.
 - The repository has no durable “this closer reports to this manager” field. This work does not choose a manager by roster position or by “only one active manager”; absent manager context remains unattributed.
