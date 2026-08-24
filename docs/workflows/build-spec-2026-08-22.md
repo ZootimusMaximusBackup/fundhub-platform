@@ -533,41 +533,79 @@ Recommended path (owner pick later):
 
 Do **not** build Transfer until Chris names this row as a build.
 
-### 5B.7 — Ops pulse: role KPIs → CEO / owner brief → hire / fire / assign (QUEUED)
+### 5B.7 — Conveyor + North Stars → Ops / AI COO v1 (DONE 2026-08-24)
+
+**Status: DONE** for pulse + briefs + hire/LinkedIn + later brain shapes/reads (2026-08-24). Ready to ship, not shipped (deploy not named). Fire / raise / bonus are C-suite task shapes only — no auto-enqueue, no kick, no invented % or $. Ad spend is a read + review task. Hermes stays later.
+
+**This pass built (2026-08-24):**
+
+- Daily pulse: company 8 (`computeKpis`) + 20/20 `staff_targets` bars + MODEL unit clocks
+- Two briefs: CEO “what needs doing today?” / Chris “what will be done.”
+- Packed calendar → one hire-closer task (`createCsuiteTask` kind=hire, assignee `sales_manager`) + LinkedIn post via existing `src/hiring/linkedin.mjs` `postJob`
+- Fire: helper `createCsuiteTask({ kind: 'fire' })` assignee `owner`. No locked fire trigger. Do not call `suspendStaff`
+- GET `/api/read/ops-pulse` (read only). POST `/api/ops/hire-closer` (owner/admin write)
+- Ops Admin “Today’s briefs” card
+
+**Change manifest**
+
+- Added: `src/ops/pulse.mjs`, `src/ops/briefs.mjs`, `src/ops/hire-closer.mjs`, `src/ops/csuite-tasks.mjs` + tests
+- Added: `api/read/ops-pulse.mjs`, `api/ops/hire-closer.mjs`
+- Routed: `read/ops-pulse`, `ops/hire-closer` in `netlify/functions/api.mjs`
+- UI: `public/app/ops-admin.html` briefs section; `public/app/data.js` `opsPulse` / `hireCloser`
+- Journeys: `docs/journeys/ops-pulse-intended.md` + `-actual.md`
+- Board: `docs/workflows/ops-coo-v1-2026-08-24.md`
+
+**Still later (do not build from this row):** Hermes; fire auto-enqueue (blocked on Chris Q1); raise/bonus auto-enqueue (blocked on Q6/Q7 dollars); buying/pausing ads.
+
+**Status was QUEUED.** Spec lock 2026-08-24. The agent v1 above is the named build. Do **not** treat this as a fire/raise/bonus brain.
 
 **Source thread:** [Ops agent for KPI management](b3cf46b7-aa4b-49b7-9858-73d8569ecd11)
-**Owner-set 2026-08-22.** Do **not** build in this comms-repair pass. Track it. Do not lose it.
+**Owner-set 2026-08-22 / 2026-08-24.** Track it. Do not lose it. Do not treat “eight KPIs per role” as the law.
 
-What it is (plain):
-- Watch leads in, and every role’s numbers, by day and by week.
-- Every role is tracked and audited. Company pulse is eight KPIs (locked 2026-08-23). Each seat also has its own short list.
-- From those numbers, tell the **CEO what needs to be done**, and tell **Chris what is going to be done**.
-- Example: calendars filling too fast → hire another closer; same pattern for fulfillment and every other role.
-- Keep an ongoing pulse. Over time the agent learns (Hermes / training). AI should be able to recommend from KPIs without a new product speech each week.
-- Later (same backlog, not this build): ramp-ups and educational material on how to use the system.
+**The law is the belt.** Success = lead → book → show → close (**deposit** logged) → upsell/downsell on the pay link → fund → inquiry / repair when needed.
 
-Capability check already done in that thread — **current CRM cannot run this loop**:
-- Staff on/off is invite + revoke login only (`inviteStaff` / `suspendStaff`). No employment fire. No `reactivateStaff`.
-- Hiring pipeline can mark a candidate `hired` and does **not** create a staff login.
-- LinkedIn code can post/close a job posting (unverified live). Not a campaign switch from KPI.
+**Long spec (read this):** [`docs/workflows/fundhub-conveyor-kpis-2026-08-23.md`](fundhub-conveyor-kpis-2026-08-23.md)
+
+**One North Star per seat** (from that spec):
+
+- AI setter — count bookings. Never hire setters.
+- Sales manager — team deposits vs calendar fullness. Calendar too full → hire a **closer**.
+- Closer — about **20 deposits / month**.
+- Funding advisor — about **20 funded / month**.
+- Inquiry remover and Credit repair — two seats. Same Specialist login today (Inquiries / Repair toggle). Clock: healthy ~15 days, hard cap 30. Do not invent monthly counts.
+- Owner — company health, not a per-seat star.
+
+**Company 8** (already on the company dashboard): new clients, booked calls, show rate, close rate, cash, funded count, funded dollars, cost per funded. Company health. Not eight numbers per person.
+
+**Mail:** expedited. Not overnight.
+
+**Unit job times** (how long one job takes — not the 15/30 day file clock): [`fundhub-conveyor-kpis-2026-08-23.md`](fundhub-conveyor-kpis-2026-08-23.md) §8 and `src/ops/role-unit-times.mjs`. Card app 10 min, funding round 50 min, funded file 175 min, repair 5 min, FTC upload 2 min, close call 45 min. Starting bar is 20. Time-max is 213 closer calls / 54 funded files at 160h.
+
+**Starting bars written 2026-08-24.** Closer deposits=20/month and funding advisor funded count=20/month (`files`). Still not the hire / fire agent.
+
+What the later agent will do (still queued):
+
+- Watch the belt by day and by week.
+- Tell the **CEO what needs doing** and tell **Chris what will be done**.
+- Hire / fire / assign from those numbers (packed calendar → hire closer). Same idea for every seat.
+- Learn over time (Hermes / training). Later: ramp-ups and how-to material.
+
+Capability check — **current CRM cannot run that loop yet**:
+
+- Staff on/off is invite + revoke login only. No employment fire. No reactivate.
+- Hiring can mark `hired` and does **not** create a staff login.
+- LinkedIn can post/close a job (unverified live). Not a switch from a number.
 - No Hermes in this repo. Staff Ask is product help. Company Brain is docs Q&A. Neither acts.
-- Reuse later, do not invent a second copy: `staff_targets` (role/person, daily/weekly/monthly), `src/sales/metrics.mjs`, `GET /api/dashboard/kpis`, `createTask`, hiring stages, LinkedIn post/close.
+- Reuse later, do not invent a second copy: `staff_targets`, sales metrics, company dashboard numbers, tasks, hiring stages, LinkedIn post/close.
 
-Needed before it can be built (do not guess):
-- the eight KPIs per role, named → **done 2026-08-23:** company 8 + per-role lists (this section + Ops thread plan). Credit Repair is two seats; new login later.
+Still needed before the agent build (do not guess):
+
+- Chris locks the conveyor spec
 - who is CEO vs Chris on the two briefs if they are not the same person
-- which metric crossing which line means hire vs fire vs assign a checklist
+- which number crossing which line means hire vs fire vs assign a checklist
 - whether LinkedIn hiring is in v1 or later
 
-**Org seats (owner-set 2026-08-23)**
-
-- CEO = `owner`. AI COO = this agent (no login). Sales manager. Closer (client may hear “funding specialist” — same seat). Funding advisor (after the close, not the closer). Inquiry remover and Credit repair = **two people**. Setter = **AI** (count bookings, never hire setters). Calendar-too-full hires a closer.
-
-**Company 8** (already in `GET /api/dashboard/kpis`): new clients, booked calls, show rate, close rate, cash, funded count, funded dollars, cost per funded.
-
-**Role KPIs:** sales manager (booked/held/deposits vs target; closers on shift vs calendar); closer (booked, held, show, deposits, cash vs target, unlogged); funding advisor (need me, submissions, funded count/dollars); inquiry (need me, open cases, removals); credit repair (files in round, letters sent, stuck).
-
-Detail board (pointer): `docs/workflows/ops-kpi-agent-2026-08-22.md`
+Pointer: [`docs/workflows/ops-kpi-agent-2026-08-22.md`](ops-kpi-agent-2026-08-22.md)
 
 ### 5B.8 — AI agent prompts (Josh and related)
 

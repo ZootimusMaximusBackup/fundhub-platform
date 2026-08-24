@@ -3,6 +3,7 @@ import fs from "node:fs";
 import assert from "node:assert/strict";
 import {
   belongsOnCloserBoard,
+  closerDepositTarget,
   closerRoster,
   filterCloserRoster,
   isBlockedCloserIdentity,
@@ -139,6 +140,18 @@ test("closerRoster SQL is closers only, never DELETEs, and returns live rates or
    target_reason straight onto the page, so "No monthly deposits target in
    staff_targets" appeared in front of a reader who has never heard of a table
    called staff_targets. The value must stay null — the wording is the fix. */
+test("closer deposit target is a count of 20, not $20", async () => {
+  const db = {
+    async query() {
+      return { rows: [{ target_value: 20 }] };
+    }
+  };
+  const t = await closerDepositTarget(db, { orgId: "org-1", staffId: "staff-2" });
+  assert.equal(t.count, 20);
+  assert.equal(t.display, "20 deposits");
+  assert.equal(t.reason, null);
+});
+
 test("metrics.mjs ships no table names in reader-facing reasons", () => {
   const src = fs.readFileSync(
     new URL("./metrics.mjs", import.meta.url), "utf8");

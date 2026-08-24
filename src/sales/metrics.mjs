@@ -120,7 +120,8 @@ async function commissionBuckets(db, { orgId, staffId }) {
   };
 }
 
-async function cashTargetCents(db, { orgId, staffId }) {
+/** Monthly closer bar: metric `deposits` is a COUNT of deposits, not dollars. */
+export async function closerDepositTarget(db, { orgId, staffId }) {
   const r = await db.query(
     `SELECT target_value FROM staff_targets
       WHERE org_id = $1 AND period = 'monthly' AND metric = 'deposits'
@@ -130,9 +131,14 @@ async function cashTargetCents(db, { orgId, staffId }) {
     [orgId, staffId]
   );
   const v = r.rows[0]?.target_value;
-  if (v == null) return { cents: null, reason: "No monthly deposit target has been set for this closer yet." };
-  // target_value for deposits is dollar amount of cash in existing Galaxy usage.
-  return { cents: Math.round(Number(v) * 100), reason: null };
+  if (v == null) {
+    return { count: null, display: null, reason: "No monthly deposit target has been set for this closer yet." };
+  }
+  const count = Math.round(Number(v));
+  if (!Number.isFinite(count)) {
+    return { count: null, display: null, reason: "No monthly deposit target has been set for this closer yet." };
+  }
+  return { count, display: count + " deposits", reason: null };
 }
 
 async function openShift(db, { orgId, staffId }) {
@@ -197,7 +203,7 @@ export async function closerMyNumbers(db, { orgId, staffId, now = new Date() } =
     staffCashCents(db, { orgId, staffId, ...prior }),
     depositToFunded(db, { orgId, staffId, ...window }),
     commissionBuckets(db, { orgId, staffId }),
-    cashTargetCents(db, { orgId, staffId }),
+    closerDepositTarget(db, { orgId, staffId }),
     openShift(db, { orgId, staffId }),
     countUnlogged(db, { orgId, staffId }),
     listUnloggedCalls(db, { orgId, staffId, limit: 10 }),
@@ -232,8 +238,10 @@ export async function closerMyNumbers(db, { orgId, staffId, now = new Date() } =
     pace: {
       cash_cents: cashCents,
       cash_display: formatUsdFromCents(cashCents),
-      target_cents: target.cents,
-      target_display: formatUsdFromCents(target.cents),
+      deposits,
+      target_deposits: target.count,
+      target_cents: null,
+      target_display: target.display,
       target_reason: target.reason,
       rank: meRank >= 0 ? meRank + 1 : null,
       team_size: team.length

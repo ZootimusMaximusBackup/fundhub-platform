@@ -1,0 +1,177 @@
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import {
+  companyEight,
+  diagnoseGaps,
+  hireProfileFromGaps,
+  loadAdSpend,
+  actOnBrain
+} from "./pulse.mjs";
+
+describe("pulse company 8", () => {
+  it("maps computeKpis fields and marks missing cost per funded", () => {
+    const eight = companyEight({
+      new_clients: 3,
+      booked_count: 10,
+      show_rate: 0.5,
+      close_rate: 0.2,
+      cash_collected_cents: 300000,
+      funded_count: 1,
+      funded_amount_cents: 5000000,
+      cost_per_funded_cents: null,
+      cost_per_funded_reason: "ad_spend_unavailable"
+    });
+    assert.equal(eight.new_clients.value, 3);
+    assert.equal(eight.booked_calls.value, 10);
+    assert.equal(eight.cost_per_funded_cents.missing, true);
+    assert.equal(eight.cost_per_funded_cents.reason, "ad_spend_unavailable");
+    assert.equal(eight.show_rate.missing, false);
+  });
+
+  it("says the eight numbers are missing when kpis are absent", () => {
+    const eight = companyEight(null);
+    assert.equal(eight.new_clients.missing, true);
+    assert.equal(eight.cash_cents.missing, true);
+  });
+});
+
+describe("gap diagnosis", () => {
+  it("names the short seat from 20/20 and does not invent a booking bar", () => {
+    const gaps = diagnoseGaps({
+      bars: {
+        closer: { target: 20, actual: 4 },
+        funding_advisor: { target: 20, actual: 20 }
+      },
+      calendar: { packed: false },
+      company_8: { booked_calls: { value: 8, missing: false } }
+    });
+    assert.equal(gaps.has_short, true);
+    assert.equal(gaps.short[0].seat, "closer");
+    assert.equal(gaps.short[0].metric, "deposits");
+    assert.match(gaps.notes.join(" "), /starting bar of 20/);
+    assert.match(gaps.notes.join(" "), /Do not hire a setter/);
+    assert.equal(gaps.short.some((s) => s.seat === "setter_ai"), false);
+  });
+
+  it("says missing instead of inventing an actual", () => {
+    const gaps = diagnoseGaps({
+      bars: {
+        closer: { target: 20, actual: null, missing: "deposits_not_available" },
+        funding_advisor: { target: 20, actual: 3 }
+      },
+      calendar: { packed: false },
+      company_8: { booked_calls: { value: null, missing: true } }
+    });
+    assert.equal(gaps.missing.some((m) => m.seat === "closer"), true);
+    assert.equal(gaps.short.some((s) => s.seat === "funding_advisor"), true);
+    assert.match(gaps.notes.join(" "), /missing/);
+    assert.match(gaps.notes.join(" "), /Do not hire a setter/);
+  });
+
+  it("treats a packed calendar as a closer need", () => {
+    const gaps = diagnoseGaps({
+      bars: {
+        closer: { target: 20, actual: 20 },
+        funding_advisor: { target: 20, actual: 20 }
+      },
+      calendar: { packed: true, due_at_count: 45, threshold: 45 },
+      company_8: { booked_calls: { value: 8, missing: false } }
+    });
+    assert.equal(gaps.has_short, true);
+    assert.equal(gaps.short.some((s) => s.seat === "closer" && s.reason === "packed"), true);
+  });
+});
+
+describe("hire profile from gaps", () => {
+  it("writes a closer profile and keeps LinkedIn on the closer path", () => {
+    const profile = hireProfileFromGaps({
+      gaps: { short: [{ seat: "closer", metric: "deposits" }] },
+      calendar: { packed: true }
+    });
+    assert.equal(profile.seat, "closer");
+    assert.equal(profile.linkedin, true);
+    assert.match(profile.lines.join(" "), /Do not hire a setter/);
+  });
+
+  it("writes a funding advisor profile without a second job-post path", () => {
+    const profile = hireProfileFromGaps({
+      gaps: { short: [{ seat: "funding_advisor", metric: "files" }] },
+      calendar: { packed: false }
+    });
+    assert.equal(profile.seat, "funding_advisor");
+    assert.equal(profile.linkedin, false);
+    assert.match(profile.linkedin_reason, /no second job-post/);
+  });
+});
+
+describe("ad spend read", () => {
+  it("returns not_configured when the spend table cannot be read", async () => {
+    const out = await loadAdSpend(
+      { query: async () => { throw new Error("no table"); } },
+      { orgId: "org-1", days: 7 }
+    );
+    assert.equal(out.status, "not_configured");
+    assert.equal(out.spend_cents, null);
+  });
+
+  it("returns a real spend number when the table answers", async () => {
+    const out = await loadAdSpend(
+      { query: async () => ({ rows: [{ cents: 12345 }] }) },
+      { orgId: "org-1", days: 7 }
+    );
+    assert.equal(out.status, "ok");
+    assert.equal(out.spend_cents, 12345);
+  });
+});
+
+describe("actOnBrain", () => {
+  function pulseBase(over = {}) {
+    return {
+      calendar: { packed: false },
+      gaps: { has_short: false, notes: [] },
+      ads: { status: "missing", spend_cents: null },
+      hire: { linkedin: { status: "not_configured" } },
+      fire: { auto_enqueue: false, rule_locked: false, note: "no fire rule yet" },
+      raise: { auto_enqueue: false, rule_locked: false, note: "no raise rule yet" },
+      bonus: { auto_enqueue: false, rule_locked: false, note: "no bonus rule yet" },
+      ...over
+    };
+  }
+
+  it("writes diagnose and ads review, never fire raise or bonus", async () => {
+    const kinds = [];
+    const out = await actOnBrain({}, {
+      orgId: "org-1",
+      computePulseFn: async () => pulseBase({
+        gaps: { has_short: true, notes: ["Closer deposits this month 4 are under the starting bar of 20."] },
+        ads: { status: "ok", spend_cents: 5000 }
+      }),
+      actOnPackedFn: async () => ({ acted: false, reason: "not_packed", calendar: { packed: false }, task: null, linkedin: { status: "not_configured" } }),
+      createCsuiteTaskFn: async (_db, spec) => {
+        kinds.push(spec.kind);
+        return { created: true, id: spec.kind, kind: spec.kind };
+      }
+    });
+    assert.deepEqual(kinds.sort(), ["ads_review", "diagnose"]);
+    assert.equal(out.acted, true);
+    assert.equal(out.fire.auto_enqueue, false);
+    assert.equal(out.raise.auto_enqueue, false);
+    assert.equal(out.bonus.auto_enqueue, false);
+  });
+
+  it("does not write an ads review when spend is zero or missing", async () => {
+    const kinds = [];
+    await actOnBrain({}, {
+      orgId: "org-1",
+      computePulseFn: async () => pulseBase({
+        ads: { status: "ok", spend_cents: 0 }
+      }),
+      actOnPackedFn: async () => ({ acted: false, reason: "not_packed", calendar: { packed: false }, task: null, linkedin: {} }),
+      createCsuiteTaskFn: async (_db, spec) => {
+        kinds.push(spec.kind);
+        return { created: true, kind: spec.kind };
+      }
+    });
+    assert.deepEqual(kinds, []);
+  });
+});

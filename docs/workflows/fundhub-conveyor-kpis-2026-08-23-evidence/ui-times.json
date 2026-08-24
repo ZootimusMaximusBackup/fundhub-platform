@@ -1,0 +1,82 @@
+{
+  "generated_at": "2026-08-24T07:14:57.123Z",
+  "note": "CRM UI milliseconds only. Not cycle clocks, not call length, not Hubstaff hours. No time thresholds asserted.",
+  "rows": [
+    {
+      "id": "calendar_join_call",
+      "screen": "calendar.html",
+      "action": "Load calendar, then Join Call",
+      "load_ms": 572,
+      "ready": true,
+      "join_enabled": true,
+      "click_ms": 110,
+      "status": "clicked",
+      "note": "popup_opened",
+      "recorded_at": "2026-08-24T07:14:53.363Z"
+    },
+    {
+      "id": "closer_dashboard_present",
+      "screen": "closer-dashboard.html",
+      "action": "Load closer dashboard with client, then Present",
+      "load_ms": 539,
+      "ready": true,
+      "present_visible": true,
+      "click_ms": 69,
+      "status": "clicked",
+      "note": "popup_opened",
+      "recorded_at": "2026-08-24T07:14:54.149Z"
+    },
+    {
+      "id": "my_numbers_load",
+      "screen": "my-numbers.html",
+      "action": "Load my numbers",
+      "load_ms": 492,
+      "ready": true,
+      "click_ms": null,
+      "status": "load_only",
+      "reason": "No primary belt click on this screen",
+      "recorded_at": "2026-08-24T07:14:54.788Z"
+    },
+    {
+      "id": "sales_floor_load",
+      "screen": "sales-floor.html",
+      "action": "Load sales floor",
+      "load_ms": 497,
+      "ready": true,
+      "click_ms": null,
+      "status": "load_only",
+      "reason": "No primary belt click on this screen",
+      "recorded_at": "2026-08-24T07:14:55.424Z"
+    },
+    {
+      "id": "pipeline_move",
+      "screen": "pipeline.html",
+      "action": "Load pipeline, then MOVE",
+      "load_ms": 477,
+      "ready": true,
+      "click_ms": 84,
+      "status": "clicked",
+      "recorded_at": "2026-08-24T07:14:56.110Z"
+    },
+    {
+      "id": "lenders_tab_switch",
+      "screen": "lenders.html",
+      "action": "Load lenders, switch to Bureau mismatch queue",
+      "load_ms": 99,
+      "ready": true,
+      "click_ms": 42,
+      "status": "clicked",
+      "recorded_at": "2026-08-24T07:14:56.399Z"
+    },
+    {
+      "id": "inquiry_repair_tab",
+      "screen": "inquiry-remover.html",
+      "action": "Load specialist desk, switch to Repair",
+      "load_ms": 510,
+      "ready": true,
+      "click_ms": 44,
+      "status": "clicked",
+      "recorded_at": "2026-08-24T07:14:57.084Z"
+    }
+  ]
+}

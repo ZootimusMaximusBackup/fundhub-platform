@@ -339,6 +339,24 @@
       </div>
     </div>
 
+    <div class="section" id="ops-pulse">
+      <div class="section-title">Today’s briefs<span class="section-meta" id="ops-pulse-meta">loading</span></div>
+      <div class="card" id="ops-pulse-card">
+        <p class="empty-note" id="ops-pulse-state" style="border-top:none;margin-top:0;padding-top:0">Loading today’s briefs…</p>
+        <div id="ops-pulse-body" hidden>
+          <div class="section-meta">CEO — what needs doing today?</div>
+          <pre class="mono" id="ops-pulse-ceo" style="white-space:pre-wrap;font-size:var(--fs-body);margin:8px 0 14px"></pre>
+          <div class="section-meta">Chris — what will be done.</div>
+          <pre class="mono" id="ops-pulse-owner" style="white-space:pre-wrap;font-size:var(--fs-body);margin:8px 0 14px"></pre>
+          <p class="empty-note" id="ops-pulse-hire" style="border-top:1px dashed var(--line);margin-top:4px;padding-top:8px"></p>
+          <p class="empty-note" id="ops-pulse-ads"></p>
+          <p class="empty-note" id="ops-pulse-fire"></p>
+          <button id="ops-pulse-act" type="button" hidden>Write today’s C-suite tasks</button>
+          <p class="empty-note" id="ops-pulse-act-msg"></p>
+        </div>
+      </div>
+    </div>
+
     <div class="two-col">
       <div>
 
@@ -600,6 +618,76 @@
     });
   }
 
+  function paintPulse(res){
+    var state = document.getElementById('ops-pulse-state');
+    var body  = document.getElementById('ops-pulse-body');
+    var meta  = document.getElementById('ops-pulse-meta');
+    var ceo   = document.getElementById('ops-pulse-ceo');
+    var own   = document.getElementById('ops-pulse-owner');
+    var hire  = document.getElementById('ops-pulse-hire');
+    var adsEl = document.getElementById('ops-pulse-ads');
+    var fire  = document.getElementById('ops-pulse-fire');
+    var act   = document.getElementById('ops-pulse-act');
+    if(!state || !body) return;
+    if(!res || !res.ok || !res.data){
+      state.hidden = false;
+      body.hidden = true;
+      state.textContent = 'Could not load today’s briefs. Refresh this page.';
+      if(meta) meta.textContent = 'error';
+      if(FHData.explain) FHData.explain(res, 'today’s briefs');
+      return;
+    }
+    var briefs = res.data.briefs || {};
+    var rec = res.data.hire || {};
+    var pulse = res.data.pulse || {};
+    var cal = pulse.calendar || {};
+    var gaps = pulse.gaps || res.data.gaps || {};
+    var ads = pulse.ads || res.data.ads || {};
+    var li  = rec.linkedin || {};
+    var profile = rec.profile || {};
+    if(!briefs.ceo && !briefs.owner){
+      state.hidden = false;
+      body.hidden = true;
+      state.textContent = 'No pulse yet. Sign in as owner or admin.';
+      if(meta) meta.textContent = 'empty';
+      return;
+    }
+    state.hidden = true;
+    body.hidden = false;
+    if(meta) meta.textContent = cal.packed ? 'calendar packed (MODEL)' : 'calendar not packed (MODEL)';
+    if(ceo) ceo.textContent = briefs.ceo || '';
+    if(own) own.textContent = briefs.owner || '';
+    if(hire){
+      hire.textContent = (cal.packed ? 'Hire: calendar is packed. ' : 'Hire: calendar is not packed. ') +
+        'LinkedIn: ' + (li.status || 'unknown') +
+        (rec.existing_task_id ? '. Hire task already on file.' : '.') +
+        (profile.lines && profile.lines.length ? ' Profile: ' + profile.lines.join(' ') : '');
+    }
+    if(adsEl){
+      adsEl.textContent = ads.status === 'ok'
+        ? ('Ad spend this window: ' + (ads.spend_cents == null ? 'missing' : ads.spend_cents) + ' cents. Read only. Do not buy ads from here.')
+        : ('Ad spend: ' + (ads.status || 'missing') + '.');
+    }
+    if(fire) fire.textContent = 'Fire: no fire rule yet. Raise: no raise rule yet. Bonus: no bonus rule yet. The brain writes a C-suite task only. It does not kick anyone out or change pay.';
+    if(act){
+      var needsAct = !!(cal.packed || gaps.has_short || (ads.status === 'ok' && ads.spend_cents > 0));
+      act.hidden = !needsAct;
+    }
+  }
+
+  function loadPulse(period){
+    var state = document.getElementById('ops-pulse-state');
+    var body  = document.getElementById('ops-pulse-body');
+    if(typeof FHData === 'undefined' || !FHData.opsPulse){
+      if(state){ state.hidden = false; state.textContent = 'No pulse yet. Sign in as owner or admin.'; }
+      if(body) body.hidden = true;
+      return;
+    }
+    if(state){ state.hidden = false; state.textContent = 'Loading today’s briefs…'; }
+    if(body) body.hidden = true;
+    FHData.opsPulse(period).then(paintPulse);
+  }
+
   function pick(id){
     var r = RANGES.filter(function(x){ return x.id===id; })[0];
     if(!r) return;
@@ -607,6 +695,7 @@
     current = id;
     paintPeriod(r);
     loadKpis(id);
+    loadPulse(id);
   }
 
   function paintPeriod(r){
@@ -623,7 +712,7 @@
   // `typeof FHData === 'undefined'` guard above, so the five KPI tiles were
   // blanked and never asked for. Every deferred script runs before
   // DOMContentLoaded, so the first read waits for that event.
-  document.addEventListener('DOMContentLoaded', function(){ loadKpis(current); });
+  document.addEventListener('DOMContentLoaded', function(){ loadKpis(current); loadPulse(current); });
 
   btn.addEventListener('click', function(e){
     e.stopPropagation();
@@ -634,6 +723,37 @@
   });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') close(); });
   mark();
+
+  var actBtn = document.getElementById('ops-pulse-act');
+  if(actBtn){
+    actBtn.addEventListener('click', function(){
+      var msg = document.getElementById('ops-pulse-act-msg');
+      if(typeof FHData === 'undefined' || !FHData.hireCloser){
+        if(msg) msg.textContent = 'That action is not available on this page.';
+        return;
+      }
+      actBtn.disabled = true;
+      if(msg) msg.textContent = 'Working…';
+      FHData.hireCloser().then(function(res){
+        actBtn.disabled = false;
+        if(!res || !res.ok){
+          if(msg) msg.textContent = 'Could not write today’s tasks. Try again.';
+          if(FHData.explain) FHData.explain(res, 'today’s tasks');
+          return;
+        }
+        var d = res.data || {};
+        var li = (d.linkedin && d.linkedin.status) || 'unknown';
+        if(d.acted){
+          if(msg) msg.textContent = 'Tasks saved. LinkedIn: ' + li + '. A person still has to send the invite.';
+        } else if(d.diagnose || d.ads_task){
+          if(msg) msg.textContent = 'Review tasks already on file. LinkedIn: ' + li + '.';
+        } else {
+          if(msg) msg.textContent = 'No new C-suite tasks this time.';
+        }
+        loadPulse(current);
+      });
+    });
+  }
 })();
 
 /* ══ SORTABLE TABLES ══════════════════════════════════════════════════════ */

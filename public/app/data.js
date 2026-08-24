@@ -182,6 +182,14 @@ window.FHData = (function () {
     kpis: function (period) {
       return get("/api/dashboard/kpis?period=" + encodeURIComponent(period || "7d"));
     },
+    /* GET /api/read/ops-pulse?period= → pulse + two briefs. Read only. */
+    opsPulse: function (period) {
+      return get("/api/read/ops-pulse?period=" + encodeURIComponent(period || "7d"));
+    },
+    /* POST /api/ops/hire-closer — hire task + LinkedIn when the calendar is packed. */
+    hireCloser: function () {
+      return this.write("/api/ops/hire-closer", {});
+    },
 
     /* GET /api/dashboard/pipeline → data.stages[] with .cards[], each stage
        carrying its own count and money so a column can never disagree with

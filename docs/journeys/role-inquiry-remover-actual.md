@@ -31,11 +31,11 @@ flowchart TD
     CAN --> A_partner_marketing[partner-marketing — 5 routes]
     CAN --> A_public[public — 6 routes]
     CAN --> A_read[Reading data — 37 routes]
-    CAN --> A_repair[repair — 3 routes]
+    CAN --> A_repair[repair — 5 routes]
     CAN --> A_social[social — 6 routes]
     CAN --> A_top_level[Everything else — 25 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 64 routes]
+    WHO -->|Yes| CANT[Blocked — 67 routes]
     CANT --> B_auth[Signing in and out — 5 blocked]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_brand[brand — 1 blocked]
@@ -48,18 +48,19 @@ flowchart TD
     CANT --> B_gifts[gifts — 1 blocked]
     CANT --> B_hiring[Hiring — 7 blocked]
     CANT --> B_journeys[journeys — 2 blocked]
+    CANT --> B_ops[ops — 1 blocked]
     CANT --> B_partner_brand[partner-brand — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
-    CANT --> B_read[Reading data — 13 blocked]
+    CANT --> B_read[Reading data — 14 blocked]
     CANT --> B_social[social — 1 blocked]
     CANT --> B_staff[staff — 2 blocked]
-    CANT --> B_top_level[Everything else — 11 blocked]
+    CANT --> B_top_level[Everything else — 12 blocked]
 ```
 
 ## What they can reach
 
-**126 of 190 routes.**
+**128 of 195 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -176,8 +177,10 @@ flowchart TD
 | `/api/read/transactions` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/workflows` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/repair/enroll` | POST | owner, admin, closer, inquiry_specialist |
 | `/api/repair/exceptions` | GET, POST | staff |
-| `/api/repair/generate` | POST | owner, admin, inquiry_specialist |
+| `/api/repair/generate` | POST | owner, admin, closer, inquiry_specialist |
+| `/api/repair/inbound-mail` | POST | owner, admin, closer, inquiry_specialist |
 | `/api/repair/send` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/shifts` | GET, POST | staff |
 | `/api/social/channels` | GET | partner, staff |
@@ -198,7 +201,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**64 of 190 routes.**
+**67 of 195 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -214,6 +217,7 @@ flowchart TD
 | `/api/chat/portal-message` | POST | client |
 | `/api/closer-deck` | POST | closer, sales_manager, owner, admin |
 | `/api/commission-rules` | GET, POST | owner, admin, sales_manager |
+| `/api/commissions` | POST | owner, admin, sales_manager |
 | `/api/company-brain/reviews` | GET, POST | owner |
 | `/api/company-brain/sync` | GET, POST | owner, admin, sales_manager |
 | `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
@@ -242,6 +246,7 @@ flowchart TD
 | `/api/lender-observations` | POST | owner, admin, funding_advisor |
 | `/api/lenders` | POST | owner, admin, funding_advisor |
 | `/api/marketing-flags` | POST | owner, admin, sales_manager |
+| `/api/ops/hire-closer` | POST | owner, admin |
 | `/api/partner-brand` | GET, PUT | employees: owner, admin<br>plus: partner |
 | `/api/partner-brand/verify-domain` | POST | owner, admin |
 | `/api/partner-pages` | GET, PATCH, POST | employees: owner, admin<br>plus: partner |
@@ -259,6 +264,7 @@ flowchart TD
 | `/api/read/invoices` | GET | owner, admin, sales_manager |
 | `/api/read/lender-observations` | GET | owner, admin, funding_advisor |
 | `/api/read/lenders` | GET | owner, admin, funding_advisor |
+| `/api/read/ops-pulse` | GET | owner, admin |
 | `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
 | `/api/read/proxy-sessions` | GET | owner, funding_advisor |
 | `/api/read/sales-floor` | GET | owner, admin, sales_manager |

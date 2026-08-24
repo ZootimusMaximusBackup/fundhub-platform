@@ -115,12 +115,14 @@
         : (pace.target_reason || "No monthly target set");
     }
     var bar = $(".pace .bar i");
-    if (bar && pace.target_cents) {
-      var pctFill = Math.min(100, Math.round((pace.cash_cents || 0) / pace.target_cents * 100));
+    if (bar && pace.target_deposits) {
+      var pctFill = Math.min(100, Math.round((pace.deposits || 0) / pace.target_deposits * 100));
       bar.style.width = pctFill + "%";
     } else if (bar) {
       bar.style.width = "0%";
     }
+    var markTarget = document.querySelector(".pace .marks span:nth-child(2)");
+    if (markTarget && pace.target_display) markTarget.textContent = "Target " + pace.target_display;
 
     paintOfferStack(d);
 

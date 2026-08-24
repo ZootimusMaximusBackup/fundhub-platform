@@ -35,9 +35,9 @@ flowchart TD
     CAN --> A_repair[repair — 2 routes]
     CAN --> A_social[social — 6 routes]
     CAN --> A_staff[staff — 1 route]
-    CAN --> A_top_level[Everything else — 28 routes]
+    CAN --> A_top_level[Everything else — 29 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 45 routes]
+    WHO -->|Yes| CANT[Blocked — 49 routes]
     CANT --> B_auth[Signing in and out — 5 blocked]
     CANT --> B_banking[banking — 1 blocked]
     CANT --> B_brand[brand — 1 blocked]
@@ -50,11 +50,12 @@ flowchart TD
     CANT --> B_gifts[gifts — 1 blocked]
     CANT --> B_hiring[Hiring — 7 blocked]
     CANT --> B_journeys[journeys — 1 blocked]
+    CANT --> B_ops[ops — 1 blocked]
     CANT --> B_partner_brand[partner-brand — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
-    CANT --> B_read[Reading data — 5 blocked]
-    CANT --> B_repair[repair — 1 blocked]
+    CANT --> B_read[Reading data — 6 blocked]
+    CANT --> B_repair[repair — 3 blocked]
     CANT --> B_social[social — 1 blocked]
     CANT --> B_staff[staff — 1 blocked]
     CANT --> B_top_level[Everything else — 8 blocked]
@@ -62,7 +63,7 @@ flowchart TD
 
 ## What they can reach
 
-**145 of 190 routes.**
+**146 of 195 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -96,6 +97,7 @@ flowchart TD
 | `/api/climate/geocode` | OPTIONS | anyone |
 | `/api/closer-deck` | POST | closer, sales_manager, owner, admin |
 | `/api/commission-rules` | GET, POST | owner, admin, sales_manager |
+| `/api/commissions` | POST | owner, admin, sales_manager |
 | `/api/company-brain/sync` | GET, POST | owner, admin, sales_manager |
 | `/api/company-brain/threads` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/company-brain/upload` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -220,7 +222,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**45 of 190 routes.**
+**49 of 195 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -254,6 +256,7 @@ flowchart TD
 | `/api/journeys/ask` | POST | owner, admin |
 | `/api/lender-observations` | POST | owner, admin, funding_advisor |
 | `/api/lenders` | POST | owner, admin, funding_advisor |
+| `/api/ops/hire-closer` | POST | owner, admin |
 | `/api/partner-brand` | GET, PUT | employees: owner, admin<br>plus: partner |
 | `/api/partner-brand/verify-domain` | POST | owner, admin |
 | `/api/partner-pages` | GET, PATCH, POST | employees: owner, admin<br>plus: partner |
@@ -265,8 +268,11 @@ flowchart TD
 | `/api/read/failed-events` | GET | owner, admin |
 | `/api/read/lender-observations` | GET | owner, admin, funding_advisor |
 | `/api/read/lenders` | GET | owner, admin, funding_advisor |
+| `/api/read/ops-pulse` | GET | owner, admin |
 | `/api/read/proxy-sessions` | GET | owner, funding_advisor |
-| `/api/repair/generate` | POST | owner, admin, inquiry_specialist |
+| `/api/repair/enroll` | POST | owner, admin, closer, inquiry_specialist |
+| `/api/repair/generate` | POST | owner, admin, closer, inquiry_specialist |
+| `/api/repair/inbound-mail` | POST | owner, admin, closer, inquiry_specialist |
 | `/api/social/posts` | GET, POST | employees: owner, admin<br>plus: partner |
 | `/api/staff/monitoring-consent` | POST | owner |
 
