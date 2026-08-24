@@ -4,7 +4,7 @@ import crypto from "node:crypto";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 
 import { driveConfigFromEnv } from "./config.mjs";
-import { buildServiceAccountJwt, fetchAccessToken } from "./auth.mjs";
+import { buildServiceAccountJwt, fetchAccessToken, fetchOAuthAccessToken } from "./auth.mjs";
 import { classifyMime, needsMediaDownload } from "./mime.mjs";
 import { sniffClientId } from "./client-id.mjs";
 import { unzipEntries, extractDocxText, extractOfficeText } from "./office.mjs";
@@ -108,8 +108,27 @@ test("driveConfigFromEnv parses service account JSON", () => {
     GOOGLE_DRIVE_DELEGATE_EMAIL: "owner@fundhub.test"
   });
   assert.equal(c.ready, true);
+  assert.equal(c.authMode, "service_account");
   assert.equal(c.serviceAccount.clientEmail, SA.clientEmail);
   assert.equal(c.delegateEmail, "owner@fundhub.test");
+});
+
+test("driveConfigFromEnv prefers personal OAuth token JSON over service account", () => {
+  const c = driveConfigFromEnv({
+    GOOGLE_DRIVE_OAUTH_TOKEN_JSON: JSON.stringify({
+      refresh_token: "rt-1",
+      client_id: "cid-1",
+      client_secret: "sec-1"
+    }),
+    GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON: JSON.stringify({
+      client_email: SA.clientEmail,
+      private_key: SA.privateKey
+    })
+  });
+  assert.equal(c.ready, true);
+  assert.equal(c.authMode, "oauth");
+  assert.equal(c.oauthCredentials.refreshToken, "rt-1");
+  assert.equal(c.serviceAccount, null);
 });
 
 // ── auth ───────────────────────────────────────────────────────────────────
@@ -157,6 +176,22 @@ test("fetchAccessToken posts JWT grant", async () => {
     fetchImpl
   });
   assert.equal(tok.accessToken, "tok-1");
+});
+
+test("fetchOAuthAccessToken posts refresh_token grant", async () => {
+  const fetchImpl = mockFetch([
+    {
+      match: (u) => u.includes("oauth2.googleapis.com/token"),
+      body: { access_token: "oauth-tok", expires_in: 3600, token_type: "Bearer" }
+    }
+  ]);
+  const tok = await fetchOAuthAccessToken({
+    refreshToken: "rt-1",
+    clientId: "cid-1",
+    clientSecret: "sec-1",
+    fetchImpl
+  });
+  assert.equal(tok.accessToken, "oauth-tok");
 });
 
 // ── mime / client id ───────────────────────────────────────────────────────

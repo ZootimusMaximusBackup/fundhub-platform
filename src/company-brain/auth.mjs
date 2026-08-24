@@ -84,3 +84,46 @@ export async function fetchAccessToken({
     tokenType: json.token_type || "Bearer"
   };
 }
+
+/**
+ * Refresh a personal OAuth token (desktop app flow).
+ * Used when Drive is accessed as a Gmail user, not a service account.
+ */
+export async function fetchOAuthAccessToken({
+  refreshToken,
+  clientId,
+  clientSecret,
+  tokenUri = GOOGLE_TOKEN_URL,
+  fetchImpl = globalThis.fetch
+} = {}) {
+  if (!refreshToken || !clientId || !clientSecret) {
+    throw new Error("fetchOAuthAccessToken requires refreshToken, clientId, and clientSecret");
+  }
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+    client_id: clientId,
+    client_secret: clientSecret
+  });
+  const res = await fetchImpl(tokenUri, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: body.toString()
+  });
+  const text = await res.text();
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    throw new Error(`oauth token refresh returned non-json (${res.status})`);
+  }
+  if (!res.ok || !json.access_token) {
+    const err = json.error || json.error_description || text.slice(0, 200);
+    throw new Error(`oauth token refresh failed (${res.status}): ${err}`);
+  }
+  return {
+    accessToken: json.access_token,
+    expiresIn: Number(json.expires_in) || 3600,
+    tokenType: json.token_type || "Bearer"
+  };
+}

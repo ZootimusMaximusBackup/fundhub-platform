@@ -1,6 +1,6 @@
 export { driveConfigFromEnv, DRIVE_READONLY_SCOPE } from "./config.mjs";
-export { buildServiceAccountJwt, fetchAccessToken } from "./auth.mjs";
-export { createDriveClient } from "./drive-client.mjs";
+export { buildServiceAccountJwt, fetchAccessToken, fetchOAuthAccessToken } from "./auth.mjs";
+export { createDriveClient, createDriveClientFromConfig } from "./drive-client.mjs";
 export { classifyMime } from "./mime.mjs";
 export { extractFromDriveFile } from "./extract.mjs";
 export { sniffClientId } from "./client-id.mjs";

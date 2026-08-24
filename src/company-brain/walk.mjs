@@ -3,7 +3,7 @@
 // H-2 owner-set 2026-08-02: no folder exclusions.
 
 import { driveConfigFromEnv } from "./config.mjs";
-import { createDriveClient } from "./drive-client.mjs";
+import { createDriveClientFromConfig } from "./drive-client.mjs";
 import { classifyMime, GOOGLE_FOLDER, needsMediaDownload } from "./mime.mjs";
 import { extractFromDriveFile } from "./extract.mjs";
 
@@ -29,11 +29,7 @@ export async function walkDriveAndExtract({
     };
   }
 
-  const client = injectedClient || createDriveClient({
-    serviceAccount: config.serviceAccount,
-    delegateEmail: config.delegateEmail,
-    fetchImpl
-  });
+  const client = injectedClient || createDriveClientFromConfig(config, { fetchImpl });
 
   // First pass: collect metadata + folder name map for parent sniffing.
   const files = [];

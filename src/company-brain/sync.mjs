@@ -6,7 +6,7 @@
 // Expired token (410): clear token, full walk again.
 
 import { driveConfigFromEnv } from "./config.mjs";
-import { createDriveClient } from "./drive-client.mjs";
+import { createDriveClientFromConfig } from "./drive-client.mjs";
 import { classifyMime, GOOGLE_FOLDER, needsMediaDownload } from "./mime.mjs";
 import { extractFromDriveFile } from "./extract.mjs";
 import { walkDriveAndExtract } from "./walk.mjs";
@@ -79,11 +79,7 @@ export async function syncDriveIncremental(db, {
     return { ok: false, reason: "not_configured", missing: config.missing };
   }
 
-  const client = injectedClient || createDriveClient({
-    serviceAccount: config.serviceAccount,
-    delegateEmail: config.delegateEmail,
-    fetchImpl
-  });
+  const client = injectedClient || createDriveClientFromConfig(config, { fetchImpl });
 
   const state = await getSyncState(db, orgId);
   const haveToken = !!(state && state.page_token) && !forceFull;

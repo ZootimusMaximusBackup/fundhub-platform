@@ -2,22 +2,24 @@
 // Scope is drive.readonly — this module never writes, deletes, or moves.
 
 import { DRIVE_API_BASE } from "./config.mjs";
-import { fetchAccessToken } from "./auth.mjs";
+import { fetchAccessToken, fetchOAuthAccessToken } from "./auth.mjs";
 
 const FILE_FIELDS = "id,name,mimeType,parents,modifiedTime,md5Checksum,size,webViewLink,trashed";
 
 /**
- * Create a Drive client bound to a service account + delegate.
+ * Create a Drive client bound to personal OAuth or a service account + delegate.
  * Token is refreshed lazily and cached until near expiry.
  */
 export function createDriveClient({
   serviceAccount,
   delegateEmail,
+  oauthCredentials = null,
   fetchImpl = globalThis.fetch,
   apiBase = DRIVE_API_BASE
 } = {}) {
-  if (!serviceAccount?.clientEmail || !serviceAccount?.privateKey) {
-    throw new Error("createDriveClient requires serviceAccount");
+  const useOAuth = !!(oauthCredentials?.refreshToken);
+  if (!useOAuth && (!serviceAccount?.clientEmail || !serviceAccount?.privateKey)) {
+    throw new Error("createDriveClient requires serviceAccount or oauthCredentials");
   }
 
   let cached = null; // { accessToken, expiresAtMs }
@@ -25,12 +27,14 @@ export function createDriveClient({
   async function accessToken() {
     const now = Date.now();
     if (cached && cached.expiresAtMs > now + 60_000) return cached.accessToken;
-    const tok = await fetchAccessToken({
-      clientEmail: serviceAccount.clientEmail,
-      privateKey: serviceAccount.privateKey,
-      delegateEmail,
-      fetchImpl
-    });
+    const tok = useOAuth
+      ? await fetchOAuthAccessToken({ ...oauthCredentials, fetchImpl })
+      : await fetchAccessToken({
+        clientEmail: serviceAccount.clientEmail,
+        privateKey: serviceAccount.privateKey,
+        delegateEmail,
+        fetchImpl
+      });
     cached = {
       accessToken: tok.accessToken,
       expiresAtMs: now + (tok.expiresIn * 1000)
@@ -213,4 +217,16 @@ export function createDriveClient({
     /** test helper */
     _clearTokenCache() { cached = null; }
   };
+}
+
+/** Build a Drive client from driveConfigFromEnv output. */
+export function createDriveClientFromConfig(config, { fetchImpl = globalThis.fetch } = {}) {
+  if (config?.authMode === "oauth") {
+    return createDriveClient({ oauthCredentials: config.oauthCredentials, fetchImpl });
+  }
+  return createDriveClient({
+    serviceAccount: config.serviceAccount,
+    delegateEmail: config.delegateEmail,
+    fetchImpl
+  });
 }
