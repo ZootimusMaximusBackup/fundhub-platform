@@ -1,3 +1,4 @@
+2026-08-23 | client | At book, only EMAIL-S04-01-CONFIRM sends. It carries a 365-day single-use portal link. EMAIL-PORTAL-MAGIC-LINK and the BS-01 kickoff email no longer fire at book. Self-service login links stay 15 minutes. | Three emails at book was too many; a 15-minute login link dies before they open the confirm | (this commit)
 2026-08-23 | client | welcome, portal invite, offer email, and doc request now take a one-shot database lock so a double form ping cannot send twice | form pinged new lead repeatedly and welcome ran more than once | (this commit)
 2026-08-23 | role-closer | closer deposit_collected rate superseded to one sixth | owner chose one sixth not 16.67% | (this commit)
 2026-08-22 | messaging/templates | seed 015 live template backfill of 41 keys so scratch matches production. | live-only rows made funding queue 0 emails look like a code bug | (this commit)

@@ -9,7 +9,7 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import {
   requestMagicLink, verifyMagicLink, magicLinkUrl, normalizeEmail,
-  LINK_TTL_MINUTES, LINK_LIMITS, MAGIC_LINK_TEMPLATE_KEY
+  LINK_TTL_MINUTES, BOOKING_CONFIRM_LINK_TTL_MINUTES, LINK_LIMITS, MAGIC_LINK_TEMPLATE_KEY
 } from "./magic-link.mjs";
 
 /* A db that fails loudly if it is touched. Every test below asserts a refusal
@@ -88,6 +88,7 @@ describe("magic link — no database needed", () => {
     // match db/seed/007_portal_magic_link_template.sql exactly or sendTemplated
     // finds no row and silently queues nothing.
     assert.equal(LINK_TTL_MINUTES, 15);
+    assert.equal(BOOKING_CONFIRM_LINK_TTL_MINUTES, 365 * 24 * 60);
     assert.equal(MAGIC_LINK_TEMPLATE_KEY, "EMAIL-PORTAL-MAGIC-LINK");
   });
 

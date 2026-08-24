@@ -10,7 +10,8 @@
 -- guarantees — confirmation of a scheduled call only.
 -- Key matches EMAIL_CONFIRM in src/workflows/s-04b-booking-reminders.mjs.
 -- Merge tags: {{contact.first_name}}, {{appointment.start_time}},
---             {{appointment.meeting_location}}, {{custom_values.booking_link}}
+--             {{appointment.meeting_location}}, {{custom_values.booking_link}},
+--             {{magic_link.url}} (365-day single-use booking token)
 
 INSERT INTO message_templates (org_id, template_key, channel, subject, body, compliance_passed)
 SELECT
@@ -45,6 +46,8 @@ SELECT
                 <td style="padding:12px 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#18181B;border-top:1px solid #E4E4E7;">{{appointment.meeting_location}}</td>
               </tr>
             </table>
+            <p style="margin:0 0 16px 0;">Here is your link to sign in to your Fundhub portal:</p>
+            <p style="margin:0 0 16px 0;"><a href="{{magic_link.url}}" style="color:#1D4ED8;">{{magic_link.url}}</a></p>
             <p style="margin:0 0 16px 0;">A member of the Fundhub team will walk you through your file and the options it supports. Nothing to prepare — just be somewhere you can talk.</p>
             <p style="margin:0 0 16px 0;">Need a different time? <a href="{{custom_values.booking_link}}" style="color:#1D4ED8;">Reschedule here</a>.</p>
             <p style="margin:0 0 8px 0;">See you then,<br>The Fundhub Team</p>

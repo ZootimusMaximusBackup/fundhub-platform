@@ -12,7 +12,8 @@ import assert from "node:assert/strict";
 import { db, close } from "../db.mjs";
 import {
   requestMagicLink, verifyMagicLink, checkLinkRate,
-  LINK_LIMITS, LINK_TTL_MINUTES, MAGIC_LINK_TEMPLATE_KEY
+  LINK_LIMITS, LINK_TTL_MINUTES, BOOKING_CONFIRM_LINK_TTL_MINUTES,
+  MAGIC_LINK_TEMPLATE_KEY
 } from "./magic-link.mjs";
 import { createAccount, verifyAccountSession } from "./account-session.mjs";
 import { resolvePrincipal } from "../http/middleware/requirePrincipal.mjs";
@@ -140,6 +141,34 @@ describe("portal magic-link sign-in", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
       assert.ok(msg.rendered_body.includes("/portal-login.html?t="), "the link does not point at the page");
       assert.ok(!msg.rendered_body.includes("{{"), `an unrendered merge tag shipped: ${msg.rendered_body}`);
       assert.ok(msg.rendered_body.includes(String(LINK_TTL_MINUTES)), "the expiry is not stated in the email");
+    });
+
+    test("booking-confirm TTL is 365 days and does not queue EMAIL-PORTAL-MAGIC-LINK", async () => {
+      const email = `${TAG}-book365@x.io`;
+      await mkClient(email);
+      const out = await requestMagicLink(db, {
+        email, ip: IP.a,
+        ttlMinutes: BOOKING_CONFIRM_LINK_TTL_MINUTES,
+        queueEmail: false
+      });
+      assert.equal(out.ok, true);
+      assert.equal(out.outcome, "issued");
+      assert.equal(out.sent, false);
+      assert.ok(out.token);
+
+      const row = (await db.query(
+        `SELECT expires_at FROM account_magic_links WHERE id = $1`, [out.linkId])).rows[0];
+      const minutes = (new Date(row.expires_at) - Date.now()) / 60000;
+      assert.ok(
+        minutes > BOOKING_CONFIRM_LINK_TTL_MINUTES - 30
+          && minutes <= BOOKING_CONFIRM_LINK_TTL_MINUTES + 1,
+        `expiry is ${minutes} minutes away`
+      );
+
+      const { rows } = await db.query(
+        `SELECT count(*)::int AS n FROM messages WHERE template_key = $1 AND to_address = $2`,
+        [MAGIC_LINK_TEMPLATE_KEY, email]);
+      assert.equal(rows[0].n, 0);
     });
 
     test("QUEUED, NOT SENT — nothing in this path transmits", async () => {

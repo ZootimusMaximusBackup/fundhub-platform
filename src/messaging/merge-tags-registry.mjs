@@ -81,7 +81,7 @@ export const WARN_ONLY_PREFIXES = Object.freeze(["custom_fields."]);
 export const CONTEXT_PREFIXES = Object.freeze([
   Object.freeze({
     prefix: "magic_link.",
-    only: "EMAIL-PORTAL-MAGIC-LINK",
+    only: "EMAIL-PORTAL-MAGIC-LINK / EMAIL-S04-01-CONFIRM",
     supplied_by: "src/auth/magic-link.mjs"
   }),
   Object.freeze({

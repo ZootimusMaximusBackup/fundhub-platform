@@ -102,8 +102,11 @@ test("happy path: funding-path client runs every populated funding cell", async 
   const res = await handle({ event: ev("booking.created", {}, { clientId: "cl-1" }), db, step: fakeStep() });
 
   assert.equal(res.drip, "funding");
-  assert.equal(db.messages.length, 18);
+  assert.equal(db.messages.length, 17, "kickoff D1-E1 does not send at book");
   assert.deepEqual(res.gaps, []);
+  assert.equal(res.skipped.length, 1);
+  assert.equal(res.skipped[0].reason, "not_at_book");
+  assert.ok(!db.messages.some((m) => /D1-E1/.test(m.template_key)));
   assert.deepEqual(db.clients[0].tags.sort(), ["bs:precall", "call:booked"]);
 });
 
@@ -113,8 +116,9 @@ test("branch: repair-only client runs the repair grid", async () => {
   const res = await handle({ event: ev("booking.created", {}, { clientId: "cl-1" }), db, step: fakeStep() });
 
   assert.equal(res.drip, "repair");
-  assert.equal(db.messages.length, 18);
+  assert.equal(db.messages.length, 17, "kickoff D1-E1 does not send at book");
   assert.ok(db.messages.every((m) => m.template_key.startsWith(REPAIR_PREFIX)));
+  assert.ok(!db.messages.some((m) => /D1-E1/.test(m.template_key)));
 });
 
 test("branch: no matching path — tags precall but runs no drip", async () => {
@@ -133,9 +137,10 @@ test("partially-populated grid: sends what exists, reports the rest as gaps, inv
   const db = pgFake({ clients: [fundingClient()], templates: templatesFor(FUNDING_PREFIX, filled) });
   const res = await handle({ event: ev("booking.created", {}, { clientId: "cl-1" }), db, step: fakeStep() });
 
-  assert.equal(db.messages.length, 11, "only the cells with real copy send");
+  assert.equal(db.messages.length, 10, "populated cells send except book-moment kickoff");
   assert.equal(res.gaps.length, 7, "the empty cells are reported, not skipped silently");
-  assert.equal(res.sent.length + res.gaps.length, 18, "all 18 cells are addressed either way");
+  assert.equal(res.skipped.length, 1);
+  assert.equal(res.sent.length + res.gaps.length + res.skipped.length, 18, "all 18 cells are addressed either way");
   for (const g of res.gaps) assert.match(g.keyPrefix, /^BS-FUND-D[123]-E[1-6]$/);
 });
 
@@ -144,7 +149,8 @@ test("empty grid: the whole drip is gaps and no message is invented", async () =
   const res = await handle({ event: ev("booking.created", {}, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.drip, "funding");
   assert.equal(db.messages.length, 0);
-  assert.equal(res.gaps.length, 18);
+  assert.equal(res.gaps.length, 17, "empty cells are gaps; D1-E1 is skipped at book, not invented");
+  assert.equal(res.skipped.length, 1);
 });
 
 // --- the recheck exit gate --------------------------------------------------
@@ -159,8 +165,8 @@ test("recheck exits the drip once the call has been held", async () => {
   const res = await handle({ event: ev("booking.created", {}, { clientId: "cl-1" }), db, step: fakeStep() });
 
   assert.equal(res.stoppedBecause, "call_held");
-  assert.equal(res.stoppedAt, "D1-E2", "stops at the first gated wake after the kickoff");
-  assert.equal(db.messages.length, 1, "only the kickoff went out — pre-call copy stops at the call");
+  assert.equal(res.stoppedAt, "D1-E2", "stops at the first gated wake after the skipped kickoff");
+  assert.equal(db.messages.length, 0, "kickoff did not send at book; pre-call copy stops at the call");
   assert.ok(!(db.clients[0].tags || []).includes("call:booked"), "a cut-short drip is not a completed one");
 });
 
@@ -199,7 +205,7 @@ test("recheck does not read cf_analyzer_recommendation — that field is written
   const res = await handle({ event: ev("booking.created", {}, { clientId: "cl-1" }), db, step: fakeStep() });
 
   assert.equal(res.stoppedBecause, null, "the recommendation field must not stop the drip");
-  assert.equal(db.messages.length, 18);
+  assert.equal(db.messages.length, 17);
 });
 
 // --- timestamps + idempotency ----------------------------------------------
@@ -220,7 +226,7 @@ test("duplicate delivery: replaying does not double-send the drip", async () => 
   const event = ev("booking.created", {}, { id: "evt-dup-bs01", clientId: "cl-1" });
   await handle({ event, db, step: fakeStep() });
   await handle({ event, db, step: fakeStep() });
-  assert.equal(db.messages.length, 18, "per-cell provider_ref keeps a replay idempotent");
+  assert.equal(db.messages.length, 17, "per-cell provider_ref keeps a replay idempotent");
 });
 
 test("idempotency key is per grid cell, so two cells in one run never collide", async () => {
@@ -310,9 +316,19 @@ test("sms + email: funding path queues email grid and the pre-call SMS together"
   });
 
   assert.equal(res.drip, "funding");
-  assert.equal(db.messages.length, 19);
+  assert.equal(db.messages.length, 18);
   assert.equal(db.messages.filter((m) => m.channel === "sms").length, 1);
-  assert.equal(db.messages.filter((m) => m.channel === "email").length, 18);
+  assert.equal(db.messages.filter((m) => m.channel === "email").length, 17);
+});
+
+test("bs-01: D1-E1 kickoff does not send at book", async () => {
+  const cells = allCells(FUNDING_PREFIX);
+  const db = pgFake({ clients: [fundingClient()], templates: templatesFor(FUNDING_PREFIX, cells) });
+  const res = await handle({ event: ev("booking.created", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  assert.equal(res.skipped[0].day, "D1");
+  assert.equal(res.skipped[0].slot, "E1");
+  assert.equal(res.skipped[0].reason, "not_at_book");
+  assert.ok(!db.messages.some((m) => /D1-E1/.test(m.template_key)));
 });
 
 test("bs-01 listens to booking.created and booking.rescheduled", async () => {

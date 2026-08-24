@@ -153,13 +153,21 @@ export async function resolveCellKey(db, orgId, keyPrefix) {
 async function runDrip({ db, step, orgId, clientId, eventId, prefix }) {
   const sent = [];
   const gaps = [];
+  const skipped = [];
 
   for (const cell of gridCells(prefix)) {
+    // Owner 2026-08-23: D1-E1 kickoff must not fire at book. Item 6 re-anchors
+    // the grid; this only skips the book-moment send.
+    if (cell.day === "D1" && cell.slot === KICKOFF_SLOT) {
+      skipped.push({ day: cell.day, slot: cell.slot, name: cell.name, reason: "not_at_book" });
+      continue;
+    }
+
     if (cell.after) await step.sleep(`wait-${cell.day}-${cell.slot}`, cell.after);
 
     if (cell.gate) {
       const held = await step.run(`recheck-${cell.day}-${cell.slot}`, () => callHappened(db, clientId));
-      if (held) return { sent, gaps, stoppedAt: `${cell.day}-${cell.slot}`, stoppedBecause: "call_held" };
+      if (held) return { sent, gaps, skipped, stoppedAt: `${cell.day}-${cell.slot}`, stoppedBecause: "call_held" };
     }
 
     const key = await step.run(`resolve-${cell.day}-${cell.slot}`, () => resolveCellKey(db, orgId, cell.keyPrefix));
@@ -175,7 +183,7 @@ async function runDrip({ db, step, orgId, clientId, eventId, prefix }) {
       mergeCustomFields(db, clientId, { bs_email_last_sent_ts: new Date().toISOString() }));
   }
 
-  return { sent, gaps, stoppedAt: null, stoppedBecause: null };
+  return { sent, gaps, skipped, stoppedAt: null, stoppedBecause: null };
 }
 
 /**
@@ -244,7 +252,7 @@ export async function handle({ event, db, step }) {
     return { done: true, drip: "none", reason: `no_matching_path:${outcomeTier}`, sms };
   }
 
-  const [sms, { sent, gaps, stoppedAt, stoppedBecause }] = await Promise.all([
+  const [sms, { sent, gaps, skipped, stoppedAt, stoppedBecause }] = await Promise.all([
     smsPromise,
     runDrip({ db, step, orgId, clientId, eventId, prefix })
   ]);
@@ -253,7 +261,7 @@ export async function handle({ event, db, step }) {
   // complete the pre-call sequence, and DPC-02 owns the held/no-show outcome.
   if (!stoppedAt) await step.run("tag-call-booked", () => addTags(db, clientId, ["call:booked"]));
 
-  return { done: true, drip, sent, gaps, stoppedAt, stoppedBecause, sms };
+  return { done: true, drip, sent, gaps, skipped, stoppedAt, stoppedBecause, sms };
 }
 
 export const bs01PrecallLauncher = inngest.createFunction(

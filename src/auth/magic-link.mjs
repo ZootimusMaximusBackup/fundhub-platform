@@ -55,6 +55,11 @@ import { sendTemplated } from "../workflows/messaging.mjs";
     archived inbox is not a way in. */
 export const LINK_TTL_MINUTES = 15;
 
+/** Booking-confirm portal token. Owner 2026-08-23: a confirm email may be
+    opened hours or days later, so that path uses 365 days. Still single-use.
+    Self-service /api/auth/magic-link stays on LINK_TTL_MINUTES. */
+export const BOOKING_CONFIRM_LINK_TTL_MINUTES = 365 * 24 * 60;
+
 /** The template the email is written from. There IS a row for this key —
     db/seed/007_portal_magic_link_template.sql — because sendTemplated() is a
     silent no-op against a key with no row, and a sign-in email that quietly
@@ -118,7 +123,9 @@ export function magicLinkUrl(token, env = process.env) {
     { ok: false, error: "email_required" } is the one refusal, and it is safe:
     it says the field was empty or malformed, which the caller already knows. */
 export async function requestMagicLink(db, {
-  email, ip, userAgent, orgId, env = process.env
+  email, ip, userAgent, orgId, env = process.env,
+  ttlMinutes = LINK_TTL_MINUTES,
+  queueEmail = true
 } = {}) {
   const mail = normalizeEmail(email);
   if (!mail || !LOOKS_LIKE_EMAIL.test(mail)) {
@@ -152,7 +159,9 @@ export async function requestMagicLink(db, {
   }
 
   const token = newToken();
-  const expiresAt = new Date(Date.now() + LINK_TTL_MINUTES * 60 * 1000);
+  const ttl = Number(ttlMinutes);
+  const minutes = Number.isFinite(ttl) && ttl > 0 ? ttl : LINK_TTL_MINUTES;
+  const expiresAt = new Date(Date.now() + minutes * 60 * 1000);
   const ins = await db.query(
     `INSERT INTO account_magic_links
        (org_id, email, account_id, client_id, token_hash, expires_at, outcome,
@@ -171,25 +180,30 @@ export async function requestMagicLink(db, {
      The rendered body carries the URL, and therefore the cleartext token. That
      is what an email is; it is the one place the token is written down, and it
      is why the link expires in minutes and dies on first use. */
-  const queued = await sendTemplated(db, {
-    orgId: org,
-    clientId: subject.clientId,
-    channel: "email",
-    templateKey: MAGIC_LINK_TEMPLATE_KEY,
-    eventId: `magic-link:${ins.rows[0].id}`,
-    context: {
-      magic_link: {
-        url: magicLinkUrl(token, env),
-        expires_minutes: String(LINK_TTL_MINUTES)
+  const url = magicLinkUrl(token, env);
+  let sent = false;
+  if (queueEmail) {
+    const queued = await sendTemplated(db, {
+      orgId: org,
+      clientId: subject.clientId,
+      channel: "email",
+      templateKey: MAGIC_LINK_TEMPLATE_KEY,
+      eventId: `magic-link:${ins.rows[0].id}`,
+      context: {
+        magic_link: {
+          url,
+          expires_minutes: String(minutes)
+        }
       }
-    }
-  });
+    });
+    sent = queued.sent === true;
+  }
 
   return {
     ok: true,
     limited: false,
     outcome: "issued",
-    sent: queued.sent === true,
+    sent,
     // For tests and for a caller that has to relay a link by hand. No endpoint
     // puts this in a response body; api/auth/magic-link.mjs does not read it.
     token,

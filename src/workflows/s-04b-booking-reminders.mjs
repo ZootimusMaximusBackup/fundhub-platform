@@ -13,6 +13,9 @@ import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { sendTemplated } from "./messaging.mjs";
 import { callHappened } from "./dpc-02-call-outcome-enforcement.mjs";
+import {
+  requestMagicLink, magicLinkUrl, BOOKING_CONFIRM_LINK_TTL_MINUTES
+} from "../auth/magic-link.mjs";
 
 export const SMS_CONFIRM = "SMS-S04-01-CONFIRM";
 export const EMAIL_CONFIRM = "EMAIL-S04-01-CONFIRM";
@@ -36,7 +39,7 @@ function appointmentContext(payload = {}) {
   };
 }
 
-export async function handle({ event, db, step }) {
+export async function handle({ event, db, step, requestMagicLinkImpl = requestMagicLink }) {
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
 
@@ -52,12 +55,41 @@ export async function handle({ event, db, step }) {
       eventId: `${eventId}:confirm`, context
     }));
 
+  // Owner 2026-08-23: the confirm email carries portal access. Token is 365 days
+  // and still single-use. The separate EMAIL-PORTAL-MAGIC-LINK send does not fire.
+  const portal = await step.run("issue-booking-portal-link", async () => {
+    const fromPayload = String(payload.email || payload.attendeeEmail || "").trim();
+    let email = fromPayload;
+    if (!email) {
+      const r = await db.query(`SELECT email FROM clients WHERE id = $1 LIMIT 1`, [clientId]);
+      email = r.rows[0]?.email || null;
+    }
+    if (!email) return { issued: false };
+    const out = await requestMagicLinkImpl(db, {
+      email, orgId,
+      ttlMinutes: BOOKING_CONFIRM_LINK_TTL_MINUTES,
+      queueEmail: false
+    });
+    if (!out?.ok || !out.token) return { issued: false };
+    return {
+      issued: true,
+      url: magicLinkUrl(out.token),
+      expires_minutes: String(BOOKING_CONFIRM_LINK_TTL_MINUTES)
+    };
+  });
+
   // Owner decision 2026-08-22: booked stage is one text + Josh dial + one email,
   // all immediate. Text first, email second; the AI setter dials on its own leg.
   const confirmEmail = await step.run("send-confirm-email", () =>
     sendTemplated(db, {
       orgId, clientId, channel: "email", templateKey: EMAIL_CONFIRM,
-      eventId: `${eventId}:confirm-email`, context
+      eventId: `${eventId}:confirm-email`,
+      context: {
+        ...context,
+        ...(portal.issued
+          ? { magic_link: { url: portal.url, expires_minutes: portal.expires_minutes } }
+          : {})
+      }
     }));
 
   if (!startTime) {

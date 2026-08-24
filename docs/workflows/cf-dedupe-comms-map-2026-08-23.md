@@ -12,8 +12,9 @@
 | slice-precall | mapper | done — `docs/workflows/comms-logic-2026-08-23-slice-precall.md` |
 | slice-capture | mapper | done — `docs/workflows/comms-logic-2026-08-23-slice-capture.md` |
 | comms-logic-map | mapper | done — `docs/workflows/comms-logic-2026-08-23.md` |
-| preflight-1-6 | mapper | claimed |
-| fix-noshow-emit | fixer | done — dpc-02 emits booking.noshow so S-05A can start without Cal.com |
+| preflight-1-6 | mapper | done — `docs/workflows/preflight-2026-08-23.md`. Gate 1 fail. Do not book. |
+| fix-noshow-emit | fixer | done in git `ae0f61d8` — **unshipped** (local, not on live) |
+| item-5-one-email-at-book | fixer | done — one confirm email at book; 365-day portal token; **unshipped** |
 
 ## Change manifest — fix-1-confirm-yes
 
@@ -45,3 +46,9 @@
 - Files: `src/workflows/dpc-02-call-outcome-enforcement.mjs`, `src/workflows/dpc-02-call-outcome-enforcement.test.mjs`, `src/adapters/calcom.mjs`
 - When dpc-02 marks a no-show 5 minutes after the appointment ends, it emits `booking.noshow`. S-05A already listens to that event. Cal.com is not the live book page; the adapter was left in place with a top-line note.
 - Journeys: none.
+
+## Change manifest — item-5-one-email-at-book
+
+- Files: `src/auth/magic-link.mjs`, `src/auth/magic-link.test.mjs`, `src/auth/magic-link.pg.test.mjs`, `src/workflows/s-04b-booking-reminders.mjs`, `src/workflows/s-04b-booking-reminders.test.mjs`, `src/workflows/s-portal-invite.mjs`, `src/workflows/s-portal-invite.test.mjs`, `src/workflows/bs-01-precall-launcher.mjs`, `src/workflows/bs-01-precall-launcher.test.mjs`, `src/messaging/merge-tags-registry.mjs`, `db/seed/012_s04_booking_confirm_email.sql`, `db/seed/016_s04_confirm_portal_link.sql`, `db/expected-migrations.mjs`, `docs/journeys/CHANGELOG.md`
+- At book, only `EMAIL-S04-01-CONFIRM` sends. It carries a 365-day single-use portal token. `EMAIL-PORTAL-MAGIC-LINK` does not fire at book. BS-01 D1-E1 kickoff does not fire at book. Self-service login stays 15 minutes.
+- Journeys: changelog only. No new route.
