@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert";
 import { handle } from "./dpc-02-call-outcome-enforcement.mjs";
+import { s05aNoShowRecovery } from "./s-05a-no-show-recovery.mjs";
 import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
 const withStages = () => ({
@@ -54,6 +55,7 @@ test("happy path: call happened before the check — moves to showed", async () 
   const res = await handle({ event: ev("booking.created", { endTime: futureEnd() }, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.outcome, "showed");
   assert.equal(db.cards[0].stage_id, "st-showed");
+  assert.equal(db.events.filter((e) => e.name === "booking.noshow").length, 0);
 });
 
 test("branch: no call — no-show, tagged, moved to lost", async () => {
@@ -62,6 +64,22 @@ test("branch: no call — no-show, tagged, moved to lost", async () => {
   assert.equal(res.outcome, "no_show");
   assert.deepEqual(db.clients[0].tags, ["call:no_show"]);
   assert.equal(db.cards[0].stage_id, "st-lost");
+});
+
+test("no-show emits booking.noshow and S-05A listens for that event", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }], ...withStages() });
+  const event = ev(
+    "booking.created",
+    { endTime: futureEnd(), bookingUid: "bk_1", email: "a@b.com", source: "clickfunnels" },
+    { clientId: "cl-1" }
+  );
+  await handle({ event, db, step: fakeStep() });
+  const noshows = db.events.filter((e) => e.name === "booking.noshow");
+  assert.equal(noshows.length, 1);
+  assert.equal(noshows[0].client_id, "cl-1");
+  assert.equal(noshows[0].payload.bookingUid, "bk_1");
+  const triggers = (s05aNoShowRecovery.opts.triggers || []).map((t) => t.event);
+  assert.ok(triggers.includes("booking.noshow"), "S-05A must start on booking.noshow");
 });
 
 test("duplicate delivery: replaying does not double-move the card", async () => {

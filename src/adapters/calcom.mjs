@@ -1,3 +1,4 @@
+// Not used in production — the live book page is ClickFunnels.
 // Cal.com booking adapter — Master Rebuild Spec Phase 1.
 //
 // Adapter responsibilities (only these, nothing else):

@@ -11,9 +11,9 @@
 | slice-booking | mapper | done — `docs/workflows/comms-logic-2026-08-23-slice-booking.md` |
 | slice-precall | mapper | done — `docs/workflows/comms-logic-2026-08-23-slice-precall.md` |
 | slice-capture | mapper | done — `docs/workflows/comms-logic-2026-08-23-slice-capture.md` |
-
-| comms-logic-map | mapper | claimed |
+| comms-logic-map | mapper | done — `docs/workflows/comms-logic-2026-08-23.md` |
 | preflight-1-6 | mapper | claimed |
+| fix-noshow-emit | fixer | done — dpc-02 emits booking.noshow so S-05A can start without Cal.com |
 
 ## Change manifest — fix-1-confirm-yes
 
@@ -38,4 +38,10 @@
 
 - Files: `src/lib/render-template.mjs`, `src/lib/render-template.test.mjs`, `src/workflows/messaging.mjs`, `src/workflows/messaging.test.mjs`
 - Live ClickFunnels appointment payloads have no join URL (adapter did not drop one). Confirm email now omits the empty Where row. A real URL still prints.
+- Journeys: none.
+
+## Change manifest — fix-noshow-emit
+
+- Files: `src/workflows/dpc-02-call-outcome-enforcement.mjs`, `src/workflows/dpc-02-call-outcome-enforcement.test.mjs`, `src/adapters/calcom.mjs`
+- When dpc-02 marks a no-show 5 minutes after the appointment ends, it emits `booking.noshow`. S-05A already listens to that event. Cal.com is not the live book page; the adapter was left in place with a top-line note.
 - Journeys: none.

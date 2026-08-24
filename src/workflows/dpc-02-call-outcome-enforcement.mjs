@@ -18,6 +18,7 @@
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
+import { emit } from "../events/bus.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { moveCardToStage } from "./cards.mjs";
@@ -52,6 +53,15 @@ export async function handle({ event, db, step }) {
   await step.run("set-call-outcome-no-show", () => mergeCustomFields(db, clientId, { call_outcome: "no_show" }));
   await step.run("tag-no-show", () => addTags(db, clientId, ["call:no_show"]));
   const card = await step.run("move-to-no-show", () => moveCardToStage(db, { orgId, clientId, pipelineKey: "sales", stageKey: "lost" }));
+  // Live detector: Cal.com does not emit booking.noshow. S-05A listens to it.
+  const payload = event.payload || {};
+  await step.run("emit-booking-noshow", () =>
+    emit(db, "booking.noshow", payload, {
+      orgId,
+      clientId,
+      idempotencyKey: `dpc-02:${payload.bookingUid || event.id}:booking.noshow`
+    })
+  );
   return { done: true, outcome: "no_show", card };
 }
 
