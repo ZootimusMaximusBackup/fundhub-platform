@@ -1,7 +1,7 @@
 // GET /api/read/contracts — what the Contracts screen reads.
 //
 //   ?view=templates             the contract copy library
-//   ?view=contracts[&client_id=][&status=][&document_id=]   the queue, newest first
+//   ?view=contracts[&client_id=][&staff_id=][&status=][&document_id=]   the queue, newest first
 //   ?id=<uuid>                  one contract, INCLUDING its frozen wording
 //
 // `document_id` takes one uuid or a comma-separated list, and answers the one
@@ -151,6 +151,9 @@ export default async function handler(req, res) {
     if (q.client_id != null && q.client_id !== "" && !isUuid(q.client_id)) {
       return res.status(400).json({ ok: false, error: "invalid_client_id" });
     }
+    if (q.staff_id != null && q.staff_id !== "" && !isUuid(q.staff_id)) {
+      return res.status(400).json({ ok: false, error: "invalid_staff_id" });
+    }
 
     /* A list of document ids, capped. The cap is the same 200 the limit caps at,
        because a caller asking about more rows than can come back is asking a
@@ -176,7 +179,8 @@ export default async function handler(req, res) {
 
     const status = q.status && STATUSES.has(String(q.status)) ? String(q.status) : null;
     const rows = await listContracts(db, {
-      orgId: staff.org_id, clientId: q.client_id || null, status, documentIds, limit
+      orgId: staff.org_id, clientId: q.client_id || null,
+      staffId: q.staff_id || null, status, documentIds, limit
     });
     return res.status(200).json({
       ok: true, view: "contracts", count: rows.length, items: redact(rows)

@@ -297,12 +297,16 @@ export default async function handler(req, res) {
       case "create_draft": {
         if (!isUuid(body.client_id)) return res.status(400).json({ ok: false, error: "invalid_client_id", message: "That contact id is not valid." });
         if (!isUuid(body.template_id)) return res.status(400).json({ ok: false, error: "invalid_template_id", message: "That template id is not valid." });
+        if (body.staff_id != null && body.staff_id !== "" && !isUuid(body.staff_id)) {
+          return res.status(400).json({ ok: false, error: "invalid_staff_id", message: "That staff id is not valid." });
+        }
         const contract = await createDraft(db, {
           orgId, staffId: staff.id,
           clientId: body.client_id, templateId: body.template_id,
           values: body.values || {}, title: body.title || null,
           signers: Array.isArray(body.signers) && body.signers.length ? body.signers : null,
-          signingOrder: body.signing_order === "parallel" ? "parallel" : "sequential"
+          signingOrder: body.signing_order === "parallel" ? "parallel" : "sequential",
+          subjectStaffId: body.staff_id || null
         });
         const signers = await listSigners(db, contract.id);
         return res.status(200).json({

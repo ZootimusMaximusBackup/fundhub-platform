@@ -49,7 +49,7 @@ import { notifySigners } from "./notify.mjs";
 export const CONTRACT_MIME = "text/html";
 
 export const CONTRACT_COLUMNS = `
-  id, org_id, client_id, template_id, template_key, title, kind, subtype,
+  id, org_id, client_id, staff_id, template_id, template_key, title, kind, subtype,
   merge_values, rendered_body, body_sha, document_id, document_version_id,
   signature_statement, signature_required, status,
   sent_at, sent_by, link_expires_at, viewed_at, view_count,
@@ -76,7 +76,7 @@ export async function getContract(db, { orgId, id } = {}) {
    the longest column in this schema and the queue shows twenty of them; the one
    screen that needs the words asks for a single contract by id. */
 const LIST_COLUMNS = `
-  c.id, c.org_id, c.client_id, c.template_id, c.template_key, c.title,
+  c.id, c.org_id, c.client_id, c.staff_id, c.template_id, c.template_key, c.title,
   c.kind, c.subtype, c.body_sha, c.document_id, c.status,
   c.sent_at, c.sent_by, c.link_expires_at, c.viewed_at, c.view_count,
   c.signed_at, c.signer_name, c.voided_at, c.void_reason,
@@ -98,7 +98,7 @@ const LIST_COLUMNS = `
  * the other looking like an unrelated file.
  */
 export async function listContracts(db, {
-  orgId, clientId = null, status = null, documentIds = null, limit = 100
+  orgId, clientId = null, staffId = null, status = null, documentIds = null, limit = 100
 } = {}) {
   if (!orgId) throw badRequest("A contract list needs to know which company it is for.", "org_required");
   const docIds = Array.isArray(documentIds) && documentIds.length ? documentIds : null;
@@ -115,9 +115,10 @@ export async function listContracts(db, {
         AND ($5::uuid[] IS NULL
              OR c.document_id = ANY($5::uuid[])
              OR c.signed_document_id = ANY($5::uuid[]))
+        AND ($6::uuid IS NULL OR c.staff_id = $6::uuid)
       ORDER BY c.created_at DESC
       LIMIT $4`,
-    [orgId, clientId, status, Math.max(1, Math.min(Number(limit) || 100, 200)), docIds]
+    [orgId, clientId, status, Math.max(1, Math.min(Number(limit) || 100, 200)), docIds, staffId]
   );
   return rows;
 }
@@ -132,11 +133,17 @@ export async function listContracts(db, {
  */
 export async function createDraft(db, {
   orgId, staffId, clientId, templateId, values = {}, title = null,
-  signers = null, signingOrder = "sequential"
+  signers = null, signingOrder = "sequential", subjectStaffId = null
 } = {}) {
   if (!orgId) throw badRequest("A contract needs to belong to a company.", "org_required");
   if (!staffId) throw badRequest("A contract has to record who created it.", "staff_required");
   if (!clientId) throw badRequest("Pick the client this contract is for.", "client_required");
+  if (subjectStaffId) {
+    const ownsStaff = await db.query(
+      `SELECT id FROM staff WHERE id = $1::uuid AND org_id = $2::uuid LIMIT 1`,
+      [subjectStaffId, orgId]);
+    if (!ownsStaff.rows[0]) throw notFound("That staff member is not on file.", "staff_not_found");
+  }
 
   const template = await getTemplate(db, { orgId, id: templateId });
   if (!template) throw notFound("That contract template does not exist.", "template_not_found");
@@ -157,12 +164,12 @@ export async function createDraft(db, {
 
   const { rows } = await db.query(
     `INSERT INTO contracts
-       (org_id, client_id, template_id, template_key, title, kind, subtype,
+       (org_id, client_id, staff_id, template_id, template_key, title, kind, subtype,
         merge_values, signature_required, created_by,
         source_kind, fields, signing_order)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,$12::jsonb,$13)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10,$11,$12,$13::jsonb,$14)
      RETURNING ${CONTRACT_COLUMNS}`,
-    [orgId, clientId, template.id, template.template_key,
+    [orgId, clientId, subjectStaffId || null, template.id, template.template_key,
      (title && String(title).trim()) || template.name,
      template.kind, template.subtype,
      JSON.stringify(values || {}), template.signature_required, staffId,

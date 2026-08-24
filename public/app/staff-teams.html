@@ -370,6 +370,11 @@ table.perm tbody tr:hover td.pl{background:var(--soft)}
       <div class="eyebrow" style="margin-bottom:6px">ST-07 <span class="sep">/</span> EFFECTIVE PERMISSIONS</div>
       <div style="font-size:var(--fs-body);color:var(--gray);margin-bottom:9px">Not available on this screen. What this person's role may do is set in the system's code and checked by the server on every action. This screen cannot read that list and cannot change it.</div>
     </div>
+    <div style="margin-top:18px" id="edAgreementsWrap">
+      <div class="eyebrow" style="margin-bottom:6px">ST-09 <span class="sep">/</span> EMPLOYMENT AGREEMENTS</div>
+      <div style="font-size:var(--fs-body);color:var(--gray);margin-bottom:9px">Signed copies stay in Fundhub (contracts + documents). Open them here later — never from git.</div>
+      <div id="edAgreements" style="font-size:var(--fs-body);color:var(--gray)">—</div>
+    </div>
   </div>
   <div class="editor-ft">
     <button class="btn dark mono" id="edSave">Save</button>
@@ -569,6 +574,7 @@ function openEditor(id){
   document.getElementById('editor').classList.add('open');
   document.getElementById('scrim').classList.add('on');
   renderRoster();
+  loadStaffAgreements(p.staffId || p.id);
 }
 function openNew(){
   selId=null;
@@ -587,6 +593,7 @@ function openNew(){
   setSw('ed_booked_sms',false);
   document.getElementById('edReset').style.display='none';   // no account exists yet
   document.getElementById('edDeact').style.display='none';   // nothing to revoke yet
+  document.getElementById('edAgreements').textContent='Save / invite first — agreements attach after hire.';
   document.getElementById('editor').classList.add('open');
   document.getElementById('scrim').classList.add('on');
 }
@@ -594,6 +601,66 @@ function closeEditor(){
   document.getElementById('editor').classList.remove('open');
   document.getElementById('scrim').classList.remove('on');
   selId=null; renderRoster();
+}
+
+/* Employment agreements for this roster person. Stored in contracts +
+   documents (signed_document_id). Filtered by contracts.staff_id. */
+function loadStaffAgreements(staffId){
+  var box=document.getElementById('edAgreements');
+  if(!box) return;
+  if(!staffId || typeof FHData==='undefined' || !FHData.read){
+    box.textContent='—';
+    return;
+  }
+  box.textContent='Loading…';
+  FHData.read('contracts',{ view:'contracts', staff_id:String(staffId), limit:50 }).then(function(res){
+    if(!res || !res.ok){
+      box.textContent=(res && res.error) || 'Could not load agreements.';
+      return;
+    }
+    var items=(res.data && res.data.items) || [];
+    if(!items.length){
+      box.textContent='None on file yet.';
+      return;
+    }
+    box.innerHTML=items.map(function(c){
+      var st=esc(c.status||'');
+      var when=c.signed_at ? new Date(c.signed_at).toLocaleDateString() : (c.sent_at ? ('sent '+new Date(c.sent_at).toLocaleDateString()) : '—');
+      var label=c.signed_document_id ? 'Open signed' : 'Open';
+      var openBtn=(c.id && (c.signed_document_id || c.document_id || c.status==='signed' || c.status==='sent' || c.status==='viewed' || c.status==='void'))
+        ? (' <button type="button" class="btn sm mono ed-open-signed" data-cid="'+esc(c.id)+'" data-signed="'+(c.signed_document_id?'1':'0')+'">'+label+'</button>')
+        : '';
+      return '<div style="padding:8px 0;border-bottom:1px solid var(--line)">'+esc(c.title||c.template_key||'Agreement')+
+        ' <span class="badge b-gray">'+st+'</span> · '+esc(when)+openBtn+'</div>';
+    }).join('');
+    box.querySelectorAll('.ed-open-signed').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        var id=btn.getAttribute('data-cid');
+        var wantSigned=btn.getAttribute('data-signed')==='1';
+        if(!id) return;
+        var was=btn.textContent;
+        btn.disabled=true; btn.textContent='opening…';
+        FHData.read('contracts',{ file:'contract', id:id, signed: wantSigned ? 1 : 0 }).then(function(r){
+          btn.disabled=false; btn.textContent=was;
+          if(!r.ok || !r.data || !r.data.pdf_base64){
+            alert((r && r.error) || 'No file on file yet.');
+            return;
+          }
+          downloadPdfB64(r.data.pdf_base64, r.data.filename || 'agreement.pdf');
+        });
+      });
+    });
+  });
+}
+function downloadPdfB64(b64, filename){
+  var bin=atob(b64);
+  var buf=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) buf[i]=bin.charCodeAt(i);
+  var url=URL.createObjectURL(new Blob([buf],{ type:'application/pdf' }));
+  var a=document.createElement('a');
+  a.href=url; a.download=filename || 'agreement.pdf';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
 }
 document.querySelectorAll('.sw').forEach(function(s){s.addEventListener('click',function(){s.classList.toggle('on')})});
 document.getElementById('addBtn').addEventListener('click',openNew);
