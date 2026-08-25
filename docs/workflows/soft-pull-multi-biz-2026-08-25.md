@@ -55,3 +55,11 @@ No new route. No migration — store EIN + extra owner in `businesses.entity_dat
 ## Extra file (needed)
 
 `api/dashboard/client.mjs` — businesses read was `LIMIT 5`. Raised to `LIMIT 20` so staff can see every saved company. No new route. No migration.
+
+## Ship
+
+- Branch: `soft-pull-multi-biz`
+- PR: https://github.com/ZootimusMaximusBackup/fundhub-platform/pull/135
+- GitHub checks: same three reds as current `main` (stale diagrams / workflow registry / missing `data-open` buttons / live-spec passwords). Not from this change.
+- Tests I ran: pricing / parse / save / client-detail / panel / pipeline — 142 passed. Lint clean. Journeys byte-identical (no new route).
+- No live token minted — no signed soft-pull link in this environment. Form reviewed from the page source + $52 math.
