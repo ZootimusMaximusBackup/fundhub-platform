@@ -20,10 +20,10 @@ Save on the client. Staff see **each business as its own fundable file**. Differ
 
 | Lane | Owner | Status |
 |------|--------|--------|
-| 1 Form (EIN, extra owner, plus, one-flow pay) | cloud | claimed |
-| 2 Save (entity_data: ein, extra_owner_name, address, source) | cloud | claimed |
-| 3 Staff screens (each business listed) | cloud | claimed |
-| 4 Journey actual + draft intended | cloud | claimed |
+| 1 Form (EIN, extra owner, plus, one-flow pay) | cloud | done |
+| 2 Save (entity_data: ein, extra_owner_name, address, source) | cloud | done |
+| 3 Staff screens (each business listed) | cloud | done |
+| 4 Journey actual + draft intended | cloud | done |
 
 ## Do not touch
 
@@ -51,3 +51,7 @@ No new route. No migration — store EIN + extra owner in `businesses.entity_dat
 - Unit tests green for parse / price / client-detail list
 - Form: add 2 businesses with EIN + one extra owner; total = $52; pay button after authorize
 - Staff drawer / full file shows both companies, states, EIN, extra-owner warning
+
+## Extra file (needed)
+
+`api/dashboard/client.mjs` — businesses read was `LIMIT 5`. Raised to `LIMIT 20` so staff can see every saved company. No new route. No migration.

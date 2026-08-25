@@ -49,8 +49,9 @@ ol.next li:last-child{margin-bottom:0}
   var q = new URLSearchParams(location.search);
   var token = { org: q.get("org"), client: q.get("client"), exp: q.get("exp"), sig: q.get("sig") };
   var root = document.getElementById("app");
-  var pricing = { base_cents: 3200, business_addon_cents: 1000, max_businesses: 5, base_display: "$32", business_addon_display: "$10" };
+  var pricing = { base_cents: 3200, business_addon_cents: 1000, max_businesses: 20, base_display: "$32", business_addon_display: "$10" };
   var bizCount = 0;
+  var bizDrafts = [];
 
   function esc(s) {
     return String(s == null ? "" : s)
@@ -87,6 +88,46 @@ ol.next li:last-child{margin-bottom:0}
       ")</span>";
   }
 
+  function normalizeEin(raw) {
+    var digits = String(raw == null ? "" : raw).replace(/\D/g, "");
+    if (digits.length !== 9) return null;
+    return digits.slice(0, 2) + "-" + digits.slice(2);
+  }
+
+  function readBizBlock(i) {
+    var name = document.getElementById("biz_name_" + i);
+    if (!name) return null;
+    return {
+      name: name.value,
+      address_line1: document.getElementById("biz_line1_" + i).value,
+      city: document.getElementById("biz_city_" + i).value,
+      state: document.getElementById("biz_state_" + i).value,
+      postal_code: document.getElementById("biz_zip_" + i).value,
+      ein: document.getElementById("biz_ein_" + i).value,
+      extra_owner_name: document.getElementById("biz_owner_" + i).value
+    };
+  }
+
+  function fillBizBlock(i, row) {
+    if (!row) return;
+    document.getElementById("biz_name_" + i).value = row.name || "";
+    document.getElementById("biz_line1_" + i).value = row.address_line1 || "";
+    document.getElementById("biz_city_" + i).value = row.city || "";
+    document.getElementById("biz_state_" + i).value = row.state || "";
+    document.getElementById("biz_zip_" + i).value = row.postal_code || "";
+    document.getElementById("biz_ein_" + i).value = row.ein || "";
+    document.getElementById("biz_owner_" + i).value = row.extra_owner_name || "";
+  }
+
+  function snapshotBiz() {
+    var list = [];
+    for (var i = 0; i < bizCount; i++) {
+      var row = readBizBlock(i);
+      if (row) list.push(row);
+    }
+    return list.length ? list : bizDrafts.slice();
+  }
+
   function bizBlockHtml(i) {
     return '<div class="biz" data-biz="' + i + '">' +
       '<div class="biz-head"><strong>Business ' + (i + 1) + '</strong>' +
@@ -101,21 +142,36 @@ ol.next li:last-child{margin-bottom:0}
       '<input id="biz_state_' + i + '" name="biz_state_' + i + '" maxlength="2" required placeholder="AZ"></div></div>' +
       '<label for="biz_zip_' + i + '">ZIP</label>' +
       '<input id="biz_zip_' + i + '" name="biz_zip_' + i + '" inputmode="numeric" required>' +
+      '<label for="biz_ein_' + i + '">EIN</label>' +
+      '<input id="biz_ein_' + i + '" name="biz_ein_' + i + '" inputmode="numeric" required placeholder="12-3456789">' +
+      '<label for="biz_owner_' + i + '">Extra owner name (if any)</label>' +
+      '<input id="biz_owner_' + i + '" name="biz_owner_' + i + '">' +
       "</div>";
   }
 
-  function renderBizList() {
+  function renderBizList(kept) {
     var box = document.getElementById("biz_list");
     var addBtn = document.getElementById("add_biz");
     if (!box) return;
+    var snap = kept || snapshotBiz();
     var html = "";
     for (var i = 0; i < bizCount; i++) html += bizBlockHtml(i);
     box.innerHTML = html;
+    for (var k = 0; k < bizCount && k < snap.length; k++) fillBizBlock(k, snap[k]);
+    bizDrafts = snapshotBiz();
     if (addBtn) addBtn.disabled = bizCount >= pricing.max_businesses;
     box.querySelectorAll("[data-rm]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        bizCount = Math.max(0, bizCount - 1);
-        renderBizList();
+        var idx = Number(btn.getAttribute("data-rm"));
+        var next = [];
+        for (var j = 0; j < bizCount; j++) {
+          if (j === idx) continue;
+          var row = readBizBlock(j);
+          if (row) next.push(row);
+        }
+        bizCount = next.length;
+        bizDrafts = next;
+        renderBizList(next);
         updateTotal();
       });
     });
@@ -125,12 +181,16 @@ ol.next li:last-child{margin-bottom:0}
   function collectBusinesses() {
     var list = [];
     for (var i = 0; i < bizCount; i++) {
+      var row = readBizBlock(i);
+      if (!row) continue;
       list.push({
-        name: document.getElementById("biz_name_" + i).value.trim(),
-        address_line1: document.getElementById("biz_line1_" + i).value.trim(),
-        city: document.getElementById("biz_city_" + i).value.trim(),
-        state: document.getElementById("biz_state_" + i).value.trim(),
-        postal_code: document.getElementById("biz_zip_" + i).value.trim()
+        name: row.name.trim(),
+        address_line1: row.address_line1.trim(),
+        city: row.city.trim(),
+        state: row.state.trim(),
+        postal_code: row.postal_code.trim(),
+        ein: row.ein.trim(),
+        extra_owner_name: row.extra_owner_name.trim()
       });
     }
     return list;
@@ -153,7 +213,7 @@ ol.next li:last-child{margin-bottom:0}
       '<div class="card"><h2>What happens next</h2><ol class="next">' +
       "<li>You fill this in (optional businesses at the bottom) and submit. Your advisor never sees your Social Security number.</li>" +
       "<li>You pay the total shown — " + esc(pricing.base_display) + " soft pull plus " +
-      esc(pricing.business_addon_display) + " per business (up to " + pricing.max_businesses + ").</li>" +
+      esc(pricing.business_addon_display) + " per business.</li>" +
       "<li>Once that payment clears, we request the report. Nothing else is needed from you.</li>" +
       "</ol></div>" +
       '<form id="f">' +
@@ -171,8 +231,9 @@ ol.next li:last-child{margin-bottom:0}
       '<input id="postal_code" name="postal_code" inputmode="numeric" required>' +
       '<div class="card" style="margin-top:16px">' +
       "<h2>Add businesses (optional)</h2>" +
-      "<p class=\"lede\" style=\"margin:0 0 8px\">Each business adds " + esc(pricing.business_addon_display) +
-      " (1–" + pricing.max_businesses + "). Leave empty if you only need the personal soft pull.</p>" +
+      "<p class=\"lede\" style=\"margin:0 0 8px\">If a company has other owners, say so. Extra owners make funding slower and harder. We usually prefer one-owner companies, but write the truth here anyway.</p>" +
+      "<p class=\"lede\" style=\"margin:0 0 8px\">Add each business you want funded. Each one adds " +
+      esc(pricing.business_addon_display) + ". Leave empty if you only need the personal soft pull.</p>" +
       '<div id="biz_list"></div>' +
       '<button type="button" class="btn-sec" id="add_biz">+ Add a business</button>' +
       '<div class="total" id="total_line"></div></div>' +
@@ -183,8 +244,9 @@ ol.next li:last-child{margin-bottom:0}
 
     document.getElementById("add_biz").addEventListener("click", function () {
       if (bizCount >= pricing.max_businesses) return;
+      bizDrafts = snapshotBiz();
       bizCount += 1;
-      renderBizList();
+      renderBizList(bizDrafts);
     });
     renderBizList();
 
@@ -215,6 +277,13 @@ ol.next li:last-child{margin-bottom:0}
           msg.innerHTML = '<div class="err">Business ' + (i + 1) + ": fill name, street, city, state, and ZIP.</div>";
           return;
         }
+        var ein = normalizeEin(b.ein);
+        if (!ein) {
+          btn.disabled = false;
+          msg.innerHTML = '<div class="err">Business ' + (i + 1) + ": enter a 9-digit EIN (you can type 12-3456789).</div>";
+          return;
+        }
+        b.ein = ein;
       }
 
       var body = {

@@ -210,7 +210,7 @@ describe("client detail derivations", () => {
     assert.equal(e.tri_merge.experian, null);
     assert.equal(e.utilisation.band, null);
     assert.equal(e.tier_reasoning.tier, null);
-    assert.deepEqual(e.business_credit, { name: null, intelliscore: null, fsr: null });
+    assert.deepEqual(e.business_credit, { name: null, intelliscore: null, fsr: null, businesses: [] });
     assert.deepEqual(e.income_estimates, { experian: null, equifax: null, asOf: null });
     assert.deepEqual(e.latest_booking, { when: null, title: null, status: null });
   });
@@ -257,10 +257,54 @@ describe("client detail derivations", () => {
     assert.equal(hit.intelliscore, 72);
     assert.equal(hit.fsr, 40);
     const miss = businessCredit({});
-    assert.deepEqual(miss, { name: null, intelliscore: null, fsr: null });
+    assert.deepEqual(miss, { name: null, intelliscore: null, fsr: null, businesses: [] });
     const ficoAsBiz = businessCredit({
       businesses: [{ entity_data: { scores: { intelliscore: 720 } } }]
     });
     assert.equal(ficoAsBiz.intelliscore, null, "FICO is not Intelliscore");
+  });
+
+  test("business credit lists every business with EIN and extra-owner warning", () => {
+    const hit = businessCredit({
+      businesses: [
+        {
+          name: "Acme LLC",
+          entity_data: {
+            state: "AZ",
+            ein: "12-3456789",
+            address_line1: "1 Main St",
+            city: "Phoenix",
+            postal_code: "85001",
+            scores: { intelliscore: 72, fsr: 40 }
+          }
+        },
+        {
+          name: "Beta Inc",
+          entity_data: {
+            state: "nv",
+            ein: "98-7654321",
+            extra_owner_name: "Pat Lee",
+            address_line1: "2 Oak Ave",
+            city: "Reno",
+            postal_code: "89501"
+          }
+        }
+      ]
+    });
+    assert.equal(hit.name, "Acme LLC");
+    assert.equal(hit.intelliscore, 72);
+    assert.equal(hit.fsr, 40);
+    assert.equal(hit.businesses.length, 2);
+    assert.equal(hit.businesses[0].name, "Acme LLC");
+    assert.equal(hit.businesses[0].state, "AZ");
+    assert.equal(hit.businesses[0].ein, "12-3456789");
+    assert.equal(hit.businesses[0].extra_owner_name, null);
+    assert.equal(hit.businesses[0].extra_owners_warning, false);
+    assert.equal(hit.businesses[0].address, "1 Main St Phoenix, AZ 85001");
+    assert.equal(hit.businesses[1].name, "Beta Inc");
+    assert.equal(hit.businesses[1].state, "NV");
+    assert.equal(hit.businesses[1].ein, "98-7654321");
+    assert.equal(hit.businesses[1].extra_owner_name, "Pat Lee");
+    assert.equal(hit.businesses[1].extra_owners_warning, true);
   });
 });
