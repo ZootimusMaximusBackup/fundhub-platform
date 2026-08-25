@@ -1576,8 +1576,31 @@ restore();
     creditMore.appendChild(rowAlways("Income (Equifax)", moneyYr(inc.equifax)));
     creditMore.appendChild(rowAlways("Business score", biz.intelliscore));
     creditMore.appendChild(rowAlways("Business FSR", biz.fsr));
-    if (biz.name) creditMore.appendChild(rowAlways("Business", biz.name));
     drawerBody.appendChild(creditMore);
+
+    var bizList = Array.isArray(biz.businesses) ? biz.businesses : [];
+    var bizSec = sec("Businesses");
+    if (!bizList.length) {
+      var bizEmpty = document.createElement("p");
+      bizEmpty.className = "fh-drawer-empty";
+      bizEmpty.textContent = "No businesses on file";
+      bizSec.appendChild(bizEmpty);
+    } else {
+      bizList.forEach(function (row, i) {
+        var n = bizList.length > 1 ? " " + (i + 1) : "";
+        bizSec.appendChild(rowAlways("Business" + n, row.name));
+        bizSec.appendChild(rowAlways("State" + n, row.state));
+        bizSec.appendChild(rowAlways("EIN" + n, row.ein));
+        if (row.address) bizSec.appendChild(rowAlways("Address" + n, row.address));
+        if (row.extra_owners_warning) {
+          bizSec.appendChild(rowAlways(
+            "Extra owners" + n,
+            "Yes — funding is slower and harder"
+          ));
+        }
+      });
+    }
+    drawerBody.appendChild(bizSec);
 
     var path = sec("Path");
     path.appendChild(rowAlways("Tier", tier));

@@ -123,7 +123,7 @@ export default async function handler(req, res) {
            FROM businesses
           WHERE client_id = $1 AND org_id = $2
           ORDER BY updated_at DESC
-          LIMIT 5`,
+          LIMIT 20`,
         [id, orgId]
       )
     ]);

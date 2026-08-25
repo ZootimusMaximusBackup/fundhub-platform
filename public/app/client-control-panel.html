@@ -549,6 +549,11 @@
       </div>
 
       <div class="group">
+        <div class="group-title">Businesses</div>
+        <div id="ccp-biz-list"><p class="cp-empty">Loading businesses…</p></div>
+      </div>
+
+      <div class="group">
         <div class="group-title">Need action</div>
         <p style="font-size:var(--fs-body);color:var(--text-dim);margin:0 0 10px;">Clients with an open inquiry removal case. Pick one to open the file.</p>
         <div id="ccp-need-action" style="font-size:var(--fs-body);color:var(--text-dim);">Loading…</div>
@@ -1239,6 +1244,69 @@ document.addEventListener("DOMContentLoaded", function () {
     href("ccp-consent-link", "consent-capture.html?client_id=" + q);
   }
 
+  function paintBusinesses(state, rows, errMsg) {
+    var box = $("ccp-biz-list");
+    if (!box) return;
+    box.textContent = "";
+    if (state === "loading") {
+      var loading = document.createElement("p");
+      loading.className = "cp-empty";
+      loading.textContent = "Loading businesses…";
+      box.appendChild(loading);
+      return;
+    }
+    if (state === "error") {
+      var err = document.createElement("p");
+      err.className = "cp-empty";
+      err.textContent = errMsg || "Could not load businesses.";
+      box.appendChild(err);
+      return;
+    }
+    var list = Array.isArray(rows) ? rows : [];
+    if (!list.length) {
+      var empty = document.createElement("p");
+      empty.className = "cp-empty";
+      empty.textContent = "No businesses on file";
+      box.appendChild(empty);
+      return;
+    }
+    list.forEach(function (row) {
+      var card = document.createElement("div");
+      card.className = "cp-sec";
+      var title = document.createElement("div");
+      title.className = "cp-sec-title";
+      title.textContent = row.name || "Business";
+      card.appendChild(title);
+      var grid = document.createElement("div");
+      grid.className = "kv-grid";
+      function kv(label, value, mono) {
+        var wrap = document.createElement("div");
+        wrap.className = "kv";
+        var k = document.createElement("div");
+        k.className = "kv-label";
+        k.textContent = label;
+        var v = document.createElement("div");
+        v.className = mono ? "kv-value mono" : "kv-value";
+        v.textContent = value == null || value === "" ? "—" : String(value);
+        wrap.appendChild(k);
+        wrap.appendChild(v);
+        grid.appendChild(wrap);
+      }
+      kv("State", row.state);
+      kv("EIN", row.ein, true);
+      kv("Address", row.address);
+      kv("Extra owner", row.extra_owner_name);
+      card.appendChild(grid);
+      if (row.extra_owners_warning) {
+        var flag = document.createElement("p");
+        flag.className = "blocker-flag";
+        flag.textContent = "Extra owners — funding is slower and harder";
+        card.appendChild(flag);
+      }
+      box.appendChild(card);
+    });
+  }
+
   function render(d) {
     var c = (d && d.client) || {};
     var cf = c.custom_fields || {};
@@ -1306,6 +1374,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     paintBlockers(d.open_blockers, hold);
     paintControlPanel(fx, d, cf);
+    var bizCredit = d.business_credit || {};
+    paintBusinesses("full", bizCredit.businesses || []);
 
     setText("ccp-footer-org", c.org_id ? ("ORG: " + c.org_id) : "ORG: —");
     setText("ccp-footer-id", c.id);
@@ -1839,19 +1909,25 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   })();
 
+  if (!id) paintBusinesses("empty");
   FHData.client(id).then(function (res) {
     if (res.ok) { render(res.data); return; }
     setText("ccp-name", "");
     if (res.source === "nodata") {
       banner("empty", "no client open — pick a client from the list");
+      paintBusinesses("empty");
     } else if (res.source === "demo") {
       banner("empty", "demo mode — this screen did not query a live file");
+      paintBusinesses("empty");
     } else if (res.source === "notfound") {
       banner("empty", "no client with that id");
+      paintBusinesses("empty");
     } else if (res.source === "badrequest") {
       banner("empty", "that id is not a valid client id");
+      paintBusinesses("empty");
     } else {
       banner("error", "could not load this file (" + res.source + ")");
+      paintBusinesses("error", null, "Could not load businesses.");
     }
   });
 

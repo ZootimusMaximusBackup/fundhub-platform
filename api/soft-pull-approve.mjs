@@ -1,12 +1,15 @@
 // /api/soft-pull-approve — client-facing soft-pull approval (signed link).
 //
-//   GET  ?org=&client=&exp=&sig=  → disclosure + client first name + whether consent already valid
-//   POST { org, client, exp, sig, granted_name, ssn, dob, address_line1, city, state, postal_code }
-//        → capture soft_pull_consent + store identity; no session required
+//   GET  ?org=&client=&exp=&sig=  → disclosure + pricing + contact
+//   POST { …identity, businesses[] } → consent + identity + businesses + checkout
 //
-// COMPLIANCE REVIEW REQUIRED — consent capture, credit-pull identity (SSN).
+// COMPLIANCE REVIEW REQUIRED — consent capture, fee timing, credit-pull identity (SSN).
 // The consent TEXT is never taken from the body — only the version key, then
 // the server copies its own words (same rule as api/consent/capture.mjs).
+//
+// Flow (owner 2026-08-25): form collects optional businesses first (safety
+// ceiling 20); total = $32 + $10×n; checkout is minted/adjusted to that total
+// before pay. EIN is required on each added business; extra owner is optional.
 
 import { db } from "../src/db.mjs";
 import { isUuid } from "../src/http/read-api.mjs";
@@ -24,8 +27,21 @@ import {
 import { storeIdentity, PiiError } from "../src/pii/index.mjs";
 import { hashPassword } from "../src/auth/hash.mjs";
 import { newToken } from "../src/auth/session.mjs";
+import { getOffer, formatCents } from "../src/config/offers.mjs";
+import {
+  softPullTotalCents,
+  softPullPricingPublic,
+  SOFT_PULL_MAX_BUSINESSES
+} from "../src/finance/soft-pull-pricing.mjs";
+import {
+  createPaymentLink,
+  markExpired,
+  markSent
+} from "../src/payment-links/index.mjs";
 
 const KIND = "soft_pull_consent";
+const BIZ_SOURCE = "soft_pull_approve";
+const OPEN = ["created", "sent"];
 
 function clientIp(req) {
   const xf = req.headers?.["x-forwarded-for"];
@@ -83,6 +99,151 @@ function tokenFrom(req) {
   };
 }
 
+/** Store EIN as XX-XXXXXXX. Accepts 9 digits or XX-XXXXXXX. */
+export function normalizeSoftPullEin(raw) {
+  const digits = String(raw == null ? "" : raw).replace(/\D/g, "");
+  if (digits.length !== 9) return null;
+  return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+}
+
+/** Parse 0–20 businesses: name + street + city + state + ZIP + EIN; extra owner optional. */
+export function parseSoftPullBusinesses(raw) {
+  if (raw == null || raw === "") return [];
+  if (!Array.isArray(raw)) {
+    const err = new ConsentError("Businesses must be a list.", {
+      status: 400,
+      code: "businesses_invalid"
+    });
+    throw err;
+  }
+  if (raw.length > SOFT_PULL_MAX_BUSINESSES) {
+    throw new ConsentError("That's too many businesses for this form.", {
+      status: 400,
+      code: "businesses_max"
+    });
+  }
+  const out = [];
+  for (let i = 0; i < raw.length; i++) {
+    const row = raw[i] || {};
+    const name = String(row.name || "").trim();
+    const line1 = String(row.address_line1 || "").trim();
+    const city = String(row.city || "").trim();
+    const state = String(row.state || "").trim().toUpperCase();
+    const postal = String(row.postal_code || "").trim();
+    const extraOwner = String(row.extra_owner_name || "").trim();
+    const ein = normalizeSoftPullEin(row.ein);
+    if (!name && !line1 && !city && !state && !postal && !row.ein && !extraOwner) continue;
+    if (!name || name.length < 2) {
+      throw new ConsentError(`Business ${i + 1}: enter the business name.`, {
+        status: 400,
+        code: "business_name_required"
+      });
+    }
+    if (!line1 || !city || !/^[A-Z]{2}$/.test(state) || !postal) {
+      throw new ConsentError(
+        `Business ${i + 1}: enter street, city, state, and ZIP.`,
+        { status: 400, code: "business_address_required" }
+      );
+    }
+    if (!ein) {
+      throw new ConsentError(
+        `Business ${i + 1}: enter the 9-digit EIN.`,
+        { status: 400, code: "business_ein_required" }
+      );
+    }
+    out.push({
+      name,
+      address_line1: line1,
+      city,
+      state,
+      postal_code: postal,
+      ein,
+      extra_owner_name: extraOwner || null
+    });
+  }
+  return out;
+}
+
+export async function replaceSoftPullBusinesses(database, { orgId, clientId, businesses }) {
+  await database.query(
+    `DELETE FROM businesses
+      WHERE org_id = $1 AND client_id = $2
+        AND COALESCE(entity_data->>'source', '') = $3`,
+    [orgId, clientId, BIZ_SOURCE]
+  );
+  for (const b of businesses) {
+    await database.query(
+      `INSERT INTO businesses (org_id, client_id, name, entity_data)
+       VALUES ($1, $2, $3, $4::jsonb)`,
+      [
+        orgId,
+        clientId,
+        b.name,
+        JSON.stringify({
+          source: BIZ_SOURCE,
+          address_line1: b.address_line1,
+          city: b.city,
+          state: b.state,
+          postal_code: b.postal_code,
+          ein: b.ein,
+          extra_owner_name: b.extra_owner_name || null
+        })
+      ]
+    );
+  }
+}
+
+/**
+ * Reuse an open diagnostic link at the exact total, or expire wrong-amount
+ * open diagnostic links and mint a new one.
+ */
+export async function ensureSoftPullCheckout(database, {
+  orgId, clientId, amountCents, description, env, checkoutBaseUrl, fetchImpl
+}) {
+  const existing = await database.query(
+    `SELECT * FROM payment_links
+      WHERE org_id = $1 AND client_id = $2 AND purpose = 'diagnostic'
+        AND status = ANY($3) AND amount_cents = $4
+      ORDER BY created_at DESC
+      LIMIT 1`,
+    [orgId, clientId, OPEN, amountCents]
+  );
+  if (existing.rows[0]) {
+    const row = existing.rows[0];
+    if (row.status === "created") {
+      const sent = await markSent(database, { id: row.id, orgId });
+      return sent || row;
+    }
+    return row;
+  }
+
+  const wrong = await database.query(
+    `SELECT id FROM payment_links
+      WHERE org_id = $1 AND client_id = $2 AND purpose = 'diagnostic'
+        AND status = ANY($3) AND amount_cents <> $4`,
+    [orgId, clientId, OPEN, amountCents]
+  );
+  for (const row of wrong.rows) {
+    await markExpired(database, { id: row.id, orgId });
+  }
+
+  const offer = getOffer("SOFT_PULL");
+  const link = await createPaymentLink(database, {
+    orgId,
+    clientId,
+    purpose: "diagnostic",
+    description: description || offer?.name || "UnderwriteIQ soft-pull assessment",
+    commasProductTitle: offer?.commasProductTitle || "Consulting Services Assessment",
+    amountCents,
+    productCode: offer?.productCode || "diagnostic",
+    checkoutBaseUrl,
+    env,
+    fetchImpl
+  });
+  const sent = await markSent(database, { id: link.id, orgId });
+  return sent || link;
+}
+
 export default async function handler(req, res, deps = {}) {
   const database = deps.db ?? db;
   const env = deps.env ?? process.env;
@@ -123,6 +284,7 @@ export default async function handler(req, res, deps = {}) {
 
     const disclosure = SOFT_PULL_DISCLOSURES[CURRENT_SOFT_PULL_VERSION];
     const status = await consentStatus(database, { orgId, clientId, kind: KIND });
+    const pricing = softPullPricingPublic();
 
     if (req.method === "GET") {
       return res.status(200).json({
@@ -135,6 +297,7 @@ export default async function handler(req, res, deps = {}) {
           bullets: disclosure.bullets || null
         },
         consent: { valid: !!status.valid, reason: status.reason || null },
+        pricing,
         contact: {
           first_name: client.first_name || null,
           last_name: client.last_name || null
@@ -187,6 +350,28 @@ export default async function handler(req, res, deps = {}) {
       });
     }
 
+    let businesses;
+    try {
+      businesses = parseSoftPullBusinesses(body.businesses);
+    } catch (e) {
+      if (e instanceof ConsentError) {
+        return res.status(e.status || 400).json({
+          ok: false,
+          error: e.code || "bad_request",
+          message: e.message
+        });
+      }
+      throw e;
+    }
+
+    const amountCents = softPullTotalCents(businesses.length);
+    const amountDisplay = formatCents(amountCents) || `$${(amountCents / 100).toFixed(0)}`;
+    const offer = getOffer("SOFT_PULL");
+    const n = businesses.length;
+    const description = n > 0
+      ? `${offer?.name || "UnderwriteIQ soft-pull assessment"} (+${n} business${n === 1 ? "" : "es"})`
+      : (offer?.name || "UnderwriteIQ soft-pull assessment");
+
     const name = [client.first_name, client.last_name].filter(Boolean).join(" ") || grantedName;
     const accountId = await provisionClientAccount(database, {
       orgId,
@@ -209,6 +394,8 @@ export default async function handler(req, res, deps = {}) {
       env
     });
 
+    await replaceSoftPullBusinesses(database, { orgId, clientId, businesses });
+
     const consent = await captureConsent(database, {
       orgId,
       clientId,
@@ -222,10 +409,38 @@ export default async function handler(req, res, deps = {}) {
       capturedUserAgent: req.headers?.["user-agent"] || null
     });
 
+    let checkout = null;
+    let checkoutError = null;
+    try {
+      const link = await ensureSoftPullCheckout(database, {
+        orgId,
+        clientId,
+        amountCents,
+        description,
+        env,
+        checkoutBaseUrl: deps.checkoutBaseUrl,
+        fetchImpl: deps.fetchImpl
+      });
+      checkout = {
+        id: link.id,
+        checkout_url: link.checkout_url,
+        amount_cents: Number(link.amount_cents),
+        amount_display: formatCents(link.amount_cents) || amountDisplay
+      };
+    } catch (err) {
+      checkoutError = String(err && err.message ? err.message : err).slice(0, 160);
+    }
+
     return res.status(201).json({
       ok: true,
       consent: { id: consent.id, valid: true, version: CURRENT_SOFT_PULL_VERSION },
-      next: "Pay the $32 assessment next — your advisor sends that link separately."
+      businesses: { count: n },
+      pricing: { ...pricing, total_cents: amountCents, total_display: amountDisplay },
+      checkout,
+      checkout_error: checkoutError,
+      next: checkout?.checkout_url
+        ? `Pay ${amountDisplay} next — use the Pay button below.`
+        : `Consent saved. Ask your advisor for the ${amountDisplay} pay link.`
     });
   } catch (err) {
     if (err instanceof ConsentError || err instanceof PiiError) {

@@ -23,12 +23,20 @@ input{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:8p
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .btn{margin-top:16px;width:100%;padding:12px 14px;border:0;border-radius:10px;background:var(--ink);color:var(--paper);font:700 13px var(--sans);cursor:pointer}
 .btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-sec{margin-top:8px;width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);font:600 12.5px var(--sans);cursor:pointer}
+.btn-pay{display:block;margin-top:14px;width:100%;padding:14px;border:0;border-radius:10px;background:var(--ink);color:var(--paper);font:700 14px var(--sans);text-align:center;text-decoration:none}
 .err{border:1px solid #c45;background:#fff5f4;color:#6E2A22;padding:10px 12px;border-radius:8px;font-size:12.5px;margin-bottom:12px}
 .ok{border:1px solid #2C5138;background:rgba(168,216,176,.26);color:#2C5138;padding:14px;border-radius:10px}
 .fine{font-size:10.5px;color:var(--gray2);margin-top:12px;line-height:1.45}
 ol.next{margin:0;padding-left:18px;font-size:12.5px;line-height:1.6;color:var(--ink)}
 ol.next li{margin-bottom:4px}
 ol.next li:last-child{margin-bottom:0}
+.biz{border:1px dashed var(--line);border-radius:10px;padding:12px;margin-top:12px;background:var(--paper)}
+.biz-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+.biz-head strong{font-size:12px}
+.biz-rm{border:0;background:transparent;color:var(--gray);font:600 11px var(--sans);cursor:pointer;padding:4px}
+.total{font-size:14px;font-weight:700;margin-top:14px;padding:12px;border-radius:10px;background:var(--paper);border:1px solid var(--line)}
+.total span{color:var(--gray);font-weight:500;font-size:12px}
 </style>
 </head>
 <body>
@@ -41,11 +49,18 @@ ol.next li:last-child{margin-bottom:0}
   var q = new URLSearchParams(location.search);
   var token = { org: q.get("org"), client: q.get("client"), exp: q.get("exp"), sig: q.get("sig") };
   var root = document.getElementById("app");
+  var pricing = { base_cents: 3200, business_addon_cents: 1000, max_businesses: 20, base_display: "$32", business_addon_display: "$10" };
+  var bizCount = 0;
+  var bizDrafts = [];
 
   function esc(s) {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  function money(cents) {
+    return "$" + (Number(cents) / 100).toFixed(0);
   }
 
   function apiUrl() {
@@ -63,36 +78,142 @@ ol.next li:last-child{margin-bottom:0}
       '<p class="lede">Stay on the call and ask your advisor to send a fresh link.</p>';
   }
 
+  function updateTotal() {
+    var el = document.getElementById("total_line");
+    if (!el) return;
+    var total = pricing.base_cents + pricing.business_addon_cents * bizCount;
+    el.innerHTML = "Total due: " + money(total) +
+      ' <span>(' + esc(pricing.base_display) + " soft pull" +
+      (bizCount ? " + " + bizCount + " × " + esc(pricing.business_addon_display) : "") +
+      ")</span>";
+  }
+
+  function normalizeEin(raw) {
+    var digits = String(raw == null ? "" : raw).replace(/\D/g, "");
+    if (digits.length !== 9) return null;
+    return digits.slice(0, 2) + "-" + digits.slice(2);
+  }
+
+  function readBizBlock(i) {
+    var name = document.getElementById("biz_name_" + i);
+    if (!name) return null;
+    return {
+      name: name.value,
+      address_line1: document.getElementById("biz_line1_" + i).value,
+      city: document.getElementById("biz_city_" + i).value,
+      state: document.getElementById("biz_state_" + i).value,
+      postal_code: document.getElementById("biz_zip_" + i).value,
+      ein: document.getElementById("biz_ein_" + i).value,
+      extra_owner_name: document.getElementById("biz_owner_" + i).value
+    };
+  }
+
+  function fillBizBlock(i, row) {
+    if (!row) return;
+    document.getElementById("biz_name_" + i).value = row.name || "";
+    document.getElementById("biz_line1_" + i).value = row.address_line1 || "";
+    document.getElementById("biz_city_" + i).value = row.city || "";
+    document.getElementById("biz_state_" + i).value = row.state || "";
+    document.getElementById("biz_zip_" + i).value = row.postal_code || "";
+    document.getElementById("biz_ein_" + i).value = row.ein || "";
+    document.getElementById("biz_owner_" + i).value = row.extra_owner_name || "";
+  }
+
+  function snapshotBiz() {
+    var list = [];
+    for (var i = 0; i < bizCount; i++) {
+      var row = readBizBlock(i);
+      if (row) list.push(row);
+    }
+    return list.length ? list : bizDrafts.slice();
+  }
+
+  function bizBlockHtml(i) {
+    return '<div class="biz" data-biz="' + i + '">' +
+      '<div class="biz-head"><strong>Business ' + (i + 1) + '</strong>' +
+      '<button type="button" class="biz-rm" data-rm="' + i + '">Remove</button></div>' +
+      '<label for="biz_name_' + i + '">Business name</label>' +
+      '<input id="biz_name_' + i + '" name="biz_name_' + i + '" required>' +
+      '<label for="biz_line1_' + i + '">Business street address</label>' +
+      '<input id="biz_line1_' + i + '" name="biz_line1_' + i + '" required>' +
+      '<div class="row2"><div><label for="biz_city_' + i + '">City</label>' +
+      '<input id="biz_city_' + i + '" name="biz_city_' + i + '" required></div>' +
+      '<div><label for="biz_state_' + i + '">State</label>' +
+      '<input id="biz_state_' + i + '" name="biz_state_' + i + '" maxlength="2" required placeholder="AZ"></div></div>' +
+      '<label for="biz_zip_' + i + '">ZIP</label>' +
+      '<input id="biz_zip_' + i + '" name="biz_zip_' + i + '" inputmode="numeric" required>' +
+      '<label for="biz_ein_' + i + '">EIN</label>' +
+      '<input id="biz_ein_' + i + '" name="biz_ein_' + i + '" inputmode="numeric" required placeholder="12-3456789">' +
+      '<label for="biz_owner_' + i + '">Extra owner name (if any)</label>' +
+      '<input id="biz_owner_' + i + '" name="biz_owner_' + i + '">' +
+      "</div>";
+  }
+
+  function renderBizList(kept) {
+    var box = document.getElementById("biz_list");
+    var addBtn = document.getElementById("add_biz");
+    if (!box) return;
+    var snap = kept || snapshotBiz();
+    var html = "";
+    for (var i = 0; i < bizCount; i++) html += bizBlockHtml(i);
+    box.innerHTML = html;
+    for (var k = 0; k < bizCount && k < snap.length; k++) fillBizBlock(k, snap[k]);
+    bizDrafts = snapshotBiz();
+    if (addBtn) addBtn.disabled = bizCount >= pricing.max_businesses;
+    box.querySelectorAll("[data-rm]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var idx = Number(btn.getAttribute("data-rm"));
+        var next = [];
+        for (var j = 0; j < bizCount; j++) {
+          if (j === idx) continue;
+          var row = readBizBlock(j);
+          if (row) next.push(row);
+        }
+        bizCount = next.length;
+        bizDrafts = next;
+        renderBizList(next);
+        updateTotal();
+      });
+    });
+    updateTotal();
+  }
+
+  function collectBusinesses() {
+    var list = [];
+    for (var i = 0; i < bizCount; i++) {
+      var row = readBizBlock(i);
+      if (!row) continue;
+      list.push({
+        name: row.name.trim(),
+        address_line1: row.address_line1.trim(),
+        city: row.city.trim(),
+        state: row.state.trim(),
+        postal_code: row.postal_code.trim(),
+        ein: row.ein.trim(),
+        extra_owner_name: row.extra_owner_name.trim()
+      });
+    }
+    return list;
+  }
+
   function renderForm(data) {
+    if (data.pricing) pricing = data.pricing;
     var name = data.contact && data.contact.first_name ? data.contact.first_name : "there";
     var already = data.consent && data.consent.valid;
+    bizCount = 0;
     root.innerHTML =
       '<div class="mono">Fundhub · soft pull</div>' +
       "<h1>Approve your soft-pull assessment</h1>" +
       '<p class="lede">Hi ' + esc(name) + ". Fill this out while you stay on the Google Meet. " +
-      "It is a soft inquiry — it does not hurt your score.</p>" +
-      (already ? '<div class="ok">Consent is already on file. You can update your details below if needed, or just pay the $32 assessment.</div><br>' : "") +
-      /* THE HEADING IS A LABEL, NOT THE CONSENT WORDING.
-         It used to print data.disclosure.version, which is the key
-         "soft-pull-v1" — a machine string, shown as a heading, to a consumer on
-         a consent page. src/consent/disclosures.mjs already carries a human
-         title ("Soft Pull Authorization") for exactly this, but the GET at
-         api/soft-pull-approve.mjs:132-136 forwards version, text and bullets
-         and not title, and this thread does not own that file. So the label is
-         written here and the version moves below the paragraph where a record
-         reference belongs. The WORDS OF THE CONSENT are still the server's and
-         are still rendered exactly as sent — that rule is untouched. */
+      "It is a soft inquiry — it does not hurt your score. Authorize first, then pay the total shown below.</p>" +
+      (already ? '<div class="ok">Consent is already on file. You can update your details below if needed, then pay.</div><br>' : "") +
       '<div class="card"><h2>Soft pull authorization</h2>' +
       '<div class="disc">' + esc((data.disclosure && data.disclosure.text) || "") + "</div>" +
       '<p class="fine">Version ' + esc((data.disclosure && data.disclosure.version) || "—") + "</p></div>" +
-      /* WHAT HAPPENS NEXT, BEFORE THEY SIGN, NOT AFTER. The page used to say
-         this only in 10.5px fine print under the button and again on the
-         confirmation screen. Somebody being asked for their Social Security
-         number should be able to see the whole sequence before they type it.
-         No promise about what the report will say — CLAUDE.md §7. */
       '<div class="card"><h2>What happens next</h2><ol class="next">' +
-      "<li>You fill this in and submit it. Your advisor never sees your Social Security number.</li>" +
-      "<li>Your advisor sends you the payment link for the assessment by email or text.</li>" +
+      "<li>You fill this in (optional businesses at the bottom) and submit. Your advisor never sees your Social Security number.</li>" +
+      "<li>You pay the total shown — " + esc(pricing.base_display) + " soft pull plus " +
+      esc(pricing.business_addon_display) + " per business.</li>" +
       "<li>Once that payment clears, we request the report. Nothing else is needed from you.</li>" +
       "</ol></div>" +
       '<form id="f">' +
@@ -108,10 +229,26 @@ ol.next li:last-child{margin-bottom:0}
       '<div><label for="state">State</label><input id="state" name="state" maxlength="2" required placeholder="AZ"></div></div>' +
       '<label for="postal_code">ZIP</label>' +
       '<input id="postal_code" name="postal_code" inputmode="numeric" required>' +
+      '<div class="card" style="margin-top:16px">' +
+      "<h2>Add businesses (optional)</h2>" +
+      "<p class=\"lede\" style=\"margin:0 0 8px\">If a company has other owners, say so. Extra owners make funding slower and harder. We usually prefer one-owner companies, but write the truth here anyway.</p>" +
+      "<p class=\"lede\" style=\"margin:0 0 8px\">Add each business you want funded. Each one adds " +
+      esc(pricing.business_addon_display) + ". Leave empty if you only need the personal soft pull.</p>" +
+      '<div id="biz_list"></div>' +
+      '<button type="button" class="btn-sec" id="add_biz">+ Add a business</button>' +
+      '<div class="total" id="total_line"></div></div>' +
       '<button class="btn" type="submit" id="go">I agree — submit soft-pull approval</button>' +
       '<p class="fine">Your advisor cannot see this Social Security number on their screen. ' +
-      "After you submit, pay the $32 assessment from the link in your email (if you have not already).</p>" +
+      "After you submit, pay the total from the Pay button (or the matching link in your email if you added no businesses).</p>" +
       '<div id="msg"></div></form>';
+
+    document.getElementById("add_biz").addEventListener("click", function () {
+      if (bizCount >= pricing.max_businesses) return;
+      bizDrafts = snapshotBiz();
+      bizCount += 1;
+      renderBizList(bizDrafts);
+    });
+    renderBizList();
 
     document.getElementById("f").addEventListener("submit", function (e) {
       e.preventDefault();
@@ -120,19 +257,6 @@ ol.next li:last-child{margin-bottom:0}
       btn.disabled = true;
       msg.innerHTML = "";
 
-      /* THIS FORM MUST NEVER POST AN EMPTY ADDRESS, AND HERE IS WHY.
-         storeIdentity() COALESCEs the SSN and the date of birth, so a partial
-         submit cannot erase either of those. It does NOT coalesce addresses:
-         src/pii/index.mjs:138 assigns `addresses = EXCLUDED.addresses` flat, so
-         a submit carrying an empty array REPLACES whatever address was on file
-         with nothing.
-         Two things stop that from being reachable and both have to stay. Every
-         address input above is `required`, and api/soft-pull-approve.mjs:178-188
-         refuses the whole POST with `address_required` when any of the four
-         trims to empty — the server never reaches storeIdentity, so nothing is
-         overwritten. The browser's own `required` accepts a single space, so
-         the same trim is done here too: it saves a pointless round trip, and it
-         keeps this form structurally incapable of sending the empty array. */
       var addr = {
         address_line1: document.getElementById("address_line1").value.trim(),
         city: document.getElementById("city").value.trim(),
@@ -143,6 +267,23 @@ ol.next li:last-child{margin-bottom:0}
         btn.disabled = false;
         msg.innerHTML = '<div class="err">Enter your current street address, city, state and ZIP.</div>';
         return;
+      }
+
+      var businesses = collectBusinesses();
+      for (var i = 0; i < businesses.length; i++) {
+        var b = businesses[i];
+        if (!b.name || !b.address_line1 || !b.city || !b.state || !b.postal_code) {
+          btn.disabled = false;
+          msg.innerHTML = '<div class="err">Business ' + (i + 1) + ": fill name, street, city, state, and ZIP.</div>";
+          return;
+        }
+        var ein = normalizeEin(b.ein);
+        if (!ein) {
+          btn.disabled = false;
+          msg.innerHTML = '<div class="err">Business ' + (i + 1) + ": enter a 9-digit EIN (you can type 12-3456789).</div>";
+          return;
+        }
+        b.ein = ein;
       }
 
       var body = {
@@ -156,7 +297,8 @@ ol.next li:last-child{margin-bottom:0}
         address_line1: addr.address_line1,
         city: addr.city,
         state: addr.state,
-        postal_code: addr.postal_code
+        postal_code: addr.postal_code,
+        businesses: businesses
       };
       fetch("/api/soft-pull-approve", {
         method: "POST",
@@ -169,13 +311,18 @@ ol.next li:last-child{margin-bottom:0}
             msg.innerHTML = '<div class="err">' + esc((r.body && (r.body.message || r.body.error)) || "Could not save") + "</div>";
             return;
           }
+          var pay = r.body.checkout && r.body.checkout.checkout_url;
+          var total = (r.body.pricing && r.body.pricing.total_display) ||
+            (r.body.checkout && r.body.checkout.amount_display) || pricing.base_display;
           root.innerHTML =
             '<div class="mono">Fundhub · soft pull</div>' +
             "<h1>Consent saved</h1>" +
             '<div class="ok">Your soft-pull authorization is on file. ' +
-            esc(r.body.next || "Pay the $32 assessment next if you have not already.") + "</div>" +
-            '<p class="lede" style="margin-top:14px">Your advisor sends the $32 pay link by email or text. ' +
-            "After payment clears, the soft pull runs automatically.</p>";
+            esc(r.body.next || ("Pay " + total + " next.")) + "</div>" +
+            (pay
+              ? '<a class="btn-pay" href="' + esc(pay) + '">Pay ' + esc(total) + " assessment</a>"
+              : '<p class="lede" style="margin-top:14px">Ask your advisor for the pay link for ' + esc(total) + ".</p>") +
+            '<p class="lede" style="margin-top:14px">After payment clears, the soft pull runs automatically. Stay on the Meet.</p>';
         })
         .catch(function () {
           btn.disabled = false;

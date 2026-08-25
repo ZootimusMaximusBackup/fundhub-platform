@@ -261,6 +261,32 @@ function firstScore100(values) {
   return null;
 }
 
+function formatBusinessAddress(entity) {
+  const line1 = entity.address_line1 ? String(entity.address_line1) : "";
+  const city = entity.city ? String(entity.city) : "";
+  const state = entity.state ? String(entity.state).toUpperCase() : "";
+  const postal = entity.postal_code ? String(entity.postal_code) : "";
+  const cityState = [city, state].filter(Boolean).join(", ");
+  const bits = [line1, cityState, postal].filter(Boolean);
+  return bits.length ? bits.join(" ") : null;
+}
+
+function listedBusinesses(businesses = []) {
+  return (businesses || []).map((biz) => {
+    const entity = safeObject(biz && biz.entity_data) || {};
+    const extra = String(entity.extra_owner_name || "").trim();
+    const state = entity.state ? String(entity.state).toUpperCase() : null;
+    return {
+      name: biz && biz.name ? String(biz.name) : null,
+      state,
+      ein: entity.ein ? String(entity.ein) : null,
+      extra_owner_name: extra || null,
+      address: formatBusinessAddress(entity),
+      extra_owners_warning: !!extra
+    };
+  });
+}
+
 export function businessCredit({ client = {}, businesses = [] } = {}) {
   const cf = client.custom_fields || {};
   const biz = businesses[0] || null;
@@ -273,7 +299,8 @@ export function businessCredit({ client = {}, businesses = [] } = {}) {
       scores.intelliscore, entity.intelliscore, commercial.score,
       cf.biz_intelliscore, cf.intelliscore
     ]),
-    fsr: firstScore100([scores.fsr, entity.fsr, cf.biz_fsr, cf.fsr])
+    fsr: firstScore100([scores.fsr, entity.fsr, cf.biz_fsr, cf.fsr]),
+    businesses: listedBusinesses(businesses)
   };
 }
 
