@@ -700,6 +700,16 @@ N-03 hot nurture is **retired**. N-04 needs a staff closeout (`round.closeout` w
 
 ---
 
+## Hour 19 — first touch / C-02 / DS-01
+
+AT-01 ran. All five have `first_touch_date` and `lead_magnet_type=Survey`.
+
+C-02 (new inquiries from a CRS analysis) never ran — no `analysis.completed`. Inquiry cases on these files came from later staff / e2e clicks, not that workflow.
+
+DS-01 repair-referral needs a **declined** closer call and a non-funding path. Fund Horse call is **callback**. Path field empty. No DS-01 send.
+
+---
+
 
 
 
