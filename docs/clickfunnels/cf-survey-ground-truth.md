@@ -6,7 +6,7 @@
 **Attribute keys:** `docs/clickfunnels/OWNER-CF-SETUP-CHECKLIST.md` Parts A–B (titles → `cf_svy_*`).  
 `src/survey/cf-question-map.mjs` stores those keys as `payloadKey`.
 
-**Not in this survey:** there is no negatives Yes/No question. Do not add one unless the owner changes this file.
+**Homepage extra (owner 2026-08-25):** `fundhub.ai` `#apply` asks “Any negatives on your credit report?” (Yes/No → `cf_svy_has_negatives`) after Current Score so a 750+ / no-negatives person can book a call. **ClickFunnels `apply.fundhub.ai/apply` still has no negatives question.** Do not invent a CF login or add this to CF from this repo.
 
 ---
 
@@ -17,7 +17,7 @@
 | CF (`apply.fundhub.ai/apply`) | **First** — “Let’s Start With Your Info” |
 | Homepage (`fundhub.ai` `#apply`) | **Last** — same fields; after Available Capital |
 
-All other questions, options, and the business/personal branch are identical.
+All other questions, options, and the business/personal branch are identical, except the homepage-only negatives question (owner 2026-08-25).
 
 ---
 
@@ -29,6 +29,7 @@ All other questions, options, and the business/personal branch are identical.
 3. **Planned Use** — 6 options + Other enabled
 4. **What Would This Money Change Right Now?** — 5 options, **MULTI-SELECT**
 5. **Your Current Score** — 6 options
+5b. **Any negatives on your credit report?** — Yes/No *(homepage only, owner 2026-08-25)*
 6. **Do You Have a Business?** — 6 options ← **BRANCH POINT**
    - Any **Yes…** tenure → **7a. Annual Business Revenue** → **8a. Can You Verify Revenue?**
    - **No, personal funding only** → **7b. Annual Personal Income** → **8b. Can You Verify Income?**
@@ -124,6 +125,17 @@ All other questions, options, and the business/personal branch are identical.
 
 ---
 
-## Not in this survey (owner 2026-08-12)
+## Homepage-only (owner 2026-08-25)
 
-Do **not** add “Any negatives on your credit report?” / `cf_svy_has_negatives` to CF or the homepage widget. Not in the live CF editor dump and not in the current owner spec.
+After **Your Current Score**, the homepage widget asks:
+
+### Any negatives on your credit report?
+
+- Yes
+- No
+
+Saves as `cf_svy_has_negatives`. Not on live ClickFunnels `apply.fundhub.ai/apply`.
+
+## Not in ClickFunnels (owner 2026-08-12 dump; still true)
+
+The CF apply survey has no negatives Yes/No question. Do **not** add it to CF from this repo. Homepage already asks it.

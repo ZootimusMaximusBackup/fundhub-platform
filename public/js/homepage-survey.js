@@ -53,6 +53,12 @@
       options: ["500-579", "580-649", "650-699", "700-749", "750+", "Not sure"],
     },
     {
+      id: "has_negatives",
+      title: "Any negatives on your credit report?",
+      type: "single",
+      options: ["Yes", "No"],
+    },
+    {
       id: "has_business",
       title: "Do You Have a Business?",
       type: "single",
@@ -141,6 +147,7 @@
     planned_use: "cf_svy_planned_use",
     money_change_now: "cf_svy_money_change_now",
     current_score: "cf_svy_self_reported_fico",
+    has_negatives: "cf_svy_has_negatives",
     has_business: "cf_svy_has_business",
     annual_business_revenue: "cf_svy_business_revenue",
     verify_revenue: "cf_svy_revenue_verifiable",
