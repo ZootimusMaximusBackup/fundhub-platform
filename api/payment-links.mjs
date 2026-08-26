@@ -47,6 +47,7 @@ import {
 } from "../src/payment-links/index.mjs";
 import { priceToCents, assertPriceCents, formatPrice } from "../src/subscriptions/index.mjs";
 import { sendTemplated } from "../src/workflows/messaging.mjs";
+import { createInvoice } from "../src/invoices/index.mjs";
 import { dbDown } from "../src/http/db-down.mjs";
 
 /* WHO GATES THIS ROUTE.
@@ -179,6 +180,33 @@ export default async function handler(req, res, deps = {}) {
         }
         if (body.sale_id != null && !isUuid(body.sale_id)) {
           return res.status(400).json({ ok: false, error: "sale_id must be a uuid" });
+        }
+        /* Present "Invoice this client" posts purpose invoice. That must write
+           an invoices row (money owed). It must not mint a payment_links row.
+           COMPLIANCE REVIEW REQUIRED — payment rails. Draft only: do not send. */
+        if (String(body.purpose || "").trim().toLowerCase() === "invoice") {
+          const amountCents = readAmountCents(body);
+          const clientId = String(body.client_id).trim();
+          const idempotencyKey = `present-invoice:${clientId}:${amountCents}`;
+          let invoice = await createInvoice(db, {
+            orgId,
+            clientId,
+            source: "other",
+            amount: amountCents / 100,
+            notes: String(body.description || "Invoice this client").slice(0, 500),
+            idempotencyKey
+          });
+          if (!invoice) {
+            const existing = await db.query(
+              `SELECT * FROM invoices WHERE org_id = $1 AND idempotency_key = $2`,
+              [orgId, idempotencyKey]
+            );
+            invoice = existing.rows[0] ?? null;
+          }
+          if (!invoice) {
+            return res.status(500).json({ ok: false, error: "invoice_not_created" });
+          }
+          return res.status(200).json({ ok: true, action: "create", invoice });
         }
         /* Refuse only when there is NO way to mint a link. Gating on
            COMMAS_CHECKOUT_BASE_URL alone refused every request while the key
