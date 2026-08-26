@@ -137,8 +137,11 @@
     }
     return "FUNDING_DFY";
   }
+  function isPrimaryPayOffer(key) {
+    return key === "FUNDING_DFY" || key === "REPAIR_DFY" || key === "REPAIR_TRIAL" || key === "FUNDING_MASTERY";
+  }
   function selectedSaleMotion() {
-    return selectedOfferKey() === "FUNDING_DFY" ? null : (state.saleMotion || null);
+    return isPrimaryPayOffer(selectedOfferKey()) ? null : (state.saleMotion || null);
   }
   function resolveContractTemplateKey() {
     if (state.tier === "FUNDING_PLUS_REPAIR") return "REPAIR-AND-FUNDING-AGREEMENT";
@@ -600,7 +603,7 @@
 
       if (code() === "S-23") {
         html += '<div><span class="mono">Live actions</span><div style="margin-top:6px;display:flex;flex-direction:column;gap:5px">';
-        if (selectedOfferKey() !== "FUNDING_DFY") {
+        if (!isPrimaryPayOffer(selectedOfferKey())) {
           html += '<label class="mono" for="fh-sale-motion">Sale motion</label>';
           html += '<select id="fh-sale-motion" style="width:100%;border:1px solid var(--line);background:transparent;padding:6px 8px;font-size:12px">';
           html += '<option value="">Choose downsell or upsell</option>';

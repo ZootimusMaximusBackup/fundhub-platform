@@ -5,6 +5,7 @@ import {
   buildCloserDeck,
   selectedOfferKey,
   generateDeckLetters,
+  sendDeckPayLink,
   CloserDeckError
 } from "./closer-deck.mjs";
 
@@ -122,6 +123,32 @@ test("selectedOfferKey: funding vs descent vs education", () => {
   assert.equal(selectedOfferKey({ edu: false, forceRepair: true, tier: "FULL_FUNDING", rung: 1 }), "REPAIR_TRIAL");
   assert.equal(selectedOfferKey({ edu: true, forceRepair: false, tier: "REPAIR_ONLY", rung: 0 }), "FUNDING_MASTERY");
   assert.equal(selectedOfferKey({ edu: true, forceRepair: false, tier: "REPAIR_ONLY", rung: 1 }), "UWIQ_DELIVERABLES");
+});
+
+test("first-sale offers skip the upsell gate; deliverables still require it", async () => {
+  const db = fakeDb({ client: CLIENT });
+  const args = {
+    orgId: ORG,
+    clientId: CID,
+    staffId: "s1",
+    checkoutBaseUrl: "https://pay.example/checkout",
+    env: {}
+  };
+  for (const offerKey of ["FUNDING_DFY", "REPAIR_DFY", "REPAIR_TRIAL", "FUNDING_MASTERY"]) {
+    await assert.rejects(
+      () => sendDeckPayLink(db, { ...args, offerKey }),
+      (e) => e instanceof CloserDeckError && e.code !== "sale_motion_required",
+      offerKey + " must mint as a first sale"
+    );
+  }
+  await assert.rejects(
+    () => sendDeckPayLink(db, { ...args, offerKey: "UWIQ_DELIVERABLES" }),
+    (e) => e instanceof CloserDeckError && e.code === "sale_motion_required" && e.status === 400
+  );
+  await assert.rejects(
+    () => sendDeckPayLink(db, { ...args, offerKey: "UWIQ_DELIVERABLES", saleMotion: "upsell" }),
+    (e) => e instanceof CloserDeckError && e.code !== "sale_motion_required"
+  );
 });
 
 test("generateDeckLetters refuses the qualified funding offer", async () => {
