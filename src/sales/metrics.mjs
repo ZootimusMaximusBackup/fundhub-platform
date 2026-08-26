@@ -4,6 +4,7 @@
 
 import { BELIEFS, BELIEF_LABELS } from "./beliefs.mjs";
 import { countUnlogged, listUnloggedCalls } from "./call-outcomes.mjs";
+import { listUnrecordedCalls } from "./unrecorded.mjs";
 import { isDemoEmail } from "../auth/demo-logins.mjs";
 import { demoClause, orgDemoModeEnabled } from "../demo/exclude-demo.mjs";
 import { listRecentRecordings } from "./recordings.mjs";
@@ -198,7 +199,7 @@ export async function closerMyNumbers(db, { orgId, staffId, now = new Date() } =
   const window = monthWindow(now);
   const prior = priorWindow(window);
 
-  const [cur, prev, d2f, commissions, target, shift, unlogged, unloggedList, team, offerStack] = await Promise.all([
+  const [cur, prev, d2f, commissions, target, shift, unlogged, unloggedList, unrecordedList, team, offerStack] = await Promise.all([
     staffCashCents(db, { orgId, staffId, ...window }),
     staffCashCents(db, { orgId, staffId, ...prior }),
     depositToFunded(db, { orgId, staffId, ...window }),
@@ -207,6 +208,7 @@ export async function closerMyNumbers(db, { orgId, staffId, now = new Date() } =
     openShift(db, { orgId, staffId }),
     countUnlogged(db, { orgId, staffId }),
     listUnloggedCalls(db, { orgId, staffId, limit: 10 }),
+    listUnrecordedCalls(db, { orgId, staffId, now, limit: 10 }),
     teamLeaderboard(db, { orgId, ...window }),
     closerOfferStack(db, { orgId, staffId, ...window })
   ]);
@@ -259,6 +261,7 @@ export async function closerMyNumbers(db, { orgId, staffId, now = new Date() } =
       calls_held: held,
       no_shows: Number(cur.no_shows || 0),
       unlogged,
+      unrecorded: unrecordedList.length,
       prior: {
         deposits: Number(prev.deposits || 0),
         close_rate: rate(Number(prev.deposits || 0), Number(prev.held || 0))
@@ -281,13 +284,22 @@ export async function closerMyNumbers(db, { orgId, staffId, now = new Date() } =
       reason: "Compliance phrase detection needs call recordings — schema is ready (call_compliance_flags), pipeline is not"
     },
     team,
-    owed: unloggedList.map((u) => ({
-      urgency: owedUrgency(u.due_at, now),
-      title: `Log the call with ${u.client_name}`,
-      detail: owedHeldDetail(u.due_at),
-      task_id: u.task_id,
-      client_id: u.client_id
-    })),
+    owed: [
+      ...unloggedList.map((u) => ({
+        urgency: owedUrgency(u.due_at, now),
+        title: `Log the call with ${u.client_name}`,
+        detail: owedHeldDetail(u.due_at),
+        task_id: u.task_id,
+        client_id: u.client_id
+      })),
+      ...unrecordedList.map((u) => ({
+        urgency: "UNRECORDED",
+        title: `No tape for ${u.client_name}`,
+        detail: u.detail,
+        client_id: u.client_id,
+        call_outcome_id: u.id
+      }))
+    ],
     streak: {
       available: false,
       reason: "Daily close streak needs a calendar of working days — not stored yet"
@@ -439,7 +451,7 @@ export async function salesFloor(db, { orgId, now = new Date(), env = process.en
   const window = monthWindow(now);
 
   const todayYmd = nyDateString(now);
-  const [cash, funnel, todayFunnel, d2f, closers, beliefs, unlogged, cold, shiftsLate, recordings, offer] = await Promise.all([
+  const [cash, funnel, todayFunnel, d2f, closers, beliefs, unlogged, unrecordedList, cold, shiftsLate, recordings, offer] = await Promise.all([
     db.query(
       `SELECT COALESCE(SUM(cash_collected_cents), 0)::bigint AS cents
          FROM call_outcomes
@@ -452,6 +464,7 @@ export async function salesFloor(db, { orgId, now = new Date(), env = process.en
     closerRoster(db, { orgId, ...window, now }),
     beliefAnalytics(db, { orgId, ...window }),
     countUnlogged(db, { orgId }),
+    listUnrecordedCalls(db, { orgId, now, limit: 20 }),
     coldDeals(db, { orgId }),
     lateShifts(db, { orgId, now }),
     listRecentRecordings(db, { orgId, now, env }),
@@ -505,17 +518,22 @@ export async function salesFloor(db, { orgId, now = new Date(), env = process.en
     closers: closersWithStack,
     beliefs,
     recordings,
+    unrecorded: {
+      count: unrecordedList.length,
+      items: unrecordedList
+    },
     compliance: {
       available: false,
       reason: recordings.items.length
         ? "Recordings are in Google Drive. Phrase flags still need transcription — table call_compliance_flags is ready."
         : (recordings.reason
           || "No Meet recordings yet. Click Record in Google Meet; the file lands in Drive."),
-      items: []
+      items: unrecordedList
     },
     cold_deals: cold,
     discipline: {
       unlogged_calls: unlogged,
+      unrecorded_calls: unrecordedList.length,
       shifts_started_late: shiftsLate.count,
       shifts_detail: shiftsLate.detail,
       followups_overdue: null,

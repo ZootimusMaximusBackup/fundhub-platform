@@ -108,6 +108,7 @@ import readMyNumbers from "../../api/read/my-numbers.mjs";
 import readSalesFloor from "../../api/read/sales-floor.mjs";
 import readCompanyActivity from "../../api/read/company-activity.mjs";
 import readCallOutcomes from "../../api/read/call-outcomes.mjs";
+import readUnrecordedCalls from "../../api/read/unrecorded-calls.mjs";
 import callOutcomesWrite from "../../api/call-outcomes.mjs";
 import readCustomerInsights from "../../api/read/customer-insights.mjs";
 import customerInsightsWrite from "../../api/customer-insights.mjs";
@@ -489,6 +490,7 @@ export const ROUTES = {
   "read/sales-floor": readSalesFloor,
   "read/company-activity": readCompanyActivity,
   "read/call-outcomes": readCallOutcomes,
+  "read/unrecorded-calls": readUnrecordedCalls,
   "call-outcomes": callOutcomesWrite,
   "read/customer-insights": readCustomerInsights,
   "customer-insights": customerInsightsWrite,
