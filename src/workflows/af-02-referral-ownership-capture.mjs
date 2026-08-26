@@ -12,14 +12,14 @@
 // payload. Sticky: only ever set once, never overwritten (GHL's own rule) — enforced
 // by gating on the field currently being empty before writing.
 //
-// Unlike AF-01/03A/03B/04/05 (BLOCKED — see workflow-migration-table.md), this one
-// doesn't need the affiliate's own tier/tracking-id record, so the missing
-// affiliate data model doesn't block it.
+// Also writes affiliate_referrals via attribute() when a1 matches a live tracking
+// id, so portal REFERRED counts and later convert() can settle commissions.
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
+import { attribute } from "../affiliates/economics.mjs";
 
 async function currentOwners(db, clientId) {
   const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
@@ -44,7 +44,37 @@ export async function handle({ event, db, step }) {
   if (!owners.tier2Owner && a2) patch.affiliate_tier2_owner = a2;
 
   await step.run("set-ownership", () => mergeCustomFields(db, clientId, patch));
-  return { done: true, patch };
+
+  // Also write affiliate_referrals so portal REFERRED / CONVERTED tiles grow.
+  // custom_fields stay as the sticky first-touch mirror (GHL parity).
+  let referral = null;
+  if (a1 && patch.affiliate_tier1_owner) {
+    referral = await step.run("attribute-direct", async () => {
+      const client = (await db.query(
+        `SELECT org_id FROM clients WHERE id = $1`,
+        [clientId]
+      )).rows[0];
+      if (!client?.org_id) return { attributed: false, reason: "no_client_row" };
+      const aff = (await db.query(
+        `SELECT id FROM affiliates
+          WHERE org_id = $1 AND upper(tracking_id) = upper($2)
+          LIMIT 1`,
+        [client.org_id, a1]
+      )).rows[0];
+      if (!aff) return { attributed: false, reason: "unknown_tracking_id" };
+      return attribute(db, {
+        orgId: client.org_id,
+        affiliateId: aff.id,
+        clientId,
+        tier: "direct",
+        trackingIdUsed: a1,
+        source: "af-02",
+        sourceEvent: event?.name ? String(event.name) : undefined
+      });
+    });
+  }
+
+  return { done: true, patch, referral };
 }
 
 export const af02ReferralOwnershipCapture = inngest.createFunction(

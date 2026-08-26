@@ -9,11 +9,11 @@
  * against.
  *
  * THE ASSERTION THAT MATTERS MOST is the last one: a converted referral with NO
- * commission rate in force must stay COUNTABLE as converted while its money
- * stays NULL. affiliate_commission_rules ships empty and AF-04 is undecided, so
- * that is the normal case today, and a COALESCE(commission_due, 0) anywhere in
- * this path would turn "we have not worked out what you are owed" into "you are
- * owed nothing".
+ * commission amount on the row must stay COUNTABLE as converted while its money
+ * stays NULL. That fixture writes commission_due NULL on purpose. A
+ * COALESCE(commission_due, 0) anywhere in this path would turn "we have not
+ * worked out what you are owed" into "you are owed nothing".
+ * (Owner-set rates live in migration 260; this test still proves NULL money survives.)
  *
  * NO TEST HERE DEPENDS ON ANOTHER ONE RUNNING FIRST. Affiliates alpha and bravo
  * are built once in before() and are READ ONLY — nothing below writes to them.
@@ -88,7 +88,7 @@ describe("affiliate stats read", { skip: !HAVE_DB ? "no DATABASE_URL" : false },
     //    referrals-table-only count would silently lose. Lower-cased on purpose:
     //    the match is case-insensitive, the way 033's backfill matched it.
     await mkClient("captureonly", String(codeA).toLowerCase());
-    // 4. CONVERTED, and UNRATED — no rule in force, so commission_due is NULL.
+    // 4. CONVERTED, and UNRATED — commission_due left NULL on purpose (money unknown).
     const conv = await mkClient("converted", null);
     await mkReferral(affA, conv, { code: codeA, status: "converted" });
 

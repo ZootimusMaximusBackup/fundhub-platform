@@ -27,9 +27,50 @@ export const UWIQ_DELIVERABLES_CONTENTS = Object.freeze([
  * @property {boolean} letters  DS-02 / letter pack may fire for this offer
  * @property {"diagnostic"|"deposit"|"repair"|"custom"} paymentPurpose
  * @property {string} productCode  products.code; durable identity for payment links
+ * @property {string} commasProductTitle  vendor checkout title only — consulting language, no credit/finance
  * @property {string} [contractTemplateKey]  contract_templates.template_key to send on close
  * @property {string[]} [contents]
  */
+
+export const COMMAS_DEFAULT_PRODUCT_TITLE = "Consulting Services Package";
+
+export const COMMAS_INVOICE_PRODUCT_TITLE = "Consulting Services Completion";
+
+const COMMAS_TITLE_BY_PRODUCT_CODE = Object.freeze({
+  diagnostic: "Consulting Services Assessment",
+  "card-stacking-dfy": "Consulting Services Engagement",
+  "consulting-package": "Consulting Services Package",
+  "repair-bundle": "Consulting Services Standard",
+  "repair-trial": "Consulting Services Trial",
+  "funding-mastery": "Consulting Services Program",
+  "inquiry-removal": "Consulting Services Records"
+});
+
+const COMMAS_TITLE_BY_PURPOSE = Object.freeze({
+  diagnostic: "Consulting Services Assessment",
+  deposit: "Consulting Services Engagement",
+  repair: "Consulting Services Standard",
+  custom: COMMAS_DEFAULT_PRODUCT_TITLE
+});
+
+/** Resolve the Commas-facing product title — never staff free text. */
+export function commasProductTitleFor({
+  offerKey = null,
+  productCode = null,
+  purpose = null,
+  commasProductTitle = null,
+  invoiceId = null
+} = {}) {
+  if (invoiceId) return COMMAS_INVOICE_PRODUCT_TITLE;
+  if (commasProductTitle) return String(commasProductTitle).trim();
+  const offer = getOffer(offerKey);
+  if (offer?.commasProductTitle) return offer.commasProductTitle;
+  const code = String(productCode || offer?.productCode || "").trim().toLowerCase();
+  if (code && COMMAS_TITLE_BY_PRODUCT_CODE[code]) return COMMAS_TITLE_BY_PRODUCT_CODE[code];
+  const p = String(purpose || offer?.paymentPurpose || "").trim().toLowerCase();
+  if (p && COMMAS_TITLE_BY_PURPOSE[p]) return COMMAS_TITLE_BY_PURPOSE[p];
+  return COMMAS_DEFAULT_PRODUCT_TITLE;
+}
 
 /** @type {Readonly<Record<OfferKey, Offer>>} */
 export const OFFERS = Object.freeze({
@@ -41,6 +82,7 @@ export const OFFERS = Object.freeze({
     letters: false,
     paymentPurpose: "diagnostic",
     productCode: "diagnostic",
+    commasProductTitle: "Consulting Services Assessment",
     contractTemplateKey: "SOFT-PULL-CONSENT"
   }),
   FUNDING_DFY: Object.freeze({
@@ -52,6 +94,7 @@ export const OFFERS = Object.freeze({
     letters: false,
     paymentPurpose: "deposit",
     productCode: "card-stacking-dfy",
+    commasProductTitle: "Consulting Services Engagement",
     contractTemplateKey: "FUNDING-AGREEMENT"
   }),
   REPAIR_DFY: Object.freeze({
@@ -62,6 +105,7 @@ export const OFFERS = Object.freeze({
     letters: true,
     paymentPurpose: "repair",
     productCode: "repair-bundle",
+    commasProductTitle: "Consulting Services Standard",
     contractTemplateKey: "CREDIT-REPAIR-AGREEMENT"
   }),
   REPAIR_TRIAL: Object.freeze({
@@ -72,6 +116,7 @@ export const OFFERS = Object.freeze({
     letters: true,
     paymentPurpose: "repair",
     productCode: "repair-trial",
+    commasProductTitle: "Consulting Services Trial",
     contractTemplateKey: "REPAIR-TRIAL-AGREEMENT"
   }),
   UWIQ_DELIVERABLES: Object.freeze({
@@ -84,6 +129,7 @@ export const OFFERS = Object.freeze({
     letters: true,
     paymentPurpose: "custom",
     productCode: "consulting-package",
+    commasProductTitle: "Consulting Services Package",
     contents: UWIQ_DELIVERABLES_CONTENTS
   }),
   FUNDING_MASTERY: Object.freeze({
@@ -93,7 +139,8 @@ export const OFFERS = Object.freeze({
     financing: true,
     letters: false,
     paymentPurpose: "custom",
-    productCode: "funding-mastery"
+    productCode: "funding-mastery",
+    commasProductTitle: "Consulting Services Program"
   })
 });
 

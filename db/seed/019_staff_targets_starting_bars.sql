@@ -1,8 +1,6 @@
 -- 019_staff_targets_starting_bars.sql
--- Owner-locked 2026-08-24: conveyor starting bars. Not the time-max.
--- Closer: 20 deposits / month (count). Funding advisor: 20 funded files / month
--- (metric `files` = count, not funded_amount dollars). Role-level, default org.
--- Not the hire / fire agent.
+-- Spoken 20/20 from 2026-08-24. Superseded by seed 020 (30 deposits / 27 files).
+-- Left in place so migrate history stays honest. Do not copy these values.
 
 WITH org AS (SELECT id FROM orgs WHERE slug = 'fundhub' LIMIT 1)
 INSERT INTO staff_targets (org_id, staff_id, role, period, metric, target_value)

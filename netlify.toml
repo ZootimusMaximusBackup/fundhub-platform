@@ -166,6 +166,12 @@
   to = "/climate/"
   status = 301
 
+# Temporary public short link → partner referral (Credit Comeback Club / xyl.in).
+[[redirects]]
+  from = "/go"
+  to = "https://xyl.in/e5hosp5"
+  status = 302
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
