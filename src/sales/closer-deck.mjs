@@ -547,7 +547,11 @@ export async function sendDeckPayLink(db, {
   }
   const purpose = paymentPurpose(offer);
   const description = offer.name;
-  if (offer.key !== "FUNDING_DFY" && saleMotion !== "downsell" && saleMotion !== "upsell") {
+  /* Primary DFY / mastery offers are the main close — not downsell/upsell.
+     Only alternate ladders need an explicit sale motion. */
+  const primaryPayOffers = new Set(["FUNDING_DFY", "REPAIR_DFY", "REPAIR_TRIAL", "FUNDING_MASTERY"]);
+  const isPrimaryPay = primaryPayOffers.has(offer.key);
+  if (!isPrimaryPay && saleMotion !== "downsell" && saleMotion !== "upsell") {
     throw new CloserDeckError(
       "Choose downsell or upsell before creating this payment link.",
       { status: 400, code: "sale_motion_required" }
@@ -564,7 +568,7 @@ export async function sendDeckPayLink(db, {
       createdByStaffId: staffId,
       createdByRole: staffRole,
       productCode: offer.productCode,
-      saleMotion: offer.key === "FUNDING_DFY" ? null : saleMotion,
+      saleMotion: isPrimaryPay ? null : saleMotion,
       checkoutBaseUrl,
       env
     });

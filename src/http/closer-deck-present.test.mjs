@@ -63,10 +63,15 @@ test("disposition UI has an explicit repair-referral control", () => {
   assert.ok(closerJs.includes("repair_referral"));
 });
 
-test("non-funding pay links require an explicit downsell or upsell choice", () => {
+test("non-primary pay links still require an explicit downsell or upsell choice", () => {
   assert.ok(presentJs.includes('id="fh-sale-motion"'));
   assert.ok(presentJs.includes('value="downsell"'));
   assert.ok(presentJs.includes('value="upsell"'));
+  assert.ok(presentJs.includes("isPrimaryPayOffer"));
+  assert.match(
+    presentJs,
+    /key === "FUNDING_DFY" \|\| key === "REPAIR_DFY" \|\| key === "REPAIR_TRIAL" \|\| key === "FUNDING_MASTERY"/
+  );
   assert.ok(presentJs.includes("sale_motion: action === \"send_pay_link\" ? selectedSaleMotion() : null"));
   assert.doesNotMatch(
     presentJs,
