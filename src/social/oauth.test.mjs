@@ -1,5 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import {
   signState, verifyState, metaAuthUrl, linkedinAuthUrl
 } from "./oauth.mjs";
@@ -56,6 +58,8 @@ test("linkedinAuthUrl: builds auth url", () => {
   const r = linkedinAuthUrl({ clientId: "li", redirectUri: "https://x/cb", state: "s" });
   assert.equal(r.ok, true);
   assert.match(r.url, /linkedin\.com/);
+  const scope = new URL(r.url).searchParams.get("scope");
+  assert.equal(scope, "openid profile email w_member_social");
 });
 
 test("linkedinPost dry-run", async () => {
@@ -106,4 +110,13 @@ test("linkedinPost posts to the organization UGC endpoint with the org URN as au
     if (prevKey === undefined) delete process.env.AD_TOKEN_ENC_KEY;
     else process.env.AD_TOKEN_ENC_KEY = prevKey;
   }
+});
+
+test("oauth callback writes social_channels inside withPartnerScope", () => {
+  const src = readFileSync(
+    fileURLToPath(new URL("../../api/social/oauth.mjs", import.meta.url)),
+    "utf8"
+  );
+  assert.match(src, /withPartnerScope\(writeScope\(principal\)/);
+  assert.match(src, /INSERT INTO social_channels/);
 });

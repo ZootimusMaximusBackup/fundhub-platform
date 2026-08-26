@@ -466,6 +466,27 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           </table>
         </div>
         <div class="pager" id="connFoot"></div>
+        <div class="card-bd" id="metaAgencyBox" style="border-top:1px solid var(--line)">
+          <div class="eyebrow" style="margin-bottom:8px">REQUEST META AGENCY ACCESS</div>
+          <p class="note" style="margin:0 0 10px;max-width:52rem">
+            Paste a partner’s Meta Business Portfolio ID. Fundhub asks Meta for agency access.
+            Their admin must still Approve once in Meta (Business Settings → Requests). We cannot skip that.
+          </p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+            <div class="selwrap" style="min-width:220px">
+              <label for="metaBizId">Meta Business ID</label>
+              <input id="metaBizId" type="text" inputmode="numeric" autocomplete="off"
+                     placeholder="e.g. 1475597360226485" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:#fff">
+            </div>
+            <div class="selwrap" style="min-width:200px">
+              <label for="metaActId">Ad account (optional)</label>
+              <input id="metaActId" type="text" autocomplete="off"
+                     placeholder="act_…" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:#fff">
+            </div>
+            <button type="button" class="btn dark mono" id="metaAgencyBtn">Request access</button>
+          </div>
+          <p class="note" id="metaAgencyMsg" style="margin:10px 0 0"></p>
+        </div>
         <div class="cap">
           Fix blockers in the ad platform’s own Business Manager — nothing here changes them. The same blocker can show more than once. A blank expiry means we do not know, not forever.
         </div>
@@ -2024,6 +2045,45 @@ document.getElementById('syncMetaBtn').addEventListener('click', function () {
       msg.textContent = 'Pulled in ' + (res.campaigns || 0) + ' campaigns · ' +
         (res.ad_sets || 0) + ' ad sets · ' + (res.ads || 0) + ' ads' +
         (res.note ? ' · ' + res.note : '');
+      wireAll();
+    });
+});
+
+document.getElementById('metaAgencyBtn').addEventListener('click', function () {
+  var msg = document.getElementById('metaAgencyMsg');
+  if (!hasPartnerScope()) {
+    msg.textContent = 'Nothing was sent. Pick a partner first.';
+    return;
+  }
+  var biz = (document.getElementById('metaBizId').value || '').trim();
+  var act = (document.getElementById('metaActId').value || '').trim();
+  if (!biz) {
+    msg.textContent = 'Paste the partner Meta Business ID first.';
+    return;
+  }
+  var pid = partnerParam();
+  msg.textContent = 'Sending agency request…';
+  var t = '';
+  try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
+  var body = { meta_business_id: biz };
+  if (pid) body.partner_id = pid;
+  if (act) body.ad_account_id = act;
+  fetch('/api/campaigns/meta-agency', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+      ...(t && t !== 'demo' ? { authorization: 'Bearer ' + t } : {})
+    },
+    body: JSON.stringify(body)
+  }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+    .then(function (res) {
+      if (!res.ok) {
+        msg.textContent = 'Nothing was saved. ' + (res.message || 'Try again.');
+        return;
+      }
+      msg.textContent = res.message ||
+        'Saved. Partner admin must Approve once in Meta Business Settings → Requests.';
       wireAll();
     });
 });

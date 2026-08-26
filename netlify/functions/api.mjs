@@ -129,6 +129,7 @@ import campaignsConnections from "../../api/campaigns/connections.mjs";
 import campaignsActionLog from "../../api/campaigns/action-log.mjs";
 import campaignsSync from "../../api/campaigns/sync.mjs";
 import campaignsWrite from "../../api/campaigns/write.mjs";
+import campaignsMetaAgency from "../../api/campaigns/meta-agency.mjs";
 import socialSchedule from "../../api/social/schedule.mjs";
 import socialPublish from "../../api/social/publish.mjs";
 import socialOauth from "../../api/social/oauth.mjs";
@@ -545,6 +546,7 @@ export const ROUTES = {
   "campaigns/action-log": campaignsActionLog,
   "campaigns/sync": campaignsSync,
   "campaigns/write": campaignsWrite,
+  "campaigns/meta-agency": campaignsMetaAgency,
   "social/schedule": socialSchedule,
   "social/publish": socialPublish,
   "social/oauth": socialOauth,

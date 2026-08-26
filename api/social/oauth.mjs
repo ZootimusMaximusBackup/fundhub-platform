@@ -4,6 +4,7 @@
 
 import { db } from "../../src/db.mjs";
 import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
+import { withPartnerScope } from "../../src/partners/rls.mjs";
 import { encryptToken } from "../../src/adplatforms/tokens.mjs";
 import { safeError } from "../../src/http/health.mjs";
 import {
@@ -12,6 +13,15 @@ import {
 } from "../../src/social/oauth.mjs";
 
 const STAFF_OK = new Set(["owner", "admin", "partner"]);
+
+/* Writes to social_channels go through RLS (049). A bare db.query leaves
+   fundhub.actor unset, so fundhub_is_staff() is false and the insert dies with
+   "new row violates row-level security policy". Stamp the caller first. */
+function writeScope(principal) {
+  return principal.kind === "partner"
+    ? { kind: "partner", partnerId: principal.partnerId }
+    : { kind: "staff" };
+}
 
 function baseUrl(req, env = process.env) {
   return (env.APP_BASE_URL || env.URL || `${req.headers?.["x-forwarded-proto"] || "https"}://${req.headers?.host || "localhost"}`).replace(/\/+$/, "");
@@ -97,6 +107,29 @@ export default async function handler(req, res, deps = {}) {
     } else {
       auth = metaAuthUrl({ appId: env.META_APP_ID, redirectUri: redir, state });
     }
+    // #region agent log
+    fetch("http://127.0.0.1:7854/ingest/d6f5d062-daec-4ccb-b29c-871a05f553ca", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "7ffc77" },
+      body: JSON.stringify({
+        sessionId: "7ffc77",
+        runId: "oauth-start",
+        hypothesisId: "A",
+        location: "api/social/oauth.mjs:start",
+        message: "oauth start auth result",
+        data: {
+          channel,
+          hasMetaAppId: Boolean(env.META_APP_ID),
+          hasMetaAppSecret: Boolean(env.META_APP_SECRET),
+          hasLinkedInClientId: Boolean(env.LINKEDIN_CLIENT_ID),
+          authOk: Boolean(auth?.ok),
+          missing: auth?.missing || null,
+          reason: auth?.reason || null
+        },
+        timestamp: Date.now()
+      })
+    }).catch(() => {});
+    // #endregion
     if (!auth.ok) {
       return res.status(503).json({
         ok: false,
@@ -129,13 +162,13 @@ export default async function handler(req, res, deps = {}) {
           return res.status(400).json({ ok: false, error: "needs_org" });
         }
         const enc = encryptToken(tok.accessToken, { partnerId, env });
-        await database.query(
+        await withPartnerScope(writeScope(principal), (tx) => tx.query(
           `INSERT INTO social_channels
              (org_id, partner_id, channel, external_account_id, encrypted_access_token,
               encrypted_refresh_token, token_expires_at, connection_state, scopes)
            VALUES ($1,$2,'linkedin',$3,$4,$5,
                    CASE WHEN $6::int IS NULL THEN NULL ELSE now() + ($6 || ' seconds')::interval END,
-                   'active', '["w_organization_social"]'::jsonb)
+                   'active', '["openid","profile","email","w_member_social"]'::jsonb)
            ON CONFLICT (partner_id, channel, external_account_id) DO UPDATE SET
              encrypted_access_token = EXCLUDED.encrypted_access_token,
              encrypted_refresh_token = EXCLUDED.encrypted_refresh_token,
@@ -144,7 +177,7 @@ export default async function handler(req, res, deps = {}) {
              last_error = NULL,
              updated_at = now()`,
           [orgId, partnerId, externalId, enc, tok.refreshToken ? encryptToken(tok.refreshToken, { partnerId, env }) : null, tok.expiresIn]
-        );
+        ));
         return res.status(200).json({ ok: true, channel: "linkedin", external_account_id: externalId });
       }
 
@@ -163,10 +196,11 @@ export default async function handler(req, res, deps = {}) {
       }
 
       const saved = [];
+      await withPartnerScope(writeScope(principal), async (tx) => {
       for (const page of pages) {
         if (st.channel === "facebook" || channel === "facebook") {
           const enc = encryptToken(page.access_token, { partnerId, env });
-          await database.query(
+          await tx.query(
             `INSERT INTO social_channels
                (org_id, partner_id, channel, external_account_id, handle, encrypted_access_token,
                 connection_state, scopes)
@@ -184,7 +218,7 @@ export default async function handler(req, res, deps = {}) {
         if ((st.channel === "instagram" || channel === "instagram") && page.instagram_business_account?.id) {
           const igId = String(page.instagram_business_account.id);
           const enc = encryptToken(page.access_token, { partnerId, env });
-          await database.query(
+          await tx.query(
             `INSERT INTO social_channels
                (org_id, partner_id, channel, external_account_id, handle, encrypted_access_token,
                 connection_state, scopes)
@@ -199,6 +233,7 @@ export default async function handler(req, res, deps = {}) {
           saved.push({ channel: "instagram", external_account_id: igId });
         }
       }
+      });
       if (!saved.length) {
         return res.status(400).json({
           ok: false,
