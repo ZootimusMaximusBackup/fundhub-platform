@@ -250,6 +250,25 @@ export async function setStatus(db, { inquiryId, staffId, orgId, status }) {
   return res.rows[0];
 }
 
+/** Staff-typed expected creditor name. Actual bureau string stays on inquiry_name. */
+export async function setExpectedName(db, { inquiryId, staffId, orgId, expectedName }) {
+  if (!staffId) throw new InquiryWriteError("staffId is required", { status: 401 });
+  if (!orgId) throw new InquiryWriteError("orgId is required", { status: 403 });
+  const name = String(expectedName || "").trim();
+  if (!name) throw new InquiryWriteError("expected name is required");
+
+  const res = await db.query(
+    `UPDATE inquiry_log
+        SET expected_name = $3,
+            worked_by = $2, worked_at = now(), updated_at = now()
+      WHERE id = $1 AND org_id = $4
+      RETURNING *`,
+    [inquiryId, staffId, name.slice(0, 200), orgId]
+  );
+  if (!res.rows[0]) throw new InquiryWriteError("inquiry not found", { status: 404 });
+  return res.rows[0];
+}
+
 /** listAttempts — the expand row's history, newest first. Org from the session. */
 export async function listAttempts(db, { inquiryId, orgId }) {
   if (!orgId) throw new InquiryWriteError("orgId is required", { status: 403 });

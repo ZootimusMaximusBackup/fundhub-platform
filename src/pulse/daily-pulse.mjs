@@ -100,13 +100,14 @@ export async function checkApplyDoor({ fetchImpl, baseUrl }) {
   try {
     const { status, text } = await readUrl(fetchImpl, url);
     const looksLikeApply = /Generate Apps|Apply door|Funding · Apply/i.test(text);
-    if (status >= 200 && status < 300 && looksLikeApply) {
-      return check("apply", "PASS", "funding Apply door page loaded");
+    const clientEmailNotFundhub = /Apply shows the client email, not a Fundhub address/i.test(text);
+    if (status >= 200 && status < 300 && looksLikeApply && clientEmailNotFundhub) {
+      return check("apply", "PASS", "funding Apply door page loaded; client email, not Fundhub");
     }
     return check(
       "apply",
       "FAIL",
-      `Apply door ${status}, apply copy missing=${!looksLikeApply}`,
+      `Apply door ${status}, apply copy missing=${!looksLikeApply}, client-email line missing=${!clientEmailNotFundhub}`,
       "Open Client Control Panel and restore the Funding Apply door. Do not submit a bank form."
     );
   } catch (err) {

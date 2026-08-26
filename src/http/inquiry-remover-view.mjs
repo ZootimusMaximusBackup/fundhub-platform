@@ -153,6 +153,18 @@ export function buildStatusRequest(opts) {
   };
 }
 
+export function buildExpectedRequest(opts) {
+  const o = opts || {};
+  requireInquiryId(o.inquiryId);
+  const expected = blankToNull(o.expectedName);
+  if (expected === null) throw new ViewError("an expected name is required");
+  return {
+    method: "POST",
+    path: "/api/inquiries",
+    body: { inquiry_id: o.inquiryId, action: "expected", expected_name: expected }
+  };
+}
+
 export function buildAttemptsRequest(opts) {
   const o = opts || {};
   requireInquiryId(o.inquiryId);
@@ -627,6 +639,7 @@ export const VIEW = {
   buildAttemptRequest: buildAttemptRequest,
   buildConfirmRequest: buildConfirmRequest,
   buildStatusRequest: buildStatusRequest,
+  buildExpectedRequest: buildExpectedRequest,
   buildAttemptsRequest: buildAttemptsRequest,
   buildIdentityRequest: buildIdentityRequest,
   buildRevealRequest: buildRevealRequest,

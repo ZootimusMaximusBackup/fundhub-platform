@@ -63,6 +63,7 @@ test("launchProxySession returns connection + verification and never claims rout
     client: {
       id: "c1",
       org_id: "o1",
+      email: "ada@client.com",
       custom_fields: { business_city: "Mesa", business_state: "AZ" }
     },
     lender: {
@@ -90,6 +91,8 @@ test("launchProxySession returns connection + verification and never claims rout
   assert.equal(out.routing_active, false);
   assert.equal(out.extension_required, true);
   assert.equal(out.application_url, "https://bank.example/apply");
+  assert.equal(out.bank_form_email.email, "ada@client.com");
+  assert.equal(out.bank_form_email.warning, null);
   assert.equal(out.verification.exit_ip, "198.51.100.7");
   assert.equal(out.verification.city, "Mesa");
   assert.equal(out.verification.targeting_level, "city");

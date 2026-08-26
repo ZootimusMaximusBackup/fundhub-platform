@@ -167,7 +167,7 @@ export function resolveClientLocation(customFields = {}, businesses = []) {
 
 export async function loadClientForProxy(db, { orgId, clientId }) {
   const r = await db.query(
-    `SELECT id, org_id, custom_fields
+    `SELECT id, org_id, email, custom_fields
        FROM clients
       WHERE org_id = $1::uuid AND id = $2::uuid`,
     [orgId, clientId]

@@ -27,6 +27,7 @@ const run = readHandler({
   fetch: (db, { limit, offset, query, staff }) =>
     db.query(
       `SELECT i.id, i.client_id, i.case_id, i.bureau, i.inquiry, i.inquiry_name,
+              i.expected_name,
               i.status, i.call_state, i.is_open, i.call_attempts, i.outcome,
               i.cleared_at, i.confirmed_at, i.created_at, i.updated_at,
               TRIM(COALESCE(c.first_name,'') || ' ' || COALESCE(c.last_name,'')) AS client_name

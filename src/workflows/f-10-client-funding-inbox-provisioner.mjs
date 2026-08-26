@@ -17,6 +17,7 @@ import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { createTask } from "../lib/create-task.mjs";
+import { mintMonitorAddress } from "../mail/monitor-address.mjs";
 
 // RETIRED 2026-08-22 — inbox routing is set up live on the sales call; no
 // follow-up wanted. Kept for the seed/audit trail; no send site references them.
@@ -51,7 +52,7 @@ export async function handle({ event, db, step }) {
   const missing = await step.run("check-forwarding-address", () => forwardingAddressMissing(db, clientId));
   if (!missing) return { done: false, reason: "already_set" };
 
-  const forwardingAddress = `monitor+${clientId}@fundhub.ai`;
+  const forwardingAddress = mintMonitorAddress(clientId, process.env);
   await step.run("set-forwarding-address", () => mergeCustomFields(db, clientId, {
     funding_email_forwarding_address: forwardingAddress,
     cf_inbox_forwarding_verified: false

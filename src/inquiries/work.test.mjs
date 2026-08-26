@@ -9,7 +9,7 @@
 
 import { test } from "node:test";
 import assert from "node:assert";
-import { logAttempt, confirmRemoval, setStatus, InquiryWriteError } from "./work.mjs";
+import { logAttempt, confirmRemoval, setStatus, setExpectedName, InquiryWriteError } from "./work.mjs";
 
 const INQUIRY = "11111111-1111-4111-8111-111111111111";
 const STAFF = "22222222-2222-4222-8222-222222222222";
@@ -155,6 +155,23 @@ test("setStatus clears confirmed_at when a row moves off a confirmed state", asy
 test("setStatus requires a non-empty status", async () => {
   const db = stubDb();
   await assert.rejects(() => setStatus(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, status: "  " }), /status is required/);
+});
+
+test("setExpectedName stores the staff-typed name and leaves the bureau string alone", async () => {
+  const db = stubDb();
+  await setExpectedName(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, expectedName: "Chase Ink" });
+  const call = db.calls.find((c) => /expected_name/.test(c.sql));
+  assert.ok(call);
+  assert.equal(call.params[2], "Chase Ink");
+  assert.doesNotMatch(call.sql, /inquiry_name/);
+});
+
+test("setExpectedName refuses a blank name", async () => {
+  const db = stubDb();
+  await assert.rejects(
+    () => setExpectedName(db, { orgId: ORG, inquiryId: INQUIRY, staffId: STAFF, expectedName: "  " }),
+    /expected name is required/
+  );
 });
 
 test("logAttempt refuses a missing orgId", async () => {
