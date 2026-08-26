@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   ATTEMPT_KINDS, COUNTING_KINDS, ViewError, isUuid, blankToNull, pill,
-  buildAttemptRequest, buildConfirmRequest, buildStatusRequest,
+  buildAttemptRequest, buildConfirmRequest, buildStatusRequest, buildExpectedRequest,
   buildAttemptsRequest, buildIdentityRequest, buildRevealRequest,
   describeFailure, interpretWrite, interpretIdentity, interpretReveal,
   maskedSsnLabel, canReveal, formatRevealed,
@@ -98,6 +98,11 @@ test("buildStatusRequest: a blank status is refused — free text does not mean 
 test("buildStatusRequest: names the status action so it cannot be confused with confirm", () => {
   const r = buildStatusRequest({ inquiryId: ID, status: "Awaiting CRS" });
   assert.deepEqual(r.body, { inquiry_id: ID, action: "status", status: "Awaiting CRS" });
+});
+
+test("buildExpectedRequest: staff type the expected name; actual stays on the file", () => {
+  const r = buildExpectedRequest({ inquiryId: ID, expectedName: "Chase Ink" });
+  assert.deepEqual(r.body, { inquiry_id: ID, action: "expected", expected_name: "Chase Ink" });
 });
 
 test("buildAttemptsRequest: reads the row history with a GET, not a write", () => {
@@ -533,7 +538,7 @@ test("the embedded copy runs in a browser-shaped sandbox and exposes every expor
 test("VIEW exposes every export the screen calls, so a rename cannot half-land", () => {
   for (const name of [
     "ATTEMPT_KINDS", "isUuid", "pill", "buildAttemptRequest", "buildConfirmRequest",
-    "buildStatusRequest", "buildIdentityRequest", "buildRevealRequest",
+    "buildStatusRequest", "buildExpectedRequest", "buildIdentityRequest", "buildRevealRequest",
     "interpretWrite", "interpretIdentity", "interpretReveal",
     "maskedSsnLabel", "canReveal", "formatRevealed",
     "createRowState", "beginWrite", "settleWrite", "failWrite",
