@@ -313,6 +313,29 @@ test("REGRESSION: mail.response now carries a clientId the downstream workflows 
   assert.equal(ev.payload.to, "monitor+cl-777@fundhub.ai");
 });
 
+test("receive wiring: signed inbound to monitor+id@mg.fundhub.ai emits mail.response", async () => {
+  const store = [];
+  const db = fakeDb({ store });
+  const res = await handleMailgunWebhook({
+    db,
+    body: {
+      signature: sign(String(Date.now()), crypto.randomBytes(22).toString("hex")),
+      recipient: "monitor+aaaaaaaa-1111-4111-8111-111111111111@mg.fundhub.ai",
+      sender: "lender@bank.com",
+      subject: "Congratulations — approved",
+      "body-plain": "Your application is approved.",
+      "Message-Id": "<receive-mg@mg.fundhub.ai>"
+    },
+    signingKey: SIGNING_KEY
+  });
+  assert.equal(res.ok, true);
+  const ev = store.find((e) => e.name === "mail.response");
+  assert.ok(ev, "mail.response emitted from Mailgun receive domain");
+  assert.equal(ev.payload.clientId, "aaaaaaaa-1111-4111-8111-111111111111");
+  assert.equal(ev.payload.classification, "APPROVED");
+  assert.equal(ev.payload.to, "monitor+aaaaaaaa-1111-4111-8111-111111111111@mg.fundhub.ai");
+});
+
 /* ── T5-04 / T5-05 · who a reply belongs to ───────────────────────────────
    Traced live 2026-08-19. The reply was deliberately NOT sent, because the
    auditor proved it would attach to a real person's credit file: the matcher

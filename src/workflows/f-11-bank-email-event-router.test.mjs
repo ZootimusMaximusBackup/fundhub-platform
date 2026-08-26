@@ -42,9 +42,9 @@ test("branch: unclassified/NOISE events are ignored", async () => {
 // recipient through the real resolver so a regression there would actually be caught.
 test("GUARD: a raw monitor+<clientId>@ recipient resolves a real client, not no_client", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com" }], ...withApprovalsStage() });
-  const clientId = await resolveClientFromRecipient(db, "monitor+cl-1@fundhub.ai");
+  const clientId = await resolveClientFromRecipient(db, "monitor+cl-1@mg.fundhub.ai");
   const res = await handle({
-    event: { id: "evt-guard-f11", orgId: "org-1", clientId, payload: { classification: "APPROVED", to: "monitor+cl-1@fundhub.ai", source: "mailgun" } },
+    event: { id: "evt-guard-f11", orgId: "org-1", clientId, payload: { classification: "APPROVED", to: "monitor+cl-1@mg.fundhub.ai", source: "mailgun" } },
     db, step: fakeStep()
   });
   assert.notEqual(res.reason, "no_client");
