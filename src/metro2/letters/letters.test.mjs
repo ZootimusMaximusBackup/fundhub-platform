@@ -149,6 +149,20 @@ describe("generate", () => {
     assert.match(text, /M2-011/);
   });
 
+  it("names the creditor and last four when the item has them", () => {
+    const text = buildLetterText({
+      violations: [{
+        ...sampleViolations[0],
+        creditor: "CAPITAL ONE",
+        account_last4: "8664"
+      }],
+      identity,
+      bureau: "EX",
+      seed: "creditor-ex"
+    });
+    assert.match(text, /Account: CAPITAL ONE · ending 8664/);
+  });
+
   it("prints last four of SSN only when identity has ssn", () => {
     const withSsn = buildLetterText({
       violations: sampleViolations,

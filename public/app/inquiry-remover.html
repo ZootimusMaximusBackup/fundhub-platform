@@ -2799,8 +2799,9 @@ function loadRepairDesk() {
           ? "<ul>" + items.slice(0, 20).map(function (it) {
               var sev = String(it.severity || "");
               var tagCls = sev === "deletion" ? "del" : (sev === "strong" ? "strong" : "mod");
-              return "<li>" + esc(it.creditor || it.rule_id) +
+              return "<li>" + (it.bureau ? esc(it.bureau) + " · " : "") + esc(it.creditor || it.rule_id) +
                 (it.account_last4 ? ' <span class="mono">····' + esc(it.account_last4) + "</span>" : "") +
+                (it.round ? ' <span class="repair-tag">' + esc(it.round) + "</span>" : "") +
                 ' <span class="repair-tag ' + tagCls + '">' + esc(sev || "item") + "</span>" +
                 ' <span class="repair-tag">' + esc(it.rule_id || "") + "</span></li>";
             }).join("") + "</ul>"
@@ -2819,10 +2820,30 @@ function loadRepairDesk() {
               return "<li>" + esc(t.words || L.timelineLine(t)) + "</li>";
             }).join("") + "</ul>"
           : '<p class="lt-detail">No timeline yet.</p>';
+        var rounds = d.rounds || [];
+        var STATUS_WORDS = {
+          written: "Written",
+          held: "Held — wait for bureau",
+          current: "Next to write",
+          later: "Later",
+          blocked_at_cap: "Blocked on this program"
+        };
+        var nextHtml = rounds.length
+          ? "<ul>" + rounds.map(function (r) {
+              var attacked = (r.attacks && r.attacks.length)
+                ? r.attacks.slice(0, 8).join("; ")
+                : "No items on this round yet";
+              return "<li><strong>" + esc(r.round) + "</strong> · " +
+                esc(STATUS_WORDS[r.status] || r.status) + "<br>" +
+                '<span class="lt-detail">' + esc(r.title || "") + " — " + esc(r.when || "") +
+                "<br>" + esc(attacked) + "</span></li>";
+            }).join("") + "</ul>"
+          : '<p class="lt-detail">Round plan is not on this file yet.</p>';
         detail.innerHTML =
           '<td colspan="6"><div class="repair-xgrid">' +
           '<div class="repair-xcard"><h3>Items</h3>' + itemHtml + "</div>" +
           '<div class="repair-xcard"><h3>Letters this round</h3>' + letterHtml + "</div>" +
+          '<div class="repair-xcard"><h3>What is next</h3>' + nextHtml + "</div>" +
           '<div class="repair-xcard"><h3>Timeline</h3>' + timeHtml + "</div>" +
           '</div><div class="case-actions" style="margin-top:14px">' +
           '<button type="button" class="primary" data-act="repair-send"' + (sendable.length ? "" : " disabled") + ">Send</button>" +
