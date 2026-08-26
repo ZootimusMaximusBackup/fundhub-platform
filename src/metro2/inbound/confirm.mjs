@@ -3,7 +3,7 @@
 // so WS-D emails queue through onRepairEvent → sendTemplated.
 
 import { advanceAfterParse } from "../rounds/advance.mjs";
-import { needsUpsellPending, markUpsellPending } from "../rounds/program-cap.mjs";
+import { loadRoundsCap, needsUpsellPending, markUpsellPending } from "../rounds/program-cap.mjs";
 import { logDecision } from "../rounds/store.mjs";
 import { onRepairEvent } from "../../repair/handlers.mjs";
 
@@ -46,7 +46,8 @@ export async function confirmParse(db, {
   }
 
   const outcomes = confirmedOutcomes || parseResult.outcomes;
-  const advanced = advanceAfterParse({ items, outcomes, roundsCap });
+  const cap = await loadRoundsCap(db, { orgId, clientId, fallback: roundsCap });
+  const advanced = advanceAfterParse({ items, outcomes, roundsCap: cap });
   if (db) {
     await logDecision(db, {
       orgId,
@@ -56,13 +57,14 @@ export async function confirmParse(db, {
       payload: {
         confidence: parseResult.confidence,
         confirmedBy: confirmedBy || null,
+        roundsCap: cap,
         log: advanced.log
       }
     });
   }
 
   let upsell = null;
-  if (db && needsUpsellPending({ items: advanced.items, roundsCap, log: advanced.log })) {
+  if (db && needsUpsellPending({ items: advanced.items, roundsCap: cap, log: advanced.log })) {
     upsell = await markUpsellPending(db, { orgId, clientId, staffId: staffId || confirmedBy });
   }
 

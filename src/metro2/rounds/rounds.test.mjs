@@ -8,7 +8,7 @@ import {
   preDispatchRecheck
 } from "./state.mjs";
 import { advanceAfterParse, filterForDispatch } from "./advance.mjs";
-import { needsUpsellPending } from "./program-cap.mjs";
+import { needsUpsellPending, markUpsellPending } from "./program-cap.mjs";
 
 describe("rounds state", () => {
   it("nextRound advances R1→…→R6→null under full cap", () => {
@@ -113,5 +113,35 @@ describe("rounds state", () => {
       }),
       false
     );
+    assert.equal(
+      needsUpsellPending({
+        roundsCap: 2,
+        items: [{ status: "escalated", round: "R3" }]
+      }),
+      true
+    );
+  });
+
+  it("markUpsellPending clamps items past the trial cap", async () => {
+    const updates = [];
+    const db = {
+      async query(sql, params = []) {
+        if (/UPDATE repair_programs/i.test(sql)) {
+          return { rows: [{ id: "p1", program: "trial", rounds_cap: 2, status: "upsell_pending" }] };
+        }
+        if (/UPDATE dispute_items/i.test(sql)) {
+          updates.push({ round: params[2], cap: params[3] });
+          return { rows: [] };
+        }
+        return { rows: [] };
+      }
+    };
+    const r = await markUpsellPending(db, {
+      orgId: "11111111-1111-1111-1111-111111111111",
+      clientId: "22222222-2222-2222-2222-222222222222"
+    });
+    assert.equal(r.ok, true);
+    assert.equal(updates[0].round, "R2");
+    assert.equal(updates[0].cap, 2);
   });
 });
