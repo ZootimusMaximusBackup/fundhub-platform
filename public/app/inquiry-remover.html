@@ -1996,7 +1996,8 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
     missing_identity: "This client has no name on their record, so a letter cannot be addressed.",
     client_not_found: "That client record could not be found.",
     invalid_round:    "That dispute round is not one this desk can generate.",
-    already_generated:"Letters for this round already exist."
+    already_generated:"Letters for this round already exist.",
+    no_authorization: "This client has no signed repair agreement on file."
   };
 
   /* Short forms, for naming a bureau that was skipped inside a longer sentence. */
@@ -2090,7 +2091,7 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
               out.textContent = genSummary(d);
               return;
             }
-            out.textContent = GEN_REASONS[d && d.reason] || (d && d.error) || "Could not generate letters.";
+            out.textContent = GEN_REASONS[d && d.reason] || (d && d.message) || (d && d.error) || "Could not generate letters.";
           }).catch(function () {
             btn.disabled = false;
             btn.textContent = "Generate letters";
@@ -2858,7 +2859,11 @@ function loadRepairDesk() {
               stageBtn.disabled = false;
               stageBtn.textContent = "Stage";
               var slot = detail.querySelector("[data-send-msg]");
-              if (slot) slot.textContent = (out && out.ok) ? "Letters staged." : ((out && (out.reason || out.error)) || "Stage failed");
+              if (slot) {
+                slot.textContent = (out && out.ok)
+                  ? "Letters staged."
+                  : ((out && (out.message || out.reason || out.error)) || "Stage failed");
+              }
               if (out && out.ok) loadRepairDesk();
             }).catch(function () {
               stageBtn.disabled = false;

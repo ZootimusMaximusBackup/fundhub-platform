@@ -80,6 +80,34 @@ const ADDRESS_SQL = `
    WHERE org_id = $1::uuid
      AND client_id = ANY($2::uuid[])`;
 
+/* Company street on businesses.entity_data — same keys the soft-pull form saves. */
+const COMPANY_ADDRESS_SQL = `
+  SELECT DISTINCT client_id
+    FROM businesses
+   WHERE org_id = $1::uuid
+     AND client_id = ANY($2::uuid[])
+     AND NULLIF(TRIM(COALESCE(
+           entity_data->>'address_line1',
+           entity_data->>'addressLine1',
+           entity_data->>'street',
+           entity_data->>'line1',
+           ''
+         )), '') IS NOT NULL`;
+
+/* Signed repair paper counts as agreement on the desk, same as generate. */
+const SIGNED_REPAIR_SQL = `
+  SELECT DISTINCT c.client_id
+    FROM contracts c
+    LEFT JOIN contract_templates t
+      ON t.org_id = c.org_id AND t.template_key = c.template_key
+   WHERE c.org_id = $1::uuid
+     AND c.client_id = ANY($2::uuid[])
+     AND c.status = 'signed'
+     AND (
+       t.subtype = 'credit_repair'
+       OR c.template_key ILIKE '%REPAIR%'
+     )`;
+
 const DUE_SQL = `
   SELECT client_id, MIN(response_due_at) AS response_due_at
     FROM dispute_cases
@@ -134,10 +162,12 @@ export async function gatherRepairSignals(db, { orgId, clientIds, files = [] } =
   if (!orgId || ids.length === 0) return out;
 
   const args = [orgId, ids];
-  const [programRows, authRows, addressRows, dueRows, unconfRows] = await Promise.all([
+  const [programRows, authRows, addressRows, companyAddrRows, signedRows, dueRows, unconfRows] = await Promise.all([
     safeRows(db, PROGRAMS_SQL, args, "repair_programs"),
     safeRows(db, authSql(), [orgId, ids, DISPUTE_AUTH_KIND], "client_consents"),
     safeRows(db, ADDRESS_SQL, args, "pii_identity"),
+    safeRows(db, COMPANY_ADDRESS_SQL, args, "businesses.address"),
+    safeRows(db, SIGNED_REPAIR_SQL, args, "contracts.repair"),
     safeRows(db, DUE_SQL, args, "dispute_cases.due"),
     safeRows(db, UNCONFIRMED_SQL, args, "dispute_responses")
   ]);
@@ -145,6 +175,8 @@ export async function gatherRepairSignals(db, { orgId, clientIds, files = [] } =
   const programBy = byClient(programRows);
   const authBy = byClient(authRows);
   const addressBy = byClient(addressRows);
+  const companyAddrBy = byClient(companyAddrRows);
+  const signedBy = byClient(signedRows);
   const dueBy = byClient(dueRows);
   const unconfBy = byClient(unconfRows);
 
@@ -176,10 +208,21 @@ export async function gatherRepairSignals(db, { orgId, clientIds, files = [] } =
       const row = (authBy.get(id) || [])[0];
       signals.authorization_ok = Boolean(row && row.is_valid === true);
     }
+    if (signals.authorization_ok !== true && programRows !== null) {
+      const p = (programBy.get(id) || [])[0];
+      if (p && String(p.status || "") !== "cancelled") {
+        signals.authorization_ok = true;
+      }
+    }
+    if (signals.authorization_ok !== true && signedRows !== null) {
+      signals.authorization_ok = (signedBy.get(id) || []).length > 0;
+    }
 
-    if (addressRows !== null) {
+    if (addressRows !== null || companyAddrRows !== null) {
       const row = (addressBy.get(id) || [])[0];
-      signals.address_ok = row ? row.address_ok === true : false;
+      const piiOk = row ? row.address_ok === true : false;
+      const companyOk = (companyAddrBy.get(id) || []).length > 0;
+      signals.address_ok = piiOk || companyOk;
     }
 
     if (dueRows !== null) {

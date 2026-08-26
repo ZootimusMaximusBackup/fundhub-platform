@@ -81,6 +81,55 @@ describe("gatherRepairSignals", () => {
     assert.equal(s.authorization_ok, false);
   });
 
+  test("enrolled repair program is authorization_ok without consent", async () => {
+    const db = fakeDb({
+      "FROM client_consents": [],
+      "FROM repair_programs": [{
+        client_id: CLIENT,
+        program: "trial",
+        rounds_cap: 2,
+        status: "active"
+      }]
+    });
+    const s = (await gatherRepairSignals(db, { orgId: ORG, clientIds: [CLIENT] })).get(CLIENT);
+    assert.equal(s.authorization_ok, true);
+  });
+
+  test("cancelled program alone is not agreement", async () => {
+    const db = fakeDb({
+      "FROM client_consents": [],
+      "FROM repair_programs": [{
+        client_id: CLIENT,
+        program: "trial",
+        rounds_cap: 2,
+        status: "cancelled"
+      }]
+    });
+    const s = (await gatherRepairSignals(db, { orgId: ORG, clientIds: [CLIENT] })).get(CLIENT);
+    assert.equal(s.authorization_ok, false);
+  });
+
+  test("signed repair contract is authorization_ok without consent", async () => {
+    const db = fakeDb({
+      "FROM client_consents": [],
+      "FROM contracts": [{ client_id: CLIENT }]
+    });
+    const s = (await gatherRepairSignals(db, { orgId: ORG, clientIds: [CLIENT] })).get(CLIENT);
+    assert.equal(s.authorization_ok, true);
+  });
+
+  test("company street is address_ok when pii has none", async () => {
+    const db = fakeDb({
+      "FROM pii_identity": [],
+      "FROM businesses": [{ client_id: CLIENT }]
+    });
+    const s = (await gatherRepairSignals(db, { orgId: ORG, clientIds: [CLIENT] })).get(CLIENT);
+    assert.equal(s.address_ok, true);
+    const biz = db.seen.find((c) => /FROM businesses/i.test(c.sql));
+    assert.ok(biz);
+    assert.match(biz.sql, /address_line1/);
+  });
+
   test("unconfirmed parse flag and SLA breach", async () => {
     const db = fakeDb({
       "FROM dispute_responses": [{ client_id: CLIENT, n: 2 }],
