@@ -97,7 +97,10 @@
   ]
   # letter-generator.js require()s this at load time. esbuild leaves it
   # external, which 502s the whole /api/* function (login included).
-  external_node_modules = ["@pdf-lib/fontkit"]
+  # pg is the same class: esbuild leaves the driver external and the zip
+  # then has no node_modules/pg, so /api/health, login, and closer-drill
+  # Start D1 all 502 with "Cannot find package 'pg'".
+  external_node_modules = ["@pdf-lib/fontkit", "pg"]
 
 # ---------------------------------------------------------------------------
 # Scheduled jobs (Netlify cron). Declared here rather than with the
