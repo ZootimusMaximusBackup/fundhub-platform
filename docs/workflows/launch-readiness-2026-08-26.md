@@ -73,5 +73,5 @@ No card charge. No live credit pull. No paper mail. No ClickFunnels remint.
 
 | PR | What | Merge? |
 |---|---|---|
-| this branch | Affiliate/partner Forgot + AF1 drip | Open after push. **Do not merge vc/save.** |
+| [#177](https://github.com/ZootimusMaximusBackup/fundhub-platform/pull/177) | Affiliate/partner Forgot + AF1 drip | Open. Isolated worktree off `origin/main`. **Do not merge vc/save.** |
 | [#171](https://github.com/ZootimusMaximusBackup/fundhub-platform/pull/171) | Funded KPI + `/start` click | Already merged. |
