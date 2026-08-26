@@ -32,7 +32,7 @@ Owner-set 2026-08-24:
 2. The brain does **not** kick anyone out, grant a raise, or spend ad money by itself.
 3. Setter = AI. **Never hire setters.** A packed calendar hires a **closer**.
 4. Close = a logged **deposit**.
-5. Starting bars: closer **20 deposits / month**. Funding advisor **20 funded files / month** (count, not dollars).
+5. Starting bars: closer **30 deposits / month**. Funding advisor **27 funded files / month** (count, not dollars). AI-set from desk time.
 6. Fire this pass = a C-suite **task** only. No kick. No invented fire trigger.
 7. Desk times are **MODEL**, not a live stopwatch. Live call logs still have no durations. That does not invent new minutes.
 8. Fundhub prices live in our offer list. Not Alec’s.
@@ -129,7 +129,7 @@ Honest list. Reuse these. Do not invent a second copy.
 | Piece | Where a person meets it | Home in the repo (for agents) |
 |-------|-------------------------|-------------------------------|
 | Company 8 | Ops & Admin, company dashboard | `src/dashboard/kpis.mjs` |
-| 20/20 starting bars | Seeded for the default org | `db/seed/019_staff_targets_starting_bars.sql`, table `staff_targets` |
+| 30/27 starting bars | Seeded for the default org | `db/seed/020_staff_targets_model_bars.sql`, table `staff_targets` |
 | My numbers / sales floor | Closer and sales manager screens | `src/sales/metrics.mjs`, `public/app/my-numbers.html`, sales floor |
 | MODEL unit clocks | Conveyor law + v1 pulse | `src/ops/role-unit-times.mjs` |
 | v1 pulse + briefs | In flight | `src/ops/pulse.mjs`, `src/ops/briefs.mjs` |
@@ -266,7 +266,7 @@ It will say “need another closer” or “funding seat is behind 20” or “f
 
 ### Trigger / numbers
 
-**Locked to use:** closer 20 deposits / month. Funding advisor 20 funded files / month. Company 8. Healthy file ~15 days. Hard stop 30 days.
+**Locked to use:** closer 30 deposits / month. Funding advisor 27 funded files / month. Company 8. Healthy file ~15 days. Hard stop 30 days.
 
 **MODEL only:** unit clocks (45-minute close, 10-minute card app, and the rest). Do not treat them as live times.
 
