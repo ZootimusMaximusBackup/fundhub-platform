@@ -30,6 +30,8 @@ Each of the five walks the **event path** (event-based CRM): the events that fil
 
 **ClickFunnels one-pass:** the same contact cannot run the funnel twice. New plus-tag (or new sim) per funnel attempt. Do **not** score “second pass blocked” as a product FAIL.
 
+**Assume paid / skip CF apply:** see `sim-assume-paid.mdc`. Do not skip unpaid deliverables. Do not walk ClickFunnels apply.
+
 **Order:** Inventory live paths from code and `docs/journeys/*-intended.md`. Walk them in that journey order, start to finish. Do not skip around. Not one stone unturned.
 
 - Every **live** page — click it. Data on the screen must match what the system stored (name, businesses, docs, money, status).
