@@ -18,10 +18,14 @@ describe("POST /api/repair/inbound-mail", () => {
   it("accepts text and marks v1.1", async () => {
     const ORG = "11111111-1111-1111-1111-111111111111";
     const CLIENT = "22222222-2222-2222-2222-222222222222";
-    const db = { async query(sql) {
+    let insertedBy = "unset";
+    const db = { async query(sql, params = []) {
       const s = String(sql);
       if (s.includes("FROM dispute_items")) return { rows: [{ id: "44444444-4444-4444-4444-444444444444", case_id: "33333333-3333-3333-3333-333333333333", creditor: "Midland", account_last4: "4521", round: "R1", status: "sent" }] };
-      if (s.includes("INSERT INTO dispute_responses")) return { rows: [{ id: "r1" }] };
+      if (s.includes("INSERT INTO dispute_responses")) {
+        insertedBy = params[7];
+        return { rows: [{ id: "r1" }] };
+      }
       return { rows: [] };
     }};
     const res = mockRes();
@@ -30,5 +34,6 @@ describe("POST /api/repair/inbound-mail", () => {
     assert.equal(res.body.version, "v1.1");
     assert.equal(res.body.imap, false);
     assert.equal(res.body.result.status, "advanced");
+    assert.equal(insertedBy, null);
   });
 });

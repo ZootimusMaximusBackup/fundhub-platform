@@ -70,6 +70,46 @@ export async function stampRecordingUrl(db, { orgId, clientId, url } = {}) {
   };
 }
 
+export async function stampCallTranscript(db, {
+  orgId,
+  clientId,
+  url = null,
+  transcript
+} = {}) {
+  const words = String(transcript || "").trim();
+  if (!orgId || !clientId || !words) return { stamped: 0 };
+  const link = String(url || "").trim();
+  const byUrl = link
+    ? await db.query(
+      `UPDATE call_outcomes SET transcript = $3
+        WHERE id = (
+          SELECT id FROM call_outcomes
+           WHERE org_id = $1 AND client_id = $2
+             AND recording_url = $4
+             AND (transcript IS NULL OR btrim(transcript) = '')
+           ORDER BY logged_at DESC NULLS LAST
+           LIMIT 1
+        )
+        RETURNING id`,
+      [orgId, clientId, words, link]
+    )
+    : { rows: [] };
+  if (byUrl.rows?.length) return { stamped: 1 };
+  const byClient = await db.query(
+    `UPDATE call_outcomes SET transcript = $3
+      WHERE id = (
+        SELECT id FROM call_outcomes
+         WHERE org_id = $1 AND client_id = $2
+           AND (transcript IS NULL OR btrim(transcript) = '')
+         ORDER BY logged_at DESC NULLS LAST
+         LIMIT 1
+      )
+      RETURNING id`,
+    [orgId, clientId, words]
+  );
+  return { stamped: byClient.rows?.length || 0 };
+}
+
 async function recentCallClients(db, { orgId, sinceIso }) {
   const res = await db.query(
     `SELECT DISTINCT c.id, c.first_name, c.last_name

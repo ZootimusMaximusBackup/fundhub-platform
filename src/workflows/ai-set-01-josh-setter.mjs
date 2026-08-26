@@ -15,10 +15,12 @@ import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { placeCall, agentReadiness, normalizePhone } from "../messaging/providers/bland-voice.mjs";
-import { inQuietHours } from "../messaging/gate.mjs";
+import { inQuietHours, recipientSkipsQuietHours } from "../messaging/gate.mjs";
 import { nextQuietHoursEnd } from "../messaging/dispatch.mjs";
+import { recordDispatch } from "../lib/outbound-calls.mjs";
 
 export const JOSH_CODE = "AG-04";
+export const JOSH_CALL_KIND = "ai-set-01-josh-setter";
 export const VENDOR_SETTER_TASK = setterPrompt.SETTER_TASK;
 
 function vendorJoshAgent() {
@@ -59,22 +61,35 @@ export async function handle({ event, db: database, step, placeCallImpl = placeC
 
   const { agent, source } = await step.run("resolve-josh", () => resolveJoshAgent(database, event.orgId));
 
-  // Same 11pm–11am Eastern window as SMS. Memoize the wake time so a replay
-  // after morning does not schedule a second dial.
-  const wakeAt = await step.run("quiet-hours-wake", () => {
+  // Same 11pm–11am Eastern window as SMS. Prove/sim files skip, same as texts.
+  // Memoize the wake time so a replay after morning does not schedule a second dial.
+  const wakeAt = await step.run("quiet-hours-wake", async () => {
+    if (await recipientSkipsQuietHours(database, clientId)) return null;
     const when = now();
     if (!inQuietHours(when)) return null;
     return nextQuietHoursEnd(when).toISOString();
   });
   if (wakeAt) await step.sleepUntil("wait-quiet-hours", new Date(wakeAt));
 
-  const call = await step.run("place-josh-call", () => placeCallImpl({
-    agent,
-    phone,
-    clientId,
-    metadata: { org_id: event.orgId, source: "ai-set-01-josh-setter" },
-    env
-  }));
+  const call = await step.run("place-josh-call", async () => {
+    const placed = await placeCallImpl({
+      agent,
+      phone,
+      clientId,
+      metadata: { org_id: event.orgId, source: JOSH_CALL_KIND },
+      env
+    });
+    if (placed?.status === "sent" && placed.callId) {
+      await recordDispatch({
+        callId: placed.callId,
+        clientId,
+        orgId: event.orgId,
+        kind: JOSH_CALL_KIND,
+        db: database
+      });
+    }
+    return placed;
+  });
 
   return { done: true, call, agentSource: source };
 }

@@ -78,8 +78,8 @@ test("formatPromptBlock omits empty interview blocks", () => {
   assert.match(text, /Jane Doe/);
 });
 
-test("closer context reads call_outcomes notes, not a transcript column", () => {
+test("closer context reads spoken words from call_outcomes.transcript", () => {
   const src = readFileSync(fileURLToPath(new URL("./context.mjs", import.meta.url)), "utf8");
-  assert.match(src, /SELECT outcome, notes, recording_url, logged_at/);
-  assert.doesNotMatch(src, /SELECT outcome, notes, recording_url, transcript/);
+  assert.match(src, /SELECT outcome, notes, recording_url, transcript, logged_at/);
+  assert.match(src, /said: /);
 });

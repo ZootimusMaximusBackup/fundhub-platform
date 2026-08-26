@@ -128,14 +128,24 @@ export async function attachGateToRound(db, {
     }
   }
 
-  // When no bureau is hot, move card to resume_funding if cases exist and completed path.
+  // Park on Resume Funding only after a real inquiry case is done.
+  // No case → do not invent an Inquiry Removal card (Combo enroll hole 11).
   if (!status.hot.length && cases.length === 0) {
-    await moveCardToStage(db, {
-      orgId,
-      clientId,
-      pipelineKey: "inquiry_removal",
-      stageKey: "resume_funding"
-    });
+    const ever = await db.query(
+      `SELECT 1
+         FROM inquiry_removal_cases
+        WHERE org_id = $1::uuid AND client_id = $2::uuid
+        LIMIT 1`,
+      [orgId, clientId]
+    );
+    if (ever.rows[0]) {
+      await moveCardToStage(db, {
+        orgId,
+        clientId,
+        pipelineKey: "inquiry_removal",
+        stageKey: "resume_funding"
+      });
+    }
   }
 
   return { status, task };

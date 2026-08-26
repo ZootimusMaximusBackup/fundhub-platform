@@ -28,6 +28,29 @@ export function templateForOffer({ offerKey, outcome } = {}) {
   return null;
 }
 
+/** Paid Mastery pay link only — not a sent/unpaid ask. */
+export function isMasteryPaidLink(row) {
+  if (!row) return false;
+  const paid = row.status === "paid" || row.paid_at;
+  if (!paid) return false;
+  const code = String(row.product_code || "").trim();
+  const desc = String(row.description || "");
+  return code === "funding-mastery" || /funding mastery/i.test(desc);
+}
+
+export async function masteryIsPaid(db, { orgId, clientId } = {}) {
+  if (!orgId || !clientId) return false;
+  const r = await db.query(
+    `SELECT pl.status, pl.paid_at, pl.description, p.code AS product_code
+       FROM payment_links pl
+       LEFT JOIN products p ON p.id = pl.product_id
+      WHERE pl.org_id = $1 AND pl.client_id = $2
+        AND (pl.status = 'paid' OR pl.paid_at IS NOT NULL)`,
+    [orgId, clientId]
+  );
+  return (r.rows || []).some(isMasteryPaidLink);
+}
+
 export async function handle({ event, db, step }) {
   const payload = event.payload || {};
   if (payload.disposition !== "closer") {
@@ -42,6 +65,12 @@ export async function handle({ event, db, step }) {
 
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
+
+  if (templateKey === OFFER_EMAIL.FUNDING_MASTERY) {
+    const paid = await step.run("check-mastery-paid", () =>
+      masteryIsPaid(db, { orgId: event.orgId, clientId }));
+    if (!paid) return { done: false, reason: "mastery_unpaid" };
+  }
 
   const claimed = await step.run("claim-offer-email", () =>
     claimCustomFieldLock(db, clientId, LOCK_FIELD));

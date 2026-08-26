@@ -50,6 +50,19 @@ describe("C1/C2 bureau-response agent shapes", () => {
     assert.equal(result.parse.outcomes[0].outcome, "deleted");
     assert.ok(result.parse.confidence >= 0.85);
     assert.equal(db.itemUpdates[0].status, "deleted");
+    assert.equal(db.responses[0].confirmed_by, null);
+    assert.notEqual(db.responses[0].confirmed_by, "system_high_confidence");
+  });
+  it("high-confidence auto-parse does not store system_high_confidence as a staff id", async () => {
+    const db = fakeDb();
+    const result = await runParseAdvanceLoop(db, {
+      orgId: ORG, clientId: CLIENT, text: CLEAR, items: OPEN_ITEMS,
+      confirmedBy: "system_high_confidence", onEvent: async () => ({})
+    });
+    assert.equal(result.status, "advanced");
+    assert.ok(result.parseResult.confidence >= 0.85);
+    assert.equal(db.responses[0].confirmed, true);
+    assert.equal(db.responses[0].confirmed_by, null);
   });
   it("C1 low confidence held then confirm advances", async () => {
     const db = fakeDb();

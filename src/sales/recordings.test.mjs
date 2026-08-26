@@ -4,7 +4,8 @@ import {
   filenameMentionsPerson,
   uniqueNameMatch,
   attachDriveRecording,
-  listRecentRecordings
+  listRecentRecordings,
+  stampCallTranscript
 } from "./recordings.mjs";
 
 const ORG = "00000000-0000-4000-8000-000000000001";
@@ -129,4 +130,23 @@ test("listRecentRecordings returns today's Drive file and name-matches a client"
   assert.equal(out.items[0].is_today, true);
   assert.equal(out.items[0].url, "https://drive.google.com/file/d/rec1");
   assert.equal(updates.length, 1);
+});
+
+test("stampCallTranscript writes words onto the latest empty call", async () => {
+  const seen = [];
+  const db = {
+    async query(sql, params) {
+      seen.push({ sql, params });
+      if (/recording_url = \$4/i.test(sql)) return { rows: [] };
+      if (/UPDATE call_outcomes/i.test(sql)) return { rows: [{ id: "co-1" }] };
+      return { rows: [] };
+    }
+  };
+  const out = await stampCallTranscript(db, {
+    orgId: ORG,
+    clientId: CLIENT,
+    transcript: "the start is part of ten percent"
+  });
+  assert.equal(out.stamped, 1);
+  assert.ok(seen.some((s) => /SET transcript/i.test(s.sql)));
 });

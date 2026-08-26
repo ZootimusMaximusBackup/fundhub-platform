@@ -48,6 +48,11 @@ export default async function handler(req, res) {
     // escaped to the platform's generic catch as an opaque 500.
     const rawBody = await readRawBody(req);
     const out = await handleWebhook({ db, provider, rawBody, headers: req.headers, url });
+    if (out.body?.twiml) {
+      res.setHeader("Content-Type", out.body.contentType || "text/xml");
+      res.status(out.status).send(out.body.twiml);
+      return;
+    }
     res.status(out.status).json(out.body);
   } catch (err) {
     res.status(500).json({ ok: false, error: "Internal error" });
