@@ -11,7 +11,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  placeCall, readiness, normalizePhone, PROVIDER, TRANSMITS, ENABLED, BLAND_API_BASE
+  placeCall, readiness, normalizePhone, firstSentenceFromPrompt,
+  PROVIDER, TRANSMITS, ENABLED, BLAND_API_BASE
 } from "./bland-voice.mjs";
 
 /* "0" is required, not decoration. src/lib/outbound-fetch.mjs defaults to
@@ -124,10 +125,32 @@ test("the task Bland speaks is the agent's stored prompt, not a vendor file", as
   const body = JSON.parse(sent.init.body);
   assert.equal(body.task, goodAgent.prompt,
     "the call must speak agents.prompt — that is what makes the Agent Editor the source of truth");
+  assert.equal(body.first_sentence, firstSentenceFromPrompt(goodAgent.prompt),
+    "Bland must have opening words — missing first_sentence ended prove calls in 0.13s");
+  assert.equal(body.wait_for_greeting, true, "a real client line still waits for a hello");
   assert.equal(body.phone_number, "+15551234567", "the number is normalised to E.164");
   assert.equal(body.metadata.agent_code, "AG-04");
   assert.equal(body.metadata.client_id, "client-1");
   assert.ok(body.webhook, "a call with no return webhook can never be filed against anybody");
+});
+
+test("the agent prove line does not wait for a greeting", async () => {
+  let sent = null;
+  await placeCall({
+    agent: goodAgent, phone: "+16616054248", env: LIVE,
+    fetchImpl: async (url, init) => { sent = { url, init }; return response(); }
+  });
+  const body = JSON.parse(sent.init.body);
+  assert.equal(body.wait_for_greeting, false);
+  assert.ok(body.first_sentence);
+});
+
+test("firstSentenceFromPrompt takes the first spoken line", () => {
+  assert.equal(
+    firstSentenceFromPrompt("You are Josh, an AI setter for Fundhub. Book a call with the client."),
+    "You are Josh, an AI setter for Fundhub."
+  );
+  assert.equal(firstSentenceFromPrompt(""), "Hey — can you hear me?");
 });
 
 test("Bland's key goes in Authorization with no Bearer prefix", async () => {
