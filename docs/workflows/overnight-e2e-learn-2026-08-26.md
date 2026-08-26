@@ -607,6 +607,77 @@ Send letters / bureau phone stay **blocked**. Talk **UNVERIFIED**.
 
 ---
 
+## Hour 14 — intended vs actual, line by line (doors)
+
+**Live:** no homepage probe. Ingested: no contracts / consents / sales; leftover DOC-02; Josh needs a book.
+
+Intended pages still say they were copied from actual on 2026-08-02. CHANGELOG after that date keeps saying **no `*-intended.md` rewrite** while actuals grew. A match is not expected. The gap is the finding.
+
+| Journey | Intended (Aug 2 picture) | Actual now |
+|---|---|---|
+| client | ~15 reach; 73 blocked | **30 / 196**. Actual adds chat, climate, content, public |
+| closer | ~59 reach; 29 blocked | **134 / 196** |
+| advisor | ~60 reach; 28 blocked | **136 / 196** |
+| sales-manager | doors only | **148 / 196** |
+| Specialist | doors + desk path | **130 / 196** |
+| owner | almost every door | **194 / 196** |
+| affiliate | ~11 reach; 77 blocked | **25 / 196** |
+| white-label | doors + marketing notes | **55 / 196** |
+
+None of these list Josh talk, book texts, or AR. Sequence vs intended stays **UNVERIFIED**.
+
+Client intended says the person should reach **consent** and **contracts**. These five have **0 consents** and **0 contracts**. The door exists. The motion never happened.
+
+---
+
+## Hour 15 — book / no-answer / nurture / bureau sweeper
+
+All of these need a **book** (or a no-answer Josh call). These five have none. Message keys on the five: **zero** for S-04 confirm, 24h, 2h, 15-min handoff, no-show, AI-SET-03.
+
+| Workflow | Trigger | On these five |
+|---|---|---|
+| S-04 move to booked | `booking.created` | never |
+| S-04B confirm + 24h + 2h | `booking.created` | never |
+| S-04C staff alert | `booking.created` (switch default off) | never |
+| AI-SET-01 Josh | `booking.created` | never (desk `outbound_calls` are not this) |
+| AI-SET-04 15-min handoff | `booking.created` | never |
+| DPC-02 showed / no-show | `booking.created` then wait | never |
+| S-05a no-show recovery | `booking.noshow` | never |
+| BS-01 pre-call drip | `booking.created` | never |
+| AI-SET-03 no-answer texts | `call.completed` + no-answer / voicemail | Fund Horse call is **callback** + FAKE MEET. Keys **absent**. Matches AR board: texts 2 and 3 almost never leave. |
+
+N-01 cold and N-02 warm are **retired** (2026-08-22). S-NOBOOK owns the post-survey chase. No nurture keys on these five.
+
+Contract chaser: nothing to chase (**0 contracts**).
+
+Inquiry call sweeper: cron every 15 min, **real bureau phones**. These cases have **no** `call_due_at`. Sweeper would skip them. Do not launch. Phone inquiry stays on hold.
+
+GHL-DOC **does** still run on `docs.received` (retired agent, live workflow). That is the leftover DOC-02 path. Extra SMS = FAIL.
+
+### Live prompts (not unused disk files)
+
+- **AG-04 / AG-09:** 169-letter stub. FAIL. Do not roleplay again.
+- **AG-07 Recon:** triage only. Do not change product code. Do not text a client.
+- **OP-06 closer drill:** staff practice. Must not talk to live clients. Banned lines: score will go up, we will get you funded, a set bank dollar, a bad mark comes off, 0% interest. Mentions Sarah.
+
+---
+
+## Hour 16 — deposit rail vs what Fund Horse actually has
+
+S-06 and S-doc-collection both start on **`deposit.paid`**. These five have **no** `deposit.paid`. **0 sales.** Pay links unpaid. Do not pay.
+
+S-06 would also gate on funding `outcome_tier`. That field is empty, so even a later pay would fail closed until someone stamps the path.
+
+F-03 (`round.submitted`) never fired. Fund Horse only has `round.started`. Editor advisor tree’s “tell them it went out” (F-02 / F-03) did **not** run. Apply stays **B4**. Do not click Apply.
+
+Fund Horse still has `EMAIL-DOC-01-REQUEST` + `SMS-DOC-01-REQUEST`. The S-doc lock `doc_01_request_sent_at` is **empty**. Hold reason is **Awaiting CRS**, not the funding doc hold. So that first “we need docs” pair is **not** a clean S-doc run after a deposit. Extra DOC-02 is GHL-DOC on `docs.received`.
+
+S-08 (didn’t buy) needs `call.completed` outcome **declined**. Fund Horse stored outcome is **callback**. No S-08 task.
+
+S-02 incomplete-survey nudge: all five submitted the survey. No `EMAIL-S02-FINISH-APPLICATION` on them (expected skip).
+
+---
+
 
 
 
