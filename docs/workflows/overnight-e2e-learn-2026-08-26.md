@@ -360,6 +360,40 @@ Walked **twice as a person:** still no. **Not 100%.**
 
 ---
 
+## Hour 7 — ~1:30 a.m. Pacific
+
+**Live:** no new probe. 503 already counted. No Apply. No Bland. No live CRS (even though a task says Pull CRS).
+
+**Did:** read C-05. It does **not** look at `crs_results`. It looks at `custom_fields.crs_status === "Complete"`.
+
+### Stored next job vs Hour 1 dash vs CRS row
+
+| File | `crs_results` rows | `crs_status` flag | Stored next / hold | Hour 1 dash next |
+|---|---|---|---|---|
+| Funding | 1 | **empty** | **Pull CRS** / Awaiting CRS | Apply for Funding |
+| Repair | 1 | empty | empty | Remove Inquiries |
+| Combo | 1 | empty | empty | none |
+| Inquiry | 1 | empty | **Apply for Funding** | Remove Inquiries |
+| Course | 1 | empty | empty | none |
+
+So:
+
+1. Fund Horse has a credit file row and still a “Cannot start funding — CRS incomplete” task. The workflow never counted the row.
+2. Hour 1 dash said Apply for Funding. The file’s own next-action field says Pull CRS. Two different “next” stories. Live page is 503 so I cannot see which one the frozen UI shows.
+3. Inquiry Horse stored next is Apply for Funding. That is the C-03 resume path. Dash said Remove Inquiries. Inquiry cases: 2 Completed + 1 Queued.
+
+### DIY status
+
+- Fund Horse: `diy_status` = **Delivery Failed — Retry**, but `EMAIL-DS02` already delivered and the tag `client:diy-letters` is on. Editor says DIY never on the funding route.
+- Repair + Combo: DIY **Delivered**. Combo still has **no** `repair_programs` row.
+- Course / Inquiry: no DIY flag.
+
+Do not pull CRS. Do not retry DIY send. Do not Apply.
+
+**File PASS:** still all **FAIL**. Talk **UNVERIFIED**. **B1 FAIL. B2 PASS.** Night not done. **Not 100%.**
+
+---
+
 
 
 
