@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { handle, templateForOffer, OFFER_EMAIL } from "./s-offer-bucket.mjs";
+import { handle, templateForOffer, OFFER_EMAIL, isMasteryPaidLink } from "./s-offer-bucket.mjs";
 import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
 test("templateForOffer reads offerKey, not outcome", () => {
@@ -57,4 +57,63 @@ test("offer bucket: Bland AI call does not send", async () => {
   assert.equal(res.done, false);
   assert.equal(res.reason, "not_closer_disposition");
   assert.equal(db.messages.length, 0);
+});
+
+test("isMasteryPaidLink: unpaid or other products are not paid Mastery", () => {
+  assert.equal(isMasteryPaidLink({ status: "sent", description: "Funding Mastery course (A to Z)" }), false);
+  assert.equal(isMasteryPaidLink({ status: "paid", description: "Funding, done-for-you" }), false);
+  assert.equal(isMasteryPaidLink({ status: "paid", product_code: "funding-mastery" }), true);
+  assert.equal(isMasteryPaidLink({ paid_at: "2026-08-26T17:00:00Z", description: "Funding Mastery course (A to Z)" }), true);
+});
+
+test("offer bucket: unpaid Mastery does not send you're enrolled", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
+    templates: [{ org_id: "org-1", template_key: OFFER_EMAIL.FUNDING_MASTERY, channel: "email", body: "enrolled", compliance_passed: true }],
+    paymentLinks: [{
+      org_id: "org-1",
+      client_id: "cl-1",
+      status: "sent",
+      paid_at: null,
+      description: "Funding Mastery course (A to Z)",
+      product_code: "funding-mastery"
+    }]
+  });
+  const res = await handle({
+    event: ev("call.completed", { disposition: "closer", offerKey: "FUNDING_MASTERY", outcome: "downsell" }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+  assert.equal(res.done, false);
+  assert.equal(res.reason, "mastery_unpaid");
+  assert.equal(db.messages.length, 0);
+  const again = await handle({
+    event: ev("call.completed", { disposition: "closer", offerKey: "FUNDING_MASTERY", outcome: "downsell" }, { id: "evt-2", clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+  assert.equal(again.done, false);
+  assert.equal(again.reason, "mastery_unpaid");
+  assert.equal(db.messages.length, 0);
+});
+
+test("offer bucket: paid Mastery sends the enrolled email", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
+    templates: [{ org_id: "org-1", template_key: OFFER_EMAIL.FUNDING_MASTERY, channel: "email", body: "enrolled", compliance_passed: true }],
+    paymentLinks: [{
+      org_id: "org-1",
+      client_id: "cl-1",
+      status: "paid",
+      paid_at: "2026-08-26T17:00:00Z",
+      description: "Funding Mastery course (A to Z)",
+      product_code: "funding-mastery"
+    }]
+  });
+  const res = await handle({
+    event: ev("call.completed", { disposition: "closer", offerKey: "FUNDING_MASTERY", outcome: "downsell" }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+  assert.equal(res.done, true);
+  assert.equal(res.templateKey, OFFER_EMAIL.FUNDING_MASTERY);
+  assert.equal(db.messages.length, 1);
+  assert.equal(db.messages[0].template_key, OFFER_EMAIL.FUNDING_MASTERY);
 });

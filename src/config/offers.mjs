@@ -93,7 +93,8 @@ export const OFFERS = Object.freeze({
     financing: true,
     letters: false,
     paymentPurpose: "custom",
-    productCode: "funding-mastery"
+    productCode: "funding-mastery",
+    contractTemplateKey: "FUNDING-MASTERY-AGREEMENT"
   })
 });
 
@@ -175,6 +176,14 @@ export function defaultContractValues({ offerKey = null, tier = null } = {}) {
       term_days: "180",
       repair_scope: "Parallel credit repair on limiting bureaus while funding rounds run.",
       funding_scope: "Full done-for-you funding program: matching, rounds, and inquiry sweeps."
+    };
+  }
+  if (templateKey === "FUNDING-MASTERY-AGREEMENT") {
+    return {
+      ...base,
+      program_fee: price || "$5,000",
+      term_days: "365",
+      scope: "Funding Mastery program access: the full A-to-Z course on your own file. This is education. You do the work."
     };
   }
   return base;
