@@ -15,10 +15,11 @@
 | | |
 |---|---|
 | What browsers hit | Frozen **CLI** blob `6a8e9c28926e` — **no git SHA** |
-| What git says | `origin/main` `e58133f0` has #176 `beb81d25`, #170, #172, notes, etc. **#177 pending** |
+| What git says | `origin/main` `056b6a9b` is **#177** (Forgot + AF1). Also has #176, #170, notes. |
 | Score rule | Only what that **frozen live** already showed. Code on main is **not** live. |
 
-- **#176 / #170 are not live.** Skip B1 reload-as-pass. **B1 stays FAIL** (play box emptied on the frozen site).
+- **#176 / #170 / #177 are not live.** Skip B1 reload-as-pass. **B1 stays FAIL.** Do **not** score Forgot / AF1 as live.
+- Migration **263** SQL is already on the live database. The Forgot / AF1 **code** is not on `fundhub.ai`. **Do not deploy.**
 - Do not treat a Specialist “What is next” glimpse as “main #170 is live.”
 - Keep walking the five sims + reading code/journeys. No Bland. No Apply. No new fixes.
 
@@ -43,7 +44,7 @@
 - Paper mail, live CRS, card charge (not run).
 - CCP / Specialist clicks this hour: live homepage **503** `usage_exceeded` (one probe). Did not retry.
 - B1 play box after reload: **#176 is on main only.** Frozen live / 503. **B1 stays FAIL.** Skip reload-as-pass.
-- Aff Forgot / AF1 (wait for **#177** on a live page, then one `e2e+aff-*` Forgot click).
+- Aff Forgot / AF1: **#177 is on `origin/main` only** (`056b6a9b`). Migration 263 is on the live DB. Code is **not** on `fundhub.ai`. **Do not score Forgot as live.** Do not deploy. Do not click Forgot tonight.
 
 **Chris quality-check later (existing PDFs, not new work):**
 - UnderwriteIQ pack on disk: `docs/workflows/four-plus-pulse-2026-08-25-evidence/deliverables/fund-*.pdf`
@@ -707,6 +708,84 @@ AT-01 ran. All five have `first_touch_date` and `lead_magnet_type=Survey`.
 C-02 (new inquiries from a CRS analysis) never ran — no `analysis.completed`. Inquiry cases on these files came from later staff / e2e clicks, not that workflow.
 
 DS-01 repair-referral needs a **declined** closer call and a non-funding path. Fund Horse call is **callback**. Path field empty. No DS-01 send.
+
+---
+
+## Hour 20 — remaining rails (book / after book / repair / AR / aff / WL)
+
+**Live:** no homepage probe. No deploy. No Forgot click. No Apply. No Bland.
+
+**#177 ingested:** merged on `origin/main` as `056b6a9b`. Affiliate / partner Forgot + AF1 welcome are **GitHub only**. Migration **263** SQL is already on the live database. The new Forgot / AF1 **code is not** on `fundhub.ai`. Site still 503 / credits gone. **Do not score Forgot as live.** Do not deploy.
+
+Intended files are still **doors**. Sequence vs intended = **UNVERIFIED**. Live fire is the bar.
+
+### Book (intended vs editor vs live fire vs these five)
+
+| Book | What it says |
+|---|---|
+| Intended (`client-intended.md`) | Sign-in doors. **No** book texts. **No** Josh talk. |
+| Editor tree | Text the survey → wait **2 days** → book link → Josh in **5 minutes**. |
+| Live fire | `booking.created` → S-04 (move card) + S-04B (confirm SMS+email now, 24h, 2h) + Josh (`ai-set-01`, live AG-04 stub) + AI-SET-04 (15-min text) + S-04C staff (switch **default off**) + DPC-02 + BS-01. Portal invite at book is **retired** — S-04B email carries the link. No-answer texts: now / +30m / +2h (`call.completed` + no-answer / voicemail). |
+
+These five: `bookings` = **0**. `booking.created` = **0**. Zero S-04 / AI-SET keys. Nobook wave 1 left ~10:25 p.m. Pacific Aug 25. Wave 2 waits **+24h** after wave 1 → due ~10:25 p.m. Pacific **tonight**. Still sleeping. Not a FAIL yet. Fund Horse stored call is **callback** + FAKE MEET, so AI-SET-03 never started.
+
+### Funding after book (never started on these five)
+
+After a real book the live fire is: closer → consent → $32 pay → `deposit.paid` → S-06 + S-doc → `round.started` → F-01 (only if the path field says funding).
+
+These five have **0** consents, **0** contracts, **0** sales, **0** `deposit.paid`. Fund Horse has `round.started` anyway (staff / e2e). F-01 skipped because `outcome_tier` is empty. `SMS-ROUND-STARTED-NOTIFY` still left. F-04 / F-05 / F-06 / F-07 / F-08 / N-04 / N-06 never ran (no submit / approve / funded / closeout). BC-01 wrote a `behavior_scores` row on Fund Horse with **empty** responsiveness. Apply stays **B4**. Do not click.
+
+### Repair rounds
+
+Intended Specialist file = desk toggle + Send. **No** repair event list.
+
+Live bus: `repair.enrolled` → docs → analysis → letters ready → Send (paper) → 30-day wait → response → next round. Trial cap **2**. Full cap **6**. R2 holds on trial. Portal copy after Send: “bureaus have 30 days.”
+
+| File | Program | Letters | Events | 30-day clock |
+|---|---|---|---|---|
+| Repair | trial, cap 2, paid $200 | EQ + EX **R1** `generated`. No PDF. No paper id. | **0** `repair.*` | **not started** (`response_due_at` empty) |
+| Combo | **none** | none | 0 | — |
+| Fund / Inquiry / Course | none | none | 0 | — |
+
+Repair welcome email left. Enroll talks to the repair handler **directly** — it does not write `repair.enrolled` into `events`. That is why the welcome mail exists and the event table is empty. Retake photo ×3. Did not Send. Inquiry leftover: Repair has a **Queued** case from the e2e FTC lane. Fund has a Queued case from the control panel. Inquiry Horse: 2 Completed + 1 Queued. All `call_due_at` empty. Do not launch bureau phone.
+
+### AR 7-day clock
+
+Live fire: `invoice.sent` + **success fee only** → AR-01 now → sleep **7 days** → AR-02 → sleep 7 more → AR-03 → AR-04 tag. Stops on `invoice.paid`. Present Invoice does **not** start this.
+
+Fund Horse: two **$100** success-fee bills, status `sent`, reminder_count **0**, sent ~8:52 p.m. and 8:54 p.m. Pacific Aug 25. AR-01 email+SMS already left (×2). AR-02 is due ~**8:52 p.m. Pacific Sep 1**. Still sleeping. Repair $200 is a **deposit** — not this chain. Combo / Inquiry / Course: no success-fee bill.
+
+### Affiliate
+
+| Book | What it says |
+|---|---|
+| Intended | ~11 reach / 77 blocked. **Doors.** No drip order. |
+| Actual | **25 / 196**. Adds climate, gifts, public click, Company Brain aff. |
+| Editor | Approve → send link (still says portal **not built**) → stamp referral → setter. |
+| Live fire | AF-02 stamps owner on `entry.captured` / pay / analysis if `a1` is on the payload. Desk + copy link + `/start?ref=` click **PASS** (earlier). Social **not-live**. |
+
+These five have **0** `affiliate_referrals`. AF-02 never ran (no `a1`). AF templates **exist** on the live DB (`AF`, `AF1`–`AF4`, `AF-06`). AF1 was sent once to `e2e+aff-click17@` — **blocked**, then **bounced**. AF2–AF4 never sent. That prove is **not** the five horsemen.
+
+**#177:** Forgot + AF1 welcome **code** is on main only. Do **not** score Forgot as live. Do not click Forgot. Do not deploy.
+
+### White-label
+
+| Book | What it says |
+|---|---|
+| Intended | Doors + marketing-suite notes. Default **off**. Owner flip only. |
+| Actual | **55 / 196**. Adds brand, campaigns, creative, partner-marketing, social. |
+| Editor | Create company → Brand Studio → invite team. |
+| Live fire | Partner Home + Brand Studio + `/sites/{id}/apply` **PASS** (earlier). Custom domain **not-live** (every `partner_brand.domain` empty or unverified). Partner drip templates **none**. Social posts **0**. |
+
+Two partner rows have marketing suite **on**, launch **off**. Several sim `/apply` pages are **published**. Seeded demo apply is still **draft**. Forgot for partners is the same #177 code — **not live**.
+
+### Agent Editor + Gmail (second read)
+
+Live prompts **unchanged**: AG-04 / AG-09 **169** same stub. AG-07 342. OP-06 2622. Do not roleplay. Do not Bland.
+
+Gmail **anywhere** (agent read): fund **12**, repair **13**, combo **5**, inquiry **3**, course **3**. Same subjects as Hour 5. No new mail since then.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **B1 FAIL. B2 PASS.** Forgot **not live**. **Not 100%.** Morning brief still waits for 4:00 a.m. Pacific.
 
 ---
 
