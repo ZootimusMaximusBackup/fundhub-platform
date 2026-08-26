@@ -6,7 +6,9 @@ Domain facts, business rules, and architecture live in `docs/`. Read them when a
 
 ## 0. STOP — split the work first
 
-This is a hard rule. It fires at the start of every new project, task, or build request. No exceptions.
+This is a hard rule. It fires at the start of every new project, task, or build request. No exceptions, except Full End-To-End Audit (next paragraph).
+
+**Exception — Full End-To-End Audit:** If Chris said **Full End-To-End Audit** (or full e2e audit / full end to end), skip the split in this turn. Follow `.cursor/rules/full-end-to-end-audit.mdc` — two questions, then stop. Split only after he answers yes + live/sandbox.
 
 Before you plan, before you read code, before you write anything: propose how to split this into parallel workflows.
 
