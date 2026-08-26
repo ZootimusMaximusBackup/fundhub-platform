@@ -2,13 +2,16 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { launchProxySession, ProxySessionError } from "./launch.mjs";
 
-function fakeDb({ client, lender, application } = {}) {
+function fakeDb({ client, lender, application, businesses = [] } = {}) {
   const sessions = [];
   return {
     sessions,
     query(sql, params) {
       if (/FROM clients/.test(sql)) {
         return { rows: client ? [client] : [] };
+      }
+      if (/FROM businesses/.test(sql)) {
+        return { rows: businesses };
       }
       if (/FROM lenders/.test(sql)) {
         return { rows: lender ? [lender] : [] };
@@ -146,6 +149,39 @@ test("launchProxySession closes the audit row when the launch throws", async () 
   assert.equal(db.sessions.length, 1);
   assert.equal(db.sessions[0].status, "failed");
   assert.equal(db.sessions[0].error_code, "launch_threw");
+});
+
+test("launchProxySession uses company city/state when the person row has none", async () => {
+  const db = fakeDb({
+    client: { id: "c1", org_id: "o1", custom_fields: {} },
+    businesses: [{ entity_data: { city: "Austin", state: "TX" } }],
+    lender: {
+      id: "l1",
+      org_id: "o1",
+      name: "1st Source Bank",
+      product_name: "Biz CC",
+      application_url: "https://bank.example/apply"
+    }
+  });
+
+  const out = await launchProxySession(db, {
+    orgId: "o1",
+    staffId: "s1",
+    clientId: "c1",
+    lenderId: "l1",
+    env: ENV,
+    fetchFn: async () => ({
+      status: 200,
+      body: "{}",
+      json: { ip: "198.51.100.8", city: "Austin", region: "Texas", country: "US" }
+    })
+  });
+
+  assert.equal(out.application_url, "https://bank.example/apply");
+  assert.equal(out.verification.city, "Austin");
+  assert.match(out.connection.username, /city-austin/);
+  assert.equal(db.sessions[0].requested_city, "Austin");
+  assert.equal(db.sessions[0].requested_state, "TX");
 });
 
 test("launchProxySession fails when client has no location", async () => {
