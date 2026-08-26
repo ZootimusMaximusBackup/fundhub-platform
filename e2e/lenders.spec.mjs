@@ -21,6 +21,40 @@ test("lenders.html loads and shows empty-state import guidance", async ({ page }
   await expect(page.getByRole("button", { name: /Bureau mismatch queue/i })).toBeVisible();
 });
 
+test("lenders.html asks for 500 rows and paints the placeholder tile", async ({ page }) => {
+  let seenLimit = "";
+  await openScreen(page, "/app/lenders.html", OWNER, {
+    "/api/read/lenders": function (_route, ctx) {
+      seenLimit = new URL(ctx.url).searchParams.get("limit");
+      return {
+        ok: true,
+        lenders: [{
+          id: "aaaaaaaa-1111-4111-8111-111111111111",
+          name: "Fixture Credit Union XYZ",
+          lender_table: "OnlineBizCC",
+          logo_path: null,
+          bureaus_pulled: "EX",
+          stated_requirements: "",
+          priority_tier: 1,
+          active: true,
+          eligible_states: "",
+          last_updated_by: "",
+          last_updated_date: "",
+          application_url: null
+        }],
+        meta: { count: 1, empty: false }
+      };
+    },
+    "/api/read/lender-observations": EMPTY_OBS
+  });
+
+  const img = page.locator("img.lender-logo");
+  await expect(img).toBeVisible();
+  await expect(img).toHaveAttribute("src", "/assets/lenders/placeholder.svg");
+  await expect(page.locator("#listMeta")).toContainText("1 lender");
+  expect(seenLimit).toBe("500");
+});
+
 test("lenders.html can switch to mismatch review tab", async ({ page }) => {
   await openScreen(page, "/app/lenders.html", OWNER, {
     "/api/read/lenders": EMPTY_LENDERS,

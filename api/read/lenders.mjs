@@ -56,7 +56,7 @@ export default async function handler(req, res, deps = {}) {
       active: q.active == null || q.active === "" ? null : q.active,
       state: q.state || null,
       q: q.q || null,
-      limit: q.limit,
+      limit: q.limit == null || q.limit === "" ? 500 : q.limit,
       offset: q.offset
     });
 
