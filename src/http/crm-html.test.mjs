@@ -99,6 +99,7 @@ test("client-control-panel.html binds the live URL client and does not fake a pu
   assert.ok(!/JSON\.stringify\(\{[^}]*simulate/.test(html), "CCP must not send simulate on a staff pull");
   assert.ok(html.includes("/api/read/lender-matches"), "Generate Apps must refresh the live lender match list");
   assert.ok(html.includes("/api/applications"), "Bank yes/no must stamp a play on the existing applications door");
+  assert.ok(html.includes("/api/applications?client_id="), "Apply list must read saved plays back onto the row");
   assert.ok(html.includes("Play name (optional)"), "staff can type or pick a play");
   assert.ok(
     html.includes("Apply shows the client email, not a Fundhub address"),

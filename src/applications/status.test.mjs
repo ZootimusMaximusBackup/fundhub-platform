@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { setApplicationStatus, logBankDecision, ApplicationStatusError } from "./status.mjs";
+import { setApplicationStatus, logBankDecision, listClientDecisionPlays, ApplicationStatusError } from "./status.mjs";
 
 function stubDb(row) {
   const calls = [];
@@ -94,4 +94,28 @@ test("logBankDecision reuses an existing application for the lender", async () =
   assert.equal(row.id, "app-existing");
   const decision = db.calls.find((c) => /INSERT INTO application_decisions/i.test(c.sql));
   assert.equal(decision.params[7], "In-branch visit");
+});
+
+test("listClientDecisionPlays reads named plays for a client", async () => {
+  const db = {
+    async query(sql, params) {
+      assert.match(sql, /application_decisions/);
+      assert.match(sql, /a\.client_id/);
+      assert.match(sql, /d\.play_name/);
+      assert.equal(params[1], "33333333-3333-4333-8333-333333333333");
+      return {
+        rows: [{
+          play_name: "DeskWalk CardStack 0826",
+          status: "Denied",
+          lender_id: "44444444-4444-4444-8444-444444444444",
+          lender_name: "American Express"
+        }]
+      };
+    }
+  };
+  const rows = await listClientDecisionPlays(db, {
+    orgId: "11111111-1111-4111-8111-111111111111",
+    clientId: "33333333-3333-4333-8333-333333333333"
+  });
+  assert.equal(rows[0].play_name, "DeskWalk CardStack 0826");
 });
