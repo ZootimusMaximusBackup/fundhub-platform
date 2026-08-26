@@ -1,6 +1,7 @@
 // Orchestrate an Oxylabs Apply session: resolve client geo → verify exit → audit row.
 
 import { launchCredentials, generateSessid } from "../adapters/oxylabs.mjs";
+import { pickBankFormEmail } from "./bank-form-email.mjs";
 import {
   ProxySessionError,
   insertProxySession,
@@ -190,6 +191,7 @@ export async function launchProxySession(db, {
     lender: lender
       ? { id: lender.id, name: lender.name, product_name: lender.product_name }
       : null,
+    bank_form_email: pickBankFormEmail(client),
     // Only the Chrome extension can turn routing on in the advisor's browser.
     routing_active: false,
     extension_required: true
