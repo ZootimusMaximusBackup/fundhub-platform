@@ -19,6 +19,7 @@ const ORG_B = "22222222-2222-4222-8222-222222222222";
 const CID = "f3263bdb-45da-4056-8d6c-7c999d944fee";
 const OTHER_CLIENT = "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa";
 const LINK_ID = "55555555-1111-4111-8111-555555555555";
+const INVOICE_ID = "66666666-1111-4111-8111-666666666666";
 const CHECKOUT_BASE = "https://pay.commas.io/c/onboarding";
 
 let savedQuery = null;
@@ -64,6 +65,7 @@ const LINK_ROW = {
 
 const ROUTES = {
   ownsClient: { re: /SELECT\s+1\s+FROM\s+clients/i, rows: () => [{ "?column?": 1 }] },
+  invoicesInsert: { re: /INSERT\s+INTO\s+invoices/i, rows: () => [{ id: INVOICE_ID, source: "other", amount_due: "100.00", status: "draft" }] },
   linksInsert: { re: /INSERT\s+INTO\s+payment_links/i, rows: () => [LINK_ROW] },
   linksGetOne: { re: /SELECT\s+\*\s+FROM\s+payment_links\s+WHERE\s+id/i, rows: () => [LINK_ROW] },
   linksSetSent: { re: /UPDATE\s+payment_links[\s\S]*status = 'sent'/i, rows: () => [{ ...LINK_ROW, status: "sent", sent_at: "2026-08-02T00:00:00.000Z" }] },
@@ -271,10 +273,19 @@ describe("POST /api/payment-links — create", () => {
     assert.equal(ran(r.queries, "linksInsert").length, 0);
   });
 
-  test("purpose invoice is accepted", async () => {
+  test("purpose invoice writes an invoice row then a pay link", async () => {
     const r = await create({ purpose: "invoice", price: "100.00" });
     assert.equal(r.status, 200);
     assert.equal(r.body.ok, true);
+    const inv = ran(r.queries, "invoicesInsert");
+    assert.equal(inv.length, 1);
+    assert.equal(inv[0].params[0], ORG_A);
+    assert.equal(inv[0].params[1], CID);
+    assert.equal(inv[0].params[3], "other");
+    assert.equal(inv[0].params[5], "100.00");
+    const ins = ran(r.queries, "linksInsert");
+    assert.equal(ins.length, 1);
+    assert.equal(ins[0].params[15], INVOICE_ID);
   });
 
   test("an unknown purpose is refused", async () => {

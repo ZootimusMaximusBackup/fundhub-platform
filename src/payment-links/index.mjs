@@ -8,9 +8,14 @@
 // created -> sent -> paid, or -> expired / void. It never writes a
 // transaction and never charges anyone — the link is a URL a client visits to
 // pay Commas directly.
+// Purpose "invoice" (Present Invoice this client) also writes an invoices row
+// and stores its id on the link. That is the owed record. The link is only
+// the ask. COMPLIANCE REVIEW REQUIRED — payment rails.
 import crypto from "node:crypto";
 import { buildCommasCheckoutUrl } from "../adapters/commas.mjs";
 import { createCheckoutSession, checkoutConfig } from "../payments/commas-api.mjs";
+import { createInvoice } from "../invoices/index.mjs";
+import { fromCents } from "../commissions/money.mjs";
 
 const PURPOSES = new Set(["deposit", "diagnostic", "repair", "custom"]);
 const SALE_MOTIONS = new Set(["downsell", "upsell"]);
@@ -137,7 +142,10 @@ export async function createPaymentLink(db, {
   if (!clientId) throw new TypeError("createPaymentLink: clientId is required");
   /* The live create-invoice door sends purpose "invoice". The table check
      still only allows deposit / diagnostic / repair / custom, so invoice
-     is accepted here and stored as custom — a word that already works. */
+     is accepted here and stored as custom — a word that already works.
+     Before that remap, write the invoices row the button claims to mint.
+     A pay link alone is not an invoice. */
+  const mintInvoiceRow = purpose === "invoice" && !invoiceId;
   if (purpose === "invoice") {
     purpose = "custom";
     if (!String(description || "").trim()) description = "Invoice";
@@ -153,6 +161,19 @@ export async function createPaymentLink(db, {
   }
   if (saleMotion != null && !SALE_MOTIONS.has(saleMotion)) {
     throw new TypeError("createPaymentLink: saleMotion must be downsell or upsell");
+  }
+  if (mintInvoiceRow) {
+    const invoice = await createInvoice(db, {
+      orgId,
+      clientId,
+      source: "other",
+      amount: fromCents(amountCents),
+      notes: String(description || "").trim() || "Present Invoice this client"
+    });
+    if (!invoice?.id) {
+      throw new Error("createPaymentLink: purpose invoice must write an invoice row");
+    }
+    invoiceId = invoice.id;
   }
 
   const context = await resolveLinkContext(db, {

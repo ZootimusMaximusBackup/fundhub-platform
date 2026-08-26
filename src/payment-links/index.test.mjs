@@ -24,11 +24,25 @@ function fakeDb({
   recentActors = []
 } = {}) {
   const rows = [];
+  const invoices = [];
   let n = 0;
   return {
     rows,
+    invoices,
     query: async (sql, params) => {
       const text = String(sql);
+
+      if (/^\s*INSERT INTO invoices/i.test(text)) {
+        const [
+          org_id, client_id, invoice_type, source, source_event_id, amount_due
+        ] = params;
+        const row = {
+          id: `inv-${++n}`, org_id, client_id, invoice_type, source,
+          source_event_id, amount_due, status: "draft"
+        };
+        invoices.push(row);
+        return { rows: [row] };
+      }
 
       if (/SELECT id, code[\s\S]*FROM products/i.test(text)) {
         const [org_id, product_id, product_code] = params;
@@ -178,13 +192,17 @@ describe("createPaymentLink", () => {
     assert.equal(db.rows.length, 0);
   });
 
-  test("purpose invoice is accepted and stored as custom", async () => {
+  test("purpose invoice writes an invoice row and stores the link as custom", async () => {
     const db = fakeDb();
     const link = await mint(db, {
       orgId: ORG, clientId: CLIENT, purpose: "invoice", amountCents: 10000, checkoutBaseUrl: BASE_URL
     });
     assert.equal(link.purpose, "custom");
     assert.equal(link.description, "Invoice");
+    assert.equal(db.invoices.length, 1);
+    assert.equal(db.invoices[0].source, "other");
+    assert.equal(db.invoices[0].amount_due, "100.00");
+    assert.equal(link.invoice_id, db.invoices[0].id);
   });
 
   test("an unknown purpose is refused", async () => {
