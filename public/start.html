@@ -39,7 +39,15 @@
       var dest = APPLY;
       if (ref) dest += "?a1=" + encodeURIComponent(ref) + "&ref=" + encodeURIComponent(ref);
       document.getElementById("go").href = dest;
-      if (ref) location.replace(dest);
+      function goApply() { location.replace(dest); }
+      if (!ref) return;
+      var body = JSON.stringify({ code: ref, source: "start", landing_path: location.pathname + location.search });
+      fetch("/api/public/affiliate-click", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: body,
+        keepalive: true
+      }).catch(function () {}).finally(goApply);
     })();
   </script>
 </body>
