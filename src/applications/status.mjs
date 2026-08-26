@@ -212,3 +212,21 @@ export async function listApplicationDecisions(db, { orgId, applicationId, limit
   );
   return r.rows;
 }
+
+/** Latest named plays for a client's bank yes/no rows. Newest first. */
+export async function listClientDecisionPlays(db, { orgId, clientId, limit = 50 }) {
+  const r = await db.query(
+    `SELECT d.play_name, d.status, d.decided_at, d.application_id,
+            a.lender_id, a.lender_name
+       FROM application_decisions d
+       JOIN applications a ON a.id = d.application_id AND a.org_id = d.org_id
+      WHERE d.org_id = $1::uuid
+        AND a.client_id = $2::uuid
+        AND d.play_name IS NOT NULL
+        AND btrim(d.play_name) <> ''
+      ORDER BY d.decided_at DESC
+      LIMIT $3`,
+    [orgId, clientId, Math.min(Math.max(Number(limit) || 50, 1), 200)]
+  );
+  return r.rows;
+}
