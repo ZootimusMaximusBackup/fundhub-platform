@@ -580,6 +580,33 @@ Intended client file still has **no talk order**. Overall cannot be PASS.
 
 ---
 
+## Hour 13 — ~2:00 a.m. Pacific
+
+**Live:** no homepage probe. Specialist intended desk vs stored inquiry/repair files. #170 is **not live**.
+
+### Specialist intended (doors + desk path)
+
+1. Sign in → Specialist.  
+2. Toggle Inquiries / Repair.  
+3. Send only when a letter is ready. Nothing mails until that click.  
+4. Phone inquiry **on hold**.
+
+### What these files have (store, not a second Send click)
+
+**Inquiry Horse:** 2 cases **Completed** + 1 **Queued**. Tag `inquiry:completed`. `inquiry.removed` ×2. C-03 tasks say start a **funding** round. Stored next = Apply for Funding. Hour 1 dash said Remove Inquiries. **1** `outbound_calls` initiated (`agent_editor`) — that is AG-09 to the **agent phone**, not a bureau. Do not launch phone inquiry. Do not Bland.
+
+**Repair Horse:** trial **active**, cap 2, R2 holds (AR board). Welcome + letters-ready email. **No** `repair.*` events. Did not Send (paper). Desk was clicked **once** earlier tonight before the site died. That is not twice. Do not treat “What is next” as #170 live.
+
+**Combo:** DIY letters email, **no** repair program. Specialist list may not even show a repair file.
+
+**Fund Horse:** extra inquiry case **Queued** from the control panel. Not this file’s job.
+
+Send letters / bureau phone stay **blocked**. Talk **UNVERIFIED**.
+
+**Not 100%.** Morning brief still waits for 4:00 a.m. Pacific.
+
+---
+
 
 
 
