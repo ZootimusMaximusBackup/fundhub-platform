@@ -537,6 +537,39 @@ describe("/api/lenders (create · save · import)", { skip: !HAVE_DB ? "no DATAB
       assert.equal(list.length, 5);
       assert.ok(list.every((L) => L.id), "every row carries an id, so its Save button can post one");
     });
+
+    test("match uses company state when the person row has none", async () => {
+      await wipeLenders();
+      const csv = [
+        "lender_table,name,eligible_states,bureaus_pulled,priority_tier,active,external_row_id",
+        "OnlineBizCC,T8 CoState All,All States,EQ,1,true,T8-CS-1",
+        "PersonalCC,T8 CoState Texas,TX,TU,2,true,T8-CS-2",
+        "PersonalLoans,T8 CoState NewYork,NY,EQ,2,true,T8-CS-3"
+      ].join("\n");
+      const imp = await api({ body: { action: "import", csv }, token: owner.token });
+      assert.equal(imp.code, 200, JSON.stringify(imp.body));
+      assert.equal(imp.body.imported, 3);
+
+      const companyClient = (await db.query(
+        `INSERT INTO clients (org_id, first_name, last_name, custom_fields)
+         VALUES ($1,'T8','CompanyState','{}'::jsonb) RETURNING id`,
+        [org]
+      )).rows[0].id;
+      await db.query(
+        `INSERT INTO businesses (org_id, client_id, name, entity_data)
+         VALUES ($1,$2,'T8 Texas Co',$3::jsonb)`,
+        [org, companyClient, JSON.stringify({ state: "TX" })]
+      );
+
+      const r = await call(matchesHandler, {
+        method: "GET", query: { client_id: companyClient }, token: owner.token
+      });
+      assert.equal(r.code, 200, JSON.stringify(r.body));
+      assert.equal(r.body.summary.client_state, "TX");
+      const names = r.body.matches.map((m) => m.name).sort();
+      assert.deepEqual(names, ["T8 CoState All", "T8 CoState Texas"]);
+      assert.equal(names.includes("T8 CoState NewYork"), false);
+    });
   });
 
   /* ── the shape of the file Chris has to hand over ──────────────────────── */
