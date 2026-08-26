@@ -335,8 +335,9 @@ function publicBaseUrl(env = process.env) {
 }
 
 /**
- * sendDeckSoftPull — $32 fixed diagnostic pay link + soft-pull approval form.
- * Soft-pull price is never closer-editable (owner law).
+ * sendDeckSoftPull — diagnostic pay link (base $32) + soft-pull approval form.
+ * Soft-pull base price is never closer-editable (owner law). Business add-ons
+ * ($10×n) are chosen on the approve form; checkout amount is adjusted there.
  */
 export async function sendDeckSoftPull(db, {
   orgId, clientId, staffId, staffRole = null, checkoutBaseUrl, env = process.env
@@ -369,6 +370,7 @@ export async function sendDeckSoftPull(db, {
       clientId,
       purpose: "diagnostic",
       description: offer.name,
+      commasProductTitle: offer.commasProductTitle,
       amountCents: offer.priceCents,
       createdByStaffId: staffId,
       createdByRole: staffRole,
@@ -394,30 +396,62 @@ export async function sendDeckSoftPull(db, {
     `SELECT first_name, email FROM clients WHERE id = $1 AND org_id = $2`,
     [clientId, orgId]
   );
-  const firstName = first.rows[0]?.first_name || "there";
+  const firstNameRaw = first.rows[0]?.first_name || "there";
+  const firstName = String(firstNameRaw)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
   const amount = formatCents(offer.priceCents) || "$32";
-
+  /* EMAIL-OFFER-SOFT-PULL is post-payment ("assessment is running") — wrong
+     for this send. Pay + consent clarity lives here until a dedicated
+     pre-pay template exists. Order: consent form first, then pay. */
   const emailBody =
-    `Hi ${firstName},\n\n` +
-    `On our call — next step is your ${amount} soft-pull assessment.\n\n` +
-    `1) Pay here (fixed ${amount}):\n${link.checkout_url}\n\n` +
-    `2) Approve the soft pull and enter your details:\n${approve.url}\n\n` +
-    `Both take about a minute. Stay on the Meet with your advisor.\n\n` +
-    `— Fundhub`;
+    `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your soft-pull assessment</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F4F4F5;-webkit-text-size-adjust:100%;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#F4F4F5;">
+  <tr>
+    <td align="center" style="padding:24px 12px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:600px;background-color:#FFFFFF;border:1px solid #E4E4E7;">
+        <tr>
+          <td style="padding:28px 28px 8px 28px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.55;color:#18181B;">
+            <p style="margin:0 0 16px 0;">Hi ${firstName},</p>
+            <p style="margin:0 0 16px 0;">Next step on our call: your UnderwriteIQ soft-pull assessment (base ${amount}).</p>
+            <p style="margin:0 0 16px 0;"><strong>1) Approve the soft pull</strong> — this is your written permission for a soft inquiry. It does not hurt your credit score. Enter your details, and optionally add businesses ($10 each, up to 5). Your total updates on that page.</p>
+            <p style="margin:0 0 16px 0;"><a href="${approve.url}" style="color:#18181B;font-weight:700;">Open soft-pull authorization form</a><br>
+            <span style="font-size:13px;color:#71717A;word-break:break-all;">${approve.url}</span></p>
+            <p style="margin:0 0 16px 0;"><strong>2) Pay the total shown on the form</strong> — base ${amount} for the personal soft pull, plus $10 per business you add. If you add no businesses, you can use this pay link:</p>
+            <p style="margin:0 0 16px 0;"><a href="${link.checkout_url}" style="color:#18181B;font-weight:700;">Pay soft-pull assessment</a><br>
+            <span style="font-size:13px;color:#71717A;word-break:break-all;">${link.checkout_url}</span></p>
+            <p style="margin:0 0 16px 0;">If you add businesses, use the <strong>Pay</strong> button after you submit the form — that link matches your total. Both steps take about a minute. Stay on the Meet with your advisor.</p>
+            <p style="margin:0 0 16px 0;">— Fundhub<br>
+            fundhub.ai</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>`;
 
   const composed = await composeAndSend(db, {
     orgId,
     staffId,
     clientId,
     channel: "email",
-    subject: `Your ${amount} soft-pull assessment`,
+    subject: `Your soft-pull assessment — authorize, then pay`,
     body: emailBody,
     idempotencyKey: `soft-pull-send:${link.id}`
   });
 
   const smsBody =
-    `Hi ${firstName}, your Fundhub soft-pull: pay ${amount} ${link.checkout_url} ` +
-    `then approve ${approve.url}`;
+    `Hi ${firstNameRaw}, Fundhub soft-pull: (1) authorize ${approve.url} ` +
+    `(2) pay total on that form (base ${amount}) ${link.checkout_url}`;
   let sms = null;
   try {
     sms = await composeAndSend(db, {
@@ -547,7 +581,11 @@ export async function sendDeckPayLink(db, {
   }
   const purpose = paymentPurpose(offer);
   const description = offer.name;
-  if (offer.key !== "FUNDING_DFY" && saleMotion !== "downsell" && saleMotion !== "upsell") {
+  /* Primary DFY / mastery offers are the main close — not downsell/upsell.
+     Only alternate ladders need an explicit sale motion. */
+  const primaryPayOffers = new Set(["FUNDING_DFY", "REPAIR_DFY", "REPAIR_TRIAL", "FUNDING_MASTERY"]);
+  const isPrimaryPay = primaryPayOffers.has(offer.key);
+  if (!isPrimaryPay && saleMotion !== "downsell" && saleMotion !== "upsell") {
     throw new CloserDeckError(
       "Choose downsell or upsell before creating this payment link.",
       { status: 400, code: "sale_motion_required" }
@@ -560,11 +598,12 @@ export async function sendDeckPayLink(db, {
       clientId,
       purpose,
       description,
+      commasProductTitle: offer.commasProductTitle,
       amountCents: offer.priceCents,
       createdByStaffId: staffId,
       createdByRole: staffRole,
       productCode: offer.productCode,
-      saleMotion: offer.key === "FUNDING_DFY" ? null : saleMotion,
+      saleMotion: isPrimaryPay ? null : saleMotion,
       checkoutBaseUrl,
       env
     });

@@ -20,13 +20,13 @@
     <div class="code" id="code">Referral</div>
     <h1>Continue to apply</h1>
     <p id="lead">This link belongs to an affiliate. We will send you to the Fundhub apply form with their code attached.</p>
-    <a class="btn" id="go" href="https://apply.fundhub.ai/apply">Go to apply</a>
+    <a class="btn" id="go" href="https://apply.fundhub.ai/watch">Go to apply</a>
   </div>
   <script>
     (function () {
-      // Canonical FundHub apply path. Bare apply.fundhub.ai/ 302s to the wrong
-      // ClickFunnels workspace theme (myclickfunnels.com); /apply is the live funnel.
-      var APPLY = "https://apply.fundhub.ai/apply";
+      // Live funnel. Bare apply.fundhub.ai/ can 302 to the wrong CF theme;
+      // /apply headless-bot-skips and drops query params; /watch keeps a1/ref.
+      var APPLY = "https://apply.fundhub.ai/watch";
       var params = new URLSearchParams(location.search);
       var ref = String(params.get("ref") || params.get("a1") || "").trim();
       if (ref) {
@@ -39,7 +39,26 @@
       var dest = APPLY;
       if (ref) dest += "?a1=" + encodeURIComponent(ref) + "&ref=" + encodeURIComponent(ref);
       document.getElementById("go").href = dest;
-      if (ref) location.replace(dest);
+      function goApply() { location.replace(dest); }
+      if (!ref) return;
+      // Record the visit before bounce. Fire-and-forget; never block apply.
+      var body = JSON.stringify({ code: ref, source: "start", landing_path: location.pathname + location.search });
+      var sent = false;
+      try {
+        if (navigator.sendBeacon) {
+          sent = navigator.sendBeacon("/api/public/affiliate-click", new Blob([body], { type: "application/json" }));
+        }
+      } catch (e) {}
+      if (!sent) {
+        fetch("/api/public/affiliate-click", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: body,
+          keepalive: true
+        }).catch(function () {}).finally(goApply);
+        return;
+      }
+      goApply();
     })();
   </script>
 </body>

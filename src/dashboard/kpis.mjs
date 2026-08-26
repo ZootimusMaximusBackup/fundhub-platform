@@ -42,11 +42,13 @@ export async function computeKpis(db, { orgId, period = "7d" } = {}) {
       [orgId, days]
     ),
     db.query(
-      `SELECT count(*)::int AS n,
+      /* Count real funded rounds (money-chain source of truth), not clients.funded
+         which can lag or stay false when rounds already landed. */
+      `SELECT count(DISTINCT client_id)::int AS n,
               COALESCE(SUM(funded_amount), 0)::bigint AS cents
-         FROM clients
+         FROM funding_rounds
         WHERE org_id = $1
-          AND funded IS TRUE
+          AND status = 'funded'
           AND updated_at >= now() - ($2::int || ' days')::interval`,
       [orgId, days]
     ),

@@ -137,8 +137,11 @@
     }
     return "FUNDING_DFY";
   }
+  function isPrimaryPayOffer(key) {
+    return key === "FUNDING_DFY" || key === "REPAIR_DFY" || key === "REPAIR_TRIAL" || key === "FUNDING_MASTERY";
+  }
   function selectedSaleMotion() {
-    return selectedOfferKey() === "FUNDING_DFY" ? null : (state.saleMotion || null);
+    return isPrimaryPayOffer(selectedOfferKey()) ? null : (state.saleMotion || null);
   }
   function resolveContractTemplateKey() {
     if (state.tier === "FUNDING_PLUS_REPAIR") return "REPAIR-AND-FUNDING-AGREEMENT";
@@ -600,7 +603,7 @@
 
       if (code() === "S-23") {
         html += '<div><span class="mono">Live actions</span><div style="margin-top:6px;display:flex;flex-direction:column;gap:5px">';
-        if (selectedOfferKey() !== "FUNDING_DFY") {
+        if (!isPrimaryPayOffer(selectedOfferKey())) {
           html += '<label class="mono" for="fh-sale-motion">Sale motion</label>';
           html += '<select id="fh-sale-motion" style="width:100%;border:1px solid var(--line);background:transparent;padding:6px 8px;font-size:12px">';
           html += '<option value="">Choose downsell or upsell</option>';
@@ -609,6 +612,7 @@
           html += "</select>";
         }
         html += ckBtn("Send agreement + pay link", "pay", true);
+        html += ckBtn("Invoice this client", "invoice", false);
         html += ckBtn("Send contract", "contract", false);
         if (state.contractOpen) {
           html += '<div style="border:1px solid var(--line);padding:8px 9px;margin-top:2px">';
@@ -939,6 +943,32 @@
     else toast("Disposition written to contact record.");
   }
 
+  async function invoiceThisClient() {
+    if (!window.FHData || !contactId) { toast("No contact on this deck."); return; }
+    toast("Looking up invoice…");
+    var list = await window.FHData.read("invoices", { client_id: contactId, limit: 5 });
+    if (!list || !list.ok) {
+      toast((list && (list.error || list.message)) || "Could not load invoices.");
+      return;
+    }
+    var items = (list.data && list.data.items) || list.items || [];
+    var open = null;
+    for (var i = 0; i < items.length; i++) {
+      var st = String(items[i].status || "").toLowerCase();
+      if (items[i].id && st !== "void" && st !== "written_off") { open = items[i]; break; }
+    }
+    if (!open) { toast("No invoice on this file yet."); return; }
+    var r = await window.FHData.write("/api/messages-outbound", {
+      action: "email_invoice",
+      invoice_id: open.id
+    });
+    if (!r.ok) {
+      toast((r.error && (r.error.message || r.error)) || "Could not email invoice.");
+      return;
+    }
+    toast("Invoice emailed.");
+  }
+
   document.addEventListener("click", function (e) {
     var btn = e.target.closest("[data-act]");
     if (!btn) return;
@@ -977,6 +1007,7 @@
       fire("send_ebook", { amount_cents: cents }); return;
     }
     if (a === "pay") { fire("send_pay_link"); return; }
+    if (a === "invoice") { invoiceThisClient(); return; }
     if (a === "contract") { openContractSend(); return; }
     if (a === "contract-go") { sendContractNow(); return; }
     if (a === "contract-copy") {

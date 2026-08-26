@@ -163,4 +163,32 @@ describe("/api/agents", () => {
     assert.equal(r.body.agent.code, "AG-02");
     assert.equal(r.body.agent.status, "draft");
   });
+
+  test("run refuses Setter Josh", async () => {
+    stubDb({
+      session: { role: "owner", orgId: ORG_A },
+      answers: [[/SELECT[\s\S]*FROM agents/i, { rows: [agentRow({
+        code: "AG-04", name: "Setter Josh", agent_class: "client_facing",
+        channel: "sms", status: "live"
+      })] }]]
+    });
+    const r = mkRes();
+    await handler(mkReq({ action: "run", code: "AG-04", message: "hi" }), r);
+    assert.equal(r.statusCode, 409);
+    assert.equal(r.body.error, "not_a_drill");
+  });
+
+  test("run refuses a draft closer drill", async () => {
+    stubDb({
+      session: { role: "owner", orgId: ORG_A },
+      answers: [[/SELECT[\s\S]*FROM agents/i, { rows: [agentRow({
+        code: "OP-06", name: "Closer drill (beta)", agent_class: "ops",
+        channel: "internal", status: "draft"
+      })] }]]
+    });
+    const r = mkRes();
+    await handler(mkReq({ action: "run", code: "OP-06", message: "Start D1" }), r);
+    assert.equal(r.statusCode, 409);
+    assert.equal(r.body.error, "not_live");
+  });
 });
