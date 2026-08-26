@@ -5,16 +5,13 @@ import path from "node:path";
 import url from "node:url";
 import { db, dbTarget } from "./db.mjs";
 
-const SRC = fs.readFileSync(
-  path.join(path.dirname(url.fileURLToPath(import.meta.url)), "db.mjs"),
-  "utf8"
-);
+const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "..");
+const DB_SRC = fs.readFileSync(path.join(ROOT, "src/db.mjs"), "utf8");
+const API_SRC = fs.readFileSync(path.join(ROOT, "netlify/functions/api.mjs"), "utf8");
 
-test("db.mjs does not import pg at load time", () => {
-  // A top-level `import pg from "pg"` 502s the whole /api/* function when the
-  // zip is missing the package. Health and login must still be able to load.
-  assert.doesNotMatch(SRC, /^import\s+pg\s+from\s+["']pg["']/m);
-  assert.match(SRC, /require\(["']pg["']\)/);
+test("the live function traces pg so the zip keeps the driver", () => {
+  assert.match(DB_SRC, /^import pg from ["']pg["']/m);
+  assert.match(API_SRC, /^import ["']pg["']/m);
 });
 
 test("the module exports query without opening a pool", () => {
