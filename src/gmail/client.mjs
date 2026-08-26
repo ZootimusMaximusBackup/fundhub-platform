@@ -71,13 +71,20 @@ export function createGmailClient({
   }
 
   /**
-   * List message ids. Defaults to INBOX.
+   * List message ids.
+   * Default labelIds=INBOX only when there is no free-text `q`.
+   * A query like `in:anywhere` / `in:spam` must not also AND INBOX
+   * (Gmail API treats labelIds + q as intersection — that false-zeroed
+   * self-loop proves on 2026-08-25).
    */
-  async function listMessages({ maxResults = 10, labelIds = ["INBOX"], q } = {}) {
+  async function listMessages({ maxResults = 10, labelIds, q } = {}) {
+    const resolvedLabels = labelIds !== undefined
+      ? labelIds
+      : (q ? undefined : ["INBOX"]);
     const res = await gmailFetch(`/users/${encodeURIComponent(userId)}/messages`, {
       query: {
         maxResults,
-        labelIds,
+        labelIds: resolvedLabels,
         q: q || undefined
       }
     });

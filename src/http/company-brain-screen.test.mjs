@@ -29,6 +29,12 @@ test("company-brain.html is a chat: composer, message area, saved conversations"
   assert.match(HTML, /data-brain-thread-list/, "past conversations need their test hook");
 });
 
+test("company-brain.html lets staff take a class quiz on the documents panel", () => {
+  assert.match(HTML, /data-brain-quiz/);
+  assert.match(HTML, /ramp-quizzes\.js/);
+  assert.match(HTML, /Class quizzes/);
+});
+
 test("company-brain.html tells the reader an upload waits for owner approval", () => {
   // The gate is enforced in retrieve.mjs; this asserts the screen SAYS so, so a
   // person is never left wondering why a file they just added answers nothing.

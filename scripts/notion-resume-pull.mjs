@@ -101,6 +101,7 @@ async function extractPage(page) {
 function savePage(url, data) {
   const dir = path.join(OUTPUT_DIR, folderNameForPage(data.title, url));
   fs.mkdirSync(dir, { recursive: true });
+  const prev = fs.existsSync(path.join(dir, "meta.json")) ? readMeta(dir) : {};
   const meta = {
     url,
     pageId: pageIdFromUrl(url),
@@ -110,6 +111,8 @@ function savePage(url, data) {
     externalLinks: data.externalLinks,
     childPages: data.childPages,
     scrapedAt: new Date().toISOString(),
+    fileLinks: prev.fileLinks || [],
+    transcripts: prev.transcripts || [],
   };
   fs.writeFileSync(path.join(dir, "page.md"), `# ${data.title}\n\nSource: ${url}\n\n${data.bodyText}\n`);
   fs.writeFileSync(path.join(dir, "meta.json"), JSON.stringify(meta, null, 2));
@@ -118,11 +121,16 @@ function savePage(url, data) {
 
 function collectKnownUrls() {
   const known = new Set();
+  const empty = [];
   for (const dir of walkOutputDirs()) {
     const meta = readMeta(dir);
-    if (meta.url) known.add(normalizeUrl(meta.url));
+    if (!meta.url) continue;
+    const url = normalizeUrl(meta.url);
+    const textLen = (meta.bodyText || "").trim().length;
+    if (textLen > 20) known.add(url);
+    else empty.push(url);
   }
-  return known;
+  return { known, empty };
 }
 
 function collectQueuedUrls() {
@@ -139,15 +147,18 @@ function collectQueuedUrls() {
 }
 
 async function main() {
-  const known = collectKnownUrls();
+  const { known, empty } = collectKnownUrls();
   const queue = [...collectQueuedUrls()].filter((u) => isNotionPageUrl(u) && !known.has(u));
+  for (const url of empty) {
+    if (isNotionPageUrl(url) && !queue.includes(url)) queue.push(url);
+  }
 
   if (!queue.length) {
     console.log("Resume: no missing pages in link graph.");
     return;
   }
 
-  console.log(`Resume: ${queue.length} pages not yet saved.\n`);
+  console.log(`Resume: ${queue.length} pages not yet saved (${empty.length} empty to refetch).\n`);
 
   const context = await chromium.launchPersistentContext(PROFILE_DIR, {
     headless: true,

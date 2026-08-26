@@ -7,6 +7,7 @@ import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { ROLE_SETS, requireRole } from "../../src/http/read-api.mjs";
 import { driveConfigFromEnv } from "../../src/company-brain/config.mjs";
 import { syncDriveIncremental, getSyncState } from "../../src/company-brain/sync.mjs";
+import { processOrgMeetWords } from "../../src/company-brain/meet-transcript.mjs";
 import { dbDown } from "../../src/http/db-down.mjs";
 
 export default async function handler(req, res, deps = {}) {
@@ -52,7 +53,13 @@ export default async function handler(req, res, deps = {}) {
     }
     try {
       const sync = deps.syncDriveIncremental || syncDriveIncremental;
+      const wordsFn = deps.processOrgMeetWords || processOrgMeetWords;
       const out = await sync(database, { orgId, env });
+      let wordsReady = 0;
+      if (out.ok) {
+        const words = await wordsFn(database, { orgId, env });
+        wordsReady = (words.paired || 0) + (words.whispered || 0);
+      }
       return res.status(200).json({
         ok: true,
         drive_ready: true,
@@ -61,7 +68,8 @@ export default async function handler(req, res, deps = {}) {
         missing: [],
         mode: out.mode || null,
         upserted: out.upserted || 0,
-        deleted: out.deleted || 0
+        deleted: out.deleted || 0,
+        words_ready: wordsReady
       });
     } catch (e) {
       if (dbDown(res, e)) return;

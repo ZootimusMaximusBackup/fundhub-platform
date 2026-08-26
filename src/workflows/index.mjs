@@ -11,6 +11,7 @@ import { bc02CustomerFriction } from './bc-02-customer-friction.mjs';
 import { bs01PrecallLauncher } from './bs-01-precall-launcher.mjs';
 import { contractChaser } from './contract-chaser.mjs';
 import { messageDispatchSweeper } from './message-dispatch-sweeper.mjs';
+import { meetTranscriptSweeper } from './meet-transcript-sweeper.mjs';
 import { c00CrsSoftPullRequest } from './c-00-crs-soft-pull-request.mjs';
 import { c02InquiryCreated } from './c-02-inquiry-created.mjs';
 import { c02bInquiryRemovalRequested } from './c-02b-inquiry-removal-requested.mjs';
@@ -97,6 +98,7 @@ export const functions = [
 
      The file's own header carries the full reasoning for what moved. */
   messageDispatchSweeper,
+  meetTranscriptSweeper,
   c00CrsSoftPullRequest,
   c02InquiryCreated,
   c02bInquiryRemovalRequested,

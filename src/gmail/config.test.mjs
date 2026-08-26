@@ -121,6 +121,61 @@ test("createGmailClient lists inbox via mocked fetch", async () => {
   assert.equal(client.headerValue(msg, "Subject"), "Hello");
 });
 
+test("listMessages with q does not AND default INBOX labelIds", async () => {
+  let listedUrl = "";
+  const fetchImpl = mockFetch([
+    {
+      match: (u) => u.includes("oauth2.googleapis.com/token"),
+      body: { access_token: "gmail-tok", expires_in: 3600 }
+    },
+    {
+      match: (u) => u.includes("/gmail/v1/users/me/messages?"),
+      body: (u) => {
+        listedUrl = u;
+        return { messages: [{ id: "m2", threadId: "t2" }], resultSizeEstimate: 1 };
+      }
+    }
+  ]);
+  const client = createGmailClient({
+    oauthCredentials: {
+      refreshToken: "rt-1",
+      clientId: "cid-1",
+      clientSecret: "sec-1"
+    },
+    fetchImpl
+  });
+  await client.listMessages({ maxResults: 5, q: "in:anywhere from:noreply@fundhub.ai" });
+  assert.ok(!listedUrl.includes("labelIds="), `unexpected labelIds in ${listedUrl}`);
+  assert.ok(listedUrl.includes("q="), "expected q= in list URL");
+});
+
+test("listMessages without q still defaults to INBOX", async () => {
+  let listedUrl = "";
+  const fetchImpl = mockFetch([
+    {
+      match: (u) => u.includes("oauth2.googleapis.com/token"),
+      body: { access_token: "gmail-tok", expires_in: 3600 }
+    },
+    {
+      match: (u) => u.includes("/gmail/v1/users/me/messages?"),
+      body: (u) => {
+        listedUrl = u;
+        return { messages: [], resultSizeEstimate: 0 };
+      }
+    }
+  ]);
+  const client = createGmailClient({
+    oauthCredentials: {
+      refreshToken: "rt-1",
+      clientId: "cid-1",
+      clientSecret: "sec-1"
+    },
+    fetchImpl
+  });
+  await client.listMessages({ maxResults: 3 });
+  assert.ok(listedUrl.includes("labelIds=INBOX"), `expected INBOX default in ${listedUrl}`);
+});
+
 test("fetchOAuthAccessToken still works for gmail refresh", async () => {
   const fetchImpl = mockFetch([
     {

@@ -66,7 +66,7 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
   const disk = idsOnDisk();
   const expected = disk.size - Object.keys(DELIBERATELY_UNSERVED).length;
 
-  /* 62 since S-04C staff booked-call text (2026-08-23). Was 61 since section 4
+  /* 63 since Meet transcript sweeper (2026-08-24). Was 62 since S-04C staff booked-call text (2026-08-23). Was 61 since section 4
      (welcome, portal-invite, offer-bucket, doc-collection, ar-collections). Was 56
      since ghl-doc-document-check (section 2.2). Was 55 after
      repair-bureau-response-reader (WS-C). Was 54 after AI-SET-01 Josh setter was
@@ -76,7 +76,7 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      The count stays pinned as well as derived: registering a function is how a
      job starts running, and Inngest executes functions in production today, so
      it should cost somebody a line in a test. */
-  assert.equal(functions.length, 62, `expected 62, got ${functions.length}`);
+  assert.equal(functions.length, 63, `expected 63, got ${functions.length}`);
   assert.equal(functions.length, expected,
     `${disk.size} workflows on disk, ${Object.keys(DELIBERATELY_UNSERVED).length} deliberately unserved, ` +
     `so ${expected} should be served — but ${functions.length} are`);

@@ -16,6 +16,8 @@ export {
 export { upsertExtractedFile } from "./store.mjs";
 export { retrieveChunks, retrieveAffiliateChunks } from "./retrieve.mjs";
 export { syncDriveIncremental, getSyncState, saveSyncState } from "./sync.mjs";
+export { pairMeetTranscripts, processOrgMeetWords, sweepMeetTranscripts } from "./meet-transcript.mjs";
+export { whisperBytes } from "./transcribe.mjs";
 export { deleteByDriveFileId } from "./store.mjs";
 
 export {

@@ -117,6 +117,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 .docrow .dsay{color:var(--gray);margin-top:6px}
 .docrow .drow{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
 .muted{color:var(--gray)}
+.qlist{display:flex;flex-direction:column;gap:8px}
+.qitem label{display:block;font-weight:600;margin-bottom:4px}
+.qitem textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff;resize:vertical;min-height:56px}
+.qmark{margin-top:6px}
+.qok{color:#2C5138}
+.qbad{color:#6E2A22}
 
 @media (max-width:1200px){
   .docs{position:absolute;right:0;top:0;bottom:0;z-index:30;width:min(340px,92vw);flex-basis:auto;box-shadow:-8px 0 24px rgba(0,0,0,.10)}
@@ -248,6 +254,15 @@ button,input,select,textarea{font:inherit;color:inherit}
           <button class="btn sm" type="button" id="docsClose" aria-label="Close documents">Close</button>
         </div>
         <div class="docs-bd">
+          <div class="panel" data-brain-quiz>
+            <div class="panel-hd">
+              <div class="pt">Class quizzes</div>
+            </div>
+            <div class="mono muted" style="margin-bottom:8px">Take the day quiz. You see right or wrong on each question. Day 5 must miss zero.</div>
+            <label class="mono muted" for="quizPick">Which quiz</label>
+            <select id="quizPick" style="width:100%;margin:6px 0 12px;border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff"></select>
+            <div id="quizBox"></div>
+          </div>
           <div class="panel">
             <div class="panel-hd">
               <div class="pt">Files you added</div>
@@ -282,6 +297,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 })();
 </script>
 <script defer src="data.js"></script>
+<script src="ramp-quizzes.js"></script>
 <script>
 (function () {
   "use strict";
@@ -873,6 +889,65 @@ button,input,select,textarea{font:inherit;color:inherit}
     });
   });
   document.getElementById("refreshReviews").addEventListener("click", loadReviews);
+
+  /* ── class quizzes (Documents panel) ────────────────────────────────── */
+  var quizPick = document.getElementById("quizPick");
+  var quizBox = document.getElementById("quizBox");
+  var quizList = (typeof quizzesForRole === "function")
+    ? quizzesForRole(myRole)
+    : (rootQuizzes());
+  function rootQuizzes() {
+    return (typeof FH_RAMP_QUIZZES !== "undefined" && FH_RAMP_QUIZZES) ? FH_RAMP_QUIZZES : [];
+  }
+  if (quizPick) {
+    quizPick.innerHTML = quizList.map(function (q) {
+      return '<option value="' + esc(q.id) + '">' + esc(q.title) + "</option>";
+    }).join("");
+    quizPick.addEventListener("change", function () { paintQuiz(quizPick.value); });
+    if (quizList.length) paintQuiz(quizList[0].id);
+    else if (quizBox) quizBox.innerHTML = '<div class="muted">No class quizzes loaded.</div>';
+  }
+  function findQuiz(id) {
+    for (var i = 0; i < quizList.length; i++) if (quizList[i].id === id) return quizList[i];
+    return null;
+  }
+  function paintQuiz(id) {
+    var quiz = findQuiz(id);
+    if (!quiz || !quizBox) return;
+    quizBox.innerHTML = '<form id="quizForm">' +
+      quiz.questions.map(function (item, i) {
+        return '<div class="qitem docrow" style="margin-top:8px">' +
+          '<label for="qa-' + i + '">' + (i + 1) + ". " + esc(item.q) + "</label>" +
+          '<textarea id="qa-' + i + '" data-qi="' + i + '"></textarea>' +
+          '<div class="qmark mono" id="qm-' + i + '"></div></div>';
+      }).join("") +
+      '<div class="drow" style="margin-top:12px">' +
+        '<button class="btn sm dark" type="submit">Check answers</button>' +
+      '</div><div class="dsay" id="quizResult" style="margin-top:8px"></div></form>';
+    document.getElementById("quizForm").addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var answers = quiz.questions.map(function (_, i) {
+        var el = document.getElementById("qa-" + i);
+        return el ? el.value : "";
+      });
+      var out = scoreRampQuiz(quiz, answers);
+      out.results.forEach(function (row, i) {
+        var mark = document.getElementById("qm-" + i);
+        if (!mark) return;
+        mark.className = "qmark mono " + (row.ok ? "qok" : "qbad");
+        mark.textContent = row.empty ? "Write an answer." : (row.ok ? "Right" : "Wrong");
+      });
+      var box = document.getElementById("quizResult");
+      if (!box) return;
+      if (out.mustMissZero) {
+        box.textContent = out.passed
+          ? ("Pass. You got every question right (" + out.correct + " of " + out.total + ").")
+          : ("Fail. Day 5 must miss zero. You got " + out.correct + " of " + out.total + " right.");
+      } else {
+        box.textContent = "You got " + out.correct + " of " + out.total + " right.";
+      }
+    });
+  }
 
   /* ── start ──────────────────────────────────────────────────────────── */
   if (isOwner && reviewPanel) reviewPanel.hidden = false;
