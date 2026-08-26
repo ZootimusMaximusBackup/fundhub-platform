@@ -508,6 +508,78 @@ Client / closer / advisor / sales-manager intended = doors. Specialist intended 
 
 ---
 
+## Hour 11 — ~1:50 a.m. Pacific
+
+**Live:** no homepage probe. Compared the Aug 25 five-horsemen fire board to what the files hold now.
+
+### Survey route (Aug 25) vs file now
+
+| File | Survey sent them | Booked? | Still true |
+|---|---|---|---|
+| Funding | PASS → book-a-call | **no** | yes |
+| Repair | DOWNSELL → thank-you | no | yes |
+| Combo | DOWNSELL → thank-you | no | yes |
+| Inquiry | PASS → book-a-call | **no** | yes |
+| Course | DOWNSELL → thank-you | no | yes |
+
+`clients.outcome_tier` is still **empty** on all five. The survey door and the stored path field do not match.
+
+### What drifted since that fire pass
+
+Aug 25 said: extra SMS **none**, Gmail Fund 2 / Repair 3 / Combo 4 / Inquiry 2 / Course 2, SMS **held** for quiet hours.
+
+Now:
+
+| | Aug 25 Gmail | Tonight Gmail | Extra SMS now |
+|---|---|---|---|
+| Funding | 2 | **12** | **FAIL** DOC-02 ×4 |
+| Repair | 3 | **13** | **FAIL** DOC-02 ×2 |
+| Combo | 4 | 5 | none seen |
+| Inquiry | 2 | 3 | none seen |
+| Course | 2 | 3 | none seen |
+
+Welcome / nobook / AR / retake / invoices / extra docs mail explain the Gmail growth.
+
+SMS: `+sim-` **skips** quiet hours (`src/messaging/gate.mjs`). Tonight SMS rows are `sent` / `delivered`. The Aug 25 “held” score is **stale**. I did not send new texts this hour.
+
+Aug 25 extra-message PASS is **dead** on Fund and Repair.
+
+### Quiet hours right now
+
+It is still night in Eastern time. Sims are allowed to text. Real clients would be held until 11:00 a.m. Eastern. Do not drain the company outbox.
+
+**Not 100%.**
+
+---
+
+## Hour 12 — ~1:55 a.m. Pacific
+
+**Live:** no homepage probe. Read stored survey bands only (no identity). Re-read Josh agent-tester board.
+
+### Survey bands still match Aug 25
+
+| File | Stored `cf_svy_self_reported_fico` | Aug 25 survey said |
+|---|---|---|
+| Funding | 750+ | 750+, no negatives |
+| Repair | 580-649 | 580–649, has negatives |
+| Combo | 700-749 | 700–749, has negatives |
+| Inquiry | 750+ | 750+, no negatives |
+| Course | Not sure | Not sure |
+
+Need / “how much funding” fields are empty. `outcome_tier` empty. Next-action still Pull CRS (Fund) and Apply for Funding (Inquiry).
+
+### Josh / AG-09 boards (do not re-run)
+
+- `docs/workflows/agent-tester-2026-08-26.md` — AG-04 overall **FAIL**. Called itself Sarah. Sequence **UNVERIFIED**. Guardrail held (no score, no approval $).
+- `docs/workflows/agent-tester-2026-08-26-2.md` — AG-09 **FAIL**. Same 169-letter stub.
+- Live prompts **unchanged**. Do not roleplay again. Do not Bland.
+
+Intended client file still has **no talk order**. Overall cannot be PASS.
+
+**File PASS:** FAIL ×5. **B1 FAIL. B2 PASS.** Talk **UNVERIFIED**. **Not 100%.** Morning brief still waits for 4:00 a.m. Pacific.
+
+---
+
 
 
 
