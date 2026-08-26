@@ -422,6 +422,92 @@ Meet tape on Fund Horse is **FAKE MEET** (Hour 5). Not `said:` from a real call.
 
 ---
 
+## Hour 9 — ~1:40 a.m. Pacific
+
+**Live:** no homepage probe. No deploy. No Apply. No Bland. No live CRS. No charge.
+
+**Did:** contracts / consent / sales / pay links / outbound calls / full Agent Editor list / AR sleep clock / intended-vs-actual door pages.
+
+### Closer money path on these five
+
+All five: **0 contracts. 0 consents. 0 sales.**  
+Closer live fire says consent first, then pay. That never happened. Offer emails and pay links still left.
+
+| File | Pay links (unpaid) | What they are |
+|---|---|---|
+| Funding | 7 | Two **$3,000** deposit **sent**. Four **$100** custom created not sent. One **$1** created not sent. |
+| Repair | 3 | Two **$1,000** repair **sent**. One **$200** created not sent (program already shows paid $200). |
+| Combo | 2 | **$3,000** deposit sent. **$1,000** repair sent. |
+| Inquiry | 1 | **$32** diagnostic sent. |
+| Course | 1 | **$5,000** custom sent (Mastery). |
+
+Do not pay any of them.
+
+AR-02: Fund Horse success-fee invoices sent ~4 hours ago. Workflow sleeps **7 days**. Still sleeping. Present Invoice does not start AR (AR board).
+
+### Talk leftovers (do not retry Bland)
+
+`outbound_calls` status **initiated** only:
+
+- Fund Horse: **6** (`kind=agent_editor`)
+- Repair: 1
+- Inquiry: 1
+- Combo / Course: 0
+
+No completed Josh talk in that table. Fund Horse messages have **no** `sender_agent_code` AG-04. AR board “staff Josh went out anyway” is these initiated rows + the FAKE MEET outcome, not a prompt-fulfilling call. Talk **UNVERIFIED** / **FAIL**.
+
+### Agent Editor (full list)
+
+**Live (4):** AG-04 169 voice stub. AG-09 169 same stub. OP-06 closer drill 2622 internal. AG-07 Recon 342 internal (“health watchdog”).  
+**Draft empty:** AG-01..03, AG-05, AG-06 Document Check, **AG-08 Context Fetcher (0 letters)**, OP-01..05. VF-LIVE / VF-SHADOW draft 210 each.  
+**Retired long scripts** (unused): GHL-A1..A5, A7, GHL-DOC 2266, GHL-RECON 1345, GHL-A2 AR 2441.
+
+Context pack for talks is **code** (`src/agents/context.mjs`), not the empty AG-08 row. Did not load unused GHL scripts as the live voice.
+
+### Intended vs actual
+
+`docs/journeys/README.md`: intended pages were **copied from actual** on 2026-08-02. Actual UNVERIFIED = “every route gate was traced.” That only proves **doors**. It does not prove event order. Specialist intended is the one desk path (toggle → Send). Phone inquiry still on hold. #170 is **not live**.
+
+### Gmail Fund Horse (all 12, second list)
+
+Welcome, nobook, two $3,000 DFY, two “Round complete” invoices, one $100 invoice, DIY letters, docs needed, still-need-docs, retake, sign-in.
+
+**File PASS:** still **FAIL** ×5. **B1 FAIL. B2 PASS.** Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 10 — ~1:45 a.m. Pacific
+
+**Live:** no homepage probe. No Bland. No deploy.
+
+**Did:** read Josh + AR + fetchContext code against these five. AR/calls board still matches.
+
+### Josh
+
+Workflow `ai-set-01-josh-setter` fires on **`booking.created` only**. Uses live AG-04 if the row is “ready” (any prompt). These five have **no** `booking.created`, so this workflow **never started**. That is why there are no book texts.
+
+The 6 Fund Horse `outbound_calls` (`agent_editor` / initiated) are **desk clicks**, not that workflow. Same for Repair ×1 and Inquiry ×1. Do not treat those as a Josh sequence. Do not retry Bland.
+
+Vendor 3,750-letter script stays unused because AG-04’s 169-letter stub counts as ready.
+
+### AR
+
+`ar-collections` starts on **`invoice.sent`** and only if the bill is a **success fee**. Fund Horse has that (two $100). AR-01 already sent. Next sleep is **7 days**. Repair $200 is a deposit — **not** this chain. Combo / Course / Inquiry have no success-fee invoices, so AR never starts there. Present Invoice does not start AR (board).
+
+### fetchContext (Meet tape row)
+
+`said:` is written from `call_outcomes.transcript` in `src/agents/context.mjs`. Fund Horse transcript is **FAKE MEET**. Conversations on all five exist (email + SMS) with **no** `agent_code` and **no** summary. AG-08 Context Fetcher is a **draft empty** Agent Editor row — the real reader is the code module, not that row.
+
+Dictator Meet tape → closer pack: would show fake words, not a real call. **FAIL** / not a pass.
+
+### Intended journeys still cannot score talk
+
+Client / closer / advisor / sales-manager intended = doors. Specialist intended = desk toggle + Send. No Josh talk order. Sequence vs intended = **UNVERIFIED**.
+
+**Not 100%.** Morning brief still waits for 4:00 a.m. Pacific.
+
+---
+
 
 
 
