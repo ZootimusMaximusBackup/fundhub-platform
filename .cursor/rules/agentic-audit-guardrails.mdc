@@ -41,6 +41,7 @@ alwaysApply: true
 
 - Present / soft-pull / pay-link buttons: **one intentional click**, with idempotency checked
 - Cap outbound SMS/email per run (e.g. max N messages)
+- Test/sim runs bypass quiet hours so fire can be proven.
 - Product is **live**; `INNGEST_EVENT_KEY` stays **on** — don’t flip live switches “for safety”
 
 ## Parallel agents
