@@ -89,6 +89,42 @@ test.describe("agent editor writes", () => {
     await expect(page.locator("#a_name")).toHaveValue("New agent");
   });
 
+  async function typePrompt(page, text) {
+    await page.locator("#a_prompt").evaluate((el, value) => {
+      const box = el.closest("details");
+      if (box) box.open = true;
+      el.value = value;
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    }, text);
+  }
+
+  test("Revert restores the last saved prompt after a type", async ({ page }) => {
+    await openScreen(page, "/app/agent-editor.html", OWNER, agentExtra([]));
+    const original = "x".repeat(80);
+    await expect(page.locator("#a_prompt")).toHaveValue(original, { timeout: 10_000 });
+    await typePrompt(page, original + " EXTRA WORDS");
+    await expect(page.locator("#a_prompt")).toHaveValue(original + " EXTRA WORDS");
+    await expect(page.locator("#saveNote")).toContainText("UNSAVED");
+    await page.locator("#revertBtn").click();
+    await expect(page.locator("#a_prompt")).toHaveValue(original);
+    await expect(page.locator("#saveNote")).not.toContainText("UNSAVED");
+  });
+
+  test("Revert restores a later type back to the last Save", async ({ page }) => {
+    const writes = [];
+    await openScreen(page, "/app/agent-editor.html", OWNER, agentExtra(writes));
+    await expect(page.locator("#a_name")).toHaveValue("Lead Follow-up", { timeout: 10_000 });
+    const saved = "z".repeat(90);
+    await typePrompt(page, saved);
+    await page.locator("#saveBtn").click();
+    await expect.poll(() => writes.some((w) => w.action === "save")).toBe(true);
+    await expect(page.locator("#saveNote")).toContainText(/SAVED/);
+    await typePrompt(page, saved + " MORE");
+    await expect(page.locator("#a_prompt")).toHaveValue(saved + " MORE");
+    await page.locator("#revertBtn").click();
+    await expect(page.locator("#a_prompt")).toHaveValue(saved);
+  });
+
   test("Promote saves then promotes", async ({ page }) => {
     const writes = [];
     page.on("dialog", async (d) => { await d.accept(); });

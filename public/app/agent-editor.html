@@ -524,7 +524,9 @@ function agentFromRow(real){
   });
 }
 
-var cur=null, dirty=false;
+var cur=null, dirty=false, SAVED={};
+function cloneAgent(a){ return JSON.parse(JSON.stringify(a)); }
+function rememberSaved(a){ if(a && a.id) SAVED[a.id]=cloneAgent(a); }
 
 /* ══ LIST ════════════════════════════════════════════════════════════════ */
 function modeDot(m){
@@ -907,8 +909,8 @@ document.getElementById('promoteBtn').addEventListener('click',function(){
       if(agent){
         var idx=AGENTS.indexOf(cur);
         var next=agentFromRow(agent);
-        AGENTS[idx]=next; cur=next;
-      }else{ cur.mode='live'; }
+        AGENTS[idx]=next; cur=next; rememberSaved(next);
+      }else{ cur.mode='live'; rememberSaved(cur); }
       dirty=false; saveNote('PROMOTED');
       renderGate(); renderList(); renderLog();
       setTimeout(function(){if(!dirty)saveNote('');},2200);
@@ -925,8 +927,8 @@ document.getElementById('demoteBtn').addEventListener('click',function(){
     if(agent){
       var idx=AGENTS.indexOf(cur);
       var next=agentFromRow(agent);
-      AGENTS[idx]=next; cur=next;
-    }else{ cur.mode='shadow'; }
+      AGENTS[idx]=next; cur=next; rememberSaved(next);
+    }else{ cur.mode='shadow'; rememberSaved(cur); }
     dirty=false; saveNote('DEMOTED');
     renderGate(); renderList(); renderLog();
     setTimeout(function(){if(!dirty)saveNote('');},2200);
@@ -946,14 +948,25 @@ document.getElementById('saveBtn').addEventListener('click',function(){
     if(agent){
       var idx=AGENTS.indexOf(cur);
       var next=agentFromRow(agent);
-      AGENTS[idx]=next; cur=next; select(cur.id);
+      AGENTS[idx]=next; cur=next; rememberSaved(next); select(cur.id);
     }
     dirty=false; saveNote('SAVED');
     renderList(); renderGate();
     setTimeout(function(){if(!dirty)saveNote('');},2200);
   });
 });
-document.getElementById('revertBtn').addEventListener('click',function(){select(cur.id)});
+document.getElementById('revertBtn').addEventListener('click',function(){
+  if(!cur) return;
+  var snap=SAVED[cur.id];
+  if(snap){
+    var next=cloneAgent(snap);
+    var idx=-1;
+    for(var i=0;i<AGENTS.length;i++){ if(AGENTS[i].id===cur.id){ idx=i; break; } }
+    if(idx>=0) AGENTS[idx]=next;
+    cur=next;
+  }
+  select(cur.id);
+});
 document.getElementById('drillSend').addEventListener('click', sendDrill);
 document.getElementById('drillReset').addEventListener('click', resetDrill);
 document.getElementById('drillIn').addEventListener('keydown', function(ev){
@@ -970,7 +983,7 @@ document.getElementById('newBtn').addEventListener('click',function(){
     var agent = res.data && res.data.agent;
     if(!agent){ writeFail({error:'no agent in response'}, 'Could not create agent'); return; }
     var a=agentFromRow(agent);
-    AGENTS.push(a); hideEmpty(); select(a.id);
+    AGENTS.push(a); rememberSaved(a); hideEmpty(); select(a.id);
     document.querySelectorAll('details.card').forEach(function(d){d.open=true});
     document.getElementById('a_name').focus();
     dirty=false; saveNote('CREATED');
@@ -1043,6 +1056,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (res && res.ok) {
       var rows = (res.data && res.data.items) || [];
       AGENTS = rows.map(agentFromRow);
+      AGENTS.forEach(rememberSaved);
       if (!AGENTS.length) {
         showEmpty("No agents in the registry yet.");
         FHData.banner("sample", "no agent registry rows yet", "agents");

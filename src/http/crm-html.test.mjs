@@ -183,6 +183,8 @@ test("ops, affiliate, and partner galaxy do not ship sample people as live", () 
   assert.ok(ae.includes("FHData.staff"), "agent-editor must load live staff");
   assert.ok(ae.includes("id=\"drillCard\""), "closer drill runs on this screen");
   assert.ok(ae.includes("action:'run'"), "drill talks to the existing agents write route");
+  assert.ok(ae.includes("rememberSaved"), "Revert must keep the last saved prompt");
+  assert.ok(/SAVED\[cur\.id\]/.test(ae), "Revert must restore the last saved prompt");
   const pc = fs.readFileSync(path.join(APP, "products-commissions.html"), "utf8");
   assert.ok(!/Jordan Blake|Marcus Webb|Alvin/.test(pc));
   assert.ok(/var PRODUCTS\s*=\s*\[\s*\]/.test(pc), "products must start empty");
