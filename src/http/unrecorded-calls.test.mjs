@@ -66,6 +66,22 @@ test("GET lists a no-tape call as unrecorded", async () => {
   assert.equal(res.body.items[0].flag, "unrecorded");
 });
 
+test("GET binds the signed-in company on the list query", async () => {
+  let params = null;
+  const db = {
+    async query(sql, p) {
+      if (/FROM call_outcomes/i.test(sql)) {
+        params = p;
+        return { rows: [] };
+      }
+      return { rows: [] };
+    }
+  };
+  const res = await get({ role: "closer", db });
+  assert.equal(res.statusCode, 200);
+  assert.equal(params[0], ORG);
+});
+
 test("GET does not list a call that already has a transcript", async () => {
   const res = await get({
     role: "closer",

@@ -72,6 +72,34 @@ test("a fresh call waits unless Drive already scanned after it", () => {
   );
 });
 
+test("listUnrecordedCalls binds the session company and never selects transcript", async () => {
+  let seen = null;
+  const orgId = "00000000-0000-4000-8000-000000000001";
+  const db = {
+    async query(sql, params) {
+      if (/FROM call_outcomes/i.test(sql)) {
+        seen = { sql, params };
+        return { rows: [] };
+      }
+      if (/brain_drive_sync/i.test(sql)) return { rows: [] };
+      return { rows: [] };
+    }
+  };
+  await listUnrecordedCalls(db, { orgId, now: NOW });
+  assert.ok(seen, "call_outcomes query ran");
+  assert.match(seen.sql, /o\.org_id\s*=\s*\$1/);
+  assert.equal(seen.params[0], orgId);
+  assert.doesNotMatch(seen.sql, /\btranscript\b/);
+});
+
+test("listUnrecordedCalls does not query without a company", async () => {
+  let queried = false;
+  const db = { async query() { queried = true; return { rows: [] }; } };
+  const rows = await listUnrecordedCalls(db, { orgId: null, now: NOW });
+  assert.deepEqual(rows, []);
+  assert.equal(queried, false);
+});
+
 test("listUnrecordedCalls returns the no-tape row and skips the transcript row", async () => {
   const db = {
     async query(sql) {

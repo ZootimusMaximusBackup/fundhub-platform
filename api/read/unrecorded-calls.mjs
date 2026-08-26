@@ -38,7 +38,7 @@ export default async function handler(req, res, deps = {}) {
 
   try {
     const rows = await listUnrecordedCalls(database, {
-      orgId,
+      orgId: staff.org_id,
       staffId,
       now: deps.now instanceof Date ? deps.now : new Date(),
       limit: limit + offset + 1
