@@ -47,6 +47,7 @@
 // A refusal is never a fake success. Every path returns a named reason.
 
 import { postJson, classify, redact, success, failure, rejection } from "./http.mjs";
+import { phoneIsAgentProveLine } from "../gate.mjs";
 
 export const PROVIDER = "bland_voice";
 export const CHANNELS = new Set(["voice"]);
@@ -75,6 +76,14 @@ export function normalizePhone(raw) {
   if (digits.length === 10) return `+1${digits}`;
   if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
   return null;
+}
+
+/** First words Bland speaks. Empty first_sentence + wait_for_greeting hung up our prove line in ~0.13s. */
+export function firstSentenceFromPrompt(prompt) {
+  const text = String(prompt || "").replace(/\s+/g, " ").trim();
+  if (!text) return "Hey — can you hear me?";
+  const cut = text.match(/^(.{1,160}?[.!?])(?:\s|$)/);
+  return (cut ? cut[1] : text).slice(0, 160).trim();
 }
 
 /**
@@ -167,12 +176,15 @@ export async function placeCall({
     };
   }
 
+  const proveLine = phoneIsAgentProveLine(to);
   const body = {
     phone_number: to,
     // THE POINT OF THE WHOLE FILE: the words come from the database row the
     // Agent Editor saves, never from a file in vendor/.
     task: String(agent.prompt),
-    wait_for_greeting: true,
+    first_sentence: firstSentenceFromPrompt(agent.prompt),
+    // The agent SMS line auto-answers silent. Waiting for a greeting ends the call in ~0.13s.
+    wait_for_greeting: !proveLine,
     webhook: webhookUrl || String(env.BLAND_WEBHOOK_URL || "").trim() || DEFAULT_WEBHOOK_URL,
     metadata: {
       ...(metadata || {}),
