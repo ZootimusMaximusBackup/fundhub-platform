@@ -1,4 +1,4 @@
-// Darwin's Message Blaster — Mac gift for affiliate + white-label partners.
+// Darwin's Message Blaster — Mac gift for staff, affiliate, and white-label partners.
 // Served only through GET /api/gifts/message-blaster (never under public/).
 
 import path from "node:path";

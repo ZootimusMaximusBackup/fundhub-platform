@@ -28,6 +28,7 @@ flowchart TD
     CAN --> A_dashboard[The dashboard — 7 routes]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 4 routes]
+    CAN --> A_gifts[gifts — 1 route]
     CAN --> A_partner_marketing[partner-marketing — 5 routes]
     CAN --> A_public[public — 6 routes]
     CAN --> A_read[Reading data — 37 routes]
@@ -35,7 +36,7 @@ flowchart TD
     CAN --> A_social[social — 6 routes]
     CAN --> A_top_level[Everything else — 25 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 67 routes]
+    WHO -->|Yes| CANT[Blocked — 66 routes]
     CANT --> B_auth[Signing in and out — 5 blocked]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_brand[brand — 1 blocked]
@@ -45,7 +46,6 @@ flowchart TD
     CANT --> B_content[content — 2 blocked]
     CANT --> B_demo[demo — 2 blocked]
     CANT --> B_finance[Finance — 7 blocked]
-    CANT --> B_gifts[gifts — 1 blocked]
     CANT --> B_hiring[Hiring — 7 blocked]
     CANT --> B_journeys[journeys — 2 blocked]
     CANT --> B_ops[ops — 1 blocked]
@@ -60,7 +60,7 @@ flowchart TD
 
 ## What they can reach
 
-**128 of 195 routes.**
+**129 of 195 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -117,6 +117,7 @@ flowchart TD
 | `/api/finance/entities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/finance/liabilities` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/finance/model` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/gifts/message-blaster` | GET, HEAD | staff, affiliate, partner |
 | `/api/health` | — | anyone |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/inquiries` | GET, POST | staff |
@@ -201,7 +202,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**67 of 195 routes.**
+**66 of 195 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -232,7 +233,6 @@ flowchart TD
 | `/api/finance/crs-pull` | POST | owner, admin, closer, funding_advisor |
 | `/api/finance/soft-pull` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/finance/subscriptions` | GET, POST | owner, admin, sales_manager |
-| `/api/gifts/message-blaster` | GET, HEAD | affiliate, partner |
 | `/api/hiring/application` | GET | owner, admin |
 | `/api/hiring/bench` | GET | owner, admin |
 | `/api/hiring/candidates` | GET | owner, admin |

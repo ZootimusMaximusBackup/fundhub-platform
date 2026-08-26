@@ -1644,9 +1644,10 @@ requestAnimationFrame(draw);
 
   // data.js carries `defer` (see its tag above), so FHData does not exist yet
   // while this script is being parsed — calling it here threw, and the throw
-  // killed the rest of this IIFE before the census was ever requested, taking
-  // the Message Blaster button wiring below down with it. Every deferred script
-  // runs before DOMContentLoaded, so the first read waits for that event.
+  // killed the rest of this IIFE before the census was ever requested. Download
+  // wiring lives in its own script so a census throw cannot take it down.
+  // Every deferred script runs before DOMContentLoaded, so the first read waits
+  // for that event.
   document.addEventListener("DOMContentLoaded", function () {
     FHData.wire(FHData.partners({ limit: 200 }), "partner census", function (data) {
       var rows = data.items || [];
@@ -1681,42 +1682,44 @@ requestAnimationFrame(draw);
              (unsigned ? unsigned + " agreement(s) unsigned" : "all agreements signed");
     });
   });
-
-  (function () {
-    var btn = document.getElementById("blasterBtn");
-    if (!btn) return;
-    var status = document.getElementById("blasterStatus");
-    btn.addEventListener("click", function () {
-      var tok = "";
-      try { tok = localStorage.getItem("fh_token") || ""; } catch (e) { tok = ""; }
-      if (!tok || tok === "demo") {
-        if (status) status.textContent = "Sign in to download.";
-        return;
+})();
+</script>
+<script>
+(function () {
+  "use strict";
+  var btn = document.getElementById("blasterBtn");
+  if (!btn) return;
+  var status = document.getElementById("blasterStatus");
+  btn.addEventListener("click", function () {
+    var tok = "";
+    try { tok = localStorage.getItem("fh_token") || ""; } catch (e) { tok = ""; }
+    if (!tok || tok === "demo") {
+      if (status) status.textContent = "Sign in to download.";
+      return;
+    }
+    btn.disabled = true;
+    if (status) status.textContent = "Preparing download…";
+    fetch("/api/gifts/message-blaster", {
+      headers: { authorization: "Bearer " + tok, accept: "application/x-apple-diskimage" }
+    }).then(function (res) {
+      if (!res.ok) {
+        return res.json().catch(function () { return {}; }).then(function (j) {
+          throw new Error(j.error || ("HTTP " + res.status));
+        });
       }
-      btn.disabled = true;
-      if (status) status.textContent = "Preparing download…";
-      fetch("/api/gifts/message-blaster", {
-        headers: { authorization: "Bearer " + tok, accept: "application/x-apple-diskimage" }
-      }).then(function (res) {
-        if (!res.ok) {
-          return res.json().catch(function () { return {}; }).then(function (j) {
-            throw new Error(j.error || ("HTTP " + res.status));
-          });
-        }
-        return res.blob();
-      }).then(function (blob) {
-        var a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "MessageBlaster.dmg";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        if (status) status.textContent = "Download started — open the file on your Mac.";
-      }).catch(function (e) {
-        if (status) status.textContent = "Could not download — " + ((e && e.message) || "error");
-      }).finally(function () { btn.disabled = false; });
-    });
-  })();
+      return res.blob();
+    }).then(function (blob) {
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "MessageBlaster.dmg";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      if (status) status.textContent = "Download started — open the file on your Mac.";
+    }).catch(function (e) {
+      if (status) status.textContent = "Could not download — " + ((e && e.message) || "error");
+    }).finally(function () { btn.disabled = false; });
+  });
 })();
 </script>
 </body>
