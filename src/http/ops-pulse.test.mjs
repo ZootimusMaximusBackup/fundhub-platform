@@ -29,6 +29,11 @@ describe("ops pulse HTTP", () => {
     assert.equal(res.statusCode, 403);
   });
 
+  it("GET passes the signed-in company into computePulse", () => {
+    const src = fs.readFileSync(path.join(ROOT, "api/read/ops-pulse.mjs"), "utf8");
+    assert.match(src, /orgId:\s*staff\.org_id/);
+  });
+
   it("GET is limited to ROLE_SETS.OPS", () => {
     assert.deepEqual([...ROLE_SETS.OPS].sort(), ["admin", "owner"]);
     const src = fs.readFileSync(path.join(ROOT, "api/read/ops-pulse.mjs"), "utf8");

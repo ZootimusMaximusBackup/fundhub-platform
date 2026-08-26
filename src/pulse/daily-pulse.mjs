@@ -15,6 +15,7 @@ import { relayDirs, readHeartbeat, isPidAlive, STALE_MS } from "../../scripts/ga
 import { gmailConfigFromEnv, createGmailClientFromConfig } from "../gmail/index.mjs";
 import { textChris, ticketDarwin } from "./notify.mjs";
 import { checkRegistry } from "./registry.mjs";
+import { listUnrecordedCalls } from "../sales/unrecorded.mjs";
 
 export const PULSE_CRON = "0 13 * * *";
 export const PULSE_TZ = "America/Denver";
@@ -194,6 +195,23 @@ export async function checkRecon({ db, orgId } = {}) {
   return check("recon", "PASS", "AG-07 Recon is live on daily-pulse");
 }
 
+export async function checkUnrecorded({ db, orgId, now = new Date() } = {}) {
+  if (!db || !orgId) {
+    return check("unrecorded", "skip", "no database in this run — unrecorded calls not read");
+  }
+  const rows = await listUnrecordedCalls(db, { orgId, now });
+  const n = rows.length;
+  if (n === 0) {
+    return check("unrecorded", "PASS", "no held sales calls missing a recording or transcript");
+  }
+  return check(
+    "unrecorded",
+    "FAIL",
+    `${n} sales call${n === 1 ? "" : "s"} logged with no recording and no transcript`,
+    "Open My Numbers or Sales Floor. Hit Record on the next Meet. Do not auto-record. Do not text each miss."
+  );
+}
+
 export async function checkGmail({ env = process.env, fetchImpl, gmailClient } = {}) {
   const cfg = gmailConfigFromEnv(env);
   if (!cfg.ready && !gmailClient) {
@@ -324,6 +342,7 @@ export async function runDailyPulse({
   checks.push(checkGateRelay({ dirs: gateRelayDirs, nowMs: now.getTime() }));
   const resolvedOrg = orgId || await defaultOrgId(db);
   checks.push(await checkRecon({ db, orgId: resolvedOrg }));
+  checks.push(await checkUnrecorded({ db, orgId: resolvedOrg, now }));
   checks.push(await checkGmail({ env, fetchImpl, gmailClient }));
   checks.push(...await checkRegistry({ fetchImpl, baseUrl: origin }));
 

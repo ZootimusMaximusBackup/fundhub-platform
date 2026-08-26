@@ -26,9 +26,9 @@ flowchart TD
     CAN --> A_finance[Finance — 1 route]
     CAN --> A_public[public — 6 routes]
     CAN --> A_read[Reading data — 3 routes]
-    CAN --> A_top_level[Everything else — 6 routes]
+    CAN --> A_top_level[Everything else — 5 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 165 routes]
+    WHO -->|Yes| CANT[Blocked — 167 routes]
     CANT --> B_auth[Signing in and out — 5 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_brand[brand — 1 blocked]
@@ -48,16 +48,16 @@ flowchart TD
     CANT --> B_partner_marketing[partner-marketing — 5 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
-    CANT --> B_read[Reading data — 48 blocked]
+    CANT --> B_read[Reading data — 49 blocked]
     CANT --> B_repair[repair — 5 blocked]
     CANT --> B_social[social — 7 blocked]
     CANT --> B_staff[staff — 2 blocked]
-    CANT --> B_top_level[Everything else — 31 blocked]
+    CANT --> B_top_level[Everything else — 32 blocked]
 ```
 
 ## What they can reach
 
-**30 of 195 routes.**
+**29 of 196 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -89,17 +89,16 @@ flowchart TD
 | `/api/read/entitlements` | GET | employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager<br>plus: client |
 | `/api/read/portal-contracts` | GET | staff, client |
 | `/api/read/portal-summary` | GET | staff, client |
-| `/api/soft-pull-approve` | GET, POST | anyone |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
 
 ### Worth knowing
 
-- **18 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/contracts/sign`, `/api/health`, `/api/public/affiliate-click`, `/api/public/education-enroll`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/survey-submit`, `/api/public/unsubscribe`, `/api/soft-pull-approve`. These are the sign-in routes and the health check.
+- **17 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/contracts/sign`, `/api/health`, `/api/public/affiliate-click`, `/api/public/education-enroll`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/survey-submit`, `/api/public/unsubscribe`. These are the sign-in routes and the health check.
 - **3 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**165 of 195 routes.**
+**167 of 196 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -251,6 +250,7 @@ flowchart TD
 | `/api/read/tradelines` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/transactions` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/unrecorded-calls` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/workflows` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/repair/enroll` | POST | owner, admin, closer, inquiry_specialist |
 | `/api/repair/exceptions` | GET, POST | staff |
@@ -265,6 +265,7 @@ flowchart TD
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
 | `/api/social/settings` | GET, POST | staff, partner |
+| `/api/soft-pull-approve` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/staff/monitoring-consent` | POST | owner |
 | `/api/staff/telemetry` | GET | owner, admin, sales_manager |
 | `/api/tasks` | GET, PATCH | staff |

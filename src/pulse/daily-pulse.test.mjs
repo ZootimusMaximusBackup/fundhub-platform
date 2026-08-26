@@ -10,6 +10,7 @@ import {
   PULSE_CRON,
   PULSE_TZ,
   checkGateRelay,
+  checkUnrecorded,
   formatScorecard,
   runDailyPulse,
   writeScorecard
@@ -134,6 +135,39 @@ test("scorecard writer is a file write, not a product fix", () => {
   assert.equal(path.basename(file), "pulse-2026-08-25.md");
   assert.match(fs.readFileSync(file, "utf8"), /does not auto-fix/);
   fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test("morning pulse includes an unrecorded count without sending a per-miss text", async () => {
+  const now = new Date("2026-08-26T18:00:00Z");
+  const old = new Date(now.getTime() - 40 * 60 * 1000).toISOString();
+  const db = {
+    async query(sql) {
+      if (/FROM orgs/i.test(sql)) return { rows: [{ id: "11111111-1111-4111-8111-111111111111" }] };
+      if (/FROM agents/i.test(sql)) {
+        return { rows: [{ code: "AG-07", status: "live", runtime: "inngest", runtime_ref: "daily-pulse" }] };
+      }
+      if (/brain_drive_sync/i.test(sql)) return { rows: [] };
+      if (/FROM call_outcomes/i.test(sql)) {
+        return {
+          rows: [{
+            id: "co-1",
+            client_id: "c1",
+            staff_id: "s1",
+            outcome: "deposit",
+            recording_url: null,
+            transcript: null,
+            logged_at: old,
+            client_name: "Jane Doe"
+          }]
+        };
+      }
+      return { rows: [] };
+    }
+  };
+  const row = await checkUnrecorded({ db, orgId: "11111111-1111-4111-8111-111111111111", now });
+  assert.equal(row.status, "FAIL");
+  assert.match(row.detail, /1 sales call/);
+  assert.match(row.suggestedFix, /Do not text each miss/);
 });
 
 test("this module does not import the Ops Admin money pulse", () => {

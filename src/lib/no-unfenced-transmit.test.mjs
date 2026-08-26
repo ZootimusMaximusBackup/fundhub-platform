@@ -130,7 +130,10 @@ const ALLOWED_RAW_FETCH = {
     "No client data leaves; no client or vendor record is written.",
   "src/pulse/daily-pulse.mjs":
     "Read-only daily health audit. GET fundhub.ai pages and optional prove Gmail. " +
-    "Does not send. Client SMS/WhatsApp go through messaging providers."
+    "Does not send. Client SMS/WhatsApp go through messaging providers.",
+  "src/pulse/registry.mjs":
+    "Read-only GET uptime pings for the 7am pulse. Never POSTs. Never sends SMS " +
+    "or email. Unrecorded is a local count only."
 };
 
 /* Modules permitted to declare fence: INTERNAL. Pinned to an exact set, so a

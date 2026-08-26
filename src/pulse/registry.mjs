@@ -185,6 +185,7 @@ const API_KEYS = [
   "read/tradelines",
   "read/transactions",
   "read/underwrite",
+  "read/unrecorded-calls",
   "read/workflows",
   "repair/enroll",
   "repair/exceptions",

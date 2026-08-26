@@ -35,7 +35,7 @@ export default async function handler(req, res, deps = {}) {
   }
 
   try {
-    const pulse = await computePulse(database, { orgId, period });
+    const pulse = await computePulse(database, { orgId: staff.org_id, period });
     const briefs = briefsFromPulse(pulse);
     return res.status(200).json({
       ok: true,
