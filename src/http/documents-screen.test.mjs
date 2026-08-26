@@ -144,9 +144,11 @@ describe("the Documents screen — sent contracts (moved here from Contracts)", 
       "an unknown kind must not be filed as a soft-pull authorization");
   });
 
-  test("it asks for that person's documents when the URL or last-open client is a real id", () => {
+  test("it asks for that person's documents when the URL has a real id", () => {
     assert.match(DOCS, /docParams\.client_id = cid/);
     assert.match(DOCS, /FHData\.documents\(docParams\)/);
+    assert.doesNotMatch(DOCS, /localStorage\.getItem\("fh_client"\)/,
+      "last-open client must not hide another person's files from the filter");
   });
 
   test("it never paints a sample banner or duplicate record count over real rows", () => {

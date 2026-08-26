@@ -609,10 +609,9 @@ renderTabs(); renderClassbar(); render();
     try {
       var q = new URLSearchParams(location.search);
       var cid = String(q.get("client_id") || q.get("id") || "").trim();
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cid)) {
-        cid = "";
-        try { cid = String(localStorage.getItem("fh_client") || "").trim(); } catch (e2) { cid = ""; }
-      }
+      /* URL only. The last-open person in localStorage must not hide everyone
+         else — the filter box has to show another person's files after you
+         just looked at someone else. */
       if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cid)) {
         docParams.client_id = cid;
       }
