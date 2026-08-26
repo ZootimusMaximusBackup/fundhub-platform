@@ -25,7 +25,7 @@
 - AR-02 / AR-03 / AR-04 (sleeping).
 - Paper mail, live CRS, card charge (not run).
 - CCP opened with `?id=` in the browser this hour (Playwright aborted; stuck rule — used one dash read per file instead).
-- B1 play box after reload (wait for **#176** on live, then one check).
+- B1 play box after reload: **#176 is on main** (`beb81d25`). Live `https://fundhub.ai` is **503 usage_exceeded**. The one reload check **did not run**. B1 stays **FAIL**. Did not keep editing. Did not hit the site again.
 - Aff Forgot / AF1 (wait for **#177** on live, then one `e2e+aff-*` Forgot click).
 
 **Chris quality-check later (existing PDFs, not new work):**
@@ -136,8 +136,41 @@ Intended files still have **no** book/talk order → those rows stay **UNVERIFIE
 
 **What I learned:** B-walk is a desk path, not the five-sim event list. A B2 PASS does not make Funding Horse e2e PASS. B4 FAIL means funding Apply motion stays FAIL; I will not burn another Apply click.
 
-**What I still fake if I stop here:** claiming advisor “done” without Apply. Claiming B1 fixed before #176 is live. Claiming aff reset before #177 is live.
+**What I still fake if I stop here:** claiming advisor “done” without Apply. Claiming B1 fixed before a live page loads. Claiming aff reset before #177 is live.
 
 ---
+
+## Hour 3 — ~1:05 a.m. Pacific
+
+**#176:** on `origin/main` (`beb81d25` — “Show the saved play name on the Apply list after reload”).  
+**Live:** homepage and `/api/health` both **503** `usage_exceeded`. Confirmed once. **Stopped.** No third try. No Apply. No Bland. No Oxylabs.
+
+**B1 one reload:** **not run.** Cannot open the funding-advisor play box while the site is 503. Score stays **FAIL**. Did not edit product code.
+
+**Five-sim walk this hour:** no live clicks (site down). Remaining events from the Hour 1 dash read, second look, not a second click:
+
+| Event (live fire) | Funding | Repair | Combo | Inquiry | Course |
+|---|---|---|---|---|---|
+| 1 entry / file exists | yes | yes | yes | yes | yes |
+| 2 S-00 welcome keys | yes | yes | yes | yes | yes |
+| 3 S-01 intake / next action | Apply for Funding | Remove Inquiries | **none** | Remove Inquiries | **none** |
+| 4 book / Josh talk | **never started / FAIL** | — | — | — | — |
+| 5 nobook keys | yes | yes | yes | yes | yes |
+| 6 Present / closer motion | opened earlier (desk) | — | Present not opened this hour | — | — |
+| 7 Apply | **B4 FAIL — do not click** | — | — | — | — |
+| 8 mint / AR | AR-01 sent; new $1 link unpaid | $200 invoice unpaid | none | none | none |
+| 9 letters / send | n/a | ready, **not sent** | letters-ready key | no letters | n/a |
+| 10 extra SMS | **FAIL** DOC-02 ×4 | DOC-02 ×2 | none seen | none | none |
+| Walked twice as a person | **no** | Repair Horse desk ×1 only | **no** | **no** | **no** |
+| File PASS | **FAIL** | **FAIL** | **FAIL** | **FAIL** | **FAIL** |
+
+Talk order still **UNVERIFIED** (not in intended). Did not invent PASS.
+
+**What I learned:** code on main ≠ live when Netlify says usage exceeded. I will not pretend #176 was tested.
+
+**What I still fake:** any “e2e done” while live is 503 and book/Apply/talk never ran.
+
+---
+
 
 
