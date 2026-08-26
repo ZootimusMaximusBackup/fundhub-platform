@@ -31,6 +31,7 @@ flowchart TD
     CAN --> A_demo[demo — 2 routes]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 11 routes]
+    CAN --> A_gifts[gifts — 1 route]
     CAN --> A_hiring[Hiring — 7 routes]
     CAN --> A_journeys[journeys — 2 routes]
     CAN --> A_ops[ops — 1 route]
@@ -45,15 +46,14 @@ flowchart TD
     CAN --> A_staff[staff — 2 routes]
     CAN --> A_top_level[Everything else — 37 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 3 routes]
+    WHO -->|Yes| CANT[Blocked — 2 routes]
     CANT --> B_chat[chat — 1 blocked]
-    CANT --> B_gifts[gifts — 1 blocked]
     CANT --> B_read[Reading data — 1 blocked]
 ```
 
 ## What they can reach
 
-**192 of 195 routes.**
+**193 of 195 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -136,6 +136,7 @@ flowchart TD
 | `/api/finance/model` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/finance/soft-pull` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/finance/subscriptions` | GET, POST | owner, admin, sales_manager |
+| `/api/gifts/message-blaster` | GET, HEAD | staff, affiliate, partner |
 | `/api/health` | — | anyone |
 | `/api/hiring/application` | GET | owner, admin |
 | `/api/hiring/bench` | GET | owner, admin |
@@ -258,12 +259,11 @@ flowchart TD
 
 ## What they are blocked from
 
-**3 of 195 routes.**
+**2 of 195 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
 | `/api/chat/portal-message` | POST | client |
-| `/api/gifts/message-blaster` | GET, HEAD | affiliate, partner |
 | `/api/read/company-brain-affiliate` | POST | employees: affiliate, partner<br>plus: affiliate, partner |
 
 ## UNVERIFIED

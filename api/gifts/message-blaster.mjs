@@ -1,7 +1,7 @@
 // GET /api/gifts/message-blaster
 //
-// Locked download for Darwin's Mac Message Blaster. Affiliate and white-label
-// partner sessions only — not staff, not clients, not the DIY brokerage path.
+// Locked download for Darwin's Mac Message Blaster. Staff, affiliate, and
+// white-label partner sessions — not clients, not unsigned callers.
 
 import fs from "node:fs";
 import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
@@ -13,11 +13,11 @@ export default async function handler(req, res, deps = {}) {
     return res.status(405).json({ ok: false, error: "method_not_allowed" });
   }
 
-  /* Literal `requirePrincipal(req, res, ["affiliate", "partner"]` must stay so
+  /* Literal `requirePrincipal(req, res, ["staff", "affiliate", "partner"]` must stay so
      scripts/journeys/extract.mjs can read the gate. Do not rename the call. */
   const principal = deps.requirePrincipal
-    ? await deps.requirePrincipal(req, res, ["affiliate", "partner"], deps)
-    : await requirePrincipal(req, res, ["affiliate", "partner"], deps);
+    ? await deps.requirePrincipal(req, res, ["staff", "affiliate", "partner"], deps)
+    : await requirePrincipal(req, res, ["staff", "affiliate", "partner"], deps);
   if (!principal) return;
 
   const asset = (deps.resolveMessageBlasterAsset || resolveMessageBlasterAsset)();

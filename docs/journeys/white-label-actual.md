@@ -86,7 +86,7 @@ flowchart TD
 | `/api/creative/library` | GET | partner, staff |
 | `/api/creative/run` | POST | partner, staff |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
-| `/api/gifts/message-blaster` | GET, HEAD | affiliate, partner |
+| `/api/gifts/message-blaster` | GET, HEAD | staff, affiliate, partner |
 | `/api/health` | — | anyone |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |

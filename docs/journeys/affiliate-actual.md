@@ -69,7 +69,7 @@ flowchart TD
 | `/api/climate/geocode` | OPTIONS | anyone |
 | `/api/contracts/sign` | GET, POST | anyone |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
-| `/api/gifts/message-blaster` | GET, HEAD | affiliate, partner |
+| `/api/gifts/message-blaster` | GET, HEAD | staff, affiliate, partner |
 | `/api/health` | — | anyone |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
