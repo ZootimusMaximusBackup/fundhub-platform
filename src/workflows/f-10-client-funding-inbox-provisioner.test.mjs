@@ -12,8 +12,8 @@ test("happy path: no forwarding address yet — sets it, notifies, creates the t
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }], templates: withTemplates() });
   const res = await handle({ event: ev("round.started", {}, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.done, true);
-  assert.equal(res.forwardingAddress, "monitor+cl-1@fundhub.ai");
-  assert.equal(db.clients[0].custom_fields.funding_email_forwarding_address, "monitor+cl-1@fundhub.ai");
+  assert.equal(res.forwardingAddress, "monitor+cl-1@mg.fundhub.ai");
+  assert.equal(db.clients[0].custom_fields.funding_email_forwarding_address, "monitor+cl-1@mg.fundhub.ai");
   assert.equal(db.messages.length, 0, "F-10 email + SMS retired 2026-08-22; inbox setup and task still run");
   assert.equal(res.task.created, true);
 });
