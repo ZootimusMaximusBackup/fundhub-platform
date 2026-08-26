@@ -1,8 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  CHRIS_PROVE_SMS,
+  PULSE_SMS_TO_ENV,
+  CHRIS_PULSE_SMS_ENV,
   DARWIN_WHATSAPP_ENV,
+  chrisPulseSmsTo,
   darwinWhatsAppNumber,
   formatChrisSms,
   formatDarwinTicket,
@@ -10,7 +12,9 @@ import {
   ticketDarwin
 } from "./notify.mjs";
 
-test("Chris SMS is the prove number and names no credit outcome", () => {
+const FAKE_PULSE_SMS = "+15555550123";
+
+test("Chris SMS dest comes from env and the body names no credit outcome", () => {
   const body = formatChrisSms({
     date: "2026-08-25",
     pass: 4,
@@ -24,7 +28,29 @@ test("Chris SMS is the prove number and names no credit outcome", () => {
   assert.match(body, /gate-relay/);
   assert.match(body, /did not change any product code/);
   assert.doesNotMatch(body, /approved|score|FICO|credit/i);
-  assert.equal(CHRIS_PROVE_SMS, "+16616054248");
+  assert.equal(chrisPulseSmsTo({}), null);
+  assert.equal(chrisPulseSmsTo({ [PULSE_SMS_TO_ENV]: "   " }), null);
+  assert.equal(chrisPulseSmsTo({ [PULSE_SMS_TO_ENV]: FAKE_PULSE_SMS }), FAKE_PULSE_SMS);
+  assert.equal(chrisPulseSmsTo({ [CHRIS_PULSE_SMS_ENV]: FAKE_PULSE_SMS }), FAKE_PULSE_SMS);
+});
+
+test("Chris SMS is skipped until PULSE_SMS_TO is set — no number is invented", async () => {
+  const calls = [];
+  const out = await textChris({
+    date: "2026-08-25",
+    pass: 1,
+    fail: 0,
+    env: {},
+    dryRun: false,
+    sendImpl: async (msg) => {
+      calls.push(msg);
+      return { status: "sent" };
+    }
+  });
+  assert.equal(out.sent, false);
+  assert.match(out.reason, /PULSE_SMS_TO unset/);
+  assert.equal(out.to, null);
+  assert.equal(calls.length, 0);
 });
 
 test("Darwin WhatsApp is skipped until DARWIN_WHATSAPP is set — no number is invented", async () => {
@@ -58,7 +84,7 @@ test("dry-run never sends Chris or Darwin", async () => {
     date: "2026-08-25",
     pass: 1,
     fail: 0,
-    env: { [DARWIN_WHATSAPP_ENV]: "+15555550100" },
+    env: { [PULSE_SMS_TO_ENV]: FAKE_PULSE_SMS, [DARWIN_WHATSAPP_ENV]: "+15555550100" },
     dryRun: true,
     sendImpl: boom
   });
@@ -71,7 +97,7 @@ test("dry-run never sends Chris or Darwin", async () => {
   });
   assert.equal(sms.sent, false);
   assert.equal(sms.reason, "dry_run");
-  assert.equal(sms.to, CHRIS_PROVE_SMS);
+  assert.equal(sms.to, FAKE_PULSE_SMS);
   assert.equal(darwin.sent, false);
   assert.equal(darwin.reason, "dry_run");
   assert.equal(darwin.to, "+15555550100");

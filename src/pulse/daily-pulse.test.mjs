@@ -79,7 +79,7 @@ test("dry-run writes a board and does not send or fix", async () => {
   assert.match(body, /\/app\/pipeline\.html/);
   assert.equal(sends.length, 0);
   assert.equal(result.sms.sent, false);
-  assert.equal(result.sms.reason, "dry_run");
+  assert.match(result.sms.reason, /PULSE_SMS_TO unset/);
   assert.match(result.darwin.reason, /DARWIN_WHATSAPP unset/);
   assert.ok(result.checks.every((c) => c.id !== "fix"));
   fs.rmSync(tmp, { recursive: true, force: true });

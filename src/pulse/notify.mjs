@@ -3,14 +3,22 @@
 // COMPLIANCE REVIEW REQUIRED: this is an ops text, not a client message.
 // No credit-outcome claims. No auto-fix.
 //
-// Chris: prove path +16616054248 through the existing Twilio SMS provider.
+// Chris: dest from PULSE_SMS_TO (or CHRIS_PULSE_SMS). Do not hardcode.
 // Darwin: WhatsApp only when DARWIN_WHATSAPP is set. Do not invent a number.
 
 import { send as sendSms } from "../messaging/providers/twilio.mjs";
 import { send as sendWhatsApp } from "../messaging/providers/twilio-whatsapp.mjs";
 
-export const CHRIS_PROVE_SMS = "+16616054248";
+export const PULSE_SMS_TO_ENV = "PULSE_SMS_TO";
+export const CHRIS_PULSE_SMS_ENV = "CHRIS_PULSE_SMS";
 export const DARWIN_WHATSAPP_ENV = "DARWIN_WHATSAPP";
+
+export function chrisPulseSmsTo(env = process.env) {
+  const raw = String(
+    (env && (env[PULSE_SMS_TO_ENV] || env[CHRIS_PULSE_SMS_ENV])) || ""
+  ).trim();
+  return raw || null;
+}
 
 export function darwinWhatsAppNumber(env = process.env) {
   const raw = String((env && env[DARWIN_WHATSAPP_ENV]) || "").trim();
@@ -63,12 +71,16 @@ export async function textChris({
   sendImpl = sendSms
 } = {}) {
   const body = formatChrisSms({ date, pass, fail, skip, topFails });
-  if (dryRun) return { sent: false, reason: "dry_run", body, to: CHRIS_PROVE_SMS };
+  const to = chrisPulseSmsTo(env);
+  if (!to) {
+    return { sent: false, reason: `${PULSE_SMS_TO_ENV} unset`, body, to: null };
+  }
+  if (dryRun) return { sent: false, reason: "dry_run", body, to };
   const result = await sendImpl(
-    { to: CHRIS_PROVE_SMS, body, channel: "sms" },
+    { to, body, channel: "sms" },
     { env }
   );
-  return { sent: result?.status === "sent", reason: result?.error || null, body, to: CHRIS_PROVE_SMS, result };
+  return { sent: result?.status === "sent", reason: result?.error || null, body, to, result };
 }
 
 export async function ticketDarwin({
