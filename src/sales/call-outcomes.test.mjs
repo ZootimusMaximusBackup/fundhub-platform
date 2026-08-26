@@ -126,6 +126,7 @@ test("logCallOutcome: checklist is stored and returned, unchecked boxes are fals
   assert.equal(presented.checklist.personal_guarantee, false);
   assert.equal(presented.checklist.month_14_cliff, false);
   assert.equal(presented.checklist.bank_decides, false);
+  assert.equal(presented.checklist.incorporation_verified, false);
 });
 
 test("logCallOutcome: bad outcome throws CallOutcomeError", async () => {

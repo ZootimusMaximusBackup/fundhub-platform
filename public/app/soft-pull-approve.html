@@ -104,6 +104,7 @@ ol.next li:last-child{margin-bottom:0}
       state: document.getElementById("biz_state_" + i).value,
       postal_code: document.getElementById("biz_zip_" + i).value,
       ein: document.getElementById("biz_ein_" + i).value,
+      incorporated_date: document.getElementById("biz_inc_" + i).value,
       extra_owner_name: document.getElementById("biz_owner_" + i).value
     };
   }
@@ -116,6 +117,7 @@ ol.next li:last-child{margin-bottom:0}
     document.getElementById("biz_state_" + i).value = row.state || "";
     document.getElementById("biz_zip_" + i).value = row.postal_code || "";
     document.getElementById("biz_ein_" + i).value = row.ein || "";
+    document.getElementById("biz_inc_" + i).value = row.incorporated_date || "";
     document.getElementById("biz_owner_" + i).value = row.extra_owner_name || "";
   }
 
@@ -144,6 +146,8 @@ ol.next li:last-child{margin-bottom:0}
       '<input id="biz_zip_' + i + '" name="biz_zip_' + i + '" inputmode="numeric" required>' +
       '<label for="biz_ein_' + i + '">EIN</label>' +
       '<input id="biz_ein_' + i + '" name="biz_ein_' + i + '" inputmode="numeric" required placeholder="12-3456789">' +
+      '<label for="biz_inc_' + i + '">When was this business incorporated?</label>' +
+      '<input id="biz_inc_' + i + '" name="biz_inc_' + i + '" type="month" required>' +
       '<label for="biz_owner_' + i + '">Extra owner name (if any)</label>' +
       '<input id="biz_owner_' + i + '" name="biz_owner_' + i + '">' +
       "</div>";
@@ -190,6 +194,7 @@ ol.next li:last-child{margin-bottom:0}
         state: row.state.trim(),
         postal_code: row.postal_code.trim(),
         ein: row.ein.trim(),
+        incorporated_date: row.incorporated_date.trim(),
         extra_owner_name: row.extra_owner_name.trim()
       });
     }
@@ -284,6 +289,11 @@ ol.next li:last-child{margin-bottom:0}
           return;
         }
         b.ein = ein;
+        if (!b.incorporated_date) {
+          btn.disabled = false;
+          msg.innerHTML = '<div class="err">Business ' + (i + 1) + ": enter when this business was incorporated (month and year).</div>";
+          return;
+        }
       }
 
       var body = {

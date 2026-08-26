@@ -269,12 +269,14 @@ describe("client detail derivations", () => {
       businesses: [
         {
           name: "Acme LLC",
+          age_months: 30,
           entity_data: {
             state: "AZ",
             ein: "12-3456789",
             address_line1: "1 Main St",
             city: "Phoenix",
             postal_code: "85001",
+            incorporated_date: "2024-02",
             scores: { intelliscore: 72, fsr: 40 }
           }
         },
@@ -301,6 +303,10 @@ describe("client detail derivations", () => {
     assert.equal(hit.businesses[0].extra_owner_name, null);
     assert.equal(hit.businesses[0].extra_owners_warning, false);
     assert.equal(hit.businesses[0].address, "1 Main St Phoenix, AZ 85001");
+    assert.equal(hit.businesses[0].incorporated_date, "2024-02");
+    assert.equal(hit.businesses[0].age_months, 30);
+    assert.equal(hit.businesses[1].incorporated_date, null);
+    assert.equal(hit.businesses[1].age_months, null);
     assert.equal(hit.businesses[1].name, "Beta Inc");
     assert.equal(hit.businesses[1].state, "NV");
     assert.equal(hit.businesses[1].ein, "98-7654321");

@@ -1591,6 +1591,8 @@ restore();
         bizSec.appendChild(rowAlways("Business" + n, row.name));
         bizSec.appendChild(rowAlways("State" + n, row.state));
         bizSec.appendChild(rowAlways("EIN" + n, row.ein));
+        bizSec.appendChild(rowAlways("Incorporated" + n, row.incorporated_date));
+        bizSec.appendChild(rowAlways("Age (months)" + n, row.age_months));
         if (row.address) bizSec.appendChild(rowAlways("Address" + n, row.address));
         if (row.extra_owners_warning) {
           bizSec.appendChild(rowAlways(

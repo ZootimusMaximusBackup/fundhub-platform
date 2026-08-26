@@ -17,6 +17,7 @@ import { composeAndSend } from "../messaging/compose.mjs";
 import { dispatchMessage } from "../messaging/dispatch.mjs";
 import { secretFromEnv } from "../documents/signed-url.mjs";
 import { incomeEstimates } from "../http/client-detail.mjs";
+import { stackedCombinedFromStored } from "../underwrite/business-funding.mjs";
 
 function jsonSafeLink(link, extra = {}) {
   if (!link) return null;
@@ -150,7 +151,7 @@ function negCountFrom(result) {
   return null;
 }
 
-function engineFromRow(crs, clientTier) {
+function engineFromRow(crs, clientTier, businessCount = 0) {
   if (!crs?.result || typeof crs.result !== "object") {
     return {
       available: false,
@@ -174,10 +175,15 @@ function engineFromRow(crs, clientTier) {
   const tier = deckTier(outcome);
   const fico = ficoFrom(result);
   const total = numOrNull(
-    result.preapprovals?.totalCombined
-    ?? result.totalCombined
-    ?? result.fundingEstimate
-    ?? result.projectedPreapproval?.currentTotal
+    stackedCombinedFromStored({
+      totalPersonal: result.preapprovals?.totalPersonal,
+      totalBusiness: result.preapprovals?.totalBusiness,
+      totalCombined: result.preapprovals?.totalCombined
+        ?? result.totalCombined
+        ?? result.fundingEstimate
+        ?? result.projectedPreapproval?.currentTotal,
+      businessCount
+    })
   );
   const afterFix = numOrNull(
     result.projectedPreapproval?.totalCombined
@@ -247,16 +253,23 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
   const client = clientRes.rows[0];
   if (!client) return null;
 
-  const crsRes = await db.query(
-    `SELECT result, outcome_tier, created_at
-       FROM crs_results
-      WHERE client_id = $1 AND org_id = $2
-      ORDER BY created_at DESC LIMIT 1`,
-    [clientId, orgId]
-  );
+  const [crsRes, bizRes] = await Promise.all([
+    db.query(
+      `SELECT result, outcome_tier, created_at
+         FROM crs_results
+        WHERE client_id = $1 AND org_id = $2
+        ORDER BY created_at DESC LIMIT 1`,
+      [clientId, orgId]
+    ),
+    db.query(
+      `SELECT id FROM businesses
+        WHERE client_id = $1 AND org_id = $2`,
+      [clientId, orgId]
+    )
+  ]);
 
   const name = [client.first_name, client.last_name].filter(Boolean).join(" ").trim() || "Client";
-  const engine = engineFromRow(crsRes.rows[0], client.outcome_tier);
+  const engine = engineFromRow(crsRes.rows[0], client.outcome_tier, bizRes.rows.length);
   if (engine.total == null) {
     const prequal = numOrNull(cf(client, "analyzer_prequal_amount") || cf(client, "total_funding_estimate"));
     if (prequal != null && engine.available) engine.total = prequal;

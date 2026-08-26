@@ -9,7 +9,9 @@
 //
 // Flow (owner 2026-08-25): form collects optional businesses first (safety
 // ceiling 20); total = $32 + $10×n; checkout is minted/adjusted to that total
-// before pay. EIN is required on each added business; extra owner is optional.
+// before pay. EIN and incorporation date (month/year) are required on each
+// added business; extra owner is optional. Age months are stored on the row.
+// Live CRS / Experian Business in this repo does not return that date.
 
 import { db } from "../src/db.mjs";
 import { isUuid } from "../src/http/read-api.mjs";
@@ -106,7 +108,50 @@ export function normalizeSoftPullEin(raw) {
   return `${digits.slice(0, 2)}-${digits.slice(2)}`;
 }
 
-/** Parse 0–20 businesses: name + street + city + state + ZIP + EIN; extra owner optional. */
+/** YYYY-MM or YYYY-MM-DD. No invented day. Invalid or empty → null. */
+export function parseIncorporatedDate(raw) {
+  const s = String(raw == null ? "" : raw).trim();
+  if (/^\d{4}-\d{2}$/.test(s)) {
+    const y = Number(s.slice(0, 4));
+    const m = Number(s.slice(5, 7));
+    if (y < 1800 || y > 2100 || m < 1 || m > 12) return null;
+    return s;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const y = Number(s.slice(0, 4));
+    const m = Number(s.slice(5, 7));
+    const d = Number(s.slice(8, 10));
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    if (
+      dt.getUTCFullYear() !== y
+      || dt.getUTCMonth() + 1 !== m
+      || dt.getUTCDate() !== d
+      || y < 1800
+      || y > 2100
+    ) {
+      return null;
+    }
+    return s;
+  }
+  return null;
+}
+
+/** Months from the stored date to `now`. Future or bad date → null. No default age. */
+export function ageMonthsFromIncorporated(raw, now = new Date()) {
+  const parsed = parseIncorporatedDate(raw);
+  if (!parsed) return null;
+  const y = Number(parsed.slice(0, 4));
+  const m = Number(parsed.slice(5, 7));
+  const day = parsed.length >= 10 ? Number(parsed.slice(8, 10)) : 1;
+  const months =
+    (now.getUTCFullYear() - y) * 12
+    + (now.getUTCMonth() + 1 - m)
+    - (now.getUTCDate() < day ? 1 : 0);
+  if (!Number.isFinite(months) || months < 0) return null;
+  return months;
+}
+
+/** Parse 0–20 businesses: name + street + city + state + ZIP + EIN + incorporated date; extra owner optional. */
 export function parseSoftPullBusinesses(raw) {
   if (raw == null || raw === "") return [];
   if (!Array.isArray(raw)) {
@@ -132,7 +177,8 @@ export function parseSoftPullBusinesses(raw) {
     const postal = String(row.postal_code || "").trim();
     const extraOwner = String(row.extra_owner_name || "").trim();
     const ein = normalizeSoftPullEin(row.ein);
-    if (!name && !line1 && !city && !state && !postal && !row.ein && !extraOwner) continue;
+    const incorporated = parseIncorporatedDate(row.incorporated_date);
+    if (!name && !line1 && !city && !state && !postal && !row.ein && !extraOwner && !row.incorporated_date) continue;
     if (!name || name.length < 2) {
       throw new ConsentError(`Business ${i + 1}: enter the business name.`, {
         status: 400,
@@ -151,6 +197,19 @@ export function parseSoftPullBusinesses(raw) {
         { status: 400, code: "business_ein_required" }
       );
     }
+    if (!incorporated) {
+      throw new ConsentError(
+        `Business ${i + 1}: enter when this business was incorporated (month and year).`,
+        { status: 400, code: "business_incorporated_required" }
+      );
+    }
+    const ageMonths = ageMonthsFromIncorporated(incorporated);
+    if (ageMonths == null) {
+      throw new ConsentError(
+        `Business ${i + 1}: the incorporation date cannot be in the future.`,
+        { status: 400, code: "business_incorporated_invalid" }
+      );
+    }
     out.push({
       name,
       address_line1: line1,
@@ -158,7 +217,9 @@ export function parseSoftPullBusinesses(raw) {
       state,
       postal_code: postal,
       ein,
-      extra_owner_name: extraOwner || null
+      extra_owner_name: extraOwner || null,
+      incorporated_date: incorporated,
+      age_months: ageMonths
     });
   }
   return out;
@@ -173,12 +234,13 @@ export async function replaceSoftPullBusinesses(database, { orgId, clientId, bus
   );
   for (const b of businesses) {
     await database.query(
-      `INSERT INTO businesses (org_id, client_id, name, entity_data)
-       VALUES ($1, $2, $3, $4::jsonb)`,
+      `INSERT INTO businesses (org_id, client_id, name, age_months, entity_data)
+       VALUES ($1, $2, $3, $4, $5::jsonb)`,
       [
         orgId,
         clientId,
         b.name,
+        b.age_months,
         JSON.stringify({
           source: BIZ_SOURCE,
           address_line1: b.address_line1,
@@ -186,7 +248,8 @@ export async function replaceSoftPullBusinesses(database, { orgId, clientId, bus
           state: b.state,
           postal_code: b.postal_code,
           ein: b.ein,
-          extra_owner_name: b.extra_owner_name || null
+          extra_owner_name: b.extra_owner_name || null,
+          incorporated_date: b.incorporated_date || null
         })
       ]
     );
