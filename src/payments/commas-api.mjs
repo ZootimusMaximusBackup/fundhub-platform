@@ -46,6 +46,8 @@
  * invent its way around.
  */
 
+import { commasCopyViolation } from "./commas-safe-copy.mjs";
+
 /* Base URL. ⚠️ NOT CONFIRMED against live Commas documentation — same caveat
    as every other Commas field path in this repo. Overridable so it can be
    corrected with an env var rather than a deploy of new code. */
@@ -267,6 +269,12 @@ export async function createCheckoutSession({
   }
   const title = String(productTitle || "").trim();
   if (!title) return { ok: false, reason: "product title is required" };
+  if (commasCopyViolation(title)) {
+    return { ok: false, reason: "commas_unsafe_copy", field: "product.title" };
+  }
+  if (productDescription && commasCopyViolation(productDescription)) {
+    return { ok: false, reason: "commas_unsafe_copy", field: "product.description" };
+  }
 
   const body = {
     amount_cents: amountCents,

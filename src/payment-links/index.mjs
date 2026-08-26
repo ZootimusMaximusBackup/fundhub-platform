@@ -11,6 +11,8 @@
 import crypto from "node:crypto";
 import { buildCommasCheckoutUrl } from "../adapters/commas.mjs";
 import { createCheckoutSession, checkoutConfig } from "../payments/commas-api.mjs";
+import { commasProductTitleFor } from "../config/offers.mjs";
+import { assertCommasSafeCopy } from "../payments/commas-safe-copy.mjs";
 
 const PURPOSES = new Set(["deposit", "diagnostic", "repair", "custom"]);
 const SALE_MOTIONS = new Set(["downsell", "upsell"]);
@@ -130,6 +132,7 @@ export async function createPaymentLink(db, {
   currency = "USD", createdByStaffId = null, createdByRole = null,
   productId = null, productCode = null, saleId = null, saleMotion = null,
   invoiceId = null, fundingRoundId = null,
+  commasProductTitle = null,
   checkoutBaseUrl,
   env = process.env, fetchImpl = fetch
 }) {
@@ -160,7 +163,20 @@ export async function createPaymentLink(db, {
   });
 
   const linkRef = generateLinkRef();
-  const title = String(description || purpose).trim();
+  const commasTitle = commasProductTitleFor({
+    productCode: context.productCode,
+    purpose,
+    commasProductTitle,
+    invoiceId
+  });
+  try {
+    assertCommasSafeCopy(commasTitle, { field: "product.title" });
+  } catch (e) {
+    const err = new Error(e.message || "Commas product title failed safety check");
+    err.code = e.code || "commas_unsafe_copy";
+    err.status = 400;
+    throw err;
+  }
   let checkoutUrl;
   let commasSessionId = null;
 
@@ -168,8 +184,7 @@ export async function createPaymentLink(db, {
   if (cfg.ok) {
     const minted = await createCheckoutSession({
       amountCents,
-      productTitle: title,
-      productDescription: purpose === "diagnostic" ? "UnderwriteIQ soft-pull assessment" : null,
+      productTitle: commasTitle,
       metadata: {
         link_ref: linkRef,
         client_id: clientId,
@@ -196,7 +211,7 @@ export async function createPaymentLink(db, {
       baseUrl: checkoutBaseUrl,
       linkRef,
       amountCents,
-      description: title
+      description: commasTitle
     });
   } else {
     const err = new Error(cfg.reason || "No Commas checkout configured");

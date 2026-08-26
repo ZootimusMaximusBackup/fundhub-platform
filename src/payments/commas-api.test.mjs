@@ -233,7 +233,7 @@ test("createCheckoutSession sends a success_url the thank-you page can act on", 
   const fetchImpl = fakeFetch([{ status: 200, body: JSON.stringify({ data: { payment_link: "https://pay/x", id: "sess_1" } }) }]);
   const res = await createCheckoutSession({
     amountCents: 3200,
-    productTitle: "diagnostic",
+    productTitle: "Consulting Services Assessment",
     metadata: META,
     env: CHECKOUT_ENV,
     fetchImpl
@@ -254,7 +254,7 @@ test("createCheckoutSession decorates an explicitly supplied success url too", a
   const fetchImpl = fakeFetch([{ status: 200, body: JSON.stringify({ data: { payment_link: "https://pay/x", id: "s" } }) }]);
   await createCheckoutSession({
     amountCents: 100,
-    productTitle: "x",
+    productTitle: "Consulting Services Package",
     metadata: { link_ref: "pl_z" },
     successUrl: "https://custom.test/thanks",
     env: CHECKOUT_ENV,
@@ -266,7 +266,25 @@ test("createCheckoutSession decorates an explicitly supplied success url too", a
 
 test("createCheckoutSession with no metadata still sends a plain success url", async () => {
   const fetchImpl = fakeFetch([{ status: 200, body: JSON.stringify({ data: { payment_link: "https://pay/x", id: "s" } }) }]);
-  await createCheckoutSession({ amountCents: 100, productTitle: "x", env: CHECKOUT_ENV, fetchImpl });
+  await createCheckoutSession({
+    amountCents: 100,
+    productTitle: "Consulting Services Package",
+    env: CHECKOUT_ENV,
+    fetchImpl
+  });
   const sent = JSON.parse(fetchImpl.calls[0].opts.body);
   assert.equal(sent.success_url, "https://fundhub.ai/app/payment-success.html");
+});
+
+test("createCheckoutSession refuses unsafe product titles before calling fetch", async () => {
+  const fetchImpl = fakeFetch([]);
+  const res = await createCheckoutSession({
+    amountCents: 100,
+    productTitle: "Funding deposit",
+    env: CHECKOUT_ENV,
+    fetchImpl
+  });
+  assert.equal(res.ok, false);
+  assert.equal(res.reason, "commas_unsafe_copy");
+  assert.equal(fetchImpl.calls.length, 0);
 });

@@ -212,9 +212,11 @@ describe("createPaymentLink", () => {
 
   test("FANBASIS_CHECKOUT_API_KEY mints via checkout-session API", async () => {
     const db = fakeDb();
+    let sentBody = null;
     const fetchImpl = async (_url, opts) => {
-      const body = JSON.parse(opts.body);
-      assert.equal(body.amount_cents, 100);
+      sentBody = JSON.parse(opts.body);
+      assert.equal(sentBody.amount_cents, 100);
+      assert.equal(sentBody.product.title, "Consulting Services Assessment");
       assert.equal(opts.headers["x-api-key"], "fb-key");
       return {
         ok: true,
@@ -234,6 +236,8 @@ describe("createPaymentLink", () => {
     assert.equal(link.checkout_url, "https://www.fanbasis.com/agency-checkout/x/N1test");
     assert.equal(link.commas_session_id, "N1test");
     assert.equal(link.amount_cents, 100);
+    assert.equal(link.description, "Business Financial Assessment — Fundhub");
+    assert.equal(sentBody.product.title, "Consulting Services Assessment");
   });
 
   test("invoice id is stored on the link and sent in checkout metadata", async () => {

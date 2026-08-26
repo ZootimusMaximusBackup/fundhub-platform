@@ -4,7 +4,7 @@ import { test, describe } from "node:test";
 import assert from "node:assert";
 import {
   BUCKET_TO_CODE, paymentKindFor, nothingUnlockedReason, NOTHING_UNLOCKED,
-  ensureAttributions, ensureSalePayment
+  ensureAttributions, ensureSalePayment, resolveProductId
 } from "./money-chain.mjs";
 
 describe("money-chain helpers", () => {
@@ -166,5 +166,44 @@ describe("ensureSalePayment", () => {
     assert.ok(ins, "deposit.paid must INSERT sale_payments when a sale exists");
     assert.match(ins.sql, /product_id/, "INSERT must include product_id (live NOT NULL)");
     assert.equal(ins.params[3], "prod-from-sale");
+  });
+});
+
+describe("resolveProductId matches product codes, not just display names", () => {
+  function productDb(rows) {
+    return {
+      query: async (sql, params) => {
+        const text = String(sql);
+        if (/resolve_product_id/i.test(text)) return { rows: [] };
+        if (/FROM products WHERE org_id/i.test(text) && /lower\(code\)/i.test(text)) {
+          const code = String(params[1] || "").toLowerCase();
+          const row = rows.find((r) => r.code === code);
+          return { rows: row ? [{ id: row.id }] : [] };
+        }
+        if (/FROM products WHERE id/i.test(text)) {
+          const row = rows.find((r) => r.id === params[0]);
+          return { rows: row ? [row] : [] };
+        }
+        return { rows: [] };
+      }
+    };
+  }
+
+  test("a catalog name miss still finds the product by code", async () => {
+    const db = productDb([{ id: "p-repair", code: "repair-bundle" }]);
+    const id = await resolveProductId(db, "org-1", {
+      productName: "repair-bundle",
+      productBucket: "repair"
+    });
+    assert.equal(id, "p-repair");
+  });
+
+  test("a product code used as the sale.closed bucket still resolves", async () => {
+    const db = productDb([{ id: "p-course", code: "funding-mastery" }]);
+    const id = await resolveProductId(db, "org-1", {
+      productName: "Funding Mastery course (A to Z)",
+      productBucket: "funding-mastery"
+    });
+    assert.equal(id, "p-course");
   });
 });
