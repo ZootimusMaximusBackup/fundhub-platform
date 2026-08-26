@@ -101,12 +101,14 @@ test("lenders.html client-scoped Apply shows no-extension fallback with verified
   await expect(modal).toBeVisible();
   await expect(modal).toContainText("Chrome extension not detected");
   await expect(modal).toContainText("NOT active");
+  await expect(modal).toContainText("will not open the safe way");
+  await expect(modal).toContainText("Do not open the bank link");
   await expect(modal).toContainText("203.0.113.44");
   await expect(modal).toContainText("Mesa");
   await expect(modal).toContainText("pr.oxylabs.io");
   await expect(modal).toContainText("customer-test-cc-US-city-mesa-sessid-abc123");
   await expect(modal).toContainText("Verified exit");
-  await expect(modal.getByRole("button", { name: /Open application URL/i })).toBeVisible();
+  await expect(modal.getByRole("button", { name: /Open application URL/i })).toHaveCount(0);
   await expect(modal.getByRole("button", { name: /End session/i })).toBeVisible();
 });
 
@@ -148,5 +150,7 @@ test("client-control-panel funding Apply list wires Apply control", async ({ pag
   const modal = page.locator("#fh-proxy-apply-modal");
   await expect(modal).toBeVisible();
   await expect(modal).toContainText("Chrome extension not detected");
+  await expect(modal).toContainText("will not open the safe way");
   await expect(modal).toContainText("203.0.113.44");
+  await expect(modal.getByRole("button", { name: /Open application URL/i })).toHaveCount(0);
 });
