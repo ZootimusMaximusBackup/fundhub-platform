@@ -187,7 +187,8 @@ describe("GET /api/read/repair-cases", () => {
         account_last4: "1234",
         round: "R1",
         status: "open",
-        outcome: null
+        outcome: null,
+        bureau: "EX"
       }],
       programs: [{ client_id: CLIENT, program: "full", rounds_cap: 6, status: "active" }],
       consents: [{ client_id: CLIENT, is_valid: true }],
@@ -209,6 +210,11 @@ describe("GET /api/read/repair-cases", () => {
     assert.equal(res.body.letters[0].html, "Dear Experian");
     assert.equal(res.body.letters[0].can_send, true);
     assert.equal(res.body.letters[0].target, "bureau");
+    assert.equal(res.body.items[0].bureau, "EX");
+    assert.ok(Array.isArray(res.body.rounds));
+    assert.equal(res.body.rounds.length, 6);
+    assert.equal(res.body.rounds[0].status, "written");
+    assert.equal(res.body.rounds[1].status, "held");
     assert.equal(res.body.signer_name, "Pat Lee");
     assert.ok(res.body.signed_at);
     assert.ok(Array.isArray(res.body.timeline));
