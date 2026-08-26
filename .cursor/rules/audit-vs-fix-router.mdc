@@ -16,6 +16,7 @@ alwaysApply: true
 | perf audit, speed audit, load time, lighthouse, page speed, core web vitals | `fundhub-perf-auditor` | Score pages against `docs/PERF-STANDARDS.md`. **Read-only.** |
 | fix, ship, repair, wire, "make X work", unblock | `fundhub-fixer` | Change **only** what he named. Then prove. |
 | build, create, add a screen, new dashboard, new feature, scaffold, make me a | `fundhub-builder` | Not for fixing (`fundhub-fixer`) or auditing (`fundhub-auditor`). No trigger matched → normal dev under existing rules. |
+| agent test / roleplay the AI / did the agent follow its prompt | `fundhub-agent-tester` | Two AIs talk. Score prompt + intended journey. |
 
 Skill paths:
 
@@ -24,6 +25,7 @@ Skill paths:
 - `.cursor/skills/fundhub-perf-auditor/SKILL.md`
 - `.cursor/skills/fundhub-fixer/SKILL.md`
 - `.cursor/skills/fundhub-builder/SKILL.md`
+- `.cursor/skills/fundhub-agent-tester/SKILL.md`
 - `.cursor/skills/fundhub-orchestrator/SKILL.md` (full loop after plan approval)
 
 Read the matching skill **before** any other work on that request.
