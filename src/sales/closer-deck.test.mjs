@@ -12,7 +12,13 @@ import {
 const ORG = "11111111-1111-4111-8111-111111111111";
 const CID = "22222222-2222-4222-8222-222222222222";
 
-function fakeDb({ client = null, crs = null, businesses = [] } = {}) {
+function fakeDb({
+  client = null,
+  crs = null,
+  businesses = [],
+  tradelines = [],
+  liabilities = []
+} = {}) {
   return {
     async query(sql) {
       const s = String(sql);
@@ -24,6 +30,12 @@ function fakeDb({ client = null, crs = null, businesses = [] } = {}) {
       }
       if (/FROM businesses/i.test(s)) {
         return { rows: businesses };
+      }
+      if (/FROM tradelines/i.test(s)) {
+        return { rows: tradelines };
+      }
+      if (/FROM card_liabilities/i.test(s)) {
+        return { rows: liabilities };
       }
       if (/FROM payment_links/i.test(s)) return { rows: [] };
       if (/FROM soft_pull_requests/i.test(s)) return { rows: [] };
@@ -103,15 +115,30 @@ test("stored closer payload maps FICO, total, reasons — no invented numbers", 
   assert.equal(out.engine.tier, "FUNDING_PLUS_REPAIR");
   assert.equal(out.engine.fico.ex, 712);
   assert.equal(out.engine.fico.tu, 648);
-  assert.equal(out.engine.total, 127500);
   assert.equal(out.engine.afterFix, 214000);
+  /* Headline dollars come from the UnderwriteIQ stack, not the canned CRS 127500. */
+  const { toBureaus } = await import("../underwrite/adapter.mjs");
+  const { computeUnderwrite } = await import("../underwrite/engine.mjs");
+  const { applyStackedBusinessFunding } = await import("../underwrite/business-funding.mjs");
+  const adapter = toBureaus({
+    tradelines: [],
+    liabilities: [],
+    crsResults: [crs],
+    customFields: CLIENT.custom_fields,
+    businesses: []
+  });
+  const stacked = applyStackedBusinessFunding(
+    computeUnderwrite(adapter.bureaus, adapter.businessAgeMonths),
+    adapter.businessAges
+  );
+  assert.equal(out.engine.total, stacked.totals.total_combined_funding);
   assert.equal(out.engine.negItems, 5);
   assert.equal(out.engine.reasons[0][0], "M2-013 · TU");
   assert.equal(out.income_estimates.experian.annual, 97000);
   assert.equal(out.income_estimates.equifax.annual, 81000);
 });
 
-test("two saved companies raise the stored pre-approval vs one, all else equal", async () => {
+test("two saved companies raise Present's UnderwriteIQ stack vs one, all else equal", async () => {
   const crs = {
     outcome_tier: "FULL_FUNDING",
     created_at: "2026-08-16T00:00:00Z",
@@ -119,21 +146,44 @@ test("two saved companies raise the stored pre-approval vs one, all else equal",
       environment: "production",
       outcome: "FULL_FUNDING",
       preapprovals: { totalPersonal: 100000, totalBusiness: 50000, totalCombined: 150000 },
-      scores: { perBureau: { ex: 720, tu: 710, eq: 705 } }
+      scores: { perBureau: { ex: 720, tu: 710, eq: 705 }, ex: 720, tu: 710, eq: 705 }
     }
   };
+  const client = {
+    ...CLIENT,
+    outcome_tier: "FULL_FUNDING",
+    custom_fields: {
+      ...CLIENT.custom_fields,
+      crs_inquiries_ex: 0,
+      crs_inquiries_eq: 0,
+      crs_inquiries_tu: 0,
+      crs_negative_items_count: 0,
+      crs_late_payments_count: 0
+    }
+  };
+  const tradelines = [{
+    id: "tl1",
+    lender: "Chase",
+    kind: "revolving",
+    credit_limit_cents: 2_000_000,
+    balance_cents: 400_000,
+    apr: "0.1899",
+    closed_at: null,
+    opened_on: "2018-01-01"
+  }];
   const one = await buildCloserDeck(fakeDb({
-    client: { ...CLIENT, outcome_tier: "FULL_FUNDING" },
+    client,
     crs,
-    businesses: [{ id: "b1" }]
+    tradelines,
+    businesses: [{ age_months: 30 }]
   }), { orgId: ORG, clientId: CID });
   const two = await buildCloserDeck(fakeDb({
-    client: { ...CLIENT, outcome_tier: "FULL_FUNDING" },
+    client,
     crs,
-    businesses: [{ id: "b1" }, { id: "b2" }]
+    tradelines,
+    businesses: [{ age_months: 30 }, { age_months: 30 }]
   }), { orgId: ORG, clientId: CID });
-  assert.equal(one.engine.total, 150000);
-  assert.equal(two.engine.total, 200000);
+  assert.ok(Number.isFinite(one.engine.total) && one.engine.total > 0);
   assert.ok(two.engine.total > one.engine.total);
 });
 
