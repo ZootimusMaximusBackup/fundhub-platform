@@ -212,6 +212,17 @@ const DISPUTE_CASES_SQL = `
      AND client_id = ANY($2::uuid[])
      AND status = 'awaiting_response'`;
 
+/* Repair letter counts — same statuses src/repair/cases.mjs LIST_SQL uses.
+   No is_demo column on dispute_letters (160_metro2_dispute_engine.sql). */
+const REPAIR_LETTERS_SQL = `
+  SELECT client_id,
+         COUNT(*) FILTER (WHERE status IN ('generated', 'ready'))::int AS letters_ready,
+         COUNT(*) FILTER (WHERE status IN ('sent', 'delivered'))::int AS letters_sent
+    FROM dispute_letters
+   WHERE org_id = $1::uuid
+     AND client_id = ANY($2::uuid[])
+   GROUP BY client_id`;
+
 /* The funding card. "Prepare Next Round" fires when it sits on the Approved
    stage of the card-stacking board. cards stores ids, so the two keys the
    derivation compares come from a join, not from the card row. */
@@ -272,7 +283,7 @@ export async function gatherListSignals(db, { orgId, clientIds } = {}) {
   const args = [orgId, ids];
   const [
     consentRows, crsRows, inquiryRows, docRows,
-    respRows, caseRows, cardRows, taskRows, roundRows, balanceRows
+    respRows, caseRows, letterRows, cardRows, taskRows, roundRows, balanceRows
   ] = await Promise.all([
     safeRows(db, consentSql(), [orgId, ids, SOFT_PULL_KIND], "consent"),
     safeRows(db, REAL_CRS_SQL, args, "crs_results"),
@@ -280,6 +291,7 @@ export async function gatherListSignals(db, { orgId, clientIds } = {}) {
     safeRows(db, DOCUMENTS_SQL, args, "documents"),
     safeRows(db, DISPUTE_RESPONSES_SQL, args, "dispute_responses"),
     safeRows(db, DISPUTE_CASES_SQL, args, "dispute_cases"),
+    safeRows(db, REPAIR_LETTERS_SQL, args, "dispute_letters"),
     safeRows(db, CARD_SQL, [orgId, ids, CARD_STACKING_PIPELINE], "cards"),
     safeRows(db, OPEN_TASKS_SQL, args, "tasks"),
     safeRows(db, ROUNDS_SQL, args, "funding_rounds"),
@@ -292,6 +304,7 @@ export async function gatherListSignals(db, { orgId, clientIds } = {}) {
   const docsBy = byClient(docRows);
   const respBy = byClient(respRows);
   const caseBy = byClient(caseRows);
+  const letterBy = byClient(letterRows);
   const cardBy = byClient(cardRows);
   const taskBy = byClient(taskRows);
   const roundBy = byClient(roundRows);
@@ -317,6 +330,13 @@ export async function gatherListSignals(db, { orgId, clientIds } = {}) {
     if (docRows !== null) signals.doc_packet = checkDocPacket(docsBy.get(id) || []);
     if (respRows !== null) signals.dispute_responses = respBy.get(id) || [];
     if (caseRows !== null) signals.dispute_cases = caseBy.get(id) || [];
+    if (letterRows !== null) {
+      const row = (letterBy.get(id) || [])[0];
+      signals.repair_letters = {
+        letters_ready: row ? Number(row.letters_ready) : 0,
+        letters_sent: row ? Number(row.letters_sent) : 0
+      };
+    }
     if (cardRows !== null) signals.card = (cardBy.get(id) || [])[0] || null;
     if (taskRows !== null) signals.tasks = taskBy.get(id) || [];
     if (roundRows !== null) signals.funding_rounds = roundBy.get(id) || [];
@@ -403,7 +423,7 @@ export async function gatherDetailSignals(db, { orgId, clientId, consentStatus }
   const args = [orgId, ids];
   const out = {};
 
-  const [consent, crsRows, docRows, respRows, caseRows, cardRows] = await Promise.all([
+  const [consent, crsRows, docRows, respRows, caseRows, letterRows, cardRows] = await Promise.all([
     (async () => {
       try {
         return await consentStatus(db, { orgId, clientId, kind: SOFT_PULL_KIND });
@@ -416,6 +436,7 @@ export async function gatherDetailSignals(db, { orgId, clientId, consentStatus }
     safeRows(db, DOCUMENTS_SQL, args, "documents"),
     safeRows(db, DISPUTE_RESPONSES_SQL, args, "dispute_responses"),
     safeRows(db, DISPUTE_CASES_SQL, args, "dispute_cases"),
+    safeRows(db, REPAIR_LETTERS_SQL, args, "dispute_letters"),
     safeRows(db, CARD_SQL, [orgId, ids, CARD_STACKING_PIPELINE], "cards")
   ]);
 
@@ -425,6 +446,13 @@ export async function gatherDetailSignals(db, { orgId, clientId, consentStatus }
   if (docRows !== null) out.doc_packet = checkDocPacket(docRows);
   if (respRows !== null) out.dispute_responses = respRows;
   if (caseRows !== null) out.dispute_cases = caseRows;
+  if (letterRows !== null) {
+    const row = letterRows[0];
+    out.repair_letters = {
+      letters_ready: row ? Number(row.letters_ready) : 0,
+      letters_sent: row ? Number(row.letters_sent) : 0
+    };
+  }
   if (cardRows !== null) out.card = cardRows[0] || null;
 
   return out;

@@ -38,11 +38,12 @@ const keyOf = (signals) => deriveNextAction(signals).next_action?.key ?? null;
 
 describe("the order is Chris's, exactly", () => {
 
-  test("ten chips, in Chris's words, in Chris's order", () => {
+  test("eleven chips, in Chris's words, in Chris's order", () => {
     assert.deepEqual(NEXT_ACTIONS.map((a) => [a.key, a.label]), [
       ["clear_fraud_alert", "Clear Fraud Alert"],
       ["get_consent", "Get Consent"],
       ["pull_crs", "Pull CRS"],
+      ["send_letters", "Send Letters"],
       ["remove_inquiries", "Remove Inquiries"],
       ["collect_documents", "Collect Documents"],
       ["review_disputes", "Review Disputes"],
@@ -118,6 +119,24 @@ describe("every chip fires on its own evidence", () => {
     assert.equal(keyOf(base({ custom_fields: { crs_paid: true } })), "pull_crs");
   });
 
+  test("Send Letters — ready letters and none sent", () => {
+    assert.equal(keyOf(base({ repair_letters: { letters_ready: 4, letters_sent: 0 } })), "send_letters");
+  });
+
+  test("Send Letters outranks Remove Inquiries when letters are the repair job", () => {
+    assert.equal(keyOf(base({
+      inquiry_cases: [{ case_status: "Queued" }],
+      repair_letters: { letters_ready: 4, letters_sent: 0 }
+    })), "send_letters");
+  });
+
+  test("Send Letters does NOT fire when letters were already sent", () => {
+    assert.equal(keyOf(base({
+      inquiry_cases: [{ case_status: "Queued" }],
+      repair_letters: { letters_ready: 0, letters_sent: 4 }
+    })), "remove_inquiries");
+  });
+
   test("Remove Inquiries — an active case", () => {
     for (const s of ["Queued", "Scheduled", "In Progress", "Escalated", "Blocked"]) {
       assert.equal(keyOf(base({ inquiry_cases: [{ case_status: s }] })), "remove_inquiries", s);
@@ -135,7 +154,7 @@ describe("every chip fires on its own evidence", () => {
   /* FINDING, recorded not fixed. Chip 5's second route — "the inquiry case is
      Blocked and the identity packet comes back short" — can never be the
      answer under Chris's order. "Blocked" is also one of the five ACTIVE
-     inquiry states (src/inquiry-ops/gate.mjs:8), so Remove Inquiries at rank 4
+     inquiry states (src/inquiry-ops/gate.mjs:8), so Remove Inquiries at rank 5
      always fires first. The route is kept because it is the approved mapping
      and it becomes reachable the moment the order changes; this test pins the
      shadowing so it is visible rather than silent. */
@@ -1247,7 +1266,7 @@ describe("defence in depth: the guards that cannot fire today", () => {
   };
 
   test("GATE A: Pull CRS keeps its own consent belt, under its own predicate", () => {
-    const fn = sliceBetween("function evaluatePullCrs", "/* 4. REMOVE INQUIRIES");
+    const fn = sliceBetween("function evaluatePullCrs", "/* 4. SEND LETTERS");
     assert.match(fn, /if\s*\(\s*ctx\.consentValid\s*!==\s*true\s*\)\s*return\s+NO\(\)/,
       "Pull CRS lost its own consent check. It is unreachable while Get Consent " +
       "outranks it — and it is the only thing left if that ranking is ever changed. " +
