@@ -7,11 +7,28 @@
 
 ---
 
+## BLOCKER (owner fact — do not fight)
+
+**Netlify production deploy is refused.** Account credits used up. Site disabled / Forbidden.  
+**Do not retry `netlify deploy`.** Do not wait for credits tonight.
+
+| | |
+|---|---|
+| What browsers hit | Frozen **CLI** blob `6a8e9c28926e` — **no git SHA** |
+| What git says | `origin/main` `e58133f0` has #176 `beb81d25`, #170, #172, notes, etc. **#177 pending** |
+| Score rule | Only what that **frozen live** already showed. Code on main is **not** live. |
+
+- **#176 / #170 are not live.** Skip B1 reload-as-pass. **B1 stays FAIL** (play box emptied on the frozen site).
+- Do not treat a Specialist “What is next” glimpse as “main #170 is live.”
+- Keep walking the five sims + reading code/journeys. No Bland. No Apply. No new fixes.
+
+---
+
 ## Morning brief (working — night not done)
 
 **Proven (do not re-open):**
 - Owner KPI **Funded = 2** on screen and in the DB. Cash **$375.96**. `/start?ref=AFF-000001` wrote a click.
-- Repair Horse desk **What is next** is on live (R1 Written, R2 Held, EX · BENEFICIAL). Did not Send.
+- Repair Horse **once** showed R1 / EQ-EX letters / BENEFICIAL on a CLI page this night. That is **not** “#170 from main is live.” Did not Send.
 - AR/calls lane: talk **FAIL** (0.13s / no-answer). Book order is live fire, **not** in intended files. Fund Horse never booked. AR first notice already sent; next sleeps 7 days. Present Invoice does not start AR.
 - AG-04 / AG-09 live prompts are 169-letter stubs. **FAIL**.
 - **B2 PASS** — expected vs actual on Specialist, Sim Fund Horse, stored + reload.
@@ -171,6 +188,48 @@ Talk order still **UNVERIFIED** (not in intended). Did not invent PASS.
 **What I still fake:** any “e2e done” while live is 503 and book/Apply/talk never ran.
 
 ---
+
+## Hour 4 — ~1:06 a.m. Pacific
+
+**Hard fact ingested.** Deploy refused. Did **not** retry Netlify. Did **not** do the B1 reload. B1 **FAIL** on frozen live.
+
+### What the editor story says vs what actually fires vs these five
+
+Read `src/journeys/seed-journeys.mjs` (editor trees) and `src/workflows/index.mjs` (live fire). Did not invent a third list.
+
+**Client editor tree** starts: text the **survey** (calls it S-01) → give to a setter → wait **two days** → survey done? → book link or nudge → … → $32 → UnderwriteIQ.  
+**Live fire** (system map + `s-00-welcome`, `s-01-new-lead-intake`, `s-nobook-chase`, `ai-set-01-josh-setter`, `s-04-call-booked`): `entry.captured` → **S-00 welcome** email+SMS → New Lead card → book? → Josh **only after book** (AR/calls: staff Josh can also go out without book) → if no book, nobook chase.
+
+**Gap:** the editor’s “Josh in 5 minutes + 2-day survey wait” is **not** what these five files got. They got welcome + **nobook**. Intended `client-intended.md` names **neither**. Sequence vs intended = **UNVERIFIED**.
+
+**No editor tree** for Specialist / repair / inquiry. `role-inquiry-remover-intended.md` is a desk toggle. Repair event bus lives in `src/repair/*` + map §4.
+
+**Advisor editor tree** exists (`SEED_JOURNEYS.advisor`). Live Apply is **B4 FAIL** on frozen live. Do not click Apply to “finish” the tree.
+
+### Five files on the **frozen** site (not main)
+
+| File | What already happened on frozen live | What this file’s path still needs | Score |
+|---|---|---|---|
+| Funding | Welcome + nobook keys. Next: Apply for Funding. Round started. AR-01 ×2. Extra DOC-02 ×4. Present opened earlier. $1 mint unpaid. | Book sequence (never started). Josh talk. Apply (**forbidden tonight**). AR-02–04 (sleep). Extra SMS already FAIL. | **FAIL** |
+| Repair | Welcome + nobook. Repair welcome + letters-ready. Next: Remove Inquiries (odd if letters are the job). Trial 2 / R2 hold / 30-day wait (AR/calls fact). Did not Send. | Send (paper — forbidden). Bureau wait. Full 6-round path (blocked at trial cap). Talk **UNVERIFIED**. | **FAIL** |
+| Combo | Welcome + nobook + letters-ready. **No** next action on dash. No AR. No round. | Funding Apply (no). Repair send (no). Book (no). | **FAIL** |
+| Inquiry | Welcome + nobook. Next: Remove Inquiries. Case id on file. No letters-ready. | Inquiry letters / bureau phone (hold / forbidden). Book (no). | **FAIL** |
+| Course | Welcome + nobook. **No** next action. Mastery pay-link keys **not** in the last-100 dash list (older board said email left). | Course pay (no charge). Book (no). | **FAIL** / mastery email **UNVERIFIED** on this read |
+
+Walked **twice as a person tonight:** no file. Repair Horse desk once before the site died. That is not twice.
+
+### What I learned without lying
+
+1. Three books: intended doors, editor story, live workflows. A PASS has to be **live fire in order**, on the **frozen** site, plus a real talk. None of the five have that.
+2. Main can be ahead (`e58133f0`) while customers still hit `6a8e9c28926e`. Scoring main as live is how we lied before.
+3. Extra `SMS-DOC-02-REQUEST-MORE` on Fund/Repair is leftover retired doc-check, not the file’s event list.
+
+**What I still fake:** calling a dash JSON read a click walk. Calling #176 tested. Calling e2e done.
+
+No Bland. No Apply. No deploy.
+
+---
+
 
 
 
