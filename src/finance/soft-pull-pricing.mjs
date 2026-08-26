@@ -1,18 +1,19 @@
 // Soft-pull diagnostic price: base assessment + optional business add-ons.
 // COMPLIANCE REVIEW REQUIRED — fee timing / payment rails.
-// Owner 2026-08-24: base $32 + $10 per business, 0–5 businesses.
+// Owner 2026-08-25: base $32 + $10 per business. Product has no advertised
+// cap; SOFT_PULL_MAX_BUSINESSES is a safety ceiling (abuse only).
 
 import { getOffer, formatCents } from "../config/offers.mjs";
 
 export const SOFT_PULL_BUSINESS_ADDON_CENTS = 1000;
-export const SOFT_PULL_MAX_BUSINESSES = 5;
+export const SOFT_PULL_MAX_BUSINESSES = 20;
 
 export function softPullBaseCents() {
   const offer = getOffer("SOFT_PULL");
   return offer?.priceCents ?? 3200;
 }
 
-/** softPullTotalCents(businessCount) — base + ($10 × n). n must be 0..5. */
+/** softPullTotalCents(businessCount) — base + ($10 × n). n must be 0..20. */
 export function softPullTotalCents(businessCount = 0) {
   if (!Number.isInteger(businessCount) || businessCount < 0 || businessCount > SOFT_PULL_MAX_BUSINESSES) {
     throw new RangeError(

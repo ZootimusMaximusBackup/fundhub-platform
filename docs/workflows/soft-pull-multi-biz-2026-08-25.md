@@ -20,10 +20,10 @@ Save on the client. Staff see **each business as its own fundable file**. Differ
 
 | Lane | Owner | Status |
 |------|--------|--------|
-| 1 Form (EIN, extra owner, plus, one-flow pay) | cloud | claimed |
-| 2 Save (entity_data: ein, extra_owner_name, address, source) | cloud | claimed |
-| 3 Staff screens (each business listed) | cloud | claimed |
-| 4 Journey actual + draft intended | cloud | claimed |
+| 1 Form (EIN, extra owner, plus, one-flow pay) | cloud | done |
+| 2 Save (entity_data: ein, extra_owner_name, address, source) | cloud | done |
+| 3 Staff screens (each business listed) | cloud | done |
+| 4 Journey actual + draft intended | cloud | done |
 
 ## Do not touch
 
@@ -49,5 +49,18 @@ No new route. No migration — store EIN + extra owner in `businesses.entity_dat
 ## Proof
 
 - Unit tests green for parse / price / client-detail list
-- Form: add 2 businesses with EIN + one extra owner; total = $52; pay button after authorize
-- Staff drawer / full file shows both companies, states, EIN, extra-owner warning
+- Form: add 2 businesses with EIN + one extra owner; total = $52
+- Live POST 201: saved QA Arizona LLC (AZ, extra owner) + QA Texas LLC (TX). Pay link minted at $52. No card charged.
+- Staff file live: both companies on Client Control Panel with extra-owner warning on Arizona.
+
+## Extra file (needed)
+
+`api/dashboard/client.mjs` — businesses read was `LIMIT 5`. Raised to `LIMIT 20` so staff can see every saved company. No new route. No migration.
+
+## Ship
+
+- Branch: `soft-pull-multi-biz`
+- PR: https://github.com/ZootimusMaximusBackup/fundhub-platform/pull/135
+- GitHub checks: same three reds as current `main` (stale diagrams / workflow registry / missing `data-open` buttons / live-spec passwords). Not from this change.
+- Tests I ran: pricing / parse / save / client-detail / panel / pipeline — 142 passed. Lint clean. Journeys byte-identical (no new route).
+- No live token minted — no signed soft-pull link in this environment. Form reviewed from the page source + $52 math.

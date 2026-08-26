@@ -7,8 +7,9 @@
 // The consent TEXT is never taken from the body — only the version key, then
 // the server copies its own words (same rule as api/consent/capture.mjs).
 //
-// Flow (owner 2026-08-24): form collects optional businesses (0–5) first;
-// total = $32 + $10×n; checkout is minted/adjusted to that total before pay.
+// Flow (owner 2026-08-25): form collects optional businesses first (safety
+// ceiling 20); total = $32 + $10×n; checkout is minted/adjusted to that total
+// before pay. EIN is required on each added business; extra owner is optional.
 
 import { db } from "../src/db.mjs";
 import { isUuid } from "../src/http/read-api.mjs";
@@ -98,7 +99,14 @@ function tokenFrom(req) {
   };
 }
 
-/** Parse 0–5 businesses: name + street + city + state + ZIP. */
+/** Store EIN as XX-XXXXXXX. Accepts 9 digits or XX-XXXXXXX. */
+export function normalizeSoftPullEin(raw) {
+  const digits = String(raw == null ? "" : raw).replace(/\D/g, "");
+  if (digits.length !== 9) return null;
+  return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+}
+
+/** Parse 0–20 businesses: name + street + city + state + ZIP + EIN; extra owner optional. */
 export function parseSoftPullBusinesses(raw) {
   if (raw == null || raw === "") return [];
   if (!Array.isArray(raw)) {
@@ -109,10 +117,10 @@ export function parseSoftPullBusinesses(raw) {
     throw err;
   }
   if (raw.length > SOFT_PULL_MAX_BUSINESSES) {
-    throw new ConsentError(
-      `You can add up to ${SOFT_PULL_MAX_BUSINESSES} businesses.`,
-      { status: 400, code: "businesses_max" }
-    );
+    throw new ConsentError("That's too many businesses for this form.", {
+      status: 400,
+      code: "businesses_max"
+    });
   }
   const out = [];
   for (let i = 0; i < raw.length; i++) {
@@ -122,7 +130,9 @@ export function parseSoftPullBusinesses(raw) {
     const city = String(row.city || "").trim();
     const state = String(row.state || "").trim().toUpperCase();
     const postal = String(row.postal_code || "").trim();
-    if (!name && !line1 && !city && !state && !postal) continue;
+    const extraOwner = String(row.extra_owner_name || "").trim();
+    const ein = normalizeSoftPullEin(row.ein);
+    if (!name && !line1 && !city && !state && !postal && !row.ein && !extraOwner) continue;
     if (!name || name.length < 2) {
       throw new ConsentError(`Business ${i + 1}: enter the business name.`, {
         status: 400,
@@ -135,12 +145,26 @@ export function parseSoftPullBusinesses(raw) {
         { status: 400, code: "business_address_required" }
       );
     }
-    out.push({ name, address_line1: line1, city, state, postal_code: postal });
+    if (!ein) {
+      throw new ConsentError(
+        `Business ${i + 1}: enter the 9-digit EIN.`,
+        { status: 400, code: "business_ein_required" }
+      );
+    }
+    out.push({
+      name,
+      address_line1: line1,
+      city,
+      state,
+      postal_code: postal,
+      ein,
+      extra_owner_name: extraOwner || null
+    });
   }
   return out;
 }
 
-async function replaceSoftPullBusinesses(database, { orgId, clientId, businesses }) {
+export async function replaceSoftPullBusinesses(database, { orgId, clientId, businesses }) {
   await database.query(
     `DELETE FROM businesses
       WHERE org_id = $1 AND client_id = $2
@@ -160,7 +184,9 @@ async function replaceSoftPullBusinesses(database, { orgId, clientId, businesses
           address_line1: b.address_line1,
           city: b.city,
           state: b.state,
-          postal_code: b.postal_code
+          postal_code: b.postal_code,
+          ein: b.ein,
+          extra_owner_name: b.extra_owner_name || null
         })
       ]
     );
