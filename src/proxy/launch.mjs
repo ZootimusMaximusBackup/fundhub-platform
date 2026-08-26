@@ -74,11 +74,11 @@ export async function launchProxySession(db, {
     );
   }
 
-  const loc = resolveClientLocation(client.custom_fields);
+  const loc = resolveClientLocation(client.custom_fields, client.businesses);
   if (!loc.city && !loc.state) {
     throw new ProxySessionError(
       "client_location_missing",
-      "Client has no city or state on file (business_city / home_city / city and business_state / state). Cannot geo-target.",
+      "Client has no city or state on the person or any company on the file. Cannot geo-target.",
       400
     );
   }

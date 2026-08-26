@@ -189,7 +189,7 @@ th[data-s="age"]{text-align:right}
 
     <div class="content fh-maxw">
       <div class="stats">
-        <div class="stat"><div class="eyebrow">DC-00 <span class="sep">/</span> TOTAL</div><div class="sv" id="kTotal">0</div><div class="sd">across four classes</div></div>
+        <div class="stat"><div class="eyebrow">DC-00 <span class="sep">/</span> TOTAL</div><div class="sv" id="kTotal">0</div><div class="sd">across five classes</div></div>
         <div class="stat"><div class="eyebrow">DC-00 <span class="sep">/</span> AWAITING SIGNATURE</div><div class="sv" id="kSign">0</div><div class="sd">sent, not signed</div></div>
         <div class="stat"><div class="eyebrow">DC-00 <span class="sep">/</span> UNDELIVERED</div><div class="sv" id="kUndel">0</div><div class="sd">generated, never sent</div></div>
       </div>
@@ -252,12 +252,13 @@ th[data-s="age"]{text-align:right}
 })();
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
 
-/* four document classes */
+/* five document classes */
 var CLASSES=[
   {k:'auth',   code:'DC-A', n:'Soft-pull authorizations', d:'consent to pull — nothing runs without one'},
   {k:'contract',code:'DC-B',n:'Contracts',                d:'funding agreements · repair engagement · partner licenses'},
   {k:'invoice',code:'DC-C', n:'Invoices',                 d:'issued against a product at point of sale'},
-  {k:'deliverable',code:'DC-D',n:'UnderwriteIQ deliverables',d:'the five reports the client actually receives'}
+  {k:'deliverable',code:'DC-D',n:'UnderwriteIQ deliverables',d:'the five reports the client actually receives'},
+  {k:'upload', code:'DC-E', n:'Uploads',                  d:'bank · FTC · portal files this person sent'}
 ];
 
 /* gen: queued|generating|generated|failed
@@ -357,7 +358,7 @@ function rows(){
 
 function render(){
   var list=rows();
-  var CN={auth:'Soft-pull auth',contract:'Contract',invoice:'Invoice',deliverable:'Deliverable'};
+  var CN={auth:'Soft-pull auth',contract:'Contract',invoice:'Invoice',deliverable:'Deliverable',upload:'Upload'};
   document.getElementById('body').innerHTML=list.map(function(d){
     var g=GEN[d.gen],dl=DEL[d.del],s=SIG[d.sig];
     var isP=pending(d);
@@ -604,7 +605,19 @@ renderTabs(); renderClassbar(); render();
       }
     } catch (e) {}
 
-    FHData.wire(FHData.documents({ limit: 200 }), "documents", function (data) {
+    var docParams = { limit: 200 };
+    try {
+      var q = new URLSearchParams(location.search);
+      var cid = String(q.get("client_id") || q.get("id") || "").trim();
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cid)) {
+        cid = "";
+        try { cid = String(localStorage.getItem("fh_client") || "").trim(); } catch (e2) { cid = ""; }
+      }
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cid)) {
+        docParams.client_id = cid;
+      }
+    } catch (e) {}
+    FHData.wire(FHData.documents(docParams), "documents", function (data) {
       var rows = data.items || [];
       if (!rows.length) {
         if (typeof DOCS !== "undefined") {
@@ -626,13 +639,15 @@ renderTabs(); renderClassbar(); render();
       if (typeof DOCS === "undefined" || typeof render !== "function") return null;
 
       var CLS = { authorization: "auth", contract: "contract",
-                  invoice_document: "invoice", deliverable: "deliverable" };
+                  invoice_document: "invoice", deliverable: "deliverable",
+                  client_upload: "upload", inquiry_doc: "upload",
+                  bureau_response: "upload" };
       var skipped = 0;
       var DAY = 86400000;
 
       var mapped = rows.map(function (r) {
         var cls = CLS[r.kind];
-        /* Four classes only. A blank uploaded template is not sent or received
+        /* Named classes only. A blank uploaded template is not sent or received
            paper, and a kind we do not name is not filed as a soft-pull. */
         if (!cls || r.subtype === "template_source") { skipped++; return null; }
 
@@ -643,9 +658,14 @@ renderTabs(); renderClassbar(); render();
            Note what is NOT mapped: nothing becomes "opened". The database records
            delivery, never an open — no column tracks it — so claiming a client
            opened a document would be invented. 'delivered' maps to "Sent", which
-           is the strongest thing that is actually known. */
+           is the strongest thing that is actually known.
+
+           Incoming uploads (bank / FTC / portal) were received, not sent. Their
+           delivery_status stays not_delivered in the table; showing that as
+           "Not sent" would call a file we already have undelivered. */
         var d = String(r.delivery_status || "").toLowerCase();
-        var del = (d === "bounced" || d === "failed") ? "bounced"
+        var del = cls === "upload" ? "na"
+                : (d === "bounced" || d === "failed") ? "bounced"
                 : (d === "sent" || d === "delivered") ? "sent"
                 : "not_sent";                       // not_delivered, pending
 

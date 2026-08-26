@@ -27,6 +27,7 @@ function makeDb({
   programs = [],
   consents = [],
   identity = [],
+  businesses = [],
   dues = [],
   unconfirmed = [],
   timeline = [],
@@ -53,6 +54,7 @@ function makeDb({
       if (/FROM repair_programs/i.test(text)) return { rows: programs };
       if (/FROM client_consents/i.test(text)) return { rows: consents };
       if (/FROM pii_identity/i.test(text)) return { rows: identity };
+      if (/FROM businesses/i.test(text)) return { rows: businesses };
       if (/MIN\(response_due_at\)/i.test(text) && /client_id = ANY/i.test(text) && /GROUP BY client_id/i.test(text)) {
         return { rows: dues };
       }

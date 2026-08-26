@@ -127,6 +127,11 @@ export async function onDocsReceivedGhlDoc(db, event, deps = {}) {
   if (!agent || !String(agent.prompt || "").trim()) {
     return { done: false, reason: "ghl_doc_unavailable" };
   }
+  // Retired Document Check must not queue SMS-DOC-02 (or DOC-03). Status is
+  // the same switch the rest of the agent runtime already honors.
+  if (String(agent.status || "") === "retired") {
+    return { done: false, reason: "ghl_doc_retired" };
+  }
 
   const loaded = await (loadBytesImpl || loadDocumentBytes)(db, {
     documentId,

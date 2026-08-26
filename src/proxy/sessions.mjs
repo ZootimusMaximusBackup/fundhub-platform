@@ -133,9 +133,8 @@ export async function getProxySession(db, { orgId, id }) {
   return r.rows[0] || null;
 }
 
-/** Resolve client home city/state from custom_fields (same keys as lender match). */
-export function resolveClientLocation(customFields = {}) {
-  const cf = customFields && typeof customFields === "object" ? customFields : {};
+function locationFromFields(fields) {
+  const cf = fields && typeof fields === "object" ? fields : {};
   const city =
     cf.business_city ||
     cf.home_city ||
@@ -154,6 +153,18 @@ export function resolveClientLocation(customFields = {}) {
   };
 }
 
+/** Person custom_fields first (same keys as lender match), then company rows on the file. */
+export function resolveClientLocation(customFields = {}, businesses = []) {
+  const fromPerson = locationFromFields(customFields);
+  if (fromPerson.city || fromPerson.state) return fromPerson;
+  for (const biz of Array.isArray(businesses) ? businesses : []) {
+    const entity = biz && typeof biz.entity_data === "object" ? biz.entity_data : {};
+    const fromBiz = locationFromFields(entity);
+    if (fromBiz.city || fromBiz.state) return fromBiz;
+  }
+  return { city: null, state: null };
+}
+
 export async function loadClientForProxy(db, { orgId, clientId }) {
   const r = await db.query(
     `SELECT id, org_id, custom_fields
@@ -161,7 +172,17 @@ export async function loadClientForProxy(db, { orgId, clientId }) {
       WHERE org_id = $1::uuid AND id = $2::uuid`,
     [orgId, clientId]
   );
-  return r.rows[0] || null;
+  const client = r.rows[0] || null;
+  if (!client) return null;
+  const biz = await db.query(
+    `SELECT entity_data
+       FROM businesses
+      WHERE org_id = $1::uuid AND client_id = $2::uuid
+      ORDER BY created_at ASC`,
+    [orgId, clientId]
+  );
+  client.businesses = biz.rows;
+  return client;
 }
 
 export async function loadLenderForProxy(db, { orgId, lenderId }) {
