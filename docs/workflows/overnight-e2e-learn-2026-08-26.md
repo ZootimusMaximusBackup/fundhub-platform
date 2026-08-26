@@ -309,6 +309,57 @@ Course mastery mail **did leave**. Hour 1 last-100 miss was template-key only. T
 
 ---
 
+## Hour 6 — ~1:25 a.m. Pacific
+
+**Live:** still frozen / 503. Did **not** probe again. No Apply. No Bland. No deploy.
+
+**Did:** walk remaining live-fire workflows against what these five already have. Intended files are still **doors only**. Talk **UNVERIFIED**.
+
+### Remaining events (due vs sleeping vs blocked)
+
+| Live-fire step | Status on these five | Notes |
+|---|---|---|
+| S-00 welcome | happened | Gmail + keys |
+| S-01 / survey.submitted | happened | ~4h 45m old (Aug 25 evening Pacific) |
+| S-nobook wave 1 | happened | EMAIL/SMS-NOBOOK-01 ×5 |
+| S-nobook wave 2 / 3 | **sleeping** | Wave 2 waits +24h after wave 1. Not due. Not a FAIL yet. |
+| Book / S-04 / Josh / Bland | **never started / FAIL** | `bookings` 0. No retry. |
+| Closer $32 / UnderwriteIQ | not a full close | Inquiry got a $32 **offer email**. Nobody paid. Do not charge. |
+| Present / Apply | Present earlier; Apply **B4 FAIL** | No Apply click. |
+| AR-02–04 | **sleeping** | Fund Horse reminder_count 0. |
+| Paper Send / bureau phone | **blocked** | Forbidden. |
+| CCP / Specialist click | **blocked** | Site 503. Repair desk ×1 earlier is not twice. |
+
+### What the leftover tasks say (staff next job, not a page load)
+
+**Fund Horse**
+- C-05: “Cannot start funding — CRS incomplete.” File has **1** `crs_results` row. Task and store do not match.
+- F-10: provision funding inbox (bank filter). Bank / Apply stays **B4 FAIL**. Do not touch Oxylabs.
+- GHL-DOC hold: retired Document Check still opened a fraud-doc hold. Matches extra `SMS-DOC-02` **FAIL**.
+
+**Repair Horse**
+- Two GHL-DOC holds on sim / “not a real filing” FTC packs. Extra DOC-02 ×2. Did not Send.
+
+**Inquiry Horse**
+- C-03 ran **twice** after `inquiry.removed` ×2. Task title: “Start next funding round — clean file.” This file is the **inquiry** horseman, not a funding round. Queued leftover case still sits next to two Completed cases.
+
+**Combo / Course:** no staff tasks.
+
+### Editor / code vs these files
+
+- Closer editor + DS-02 code: DIY letters **never** on the funding route. Fail closed if `outcome_tier` is empty. All five have `outcome_tier` **null**. Fund + Repair + Combo still have `client:diy-letters` and `EMAIL-DS02`. That mail left anyway.
+- F-01 (funding intake) also gates on product path. No F-01 pod task on Fund Horse. `SMS-ROUND-STARTED-NOTIFY` still left (different workflow, no that gate).
+- Repair welcome email left. **No** `repair.enrolled` (or any `repair.*`) on these five. The only `repair.*` rows in the whole events table have **no** client id.
+- Combo: $3k + $1k offer emails. **No** `repair_programs` row. No funding round.
+
+### Agent Editor
+
+Same as Hour 5. Fourth live row **AG-07 Recon** (342 letters, internal). Not on these five. Did not roleplay. AG-04 / AG-09 **FAIL**. Talk **UNVERIFIED**.
+
+Walked **twice as a person:** still no. **Not 100%.**
+
+---
+
 
 
 
