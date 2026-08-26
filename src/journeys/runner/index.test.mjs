@@ -20,12 +20,11 @@ import { functions } from "../../workflows/index.mjs";
 import { inngest } from "../../workflows/client.mjs";
 import { isSyntheticRow } from "./synthetic.mjs";
 
-/* THE COUNT STAYS PINNED, AND IT MOVED FROM 53 TO 54.
-   s02IncompleteSurveyNudge and inquiryCallSweeper were registered in
-   src/workflows/index.mjs — owner decision, 2026-08-19. The pin exists so that
-   registering a workflow is a visible decision rather than a silent one, so it
-   is updated here rather than read from the module. */
-const REGISTERED = 54;
+/* THE COUNT STAYS PINNED, AND IT MOVED FROM 63 TO 64.
+   AF-01 affiliate welcome drip was registered 2026-08-26. The pin exists so
+   that registering a workflow is a visible decision rather than a silent one,
+   so it is updated here rather than read from the module. */
+const REGISTERED = 64;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);

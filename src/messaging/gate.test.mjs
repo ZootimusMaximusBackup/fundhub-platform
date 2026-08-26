@@ -189,6 +189,17 @@ describe("opt-out", () => {
     assert.strictEqual(res.state, "blocked");
     assert.ok(codes(res).includes("recipient_unknown"), JSON.stringify(codes(res)));
   });
+
+  test("allows catalog AF1 email when the address is on the queued row", async () => {
+    const res = await gate(fakeDb(), {
+      ...base,
+      clientId: null,
+      channel: "email",
+      templateKey: "AF1",
+      toAddress: "e2e+aff-click17@fundhub.ai"
+    }, { now: MIDDAY });
+    assert.ok(!codes(res).includes("recipient_unknown"), JSON.stringify(codes(res)));
+  });
 });
 
 // ---------------------------------------------------------------------------

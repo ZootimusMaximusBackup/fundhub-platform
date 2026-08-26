@@ -2,13 +2,14 @@
 //
 // The affiliates page used to show "Application received" without writing
 // anything. This door creates the affiliate or white-label row, a password
-// login, and the personal URL. The first password is returned once. There is
-// no mailbox yet, so hiding it would leave them with no way in.
+// login, and the personal URL. The first password is returned once. Affiliate
+// apply also queues catalog AF1. White-label has no drip templates.
 
 import crypto from "node:crypto";
 import { db, pool } from "../../src/db.mjs";
 import { createAccount } from "../../src/auth/account-session.mjs";
 import { resolveDefaultOrg } from "../../src/auth/org.mjs";
+import { queueAffiliateTemplate } from "../../src/affiliates/drip.mjs";
 import { safeError } from "../../src/http/health.mjs";
 
 const APP_ORIGIN = "https://fundhub.ai";
@@ -134,6 +135,7 @@ function defaultApplyBody(displayName) {
 export async function runPartnerApply(parsed, deps = {}) {
   const database = deps.db || db;
   const create = deps.createAccount || createAccount;
+  const queueDrip = deps.queueAffiliateTemplate || queueAffiliateTemplate;
   const resolveOrg = deps.resolveDefaultOrg || resolveDefaultOrg;
   const password = deps.password || generateFirstPassword();
   const connect = deps.connect || (() => pool().connect());
@@ -182,6 +184,15 @@ export async function runPartnerApply(parsed, deps = {}) {
         password,
         affiliateId
       });
+      try {
+        await queueDrip(client, {
+          orgId,
+          email: parsed.email,
+          name: parsed.name,
+          trackingId,
+          eventId: affiliateId
+        });
+      } catch { /* apply still commits; sweeper backfills plus-tag sims */ }
     } else {
       const invitedBy = await inviterId(client, orgId);
       if (!invitedBy) {

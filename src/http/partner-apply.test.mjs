@@ -113,3 +113,44 @@ test("runPartnerApply refuses a duplicate email without creating a row", async (
   assert.equal(result.error, "already_registered");
   assert.ok(calls.some((c) => /^ROLLBACK/i.test(c.sql)));
 });
+
+test("affiliate apply queues catalog AF1 for that one login", async () => {
+  const queued = [];
+  const client = {
+    query: async (sql) => {
+      if (/^BEGIN/i.test(sql) || /^COMMIT/i.test(sql)) return { rows: [] };
+      if (/FROM accounts/i.test(sql)) return { rows: [] };
+      if (/INSERT INTO affiliates/i.test(sql)) {
+        return { rows: [{ id: "aff-1", tracking_id: "AFF-000099" }] };
+      }
+      return { rows: [] };
+    },
+    release() {}
+  };
+  const result = await runPartnerApply(
+    {
+      name: "Sam Rivera",
+      email: "e2e+aff-click26@fundhub.ai",
+      phone: "5551234567",
+      company: "",
+      audience: "list",
+      kind: "affiliate",
+      sms_consent: true
+    },
+    {
+      db: { query: async () => ({ rows: [] }) },
+      resolveDefaultOrg: async () => "org-1",
+      connect: async () => client,
+      createAccount: async () => ({ id: "acct-1" }),
+      queueAffiliateTemplate: async (_db, args) => {
+        queued.push(args);
+        return { queued: true, messageId: "msg-1" };
+      }
+    }
+  );
+  assert.equal(result.ok, true);
+  assert.equal(queued.length, 1);
+  assert.equal(queued[0].email, "e2e+aff-click26@fundhub.ai");
+  assert.equal(queued[0].trackingId, "AFF-000099");
+  assert.equal(queued[0].eventId, "aff-1");
+});

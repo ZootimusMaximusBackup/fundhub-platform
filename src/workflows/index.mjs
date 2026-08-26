@@ -1,6 +1,7 @@
 import { registerRepairHandlers } from '../repair/register.mjs';
 registerRepairHandlers();
 import { arCollections } from './ar-collections.mjs';
+import { af01AffiliateDrip } from './af-01-affiliate-drip.mjs';
 import { af02ReferralOwnershipCapture } from './af-02-referral-ownership-capture.mjs';
 import { aiSet01JoshSetter } from './ai-set-01-josh-setter.mjs';
 import { aiSet03NoAnswerCadence } from './ai-set-03-no-answer-cadence.mjs';
@@ -65,6 +66,7 @@ import { u04PromoteCrsPrimary } from './u-04-promote-crs-primary.mjs';
 import { u05DataHealthMonitor } from './u-05-data-health-monitor.mjs';
 
 export const functions = [
+  af01AffiliateDrip,
   af02ReferralOwnershipCapture,
   aiSet01JoshSetter,
   aiSet03NoAnswerCadence,
