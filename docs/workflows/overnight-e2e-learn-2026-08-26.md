@@ -394,6 +394,34 @@ Do not pull CRS. Do not retry DIY send. Do not Apply.
 
 ---
 
+## Hour 8 — ~1:35 a.m. Pacific
+
+**Live:** no new probe. No live CRS. The flag that would clear “Pull CRS” is set only by **U-03**, and U-03 only runs on `analysis.completed` with `source=crs`.
+
+### What the sample credit files actually are
+
+All five have **1** `crs_results` row with a result blob. **Provider is empty** (not a bureau adapter name). That matches “sample CRS planted,” not a live pull.
+
+| File | CRS row `outcome_tier` | Client `outcome_tier` | `analysis.completed` on file |
+|---|---|---|---|
+| Funding | FULL_FUNDING | **empty** | **none** |
+| Repair | empty | empty | none |
+| Combo | empty | empty | none |
+| Inquiry | FULL_FUNDING | empty | none |
+| Course | FULL_FUNDING | empty | none |
+
+So the planted file never fired the event that stamps `crs_status=Complete`. C-05 then tells the advisor to Pull CRS. I will **not** pull. That would be a live bureau charge.
+
+Fund / Inquiry / Course CRS rows say FULL_FUNDING. The client row does not. F-01 and DS-02 read the **client** field, so they treat these as unknown path (fail closed / no funding intake).
+
+### Dictator leftover (still not a PASS)
+
+Meet tape on Fund Horse is **FAKE MEET** (Hour 5). Not `said:` from a real call. Fulfillment Apply is **B4**. Talk is **UNVERIFIED**. Beta every-button not run on a 503 site.
+
+**Not 100%.** Night continues. Morning brief waits for 4:00 a.m. Pacific or a second full walk (impossible tonight: no book, no Apply, no Bland, live deploy dead).
+
+---
+
 
 
 
