@@ -1,4 +1,7 @@
 // Postgres connection (pg pool). One database for the whole platform (Spec §2).
+// `pg` stays a static import so the Netlify zip can resolve it. It is also
+// listed in netlify.toml [functions] external_node_modules — esbuild leaves
+// the driver external, and a missing copy 502s /api/health, login, and Start D1.
 import pg from "pg";
 
 let _pool = null;

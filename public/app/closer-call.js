@@ -306,6 +306,14 @@
           esc(f.label || f.key) + (f.required ? " *" : "") + "</label>" +
           '<input id="fh-blank-' + esc(f.key) + '" data-blank="' + esc(f.key) + '" type="text" style="width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 9px"></div>';
       }).join("");
+      if (window.FHContractSend && window.FHContractSend.fillBlankInputs) {
+        var picked = selected();
+        window.FHContractSend.fillBlankInputs(
+          window.FHContractSend.defaultBlankValues
+            ? window.FHContractSend.defaultBlankValues(picked && picked.template_key)
+            : { company_name: "Fundhub", company_email: "support@fundhub.ai", consent_days: "90" }
+        );
+      }
     }
 
     function blankValues() {
@@ -348,8 +356,15 @@
       if (!t) { setMsg("Pick a wording first."); return; }
       go.disabled = true;
       setMsg("Sending…");
+      var values = blankValues();
+      var defaults = window.FHContractSend.defaultBlankValues
+        ? window.FHContractSend.defaultBlankValues(t.template_key)
+        : {};
+      Object.keys(defaults).forEach(function (k) {
+        if (values[k] == null || values[k] === "") values[k] = defaults[k];
+      });
       window.FHContractSend.sendToClient({
-        clientId: clientId, templateId: t.id, values: blankValues()
+        clientId: clientId, templateId: t.id, values: values
       }).then(function (r) {
         go.disabled = false;
         if (!r.ok) { setMsg(r.error || "Could not send."); return; }
