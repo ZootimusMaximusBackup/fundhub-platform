@@ -35,7 +35,7 @@
           reply(requestId, { type: "pong", ok: false, error: chrome.runtime.lastError.message });
           return;
         }
-        reply(requestId, { type: "pong", ...(res || { ok: false }) });
+        reply(requestId, { ...(res || { ok: false }), type: "pong" });
       });
       return;
     }
@@ -80,7 +80,7 @@
   try {
     chrome.runtime.sendMessage({ type: "fh-proxy-ping" }, (res) => {
       if (chrome.runtime.lastError || !res) return;
-      reply(null, { type: "ready", ...(res || {}) });
+      reply(null, { ...(res || {}), type: "ready" });
     });
   } catch {
     /* ignore */
