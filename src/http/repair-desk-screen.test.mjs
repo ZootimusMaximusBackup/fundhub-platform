@@ -81,6 +81,8 @@ describe("Repair desk screen — E3 expand, soft pull, no dollars", () => {
     assert.match(HTML, /id="repairPullGo"/);
     assert.match(HTML, /data-act="repair-stage"/);
     assert.match(HTML, /data-act="repair-send"/);
+    assert.match(HTML, /no_authorization:\s*"This client has no signed repair agreement on file\."/);
+    assert.match(HTML, /out\.message \|\| out\.reason \|\| out\.error/);
     assert.match(HTML, /Clean personal info/);
     assert.match(HTML, /data-act="repair-enroll"/);
   });

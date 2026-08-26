@@ -31,7 +31,7 @@ import {
 } from "../metro2/rounds/store.mjs";
 import { roundAllowed } from "../metro2/rounds/state.mjs";
 import { loadClientReturnAddress } from "../inquiry-ops/call-scheduler.mjs";
-import { hasDisputeAuthorization } from "./dispute-auth.mjs";
+import { hasRepairAgreement } from "./dispute-auth.mjs";
 import { onRepairEvent } from "./handlers.mjs";
 
 const BUREAU_CODES = Object.freeze(["TU", "EX", "EQ"]);
@@ -104,6 +104,54 @@ async function newestCreditFile(db, { orgId, clientId }) {
   return r.rows[0]?.result || null;
 }
 
+/** Map a businesses.entity_data object to the letter return-address shape. */
+export function addressFromBusinessEntity(entity) {
+  const e = entity && typeof entity === "object" ? entity : {};
+  const line1 = String(e.address_line1 || e.addressLine1 || e.street || e.line1 || "").trim();
+  if (!line1) return null;
+  return {
+    address_line1: line1,
+    address_line2: e.address_line2 || e.addressLine2 || e.line2 || null,
+    address_city: e.city || e.address_city || null,
+    address_state: e.state || e.address_state || null,
+    address_zip: e.postal_code || e.zip || e.address_zip || null
+  };
+}
+
+async function loadCompanyReturnAddress(db, { orgId, clientId }) {
+  const r = await db.query(
+    `SELECT entity_data FROM businesses
+      WHERE client_id = $1::uuid AND org_id = $2::uuid
+      ORDER BY created_at ASC`,
+    [clientId, orgId]
+  );
+  for (const row of r.rows) {
+    const mapped = addressFromBusinessEntity(row.entity_data);
+    if (mapped) return mapped;
+  }
+  return null;
+}
+
+async function loadExistingRoundLetters(db, { orgId, clientId, round }) {
+  const prior = await db.query(
+    `SELECT dl.id, dl.bureau, dl.case_id, dl.body_text, dl.rule_ids
+       FROM dispute_letters dl
+       JOIN dispute_cases dc ON dc.id = dl.case_id
+      WHERE dl.org_id = $1::uuid AND dl.client_id = $2::uuid
+        AND dc.round = $3
+        AND dl.status IN ('generated', 'ready', 'queued', 'sent')
+      ORDER BY dl.bureau`,
+    [orgId, clientId, round]
+  );
+  return prior.rows.map((row) => ({
+    bureau: row.bureau,
+    caseId: row.case_id,
+    letterId: row.id,
+    ruleIds: row.rule_ids || [],
+    body_text: row.body_text || ""
+  }));
+}
+
 async function loadIdentity(db, { orgId, clientId }) {
   const c = await db.query(
     `SELECT first_name, last_name FROM clients
@@ -120,6 +168,13 @@ async function loadIdentity(db, { orgId, clientId }) {
     addr = await loadClientReturnAddress(db, { orgId, clientId });
   } catch {
     addr = null;
+  }
+  if (!addr?.address_line1) {
+    try {
+      addr = await loadCompanyReturnAddress(db, { orgId, clientId }) || addr;
+    } catch {
+      /* keep pii addr or null */
+    }
   }
   return {
     fullName,
@@ -230,8 +285,25 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
   if (!orgId || !clientId) return { ok: false, reason: "missing_ids" };
   if (!ROUNDS.includes(round)) return { ok: false, reason: "invalid_round", round };
 
-  // WS-A auth gate — do not remove.
-  const authorized = await hasDisputeAuthorization(db, { orgId, clientId });
+  // Letters already on file: Stage succeeds without a new consent click.
+  const existingLetters = await loadExistingRoundLetters(db, { orgId, clientId, round });
+  if (existingLetters.length > 0) {
+    const identity = await loadIdentity(db, { orgId, clientId });
+    return {
+      ok: true,
+      already_generated: true,
+      round,
+      caseIds: [...new Set(existingLetters.map((l) => l.caseId).filter(Boolean))],
+      letters: existingLetters,
+      skipped: existingLetters.map((l) => ({ bureau: l.bureau, reason: "already_generated" })),
+      warnings: [],
+      identity_complete: Boolean(identity?.complete)
+    };
+  }
+
+  // WS-A auth gate — do not remove. Enrollment or a signed repair contract
+  // counts as the agreement; the extra consent row is not the only one.
+  const authorized = await hasRepairAgreement(db, { orgId, clientId });
   if (!authorized) return { ok: false, reason: "no_authorization" };
 
   const program = await loadRepairProgram(db, { orgId, clientId });
@@ -438,23 +510,7 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
 
   if (stored.length === 0 && casesWritten === 0
     && skipped.length > 0 && skipped.every((s) => s.reason === "already_generated")) {
-    const prior = await db.query(
-      `SELECT dl.id, dl.bureau, dl.case_id, dl.body_text, dl.rule_ids
-         FROM dispute_letters dl
-         JOIN dispute_cases dc ON dc.id = dl.case_id
-        WHERE dl.org_id = $1::uuid AND dl.client_id = $2::uuid
-          AND dc.round = $3
-          AND dl.status IN ('generated', 'ready', 'queued', 'sent')
-        ORDER BY dl.bureau`,
-      [orgId, clientId, round]
-    );
-    const letters = prior.rows.map((row) => ({
-      bureau: row.bureau,
-      caseId: row.case_id,
-      letterId: row.id,
-      ruleIds: row.rule_ids || [],
-      body_text: row.body_text || ""
-    }));
+    const letters = await loadExistingRoundLetters(db, { orgId, clientId, round });
     return {
       ok: true,
       already_generated: true,
