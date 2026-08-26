@@ -21,7 +21,9 @@
       "matches": [
         "http://localhost/*",
         "http://127.0.0.1/*",
-        "https://*.netlify.app/*"
+        "https://*.netlify.app/*",
+        "https://fundhub.ai/*",
+        "https://www.fundhub.ai/*"
       ],
       "js": ["content.js"],
       "run_at": "document_start"

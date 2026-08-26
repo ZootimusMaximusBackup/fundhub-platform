@@ -57,7 +57,7 @@
     if (event.source !== global) return;
     var data = event.data;
     if (!data || data.source !== SOURCE || data.direction !== "extension-to-page") return;
-    if (data.type === "ready" || data.type === "pong") {
+    if (data.type === "ready" || data.type === "pong" || data.type === "fh-proxy-pong") {
       extensionPresent = !!(data.ok !== false);
     }
     if (data.requestId && pending[data.requestId]) {
@@ -65,9 +65,35 @@
     }
   });
 
+  function extensionReplyOk(res) {
+    return !!(res && res.ok && (res.type === "pong" || res.type === "fh-proxy-pong" || res.type === "ready"));
+  }
+
+  function showExtensionHint(present) {
+    var el = document.getElementById("fh-proxy-ext-hint");
+    if (present) {
+      if (el) el.style.display = "none";
+      return;
+    }
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "fh-proxy-ext-hint";
+      el.setAttribute("role", "status");
+      el.style.cssText =
+        "padding:8px 14px;background:#FEF3C7;border-bottom:1px solid #FCD34D;" +
+        "font:600 12px/1.4 system-ui,sans-serif;color:#18181B;";
+      el.textContent =
+        "Chrome add-on is off. Load Fundhub Proxy (Extensions → Load unpacked → extension folder), pin it, then reload. Apply will not route the bank page without it.";
+      var host = document.querySelector(".shell") || document.body;
+      host.insertBefore(el, host.firstChild);
+    }
+    el.style.display = "";
+  }
+
   function detectExtension() {
     return extRequest("ping").then(function (res) {
-      extensionPresent = !!(res && res.ok && res.type === "pong");
+      extensionPresent = extensionReplyOk(res);
+      showExtensionHint(extensionPresent);
       return extensionPresent;
     });
   }

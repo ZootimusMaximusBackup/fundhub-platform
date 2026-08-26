@@ -60,6 +60,23 @@ const LAUNCH_OK = {
 test("lenders.html client-scoped Apply shows no-extension fallback with verified exit", async ({ page }) => {
   await openScreen(page, `/app/lenders.html?client_id=${CLIENT_ID}`, OWNER, {
     "/api/read/lenders": LENDERS_PAYLOAD,
+    "/api/read/lender-matches": {
+      ok: true,
+      client_id: CLIENT_ID,
+      match_count: 1,
+      summary: { match_count: 1, lender_count: 1 },
+      matches: [{
+        id: LENDER_ID,
+        name: "Mesa Community Bank",
+        lender_table: "OnlineBizCC",
+        bureaus_pulled: "EX",
+        stated_requirements: null,
+        priority_tier: 1,
+        active: true,
+        eligible_states: "AZ",
+        application_url: "https://bank.example/apply/mesa"
+      }]
+    },
     "/api/read/lender-observations": { ok: true, observations: [], meta: { count: 0 } },
     "/api/proxy/launch": async (route) => {
       expect(route.request().method()).toBe("POST");
@@ -75,6 +92,7 @@ test("lenders.html client-scoped Apply shows no-extension fallback with verified
   });
 
   await expect(page.locator("#applyClientBanner")).toContainText("Client-scoped Apply");
+  await expect(page.locator("#fh-proxy-ext-hint")).toContainText("Chrome add-on is off");
   const applyBtn = page.getByRole("button", { name: /^Apply$/ });
   await expect(applyBtn).toBeVisible();
   await applyBtn.click();
@@ -124,6 +142,7 @@ test("client-control-panel funding Apply list wires Apply control", async ({ pag
   });
 
   await expect(page.locator("#fh-funding-apply")).toBeVisible();
+  await expect(page.locator("#fh-proxy-ext-hint")).toContainText("Chrome add-on is off");
   await expect(page.locator("#fh-funding-apply-status")).toContainText("fit");
   await page.locator("#fh-funding-apply-list").getByRole("button", { name: /^Apply$/ }).click();
   const modal = page.locator("#fh-proxy-apply-modal");
