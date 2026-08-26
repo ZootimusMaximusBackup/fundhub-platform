@@ -10,6 +10,7 @@ import { bc01CustomerResponsiveness } from './bc-01-customer-responsiveness.mjs'
 import { bc02CustomerFriction } from './bc-02-customer-friction.mjs';
 import { bs01PrecallLauncher } from './bs-01-precall-launcher.mjs';
 import { contractChaser } from './contract-chaser.mjs';
+import { dailyPulse } from './daily-pulse.mjs';
 import { messageDispatchSweeper } from './message-dispatch-sweeper.mjs';
 import { c00CrsSoftPullRequest } from './c-00-crs-soft-pull-request.mjs';
 import { c02InquiryCreated } from './c-02-inquiry-created.mjs';
@@ -83,6 +84,9 @@ export const functions = [
      The chaser also runs today WITHOUT Inngest, through
      /api/contracts { action: "run_reminders" } — see its header. */
   contractChaser,
+  /* Daily pulse — 7:00 a.m. America/Denver (cron 0 13 * * * during MDT).
+     Audit only. Recon AG-07 runtime. Does not auto-fix. */
+  dailyPulse,
 
   /* THE OUTBOUND DRAIN. Registered 2026-08-02, and it is the reason any client
      email leaves this platform at all — twenty-six workflows queue mail and
