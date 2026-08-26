@@ -865,6 +865,37 @@ Hour 21 said **0** inbound **message** rows. Fund Horse `events` has **1** `mess
 
 ---
 
+## Hour 23 — planted inbound, DIY gate, leftover tasks
+
+**Live:** no homepage probe. No deploy. No Forgot. **#177 stays main-only.**
+
+### Fund Horse inbound (not a talk)
+
+That inbound event is a planted e2e text from the **agent phone**. They asked what happens next. DPC-03 only acts on **yes / confirm / reschedule / close**. This body matches **none**. No DPC-03 keys. Not a Josh talk. Do not Bland.
+
+### DIY mail vs DS-02 code
+
+DS-02 **fail-closed** when the path field is empty. All five have `outcome_tier` empty. So DS-02 itself should **not** have sent. Fund / Repair / Combo still have `EMAIL-DS02` delivered and tag `client:diy-letters`. Same shape as repair welcome: something else sent the mail. Did not retry DIY.
+
+C-06 (CRS router) needs `analysis.completed`. Never on these five. Sample CRS rows stay planted. Do not live CRS.
+
+F-10 emails are **retired**. The **task** still fires on `round.started`. Fund Horse has that leftover inbox task, still open. Do not touch Oxylabs.
+
+### Open staff tasks (still)
+
+| File | Open tasks |
+|---|---|
+| Funding | GHL-DOC hold. C-05 “Pull CRS.” F-10 inbox. |
+| Repair | Two GHL-DOC holds (sim FTC packs). |
+| Inquiry | Two C-03 “start a funding round” leftovers. |
+| Combo / Course | none |
+
+**#177:** still GitHub only. Do not score Forgot. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.** Morning brief still waits for 4:00 a.m. Pacific.
+
+---
+
 
 
 
