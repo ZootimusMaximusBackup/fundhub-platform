@@ -3,7 +3,7 @@
 import { INLINE_EDIT_FIELDS, LENDER_CSV_COLUMNS, isLenderTable } from "./tables.mjs";
 import { buildObservation } from "./observations.mjs";
 import { parseLenderCsv, serializeLenderCsv } from "./csv.mjs";
-import { matchLenders } from "./match.mjs";
+import { matchLenders, resolveMatchState } from "./match.mjs";
 import { orgDemoModeEnabled } from "../demo/exclude-demo.mjs";
 import { logoPathOrPlaceholder } from "./resolve-logo.mjs";
 
@@ -349,11 +349,14 @@ export async function matchForClient(db, {
   if (!client) return null;
 
   const cf = client.custom_fields || {};
-  const clientState =
-    cf.business_state ||
-    cf.state ||
-    cf.home_state ||
-    null;
+  const bizR = await db.query(
+    `SELECT entity_data
+       FROM businesses
+      WHERE org_id = $1::uuid AND client_id = $2::uuid
+      ORDER BY created_at ASC`,
+    [orgId, clientId]
+  );
+  const clientState = resolveMatchState(cf, bizR.rows);
 
   const inq = await db.query(
     `SELECT bureau, status, created_at
@@ -397,4 +400,4 @@ export async function matchForClient(db, {
   });
 }
 
-export { matchLenders, publicLender };
+export { matchLenders, resolveMatchState, publicLender };
