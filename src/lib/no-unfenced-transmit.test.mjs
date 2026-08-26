@@ -127,7 +127,10 @@ const ALLOWED_RAW_FETCH = {
   /* ── Market / macro data. No client contact, no vendor client record ─────── */
   "src/climate/connectors.mjs":
     "Reads FRED/BLS/Census/NOAA/geocode public series for the climate engine. " +
-    "No client data leaves; no client or vendor record is written."
+    "No client data leaves; no client or vendor record is written.",
+  "src/pulse/daily-pulse.mjs":
+    "Read-only daily health audit. GET fundhub.ai pages and optional prove Gmail. " +
+    "Does not send. Client SMS/WhatsApp go through messaging providers."
 };
 
 /* Modules permitted to declare fence: INTERNAL. Pinned to an exact set, so a
