@@ -252,6 +252,19 @@ export function pgFake(seed = {}) {
         invoicePayments.push(row);
         return { rows: [row] };
       }
+      if (/FROM payment_links pl/.test(sql) && /LEFT JOIN products/.test(sql)) {
+        const [orgId, clientId] = params;
+        return {
+          rows: paymentLinks
+            .filter((p) => p.org_id === orgId && p.client_id === clientId && (p.status === "paid" || p.paid_at))
+            .map((p) => ({
+              status: p.status,
+              paid_at: p.paid_at || null,
+              description: p.description || null,
+              product_code: p.product_code || null
+            }))
+        };
+      }
       if (/FROM payment_links WHERE invoice_id/.test(sql)) {
         const hit = paymentLinks.find((p) => p.invoice_id === params[0]);
         return { rows: hit ? [{ id: hit.id }] : [] };
