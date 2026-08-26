@@ -75,7 +75,7 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
       [orgId, staffId, window.start.toISOString(), window.end.toISOString()]
     ),
     countUnlogged(db, { orgId, staffId }),
-    upcomingCalls(db, { orgId, staffId, excludeClientId: clientId }),
+    upcomingCalls(db, { orgId, staffId, includeClientId: clientId }),
     quietClients(db, { orgId, staffId }),
     db.query(
       `SELECT ps.key AS stage_key, ps.name AS stage_name, p.key AS pipeline_key
@@ -362,7 +362,7 @@ function buildPrecall({ client, conversations, messages }) {
   };
 }
 
-async function upcomingCalls(db, { orgId, staffId, excludeClientId }) {
+export async function upcomingCalls(db, { orgId, staffId, includeClientId }) {
   const r = await db.query(
     `SELECT t.id AS task_id, t.client_id, t.due_at, t.meeting_url, t.title,
             COALESCE(NULLIF(trim(c.first_name || ' ' || c.last_name), ''), c.email, 'Client') AS name
@@ -372,12 +372,16 @@ async function upcomingCalls(db, { orgId, staffId, excludeClientId }) {
       WHERE t.org_id = $1
         AND t.assignee_role = 'closer'
         AND (t.assignee_staff_id = $2 OR t.assignee_staff_id IS NULL)
-        AND t.due_at IS NOT NULL AND t.due_at >= now()
+        AND t.due_at IS NOT NULL
         AND o.id IS NULL
-        AND ($3::uuid IS NULL OR t.client_id IS DISTINCT FROM $3)
-      ORDER BY t.due_at ASC
+        AND (
+          (t.client_id = $3 AND t.due_at >= date_trunc('day', now()))
+          OR
+          (($3::uuid IS NULL OR t.client_id IS DISTINCT FROM $3) AND t.due_at >= now())
+        )
+      ORDER BY CASE WHEN t.client_id = $3 THEN 0 ELSE 1 END, t.due_at ASC
       LIMIT 5`,
-    [orgId, staffId, excludeClientId]
+    [orgId, staffId, includeClientId]
   );
   return r.rows;
 }
