@@ -220,6 +220,7 @@ describe("toBureaus — which bureaus are supplied, and what is recorded missing
     assert.equal(out.bureaus.experian.negatives, 3);
     assert.equal(out.bureaus.experian.late_payment_events, 1);
     assert.equal(out.businessAgeMonths, 18);
+    assert.deepEqual(out.businessAges, [18]);
 
     // A real 0 must not be reported as missing.
     assert.ok(!out.missing.transunion.some((m) => m.field === "inquiries"));
@@ -271,7 +272,18 @@ describe("toBureaus — which bureaus are supplied, and what is recorded missing
   test("business age absent is recorded and stays null", () => {
     const out = toBureaus({ crsResults: [crs(SCORES)], customFields: {} });
     assert.equal(out.businessAgeMonths, null, "never 0 — a 0-month-old business is a claim");
+    assert.deepEqual(out.businessAges, []);
     assert.ok(out.missing.client.some((m) => m.field === "business_age_months"));
+  });
+
+  test("two saved companies reuse the client age when rows have no age_months", () => {
+    const out = toBureaus({
+      crsResults: [crs(SCORES)],
+      customFields: { business_age_months: 30 },
+      businesses: [{ name: "One LLC" }, { name: "Two LLC" }]
+    });
+    assert.equal(out.businessAgeMonths, 30);
+    assert.deepEqual(out.businessAges, [30, 30]);
   });
 
   test("garbage in a numeric custom field reads as unknown, not as a number", () => {

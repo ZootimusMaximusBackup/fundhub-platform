@@ -1294,6 +1294,8 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       kv("State", row.state);
       kv("EIN", row.ein, true);
+      kv("Incorporated", row.incorporated_date);
+      kv("Age (months)", row.age_months);
       kv("Address", row.address);
       kv("Extra owner", row.extra_owner_name);
       card.appendChild(grid);

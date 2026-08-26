@@ -276,13 +276,16 @@ function listedBusinesses(businesses = []) {
     const entity = safeObject(biz && biz.entity_data) || {};
     const extra = String(entity.extra_owner_name || "").trim();
     const state = entity.state ? String(entity.state).toUpperCase() : null;
+    const age = num(biz && biz.age_months);
     return {
       name: biz && biz.name ? String(biz.name) : null,
       state,
       ein: entity.ein ? String(entity.ein) : null,
       extra_owner_name: extra || null,
       address: formatBusinessAddress(entity),
-      extra_owners_warning: !!extra
+      extra_owners_warning: !!extra,
+      incorporated_date: entity.incorporated_date ? String(entity.incorporated_date) : null,
+      age_months: age !== null && age >= 0 ? age : null
     };
   });
 }

@@ -89,6 +89,7 @@ import { fromCents } from "../commissions/money.mjs";
 import { financeOsGrid } from "../finance/os-grid.mjs";
 import { triMerge } from "../http/client-detail.mjs";
 import { isoDay } from "../liabilities/card-stack.mjs";
+import { resolveBusinessAges } from "./business-funding.mjs";
 
 export const BUREAUS = Object.freeze(["experian", "equifax", "transunion"]);
 
@@ -265,10 +266,12 @@ export function clientUtilizationPct(tradelines = []) {
  * @param {Array}  [input.crsResults]   `crs_results` rows, newest-first or not —
  *                 triMerge picks the most recent one carrying scores
  * @param {object} [input.customFields] `clients.custom_fields` jsonb
+ * @param {Array}  [input.businesses]   `businesses` rows (age_months per company)
  *
  * @returns {object} {
  *   bureaus,            // { experian, equifax, transunion } for computeUnderwrite
- *   businessAgeMonths,  // number | null
+ *   businessAgeMonths,  // number | null — first known age (engine still takes one)
+ *   businessAges,       // number|null[] — one age per saved company
  *   missing,            // { <bureau>: [ {field, reason, ...} ], client: [...] }
  *   available,          // string[] — which bureaus carry a score
  *   utilization,        // { pct, partial, basis }
@@ -283,7 +286,7 @@ export function clientUtilizationPct(tradelines = []) {
  * unavailable. Failing to the "we don't have this bureau" side is right: it is
  * true, and it is the side that cannot overstate.
  */
-export function toBureaus({ tradelines = [], liabilities = [], crsResults = [], customFields = {} } = {}) {
+export function toBureaus({ tradelines = [], liabilities = [], crsResults = [], customFields = {}, businesses = [] } = {}) {
   const cf = customFields && typeof customFields === "object" ? customFields : {};
   const scores = triMerge(Array.isArray(crsResults) ? crsResults : []);
   const { lines, gaps } = toEngineTradelines(tradelines, liabilities);
@@ -443,7 +446,9 @@ export function toBureaus({ tradelines = [], liabilities = [], crsResults = [], 
     });
   }
 
-  const businessAgeMonths = count(cf.business_age_months);
+  const fallbackAge = count(cf.business_age_months);
+  const businessAges = resolveBusinessAges({ businesses, fallbackAgeMonths: fallbackAge });
+  const businessAgeMonths = businessAges.find((age) => age != null) ?? null;
   if (businessAgeMonths === null) {
     missing.client.push({
       field: "business_age_months",
@@ -456,6 +461,7 @@ export function toBureaus({ tradelines = [], liabilities = [], crsResults = [], 
   return {
     bureaus,
     businessAgeMonths,
+    businessAges,
     missing,
     available,
     utilization,

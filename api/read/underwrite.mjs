@@ -45,6 +45,7 @@ import { ROLE_SETS, requireRole, isUuid, CLIENT_DATA_ERRORS } from "../../src/ht
 import { evaluateUtilization } from "../../src/alerts/evaluate.mjs";
 import { UPSTREAM, computeUnderwrite, buildSuggestions } from "../../src/underwrite/engine.mjs";
 import { toBureaus } from "../../src/underwrite/adapter.mjs";
+import { applyStackedBusinessFunding } from "../../src/underwrite/business-funding.mjs";
 import { buildReport } from "../../src/underwrite/report.mjs";
 import { dbDown } from "../../src/http/db-down.mjs";
 
@@ -97,7 +98,7 @@ export default async function handler(req, res, deps = {}) {
     // Every read below carries org_id as well as client_id. Redundant given the
     // check above, and kept anyway: it means no single missing guard turns this
     // into a cross-org read.
-    const [tradelinesRes, liabilitiesRes, crsRes] = await Promise.all([
+    const [tradelinesRes, liabilitiesRes, crsRes, businessesRes] = await Promise.all([
       database.query(
         `SELECT * FROM tradelines
           WHERE client_id = $1 AND org_id = $2
@@ -115,6 +116,12 @@ export default async function handler(req, res, deps = {}) {
           WHERE client_id = $1 AND org_id = $2
           ORDER BY created_at DESC`,
         [clientId, orgId]
+      ),
+      database.query(
+        `SELECT age_months FROM businesses
+          WHERE client_id = $1 AND org_id = $2
+          ORDER BY created_at ASC`,
+        [clientId, orgId]
       )
     ]);
 
@@ -125,10 +132,14 @@ export default async function handler(req, res, deps = {}) {
       tradelines,
       liabilities: liabilitiesRes.rows,
       crsResults: crsRes.rows,
-      customFields: client.custom_fields || {}
+      customFields: client.custom_fields || {},
+      businesses: businessesRes.rows
     });
 
-    const underwrite = computeUnderwrite(adapter.bureaus, adapter.businessAgeMonths);
+    const underwrite = applyStackedBusinessFunding(
+      computeUnderwrite(adapter.bureaus, adapter.businessAgeMonths),
+      adapter.businessAges
+    );
 
     // NO `user` OBJECT IS PASSED. fundhub stores no LLC field, and passing
     // { hasLLC: false } would be asserting something about this client that

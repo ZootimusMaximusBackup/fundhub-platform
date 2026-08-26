@@ -40,7 +40,7 @@ function makeRes() {
  * empty result, so a new query added to the handler cannot silently read as
  * "this client has no data".
  */
-function makeDb({ session = {}, client = undefined, tradelines = [], liabilities = [], crs = [] } = {}) {
+function makeDb({ session = {}, client = undefined, tradelines = [], liabilities = [], crs = [], businesses = [] } = {}) {
   const calls = [];
   return {
     calls,
@@ -66,6 +66,7 @@ function makeDb({ session = {}, client = undefined, tradelines = [], liabilities
       if (sql.includes("FROM tradelines")) return { rows: tradelines };
       if (sql.includes("FROM card_liabilities")) return { rows: liabilities };
       if (sql.includes("FROM crs_results")) return { rows: crs };
+      if (sql.includes("FROM businesses")) return { rows: businesses };
 
       throw new Error("stub db: unexpected query:\n" + sql);
     }
@@ -187,7 +188,7 @@ describe("org scoping comes from the session and fails closed", () => {
     const deps = fullDb();
     await handler(req(), res, deps);
     assert.equal(res.statusCode, 200);
-    for (const table of ["FROM tradelines", "FROM card_liabilities", "FROM crs_results"]) {
+    for (const table of ["FROM tradelines", "FROM card_liabilities", "FROM crs_results", "FROM businesses"]) {
       const call = deps.db.calls.find((c) => c.sql.includes(table));
       assert.ok(call, `expected a query against ${table}`);
       assert.deepEqual(call.params, [CLIENT, ORG],
@@ -336,6 +337,30 @@ describe("the response body", () => {
       "a fully-dated file must not still be flagged as a funding floor");
     assert.equal(res.body.caveats.fundingFiguresNote, null);
     assert.ok(res.body.dataCompleteness.tradelineGaps.every((g) => !g.missing.includes("opened")));
+  });
+
+  test("two saved companies raise the UnderwriteIQ combined total vs one, all else equal", async () => {
+    const seasoned = { ...TRADELINE_ROW, opened_on: "2018-01-01" };
+    const one = makeRes();
+    await handler(req(), one, fullDb({
+      tradelines: [seasoned],
+      businesses: [{ age_months: 30 }]
+    }));
+    const two = makeRes();
+    await handler(req(), two, fullDb({
+      tradelines: [seasoned],
+      businesses: [{ age_months: 30 }, { age_months: 30 }]
+    }));
+    assert.equal(one.statusCode, 200);
+    assert.equal(two.statusCode, 200);
+    const oneTotal = one.body.underwrite.totals.total_combined_funding;
+    const twoTotal = two.body.underwrite.totals.total_combined_funding;
+    assert.ok(Number.isFinite(oneTotal) && oneTotal > 0, "one company must still produce a figure");
+    assert.ok(twoTotal > oneTotal, "a second company must raise the shown pre-approval");
+    assert.equal(
+      two.body.underwrite.totals.total_business_funding,
+      one.body.underwrite.totals.total_business_funding * 2
+    );
   });
 
   test("no promise is added on top of the engine's own strings", async () => {
