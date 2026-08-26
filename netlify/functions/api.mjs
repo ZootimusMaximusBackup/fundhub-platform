@@ -27,9 +27,10 @@
 // until someone decides, in writing, whether it is reachable.
 
 import { safeError } from "../../src/http/health.mjs";
-// Keep fontkit in the function zip. letter-generator require()s it at
-// load time; without this import the whole /api/* function 502s.
+// Keep fontkit and pg in the function zip. esbuild leaves both external;
+// without these imports the whole /api/* function 502s (health, login, Start D1).
 import "@pdf-lib/fontkit";
+import "pg";
 import authLogin from "../../api/auth/login.mjs";
 import authLogout from "../../api/auth/logout.mjs";
 import authSession from "../../api/auth/session.mjs";

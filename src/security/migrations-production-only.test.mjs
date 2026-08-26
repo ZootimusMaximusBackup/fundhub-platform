@@ -97,6 +97,17 @@ describe("migrations run on the production deploy only — netlify.toml", () => 
     );
   });
 
+  test("the api function zip includes pg", () => {
+    // Same class as @pdf-lib/fontkit: esbuild leaves pg external. If it is not
+    // on this list, the live function 502s /api/health, login, and Start D1
+    // with "Cannot find package 'pg'".
+    assert.match(
+      TOML, /external_node_modules[\s\S]*"pg"/,
+      "netlify.toml [functions] must list pg in external_node_modules so the " +
+      "deployed zip has node_modules/pg"
+    );
+  });
+
   test("the privilege guard still runs everywhere", () => {
     // guard:db reads nothing and writes nothing — it refuses the deploy if the
     // connection is a superuser or can bypass row locks. Worth asking in every
