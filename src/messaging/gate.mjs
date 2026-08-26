@@ -179,7 +179,8 @@ export async function recipientSkipsQuietHours(db, clientId) {
 
    message: {
      orgId,     — required. Missing means we do not know whose rules apply.
-     clientId,  — required. Missing means opt-out state cannot be established.
+     clientId,  — required for client mail. Affiliate welcome AF1 records
+                  toAddress instead; missing both is a block.
      channel,   — 'sms' | 'email' | 'voice'
      body,      — the rendered text that would be sent
      messageId  — optional; the messages.id row this decision is about, carried
@@ -212,7 +213,7 @@ export async function gate(db, message = {}, options = {}) {
 }
 
 async function run(db, message, { now = () => new Date(), timeZone = QUIET_HOURS_TZ } = {}) {
-  const { orgId, clientId, channel, body = "", messageId = null } = message;
+  const { orgId, clientId, channel, body = "", messageId = null, templateKey = null, toAddress = null } = message;
 
   // NOTE WHAT IS NOT DESTRUCTURED ABOVE: createdAt, scheduledAt, queuedAt.
   // They are absent on purpose — see the sleeping-workflow note in the header.
@@ -231,10 +232,13 @@ async function run(db, message, { now = () => new Date(), timeZone = QUIET_HOURS
   // Read now, from the database, per channel. A missing clientId is a block and
   // not a pass: a message with nobody attached has no opt-out record to check,
   // and "we could not find a record" must never resolve to "nobody objected".
-  if (!clientId) {
+  const affiliateWelcome = channel === "email"
+    && String(templateKey || "") === "AF1"
+    && String(toAddress || "").includes("@");
+  if (!clientId && !affiliateWelcome) {
     reasons.push(r("recipient_unknown", "consent",
       "This message has no client attached, so we cannot check whether they asked us to stop. It was not sent."));
-  } else if (await isOptedOut(db, clientId, channel)) {
+  } else if (clientId && await isOptedOut(db, clientId, channel)) {
     reasons.push(r("opted_out", "consent",
       `This person asked us to stop contacting them on ${channel}. It was not sent.`,
       { citation: "TCPA 47 U.S.C. 227" }));

@@ -85,6 +85,16 @@ export async function revokeAccountSession(db, token) {
   return r.rows.length > 0;
 }
 
+export async function revokeAllForAccount(db, accountId) {
+  if (!accountId) return 0;
+  const r = await db.query(
+    `UPDATE account_sessions SET revoked_at = now()
+      WHERE account_id = $1 AND revoked_at IS NULL RETURNING id`,
+    [accountId]
+  );
+  return r.rows.length;
+}
+
 /* selfSignupAllowed — asks the policy TABLE, not a branch. 'partner' is
    invite-only, and this is the read that enforces it in code as well as in the
    044 trigger. */

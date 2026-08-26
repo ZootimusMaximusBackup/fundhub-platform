@@ -394,7 +394,9 @@ export async function dispatchOne(db, message, options = {}) {
       clientId: message.client_id,
       channel: message.channel,
       body: message.rendered_body,
-      messageId: message.id
+      messageId: message.id,
+      templateKey: message.template_key,
+      toAddress: message.to_address
     }, now ? { now } : {});
 
     if (verdict.state !== "allowed") {

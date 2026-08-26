@@ -51,3 +51,27 @@ Branch `fix/letter-rounds-visibility` off `origin/main`. Does not rewrite Underw
 ### Hard stops kept
 
 No card charge. No live credit pull. No paper mail. No ClickFunnels remint.
+
+---
+
+## AFFILIATE + WHITE-LABEL (reset + drips)
+
+**Lane:** `launch/aff-wl-reset-drips` off `origin/main`. Isolated worktree. Did **not** merge `vc/save-2026-08-25`. No ClickFunnels. No new Facebook app. No custom-domain DNS.
+
+**COMPLIANCE REVIEW REQUIRED** — affiliate welcome mail (AF1) may leave the house without a client opt-out row. Gate only allows that for catalog AF1 with an email on the queued row.
+
+| Path | Result | Evidence |
+|---|---|---|
+| Affiliate + partner Forgot | **wired in PR** / **not live** | Same `/api/auth/reset` door. Token path now looks at `accounts` (affiliate + partner), not only `staff`. Needs merge + deploy + migration `263_password_resets_account.sql`. Live click on https://fundhub.ai/login.html with `e2e+aff-click17@fundhub.ai`: page said nothing was sent. Live function also answered with a missing `pg` package (site-wide). Shot: `shots/aff-reset-live-click.png`. Did not use Chris’s personal inbox. |
+| Affiliate email drips | **wired in PR** (AF1 only) | Catalog already had AF1. Apply queues AF1 for that one new affiliate. Sweeper only plus-tag (`+aff-` / `+sim-`), cap 5. Did not invent AF2–AF4 timing. Live prove on `e2e+aff-click17@fundhub.ai`: queued, then send went out; later bounced (plus-tag box is not real). First try was blocked (`recipient_unknown`); second try sent. |
+| White-label drips | **not-live** | No partner / white-label templates. Did not invent any. |
+| Social Studio / calendar | **not built** | No new door. No fake posts. |
+| Custom domain / Cloudflare | **not built** | No DNS invention. |
+| Pulse | **no new HTTP door** | `/api/auth/reset`, `/api/public/partner-apply`, and `messages-outbound` already on the registry. New job is Inngest cron AF-01 (same as other crons — `/api/inngest` is not a GET ping). |
+
+### PRs this lane
+
+| PR | What | Merge? |
+|---|---|---|
+| [#177](https://github.com/ZootimusMaximusBackup/fundhub-platform/pull/177) | Affiliate/partner Forgot + AF1 drip | Open. Isolated worktree off `origin/main`. **Do not merge vc/save.** |
+| [#171](https://github.com/ZootimusMaximusBackup/fundhub-platform/pull/171) | Funded KPI + `/start` click | Already merged. |
