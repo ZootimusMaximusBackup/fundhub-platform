@@ -77,6 +77,7 @@ test("onDocsReceivedGhlDoc: retired GHL-DOC does not queue SMS-DOC-02", async ()
     return origQuery(sql, params);
   };
   let modelCalls = 0;
+  const runs = [];
   const res = await onDocsReceivedGhlDoc(db, event({
     kind: "client_upload",
     subtype: "id_document",
@@ -87,12 +88,15 @@ test("onDocsReceivedGhlDoc: retired GHL-DOC does not queue SMS-DOC-02", async ()
       modelCalls += 1;
       return { mode: "live", text: JSON.stringify({ outcome: "request_more" }), error: null };
     },
-    recordRunImpl: async () => null
+    recordRunImpl: async (_db, row) => { runs.push(row); return row; }
   });
   assert.equal(res.done, false);
   assert.equal(res.reason, "ghl_doc_retired");
   assert.equal(modelCalls, 0);
   assert.equal(db.messages.length, 0);
+  assert.equal(runs.length, 1);
+  assert.equal(runs[0].agentCode, AGENT_CODE);
+  assert.equal(runs[0].outcome, "ghl_doc_retired");
 });
 
 test("onDocsReceivedGhlDoc: draft GHL-DOC does not run", async () => {
