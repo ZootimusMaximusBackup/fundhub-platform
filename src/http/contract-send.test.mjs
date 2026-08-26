@@ -51,6 +51,13 @@ describe("where Send lives after the screen merge", () => {
     assert.equal(/action: "create_draft"/.test(CRM), false);
   });
 
+  test("defaultBlankValues fills company, days, and email for soft pull", () => {
+    assert.match(HELPER, /function defaultBlankValues/);
+    assert.match(HELPER, /company_name: "Fundhub"/);
+    assert.match(HELPER, /company_email: "support@fundhub\.ai"/);
+    assert.match(HELPER, /consent_days = "90"/);
+  });
+
   test("Closer Dashboard and Present load the helper and offer Send", () => {
     assert.match(CLOSER, /src="contract-send\.js"/);
     assert.match(CLOSER, /id="fh-send-contract"/);

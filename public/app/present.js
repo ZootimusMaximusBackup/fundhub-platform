@@ -612,6 +612,7 @@
           html += "</select>";
         }
         html += ckBtn("Send agreement + pay link", "pay", true);
+        html += ckBtn("Invoice this client", "invoice", false);
         html += ckBtn("Send contract", "contract", false);
         if (state.contractOpen) {
           html += '<div style="border:1px solid var(--line);padding:8px 9px;margin-top:2px">';
@@ -942,6 +943,26 @@
     else toast("Disposition written to contact record.");
   }
 
+  async function invoiceThisClient() {
+    if (!window.FHData || !contactId) { toast("No contact on this deck."); return; }
+    var o = offer(selectedOfferKey());
+    var cents = Math.round(Number(o && o.priceCents));
+    if (!Number.isFinite(cents) || cents <= 0) { toast("Pick an offer first."); return; }
+    toast("Minting invoice…");
+    var r = await window.FHData.write("/api/payment-links", {
+      action: "create",
+      client_id: contactId,
+      purpose: "invoice",
+      description: (o && o.name) || "Invoice",
+      price_cents: cents
+    });
+    if (!r.ok) {
+      toast((r.error && (r.error.message || r.error)) || "Could not mint invoice.");
+      return;
+    }
+    toast("Invoice minted. Do not pay.");
+  }
+
   document.addEventListener("click", function (e) {
     var btn = e.target.closest("[data-act]");
     if (!btn) return;
@@ -980,6 +1001,7 @@
       fire("send_ebook", { amount_cents: cents }); return;
     }
     if (a === "pay") { fire("send_pay_link"); return; }
+    if (a === "invoice") { invoiceThisClient(); return; }
     if (a === "contract") { openContractSend(); return; }
     if (a === "contract-go") { sendContractNow(); return; }
     if (a === "contract-copy") {
