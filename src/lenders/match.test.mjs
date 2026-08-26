@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   parseBureaus,
   stateEligible,
+  resolveMatchState,
   sensitiveBureaus,
   matchLenders,
   lenderMatchCount
@@ -12,6 +13,20 @@ import { isBureauMismatch, buildObservation } from "./observations.mjs";
 test("parseBureaus normalizes common aliases", () => {
   assert.deepEqual(parseBureaus("EX / EQ"), ["EX", "EQ"]);
   assert.deepEqual(parseBureaus("experian, TransUnion"), ["EX", "TU"]);
+});
+
+test("resolveMatchState reads company state before person custom fields", () => {
+  assert.equal(
+    resolveMatchState({ business_state: "AZ" }, [{ entity_data: { state: "TX" } }]),
+    "TX"
+  );
+  assert.equal(
+    resolveMatchState({}, [{ entity_data: { city: "Austin" } }, { entity_data: { state: "TX" } }]),
+    "TX"
+  );
+  assert.equal(resolveMatchState({ business_state: "TX" }, []), "TX");
+  assert.equal(resolveMatchState({ home_state: "OK" }, []), "OK");
+  assert.equal(resolveMatchState({}, []), null);
 });
 
 test("stateEligible allows unknown sides", () => {

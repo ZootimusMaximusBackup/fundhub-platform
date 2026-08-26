@@ -8,6 +8,7 @@ import {
   matchLenders,
   lenderMatchCount
 } from "./match.mjs";
+import { matchForClient } from "./store.mjs";
 import { isBureauMismatch, buildObservation } from "./observations.mjs";
 import { LENDER_TABLES } from "./tables.mjs";
 
@@ -74,6 +75,29 @@ test("matchLenders never invents rows — empty list stays empty", () => {
   const r = matchLenders({ lenders: [], clientState: "AZ" });
   assert.equal(r.summary.match_count, 0);
   assert.deepEqual(r.matches, []);
+});
+
+test("matchForClient uses company state when the person row has none", async () => {
+  const lenders = [
+    { id: "1", name: "All", lender_table: "OnlineBizCC", active: true, priority_tier: 1, bureaus_pulled: "EQ", eligible_states: "All States", is_demo: false },
+    { id: "2", name: "Texas", lender_table: "OnlineBizCC", active: true, priority_tier: 1, bureaus_pulled: "EQ", eligible_states: "TX", is_demo: false },
+    { id: "3", name: "NewYork", lender_table: "OnlineBizCC", active: true, priority_tier: 1, bureaus_pulled: "EQ", eligible_states: "NY", is_demo: false }
+  ];
+  const db = {
+    async query(sql) {
+      const s = String(sql);
+      if (s.includes("FROM clients")) return { rows: [{ id: "c1", custom_fields: {} }] };
+      if (s.includes("FROM businesses")) return { rows: [{ entity_data: { state: "TX" } }] };
+      if (s.includes("FROM inquiry_log")) return { rows: [] };
+      if (s.includes("FROM inquiry_removal_cases")) return { rows: [] };
+      if (s.includes("demo_mode_enabled")) return { rows: [{ demo_mode_enabled: false }] };
+      if (s.includes("FROM lenders")) return { rows: lenders };
+      throw new Error("unexpected sql: " + s);
+    }
+  };
+  const r = await matchForClient(db, { orgId: "o1", clientId: "c1" });
+  assert.equal(r.summary.client_state, "TX");
+  assert.deepEqual(r.matches.map((m) => m.name).sort(), ["All", "Texas"]);
 });
 
 test("CSV round-trip keeps lender_table and name", () => {
