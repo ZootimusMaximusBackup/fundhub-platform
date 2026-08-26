@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert";
-import { handle, JOSH_CODE, VENDOR_SETTER_TASK } from "./ai-set-01-josh-setter.mjs";
+import { handle, JOSH_CODE, JOSH_CALL_KIND, VENDOR_SETTER_TASK } from "./ai-set-01-josh-setter.mjs";
 import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
 const CLIENT_PHONE = "+15555550100";
@@ -115,6 +115,58 @@ test("quiet-hours-blocks-or-delays-josh: daytime Eastern dials once with no wait
     step,
     placeCallImpl: stubPlaceCall(placed),
     now: () => afternoon
+  });
+  assert.equal(res.done, true);
+  assert.equal(sleeps.length, 0);
+  assert.equal(placed.length, 1);
+});
+
+test("successful placeCall writes outbound_calls as ai-set-01-josh-setter", async () => {
+  const inserts = [];
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: CLIENT_PHONE }]
+  });
+  const orig = db.query.bind(db);
+  db.query = async (sql, params = []) => {
+    if (/INSERT INTO outbound_calls/.test(sql)) {
+      inserts.push(params);
+      return { rows: [] };
+    }
+    return orig(sql, params);
+  };
+  const res = await handle({
+    event: ev("booking.created", {}, { clientId: "cl-1" }),
+    db,
+    step: fakeStep(),
+    placeCallImpl: async () => ({ status: "sent", callId: "bland-josh-1", reason: "placed" })
+  });
+  assert.equal(res.done, true);
+  assert.equal(inserts.length, 1);
+  assert.deepEqual(inserts[0], ["bland-josh-1", "cl-1", "org-1", JOSH_CALL_KIND]);
+});
+
+test("prove sim skips quiet hours and dials once at night", async () => {
+  const placed = [];
+  const sleeps = [];
+  const night = new Date("2026-08-02T03:00:00Z");
+  const step = {
+    ...fakeStep(),
+    sleepUntil: async (id, date) => { sleeps.push({ id, date }); }
+  };
+  const db = pgFake({
+    clients: [{
+      id: "cl-1",
+      org_id: "org-1",
+      email: "stanbridgejchris+sim-fund@gmail.com",
+      phone: CLIENT_PHONE
+    }]
+  });
+  const res = await handle({
+    event: ev("booking.created", { bookingUid: "bk-sim-night" }, { clientId: "cl-1" }),
+    db,
+    step,
+    placeCallImpl: stubPlaceCall(placed),
+    now: () => night
   });
   assert.equal(res.done, true);
   assert.equal(sleeps.length, 0);
