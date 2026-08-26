@@ -49,6 +49,7 @@ test("fetchContext includes interview answers and the recording link", async () 
       outcome: "deposit",
       notes: "Closed",
       recording_url: "https://drive.google.com/file/d/call",
+      transcript: "three thousand is a start and part of ten percent",
       logged_at: "2026-08-14T16:00:00Z"
     }]
   }), { orgId: ORG, clientId: CLIENT });
@@ -59,6 +60,8 @@ test("fetchContext includes interview answers and the recording link", async () 
   assert.match(ctx.as_prompt_block, /Price/);
   assert.match(ctx.as_prompt_block, /Loved the closer/);
   assert.match(ctx.as_prompt_block, /deposit/);
+  assert.match(ctx.as_prompt_block, /said: three thousand is a start/);
+  assert.equal(ctx.recent_calls[0].transcript, "three thousand is a start and part of ten percent");
 });
 
 test("formatPromptBlock omits empty interview blocks", () => {

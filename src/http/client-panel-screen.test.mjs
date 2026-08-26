@@ -626,3 +626,9 @@ describe("both screens paint only the gated funding round", () => {
     assert.equal(L.roundText(undefined), null);
   });
 });
+
+test("client-control-panel can save a company birth month/year", () => {
+  assert.match(PANEL_HTML, /stamp_incorporated/);
+  assert.match(PANEL_HTML, /type = "month"/);
+  assert.match(PANEL_HTML, /Age \(months\)/);
+});
