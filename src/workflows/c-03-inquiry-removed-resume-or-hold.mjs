@@ -12,6 +12,10 @@ import { createTask } from "../lib/create-task.mjs";
 
 const SOURCE_WORKFLOW = "c-03-inquiry-removed-resume-or-hold";
 
+function boughtFunding(customFields) {
+  return String(customFields?.product_path || "") === "Funding";
+}
+
 async function createTaskOnce(db, { orgId, clientId, eventId, title }) {
   const dup = await db.query(`SELECT 1 FROM tasks WHERE client_id = $1 AND source_workflow = $2 AND body = $3`, [clientId, SOURCE_WORKFLOW, eventId]);
   if (dup.rows[0]) return { created: false };
@@ -42,6 +46,15 @@ export async function handle({ event, db, step }) {
 
   await step.run("clear-inquiry-pending", () => removeTags(db, clientId, ["inquiry:pending"]));
   await step.run("tag-inquiry-completed", () => addTags(db, clientId, ["inquiry:completed"]));
+
+  const fields = await step.run("read-product-path", async () => {
+    const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
+    return r.rows[0]?.custom_fields || {};
+  });
+  if (!boughtFunding(fields)) {
+    return { done: true, branch: "inquiry_done" };
+  }
+
   await step.run("set-ready-for-next-round", () => mergeCustomFields(db, clientId, { ready_for_next_round: true, employee_next_action: "Apply for Funding" }));
   const task = await step.run("create-next-round-task", () => createTaskOnce(db, { orgId, clientId, eventId, title: "Start next funding round — clean file" }));
   return { done: true, branch: "resume", task };
