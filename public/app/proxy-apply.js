@@ -293,11 +293,28 @@
           var c = d.connection || {};
           var url = d.application_url;
 
+          function bankEmailBlock() {
+            var pack = d.bank_form_email || {};
+            var email = pack.email || "";
+            var warn = pack.warning || "";
+            var rows = '<div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:#FFFBEB;border:1px solid #FCD34D">' +
+              "<div><b>Bank form email</b> — put this on the bank page, not a fundhub.ai address.</div>";
+            if (email) {
+              rows += fieldRow("Client email (copy onto the bank form)", email, true);
+            }
+            if (warn) {
+              rows += '<p style="margin:8px 0 0;color:#B45309"><b>Warning.</b> ' + esc(warn) + "</p>";
+            }
+            rows += "</div>";
+            return rows;
+          }
+
           function openManualUi(routingNote) {
             var body =
               '<p style="margin:0 0 8px;padding:8px 10px;background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px">' +
               esc(routingNote) + "</p>" +
               verificationBlock(v) +
+              bankEmailBlock() +
               "<p style=\"margin:12px 0 4px\">Manual proxy settings (use only if the extension is not active):</p>" +
               fieldRow("Host", c.host, true) +
               fieldRow("Port", c.port, true) +
@@ -353,6 +370,7 @@
               ". Only the lender host is PAC-routed; Chrome’s proxy API is still browser-wide — end the session when done." +
               "</p>" +
               verificationBlock(v) +
+              bankEmailBlock() +
               "<p style=\"margin-top:10px\">The lender application tab should be open. Confirm the exit city above <b>before</b> you submit the bank form.</p>";
 
             showModal(lenderName, body, [

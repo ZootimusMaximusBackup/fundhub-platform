@@ -677,7 +677,7 @@
         <div style="font:700 var(--fs-caption)/1 var(--mono,ui-monospace);letter-spacing:.1em;text-transform:uppercase;color:var(--gray,#71717A)">Apply door</div>
         <div id="fh-funding-apply-status" style="margin-top:6px;font-size:var(--fs-body);color:var(--gray,#71717A)">Lenders that fit a client's file appear here. Pick a client on Pipeline to open one.</div>
         <div id="fh-funding-apply-list" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
-        <p style="margin:8px 0 0;font-size:var(--fs-caption);color:var(--gray,#71717A)">Shows lenders that fit this file. Apply opens the bank page when a URL is on file.</p>
+        <p style="margin:8px 0 0;font-size:var(--fs-caption);color:var(--gray,#71717A)">Shows lenders that fit this file. Apply opens the bank page when a URL is on file. Apply shows the client email, not a Fundhub address.</p>
       </div>
 
       <div class="side-title">Quick Launch</div>
@@ -2132,11 +2132,13 @@ document.addEventListener("DOMContentLoaded", function () {
         listEl.innerHTML = "";
         (d.matches || []).slice(0, 12).forEach(function (m) {
           var row = document.createElement("div");
-          row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px";
+          row.style.cssText = "display:flex;flex-direction:column;gap:6px;padding:8px 0;border-bottom:1px solid var(--line,#E4E4E7)";
+          var top = document.createElement("div");
+          top.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px";
           var label = document.createElement("span");
           label.style.cssText = "font-size:var(--fs-body);min-width:0";
           label.textContent = (m.name || "?") + (m.bureaus_pulled ? (" · " + m.bureaus_pulled) : "");
-          row.appendChild(label);
+          top.appendChild(label);
           if (m.id && m.application_url && window.FHProxyApply) {
             var btn = document.createElement("button");
             btn.type = "button";
@@ -2151,15 +2153,67 @@ document.addEventListener("DOMContentLoaded", function () {
                 lenderName: m.name || "Lender"
               });
             });
-            row.appendChild(btn);
+            top.appendChild(btn);
           } else {
             var miss = document.createElement("span");
             miss.style.cssText = "font-size:var(--fs-caption);color:var(--gray2,#A1A1AA)";
             miss.textContent = "No URL";
-            row.appendChild(miss);
+            top.appendChild(miss);
           }
+          row.appendChild(top);
+          var playRow = document.createElement("div");
+          playRow.style.cssText = "display:flex;flex-wrap:wrap;align-items:center;gap:6px";
+          var play = document.createElement("input");
+          play.type = "text";
+          play.setAttribute("list", "fh-play-names");
+          play.placeholder = "Play name (optional)";
+          play.style.cssText = "flex:1;min-width:140px;font-size:var(--fs-caption);padding:4px 6px";
+          playRow.appendChild(play);
+          function logBank(status) {
+            var h = { accept: "application/json", "content-type": "application/json" };
+            if (t) h.authorization = "Bearer " + t;
+            return fetch("/api/applications", {
+              method: "POST",
+              headers: h,
+              body: JSON.stringify({
+                client_id: clientId,
+                lender_id: m.id,
+                status: status,
+                play_name: play.value || ""
+              })
+            }).then(function (r) { return r.json(); }).then(function (res) {
+              statusEl.textContent = (res && res.ok)
+                ? ((status === "Approved" ? "Bank yes" : "Bank no") + (play.value ? (" · " + play.value) : "") + " saved.")
+                : ((res && (res.message || res.error)) || "Could not save bank yes/no.");
+            }).catch(function () {
+              statusEl.textContent = "Could not save bank yes/no.";
+            });
+          }
+          var yes = document.createElement("button");
+          yes.type = "button";
+          yes.textContent = "Bank yes";
+          yes.style.cssText = "padding:4px 8px;font-size:var(--fs-caption)";
+          yes.addEventListener("click", function () { logBank("Approved"); });
+          var no = document.createElement("button");
+          no.type = "button";
+          no.textContent = "Bank no";
+          no.style.cssText = "padding:4px 8px;font-size:var(--fs-caption)";
+          no.addEventListener("click", function () { logBank("Denied"); });
+          playRow.appendChild(yes);
+          playRow.appendChild(no);
+          row.appendChild(playRow);
           listEl.appendChild(row);
         });
+        if (!document.getElementById("fh-play-names")) {
+          var dl = document.createElement("datalist");
+          dl.id = "fh-play-names";
+          ["Card stacking first pull", "In-branch visit", "Online only", "Docs first"].forEach(function (name) {
+            var opt = document.createElement("option");
+            opt.value = name;
+            dl.appendChild(opt);
+          });
+          document.body.appendChild(dl);
+        }
         return readyCopy || (n + " lenders ready.");
       })
       .catch(function () {

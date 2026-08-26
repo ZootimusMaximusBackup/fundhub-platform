@@ -471,7 +471,7 @@
     <div class="section fh-maxw">
       <div class="section-title">Work Queue</div>
       <table class="queue" id="workQueueTable">
-        <tr><th>Client</th><th>Bureau</th><th>Inquiry</th><th>Call State</th><th>Hold</th><th>Attempts</th><th>Status</th></tr>
+        <tr><th>Client</th><th>Bureau</th><th>Actual</th><th>Expected</th><th>Call State</th><th>Hold</th><th>Attempts</th><th>Status</th></tr>
         <tr id="queue-status-row"><td colspan="7" style="text-align:center;padding:28px 16px;color:var(--text-dim);">Loading inquiry queue…</td></tr>
       </table>
     </div>
@@ -689,6 +689,18 @@ function buildStatusRequest(opts) {
     method: "POST",
     path: "/api/inquiries",
     body: { inquiry_id: o.inquiryId, action: "status", status: status }
+  };
+}
+
+function buildExpectedRequest(opts) {
+  const o = opts || {};
+  requireInquiryId(o.inquiryId);
+  const expected = blankToNull(o.expectedName);
+  if (expected === null) throw new ViewError("an expected name is required");
+  return {
+    method: "POST",
+    path: "/api/inquiries",
+    body: { inquiry_id: o.inquiryId, action: "expected", expected_name: expected }
   };
 }
 
@@ -1166,6 +1178,7 @@ const VIEW = {
   buildAttemptRequest: buildAttemptRequest,
   buildConfirmRequest: buildConfirmRequest,
   buildStatusRequest: buildStatusRequest,
+  buildExpectedRequest: buildExpectedRequest,
   buildAttemptsRequest: buildAttemptsRequest,
   buildIdentityRequest: buildIdentityRequest,
   buildRevealRequest: buildRevealRequest,
@@ -1338,13 +1351,14 @@ window.__fhQueueReady = (function () {
       if (it.id) tr.dataset.id = it.id;
       if (it.client_id) tr.dataset.clientId = it.client_id;
       if (it.case_id) tr.dataset.caseId = it.case_id;
-      tr._row = { status: it.status, outcome: it.outcome, call_attempts: it.call_attempts };
+      tr._row = { status: it.status, outcome: it.outcome, call_attempts: it.call_attempts, expected_name: it.expected_name || "" };
       tr.tabIndex = 0;
       tr.setAttribute('aria-expanded', 'false');
       tr.appendChild(cell('<span class="rowchev">&#9656;</span>' +
         esc(it.client_name || '(unnamed client)')));
       tr.appendChild(cell(esc(it.bureau || '—')));
       tr.appendChild(cell(esc(it.inquiry_name || it.inquiry || '—')));
+      tr.appendChild(cell(esc(it.expected_name || '—')));
       tr.appendChild(cell('<span class="call-state ' + callStateClass(it.call_state) + '">' +
         esc(callStateLabel(it.call_state)) + '</span>'));
       var holdCell = '—';
@@ -1488,7 +1502,7 @@ window.__fhInitQueue = function(){
       emptyRow = document.createElement('tr');
       emptyRow.className = 'queue-empty';
       var td = document.createElement('td');
-      td.colSpan = 5;
+      td.colSpan = 8;
       /* reuse the chip's own wording rather than inventing new copy */
       td.textContent = 'all done for today';
       emptyRow.appendChild(td);
@@ -1551,7 +1565,7 @@ window.__fhInitQueue = function(){
     var tr = document.createElement('tr');
     tr.className = 'workrow';
     var td = document.createElement('td');
-    td.colSpan = 5;
+    td.colSpan = 8;
 
     var strip = document.createElement('div');
     strip.className = 'workstrip';
@@ -1593,11 +1607,23 @@ window.__fhInitQueue = function(){
     setSt.type = 'button'; setSt.className = 'qbtn';
     setSt.textContent = 'Set status';
 
+    var expectedIn = document.createElement('input');
+    expectedIn.type = 'text'; expectedIn.className = 'qbtn qinput';
+    expectedIn.placeholder = 'expected name';
+    expectedIn.title = 'Name you expected to see. Actual stays the bureau string.';
+    expectedIn.setAttribute('aria-label', 'expected creditor name');
+    if (r._row && r._row.expected_name) expectedIn.value = r._row.expected_name;
+
+    var saveExpected = document.createElement('button');
+    saveExpected.type = 'button'; saveExpected.className = 'qbtn';
+    saveExpected.textContent = 'Save expected';
+
     var log = document.createElement('div');
     log.className = 'worklog';
 
     strip.appendChild(kind); strip.appendChild(call); strip.appendChild(conf);
-    strip.appendChild(statusIn); strip.appendChild(setSt); strip.appendChild(log);
+    strip.appendChild(statusIn); strip.appendChild(setSt);
+    strip.appendChild(expectedIn); strip.appendChild(saveExpected); strip.appendChild(log);
 
     /* ── the identity line ─────────────────────────────────────────────────
        Masked by default and never fetched for a row that is not in the
@@ -1739,6 +1765,11 @@ window.__fhInitQueue = function(){
     setSt.addEventListener('click', function(){
       run('status', function(){
         return V.buildStatusRequest({ inquiryId: inquiryId, status: statusIn.value });
+      });
+    });
+    saveExpected.addEventListener('click', function(){
+      run('expected', function(){
+        return V.buildExpectedRequest({ inquiryId: inquiryId, expectedName: expectedIn.value });
       });
     });
 

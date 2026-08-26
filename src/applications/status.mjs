@@ -17,6 +17,11 @@ export class ApplicationStatusError extends Error {
  * @param {import("pg").Pool|object} db
  * @param {object} opts
  */
+function cleanPlayName(playName) {
+  const s = String(playName || "").trim();
+  return s ? s.slice(0, 120) : null;
+}
+
 export async function setApplicationStatus(db, {
   orgId,
   applicationId,
@@ -24,6 +29,7 @@ export async function setApplicationStatus(db, {
   eventType = "status_change",
   staff = null,
   notes = null,
+  playName = null,
   patch = null
 } = {}) {
   const next = String(status || "").trim();
@@ -88,9 +94,9 @@ export async function setApplicationStatus(db, {
 
   await db.query(
     `INSERT INTO application_decisions (
-       org_id, application_id, event_type, status, lender_table, decided_at, created_by, notes
+       org_id, application_id, event_type, status, lender_table, decided_at, created_by, notes, play_name
      ) VALUES (
-       $1::uuid, $2::uuid, $3, $4, $5::lender_table, now(), $6, $7
+       $1::uuid, $2::uuid, $3, $4, $5::lender_table, now(), $6, $7, $8
      )`,
     [
       orgId,
@@ -99,11 +105,100 @@ export async function setApplicationStatus(db, {
       next,
       row.lender_table || null,
       staff ? String(staff.name || staff.email || staff.id || "").slice(0, 200) : null,
-      notes || null
+      notes || null,
+      cleanPlayName(playName)
     ]
   );
 
   return row;
+}
+
+/** Find or mint the application row for this client + lender, then stamp yes/no. */
+export async function logBankDecision(db, {
+  orgId,
+  applicationId = null,
+  clientId = null,
+  lenderId = null,
+  status,
+  playName = null,
+  staff = null,
+  notes = null
+} = {}) {
+  let appId = applicationId;
+  if (!appId) {
+    if (!clientId || !lenderId) {
+      throw new ApplicationStatusError(
+        "application_id or client_id + lender_id is required",
+        { code: "application_id required" }
+      );
+    }
+    const found = await db.query(
+      `SELECT id FROM applications
+        WHERE org_id = $1::uuid AND client_id = $2::uuid AND lender_id = $3::uuid
+        ORDER BY updated_at DESC LIMIT 1`,
+      [orgId, clientId, lenderId]
+    );
+    if (found.rows[0]) {
+      appId = found.rows[0].id;
+    } else {
+      const lender = await db.query(
+        `SELECT id, name, product_name, application_url, lender_table
+           FROM lenders WHERE org_id = $1::uuid AND id = $2::uuid`,
+        [orgId, lenderId]
+      );
+      const L = lender.rows[0];
+      if (!L) {
+        throw new ApplicationStatusError("lender not found", {
+          code: "lender_not_found",
+          status: 404
+        });
+      }
+      let round = await db.query(
+        `SELECT id FROM funding_rounds
+          WHERE org_id = $1::uuid AND client_id = $2::uuid
+          ORDER BY round_number DESC LIMIT 1`,
+        [orgId, clientId]
+      );
+      if (!round.rows[0]) {
+        round = await db.query(
+          `INSERT INTO funding_rounds (org_id, client_id, round_number, status, product)
+           VALUES ($1::uuid, $2::uuid, 1, 'open', 'card_stacking')
+           RETURNING id`,
+          [orgId, clientId]
+        );
+      }
+      const created = await db.query(
+        `INSERT INTO applications (
+           org_id, funding_round_id, client_id, lender_id, bank, lender_name,
+           product_name, application_url, lender_table, status
+         ) VALUES (
+           $1::uuid, $2::uuid, $3::uuid, $4::uuid, $5, $6, $7, $8, $9::lender_table, 'Apply'
+         ) RETURNING id`,
+        [
+          orgId,
+          round.rows[0].id,
+          clientId,
+          lenderId,
+          L.name || null,
+          L.name || null,
+          L.product_name || null,
+          L.application_url || null,
+          L.lender_table || null
+        ]
+      );
+      appId = created.rows[0].id;
+    }
+  }
+
+  return setApplicationStatus(db, {
+    orgId,
+    applicationId: appId,
+    status,
+    eventType: "bank_decision",
+    staff,
+    notes,
+    playName
+  });
 }
 
 export async function listApplicationDecisions(db, { orgId, applicationId, limit = 50 }) {

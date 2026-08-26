@@ -39,7 +39,7 @@ const LIVE_PAGES = {
   "/login.html": { status: 200, text: "<form>Sign in <input type=password></form>" },
   "/app/client-control-panel.html": {
     status: 200,
-    text: "Funding · Apply Generate Apps Apply door"
+    text: "Funding · Apply Generate Apps Apply door Apply shows the client email, not a Fundhub address"
   },
   "/api/read/underwrite": { status: 401, text: '{"error":"unauthorized"}' }
 };

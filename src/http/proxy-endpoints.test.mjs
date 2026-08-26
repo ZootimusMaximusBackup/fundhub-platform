@@ -140,7 +140,7 @@ test("proxy/launch success shape never sets routing_active true", async () => {
       db: {
         query: async (sql, params) => {
           if (/FROM clients/.test(sql)) {
-            return { rows: [{ id: CLIENT, org_id: ORG, custom_fields: { business_city: "Mesa", business_state: "AZ" } }] };
+            return { rows: [{ id: CLIENT, org_id: ORG, email: "ada@client.com", custom_fields: { business_city: "Mesa", business_state: "AZ" } }] };
           }
           if (/FROM lenders/.test(sql)) {
             return { rows: [{ id: LENDER, org_id: ORG, name: "Bank", product_name: "CC", application_url: "https://bank.test/a" }] };
@@ -172,6 +172,7 @@ test("proxy/launch success shape never sets routing_active true", async () => {
   assert.equal(res.body.extension_required, true);
   assert.equal(res.body.verification.exit_ip, "203.0.113.50");
   assert.equal(res.body.verification.city, "Mesa");
+  assert.equal(res.body.bank_form_email.email, "ada@client.com");
   assert.equal(res.body.connection.host, "pr.oxylabs.io");
   assert.match(res.body.connection.username, /city-mesa/);
 });
