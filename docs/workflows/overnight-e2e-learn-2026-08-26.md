@@ -37,13 +37,13 @@
 
 **Not proven / do not claim:**
 - Any of the five horsemen as a full event-list PASS.
-- A real Josh or AG-09 talk. **Do not retry Bland tonight.**
-- Book sequence on these five (no `booking.created`).
-- AR-02 / AR-03 / AR-04 (sleeping).
+- A real Josh or AG-09 talk. **Do not retry Bland tonight.** Fund Horse has a stored call row (42s, FAKE MEET). That is not a Josh talk.
+- Book sequence on these five (`bookings` = 0, no `booking.created`).
+- AR-02 / AR-03 / AR-04 (sleeping). Repair $200 invoice still `sent` even though the trial program shows paid.
 - Paper mail, live CRS, card charge (not run).
-- CCP opened with `?id=` in the browser this hour (Playwright aborted; stuck rule — used one dash read per file instead).
-- B1 play box after reload: **#176 is on main** (`beb81d25`). Live `https://fundhub.ai` is **503 usage_exceeded**. The one reload check **did not run**. B1 stays **FAIL**. Did not keep editing. Did not hit the site again.
-- Aff Forgot / AF1 (wait for **#177** on live, then one `e2e+aff-*` Forgot click).
+- CCP / Specialist clicks this hour: live homepage **503** `usage_exceeded` (one probe). Did not retry.
+- B1 play box after reload: **#176 is on main only.** Frozen live / 503. **B1 stays FAIL.** Skip reload-as-pass.
+- Aff Forgot / AF1 (wait for **#177** on a live page, then one `e2e+aff-*` Forgot click).
 
 **Chris quality-check later (existing PDFs, not new work):**
 - UnderwriteIQ pack on disk: `docs/workflows/four-plus-pulse-2026-08-25-evidence/deliverables/fund-*.pdf`
@@ -227,6 +227,85 @@ Walked **twice as a person tonight:** no file. Repair Horse desk once before the
 **What I still fake:** calling a dash JSON read a click walk. Calling #176 tested. Calling e2e done.
 
 No Bland. No Apply. No deploy.
+
+---
+
+## Hour 5 — ~1:20 a.m. Pacific
+
+**Live:** one homepage probe. **503** `usage_exceeded`. Stopped. No second hit. No deploy. No Apply. No Bland. No B1 reload.
+
+**Did:** read intended doors again (`client`, Specialist, closer, advisor). They still have **no talk order**. Loaded live Agent Editor rows. Walked stored events + Gmail **anywhere** for all five plus-tags. That is the remaining motion while the site is dead.
+
+### Agent Editor (live rows, not disk files)
+
+| Code | Name | Letters | Channel |
+|---|---|---|---|
+| AG-04 | Setter Josh | **169** stub | voice |
+| AG-09 | Inquiry Removal AI | **169** same stub | voice |
+| OP-06 | Closer drill | 2622 | internal |
+| AG-07 | Recon | **342** | internal |
+
+System map said three live. There are **four**. AG-07 is not on these five files. Did not roleplay it. AG-04 / AG-09 stay **FAIL**. Talk **UNVERIFIED**.
+
+### What actually fired (`events.name`)
+
+| Event | Funding | Repair | Combo | Inquiry | Course |
+|---|---|---|---|---|---|
+| `entry.captured` | 1 | 1 | 1 | 1 | 1 |
+| `survey.submitted` | 1 | 1 | 1 | 1 | 1 |
+| `booking.created` | **0** | **0** | **0** | **0** | **0** |
+| `message.queued` | 18 | 13 | 5 | 4 | 4 |
+| `docs.received` | 7 | 12 | 0 | 1 | 0 |
+| `round.started` | 1 | 0 | 0 | 0 | 0 |
+| `invoice.sent` | 2 | 0 | 0 | 0 | 0 |
+| `call.completed` | 1 | 0 | 0 | 0 | 0 |
+| `inquiry.removed` | 0 | 0 | 0 | **2** | 0 |
+| any `repair.*` | **0** | **0** | **0** | **0** | **0** |
+
+`bookings` table: **0** on all five. Book texts never started.
+
+Fund Horse stored call: outcome `callback`, **42 seconds**, 127-letter transcript, notes say **FAKE MEET**. Not Josh. Not a real talk. **Do not retry Bland.**
+
+### Store vs Hour 1 dash
+
+Hour 1 dash said `biz_n=0` on all five. The `businesses` table has them:
+
+- Fund: 3 (Logistics age **79**; other two age empty)
+- Combo: 3 (all age empty)
+- Repair / Inquiry / Course: 2 each (age empty)
+
+Dash 0 vs store 3/2 is a **mismatch**. On-screen data must match the file. Live page could not be opened this hour (503). Score the store as the file. Do not invent the dash is right.
+
+CRS rows: **1 each**. Documents: Fund 7, Repair 12, Inquiry 1 (FTC), Combo 0, Course 0.
+
+### Money
+
+- Fund: two **$100** success-fee invoices, status `sent`, reminder_count 0. AR-02 still sleeping.
+- Repair: trial program **active**, cap 2, `amount_paid` **200**. Invoice still `sent` $200 deposit. Paid on the program, not settled on the bill.
+- Combo / Inquiry / Course: **no** invoices.
+
+### Gmail anywhere (agent read — not Chris)
+
+| Plus-tag | Hits | Subjects that matter |
+|---|---|---|
+| fund | 12 | Welcome path, nobook, two $100 invoices, DIY letters ready, docs needed, retake photo, sign-in |
+| repair | 13 | Welcome, repair welcome, nobook, $200 invoice, retake ×3, sign-in |
+| combo | 5 | Welcome, nobook, DIY letters, **$3,000** DFY, **$1,000** repair DFY |
+| inquiry | 3 | Welcome, nobook, **$32** soft-pull |
+| course | 3 | Welcome, nobook, **Funding Mastery $5,000** |
+
+Course mastery mail **did leave**. Hour 1 last-100 miss was template-key only. Those offer rows have **null** `template_key` (offer-bucket subjects, not `EMAIL-OFFER-*` keys). Mastery is **not paid**. Do not charge.
+
+### Remaining events I still cannot walk (blocked, not skipped by laziness)
+
+- Book / Josh talk / Bland — never started or **FAIL**. No retry.
+- Apply — **B4 FAIL**. No click.
+- Paper Send letters / bureau phone — forbidden.
+- AR-02–04 — not due.
+- Live CCP `?id=` / Specialist second click — site 503.
+- Walked **twice as a person** — no file.
+
+**File PASS:** all five still **FAIL**. Talk **UNVERIFIED**. **B1 FAIL. B2 PASS.** Not 100%.
 
 ---
 
