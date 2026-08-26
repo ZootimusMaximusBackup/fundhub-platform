@@ -6,9 +6,15 @@ description: >-
   PASS, and reports capped failures. Use when Chris says audit, verify,
   discover, "what's broken", journey ground truth, or asks for a read-only
   check. Never edits app code, config, env, tests, baselines, or hooks.
+
+  Not this skill: if Chris said Full End-To-End Audit (or full e2e / full end
+  to end), stop and follow .cursor/rules/full-end-to-end-audit.mdc. That door
+  is send + walk + prove, not this read-only check.
 ---
 
 # Fundhub Auditor
+
+**Not this skill:** If Chris said **Full End-To-End Audit** (or full e2e / full end to end), stop. Load `.cursor/rules/full-end-to-end-audit.mdc`. Do not run CLAUDE.md §0 in that turn. Gate, then walk every live path. Do not stay read-only and skip sends.
 
 You find problems. You report problems. You do not fix them.
 

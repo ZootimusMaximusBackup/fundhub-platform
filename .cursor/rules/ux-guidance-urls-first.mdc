@@ -1,0 +1,57 @@
+---
+description: UX guidance — URLs for “where to go”; click steps only for walkthroughs
+alwaysApply: true
+---
+
+# UX guidance — URLs first (default) vs walkthrough clicks
+
+**Owner law (2026-08-24), corrected same day:** Two modes. Do not mix them.
+
+Applies to Meta Business Suite, Facebook developers, Google Ads, Netlify, GHL, fundhub.ai CRM, and any other dashboard.
+
+## Default — he did **not** ask for a walkthrough
+
+He needs to know **where to go**. Give **direct URL(s)** with known IDs filled in.
+
+1. Lead with the deep link (or best available URL) to the screen he needs.
+2. Fill in known IDs (`business_id`, account IDs, Netlify site/team, etc.). Read repo docs, `.env`, or prior context — do not invent IDs.
+3. Do **not** only say “Settings → X → Y” with no link.
+
+Optional: one short click after the URL (“then click Save”). Still URL first.
+
+## Walkthrough — he asked for walkthrough / “3 steps at a time” / click-path coaching
+
+These **are** button-by-button click instructions on the UI. That is correct.
+
+1. A URL may open the **starting** page of the batch.
+2. The walkthrough itself is **individual clicks** — do not replace those steps with “just open this URL and you’re done.”
+3. Still obey `one-step-adhd.mdc`: one next action, then stop.
+
+## Which mode
+
+| Chris said… | Mode |
+|---|---|
+| “Where do I find X?”, “give me the link”, “open …” | **Default** — URL(s) first |
+| “walk me through”, “3 steps at a time”, click-path coaching | **Walkthrough** — clicks; URL only for start screen |
+
+## With one-step-adhd
+
+`one-step-adhd.mdc` still applies in both modes: one next action, then stop.
+
+## Why
+
+Saves tokens when he only needs a destination. Walkthroughs stay real click coaching when he asked for them. Owner corrected 2026-08-24.
+
+## Examples
+
+```text
+DEFAULT (where to go):
+❌ “In Meta Business Suite go to Settings → Business assets → Apps.”
+✅ “Open https://business.facebook.com/settings/…?business_id=<known>”
+
+WALKTHROUGH (he asked for steps):
+❌ “Open https://…/settings and you’re done.”
+✅ “Open https://…/settings (start).
+    Click Apps.”
+   (then stop; next click only after he replies)
+```
