@@ -43,8 +43,27 @@ describe("addressFromBusinessEntity", () => {
 });
 
 describe("analyzeAndGenerate", () => {
-  test("letters already on file succeed without a consent row", async () => {
+  test("letters already on file still refuse without a signed repair agreement", async () => {
     const db = fakeDb({
+      "FROM contracts": [],
+      "FROM dispute_letters dl": [{
+        id: "letter-1",
+        bureau: "EQ",
+        case_id: "case-1",
+        body_text: "Dear Equifax",
+        rule_ids: ["M2-005"]
+      }],
+      "FROM clients": [{ first_name: "Sim", last_name: "Repair" }]
+    });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    assert.equal(r.ok, false);
+    assert.equal(r.reason, "no_authorization");
+    assert.ok(!db.seen.some((c) => /FROM dispute_letters/i.test(c.sql)));
+  });
+
+  test("letters already on file succeed when a signed repair agreement exists", async () => {
+    const db = fakeDb({
+      "FROM contracts": [{ "?column?": 1 }],
       "FROM dispute_letters dl": [{
         id: "letter-1",
         bureau: "EQ",
@@ -58,19 +77,18 @@ describe("analyzeAndGenerate", () => {
     assert.equal(r.ok, true);
     assert.equal(r.already_generated, true);
     assert.equal(r.letters.length, 1);
-    assert.ok(!db.seen.some((c) => /FROM client_consents/i.test(c.sql)));
   });
 
-  test("an enrolled program is enough agreement to look at the credit file", async () => {
+  test("enroll without a signed repair agreement refuses before the credit file", async () => {
     const db = fakeDb({
-      "FROM client_consents": [],
       "FROM contracts": [],
       "FROM repair_programs": [{ program: "trial", rounds_cap: 2, status: "active" }],
-      "FROM crs_results": []
+      "FROM crs_results": [{ result: { bureausPulled: ["EQ"] } }]
     });
     const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
     assert.equal(r.ok, false);
-    assert.equal(r.reason, "no_credit_file");
+    assert.equal(r.reason, "no_authorization");
+    assert.ok(!db.seen.some((c) => /FROM crs_results/i.test(c.sql)));
   });
 
   test("no agreement still refuses before the credit file", async () => {

@@ -41,27 +41,28 @@ describe("hasDisputeAuthorization", () => {
 });
 
 describe("hasRepairAgreement", () => {
-  test("true from dispute_authorization consent", async () => {
-    const db = fakeDb([{ rows: [{ is_valid: true }] }]);
+  test("missing org is false and issues no query", async () => {
+    const db = fakeDb([{ rows: [{ "?column?": 1 }] }]);
+    assert.equal(await hasRepairAgreement(db, { clientId: "c" }), false);
+    assert.deepEqual(db.calls, []);
+  });
+
+  test("true only from a signed repair contract", async () => {
+    const db = fakeDb([{ rows: [{ "?column?": 1 }] }]);
     assert.equal(await hasRepairAgreement(db, { orgId: "o", clientId: "c" }), true);
     assert.equal(db.calls.length, 1);
+    assert.match(db.calls[0].text, /FROM contracts/i);
   });
 
-  test("true from a signed repair contract when consent is missing", async () => {
-    const db = fakeDb([{ rows: [] }, { rows: [{ "?column?": 1 }] }]);
-    assert.equal(await hasRepairAgreement(db, { orgId: "o", clientId: "c" }), true);
-    assert.equal(db.calls.length, 2);
-    assert.match(db.calls[1].text, /FROM contracts/i);
-  });
-
-  test("true from an active repair program when consent and contract are missing", async () => {
-    const db = fakeDb([{ rows: [] }, { rows: [] }, { rows: [{ "?column?": 1 }] }]);
-    assert.equal(await hasRepairAgreement(db, { orgId: "o", clientId: "c" }), true);
-    assert.match(db.calls[2].text, /FROM repair_programs/i);
+  test("staff consent or enroll is not a signed repair agreement", async () => {
+    const db = fakeDb([{ rows: [] }]);
+    assert.equal(await hasRepairAgreement(db, { orgId: "o", clientId: "c" }), false);
+    assert.equal(db.calls.length, 1);
+    assert.match(db.calls[0].text, /FROM contracts/i);
   });
 
   test("false when nothing is on file", async () => {
-    const db = fakeDb([{ rows: [] }, { rows: [] }, { rows: [] }]);
+    const db = fakeDb([{ rows: [] }]);
     assert.equal(await hasRepairAgreement(db, { orgId: "o", clientId: "c" }), false);
   });
 });

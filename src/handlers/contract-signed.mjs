@@ -94,7 +94,8 @@ export const CONTRACT_LABELS = Object.freeze({
   "FUNDING-AGREEMENT": "funding agreement",
   "CREDIT-REPAIR-AGREEMENT": "credit repair agreement",
   "REPAIR-TRIAL-AGREEMENT": "repair test-run agreement",
-  "REPAIR-AND-FUNDING-AGREEMENT": "repair and funding agreement"
+  "REPAIR-AND-FUNDING-AGREEMENT": "repair and funding agreement",
+  "FUNDING-MASTERY-AGREEMENT": "Funding Mastery program agreement"
 });
 
 /** The one branch: template key → plain words, or null when we do not know. */

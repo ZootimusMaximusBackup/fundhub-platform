@@ -191,6 +191,13 @@
         funding_scope: "Full done-for-you funding program."
       });
     }
+    if (key === "FUNDING-MASTERY-AGREEMENT") {
+      return Object.assign({}, base, {
+        program_fee: price || "$5,000",
+        term_days: "365",
+        scope: "Funding Mastery program access: the full A-to-Z course on your own file. This is education. You do the work."
+      });
+    }
     return base;
   }
   function lettersOk() {

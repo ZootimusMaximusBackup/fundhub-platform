@@ -235,6 +235,35 @@
     }
 
     wireDisposition();
+    loadSaid();
+  }
+
+  function paintSaid(words) {
+    var said = String(words || "").trim();
+    if (!said) return;
+    var ctx = $(".ctx");
+    if (ctx) {
+      var el = ctx.querySelector("[data-fh-said]");
+      if (!el) {
+        el = document.createElement("p");
+        el.setAttribute("data-fh-said", "");
+        ctx.appendChild(el);
+      }
+      el.textContent = "said: " + said;
+    }
+    var note = $(".logbar .foot span");
+    if (note) note.textContent = "Cash comes from the payment record — never typed.";
+  }
+
+  function loadSaid() {
+    if (!window.FHData || !clientId) return;
+    FHData.read("agent-context", { client_id: clientId }).then(function (res) {
+      var block = res && res.data && res.data.context && res.data.context.as_prompt_block;
+      if (!block) return;
+      var idx = String(block).indexOf("said:");
+      if (idx < 0) return;
+      paintSaid(String(block).slice(idx).split("\n")[0].replace(/^said:\s*/, ""));
+    });
   }
 
   function wireDisposition() {

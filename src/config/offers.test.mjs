@@ -70,7 +70,10 @@ test("repair and funding offers map to contract template keys", () => {
   assert.equal(OFFERS.REPAIR_DFY.contractTemplateKey, "CREDIT-REPAIR-AGREEMENT");
   assert.equal(OFFERS.FUNDING_DFY.contractTemplateKey, "FUNDING-AGREEMENT");
   assert.equal(OFFERS.SOFT_PULL.contractTemplateKey, "SOFT-PULL-CONSENT");
+  assert.equal(OFFERS.FUNDING_MASTERY.contractTemplateKey, "FUNDING-MASTERY-AGREEMENT");
   assert.equal(resolveContractTemplateKey({ tier: "FUNDING_PLUS_REPAIR" }), "REPAIR-AND-FUNDING-AGREEMENT");
   assert.equal(resolveContractTemplateKey({ offerKey: "REPAIR_TRIAL" }), "REPAIR-TRIAL-AGREEMENT");
+  assert.equal(resolveContractTemplateKey({ offerKey: "FUNDING_MASTERY" }), "FUNDING-MASTERY-AGREEMENT");
   assert.ok(defaultContractValues({ offerKey: "REPAIR_TRIAL" }).trial_fee);
+  assert.equal(defaultContractValues({ offerKey: "FUNDING_MASTERY" }).program_fee, "$5,000");
 });
