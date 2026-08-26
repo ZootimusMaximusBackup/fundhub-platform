@@ -896,6 +896,20 @@ F-10 emails are **retired**. The **task** still fires on `round.started`. Fund H
 
 ---
 
+## Hour 24 — C-02B vs leftover inquiry cases
+
+**Live:** no homepage probe. No deploy. No Send. **#177 stays main-only.**
+
+C-02B (`deposit.paid` → tag `inquiry-removal-queued`) **never ran**. These five have **0** `deposit.paid`. Inquiry cases on Inquiry / Repair / Fund came from later e2e / desk clicks (`e2e-deep-lane`, `e2e-repair-ftc-lane`, `client_control_panel`, `full-e2e-dictator-gap`). That is leftover staff work, not the live-fire inquiry rail after a deposit.
+
+Phone inquiry stays on hold. All leftover cases have `call_due_at` empty. Do not Send. Do not launch bureau phone.
+
+**#177:** GitHub only. Forgot **not live**. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
 
 
 
