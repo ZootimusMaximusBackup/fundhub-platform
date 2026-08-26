@@ -932,6 +932,23 @@ These are still on `src/workflows/index.mjs`. Intended files name **none** of th
 
 ---
 
+## Hour 26 — affiliate / WL doors vs the marketing switch
+
+**Live:** no homepage probe. No Forgot click. **#177 stays main-only.**
+
+Intended affiliate: ~11 reach / 77 blocked (Aug 2). Actual: **25 / 196** reach, **171** blocked.  
+Intended white-label: doors + marketing notes. Actual: **55 / 196** reach, **141** blocked.
+
+Intended WL says only the **owner** can turn the marketing suite on. Code matches: POST `/api/partner-marketing/enable` refuses anyone who is not the owner. GET can be the partner or owner. Two live partner rows have the suite **on** and launch **off**. Social posts still **0**. No partner drip templates.
+
+Editor affiliate tree still says the portal is **not built**. Launch board already scored the desk **PASS**. That story is stale. The five horsemen have **0** affiliate referrals.
+
+**#177** Forgot / AF1 **code** is on main (`056b6a9b`). Migration 263 is on the live DB. The page is **not** on `fundhub.ai`. **Do not score Forgot as live.** Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
 
 
 
