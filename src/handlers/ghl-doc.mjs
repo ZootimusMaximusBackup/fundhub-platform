@@ -129,8 +129,9 @@ export async function onDocsReceivedGhlDoc(db, event, deps = {}) {
   }
   // Retired Document Check must not queue SMS-DOC-02 (or DOC-03). Status is
   // the same switch the rest of the agent runtime already honors.
-  if (String(agent.status || "") === "retired") {
-    return { done: false, reason: "ghl_doc_retired" };
+  const status = String(agent.status || "");
+  if (status === "retired" || status === "draft") {
+    return { done: false, reason: status === "retired" ? "ghl_doc_retired" : "ghl_doc_not_live" };
   }
 
   const loaded = await (loadBytesImpl || loadDocumentBytes)(db, {

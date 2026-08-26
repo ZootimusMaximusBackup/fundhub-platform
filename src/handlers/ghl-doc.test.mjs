@@ -95,6 +95,32 @@ test("onDocsReceivedGhlDoc: retired GHL-DOC does not queue SMS-DOC-02", async ()
   assert.equal(db.messages.length, 0);
 });
 
+test("onDocsReceivedGhlDoc: draft GHL-DOC does not run", async () => {
+  const res = await onDocsReceivedGhlDoc({
+    async query(sql) {
+      if (/FROM agents/.test(sql)) {
+        return { rows: [{
+          code: AGENT_CODE,
+          status: "draft",
+          prompt: "You are the Document Check agent. Return JSON."
+        }] };
+      }
+      return { rows: [] };
+    }
+  }, event({
+    kind: "client_upload",
+    subtype: "id_document",
+    document_id: "doc-1"
+  }), {
+    loadBytesImpl: async () => ({ buffer: Buffer.from("img"), mimeType: "image/png" }),
+    callModelImpl: async () => {
+      throw new Error("draft must not call the model");
+    }
+  });
+  assert.equal(res.done, false);
+  assert.equal(res.reason, "ghl_doc_not_live");
+});
+
 test("onDocsReceivedGhlDoc: runs GHL-DOC and does not send", async () => {
   const runs = [];
   const db = {
