@@ -910,6 +910,28 @@ Phone inquiry stays on hold. All leftover cases have `call_due_at` empty. Do not
 
 ---
 
+## Hour 25 — last unused registered workflows
+
+**Live:** no homepage probe. No deploy. **#177 stays main-only.**
+
+These are still on `src/workflows/index.mjs`. Intended files name **none** of them. Sequence vs intended = **UNVERIFIED**.
+
+| Workflow | Trigger | On these five |
+|---|---|---|
+| BS-01 pre-call drip | `booking.created` | never (no book) |
+| S-08 didn’t buy | `call.completed` + **declined** | never (Fund Horse is **callback**) |
+| SYS-01 LTV | `round.funded` | never |
+| U-02 analyzer delivery | `analysis.completed` | **retired** 2026-08-22. Also never fired. |
+| Repair bureau-response reader | `docs.received` | Fund ×7 / Repair ×12 docs. **0** `repair.*` events. If it ran, it wrote nothing we can see. **UNVERIFIED**. Do not Send. |
+| Contract chaser | unsigned contracts | **0** contracts. Nothing to chase. |
+| N-03 hot nurture | retired | no keys |
+
+**#177:** GitHub only. Forgot **not live**. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.** Morning brief still waits for 4:00 a.m. Pacific.
+
+---
+
 
 
 
