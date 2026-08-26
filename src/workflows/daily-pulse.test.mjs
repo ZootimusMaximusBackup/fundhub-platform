@@ -29,8 +29,11 @@ test("handle is audit-only — dry-run writes findings and does not send", async
         "/app/client-control-panel.html": { status: 200, text: "Generate Apps Apply door" },
         "/api/read/underwrite": { status: 401, text: "{}" }
       };
-      const hit = pages[pathOnly] || { status: 404, text: "" };
-      return { status: hit.status, text: async () => hit.text };
+      const hit = pages[pathOnly];
+      if (hit) return { status: hit.status, text: async () => hit.text };
+      if (pathOnly.startsWith("/api/")) return { status: 401, text: async () => "{}" };
+      if (pathOnly.endsWith(".html")) return { status: 200, text: async () => "<html>" };
+      return { status: 404, text: async () => "" };
     },
     sendSms: async (msg) => {
       sends.push(msg);

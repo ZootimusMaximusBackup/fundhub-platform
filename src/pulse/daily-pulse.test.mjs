@@ -21,11 +21,15 @@ function fakeFetch(routes) {
   return async (url) => {
     const pathOnly = String(url).replace(/^https?:\/\/[^/]+/, "");
     const hit = routes[pathOnly] || routes[url];
-    if (!hit) return { status: 404, text: async () => "missing" };
-    return {
-      status: hit.status,
-      text: async () => hit.text || ""
-    };
+    if (hit) {
+      return {
+        status: hit.status,
+        text: async () => hit.text || ""
+      };
+    }
+    if (pathOnly.startsWith("/api/")) return { status: 401, text: async () => "auth" };
+    if (pathOnly.endsWith(".html")) return { status: 200, text: async () => "<html>" };
+    return { status: 404, text: async () => "missing" };
   };
 }
 
@@ -71,6 +75,8 @@ test("dry-run writes a board and does not send or fix", async () => {
   const body = fs.readFileSync(result.wrote, "utf8");
   assert.match(body, /This run does not auto-fix/);
   assert.match(body, /health/);
+  assert.match(body, /Uptime/);
+  assert.match(body, /\/app\/pipeline\.html/);
   assert.equal(sends.length, 0);
   assert.equal(result.sms.sent, false);
   assert.equal(result.sms.reason, "dry_run");
