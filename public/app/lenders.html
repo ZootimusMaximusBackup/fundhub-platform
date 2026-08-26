@@ -308,6 +308,7 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
     if (active) p.set("active", active);
     if (state) p.set("state", state);
     if (q) p.set("q", q);
+    p.set("limit", "500");
     return p;
   }
 
@@ -338,9 +339,8 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
       var tr = document.createElement("tr");
       tr.dataset.id = L.id;
       tr.innerHTML =
-        '<td>' + (L.logo_path
-          ? '<img class="lender-logo" src="' + esc(L.logo_path) + '" alt="" width="28" height="28"/>'
-          : '<span class="lender-logo missing" aria-hidden="true"></span>') + '</td>' +
+        '<td><img class="lender-logo" src="' + esc(L.logo_path || "/assets/lenders/placeholder.svg") +
+          '" alt="" width="28" height="28" onerror="this.onerror=null;this.src=\'/assets/lenders/placeholder.svg\'"/></td>' +
         '<td><input data-f="name" value="' + esc(L.name) + '"/></td>' +
         '<td><select data-f="lender_table">' + TABLES.map(function (t) {
           return '<option value="' + t + '"' + (t === L.lender_table ? " selected" : "") + ">" + t + "</option>";

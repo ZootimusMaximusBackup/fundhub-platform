@@ -5,6 +5,7 @@ import { buildObservation } from "./observations.mjs";
 import { parseLenderCsv, serializeLenderCsv } from "./csv.mjs";
 import { matchLenders } from "./match.mjs";
 import { orgDemoModeEnabled } from "../demo/exclude-demo.mjs";
+import { logoPathOrPlaceholder } from "./resolve-logo.mjs";
 
 const SELECT_COLS = `
   id, org_id, lender_table, name, product_name, logo_path, application_url, lender_row_url,
@@ -36,6 +37,7 @@ function publicLender(row) {
   out.active = out.active !== false;
   out.is_demo = !!out.is_demo;
   if (out.is_demo && out.name && !String(out.name).startsWith("DEMO")) out.name = "DEMO · " + out.name;
+  out.logo_path = logoPathOrPlaceholder(out.logo_path);
   return out;
 }
 
@@ -51,7 +53,7 @@ export async function listLenders(db, {
   active = null,
   state = null,
   q = null,
-  limit = 200,
+  limit = 500,
   offset = 0,
   includeDemo = null,
   forExport = false
@@ -84,7 +86,7 @@ export async function listLenders(db, {
   }
   const demoOn = forExport ? false : (includeDemo == null ? await orgDemoModeEnabled(db, orgId) : !!includeDemo);
   if (!demoOn) where.push("COALESCE(is_demo, false) = false");
-  params.push(Math.min(Math.max(Number(limit) || 200, 1), 500));
+  params.push(Math.min(Math.max(Number(limit) || 500, 1), 500));
   params.push(Math.max(Number(offset) || 0, 0));
   const sql = `
     SELECT ${SELECT_COLS}
