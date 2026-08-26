@@ -83,7 +83,7 @@
         "padding:8px 14px;background:#FEF3C7;border-bottom:1px solid #FCD34D;" +
         "font:600 12px/1.4 system-ui,sans-serif;color:#18181B;";
       el.textContent =
-        "Chrome add-on is off. Load Fundhub Proxy (Extensions → Load unpacked → extension folder), pin it, then reload. Apply will not route the bank page without it.";
+        "Chrome add-on is off. Apply will not open the bank page the safe way. Do not open a bank link from this computer. Load Fundhub Proxy (Extensions → Load unpacked → extension folder), pin it, then reload.";
       var host = document.querySelector(".shell") || document.body;
       host.insertBefore(el, host.firstChild);
     }
@@ -315,22 +315,18 @@
               esc(routingNote) + "</p>" +
               verificationBlock(v) +
               bankEmailBlock() +
-              "<p style=\"margin:12px 0 4px\">Manual proxy settings (use only if the extension is not active):</p>" +
+              "<p style=\"margin:12px 0 4px\">Proxy settings (only if you can set a computer proxy first):</p>" +
               fieldRow("Host", c.host, true) +
               fieldRow("Port", c.port, true) +
               fieldRow("Username (includes city + sessid)", c.username, true) +
               fieldRow("Password", c.password, true) +
-              fieldRow("Application URL", url, true) +
-              '<p style="margin-top:10px;color:#71717A;font-size:12px">Set these in your system/browser proxy, confirm the exit city matches above, then open the application URL. Click <b>End session</b> when finished so normal browsing is not affected.</p>';
+              fieldRow("Application URL (do not open on this computer)", url, true) +
+              '<p style="margin-top:10px;color:#71717A;font-size:12px">The bank page will not open the safe way from this desk. Do not open the bank link here — the bank would see this office. Turn the Fundhub Proxy add-on on, reload, then click Apply again. Click <b>End session</b> when finished.</p>';
 
             showModal(lenderName, body, [
               {
-                label: "Open application URL",
-                primary: true,
-                onClick: function () { global.open(url, "_blank", "noopener"); }
-              },
-              {
                 label: "End session",
+                primary: true,
                 onClick: function () {
                   endSession().then(hideModal);
                 }
@@ -342,7 +338,7 @@
 
           if (!hasExt) {
             openManualUi(
-              "Chrome extension not detected. Browser routing is NOT active. Use the copyable proxy settings below, or install the Fundhub Proxy extension (see extension/README.md)."
+              "Chrome extension not detected. Browser routing is NOT active. The bank page will not open the safe way. Do not open the bank link from this computer."
             );
             return;
           }
@@ -359,7 +355,7 @@
               openManualUi(
                 "Extension is installed but did not activate routing (" +
                 esc((extRes && extRes.error) || "unknown") +
-                "). Browser routing is NOT active — use the manual settings."
+                "). Browser routing is NOT active. The bank page will not open the safe way. Do not open the bank link from this computer."
               );
               return;
             }
