@@ -5,7 +5,8 @@ import {
   verifyTwilioSignature,
   normalizeTwilioEvent,
   mapToCanonical,
-  handleTwilioWebhook
+  handleTwilioWebhook,
+  VOICE_ANSWER_TWIML
 } from "./twilio.mjs";
 import { _resetOrgCache } from "../events/bus.mjs";
 import { on, clearHandlers } from "../events/registry.mjs";
@@ -132,10 +133,25 @@ test("message.inbound payload has correct shape", async () => {
   assert.deepEqual(payload.mediaUrls, []);
 });
 
-// --- not-a-message path ------------------------------------------------------
-test("handleTwilioWebhook: no MessageSid => 200, reason=not_a_message, no emit", async () => {
+// --- voice answer (Bland talks to the prove line) ----------------------------
+test("handleTwilioWebhook: CallSid with no MessageSid returns TwiML pause, no emit", async () => {
   _resetOrgCache(); clearHandlers();
-  const params = { CallSid: "CA_xyz", CallStatus: "completed" };
+  const params = { CallSid: "CA_xyz", CallStatus: "ringing" };
+  const raw = toBody(params);
+  const sig = sign(TEST_URL, params);
+  const res = await handleTwilioWebhook({ db: fakeDb(), rawBody: raw, signatureHeader: sig, secret: AUTH_TOKEN, url: TEST_URL });
+  assert.equal(res.ok, true);
+  assert.equal(res.status, 200);
+  assert.equal(res.reason, "voice_answer");
+  assert.equal(res.twiml, VOICE_ANSWER_TWIML);
+  assert.match(res.twiml, /<Pause length="120"\/>/);
+  assert.deepEqual(res.emitted, []);
+});
+
+// --- not-a-message path ------------------------------------------------------
+test("handleTwilioWebhook: no MessageSid and no CallSid => 200, reason=not_a_message, no emit", async () => {
+  _resetOrgCache(); clearHandlers();
+  const params = { AccountSid: "AC_test" };
   const raw = toBody(params);
   const sig = sign(TEST_URL, params);
   const res = await handleTwilioWebhook({ db: fakeDb(), rawBody: raw, signatureHeader: sig, secret: AUTH_TOKEN, url: TEST_URL });

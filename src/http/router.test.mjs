@@ -214,6 +214,28 @@ test("twilio route reaches the twilio adapter (no secret → 401, not 404)", asy
   assert.notEqual(out.status, 404, "router recognized twilio");
 });
 
+test("twilio voice CallSid returns TwiML on the existing webhook (not JSON hang-up)", async () => {
+  reset();
+  const { default: crypto } = await import("node:crypto");
+  const token = "router_twilio_voice_token";
+  const url = "https://x/api/webhooks/twilio";
+  const params = { CallSid: "CA_router", CallStatus: "ringing" };
+  const rawBody = new URLSearchParams(params).toString();
+  const sorted = Object.keys(params).sort().reduce((acc, k) => acc + k + params[k], "");
+  const sig = crypto.createHmac("sha1", token).update(url + sorted, "utf8").digest("base64");
+  const out = await handleWebhook({
+    db: fakeDb(),
+    provider: "twilio",
+    rawBody,
+    headers: { "x-twilio-signature": sig },
+    url,
+    env: { TWILIO_AUTH_TOKEN: token }
+  });
+  assert.equal(out.status, 200);
+  assert.equal(out.body.reason, "voice_answer");
+  assert.match(out.body.twiml, /<Pause length="120"\/>/);
+});
+
 test("postgrid webhook route RESOLVES (not 404) — delivery clock entry point", async () => {
   reset();
   const out = await handleWebhook({

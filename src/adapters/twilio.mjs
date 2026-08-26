@@ -1,4 +1,4 @@
-// Twilio inbound SMS adapter — Master Rebuild Spec Phase 1.
+// Twilio inbound SMS + voice-answer adapter — Master Rebuild Spec Phase 1.
 //
 // Exactly three responsibilities:
 //   1. verify the X-Twilio-Signature (fail-closed),
@@ -6,11 +6,17 @@
 //   3. emit canonical events onto the bus — handlers react.
 //
 // Twilio inbound webhooks are application/x-www-form-urlencoded.
-// Fields: MessageSid, From, To, Body, NumMedia, AccountSid.
+// SMS fields: MessageSid, From, To, Body, NumMedia, AccountSid.
+// Voice fields: CallSid (no MessageSid). A voice POST must return TwiML or
+// Twilio hangs up in ~0.13s (demo.twilio.com / empty JSON).
 // Only emits when a MessageSid is present (skip non-message webhooks).
 
 import crypto from "node:crypto";
 import { emit } from "../events/bus.mjs";
+
+/** Keep the prove line open so Bland can talk. Same pause the night-ship twimlet used. */
+export const VOICE_ANSWER_TWIML =
+  '<?xml version="1.0" encoding="UTF-8"?><Response><Pause length="120"/></Response>';
 
 // --- 1. Signature verification (fail-closed) --------------------------------
 // Twilio HMAC-SHA1 scheme:
@@ -88,6 +94,18 @@ export async function handleTwilioWebhook({ db, rawBody, signatureHeader, secret
   // Verify before doing anything — fail-closed.
   if (!verifyTwilioSignature(url, evt._params, signatureHeader, secret)) {
     return { ok: false, status: 401, reason: "bad_signature", emitted: [] };
+  }
+
+  // Voice: CallSid and no MessageSid. Return TwiML so the line stays open.
+  if (evt._params.CallSid && !evt.sid) {
+    return {
+      ok: true,
+      status: 200,
+      reason: "voice_answer",
+      twiml: VOICE_ANSWER_TWIML,
+      contentType: "text/xml",
+      emitted: []
+    };
   }
 
   // Non-message webhooks (no MessageSid) — acknowledge, do nothing.
