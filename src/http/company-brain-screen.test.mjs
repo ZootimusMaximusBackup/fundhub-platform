@@ -29,11 +29,26 @@ test("company-brain.html is a chat: composer, message area, saved conversations"
   assert.match(HTML, /data-brain-thread-list/, "past conversations need their test hook");
 });
 
+test("company-brain.html lets staff take a class quiz on the documents panel", () => {
+  assert.match(HTML, /data-brain-quiz/);
+  assert.match(HTML, /ramp-quizzes\.js/);
+  assert.match(HTML, /Class quizzes/);
+  assert.match(HTML, /Check answers/);
+});
+
 test("company-brain.html tells the reader an upload waits for owner approval", () => {
   // The gate is enforced in retrieve.mjs; this asserts the screen SAYS so, so a
   // person is never left wondering why a file they just added answers nothing.
   assert.match(HTML, /approve/i);
   assert.match(HTML, /before it can be used in answers/i);
+});
+
+test("company-brain.html reads the saved staff role and can Approve a waiting file", () => {
+  // Login writes fh_role. The old fh_session key was never set, so the owner
+  // badge said "staff" and the Approve box stayed hidden on the live page.
+  assert.match(HTML, /fh_role/);
+  assert.match(HTML, /data-decide="approve"/);
+  assert.match(HTML, />Approve</);
 });
 
 test("company-brain.html is in shell ALL and linked from documents sidebar", () => {
