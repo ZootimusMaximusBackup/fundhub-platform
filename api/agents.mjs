@@ -6,6 +6,7 @@
 //   { action: "promote", code }          → status = live
 //   { action: "demote",  code }          → status = shadow
 //   { action: "create",  name, channel?, agent_class?, owner_label? }
+//   { action: "run",     code, message, history? }  → staff drill turn
 //
 // POST + action, same shape as message-templates / contracts — FHData.write()
 // is POST-only.
@@ -28,6 +29,7 @@ import { db } from "../src/db.mjs";
 import { requireAuth } from "../src/http/middleware/requireAuth.mjs";
 import { requireRole, ROLE_SETS } from "../src/http/read-api.mjs";
 import { dbDown } from "../src/http/db-down.mjs";
+import { runDrill } from "../src/agents/drill.mjs";
 
 const CHANNELS = new Set(["sms", "email", "voice", "internal"]);
 /* Where an agent runs. The list is 037_agent_registry.sql's own column comment
@@ -37,7 +39,7 @@ const CHANNELS = new Set(["sms", "email", "voice", "internal"]);
    call. api/agent-call.mjs refuses anything that is not 'bland'. */
 const RUNTIMES = new Set(["bland", "vercel", "inngest", "netlify", "internal", "ghl"]);
 const CLASSES = new Set(["client_facing", "ops"]);
-const ACTIONS = new Set(["save", "promote", "demote", "create"]);
+const ACTIONS = new Set(["save", "promote", "demote", "create", "run"]);
 
 function normChannel(raw) {
   const s = String(raw || "").trim().toLowerCase();
@@ -136,7 +138,7 @@ export default async function handler(req, res) {
   if (!ACTIONS.has(action)) {
     return res.status(400).json({
       ok: false, error: "unknown_action",
-      message: "Unknown action. Use save, promote, demote, or create."
+      message: "Unknown action. Use save, promote, demote, create, or run."
     });
   }
 
@@ -354,6 +356,29 @@ export default async function handler(req, res) {
       );
       return res.status(200).json({
         ok: true, action: "demote", agent: publicAgent(updated.rows[0])
+      });
+    }
+
+    /* ── run → staff drill turn (ops / internal only) ─────────────────── */
+    if (action === "run") {
+      const out = await runDrill(db, {
+        orgId,
+        agent: current,
+        message: body.message,
+        history: body.history
+      });
+      if (!out.ok) {
+        const status = out.error === "not_found" ? 404
+          : out.error === "message_required" || out.error === "org_required" ? 400
+          : 409;
+        return res.status(status).json(out);
+      }
+      return res.status(200).json({
+        ok: true,
+        action: "run",
+        reply: out.reply,
+        banned_line: out.banned_line === true,
+        call_samples: out.call_samples || null
       });
     }
 
