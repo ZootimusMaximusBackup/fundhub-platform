@@ -1,5 +1,23 @@
 // Postgres connection (pg pool). One database for the whole platform (Spec §2).
-import pg from "pg";
+//
+// pg is loaded when the first query runs, not when this file is imported.
+// Netlify's esbuild leaves `pg` external. If the zip is missing the package,
+// a top-level `import pg from "pg"` crashes the whole /api/* function before
+// /api/health or login can answer. pool() throws a catchable error instead.
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+
+function loadPg() {
+  try {
+    return require("pg");
+  } catch (err) {
+    const missing = new Error("Cannot find package 'pg'");
+    missing.code = "ERR_MODULE_NOT_FOUND";
+    missing.cause = err;
+    throw missing;
+  }
+}
 
 let _pool = null;
 
@@ -41,6 +59,7 @@ export function pool() {
        statement_timeout bounds a query that connects but never returns, which
        is the other way to hang past the function's own limit. Both are
        overridable for a slow link or a deliberately long migration run. */
+    const pg = loadPg();
     _pool = new pg.Pool({
       connectionString,
       max: Number(process.env.PG_POOL_MAX || 10),
