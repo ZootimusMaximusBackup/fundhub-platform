@@ -363,6 +363,18 @@ describe("the response body", () => {
     );
   });
 
+  test("a company on the file does not get the no-LLC suggestion", async () => {
+    const res = makeRes();
+    await handler(req(), res, fullDb({ businesses: [{ age_months: 30 }] }));
+    assert.equal(res.statusCode, 200);
+    for (const s of res.body.suggestions) {
+      assert.ok(!/don.?t have an LLC/i.test(s.text), s.text);
+    }
+    assert.ok(res.body.suggestions.some((s) => /LLC is seasoned/i.test(s.text)),
+      "age on the company must talk about seasoning, not forming an LLC");
+    assert.ok(!res.body.dataCompleteness.missing.client.some((m) => m.field === "hasLLC"));
+  });
+
   test("no promise is added on top of the engine's own strings", async () => {
     const res = makeRes();
     await handler(req(), res, fullDb());
