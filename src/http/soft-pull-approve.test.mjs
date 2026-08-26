@@ -6,6 +6,7 @@ import {
   ageMonthsFromIncorporated,
   normalizeSoftPullEin,
   replaceSoftPullBusinesses,
+  stampBusinessIncorporated,
   ensureSoftPullCheckout
 } from "../../api/soft-pull-approve.mjs";
 import { softPullTotalCents } from "../finance/soft-pull-pricing.mjs";
@@ -137,6 +138,51 @@ test("replaceSoftPullBusinesses writes ein, incorporated_date, and age_months", 
   assert.equal(inserts[0].entity.extra_owner_name, "Pat Lee");
   assert.equal(inserts[0].entity.address_line1, "1 Main St");
   assert.equal(inserts[0].entity.state, "AZ");
+});
+
+test("stampBusinessIncorporated writes month/year and age on one existing company", async () => {
+  const updates = [];
+  const db = {
+    async query(sql, params) {
+      if (/UPDATE businesses/i.test(sql)) {
+        updates.push(params);
+        return {
+          rows: [{
+            id: "b1",
+            name: params[2],
+            age_months: params[3],
+            incorporated_date: params[4]
+          }]
+        };
+      }
+      throw new Error("unexpected: " + String(sql).slice(0, 80));
+    }
+  };
+  const out = await stampBusinessIncorporated(db, {
+    orgId: "o",
+    clientId: "c",
+    businessName: "Fund Horse Logistics",
+    incorporatedDate: "2020-01",
+    now: new Date("2026-08-25T00:00:00Z")
+  });
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0][2], "Fund Horse Logistics");
+  assert.equal(updates[0][3], 79);
+  assert.equal(updates[0][4], "2020-01");
+  assert.equal(out.age_months, 79);
+  assert.equal(out.incorporated_date, "2020-01");
+});
+
+test("stampBusinessIncorporated does not invent a date", async () => {
+  await assert.rejects(
+    () => stampBusinessIncorporated({ query() { throw new Error("should not write"); } }, {
+      orgId: "o",
+      clientId: "c",
+      businessName: "Fund Horse Logistics",
+      incorporatedDate: ""
+    }),
+    (e) => e instanceof ConsentError && e.code === "business_incorporated_required"
+  );
 });
 
 test("ensureSoftPullCheckout reuses matching open link", async () => {
