@@ -42,11 +42,19 @@ const OXYLABS_STATE_TO_ABBR = Object.fromEntries(
   Object.entries(US_STATE_TO_OXYLABS).map(([abbr, full]) => [full, abbr])
 );
 
+/** Env username is the account id only. Strip a pasted `customer-` so we do not double-prefix. */
+export function stripCustomerPrefix(username) {
+  const s = String(username || "").trim();
+  if (!s) return null;
+  return s.replace(/^customer-/i, "") || null;
+}
+
 export function oxylabsConfigFromEnv(env = process.env) {
-  const username = env.OXYLABS_USERNAME || null;
-  const password = env.OXYLABS_PASSWORD || null;
+  const rawUser = env.OXYLABS_USERNAME;
+  const username = stripCustomerPrefix(rawUser);
+  const password = env.OXYLABS_PASSWORD ? String(env.OXYLABS_PASSWORD) : null;
   const missing = [];
-  if (!username) missing.push("OXYLABS_USERNAME");
+  if (rawUser == null || rawUser === "") missing.push("OXYLABS_USERNAME");
   if (!password) missing.push("OXYLABS_PASSWORD");
   return {
     host: OXYLABS_HOST,
@@ -108,7 +116,7 @@ export function buildProxyUsername({
   level = "city",
   country = "US"
 } = {}) {
-  const base = String(username || "").trim();
+  const base = stripCustomerPrefix(username);
   if (!base) throw new Error("oxylabs_username_required");
   const sid = String(sessid || "").trim();
   if (!sid) throw new Error("oxylabs_sessid_required");
@@ -236,26 +244,83 @@ export function fetchThroughProxy(targetUrl, {
   });
 }
 
+function fieldFromGeo(obj, keys) {
+  if (!obj || typeof obj !== "object") return null;
+  for (const k of keys) {
+    const v = obj[k];
+    if (v != null && String(v).trim()) return String(v).trim();
+  }
+  return null;
+}
+
+function majorityString(values) {
+  const counts = new Map();
+  for (const raw of values) {
+    const s = String(raw || "").trim();
+    if (!s) continue;
+    const key = s.toLowerCase();
+    const cur = counts.get(key) || { n: 0, sample: s };
+    cur.n += 1;
+    counts.set(key, cur);
+  }
+  let best = null;
+  for (const row of counts.values()) {
+    if (!best || row.n > best.n) best = row;
+  }
+  return best ? best.sample : null;
+}
+
+export function geoFromProviders(providers) {
+  if (!providers || typeof providers !== "object") {
+    return { city: null, region: null, country: null, cities: [] };
+  }
+  const cities = [];
+  const regions = [];
+  const countries = [];
+  for (const p of Object.values(providers)) {
+    const city = fieldFromGeo(p, ["city", "city_name"]);
+    const region = fieldFromGeo(p, ["region", "regionName", "state", "region_name"]);
+    const country = fieldFromGeo(p, ["country", "countryCode", "country_code"]);
+    if (city) cities.push(city);
+    if (region) regions.push(region);
+    if (country) countries.push(country);
+  }
+  return {
+    city: majorityString(cities),
+    region: majorityString(regions),
+    country: majorityString(countries),
+    cities
+  };
+}
+
 /**
  * Parse ip.oxylabs.io/location body into { exitIp, city, region, country, raw }.
+ * Current Oxylabs payload is `{ ip, providers: { dbip, ip2location, ipinfo, maxmind } }`
+ * with city/country on each provider — not at the top level.
  */
 export function parseLocationPayload(result) {
   const json = result?.json;
   if (json && typeof json === "object") {
+    const fromProviders = geoFromProviders(json.providers);
     return {
       exitIp: json.ip || json.query || null,
-      city: json.city || json.city_name || null,
-      region: json.region || json.regionName || json.state || null,
-      country: json.country || json.countryCode || json.country_code || null,
+      city: json.city || json.city_name || fromProviders.city || null,
+      region: json.region || json.regionName || json.state || fromProviders.region || null,
+      country: json.country || json.countryCode || json.country_code || fromProviders.country || null,
+      cities: fromProviders.cities,
       raw: json
     };
   }
   const body = String(result?.body || "").trim();
   // Plain IP fallback
   if (/^\d{1,3}(\.\d{1,3}){3}$/.test(body)) {
-    return { exitIp: body, city: null, region: null, country: null, raw: body };
+    return { exitIp: body, city: null, region: null, country: null, cities: [], raw: body };
   }
-  return { exitIp: null, city: null, region: null, country: null, raw: body || null };
+  return { exitIp: null, city: null, region: null, country: null, cities: [], raw: body || null };
+}
+
+export function isOxylabsAuthFailure(reason) {
+  return /oxylabs_connect_failed:(401|403|407)\b/.test(String(reason || ""));
 }
 
 /**
@@ -294,6 +359,7 @@ export async function verify({
     city: loc.city,
     region: loc.region,
     country: loc.country,
+    cities: loc.cities || [],
     raw: loc.raw
   };
 }
@@ -356,9 +422,11 @@ export async function launchCredentials({
         fetchFn,
         env
       });
-      const cityOk = level === "city" && citiesMatch(requestedCity, v.city);
+      const cityHit = [v.city, ...(v.cities || [])].find((c) => citiesMatch(requestedCity, c));
+      const cityOk = level === "city" && Boolean(cityHit);
       const stateOk = level === "state" && statesMatch(requestedState, v.region || v.city);
       const matched = level === "city" ? cityOk : stateOk;
+      if (cityOk && cityHit) v.city = cityHit;
       const attempt = {
         level,
         proxyUsername,
@@ -385,10 +453,36 @@ export async function launchCredentials({
   if (requestedCity) {
     const cityAttempt = await tryLevel("city");
     if (cityAttempt.matched) achieved = cityAttempt;
+    else if (isOxylabsAuthFailure(cityAttempt.reason)) {
+      return {
+        ok: false,
+        error: "oxylabs_auth_failed",
+        message: "Oxylabs rejected the proxy login (407). Username is the account id without the customer- prefix. See docs/STILL-MISSING.md.",
+        requested_city: requestedCity,
+        requested_state: requestedState,
+        sessid,
+        attempts,
+        host: cfg.host,
+        port: cfg.port
+      };
+    }
   }
   if (!achieved && requestedState) {
     const stateAttempt = await tryLevel("state");
     if (stateAttempt.matched) achieved = stateAttempt;
+    else if (isOxylabsAuthFailure(stateAttempt.reason)) {
+      return {
+        ok: false,
+        error: "oxylabs_auth_failed",
+        message: "Oxylabs rejected the proxy login (407). Username is the account id without the customer- prefix. See docs/STILL-MISSING.md.",
+        requested_city: requestedCity,
+        requested_state: requestedState,
+        sessid,
+        attempts,
+        host: cfg.host,
+        port: cfg.port
+      };
+    }
   }
 
   if (!achieved) {

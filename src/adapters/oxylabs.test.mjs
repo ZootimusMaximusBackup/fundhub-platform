@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   oxylabsConfigFromEnv,
+  stripCustomerPrefix,
   normalizeCity,
   normalizeState,
   buildProxyUsername,
@@ -10,6 +11,7 @@ import {
   parseLocationPayload,
   generateSessid,
   launchCredentials,
+  isOxylabsAuthFailure,
   OXYLABS_HOST,
   OXYLABS_PORT
 } from "./oxylabs.mjs";
@@ -57,6 +59,19 @@ test("buildProxyUsername encodes city targeting and sessid", () => {
   assert.equal(u, "customer-myuser-cc-US-city-los_angeles-sessid-abc123-sesstime-30");
 });
 
+test("stripCustomerPrefix and buildProxyUsername do not double-prefix", () => {
+  assert.equal(stripCustomerPrefix("customer-myuser"), "myuser");
+  assert.equal(stripCustomerPrefix("myuser"), "myuser");
+  const u = buildProxyUsername({
+    username: "customer-myuser",
+    city: "Mesa",
+    sessid: "abc123",
+    sesstime: 30,
+    level: "city"
+  });
+  assert.equal(u, "customer-myuser-cc-US-city-mesa-sessid-abc123-sesstime-30");
+});
+
 test("buildProxyUsername encodes state targeting", () => {
   const u = buildProxyUsername({
     username: "myuser",
@@ -94,6 +109,24 @@ test("parseLocationPayload reads Oxylabs JSON and plain IP", () => {
 
   const plain = parseLocationPayload({ body: "8.8.8.8", json: null });
   assert.equal(plain.exitIp, "8.8.8.8");
+});
+
+test("parseLocationPayload reads city from providers.* (current Oxylabs shape)", () => {
+  const j = parseLocationPayload({
+    json: {
+      ip: "203.0.113.9",
+      providers: {
+        dbip: { country: "US", city: "Waco" },
+        ip2location: { country: "US", city: "Austin" },
+        ipinfo: { country: "US", city: "" },
+        maxmind: { country: "US", city: "Austin" }
+      }
+    }
+  });
+  assert.equal(j.exitIp, "203.0.113.9");
+  assert.equal(j.city, "Austin");
+  assert.equal(j.country, "US");
+  assert.ok(j.cities.includes("Austin"));
 });
 
 test("generateSessid is alphanumeric hex", () => {
@@ -166,6 +199,47 @@ test("launchCredentials falls back to state when city mismatches", async () => {
   assert.equal(out.exit_ip, "203.0.113.2");
   assert.match(out.proxy_username, /st-us_arizona/);
   assert.equal(n, 2);
+});
+
+test("launchCredentials matches city when only providers.* have it", async () => {
+  const out = await launchCredentials({
+    city: "Austin",
+    state: "TX",
+    sessid: "sess4",
+    env: { OXYLABS_USERNAME: "u", OXYLABS_PASSWORD: "p" },
+    fetchFn: async () => ({
+      status: 200,
+      body: "{}",
+      json: {
+        ip: "203.0.113.9",
+        providers: {
+          dbip: { country: "US", city: "Waco" },
+          ip2location: { country: "US", city: "Austin" },
+          maxmind: { country: "US", city: "Austin" }
+        }
+      }
+    })
+  });
+  assert.equal(out.ok, true);
+  assert.equal(out.targeting_level, "city");
+  assert.equal(out.granted_city, "Austin");
+  assert.equal(out.exit_ip, "203.0.113.9");
+});
+
+test("launchCredentials reports auth failed instead of geo miss on 407", async () => {
+  assert.equal(isOxylabsAuthFailure("oxylabs_connect_failed:407"), true);
+  const out = await launchCredentials({
+    city: "Austin",
+    state: "TX",
+    sessid: "sess5",
+    env: { OXYLABS_USERNAME: "u", OXYLABS_PASSWORD: "p" },
+    fetchFn: async () => {
+      throw new Error("oxylabs_connect_failed:407");
+    }
+  });
+  assert.equal(out.ok, false);
+  assert.equal(out.error, "oxylabs_auth_failed");
+  assert.equal(out.attempts.length, 1);
 });
 
 test("launchCredentials refuses silent wrong geo when both levels fail", async () => {
