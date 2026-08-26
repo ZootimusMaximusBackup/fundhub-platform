@@ -784,7 +784,7 @@ function restore(){
   });
 }
 
-function persistCardMove(card, pipelineKey, stageKey, onFail){
+function persistCardMove(card, pipelineKey, stageKey, onFail, onOk){
   if(typeof FHData === 'undefined' || !FHData.write){
     if(onFail) onFail('data layer not loaded');
     return;
@@ -817,6 +817,7 @@ function persistCardMove(card, pipelineKey, stageKey, onFail){
     if(window.FHPipelineBoard && typeof window.FHPipelineBoard.invalidate === 'function'){
       window.FHPipelineBoard.invalidate(pipelineKey);
     }
+    if(typeof onOk === 'function') onOk();
   });
 }
 
@@ -942,28 +943,12 @@ menu.addEventListener('click',function(e){
   menu.hidden=true; moveCard=null;
   persistCardMove(card, pipelineKey, stageKey, function(msg){
     alert('Could not save the move: ' + msg);
+  }, function(){
+    // After the save, open the dest rail so Apply Now is the column they see.
+    if(window.FHPipelineBoard && typeof window.FHPipelineBoard.showPipeline === 'function'){
+      window.FHPipelineBoard.showPipeline(pipelineKey);
+    }
   });
-  // Cross-rail: remove from this board after a successful write path starts;
-  // invalidate + leave the card until refetch if same rail.
-  var currentKey = window.FHPipelineBoard && window.FHPipelineBoard.currentKey;
-  if(currentKey && pipelineKey !== currentKey){
-    var from=colOf(card);
-    if(from){
-      var amt=amountOf(card);
-      bump(from,-1,-amt);
-      if(card.parentNode) card.parentNode.removeChild(card);
-    }
-  }else if(currentKey && pipelineKey === currentKey){
-    // Same pipeline: find the destination column and move the card there.
-    var dest=null;
-    cols().forEach(function(c){ if(c.dataset.stageKey===stageKey) dest=c; });
-    if(dest && dest!==colOf(card)){
-      var amt2=amountOf(card);
-      var from2=colOf(card);
-      dest.querySelector('.col-body').appendChild(card);
-      bump(from2,-1,-amt2); bump(dest,1,amt2);
-    }
-  }
 });
 document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ menu.hidden=true; moveCard=null; } });
 
@@ -1924,11 +1909,33 @@ restore();
     });
   }
 
+  function showPipeline(pipelineKey) {
+    var rail = null;
+    Object.keys(PIPELINE_KEYS).forEach(function (rk) {
+      if (PIPELINE_KEYS[rk] === pipelineKey) rail = rk;
+    });
+    if (!rail) return;
+    delete cache[pipelineKey];
+    var tab = document.querySelector('.rail-tab[data-rail="' + rail + '"]');
+    var tabs = document.querySelectorAll('.rail-tab');
+    for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+    if (tab) tab.classList.add('active');
+    var name = tab
+      ? [].filter.call(tab.childNodes, function (n) { return n.nodeType === 3; })
+          .map(function (n) { return n.textContent; }).join('').trim()
+      : pipelineKey;
+    var railLabel = document.getElementById('railLabel');
+    if (railLabel && name) railLabel.textContent = name;
+    load(rail, name || pipelineKey);
+  }
+
   // Exposed so the rail-tab click handler (defined earlier in the page) can
-  // drive the same loader. currentKey / invalidate are used by drag + MOVE.
+  // drive the same loader. currentKey / invalidate / showPipeline are used by
+  // drag + MOVE.
   window.FHPipelineBoard = {
     load: load,
     currentKey: activePipelineKey,
+    showPipeline: showPipeline,
     invalidate: function (key) {
       if (key) delete cache[key];
       else Object.keys(cache).forEach(function (k) { delete cache[k]; });

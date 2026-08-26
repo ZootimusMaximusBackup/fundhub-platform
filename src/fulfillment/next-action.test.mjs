@@ -195,6 +195,32 @@ describe("every chip fires on its own evidence", () => {
     assert.equal(keyOf(base({ custom_fields: { ready_for_next_round: true } })), "apply_for_funding");
   });
 
+  test("Apply for Funding — the funding card sits on Apply Now", () => {
+    assert.equal(keyOf(base({
+      card: { pipeline_key: "funding_card_stacking", stage_key: "apply_now" }
+    })), "apply_for_funding");
+  });
+
+  test("Apply Now is the job even with no product tier and an open inquiry", () => {
+    const r = deriveNextAction(base({
+      outcome_tier: null,
+      inquiry_cases: [{ case_status: "Queued" }],
+      consent: { valid: false, reason: "none_on_file", consent: null },
+      card: { pipeline_key: "funding_card_stacking", stage_key: "apply_now" }
+    }));
+    assert.equal(r.next_action.key, "apply_for_funding");
+    assert.equal(r.next_action.label, "Apply for Funding");
+    assert.equal(r.degraded, false);
+  });
+
+  test("Apply Now does not give a repair-only file a funding chip", () => {
+    const r = deriveNextAction(base({
+      outcome_tier: "REPAIR_ONLY",
+      card: { pipeline_key: "funding_card_stacking", stage_key: "apply_now" }
+    }));
+    assert.ok(!FUNDING_CHIP_KEYS.includes(r.next_action?.key ?? null));
+  });
+
   test("Ready to Fund — nothing blocking, no hold, packet complete", () => {
     assert.equal(keyOf(base({
       doc_packet: { complete: true, missing: [], present: {} }

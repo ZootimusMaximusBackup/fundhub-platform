@@ -133,6 +133,7 @@ const CRS_COMPLETE = "Complete";
 const PRE_FUNDING_REVIEW_WORKFLOW = "c-05-pre-funding-review";
 const CARD_STACKING_PIPELINE = "funding_card_stacking";
 const CARD_STACKING_APPROVED_STAGE = "approved";
+const CARD_STACKING_APPLY_NOW_STAGE = "apply_now";
 
 /* ── tiny readers. Every one of them answers "I cannot tell" as null. ──────── */
 
@@ -411,14 +412,26 @@ function evaluatePrepareNextRound(ctx) {
 }
 
 /* 9. APPLY FOR FUNDING — a funding chip, GATE B applies.
+   The funding card sits on Apply Now (staff MOVE), OR
    custom_fields.ready_for_next_round true (c-03:45) AND the outcome tier is a
    funding tier. The tier check is not optional — leaving it out is Phase 0
-   defect 1, live today: a repair-only client being told to apply. */
+   defect 1, live today: a repair-only client being told to apply.
+   A card already on Apply Now is handled first in deriveNextAction so that
+   job is not hidden by an earlier chip. */
 function evaluateApplyForFunding(ctx) {
   if (!fundingChipsAllowed(ctx)) return NO();
+  if (cardOnApplyNow(ctx)) {
+    return YES("Their funding card is sitting on Apply Now, so it is time to apply.");
+  }
   if (ctx.cf === null) return NO();
   if (ctx.cf.ready_for_next_round !== true) return NO();
   return YES("Their file is clean and their plan includes funding, so it is time to apply.");
+}
+
+function cardOnApplyNow(ctx) {
+  return !!(ctx.card
+    && str(ctx.card.pipeline_key) === CARD_STACKING_PIPELINE
+    && str(ctx.card.stage_key) === CARD_STACKING_APPLY_NOW_STAGE);
 }
 
 /* 10. READY TO FUND — a funding chip, GATE B applies.
@@ -766,14 +779,25 @@ export function deriveNextAction(signals) {
     let degraded = false;
     let chosen = null;
 
-    for (const spec of NEXT_ACTIONS) {
-      const evaluator = EVALUATORS[spec.key];
-      if (!evaluator) continue;
-      const v = evaluator(ctx);
-      if (!v || v.verdict === "unknown") { degraded = true; break; }
-      if (v.verdict === "yes") {
-        chosen = { key: spec.key, label: spec.label, why: v.why };
-        break;
+    // Staff parked the card on Apply Now — applying is the job. Repair-only
+    // still refuses. A missing product tier does not hide that job.
+    const applyNowJob = cardOnApplyNow(ctx) && !isRepairOnlyPath(ctx.tier);
+    if (applyNowJob) {
+      chosen = {
+        key: "apply_for_funding",
+        label: "Apply for Funding",
+        why: "Their funding card is sitting on Apply Now, so it is time to apply."
+      };
+    } else {
+      for (const spec of NEXT_ACTIONS) {
+        const evaluator = EVALUATORS[spec.key];
+        if (!evaluator) continue;
+        const v = evaluator(ctx);
+        if (!v || v.verdict === "unknown") { degraded = true; break; }
+        if (v.verdict === "yes") {
+          chosen = { key: spec.key, label: spec.label, why: v.why };
+          break;
+        }
       }
     }
 
@@ -784,7 +808,7 @@ export function deriveNextAction(signals) {
       chosen = null;
       degraded = true;
     }
-    if (chosen && guardFundingProduct(chosen, { outcomeTier: ctx.tier }) !== chosen) {
+    if (chosen && !applyNowJob && guardFundingProduct(chosen, { outcomeTier: ctx.tier }) !== chosen) {
       chosen = null;
       degraded = true;
     }
