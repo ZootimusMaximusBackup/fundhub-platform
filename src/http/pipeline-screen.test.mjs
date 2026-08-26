@@ -107,6 +107,15 @@ describe("public/app/pipeline.html — screen wiring", () => {
   test("a failed or demo load clears the summary instead of leaving the last rail's numbers on screen", () => {
     assert.match(HTML, /setSummary\(null\)/);
   });
+
+  test("MOVE to Card Stacking Apply Now is wired and opens that board after a save", () => {
+    assert.match(HTML, /data-pipeline-key="funding_card_stacking" data-stage-key="apply_now"/);
+    assert.match(HTML, /Funding: Card Stacking · Apply Now/);
+    assert.match(HTML, /function persistCardMove\(card, pipelineKey, stageKey, onFail, onOk\)/);
+    assert.match(HTML, /function showPipeline\(pipelineKey\)/);
+    assert.match(HTML, /showPipeline: showPipeline/);
+    assert.match(HTML, /FHPipelineBoard\.showPipeline\(pipelineKey\)/);
+  });
 });
 
 describe("public/app/pipeline.html — phone and email open messaging", () => {

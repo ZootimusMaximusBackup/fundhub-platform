@@ -45,8 +45,9 @@ export async function moveCardToStage(db, {
   let resolvedApproved = approvedAmount != null ? Number(approvedAmount) : null;
   let resolvedRoundNumber = roundNumber != null ? Number(roundNumber) : null;
 
-  // Funding document / new-negative gates block work, not Closed / Action Required.
-  const allowedWhileHeld = stageKey === "closed" || stageKey === "action_required";
+  // Funding document / new-negative gates block later stages, not Closed /
+  // Action Required, and not Apply Now — staff MOVE onto that column is the job.
+  const allowedWhileHeld = stageKey === "closed" || stageKey === "action_required" || stageKey === "apply_now";
   if (pipelineKey === CARD_STACKING_PIPELINE && !allowedWhileHeld) {
     const hold = await db.query(
       `SELECT custom_fields FROM clients WHERE id = $1 LIMIT 1`,
