@@ -30,7 +30,8 @@
 // A plain SELECT-then-UPDATE would satisfy none of them.
 
 import {
-  gateAndRecord, inQuietHours, QUIET_HOURS_CHANNELS, QUIET_END_HOUR, QUIET_HOURS_TZ
+  gateAndRecord, inQuietHours, recipientSkipsQuietHours,
+  QUIET_HOURS_CHANNELS, QUIET_END_HOUR, QUIET_HOURS_TZ
 } from "./gate.mjs";
 import { resolve, addressFieldFor } from "./providers/index.mjs";
 import { isSynthetic } from "./live-fence.mjs";
@@ -357,16 +358,19 @@ export async function dispatchOne(db, message, options = {}) {
     // recorded as a permanent block.
     const clock = typeof now === "function" ? now : () => new Date();
     if (QUIET_HOURS_CHANNELS.has(message.channel) && inQuietHours(clock(), QUIET_HOURS_TZ)) {
-      const due = nextQuietHoursEnd(clock(), QUIET_HOURS_TZ);
-      await db.query(
-        // The attempt is given back: an unopened window is not a failed
-        // delivery, and charging it would burn the retry budget overnight.
-        `UPDATE messages
-            SET status = 'queued', scheduled_at = $2, attempts = GREATEST(attempts - 1, 0)
-          WHERE id = $1`,
-        [message.id, due.toISOString()]
-      );
-      return { id: message.id, outcome: OUTCOME.DEFERRED, detail: due.toISOString() };
+      const skipQuiet = await recipientSkipsQuietHours(db, message.client_id);
+      if (!skipQuiet) {
+        const due = nextQuietHoursEnd(clock(), QUIET_HOURS_TZ);
+        await db.query(
+          // The attempt is given back: an unopened window is not a failed
+          // delivery, and charging it would burn the retry budget overnight.
+          `UPDATE messages
+              SET status = 'queued', scheduled_at = $2, attempts = GREATEST(attempts - 1, 0)
+            WHERE id = $1`,
+          [message.id, due.toISOString()]
+        );
+        return { id: message.id, outcome: OUTCOME.DEFERRED, detail: due.toISOString() };
+      }
     }
 
     // ---- 1. THE GATE, FIRST, ALWAYS ---------------------------------------

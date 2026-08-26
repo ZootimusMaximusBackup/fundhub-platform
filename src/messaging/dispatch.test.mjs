@@ -67,6 +67,9 @@ function fakeDb({
       if (sql.includes("SELECT custom_fields FROM clients")) {
         return { rows: [{ custom_fields: customFields }] };
       }
+      if (sql.includes("SELECT email, phone FROM clients")) {
+        return { rows: [{ email: client.email ?? null, phone: client.phone ?? null }] };
+      }
       if (sql.includes("FROM clients")) {
         // The dispatcher picks the column; echo whichever it asked for.
         const col = /SELECT (\w+) AS address/.exec(sql)?.[1];
@@ -86,7 +89,7 @@ function spy(result = { status: "sent", providerMessageId: "prov1", error: null,
   const calls = [];
   const fetchImpl = async (url, init) => {
     calls.push({ url, init });
-    return { ok: true, status: 200, text: async () => JSON.stringify({ id: "prov1", messageId: "prov1" }) };
+    return { ok: true, status: 200, text: async () => JSON.stringify({ id: "prov1", messageId: "prov1", sid: "SMprov1" }) };
   };
   fetchImpl.calls = calls;
   fetchImpl.result = result;
@@ -171,6 +174,63 @@ describe("nothing reaches a provider without the gate allowing it", () => {
     });
     assert.strictEqual(res.outcome, OUTCOME.SENT);
     assert.strictEqual(f.calls.length, 1);
+  });
+
+  test("a +sim- text at 3am is not held for quiet hours", async () => {
+    const f = spy();
+    const db = fakeDb({
+      client: { email: "stanbridgejchris+sim-fund@gmail.com", phone: "+16616054248" },
+      routing: {
+        email: { provider: "mailgun", enabled: true },
+        sms: { provider: "twilio", enabled: true }
+      }
+    });
+    const res = await dispatchOne(db, claimed({ channel: "sms" }), {
+      fetchImpl: f,
+      env: { ...ENV, TWILIO_SEND_ACCOUNT_SID: "ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        TWILIO_SEND_AUTH_TOKEN: "twilio-auth-token-value", TWILIO_SEND_FROM: "+15550001111" },
+      now: () => new Date("2026-08-01T07:00:00Z")
+    });
+    assert.strictEqual(res.outcome, OUTCOME.SENT);
+    assert.strictEqual(f.calls.length, 1, "the sim text must leave at night");
+  });
+
+  test("an e2e+ text at 3am is not held for quiet hours", async () => {
+    const f = spy();
+    const db = fakeDb({
+      client: { email: "e2e+aff-prove@fundhub.ai", phone: "+16616054248" },
+      routing: {
+        email: { provider: "mailgun", enabled: true },
+        sms: { provider: "twilio", enabled: true }
+      }
+    });
+    const res = await dispatchOne(db, claimed({ channel: "sms" }), {
+      fetchImpl: f,
+      env: { ...ENV, TWILIO_SEND_ACCOUNT_SID: "ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        TWILIO_SEND_AUTH_TOKEN: "twilio-auth-token-value", TWILIO_SEND_FROM: "+15550001111" },
+      now: () => new Date("2026-08-01T07:00:00Z")
+    });
+    assert.strictEqual(res.outcome, OUTCOME.SENT);
+    assert.strictEqual(f.calls.length, 1);
+  });
+
+  test("a normal client text at 3am is still held", async () => {
+    const f = spy();
+    const db = fakeDb({
+      client: { email: "person@example.com", phone: "+15551234567" },
+      routing: {
+        email: { provider: "mailgun", enabled: true },
+        sms: { provider: "twilio", enabled: true }
+      }
+    });
+    const res = await dispatchOne(db, claimed({ channel: "sms" }), {
+      fetchImpl: f,
+      env: { ...ENV, TWILIO_SEND_ACCOUNT_SID: "ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        TWILIO_SEND_AUTH_TOKEN: "twilio-auth-token-value", TWILIO_SEND_FROM: "+15550001111" },
+      now: () => new Date("2026-08-01T07:00:00Z")
+    });
+    assert.strictEqual(res.outcome, OUTCOME.DEFERRED);
+    assert.strictEqual(f.calls.length, 0, "A REAL CUSTOMER WAS TEXTED AT 3AM");
   });
 
   test("restricted wording is never sent", async () => {
