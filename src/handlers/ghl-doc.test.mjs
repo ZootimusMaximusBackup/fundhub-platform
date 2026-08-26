@@ -57,6 +57,7 @@ test("onDocsReceivedGhlDoc: inquiry_doc is skipped so the inquiry gate keeps tha
 
 test("onDocsReceivedGhlDoc: runs GHL-DOC and does not send", async () => {
   const runs = [];
+  const prompts = [];
   const db = {
     async query(sql) {
       if (/FROM agents/.test(sql)) {
@@ -64,6 +65,18 @@ test("onDocsReceivedGhlDoc: runs GHL-DOC and does not send", async () => {
           code: AGENT_CODE,
           prompt: "You are the Document Check agent. Return JSON.",
           output_schema: { outcome: "accept, request_more, or hold" }
+        }] };
+      }
+      if (/FROM clients/.test(sql) && /first_name/.test(sql)) {
+        return { rows: [{
+          first_name: "Chris",
+          last_name: "Stanbridge",
+          custom_fields: {
+            address_line1: "1005 W Hudson Way",
+            address_city: "Gilbert",
+            address_state: "AZ",
+            address_zip: "85233"
+          }
         }] };
       }
       return { rows: [] };
@@ -76,11 +89,14 @@ test("onDocsReceivedGhlDoc: runs GHL-DOC and does not send", async () => {
     original_filename: "id.png"
   }), {
     loadBytesImpl: async () => ({ buffer: Buffer.from("img"), mimeType: "image/png" }),
-    callModelImpl: async () => ({
-      mode: "shadow",
-      text: JSON.stringify({ outcome: "accept", documents_reviewed: ["id"], issues: [] }),
-      error: null
-    }),
+    callModelImpl: async (args) => {
+      prompts.push(args.user);
+      return {
+        mode: "shadow",
+        text: JSON.stringify({ outcome: "accept", documents_reviewed: ["id"], issues: [] }),
+        error: null
+      };
+    },
     recordRunImpl: async (_db, row) => { runs.push(row); return row; }
   });
   assert.equal(res.done, true);
@@ -91,6 +107,25 @@ test("onDocsReceivedGhlDoc: runs GHL-DOC and does not send", async () => {
   assert.equal(runs[0].agentCode, AGENT_CODE);
   assert.equal(runs[0].triggerEvent, "docs.received");
   assert.equal(runs[0].outcome, "accept");
+  assert.match(prompts[0], /1005 W Hudson Way/);
+  assert.match(prompts[0], /Chris Stanbridge/);
+  assert.match(prompts[0], /Today's date/);
+});
+
+test("clientContextLines: formats on-file address for the model", async () => {
+  const { clientContextLines } = await import("./ghl-doc.mjs");
+  const lines = clientContextLines({
+    first_name: "Chris",
+    last_name: "Stanbridge",
+    custom_fields: {
+      address_line1: "1005 W Hudson Way",
+      address_city: "Gilbert",
+      address_state: "AZ",
+      address_zip: "85233"
+    }
+  });
+  assert.ok(lines.some((l) => /Chris Stanbridge/.test(l)));
+  assert.ok(lines.some((l) => /1005 W Hudson Way/.test(l)));
 });
 
 test("parseAgentJson reads fenced JSON", () => {

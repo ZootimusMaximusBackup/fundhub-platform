@@ -1245,7 +1245,8 @@ document.addEventListener("DOMContentLoaded", async function () {
   function doorsFromEntitlementCodes(codes) {
     var set={}; (codes||[]).forEach(function(c){set[String(c||"").toLowerCase()]=1;});
     var funding=!!set["funding-snapshot"], repair=!!set["metro2-letter-pack"];
-    return { funding: funding, inquiry: funding, bureau_response: repair };
+    var inquiry=funding || !!set["credit-analysis-report"];
+    return { funding: funding, inquiry: inquiry, bureau_response: repair };
   }
 
   function setOwnVisible(hasOwn) {
@@ -1625,7 +1626,8 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   setFundingVisible(false);
-  document.body.classList.add("no-docs");
+  /* Doors stay hidden via body.no-upload-doors until entitlements paint.
+     Do not force no-docs here — that hid Send a file even after unlock. */
   setOwnVisible(false);
 
   /* GET /api/dashboard/client is staff-only. A client calling it always

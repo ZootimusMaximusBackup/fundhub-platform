@@ -29,7 +29,7 @@ export const CRS_PRODUCTION_HOST = "mware.crscreditapi.com";
 /** The bureaus this repo can order. Live order list is `activeBureausFromEnv`. */
 export const BUREAUS = Object.freeze(["TU", "EX", "EQ"]);
 
-/** Owner-set 2026-08-16: TransUnion is off until CRS fixes E1006. */
+/** Live soft-pull bureau list. Unset = TU+EX+EQ. Owner 2026-08-24: TU on. */
 export function activeBureausFromEnv(env = process.env) {
   const raw = env?.CRS_ACTIVE_BUREAUS;
   if (raw == null || String(raw).trim() === "") return [...BUREAUS];
