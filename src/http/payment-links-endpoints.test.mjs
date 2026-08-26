@@ -271,6 +271,12 @@ describe("POST /api/payment-links — create", () => {
     assert.equal(ran(r.queries, "linksInsert").length, 0);
   });
 
+  test("purpose invoice is accepted", async () => {
+    const r = await create({ purpose: "invoice", price: "100.00" });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.ok, true);
+  });
+
   test("an unknown purpose is refused", async () => {
     const r = await create({ purpose: "yacht", price: "10.00" });
     assert.equal(r.status, 400);

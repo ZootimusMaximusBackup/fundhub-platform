@@ -46,6 +46,12 @@
     return null;
   }
 
+  function defaultBlankValues(templateKey) {
+    var values = { company_name: "Fundhub", company_email: "support@fundhub.ai" };
+    if (templateKey === "SOFT-PULL-CONSENT") values.consent_days = "90";
+    return values;
+  }
+
   function fillBlankInputs(values) {
     values = values || {};
     Array.prototype.forEach.call(document.querySelectorAll("[data-blank]"), function (el) {
@@ -99,6 +105,7 @@
   root.FHContractSend = {
     listWordings: listWordings,
     pickTemplate: pickTemplate,
+    defaultBlankValues: defaultBlankValues,
     fillBlankInputs: fillBlankInputs,
     sendToClient: sendToClient,
     copyText: copyText,

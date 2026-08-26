@@ -32,6 +32,12 @@ test("letters action is absent on the qualified funding route", () => {
   assert.ok(presentJs.includes("letters_blocked") || presentJs.includes("generate_letters"));
 });
 
+test("Closer Dashboard Send fills company, days, and email blanks", () => {
+  assert.ok(closerJs.includes("fillBlankInputs"));
+  assert.ok(closerJs.includes("defaultBlankValues"));
+  assert.ok(closerJs.includes("template_key"));
+});
+
 test("Closer Dashboard has a Present control that deep-links the contact", () => {
   assert.ok(closerHtml.includes('id="fh-present"'));
   assert.ok(closerHtml.includes("Present"));
@@ -78,6 +84,13 @@ test("non-primary pay links still require an explicit downsell or upsell choice"
     /selectedOfferKey\(\)\s*===\s*"FUNDING_DFY"\s*\?\s*null\s*:\s*"downsell"/,
     "motion must not be derived from the selected product"
   );
+});
+
+test("S-23 has Invoice this client and mints a payment link", () => {
+  assert.ok(presentJs.includes("Invoice this client"));
+  assert.ok(presentJs.includes("invoiceThisClient"));
+  assert.ok(presentJs.includes("/api/payment-links"));
+  assert.ok(presentJs.includes('purpose: "invoice"'));
 });
 
 test("S-23 pay click always POSTs send_pay_link", () => {
