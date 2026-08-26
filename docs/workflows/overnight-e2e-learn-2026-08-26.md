@@ -15,10 +15,11 @@
 | | |
 |---|---|
 | What browsers hit | Frozen **CLI** blob `6a8e9c28926e` — **no git SHA** |
-| What git says | `origin/main` `e58133f0` has #176 `beb81d25`, #170, #172, notes, etc. **#177 pending** |
+| What git says | `origin/main` `056b6a9b` is **#177** (Forgot + AF1). Also has #176, #170, notes. |
 | Score rule | Only what that **frozen live** already showed. Code on main is **not** live. |
 
-- **#176 / #170 are not live.** Skip B1 reload-as-pass. **B1 stays FAIL** (play box emptied on the frozen site).
+- **#176 / #170 / #177 are not live.** Skip B1 reload-as-pass. **B1 stays FAIL.** Do **not** score Forgot / AF1 as live.
+- Migration **263** SQL is already on the live database. The Forgot / AF1 **code** is not on `fundhub.ai`. **Do not deploy.**
 - Do not treat a Specialist “What is next” glimpse as “main #170 is live.”
 - Keep walking the five sims + reading code/journeys. No Bland. No Apply. No new fixes.
 
@@ -43,7 +44,7 @@
 - Paper mail, live CRS, card charge (not run).
 - CCP / Specialist clicks this hour: live homepage **503** `usage_exceeded` (one probe). Did not retry.
 - B1 play box after reload: **#176 is on main only.** Frozen live / 503. **B1 stays FAIL.** Skip reload-as-pass.
-- Aff Forgot / AF1 (wait for **#177** on a live page, then one `e2e+aff-*` Forgot click).
+- Aff Forgot / AF1: **#177 is on `origin/main` only** (`056b6a9b`). Migration 263 is on the live DB. Code is **not** on `fundhub.ai`. **Do not score Forgot as live.** Do not deploy. Do not click Forgot tonight.
 
 **Chris quality-check later (existing PDFs, not new work):**
 - UnderwriteIQ pack on disk: `docs/workflows/four-plus-pulse-2026-08-25-evidence/deliverables/fund-*.pdf`
@@ -707,6 +708,742 @@ AT-01 ran. All five have `first_touch_date` and `lead_magnet_type=Survey`.
 C-02 (new inquiries from a CRS analysis) never ran — no `analysis.completed`. Inquiry cases on these files came from later staff / e2e clicks, not that workflow.
 
 DS-01 repair-referral needs a **declined** closer call and a non-funding path. Fund Horse call is **callback**. Path field empty. No DS-01 send.
+
+---
+
+## Hour 20 — remaining rails (book / after book / repair / AR / aff / WL)
+
+**Live:** no homepage probe. No deploy. No Forgot click. No Apply. No Bland.
+
+**#177 ingested:** merged on `origin/main` as `056b6a9b`. Affiliate / partner Forgot + AF1 welcome are **GitHub only**. Migration **263** SQL is already on the live database. The new Forgot / AF1 **code is not** on `fundhub.ai`. Site still 503 / credits gone. **Do not score Forgot as live.** Do not deploy.
+
+Intended files are still **doors**. Sequence vs intended = **UNVERIFIED**. Live fire is the bar.
+
+### Book (intended vs editor vs live fire vs these five)
+
+| Book | What it says |
+|---|---|
+| Intended (`client-intended.md`) | Sign-in doors. **No** book texts. **No** Josh talk. |
+| Editor tree | Text the survey → wait **2 days** → book link → Josh in **5 minutes**. |
+| Live fire | `booking.created` → S-04 (move card) + S-04B (confirm SMS+email now, 24h, 2h) + Josh (`ai-set-01`, live AG-04 stub) + AI-SET-04 (15-min text) + S-04C staff (switch **default off**) + DPC-02 + BS-01. Portal invite at book is **retired** — S-04B email carries the link. No-answer texts: now / +30m / +2h (`call.completed` + no-answer / voicemail). |
+
+These five: `bookings` = **0**. `booking.created` = **0**. Zero S-04 / AI-SET keys. Nobook wave 1 left ~10:25 p.m. Pacific Aug 25. Wave 2 waits **+24h** after wave 1 → due ~10:25 p.m. Pacific **tonight**. Still sleeping. Not a FAIL yet. Fund Horse stored call is **callback** + FAKE MEET, so AI-SET-03 never started.
+
+### Funding after book (never started on these five)
+
+After a real book the live fire is: closer → consent → $32 pay → `deposit.paid` → S-06 + S-doc → `round.started` → F-01 (only if the path field says funding).
+
+These five have **0** consents, **0** contracts, **0** sales, **0** `deposit.paid`. Fund Horse has `round.started` anyway (staff / e2e). F-01 skipped because `outcome_tier` is empty. `SMS-ROUND-STARTED-NOTIFY` still left. F-04 / F-05 / F-06 / F-07 / F-08 / N-04 / N-06 never ran (no submit / approve / funded / closeout). BC-01 wrote a `behavior_scores` row on Fund Horse with **empty** responsiveness. Apply stays **B4**. Do not click.
+
+### Repair rounds
+
+Intended Specialist file = desk toggle + Send. **No** repair event list.
+
+Live bus: `repair.enrolled` → docs → analysis → letters ready → Send (paper) → 30-day wait → response → next round. Trial cap **2**. Full cap **6**. R2 holds on trial. Portal copy after Send: “bureaus have 30 days.”
+
+| File | Program | Letters | Events | 30-day clock |
+|---|---|---|---|---|
+| Repair | trial, cap 2, paid $200 | EQ + EX **R1** `generated`. No PDF. No paper id. | **0** `repair.*` | **not started** (`response_due_at` empty) |
+| Combo | **none** | none | 0 | — |
+| Fund / Inquiry / Course | none | none | 0 | — |
+
+Repair welcome email left. Enroll talks to the repair handler **directly** — it does not write `repair.enrolled` into `events`. That is why the welcome mail exists and the event table is empty. Retake photo ×3. Did not Send. Inquiry leftover: Repair has a **Queued** case from the e2e FTC lane. Fund has a Queued case from the control panel. Inquiry Horse: 2 Completed + 1 Queued. All `call_due_at` empty. Do not launch bureau phone.
+
+### AR 7-day clock
+
+Live fire: `invoice.sent` + **success fee only** → AR-01 now → sleep **7 days** → AR-02 → sleep 7 more → AR-03 → AR-04 tag. Stops on `invoice.paid`. Present Invoice does **not** start this.
+
+Fund Horse: two **$100** success-fee bills, status `sent`, reminder_count **0**, sent ~8:52 p.m. and 8:54 p.m. Pacific Aug 25. AR-01 email+SMS already left (×2). AR-02 is due ~**8:52 p.m. Pacific Sep 1**. Still sleeping. Repair $200 is a **deposit** — not this chain. Combo / Inquiry / Course: no success-fee bill.
+
+### Affiliate
+
+| Book | What it says |
+|---|---|
+| Intended | ~11 reach / 77 blocked. **Doors.** No drip order. |
+| Actual | **25 / 196**. Adds climate, gifts, public click, Company Brain aff. |
+| Editor | Approve → send link (still says portal **not built**) → stamp referral → setter. |
+| Live fire | AF-02 stamps owner on `entry.captured` / pay / analysis if `a1` is on the payload. Desk + copy link + `/start?ref=` click **PASS** (earlier). Social **not-live**. |
+
+These five have **0** `affiliate_referrals`. AF-02 never ran (no `a1`). AF templates **exist** on the live DB (`AF`, `AF1`–`AF4`, `AF-06`). AF1 was sent once to `e2e+aff-click17@` — **blocked**, then **bounced**. AF2–AF4 never sent. That prove is **not** the five horsemen.
+
+**#177:** Forgot + AF1 welcome **code** is on main only. Do **not** score Forgot as live. Do not click Forgot. Do not deploy.
+
+### White-label
+
+| Book | What it says |
+|---|---|
+| Intended | Doors + marketing-suite notes. Default **off**. Owner flip only. |
+| Actual | **55 / 196**. Adds brand, campaigns, creative, partner-marketing, social. |
+| Editor | Create company → Brand Studio → invite team. |
+| Live fire | Partner Home + Brand Studio + `/sites/{id}/apply` **PASS** (earlier). Custom domain **not-live** (every `partner_brand.domain` empty or unverified). Partner drip templates **none**. Social posts **0**. |
+
+Two partner rows have marketing suite **on**, launch **off**. Several sim `/apply` pages are **published**. Seeded demo apply is still **draft**. Forgot for partners is the same #177 code — **not live**.
+
+### Agent Editor + Gmail (second read)
+
+Live prompts **unchanged**: AG-04 / AG-09 **169** same stub. AG-07 342. OP-06 2622. Do not roleplay. Do not Bland.
+
+Gmail **anywhere** (agent read): fund **12**, repair **13**, combo **5**, inquiry **3**, course **3**. Same subjects as Hour 5. No new mail since then.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **B1 FAIL. B2 PASS.** Forgot **not live**. **Not 100%.** Morning brief still waits for 4:00 a.m. Pacific.
+
+---
+
+## Hour 21 — leftover workflows that still could fire
+
+**Live:** no homepage probe. No deploy. No Forgot. No Apply. No Bland. **#177 stays main-only.**
+
+Fund Horse is the only file with `round.started` (~10:10 p.m. Pacific Aug 25). That is the only leftover clock that is not a 7-day or 24-hour nobook wait.
+
+| Workflow | Trigger | On these five | Due? |
+|---|---|---|---|
+| BC-02 friction | `round.started` now | Fund Horse row: friction **0.5** (medium). Tags include `ops:action-required`. | **happened** |
+| BC-01 responsiveness | `round.started` then **+24h** / +48h | Same row, responsiveness **empty**. First score waits until ~10:10 p.m. Pacific **tonight**. | **sleeping** |
+| F-02 id / portal nudge | `round.started` then **+3h** | `id_uploaded` and portal status are **empty**. First wake was due ~**1:10 a.m.** Pacific. **No** `EMAIL-F02` / `SMS-F02` keys. | **due, no mail** — Inngest on the frozen site may be dead. Not a live-page FAIL. |
+| DPC-01 / U-03 / U-04 / U-05 | `analysis.completed` | none | never |
+| DPC-03 inbound router | `message.inbound` | **0** inbound rows on all five | never |
+| DPC-05 72h stall | `booking.created` | no book | never |
+| SYS-01 value | `round.approved` | none | never |
+| F-07 / F-08 / N-04 / N-06 | `round.funded` / closeout | none | never |
+| F-09 no-path | `mail.response` denied | none | never |
+| Meet sweeper | cron | Fund Horse tape is **FAKE MEET** | not a real talk |
+| S-PORTAL at book | `booking.created` | **retired**. Sign-in mail still left (`EMAIL-PORTAL-MAGIC-LINK`) when someone asked for a link. That is not the book invite. | n/a |
+
+Combo events are only `entry.captured`, `survey.submitted`, `message.queued`. Tag `client:diy-letters` is on. No funding round. No repair program. DIY mail left anyway.
+
+Conversations exist (2 each file). No inbound. DPC-03 has nothing to parse.
+
+**Still true:** Forgot / AF1 **not live**. Do not deploy. Do not click Forgot.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 22 — cards, retired nurture, F-02 templates, leftover inbound
+
+**Live:** no homepage probe. No deploy. No Forgot. **#177 stays main-only.**
+
+### Where the five cards sit (store, not a live page)
+
+| File | Sales | Other boards |
+|---|---|---|
+| Funding | `survey_complete` | Funding board: **Apply Now**. Repair board: **response received** |
+| Repair | `survey_complete` | Repair board: **ready to send** |
+| Combo | `survey_complete` | none |
+| Inquiry | `survey_complete` | none |
+| Course | `survey_complete` | none |
+
+None are on **booked**. That matches `bookings` = 0.
+
+Repair Horse “ready to send” matches EQ/EX R1 letters `generated`. Did not Send.
+
+Fund Horse on the **repair** board at “response received” is a leftover. This file has **no** repair program and **0** `repair.*` events. Retake-photo mail still left. Same pattern as enroll: the repair handler can move a card / send mail **without** writing `repair.*` into `events`.
+
+Bank inbox rows on these five: **0**. F-11 / F-09 never started. Do not touch Oxylabs.
+
+### Editor vs S-01 vs these five
+
+Editor says: text the survey, wait two days, then book.  
+Live S-01 on `entry.captured` only: tag `lead:new`, put the sales card on **New Lead**. No text. No 2-day wait.  
+All five have `lead:new` and later moved to `survey_complete`. The editor’s Josh-in-5-minutes step never ran.
+
+### Templates exist; mail still did not leave
+
+F-02 / DPC-05 / N-04 / N-06 keys **are** on the live database. Missing F-02 mail after the 3-hour wake is **not** “no template.” Partner / white-label drip keys: **none**.
+
+N-01 and N-02 are **retired** (empty trigger). S-NOBOOK owns the chase. Matches Hour 15.
+
+GHL-DOC still runs on `docs.received`. Fund Horse has 7 of those. Extra DOC-02 = FAIL (already logged).
+
+### Inbound leftover
+
+Hour 21 said **0** inbound **message** rows. Fund Horse `events` has **1** `message.inbound`. DPC-03 listens to that event. I did not invent what the body said. No DPC-03 keys on the file. Conversations exist (2 each). Still not a talk.
+
+**#177:** still GitHub only. Do not score Forgot. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 23 — planted inbound, DIY gate, leftover tasks
+
+**Live:** no homepage probe. No deploy. No Forgot. **#177 stays main-only.**
+
+### Fund Horse inbound (not a talk)
+
+That inbound event is a planted e2e text from the **agent phone**. They asked what happens next. DPC-03 only acts on **yes / confirm / reschedule / close**. This body matches **none**. No DPC-03 keys. Not a Josh talk. Do not Bland.
+
+### DIY mail vs DS-02 code
+
+DS-02 **fail-closed** when the path field is empty. All five have `outcome_tier` empty. So DS-02 itself should **not** have sent. Fund / Repair / Combo still have `EMAIL-DS02` delivered and tag `client:diy-letters`. Same shape as repair welcome: something else sent the mail. Did not retry DIY.
+
+C-06 (CRS router) needs `analysis.completed`. Never on these five. Sample CRS rows stay planted. Do not live CRS.
+
+F-10 emails are **retired**. The **task** still fires on `round.started`. Fund Horse has that leftover inbox task, still open. Do not touch Oxylabs.
+
+### Open staff tasks (still)
+
+| File | Open tasks |
+|---|---|
+| Funding | GHL-DOC hold. C-05 “Pull CRS.” F-10 inbox. |
+| Repair | Two GHL-DOC holds (sim FTC packs). |
+| Inquiry | Two C-03 “start a funding round” leftovers. |
+| Combo / Course | none |
+
+**#177:** still GitHub only. Do not score Forgot. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.** Morning brief still waits for 4:00 a.m. Pacific.
+
+---
+
+## Hour 24 — C-02B vs leftover inquiry cases
+
+**Live:** no homepage probe. No deploy. No Send. **#177 stays main-only.**
+
+C-02B (`deposit.paid` → tag `inquiry-removal-queued`) **never ran**. These five have **0** `deposit.paid`. Inquiry cases on Inquiry / Repair / Fund came from later e2e / desk clicks (`e2e-deep-lane`, `e2e-repair-ftc-lane`, `client_control_panel`, `full-e2e-dictator-gap`). That is leftover staff work, not the live-fire inquiry rail after a deposit.
+
+Phone inquiry stays on hold. All leftover cases have `call_due_at` empty. Do not Send. Do not launch bureau phone.
+
+**#177:** GitHub only. Forgot **not live**. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 25 — last unused registered workflows
+
+**Live:** no homepage probe. No deploy. **#177 stays main-only.**
+
+These are still on `src/workflows/index.mjs`. Intended files name **none** of them. Sequence vs intended = **UNVERIFIED**.
+
+| Workflow | Trigger | On these five |
+|---|---|---|
+| BS-01 pre-call drip | `booking.created` | never (no book) |
+| S-08 didn’t buy | `call.completed` + **declined** | never (Fund Horse is **callback**) |
+| SYS-01 LTV | `round.funded` | never |
+| U-02 analyzer delivery | `analysis.completed` | **retired** 2026-08-22. Also never fired. |
+| Repair bureau-response reader | `docs.received` | Fund ×7 / Repair ×12 docs. **0** `repair.*` events. If it ran, it wrote nothing we can see. **UNVERIFIED**. Do not Send. |
+| Contract chaser | unsigned contracts | **0** contracts. Nothing to chase. |
+| N-03 hot nurture | retired | no keys |
+
+**#177:** GitHub only. Forgot **not live**. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.** Morning brief still waits for 4:00 a.m. Pacific.
+
+---
+
+## Hour 26 — affiliate / WL doors vs the marketing switch
+
+**Live:** no homepage probe. No Forgot click. **#177 stays main-only.**
+
+Intended affiliate: ~11 reach / 77 blocked (Aug 2). Actual: **25 / 196** reach, **171** blocked.  
+Intended white-label: doors + marketing notes. Actual: **55 / 196** reach, **141** blocked.
+
+Intended WL says only the **owner** can turn the marketing suite on. Code matches: POST `/api/partner-marketing/enable` refuses anyone who is not the owner. GET can be the partner or owner. Two live partner rows have the suite **on** and launch **off**. Social posts still **0**. No partner drip templates.
+
+Editor affiliate tree still says the portal is **not built**. Launch board already scored the desk **PASS**. That story is stale. The five horsemen have **0** affiliate referrals.
+
+**#177** Forgot / AF1 **code** is on main (`056b6a9b`). Migration 263 is on the live DB. The page is **not** on `fundhub.ai`. **Do not score Forgot as live.** Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 27 — remaining intended doors + remaining prompts + Gmail again
+
+**Live:** no homepage probe. No deploy. No Forgot. No Bland. **#177 stays main-only.**
+
+### Remaining intended vs actual (doors only)
+
+| Journey | Intended (Aug 2) | Actual now | Talk / event order? |
+|---|---|---|---|
+| owner | almost every door; “nothing blocked” | **194 / 196**. Blocked: client portal chat, affiliate Company Brain | **No** |
+| sales-manager | ~70 reach / 17 blocked | **148 / 196**, 48 blocked | **No** (this is not Josh’s talk) |
+| closer | ~59 reach | **134 / 196** | **No** |
+| advisor | ~60 reach | **136 / 196** | **No** |
+| Specialist | doors + desk path | **130 / 196** | desk **yes**, talk **no** |
+| client | ~15 reach / 73 blocked | **30 / 196** | **No** |
+| ops-pulse | owner pulse numbers + two briefs | not a customer rail | **No** |
+| gate-relay | Mac Telegram, not a Fundhub screen | not a customer rail | **No** |
+
+Owner intended said every door. Actual now blocks two. That is a gap. Sequence vs intended still **UNVERIFIED**.
+
+### Setter / closer editor vs live vs these five
+
+Setter editor: Josh calls in the **first hour**, three tries, **then** sends the survey. Live fire is the opposite: survey first (S-00 / S-01), Josh **only after** `booking.created`. These five never booked. Editor also names templates **N-02 / N-03**. Those nurture workflows are **retired**. S-NOBOOK owns the chase.
+
+Closer editor starts at a **booked** call, then $32 + consent, then UnderwriteIQ, then deposit **or** DIY (“never on the funding route”). These five have **0** books, **0** consents, **0** sales. DIY mail still left on Fund / Repair / Combo anyway.
+
+### Remaining Agent Editor rows (live store, not disk)
+
+Unchanged live stubs: AG-04 / AG-09 **169**, same sentence. AG-07 342 triage. OP-06 2622 staff drill.
+
+Draft empty (0 letters): AG-01, AG-02, AG-03, AG-05, AG-06, AG-08, OP-01–05.  
+Draft with a prompt: **VF-LIVE** and **VF-SHADOW** — **210** letters each. The same short SMS line is pasted **three times**. Not live. Did not roleplay.
+
+Retired long scripts stay unused: GHL-A1 1701, GHL-A2 2441, GHL-A3 2733, GHL-A4 1449, GHL-A5 1373, GHL-A7 1705, GHL-DOC 2266, GHL-RECON 1345. Did not load them as production.
+
+### Gmail anywhere (third read)
+
+Same counts. No new mail since Hour 5: fund **12**, repair **13**, combo **5**, inquiry **3**, course **3**. Newest on all five is still the nobook subject (“the call isn't booked yet”).
+
+**#177:** not live. Do not score Forgot. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 28 — Gmail subjects vs stored keys
+
+**Live:** no homepage probe. No pay. No Forgot. **#177 stays main-only.**
+
+Gmail and the `messages` table match. No new mail. Offer / pay-link emails have **null** `template_key`. S-OFFER would have used `EMAIL-OFFER-*`. These five did **not** go through S-OFFER.
+
+Those null-key mails come from the closer deck / pay-link sender (`src/sales/closer-deck.mjs`). That path writes a custom subject and body. Soft-pull mail even says `EMAIL-OFFER-SOFT-PULL` is the **wrong** template (that one is post-pay). Inquiry’s “Your $32 soft-pull assessment” is this path. Do not pay. Do not live CRS.
+
+| Gmail subject | Stored key | Files |
+|---|---|---|
+| You're in — here's what happens next | `EMAIL-S00-WELCOME` | all five |
+| the call isn't booked yet | `EMAIL-NOBOOK-01` | all five |
+| Funding, done-for-you — $3,000 | **null** (deck) | Fund, Combo |
+| Credit repair, done-for-you — $1,000 | **null** (deck) | Repair, Combo |
+| Funding Mastery — $5,000 | **null** (deck) | Course |
+| Your $32 soft-pull assessment | **null** (deck) | Inquiry |
+| Your correction letters are ready | `EMAIL-DS02` | Fund, Repair, Combo |
+| Repair welcome | `EMAIL-REPAIR-WELCOME` | Repair only |
+| Invoice $100 / $200 | `INVOICE-SENT-EMAIL` | Fund, Repair |
+| Invoice INV-… Round complete | `EMAIL-AR-01-FIRST-NOTICE` | Fund ×2 |
+| Documents needed / still need docs | `EMAIL-DOC-01` + null | Fund, Repair |
+| Retake photo | `EMAIL-REPAIR-RETAKE-PHOTO` | Fund ×1, Repair ×3 |
+| Sign-in link | `EMAIL-PORTAL-MAGIC-LINK` | Fund, Repair |
+
+Setter editor names **N-02 / N-03**. N-03 is **retired**. No N-03 keys on these five.
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 29 — leftover intended freeze + leftover SMS + leftover OP-06 lines
+
+**Live:** no homepage probe. No pay. No Forgot. **#177 stays main-only.**
+
+### Intended files are doors, not talk
+
+Client / owner / closer / sales-manager intended files are **Aug 2 door catalogs**. They name routes. They do **not** name welcome, nobook, Josh after book, or offer order.
+
+The journeys changelog lists later work and says **no `-intended.md` rewritten** on most of it: soft-pull many businesses, Present first-sale mint, closer drill on Agent Editor, Cal.com dead, book-confirm only, ops-pulse. Sequence vs intended stays **UNVERIFIED** because intended never wrote the talk.
+
+### Leftover SMS (store). Do not Send.
+
+30 SMS on these five (11 delivered, 19 sent). Same pattern as Gmail: welcome + nobook on all five. Pay-link texts have **null** keys (closer deck). Extra leftover:
+
+- Fund: 2× pay $3,000, 1× still-need-docs (null), 4× `SMS-DOC-02`, 2× `SMS-AR-01` (“Round  is complete” — round name blank), 1× `SMS-DOC-01`, 1× `SMS-ROUND-STARTED-NOTIFY` (“your funding round is underway” with **no** `round.started` event)
+- Repair: 2× pay $1,000, 1× still-need-docs (null), 2× `SMS-DOC-02`
+- Combo: pay $3,000 + pay $1,000
+- Inquiry: pay $32
+- Course: pay $5,000
+
+No Josh / AG-04 SMS. No AG-09 SMS.
+
+### Leftover OP-06 lines (staff drill, not these five)
+
+Banned buyer lines: score will go up; we will get you funded; a set dollar a bank will give; a bad mark will come off; 0% interest / no damage / we protect your score; Alec’s $8,000–$10,000 as our price.
+
+Also: **PASS_BAR is not locked.** One drill pass ≠ live clients. Sarah grades. Do not roleplay OP-06 on these five.
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 30 — leftover registered workflows Hour 25 did not finish
+
+**Live:** no homepage probe. No pay. No Bland. **#177 stays main-only.**
+
+These are still on `src/workflows/index.mjs`. Intended door files name **none** of them. These five never hit their events (except leftover `docs.received` already noted). Sequence vs intended = **UNVERIFIED**.
+
+| Workflow | Trigger | On these five |
+|---|---|---|
+| S-02 incomplete survey | `entry.captured` + 20 min, skip if survey done | Survey **did** fire. Nudge should skip. **UNVERIFIED** (no S-02 keys seen). |
+| AT-01 first touch | `entry.captured` | **UNVERIFIED**. No AT-01 keys. |
+| AF-02 referral | `entry.captured` / paid / analysis | **0** affiliate referrals. |
+| S-06 purchased | `deposit.paid` | never |
+| C-03 inquiry removed | `inquiry.removed` | never |
+| C-05 pre-funding review | `round.started` | **0** `round.started`. Fund still got `SMS-ROUND-STARTED-NOTIFY` without that event. |
+| F-02 / F-03 / F-04 / F-05 / F-07 / F-08 / F-09 / F-10 | round / mail / funded | never |
+| F-06 missing docs | `mail.response` + `docs.received` | docs leftover; **0** `mail.response` |
+| F-11 bank mail | `mail.response` | never |
+| N-04 post-funding | `round.closeout` | never |
+| N-06 renewal | `round.funded` | never |
+| DPC-01 analyzer lock | `analysis.completed` | never |
+| DPC-05 no progress | `booking.created` | never |
+| AI-SET-03 no-answer | `call.completed` no_answer | never (Fund Horse is **callback**) |
+| AI-SET-04 3-way | `booking.created` | never |
+| U-03 / U-04 / U-05 | `analysis.completed` | never. Do not live CRS. |
+| Meet tape sweeper | cron | **0** Meet rows. FAKE MEET is desk-only. |
+| BC-01 / BC-02 | customer pulse | **UNVERIFIED**. Not a client talk rail. |
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 31 — leftover Josh/AG-09 runtime + leftover changelog vs these five
+
+**Live:** no homepage probe. No Bland. No Apply. No pay. **#177 stays main-only.**
+
+### If Josh ever rang (he did not on these five)
+
+AI-SET-01 prefers the live **AG-04** row when `agentReadiness` is ok: status live, runtime `bland`, prompt not empty.
+
+Live store: AG-04 **and** AG-09 are `live` + `bland` + **169** letters. So Josh would **not** fall back to the 7k vendor script. Bland would get the short stub. Both rows also share `runtime_ref = inquiry-removal-ai`. Do not launch Bland to prove it. These five have **0** `booking.created`.
+
+### Leftover changelog rails these five never hit
+
+CHANGELOG later work, still **no** intended rewrite. On these five:
+
+| Later rail | These five |
+|---|---|
+| Cal.com deleted; books from ClickFunnels | **0** books. No Cal.com. Do not Apply. |
+| Book-confirm only (`EMAIL-S04-01`) | never (no book) |
+| Education enroll door | Course got a **$5,000** pay-link, not an enroll row. **UNVERIFIED** enroll. |
+| Soft-pull many businesses + incorporation date | **0** consents. Do not live CRS. |
+| Present first-sale mint | leftover pay-links exist; **0** sales |
+| Closer drill on Agent Editor | OP-06 staff only. Not these five. |
+| Commissions approve / mark paid | not a client talk rail |
+| Social approve / refuse | **0** posts |
+| Message Blaster download | staff/partner gift. Not these five. |
+| Hubstaff ingest | ops-pulse. Not these five. |
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 32 — leftover events I had marked never + leftover retired scripts
+
+**Live:** no homepage probe. No Bland. No Apply. **#177 stays main-only.**
+
+### Leftover events on these five (store). Not live-fire order.
+
+| Event | Count | Whose leftover |
+|---|---|---|
+| `message.queued` | 44 | welcome / offers / later desk |
+| `docs.received` | 20 | leftover uploads |
+| `entry.captured` / `survey.submitted` | 5 / 5 | live fire (all five) |
+| `invoice.sent` | 2 | Fund success-fee leftover. Do not pay. |
+| `inquiry.removed` | 2 | Inquiry desk leftover (`source=inquiry_removal_case`, Equifax). C-03 listens. Did it resume funding? **UNVERIFIED**. Do not launch bureau phone. |
+| `call.completed` | 1 | Fund Horse **callback** leftover |
+| `message.inbound` | 1 | leftover `e2e-live-agent-in` text on Fund |
+| `round.started` | 1 | Fund leftover **card stacking** at 05:10 UTC. C-05 / F-01 listen. Matches the leftover `SMS-ROUND-STARTED-NOTIFY`. Do not Apply. |
+
+Hour 29 said Fund had that SMS with **no** `round.started`. That was wrong. The event is there. It is leftover staff, not the live-fire talk.
+
+### Leftover retired scripts vs live stubs
+
+Vendor Josh (`setter-prompt.js`) is the long “confirm the booked call” script. Live AG-04 is ready (live + bland + 169 letters), so that vendor file is **unused** if Josh ever rings. Same for AG-09 vs retired GHL inquiry copy.
+
+Retired GHL rows still unused: A1 booking 1701, A2 billing 2441, A3 nurture 2733, A4 pre-call 1449, A5 docs 1373, A7 affiliate 1705, DOC 2266, RECON 1345. Live Recon is the 342-letter triage stub, not GHL-RECON.
+
+### Leftover education enroll
+
+`education_enrollments` is **0** company-wide. Course’s $5,000 pay-link is not an enroll. Do not Apply.
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 33 — leftover C-03 / C-05 / F-10 did fire (desk leftover)
+
+**Live:** no homepage probe. No Apply. No pay. **#177 stays main-only.**
+
+Hour 30 said C-03 never. That was wrong. Leftover desk `inquiry.removed` (Inquiry, Equifax, twice) **did** wake C-03.
+
+Inquiry file now:
+
+- tag `inquiry:completed`
+- next action **Apply for Funding**
+- `ready_for_next_round = true`
+- two tasks: “Start next funding round — clean file” (03:54 and 03:56 UTC)
+- **0** funding rounds
+- next events after that: only nobook `message.queued` at 05:26
+
+No fraud-hold branch. C-03’s resume branch writes “Apply for Funding” even on a file that never bought funding. Do **not** Apply. This is leftover desk, not the live-fire talk.
+
+Fund leftover card-stacking `round.started` (05:10 UTC) **did** wake:
+
+- C-05 → task “Cannot start funding — CRS incomplete”
+- F-10 → task “Provision funding inbox…”
+- SMS-ROUND-STARTED-NOTIFY (already in Gmail/SMS leftover)
+
+No F-01 pod-assign task on Fund. **UNVERIFIED** whether F-01 ran and skipped. Do not Apply.
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 34 — leftover F-01 skip + leftover tasks + leftover next actions
+
+**Live:** no homepage probe. No Apply. No live CRS. **#177 stays main-only.**
+
+F-01 only runs if the file is on a funding product path. All five have `outcome_tier` **null**. Fund after leftover card stacking still says lifecycle **New Lead**, next action **Pull CRS**, tags include `ops:action-required` and `client:diy-letters` but **not** `client:funding`. So F-01 did **not** take them in. Do not Apply. Do not Pull.
+
+### Leftover tasks (desk, not live-fire)
+
+| File | Task | From |
+|---|---|---|
+| Fund | Document hold — fraud-allegation packet needs a person | GHL-DOC leftover |
+| Fund | Cannot start funding — CRS incomplete | C-05 leftover |
+| Fund | Provision funding inbox | F-10 leftover |
+| Repair | Document hold — FTC marked simulation | GHL-DOC leftover |
+| Repair | Document hold — not a real filing | GHL-DOC leftover |
+| Inquiry | Start next funding round ×2 | C-03 leftover |
+| Combo | none | |
+| Course | none | |
+
+### Leftover next-action stamps
+
+- Fund: **Pull CRS** (0 consents. Do not pull.)
+- Inquiry: **Apply for Funding** (0 books, 0 deposit. Do not Apply.)
+- Repair / Combo / Course: blank
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 35 — leftover uploads + leftover 0 consents + leftover inbound no-match
+
+**Live:** no homepage probe. No live CRS. No bureau mail. **#177 stays main-only.**
+
+### Leftover documents (desk). All `not_delivered`.
+
+20 rows. Combo and Course have **0**.
+
+| File | What landed |
+|---|---|
+| Fund | bank statement, FTC report, bureau letter, extra fraud docs, 2× “other” |
+| Repair | bank, FTC, bureau letter ×3, extra fraud docs ×3, bureau “other” ×3 |
+| Inquiry | FTC report only |
+
+No live bureau mail. Repair-bureau-response reader had `docs.received` to chew. **0** `repair.*` events. **UNVERIFIED** if it wrote nothing.
+
+### Leftover consents
+
+`client_consents` = **0** on these five. Closer intended still names a consent door. Soft-pull intended later work also needs written permission. Do not Pull.
+
+### Leftover inbound
+
+Fund’s leftover text (“what happens next on my file?”) is `message.inbound`. DPC-03 only acts on **yes / confirm / reschedule / close**. This body matches **none**. No DPC-03 task. Do not Send.
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 36 — leftover Gmail 4th read + leftover sales-manager doors
+
+**Live:** no homepage probe. No Forgot. **#177 stays main-only.**
+
+Gmail anywhere, fourth read: still fund **12**, repair **13**, combo **5**, inquiry **3**, course **3**. No new mail. Newest still the nobook subject.
+
+Sales-manager intended (Aug 2): ~17 blocked. Actual now: **48 / 196** blocked. Extra blocks include Company Brain reviews, consent capture, CRS pull, soft-pull, hire desk, journeys write, lender writes, inquiry desk. Intended already said consent stays blocked for this role. Sequence vs intended still **UNVERIFIED** — this file is doors, not Josh’s talk.
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 37 — leftover tape / leftover GHL-DOC runs / leftover Agent Editor dials
+
+**Live:** no homepage probe. No Bland. **#177 stays main-only.**
+
+Meet: no Meet table. The only “tape” is Fund’s leftover `call_outcomes` row: outcome **callback**, notes say **E2E-DICTATOR fake Meet**, transcript starts **FAKE MEET SIM**. Not a real Meet. fetchContext would read that leftover string. Talk **UNVERIFIED**.
+
+`agent_runs` on these five: **GHL-DOC only** — 6× `request_more`, 3× `hold`, all `docs.received`. No AG-04. No AG-09. No AG-07. No OP-06.
+
+`outbound_calls`: **8** leftover Agent Editor rows, all `kind=agent_editor`, status still **initiated**. Fund ×6, Inquiry ×1, Repair ×1. Last three Fund rows at 07:43–07:57 UTC (tonight). Not Josh after book. Do not Bland again.
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 38 — leftover unused templates vs these five
+
+**Live:** no homepage probe. No Send. No Forgot. **#177 stays main-only.**
+
+These five used a short key list (welcome, nobook-01, DIY, repair welcome, retake, magic link, AR-01, DOC-01/02, invoice, round-started SMS). Everything else in `message_templates` is leftover unused **on these five**. Do not Send to prove them.
+
+Unused groups that matter for talk vs intended:
+
+- **AF1 / AF2 / AF3 / AF4 / AF-06** — affiliate / Forgot. AF1 is on main, **not** on `fundhub.ai`. Do not score Forgot live.
+- **EMAIL-OFFER-*** — S-OFFER keys. These five’s pay-link mail used **null** keys (closer deck).
+- **EMAIL-S04-01-CONFIRM** + BS-01 / S-04B / S-05A — book / remind / no-show. **0** books.
+- **N-01 / N-02 / N-03** + old LT-Cold / LT-Warm / LT-Hot — retired nurture. Setter editor still names N-02 / N-03.
+- **NOBOOK-02 / NOBOOK-03** — later chase. Only **-01** landed.
+- **F-02 … F-10**, **FR1–FR23**, **U-02**, **C-06**, **DS-01**, **AX-07** — later funding / repair / pause. Never.
+- **CONTRACT-SEND / REMIND** — **0** contracts.
+- Old GHL short codes (D1–D4, P1–P3, GE1–GE3, etc.) — leftover store, not this fire.
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 39 — leftover closer intended doors vs leftover these five
+
+**Live:** no homepage probe. No live CRS. No pay. **#177 stays main-only.**
+
+Closer intended (Aug 2): can reach **consent** and **contracts**. Actual API still lets a closer into `/api/consent/capture` and `/api/contracts`. Changelog later hid the **contracts screen** from closers (owner/admin only). That screen change is not in intended. Sequence vs intended = **UNVERIFIED**.
+
+On these five:
+
+- `client_consents` = **0**
+- contracts sent = **0**
+- leftover pay-links exist without a logged consent
+- leftover Fund next action still says **Pull CRS**
+
+Do not Pull. Do not pay.
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 40 — leftover social 0 + leftover inquiry cases still not due
+
+**Live:** no homepage probe. No Bland. No bureau phone. **#177 stays main-only.**
+
+Social posts company-wide: **0**. Partner drips still unused. Not these five’s talk.
+
+Leftover inquiry cases on these files (desk, not C-02B after deposit):
+
+| File | Status | call_due_at | attempts |
+|---|---|---|---|
+| Inquiry | Queued + 2× Completed (EQ) | empty | 0 |
+| Repair | Queued (EQ) | empty | 0 |
+| Fund | Queued | empty | 0 |
+| Combo / Course | none | | |
+
+Phone inquiry stays on hold. Do not Send. Do not launch bureau phone.
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 41 — leftover unused draft prompts (VF-LIVE / empty AG rows)
+
+**Live:** no homepage probe. No Bland. No roleplay. **#177 stays main-only.**
+
+Draft rows still unused on these five:
+
+- **VF-LIVE** / **VF-SHADOW**: 210 letters. Same SMS line pasted three times. Status draft. Not Josh. Not inquiry.
+- **AG-01, AG-02, AG-03, AG-05, AG-06, AG-08**: 0 letters. Empty.
+- **OP-01 … OP-05**: 0 letters. Empty.
+
+Live unused-on-these-five: AG-04 / AG-09 stubs (169), AG-07 Recon (342), OP-06 drill (2622). `agent_runs` for these five is GHL-DOC only.
+
+Did not roleplay leftover drafts. Did not promote them.
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 42 — leftover Gmail 5th + leftover `said:` vs fake tape
+
+**Live:** no homepage probe. No Bland. **#177 stays main-only.**
+
+Gmail anywhere, fifth read: still 12 / 13 / 5 / 3 / 3. Newest still nobook. No new mail.
+
+`fetchContext` copies `call_outcomes.transcript` into a `said:` line (first 1200 letters). Fund’s leftover row is **FAKE MEET SIM**. Repair / Combo / Inquiry / Course have **0** `call_outcomes`. So leftover context fetch would only “hear” the fake Fund tape. Not a real Meet. Talk **UNVERIFIED**.
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 43 — leftover system-map vs leftover these five
+
+**Live:** no homepage probe. No Apply. **#177 stays main-only.**
+
+The system map (`docs/workflows/system-map-2026-08-26.md`) already says intended is **doors**, Josh’s live script is a **stub**, and talk is **UNVERIFIED** if intended has no talk order. These five match that.
+
+Leftover unused vs the map’s live-fire list:
+
+- Map step 5–7 (book + Josh): **0** books. Unused.
+- Map offer ladder includes **e-book $49**. These five never got that mint. Unused. Do not Send.
+- Map step 9–10 (consent then $32 then CRS): leftover pay-links exist, **0** consents. Do not Pull.
+- Map step 14 (advisor Apply): leftover Fund card-stacking + “Apply for Funding” on Inquiry. Do not Apply.
+- Map Present-is-core: leftover desk, not a booked closer call.
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 44 — leftover unused offers vs the live catalog
+
+**Live:** no homepage probe. No pay. **#177 stays main-only.**
+
+Live offer keys in `src/config/offers.mjs`: soft-pull $32, Funding DFY $3,000, Repair DFY $1,000, Repair trial $200, UnderwriteIQ pack $1,000, Funding Mastery $5,000.
+
+The system map’s **e-book $49** is **not** in that catalog. Leftover unused / stale map line. These five never got it.
+
+These five leftover pay-links used: $32, $3,000, $1,000, $5,000. **Unused leftover** on these five: Repair trial $200, UnderwriteIQ pack $1,000. Do not mint. Do not pay.
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 45 — leftover unused advisor / white-label doors vs these five
+
+**Live:** no homepage probe. No Apply. No Forgot. **#177 stays main-only.**
+
+Advisor intended (Aug 2): doors only — consent + contracts reachable. Actual: **136 / 196** reach, 60 blocked. No talk order. These five never reached a real Apply walk. Leftover Fund card-stacking + Inquiry “Apply for Funding” are desk leftover. Do not Apply.
+
+White-label intended: doors + marketing notes. Actual: **55 / 196** reach, 141 blocked. These five have **0** partner referrals. Social posts still **0**. Not their talk.
+
+**#177:** not live. Do not deploy.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
+
+---
+
+## Hour 46 — leftover Gmail 7th + leftover unused Forgot / AF1
+
+**Live:** no homepage probe. No Forgot click. **#177 stays main-only.**
+
+Gmail anywhere, seventh read: still 12 / 13 / 5 / 3 / 3. No new mail.
+
+AF1 / Forgot password: code on main (`056b6a9b`). Migration 263 on the live DB. Page **not** on `fundhub.ai`. Template **AF1** unused on these five. Do not score Forgot as live. Do not deploy.
+
+**#177:** GitHub only.
+
+**File PASS:** still **FAIL** ×5. Talk **UNVERIFIED**. **Not 100%.**
 
 ---
 
