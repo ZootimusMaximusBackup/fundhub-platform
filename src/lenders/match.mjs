@@ -35,6 +35,26 @@ export function parseBureaus(raw) {
 }
 
 /**
+ * Company state first (businesses.entity_data.state), then the old person
+ * custom_field keys. Empty stays empty — do not invent a state.
+ *
+ * @param {object} [customFields]
+ * @param {object[]} [businesses]
+ * @returns {string|null}
+ */
+export function resolveMatchState(customFields = {}, businesses = []) {
+  for (const biz of Array.isArray(businesses) ? businesses : []) {
+    const entity = biz && typeof biz.entity_data === "object" && biz.entity_data
+      ? biz.entity_data
+      : {};
+    const fromBiz = entity.state != null ? String(entity.state).trim() : "";
+    if (fromBiz) return fromBiz;
+  }
+  const cf = customFields && typeof customFields === "object" ? customFields : {};
+  return cf.business_state || cf.state || cf.home_state || null;
+}
+
+/**
  * @param {string|null|undefined} eligibleStates
  * @param {string|null|undefined} clientState
  * @returns {boolean}
