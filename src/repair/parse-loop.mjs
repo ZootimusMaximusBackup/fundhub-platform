@@ -4,6 +4,11 @@ import { onRepairEvent } from "./handlers.mjs";
 
 const OPENISH = new Set(["open", "sent", "unaddressed", "escalated", "verified"]);
 export const AUTO_THRESHOLD = 0.85;
+const STAFF_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function staffIdOrNull(value) {
+  return typeof value === "string" && STAFF_UUID.test(value.trim()) ? value.trim() : null;
+}
 
 export async function loadOpenDisputeItems(db, { orgId, clientId }) {
   if (!db) return [];
@@ -44,7 +49,7 @@ export async function insertDisputeResponse(db, {
      VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7, CASE WHEN $7 THEN now() ELSE NULL END, $8)
      RETURNING *`,
     [caseId, orgId, clientId, rawText || null, JSON.stringify(parseResult || {}),
-     parseResult?.confidence ?? null, !!confirmed, confirmedBy || null]
+     parseResult?.confidence ?? null, !!confirmed, staffIdOrNull(confirmedBy)]
   );
   return r.rows[0] || null;
 }
@@ -52,7 +57,7 @@ export async function insertDisputeResponse(db, {
 export async function runParseAdvanceLoop(db, {
   orgId, clientId, text, items: itemsIn = null,
   autoConfirmThreshold = AUTO_THRESHOLD,
-  confirmedBy = "system_high_confidence",
+  confirmedBy = null,
   onEvent = onRepairEvent
 } = {}) {
   const items = itemsIn || await loadOpenDisputeItems(db, { orgId, clientId });
@@ -112,7 +117,7 @@ export async function confirmHeldParse(db, {
   await persistAdvancedItems(db, confirmed.items || []);
   await db.query(
     `UPDATE dispute_responses SET confirmed = true, confirmed_at = now(), confirmed_by = $2 WHERE id = $1 AND org_id = $3`,
-    [responseId, confirmedBy || null, orgId]
+    [responseId, staffIdOrNull(confirmedBy), orgId]
   );
   if (typeof onEvent === "function") {
     await onEvent(db, { name: "repair.response.parsed", orgId, clientId: row.client_id,
