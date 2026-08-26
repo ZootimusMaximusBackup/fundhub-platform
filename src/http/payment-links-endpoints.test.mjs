@@ -62,6 +62,14 @@ const LINK_ROW = {
   sent_at: null, paid_at: null, expired_at: null
 };
 
+const INVOICE_ID = "66666666-1111-4111-8111-666666666666";
+const INVOICE_ROW = {
+  id: INVOICE_ID, org_id: ORG_A, client_id: CID, source: "other",
+  status: "draft", amount_due: "100.00", currency: "USD",
+  idempotency_key: `present-invoice:${CID}:10000`,
+  notes: "Invoice this client"
+};
+
 const ROUTES = {
   ownsClient: { re: /SELECT\s+1\s+FROM\s+clients/i, rows: () => [{ "?column?": 1 }] },
   linksInsert: { re: /INSERT\s+INTO\s+payment_links/i, rows: () => [LINK_ROW] },
@@ -69,6 +77,8 @@ const ROUTES = {
   linksSetSent: { re: /UPDATE\s+payment_links[\s\S]*status = 'sent'/i, rows: () => [{ ...LINK_ROW, status: "sent", sent_at: "2026-08-02T00:00:00.000Z" }] },
   linksSetExpired: { re: /UPDATE\s+payment_links[\s\S]*status = 'expired'/i, rows: () => [{ ...LINK_ROW, status: "expired", expired_at: "2026-08-02T00:00:00.000Z" }] },
   linksList: { re: /SELECT\s+\*\s+FROM\s+payment_links\s+WHERE\s+org_id[\s\S]*client_id/i, rows: () => [LINK_ROW] },
+  invoicesInsert: { re: /INSERT\s+INTO\s+invoices/i, rows: () => [INVOICE_ROW] },
+  invoicesByKey: { re: /FROM\s+invoices\s+WHERE\s+org_id[\s\S]*idempotency_key/i, rows: () => [INVOICE_ROW] },
   templateLookup: { re: /FROM\s+message_templates/i, rows: () => [] }, // no template row => template_pending, no live send
   optOuts: { re: /FROM\s+opt_outs/i, rows: () => [] }
 };
@@ -271,10 +281,32 @@ describe("POST /api/payment-links — create", () => {
     assert.equal(ran(r.queries, "linksInsert").length, 0);
   });
 
-  test("purpose invoice is accepted", async () => {
-    const r = await create({ purpose: "invoice", price: "100.00" });
+  test("purpose invoice writes an invoice row and no payment link", async () => {
+    const r = await create({ purpose: "invoice", price: "100.00", description: "Credit repair, done-for-you" }, { env: {} });
     assert.equal(r.status, 200);
     assert.equal(r.body.ok, true);
+    assert.equal(r.body.invoice.id, INVOICE_ID);
+    assert.equal(r.body.invoice.status, "draft");
+    assert.equal(ran(r.queries, "invoicesInsert").length, 1);
+    const ins = ran(r.queries, "invoicesInsert")[0];
+    assert.equal(ins.params[0], ORG_A);
+    assert.equal(ins.params[1], CID);
+    assert.equal(ins.params[3], "other");
+    assert.equal(ins.params[5], 100);
+    assert.equal(ins.params[12], `present-invoice:${CID}:10000`);
+    assert.equal(ran(r.queries, "linksInsert").length, 0);
+  });
+
+  test("purpose invoice replay returns the same invoice and still mints no pay link", async () => {
+    const r = await create(
+      { purpose: "invoice", price_cents: 10000, description: "Credit repair, done-for-you" },
+      { env: {}, handlers: { invoicesInsert: { rows: [] } } }
+    );
+    assert.equal(r.status, 200);
+    assert.equal(r.body.invoice.id, INVOICE_ID);
+    assert.equal(ran(r.queries, "invoicesInsert").length, 1);
+    assert.equal(ran(r.queries, "invoicesByKey").length, 1);
+    assert.equal(ran(r.queries, "linksInsert").length, 0);
   });
 
   test("an unknown purpose is refused", async () => {
