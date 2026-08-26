@@ -97,6 +97,7 @@ export default async function handler(req, res, deps = {}) {
       verification: result.verification,
       application_url: result.application_url,
       lender: result.lender,
+      bank_form_email: result.bank_form_email,
       routing_active: false,
       extension_required: true,
       notice:
