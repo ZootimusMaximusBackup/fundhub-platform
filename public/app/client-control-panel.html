@@ -1270,7 +1270,7 @@ document.addEventListener("DOMContentLoaded", function () {
       box.appendChild(empty);
       return;
     }
-    list.forEach(function (row) {
+    list.forEach(function (row, i) {
       var card = document.createElement("div");
       card.className = "cp-sec";
       var title = document.createElement("div");
@@ -1299,6 +1299,60 @@ document.addEventListener("DOMContentLoaded", function () {
       kv("Address", row.address);
       kv("Extra owner", row.extra_owner_name);
       card.appendChild(grid);
+      var birth = document.createElement("div");
+      birth.style.marginTop = "10px";
+      var birthLab = document.createElement("label");
+      birthLab.setAttribute("for", "ccp-inc-" + i);
+      birthLab.textContent = "When was this business incorporated?";
+      var birthIn = document.createElement("input");
+      birthIn.id = "ccp-inc-" + i;
+      birthIn.type = "month";
+      birthIn.value = row.incorporated_date ? String(row.incorporated_date).slice(0, 7) : "";
+      var birthBtn = document.createElement("button");
+      birthBtn.type = "button";
+      birthBtn.className = "action-btn";
+      birthBtn.style.marginTop = "8px";
+      birthBtn.textContent = "Save month / year";
+      var birthMsg = document.createElement("p");
+      birthMsg.style.fontSize = "var(--fs-caption)";
+      birthMsg.style.margin = "6px 0 0";
+      birthBtn.addEventListener("click", function () {
+        if (!id || !row.name) {
+          birthMsg.textContent = "Open a client file first.";
+          return;
+        }
+        if (!birthIn.value) {
+          birthMsg.textContent = "Enter the month and year.";
+          return;
+        }
+        if (!window.FHData || typeof FHData.write !== "function") {
+          birthMsg.textContent = "Could not save.";
+          return;
+        }
+        birthBtn.disabled = true;
+        birthMsg.textContent = "Saving…";
+        FHData.write("/api/soft-pull-approve", {
+          action: "stamp_incorporated",
+          client_id: id,
+          business_name: row.name,
+          incorporated_date: birthIn.value
+        }).then(function (res) {
+          birthBtn.disabled = false;
+          if (!res || !res.ok) {
+            birthMsg.textContent = (res && (res.error || res.message)) || "Could not save.";
+            return;
+          }
+          birthMsg.textContent = "Saved.";
+          FHData.client(id).then(function (again) {
+            if (again && again.ok) render(again.data);
+          });
+        });
+      });
+      birth.appendChild(birthLab);
+      birth.appendChild(birthIn);
+      birth.appendChild(birthBtn);
+      birth.appendChild(birthMsg);
+      card.appendChild(birth);
       if (row.extra_owners_warning) {
         var flag = document.createElement("p");
         flag.className = "blocker-flag";

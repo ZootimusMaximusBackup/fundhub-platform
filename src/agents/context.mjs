@@ -27,7 +27,7 @@ const SURVEY_KEYS = [
  *     client: { id, first_name, last_name, email, phone, funded, funded_amount, tags, flags },
  *     snapshot: { pipeline_stage, funding_round, fico, prequal_amount, agent_context_field, outcome_tier },
  *     insights: [{ stage, channel, answers, notes, recording_url, meeting_url, occurred_at }],
- *     recent_calls: [{ outcome, notes, recording_url, logged_at }],
+ *     recent_calls: [{ outcome, notes, recording_url, transcript, logged_at }],
  *     as_prompt_block: string   // ready to inject under the system prompt
  *   }
  */
@@ -120,7 +120,7 @@ export async function fetchContext(db, {
       [clientId, orgId]
     ),
     db.query(
-      `SELECT outcome, notes, recording_url, logged_at
+      `SELECT outcome, notes, recording_url, transcript, logged_at
          FROM call_outcomes
         WHERE client_id = $1 AND org_id = $2
         ORDER BY logged_at DESC
@@ -230,6 +230,7 @@ export async function fetchContext(db, {
     outcome: row.outcome || null,
     notes: row.notes || null,
     recording_url: row.recording_url || null,
+    transcript: row.transcript || null,
     logged_at: row.logged_at || null
   }));
 
@@ -309,6 +310,9 @@ export function formatPromptBlock(ctx) {
       const rec = call.recording_url ? ` recording: ${call.recording_url}` : "";
       lines.push(`  - ${call.outcome || "logged"} ${call.logged_at || ""}${rec}`.trim());
       if (call.notes) lines.push(`    notes: ${String(call.notes).slice(0, 400)}`);
+      if (call.transcript) {
+        lines.push(`    said: ${String(call.transcript).slice(0, 1200)}`);
+      }
     }
   }
   return lines.join("\n");
