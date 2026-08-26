@@ -181,6 +181,8 @@ test("ops, affiliate, and partner galaxy do not ship sample people as live", () 
   assert.ok(!/Jordan Blake|Nina Castellano|Marcus Webb/.test(ae));
   assert.ok(ae.includes("Pick a person"));
   assert.ok(ae.includes("FHData.staff"), "agent-editor must load live staff");
+  assert.ok(ae.includes("id=\"drillCard\""), "closer drill runs on this screen");
+  assert.ok(ae.includes("action:'run'"), "drill talks to the existing agents write route");
   const pc = fs.readFileSync(path.join(APP, "products-commissions.html"), "utf8");
   assert.ok(!/Jordan Blake|Marcus Webb|Alvin/.test(pc));
   assert.ok(/var PRODUCTS\s*=\s*\[\s*\]/.test(pc), "products must start empty");

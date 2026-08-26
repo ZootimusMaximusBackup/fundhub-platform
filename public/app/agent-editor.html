@@ -147,6 +147,9 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
 .mode .mbd{padding:15px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .mode.shadow{background:rgba(196,179,229,.10)}
 .mode.live{background:rgba(168,216,176,.12)}
+.drill-log{max-height:280px;overflow:y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+.drill-turn{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--soft);white-space:pre-wrap}
+.drill-turn.me{background:#fff}
 .mode .mt{font-family:var(--mono);font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
 .gate{border-top:1px solid var(--line);padding:13px 16px;background:#fff}
 .gaterow{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:var(--fs-body)}
@@ -273,6 +276,21 @@ details.card:not([open])>summary.card-hd{border-bottom:0}
               <button class="btn mono" id="demoteBtn">Return to shadow</button>
             </div>
             <div class="gate" id="gateBox"></div>
+          </div>
+
+          <div class="card" id="drillCard" style="display:none;margin-top:14px">
+            <div class="card-hd"><div class="eyebrow">CLOSER DRILL</div>
+              <div class="spacer"></div>
+              <button class="btn sm mono" type="button" id="drillReset">New drill</button></div>
+            <div class="card-bd">
+              <div class="mono" style="color:var(--gray);margin-bottom:8px" id="drillHint">Talk to the coach here. It plays the buyer, then reports. It does not text a client.</div>
+              <div class="drill-log" id="drillLog"></div>
+              <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+                <textarea id="drillIn" rows="3" style="flex:1;min-width:200px;border:1px solid var(--line);border-radius:8px;padding:8px" placeholder="Say Start D1, or talk as the closer."></textarea>
+                <button class="btn dark mono" type="button" id="drillSend">Send</button>
+              </div>
+              <div class="mono" style="margin-top:8px;color:var(--gray2)" id="drillNote"></div>
+            </div>
           </div>
 
             <!-- What it may do, and what stops it: these two stay open. -->
@@ -639,6 +657,8 @@ function renderGate(){
     sub=live
       ? 'Live on the phone. It only speaks when someone starts a call for it — it never answers texts or email.'
       : 'A phone agent. It cannot run until it is promoted, and it never answers texts or email.';
+  }else if(cur.id==='OP-06' && live){
+    sub='Staff can start a drill on this page. It does not talk to buyers.';
   }else if(live){
     sub='Acting on real clients on '+cur.chan+'. '+cur.runs.toLocaleString()+' runs.';
   }else if(cur.mode==='shadow'){
@@ -664,6 +684,7 @@ function renderGate(){
   var sb=document.getElementById('saveBtn');
   if(sb){ sb.disabled=retired; sb.title=retired?'Retired agents cannot be edited.':''; }
   renderStats();
+  renderDrill();
 }
 function renderStats(){
   document.getElementById('kAll').textContent=AGENTS.length;
@@ -736,6 +757,7 @@ function select(id){
   dirty=false; document.getElementById('saveNote').textContent='';
   renderList(); renderEvents(); renderGate(); renderLog(); syncLens();
   loadShadowLog(cur.id);
+  resetDrill();
 }
 function loadShadowLog(code){
   if(typeof FHData === 'undefined' || !FHData.read){ renderLog(); return; }
@@ -799,11 +821,78 @@ function writeFail(res, what){
   alert((what||'Could not save')+': '+msg);
 }
 
+var DRILL={turns:[], busy:false, code:null};
+function canDrill(a){
+  if(!a) return false;
+  if(a.id==='AG-04' || a.id==='AG-09') return false;
+  if(a.id!=='OP-06') return false;
+  return a.mode==='live' || a.mode==='shadow';
+}
+function resetDrill(){
+  DRILL={turns:[], busy:false, code:cur && cur.id};
+  renderDrill();
+}
+function renderDrill(){
+  var card=document.getElementById('drillCard');
+  if(!card) return;
+  var on=canDrill(cur);
+  card.style.display=on?'':'none';
+  if(!on) return;
+  var log=document.getElementById('drillLog');
+  var send=document.getElementById('drillSend');
+  if(send) send.disabled=!!DRILL.busy;
+  if(!log) return;
+  if(!DRILL.turns.length){
+    log.innerHTML='<div class="mono" style="color:var(--gray)">No turns yet. Send “Start D1” to begin.</div>';
+    return;
+  }
+  log.innerHTML=DRILL.turns.map(function(t){
+    return '<div class="drill-turn'+(t.role==='user'?' me':'')+'"><div class="eyebrow">'+(t.role==='user'?'YOU':'COACH')+'</div>'+esc(t.text)+'</div>';
+  }).join('');
+  log.scrollTop=log.scrollHeight;
+}
+function sendDrill(){
+  if(!canDrill(cur) || DRILL.busy) return;
+  var box=document.getElementById('drillIn');
+  var note=document.getElementById('drillNote');
+  var text=box && box.value ? String(box.value).trim() : '';
+  if(!text){ if(note) note.textContent='Type something first.'; return; }
+  DRILL.busy=true;
+  DRILL.turns.push({role:'user', text:text});
+  if(box) box.value='';
+  if(note) note.textContent='Coach is answering…';
+  renderDrill();
+  var history=DRILL.turns.slice(0,-1);
+  FHData.write('/api/agents', {
+    action:'run', code:cur.id, message:text, history:history
+  }).then(function(res){
+    DRILL.busy=false;
+    if(!res || !res.ok){
+      if(note) note.textContent=(res && (res.data && res.data.message || res.error)) || 'The coach could not answer.';
+      renderDrill();
+      return;
+    }
+    var reply=(res.data && res.data.reply) || '';
+    DRILL.turns.push({role:'assistant', text:reply});
+    var extra='';
+    if(res.data && res.data.call_samples){
+      extra=' Logged calls in this turn: '+
+        (res.data.call_samples.easy||0)+' easy, '+
+        (res.data.call_samples.hard||0)+' hard.';
+    }
+    if(note) note.textContent=(res.data && res.data.banned_line) ? ('A banned line showed up. This drill is a fail.'+extra) : extra.trim();
+    renderDrill();
+  });
+}
+
 document.getElementById('promoteBtn').addEventListener('click',function(){
   collect();
   var checks=gateChecks();
   if(!checks.every(function(c){return c.ok})){alert('Promotion blocked — not every gate check passes.');return}
-  if(!confirm('Promote '+cur.name+' to live?\n\nIt will start acting on real clients over '+cur.chan+' immediately. Its guardrail block becomes the only thing between it and a client.')) return;
+  var promoteWarn = (cur.id==='OP-06')
+    ? 'Staff can start drills with it on this page. It does not talk to buyers.'
+    : 'It will start acting on real clients over '+cur.chan+' immediately. Its guardrail block becomes the only thing between it and a client.';
+  if(!confirm('Promote '+cur.name+' to live?\n\n'+promoteWarn)) return;
   // Persist the form first so promote judges the words on screen, not a stale row.
   saveNote('SAVING…');
   FHData.write('/api/agents', {
@@ -865,6 +954,11 @@ document.getElementById('saveBtn').addEventListener('click',function(){
   });
 });
 document.getElementById('revertBtn').addEventListener('click',function(){select(cur.id)});
+document.getElementById('drillSend').addEventListener('click', sendDrill);
+document.getElementById('drillReset').addEventListener('click', resetDrill);
+document.getElementById('drillIn').addEventListener('keydown', function(ev){
+  if(ev.key==='Enter' && !ev.shiftKey){ ev.preventDefault(); sendDrill(); }
+});
 document.getElementById('newBtn').addEventListener('click',function(){
   var name = window.prompt('Name this agent');
   if (!name || !String(name).trim()) return;
