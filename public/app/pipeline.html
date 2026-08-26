@@ -507,7 +507,7 @@
   <nav class="railbar">
     <div class="rail-tab active" data-rail="R-01"><span class="rt-code">R-01</span>Sales</div>
     <div class="rail-tab" data-rail="R-02"><span class="rt-code">R-02</span>Funding: Card Stacking</div>
-    <div class="rail-tab" data-rail="R-03"><span class="rt-code">R-03</span>Funding: Alt-Fin (Lendflow)</div>
+    <!-- R-03 Alt-Fin (Lendflow) parked 2026-08-25 — adapter + webhook stay. -->
     <div class="rail-tab" data-rail="R-04"><span class="rt-code">R-04</span>Optimization (Repair) Rounds</div>
     <div class="rail-tab" data-rail="R-05"><span class="rt-code">R-05</span>Inquiry Removal</div>
     <div class="rail-tab" data-rail="R-06"><span class="rt-code">R-06</span>AR / Collections</div>
@@ -576,13 +576,7 @@
             <div class="rm-dest">Funding: Card Stacking · Apply Now</div>
           </div>
         </div>
-        <div class="rm-item" data-pipeline-key="funding_altfin" data-stage-key="app_created">
-          <span class="rm-dot"></span>
-          <div>
-            <div class="rm-label">Alt-Fin (Lendflow)</div>
-            <div class="rm-dest">Funding: Alt-Fin · App Created</div>
-          </div>
-        </div>
+        <!-- funding_altfin MOVE dest parked 2026-08-25 — do not send files to Lendflow from the desk. -->
         <div class="rm-item" data-pipeline-key="optimization" data-stage-key="round_sent">
           <span class="rm-dot"></span>
           <div>

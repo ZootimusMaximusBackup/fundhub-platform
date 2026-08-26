@@ -157,6 +157,17 @@ describe("public/app/pipeline.html — rail tab count duplicates removed", () =>
       "PIPELINE_KEYS must not still map any rail code to affiliates_hiring");
   });
 
+  test("R-03 Alt-Fin (Lendflow) is parked off the desk; Card Stacking Apply stays", () => {
+    assert.ok(!/<div class="rail-tab"[^>]*data-rail="R-03"/.test(HTML),
+      "R-03 must not be a clickable rail tab");
+    assert.ok(!/data-pipeline-key="funding_altfin"/.test(HTML),
+      "MOVE must not offer an Alt-Fin (Lendflow) dest");
+    assert.match(HTML, /data-pipeline-key="funding_card_stacking"/);
+    assert.match(HTML, /Funding: Card Stacking · Apply Now/);
+    assert.match(HTML, /"R-03":\s*"funding_altfin"/,
+      "keep the pipeline key so the adapter and webhook still have a home");
+  });
+
   test("R-08 and R-09 are real pipelines, not permanently-empty stubs", () => {
     assert.ok(!/rail-tab empty" data-rail="R-08"/.test(HTML),
       "R-08 maps to affiliates_white_label and should not carry empty styling");

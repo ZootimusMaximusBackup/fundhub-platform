@@ -209,6 +209,16 @@ test("galaxy.html does not seed sample standing workers", () => {
   assert.ok(!/Jordan Blake|Marcus Webb|Nina Torres/.test(html));
 });
 
+test("Galaxy rails do not paint Alt-Fin (Lendflow)", () => {
+  for (const file of ["galaxy.html", "partner-galaxy.html"]) {
+    const html = fs.readFileSync(path.join(APP, file), "utf8");
+    assert.ok(!/name:'Alt-Fin \(Lendflow\)'/.test(html),
+      file + " still labels an Alt-Fin (Lendflow) rail");
+    assert.ok(/name:'Card Stacking'/.test(html),
+      file + " must still show Card Stacking");
+  }
+});
+
 test("client-control-panel right column is paper, not a black gutter", () => {
   const html = fs.readFileSync(path.join(APP, "client-control-panel.html"), "utf8");
   assert.ok(html.includes(".side-col{background:var(--paper)"));
