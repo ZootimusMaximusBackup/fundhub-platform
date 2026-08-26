@@ -233,14 +233,25 @@ describe("toBureaus — which bureaus are supplied, and what is recorded missing
     assert.equal(note.perBureau, false);
   });
 
-  test("hasLLC is always reported missing at client level; opened is reported only when true", () => {
-    // hasLLC has no code path that could ever fill it in — always missing.
+  test("hasLLC is missing only when no company is on the file; opened is reported only when true", () => {
     // opened is data-dependent since the mapping fix: this fixture's line has
     // no opened_on, so it is still missing here.
-    const out = toBureaus({ crsResults: [crs(SCORES)], tradelines: [line()] });
-    const fields = out.missing.client.map((m) => m.field);
-    assert.ok(fields.includes("hasLLC"));
-    assert.ok(fields.includes("opened"));
+    const none = toBureaus({ crsResults: [crs(SCORES)], tradelines: [line()] });
+    const noneFields = none.missing.client.map((m) => m.field);
+    assert.ok(noneFields.includes("hasLLC"));
+    assert.equal(none.hasLLC, false);
+    assert.equal(none.llcAgeMonths, null);
+    assert.ok(noneFields.includes("opened"));
+
+    const withCompany = toBureaus({
+      crsResults: [crs(SCORES)],
+      tradelines: [line()],
+      businesses: [{ age_months: 30 }]
+    });
+    assert.equal(withCompany.hasLLC, true);
+    assert.equal(withCompany.llcAgeMonths, 30);
+    assert.ok(!withCompany.missing.client.map((m) => m.field).includes("hasLLC"),
+      "a company on the file is not a missing LLC");
   });
 
   test("opened is NOT reported missing at client level once every line has a real date", () => {

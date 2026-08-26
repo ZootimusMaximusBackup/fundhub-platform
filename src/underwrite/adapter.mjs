@@ -66,11 +66,11 @@
 //     reported unconditionally at the client level, because it is no longer
 //     unconditionally true.
 //
-//   * LLC / ENTITY DATA — nowhere. `buildSuggestions` takes { hasLLC,
-//     llcAgeMonths } and, given nothing, defaults to "no LLC" and emits a
-//     sentence on that basis for every client. We pass no LLC object at all and
-//     record `hasLLC` as missing, so that sentence is marked as resting on a
-//     default rather than on a fact about this client.
+//   * LLC / ENTITY DATA — a `businesses` row on the file means the client has
+//     a company. We set `hasLLC` from that and `llcAgeMonths` from
+//     `businesses.age_months` when that number is there. No company on file
+//     still records `hasLLC` as missing, so the engine's "no LLC" default is
+//     marked as a default rather than a fact.
 //
 //   * PER-BUREAU IDENTITY (names / addresses / employers) — nowhere, and it does
 //     not matter. `normalizeBureau` carries those four arrays through but
@@ -414,12 +414,23 @@ export function toBureaus({ tradelines = [], liabilities = [], crsResults = [], 
       informational: true
     });
   }
-  missing.client.push({
-    field: "hasLLC",
-    source: "(not stored anywhere in fundhub)",
-    reason: "no LLC or business-entity field exists in the schema",
-    effect: "the engine's LLC suggestion is produced from its default of 'no LLC', not from this client's record"
-  });
+  const hasLLC = Array.isArray(businesses) && businesses.length > 0;
+  let llcAgeMonths = null;
+  if (hasLLC) {
+    for (const row of businesses) {
+      const age = Number(row.age_months);
+      if (Number.isFinite(age) && age >= 0) {
+        llcAgeMonths = llcAgeMonths == null ? age : Math.max(llcAgeMonths, age);
+      }
+    }
+  } else {
+    missing.client.push({
+      field: "hasLLC",
+      source: "businesses",
+      reason: "no company stored for this client",
+      effect: "the engine's LLC suggestion is produced from its default of 'no LLC', not from this client's record"
+    });
+  }
   // Data-dependent, not blanket: a line ingested since the 2026-08-01 fix (or a
   // manual entry the client dated) can carry a real opened_on. Report the gap
   // only when it is actually true for at least one line — see the header for
@@ -462,6 +473,8 @@ export function toBureaus({ tradelines = [], liabilities = [], crsResults = [], 
     bureaus,
     businessAgeMonths,
     businessAges,
+    hasLLC,
+    llcAgeMonths,
     missing,
     available,
     utilization,

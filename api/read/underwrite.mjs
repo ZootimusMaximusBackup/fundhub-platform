@@ -141,12 +141,13 @@ export default async function handler(req, res, deps = {}) {
       adapter.businessAges
     );
 
-    // NO `user` OBJECT IS PASSED. fundhub stores no LLC field, and passing
-    // { hasLLC: false } would be asserting something about this client that
-    // nobody recorded. The engine applies its own defaults either way; the
-    // difference is that the adapter has named `hasLLC` as missing, so the
-    // report marks the resulting sentence as resting on a default.
-    const suggestions = buildSuggestions(underwrite);
+    // Company on file (`businesses`) is "has a company." Stored age is
+    // `businesses.age_months`. No company still leaves hasLLC missing, so the
+    // report marks the engine's "no LLC" default as a default.
+    const suggestions = buildSuggestions(underwrite, {
+      hasLLC: adapter.hasLLC,
+      llcAgeMonths: adapter.llcAgeMonths ?? 0
+    });
 
     // fundhub's own utilization reading, from the four rules that already exist.
     // Included so both engines' utilization lines appear together, each stamped
