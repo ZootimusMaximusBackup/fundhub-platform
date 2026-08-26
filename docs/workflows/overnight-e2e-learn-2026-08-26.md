@@ -678,6 +678,28 @@ S-02 incomplete-survey nudge: all five submitted the survey. No `EMAIL-S02-FINIS
 
 ---
 
+## Hour 17 — after Apply / after $32 (do not run)
+
+F-04 and F-05 start on **`round.approved`**. None of the five have that event. Advisor “wait on banks / mark funded” never started. Do not Apply.
+
+C-00 (`diagnostic.paid`) is the **$32** path. After pay it **requests a real credit pull** if consent is on the ledger. These five have **0 consents**. Inquiry’s $32 link is **unpaid**. Do **not** pay. Do **not** live CRS.
+
+U-02 analyzer delivery email is **retired** (2026-08-22). `analysis.completed` also never fired on these five (Hour 8).
+
+`soft_pull_requests` on these five: **0**. Sample CRS rows were planted. C-00 never wrote a ledger row. The “Pull CRS” task is a flag, not a finished pull.
+
+---
+
+## Hour 18 — later funding rail (never started)
+
+Only `round.started` exists (Fund Horse ×1). No `round.submitted`, `round.approved`, `round.funded`, `mail.response`, `diagnostic.paid`, `deposit.paid`.
+
+So these also never ran on the five: F-04 approvals, F-05 inquiry-between-rounds, F-06 bank missing-docs, F-07 funded/locked, F-11 bank inbox router. B3 mail pipe stays code-only. Do not Apply. Do not touch Oxylabs.
+
+N-03 hot nurture is **retired**. N-04 needs a staff closeout (`round.closeout` with stage closed). These five are not funded.
+
+---
+
 
 
 
