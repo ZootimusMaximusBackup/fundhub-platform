@@ -31,6 +31,8 @@ test("closer-dashboard.html default markup has no sample people", () => {
   assert.ok(!/id="todayPipe"/.test(html), "Today's Pipeline is back — the cockpit owns booked calls");
   assert.match(html, /id="calcClientName"/);
   assert.match(callJs, /FHData\.read\("closer-call"/);
+  assert.match(callJs, /FHData\.read\("agent-context"/);
+  assert.match(callJs, /said: /);
   assert.doesNotMatch(callJs, /FHData\.read\("underwrite"/);
   assert.match(html, /FHData\.read\("deal-math"/);
   assert.match(html, /<details class="payment-calculator" id="paymentCalculator">/);

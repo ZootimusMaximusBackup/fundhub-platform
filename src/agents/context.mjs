@@ -120,7 +120,7 @@ export async function fetchContext(db, {
       [clientId, orgId]
     ),
     db.query(
-      `SELECT outcome, notes, recording_url, logged_at
+      `SELECT outcome, notes, recording_url, transcript, logged_at
          FROM call_outcomes
         WHERE client_id = $1 AND org_id = $2
         ORDER BY logged_at DESC
