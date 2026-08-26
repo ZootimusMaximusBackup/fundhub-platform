@@ -285,7 +285,12 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
   if (!orgId || !clientId) return { ok: false, reason: "missing_ids" };
   if (!ROUNDS.includes(round)) return { ok: false, reason: "invalid_round", round };
 
-  // Letters already on file: Stage succeeds without a new consent click.
+  // WS-A auth gate — do not remove. No signed repair agreement → no letters.
+  // Runs before the already-generated shortcut so Stage cannot succeed after
+  // Generate said no agreement.
+  const authorized = await hasRepairAgreement(db, { orgId, clientId });
+  if (!authorized) return { ok: false, reason: "no_authorization" };
+
   const existingLetters = await loadExistingRoundLetters(db, { orgId, clientId, round });
   if (existingLetters.length > 0) {
     const identity = await loadIdentity(db, { orgId, clientId });
@@ -300,11 +305,6 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
       identity_complete: Boolean(identity?.complete)
     };
   }
-
-  // WS-A auth gate — do not remove. Enrollment or a signed repair contract
-  // counts as the agreement; the extra consent row is not the only one.
-  const authorized = await hasRepairAgreement(db, { orgId, clientId });
-  if (!authorized) return { ok: false, reason: "no_authorization" };
 
   const program = await loadRepairProgram(db, { orgId, clientId });
   const roundsCap = program?.rounds_cap != null ? Number(program.rounds_cap) : 6;
