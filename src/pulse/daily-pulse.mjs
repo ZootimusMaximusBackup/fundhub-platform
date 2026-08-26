@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import { relayDirs, readHeartbeat, isPidAlive, STALE_MS } from "../../scripts/gate-relay/index.mjs";
 import { gmailConfigFromEnv, createGmailClientFromConfig } from "../gmail/index.mjs";
 import { textChris, ticketDarwin } from "./notify.mjs";
+import { checkRegistry } from "./registry.mjs";
 
 export const PULSE_CRON = "0 13 * * *";
 export const PULSE_TZ = "America/Denver";
@@ -212,23 +213,42 @@ export async function checkGmail({ env = process.env, fetchImpl, gmailClient } =
 }
 
 export function formatScorecard({ date, dryRun, checks = [], sms, darwin } = {}) {
-  const pass = checks.filter((c) => c.status === "PASS").length;
-  const fail = checks.filter((c) => c.status === "FAIL").length;
-  const skip = checks.filter((c) => c.status === "skip").length;
+  const named = checks.filter((c) => c.kind !== "registry");
+  const uptime = checks.filter((c) => c.kind === "registry");
+  const pass = named.filter((c) => c.status === "PASS").length;
+  const fail = named.filter((c) => c.status === "FAIL").length;
+  const skip = named.filter((c) => c.status === "skip").length;
+  const up = uptime.filter((c) => c.status === "up").length;
+  const down = uptime.filter((c) => c.status === "down").length;
+  const score = uptime.length
+    ? `Score: ${pass} PASS / ${fail} FAIL / ${skip} skip. Uptime: ${up} up / ${down} down`
+    : `Score: ${pass} PASS / ${fail} FAIL / ${skip} skip`;
   const lines = [
     `# Pulse ${date}`,
     "",
     `Timezone: ${PULSE_TZ}. Cron: \`${PULSE_CRON}\` (7:00 a.m. Denver during daylight time).`,
     `Dry-run: ${dryRun ? "yes" : "no"}. **This run does not auto-fix.**`,
     "",
-    `Score: ${pass} PASS / ${fail} FAIL / ${skip} skip`,
+    score,
     "",
     "| Check | Status | Proof | Suggested fix |",
     "|---|---|---|---|"
   ];
-  for (const c of checks) {
+  for (const c of named) {
     const fix = c.suggestedFix ? String(c.suggestedFix).replace(/\|/g, "/") : "—";
     lines.push(`| ${c.id} | ${c.status} | ${String(c.detail || "").replace(/\|/g, "/")} | ${fix} |`);
+  }
+  if (uptime.length) {
+    lines.push("");
+    lines.push("## Uptime");
+    lines.push("");
+    lines.push("| Path | Status | Proof | Suggested fix |");
+    lines.push("|---|---|---|---|");
+    for (const c of uptime) {
+      const fix = c.suggestedFix ? String(c.suggestedFix).replace(/\|/g, "/") : "—";
+      const pathLabel = c.path || c.id;
+      lines.push(`| ${pathLabel} | ${c.status} | ${String(c.detail || "").replace(/\|/g, "/")} | ${fix} |`);
+    }
   }
   lines.push("");
   lines.push("## Notify");
@@ -304,11 +324,12 @@ export async function runDailyPulse({
   const resolvedOrg = orgId || await defaultOrgId(db);
   checks.push(await checkRecon({ db, orgId: resolvedOrg }));
   checks.push(await checkGmail({ env, fetchImpl, gmailClient }));
+  checks.push(...await checkRegistry({ fetchImpl, baseUrl: origin }));
 
-  const failRows = checks.filter((c) => c.status === "FAIL");
+  const failRows = checks.filter((c) => c.status === "FAIL" || c.status === "down");
   const findings = failRows.map((c) => `${c.id}: ${c.detail}`);
   const suggestedFixes = failRows.map((c) => c.suggestedFix).filter(Boolean);
-  const pass = checks.filter((c) => c.status === "PASS").length;
+  const pass = checks.filter((c) => c.status === "PASS" || c.status === "up").length;
   const fail = failRows.length;
   const skip = checks.filter((c) => c.status === "skip").length;
 
