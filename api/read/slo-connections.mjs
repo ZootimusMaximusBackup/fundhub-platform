@@ -9,8 +9,8 @@ import { listConnections } from "../../src/slo/connections.mjs";
 export const run = readHandler({
   roles: ROLE_SETS.OPS,
   fetch: async (db, { staff }) => {
-    const orgId = (staff && staff.org_id) || null;
-    return listConnections(db, orgId);
+    const args = { orgId: staff.org_id };
+    return listConnections(db, args.orgId);
   }
 });
 
