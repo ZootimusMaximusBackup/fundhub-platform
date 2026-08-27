@@ -14,7 +14,16 @@
 import { test, before, beforeEach, after, describe } from "node:test";
 import assert from "node:assert";
 import { db, close } from "../db.mjs";
-import { withPartnerScope, asPartner, asStaff } from "../partners/rls.mjs";
+import { withPartnerScope as _withPartnerScope, asPartner as _asPartner, asStaff as _asStaff } from "../partners/rls.mjs";
+import { rlsPool, rlsIsReal, closeRlsPool } from "../testing/rls-pool.mjs";
+
+/* SET UP as the owner, ASSERT as the unprivileged role. A superuser
+   bypasses every RLS policy, so these isolation assertions are only
+   meaningful through APP_DATABASE_URL. See src/testing/rls-pool.mjs. */
+const withPartnerScope = (principal, fn, deps) => _withPartnerScope(principal, fn, { pool: rlsPool, ...(deps || {}) });
+const asPartner = (partnerId, fn, deps) => _asPartner(partnerId, fn, { pool: rlsPool, ...(deps || {}) });
+const asStaff = (fn, deps) => _asStaff(fn, { pool: rlsPool, ...(deps || {}) });
+
 import { enqueue, claim, run } from "./generate.mjs";
 import { clearRuleCache } from "../compliance/screen.mjs";
 
