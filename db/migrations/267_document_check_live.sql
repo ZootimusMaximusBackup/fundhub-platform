@@ -41,7 +41,7 @@ UPDATE agents
        runtime_ref   = 'ghl-doc-document-check',
        went_live_at  = COALESCE(went_live_at, now()),
        runtime_notes = COALESCE(runtime_notes || ' · ', '') ||
-         'Turned back on by migration 266 on 2026-08-27. Retired in error by 168, ' ||
+         'Turned back on by migration 267 on 2026-08-27. Retired in error by 168, ' ||
          'which retired every GHL-* row when GoHighLevel was cancelled. This agent ' ||
          'runs on the Inngest function ghl-doc-document-check on docs.received, ' ||
          'not on GoHighLevel.',
