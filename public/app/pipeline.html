@@ -192,9 +192,25 @@
   .fh-del-actions .go{background:#6E2A22;color:#fff;border-color:#6E2A22}
   .fh-del-actions .go:disabled{opacity:.4;cursor:not-allowed}
   .fh-new-actions .go{background:var(--ink);color:#fff;border-color:var(--ink)}
-  .board{display:flex;gap:10px;padding:10px 14px 14px;align-items:stretch;height:100%;position:relative;width:max-content;}
+  /* 2026-08-27 (owner-set): columns STRETCH to fill a wide window instead of
+     stopping short of the right edge.
+     width:max-content is GONE and must not come back. With a growable .col it
+     no longer means "as wide as the columns" — intrinsic sizing resolves each
+     item at its CONTENT max-content, so the board measured 3501px wide with
+     338px columns at every viewport and scrolled even at 3440. Letting the
+     board take its normal auto width (the scroll wrap's width) is what gives
+     .col free space to grow into; when the columns need more than that they
+     overflow and .board-wrap scrolls, exactly as before. */
+  .board{display:flex;gap:10px;padding:10px 14px 14px;align-items:stretch;height:100%;position:relative;}
+  /* Trailing breathing room after the last column when scrolled right, which
+     the old width:max-content used to provide via padding. */
+  .board::after{content:"";flex:0 0 4px;}
 
-  .col{width:238px;flex-shrink:0;background:var(--paper-dim);border:1px solid var(--line);border-radius:8px;
+  /* grow to share a wide board, never shrink below the width a card was
+     designed for. Was width:238px + flex-shrink:0, which pinned the board at
+     2498px however wide the monitor got — 714px of empty board to the right
+     of the last column at 3440, measured 2026-08-27. */
+  .col{flex:1 1 238px;min-width:238px;background:var(--paper-dim);border:1px solid var(--line);border-radius:8px;
     display:flex;flex-direction:column;height:100%;max-height:100%;}
   .col.drop-target{background:var(--info-bg);border-color:var(--info);box-shadow:0 0 0 2px color-mix(in srgb,var(--info) 40%,transparent);}
 
