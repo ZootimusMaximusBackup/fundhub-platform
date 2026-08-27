@@ -10,6 +10,7 @@ import { db, pool } from "../../src/db.mjs";
 import { createAccount } from "../../src/auth/account-session.mjs";
 import { resolveDefaultOrg } from "../../src/auth/org.mjs";
 import { queueAffiliateTemplate } from "../../src/affiliates/drip.mjs";
+import { queuePartnerWelcome } from "../../src/partners/welcome.mjs";
 import { safeError } from "../../src/http/health.mjs";
 
 const APP_ORIGIN = "https://fundhub.ai";
@@ -173,6 +174,7 @@ export async function runPartnerApply(parsed, deps = {}) {
   const database = deps.db || db;
   const create = deps.createAccount || createAccount;
   const queueDrip = deps.queueAffiliateTemplate || queueAffiliateTemplate;
+  const queueWelcome = deps.queuePartnerWelcome || queuePartnerWelcome;
   const resolveOrg = deps.resolveDefaultOrg || resolveDefaultOrg;
   const password = deps.password || generateFirstPassword();
   const connect = deps.connect || (() => pool().connect());
@@ -281,6 +283,22 @@ export async function runPartnerApply(parsed, deps = {}) {
     }
 
     await client.query("COMMIT");
+    // White-label used to hear nothing after "you are in". Queued after the
+    // commit so the partner row exists even if the mailbox is down.
+    if (partnerId) {
+      await queueWelcome(database, {
+        orgId,
+        partnerId,
+        email: parsed.email,
+        phone: parsed.phone,
+        name: parsed.name,
+        brand: display,
+        kind: "partner",
+        loginUrl: `${APP_ORIGIN}/login.html`,
+        siteUrl: sitePath ? `${APP_ORIGIN}${sitePath}` : null,
+        smsConsent: parsed.sms_consent
+      });
+    }
     return {
       ok: true,
       kind: parsed.kind,
