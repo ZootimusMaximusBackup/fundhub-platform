@@ -73,100 +73,111 @@
   .topbar-right{display:flex;align-items:center;gap:16px;font-size:11.5px;color:var(--dark-text-dim);}
   .clock{font-family:var(--mono);font-size:12px;color:var(--dark-text);}
 
-  .stat-head{background:var(--surface);border-bottom:1px solid var(--line);padding:9px 18px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:16px;}
+  .stat-head{background:var(--surface);border-bottom:1px solid var(--line);padding:16px 32px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:16px;}
   .who{display:flex;align-items:baseline;gap:9px;}
-  .who-name{font-size:16px;font-weight:800;}
-  .who-role{font-size:11.5px;color:var(--text-dim);}
+  .who-name{font-weight:800;}
+  .who-role{color:var(--text-dim);}
   /* the deposit count used to be its own tile beside the dollars — same fact,
      two numbers. It rides under the money now instead of competing with it. */
-  .stat-sub{font-size:8.5px;color:var(--text-faint);margin-top:1px;letter-spacing:.2px;}
+  .stat-sub{color:var(--text-faint);margin-top:8px;letter-spacing:.2px;}
 
-  main{flex:1;overflow-y:auto;padding:22px 24px 20px;background:var(--paper);}
+  main{flex:1;overflow-y:auto;padding:32px;background:var(--paper);}
   main::-webkit-scrollbar{width:8px;}
   main::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
 
-  .section{margin-bottom:14px;}
-  .section-title{font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;}
+  .section{margin-bottom:24px;}
+  .section-title{font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;}
 
-  .stage-pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--info-bg);color:var(--ink2);}
+  .stage-pill{display:inline-block;font-weight:700;padding:4px 8px;border-radius:10px;background:var(--info-bg);color:var(--ink2);}
   .empty-slot{color:var(--text-faint);font-style:normal;}
-  #calcGate{padding:16px 0 4px;font-size:14px;}
+  #calcGate{padding:16px 0;}
 
-  .calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;}
+  .calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start;}
   .calc-grid[hidden],#breakdown[hidden]{display:none!important;}
-  .calc-panel{background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:13px 15px 15px;}
+  /* The two calculators keep the brand resting shadow so they still read as
+     two panels — the 1px outline on top of it was the redundant half. */
+  .calc-panel{background:var(--surface);border:0;border-radius:8px;padding:24px;}
   /* LOADING STATE — set only while a /api/read/tradelines request is in flight,
      removed the moment it resolves either way. Nothing else in the design keys
      off this attribute; it is not a second visual state to maintain. */
   .calc-panel[data-fh-busy]{opacity:.55;}
-  .calc-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
-  .calc-title{font-size:13px;font-weight:800;}
-  .calc-client{font-family:var(--mono);font-size:11px;color:var(--text-faint);}
+  .calc-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-bottom:16px;flex-wrap:wrap;}
+  .calc-title{font-weight:800;}
+  .calc-client{font-family:var(--mono);color:var(--text-faint);}
 
-  .big-tile{background:var(--paper);border:1px solid var(--line);border-radius:7px;padding:10px 12px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
-  .big-tile .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);}
-  .big-tile .val{font-family:var(--mono);font-weight:800;font-size:22px;}
-  .big-tile .val.sm{font-size:16px;}
+  .big-tile{background:var(--soft);border:0;border-radius:8px;padding:16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;}
+  .big-tile>.lbl{flex:1 0 100%;margin-top:8px;}
+  .big-tile .lbl{text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);}
+  .big-tile .val{font-family:var(--mono);font-weight:800;}
 
   table.deal{width:100%;border-collapse:collapse;margin-bottom:10px;}
-  table.deal th{text-align:right;font-size:9px;text-transform:uppercase;color:var(--text-dim);padding:5px 6px;border-bottom:1px solid var(--line);}
+  table.deal th{text-align:right;text-transform:uppercase;color:var(--text-dim);padding:8px;border-bottom:1px solid var(--line);}
   table.deal th:first-child{text-align:left;}
-  table.deal td{text-align:right;font-size:11.5px;padding:5px 6px;border-bottom:1px solid var(--paper-dim);font-family:var(--mono);}
+  table.deal td{text-align:right;padding:8px;border-bottom:1px solid var(--paper-dim);font-family:var(--mono);}
   table.deal td:first-child{text-align:left;font-family:var(--sans);font-weight:600;}
   table.deal tr.unused td{color:var(--text-faint);}
   table.deal tr.total td{font-weight:800;border-top:2px solid var(--line);border-bottom:none;color:var(--text);}
-  .apr-tag{font-size:9.5px;color:var(--text-faint);}
+  .apr-tag{color:var(--text-faint);}
 
+  /* These two ARE alerts — a hard stop on the guardrail and a flagged
+     negative-amortisation cliff — so they keep their status colour. The full
+     1px outline around a filled tint was the redundant half (§7). */
   .alert-box{
-    background:var(--alert-bg);border:1px solid var(--alert-line);border-radius:7px;padding:10px 12px;margin:6px 0 10px;
+    background:var(--alert-bg);border:0;border-left:3px solid var(--alert);border-radius:0 8px 8px 0;padding:16px;margin:16px 0;
   }
-  .alert-box.warn{background:var(--warn-bg);border-color:var(--warn-line);}
-  .alert-box.clear{background:var(--ok-bg);border-color:var(--ok-line);}
-  .alert-box .a-title{font-size:12px;font-weight:800;color:var(--ink2);margin-bottom:3px;}
-  .alert-box .a-body{font-size:11.5px;color:var(--text);line-height:1.4;}
+  .alert-box.warn{background:var(--warn-bg);border-left-color:var(--warn);}
+  .alert-box.clear{background:var(--ok-bg);border-left-color:var(--ok);}
+  .alert-box .a-title{font-weight:800;color:var(--ink2);margin-bottom:8px;}
+  .alert-box .a-body{color:var(--text);line-height:1.5;}
   .alert-box .a-body b{color:var(--ink2);}
 
   /* ---------- calculator inputs ---------- */
-  .inrow{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
-  .infield{display:flex;flex-direction:column;gap:3px;flex:1;min-width:100px;}
-  .infield label{font-family:var(--mono);font-size:8.5px;letter-spacing:.13em;
+  .inrow{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px;}
+  .infield{display:flex;flex-direction:column;gap:8px;flex:1;min-width:120px;}
+  .infield label{font-family:var(--mono);letter-spacing:.13em;
     text-transform:uppercase;color:var(--text-dim);}
-  .infield input{border:1px solid var(--line);border-radius:6px;background:var(--surface);
-    padding:6px 8px;font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums;
-    color:var(--text);width:100%;}
+  .infield input{border:1px solid var(--line);border-radius:8px;background:var(--surface);
+    padding:8px;font-family:var(--mono);font-variant-numeric:tabular-nums;
+    color:var(--text);width:100%;min-height:40px;}
   .infield input:focus{outline:none;border-color:var(--gray2);
     box-shadow:0 0 0 3px color-mix(in srgb,var(--info) 45%,transparent);}
-  .drawrange{width:100%;margin:6px 0 10px;accent-color:#0A0A0A;display:block;}
-  .util-line{font-family:var(--mono);font-size:10.5px;color:var(--text-dim);margin:-4px 0 9px;}
+  .drawrange{width:100%;margin:8px 0 16px;accent-color:#0A0A0A;display:block;}
+  .util-line{font-family:var(--mono);color:var(--text-dim);margin:0 0 16px;}
   .util-line b{color:var(--ink2);}
 
   /* ---------- results row: two answers side by side, nothing between ---------- */
-  .res-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px;}
-  .res-grid .big-tile{margin-bottom:0;flex-direction:column;align-items:flex-start;gap:2px;}
-  .res-note{font-size:10.5px;color:var(--text-faint);margin:6px 0 10px;}
+  .res-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px;}
+  /* These two tiles stack their label over their value, so they must undo the
+     row-tile rules above: in a COLUMN flex container `flex-basis:100%` measures
+     the HEIGHT, which sent the label full-height and wrapped the money into a
+     second column outside the tile. */
+  .res-grid .big-tile{margin-bottom:0;flex-direction:column;align-items:flex-start;gap:8px;min-width:0;flex-wrap:nowrap;}
+  .res-grid .big-tile>.lbl{flex:0 0 auto;margin-top:0;}
+  .res-grid .big-tile .val{min-width:0;line-height:1.1;overflow-wrap:break-word;}
+  .res-note{color:var(--text-faint);margin:16px 0;line-height:1.5;}
 
   /* ---------- demoted: pre-call planning tables ----------------------------
      The per-lender waterfall, the 12/24/36 payback comparison and the per-card
      minimums are what a closer reads BEFORE the call. Mid-call they are noise
      between the inputs and the answer, so they sit one click down. Nothing is
      removed — the calculators still write into every cell while it is closed. */
-  .breakdown{background:var(--surface);border:1px solid var(--line);border-radius:9px;margin-top:12px;}
-  .breakdown>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;
-    padding:10px 14px;font-size:12px;font-weight:800;color:var(--text);}
+  .breakdown{background:none;border:0;border-top:1px solid var(--line);border-radius:0;margin-top:32px;}
+  .breakdown>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:16px;
+    min-height:40px;padding:16px 0;font-weight:800;color:var(--text);}
   .breakdown>summary::-webkit-details-marker{display:none;}
-  .breakdown>summary:hover{background:var(--paper);}
+  .breakdown>summary:hover{color:var(--ink2);}
   .breakdown>summary:focus-visible{outline:2px solid var(--gray2);outline-offset:-2px;}
-  .breakdown .bd-chev{font-family:var(--mono);font-size:11px;color:var(--text-faint);transition:transform .16s;}
+  .breakdown .bd-chev{font-family:var(--mono);color:var(--text-faint);transition:transform .16s;}
   .breakdown[open] .bd-chev{transform:rotate(90deg);}
-  .breakdown .bd-note{margin-left:auto;font-size:10.5px;font-weight:400;color:var(--text-faint);}
-  .bd-body{border-top:1px solid var(--line);padding:12px 14px 14px;}
-  .bd-cols{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:12px;}
-  .bd-sub{font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:5px;}
+  .breakdown .bd-note{margin-left:auto;font-weight:400;color:var(--text-faint);}
+  .bd-body{border-top:0;padding:0 0 24px;}
+  .bd-cols{display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-top:32px;}
+  .bd-sub{font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;}
 
   table.pm{width:100%;border-collapse:collapse;margin-top:4px;}
-  table.pm th{font-size:9px;text-transform:uppercase;color:var(--text-dim);padding:5px 6px;text-align:right;border-bottom:1px solid var(--line);}
+  table.pm th{text-transform:uppercase;color:var(--text-dim);padding:8px;text-align:right;border-bottom:1px solid var(--line);}
   table.pm th:first-child{text-align:left;}
-  table.pm td{font-family:var(--mono);font-size:11.5px;padding:5px 6px;text-align:right;border-bottom:1px solid var(--paper-dim);}
+  table.pm td{font-family:var(--mono);padding:8px;text-align:right;border-bottom:1px solid var(--paper-dim);}
   table.pm td:first-child{text-align:left;font-family:var(--sans);font-weight:600;}
 
   footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;align-items:center;
@@ -176,43 +187,176 @@
   footer.statusbar .ghost{position:absolute;left:2vw;right:2vw;top:50%;transform:translateY(-50%);
     aspect-ratio:2698/543;background:var(--logo) no-repeat center/contain;
     filter:invert(1);opacity:.05;pointer-events:none;z-index:0;}
-  .call-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
-  .call-toolbar .hl,.call-toolbar .hr{display:flex;align-items:center;gap:10px;}
-  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim);}
-  .eyebrow::before{content:"";display:inline-block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;margin-right:9px;vertical-align:middle;}
-  .chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:4px 9px;border:1px solid var(--line);border-radius:20px;color:var(--text-dim);white-space:nowrap;}
-  .chip .cd{width:6px;height:6px;border-radius:50%;}.chip.on .cd{background:var(--ok);}
-  .cockpit-wrap{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:20px;align-items:start;}
+  /* ══════════════════════════════════════════════════════════════════════════
+     VISUAL PASS 2026-08-27 — spacing does the grouping, not outlines.
+
+     Measured on the DEPLOYED page before this change: eight bordered containers
+     stacked on one screen, and the three largest things on it were em-dashes
+     while the person being called sat two sizes below them.
+
+     Two facts drive everything below.
+
+     1. THE FONT SIZES IN THIS FILE WERE ALREADY DEAD. fundhub-brand.css snaps
+        every descendant of .app to four tokens with `* {font-size:inherit
+        !important}`, so the 7.5–24px values that used to sit here painted
+        nothing at all. What actually rendered was 13 / 16 / 20 / 32 — and every
+        h3/h4 section heading fell through to 16px, the same size as body text,
+        which is why eight caps labels shouted in unison. Each element is now
+        assigned one of the four tokens on purpose instead of by accident, and
+        the dead px values are gone so the next reader is not misled.
+        UI-STANDARDS §3.
+     2. PROXIMITY, NOT BORDERS. UI-STANDARDS §2 and §7. Every group keeps every
+        one of its contents; only the outline goes. Spacing is on the 8px scale
+        (8/16/24/32/48/64) and does the work the boxes were doing. Exactly one
+        border survives inside the cockpit — the rail's divider, because the
+        pre-call checklist is genuinely unrelated to the call itself and the two
+        butt against each other.
+     ────────────────────────────────────────────────────────────────────────── */
+
+  /* ---------- ONE label size, one label treatment ---------------------------
+     §3: "No ALL-CAPS body text. Caps for small labels/eyebrows only." These are
+     h3/h4/div/em and so escape the brand's own caption list; !important is what
+     beats the brand's `* {font-size:inherit !important}`. */
+  .cockpit-main h3,.rail h4,.ctxg div span,.big-tile .lbl,.logrow .lbl,
+  .q .t,.q em,.never,.lever,.res-note,.util-line,.apr-tag,.bd-note,.bd-sub,
+  .empty-slot,.calc-client,.band .bn,.logbar .foot,.logbar .hk,.hero-next,
+  .stat-sub,.who-role{
+    font-size:var(--fs-caption)!important;
+  }
+  .cockpit-main h3,.rail h4{
+    font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;
+    color:var(--text-dim);font-weight:500;margin:0 0 16px;
+  }
+  .eyebrow{font-family:var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--text-dim);}
+  .eyebrow::before{content:"";display:inline-block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;margin-right:8px;vertical-align:middle;}
+  .chip{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;padding:4px 12px;border:1px solid var(--line);border-radius:20px;color:var(--text-dim);white-space:nowrap;}
+  .chip .cd{width:6px;height:6px;border-radius:50%;flex:0 0 6px;}.chip.on .cd{background:var(--ok);}
+
+  /* §1 — 1800px, centred. Without this the cockpit sprawls to ~2200px on the
+     owner's 2560px screen and the lines of text stop being readable. */
+  .cockpit-wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:48px;align-items:start;max-width:var(--fh-maxw);margin-inline:auto;}
   .cockpit-main{min-width:0;}
-  .call-cockpit .who{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap;}
-  .call-cockpit .who h1{font-size:22px;font-weight:600;letter-spacing:-.02em;margin:0;}
-  .call-cockpit .who .meta{font-size:12.5px;color:var(--text-dim);margin-top:3px;}
-  .call-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
-  .call-cockpit button,.logbar button{font-family:var(--sans);font-size:12.5px;padding:7px 13px;border:1px solid var(--line);background:var(--surface);border-radius:7px;cursor:pointer;color:var(--text);}
+
+  /* ---------- THE ANCHOR (§1 top-left, §10 closer lens) ---------------------
+     "Who am I calling next?" is the closer's first question, so the person and
+     the call are the largest thing on the page and they sit top-left. The
+     eyebrow rides 8px above the name so the two read as one block (§2). */
+  .call-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:8px;flex-wrap:wrap;}
+  .call-toolbar .hl,.call-toolbar .hr{display:flex;align-items:center;gap:8px;}
+  .call-cockpit .who{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:48px;flex-wrap:wrap;}
+  .call-cockpit .who>div:first-child{min-width:0;flex:1 1 320px;}
+  /* Beats the brand's `:is(.app,…) :is(h1,h2)` → --fs-title on specificity. */
+  .call-cockpit .who h1{font-size:var(--fs-metric)!important;font-weight:600;letter-spacing:-.025em;margin:0;line-height:1.15;}
+  .call-cockpit .who .meta{color:var(--text-dim);margin-top:8px;line-height:1.5;}
+
+  /* §6 empty state — said ONCE at the anchor instead of twelve times in dashes.
+     Gated on #fh-send-contract: closer-call.js REMOVES that button in setEmpty()
+     and leaves it in place (merely hidden) while a call is loading or live, so
+     this appears exactly when there is no client and never over real figures. */
+  .hero-next{display:none;margin:8px 0 0;color:var(--text-dim);line-height:1.55;max-width:64ch;}
+  .cockpit-main:not(:has(#fh-send-contract)) .hero-next{display:block;}
+  .cockpit-main:not(:has(#fh-send-contract)) .panel td:last-child,
+  .cockpit-main:not(:has(#fh-send-contract)) .band .bv,
+  .cockpit-main:not(:has(#fh-send-contract)) .ctxg div b{color:var(--text-faint);}
+
+  .call-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .call-cockpit button,.logbar button{font-family:var(--sans);padding:8px 16px;border:1px solid var(--line);background:var(--surface);border-radius:8px;cursor:pointer;color:var(--text);}
   .call-cockpit button:hover,.logbar button:hover{border-color:var(--gray2);background:var(--soft);}
   .call-cockpit button.k,.logbar button.k{border-color:var(--ink);background:var(--ink);color:var(--paper);}
   .call-cockpit button:disabled{cursor:not-allowed;color:var(--text-faint);}
-  .sec{margin-bottom:24px;}.sech{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:11px;}
-  .bands{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-  .band{border:1px solid var(--line);border-radius:10px;padding:14px 15px;background:var(--surface);}
-  .band .bl{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);}
-  .band .bv{font-size:24px;font-weight:600;letter-spacing:-.03em;margin-top:5px;font-variant-numeric:tabular-nums;}
-  .band .bn{font-size:12px;color:var(--text-dim);margin-top:4px;line-height:1.4;}
-  .lever{font-size:13px;color:var(--text-dim);margin-top:12px;line-height:1.45;}
-  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-  .panel{border:1px solid var(--line);border-radius:10px;padding:15px 16px;background:var(--surface);}
-  .panel h3,.ctx h3,.rail h4{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);font-weight:500;margin:0 0 10px;}
-  .panel table{width:100%;border-collapse:collapse;font-size:13px;}.panel td{padding:5px 0;}.panel td:first-child{color:var(--text-dim);}.panel td:last-child{text-align:right;font-variant-numeric:tabular-nums;}.panel .hi{font-weight:600;}
-  .ctx{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;}.ctx p{font-size:14px;line-height:1.6;margin:0;}
-  .ctxg{display:grid;grid-template-columns:repeat(2,1fr);gap:12px 18px;margin-top:14px;}.ctxg div span{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);margin-bottom:3px;}.ctxg div b{font-weight:500;font-size:14px;}
-  .flag,.cliff{margin-top:12px;padding:9px 12px;border-radius:7px;background:var(--warn-bg);border-left:2px solid var(--warn);font-size:12.5px;}
-  .rail{padding:16px;background:var(--surface);border:1px solid var(--line);border-radius:10px;}.rail section{margin-bottom:22px;}.rail section:last-child{margin-bottom:0;}
-  .q{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line);font-size:12.5px;}.q:first-of-type{border-top:none;}.q .t{font-family:var(--mono);font-size:10.5px;color:var(--text-faint);flex:0 0 42px;}.q b{font-weight:600;display:block;}.q em{font-style:normal;color:var(--text-dim);font-size:11.5px;display:block;}
-  .disc{list-style:none;margin:0;padding:0;}.disc li{display:flex;gap:8px;align-items:flex-start;font-size:12px;padding:5px 0;color:var(--text-dim);}.disc input{margin-top:2px;accent-color:#0A0A0A;}.never{margin-top:9px;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;color:var(--alert);line-height:1.7;}
-  .payment-calculator{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-top:22px;}.payment-calculator>summary{cursor:pointer;list-style:none;padding:13px 15px;font-size:13px;font-weight:700;}.payment-calculator>summary::-webkit-details-marker{display:none;}.payment-calculator>summary::before{content:"›";display:inline-block;margin-right:9px;font-family:var(--mono);transition:transform .16s;}.payment-calculator[open]>summary::before{transform:rotate(90deg);}.payment-body{border-top:1px solid var(--line);padding:14px;}
-  .logbar{flex-shrink:0;border-top:1px solid var(--line);background:var(--surface);padding:12px 18px;}.logrow{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:8px;}.logrow .lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-right:4px;}.logbar .foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--text-faint);}.logbar .hk{font-family:var(--mono);font-size:9.5px;color:var(--text-faint);margin-right:6px;}
-  @media(max-width:1080px){.cockpit-wrap{grid-template-columns:1fr;}.rail{order:2;}}
-  @media(max-width:720px){.bands,.two,.ctxg,.calc-grid{grid-template-columns:1fr;}}
+
+  .sec{margin-bottom:48px;}
+  .sech{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:16px;}
+
+  /* ---------- the three forecasts: columns, not cards ---------------------- */
+  .bands{display:grid;grid-template-columns:repeat(3,1fr);gap:32px;}
+  .band{padding:0;}
+  .band .bl{font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);}
+  .band .bv{font-weight:600;letter-spacing:-.03em;margin-top:8px;font-variant-numeric:tabular-nums;line-height:1.1;}
+  .band .bn{color:var(--text-dim);margin-top:8px;line-height:1.5;}
+  .lever{color:var(--text-dim);margin:24px 0 0;line-height:1.5;}
+
+  /* ---------- the two fact lists: no box, no fill, no resting shadow -------
+     .panel is on fundhub-brand.css's resting-shadow list, so the shadow has to
+     be turned off from a selector that outranks it, not just a later one. */
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:48px;}
+  .cockpit-main .panel{padding:0;background:none;border:0;box-shadow:none;}
+  .panel table{width:100%;max-width:40rem;border-collapse:collapse;}
+  .panel td{padding:8px 0;vertical-align:top;}
+  .panel td:first-child{color:var(--text-dim);}
+  .panel td:last-child{text-align:right;font-variant-numeric:tabular-nums;}
+  .panel td[colspan]{text-align:left;}
+  .panel .hi{font-weight:600;}
+
+  .ctx{background:none;border:0;padding:0;}
+  .ctx p{line-height:1.6;margin:0;max-width:72ch;}
+  .ctxg{display:grid;grid-template-columns:repeat(2,1fr);gap:24px 48px;margin-top:24px;max-width:72ch;}
+  .ctxg div span{display:block;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px;}
+  .ctxg div b{font-weight:500;}
+
+  /* §7 data-ink — these two lines explain where the numbers come from. They are
+     captions, not alerts, and a filled callout bar was reading as a warning.
+     Wording is untouched; the inline background/border-colour on the .cliff had
+     to come out of the markup with it or it would have beaten this rule. */
+  .flag,.cliff{margin-top:16px;padding:0;border:0;background:none;color:var(--text-faint);line-height:1.5;}
+
+  /* ---------- the one border that stays (§2) -------------------------------
+     A checklist of things to say is not part of the call cockpit, and the two
+     butt against each other. One divider says that; a box around each said it
+     twice. The divider moves to the top edge when the rail stacks underneath. */
+  .rail{padding:0 0 0 48px;background:none;border:0;border-left:1px solid var(--line);align-self:stretch;}
+  .rail section{margin-bottom:48px;}
+  .rail section:last-child{margin-bottom:0;}
+  .q{display:flex;gap:16px;align-items:flex-start;padding:8px 0;}
+  .q .t{font-family:var(--mono);color:var(--text-faint);flex:0 0 40px;}
+  .q b{font-weight:600;display:block;line-height:1.4;}
+  .q em{font-style:normal;color:var(--text-dim);display:block;margin-top:8px;line-height:1.5;}
+
+  /* §5 + §11 — 40px hit area. The box itself is 20px (set in the brand file)
+     and its label is a sibling rather than a wrapper, so the LABEL is what has
+     to carry the target. Clicking it still toggles the box via for=. */
+  .disc{list-style:none;margin:0;padding:0;}
+  .disc li{display:flex;gap:16px;align-items:center;color:var(--text-dim);}
+  .disc input{flex:0 0 20px;accent-color:#0A0A0A;cursor:pointer;}
+  .disc label{cursor:pointer;flex:1 1 auto;min-height:40px;display:flex;align-items:center;line-height:1.4;}
+
+  /* The compliance line wrapped to five lines in a 280px column: mono, at body
+     size, with .06em tracking. Sans at the caption token, no tracking, and the
+     status colour moves off the text onto a keyline so the words read. The
+     colour itself is tenant-set — shell.js paintBrand() overwrites --alert from
+     the company brand ramp — so do not assume it is the pastel coral. */
+  .never{margin-top:24px;font-family:var(--sans);letter-spacing:0;color:var(--ink2);line-height:1.6;padding-left:16px;border-left:2px solid var(--alert);}
+
+  /* A disclosure has to look pressable, so this keeps one hairline and a hover
+     state instead of a full outline. */
+  .payment-calculator{border:0;border-top:1px solid var(--line);border-radius:0;background:none;margin-top:48px;}
+  .payment-calculator>summary{cursor:pointer;list-style:none;padding:16px 0;font-weight:700;display:flex;align-items:center;min-height:40px;}
+  .payment-calculator>summary::-webkit-details-marker{display:none;}
+  .payment-calculator>summary::before{content:"›";display:inline-block;margin-right:16px;font-family:var(--mono);transition:transform .16s;color:var(--text-dim);}
+  .payment-calculator[open]>summary::before{transform:rotate(90deg);}
+  .payment-calculator>summary:hover{color:var(--ink2);}
+  .payment-body{border-top:0;padding:0 0 24px;}
+
+  .logbar{flex-shrink:0;border-top:1px solid var(--line);background:var(--surface);padding:16px 32px;}
+  .logrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+  .logrow .lbl{font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin-right:8px;}
+  .logbar .foot{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;color:var(--text-faint);}
+  .logbar .hk{font-family:var(--mono);color:var(--text-faint);margin-right:8px;}
+
+  @media(max-width:1080px){
+    .cockpit-wrap{grid-template-columns:1fr;gap:48px;}
+    .rail{order:2;padding:48px 0 0;border-left:0;border-top:1px solid var(--line);align-self:auto;}
+  }
+  /* §11 — one column. .res-grid and .bd-cols were missing from this list, so
+     the two result tiles and the two breakdown tables stayed side by side on a
+     390px phone and the money overflowed its own tile. */
+  @media(max-width:720px){
+    .bands,.two,.ctxg,.calc-grid,.res-grid,.bd-cols{grid-template-columns:1fr;}
+    .bands,.two{gap:32px;}
+    .bd-cols{gap:32px;}
+    .call-cockpit .who{margin-bottom:32px;}
+    .sec{margin-bottom:32px;}
+  }
 </style>
 <script defer src="shell.js"></script>
 <script src="demo-client-bootstrap.js"></script>
@@ -332,6 +476,7 @@
             <div>
               <h1 id="ccp-who-name">Loading…</h1>
               <div class="meta" id="ccp-who-meta">Open with ?client_id=&lt;uuid&gt;</div>
+              <p class="hero-next">Every field below fills from the live file when a call opens. Booked calls land here on their own &mdash; Up next lists what is coming.</p>
             </div>
             <div class="call-actions">
               <span class="chip" id="fh-temp-chip" hidden><span class="cd"></span>—</span>
@@ -368,7 +513,7 @@
             <div class="panel">
               <h3>Where they stand</h3>
               <table><tr><td>Scores</td><td class="hi">—</td></tr><tr><td>Utilization</td><td>—</td></tr><tr><td>Inquiries · 6mo</td><td>—</td></tr><tr><td>Derogatories</td><td>—</td></tr><tr><td>Pulled</td><td>—</td></tr></table>
-              <div class="cliff" style="background:var(--info-bg);border-left-color:var(--info)">Credit facts load from the live file.</div>
+              <div class="cliff">Credit facts load from the live file.</div>
             </div>
             <div class="panel">
               <h3>The deal</h3>
