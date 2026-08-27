@@ -15,7 +15,7 @@ import { test, before, beforeEach, after, describe } from "node:test";
 import assert from "node:assert";
 import { db, close } from "../db.mjs";
 import { withPartnerScope as _withPartnerScope, asPartner as _asPartner, asStaff as _asStaff } from "../partners/rls.mjs";
-import { rlsPool, rlsIsReal, closeRlsPool } from "../testing/rls-pool.mjs";
+import { rlsPool, rlsDb } from "../testing/rls-pool.mjs";
 
 /* SET UP as the owner, ASSERT as the unprivileged role. A superuser
    bypasses every RLS policy, so these isolation assertions are only
@@ -105,7 +105,9 @@ describe("creative generation", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
 
   test("an unscoped read returns nothing rather than everything", async () => {
     // The whole point of RLS here: a query that forgets its predicate fails closed.
-    const rows = (await db.query(`SELECT id FROM generation_jobs`)).rows;
+    /* rlsDb, not db — the owner bypasses RLS, so this would "leak" no matter
+       how correct the policies are. See src/testing/rls-pool.mjs. */
+    const rows = (await rlsDb.query(`SELECT id FROM generation_jobs`)).rows;
     assert.deepStrictEqual(rows, [], "an unscoped session read partner rows");
   });
 

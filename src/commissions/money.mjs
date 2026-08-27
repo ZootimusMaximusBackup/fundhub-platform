@@ -1,3 +1,4 @@
+// @ts-check
 // Money. Integer cents, everywhere, always.
 //
 // Commission is percentages of percentages of splits. Doing that in floats

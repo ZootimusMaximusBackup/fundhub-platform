@@ -1678,7 +1678,23 @@
        chip reuse the same row, so it reserves real space exactly once. */
     var row = document.getElementById("fh-shell-account-row");
     if (!row) {
-      var host = document.querySelector(".shell, .main, .content, main, .app-shell, .app");
+      /* Try each host IN ORDER, innermost first — do NOT put these back into one
+         grouped querySelector. A selector list returns the first match in
+         DOCUMENT order, not in list order, and .app is an ANCESTOR of .shell, so
+         the grouped form always resolved to .app and never to the content column
+         it was written to prefer.
+         That is invisible while .app is display:block (the row is just a
+         full-width block, which is what my-numbers and sales-floor get). On the
+         screens that set .app{display:flex} it is not: the row becomes a flex
+         ITEM and takes horizontal space away from the content beside it.
+         Measured on journeys at 3440 on 2026-08-27 — the row sat between the
+         rail and the content and ate 718px, so the screen never reached the
+         left edge no matter how wide the window got. */
+      var host = null;
+      var hostSel = [".shell", ".main", ".content", "main", ".app-shell", ".app"];
+      for (var hi = 0; hi < hostSel.length && !host; hi++) {
+        host = document.querySelector(hostSel[hi]);
+      }
       if (!host) return false;
       row = document.createElement("div");
       row.id = "fh-shell-account-row";

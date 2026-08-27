@@ -13,7 +13,7 @@ import { test, before, after, describe } from "node:test";
 import assert from "node:assert";
 import { db, close } from "../db.mjs";
 import { asStaff as _asStaff, asPartner as _asPartner } from "../partners/rls.mjs";
-import { rlsPool, rlsIsReal, closeRlsPool } from "../testing/rls-pool.mjs";
+import { rlsPool, rlsDb } from "../testing/rls-pool.mjs";
 
 /* SET UP as the owner, ASSERT as the unprivileged role. A superuser
    bypasses every RLS policy, so these isolation assertions are only
@@ -119,8 +119,36 @@ describe("module invariants", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, ()
     // like, and every one of these must come back empty rather than whole.
     await seedOneRowEverywhere(pA);
     for (const t of MODULE_TABLES) {
-      const { rows } = await db.query(`SELECT 1 FROM ${t} LIMIT 1`);
+      /* rlsDb, not db: this asserts what an UNSCOPED session sees, and the
+         owner connection sees past every policy. Running it as the app role is
+         what makes "fails closed" a real claim. */
+      const { rows } = await rlsDb.query(`SELECT 1 FROM ${t} LIMIT 1`);
       assert.deepStrictEqual(rows, [], `${t} leaked rows to an unscoped session`);
+    }
+  });
+
+  /* A VIEW over these tables must invoke as the CALLER, or every policy above is
+     decoration. A plain Postgres view runs as its OWNER, and the owner is exempt
+     from the FORCEd policies — so a partner reading through a view saw
+     everybody's rows. Measured 2026-08-27 before 269: partner B read partner A's
+     spend ceiling through v_partner_spend_vs_ceiling while the same count over
+     the TABLE correctly returned zero. api/campaigns/spend.mjs had a comment
+     asserting the opposite. */
+  test("every partner-facing view invokes as the caller, so RLS is not skipped", async () => {
+    const { rows } = await db.query(
+      `SELECT c.relname,
+              COALESCE(array_to_string(c.reloptions, ','), '') AS opts
+         FROM pg_class c
+        WHERE c.relkind = 'v'
+          AND c.relnamespace = 'public'::regnamespace
+          AND c.relname LIKE 'v\\_partner\\_%'
+        ORDER BY 1`
+    );
+    assert.ok(rows.length >= 5, "the v_partner_* views went missing");
+    for (const v of rows) {
+      assert.match(v.opts, /security_invoker=true/,
+        `${v.relname} does not invoke as the caller — a partner reading through it ` +
+        `bypasses every isolation policy on its base tables`);
     }
   });
 
