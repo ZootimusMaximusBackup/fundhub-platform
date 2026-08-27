@@ -506,6 +506,24 @@ window.FHData = (function () {
          must not be hidden behind another that succeeded. */
       this._parts[key || text] = { tone: tone, text: text };
       var parts = Object.keys(this._parts).map(function (k) { return this._parts[k]; }, this);
+
+      /* The peach "sample" tone does not render, owner-set 2026-08-27. Every
+         screen carried a yellow strip along its bottom edge and the owner wants
+         them gone CRM-wide. Sample parts are dropped from the strip entirely
+         rather than recoloured, so a screen whose only report is "sample" shows
+         no strip at all and reserves no space for one.
+         MINT AND ROSE STILL RENDER. A failed read must still say it failed —
+         that is the rose tone, and silencing it would put dashes on screen with
+         nothing saying why. Only the peach middle case is suppressed. */
+      parts = parts.filter(function (p) { return p.tone !== "sample"; });
+      if (!parts.length) {
+        el.style.display = "none";
+        el.textContent = "";
+        document.documentElement.style.setProperty("--fh-statusbar", "0px");
+        return el;
+      }
+      el.style.display = "";
+
       var RANK = { error: 0, sample: 1, real: 2 };
       var worst = parts.reduce(function (a, p) {
         return RANK[p.tone] < RANK[a] ? p.tone : a; }, "real");

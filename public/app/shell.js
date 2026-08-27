@@ -242,11 +242,15 @@
      Owner-set 2026-08-19 kill pass. These screens stay in ALL and in
      allowedFor(), so typing the address still opens them. gateLinks() hides
      only the .navitem rows. In-page links and background jobs are untouched.
-     No Retired flyout (owner picked nothing). */
+     No Retired flyout (owner picked nothing).
+
+     company-brain.html came OFF this list 2026-08-27, owner-set, superseding
+     the 2026-08-19 entry. The screen is live and answering, and the class
+     quizzes (ramp-quizzes.js) are only reachable from it — with the row
+     hidden the only way in was typing the address, so nobody found either. */
   var NAV_HIDDEN = [
     "finance-os.html",
     "consent-capture.html",
-    "company-brain.html",
     "galaxy.html",
     "partner-galaxy.html",
     "ops-admin.html",

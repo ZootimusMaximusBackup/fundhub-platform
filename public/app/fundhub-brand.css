@@ -87,7 +87,15 @@ html{ font-size:100%; }        /* = the reader's browser default, normally 16px 
    with the strip's measured height, which grew the page ~29px AFTER first paint
    on every single load. Reserving the space up front removes that reflow; the
    strip is position:fixed so this only ever reserves, never pushes twice. */
-:root{ --fh-maxw:1800px; --fh-statusbar:32px; }
+/* --fh-maxw is `none` as of 2026-08-27, owner-set. It was 1280px, then 1800px
+   (2026-08-17). The owner works zoomed out on a 2560px monitor to get more of
+   the CRM on screen, and a px cap defeats that exactly: zooming out widens the
+   viewport, the content refuses to grow past the cap, and every pixel gained
+   turns into equal dead margin on both sides. That is the "I can't zoom out and
+   there's side padding" report. `none` is a value, not a deletion — both the
+   .fh-maxw class below and the !important rule in crm-sidebar.css still resolve
+   through this one token, so there is still ONE place to change the width. */
+:root{ --fh-maxw:none; --fh-statusbar:32px; }
 
 /* ── SURFACE — panels sit ON the page, on purpose (owner-set 2026-08-17) ─────
    Measured before this change: panels were #FFFFFF on a #FCFCFC page. That is
