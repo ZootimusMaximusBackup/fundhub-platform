@@ -40,11 +40,11 @@ flowchart TD
     CAN --> A_privacy[privacy — 1 route]
     CAN --> A_proxy[proxy — 2 routes]
     CAN --> A_public[public — 6 routes]
-    CAN --> A_read[Reading data — 51 routes]
+    CAN --> A_read[Reading data — 52 routes]
     CAN --> A_repair[repair — 5 routes]
     CAN --> A_social[social — 7 routes]
     CAN --> A_staff[staff — 2 routes]
-    CAN --> A_top_level[Everything else — 37 routes]
+    CAN --> A_top_level[Everything else — 38 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 2 routes]
     CANT --> B_chat[chat — 1 blocked]
@@ -53,7 +53,7 @@ flowchart TD
 
 ## What they can reach
 
-**194 of 196 routes.**
+**196 of 198 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -227,6 +227,7 @@ flowchart TD
 | `/api/read/repair-cases` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/sales-floor` | GET | owner, admin, sales_manager |
 | `/api/read/search` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/slo-connections` | GET | owner, admin |
 | `/api/read/staff` | GET | owner, admin, sales_manager |
 | `/api/read/tradelines` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/transactions` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -239,6 +240,7 @@ flowchart TD
 | `/api/repair/inbound-mail` | POST | owner, admin, closer, inquiry_specialist |
 | `/api/repair/send` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/shifts` | GET, POST | staff |
+| `/api/slo-connections` | POST | owner, admin |
 | `/api/social/channels` | GET | partner, staff |
 | `/api/social/generate` | POST | partner, staff |
 | `/api/social/oauth` | — | staff |
@@ -260,7 +262,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**2 of 196 routes.**
+**2 of 198 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

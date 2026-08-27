@@ -30,7 +30,7 @@ flowchart TD
     CAN --> A_social[social — 6 routes]
     CAN --> A_top_level[Everything else — 6 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 143 routes]
+    WHO -->|Yes| CANT[Blocked — 145 routes]
     CANT --> B_auth[Signing in and out — 5 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_chat[chat — 4 blocked]
@@ -46,16 +46,16 @@ flowchart TD
     CANT --> B_partner_brand[partner-brand — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
-    CANT --> B_read[Reading data — 50 blocked]
+    CANT --> B_read[Reading data — 51 blocked]
     CANT --> B_repair[repair — 5 blocked]
     CANT --> B_social[social — 1 blocked]
     CANT --> B_staff[staff — 2 blocked]
-    CANT --> B_top_level[Everything else — 31 blocked]
+    CANT --> B_top_level[Everything else — 32 blocked]
 ```
 
 ## What they can reach
 
-**53 of 196 routes.**
+**53 of 198 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -120,7 +120,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**143 of 196 routes.**
+**145 of 198 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -250,6 +250,7 @@ flowchart TD
 | `/api/read/repair-cases` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/sales-floor` | GET | owner, admin, sales_manager |
 | `/api/read/search` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/slo-connections` | GET | owner, admin |
 | `/api/read/staff` | GET | owner, admin, sales_manager |
 | `/api/read/tradelines` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/transactions` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -262,6 +263,7 @@ flowchart TD
 | `/api/repair/inbound-mail` | POST | owner, admin, closer, inquiry_specialist |
 | `/api/repair/send` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/shifts` | GET, POST | staff |
+| `/api/slo-connections` | POST | owner, admin |
 | `/api/social/oauth` | — | staff |
 | `/api/soft-pull-approve` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/staff/monitoring-consent` | POST | owner |
