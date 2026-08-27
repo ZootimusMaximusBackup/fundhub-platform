@@ -2,6 +2,12 @@
 // says ?id=, ?client=, ?client_id= or ?contact=. Before this, Control Panel
 // ignored ?client= / ?contact= and Present ignored ?id= / ?client=, so a link
 // from another screen landed on an empty "needs contact" page.
+//
+// Hole 18 — the Closer Dashboard is the third screen with the same hole. It
+// read ?client_id= and ?id= only, so ?client= / ?contact= dropped the file and
+// the page fell back to its honest "Open from a client." gate. A downsell
+// repair file (no booked call) opens here like any other file — the id in the
+// address is the only thing that decides it.
 
 import { test, expect } from "@playwright/test";
 
@@ -35,6 +41,13 @@ for (const key of KEYS) {
 for (const key of KEYS) {
   test(`present opens the file from ?${key}=`, async ({ page }) => {
     const hits = await idsSeen(page, `/app/present.html?${key}=${ID}`);
+    expect(hits.length, `no request carried the client id for ?${key}=`).toBeGreaterThan(0);
+  });
+}
+
+for (const key of KEYS) {
+  test(`closer dashboard opens the file from ?${key}=`, async ({ page }) => {
+    const hits = await idsSeen(page, `/app/closer-dashboard.html?${key}=${ID}`);
     expect(hits.length, `no request carried the client id for ?${key}=`).toBeGreaterThan(0);
   });
 }
