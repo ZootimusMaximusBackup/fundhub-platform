@@ -32,7 +32,7 @@ import { isInterviewBooking } from "../insights/meet.mjs";
 import { addTags } from "../workflows/tags.mjs";
 import { mergeCustomFields } from "../workflows/custom-fields.mjs";
 import { advanceCardToStage } from "../workflows/cards.mjs";
-import { upsertConversation, linkMessage } from "../conversations/store.mjs";
+import { threadMessage as threadStoredMessage } from "../conversations/store.mjs";
 // One phone-matching rule for the whole repo — see the note on the export.
 import { phoneCandidates } from "../mail/suppression.mjs";
 // Bookings are stored as bookings now, not only as a to-do. See the booking
@@ -133,35 +133,32 @@ async function findMessageByRef(db, orgId, providerRef) {
   return r.rows[0] || null;
 }
 
-// Upsert the (client, channel) thread and point the message at it.
+// Find the row this webhook wrote, then hand it to the shared threader.
 // `channel` is passed in by the caller as the exact value it wrote to
 // messages.channel — no parallel vocabulary is minted here.
+//
+// THE UPSERT-AND-LINK ITSELF MOVED to src/conversations/store.mjs, unchanged,
+// because it lived here as a private function and so only these two webhook
+// handlers ever threaded anything. Every workflow send left conversation_id
+// NULL and the staff inbox — which lists `conversations` — could not find those
+// clients by name. What is left here is the part that is genuinely this file's:
+// a webhook may be a retry, so the row may already exist under its provider_ref.
 async function threadMessage(db, { orgId, clientId, channel, inserted, providerRef }) {
   // conversations.client_id is NOT NULL, and these handlers deliberately do not
   // mint a client from an inbound message (it could be spam). An SMS from an
   // unrecognised number therefore has no thread to join; it stays a messages row
   // with conversation_id NULL, which is the honest state, not a bug.
   if (!clientId) return null;
-  try {
-    const message = inserted || (await findMessageByRef(db, orgId, providerRef));
-    if (!message) return null;
-    // summary is not passed: no payload here carries one, and sentiment is never
-    // written at all — see the header of src/conversations/store.mjs.
-    const convo = await upsertConversation(db, {
-      orgId,
-      clientId,
-      channel,
-      lastPulseAt: message.created_at || null
-    });
-    await linkMessage(db, { messageId: message.id, conversationId: convo.id });
-    return convo;
-  } catch (err) {
-    console.error(
-      `[comms] conversation threading failed for ${channel} message ` +
-      `(provider_ref=${providerRef || "none"}): ${err && err.message}`
-    );
-    return null;
-  }
+  const message = inserted || (await findMessageByRef(db, orgId, providerRef).catch(() => null));
+  if (!message) return null;
+  return threadStoredMessage(db, {
+    orgId,
+    clientId,
+    channel,
+    messageId: message.id,
+    createdAt: message.created_at || null,
+    source: "comms"
+  });
 }
 
 // message.inbound — a client contacting us. SMS from Twilio, or email from
