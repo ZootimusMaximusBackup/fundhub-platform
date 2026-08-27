@@ -34,7 +34,18 @@ export function checkDocPacket(documents, opts = {}) {
   const rows = Array.isArray(documents) ? documents : [];
   const bySubtype = new Set(
     rows
-      .filter((d) => d && (d.kind === KINDS.CLIENT_UPLOAD || d.kind === KINDS.AUTHORIZATION || d.kind === "client_upload" || d.kind === "authorization"))
+      /* INQUIRY_DOC counts too. The inquiry portal door (251) writes kind
+         'inquiry_doc', and its conventional subtypes include 'id_document' —
+         the same government photo ID this packet requires. A client who sent
+         their ID through the inquiry door has sent their ID; which door it
+         arrived by is our filing detail, not something they should have to
+         guess right. Before this, hole 17 opened that door and the packet
+         still reported the ID missing. */
+      .filter((d) => d && (
+        d.kind === KINDS.CLIENT_UPLOAD || d.kind === KINDS.AUTHORIZATION
+        || d.kind === KINDS.INQUIRY_DOC
+        || d.kind === "client_upload" || d.kind === "authorization"
+        || d.kind === "inquiry_doc"))
       .map((d) => String(d.subtype || ""))
   );
 
