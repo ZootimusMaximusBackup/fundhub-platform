@@ -12,17 +12,25 @@ with a synthetic 599, so a shot run can never write anything).
 
 ## What the numbers say
 
-Measured on the deployed page as `closer@fundhub.ai`, before and after.
+Every row below is a measured number, not an impression. `_tools/measure.mjs`
+reads them off the running page; the before column is `fundhub.ai`, the after
+column is the deploy preview for PR #249, same login, same viewport.
 
 | | before | after |
 |---|---|---|
 | Bordered containers on screen | **8** | **0** (one rail divider, which is a single edge, not a box) |
 | Distinct rendered text sizes | 4 (13 / 16 / 20 / 32) | **3** (13 / 16 / 32) |
-| Largest thing on the page | three em-dashes, 32px | **the person being called**, 32px, top-left |
+| The anchor, `.who h1` | 20px | **32px** |
+| Forecast values, `.band .bv` | 32px, full black | 32px, muted to `#A1A1AA` **only when no client is loaded** |
+| Section headings, `h3` | 16px — body size | **13px** |
+| Rail headings, `h4` | 16px — body size | **13px** |
+| Compliance line | 16px JetBrains Mono, **4 lines** at 2560 | 13px Inter, **3 lines** at 2560, 2 on a phone |
+| `.cliff` / `.flag` background | filled callout | **transparent** |
+| Checklist label hit heights | 16, 16, 16, 16, 32 | **40, 40, 40, 40, 40** |
 | Text under 11px | 0 | 0 |
 | Sideways scroll at 390px | none | none |
-| Console errors | 0 | 0 |
-| Controls / labels / headings | — | **identical, both states** (see parity table) |
+| Console errors | 0 | 0 (the 7 on the preview run are my own harness refusing writes on a fresh login) |
+| Controls / labels / headings | — | **identical, both states** (see parity) |
 
 ---
 
@@ -97,12 +105,17 @@ rule, so those two declarations came out of the markup with it.
   wrapper, so the **label** now carries a 40px target; clicking it still toggles
   the box through `for=`. Number-inputs in the calculators are 40px too.
 * **The compliance line.** "Never: guaranteed · won't affect credit · we have
-  relationships · 0% forever" wrapped to five lines: mono, at body size, with
-  .06em tracking, in a 280px column. Sans at the caption token with no tracking
-  reads in two. The status colour moved off the text onto a keyline so the words
-  are legible. Wording unchanged.
-* **§1 max width.** `.cockpit-wrap` now honours `--fh-maxw`. Without it the
-  cockpit sprawled to roughly 2200px on the owner's 2560px screen.
+  relationships · 0% forever" was 16px JetBrains Mono with .06em tracking in a
+  280px column. Measured, that is **four** wrapped lines at 2560px, not the five
+  in the brief — it reaches five at narrower rail widths. It is 13px Inter with
+  no tracking now: three lines there, two on a phone. The status colour moved off
+  the text onto a keyline so the words are legible. Wording unchanged.
+* **§1 max width — I was wrong about this one.** I added a `max-width` to
+  `.cockpit-wrap` believing the cockpit sprawled at 2560px. Measuring both pages
+  says otherwise: `main` is already capped at `--fh-maxw` and centred, and the
+  wrapper measures 1736px at 2560px with or without my rule. The redundant
+  declaration was taken back out rather than left in under a comment claiming it
+  did something. §1 was already satisfied a level up.
 
 ## Found, not fixed — nothing removed
 

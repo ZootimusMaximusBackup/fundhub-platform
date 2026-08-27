@@ -232,9 +232,11 @@
   .chip{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;padding:4px 12px;border:1px solid var(--line);border-radius:20px;color:var(--text-dim);white-space:nowrap;}
   .chip .cd{width:6px;height:6px;border-radius:50%;flex:0 0 6px;}.chip.on .cd{background:var(--ok);}
 
-  /* §1 — 1800px, centred. Without this the cockpit sprawls to ~2200px on the
-     owner's 2560px screen and the lines of text stop being readable. */
-  .cockpit-wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:48px;align-items:start;max-width:var(--fh-maxw);margin-inline:auto;}
+  /* No max-width here on purpose: `main` is ALREADY capped at --fh-maxw and
+     centred, so measured at 2560px this wrapper is 1736px either way. Adding a
+     second cap would have been dead weight with a comment claiming it did
+     something. §1 is satisfied a level up. */
+  .cockpit-wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:48px;align-items:start;}
   .cockpit-main{min-width:0;}
 
   /* ---------- THE ANCHOR (§1 top-left, §10 closer lens) ---------------------
