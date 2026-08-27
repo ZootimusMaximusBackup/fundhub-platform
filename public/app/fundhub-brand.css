@@ -95,6 +95,13 @@ html{ font-size:100%; }        /* = the reader's browser default, normally 16px 
    with the strip's measured height, which grew the page ~29px AFTER first paint
    on every single load. Reserving the space up front removes that reflow; the
    strip is position:fixed so this only ever reserves, never pushes twice. */
+/* This branch set the token to `none`. main got to the same fluid CRM a
+   different and better way — see the block above — and `none` breaks the one
+   place that still reads it: client-portal.html:67 asks for
+   `min(780px, var(--fh-maxw))`, and min() with a keyword is invalid, which
+   would silently drop the portal's reading measure. Keeping main's value; the
+   CRM is uncapped by the shell rule, not by emptying this token.
+   src/ui/shell-is-fluid.test.mjs fails if it is deleted. */
 :root{ --fh-maxw:1800px; --fh-statusbar:32px; }
 
 /* ── SURFACE — panels sit ON the page, on purpose (owner-set 2026-08-17) ─────
