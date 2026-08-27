@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 
 import {
   placeCall, readiness, normalizePhone, firstSentenceFromPrompt,
-  PROVIDER, TRANSMITS, ENABLED, BLAND_API_BASE
+  PROVIDER, TRANSMITS, ENABLED, BLAND_API_BASE, RECORDING_NOTICE
 } from "./bland-voice.mjs";
 
 /* "0" is required, not decoration. src/lib/outbound-fetch.mjs defaults to
@@ -123,8 +123,15 @@ test("the task Bland speaks is the agent's stored prompt, not a vendor file", as
   assert.equal(String(sent.url), `${BLAND_API_BASE}/calls`);
 
   const body = JSON.parse(sent.init.body);
-  assert.equal(body.task, goodAgent.prompt,
+  /* Was `assert.equal(body.task, goodAgent.prompt)` until the recording notice
+     landed. The point of this assertion is that the Agent Editor row is what the
+     call speaks — not that it is the only thing in the string. Kept as an exact
+     check on the stored prompt, plus a check that the only thing added is the
+     notice, so a vendor file creeping back in still fails here. */
+  assert.ok(body.task.includes(goodAgent.prompt),
     "the call must speak agents.prompt — that is what makes the Agent Editor the source of truth");
+  assert.equal(body.task, `${RECORDING_NOTICE}\n\n${goodAgent.prompt}`,
+    "the notice is the ONLY thing allowed in front of the stored prompt");
   assert.equal(body.first_sentence, firstSentenceFromPrompt(goodAgent.prompt),
     "Bland must have opening words — missing first_sentence ended prove calls in 0.13s");
   assert.equal(body.wait_for_greeting, true, "a real client line still waits for a hello");
@@ -147,6 +154,53 @@ test("the call asks for a nearby number and for a recording", async () => {
     "without this Bland dials from a fresh out-of-area number every time and the handset stops answering");
   assert.equal(body.record, true,
     "Bland defaults record to false, so every tape was empty no matter how the call went");
+});
+
+/* ── the tape and the notice are one thing ─────────────────────────────────
+
+   hole 12 set `record: true` and shipped. Nothing anywhere told the person on
+   the phone they were being taped, and ai-set-01-josh-setter.mjs fires this
+   path automatically on booking.created — so the first undisclosed recording
+   would have been of a consumer, placed by nobody. These three tests exist so
+   that state cannot come back quietly. */
+
+test("a recorded call speaks the notice before anything else", async () => {
+  let sent = null;
+  await placeCall({
+    agent: goodAgent, phone: "+16616054248", env: LIVE,
+    fetchImpl: async (url, init) => { sent = { url, init }; return response(); }
+  });
+  const body = JSON.parse(sent.init.body);
+  assert.ok(body.task.startsWith(RECORDING_NOTICE),
+    "the notice has to be the first thing in the script, or the robot talks before it discloses");
+  assert.match(body.task, /this call is recorded/i,
+    "the actual words have to survive — an instruction that only alludes to recording is not a disclosure");
+});
+
+test("the agent's own words still get through underneath the notice", async () => {
+  let sent = null;
+  await placeCall({
+    agent: goodAgent, phone: "+16616054248", env: LIVE,
+    fetchImpl: async (url, init) => { sent = { url, init }; return response(); }
+  });
+  const body = JSON.parse(sent.init.body);
+  assert.ok(body.task.includes(goodAgent.prompt),
+    "the notice prepends, it never replaces — the Agent Editor row is still what the call says");
+  assert.ok(body.task.indexOf(RECORDING_NOTICE) < body.task.indexOf(goodAgent.prompt),
+    "notice first, script second");
+});
+
+test("nothing can ask for the tape without also carrying the notice", async () => {
+  let sent = null;
+  await placeCall({
+    agent: goodAgent, phone: "+16616054248", env: LIVE,
+    fetchImpl: async (url, init) => { sent = { url, init }; return response(); }
+  });
+  const body = JSON.parse(sent.init.body);
+  // The pairing IS the guard. If someone later drops the notice but leaves
+  // record:true, this fails; if they drop record:true, the notice is harmless.
+  assert.equal(body.record === true, body.task.startsWith(RECORDING_NOTICE),
+    "record:true and the spoken notice have to travel together in the same body");
 });
 
 test("the agent prove line does not wait for a greeting", async () => {

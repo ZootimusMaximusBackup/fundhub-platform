@@ -66,6 +66,40 @@ export const BLAND_API_BASE = "https://api.bland.ai/v1";
    half returns to the same door. */
 export const DEFAULT_WEBHOOK_URL = "https://fundhub.ai/api/webhooks/bland";
 
+/* THE NOTICE THAT HAS TO RIDE WITH THE TAPE.
+   `record: true` in placeCall's body asks Bland to tape the call. Nothing else
+   in this system tells the person that: searched 2026-08-27, there is no
+   disclosure in any agents.prompt, in any seeded message template, or anywhere
+   else in the repo. Recording someone without telling them is not allowed in
+   the two-party-consent states (California, Florida, Pennsylvania, Washington,
+   Illinois, Massachusetts and others), and this dials consumers.
+
+   It lives HERE — not in a caller, not in the prompt — for two reasons:
+
+     1. placeCall is the only body in this file that sets `record`, and BOTH of
+        its callers reach consumers: api/agent-call.mjs (Agent Editor, placed by
+        hand) and src/workflows/ai-set-01-josh-setter.mjs (placed automatically
+        on booking.created). Fixing one caller leaves the other silent.
+        placeConfiguredCall — the bureau path — sets no `record` and so needs
+        none of this; if it ever starts taping, it needs this too.
+
+     2. agents.prompt is owner-editable in the Agent Editor. A notice living
+        there can be removed by a save that meant nothing by it, and the tape
+        would keep rolling with no words in front of it.
+
+   Binding the words to the same object that carries `record` is what makes
+   "taped but not told" unrepresentable rather than merely discouraged. */
+export const RECORDING_NOTICE =
+  "FIRST, before anything else you say, speak this sentence exactly, and say " +
+  'nothing before it: "Just so you know, this call is recorded." ' +
+  "Then continue with the instructions that follow.";
+
+/** The spoken script with the notice in front of it. Exported so the test can
+    assert against the real words instead of retyping them. */
+export function taskWithRecordingNotice(prompt) {
+  return `${RECORDING_NOTICE}\n\n${String(prompt)}`;
+}
+
 /** E.164-ish. Bland wants a dialable string; this rejects the obviously wrong
     rather than trying to be a phone-number library. */
 export function normalizePhone(raw) {
@@ -181,7 +215,9 @@ export async function placeCall({
     phone_number: to,
     // THE POINT OF THE WHOLE FILE: the words come from the database row the
     // Agent Editor saves, never from a file in vendor/.
-    task: String(agent.prompt),
+    // Wrapped, not replaced: the recording notice is prepended because `record`
+    // is true below. See RECORDING_NOTICE.
+    task: taskWithRecordingNotice(agent.prompt),
     first_sentence: firstSentenceFromPrompt(agent.prompt),
     // The agent SMS line auto-answers silent. Waiting for a greeting ends the call in ~0.13s.
     wait_for_greeting: !proveLine,
@@ -198,6 +234,8 @@ export async function placeCall({
     /* THE TAPE. Bland defaults `record` to false, so recording_url came back null on
        every call ever placed here — including the ones that did connect and talk.
        "Empty tape" was not a symptom of the hang-up; it was guaranteed separately. */
+    /* Paired with taskWithRecordingNotice() on `task` above. Do not set this
+       true anywhere that does not also carry the notice. */
     record: true,
     webhook: webhookUrl || String(env.BLAND_WEBHOOK_URL || "").trim() || DEFAULT_WEBHOOK_URL,
     metadata: {
