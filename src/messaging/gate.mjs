@@ -67,6 +67,10 @@ export const GATE_SOURCE = "messaging-gate";
     guessing which rules apply is the failure this exists to prevent. */
 export const CHANNELS = new Set(["sms", "email", "voice"]);
 
+/** Welcome mail for a partner or affiliate. They are not client rows, so these
+    keys are the only emails allowed out with no clientId attached. */
+export const PARTNER_WELCOME_KEYS = new Set(["AF1", "EMAIL-PARTNER-WELCOME"]);
+
 /** Quiet hours, US Eastern, inclusive start and exclusive end.
     23:00 through 10:59 is closed; 11:00 through 22:59 is open. */
 export const QUIET_START_HOUR = 23;
@@ -232,10 +236,13 @@ async function run(db, message, { now = () => new Date(), timeZone = QUIET_HOURS
   // Read now, from the database, per channel. A missing clientId is a block and
   // not a pass: a message with nobody attached has no opt-out record to check,
   // and "we could not find a record" must never resolve to "nobody objected".
-  const affiliateWelcome = channel === "email"
-    && String(templateKey || "") === "AF1"
+  // A partner or affiliate is not a client row, so their own welcome mail has
+  // no clientId to look up. The address is on the queued row and they asked for
+  // it by filling in the apply form.
+  const partnerWelcome = channel === "email"
+    && PARTNER_WELCOME_KEYS.has(String(templateKey || ""))
     && String(toAddress || "").includes("@");
-  if (!clientId && !affiliateWelcome) {
+  if (!clientId && !partnerWelcome) {
     reasons.push(r("recipient_unknown", "consent",
       "This message has no client attached, so we cannot check whether they asked us to stop. It was not sent."));
   } else if (clientId && await isOptedOut(db, clientId, channel)) {

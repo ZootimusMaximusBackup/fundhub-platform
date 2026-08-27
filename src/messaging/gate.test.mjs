@@ -200,6 +200,17 @@ describe("opt-out", () => {
     }, { now: MIDDAY });
     assert.ok(!codes(res).includes("recipient_unknown"), JSON.stringify(codes(res)));
   });
+
+  test("allows the partner welcome email when the address is on the queued row", async () => {
+    const res = await gate(fakeDb(), {
+      ...base,
+      clientId: null,
+      channel: "email",
+      templateKey: "EMAIL-PARTNER-WELCOME",
+      toAddress: "e2e+wl-hole7@fundhub.ai"
+    }, { now: MIDDAY });
+    assert.ok(!codes(res).includes("recipient_unknown"), JSON.stringify(codes(res)));
+  });
 });
 
 // ---------------------------------------------------------------------------
