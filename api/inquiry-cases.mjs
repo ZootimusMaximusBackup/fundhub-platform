@@ -5,6 +5,7 @@ import { db } from "../src/db.mjs";
 import { requireAuth } from "../src/http/middleware/requireAuth.mjs";
 import { ROLE_SETS, requireRole, isUuid } from "../src/http/read-api.mjs";
 import { createCase, updateCase, closeCase, CASE_STATUSES } from "../src/inquiry-ops/cases.mjs";
+import { generateFromCrs } from "../src/inquiry-ops/generate-from-crs.mjs";
 import { clearInquiry as clearBridgeInquiry } from "../src/inquiry-removal/cases.mjs";
 import { sendCase, SendGateError } from "../src/inquiry-ops/send.mjs";
 import { overrideBureauGate } from "../src/inquiry-ops/gate.mjs";
@@ -22,7 +23,7 @@ import { emit } from "../src/events/bus.mjs";
 import { dbDown } from "../src/http/db-down.mjs";
 
 const ACTIONS = new Set([
-  "create", "update", "close", "mark_cleared", "clear_inquiry", "send", "gate_override"
+  "create", "update", "close", "mark_cleared", "clear_inquiry", "send", "gate_override", "generate"
 ]);
 
 export default async function handler(req, res, deps = {}) {
@@ -115,6 +116,22 @@ export default async function handler(req, res, deps = {}) {
 
     if (!isUuid(body.id)) {
       return res.status(400).json({ ok: false, error: "id required" });
+    }
+
+    if (action === "generate") {
+      const result = await generateFromCrs(database, { orgId, caseId: body.id });
+      const status = result.httpStatus || 200;
+      const payload = { ...result };
+      delete payload.httpStatus;
+      if (!payload.ok && status === 404) {
+        return res.status(404).json({
+          ok: false,
+          error: "not_found",
+          reason: "not_found",
+          message: payload.message
+        });
+      }
+      return res.status(status).json(payload);
     }
 
     if (action === "update") {
