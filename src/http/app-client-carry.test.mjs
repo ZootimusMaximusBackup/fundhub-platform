@@ -344,6 +344,36 @@ describe("shell.js — remembering the client across a screen that has none", ()
     assert.equal(seen.href, "finance-os.html?client_id=" + CID);
   });
 
+  /* Hole 10 taught the pages to open a file from ?client= and ?contact= too.
+     The shell was not taught, so the page opened the right person while the
+     rail around it pointed somewhere else. These pin that the shell now agrees
+     with the pages - and the ?id= test directly below pins the one spelling it
+     still must NOT take everywhere. */
+
+  test("?client= is read as the client, on any screen", async () => {
+    const a = anchor("finance-os.html");
+    const r = await runShell({ links: [a], page: "closer-dashboard.html", search: "?client=" + CID });
+    assert.equal(r.store.fh_client, CID);
+    assert.equal(a.href, "finance-os.html?client_id=" + CID);
+  });
+
+  test("?contact= is read as the client, on any screen", async () => {
+    const a = anchor("finance-os.html");
+    const r = await runShell({ links: [a], page: "closer-dashboard.html", search: "?contact=" + CID });
+    assert.equal(r.store.fh_client, CID);
+    assert.equal(a.href, "finance-os.html?client_id=" + CID);
+  });
+
+  test("a junk ?client= does not shadow a good ?client_id=", async () => {
+    const a = anchor("finance-os.html");
+    const r = await runShell({
+      links: [a], page: "closer-dashboard.html",
+      search: "?client=not-a-uuid&client_id=" + CID
+    });
+    assert.equal(r.store.fh_client, CID,
+      "only a real uuid wins, whichever spelling carries it");
+  });
+
   test("an ?id= on some other screen is NOT read as a client", async () => {
     // agent-editor.html?id= is an agent. Remembering it as a client would send
     // the next click to a record that is not a person.

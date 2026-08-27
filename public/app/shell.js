@@ -534,37 +534,44 @@
   /* READING is permissive; WRITING stays per-screen.
 
      Hole 10 taught client-control-panel.html, closer-dashboard.html and
-     present.js to open a file from any of these four spellings, because links
-     into this product come from ClickFunnels, from email, and from staff
-     pasting a URL, and they do not agree on one name. urlClient() was left
-     reading only client_id (plus "id" on the control panel), so the PAGE would
-     open the right client while the SHELL around it thought no client was
-     selected — the rail rows then pointed at a different file, or at none.
+     present.js to open a file from ?id=, ?client_id=, ?client= or ?contact=,
+     because links into this product come from ClickFunnels, from email, and
+     from staff pasting a URL, and they do not agree on one name. urlClient()
+     was left reading only client_id (plus "id" on the control panel), so the
+     PAGE would open the right client while the SHELL around it thought no
+     client was selected - the rail rows then pointed at a different file, or
+     at none.
 
-     CLIENT_SCREENS below is unchanged and still governs which name we WRITE
-     when building a link, so nothing about outgoing URLs changes here.
+     "client" and "contact" are safe on every screen: nothing else in the app
+     uses those names.
+
+     "id" IS NOT, and stays gated to CLIENT_SCREENS. agent-editor.html?id= is an
+     AGENT id; reading it as a client would remember a record that is not a
+     person and send the next click there. src/http/app-client-carry.test.mjs
+     "an ?id= on some other screen is NOT read as a client" pins that, and it is
+     the reason this function cannot simply take every spelling everywhere.
+
+     CLIENT_SCREENS is unchanged and still governs which name we WRITE when
+     building a link, so nothing about outgoing URLs changes here.
 
      Known duplication, left alone deliberately: this same alias list exists in
      four places with four different orderings (present.js:91,
      client-control-panel.html:1474/2050/2128/2130, closer-dashboard.html:225).
-     Order is irrelevant while at most one is ever present, and unifying them is
-     a refactor across four files, not part of closing this gap.
-
-     "id" used to be read only on the control panel. It is read everywhere now.
-     Checked 2026-08-27 before widening it: no screen under public/app reads
-     ?id= for anything that is not a client, and UUID_RE below means a non-uuid
-     ?id= (a slug, a number) is ignored rather than mistaken for one. */
-  var CLIENT_ID_ALIASES = ["client_id", "id", "client", "contact"];
+     Unifying them is a refactor across four files, not part of closing this
+     gap. */
+  var CLIENT_ID_ALIASES = ["client_id", "client", "contact"];
 
   function urlClient() {
     try {
       var q = new URLSearchParams(location.search);
+      var names = CLIENT_ID_ALIASES.slice();
+      if (CLIENT_SCREENS[PAGE] === "id") names.push("id");
       var v = "";
-      for (var i = 0; i < CLIENT_ID_ALIASES.length && !v; i++) {
-        var raw = q.get(CLIENT_ID_ALIASES[i]);
+      for (var i = 0; i < names.length && !v; i++) {
+        var raw = q.get(names[i]);
         raw = String(raw == null ? "" : raw).trim();
-        /* Only a real uuid wins. A junk ?client=foo must not shadow a good
-           ?client_id=<uuid> later in the list. */
+        /* Only a real uuid wins, so a junk ?client=foo cannot shadow a good
+           ?client_id=<uuid> further down the list. */
         if (UUID_RE.test(raw)) v = raw;
       }
       return v;
