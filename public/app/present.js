@@ -96,7 +96,8 @@
     offers: [], softPull: null, ebookDollars: "", saleMotion: "", loaded: false, error: null,
     contractOpen: false, contractWordings: [], contractTplId: "", contractLink: "",
     contractMsg: "", contractBusy: false,
-    stagedLetters: [], repairBusy: false, repairMsg: "", amountPaidDollars: ""
+    stagedLetters: [], repairBusy: false, repairMsg: "", amountPaidDollars: "",
+    businesses: [], incBusy: "", incMsg: ""
   };
 
   function esc(s) {
@@ -107,6 +108,16 @@
   function money(n) {
     if (n == null || !Number.isFinite(Number(n))) return "—";
     return "$" + Number(n).toLocaleString("en-US");
+  }
+  /* "2020-01" -> "January 2020". Never invents a day. */
+  function monthYear(raw) {
+    var s = String(raw == null ? "" : raw).trim();
+    var m = s.match(/^(\d{4})-(\d{2})/);
+    if (!m) return s;
+    var names = ["January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"];
+    var i = Number(m[2]) - 1;
+    return (names[i] || m[2]) + " " + m[1];
   }
   function offer(key) {
     var list = state.offers || [];
@@ -229,6 +240,16 @@
   function firstName() {
     var n = (state.survey && state.survey.name) || "";
     return n.split(" ")[0] || "there";
+  }
+
+  /* Companies on the file, and the ones still missing a month/year. Age is
+     computed from the incorporation date, so a blank date means the stack is
+     guessing. Present has to ask. */
+  function businesses() {
+    return Array.isArray(state.businesses) ? state.businesses : [];
+  }
+  function businessesNeedingDate() {
+    return businesses().filter(function (b) { return !b.incorporated_date; });
   }
 
   function slide(c, label, inner) {
@@ -360,6 +381,13 @@
         row("Funding target", esc(dash(sv.target))) +
         row("Planned use", esc(dash(sv.use))) +
         row("Business", esc(dash(sv.hasBiz)), esc(sv.entity || "")) +
+        businesses().map(function (b) {
+          return row(
+            esc(b.name || "Business"),
+            b.incorporated_date ? esc(monthYear(b.incorporated_date)) : "When was it incorporated?",
+            b.incorporated_date ? "Incorporated" : "We need the month and year to price the file"
+          );
+        }).join("") +
         row("Monthly revenue", esc(dash(sv.revenue))) +
         row("Annual income (they said)", esc(dash(sv.income))) +
         row("Income Insight (Experian)", esc(dash(moneyYr(inc.experian)))) +
@@ -513,6 +541,39 @@
     return '<button type="button" class="ck-btn' + (primary ? " k" : "") + '" data-act="' + esc(action) + '"' + (extra || "") + ">" + esc(label) + "</button>";
   }
 
+  /* Ask for the month and year each company was incorporated. Business age is
+     what the lender stack prices off, and a blank date means nobody asked.
+     Saves through the same staff action the Control Panel uses. */
+  function incorporationAsk() {
+    var all = businesses();
+    if (!all.length) return "";
+    var missing = businessesNeedingDate();
+    var html = '<div><span class="mono">When was each business incorporated?</span>';
+    if (!missing.length) {
+      html += '<div style="font-size:11px;color:var(--gray);margin-top:5px">All '
+        + all.length + ' on file. Read them back and confirm nothing changed.</div>';
+    } else {
+      html += '<div style="font-size:11px;color:var(--gray);margin-top:5px">'
+        + missing.length + ' of ' + all.length
+        + ' have no date. Ask for the month and year, then save. Do not take a guess.</div>';
+    }
+    html += '<div style="margin-top:6px;display:flex;flex-direction:column;gap:7px">';
+    all.forEach(function (b, i) {
+      var val = b.incorporated_date ? String(b.incorporated_date).slice(0, 7) : "";
+      html += '<div><div style="font-size:11px;font-weight:650">' + esc(b.name || "Business " + (i + 1)) + "</div>"
+        + '<div style="font-size:9.5px;color:var(--gray2);margin-top:1px">'
+        + (b.incorporated_date ? "On file · " + esc(monthYear(b.incorporated_date)) : "No date on file")
+        + "</div>"
+        + '<input id="fh-inc-' + i + '" type="month" value="' + esc(val)
+        + '" style="margin-top:4px;width:100%;background:transparent;border:1px solid var(--line);color:var(--ink);font-family:var(--mono);font-size:11px;padding:7px 9px;outline:none">'
+        + ckBtn(state.incBusy === b.name ? "Saving\u2026" : "Save month / year", "stamp-inc:" + i)
+        + "</div>";
+    });
+    html += "</div>";
+    if (state.incMsg) html += '<div style="font-size:11px;color:var(--gray);margin-top:6px">' + esc(state.incMsg) + "</div>";
+    return html + "</div>";
+  }
+
   function cockpit() {
     var t = TALK[code()] || { title: "", lines: [], watch: "" };
     var d = state.engine || {};
@@ -546,6 +607,9 @@
       html += '</div></div><div class="watch"><span class="mono">Watch for</span><div style="font-size:11px;color:var(--gray);margin-top:4px">' + esc(t.watch) + "</div></div>";
 
       if (ph === "02 Discovery") {
+        /* Above the belief list on purpose: on a laptop the cockpit scrolls,
+           and an ask below the fold is an ask nobody makes. */
+        html += incorporationAsk();
         html += '<div><span class="mono">7 beliefs — check when THEY say it</span><div style="margin-top:6px;display:flex;flex-direction:column;gap:4px">';
         DISCOVERY.forEach(function (b) {
           var on = !!state.checks[b[0]];
@@ -751,6 +815,10 @@
       cost.addEventListener("input", function (e) { state.costNum = e.target.value; });
       cost.addEventListener("keydown", function (e) { e.stopPropagation(); });
     }
+    businesses().forEach(function (b, i) {
+      var inc = document.getElementById("fh-inc-" + i);
+      if (inc) inc.addEventListener("keydown", function (e) { e.stopPropagation(); });
+    });
     var ebook = document.getElementById("fh-ebook");
     if (ebook) {
       ebook.addEventListener("input", function (e) { state.ebookDollars = e.target.value; });
@@ -842,6 +910,49 @@
       render();
       if (state.contractLink) window.FHContractSend.copyText(state.contractLink);
     });
+  }
+
+  /* Save one company's month/year. Same staff action the Control Panel posts,
+     so there is one write path, not two. */
+  async function stampIncorporated(i) {
+    var b = businesses()[i];
+    if (!b) return;
+    var input = document.getElementById("fh-inc-" + i);
+    var val = input ? String(input.value || "").trim() : "";
+    if (!/^\d{4}-\d{2}$/.test(val)) {
+      state.incMsg = "Enter the month and year for " + (b.name || "this business") + ".";
+      render();
+      return;
+    }
+    state.incBusy = b.name;
+    state.incMsg = "Saving\u2026";
+    render();
+    var r = await window.FHData.write("/api/soft-pull-approve", {
+      action: "stamp_incorporated",
+      client_id: contactId,
+      business_name: b.name,
+      incorporated_date: val
+    });
+    state.incBusy = "";
+    if (!r || !r.ok) {
+      state.incMsg = (r && r.error && (r.error.message || r.error)) || (r && r.message) || "Could not save that date.";
+      render();
+      return;
+    }
+    var saved = r.business || (r.data && r.data.business) || {};
+    state.businesses = businesses().map(function (row) {
+      if (row.name !== b.name) return row;
+      return {
+        id: row.id,
+        name: row.name,
+        age_months: saved.age_months == null ? row.age_months : Number(saved.age_months),
+        incorporated_date: saved.incorporated_date || val
+      };
+    });
+    var left = businessesNeedingDate().length;
+    state.incMsg = "Saved " + (b.name || "that business") + "."
+      + (left ? " " + left + " still need a date." : " Every company on the file has a date now.");
+    render();
   }
 
   async function stageRepairLetters() {
@@ -1020,6 +1131,7 @@
       return;
     }
     if (a === "letters") { fire("generate_letters"); return; }
+    if (a.indexOf("stamp-inc:") === 0) { stampIncorporated(Number(a.slice(10))); return; }
     if (a === "stage-letters") { stageRepairLetters(); return; }
     if (a === "send-letters") { sendRepairNow(); return; }
     if (a === "disp") {
@@ -1070,6 +1182,7 @@
     }
     var d = r.data || r;
     state.survey = d.survey || {};
+    state.businesses = Array.isArray(d.businesses) ? d.businesses : [];
     state.incomeEstimates = d.income_estimates || {};
     state.engine = d.engine || { available: false, reason: "engine data unavailable", fico: {}, reasons: [] };
     state.offers = d.offers || [];
