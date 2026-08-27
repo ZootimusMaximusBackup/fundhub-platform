@@ -914,6 +914,32 @@
 
   /* Save one company's month/year. Same staff action the Control Panel posts,
      so there is one write path, not two. */
+  /* The whole deck payload in one place, because two things load it now: boot,
+     and a saved incorporation date. The pre-approval figure on screen comes from
+     state.engine, which the SERVER computes from business age - so a date saved
+     without re-reading the deck leaves the old price sitting there. */
+  function applyDeck(d) {
+    d = d || {};
+    state.survey = d.survey || {};
+    state.businesses = Array.isArray(d.businesses) ? d.businesses : [];
+    state.incomeEstimates = d.income_estimates || {};
+    state.engine = d.engine || { available: false, reason: "engine data unavailable", fico: {}, reasons: [] };
+    state.offers = d.offers || [];
+    state.softPull = d.soft_pull || null;
+    state.tier = (state.engine && state.engine.tier) || null;
+  }
+
+  /* Returns true when the numbers on screen are the server's current ones.
+     False means the save landed but the price may still be the old one, and
+     the caller says so rather than showing a stale figure as if it were fresh. */
+  async function refreshDeck() {
+    if (!window.FHData || !contactId) return false;
+    var r = await window.FHData.read("closer-deck", { contact: contactId });
+    if (!r || !r.ok) return false;
+    applyDeck(r.data || r);
+    return true;
+  }
+
   async function stampIncorporated(i) {
     var b = businesses()[i];
     if (!b) return;
@@ -949,9 +975,16 @@
         incorporated_date: saved.incorporated_date || val
       };
     });
+    /* Re-read the deck. Business age is an input to the stack the engine
+       prices, so the pre-approval figure above this panel is wrong the moment a
+       date is saved. Keeping the optimistic row update above means the list
+       stays right even if this read fails. */
+    var fresh = await refreshDeck();
+
     var left = businessesNeedingDate().length;
     state.incMsg = "Saved " + (b.name || "that business") + "."
-      + (left ? " " + left + " still need a date." : " Every company on the file has a date now.");
+      + (left ? " " + left + " still need a date." : " Every company on the file has a date now.")
+      + (fresh ? "" : " The pre-approval number above may still be the old one \u2014 reload to be sure.");
     render();
   }
 
@@ -1180,14 +1213,7 @@
       render();
       return;
     }
-    var d = r.data || r;
-    state.survey = d.survey || {};
-    state.businesses = Array.isArray(d.businesses) ? d.businesses : [];
-    state.incomeEstimates = d.income_estimates || {};
-    state.engine = d.engine || { available: false, reason: "engine data unavailable", fico: {}, reasons: [] };
-    state.offers = d.offers || [];
-    state.softPull = d.soft_pull || null;
-    state.tier = (state.engine && state.engine.tier) || null;
+    applyDeck(r.data || r);
     state.loaded = true;
     render();
   }

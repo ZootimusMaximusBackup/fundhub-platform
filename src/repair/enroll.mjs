@@ -114,11 +114,30 @@ export async function enrollRepairProgram(db, {
     idempotencyKey
   }).catch((err) => ({ id: null, deduped: false, error: String(err?.message || err) }));
 
-  /* Still called directly. emit() dispatches only to handlers registered via
-     src/workflows/index.mjs, which this HTTP path does not import, so dropping
-     this call would silently stop the welcome email. If both do run, both are
-     idempotent: moveCardToStage is an UPDATE and sendTemplated's insert is
-     ON CONFLICT (org_id, provider_ref) DO NOTHING on a deterministic ref. */
+  /* Still called directly, and ON THE DEPLOYED SITE IT DOES RUN TWICE.
+
+     An earlier version of this comment said emit() "dispatches only to handlers
+     registered via src/workflows/index.mjs, which this HTTP path does not
+     import". That premise is false in production: netlify/functions/api.mjs:101
+     imports api/read/workflows.mjs, which imports src/workflows/index.mjs:1,
+     which calls registerRepairHandlers() — so emit() above already dispatched
+     onRepairEvent for this same event before this line runs.
+
+     The comment's CONCLUSION was right even though its reason was wrong, and
+     that is the only reason this is not a live bug. Both runs are idempotent:
+       - moveRepairCard is an UPDATE
+       - the welcome email keys on provider_ref
+         `workflow:EMAIL-REPAIR-WELCOME:repair-email:repair.enrolled:<org>:<client>:<staffId>`
+         and inserts ON CONFLICT (org_id, provider_ref) DO NOTHING. Both runs
+         are handed the same `payload` object, so eventIdFor() returns the same
+         string and the second insert writes nothing.
+
+     KEEP THE CALL. In a context that does NOT load the registry — a script, a
+     test, a worker that imports this module alone — emit()'s dispatch reaches
+     no handler and this line is the only thing that sends the welcome email.
+
+     DO NOT add a side effect to onRepairEvent that is not idempotent. It runs
+     twice per enrollment here. src/repair/notify.test.mjs pins that. */
   const event = await onRepairEvent(db, {
     name: "repair.enrolled",
     orgId,
