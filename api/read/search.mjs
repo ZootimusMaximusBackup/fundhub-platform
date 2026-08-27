@@ -255,6 +255,23 @@ async function searchCards(database, orgId, pattern, limit) {
           OR pr.name ILIKE $2 ESCAPE '\\'
           OR pr.brand_name ILIKE $2 ESCAPE '\\'
           OR pr.contact_email ILIKE $2 ESCAPE '\\'
+          /* THE PERSON, NOT JUST THE COMPANY. api/public/partner-apply.mjs
+             writes the COMPANY into partners.name and partners.brand_name
+             (display = company or name, company winning). The human being
+             who signed up is stored nowhere on the partner row — only on their
+             accounts row. So the three predicates above find "Sim WL Book
+             E2e27" and find the email, and return nothing at all for "Sim
+             Wlabel E2e27", which is the name a staff member actually types.
+
+             EXISTS rather than a join: a partner may hold more than one login,
+             and joining accounts would return the same card once per login. */
+          OR EXISTS (
+               SELECT 1 FROM accounts a
+                WHERE a.partner_id = cd.partner_id
+                  AND a.org_id = cd.org_id
+                  AND a.kind = 'partner'
+                  AND a.name ILIKE $2 ESCAPE '\\'
+             )
           OR s.name ILIKE $2 ESCAPE '\\'
           OR p.name ILIKE $2 ESCAPE '\\'
           OR cd.owner ILIKE $2 ESCAPE '\\'
