@@ -53,7 +53,21 @@ describe("POST /api/public/education-enroll", { skip: !HAVE_DB ? "no DATABASE_UR
     [EMAIL_LIKE]
   )).rows;
 
+  const salesCards = async () => (await db.query(
+    `SELECT ps.key AS stage_key
+       FROM cards cd
+       JOIN clients c ON c.id = cd.client_id
+       JOIN pipelines p ON p.id = cd.pipeline_id
+       JOIN pipeline_stages ps ON ps.id = cd.stage_id
+      WHERE lower(c.email) LIKE $1 AND p.key = 'sales'`,
+    [EMAIL_LIKE]
+  )).rows;
+
   async function purge() {
+    await db.query(
+      `DELETE FROM cards WHERE client_id IN (SELECT id FROM clients WHERE lower(email) LIKE $1)`,
+      [EMAIL_LIKE]
+    );
     await db.query(`DELETE FROM education_enrollments WHERE lower(email) LIKE $1`, [EMAIL_LIKE]);
     await db.query(`DELETE FROM clients WHERE lower(email) LIKE $1`, [EMAIL_LIKE]);
   }
@@ -90,6 +104,14 @@ describe("POST /api/public/education-enroll", { skip: !HAVE_DB ? "no DATABASE_UR
     // A request is not a payment. Nothing here may report otherwise.
     assert.equal(found[0].status, "pending_payment");
     assert.ok(found[0].org_id, "org_id must be stamped");
+  });
+
+  // Hole 6: the row existed for months while the Sales board stayed empty, so
+  // nobody worked the lead. The card is the claim, not the response body.
+  test("the enrollment puts a card on the Sales board", async () => {
+    const cards = await salesCards();
+    assert.equal(cards.length, 1, "one Sales card for the enrolled person");
+    assert.equal(cards[0].stage_key, "new_lead");
   });
 
   test("an unknown program is refused and stores nothing", async () => {
