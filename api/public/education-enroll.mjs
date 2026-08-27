@@ -28,6 +28,7 @@ import { defaultOrgId } from "../../src/events/bus.mjs";
 import { resolveClient } from "../../src/handlers/client-lifecycle.mjs";
 import { safeError } from "../../src/http/health.mjs";
 import { createEnrollment, isProgram, EnrollmentError } from "../../src/education/enrollments.mjs";
+import { normalizePhone } from "../../src/messaging/providers/bland-voice.mjs";
 
 function readBody(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
@@ -64,7 +65,8 @@ export function parseEducationEnrollBody(body) {
   const program = cleanStr(body.program, 60);
   const name = cleanStr(body.full_name || body.name, 120);
   const email = cleanStr(body.email, 160).toLowerCase();
-  const phone = cleanStr(body.phone || body.mobile, 40);
+  const rawPhone = cleanStr(body.phone || body.mobile, 40);
+  const phone = normalizePhone(rawPhone) || rawPhone;
   const pageUrl = cleanStr(body.page_url, 500);
 
   if (!isProgram(program)) return { ok: false, error: "unknown_program" };

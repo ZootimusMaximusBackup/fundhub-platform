@@ -50,6 +50,12 @@ test("parseSurveySubmitBody requires name and email; phone and SMS are optional"
   });
   assert.equal(ok.ok, true);
   assert.equal(ok.email, "ada@example.com");
+  const e164 = parseSurveySubmitBody({
+    name: "Ada Lovelace",
+    email: "ada@example.com",
+    phone: "6616054248",
+  });
+  assert.equal(e164.phone, "+16616054248");
   assert.deepEqual(ok.answers, {
     cf_svy_self_reported_fico: "750+",
     cf_svy_funding_target_amount: "Less than $50k",
