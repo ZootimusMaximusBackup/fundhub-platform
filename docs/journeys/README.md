@@ -52,8 +52,8 @@ have no automation tree at all. See `src/journeys/seed-journeys.mjs`'s header.
 
 - **198 routes** are reachable in total.
 - **0 routes have gates that could not be traced.** Every gate resolved to its source.
-- **17 routes are genuinely open** (signing in, signing out, "who am I", and the health check).
-- **3 routes need no sign-in but are not open** — a signed link, a provider signature, and Inngest's own request signing. Anyone may call them; the wrong signature is refused.
+- **15 routes are genuinely open** (signing in, signing out, "who am I", and the health check).
+- **5 routes need no sign-in but are not open** — a signed link, a provider signature, and Inngest's own request signing. Anyone may call them; the wrong signature is refused.
 - **`role-sales-manager` is built.** It was tracked in `CLAUDE.md` §4 with nothing behind
   it until 2026-08-01, when the owner directed the build (Ticket 8). The role now carries a
   catalog row, a task-routing CHECK, a demo login, and membership of `ROLE_SETS.STAFF` and
