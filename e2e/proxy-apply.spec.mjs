@@ -92,7 +92,9 @@ test("lenders.html client-scoped Apply shows no-extension fallback with verified
   });
 
   await expect(page.locator("#applyClientBanner")).toContainText("Client-scoped Apply");
-  await expect(page.locator("#fh-proxy-ext-hint")).toContainText("Chrome add-on is off");
+  // The page-level yellow bar is gone by design; the warning now lives in the
+  // Apply modal asserted below, which is where it can still stop somebody.
+  await expect(page.locator("#fh-proxy-ext-hint")).toHaveCount(0);
   const applyBtn = page.getByRole("button", { name: /^Apply$/ });
   await expect(applyBtn).toBeVisible();
   await applyBtn.click();
@@ -144,7 +146,9 @@ test("client-control-panel funding Apply list wires Apply control", async ({ pag
   });
 
   await expect(page.locator("#fh-funding-apply")).toBeVisible();
-  await expect(page.locator("#fh-proxy-ext-hint")).toContainText("Chrome add-on is off");
+  // The page-level yellow bar is gone by design; the warning now lives in the
+  // Apply modal asserted below, which is where it can still stop somebody.
+  await expect(page.locator("#fh-proxy-ext-hint")).toHaveCount(0);
   await expect(page.locator("#fh-funding-apply-status")).toContainText("fit");
   await page.locator("#fh-funding-apply-list").getByRole("button", { name: /^Apply$/ }).click();
   const modal = page.locator("#fh-proxy-apply-modal");

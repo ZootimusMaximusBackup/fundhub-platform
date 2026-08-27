@@ -49,7 +49,6 @@
   .live-dot{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 60%,transparent);animation:livepulse 1.8s infinite;}
   @keyframes livepulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 55%,transparent);}70%{box-shadow:0 0 0 6px color-mix(in srgb,var(--ok) 0%,transparent);}100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 0%,transparent);}}
   .clock{font-family:var(--mono);font-size:var(--fs-caption);color:var(--dark-text);}
-  .org-pill{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.6px;color:var(--dark-text-dim);border:1px solid var(--dark-line);padding:3px 8px;border-radius:4px;}
 
   /* ══════════════════════════════════════════════════════════════════════════
      SHARED CHROME — collapsible grouped sidebar. Identical across every file.
@@ -496,7 +495,6 @@
       <div class="sub">Pipeline</div>
     </div>
     <div class="topbar-right">
-      <div class="org-pill">Org: Fundhub</div>
       <div class="clock">—</div>
       <div class="live-pill"><span class="live-dot"></span>LIVE</div>
     </div>
@@ -1807,13 +1805,6 @@ restore();
     var body = document.createElement("div");
     body.className = "col-body";
     (stage.cards || []).forEach(function (c) { body.appendChild(cardEl(c)); });
-    if (!(stage.cards || []).length) {
-      var empty = document.createElement("div");
-      empty.className = "empty-rail-note";
-      empty.style.cssText = "margin:16px 8px;font-size:var(--fs-caption);";
-      empty.textContent = "No cards in this stage";
-      body.appendChild(empty);
-    }
     col.appendChild(head); col.appendChild(body);
     return col;
   }
@@ -1853,10 +1844,10 @@ restore();
     }
     if (r.shown === 0) {
       banner("real",
-        "live board · " + label.toLowerCase() +
+        label.toLowerCase() +
         " · no cards on this rail yet — stages are ready, nobody has been placed here");
     } else {
-      banner("real", "live board · " + label.toLowerCase() + " pipeline");
+      banner("real", label.toLowerCase() + " pipeline");
     }
   }
 

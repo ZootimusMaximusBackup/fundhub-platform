@@ -69,31 +69,16 @@
     return !!(res && res.ok && (res.type === "pong" || res.type === "fh-proxy-pong" || res.type === "ready"));
   }
 
-  function showExtensionHint(present) {
-    var el = document.getElementById("fh-proxy-ext-hint");
-    if (present) {
-      if (el) el.style.display = "none";
-      return;
-    }
-    if (!el) {
-      el = document.createElement("div");
-      el.id = "fh-proxy-ext-hint";
-      el.setAttribute("role", "status");
-      el.style.cssText =
-        "padding:8px 14px;background:#FEF3C7;border-bottom:1px solid #FCD34D;" +
-        "font:600 12px/1.4 system-ui,sans-serif;color:#18181B;";
-      el.textContent =
-        "Chrome add-on is off. Apply will not open the bank page the safe way. Do not open a bank link from this computer. Load Fundhub Proxy (Extensions → Load unpacked → extension folder), pin it, then reload.";
-      var host = document.querySelector(".shell") || document.body;
-      host.insertBefore(el, host.firstChild);
-    }
-    el.style.display = "";
-  }
-
+  /* No page-level banner. This file is loaded by three screens and used to push
+     a yellow bar onto the top of all of them on every load, whether or not the
+     screen could start an application. The warning it carried is not lost: the
+     moment anyone actually clicks Apply without the add-on, openManualUi() below
+     states it in the modal — same words, same yellow, at the point of action —
+     and NOT_ROUTED_WARNING covers both failure paths. Detection itself is
+     unchanged; only the banner is gone. */
   function detectExtension() {
     return extRequest("ping").then(function (res) {
       extensionPresent = extensionReplyOk(res);
-      showExtensionHint(extensionPresent);
       return extensionPresent;
     });
   }
