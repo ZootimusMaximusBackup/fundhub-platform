@@ -75,18 +75,33 @@ html{ font-size:100%; }        /* = the reader's browser default, normally 16px 
   --fs-caption:.8125rem; /* 13px - caption / label / eyebrow - the floor */
 }
 
-/* UI-STANDARDS.md §1 MAX CONTENT WIDTH — 1800px, centered.
-   Owner-set 2026-08-17, and UI-STANDARDS §1 updated in the same commit.
-   Was 1280px. Measured on the owner's 2560px working screen: the rail takes a
-   fixed 228px, so 228 + 1280 left 1052px (41.1%) of the monitor empty, and no
-   breakpoint above 1201px existed anywhere in the app. 1800px was chosen over
-   full-bleed on purpose — the cap exists to stop lines of text growing too long
-   to read, so it is raised, not removed. */
+/* UI-STANDARDS.md §1 CONTENT WIDTH — FULL WIDTH, no cap.
+   Owner-set 2026-08-27, and UI-STANDARDS §1 updated in the same commit.
+   History: 1280px, raised to 1800px on 2026-08-17, removed now. Both earlier
+   values failed the same test. The owner zooms out on a 2560px monitor to get
+   more room and gets none, because the content stops growing and every extra
+   pixel becomes empty side margin: with the fixed 228px rail, a 1800px cap
+   leaves 532px dead at 2560 and 1412px dead at 3440. Reading measure belongs
+   on the text blocks that need it, not on every table, card grid and two-pane
+   layout in the app. Do not reinstate a cap here.
+
+   --fh-maxw IS STILL DEFINED ON PURPOSE. It is no longer an app-wide cap, but
+   client-portal.html:67 reads it as `min(780px, var(--fh-maxw))` to hold that
+   page's 780px reading column. Deleting the token makes the min() invalid at
+   computed-value time, which drops max-width to none and blows the client's
+   portal full width. Leave the token; it is a bound, not a layout. */
 /* --fh-statusbar reserves room for the fixed status strip at the bottom of the
    page. It used to start at 0px and be overwritten at runtime by data.js:497
    with the strip's measured height, which grew the page ~29px AFTER first paint
    on every single load. Reserving the space up front removes that reflow; the
    strip is position:fixed so this only ever reserves, never pushes twice. */
+/* This branch set the token to `none`. main got to the same fluid CRM a
+   different and better way — see the block above — and `none` breaks the one
+   place that still reads it: client-portal.html:67 asks for
+   `min(780px, var(--fh-maxw))`, and min() with a keyword is invalid, which
+   would silently drop the portal's reading measure. Keeping main's value; the
+   CRM is uncapped by the shell rule, not by emptying this token.
+   src/ui/shell-is-fluid.test.mjs fails if it is deleted. */
 :root{ --fh-maxw:1800px; --fh-statusbar:32px; }
 
 /* ── SURFACE — panels sit ON the page, on purpose (owner-set 2026-08-17) ─────
@@ -140,7 +155,13 @@ html{ font-size:100%; }        /* = the reader's browser default, normally 16px 
    hiring.html, products-commissions.html and staff-teams.html had each already
    added exactly this declaration by hand to their own .content. This moves that
    one-line workaround to the one place the class is defined. */
-.fh-maxw{max-width:var(--fh-maxw);margin-inline:auto;width:100%}
+/* 2026-08-27: max-width and the auto inline margin are gone (owner-set,
+   §1 above). width:100% stays — read the note above, it is still the thing
+   that keeps this wrapper sized by its column instead of by its widest child.
+   margin-inline is pinned to 0 rather than dropped: several screens set their
+   own `margin:0 auto`, and an auto cross-axis margin on a flex item cancels
+   the stretch, which would shrink-wrap them right back down. */
+.fh-maxw{max-width:none;margin-inline:0;width:100%}
 
 /* ── UI-STANDARDS.md §3 TYPE SNAP ──────────────────────────────────────────
    Screen CSS loads AFTER this file, so leftover 7.5–13px sizes win unless we

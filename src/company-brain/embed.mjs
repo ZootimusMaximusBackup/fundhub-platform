@@ -1,7 +1,6 @@
 // OpenAI embeddings for Company Brain.
-// Owner-set: embeddings stay on OpenAI. Completions moved to Claude
-// (src/agents/model.mjs); Anthropic has no embeddings API and the stored
-// vectors are 1536-dim.
+// Owner-set: embeddings stay on OpenAI. Completions also use OpenAI for now
+// (src/agents/model.mjs). Stored vectors are 1536-dim.
 // Outbound HTTP goes through src/messaging/providers/http.mjs (the only
 // directory allowed to transmit). This module does not call fetch itself.
 

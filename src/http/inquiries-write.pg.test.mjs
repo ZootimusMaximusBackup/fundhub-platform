@@ -128,6 +128,12 @@ describe("POST /api/inquiries — active-shift gate", { skip: !HAVE_DB ? "no DAT
     // irrelevant — they are unrelated FKs — so this is just both.
     const ids = (await db.query(`SELECT id FROM clients WHERE email LIKE $1`, [CLIENT_EMAIL_LIKE]))
       .rows.map((r) => r.id);
+    /* events does NOT cascade from clients - events_client_id_fkey is one of the
+       16 client foreign keys deliberately left blocking, so an audit row cannot
+       vanish with the client it describes. The comment above says inquiry_log
+       and inquiry_attempts cascade, which is true, but the inquiry writes here
+       also emit bus events. Clear those first or the client DELETE fails. */
+    if (ids.length) await db.query(`DELETE FROM events WHERE client_id = ANY($1)`, [ids]);
     if (ids.length) await db.query(`DELETE FROM clients WHERE id = ANY($1)`, [ids]);
     await db.query(`DELETE FROM staff WHERE email LIKE $1`, [STAFF_EMAIL_LIKE]);
   }

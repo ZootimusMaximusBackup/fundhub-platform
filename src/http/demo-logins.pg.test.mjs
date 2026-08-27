@@ -45,6 +45,14 @@ describe("demo logins", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
 
   before(async () => {
     org = await resolveDefaultOrg(db);
+    /* The demo book has to BE there. wipeDemoData legitimately empties it, and
+       several files in this suite call it, so "the demo partner owns a client"
+       depended on which file ran last. Seeding here is idempotent and makes the
+       precondition this file's own business. */
+    try {
+      const { seedPlatformDemo } = await import("../demo/platform-seed.mjs");
+      await seedPlatformDemo(db, { orgId: org });
+    } catch { /* a database that predates the demo seed is handled below */ }
     const r = await db.query(
       `SELECT count(*)::int AS n FROM staff
         WHERE org_id = $1 AND email LIKE '%@demo.fundhub.local'`, [org]);
@@ -52,6 +60,8 @@ describe("demo logins", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
     // rather than failing nine tests that are really one missing migration.
     if (r.rows[0].n === 0) migrated = false;
   });
+
+  let refusalsStartedAt = null;
 
   after(async () => { await close(); });
 
@@ -142,6 +152,11 @@ describe("demo logins", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
   /* --------------------------------------------------------------------- */
   test("WITH THE SWITCH OFF: not one of the nine can sign in",
     { skip: needMigration() }, async () => {
+    /* Stamped so the next test can ask "were any sessions minted BY THESE
+       ATTEMPTS", instead of "in the last two minutes". The whole pg suite shares
+       one database, and any earlier file that signed a demo principal in landed
+       inside that window and failed this. */
+    refusalsStartedAt = new Date();
     for (const s of DEMO_STAFF) {
       const out = await login(db, { email: s.email, password: DEMO_PASSWORD, env: OFF });
       assert.equal(out.ok, false, `${s.email} signed in with ${DEMO_ENV_VAR} unset`);
@@ -160,14 +175,15 @@ describe("demo logins", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
   test("WITH THE SWITCH OFF: no session row was minted for any of them",
     { skip: needMigration() }, async () => {
     // The refusal has to happen before the session is created, not after.
+    assert.ok(refusalsStartedAt, "the refusal test must run first — it stamps the window");
     const staffSessions = await db.query(
       `SELECT count(*)::int AS n FROM sessions s JOIN staff t ON t.id = s.staff_id
-        WHERE t.is_demo AND s.created_at > now() - interval '2 minutes'`);
+        WHERE t.is_demo AND s.created_at >= $1`, [refusalsStartedAt]);
     assert.equal(staffSessions.rows[0].n, 0,
       "a refused demo staff login still minted a session");
     const acctSessions = await db.query(
       `SELECT count(*)::int AS n FROM account_sessions s JOIN accounts a ON a.id = s.account_id
-        WHERE a.is_demo AND s.created_at > now() - interval '2 minutes'`);
+        WHERE a.is_demo AND s.created_at >= $1`, [refusalsStartedAt]);
     assert.equal(acctSessions.rows[0].n, 0,
       "a refused demo principal login still minted a session");
   });

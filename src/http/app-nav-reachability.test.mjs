@@ -176,7 +176,10 @@ describe("app shell — the lists this test reads", () => {
         "automations.html",
         "brand-studio.html",
         "campaign-manager.html",
-        "company-brain.html",
+        /* company-brain.html was here until 2026-08-27, when the owner put the
+           row back. Removed from this fixture rather than the assertion being
+           loosened: the point of the list is that a row cannot appear or vanish
+           from the sidebar without someone editing this line on purpose. */
         "consent-capture.html",
         "content-admin.html",
         "creative-factory.html",

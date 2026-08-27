@@ -79,6 +79,28 @@ describe("company-activity", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
 
     const cashKpi = data.kpis.find((k) => k.id === "cash");
     assert.ok(cashKpi);
+
+    /* The precondition is now WRITTEN, not hoped for. seedPlatformDemo spreads
+       its demo calls over `(n + k) % 25` days back, and only the ones that land
+       on 0 are today — and only 'deposit'/'downsell' outcomes carry cash at all.
+       Whether any row satisfied BOTH was arithmetic coincidence, so this test
+       failed on a correctly-seeded database and blamed the seed.
+
+       The assertion that matters is the line below: the cash KPI must ignore
+       is_demo rows. Guaranteeing the row exists is what makes that assertion
+       mean something instead of passing on an empty set. */
+    await db.query(
+      `INSERT INTO call_outcomes
+         (org_id, client_id, staff_id, booking_ref, outcome, cash_collected_cents,
+          duration_seconds, notes, logged_at, is_demo)
+       SELECT $1, c.id, s.id, 'demo-cash-today', 'deposit', 250000, 600, 'demo',
+              now(), true
+         FROM (SELECT id FROM clients WHERE org_id = $1 AND is_demo LIMIT 1) c,
+              (SELECT id FROM staff   WHERE org_id = $1 AND is_demo LIMIT 1) s
+       ON CONFLICT DO NOTHING`,
+      [orgId]
+    );
+
     // Seeded demo call_outcomes have cash; money KPIs must still exclude them.
     const demoCash = (await db.query(
       `SELECT COALESCE(SUM(cash_collected_cents),0)::bigint n FROM call_outcomes

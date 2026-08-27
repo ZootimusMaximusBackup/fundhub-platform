@@ -128,6 +128,30 @@ describe("fulfillment read layer: the tiles and the demo filter (real Postgres)"
   before(seed);
   after(wipe);
 
+  /* THE NULL THAT EMPTIED BOTH TILES.
+
+     hasFraudAlert compared TRIM(custom_fields->>'round_hold_reason') to
+     'Fraud Alert' with no COALESCE. A client with no hold reason - the common
+     case - made that NULL, which poisoned the whole OR (false OR NULL OR false
+     is NULL), NOT NULL is NULL, and COUNT(*) FILTER silently dropped the row.
+
+     needs_pull and needs_consent are two halves of ONE population, so the tell
+     was a client satisfying every term and appearing in NEITHER. Measured
+     2026-08-27 on real Postgres: both read 0 with one qualifying client.
+
+     This test states the invariant rather than the arithmetic: every paid,
+     unpulled, non-fraud client lands in exactly one of the two counts. A NULL
+     anywhere in that predicate makes it fail again. */
+  test("a client with no round_hold_reason is not silently dropped from BOTH tiles", async () => {
+    const t = await listRollups(db, { orgId, demoOn: false });
+    assert.ok(
+      t.needs_pull + t.needs_consent >= 1,
+      "paidDemoOnly has no round_hold_reason and qualifies on every other term, " +
+      "so it must appear in needs_pull or needs_consent. Zero in both means a NULL " +
+      "is poisoning the fraud predicate again — see the COALESCE in read-signals.mjs."
+    );
+  });
+
   test("a demo credit row does not make it into the Needs Pull tile", async () => {
     const t = await listRollups(db, { orgId, demoOn: false });
     assert.equal(t.needs_pull, 1,
