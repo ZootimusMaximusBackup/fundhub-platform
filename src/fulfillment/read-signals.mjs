@@ -266,6 +266,17 @@ const BALANCES_SQL = `
      AND client_id = ANY($2::uuid[])
      AND balance_due > 0`;
 
+const OPEN_PAYMENT_LINK_STATUSES = Object.freeze(["created", "sent"]);
+
+const PAYMENT_LINKS_SQL = `
+  SELECT client_id, id, purpose, description, amount_cents, status, paid_at
+    FROM payment_links
+   WHERE org_id = $1::uuid
+     AND client_id = ANY($2::uuid[])
+     AND status = ANY($3::text[])
+     AND paid_at IS NULL
+     AND COALESCE(is_demo, false) = false`;
+
 /**
  * gatherListSignals — every derivation signal for a whole page of clients, in
  * one round of parallel reads. Returns a Map keyed by client id.
@@ -283,7 +294,8 @@ export async function gatherListSignals(db, { orgId, clientIds } = {}) {
   const args = [orgId, ids];
   const [
     consentRows, crsRows, inquiryRows, docRows,
-    respRows, caseRows, letterRows, cardRows, taskRows, roundRows, balanceRows
+    respRows, caseRows, letterRows, cardRows, taskRows, roundRows, balanceRows,
+    linkRows
   ] = await Promise.all([
     safeRows(db, consentSql(), [orgId, ids, SOFT_PULL_KIND], "consent"),
     safeRows(db, REAL_CRS_SQL, args, "crs_results"),
@@ -295,7 +307,8 @@ export async function gatherListSignals(db, { orgId, clientIds } = {}) {
     safeRows(db, CARD_SQL, [orgId, ids, CARD_STACKING_PIPELINE], "cards"),
     safeRows(db, OPEN_TASKS_SQL, args, "tasks"),
     safeRows(db, ROUNDS_SQL, args, "funding_rounds"),
-    safeRows(db, BALANCES_SQL, args, "v_invoice_balance")
+    safeRows(db, BALANCES_SQL, args, "v_invoice_balance"),
+    safeRows(db, PAYMENT_LINKS_SQL, [orgId, ids, OPEN_PAYMENT_LINK_STATUSES], "payment_links")
   ]);
 
   const consentBy = byClient(consentRows);
@@ -309,6 +322,7 @@ export async function gatherListSignals(db, { orgId, clientIds } = {}) {
   const taskBy = byClient(taskRows);
   const roundBy = byClient(roundRows);
   const balanceBy = byClient(balanceRows);
+  const linkBy = byClient(linkRows);
   const now = new Date();
 
   for (const id of ids) {
@@ -340,6 +354,7 @@ export async function gatherListSignals(db, { orgId, clientIds } = {}) {
     if (cardRows !== null) signals.card = (cardBy.get(id) || [])[0] || null;
     if (taskRows !== null) signals.tasks = taskBy.get(id) || [];
     if (roundRows !== null) signals.funding_rounds = roundBy.get(id) || [];
+    if (linkRows !== null) signals.payment_links = linkBy.get(id) || [];
 
     /* openBlockers() (src/http/client-detail.mjs:169-215) is REUSED, not
        rebuilt — the same function the control panel already paints. It also
@@ -423,7 +438,7 @@ export async function gatherDetailSignals(db, { orgId, clientId, consentStatus }
   const args = [orgId, ids];
   const out = {};
 
-  const [consent, crsRows, docRows, respRows, caseRows, letterRows, cardRows] = await Promise.all([
+  const [consent, crsRows, docRows, respRows, caseRows, letterRows, cardRows, linkRows] = await Promise.all([
     (async () => {
       try {
         return await consentStatus(db, { orgId, clientId, kind: SOFT_PULL_KIND });
@@ -437,7 +452,8 @@ export async function gatherDetailSignals(db, { orgId, clientId, consentStatus }
     safeRows(db, DISPUTE_RESPONSES_SQL, args, "dispute_responses"),
     safeRows(db, DISPUTE_CASES_SQL, args, "dispute_cases"),
     safeRows(db, REPAIR_LETTERS_SQL, args, "dispute_letters"),
-    safeRows(db, CARD_SQL, [orgId, ids, CARD_STACKING_PIPELINE], "cards")
+    safeRows(db, CARD_SQL, [orgId, ids, CARD_STACKING_PIPELINE], "cards"),
+    safeRows(db, PAYMENT_LINKS_SQL, [orgId, ids, OPEN_PAYMENT_LINK_STATUSES], "payment_links")
   ]);
 
   // Left absent, never defaulted, when the read failed. See the header.
@@ -454,6 +470,7 @@ export async function gatherDetailSignals(db, { orgId, clientId, consentStatus }
     };
   }
   if (cardRows !== null) out.card = cardRows[0] || null;
+  if (linkRows !== null) out.payment_links = linkRows;
 
   return out;
 }

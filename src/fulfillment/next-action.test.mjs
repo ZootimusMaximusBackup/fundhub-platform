@@ -38,7 +38,7 @@ const keyOf = (signals) => deriveNextAction(signals).next_action?.key ?? null;
 
 describe("the order is Chris's, exactly", () => {
 
-  test("eleven chips, in Chris's words, in Chris's order", () => {
+  test("twelve chips, in Chris's words, in Chris's order", () => {
     assert.deepEqual(NEXT_ACTIONS.map((a) => [a.key, a.label]), [
       ["clear_fraud_alert", "Clear Fraud Alert"],
       ["get_consent", "Get Consent"],
@@ -50,6 +50,7 @@ describe("the order is Chris's, exactly", () => {
       ["review_funding_file", "Review Funding File"],
       ["prepare_next_round", "Prepare Next Round"],
       ["apply_for_funding", "Apply for Funding"],
+      ["collect_payment", "Collect payment"],
       ["ready_to_fund", "Ready to Fund"]
     ]);
   });
@@ -238,6 +239,47 @@ describe("every chip fires on its own evidence", () => {
       card: { pipeline_key: "funding_card_stacking", stage_key: "apply_now" }
     }));
     assert.ok(!FUNDING_CHIP_KEYS.includes(r.next_action?.key ?? null));
+  });
+
+  test("Collect payment — unpaid Funding Mastery pay link", () => {
+    const r = deriveNextAction(base({
+      outcome_tier: null,
+      custom_fields: { crs_status: "Complete" },
+      crs_results: [{ is_demo: false }],
+      payment_links: [{
+        description: "Funding Mastery course (A to Z)",
+        status: "sent",
+        amount_cents: 500000,
+        paid_at: null
+      }]
+    }));
+    assert.equal(r.next_action.key, "collect_payment");
+    assert.equal(r.next_action.label, "Collect payment");
+    assert.match(r.next_action.why, /unpaid/i);
+    assert.equal(r.degraded, false);
+  });
+
+  test("Collect payment does NOT fire when Mastery is already paid", () => {
+    assert.equal(keyOf(base({
+      payment_links: [{
+        description: "Funding Mastery course (A to Z)",
+        status: "paid",
+        amount_cents: 500000,
+        paid_at: "2026-08-26T12:00:00Z"
+      }]
+    })), null);
+  });
+
+  test("Collect payment does NOT fire on an unpaid non-Mastery link", () => {
+    assert.equal(keyOf(base({
+      payment_links: [{
+        description: "Diagnostic soft pull",
+        purpose: "diagnostic",
+        status: "sent",
+        amount_cents: 3200,
+        paid_at: null
+      }]
+    })), null);
   });
 
   test("Ready to Fund — nothing blocking, no hold, packet complete", () => {
