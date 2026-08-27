@@ -213,7 +213,11 @@ describe("fireDueCalls never calls a bureau about a fake client", { skip: !HAS_D
     }
   }
 
-  async function mkClient({ suffix, isDemo = null, synthetic = false }) {
+  /* isDemo defaults to FALSE, not null. clients.is_demo is NOT NULL DEFAULT
+     false — it was nullable when this file was written, and every caller that
+     omitted the flag was inserting NULL, so all three tests in this block died
+     on the not-null constraint before asserting anything. */
+  async function mkClient({ suffix, isDemo = false, synthetic = false }) {
     const r = await db.query(
       `INSERT INTO clients (org_id, first_name, last_name, email, is_demo, custom_fields)
        VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
@@ -223,11 +227,17 @@ describe("fireDueCalls never calls a bureau about a fake client", { skip: !HAS_D
     return r.rows[0].id;
   }
 
-  async function mkCase(clientId, { caseIsDemo = null } = {}) {
+  /* Same as mkClient: inquiry_removal_cases.is_demo is NOT NULL DEFAULT false
+     now, so the old `= null` default made every case insert throw. */
+  async function mkCase(clientId, { caseIsDemo = false } = {}) {
     const r = await db.query(
-      `INSERT INTO inquiry_removal_cases (org_id, client_id, case_status, call_due_at, is_demo)
-       VALUES ($1,$2,'Queued',$3::timestamptz,$4) RETURNING id`,
-      [orgId, clientId, due, caseIsDemo]
+      /* case_id is NOT NULL with no default and was never supplied, so every
+         case insert threw. Production mints `IRC-<timestamp>`
+         (src/inquiry-ops/cases.mjs:83); the client id keeps it unique per row
+         here without depending on a clock. */
+      `INSERT INTO inquiry_removal_cases (org_id, client_id, case_id, case_status, call_due_at, is_demo)
+       VALUES ($1,$2,$5,'Queued',$3::timestamptz,$4) RETURNING id`,
+      [orgId, clientId, due, caseIsDemo, `IRC-${MARK2}-${clientId.slice(0, 8)}`]
     );
     return r.rows[0].id;
   }
@@ -250,13 +260,30 @@ describe("fireDueCalls never calls a bureau about a fake client", { skip: !HAS_D
       `exactly one case should fire; a demo case, a demo client or a synthetic client got a bureau call. Fired: ${JSON.stringify(firedIds)}`);
   });
 
-  test("a NULL is_demo is treated as real, not skipped", async () => {
-    /* Both columns are nullable and almost every existing row is NULL. If the
-       guard had been written `= false` these would all silently stop firing,
-       which is the opposite failure and just as bad. */
-    const id = await mkCase(await mkClient({ suffix: "nulls", isDemo: null }));
+  test("a client that never says it is demo is treated as real, not skipped", async () => {
+    /* This used to insert is_demo = NULL and assert the guard still fired,
+       because both columns were nullable and most rows were NULL. They are not
+       any more: clients.is_demo is NOT NULL DEFAULT false, so the old premise
+       cannot be constructed and the insert simply threw.
+
+       The point it was making still stands and is the one that matters — a
+       guard written `= true` must let everything else through, and one written
+       `= false` would silently stop the sweeper on any row that did not say
+       false explicitly. So: assert the column shape that now guarantees it,
+       and assert a client created without mentioning is_demo still fires. */
+    const shape = (await db.query(
+      `SELECT is_nullable, column_default FROM information_schema.columns
+        WHERE table_name = 'clients' AND column_name = 'is_demo'`
+    )).rows[0];
+    assert.equal(shape.is_nullable, "NO",
+      "clients.is_demo went nullable again — a NULL here would decide whether a bureau gets called");
+    assert.match(String(shape.column_default), /false/,
+      "the default must be false: a row that never mentions is_demo is a REAL client");
+
+    const id = await mkCase(await mkClient({ suffix: "defaulted" }));
     const res = await fireDueCalls(db, { orgId, limit: 50 });
     const firedIds = (res.fired || res || []).map((f) => f.id || f.caseId || f);
-    assert.ok(firedIds.includes(id), "a case with NULL is_demo is a real case and must fire");
+    assert.ok(firedIds.includes(id),
+      "a client created without mentioning is_demo is real and its due case must fire");
   });
 });

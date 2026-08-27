@@ -151,7 +151,11 @@ describe("hiring read endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
     await withTx((tx) => scoreApplication(tx, {
       orgId: org, applicationId, categoryScores: full(2), scoredByStaffId: staffId }));
 
-    const detail = await fetchRows(db, { query: { id: applicationId } });
+    /* staff.org_id is REQUIRED now. api/hiring/application.mjs:20 takes the org
+       from the session only — its comment says why: it used to fall back to the
+       default org, so any hiring session that knew an application uuid could read
+       that candidate's PII. These calls predate that fix and threw FORBIDDEN. */
+    const detail = await fetchRows(db, { query: { id: applicationId }, staff: { org_id: org } });
     assert.ok(detail, "detail should resolve");
     assert.strictEqual(detail.scores.length, 2, "an override must not hide the original");
     assert.strictEqual(detail.scores[0].is_automated, true);
@@ -162,9 +166,9 @@ describe("hiring read endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
 
   test("application detail requires an id and 404s on an unknown one", async () => {
     const { fetchRows } = await import("../../api/hiring/application.mjs");
-    await assert.rejects(() => fetchRows(db, { query: {} }), /id is required/);
+    await assert.rejects(() => fetchRows(db, { query: {}, staff: { org_id: org } }), /id is required/);
     const missing = await fetchRows(db,
-      { query: { id: "00000000-0000-4000-8000-000000000000" } });
+      { query: { id: "00000000-0000-4000-8000-000000000000" }, staff: { org_id: org } });
     assert.strictEqual(missing, null);
   });
 

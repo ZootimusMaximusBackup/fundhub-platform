@@ -46,7 +46,17 @@ function spy() {
     return {
       ok: true,
       status: 200,
-      text: async () => JSON.stringify({ id: `prov-${calls.length}`, messageId: `prov-${calls.length}` })
+      /* `sid` is Twilio's success key (providers/twilio.mjs:204) and was missing:
+         the provider answered "accepted the message but returned no sid" and the
+         send was recorded as a retry, so the quiet-hours test could never see
+         the text leave and blamed the window. `id` is Resend's. The comment
+         above has always claimed this returns the shape BOTH providers read;
+         now it does. */
+      text: async () => JSON.stringify({
+        id: `prov-${calls.length}`,
+        messageId: `prov-${calls.length}`,
+        sid: `SM${String(calls.length).padStart(32, "0")}`
+      })
     };
   };
   fetchImpl.calls = calls;
@@ -59,6 +69,21 @@ const ENV = {
      to blocked, so it has to be declared down here or every assertion below
      would pass by sending nothing, which is the opposite of acceptance. */
   MESSAGING_DRY_RUN: "0",
+  /* RESEND, not Mailgun. The email provider moved and this block did not: the
+     dispatcher answered `retry — resend is not configured: RESEND_API_KEY,
+     RESEND_FROM not set` on every message, so the acceptance run sent nothing
+     and three tests failed claiming the send path was broken. Same fake-key
+     shape the other suites use (providers.test.mjs:357, staff-mail.test.mjs:44).
+     The Mailgun keys are left below because src/messaging/providers/mailgun.mjs
+     still exists and resolve() may still pick it for a letter channel. */
+  RESEND_API_KEY: "re_test_0123456789abcdef",
+  RESEND_FROM: "Fundhub <no-reply@fundhub.ai>",
+  /* Same story on the SMS half: twilio answered `retry — not configured` so the
+     quiet-hours test could never observe the text going out once the window
+     opened, and reported it as the window being broken. */
+  TWILIO_SEND_ACCOUNT_SID: "ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  TWILIO_SEND_AUTH_TOKEN: "twilio-test-token",
+  TWILIO_SEND_FROM: "+15550000000",
   MAILGUN_SEND_API_KEY: "key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   MAILGUN_SEND_DOMAIN: "mg.example.com",
   MAILGUN_SEND_FROM: "Fundhub <no-reply@mg.example.com>",
