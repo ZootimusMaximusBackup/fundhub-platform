@@ -238,3 +238,39 @@ test("generateDeckLetters refuses the qualified funding offer", async () => {
     (e) => e instanceof CloserDeckError && e.code === "letters_blocked_funding_route" && e.status === 409
   );
 });
+
+/* Hole 16 — a multi-company file was priced off business ages nobody asked
+   for. The deck payload now carries every company and its incorporation date,
+   so Present can ask for the ones that are blank. */
+test("deck payload carries every company and its incorporation date", async () => {
+  const out = await buildCloserDeck(fakeDb({
+    client: CLIENT,
+    businesses: [
+      { id: "b1", name: "Fund Horse Holdings", age_months: 48, incorporated_date: null },
+      { id: "b2", name: "Fund Horse Logistics", age_months: 79, incorporated_date: "2020-01" },
+      { id: "b3", name: "Fund Horse Retail", age_months: 24, incorporated_date: null }
+    ]
+  }), { orgId: ORG, clientId: CID });
+
+  assert.equal(out.businesses.length, 3);
+  assert.deepEqual(out.businesses.map((b) => b.name), [
+    "Fund Horse Holdings", "Fund Horse Logistics", "Fund Horse Retail"
+  ]);
+  assert.deepEqual(out.businesses.map((b) => b.incorporated_date), [null, "2020-01", null]);
+  assert.deepEqual(out.businesses.map((b) => b.age_months), [48, 79, 24]);
+});
+
+test("a missing incorporation date stays null — never defaulted to a guess", async () => {
+  const out = await buildCloserDeck(fakeDb({
+    client: CLIENT,
+    businesses: [{ id: "b1", name: "Only Co", age_months: null, incorporated_date: "" }]
+  }), { orgId: ORG, clientId: CID });
+
+  assert.equal(out.businesses[0].incorporated_date, null);
+  assert.equal(out.businesses[0].age_months, null);
+});
+
+test("a file with no company gets an empty list, not a fake row", async () => {
+  const out = await buildCloserDeck(fakeDb({ client: CLIENT }), { orgId: ORG, clientId: CID });
+  assert.deepEqual(out.businesses, []);
+});

@@ -261,7 +261,11 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
       [clientId, orgId]
     ),
     db.query(
-      `SELECT age_months FROM businesses
+      /* name + incorporated_date ride along so Present can ask for the month
+         and year the file is missing. age_months still feeds the stack. */
+      `SELECT id, name, age_months,
+              entity_data->>'incorporated_date' AS incorporated_date
+         FROM businesses
         WHERE client_id = $1 AND org_id = $2
         ORDER BY created_at ASC`,
       [clientId, orgId]
@@ -320,6 +324,14 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
       capital: cf(client, "cf_svy_available_capital"),
       motivation: cf(client, "cf_svy_money_change_now")
     },
+    /* Every company on the file, so the deck can ask for a missing
+       incorporation month/year instead of guessing the age. */
+    businesses: bizRes.rows.map((b) => ({
+      id: b.id,
+      name: b.name || null,
+      age_months: numOrNull(b.age_months),
+      incorporated_date: b.incorporated_date || null
+    })),
     /* Bureau income guesses for closer leverage — not paystubs, not bank balances. */
     income_estimates: income,
     engine,
