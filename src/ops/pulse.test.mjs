@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -8,6 +9,19 @@ import {
   actOnBrain
 } from "./pulse.mjs";
 import { marketingSnapshot } from "./meta-marketing.mjs";
+
+describe("funded this month bar", () => {
+  it("counts funding_rounds status=funded, not clients.funded", () => {
+    const src = readFileSync(new URL("./pulse.mjs", import.meta.url), "utf8");
+    const start = src.indexOf("fundedActual");
+    const end = src.indexOf("const closerTarget");
+    const bar = src.slice(start, end);
+    assert.match(bar, /FROM funding_rounds/);
+    assert.match(bar, /status = 'funded'/);
+    assert.doesNotMatch(bar, /FROM clients/);
+    assert.doesNotMatch(bar, /funded IS TRUE/);
+  });
+});
 
 describe("pulse company 8", () => {
   it("maps computeKpis fields and marks missing cost per funded", () => {

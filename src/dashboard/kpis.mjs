@@ -45,7 +45,7 @@ export async function computeKpis(db, { orgId, period = "7d" } = {}) {
       /* Count real funded rounds, not clients.funded — that flag can stay
          false after a round already landed. */
       `SELECT count(DISTINCT client_id)::int AS n,
-              COALESCE(SUM(funded_amount), 0)::bigint AS cents
+              COALESCE(SUM(funded_amount), 0) AS dollars
          FROM funding_rounds
         WHERE org_id = $1
           AND status = 'funded'
@@ -97,7 +97,8 @@ export async function computeKpis(db, { orgId, period = "7d" } = {}) {
 
   const cashCents = Number(cash.rows[0]?.cents || 0);
   const fundedN = Number(funded.rows[0]?.n || 0);
-  const fundedCents = Number(funded.rows[0]?.cents || 0);
+  // funding_rounds.funded_amount is dollars (numeric 14,2), not cents.
+  const fundedCents = Math.round(Number(funded.rows[0]?.dollars || 0) * 100);
   const bookedN = Number(booked.rows[0]?.n || 0);
   const showedN = Number(showed.rows[0]?.n || 0);
   const closedN = Number(closed.rows[0]?.n || 0);

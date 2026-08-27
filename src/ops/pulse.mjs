@@ -99,9 +99,9 @@ async function loadBars(db, { orgId, now }) {
   try {
     const fund = await db.query(
       `SELECT count(*)::int AS n
-         FROM clients
+         FROM funding_rounds
         WHERE org_id = $1
-          AND funded IS TRUE
+          AND status = 'funded'
           AND updated_at >= $2 AND updated_at < $3`,
       [orgId, start.toISOString(), end.toISOString()]
     );
