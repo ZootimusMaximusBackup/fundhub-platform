@@ -221,7 +221,8 @@
 <script>
 (function () {
   var q = new URLSearchParams(location.search);
-  window.__FH_CLIENT_ID = q.get("client_id") || q.get("id") || null;
+  window.__FH_CLIENT_ID = q.get("client_id") || q.get("id") ||
+    q.get("client") || q.get("contact") || null;
 })();
 </script>
 <div class="app">
@@ -1034,9 +1035,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   var V = window.FHCloserView;
   var $ = function (id) { return document.getElementById(id); };
-  // client_id is what the endpoint calls it; ?id= is accepted so a link copied
-  // from another screen still lands somewhere useful.
-  var clientId = FHData.param("client_id") || FHData.param("id");
+  // client_id is what the endpoint calls it; ?id=, ?client= and ?contact= are
+  // accepted too, so a link copied from any other screen still lands here.
+  var clientId = FHData.param("client_id") || FHData.param("id") ||
+    FHData.param("client") || FHData.param("contact");
 
   var panels = [].slice.call(document.querySelectorAll(".calc-panel"));
   var dealTable = document.querySelector("table.deal");
