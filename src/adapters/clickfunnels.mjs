@@ -16,6 +16,7 @@
 
 import crypto from "node:crypto";
 import { emit, defaultOrgId } from "../events/bus.mjs";
+import { handleSloPaidWebhook } from "../slo/purchase.mjs";
 
 // --- 1. Signature verification (fail-closed) --------------------------------
 // ClickFunnels 2.0 (official): HMAC-SHA256(secret, `${timestamp}.${rawBody}`)
@@ -403,10 +404,16 @@ export async function handleClickFunnelsWebhook({
     }
   }
 
+  // SLO paid path: resolve from owner map + fundhub_client_id. Never email/price.
+  const purchase = await handleSloPaidWebhook(db, body);
+
   const evt = normalizeClickFunnelsEvent(body);
 
   if (!evt.email) {
-    return { ok: true, status: 200, reason: "no_email", emitted: [] };
+    const reason = purchase.reason && purchase.reason !== "not_paid_event"
+      ? purchase.reason
+      : "no_email";
+    return { ok: true, status: 200, reason, emitted: [], purchase };
   }
 
   const canonical = mapToCanonical(evt);
@@ -479,5 +486,5 @@ export async function handleClickFunnelsWebhook({
     const res = await emit(db, c.name, payload, { idempotencyKey: idKey });
     emitted.push({ name: c.name, id: res.id, deduped: res.deduped });
   }
-  return { ok: true, status: 200, emitted };
+  return { ok: true, status: 200, emitted, purchase };
 }

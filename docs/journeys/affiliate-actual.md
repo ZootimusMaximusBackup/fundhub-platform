@@ -25,7 +25,7 @@ flowchart TD
     CAN --> A_read[Reading data — 2 routes]
     CAN --> A_top_level[Everything else — 4 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 172 routes]
+    WHO -->|Yes| CANT[Blocked — 174 routes]
     CANT --> B_auth[Signing in and out — 5 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_brand[brand — 1 blocked]
@@ -45,16 +45,16 @@ flowchart TD
     CANT --> B_partner_marketing[partner-marketing — 5 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
-    CANT --> B_read[Reading data — 50 blocked]
+    CANT --> B_read[Reading data — 51 blocked]
     CANT --> B_repair[repair — 5 blocked]
     CANT --> B_social[social — 7 blocked]
     CANT --> B_staff[staff — 2 blocked]
-    CANT --> B_top_level[Everything else — 33 blocked]
+    CANT --> B_top_level[Everything else — 34 blocked]
 ```
 
 ## What they can reach
 
-**24 of 196 routes.**
+**24 of 198 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -90,7 +90,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**172 of 196 routes.**
+**174 of 198 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -243,6 +243,7 @@ flowchart TD
 | `/api/read/repair-cases` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/sales-floor` | GET | owner, admin, sales_manager |
 | `/api/read/search` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/slo-connections` | GET | owner, admin |
 | `/api/read/staff` | GET | owner, admin, sales_manager |
 | `/api/read/tradelines` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/transactions` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -255,6 +256,7 @@ flowchart TD
 | `/api/repair/inbound-mail` | POST | owner, admin, closer, inquiry_specialist |
 | `/api/repair/send` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/shifts` | GET, POST | staff |
+| `/api/slo-connections` | POST | owner, admin |
 | `/api/social/channels` | GET | partner, staff |
 | `/api/social/generate` | POST | partner, staff |
 | `/api/social/oauth` | — | staff |

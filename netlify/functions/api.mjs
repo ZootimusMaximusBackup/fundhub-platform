@@ -78,6 +78,7 @@ import readAgentContext from "../../api/read/agent-context.mjs";
 import readAgentShadowLog from "../../api/read/agent-shadow-log.mjs";
 import readInquiries from "../../api/read/inquiries.mjs";
 import readProducts from "../../api/read/products.mjs";
+import readSloConnections from "../../api/read/slo-connections.mjs";
 import readConversations from "../../api/read/conversations.mjs";
 import readInbox from "../../api/read/inbox.mjs";
 import readMessages from "../../api/read/messages.mjs";
@@ -207,6 +208,7 @@ import agentCall from "../../api/agent-call.mjs";
 import pipelineCards from "../../api/pipeline-cards.mjs";
 import pipelineClients from "../../api/pipeline-clients.mjs";
 import productsWrite from "../../api/products.mjs";
+import sloConnectionsWrite from "../../api/slo-connections.mjs";
 import clientNotes from "../../api/client-notes.mjs";
 import commissionRules from "../../api/commission-rules.mjs";
 import commissionsWrite from "../../api/commissions.mjs";
@@ -289,6 +291,8 @@ export const ROUTES = {
   /* Products & Commissions product ladder edits. ROLE_SETS.FINANCE — prices are
      configuration, same gate as other money-config writes. */
   "products": productsWrite,
+  /* Owner SLO Connections. ROLE_SETS.OPS. Maps ClickFunnels IDs to a product. */
+  "slo-connections": sloConnectionsWrite,
   "client-notes": clientNotes,
   "commission-rules": commissionRules,
   /* Commission ledger Approve / Mark paid. ROLE_SETS.FINANCE. Does not send money. */
@@ -356,6 +360,7 @@ export const ROUTES = {
   "read/agent-shadow-log": readAgentShadowLog,
   "read/inquiries": readInquiries,
   "read/products": readProducts,
+  "read/slo-connections": readSloConnections,
   "read/conversations": readConversations,
 
   /* The staff reply inbox's two reads. "read/inbox" is the thread list across

@@ -669,3 +669,54 @@ test("handleClickFunnelsWebhook: idempotent re-delivery (deduped, no handler dis
   assert.ok(res.emitted.every((e) => e.deduped === true), "all events must be deduped");
   assert.equal(fired, 0, "handler must not fire on deduped replay");
 });
+
+test("handleClickFunnelsWebhook: signed paid order writes a sale from the SLO map, not email", async () => {
+  _resetOrgCache();
+  clearHandlers();
+  const CLIENT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const PRODUCT = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  const store = { sales: [] };
+  const db = {
+    query(sql, params) {
+      if (/FROM orgs/.test(sql)) return { rows: [{ id: "org-1" }] };
+      if (/FROM slo_connections/.test(sql)) {
+        return { rows: [{ id: "conn-1", product_id: PRODUCT, product_name: "Funding Bundle", active: true }] };
+      }
+      if (/FROM clients/.test(sql)) return { rows: [{ id: CLIENT }] };
+      if (/FROM sales/.test(sql)) return { rows: store.sales };
+      if (/INSERT INTO transactions/.test(sql)) return { rows: [{ id: "tx-1" }] };
+      if (/INSERT INTO sales/.test(sql)) {
+        const row = { id: "sale-1", client_id: params[1], product_id: params[2], agreed_price: params[3], external_ref: params[4] };
+        store.sales.push(row);
+        return { rows: [row] };
+      }
+      if (/INSERT INTO sale_payments/.test(sql)) return { rows: [{ id: "pay-1" }] };
+      if (/INSERT INTO events/.test(sql)) return { rows: [{ id: "evt-1" }] };
+      return { rows: [] };
+    }
+  };
+  const raw = JSON.stringify({
+    event_id: "slo-sim-paid-1",
+    event_type: "order.completed",
+    funnel_id: "funnel-slo-1",
+    data: {
+      id: 9001,
+      amount_cents: 19700,
+      contact: {
+        email: "wrong-person@example.com",
+        custom_attributes: { fundhub_client_id: CLIENT }
+      },
+      line_items: [{ product_id: "cf-prod-slo-1" }]
+    }
+  });
+  const res = await handleClickFunnelsWebhook({
+    db, rawBody: raw, signatureHeader: sign(raw), secret: SECRET
+  });
+  assert.equal(res.ok, true);
+  assert.equal(res.status, 200);
+  assert.equal(res.purchase.reason, "recorded");
+  assert.equal(store.sales.length, 1);
+  assert.equal(store.sales[0].client_id, CLIENT);
+  assert.equal(store.sales[0].product_id, PRODUCT);
+  assert.equal(Number(store.sales[0].agreed_price), 197);
+});
