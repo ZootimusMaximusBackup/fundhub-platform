@@ -119,9 +119,21 @@ test("there is no column on client_cards that could hold a card number or a secu
   )).rows;
   const names = cols.map((c) => c.column_name);
   assert.deepEqual(names, [
-    "brand", "client_id", "created_at", "exp_month", "exp_year", "id", "last4",
-    "org_id", "provider", "provider_token", "removed_at", "updated_at"
+    "brand", "client_id", "created_at", "exp_month", "exp_year", "id",
+    // is_demo is the Demo Mode flag (148_demo_mode.sql), added across the
+    // tenant tables. It holds a boolean, never card data, and it is listed
+    // here rather than the list being loosened: the point of this assertion is
+    // that EVERY column is named on purpose.
+    "is_demo",
+    "last4", "org_id", "provider", "provider_token", "removed_at", "updated_at"
   ], "a new column here needs a very good reason — this list is the promise");
+
+  /* And the promise restated as the thing it actually protects, so a future
+     column cannot slip in under a name nobody reads carefully. */
+  for (const c of cols) {
+    assert.doesNotMatch(c.column_name, /(^|_)(pan|cvv|cvc|card_number|security_code|full_number)($|_)/,
+      `client_cards.${c.column_name} looks like it could hold a card number or security code`);
+  }
   for (const forbidden of ["pan", "card_number", "cvv", "cvc", "security_code", "encrypted_pan"]) {
     assert.equal(names.includes(forbidden), false, `${forbidden} must never exist`);
   }
