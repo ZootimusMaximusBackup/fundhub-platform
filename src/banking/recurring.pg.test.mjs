@@ -309,14 +309,38 @@ test("detected_as_of has no DEFAULT, so the write time cannot stand in for the e
        VALUES ($1,$2,$3,'monthly',-1000,'2026-04-15',60,'medium',3,'2026-01-15','2026-03-15')`,
       [orgId, ACCOUNT_A, `${MERCHANT_PREFIX} NODEFAULT`]
     ));
-    assert.ok(e, "omitting detected_as_of must fail");
-    assert.match(e.message, /detected_as_of/);
+    assert.ok(e, "omitting detected_as_of on a DETECTED row must still fail");
+    /* The guarantee moved, it did not go away. 086 enforced it with NOT NULL.
+       107_recurring_bills_manual.sql dropped that on purpose — a MANUAL bill has
+       no detection run, and writing a fake occurrence_count / window / instant to
+       satisfy the old constraint is exactly the confident-looking fabrication
+       these finance migrations keep refusing. It replaced it with
+       recurring_bills_manual_shape_ck, which requires all four for
+       source = 'detected' and forbids all four for 'manual'.
+
+       `source` defaults to 'detected', so this insert is still refused — the
+       message just names the constraint now instead of the column. Accepting
+       either keeps the test honest whichever way it is enforced. */
+    assert.match(e.message, /detected_as_of|manual_shape/);
 
     const def = (await db.query(
       `SELECT column_default FROM information_schema.columns
         WHERE table_name = 'recurring_bills' AND column_name = 'detected_as_of'`
     )).rows[0].column_default;
     assert.equal(def, null, "a default here would re-introduce the hidden clock");
+
+    /* And the other half of 107: a MANUAL row must be allowed to leave it NULL,
+       or the fix that made this column nullable would be silently undone. */
+    const manualErr = await errorOf(() => db.query(
+      `INSERT INTO recurring_bills (org_id, bank_account_id, merchant_key, cadence,
+         typical_amount_cents, next_expected_on, confidence_pct, confidence_label, source)
+       VALUES ($1,$2,$3,'monthly',-1000,'2026-04-15',60,'medium','manual')`,
+      [orgId, ACCOUNT_A, `${MERCHANT_PREFIX} MANUALOK`]
+    ));
+    assert.equal(manualErr, null,
+      "a manual bill has no detection run and must be allowed to leave those four NULL");
+    await db.query(`DELETE FROM recurring_bills WHERE merchant_key = $1`,
+      [`${MERCHANT_PREFIX} MANUALOK`]);
   });
 
 /* ========================================================================= *

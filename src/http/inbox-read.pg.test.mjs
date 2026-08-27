@@ -284,8 +284,35 @@ test("inbox: another company's threads are not in this company's inbox", { skip:
   assert.deepEqual(foreign, [], "the inbox returned a thread belonging to a different company");
 });
 
-// sentiment is NULL for every row in this codebase and nothing computes it.
+/* Nothing in the product computes sentiment. src/conversations/store.mjs:167 says
+   so outright — "sentiment is never written" — and the reason is in its header:
+   "A guessed sentiment is read aloud on a sales call."
+
+   The one exception is the DEMO seeder, which stamps a literal 'Warm' on its own
+   rows (platform-seed.mjs:172) so the screen looks populated. That is fixture
+   dressing, not a computation, and this test used to assert null for EVERY row —
+   so it failed the moment the demo seed existed in the same database, which the
+   shared pg suite guarantees.
+
+   The guarantee that matters is about REAL conversations, so that is what is
+   asserted, and the demo rows are checked to be the only exception rather than
+   quietly skipped. */
 test("inbox: sentiment comes back null rather than invented", { skip: !HAS_DB }, async () => {
   const r = await call({ limit: "200" });
-  for (const row of r.body.items) assert.equal(row.sentiment, null);
+  const demoIds = new Set((await db.query(
+    `SELECT id FROM conversations WHERE COALESCE(is_demo, false)`
+  )).rows.map((x) => String(x.id)));
+
+  let realRows = 0;
+  for (const row of r.body.items) {
+    if (demoIds.has(String(row.id))) {
+      assert.equal(row.sentiment, "Warm",
+        "the demo seeder is the only thing that writes sentiment, and it writes 'Warm'");
+      continue;
+    }
+    realRows += 1;
+    assert.equal(row.sentiment, null,
+      "a real conversation must never carry a sentiment — nothing computes one");
+  }
+  assert.ok(realRows > 0, "no real rows were checked, so this asserted nothing");
 });

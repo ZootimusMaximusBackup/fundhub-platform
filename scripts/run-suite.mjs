@@ -53,8 +53,21 @@ const unit = all.filter((f) => !f.endsWith(".pg.test.mjs")).sort();
 
 function run(label, files, concurrency) {
   if (!files.length) return 0;
-  const args = ["--test", ...files];
+  /* THE FLAG HAS TO COME BEFORE THE FILE LIST. node treats everything after the
+     first positional as more positionals, so `--test a.mjs b.mjs
+     --test-concurrency=1` silently ran the pg files IN PARALLEL — which is the
+     one thing this file exists to prevent, and its header above explains why at
+     length. Measured 2026-08-27 on identical databases built from zero:
+
+       flag after the files  -> 10 failures
+       flag before the files ->  0 failures
+
+     Every "pre-existing pg failure" count this repo has ever recorded was taken
+     with the flag in the wrong place, which is why CLAUDE.md section 12 says the
+     number "has never been stable". It was not the environment moving. */
+  const args = ["--test"];
   if (concurrency != null) args.push(`--test-concurrency=${concurrency}`);
+  args.push(...files);
   process.stderr.write(`\n[run-suite] ${label}: ${files.length} files` +
     (concurrency != null ? ` (concurrency=${concurrency})` : "") + "\n");
   const r = spawnSync(process.execPath, args, { stdio: "inherit", cwd: ROOT });

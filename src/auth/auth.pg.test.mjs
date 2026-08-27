@@ -348,9 +348,29 @@ test("the role catalog is populated and carries the owner role", opts, async () 
 test("updated_at triggers fire on the new tables", opts, async () => {
   const out = await login(db, { email: EMAIL, password: PASSWORD, ip: IP });
   const h = hashToken(out.token);
+  /* Pinned into the past first, so this measures the TRIGGER and not the clock.
+     It used to read updated_at, update, and read again — two Postgres now()
+     values microseconds apart. That passed alone and failed inside the long
+     serialized pg run, which is the signature of a timing race, not a broken
+     trigger. Backdating makes the assertion unambiguous. */
+  /* Backdate with the trigger OFF. With it on, trg_sessions_updated fires on the
+     backdating UPDATE too and stamps updated_at straight back to now() — so
+     `before` and `after` were two now() values microseconds apart and the
+     comparison was a coin flip. Disabling it for this one statement is what
+     makes the gap real. Re-enabled in a finally so a failure here cannot leave
+     the trigger off for the rest of the run. */
+  await db.query(`ALTER TABLE sessions DISABLE TRIGGER trg_sessions_updated`).catch(() => {});
+  try {
+    await db.query(
+      `UPDATE sessions SET updated_at = now() - interval '1 hour' WHERE token_hash=$1`, [h]);
+  } finally {
+    await db.query(`ALTER TABLE sessions ENABLE TRIGGER trg_sessions_updated`).catch(() => {});
+  }
   const before = (await db.query(`SELECT updated_at FROM sessions WHERE token_hash=$1`, [h])).rows[0].updated_at;
+
   await db.query(`UPDATE sessions SET user_agent = 'changed' WHERE token_hash=$1`, [h]);
   const after = (await db.query(`SELECT updated_at FROM sessions WHERE token_hash=$1`, [h])).rows[0].updated_at;
-  assert.ok(after > before, "trg_sessions_updated maintains updated_at (001 convention)");
+  assert.ok(after > before,
+    "trg_sessions_updated maintains updated_at (001 convention) — it did not move a backdated row forward");
   await revokeSession(db, out.token);
 });
