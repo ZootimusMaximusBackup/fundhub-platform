@@ -47,7 +47,13 @@
 }
 
 /* ── UI-STANDARDS §1: ONE WIDTH, ON EVERY SCREEN ──────────────────────────────
-   "Max content width 1800px, centered." (owner-set 2026-08-17, --fh-maxw in
+   NOW: full width, no cap (owner-set 2026-08-27). The history below is kept
+   because it is what explains the SHAPE of this rule — why it lives on the
+   rail, why .main is in the selector, and why every declaration is !important.
+   All three reasons still hold; only the value changed. Read it before you
+   touch this.
+
+   WAS: "Max content width 1800px, centered." (owner-set 2026-08-17, --fh-maxw in
    fundhub-brand.css). It was opt-in per screen — a hand-added .fh-maxw class —
    and measured live on 2026-08-18 only 18 of 31 CRM screens had it. At a 2560px
    monitor the other 13 painted 2332px full-bleed (Calendar, Closer Dashboard,
@@ -72,12 +78,32 @@
    here would lose to Sales Floor's 1280px. Importance is settled before
    specificity and before order, which is why this reaches them. The cost: a
    screen that later wants true full-bleed has to say so with its own
-   !important. That is the trade, stated rather than discovered. */
+   !important. That is the trade, stated rather than discovered.
+
+   2026-08-27 — THE CAP IS REMOVED, AND THAT IS WHY THIS RULE STAYS.
+   Deleting the rule would NOT give full width. It would hand two screens back
+   their own hardcoded caps, which are the very thing the paragraph above says
+   this rule exists to beat: sales-floor.html:40 `.shell{max-width:1280px;
+   margin:0 auto}` and my-numbers.html:40 `.shell{max-width:1240px;margin:0
+   auto}`. Both would sit narrow and centred on a 3440px monitor while every
+   other screen filled it. So the rule is kept and its value inverted — from
+   "cap everything at 1800" to "uncap everything" — and the !important is now
+   carrying MORE weight than before, not less.
+
+   margin-inline goes to 0, not away. Those same two screens set `margin:0
+   auto`, and an auto cross-axis margin on a flex item cancels the stretch
+   (the trap written up at length in fundhub-brand.css). Removing the cap
+   without also pinning the margin lets them shrink-wrap to their widest child
+   instead of filling the column.
+
+   The phone rule further down (@media max-width:860px) still pins these same
+   selectors to max-width:100%. That is UI-STANDARDS §11, no sideways scroll,
+   and it is untouched by this — 100% is not a cap, it is the viewport. */
 :is(.app, .app-shell) :is(.shell, .content, .main),
 .app main,
 .app-shell main {
-  max-width: var(--fh-maxw) !important;
-  margin-inline: auto !important;
+  max-width: none !important;
+  margin-inline: 0 !important;
   width: 100%;
 }
 
