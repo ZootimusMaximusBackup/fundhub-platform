@@ -88,7 +88,7 @@
   ];
 
   var q = new URLSearchParams(location.search);
-  var contactId = q.get("contact") || q.get("client_id") || "";
+  var contactId = q.get("contact") || q.get("client_id") || q.get("id") || q.get("client") || "";
   var state = {
     idx: 0, tier: null, edu: false, forceRepair: false, rung: 0, temp: 0,
     checks: {}, costNum: "", obj: null, showRef: false, toast: "", clientOnly: false,

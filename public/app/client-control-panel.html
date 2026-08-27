@@ -1443,7 +1443,7 @@ document.addEventListener("DOMContentLoaded", function () {
       (d.messages || []).length + " messages");
   }
 
-  var id = FHData.param("id") || FHData.param("client_id");
+  var id = FHData.param("id") || FHData.param("client_id") || FHData.param("client") || FHData.param("contact");
   wireLinks(id);
   if (!id) setText("ccp-name", "");
 
@@ -2019,7 +2019,7 @@ document.addEventListener("DOMContentLoaded", function () {
       input  = document.getElementById("staff-file-input"),
       list   = document.getElementById("staff-filelist"),
       status = document.getElementById("staff-upload-status"),
-      clientId = FHData.param("id") || FHData.param("client_id");
+      clientId = FHData.param("id") || FHData.param("client_id") || FHData.param("client") || FHData.param("contact");
 
   if (!zone) return;
 
@@ -2097,8 +2097,10 @@ document.addEventListener("DOMContentLoaded", function () {
 (function () {
   "use strict";
   var clientId = (typeof FHData !== "undefined" && FHData.param)
-    ? (FHData.param("id") || FHData.param("client_id") || "")
-    : (new URLSearchParams(location.search).get("id") || new URLSearchParams(location.search).get("client_id") || "");
+    ? (FHData.param("id") || FHData.param("client_id") || FHData.param("client") || FHData.param("contact") || "")
+    : (function (p) {
+        return p.get("id") || p.get("client_id") || p.get("client") || p.get("contact") || "";
+      })(new URLSearchParams(location.search));
   var statusEl = document.getElementById("fh-funding-apply-status");
   var listEl = document.getElementById("fh-funding-apply-list");
   if (!statusEl || !listEl) return;
