@@ -1,4 +1,4 @@
--- 262_slo_connections.sql
+-- 264_slo_connections.sql
 -- COMPLIANCE REVIEW REQUIRED — payment rails.
 --
 -- First SLO slice: the owner maps a ClickFunnels funnel ID + product ID to one
