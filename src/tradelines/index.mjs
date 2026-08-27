@@ -181,6 +181,45 @@ export function normalizeFromCrs(crsRow) {
 }
 
 /**
+ * linesForEngine — WHICH ACCOUNTS THE UNDERWRITING ENGINE IS GIVEN, decided once.
+ *
+ * Two callers run the same three engine calls over the same client:
+ * api/read/underwrite.mjs (the UnderwriteIQ read) and src/sales/closer-deck.mjs
+ * (the headline pre-approval a closer shows the client on Present). They must
+ * never be able to answer "how much can this person get" differently, so the
+ * choice of input rows is made here rather than twice.
+ *
+ * STORED ROWS WIN. `tradelines` is written at pull time by ingestCrsResult()
+ * and is the client's account list; when it has rows, nothing else is read.
+ *
+ * WHEN IT IS EMPTY, THE ACCOUNTS INSIDE THE STORED PULL ARE USED. The pull is
+ * already being read for the scores, and reading three scores out of a file
+ * while ignoring the four accounts in the same file is how one credit file came
+ * to say "718 / 724 / 731" and "your file is thin, $0" on one screen. Nothing is
+ * inferred: these are lines the file already carried, normalised by the same
+ * function the ingest uses.
+ *
+ * @param {Array} storedRows `tradelines` rows for this client
+ * @param {Array} crsRows    `crs_results` rows, NEWEST FIRST
+ * @returns {{ tradelines: Array, source: "tradelines"|"crs_results"|"none" }}
+ *          `source` is always the truth about which of the two was used, so a
+ *          caller can say so rather than implying stored rows exist.
+ */
+export function linesForEngine(storedRows = [], crsRows = []) {
+  const stored = Array.isArray(storedRows) ? storedRows : [];
+  if (stored.length > 0) return { tradelines: stored, source: "tradelines" };
+
+  // Newest first. A pull that carries no accounts is skipped rather than taken
+  // as proof the client has none — an older pull that does carry them is better
+  // evidence than an empty newer one.
+  for (const crsRow of Array.isArray(crsRows) ? crsRows : []) {
+    const lines = normalizeFromCrs(crsRow);
+    if (lines.length > 0) return { tradelines: lines, source: "crs_results" };
+  }
+  return { tradelines: [], source: "none" };
+}
+
+/**
  * toCalculatorCards — stored rows → `calcFunding({ cards })` input.
  *
  * TWO EXCLUSIONS, BOTH DELIBERATE:

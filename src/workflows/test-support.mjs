@@ -299,6 +299,13 @@ export function pgFake(seed = {}) {
         const row = crsResults.find((r) => r.id === params[0]);
         return { rows: row ? [{ result: row.result, id: row.id }] : [] };
       }
+      if (/SELECT result, created_at FROM crs_results WHERE client_id/.test(sql)) {
+        return {
+          rows: crsResults
+            .filter((r) => r.client_id === params[0])
+            .map((r) => ({ result: r.result, created_at: r.created_at || null }))
+        };
+      }
 
       // --- clients.outcome_tier lookup (product-path routing, Rule 4) ---
       if (/SELECT outcome_tier FROM clients WHERE id/.test(sql)) {

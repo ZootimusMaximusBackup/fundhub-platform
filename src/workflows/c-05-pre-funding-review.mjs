@@ -9,6 +9,7 @@ import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { mergeCustomFields } from "./custom-fields.mjs";
 import { addTags } from "./tags.mjs";
 import { createTask } from "../lib/create-task.mjs";
+import { hasPaintedScores } from "../http/client-detail.mjs";
 
 const SOURCE_WORKFLOW = "c-05-pre-funding-review";
 
@@ -31,7 +32,10 @@ export async function handle({ event, db, step }) {
   if (!clientId) return { done: false, reason: "no_client" };
 
   const r = await step.run("check-crs-status", () => db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]));
-  const crsComplete = r.rows[0]?.custom_fields?.crs_status === "Complete";
+  const crsRows = await step.run("check-crs-rows", () =>
+    db.query(`SELECT result, created_at FROM crs_results WHERE client_id = $1`, [clientId]));
+  const crsComplete = r.rows[0]?.custom_fields?.crs_status === "Complete"
+    || hasPaintedScores(crsRows.rows);
   const orgId = event.orgId;
   const eventId = event.id;
 

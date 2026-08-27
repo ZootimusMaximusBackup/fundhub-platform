@@ -103,3 +103,45 @@ test("S-23 pay click always POSTs send_pay_link", () => {
     /Choose downsell or upsell first/
   );
 });
+
+/* Hole 16 — a file with more than one company was priced off a business age
+   nobody ever asked for. Present now asks for the month and year. */
+test("Present asks for the incorporation month and year", () => {
+  assert.ok(presentJs.includes("function incorporationAsk"), "no incorporation ask in the cockpit");
+  assert.ok(presentJs.includes("When was each business incorporated?"));
+  assert.ok(/type="month"/.test(presentJs), "the ask has no month/year input");
+  assert.ok(presentJs.includes("Save month / year"));
+  assert.ok(presentJs.includes("stamp-inc:"), "no save button action");
+});
+
+test("the ask sits on discovery, inside slides 1 to 12", () => {
+  const discovery = presentJs.indexOf('if (ph === "02 Discovery")');
+  assert.ok(discovery > -1);
+  const softPull = presentJs.indexOf('if (ph === "03 Soft pull"');
+  assert.ok(presentJs.indexOf("incorporationAsk()", discovery) > discovery);
+  assert.ok(presentJs.indexOf("incorporationAsk()", discovery) < softPull,
+    "the ask must render during discovery, not after the pull");
+});
+
+test("Present saves the date through the same staff action as the Control Panel", () => {
+  assert.ok(presentJs.includes("stamp_incorporated"));
+  assert.ok(presentJs.includes('window.FHData.write("/api/soft-pull-approve"'));
+  assert.ok(presentJs.includes("business_name"));
+  assert.ok(presentJs.includes("incorporated_date"));
+});
+
+test("Present never guesses a date and never hides a missing one", () => {
+  assert.ok(presentJs.includes("function businessesNeedingDate"));
+  assert.ok(presentJs.includes("Do not take a guess."));
+  assert.ok(presentJs.includes("When was it incorporated?"),
+    "the client slide must show the missing date as a question, not a blank");
+  assert.ok(/\^\\d\{4\}-\\d\{2\}\$/.test(presentJs), "no month/year format check before saving");
+});
+
+test("the client slide lists every company on the file, not just one", () => {
+  const s03 = presentJs.indexOf('if (c === "S-03")');
+  assert.ok(s03 > -1);
+  const s04 = presentJs.indexOf('if (c === "S-04")');
+  assert.ok(presentJs.indexOf("businesses().map", s03) > s03);
+  assert.ok(presentJs.indexOf("businesses().map", s03) < s04);
+});

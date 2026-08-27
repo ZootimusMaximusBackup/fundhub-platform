@@ -881,7 +881,28 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
 
     var main = label ? label : (workedOut ? NONE_APPLIES : NOT_WORKED_OUT);
     var saved = (stored && stored !== main) ? (SAVED_PREFIX + stored) : "";
+    try {
+      if (saved && fx && fx.scores_on_file === true && /^pull crs$/i.test(stored)) saved = "";
+    } catch (e) { /* keep the labelled saved line */ }
     return { main: main, saved: saved };
+  }
+
+  function displayStatus(raw, fx) {
+    var s = "";
+    try { s = raw == null ? "" : String(raw).trim(); } catch (e) { s = ""; }
+    var key = "";
+    try { key = fx && fx.next_action && fx.next_action.key ? String(fx.next_action.key) : ""; } catch (e) { key = ""; }
+    if (s === "New Lead" && key === "apply_for_funding") return "Apply Now";
+    return s;
+  }
+
+  function displayHold(raw, fx) {
+    var h = "";
+    try { h = raw == null ? "" : String(raw).trim(); } catch (e) { h = ""; }
+    try {
+      if (h === "Awaiting CRS" && fx && fx.scores_on_file === true) return "";
+    } catch (e) { /* keep */ }
+    return h;
   }
 
   window.FHClientPanel = {
@@ -891,7 +912,9 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
     SAVED_PREFIX: SAVED_PREFIX,
     money: money,
     tileMoney: tileMoney,
-    nextAction: nextAction
+    nextAction: nextAction,
+    displayStatus: displayStatus,
+    displayHold: displayHold
   };
 })();
 /* FH-CCP-END */
@@ -1380,7 +1403,6 @@ document.addEventListener("DOMContentLoaded", function () {
       : cf.deposit_paid ? "Deposit paid"
       : cf.crs_paid ? "Diagnostic paid"
       : "";
-    setText("ccp-status", status);
 
     var prequal = cf.analyzer_prequal_amount || cf.total_funding_estimate;
     setText("ccp-prequal", money(prequal));
@@ -1420,8 +1442,14 @@ document.addEventListener("DOMContentLoaded", function () {
        and the value saved on the record goes in the quiet line under it.
        GATE A — see paintNextAction. */
     var fx = fulfillment(d);
+    if (fx) {
+      try {
+        fx.scores_on_file = tm.experian != null || tm.equifax != null || tm.transunion != null;
+      } catch (e) { fx.scores_on_file = false; }
+    }
+    setText("ccp-status", FHCP.displayStatus(status, fx));
     paintNextAction("ccp-next-action", "ccp-saved", fx, cf);
-    var hold = cf.round_hold_reason || (latestRound && latestRound.hold_reason) || "";
+    var hold = FHCP.displayHold(cf.round_hold_reason || (latestRound && latestRound.hold_reason) || "", fx);
     setText("ccp-hold-reason", hold);
     setText("ccp-credit-status", cf.crs_status || cf.analyzer_status);
     var inc = d.income_estimates || {};
@@ -1443,7 +1471,7 @@ document.addEventListener("DOMContentLoaded", function () {
       (d.messages || []).length + " messages");
   }
 
-  var id = FHData.param("id") || FHData.param("client_id");
+  var id = FHData.param("id") || FHData.param("client_id") || FHData.param("client") || FHData.param("contact");
   wireLinks(id);
   if (!id) setText("ccp-name", "");
 
@@ -2019,7 +2047,7 @@ document.addEventListener("DOMContentLoaded", function () {
       input  = document.getElementById("staff-file-input"),
       list   = document.getElementById("staff-filelist"),
       status = document.getElementById("staff-upload-status"),
-      clientId = FHData.param("id") || FHData.param("client_id");
+      clientId = FHData.param("id") || FHData.param("client_id") || FHData.param("client") || FHData.param("contact");
 
   if (!zone) return;
 
@@ -2097,8 +2125,10 @@ document.addEventListener("DOMContentLoaded", function () {
 (function () {
   "use strict";
   var clientId = (typeof FHData !== "undefined" && FHData.param)
-    ? (FHData.param("id") || FHData.param("client_id") || "")
-    : (new URLSearchParams(location.search).get("id") || new URLSearchParams(location.search).get("client_id") || "");
+    ? (FHData.param("id") || FHData.param("client_id") || FHData.param("client") || FHData.param("contact") || "")
+    : (function (p) {
+        return p.get("id") || p.get("client_id") || p.get("client") || p.get("contact") || "";
+      })(new URLSearchParams(location.search));
   var statusEl = document.getElementById("fh-funding-apply-status");
   var listEl = document.getElementById("fh-funding-apply-list");
   if (!statusEl || !listEl) return;

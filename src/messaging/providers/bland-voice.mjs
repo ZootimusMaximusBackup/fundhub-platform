@@ -185,6 +185,20 @@ export async function placeCall({
     first_sentence: firstSentenceFromPrompt(agent.prompt),
     // The agent SMS line auto-answers silent. Waiting for a greeting ends the call in ~0.13s.
     wait_for_greeting: !proveLine,
+    /* PICKUP — INERT UNTIL THE ACCOUNT OWNS A NUMBER. Asks Bland to dial from the
+       destination's own area code. Measured 2026-08-27: it changed nothing, because
+       `GET /v1/inbound` returns `{"inbound_numbers":[]}` — this account owns no
+       phone number, so there is no local number to dial from and Bland falls back
+       to the same shared pool line (+1 659 946 5643). That shared line is why five
+       consecutive AG-04 calls to the same 661 handset came back `no-answer` with
+       `started_at: null`: the carrier never completed the call, so the robot never
+       got to speak. Buying a Bland number is the fix; this line is what makes it
+       take effect the moment one exists. Do not read it as today's cure. */
+    local_dialing: true,
+    /* THE TAPE. Bland defaults `record` to false, so recording_url came back null on
+       every call ever placed here — including the ones that did connect and talk.
+       "Empty tape" was not a symptom of the hang-up; it was guaranteed separately. */
+    record: true,
     webhook: webhookUrl || String(env.BLAND_WEBHOOK_URL || "").trim() || DEFAULT_WEBHOOK_URL,
     metadata: {
       ...(metadata || {}),

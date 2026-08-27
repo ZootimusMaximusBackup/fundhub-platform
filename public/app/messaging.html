@@ -711,10 +711,19 @@
      The `filter` option is still accepted and still applied, because the rows
      handed in are already the right set and re-checking them is free — but it
      is now a consistency check rather than the mechanism. */
+  /* A SEARCH IS NOT A TAB, and this is the half of hole 15 the data fix does
+     not reach. The screen opens on "Needs reply". Every message the system
+     sends is outbound, so a client we have only ever texted is never on that
+     tab — and somebody typing their name into a box that says "Search people
+     and messages" got "Nothing matches what you typed" about a person the
+     company had messaged three times. The box now means what it says: while
+     there is a term, it looks at every thread. Empty it and the tab is back in
+     charge, unchanged. */
   function filterRows(items, opts) {
     var o = opts || {};
+    var searching = String(o.q || "").trim() !== "";
     return (items || []).filter(function (r) {
-      if (o.filter === "reply" && r.needs_reply !== true) return false;
+      if (!searching && o.filter === "reply" && r.needs_reply !== true) return false;
       return matches(r, o.q);
     });
   }
@@ -726,11 +735,11 @@
      thousand it is not, and a box that silently searches 2% of the data while
      looking like it searches all of it will have somebody swear a customer
      never messaged them. So the screen says which it is doing. */
-  function searchScopeNote(loaded, hasMore, term) {
+  function searchScopeNote(loaded, hasMore, term, filter) {
     if (!String(term || "").trim()) return "";
-    return hasMore
-      ? "Searching the " + loaded + " most recent conversations only."
-      : "";
+    var everyone = filter === "reply" ? "Searching everyone, not just Needs reply." : "";
+    if (!hasMore) return everyone;
+    return ("Searching the " + loaded + " most recent conversations only. " + everyone).trim();
   }
 
   /* One row of the conversation list. `unread` is the needs-a-reply marker —
@@ -992,7 +1001,7 @@
     $("nAll").textContent = counts.all;
     $("nReply").textContent = counts.reply;
 
-    var scope = V.searchScopeNote(state.rows.length, state.hasMore, state.q);
+    var scope = V.searchScopeNote(state.rows.length, state.hasMore, state.q, state.filter);
     var scopeHtml = scope
       ? '<div class="search-scope">' + V.esc(scope) + "</div>"
       : "";
@@ -1001,7 +1010,7 @@
       $("convoList").innerHTML = scopeHtml +
         '<div class="empty-box" id="convoEmpty" style="margin:14px 12px;">' +
         (state.rows.length
-          ? (state.filter === "reply"
+          ? (state.filter === "reply" && !String(state.q || "").trim()
               ? "Nothing here needs a reply."
               : "Nothing matches what you typed.")
           : (state.filter === "reply"
@@ -1021,7 +1030,10 @@
     /* The tab is a SERVER-SIDE filter now. See searchScopeNote and the header of
        api/read/inbox.mjs for why it stopped being a browser-side one. */
     var params = { limit: 200 };
-    if (state.filter === "reply") params.needs_reply = 1;
+    /* The tab narrows the query — unless somebody is searching. See filterRows:
+       a search looks at every thread, so asking the server for only the
+       unanswered ones would hide the very person being searched for. */
+    if (state.filter === "reply" && !String(state.q || "").trim()) params.needs_reply = 1;
 
     return FHData.inbox(params).then(function (res) {
       if (!res.ok) {
@@ -1383,7 +1395,15 @@
     if (row) openThread(row);
   });
 
-  $("q").addEventListener("input", function (e) { state.q = e.target.value; paintList(); });
+  $("q").addEventListener("input", function (e) {
+    var was = String(state.q || "").trim() !== "";
+    state.q = e.target.value;
+    var now = String(state.q || "").trim() !== "";
+    paintList();
+    // Crossing empty↔typed changes the SERVER query on the Needs-reply tab —
+    // see loadList. Only then, so a keystroke is not a request.
+    if (was !== now && state.filter === "reply") loadList({ quiet: true });
+  });
 
   [].slice.call(document.querySelectorAll(".ctab")).forEach(function (tab) {
     tab.addEventListener("click", function () {

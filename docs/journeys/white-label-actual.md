@@ -98,10 +98,10 @@ flowchart TD
 | `/api/partner-marketing/usage` | GET | staff, partner |
 | `/api/partner-pages` | GET, PATCH, POST | employees: owner, admin<br>plus: partner |
 | `/api/public/affiliate-click` | POST | anyone |
-| `/api/public/education-enroll` | POST | anyone |
+| `/api/public/education-enroll` | POST | **not a sign-in** — provider signature |
 | `/api/public/partner-apply` | POST | anyone |
 | `/api/public/partner-page` | GET | anyone |
-| `/api/public/survey-submit` | POST | anyone |
+| `/api/public/survey-submit` | POST | **not a sign-in** — provider signature |
 | `/api/public/unsubscribe` | — | anyone |
 | `/api/read/company-brain-affiliate` | POST | employees: affiliate, partner<br>plus: affiliate, partner |
 | `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
@@ -115,8 +115,8 @@ flowchart TD
 
 ### Worth knowing
 
-- **17 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/contracts/sign`, `/api/health`, `/api/public/affiliate-click`, `/api/public/education-enroll`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/survey-submit`, `/api/public/unsubscribe`. These are the sign-in routes and the health check.
-- **3 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
+- **15 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/contracts/sign`, `/api/health`, `/api/public/affiliate-click`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/unsubscribe`. These are the sign-in routes and the health check.
+- **5 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/education-enroll` (provider signature), `/api/public/survey-submit` (provider signature), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 

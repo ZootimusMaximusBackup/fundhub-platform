@@ -3,6 +3,7 @@
 
 import { grant } from "../entitlements/entitlements.mjs";
 import { onRepairEvent } from "./handlers.mjs";
+import { emit } from "../events/bus.mjs";
 
 /** Portal bureau-response door keys off this catalog code (client-portal doors). */
 const REPAIR_ENTITLEMENT = "metro2-letter-pack";
@@ -86,16 +87,43 @@ export async function enrollRepairProgram(db, {
     reinstate: true
   });
 
+  const payload = {
+    staffId,
+    program: row.program,
+    roundsCap: row.rounds_cap,
+    source: "repair_enroll"
+  };
+
+  /* The events table is the record that this enrollment happened at all — the
+     activity feed, the replay harness and every "what did this client do"
+     report read it, and none of them read repair_programs. onRepairEvent below
+     moves the card and queues the welcome email but makes NO bus write, so
+     before this line enrolling produced a live program, a sent email, and no
+     repair.enrolled row anywhere. Confirmed on Sim Repair 27 (2026-08-27):
+     program active, welcome delivered, `select ... from events where name like
+     'repair%'` empty.
+
+     Keyed on the program row id so a retried or double-submitted enroll dedupes
+     into one event instead of stacking. Best-effort on purpose: a failure to
+     record must not lose the enrollment or the email, both of which are already
+     committed by the time we get here. */
+  const idempotencyKey = `repair.enrolled:${row.id}`;
+  const recorded = await emit(db, "repair.enrolled", payload, {
+    orgId,
+    clientId,
+    idempotencyKey
+  }).catch((err) => ({ id: null, deduped: false, error: String(err?.message || err) }));
+
+  /* Still called directly. emit() dispatches only to handlers registered via
+     src/workflows/index.mjs, which this HTTP path does not import, so dropping
+     this call would silently stop the welcome email. If both do run, both are
+     idempotent: moveCardToStage is an UPDATE and sendTemplated's insert is
+     ON CONFLICT (org_id, provider_ref) DO NOTHING on a deterministic ref. */
   const event = await onRepairEvent(db, {
     name: "repair.enrolled",
     orgId,
     clientId,
-    payload: {
-      staffId,
-      program: row.program,
-      roundsCap: row.rounds_cap,
-      source: "repair_enroll"
-    }
+    payload
   });
 
   return {
@@ -110,6 +138,7 @@ export async function enrollRepairProgram(db, {
       status: row.status
     },
     entitlement,
-    event
+    event,
+    recorded
   };
 }

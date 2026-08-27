@@ -55,6 +55,16 @@ describe("enrollRepairProgram", () => {
     assert.equal(r.program.rounds_cap, 2);
     assert.equal(r.program.price_total, 200);
     assert.equal(calls[0].params[3], 2);
+
+    /* The point of the test name. Enrolling used to move the card and send the
+       welcome email while writing nothing to `events`, so nothing downstream
+       could tell the enrollment had happened. */
+    const eventInsert = calls.find((c) => /INSERT INTO events/.test(String(c.sql)));
+    assert.ok(eventInsert, "enroll must write a repair.enrolled row to events");
+    assert.equal(eventInsert.params[1], "repair.enrolled");
+    assert.equal(eventInsert.params[0], "11111111-1111-4111-8111-111111111111");
+    assert.equal(eventInsert.params[4], "22222222-2222-4222-8222-222222222222");
+    assert.match(String(eventInsert.params[3]), /^repair\.enrolled:/);
   });
 
   it("full program uses rounds_cap 6", async () => {

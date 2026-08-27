@@ -211,6 +211,75 @@ describe("opt-out", () => {
     }, { now: MIDDAY });
     assert.ok(!codes(res).includes("recipient_unknown"), JSON.stringify(codes(res)));
   });
+
+  // The text half of the same welcome. src/partners/welcome.mjs only writes this
+  // row when the applicant ticked the text box, so the row is the consent record.
+  test("allows the partner welcome text when a real number is on the queued row", async () => {
+    const res = await gate(fakeDb(), {
+      ...base,
+      clientId: null,
+      channel: "sms",
+      templateKey: "SMS-PARTNER-WELCOME",
+      toAddress: "+16615550143"
+    }, { now: MIDDAY });
+    assert.ok(!codes(res).includes("recipient_unknown"), JSON.stringify(codes(res)));
+    assert.strictEqual(res.state, "allowed", JSON.stringify(codes(res)));
+  });
+
+  // The near-miss. The allowance is the key AND a number we could dial. A
+  // partner text with a junk destination has to fall back to blocked.
+  for (const bad of ["", null, "6616054248", "not a phone", "+1"]) {
+    test(`still blocks the partner welcome text with destination ${JSON.stringify(bad)}`, async () => {
+      const res = await gate(fakeDb(), {
+        ...base,
+        clientId: null,
+        channel: "sms",
+        templateKey: "SMS-PARTNER-WELCOME",
+        toAddress: bad
+      }, { now: MIDDAY });
+      assert.strictEqual(res.state, "blocked");
+      assert.ok(codes(res).includes("recipient_unknown"), JSON.stringify(codes(res)));
+    });
+  }
+
+  // The allowance is per template key, not "any text with a phone number on it".
+  test("does not let an ordinary text out just because it carries a number", async () => {
+    const res = await gate(fakeDb(), {
+      ...base,
+      clientId: null,
+      channel: "sms",
+      templateKey: "SMS-S00-WELCOME",
+      toAddress: "+16615550143"
+    }, { now: MIDDAY });
+    assert.strictEqual(res.state, "blocked");
+    assert.ok(codes(res).includes("recipient_unknown"), JSON.stringify(codes(res)));
+  });
+
+  // The email key must not become a text key by being passed a phone number.
+  test("does not let the welcome EMAIL key out over sms", async () => {
+    const res = await gate(fakeDb(), {
+      ...base,
+      clientId: null,
+      channel: "sms",
+      templateKey: "EMAIL-PARTNER-WELCOME",
+      toAddress: "+16615550143"
+    }, { now: MIDDAY });
+    assert.strictEqual(res.state, "blocked");
+    assert.ok(codes(res).includes("recipient_unknown"), JSON.stringify(codes(res)));
+  });
+
+  // Quiet hours are untouched by the allowance above.
+  test("a partner welcome text at 2am Eastern still waits for 11:00", async () => {
+    const res = await gate(fakeDb(), {
+      ...base,
+      clientId: null,
+      channel: "sms",
+      templateKey: "SMS-PARTNER-WELCOME",
+      toAddress: "+16615550143"
+    }, { now: () => new Date("2026-08-01T06:00:00Z") });
+    assert.strictEqual(res.state, "blocked");
+    assert.ok(codes(res).includes("quiet_hours"), JSON.stringify(codes(res)));
+  });
 });
 
 // ---------------------------------------------------------------------------

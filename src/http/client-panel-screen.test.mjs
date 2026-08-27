@@ -69,6 +69,35 @@ describe("client-control-panel.html — the big Next Action slot never carries s
     const P = loadPanel();
     assert.equal(typeof P.money, "function");
     assert.equal(typeof P.nextAction, "function");
+    assert.equal(typeof P.displayStatus, "function");
+    assert.equal(typeof P.displayHold, "function");
+  });
+
+  test("New Lead becomes Apply Now when that is the worked-out job", () => {
+    const P = loadPanel();
+    const fx = { next_action: { key: "apply_for_funding", label: "Apply for Funding" }, degraded: false };
+    assert.equal(P.displayStatus("New Lead", fx), "Apply Now");
+    assert.equal(P.displayStatus("Funding Client", fx), "Funding Client");
+    assert.equal(P.displayStatus("New Lead", { next_action: { key: "get_consent" } }), "New Lead");
+  });
+
+  test("Awaiting CRS hold is dropped when scores sit on the page", () => {
+    const P = loadPanel();
+    assert.equal(P.displayHold("Awaiting CRS", { scores_on_file: true }), "");
+    assert.equal(P.displayHold("Awaiting CRS", { scores_on_file: false }), "Awaiting CRS");
+    assert.equal(P.displayHold("Missing Documents", { scores_on_file: true }), "Missing Documents");
+  });
+
+  test("saved Pull CRS is hidden when scores sit on the page", () => {
+    const P = loadPanel();
+    const fx = {
+      next_action: { key: "apply_for_funding", label: "Apply for Funding" },
+      degraded: false,
+      scores_on_file: true
+    };
+    const out = P.nextAction(fx, STORED_PULL);
+    assert.equal(out.main, "Apply for Funding");
+    assert.equal(out.saved, "");
   });
 
   test("GATE A: a degraded answer carrying a stored 'Pull CRS' must not put it in the big slot", () => {

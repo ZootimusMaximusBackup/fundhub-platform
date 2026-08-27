@@ -26,6 +26,7 @@ import { logStaffEvent } from "../shifts/telemetry.mjs";
 import { resolveShiftId } from "../shifts/attribution.mjs";
 import { emit } from "../events/bus.mjs";
 import { isDraftTemplateRow } from "../messaging/draft-guard.mjs";
+import { threadMessage } from "../conversations/store.mjs";
 
 /* Which column on the client record is the destination for a channel.
    The destination is recorded in the terms of the CHANNEL, not of whichever
@@ -205,7 +206,7 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
     `INSERT INTO messages (org_id, client_id, direction, channel, template_key, rendered_body, provider, provider_ref, status, compliance_check_passed, to_address, subject)
      VALUES ($1,$2,'outbound',$3,$4,$5,'internal',$6,'queued',true,$7,$8)
      ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING
-     RETURNING id`,
+     RETURNING id, created_at`,
     [orgId, clientId, channel, templateKey, rendered, providerRef, toAddress, subject]
   );
 
@@ -253,12 +254,35 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
   }
 
   let messageId = ins?.rows?.[0]?.id || null;
+  let createdAt = ins?.rows?.[0]?.created_at || null;
   if (!messageId && providerRef) {
     const existing = await db.query(
-      `SELECT id FROM messages WHERE org_id = $1 AND provider_ref = $2 LIMIT 1`,
+      `SELECT id, created_at FROM messages WHERE org_id = $1 AND provider_ref = $2 LIMIT 1`,
       [orgId, providerRef]
     );
     messageId = existing.rows[0]?.id || null;
+    createdAt = existing.rows[0]?.created_at || null;
   }
+
+  /* THE THREAD. Without this the message is written and the person is not on
+     the Messaging screen: api/read/inbox.mjs lists `conversations`, and every
+     one of this function's 39 call sites used to write conversation_id NULL. A
+     client whose only messages were automatic — the welcome email, the welcome
+     text — had no row in the staff inbox at all, so searching their name found
+     nothing while the company had already texted them twice.
+
+     It runs on a replay too, not only on a fresh insert. A replayed event
+     deduped into DO NOTHING above, and the row it deduped against is exactly
+     the row that may still be unthreaded; skipping it here would leave the
+     first send's message off the thread forever. upsertConversation GREATESTs
+     the pulse and linkMessage is a plain UPDATE, so running twice changes
+     nothing the second time.
+
+     Never throws — see the helper. A thread write that fails must not turn a
+     queued message into a failed send. */
+  await threadMessage(db, {
+    orgId, clientId, channel, messageId, createdAt, source: "sendTemplated"
+  });
+
   return { sent: true, messageId };
 }
