@@ -134,6 +134,21 @@ test("the task Bland speaks is the agent's stored prompt, not a vendor file", as
   assert.ok(body.webhook, "a call with no return webhook can never be filed against anybody");
 });
 
+/* ── pickup and the tape ────────────────────────────────────────────────── */
+
+test("the call asks for a nearby number and for a recording", async () => {
+  let sent = null;
+  await placeCall({
+    agent: goodAgent, phone: "+16616054248", env: LIVE,
+    fetchImpl: async (url, init) => { sent = { url, init }; return response(); }
+  });
+  const body = JSON.parse(sent.init.body);
+  assert.equal(body.local_dialing, true,
+    "without this Bland dials from a fresh out-of-area number every time and the handset stops answering");
+  assert.equal(body.record, true,
+    "Bland defaults record to false, so every tape was empty no matter how the call went");
+});
+
 test("the agent prove line does not wait for a greeting", async () => {
   let sent = null;
   await placeCall({
