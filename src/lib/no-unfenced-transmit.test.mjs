@@ -73,6 +73,15 @@ const ALLOWED_RAW_FETCH = {
     "Staff-facing question to a language model. No client contact.",
   "src/adapters/oxylabs.mjs":
     "Location lookup against a scraping proxy. No client data leaves.",
+  "src/gmail/client.mjs":
+    "Reads a Gmail mailbox — profile and message list only. Checked 2026-08-27: "
+    + "the module exports no send function and issues no POST; gmailFetch() "
+    + "defaults method to GET and every call site takes that default. Cannot "
+    + "reach a client and cannot change a vendor record.",
+  "src/handlers/inbound-mms-docs.mjs":
+    "Downloads a photo the client already sent US, from the Twilio media URL "
+    + "on the inbound webhook. Inbound only — GET with the account credentials, "
+    + "no message leaves. Cannot reach a client.",
 
   // ── Conduits. Default a fetch and hand it to a module listed above ───────
   "src/agents/runtime.mjs":

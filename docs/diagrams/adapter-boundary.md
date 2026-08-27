@@ -12,7 +12,6 @@ flowchart TB
   subgraph OUTSIDE[Outside the trust boundary]
     direction LR
     o_bland["Bland AI voice-call"]
-    o_calcom["Cal.com booking"]
     o_clickfunnels["ClickFunnels webhook"]
     o_commas["Commas (formerly FanBasis) payment"]
     o_crs["CRS engine output"]
@@ -23,12 +22,11 @@ flowchart TB
     o_oxylabs["Oxylabs residential proxy adapter."]
     o_resend_events["Resend delivery events"]
     o_twilio_status["Twilio delivery-status callback"]
-    o_twilio["Twilio inbound SMS"]
+    o_twilio["Twilio inbound SMS + voice-answer"]
   end
   subgraph BOUNDARY[Adapter layer]
     direction LR
     b_bland["bland<br/>HMAC-SHA256<br/>fail-closed"]
-    b_calcom["calcom<br/>HMAC-SHA256<br/>fail-closed"]
     b_clickfunnels["clickfunnels<br/>HMAC-SHA256<br/>fail-closed"]
     b_commas["commas<br/>HMAC-SHA256<br/>fail-closed"]
     b_crs["crs<br/>no signature<br/>direct call"]
@@ -45,8 +43,6 @@ flowchart TB
 
   o_bland --> b_bland
   b_bland --> BUS
-  o_calcom --> b_calcom
-  b_calcom --> BUS
   o_clickfunnels --> b_clickfunnels
   b_clickfunnels --> BUS
   o_commas --> b_commas
@@ -74,7 +70,6 @@ flowchart TB
 | adapter | direction | auth | emits | verified against a real payload? |
 |---|---|---|---|---|
 | `bland` | inbound webhook | `verifyBlandSignature` (HMAC-SHA256) | `call.completed` | ⚠️ **no** — carries a CONFIRM banner |
-| `calcom` | inbound webhook | `verifyCalcomSignature` (HMAC-SHA256) | `booking.created`<br/>`booking.rescheduled`<br/>`booking.cancelled`<br/>`booking.noshow` | yes |
 | `clickfunnels` | inbound webhook | `verifyClickFunnelsSignature` (HMAC-SHA256) | `entry.captured`<br/>`survey.submitted`<br/>`booking.created`<br/>`booking.rescheduled`<br/>`booking.cancelled` | ⚠️ **no** — carries a CONFIRM banner |
 | `commas` | inbound webhook | `verifyCommasSignature` (HMAC-SHA256) | `diagnostic.paid`<br/>`deposit.paid`<br/>`sale.closed`<br/>`payment.received`<br/>`payment.failed`<br/>`payment.expired`<br/>`payment.canceled`<br/>`payment.refunded`<br/>`payment.disputed` | ⚠️ **no** — carries a CONFIRM banner |
 | `crs` | direct call | none — not a webhook | `analysis.completed`<br/>`decision.rendered` | yes |
@@ -87,7 +82,7 @@ flowchart TB
 | `twilio-status` | inbound webhook | `verifyTwilioSignature` (HMAC-SHA1) | — | yes |
 | `twilio` | inbound webhook | `verifyTwilioSignature` (HMAC-SHA1) | `message.inbound` | yes |
 
-> ⚠️ 4 of 13 adapters still carry a `CONFIRM` banner in their header:
+> ⚠️ 4 of 12 adapters still carry a `CONFIRM` banner in their header:
 > `bland`, `clickfunnels`, `commas`, `lendflow`. Their field paths, header names or signature
 > schemes were written from documentation rather than from an observed payload. The boundary is drawn
 > here as the code intends it, which is not the same as how the vendor actually behaves.

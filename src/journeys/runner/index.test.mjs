@@ -24,7 +24,17 @@ import { isSyntheticRow } from "./synthetic.mjs";
    AF-01 affiliate welcome drip was registered 2026-08-26. The pin exists so
    that registering a workflow is a visible decision rather than a silent one,
    so it is updated here rather than read from the module. */
-const REGISTERED = 64;
+/* Bumped 64 -> 65 on 2026-08-27. src/workflows/meet-transcript-sweeper.mjs was
+   registered on 2026-08-26 and this number was not moved with it, so these three
+   tests sat red — the registry was right and the count describing it was stale.
+
+   The sweeper landed with no test file of its own and no seeded journey walks
+   it, so it shows up in neverFired. That is this test doing its job: an untested
+   workflow is now VISIBLE rather than silent. Do not "fix" that by pretending it
+   fired — add a journey that walks it, or leave it named and known.
+
+   If you register a workflow, move this number in the same commit. */
+const REGISTERED = 65;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);
