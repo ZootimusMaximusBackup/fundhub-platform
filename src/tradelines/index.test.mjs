@@ -10,7 +10,8 @@ import { test } from "node:test";
 import assert from "node:assert";
 import {
   toCents, fromCents, readApr, readOpenedOn, readKind,
-  extractTradelineRecords, normalizeTradeline, normalizeFromCrs, toCalculatorCards
+  extractTradelineRecords, normalizeTradeline, normalizeFromCrs, toCalculatorCards,
+  linesForEngine
 } from "./index.mjs";
 
 test("toCents handles the string forms a bureau file actually uses", () => {
@@ -188,4 +189,49 @@ test("a null balance becomes zero, a null limit does not become zero", () => {
   assert.equal(card.currentBalance, 0, "no reported balance means nothing drawn");
   assert.equal(card.creditLimit, 1000);
   assert.equal(card.apr, null, "an unknown rate stays unknown and sorts last");
+});
+
+/* linesForEngine — the one rule both money readers share. */
+
+const PULL_WITH_LINES = {
+  id: "crs-1",
+  created_at: "2026-08-27T00:00:00Z",
+  result: {
+    scores: { ex: 718, eq: 724, tu: 731 },
+    tradelines: [{
+      creditorName: "American Express", accountType: "revolving",
+      creditLimitAmount: "25000", currentBalance: "4800",
+      accountOpenedDate: "2020-08-01"
+    }]
+  }
+};
+const PULL_NO_LINES = { id: "crs-0", created_at: "2026-08-28T00:00:00Z", result: { scores: { ex: 718 } } };
+
+test("linesForEngine: stored rows win and the pull is not read on top of them", () => {
+  const stored = [{ id: "t1", lender: "Chase", kind: "revolving", credit_limit_cents: 1_000_000 }];
+  const out = linesForEngine(stored, [PULL_WITH_LINES]);
+  assert.equal(out.source, "tradelines");
+  assert.deepEqual(out.tradelines, stored);
+});
+
+test("linesForEngine: an empty table falls back to the accounts inside the pull", () => {
+  const out = linesForEngine([], [PULL_WITH_LINES]);
+  assert.equal(out.source, "crs_results");
+  assert.equal(out.tradelines.length, 1);
+  assert.equal(out.tradelines[0].credit_limit_cents, 2_500_000);
+  assert.equal(out.tradelines[0].opened_on, "2020-08-01");
+});
+
+test("linesForEngine: an empty newer pull does not hide the accounts in an older one", () => {
+  const out = linesForEngine([], [PULL_NO_LINES, PULL_WITH_LINES]);
+  assert.equal(out.source, "crs_results");
+  assert.equal(out.tradelines.length, 1);
+});
+
+test("linesForEngine: nothing anywhere is reported as nothing, never filled in", () => {
+  const out = linesForEngine([], [PULL_NO_LINES]);
+  assert.equal(out.source, "none");
+  assert.deepEqual(out.tradelines, []);
+  assert.deepEqual(linesForEngine().tradelines, []);
+  assert.equal(linesForEngine().source, "none");
 });

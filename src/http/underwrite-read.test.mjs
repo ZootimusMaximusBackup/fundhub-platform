@@ -375,7 +375,38 @@ describe("the response body", () => {
     assert.ok(!res.body.dataCompleteness.missing.client.some((m) => m.field === "hasLLC"));
   });
 
+  test("the note under the LLC sentence names the saved company, not 'fundhub stores no LLC'", async () => {
+    // The sentence and the note printed under it used to disagree: the engine
+    // was handed the real company and said "Your LLC is seasoned", while the
+    // note beneath it still read "fundhub stores no LLC or business-entity
+    // field ... applied its own defaults (no LLC, age 0)". Two opposite lines,
+    // one read.
+    const res = makeRes();
+    await handler(req(), res, fullDb({ businesses: [{ age_months: 30 }] }));
+    const llc = res.body.suggestions.find((x) => x.topic === "llc");
+    assert.ok(llc, "the LLC sentence must still be there");
+    assert.equal(llc.basis.has_llc, true);
+    assert.equal(llc.basis.llc_age_months, 30);
+    assert.ok(!/stores no LLC/i.test(llc.basis.note), llc.basis.note);
+  });
+
+  test("no company on the file: the note says so, and the sentence is flagged as a default", async () => {
+    // `has_llc: false` is what the ENGINE was handed, which is what a basis
+    // records. The note is what stops a reader treating it as a measurement:
+    // nobody saved a company, so this is fundhub's default, not a finding about
+    // this person. `restsOnMissingData` says the same thing in one boolean.
+    const res = makeRes();
+    await handler(req(), res, fullDb({ businesses: [] }));
+    const llc = res.body.suggestions.find((x) => x.topic === "llc");
+    assert.equal(llc.basis.has_llc, false);
+    assert.equal(llc.basis.llc_age_months, null);
+    assert.match(llc.basis.note, /no company is saved/i);
+    assert.equal(llc.restsOnMissingData, true);
+    assert.ok(res.body.dataCompleteness.missing.client.some((m) => m.field === "hasLLC"));
+  });
+
   test("no promise is added on top of the engine's own strings", async () => {
+
     const res = makeRes();
     await handler(req(), res, fullDb());
     // Every sentence in the response must be one the vendored engine produced.
@@ -386,6 +417,77 @@ describe("the response body", () => {
       assert.ok(engineStrings.has(s.text),
         `"${s.text}" is not a sentence the engine produced — the endpoint must not add advice`);
     }
+  });
+});
+
+
+/* A stored pull that carries its accounts, in the live payload shape
+   src/tradelines/index.mjs already normalises (confirmed against the vendor
+   sandbox library — see that file's key lists). */
+const CRS_ROW_WITH_LINES = {
+  id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+  created_at: "2026-01-02T00:00:00Z",
+  result: {
+    scores: { ex: 720, eq: 705, tu: 710 },
+    tradelines: [{
+      creditorName: "American Express Blue Business Cash",
+      accountType: "revolving",
+      accountIdentifier: "SIM-AMEX-001",
+      creditLimitAmount: "25000",
+      currentBalance: "4800",
+      accountOpenedDate: "2020-08-01",
+      apr: "18.49"
+    }]
+  }
+};
+
+describe("the accounts come out of the same file the scores did", () => {
+  test("no stored rows: the accounts inside the pull are used, and the source says so", async () => {
+    // The live failure this closes. One `crs_results` row produced three scores
+    // AND "your file is thin, $0", because the scores were read out of the pull
+    // and the accounts were only ever read out of the table.
+    const res = makeRes();
+    await handler(req(), res, fullDb({ tradelines: [], crs: [CRS_ROW_WITH_LINES] }));
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.tradelineSource, "crs_results");
+    assert.ok(res.body.underwrite.personal.highest_revolving_limit > 0,
+      "the $25,000 limit in the stored pull must reach the engine");
+    assert.ok(res.body.underwrite.totals.total_combined_funding > 0,
+      "a file with an open seasoned card must not report $0");
+    for (const x of res.body.suggestions) {
+      assert.ok(!/file is thin/i.test(x.text), x.text);
+    }
+  });
+
+  test("stored rows win — the pull is never read on top of them", async () => {
+    const res = makeRes();
+    await handler(req(), res, fullDb({
+      tradelines: [{ ...TRADELINE_ROW, opened_on: "2018-01-01" }],
+      crs: [CRS_ROW_WITH_LINES]
+    }));
+    assert.equal(res.body.tradelineSource, "tradelines");
+    // $20,000 from the stored row, NOT the $25,000 in the pull, and not both.
+    assert.equal(res.body.underwrite.personal.highest_revolving_limit, 20_000);
+  });
+
+  test("neither the table nor the pull has accounts: that is reported, not filled in", async () => {
+    const res = makeRes();
+    await handler(req(), res, fullDb({ tradelines: [], crs: [CRS_ROW] }));
+    assert.equal(res.body.tradelineSource, "none");
+    assert.equal(res.body.underwrite.totals.total_combined_funding, 0);
+    const gaps = res.body.dataCompleteness.missing.experian || [];
+    assert.ok(gaps.some((g) => g.field === "tradelines"),
+      "an empty file must still name the missing lines");
+  });
+
+  test("an empty newer pull does not hide the accounts in an older one", async () => {
+    const res = makeRes();
+    await handler(req(), res, fullDb({
+      tradelines: [],
+      crs: [CRS_ROW, CRS_ROW_WITH_LINES]   // newest first, as the handler orders them
+    }));
+    assert.equal(res.body.tradelineSource, "crs_results");
+    assert.ok(res.body.underwrite.personal.highest_revolving_limit > 0);
   });
 });
 
