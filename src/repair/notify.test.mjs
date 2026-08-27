@@ -305,3 +305,40 @@ describe("repairMergeContext", () => {
     assert.equal(ctx.repair.retake_message, "Blurry");
   });
 });
+
+/* ── the enrollment runs this twice, on purpose and unavoidably ───────────
+   src/repair/enroll.mjs emits repair.enrolled AND calls onRepairEvent directly.
+   On the deployed site netlify/functions/api.mjs loads the workflow registry,
+   so emit() already dispatched onRepairEvent before the direct call runs. That
+   is safe ONLY because both runs key the email identically and the insert is
+   ON CONFLICT DO NOTHING. This pins the "identically" half — if eventIdFor ever
+   picks up a timestamp, a random id, or anything else that differs between the
+   two runs, the client gets two welcome emails and this fails. */
+describe("repair.enrolled runs twice per enrollment and must still send once", () => {
+  const base = {
+    name: "repair.enrolled",
+    orgId: "11111111-1111-1111-1111-111111111111",
+    clientId: "22222222-2222-2222-2222-222222222222",
+    payload: { staffId: "33333333-3333-3333-3333-333333333333", program: "trial", source: "repair_enroll" }
+  };
+
+  it("both runs ask for the same dedupe key, so the second insert writes nothing", async () => {
+    const seen = [];
+    const send = async (_db, args) => { seen.push(args.eventId); return { sent: true }; };
+
+    await notifyRepairEmail(null, { ...base, send });
+    await notifyRepairEmail(null, { ...base, send });
+
+    assert.equal(seen.length, 2, "both paths do call the mailer — the dedupe is in the database, not here");
+    assert.equal(seen[0], seen[1],
+      "the two runs must produce ONE provider_ref, or the client is welcomed twice");
+    assert.equal(seen[0], `repair-email:repair.enrolled:${base.orgId}:${base.clientId}:${base.payload.staffId}`);
+  });
+
+  it("the key is the welcome template, so provider_ref cannot collide with another repair email", async () => {
+    let key = null;
+    const send = async (_db, args) => { key = args.templateKey; return { sent: true }; };
+    await notifyRepairEmail(null, { ...base, send });
+    assert.equal(key, EMAIL_REPAIR_WELCOME);
+  });
+});
