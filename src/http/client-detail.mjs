@@ -163,14 +163,25 @@ export function tierReasoning(client = {}, crsResults = []) {
 
 function fmt(v) { return v === null ? "—" : String(v); }
 
+const CRS_INCOMPLETE_TASK = "Cannot start funding — CRS incomplete";
+const AWAITING_CRS = "Awaiting CRS";
+
+/** True when the same scores the control panel paints are on file. */
+export function hasPaintedScores(crsResults) {
+  const tm = triMerge(crsResults);
+  return tm.experian != null || tm.equifax != null || tm.transunion != null;
+}
+
 /* OPEN BLOCKERS — what is actually stopping this file moving, assembled from
    rows the endpoint already has. Each blocker names its source so a closer can
    act on it rather than guessing what produced it. */
-export function openBlockers({ client = {}, tasks = [], fundingRounds = [], invoices = [] } = {}) {
+export function openBlockers({ client = {}, tasks = [], fundingRounds = [], invoices = [], crsResults } = {}) {
   const cf = client.custom_fields || {};
+  const scoresOnFile = hasPaintedScores(crsResults);
   const blockers = [];
 
   for (const t of tasks.filter((t) => !t.done)) {
+    if (scoresOnFile && String(t.title || "") === CRS_INCOMPLETE_TASK) continue;
     blockers.push({
       kind: "task", severity: "normal",
       label: t.title,
@@ -180,6 +191,7 @@ export function openBlockers({ client = {}, tasks = [], fundingRounds = [], invo
   }
 
   for (const r of fundingRounds.filter((r) => r.hold_reason)) {
+    if (scoresOnFile && String(r.hold_reason || "").trim() === AWAITING_CRS) continue;
     blockers.push({
       kind: "funding_hold", severity: "high",
       label: `Round ${r.round_number} on hold`,
@@ -341,6 +353,6 @@ export function clientDetailExtras({ client, crsResults, tasks, fundingRounds, i
     income_estimates: incomeEstimates(crsResults),
     business_credit: businessCredit({ client, businesses }),
     latest_booking: latestBooking({ client, tasks }),
-    open_blockers: openBlockers({ client, tasks, fundingRounds, invoices })
+    open_blockers: openBlockers({ client, tasks, fundingRounds, invoices, crsResults })
   };
 }

@@ -178,6 +178,14 @@ const REAL_CRS_SQL = `
      AND COALESCE(is_demo, false) = false
    GROUP BY client_id`;
 
+/* Rows the control panel would paint as scores — including a planted sample.
+   Demo rows still do not count as a live bureau pull (REAL_CRS_SQL above). */
+const PAINTED_CRS_SQL = `
+  SELECT client_id, result, created_at
+    FROM crs_results
+   WHERE org_id = $1::uuid
+     AND client_id = ANY($2::uuid[])`;
+
 const ACTIVE_INQUIRY_SQL = `
   SELECT client_id, case_status::text AS case_status, fraud_alert_after
     FROM inquiry_removal_cases
@@ -295,7 +303,7 @@ export async function gatherListSignals(db, { orgId, clientIds } = {}) {
   const [
     consentRows, crsRows, inquiryRows, docRows,
     respRows, caseRows, letterRows, cardRows, taskRows, roundRows, balanceRows,
-    linkRows
+    linkRows, paintedCrsRows
   ] = await Promise.all([
     safeRows(db, consentSql(), [orgId, ids, SOFT_PULL_KIND], "consent"),
     safeRows(db, REAL_CRS_SQL, args, "crs_results"),
@@ -308,7 +316,8 @@ export async function gatherListSignals(db, { orgId, clientIds } = {}) {
     safeRows(db, OPEN_TASKS_SQL, args, "tasks"),
     safeRows(db, ROUNDS_SQL, args, "funding_rounds"),
     safeRows(db, BALANCES_SQL, args, "v_invoice_balance"),
-    safeRows(db, PAYMENT_LINKS_SQL, [orgId, ids, OPEN_PAYMENT_LINK_STATUSES], "payment_links")
+    safeRows(db, PAYMENT_LINKS_SQL, [orgId, ids, OPEN_PAYMENT_LINK_STATUSES], "payment_links"),
+    safeRows(db, PAINTED_CRS_SQL, args, "crs_results_painted")
   ]);
 
   const consentBy = byClient(consentRows);
@@ -323,6 +332,7 @@ export async function gatherListSignals(db, { orgId, clientIds } = {}) {
   const roundBy = byClient(roundRows);
   const balanceBy = byClient(balanceRows);
   const linkBy = byClient(linkRows);
+  const paintedCrsBy = byClient(paintedCrsRows);
   const now = new Date();
 
   for (const id of ids) {
@@ -367,7 +377,8 @@ export async function gatherListSignals(db, { orgId, clientIds } = {}) {
       signals.blocker_inputs = {
         tasks: taskBy.get(id) || [],
         fundingRounds: roundBy.get(id) || [],
-        invoices: balanceBy.get(id) || []
+        invoices: balanceBy.get(id) || [],
+        crsResults: paintedCrsRows === null ? undefined : (paintedCrsBy.get(id) || [])
       };
     } else {
       /* A FAILED BLOCKER READ IS NOT "NOTHING IS BLOCKING THIS FILE".
@@ -417,7 +428,8 @@ export function signalsForListRow(row, batched) {
       client: { custom_fields: customFields },
       tasks: inputs.tasks,
       fundingRounds: inputs.fundingRounds,
-      invoices: inputs.invoices
+      invoices: inputs.invoices,
+      crsResults: inputs.crsResults
     });
   }
   return signals;
