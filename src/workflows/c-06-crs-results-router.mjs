@@ -83,8 +83,8 @@ async function createDeclineTaskOnce(db, { orgId, clientId, eventId }) {
 }
 
 // Row 20: funding letters from in-repo letter-pack only. No external UIQ.
-// Persists inquiry_removal + personal_info PDFs into documents so inquiry
-// send (W3) can mail them later. Never stores Metro 2 dispute letters here.
+// Persists inquiry_removal + personal_info PDFs and the four WeasyPrint
+// analysis reports into documents. Never stores Metro 2 dispute letters here.
 async function deliverFundingLetters(db, { clientId, orgId, store } = {}) {
   const pack = await buildLetterPackForClient(db, { clientId, pack: "funding" });
   const files = pack.files || [];
