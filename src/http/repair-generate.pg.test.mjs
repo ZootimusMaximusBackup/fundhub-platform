@@ -126,8 +126,20 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
       `DELETE FROM events WHERE client_id IN (SELECT id FROM clients WHERE email = $1)`, [EMAIL]);
     await db.query(
       `DELETE FROM repair_decision_log WHERE client_id IN (SELECT id FROM clients WHERE email = $1)`, [EMAIL]);
-    await db.query(
-      `DELETE FROM contracts WHERE client_id IN (SELECT id FROM clients WHERE email = $1)`, [EMAIL]);
+
+      /* contracts carries trg_contracts_no_delete — "contracts are never
+         deleted, void it instead". A test wipe is the one place that has to get
+         past it, the same way lifecycle.pg.test.mjs:48 and tamper.pg.test.mjs:64
+         already do. Without this the wipe threw, before() never finished, and
+         all five tests in this file died together. Re-enabled in a finally so a
+         failure cannot leave the guard off for the rest of the run. */
+      await db.query(`ALTER TABLE contracts DISABLE TRIGGER trg_contracts_no_delete`).catch(() => {});
+      try {
+        await db.query(
+          `DELETE FROM contracts WHERE client_id IN (SELECT id FROM clients WHERE email = $1)`, [EMAIL]);
+      } finally {
+        await db.query(`ALTER TABLE contracts ENABLE TRIGGER trg_contracts_no_delete`).catch(() => {});
+      }
     await db.query(`DELETE FROM clients WHERE email = $1`, [EMAIL]);
   }
 
