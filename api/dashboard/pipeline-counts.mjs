@@ -30,7 +30,7 @@ const COUNTS_SQL = `
   SELECT p.key AS pipeline_key,
          COUNT(cd.id) FILTER (
            WHERE s.id IS NOT NULL
-             AND c.id IS NOT NULL
+             AND (c.id IS NOT NULL OR pr.id IS NOT NULL)
              AND ($2::boolean OR COALESCE(c.is_demo, false) = false)
              AND (c.custom_fields->>'crm_archived_at') IS NULL
          )::int AS count
@@ -41,6 +41,8 @@ const COUNTS_SQL = `
       ON s.id = cd.stage_id AND s.pipeline_id = p.id
     LEFT JOIN clients c
       ON c.id = cd.client_id AND c.org_id = p.org_id
+    LEFT JOIN partners pr
+      ON pr.id = cd.partner_id AND pr.org_id = p.org_id
    WHERE p.org_id = $1
    GROUP BY p.key
    ORDER BY p.key ASC

@@ -62,6 +62,43 @@ export function generateFirstPassword() {
   return crypto.randomBytes(12).toString("base64url");
 }
 
+export async function placeWhiteLabelRailCard(qx, { orgId, partnerId, stageKey = "active" } = {}) {
+  if (!qx || !orgId || !partnerId) return { placed: false, reason: "missing_args" };
+  const stage = await qx.query(
+    `SELECT ps.id AS stage_id, ps.pipeline_id
+       FROM pipeline_stages ps
+       JOIN pipelines p ON p.id = ps.pipeline_id
+      WHERE p.key = 'affiliates_white_label'
+        AND ps.key = $1
+        AND p.org_id = $2
+        AND ps.org_id = $2
+      LIMIT 1`,
+    [stageKey, orgId]
+  );
+  const row = stage.rows[0];
+  if (!row) return { placed: false, reason: "stage_not_found" };
+
+  const existing = await qx.query(
+    `SELECT id FROM cards WHERE partner_id = $1 AND pipeline_id = $2 LIMIT 1`,
+    [partnerId, row.pipeline_id]
+  );
+  if (existing.rows[0]) {
+    await qx.query(`UPDATE cards SET stage_id = $2 WHERE id = $1`, [
+      existing.rows[0].id,
+      row.stage_id
+    ]);
+    return { placed: true, created: false, cardId: existing.rows[0].id };
+  }
+
+  const ins = await qx.query(
+    `INSERT INTO cards (org_id, partner_id, pipeline_id, stage_id)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id`,
+    [orgId, partnerId, row.pipeline_id, row.stage_id]
+  );
+  return { placed: true, created: true, cardId: ins.rows[0]?.id || null };
+}
+
 export function parsePartnerApplyBody(body) {
   if (!body || typeof body !== "object") return { ok: false, error: "invalid_json" };
 
@@ -239,6 +276,7 @@ export async function runPartnerApply(parsed, deps = {}) {
            updated_at = now()`,
         [orgId, partnerId, `${display} apply`, JSON.stringify(body)]
       );
+      await placeWhiteLabelRailCard(client, { orgId, partnerId, stageKey: "active" });
       sitePath = `/sites/${partnerId}/apply`;
     }
 

@@ -105,15 +105,18 @@ function mapConversation(row) {
 }
 
 function mapCard(row) {
-  const name = String(row.client_name || "").trim() || "Unnamed client";
+  const name = String(row.client_name || row.partner_name || "").trim() || "Unnamed";
   const stage = [row.pipeline_name, row.stage_name].filter(Boolean).join(" / ");
+  const href = row.client_id
+    ? clientHref(row.client_id)
+    : "/app/pipeline.html";
   return {
     type: "card",
     id: row.id,
     title: name,
     subtitle: stage || "Pipeline card",
-    href: clientHref(row.client_id),
-    client_id: row.client_id,
+    href,
+    client_id: row.client_id || null,
     stage_id: row.stage_id || null
   };
 }
@@ -234,10 +237,12 @@ async function searchCards(database, orgId, pattern, limit) {
   const r = await database.query(
     `SELECT cd.id, cd.client_id, cd.stage_id,
             TRIM(BOTH ' ' FROM COALESCE(c.first_name, '') || ' ' || COALESCE(c.last_name, '')) AS client_name,
+            pr.name AS partner_name,
             s.name AS stage_name,
             p.name AS pipeline_name
        FROM cards cd
-       JOIN clients c ON c.id = cd.client_id AND c.org_id = cd.org_id
+       LEFT JOIN clients c ON c.id = cd.client_id AND c.org_id = cd.org_id
+       LEFT JOIN partners pr ON pr.id = cd.partner_id AND pr.org_id = cd.org_id
        JOIN pipeline_stages s ON s.id = cd.stage_id
        JOIN pipelines p ON p.id = cd.pipeline_id
       WHERE cd.org_id = $1::uuid
@@ -247,6 +252,9 @@ async function searchCards(database, orgId, pattern, limit) {
           OR TRIM(BOTH ' ' FROM COALESCE(c.first_name, '') || ' ' || COALESCE(c.last_name, ''))
              ILIKE $2 ESCAPE '\\'
           OR c.custom_fields->>'business_name' ILIKE $2 ESCAPE '\\'
+          OR pr.name ILIKE $2 ESCAPE '\\'
+          OR pr.brand_name ILIKE $2 ESCAPE '\\'
+          OR pr.contact_email ILIKE $2 ESCAPE '\\'
           OR s.name ILIKE $2 ESCAPE '\\'
           OR p.name ILIKE $2 ESCAPE '\\'
           OR cd.owner ILIKE $2 ESCAPE '\\'
