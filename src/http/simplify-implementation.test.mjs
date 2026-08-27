@@ -191,7 +191,7 @@ function staffDatabase({ role = "owner", orgId = ORG, data } = {}) {
   return calls;
 }
 
-function clientDatabase({ documents = [] } = {}) {
+function clientDatabase({ documents = [], inquiryOpen = false } = {}) {
   const calls = [];
   db.query = async (sql, params) => {
     calls.push({ sql, params });
@@ -212,6 +212,7 @@ function clientDatabase({ documents = [] } = {}) {
     if (/FROM documents/i.test(sql)) return { rows: documents };
     if (/FROM crs_results/i.test(sql)) return { rows: [] };
     if (/FROM businesses/i.test(sql)) return { rows: [] };
+    if (/FROM inquiry_removal_cases/i.test(sql)) return { rows: inquiryOpen ? [{ "?column?": 1 }] : [] };
     throw new Error("unexpected query: " + sql);
   };
   return calls;
@@ -337,10 +338,24 @@ test("client portal summary ignores requested client ids and returns only sessio
   const documentRead = calls.find((call) => /FROM documents/i.test(call.sql));
   const crsRead = calls.find((call) => /FROM crs_results/i.test(call.sql));
   const bizRead = calls.find((call) => /FROM businesses/i.test(call.sql));
+  const inquiryRead = calls.find((call) => /FROM inquiry_removal_cases/i.test(call.sql));
   assert.deepEqual(clientRead.params, [CLIENT, ORG]);
   assert.deepEqual(documentRead.params, [ORG, CLIENT]);
   assert.deepEqual(crsRead.params, [CLIENT, ORG]);
   assert.deepEqual(bizRead.params, [CLIENT, ORG]);
+  /* The inquiry-door flag is read on the SAME session-owned client, never the
+     one the caller asked for — it opens an upload door, so a leak here would
+     open somebody else's. */
+  assert.deepEqual(inquiryRead.params, [CLIENT, ORG]);
+  assert.equal(res.body.inquiry_open, false);
+});
+
+test("an open inquiry case is reported to the portal as inquiry_open", async () => {
+  clientDatabase({ inquiryOpen: true });
+  const res = response();
+  await portalSummaryHandler(request({ query: {} }), res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.inquiry_open, true);
 });
 
 test("simplify routes are registered to their actual handlers", () => {

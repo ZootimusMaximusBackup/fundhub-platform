@@ -1,8 +1,9 @@
 // GET /api/read/portal-summary — client-safe file summary for the portal.
 //
-// Returns pre-qual, 3-bureau + Experian business scores, and client-safe
-// document metadata. Clients read their own file only; staff may pass
-// ?client_id= when previewing the portal.
+// Returns pre-qual, 3-bureau + Experian business scores, client-safe document
+// metadata, and whether an inquiry case is open (the portal's inquiry upload
+// door hangs off that one flag). Clients read their own file only; staff may
+// pass ?client_id= when previewing the portal.
 
 import { db } from "../../src/db.mjs";
 import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
@@ -67,7 +68,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ ok: false, error: "client_not_found" });
     }
 
-    const [documentsRes, crsRes, bizRes] = await Promise.all([
+    const [documentsRes, crsRes, bizRes, inquiryRes] = await Promise.all([
       db.query(
         `SELECT id, document_key, kind, subtype, title, mime_type, byte_size,
                 generated_at, delivered_at, delivery_channel, delivery_status,
@@ -94,6 +95,24 @@ export default async function handler(req, res) {
           ORDER BY updated_at DESC
           LIMIT 5`,
         [clientId, orgId]
+      ),
+      /* THE INQUIRY UPLOAD DOOR HANGS OFF THIS ONE ROW.
+         The portal's "Send a file" doors were gated only on entitlements, and
+         the inquiry-removal product deliberately grants none
+         (db/migrations/180_product_entitlements_seed.sql: "no shipped code
+         anywhere says what an inquiry removal entitles the client to").
+         So a client whose file says `inquiry:docs_needed` — asked by DOC-01 for
+         an ID, proof of address and an authorization — read "0 unlocked" and
+         had no door to send them through. An open case is a fact on the file,
+         not an offer decision, so it is the honest gate. */
+      db.query(
+        `SELECT 1
+           FROM inquiry_removal_cases
+          WHERE client_id = $1 AND org_id = $2
+            AND closed_at IS NULL
+            AND is_demo IS NOT TRUE
+          LIMIT 1`,
+        [clientId, orgId]
       )
     ]);
 
@@ -113,6 +132,7 @@ export default async function handler(req, res) {
       soft_pull_complete: cf.crs_paid === true
         || String(cf.analyzer_status || "").toLowerCase() === "complete",
       doc_agent_message: cf.doc_agent_message || null,
+      inquiry_open: inquiryRes.rows.length > 0,
       documents: documentsRes.rows
     }));
   } catch (err) {

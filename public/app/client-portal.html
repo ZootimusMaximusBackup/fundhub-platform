@@ -1235,12 +1235,43 @@ document.addEventListener("DOMContentLoaded", async function () {
   function setFundingVisible(hasFunding) {
     document.body.classList.toggle("no-funding", !hasFunding);
   }
-  function setUploadDoors(active) {
-    var f=!!(active&&active.funding), i=!!(active&&active.inquiry), b=!!(active&&active.bureau_response);
+  /* TWO READS OPEN THESE DOORS AND EITHER CAN LAND FIRST.
+     Entitlements say which paid lanes this client holds. portal-summary says
+     whether an inquiry case is open on their file. Both drive the same three
+     doors, so each records what it learned and asks for one repaint instead of
+     overwriting the other's answer. */
+  var doorLanes = { funding: false, inquiry: false, bureau_response: false };
+  var inquiryCaseOpen = false;
+
+  function applyDoors() {
+    var f = doorLanes.funding;
+    var i = doorLanes.inquiry || inquiryCaseOpen;
+    var b = doorLanes.bureau_response;
     document.body.classList.toggle("no-funding-door", !f);
     document.body.classList.toggle("no-inquiry-door", !i);
     document.body.classList.toggle("no-bureau-door", !b);
     document.body.classList.toggle("no-upload-doors", !(f||i||b));
+    /* The whole "Send a file" card hides with the last door — an empty card
+       titled "Use the door that matches what you have" is worse than none. */
+    document.body.classList.toggle("no-docs", !(f||i||b));
+  }
+  function setUploadDoors(active) {
+    doorLanes = {
+      funding: !!(active && active.funding),
+      inquiry: !!(active && active.inquiry),
+      bureau_response: !!(active && active.bureau_response)
+    };
+    applyDoors();
+  }
+  /* AN OPEN INQUIRY CASE IS ITS OWN KEY TO THE INQUIRY DOOR.
+     The inquiry-removal product grants no entitlement on purpose
+     (db/migrations/180_product_entitlements_seed.sql), so gating this door on
+     entitlements alone left every inquiry client reading "0 unlocked" with
+     nowhere to send the ID, proof of address and authorization DOC-01 had just
+     asked them for. */
+  function setInquiryCaseOpen(open) {
+    inquiryCaseOpen = !!open;
+    applyDoors();
   }
   function doorsFromEntitlementCodes(codes) {
     var set={}; (codes||[]).forEach(function(c){set[String(c||"").toLowerCase()]=1;});
@@ -1669,6 +1700,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   FHData.wire(FHData.portalSummary(clientId ? { client_id: clientId } : {}),
     "portal-summary", function (data) {
       if (!STAFF_ROLES[roleHint()]) paintDocs(data.documents || []);
+      setInquiryCaseOpen(data.inquiry_open);
       var note = document.getElementById("doc-agent-note");
       if (note) {
         var msg = data.doc_agent_message;
@@ -1703,9 +1735,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       rows.forEach(function (e) { if (e.active) active[e.entitlement_code] = e; });
 
       setFundingVisible(!!active[FUNDING_CODE]);
-      var doorState = doorsFromEntitlementCodes(Object.keys(active));
-      setUploadDoors(doorState);
-      document.body.classList.toggle("no-docs", !(doorState.funding || doorState.inquiry || doorState.bureau_response));
+      setUploadDoors(doorsFromEntitlementCodes(Object.keys(active)));
       paintOwn(active);
       if (active[FUNDING_CODE]) {
         var sbLive = document.getElementById("sb-main");

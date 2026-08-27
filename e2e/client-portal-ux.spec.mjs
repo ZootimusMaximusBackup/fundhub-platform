@@ -243,4 +243,54 @@ test.describe("client portal go-live UX", () => {
     await expect(page.locator("#fh-chat-fab")).toBeVisible({ timeout: 8000 });
     await expect(page.locator("#fh-chat-panel")).not.toHaveClass(/open/);
   });
+
+  /* HOLE 17 — an inquiry client held no entitlement, so every upload door was
+     hidden and the whole "Send a file" card with them. The file said
+     inquiry:docs_needed and DOC-01 had already asked for an ID, proof of
+     address and an authorization; there was nowhere to put them. */
+  test("an open inquiry case opens the inquiry door with no entitlements", async ({ page }) => {
+    await openPortal(page, CLIENT_SESSION, [], { portalSummary: { inquiry_open: true } });
+
+    await expect(page.locator(".action-card")).toBeVisible();
+    await expect(page.locator("#upload-doors")).toBeVisible();
+    await expect(page.locator(".door-inquiry")).toBeVisible();
+    await expect(page.locator(".door-inquiry .upload-btn")).toHaveText(/Upload inquiry docs/i);
+    /* Only the door they actually have. The funding and bureau lanes are paid
+       lanes and stay shut. */
+    await expect(page.locator(".door-funding")).toBeHidden();
+    await expect(page.locator(".door-bureau")).toBeHidden();
+  });
+
+  test("no entitlements and no inquiry case keeps every door shut", async ({ page }) => {
+    await openPortal(page, CLIENT_SESSION, [], { portalSummary: { inquiry_open: false } });
+    await expect(page.locator(".action-card")).toBeHidden();
+    await expect(page.locator(".door-inquiry")).toBeHidden();
+  });
+
+  test("Send through the inquiry door posts an inquiry_doc for this client", async ({ page }) => {
+    await openPortal(page, CLIENT_SESSION, [], { portalSummary: { inquiry_open: true } });
+
+    const posted = [];
+    await page.route("**/api/documents-upload", async (route) => {
+      posted.push(route.request().postData() || "");
+      return json(route, { ok: true, documents: [{ id: "doc-new" }] });
+    });
+
+    const door = page.locator(".door-inquiry");
+    await door.locator("input[type=file]").setInputFiles({
+      name: "ftc-report.pdf",
+      mimeType: "application/pdf",
+      buffer: Buffer.from("%PDF-1.4 hole 17 proof")
+    });
+    await expect(door.locator(".upload-btn")).toHaveText(/Send 1 file/i);
+
+    await door.locator(".upload-btn").click();
+    await expect(door.locator(".upload-btn")).toHaveText(/^Sent$/, { timeout: 15_000 });
+
+    expect(posted).toHaveLength(1);
+    expect(posted[0]).toContain("inquiry_doc");
+    expect(posted[0]).toContain(CLIENT_ID);
+    expect(posted[0]).toContain("ftc-report.pdf");
+  });
+
 });
