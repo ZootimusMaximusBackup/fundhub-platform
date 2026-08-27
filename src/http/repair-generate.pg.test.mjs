@@ -257,7 +257,7 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
     assert.equal(await countRows("dispute_letters"), 0);
   });
 
-  test("staff consent without a signed repair agreement writes no letters", async () => {
+  test("staff consent without a signed repair agreement still writes letters", async () => {
     await wipeClient();
     await buildClient({
       result: { bureausPulled: ["EQ"], bureaus: { EQ: equifaxReport() } },
@@ -268,10 +268,8 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
     const r = await post({ client_id: clientId });
 
     assert.equal(r.code, 200);
-    assert.equal(r.body.ok, false);
-    assert.equal(r.body.reason, "no_authorization");
-    assert.equal(r.body.message, "No signed repair agreement on file.");
-    assert.equal(await countRows("dispute_letters"), 0);
+    assert.equal(r.body.ok, true, JSON.stringify(r.body));
+    assert.equal(await countRows("dispute_letters"), 1);
   });
 
   test("no credit file on record: refuses, and writes no dispute rows at all", async () => {

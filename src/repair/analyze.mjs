@@ -31,7 +31,7 @@ import {
 } from "../metro2/rounds/store.mjs";
 import { roundAllowed } from "../metro2/rounds/state.mjs";
 import { loadClientReturnAddress } from "../inquiry-ops/call-scheduler.mjs";
-import { hasRepairAgreement } from "./dispute-auth.mjs";
+import { hasDisputeAuthorization, hasRepairAgreement } from "./dispute-auth.mjs";
 import { onRepairEvent } from "./handlers.mjs";
 
 const BUREAU_CODES = Object.freeze(["TU", "EX", "EQ"]);
@@ -285,10 +285,12 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
   if (!orgId || !clientId) return { ok: false, reason: "missing_ids" };
   if (!ROUNDS.includes(round)) return { ok: false, reason: "invalid_round", round };
 
-  // WS-A auth gate — do not remove. No signed repair agreement → no letters.
-  // Runs before the already-generated shortcut so Stage cannot succeed after
-  // Generate said no agreement.
-  const authorized = await hasRepairAgreement(db, { orgId, clientId });
+  // WS-A auth gate — do not remove. Prepare letters when a signed repair
+  // agreement or a live signed/staff dispute_authorization is on file.
+  // Send / paper mail stays a separate human click.
+  const authorized =
+    (await hasRepairAgreement(db, { orgId, clientId }))
+    || (await hasDisputeAuthorization(db, { orgId, clientId }));
   if (!authorized) return { ok: false, reason: "no_authorization" };
 
   const existingLetters = await loadExistingRoundLetters(db, { orgId, clientId, round });

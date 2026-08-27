@@ -61,6 +61,25 @@ describe("analyzeAndGenerate", () => {
     assert.ok(!db.seen.some((c) => /FROM dispute_letters/i.test(c.sql)));
   });
 
+  test("staff dispute authorization is enough when no signed contract exists", async () => {
+    const db = fakeDb({
+      "FROM contracts": [],
+      "FROM client_consents": [{ is_valid: true }],
+      "FROM dispute_letters dl": [{
+        id: "letter-1",
+        bureau: "EQ",
+        case_id: "case-1",
+        body_text: "Dear Equifax",
+        rule_ids: ["M2-005"]
+      }],
+      "FROM clients": [{ first_name: "Sim", last_name: "Repair" }]
+    });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    assert.equal(r.ok, true);
+    assert.equal(r.already_generated, true);
+    assert.equal(r.letters.length, 1);
+  });
+
   test("letters already on file succeed when a signed repair agreement exists", async () => {
     const db = fakeDb({
       "FROM contracts": [{ "?column?": 1 }],
