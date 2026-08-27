@@ -45,7 +45,7 @@ import { ROLE_SETS, requireRole, isUuid, CLIENT_DATA_ERRORS } from "../../src/ht
 import { evaluateUtilization } from "../../src/alerts/evaluate.mjs";
 import { UPSTREAM, computeUnderwrite, buildSuggestions } from "../../src/underwrite/engine.mjs";
 import { toBureaus } from "../../src/underwrite/adapter.mjs";
-import { normalizeFromCrs } from "../../src/tradelines/index.mjs";
+import { linesForEngine } from "../../src/tradelines/index.mjs";
 import { applyStackedBusinessFunding } from "../../src/underwrite/business-funding.mjs";
 import { buildReport } from "../../src/underwrite/report.mjs";
 import { dbDown } from "../../src/http/db-down.mjs";
@@ -155,24 +155,16 @@ export default async function handler(req, res, deps = {}) {
        this can neither double-count nor disagree with the screens that read
        `tradelines` directly (api/read/tradelines.mjs, api/read/finance-os.mjs).
 
+       THE RULE LIVES IN ONE PLACE — src/tradelines/index.mjs's linesForEngine.
+       src/sales/closer-deck.mjs runs the same three engine calls to produce the
+       pre-approval a closer reads out to the client, and the two must never be
+       able to answer "how much can this person get" differently.
+
        `tradelineSource` is returned so a reader can always tell which of the two
        they are looking at. It is never a guess: "none" means the file carried no
        accounts either, and the adapter still reports that as a missing field. */
-    const storedTradelines = tradelinesRes.rows;
-    let fallbackTradelines = [];
-    if (storedTradelines.length === 0) {
-      // Newest first, from the ORDER BY above. The first pull that actually
-      // carries accounts wins; an empty one is skipped rather than treated as
-      // proof the client has no lines.
-      for (const crsRow of crsRes.rows) {
-        const lines = normalizeFromCrs(crsRow);
-        if (lines.length > 0) { fallbackTradelines = lines; break; }
-      }
-    }
-    const tradelines = storedTradelines.length > 0 ? storedTradelines : fallbackTradelines;
-    const tradelineSource = storedTradelines.length > 0
-      ? "tradelines"
-      : (fallbackTradelines.length > 0 ? "crs_results" : "none");
+    const { tradelines, source: tradelineSource } =
+      linesForEngine(tradelinesRes.rows, crsRes.rows);
 
     // ── pure from here down ──
     const adapter = toBureaus({

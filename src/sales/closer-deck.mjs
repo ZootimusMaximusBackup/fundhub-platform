@@ -22,6 +22,7 @@ import { incomeEstimates } from "../http/client-detail.mjs";
 import { toBureaus } from "../underwrite/adapter.mjs";
 import { computeUnderwrite } from "../underwrite/engine.mjs";
 import { applyStackedBusinessFunding } from "../underwrite/business-funding.mjs";
+import { linesForEngine } from "../tradelines/index.mjs";
 
 function jsonSafeLink(link, extra = {}) {
   if (!link) return null;
@@ -254,7 +255,7 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
 
   const [crsRes, bizRes, tradelinesRes, liabilitiesRes] = await Promise.all([
     db.query(
-      `SELECT result, outcome_tier, created_at
+      `SELECT id, result, outcome_tier, created_at
          FROM crs_results
         WHERE client_id = $1 AND org_id = $2
         ORDER BY created_at DESC LIMIT 1`,
@@ -285,8 +286,17 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
   /* COMPLIANCE REVIEW REQUIRED — Present money is the UnderwriteIQ stack, not
      the stored CRS canned total. Same three calls as api/read/underwrite.mjs. */
   if (engine.available) {
+    /* THE ACCOUNTS COME OUT OF THE SAME FILE THE SCORES DID. `tradelines` is
+       written at pull time by ingestCrsResult(); when that did not run the table
+       is empty, and reading the scores out of the stored pull while ignoring the
+       accounts in the same pull put "$0" on the client's screen under three
+       real FICO scores and the words FULL FUNDING. Measured on live 2026-08-27
+       for client 89f1a12f: the stored pull lists four open, seasoned accounts.
+       linesForEngine is the one rule, shared with api/read/underwrite.mjs, so
+       Present and the UnderwriteIQ read can never answer this differently. */
+    const { tradelines } = linesForEngine(tradelinesRes.rows, crsRes.rows);
     const adapter = toBureaus({
-      tradelines: tradelinesRes.rows,
+      tradelines,
       liabilities: liabilitiesRes.rows,
       crsResults: crsRes.rows,
       customFields: client.custom_fields || {},

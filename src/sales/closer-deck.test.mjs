@@ -138,6 +138,69 @@ test("stored closer payload maps FICO, total, reasons — no invented numbers", 
   assert.equal(out.income_estimates.equifax.annual, 81000);
 });
 
+test("the headline is not $0 when the accounts are in the pull but not the table", async () => {
+  /* THE LIVE FAILURE THIS CLOSES. Present showed a client
+     "PRE-APPROVED FOR APPROXIMATELY $0" directly under 718 / 731 / 724 and the
+     words FULL FUNDING, because `tradelines` was empty — the pull-time ingest
+     had not run — while the very same stored pull listed four open, seasoned
+     accounts. Measured on live 2026-08-27, client 89f1a12f. */
+  const crs = {
+    id: "33333333-3333-4333-8333-333333333333",
+    outcome_tier: "FULL_FUNDING",
+    created_at: "2026-08-27T00:00:00Z",
+    result: {
+      outcome: "FULL_FUNDING",
+      preapprovals: { totalCombined: 125000 },
+      scores: { ex: 718, eq: 724, tu: 731 },
+      tradelines: [{
+        creditorName: "American Express Blue Business Cash",
+        accountType: "revolving",
+        accountIdentifier: "SIM-AMEX-001",
+        creditLimitAmount: "25000",
+        currentBalance: "4800",
+        accountOpenedDate: "2020-08-01",
+        apr: "18.49"
+      }]
+    }
+  };
+  const out = await buildCloserDeck(
+    fakeDb({ client: { ...CLIENT, outcome_tier: "FULL_FUNDING" }, crs, tradelines: [] }),
+    { orgId: ORG, clientId: CID }
+  );
+  assert.equal(out.engine.available, true);
+  assert.ok(out.engine.total > 0,
+    "a file with an open seasoned card must never be read out to a client as $0");
+});
+
+test("stored rows still win — the pull is never read on top of them", async () => {
+  const crs = {
+    id: "33333333-3333-4333-8333-333333333333",
+    outcome_tier: "FULL_FUNDING",
+    created_at: "2026-08-27T00:00:00Z",
+    result: {
+      outcome: "FULL_FUNDING",
+      scores: { ex: 718, eq: 724, tu: 731 },
+      tradelines: [{
+        creditorName: "American Express", accountType: "revolving",
+        creditLimitAmount: "25000", currentBalance: "4800",
+        accountOpenedDate: "2020-08-01"
+      }]
+    }
+  };
+  const stored = {
+    id: "44444444-4444-4444-8444-444444444444",
+    lender: "Chase", kind: "revolving",
+    credit_limit_cents: 1_000_000, balance_cents: 100_000,
+    opened_on: "2018-01-01", closed_at: null
+  };
+  const out = await buildCloserDeck(
+    fakeDb({ client: { ...CLIENT, outcome_tier: "FULL_FUNDING" }, crs, tradelines: [stored] }),
+    { orgId: ORG, clientId: CID }
+  );
+  // $10,000 stored limit, not the $25,000 in the pull, and not the two summed.
+  assert.equal(out.engine.total, 10_000 * 5.5 * 3);
+});
+
 test("two saved companies raise Present's UnderwriteIQ stack vs one, all else equal", async () => {
   const crs = {
     outcome_tier: "FULL_FUNDING",
