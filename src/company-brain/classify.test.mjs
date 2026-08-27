@@ -100,14 +100,34 @@ test("classifyWithModel keeps the heuristic when no ANTHROPIC_API_KEY", async ()
   assert.equal(calls.length, 0);
 });
 
-test("classifyWithModel with only OPENAI_API_KEY stays on the heuristic", async () => {
-  const { calls, fetchImpl } = fakeAnthropic({ text: '{"tier":"public"}' });
+function fakeOpenAI({ status = 200, text = '{"tier":"staff","rationale":"internal runbook"}' } = {}) {
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({ url, init, json: JSON.parse(init.body) });
+    return {
+      ok: status >= 200 && status < 300,
+      status,
+      json: async () => ({
+        choices: [{ message: { content: text } }]
+      })
+    };
+  };
+  return { calls, fetchImpl };
+}
+
+test("classifyWithModel with only OPENAI_API_KEY calls OpenAI and takes its tier", async () => {
+  const { calls, fetchImpl } = fakeOpenAI();
   const out = await classifyWithModel(UNCLASSIFIED, {
     env: { OPENAI_API_KEY: "sk-openai" },
     fetchImpl
   });
-  assert.equal(out.source, "heuristic");
-  assert.equal(calls.length, 0);
+  assert.equal(out.proposedTier, "staff");
+  assert.equal(out.autoAssignable, true);
+  assert.equal(out.source, "model");
+  assert.equal(out.rationale, "internal runbook");
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].url, /api\.openai\.com\/v1\/chat\/completions/);
+  assert.equal(calls[0].init.headers.authorization, "Bearer sk-openai");
 });
 
 test("classifyWithModel falls back to heuristic on model error or bad JSON", async () => {

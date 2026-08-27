@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { chunkText } from "./chunk.mjs";
 import { tiersForRole, assertOwnerOnlyRole } from "./access.mjs";
 import { embedTexts, toVectorLiteral, EMBEDDING_DIMS } from "./embed.mjs";
-import { upsertExtractedFile } from "./store.mjs";
+import { upsertExtractedFile, replaceFileChunks } from "./store.mjs";
 import { retrieveChunks } from "./retrieve.mjs";
 
 function fakeEmbedding(seed = 1) {
@@ -111,6 +111,55 @@ test("upsertExtractedFile writes file + chunks through db mock", async () => {
   assert.ok(out.chunkCount >= 1);
   assert.ok(rows.chunks.length >= 1);
   assert.equal(rows.chunks[0][4], "owner"); // access_tier
+});
+
+test("replaceFileChunks embeds text onto an existing file via OpenAI", async () => {
+  const chunks = [];
+  const updates = [];
+  const db = {
+    async query(sql, params) {
+      if (/DELETE FROM brain_chunks/i.test(sql)) return { rows: [] };
+      if (/INSERT INTO brain_chunks/i.test(sql)) {
+        chunks.push(params);
+        return { rows: [] };
+      }
+      if (/UPDATE brain_files/i.test(sql)) {
+        updates.push(params);
+        return { rows: [] };
+      }
+      return { rows: [] };
+    }
+  };
+  const out = await replaceFileChunks(db, {
+    orgId: "org-1",
+    fileId: "file-9",
+    text: "Closer day 1. We are not the bank. ".repeat(40),
+    accessTier: "staff",
+    env: { OPENAI_API_KEY: "sk-test" },
+    embed: async (texts) => ({
+      ok: true,
+      embeddings: texts.map((_, i) => fakeEmbedding(i + 2))
+    })
+  });
+  assert.equal(out.ok, true);
+  assert.ok(out.chunkCount >= 1);
+  assert.ok(chunks.length >= 1);
+  assert.equal(chunks[0][4], "staff");
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0][0], "file-9");
+});
+
+test("replaceFileChunks stays dead when OpenAI embed fails", async () => {
+  const out = await replaceFileChunks({
+    async query() { throw new Error("db should not run"); }
+  }, {
+    orgId: "org-1",
+    fileId: "file-9",
+    text: "enough words to make a chunk",
+    embed: async () => ({ ok: false, embeddings: [], error: "not_configured:OPENAI_API_KEY" })
+  });
+  assert.equal(out.ok, false);
+  assert.match(out.reason, /OPENAI_API_KEY/);
 });
 
 test("retrieveChunks refuses non-STAFF before any db call", async () => {

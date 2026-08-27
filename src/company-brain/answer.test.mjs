@@ -71,16 +71,38 @@ test("synthesizeAnswer fallback text does not name OpenAI", async () => {
   assert.doesNotMatch(out.text, /OpenAI/i);
 });
 
-test("synthesizeAnswer having only OPENAI_API_KEY does not call a model", async () => {
-  const { calls, fetchImpl } = fakeAnthropic();
+function fakeOpenAI({ status = 200, text = "Per [1], ask what they compared the rate to." } = {}) {
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({ url, init, json: JSON.parse(init.body) });
+    return {
+      ok: status >= 200 && status < 300,
+      status,
+      json: async () => ({
+        choices: [{ message: { content: text } }],
+        usage: { prompt_tokens: 4, completion_tokens: 8 }
+      })
+    };
+  };
+  return { calls, fetchImpl };
+}
+
+test("synthesizeAnswer having only OPENAI_API_KEY calls OpenAI", async () => {
+  const { calls, fetchImpl } = fakeOpenAI();
   const out = await synthesizeAnswer({
     query: "objection script",
     chunks: CHUNKS,
     env: { OPENAI_API_KEY: "sk-openai" },
     fetchImpl
   });
-  assert.equal(out.source, "extractive");
-  assert.equal(calls.length, 0);
+  assert.equal(out.ok, true);
+  assert.equal(out.source, "model");
+  assert.equal(out.thin, false);
+  assert.match(out.text, /compared the rate to/);
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].url, /api\.openai\.com\/v1\/chat\/completions/);
+  assert.equal(calls[0].init.headers.authorization, "Bearer sk-openai");
+  assert.match(calls[0].json.model, /^gpt-/);
 });
 
 test("synthesizeAnswer falls back to extractive when Claude errors", async () => {

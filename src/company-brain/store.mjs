@@ -121,6 +121,50 @@ export async function upsertExtractedFile(db, {
   };
 }
 
+/**
+ * Write searchable OpenAI embeddings onto an existing brain file.
+ * Used when a training pack was approved but landed with no chunks.
+ */
+export async function replaceFileChunks(db, {
+  orgId,
+  fileId,
+  text,
+  accessTier = "staff",
+  env = process.env,
+  fetchImpl,
+  embed = embedTexts
+} = {}) {
+  if (!orgId) return { ok: false, reason: "org_id_required" };
+  if (!fileId) return { ok: false, reason: "file_id_required" };
+  const chunks = chunkText(String(text || ""));
+  if (!chunks.length) return { ok: false, reason: "no_chunks" };
+
+  const embedded = await embed(chunks, { env, fetchImpl });
+  if (!embedded.ok) return { ok: false, reason: embedded.error || "embed_failed" };
+  if ((embedded.embeddings || []).length !== chunks.length) {
+    return { ok: false, reason: "embed_failed" };
+  }
+
+  const tier = ACCESS_TIER_OR_OWNER(accessTier);
+  const contentHash = sha256(String(text || ""));
+
+  await db.query(`DELETE FROM brain_chunks WHERE file_id = $1 AND org_id = $2`, [fileId, orgId]);
+  for (let i = 0; i < chunks.length; i++) {
+    await db.query(
+      `INSERT INTO brain_chunks (org_id, file_id, chunk_index, content, access_tier, embedding)
+       VALUES ($1, $2, $3, $4, $5, $6::vector)`,
+      [orgId, fileId, i, chunks[i], tier, toVectorLiteral(embedded.embeddings[i])]
+    );
+  }
+  await db.query(
+    `UPDATE brain_files
+        SET content_sha256 = $3, indexed_at = now(), updated_at = now()
+      WHERE id = $1 AND org_id = $2`,
+    [fileId, orgId, contentHash]
+  );
+  return { ok: true, chunkCount: chunks.length };
+}
+
 
 async function maybeClassify(db, {
   orgId, fileId, extracted, env, fetchImpl, classify, classifyFn
