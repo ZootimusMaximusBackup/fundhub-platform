@@ -66,3 +66,12 @@ export function rlsPool() {
 export async function closeRlsPool() {
   if (_appPool) { await _appPool.end(); _appPool = null; }
 }
+
+/** A `{ query }` handle on the same restricted pool, for the tests that assert
+    what an UNSCOPED session can read. Those deliberately skip withPartnerScope —
+    "a forgotten predicate must fail closed" — but they still have to run as the
+    unprivileged role, or the owner reads straight past every policy and the test
+    reports a leak that only exists because of who is connected. */
+export const rlsDb = {
+  query: (sql, params) => rlsPool().query(sql, params)
+};
