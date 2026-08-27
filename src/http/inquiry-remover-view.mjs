@@ -569,6 +569,12 @@ export function buildCaseSendRequest(opts) {
   return { method: "POST", path: "/api/inquiry-cases", body: body };
 }
 
+export function buildInquiryGenerateRequest(opts) {
+  const o = opts || {};
+  if (!isUuid(o.caseId)) throw new ViewError("case id must be a uuid");
+  return { method: "POST", path: "/api/inquiry-cases", body: { id: o.caseId, action: "generate" } };
+}
+
 /* ── REPAIR PANE ─────────────────────────────────────────────────────────────
    Same desk, other toggle. Send is human-only. No letter without an id. */
 
@@ -662,6 +668,7 @@ export const VIEW = {
   caseUiStatus: caseUiStatus,
   caseCallState: caseCallState,
   buildCaseSendRequest: buildCaseSendRequest,
+  buildInquiryGenerateRequest: buildInquiryGenerateRequest,
   bureauLabel: bureauLabel,
   repairStagePill: repairStagePill,
   buildRepairSendRequest: buildRepairSendRequest,

@@ -1108,6 +1108,12 @@ function buildCaseSendRequest(opts) {
   return { method: "POST", path: "/api/inquiry-cases", body: body };
 }
 
+function buildInquiryGenerateRequest(opts) {
+  const o = opts || {};
+  if (!isUuid(o.caseId)) throw new ViewError("case id must be a uuid");
+  return { method: "POST", path: "/api/inquiry-cases", body: { id: o.caseId, action: "generate" } };
+}
+
 /* ── REPAIR PANE ─────────────────────────────────────────────────────────────
    Same desk, other toggle. Send is human-only. No letter without an id. */
 
@@ -1201,6 +1207,7 @@ const VIEW = {
   caseUiStatus: caseUiStatus,
   caseCallState: caseCallState,
   buildCaseSendRequest: buildCaseSendRequest,
+  buildInquiryGenerateRequest: buildInquiryGenerateRequest,
   bureauLabel: bureauLabel,
   repairStagePill: repairStagePill,
   buildRepairSendRequest: buildRepairSendRequest,
@@ -2023,6 +2030,7 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
      unlisted reason falls through to the raw string rather than being hidden. */
   var GEN_REASONS = {
     no_credit_file:   "No credit report on file yet. Pull one first.",
+    no_inquiries:     "No inquiries on this credit file.",
     no_violations:    "Nothing to dispute on this file — no letter was made.",
     missing_identity: "This client has no name on their record, so a letter cannot be addressed.",
     client_not_found: "That client record could not be found.",
@@ -2099,34 +2107,41 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
           return;
         }
         if (act === "generate-letters") {
-          /* Owner decision 2026-08-19: letter generation is triggered from the case the
-             Specialist already has open — existing surface, no new screen and no new menu
-             row. This WRITES dispute letters and mails nothing; Send below is still the
-             only thing that reaches a bureau. */
-          if (!C.client_id) { btn.textContent = "no client"; return; }
+          /* Writes inquiry items from the credit file onto this case. Does not mail. */
           var out = trDetail.querySelector(".gen-result");
+          var req;
+          try {
+            req = window.FHInquiryView.buildInquiryGenerateRequest({ caseId: C.id });
+          } catch (err) {
+            if (out) out.textContent = err.message || "no case";
+            return;
+          }
           btn.disabled = true;
           btn.textContent = "Generating…";
-          fetch("/api/repair/generate", {
-            method: "POST",
+          fetch(req.path, {
+            method: req.method,
             headers: headers(true),
-            body: JSON.stringify({ client_id: C.client_id })
+            body: JSON.stringify(req.body)
           }).then(function (r) { return r.json(); }).then(function (d) {
             btn.disabled = false;
             btn.textContent = "Generate letters";
-            if (!out) return;
             if (d && d.ok) {
-              /* Deliberately NO load() here. Letters land on the Repair tab; nothing on
-                 this inquiry case row changes. Re-rendering would rebuild the detail and
-                 wipe the sentence the Specialist needs to read. */
-              out.textContent = genSummary(d);
+              var n = Number(d.open_inquiry_count != null ? d.open_inquiry_count : d.written) || 0;
+              if (out) {
+                out.textContent = n + (n === 1
+                  ? " inquiry item on this case. Nothing mailed."
+                  : " inquiry items on this case. Nothing mailed.");
+              }
+              load();
               return;
             }
-            out.textContent = GEN_REASONS[d && d.reason] || (d && d.message) || (d && d.error) || "Could not generate letters.";
+            if (out) {
+              out.textContent = GEN_REASONS[d && d.reason] || (d && d.message) || (d && d.error) || "Could not generate.";
+            }
           }).catch(function () {
             btn.disabled = false;
             btn.textContent = "Generate letters";
-            if (out) out.textContent = "Could not generate letters.";
+            if (out) out.textContent = "Could not generate.";
           });
           return;
         }

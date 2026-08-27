@@ -543,12 +543,20 @@ test("VIEW exposes every export the screen calls, so a rename cannot half-land",
     "maskedSsnLabel", "canReveal", "formatRevealed",
     "createRowState", "beginWrite", "settleWrite", "failWrite",
     "attemptsDelta", "pendingLabel",
-    "caseUiStatus", "caseCallState", "buildCaseSendRequest",
+    "caseUiStatus", "caseCallState", "buildCaseSendRequest", "buildInquiryGenerateRequest",
     "bureauLabel", "repairStagePill", "buildRepairSendRequest",
     "buildRepairConfirmParseRequest"
   ]) {
     assert.ok(VIEW[name], name + " is missing from VIEW");
   }
+});
+
+test("buildInquiryGenerateRequest: posts generate to /api/inquiry-cases", () => {
+  const r = VIEW.buildInquiryGenerateRequest({ caseId: ID });
+  assert.equal(r.method, "POST");
+  assert.equal(r.path, "/api/inquiry-cases");
+  assert.deepEqual(r.body, { id: ID, action: "generate" });
+  assert.throws(() => VIEW.buildInquiryGenerateRequest({ caseId: "not-a-uuid" }), /must be a uuid/);
 });
 
 test("buildCaseSendRequest: human send only, portal needs reference", () => {
@@ -599,6 +607,16 @@ test("repair pane calls the copied VIEW, not a missing window.VIEW", () => {
   assert.match(HTML_SRC, /var V = window\.FHInquiryView;/);
   assert.match(HTML_SRC, /V\.buildRepairSendRequest/);
   assert.match(HTML_SRC, /V\.buildRepairConfirmParseRequest/);
+});
+
+test("Inquiries Generate posts generate to inquiry-cases, not repair generate", () => {
+  assert.match(HTML_SRC, /buildInquiryGenerateRequest\(\{\s*caseId:/);
+  const start = HTML_SRC.indexOf('if (act === "generate-letters")');
+  const end = HTML_SRC.indexOf('if (act === "upload-fraud")');
+  assert.ok(start > 0 && end > start, "generate-letters handler missing");
+  const inquiriesGen = HTML_SRC.slice(start, end);
+  assert.equal(inquiriesGen.includes("/api/repair/generate"), false);
+  assert.match(inquiriesGen, /inquiry items on this case/);
 });
 
 /* ── rules that live in the HTML itself ────────────────────────────────────── */
