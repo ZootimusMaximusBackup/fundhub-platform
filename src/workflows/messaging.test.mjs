@@ -2,15 +2,17 @@ import { test } from "node:test";
 import assert from "node:assert";
 import { sendTemplated, formatAppointmentStart } from "./messaging.mjs";
 
-// In-memory DB fake covering message_templates, messages, opt_outs, and the client
-// record sendTemplated reads merge-tag context from.
+// In-memory DB fake covering message_templates, messages, opt_outs, conversations
+// and the client record sendTemplated reads merge-tag context from.
 function pgFake({ templates = [], optOuts = [], clients = [], openShift = null, failOn = null } = {}) {
   const messages = [];
   const events = [];          // staff_events, the telemetry seam's output
+  const conversations = [];   // the thread the Messaging screen lists
   const sql = [];             // every statement issued, so a test can assert one was NOT
   return {
     messages,
     events,
+    conversations,
     sql,
     optOuts,
     clients,
@@ -43,13 +45,50 @@ function pgFake({ templates = [], optOuts = [], clients = [], openShift = null, 
         // the same event writes nothing and RETURNS no row.
         const dup = messages.some((m) => m.org_id === params[0] && m.provider_ref === params[5]);
         if (dup) return { rows: [] };
-        messages.push({ org_id: params[0], client_id: params[1], channel: params[2], template_key: params[3], rendered_body: params[4], provider_ref: params[5] });
-        return { rows: [{ id: "msg-" + messages.length }] };
+        messages.push({
+          id: "msg-" + (messages.length + 1),
+          org_id: params[0], client_id: params[1], channel: params[2], template_key: params[3],
+          rendered_body: params[4], provider_ref: params[5],
+          created_at: WROTE_AT, conversation_id: null
+        });
+        const row = messages[messages.length - 1];
+        return { rows: [{ id: row.id, created_at: row.created_at }] };
+      }
+      // The message row a replay deduped against — sendTemplated looks it up so
+      // it can still be threaded. See the threading block in messaging.mjs.
+      if (/SELECT id, created_at FROM messages WHERE org_id/.test(sql)) {
+        const m = messages.find((m) => m.org_id === params[0] && m.provider_ref === params[1]);
+        return { rows: m ? [{ id: m.id, created_at: m.created_at }] : [] };
+      }
+      // conversations — one row per (client_id, channel), the shape
+      // uq_conversations_client_channel enforces. GREATEST on the pulse.
+      if (/INSERT INTO conversations/.test(sql)) {
+        const [orgId, clientId, channel, , pulse] = params;
+        let c = conversations.find((c) => c.client_id === clientId && c.channel === channel);
+        if (!c) {
+          c = { id: "convo-" + (conversations.length + 1), org_id: orgId, client_id: clientId, channel, last_pulse_at: pulse || null };
+          conversations.push(c);
+        } else if (pulse && (!c.last_pulse_at || pulse > c.last_pulse_at)) {
+          c.last_pulse_at = pulse;
+        }
+        return { rows: [{ ...c }] };
+      }
+      if (/UPDATE messages m\s*\n?\s*SET conversation_id/.test(sql)) {
+        const [messageId, conversationId] = params;
+        const m = messages.find((m) => m.id === messageId);
+        const c = conversations.find((c) => c.id === conversationId);
+        if (!m || !c || c.client_id !== m.client_id || c.org_id !== m.org_id) return { rows: [] };
+        m.conversation_id = c.id;
+        return { rows: [{ id: m.id }] };
       }
       return { rows: [] };
     }
   };
 }
+
+// A fixed write time, so a test can assert the thread pulse is the message's own
+// timestamp rather than "now".
+const WROTE_AT = "2026-08-27T07:28:33.273Z";
 
 async function quietly(fn) {
   const real = console.error;
@@ -387,4 +426,79 @@ test("sendTemplated: confirm email keeps Where when a join URL is present", asyn
   const body = db.messages[0].rendered_body;
   assert.match(body, />\s*Where\s*</);
   assert.match(body, /https:\/\/meet\.example\.com\/abc/);
+});
+
+// =============================================================================
+// THE THREAD — why a sent message has to land on one.
+//
+// api/read/inbox.mjs, the staff Messaging list, reads `conversations`. Every
+// send from here used to write conversation_id NULL, so a client whose only
+// messages were automatic — the welcome email, the welcome text — had no row on
+// that screen at all. Searching their name found nothing while the company had
+// already texted them twice. Measured on production 2026-08-27: 600 of 844
+// message rows unthreaded, 15 clients invisible.
+// =============================================================================
+
+test("a workflow send puts the client on a thread, so Messaging can find them", async () => {
+  const db = pgFake({ templates: [tpl("N-01-SMS", "Hey!")] });
+  const res = await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS" });
+  assert.equal(res.sent, true);
+  assert.equal(db.conversations.length, 1, "the send left the client off the Messaging screen");
+  assert.equal(db.conversations[0].client_id, "cl-1");
+  assert.equal(db.conversations[0].channel, "sms");
+  assert.equal(db.messages[0].conversation_id, db.conversations[0].id, "the message is not on the thread");
+});
+
+test("the thread's clock is the message's own time, not now()", async () => {
+  // A replayed event must not drag an old thread to the top of the inbox.
+  const db = pgFake({ templates: [tpl("N-01-SMS", "Hey!")] });
+  await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS" });
+  assert.equal(db.conversations[0].last_pulse_at, WROTE_AT);
+});
+
+test("two sends on one channel share one thread; the other channel gets its own", async () => {
+  const db = pgFake({ templates: [tpl("N-01-SMS", "One"), tpl("N-02-EMAIL", "Two")] });
+  await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS", eventId: "evt-1" });
+  await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS", eventId: "evt-2" });
+  await sendTemplated(db, { ...BASE, channel: "email", templateKey: "N-02-EMAIL", eventId: "evt-3" });
+  assert.equal(db.conversations.length, 2, "one thread per (client, channel) — no more, no fewer");
+  assert.deepEqual(db.conversations.map((c) => c.channel).sort(), ["email", "sms"]);
+});
+
+test("a replay threads the row it deduped against, rather than leaving it loose", async () => {
+  // The first send's row is the one that may still be unthreaded — a thread
+  // write can fail on its own without failing the send. If the replay skipped
+  // threading because it queued nothing, that message would stay off the
+  // Messaging screen forever.
+  const db = pgFake({ templates: [tpl("N-01-SMS", "Hey!")] });
+  await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS" });
+  db.messages[0].conversation_id = null;
+  db.conversations.length = 0;
+
+  const again = await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS" });
+  assert.equal(again.sent, true);
+  assert.equal(db.messages.length, 1, "a replay must still not queue a second message");
+  assert.equal(db.conversations.length, 1);
+  assert.equal(db.messages[0].conversation_id, db.conversations[0].id, "the replay left the row loose");
+});
+
+test("a send with no client writes no thread and says nothing about it", async () => {
+  // conversations.client_id is NOT NULL. No client is not a failure to report.
+  const db = pgFake({ templates: [tpl("N-01-SMS", "Hey!")] });
+  const { value: res, lines } = await quietly(
+    () => sendTemplated(db, { ...BASE, clientId: null, templateKey: "N-01-SMS" }));
+  assert.equal(res.sent, true);
+  assert.equal(db.conversations.length, 0);
+  assert.deepEqual(lines, [], `no client is a normal state, got: ${JSON.stringify(lines)}`);
+});
+
+test("a thread write that fails does NOT fail the message it observes", async () => {
+  // The message row is already committed. A list that could not be updated must
+  // never turn into a client who was never told anything.
+  const db = pgFake({ templates: [tpl("N-01-SMS", "Hey!")], failOn: /INSERT INTO conversations/ });
+  const { value: res, lines } = await quietly(
+    () => sendTemplated(db, { ...BASE, templateKey: "N-01-SMS" }));
+  assert.equal(res.sent, true, "the send must survive a threading failure");
+  assert.equal(db.messages.length, 1);
+  assert.equal(lines.length, 1, "and it must say so once, so the gap is findable");
 });

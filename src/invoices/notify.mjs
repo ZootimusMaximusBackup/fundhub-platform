@@ -19,6 +19,7 @@
 
 import { renderTemplate } from "../lib/render-template.mjs";
 import { drain } from "../messaging/outbox.mjs";
+import { threadMessage } from "../conversations/store.mjs";
 
 export const INVOICE_TEMPLATE_KEY = "INVOICE-SENT-EMAIL";
 
@@ -105,7 +106,7 @@ export async function emailInvoice(db, { orgId, invoiceId, purpose = "sent", now
           provider, provider_ref, status, compliance_check_passed, to_address, subject)
        VALUES ($1,$2,'outbound','email',$3,$4,NULL,$5,'queued',true,$6,$7)
        ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING
-       RETURNING id`,
+       RETURNING id, created_at`,
       [orgId, inv.client_id, tpl.template_key,
        renderTemplate(tpl.body, context),
        `invoice:${inv.id}:${purpose}`,
@@ -114,6 +115,16 @@ export async function emailInvoice(db, { orgId, invoiceId, purpose = "sent", now
 
     if (!ins.rows[0]) return { ok: false, reason: "already_emailed" };
     const messageId = ins.rows[0].id;
+
+    /* Put it on the client's email thread, so the Messaging screen can find
+       this person by name. Without it the row is written with conversation_id
+       NULL and api/read/inbox.mjs — which lists `conversations` — has nothing
+       to show. Never throws: an invoice email must not fail because a list
+       could not be updated. */
+    await threadMessage(db, {
+      orgId, clientId: inv.client_id, channel: "email",
+      messageId, createdAt: ins.rows[0].created_at, source: "invoices"
+    });
 
     /* emailed_at is stamped on the FIRST email and never moved, matching how
        markDelivered() treats a document: it is when the client was told, not
