@@ -20,7 +20,7 @@ const res = () => {
 };
 
 describe("/api/read/finance-command", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
-  let org, client, owner;
+  let orgId, client, owner;
 
   const call = async ({ query = {}, token } = {}) => {
     const r = res();
@@ -40,28 +40,32 @@ describe("/api/read/finance-command", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
   }
 
   before(async () => {
-    org = await resolveDefaultOrg(db);
+    /* resolveDefaultOrg returns the id STRING (src/auth/org.mjs:14 caches
+       r.rows[0].id), not a row. This read `org.id`, which was undefined, so
+       every INSERT here passed NULL for org_id and the whole file died in
+       before() on the staff not-null constraint - 0 tests ever ran. */
+    orgId = await resolveDefaultOrg(db);
     await purge();
     const staffId = (await db.query(
       `INSERT INTO staff (org_id, name, role, email, status) VALUES ($1,'Owner','owner',$2,'active') RETURNING id`,
-      [org.id, "fc_http_test_owner@example.com"]
+      [orgId, "fc_http_test_owner@example.com"]
     )).rows[0].id;
-    owner = { id: staffId, token: (await createSession(db, { staffId, orgId: org.id })).token };
+    owner = { id: staffId, token: (await createSession(db, { staffId, orgId: orgId })).token };
 
     client = (await db.query(
       `INSERT INTO clients (org_id, first_name, last_name, email) VALUES ($1,'FC','Test',$2) RETURNING id`,
-      [org.id, "fc.http.test.one@example.com"]
+      [orgId, "fc.http.test.one@example.com"]
     )).rows[0].id;
 
     await db.query(
       `INSERT INTO bank_accounts (org_id, client_id, name, account_type, current_balance_cents)
        VALUES ($1,$2,'Checking','depository',150000)`,
-      [org.id, client]
+      [orgId, client]
     );
     await db.query(
       `INSERT INTO tradelines (org_id, client_id, lender, kind, credit_limit_cents, balance_cents)
        VALUES ($1,$2,'Chase','revolving',100000,25000)`,
-      [org.id, client]
+      [orgId, client]
     );
   });
 
@@ -79,11 +83,11 @@ describe("/api/read/finance-command", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
   test("an entity that does not belong to the given client is refused", async () => {
     const ent = (await db.query(
       `INSERT INTO entities (org_id, client_id, kind, name) VALUES ($1,$2,'personal','Me') RETURNING id`,
-      [org.id, client]
+      [orgId, client]
     )).rows[0].id;
     const otherClient = (await db.query(
       `INSERT INTO clients (org_id, first_name, email) VALUES ($1,'Other',$2) RETURNING id`,
-      [org.id, "fc.http.test.other@example.com"]
+      [orgId, "fc.http.test.other@example.com"]
     )).rows[0].id;
     const r = await call({ token: owner.token, query: { client_id: otherClient, entity_id: ent } });
     assert.equal(r.code, 400);
