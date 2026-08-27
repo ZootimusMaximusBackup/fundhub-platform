@@ -8,9 +8,21 @@
  */
 import { test, describe, beforeEach, afterEach } from "node:test";
 import assert from "node:assert";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { db } from "../db.mjs";
 import handler from "../../api/dashboard/pipeline-counts.mjs";
+
+const COUNTS_SRC = fs.readFileSync(
+  path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../api/dashboard/pipeline-counts.mjs"),
+  "utf8"
+);
+const PIPE_SRC = fs.readFileSync(
+  path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../api/dashboard/pipeline.mjs"),
+  "utf8"
+);
 
 const ORG_A = "11111111-1111-4111-8111-111111111111";
 const STAFF = "44444444-4444-4444-8444-444444444444";
@@ -130,5 +142,12 @@ describe("/api/dashboard/pipeline-counts", () => {
     const r = mkRes();
     await handler({ ...GET }, r);
     assert.notEqual(r.statusCode, 200);
+  });
+
+  test("R-08 partner cards count and paint without a client row", () => {
+    assert.match(COUNTS_SRC, /LEFT JOIN partners/i);
+    assert.match(COUNTS_SRC, /pr\.id IS NOT NULL/);
+    assert.match(PIPE_SRC, /LEFT JOIN partners/i);
+    assert.match(PIPE_SRC, /partner_name/);
   });
 });

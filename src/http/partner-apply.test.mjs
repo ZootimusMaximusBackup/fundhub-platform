@@ -6,7 +6,8 @@ import handler, {
   parsePartnerApplyBody,
   slugFromName,
   generateFirstPassword,
-  runPartnerApply
+  runPartnerApply,
+  placeWhiteLabelRailCard
 } from "../../api/public/partner-apply.mjs";
 
 function mockRes() {
@@ -153,4 +154,75 @@ test("affiliate apply queues catalog AF1 for that one login", async () => {
   assert.equal(queued[0].email, "e2e+aff-click26@fundhub.ai");
   assert.equal(queued[0].trackingId, "AFF-000099");
   assert.equal(queued[0].eventId, "aff-1");
+});
+
+test("placeWhiteLabelRailCard inserts on affiliates_white_label when the rail exists", async () => {
+  const calls = [];
+  const qx = {
+    query: async (sql, params) => {
+      calls.push({ sql, params });
+      if (/affiliates_white_label/i.test(sql)) {
+        return { rows: [{ stage_id: "st-active", pipeline_id: "pipe-r08" }] };
+      }
+      if (/SELECT id FROM cards WHERE partner_id/i.test(sql)) return { rows: [] };
+      if (/INSERT INTO cards/i.test(sql)) return { rows: [{ id: "card-1" }] };
+      throw new Error("unexpected sql: " + sql);
+    }
+  };
+  const out = await placeWhiteLabelRailCard(qx, {
+    orgId: "org-1",
+    partnerId: "part-1",
+    stageKey: "active"
+  });
+  assert.equal(out.placed, true);
+  assert.equal(out.created, true);
+  assert.ok(calls.some((c) => /INSERT INTO cards/i.test(c.sql)));
+  assert.deepEqual(calls.find((c) => /INSERT INTO cards/i.test(c.sql)).params, [
+    "org-1", "part-1", "pipe-r08", "st-active"
+  ]);
+});
+
+test("white-label apply places a named card on R-08", async () => {
+  const calls = [];
+  const client = {
+    query: async (sql, params) => {
+      calls.push({ sql, params });
+      if (/^BEGIN/i.test(sql) || /^COMMIT/i.test(sql)) return { rows: [] };
+      if (/FROM accounts/i.test(sql)) return { rows: [] };
+      if (/FROM staff/i.test(sql)) return { rows: [{ id: "staff-1" }] };
+      if (/SELECT 1 FROM partners/i.test(sql)) return { rows: [] };
+      if (/INSERT INTO partners/i.test(sql)) return { rows: [{ id: "part-1", slug: "rivera-llc" }] };
+      if (/INSERT INTO partner_brand/i.test(sql)) return { rows: [] };
+      if (/INSERT INTO partner_pages/i.test(sql)) return { rows: [] };
+      if (/affiliates_white_label/i.test(sql)) {
+        return { rows: [{ stage_id: "st-active", pipeline_id: "pipe-r08" }] };
+      }
+      if (/SELECT id FROM cards WHERE partner_id/i.test(sql)) return { rows: [] };
+      if (/INSERT INTO cards/i.test(sql)) return { rows: [{ id: "card-1" }] };
+      return { rows: [] };
+    },
+    release() {}
+  };
+  const result = await runPartnerApply(
+    {
+      name: "Sam Rivera",
+      email: "e2e+wl-r08@fundhub.ai",
+      phone: "5551234567",
+      company: "Rivera LLC",
+      audience: "book",
+      kind: "partner",
+      sms_consent: false
+    },
+    {
+      db: { query: async () => ({ rows: [] }) },
+      resolveDefaultOrg: async () => "org-1",
+      connect: async () => client,
+      createAccount: async () => ({ id: "acct-1" })
+    }
+  );
+  assert.equal(result.ok, true);
+  assert.equal(result.partner_id, "part-1");
+  const cardInsert = calls.find((c) => /INSERT INTO cards/i.test(c.sql));
+  assert.ok(cardInsert, "white-label apply must insert a pipeline card");
+  assert.equal(cardInsert.params[1], "part-1");
 });

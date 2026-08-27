@@ -12,9 +12,17 @@
 
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { db } from "../db.mjs";
 import handler, { likePattern, emptyGroups } from "../../api/read/search.mjs";
 import { ROLE_SETS } from "./read-api.mjs";
+
+const SEARCH_SRC = fs.readFileSync(
+  path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../api/read/search.mjs"),
+  "utf8"
+);
 
 const TOKEN = "search-test-session-token";
 const ORG = "00000000-0000-4000-8000-0000000000aa";
@@ -161,5 +169,10 @@ describe("api/read/search — org scope and empty q", () => {
     for (const key of Object.keys(emptyGroups())) {
       assert.ok(Array.isArray(r.body.groups[key]), `${key} missing from groups`);
     }
+  });
+
+  test("card search also matches a white-label partner name", () => {
+    assert.match(SEARCH_SRC, /pr\.name ILIKE/);
+    assert.match(SEARCH_SRC, /LEFT JOIN partners/i);
   });
 });
