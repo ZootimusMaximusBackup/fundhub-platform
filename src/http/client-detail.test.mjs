@@ -188,6 +188,37 @@ describe("client detail derivations", () => {
     assert.match(overdue.detail, /USD 250\.00/);
   });
 
+  test("painted scores hide the stale CRS-incomplete task", () => {
+    const painted = [{
+      result: { scores: { ex: 718, eq: 724, tu: 731 }, environment: "simulated" },
+      created_at: "2026-08-27T00:00:00Z"
+    }];
+    const b = openBlockers({
+      client: { custom_fields: {} },
+      tasks: [
+        { id: "t1", title: "Cannot start funding — CRS incomplete", done: false, source_workflow: "c-05-pre-funding-review" },
+        { id: "t2", title: "Provision funding inbox", done: false }
+      ],
+      fundingRounds: [{ id: "r1", round_number: 1, hold_reason: "Awaiting CRS" }],
+      invoices: [],
+      crsResults: painted
+    });
+    assert.equal(b.some((x) => /CRS incomplete/i.test(x.label || "")), false);
+    assert.equal(b.some((x) => x.kind === "funding_hold"), false);
+    assert.equal(b.some((x) => x.label === "Provision funding inbox"), true);
+  });
+
+  test("without painted scores the CRS-incomplete task still blocks", () => {
+    const b = openBlockers({
+      client: { custom_fields: {} },
+      tasks: [{ id: "t1", title: "Cannot start funding — CRS incomplete", done: false }],
+      fundingRounds: [],
+      invoices: []
+    });
+    assert.equal(b.length, 1);
+    assert.match(b[0].label, /CRS incomplete/);
+  });
+
   test("a zero balance and a paid gate produce no blocker", () => {
     const b = openBlockers({
       client: { custom_fields: { crs_paid: true, deposit_paid: true, sale_closed: true } },

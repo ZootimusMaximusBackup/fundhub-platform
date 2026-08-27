@@ -10,6 +10,20 @@ test("happy path: CRS complete raises the review task", async () => {
   assert.equal(db.clients[0].custom_fields.employee_next_action, "Review Funding File");
 });
 
+test("planted scores without crs_status count as CRS in", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
+    crsResults: [{
+      client_id: "cl-1",
+      result: { scores: { ex: 718, eq: 724, tu: 731 }, environment: "simulated" },
+      created_at: "2026-08-27T00:00:00Z"
+    }]
+  });
+  const res = await handle({ event: ev("round.started", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  assert.equal(res.branch, "review");
+  assert.equal(db.clients[0].custom_fields.employee_next_action, "Review Funding File");
+});
+
 test("branch: CRS incomplete flags awaiting-CRS", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }] });
   const res = await handle({ event: ev("round.started", {}, { clientId: "cl-1" }), db, step: fakeStep() });

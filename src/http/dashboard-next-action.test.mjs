@@ -313,7 +313,7 @@ describe("dashboard reads: the fulfillment next action", () => {
   /* ── the derivation is OPT-IN ──────────────────────────────────────────────
      This endpoint is not only the Fulfillment lens. It is also the client
      picker on the Client Control Panel, and anything else that wants a list of
-     clients.      The derivation costs thirteen extra reads, so it happens only when
+     clients.      The derivation costs fourteen extra reads, so it happens only when
      the caller asks with ?fulfillment=1. Everyone else must get back exactly
      what they got before this work existed — same reads, same reply. */
 
@@ -335,7 +335,7 @@ describe("dashboard reads: the fulfillment next action", () => {
       "the tile count ran for a caller that never asked for tiles");
   });
 
-  test("somebody asked: the thirteen extra reads happen, and only then", async () => {
+  test("somebody asked: the fourteen extra reads happen, and only then", async () => {
     plan.listRows = [listRow()];
     plan.consentRows = [consentRow()];
 
@@ -343,8 +343,8 @@ describe("dashboard reads: the fulfillment next action", () => {
     await clientsHandler(req(LENS), r);
 
     assert.equal(r.code, 200, JSON.stringify(r.body));
-    assert.equal(queries.length, 16,
-      "expected the 3 original reads plus the 13 the fulfillment layer adds, got " +
+    assert.equal(queries.length, 17,
+      "expected the 3 original reads plus the 14 the fulfillment layer adds, got " +
       queries.length);
     assert.ok(queries.some((q) => /FROM client_consents/.test(q)), "the consent read never ran");
     assert.ok(queries.some((q) => /AS total_clients/.test(q)), "the tile count never ran");
