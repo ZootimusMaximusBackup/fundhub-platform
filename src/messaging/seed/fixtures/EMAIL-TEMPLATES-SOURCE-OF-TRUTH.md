@@ -2,6 +2,11 @@
 Not real copy. Exercises the header split, duplicate keys (identical and
 different), a single-space header, and an empty body.
 
+EM-EMPTY deliberately has NO body and NO signature block. The 2026-08-21 footer
+sweep pasted the Josh signature onto it too, which made the empty case non-empty
+and silently deleted the only test of a subject with nothing under it. Leave that
+block without a footer.
+
 
 ================================================================================
 ## EM-01   Plain Template      [folder: (root)]
@@ -94,8 +99,4 @@ FundHub.ai • Funding Intelligence for Entrepreneurs
 ================================================================================
 Only a subject, no body
 
-– Josh
-FundHub.ai
-
-FundHub.ai • Funding Intelligence for Entrepreneurs
 

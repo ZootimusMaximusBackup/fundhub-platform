@@ -285,11 +285,29 @@ test("the real source docs parse to the counts the docs themselves claim", async
   assert.equal(problems.emptyBody.length, 0);
   assert.equal(new Set(seedable.map((x) => x.templateKey)).size, seedable.length);
   assert.ok(seedable.some((x) => x.templateKey === "SMS-F03-01-ROUND-SUBMITTED"));
-  // Copy is verbatim: this line must survive the parser exactly as written.
   const f03 = seedable.find((x) => x.templateKey === "SMS-F03-01-ROUND-SUBMITTED");
+
+  /* Copy is verbatim: the parsed body must survive the parser exactly as
+     written in the source doc.
+
+     This used to assert the opening sentence as a hardcoded string
+     ("Fundhub update, ..."). The copy was rewritten on 2026-08-21 to
+     "Update from Josh, ..." and this line was not, so it sat red ever after -
+     the parser was fine and the sentence describing it was stale. A test that
+     pins marketing copy breaks every time marketing copy changes, which trains
+     everyone to ignore it.
+
+     So: prove the property instead of the wording. The parsed body must appear
+     character-for-character inside the raw source file. That is exactly what
+     "verbatim" means, and a copy edit can no longer break it - only the parser
+     mangling text can. */
+  const rawSms = fs.readFileSync(path.join(docsDir, "SMS-TEMPLATES-CURRENT.md"), "utf8");
   assert.ok(
-    f03.body.startsWith("Fundhub update, {{contact.first_name}}: Round {{custom_fields.funding_round_number}} has been submitted.")
+    rawSms.includes(f03.body),
+    "the parsed body must appear verbatim in the source doc - the parser altered the copy"
   );
+
+  /* The opt-out line is a compliance requirement, not copy, so it IS pinned. */
   assert.ok(f03.body.endsWith("Reply STOP to opt out."));
   assert.equal(f03.compliancePassed, true);
 });

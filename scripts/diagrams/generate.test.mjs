@@ -112,10 +112,18 @@ test("every canonical event lands in exactly one group", async () => {
 test("adapters report their auth scheme and emitted events", async () => {
   const { canonicalEvents } = await extractAll();
   const adapters = extractAdapters(canonicalEvents);
-  // 13: nine webhook/direct + oxylabs + hubstaff + inquiry-removal (IRA bridge)
+  // 12: eight webhook/direct + oxylabs + hubstaff + inquiry-removal (IRA bridge)
   // + resend-events (2026-08-18, T5-16 — delivery/bounce/complaint receipts for
   // the live email provider, which had no webhook door at all).
-  assert.equal(adapters.length, 13, "13 adapters in src/adapters");
+  //
+  // Was 13 until 4fb2a3d5 removed the Cal.com adapter and its webhook door —
+  // correctly, because bookings come from ClickFunnels and no Cal.com booking
+  // has ever existed. The count here was not updated with it, so this test has
+  // been red ever since: the code was right and the number describing it was
+  // stale. Kept as a hard count on purpose — it is what catches an adapter
+  // being added or dropped without anyone saying so — but if you change the
+  // set, change this line in the same commit.
+  assert.equal(adapters.length, 12, "12 adapters in src/adapters");
 
   const twilio = adapters.find((a) => a.name === "twilio");
   assert.equal(twilio.scheme, "HMAC-SHA1", "Twilio signs with SHA1, unlike the rest");
