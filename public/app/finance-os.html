@@ -79,7 +79,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 @keyframes pulse{to{transform:scale(1.9);opacity:0}}
 
 /* ══ FINANCE OS — content area only, everything below scoped to #fosWrap ═══ */
-#fosWrap{max-width:var(--fh-maxw);margin:0 auto;min-height:480px}
+/* 2026-08-27: the §1 cap is removed app-wide (owner-set). This one is an ID
+   selector, so the shell rule in crm-sidebar.css cannot reach it and Finance OS
+   would have been the one screen still stopping at 1800px on a wide monitor.
+   margin goes to 0 with it: `auto` here cancels the flex stretch if .content
+   ever becomes a flex container, which is the trap in fundhub-brand.css. */
+#fosWrap{margin:0;min-height:480px}
 #fosWrap .grid2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;align-items:start}
 #fosWrap .col{display:flex;flex-direction:column;gap:14px;min-width:0}
 @media (max-width:1180px){#fosWrap .grid2{grid-template-columns:1fr}}

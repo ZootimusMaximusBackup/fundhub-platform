@@ -1,3 +1,4 @@
+// @ts-check
 // Text chunking for Company Brain embeddings.
 
 export const DEFAULT_CHUNK_CHARS = 1800;
