@@ -89,6 +89,7 @@ export const NEXT_ACTIONS = Object.freeze([
   Object.freeze({ key: "review_funding_file", label: "Review Funding File", isFunding: true }),
   Object.freeze({ key: "prepare_next_round",  label: "Prepare Next Round",  isFunding: true }),
   Object.freeze({ key: "apply_for_funding",   label: "Apply for Funding",   isFunding: true }),
+  Object.freeze({ key: "collect_payment",     label: "Collect payment",     isFunding: false }),
   Object.freeze({ key: "ready_to_fund",       label: "Ready to Fund",       isFunding: true })
 ]);
 
@@ -230,6 +231,7 @@ function buildContext(signals) {
     consentValid, consentReason,
     realCrsCount,
     inquiryCases, repairLetters, docPacket, disputeResponses, disputeCases, tasks, rounds, card,
+    paymentLinks: rowsOf(signals.payment_links),
     now
   };
 
@@ -447,13 +449,32 @@ function evaluateApplyForFunding(ctx) {
   return YES("Their file is clean and their plan includes funding, so it is time to apply.");
 }
 
+/* 11. COLLECT PAYMENT.
+   Unpaid Funding Mastery (the $5k course pay link / invoice). Missing
+   payment_links is NO, not UNKNOWN — this chip is optional and must not
+   degrade a file we did not ask about money on. */
+function evaluateCollectPayment(ctx) {
+  const unpaidMastery = ctx.paymentLinks.some((row) => {
+    if (row.paid_at) return false;
+    const status = str(row.status);
+    if (status === "paid" || status === "expired" || status === "void") return false;
+    if (status !== null && status !== "created" && status !== "sent") return false;
+    const blob = [str(row.description), str(row.purpose), str(row.product_code)]
+      .filter(Boolean)
+      .join(" ");
+    return /mastery/i.test(blob);
+  });
+  if (!unpaidMastery) return NO();
+  return YES("Their Funding Mastery course is unpaid.");
+}
+
 function cardOnApplyNow(ctx) {
   return !!(ctx.card
     && str(ctx.card.pipeline_key) === CARD_STACKING_PIPELINE
     && str(ctx.card.stage_key) === CARD_STACKING_APPLY_NOW_STAGE);
 }
 
-/* 11. READY TO FUND — a funding chip, GATE B applies.
+/* 12. READY TO FUND — a funding chip, GATE B applies.
    The lead's addition, ranked last, and flagged to Chris. Nothing in the
    system writes this status; it is derived: no active blockers, the newest
    round is not on hold, and the document packet is complete.
@@ -483,6 +504,7 @@ const EVALUATORS = Object.freeze({
   review_funding_file: evaluateReviewFundingFile,
   prepare_next_round: evaluatePrepareNextRound,
   apply_for_funding: evaluateApplyForFunding,
+  collect_payment: evaluateCollectPayment,
   ready_to_fund: evaluateReadyToFund
 });
 
