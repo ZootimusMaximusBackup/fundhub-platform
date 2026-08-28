@@ -214,6 +214,14 @@
      of the last column at 3440, measured 2026-08-27. */
   .col{flex:1 1 238px;min-width:238px;background:var(--paper-dim);border:1px solid var(--line);border-radius:8px;
     display:flex;flex-direction:column;height:100%;max-height:100%;}
+/* At 2560 — the owner's monitor at 100% zoom — ten columns at the 238px
+     minimum need 2498px and only 2332px exists, so the board scrolled 166px
+     there. Below 2560 that is unavoidable and squeezing the cards would buy
+     nothing (the board scrolls either way), so the designed 238px stands.
+     From 2560 up, allowing 216px lets all ten fit, and flex-grow then pushes
+     them back out to fill whatever is actually there — 220px at 2560, 308px at
+     3440. Measured 2026-08-27. */
+  @media (min-width:2560px){ .col{min-width:216px;} }
   .col.drop-target{background:var(--info-bg);border-color:var(--info);box-shadow:0 0 0 2px color-mix(in srgb,var(--info) 40%,transparent);}
 
   .col-head{padding:7px 10px 8px;border-bottom:1px solid var(--line);flex-shrink:0;}
