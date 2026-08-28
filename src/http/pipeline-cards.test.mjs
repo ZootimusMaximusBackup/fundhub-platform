@@ -113,6 +113,59 @@ describe("/api/pipeline-cards", () => {
     assert.equal(r.body.pipeline_key, "sales");
   });
 
+  test("cross-rail move clears the card on the rail it left", async () => {
+    stubDb({
+      session: { role: "owner", orgId: ORG_A },
+      answers: [
+        [/SELECT id FROM clients/i, { rows: [{ id: CLIENT }] }],
+        [/SELECT ps\.id AS stage_id/i, { rows: [{ stage_id: "stage-1", pipeline_id: "pipe-1" }] }],
+        [/SELECT id FROM cards/i, { rows: [{ id: "card-1" }] }],
+        [/UPDATE cards SET stage_id/i, { rows: [] }],
+        [/DELETE FROM cards/i, { rows: [], rowCount: 1 }]
+      ]
+    });
+    const r = mkRes();
+    await handler({
+      method: "POST",
+      headers: { authorization: "Bearer tok" },
+      body: {
+        action: "move", client_id: CLIENT,
+        pipeline_key: "funding_card_stacking", stage_key: "apply_now",
+        from_pipeline_key: "sales"
+      }
+    }, r);
+    assert.equal(r.statusCode, 200);
+    assert.equal(r.body.cleared_from_pipeline, true);
+    const del = calls.find((c) => /DELETE FROM cards/i.test(c.text));
+    assert.ok(del, "source rail card was deleted");
+    assert.equal(del.params[2], "sales");
+  });
+
+  test("same-rail move does not delete anything", async () => {
+    stubDb({
+      session: { role: "owner", orgId: ORG_A },
+      answers: [
+        [/SELECT id FROM clients/i, { rows: [{ id: CLIENT }] }],
+        [/SELECT ps\.id AS stage_id/i, { rows: [{ stage_id: "stage-1", pipeline_id: "pipe-1" }] }],
+        [/SELECT id FROM cards/i, { rows: [{ id: "card-1" }] }],
+        [/UPDATE cards SET stage_id/i, { rows: [] }]
+      ]
+    });
+    const r = mkRes();
+    await handler({
+      method: "POST",
+      headers: { authorization: "Bearer tok" },
+      body: {
+        action: "move", client_id: CLIENT,
+        pipeline_key: "sales", stage_key: "booked",
+        from_pipeline_key: "sales"
+      }
+    }, r);
+    assert.equal(r.statusCode, 200);
+    assert.equal(r.body.cleared_from_pipeline, false);
+    assert.ok(!calls.some((c) => /DELETE FROM cards/i.test(c.text)));
+  });
+
   test("refuses a client from another org", async () => {
     stubDb({
       session: { role: "owner", orgId: ORG_A },
