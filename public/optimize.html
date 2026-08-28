@@ -343,11 +343,7 @@
             auditErr.hidden = false;
             auditErr.textContent = "Audit checkout is not ready yet.";
           }
-          renderPullStep(
-            cfg && cfg.smartCredit && cfg.smartCredit.clientKey && cfg.smartCredit.pid
-              ? cfg.smartCredit
-              : null
-          );
+          renderPullStep(cfg && cfg.smartCredit ? cfg.smartCredit : null);
         })
         .catch(function () { renderPullStep(null); });
       audit.addEventListener("submit", function (e) {
@@ -688,12 +684,22 @@
         box.appendChild(el("p", "sub",
           "The audit reads your credit file. We can read it now or read it together on the call \u2014 " +
           "doing it now means we spend the call on what to do about it, not on getting it."));
-        if (sc) {
+        if (sc && sc.clientKey && sc.pid && sc.scriptUrl) {
           var slot = el("div", "widgetslot");
           slot.id = "cd-mount";
           box.appendChild(slot);
           filePull.appendChild(box);
           mountFilePull(sc, slot);
+          return;
+        }
+        if (sc && sc.affiliateUrl) {
+          var go = el("a", "btn");
+          go.href = sc.affiliateUrl;
+          go.textContent = "Pull your file";
+          go.setAttribute("target", "_blank");
+          go.setAttribute("rel", "noopener noreferrer");
+          box.appendChild(go);
+          filePull.appendChild(box);
           return;
         }
         var w = el("div", "onhold");
