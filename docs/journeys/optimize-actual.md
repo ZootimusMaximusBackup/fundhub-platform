@@ -1,5 +1,10 @@
 # optimize — actual
 
+> **2026-08-28 — the page is now ONE signup form.** The Audit section, the Pay-for-Audit
+> checkout and the roadmap render were removed from the page by owner decision. The roadmap
+> API still exists and still works; nothing draws it here any more. The diagram below still
+> describes those API doors — they are reachable, just not from this page.
+
 Traced from `public/optimize.html`, `api/public/optimize.mjs`, and `netlify.toml`. Not from the spec.
 
 ```mermaid

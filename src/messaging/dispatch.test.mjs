@@ -28,7 +28,7 @@ const ORG = "00000000-0000-4000-8000-000000000001";
 const CLIENT = "00000000-0000-4000-8000-000000000003";
 const MSG = "00000000-0000-4000-8000-000000000004";
 
-// Midday Eastern, so nothing is accidentally inside quiet hours.
+// Midday Arizona, so nothing is accidentally inside quiet hours.
 const MIDDAY = () => new Date("2026-08-01T16:00:00Z");
 
 const claimed = (over = {}) => ({
@@ -133,7 +133,7 @@ describe("nothing reaches a provider without the gate allowing it", () => {
     const f = spy();
     const db = fakeDb();
     const res = await dispatchOne(db, claimed({ channel: "sms" }), {
-      fetchImpl: f, env: ENV, now: () => new Date("2026-08-01T07:00:00Z") // 3am Eastern
+      fetchImpl: f, env: ENV, now: () => new Date("2026-08-01T07:00:00Z") // midnight Arizona
     });
 
     assert.strictEqual(res.outcome, OUTCOME.DEFERRED);
@@ -590,29 +590,30 @@ describe("the dispatcher, structurally", () => {
 // ---------------------------------------------------------------------------
 
 describe("nextQuietHoursEnd", () => {
-  const etHour = (d) => Number(new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York", hour: "numeric", hour12: false
+  const azHour = (d) => Number(new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Phoenix", hour: "numeric", hour12: false
   }).formatToParts(d).find((p) => p.type === "hour").value) % 24;
 
-  test("11pm Eastern wakes at 11am the next morning", () => {
-    // 2026-08-01 23:00 Eastern is 2026-08-02 03:00 UTC (EDT, UTC-4).
+  test("8pm Arizona wakes at 8am the next morning", () => {
+    // 2026-08-01 20:00 Arizona is 2026-08-02 03:00 UTC (MST, UTC-7).
     const due = nextQuietHoursEnd(new Date("2026-08-02T03:00:00Z"));
-    assert.strictEqual(etHour(due), 11);
+    assert.strictEqual(azHour(due), 8);
     assert.strictEqual(due.toISOString(), "2026-08-02T15:00:00.000Z");
   });
 
-  test("3am Eastern wakes the same morning, not the next day", () => {
+  test("midnight Arizona wakes the same morning, not the next day", () => {
     const due = nextQuietHoursEnd(new Date("2026-08-01T07:00:00Z"));
     assert.strictEqual(due.toISOString(), "2026-08-01T15:00:00.000Z");
   });
 
-  test("the wake time is always 11am Eastern, on every day of the year", () => {
-    // Every day of 2026 at 2am Eastern-ish, including both DST transitions.
+  test("the wake time is always 8am Arizona, on every day of the year", () => {
+    // Every day of 2026 at midnight Arizona, including both dates the rest of
+    // the country changes its clocks and Arizona does not.
     for (let day = 0; day < 365; day += 1) {
       const from = new Date(Date.UTC(2026, 0, 1, 7, 0, 0) + day * 86400000);
       const due = nextQuietHoursEnd(from);
-      assert.strictEqual(etHour(due), 11,
-        `woke at ${etHour(due)}:00 Eastern, not 11:00, starting from ${from.toISOString()}`);
+      assert.strictEqual(azHour(due), 8,
+        `woke at ${azHour(due)}:00 Arizona, not 08:00, starting from ${from.toISOString()}`);
       assert.ok(due > from, "the wake time must be in the future");
       assert.ok(due - from < 36 * 3600 * 1000, "the wake time must be within a day and a half");
     }

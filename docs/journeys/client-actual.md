@@ -24,7 +24,7 @@ flowchart TD
     CAN --> A_contracts[contracts — 1 route]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 1 route]
-    CAN --> A_public[public — 6 routes]
+    CAN --> A_public[public — 7 routes]
     CAN --> A_read[Reading data — 3 routes]
     CAN --> A_top_level[Everything else — 5 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
@@ -58,7 +58,7 @@ flowchart TD
 
 ## What they can reach
 
-**29 of 200 routes.**
+**30 of 201 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -83,6 +83,7 @@ flowchart TD
 | `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
 | `/api/public/affiliate-click` | POST | anyone |
 | `/api/public/education-enroll` | POST | **not a sign-in** — provider signature |
+| `/api/public/optimize` | GET, POST | **not a sign-in** — provider signature |
 | `/api/public/partner-apply` | POST | anyone |
 | `/api/public/partner-page` | GET | anyone |
 | `/api/public/survey-submit` | POST | **not a sign-in** — provider signature |
@@ -95,11 +96,11 @@ flowchart TD
 ### Worth knowing
 
 - **15 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/contracts/sign`, `/api/health`, `/api/public/affiliate-click`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/unsubscribe`. These are the sign-in routes and the health check.
-- **5 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/education-enroll` (provider signature), `/api/public/survey-submit` (provider signature), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
+- **6 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/education-enroll` (provider signature), `/api/public/optimize` (provider signature), `/api/public/survey-submit` (provider signature), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**170 of 200 routes.**
+**170 of 201 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

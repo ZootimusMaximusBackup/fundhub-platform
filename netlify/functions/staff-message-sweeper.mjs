@@ -5,7 +5,7 @@
 //
 // A text written at 11pm is correctly held until 11am — the gate marks quiet
 // hours retryable, the dispatcher pushes `scheduled_at` to the next 11:00
-// Eastern and puts the row back on the queue. Then nothing happens, forever,
+// Arizona and puts the row back on the queue. Then nothing happens, forever,
 // because NOTHING IN THIS REPOSITORY HAS EVER CALLED THE DISPATCHER ON A
 // SCHEDULE. The message sits queued and due and nobody sends it.
 //

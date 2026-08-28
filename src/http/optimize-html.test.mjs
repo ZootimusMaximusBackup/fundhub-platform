@@ -23,7 +23,8 @@ test("optimize.html books on schedule/phonecall, not funding-book-call or xyl.in
     /funding-book-call/,
     "must not send referrals to the funding survey calendar"
   );
-  assert.match(html, /Book a call/, "primary button must say what happens");
+  assert.match(html, /Get My Credit Report/, "primary button must say what happens");
+  assert.match(html, /book a call/i, "the call is still reachable from this page");
   assert.match(
     html,
     /Fundhub Credit Solutions LLC/,
@@ -42,11 +43,26 @@ test("optimize.html books on schedule/phonecall, not funding-book-call or xyl.in
     /your score will go up/i,
     "must not claim a credit outcome"
   );
-  assert.match(html, />Audit</, "page copy must stay vague — Audit");
+  // The Audit section was removed from this page on 2026-08-28 (owner decision:
+  // one form, first/last/email/phone, and the SmartCredit signup — nothing else).
+  // The compliance guards below are the part that must never move.
+  assert.match(
+    html,
+    /sms_consent/,
+    "a page that takes a mobile number must carry the consent box"
+  );
+  assert.match(
+    html,
+    /Reply STOP to opt out/,
+    "consent must keep the shipped opt-out wording"
+  );
   assert.doesNotMatch(html, /credit repair/i, "must not say credit repair on the page");
-  assert.match(html, /\/api\/public\/optimize/, "Audit checkout posts to the public optimize door");
-  assert.match(html, /See Audit roadmap/, "roadmap stays on this page");
-  assert.match(html, /view=roadmap/, "roadmap calls the existing brain door");
+  assert.match(html, /\/api\/public\/optimize/, "the page reads its config from the public optimize door");
+  assert.match(
+    html,
+    /affiliateUrl/,
+    "the signup link must be overridable from the server config, not only hardcoded"
+  );
   assert.match(html, /affiliateUrl/, "Pull your file uses their partner affiliate URL when the widget is dark");
 });
 

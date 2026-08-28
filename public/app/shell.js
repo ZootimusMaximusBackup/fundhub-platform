@@ -1775,6 +1775,126 @@
     return true;
   }
 
+  /* ══════════════════════════════════════════════════════════════════════════
+     THE CLOCK — ON EVERY STAFF SCREEN, IN ARIZONA TIME (owner-set 2026-08-28)
+
+     Two separate faults, one fix.
+
+     1. Fourteen screens were built without a clock at all. Nothing was hiding
+        it; there was never one in the markup.
+     2. The screens that DO have one hide it under 1600px (pipeline), 1560px
+        (client control panel) and at phone width (messaging, automations). On
+        a laptop the pipeline topbar therefore showed no time whatsoever — which
+        is the screenshot the owner sent. A clock that vanishes on the machine
+        the owner actually uses is the same as no clock.
+
+     So: the shell mounts one where a page has none, and un-hides the ones a
+     page hides, shrinking to a time-only face on a narrow bar rather than
+     disappearing. It stays hidden below 900px, where the topbar genuinely has
+     no room and the date is not what anybody opened the phone for.
+
+     ZONE: America/Phoenix. Not Eastern, and deliberately NOT the viewer's own
+     machine — everyone reading these screens is reading about work done on
+     Arizona time, and a laptop still set to Eastern would quietly disagree with
+     the server. Arizona does not observe daylight saving, so the label reads MST
+     all year and the hour never jumps. Every per-page tickClock moved to the
+     same zone in the same change.
+
+     OWNERSHIP: this ticks only the element it created. Pages that already drive
+     their own clock keep driving it, so no element has two writers competing at
+     one-second intervals. ══════════════════════════════════════════════════ */
+  var CLOCK_TZ = "America/Phoenix";
+  var CLOCK_WIDE_AT = 1200;
+
+  /* The face. Wide bars get the weekday and date the closer dashboard has
+     always shown; narrow ones get the time alone, because the date is the part
+     you can drop without losing the answer to "what time is it". */
+  function clockFace(now, wide) {
+    var opts = {
+      hour: "numeric", minute: "2-digit", second: "2-digit",
+      timeZone: CLOCK_TZ, timeZoneName: "short"
+    };
+    if (wide) {
+      opts.weekday = "short";
+      opts.month = "short";
+      opts.day = "numeric";
+    }
+    try {
+      return now.toLocaleString("en-US", opts);
+    } catch (e) {
+      /* No Intl, or a build without the zone. An empty clock is honest; a clock
+         showing the browser's own zone while claiming to be Arizona is not. */
+      return "";
+    }
+  }
+
+  function mountClock(role) {
+    /* The portal is the client's own screen, not a staff screen. Adding an
+       office clock to it would be a change to a customer surface that nobody
+       asked for. */
+    if (role === "client") return;
+
+    /* Un-hide whatever the page already has, and give every clock on every
+       screen one size. !important is required twice over: once to beat the
+       page's own display:none media queries, and once to beat
+       fundhub-brand.css's `:is(.app,...) * {font-size:inherit !important}`,
+       which is why the per-page `.clock{font-size:var(--fs-caption)}` rules
+       have been painting nothing for months. */
+    if (!document.getElementById("fh-shell-clock-css")) {
+      var css = document.createElement("style");
+      css.id = "fh-shell-clock-css";
+      css.textContent =
+        ".clock,#clock,#fh-shell-clock{" +
+          "display:inline-block!important;" +
+          "font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace!important;" +
+          "font-size:12px!important;letter-spacing:.02em;line-height:1;" +
+          "white-space:nowrap;flex-shrink:0;opacity:.78;" +
+        "}" +
+        "@media (max-width:900px){.clock,#clock,#fh-shell-clock{display:none!important;}}";
+      document.head.appendChild(css);
+    }
+
+    /* A page that already has a clock keeps it — including lenders.html, whose
+       clock is a bare `<span id="clock">` with no class on it. */
+    if (document.querySelector(".clock, #clock")) return;
+
+    var bar = document.querySelector(
+      ".topbar, .top, .page-hd, body > header, .app > header, .app-shell > header"
+    );
+    /* No top bar means no "top part" to put it in. Those screens (my-numbers,
+       sales-floor, journeys) get the shared account row instead, and a clock
+       floating in the content column is not what was asked for. */
+    if (!bar) return;
+
+    var el = document.createElement("div");
+    el.id = "fh-shell-clock";
+    el.className = "clock";
+
+    var right = bar.querySelector(".topbar-right");
+    if (right) {
+      /* First child: the same position it holds on the screens that shipped
+         with one, so the topbars match each other. */
+      right.insertBefore(el, right.firstChild);
+    } else {
+      /* No right-hand group. margin-left:auto makes the clock the start of the
+         right-hand side, and Search and the account chip mount after it into
+         the same bar, so they line up beside it instead of beside the title. */
+      el.style.marginLeft = "auto";
+      bar.appendChild(el);
+    }
+
+    function tick() {
+      /* Read the width every tick rather than caching it. A resize listener
+         would be a second thing to unregister, and this costs one layout read
+         per second on a bar that is already being repainted. */
+      var wide = !window.matchMedia ||
+        window.matchMedia("(min-width:" + CLOCK_WIDE_AT + "px)").matches;
+      el.textContent = clockFace(new Date(), wide);
+    }
+    tick();
+    setInterval(tick, 1000);
+  }
+
   /* ---------------------------------------------------------------------
      The employee's own photo, at the head of the account chip.
 
@@ -2327,6 +2447,7 @@
     settleClicks(ok);
     onReady(function () {
       gateLinks(ok, role);
+      mountClock(role);
       mountSearch(sess.staff, sess.demo);
       mountChip(sess.staff, sess.demo);
       mountBetaBanner(role);
