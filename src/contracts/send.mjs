@@ -166,8 +166,15 @@ export async function createDraft(db, {
     `INSERT INTO contracts
        (org_id, client_id, staff_id, template_id, template_key, title, kind, subtype,
         merge_values, signature_required, created_by,
-        source_kind, fields, signing_order)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10,$11,$12,$13::jsonb,$14)
+        source_kind, fields, signing_order, is_demo)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10,$11,$12,$13::jsonb,$14,
+     /* A contract for a demo client is a demo contract. Read off the client
+        rather than passed in, because every caller that creates a fixture
+        contract would otherwise have to remember, and none of them did: on
+        2026-08-27 all 44 contracts in the production database were test
+        artifacts signed by "Sim Repair", "Mock CloserSign" and the like, none
+        flagged, all of them showing to the operator as real signed agreements. */
+     COALESCE((SELECT c.is_demo FROM clients c WHERE c.id = $2), false))
      RETURNING ${CONTRACT_COLUMNS}`,
     [orgId, clientId, subjectStaffId || null, template.id, template.template_key,
      (title && String(title).trim()) || template.name,
