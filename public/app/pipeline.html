@@ -819,11 +819,15 @@ function persistCardMove(card, pipelineKey, stageKey, onFail, onOk){
     return;
   }
   card.classList.add('saving');
+  // The rail this card is leaving. A cross-rail MOVE hands the client over —
+  // the old rail must not keep an open card for the same person.
+  var fromKey = (window.FHPipelineBoard && window.FHPipelineBoard.currentKey) || null;
   FHData.write('/api/pipeline-cards', {
     action: 'move',
     client_id: clientId,
     pipeline_key: pipelineKey,
-    stage_key: stageKey
+    stage_key: stageKey,
+    from_pipeline_key: (fromKey && fromKey !== pipelineKey) ? fromKey : null
   }).then(function(res){
     card.classList.remove('saving');
     if(!res || !res.ok){
@@ -835,6 +839,7 @@ function persistCardMove(card, pipelineKey, stageKey, onFail, onOk){
     // Bust the board cache so the next rail click refetches.
     if(window.FHPipelineBoard && typeof window.FHPipelineBoard.invalidate === 'function'){
       window.FHPipelineBoard.invalidate(pipelineKey);
+      if(fromKey && fromKey !== pipelineKey) window.FHPipelineBoard.invalidate(fromKey);
     }
     if(typeof onOk === 'function') onOk();
   });
