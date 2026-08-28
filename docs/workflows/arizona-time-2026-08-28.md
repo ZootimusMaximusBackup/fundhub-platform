@@ -313,3 +313,36 @@ Raw unmarked shots and the measurement JSON for every one of them are in `shots/
 The harness is `_prove.mjs`, the marker is `_apply-marks.py`, the tables come from
 `_report.mjs`. The folder is gitignored (`.gitignore:30`), so the images do not travel with
 this file — they are on disk at the path above.
+
+## Follow-up: the five the first sweep missed (same day)
+
+The first pass swept for `America/New_York` and nothing else. That was the wrong
+search, and it left five timestamps behind on staff screens:
+
+| File | Was | What it shows |
+|---|---|---|
+| `pipeline.html` `fmtWhen` | `America/Los_Angeles` | date + time on a card |
+| `inquiry-remover.html` ×2 | `America/Los_Angeles` | dates on inquiry rows |
+| `messaging.html` `shortWhen` | `UTC` | which day a message arrived |
+| `automations.html` | `UTC` | which day a run happened |
+
+**Why nobody would have noticed until November.** Pacific is the same clock as
+Arizona from March to November. Those three would have read correctly all
+summer and then, on the day the rest of the country changes its clocks and
+Arizona does not, started running an hour behind every other clock on the same
+page.
+
+**The two UTC ones were already wrong.** A message sent at 6pm Arizona is
+tomorrow in UTC. So the one line whose whole job is saying *which day* something
+happened was a day late every evening after 5pm.
+
+**The guard is now positive, not a blocklist.** `crm-html.test.mjs` used to
+assert "no `America/New_York`". It now reads every `timeZone:` on every staff
+screen and fails on anything that is not `America/Phoenix`. A blocklist only
+ever stops the zone somebody already thought of — this one caught
+`automations.html` immediately, which a second hand-written grep had missed
+because it used single quotes.
+
+Found by checking the deployed site rather than the source tree: the live
+`pipeline.html` was serving `America/Los_Angeles` next to `America/Phoenix` on
+the same page.
