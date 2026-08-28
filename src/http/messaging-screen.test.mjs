@@ -240,7 +240,7 @@ describe("messaging.html — what the screen says after a send", () => {
     const V = loadViewModel();
     const out = V.outcomeMessage("deferred");
     assert.equal(out.tone, "hold");
-    assert.match(out.text, /11:00am Eastern/);
+    assert.match(out.text, /8:00am Arizona time/);
     assert.match(out.text, /do not need to send it again/i);
     assert.ok(!/failed|error|not sent/i.test(out.text), "a deferral is being reported as a failure");
   });
@@ -248,12 +248,13 @@ describe("messaging.html — what the screen says after a send", () => {
   /* ONE RULE, ONE SENTENCE. The warning above the compose box and the reply
      after Send describe the same thing, and if they drift a staff member reads
      them as two different rules. They said "11am Eastern" and "11:00am Eastern"
-     for a while, which is exactly how that starts. */
+     for a while, which is exactly how that starts. The wording is Arizona time
+     now; the drift risk is identical. */
   test("the hold message and the texting-hours warning use the same words", () => {
     const V = loadViewModel();
     const afterSend = V.outcomeMessage("deferred").text;
     const beforeTyping = V.quietNotice("sms", Date.parse("2026-01-15T07:00:00Z")).text;
-    for (const phrase of ["11:00am Eastern", "do not need to send it again"]) {
+    for (const phrase of ["8:00am Arizona time", "do not need to send it again"]) {
       assert.ok(afterSend.includes(phrase), `the post-send message dropped "${phrase}"`);
       assert.ok(beforeTyping.includes(phrase), `the pre-typing warning dropped "${phrase}"`);
     }
@@ -346,32 +347,31 @@ describe("messaging.html — the texting-hours warning, before anyone types", ()
     assert.equal(V.QUIET_END_HOUR, gate.QUIET_END_HOUR);
   });
 
-  test("it reads the hour in US Eastern, not in the viewer's own timezone", () => {
+  test("it reads the hour in Arizona, not in the viewer's own timezone", () => {
     const V = loadViewModel();
-    // 04:00 UTC is midnight or 1am in New York whatever the season. A staff
-    // member in Manila must see the rule that applies to the person receiving
-    // the text, not the clock on their own wall.
-    assert.equal(V.easternHour(Date.parse("2026-01-15T04:00:00Z")), 23);
-    assert.equal(V.easternHour(Date.parse("2026-01-15T18:00:00Z")), 13);
+    // Arizona is UTC-7 every day of the year. A staff member in Manila must see
+    // the rule the server actually enforces, not the clock on their own wall.
+    assert.equal(V.hourInZone(Date.parse("2026-01-15T04:00:00Z")), 21);
+    assert.equal(V.hourInZone(Date.parse("2026-01-15T18:00:00Z")), 11);
   });
 
-  test("the window wraps midnight — it is shut at 2am and open at noon", () => {
+  test("the window wraps midnight — it is shut at midnight and open at 10am", () => {
     const V = loadViewModel();
-    assert.equal(V.inQuietHours(Date.parse("2026-01-15T07:00:00Z")), true);  // 02:00 ET
-    assert.equal(V.inQuietHours(Date.parse("2026-01-15T05:00:00Z")), true);  // 00:00 ET
-    assert.equal(V.inQuietHours(Date.parse("2026-01-15T17:00:00Z")), false); // 12:00 ET
-    // 22:00 ET is the last hour the window is OPEN — one hour before it shuts.
+    assert.equal(V.inQuietHours(Date.parse("2026-01-15T07:00:00Z")), true);  // 00:00 MST
+    assert.equal(V.inQuietHours(Date.parse("2026-01-15T05:00:00Z")), true);  // 22:00 MST
+    assert.equal(V.inQuietHours(Date.parse("2026-01-15T17:00:00Z")), false); // 10:00 MST
+    // 19:00 MST is the last hour the window is OPEN — one hour before it shuts.
     // Getting this boundary backwards yields a window that is never open, which
     // is why it is asserted rather than assumed.
-    assert.equal(V.inQuietHours(Date.parse("2026-01-15T03:00:00Z")), false); // 22:00 ET
-    assert.equal(V.inQuietHours(Date.parse("2026-01-15T04:00:00Z")), true);  // 23:00 ET — shuts
+    assert.equal(V.inQuietHours(Date.parse("2026-01-15T02:00:00Z")), false); // 19:00 MST
+    assert.equal(V.inQuietHours(Date.parse("2026-01-15T03:00:00Z")), true);  // 20:00 MST — shuts
   });
 
   test("a text thread states the rule up front, before anything is typed", () => {
     const V = loadViewModel();
     const open = V.quietNotice("sms", Date.parse("2026-01-15T17:00:00Z"));
     assert.equal(open.closed, false);
-    assert.match(open.text, /11:00am to 11:00pm Eastern/);
+    assert.match(open.text, /8:00am to 8:00pm Arizona time/);
     assert.match(open.text, /held and sent the next morning/);
   });
 
@@ -379,7 +379,7 @@ describe("messaging.html — the texting-hours warning, before anyone types", ()
     const V = loadViewModel();
     const shut = V.quietNotice("sms", Date.parse("2026-01-15T07:00:00Z"));
     assert.equal(shut.closed, true);
-    assert.match(shut.text, /11:00am Eastern/);
+    assert.match(shut.text, /8:00am Arizona time/);
     // The single most important sentence on the screen at 2am: do not retype it.
     assert.match(shut.text, /do not need to send it again/i);
   });
@@ -542,4 +542,42 @@ describe("the destination box", () => {
     assert.equal(V.addressLooksRight("voice", "+15551234567").ok, false,
       "there is no staff voice compose, and inventing one is a step no journey names");
   });
+});
+
+/* ───────────────────────────────────────────────────────────────────────────
+   THE BROWSER TEST'S WORDS MUST BE THE SCREEN'S WORDS.
+
+   CLAUDE.md §12 records that `npm test` globs `src/**` and `scripts/**` only.
+   e2e/ is not in it — it runs under `npm run test:e2e`, in CI, in a browser.
+   So when the texting-hours copy moved from Eastern to Arizona time, every
+   unit test here was updated and went green, and two Playwright specs kept
+   asserting the old sentence for another twenty minutes until CI said so.
+
+   This closes that loop from the side that DOES run on every `npm test`: pull
+   the quoted sentences straight out of the browser spec and check the screen
+   still says them. It fails locally, in seconds, the next time the copy moves
+   and the spec does not.
+   ─────────────────────────────────────────────────────────────────────────── */
+test("the texting-hours copy the browser test expects is the copy the screen ships", () => {
+  const specPath = path.resolve(HERE, "../../e2e/messaging-inbox.spec.mjs");
+  const spec = fs.readFileSync(specPath, "utf8");
+  const html = fs.readFileSync(path.resolve(HERE, "../../public/app/messaging.html"), "utf8");
+
+  // Every toContainText("...") the spec asserts against #quietNote or #sendStatus.
+  const quoted = [...spec.matchAll(/toContainText\("([^"]+)"\)/g)].map((m) => m[1]);
+  const aboutHours = quoted.filter((t) => /am|pm|Texting hours|send it again/i.test(t));
+
+  assert.ok(aboutHours.length >= 3,
+    `expected the browser spec to still assert the texting-hours wording, found ${aboutHours.length}`);
+
+  for (const phrase of aboutHours) {
+    assert.ok(
+      html.includes(phrase),
+      `e2e/messaging-inbox.spec.mjs expects "${phrase}" but messaging.html does not say it`
+    );
+  }
+
+  // And the old zone must not survive in either place.
+  assert.ok(!/Eastern/.test(spec), "the browser spec still mentions Eastern");
+  assert.ok(!/Eastern/.test(html), "the messaging screen still mentions Eastern");
 });

@@ -96,7 +96,7 @@ describe("the sweeper", () => {
     const [minute] = SWEEP_CRON.split(" ");
     assert.match(minute, /^\*\/(\d+)$/);
     assert.ok(Number(minute.slice(2)) <= 15,
-      "a text held to 11:00 Eastern should go out within minutes of the window opening");
+      "a text held to 08:00 Arizona should go out within minutes of the window opening");
   });
 });
 

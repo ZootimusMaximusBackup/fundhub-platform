@@ -40,7 +40,7 @@
 // So this function queues a row and then asks the dispatcher to work it now.
 // Every rule the dispatcher enforces applies unchanged and unconditionally:
 //   * opted out          → blocked, recorded on the row, nothing sent
-//   * quiet hours (SMS)  → deferred to 11:00 Eastern, still queued
+//   * quiet hours (SMS)  → deferred to 08:00 Arizona, still queued
 //   * restricted wording → blocked, and a task is raised for an operator
 //   * no routing row     → held, nothing sent
 //

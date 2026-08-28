@@ -56,7 +56,7 @@
 // tell the screen the send failed, and the staff member would type it again.
 //
 //   sent        gone to the provider
-//   deferred    SMS inside quiet hours; queued for 11:00 Eastern
+//   deferred    SMS inside quiet hours; queued for 08:00 Arizona
 //   blocked     the gate refused it — opted out, or restricted wording
 //   no_route    no provider is routed for this channel in this company
 //   no_address  the client record has no phone/email to send to

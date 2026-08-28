@@ -16,10 +16,15 @@ function monthWindow(now = new Date()) {
   return { start, end };
 }
 
-/** Civil date in America/New_York as YYYY-MM-DD. */
-export function nyDateString(now = new Date()) {
+/** Civil date in America/Phoenix as YYYY-MM-DD.
+
+    Arizona is where the floor works, so "today" on sales-floor is Arizona's
+    today. It was Eastern before, which put every call logged after 9pm local
+    on the next day's board. Arizona never shifts for daylight saving, so this
+    boundary does not move twice a year either. */
+export function localDateString(now = new Date()) {
   return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/New_York",
+    timeZone: "America/Phoenix",
     year: "numeric",
     month: "2-digit",
     day: "2-digit"
@@ -450,7 +455,7 @@ export async function salesFloor(db, { orgId, now = new Date(), env = process.en
   if (!orgId) throw new TypeError("salesFloor: orgId required");
   const window = monthWindow(now);
 
-  const todayYmd = nyDateString(now);
+  const todayYmd = localDateString(now);
   const [cash, funnel, todayFunnel, d2f, closers, beliefs, unlogged, unrecordedList, cold, shiftsLate, recordings, offer] = await Promise.all([
     db.query(
       `SELECT COALESCE(SUM(cash_collected_cents), 0)::bigint AS cents
@@ -585,15 +590,15 @@ async function floorFunnel(db, { orgId, start, end }) {
   };
 }
 
-/** Same funnel counts, one America/New_York civil day. */
+/** Same funnel counts, one America/Phoenix civil day. */
 async function floorFunnelDay(db, { orgId, day }) {
   const [booked, outcomes] = await Promise.all([
     db.query(
       `SELECT count(DISTINCT client_id)::int AS n
          FROM events
         WHERE org_id = $1 AND name = 'booking.created'
-          AND created_at >= ($2::date AT TIME ZONE 'America/New_York')
-          AND created_at < (($2::date + 1) AT TIME ZONE 'America/New_York')
+          AND created_at >= ($2::date AT TIME ZONE 'America/Phoenix')
+          AND created_at < (($2::date + 1) AT TIME ZONE 'America/Phoenix')
           AND client_id IS NOT NULL`,
       [orgId, day]
     ),
@@ -602,8 +607,8 @@ async function floorFunnelDay(db, { orgId, day }) {
               count(*) FILTER (WHERE outcome = 'deposit')::int AS deposits
          FROM call_outcomes
         WHERE org_id = $1
-          AND logged_at >= ($2::date AT TIME ZONE 'America/New_York')
-          AND logged_at < (($2::date + 1) AT TIME ZONE 'America/New_York')`,
+          AND logged_at >= ($2::date AT TIME ZONE 'America/Phoenix')
+          AND logged_at < (($2::date + 1) AT TIME ZONE 'America/Phoenix')`,
       [orgId, day]
     )
   ]);

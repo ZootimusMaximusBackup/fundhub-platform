@@ -33,8 +33,8 @@ const SMS_TPL = "SMS-N06-RENEWAL";
 let orgId = null;
 let clientId = null;
 
-/* Midday Eastern. Every test that is not about the clock pins it here, so a
-   suite run at 2am does not silently become a quiet-hours test. */
+/* Mid-morning Arizona. Every test that is not about the clock pins it here, so
+   a suite run at 2am does not silently become a quiet-hours test. */
 const MIDDAY = () => new Date("2026-08-03T16:00:00Z");
 
 /** A fetch spy. Its call count is the number of messages that reached a
@@ -254,40 +254,40 @@ test("n-06: a client who opted out during the sleep gets nothing", { skip: !RUN 
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 3. QUIET HOURS — HELD AT 23:00, STILL WAITING AT 23:05, OUT AFTER 11:00
+// 3. QUIET HOURS — HELD AT 20:00, STILL WAITING AT 20:05, OUT AFTER 08:00
 // ═══════════════════════════════════════════════════════════════════════════
 
-test("an SMS queued at 23:00 ET is still queued at 23:05 and sends after 11:00 ET",
+test("an SMS queued at 20:00 MST is still queued at 20:05 and sends after 08:00 MST",
   { skip: !RUN }, async () => {
     const f = spy();
     await queueReal({ channel: "sms", templateKey: SMS_TPL, eventId: "quiet-evt-1" });
 
-    // 23:00 Eastern on 2026-08-03 is 03:00 UTC on 2026-08-04 (EDT, UTC-4).
-    const at2300 = () => new Date("2026-08-04T03:00:00Z");
-    const at2305 = () => new Date("2026-08-04T03:05:00Z");
-    const at1100 = () => new Date("2026-08-04T15:00:00Z");
+    // 20:00 Arizona on 2026-08-03 is 03:00 UTC on 2026-08-04 (MST, UTC-7).
+    const at2000 = () => new Date("2026-08-04T03:00:00Z");
+    const at2005 = () => new Date("2026-08-04T03:05:00Z");
+    const at0800 = () => new Date("2026-08-04T15:00:00Z");
 
-    const pass1 = await dispatchDue(db, opts(f, at2300));
+    const pass1 = await dispatchDue(db, opts(f, at2000));
     assert.equal(pass1.counts[OUTCOME.DEFERRED], 1, "the text should have been held, not sent or blocked");
-    assert.equal(f.calls.length, 0, "A TEXT WAS SENT AT 11PM");
+    assert.equal(f.calls.length, 0, "A TEXT WAS SENT AT 8PM");
 
     let [row] = await rowsFor();
     assert.equal(row.status, "queued", "a held text must stay queued, not become 'blocked'");
     assert.equal(row.blocked_reason, null,
       "A HELD TEXT WAS RECORDED AS A PERMANENT BLOCK — it would never send");
 
-    // 23:05 — five minutes later, the sweeper runs again. Still nothing.
-    const pass2 = await dispatchDue(db, opts(f, at2305));
+    // 20:05 — five minutes later, the sweeper runs again. Still nothing.
+    const pass2 = await dispatchDue(db, opts(f, at2005));
     assert.equal(pass2.claimed, 0, "the text became due again inside the window");
-    assert.equal(f.calls.length, 0, "A TEXT WAS SENT AT 11:05PM");
+    assert.equal(f.calls.length, 0, "A TEXT WAS SENT AT 8:05PM");
 
     [row] = await rowsFor();
-    assert.equal(row.status, "queued", "still waiting at 23:05");
+    assert.equal(row.status, "queued", "still waiting at 20:05");
     assert.equal(new Date(row.scheduled_at).toISOString(), "2026-08-04T15:00:00.000Z",
-      "the text should be due at 11:00 Eastern the next morning");
+      "the text should be due at 08:00 Arizona the next morning");
 
-    // 11:00 the next morning. Now it goes.
-    const pass3 = await dispatchDue(db, opts(f, at1100));
+    // 08:00 the next morning. Now it goes.
+    const pass3 = await dispatchDue(db, opts(f, at0800));
     assert.equal(pass3.counts[OUTCOME.SENT], 1, "the text did not send once the window opened");
     assert.equal(f.calls.length, 1, "exactly one text should have gone out");
 

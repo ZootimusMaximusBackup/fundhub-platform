@@ -576,7 +576,6 @@
   <footer class="statusbar">
     <span class="ghost"></span>
     <span>fundhub-messaging · v1</span>
-    <span>org: fundhub</span>
     <span>thread: <span id="footName">none open</span></span>
     <span class="nominal"><span class="pulse"></span>systems nominal · fundhub.ai</span>
   </footer>
@@ -821,7 +820,7 @@
   }
 
   /* QUIET HOURS, ON SCREEN, BEFORE ANYBODY TYPES.
-     Texts are not sent between 11pm and 11am US Eastern (TCPA). The rule was
+     Texts are not sent between 8pm and 8am Arizona time (TCPA). The rule was
      already enforced at send time; nothing said it beforehand, so the first a
      staff member knew of it was a reply that did not go. The owner asked for
      the warning up front — people forget a rule they have never been told.
@@ -830,14 +829,15 @@
      src/messaging/gate.mjs. src/http/messaging-screen.test.mjs reads the gate's
      own constants and fails if these drift from them, so the screen cannot end
      up promising a window the server does not honour. */
-  var QUIET_START_HOUR = 23;
-  var QUIET_END_HOUR = 11;
-  var QUIET_TZ = "America/New_York";
+  var QUIET_START_HOUR = 20;
+  var QUIET_END_HOUR = 8;
+  var QUIET_TZ = "America/Phoenix";
 
-  /* The hour right now in US Eastern. Intl carries the timezone database, so
-     daylight saving is the browser's problem and not ours — the same reason
-     the server reads it out of Intl rather than hardcoding an offset. */
-  function easternHour(nowMs) {
+  /* The hour right now in Arizona. Intl carries the timezone database, so the
+     zone is looked up rather than hardcoded as an offset — the same reason the
+     server reads it out of Intl. Arizona never shifts for daylight saving, so
+     this answer is stable all year; that is the point of naming it. */
+  function hourInZone(nowMs) {
     try {
       var parts = new Intl.DateTimeFormat("en-US", {
         timeZone: QUIET_TZ, hour: "numeric", hour12: false
@@ -854,7 +854,7 @@
      as "do not claim anything", because a warning that guesses is worse than
      no warning. */
   function inQuietHours(nowMs) {
-    var h = easternHour(nowMs);
+    var h = hourInZone(nowMs);
     if (h == null) return null;
     return h >= QUIET_START_HOUR || h < QUIET_END_HOUR;
   }
@@ -871,10 +871,10 @@
     if (closed) {
       return { closed: true, text:
         "Texting hours are closed. Anything you send now is saved and goes out " +
-        "automatically at 11:00am Eastern — you do not need to send it again." };
+        "automatically at 8:00am Arizona time — you do not need to send it again." };
     }
     return { closed: false, text:
-      "Texting hours: 11:00am to 11:00pm Eastern. Outside those hours a text is " +
+      "Texting hours: 8:00am to 8:00pm Arizona time. Outside those hours a text is " +
       "held and sent the next morning." };
   }
 
@@ -903,8 +903,8 @@
          wordings for one rule is how somebody ends up believing they are two
          different rules — and the browser test that compares them is what
          caught this drifting the first time. */
-      case "deferred":   return { tone: "hold", text: "Saved. It goes out automatically at 11:00am " +
-                                                       "Eastern — you do not need to send it again." };
+      case "deferred":   return { tone: "hold", text: "Saved. It goes out automatically at 8:00am " +
+                                                       "Arizona time — you do not need to send it again." };
       case "blocked":    return { tone: "stop", text: "Not sent. The compliance check stopped it" +
                                                        (detail && detail.length ? " (" + [].concat(detail).join(", ") + ")" : "") + "." };
       case "no_route":   return { tone: "stop", text: "Not sent. No text or email provider is set up for your company yet." };
@@ -965,7 +965,7 @@
     messageRow: messageRow,
     statusWord: statusWord,
     outcomeMessage: outcomeMessage,
-    easternHour: easternHour,
+    hourInZone: hourInZone,
     inQuietHours: inQuietHours,
     quietNotice: quietNotice,
     QUIET_START_HOUR: QUIET_START_HOUR,
@@ -1524,7 +1524,7 @@ function tickClock() {
   el.textContent = new Date().toLocaleString("en-US", {
     weekday: "short", month: "short", day: "numeric",
     hour: "numeric", minute: "2-digit", second: "2-digit",
-    timeZone: "America/New_York", timeZoneName: "short"
+    timeZone: "America/Phoenix", timeZoneName: "short"
   });
 }
 tickClock();

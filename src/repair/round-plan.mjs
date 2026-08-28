@@ -2,15 +2,9 @@
 // Copy comes only from metro2 catalog + prompt pools + round cap.
 // Does not invent a legal strategy.
 
-import { LETTER_META, LETTER_TYPES } from "../metro2/letters/catalog.mjs";
-import { promptPoolRound, ROUND } from "../metro2/letters/prompts.mjs";
+import { roundLadderEntry } from "../metro2/letters/catalog.mjs";
+import { promptPoolRound } from "../metro2/letters/prompts.mjs";
 import { BUREAU_ROUNDS, nextRound, roundAllowed } from "../metro2/rounds/state.mjs";
-
-const POOL_TO_TYPE = Object.freeze({
-  [ROUND.R1]: LETTER_TYPES.R1_METRO2,
-  [ROUND.R2]: LETTER_TYPES.R2_FCRA_MOV,
-  [ROUND.R3]: LETTER_TYPES.R3_FINAL_NOTICE
-});
 
 function roundNum(round) {
   const m = /^R(\d+)$/i.exec(String(round || ""));
@@ -46,7 +40,19 @@ function attackLine(item) {
 
 /**
  * Six bureau rounds with held / blocked / written state.
- * R4–R6 reuse R2/R3 letter pools (src/metro2/letters/prompts.mjs).
+ *
+ * COMPLIANCE REVIEW REQUIRED — dispute logic.
+ *
+ * The rung's title and timing come from the round ladder
+ * (src/metro2/letters/catalog.mjs `roundLadderEntry`): R1–R3 the bureau letters,
+ * R4 the CFPB complaint, R5 the state attorney general complaint, R6 the final
+ * notice reissued. This used to read `promptPoolRound` instead, which answers
+ * only "which prose shape", so the plan showed R4 and R6 as a repeat of Round 2
+ * and R5 as a repeat of Round 3 — the complaints never appeared in it at all.
+ *
+ * `pool` is still reported alongside, because it is still true and a caller may
+ * want it: it is the bureau wording a letter for that round would use, and after
+ * Round 3 that is always the R3 final-notice wording.
  */
 export function buildRoundPlan({
   roundsCap = 6,
@@ -62,7 +68,7 @@ export function buildRoundPlan({
 
   return BUREAU_ROUNDS.map((round) => {
     const pool = promptPoolRound(round);
-    const meta = LETTER_META[POOL_TO_TYPE[pool] || LETTER_TYPES.R1_METRO2];
+    const rung = roundLadderEntry(round);
     const attacks = (items || [])
       .filter((it) => String(it.round || "").toUpperCase() === round)
       .map((it) => attackLine(it))
@@ -76,8 +82,9 @@ export function buildRoundPlan({
 
     return {
       round,
-      title: meta.title,
-      when: meta.sendWhen,
+      title: rung.title,
+      when: rung.sendWhen,
+      letterType: rung.type,
       pool,
       status,
       attacks

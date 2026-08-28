@@ -11,11 +11,42 @@ export const ROUND = Object.freeze({
   FURNISHER: "FURNISHER"
 });
 
-/** Rounds 4–6 cycle R2/R3 prompt pools (spec D3). */
+/**
+ * Which of the three BUREAU PROSE shapes a round's letter is written in.
+ *
+ * COMPLIANCE REVIEW REQUIRED — dispute logic.
+ *
+ * THIS IS NOT THE ROUND LADDER. The ladder — what document round N actually is —
+ * lives in ./catalog.mjs `ROUND_LADDER`, where R4 is the CFPB complaint and R5
+ * is the state attorney general complaint. This function only picks prose, and
+ * there are only three bureau prose shapes to pick from.
+ *
+ * Until 2026-08-28 this mapped R4→R2, R5→R3, R6→R2 and was also being read AS
+ * the ladder (src/repair/round-plan.mjs), so a client past Round 3 was handed the
+ * Round 2 and Round 3 bureau letters over and over and never reached the
+ * complaints. The ladder moved to catalog.mjs. What is left here is the prose
+ * question, and its honest answer is:
+ *
+ *   AFTER ROUND 3, EVERY BUREAU LETTER IS A FINAL NOTICE.
+ *
+ * R4, R5 and R6 therefore all take the R3 pool. Going back to the R2
+ * method-of-verification wording at round 4 or round 6 asks the bureau a
+ * question that was already asked twice and is a step DOWN in authority, which
+ * is the opposite of the ladder. The R3 pool is the strongest bureau wording
+ * that exists in this repository; no stronger one was invented, and none may be.
+ *
+ * The escalation past R3 is not carried by stronger prose. It is carried by the
+ * CFPB and state AG complaints, which are separate documents with a separate
+ * builder (src/metro2/diy/package.mjs `maybeComplaintFiles`).
+ *
+ * SAFE BY CONSTRUCTION: no wording in the R3 pool claims a complaint HAS been
+ * filed. Every reference to the CFPB or a state attorney general in it is future
+ * tense — "I will file", "those come next" — so reusing it at R4–R6 cannot
+ * assert a filing this repository has no record of.
+ */
 export function promptPoolRound(round) {
   const r = String(round || ROUND.R1).toUpperCase();
-  if (r === ROUND.R4 || r === ROUND.R6) return ROUND.R2;
-  if (r === ROUND.R5) return ROUND.R3;
+  if (r === ROUND.R4 || r === ROUND.R5 || r === ROUND.R6) return ROUND.R3;
   return r;
 }
 const OPENINGS = Object.freeze({

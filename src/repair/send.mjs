@@ -3,6 +3,11 @@
 
 import { mailBureauLetter } from "../metro2/delivery/send.mjs";
 import { findFurnisherAddress } from "../metro2/rounds/store.mjs";
+import {
+  complaintDestination,
+  isComplaintTarget,
+  recordComplaintFiling
+} from "../metro2/rounds/complaint-filing.mjs";
 import { onRepairEvent } from "./handlers.mjs";
 
 export class RepairSendError extends Error {
@@ -14,7 +19,7 @@ export class RepairSendError extends Error {
   }
 }
 
-async function resolveLetterRouting(db, letter, { orgId }) {
+async function resolveLetterRouting(db, letter, { orgId, identity = null }) {
   const letterId = letter.letterId || letter.letter_id || null;
   let target = letter.target || null;
   let furnisherAddressId = letter.furnisher_address_id || letter.furnisherAddressId || null;
@@ -35,6 +40,23 @@ async function resolveLetterRouting(db, letter, { orgId }) {
   }
 
   target = target || "bureau";
+
+  // A CFPB or state AG complaint. Same human send gate, same provider — only the
+  // destination differs. A state AG has no postal address on file today, so that
+  // send is REFUSED rather than guessed; see ../metro2/rounds/complaint-filing.mjs.
+  if (isComplaintTarget(target)) {
+    if (to) return { target, furnisherAddressId: null, furnisherName: null, to, refusal: null };
+    const dest = complaintDestination(target, {
+      state: identity?.state || identity?.address_state || letter.state || null
+    });
+    return {
+      target,
+      furnisherAddressId: null,
+      furnisherName: null,
+      to: dest.ok ? dest.to : null,
+      refusal: dest.ok ? null : dest.reason
+    };
+  }
 
   if (target === "furnisher" && !to && furnisherAddressId && db?.query) {
     const r = await db.query(
@@ -71,7 +93,7 @@ async function resolveLetterRouting(db, letter, { orgId }) {
     }
   }
 
-  return { target, furnisherAddressId, furnisherName, to };
+  return { target, furnisherAddressId, furnisherName, to, refusal: null };
 }
 
 export async function sendRepairLetters(db, {
@@ -103,7 +125,13 @@ export async function sendRepairLetters(db, {
       throw new RepairSendError("each letter needs a bureau", { code: "bureau_required" });
     }
 
-    const routing = await resolveLetterRouting(db, letter, { orgId });
+    const routing = await resolveLetterRouting(db, letter, { orgId, identity });
+    // No address, no send, no filing row. A complaint that cannot be addressed
+    // must never be reported as mailed — Round 6 reads those rows.
+    if (routing.refusal) {
+      results.push({ bureau, target: routing.target, ok: false, error: routing.refusal });
+      continue;
+    }
     const enriched = {
       ...letter,
       bureau,
@@ -124,7 +152,9 @@ export async function sendRepairLetters(db, {
     } else {
       sent = await mailBureauLetter({
         db,
-        bureau: routing.target === "furnisher" ? null : bureau,
+        // A complaint is not addressed to a bureau, so the bureau lookup must not
+        // be allowed to supply a fallback destination for it.
+        bureau: (routing.target === "furnisher" || isComplaintTarget(routing.target)) ? null : bureau,
         furnisherName: routing.target === "furnisher" ? routing.furnisherName : null,
         to: routing.to,
         identity,
@@ -132,9 +162,11 @@ export async function sendRepairLetters(db, {
         pdf: letter.pdf || letter.pdfBase64,
         html: letter.html,
         description: letter.description
-          || (routing.target === "furnisher"
-            ? `Repair furnisher letter ${routing.furnisherName || bureau}`
-            : `Repair letter ${bureau}`),
+          || (isComplaintTarget(routing.target)
+            ? `Repair complaint ${routing.target.toUpperCase()} ${bureau}`
+            : routing.target === "furnisher"
+              ? `Repair furnisher letter ${routing.furnisherName || bureau}`
+              : `Repair letter ${bureau}`),
         metadata: {
           orgId,
           clientId,
@@ -164,13 +196,31 @@ export async function sendRepairLetters(db, {
         [letterId, String(providerId), orgId, clientId]
       ).catch(() => {});
     }
+    // A complaint that had no row yet gets one now — AFTER the provider took it,
+    // never before. This row is what Round 6 reads to decide whether it may say a
+    // complaint was filed, so it must mean "mailed" and nothing weaker.
+    let filingRecorded = null;
+    if (!letterId && isComplaintTarget(routing.target)) {
+      const rec = await recordComplaintFiling(db, {
+        caseId: letter.caseId || letter.case_id || null,
+        orgId,
+        clientId,
+        bureau,
+        round: letter.round,
+        target: routing.target,
+        bodyText: letter.bodyText || letter.body_text || null,
+        providerId
+      });
+      filingRecorded = rec.ok ? true : rec.reason;
+    }
     results.push({
       bureau,
       target: routing.target,
       ok: true,
       providerId,
       outcome: sent?.outcome || "sent",
-      letterId
+      letterId,
+      ...(filingRecorded === null ? {} : { filingRecorded })
     });
   }
 

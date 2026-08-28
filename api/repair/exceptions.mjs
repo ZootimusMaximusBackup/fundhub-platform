@@ -42,11 +42,26 @@ export default async function handler(req, res) {
       stalled = s.rows;
     } catch { /* tables may not be migrated yet in some envs */ }
     try {
+      // Two kinds of parse need a person, and both belong in this one queue.
+      //
+      // 1. confidence < 0.85 — the reader was unsure.
+      // 2. heldForEscalation — the reader was SURE, and wanted to move an item
+      //    into R4, which is where the CFPB and state attorney general
+      //    complaints the client signs under penalty of perjury get released.
+      //    A machine may not make that crossing alone (owner-set 2026-08-28,
+      //    enforced in src/metro2/rounds/state.mjs applyItemOutcome).
+      //
+      // Case 2 is ABOVE the confidence threshold, so the old WHERE clause hid it
+      // and nobody would ever have seen it to confirm it.
       const p = await db.query(
-        `SELECT id, case_id, client_id, confidence, confirmed, created_at
+        `SELECT id, case_id, client_id, confidence, confirmed, created_at,
+                COALESCE(parse_json->>'heldForEscalation', 'false') = 'true' AS held_for_escalation
            FROM dispute_responses
           WHERE org_id = $1 AND COALESCE(confirmed, false) = false
-            AND confidence IS NOT NULL AND confidence < 0.85
+            AND (
+              (confidence IS NOT NULL AND confidence < 0.85)
+              OR COALESCE(parse_json->>'heldForEscalation', 'false') = 'true'
+            )
           ORDER BY created_at DESC LIMIT 100`,
         [orgId]
       );

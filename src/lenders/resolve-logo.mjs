@@ -2,6 +2,29 @@
 
 import { normalizeName, slugFromName } from "./tips.mjs";
 
+/* The two exports below were lost in the 2026-08-27 merge (60c1902b). Two
+   branches each ADDED a file at this path — one holding resolveLogoPath, the
+   other holding the placeholder helper — so the merge took one whole file and
+   dropped the other's contents. Nothing conflicted, because to git this was one
+   new file, not two edits.
+
+   src/lenders/store.mjs kept importing logoPathOrPlaceholder from here, which
+   made every import chain through the lender store throw at load time and took
+   79 tests down with it. Lint and the type check both pass on this, which is the
+   trap in CLAUDE.md §12: a missing export is invisible until something runs. */
+
+export const LENDER_LOGO_PLACEHOLDER = "/assets/lenders/placeholder.svg";
+
+/**
+ * A lender with no local mark gets the placeholder tile, never an empty box.
+ * @param {string|null|undefined} logoPath
+ * @returns {string}
+ */
+export function logoPathOrPlaceholder(logoPath) {
+  const s = logoPath == null ? "" : String(logoPath).trim();
+  return s || LENDER_LOGO_PLACEHOLDER;
+}
+
 /** Same institution, different scrape wording → an existing file. */
 function aliasPath(rawName) {
   const raw = String(rawName || "");
@@ -36,16 +59,4 @@ export function resolveLogoPath({ name, externalRowId, sidecar, exists }) {
     if (exists(rel)) return rel;
   }
   return null;
-}
-
-/* Shared lender mark path. Never invent a bank — missing marks use the tile. */
-export const LENDER_LOGO_PLACEHOLDER = "/assets/lenders/placeholder.svg";
-
-/**
- * @param {string|null|undefined} logoPath
- * @returns {string}
- */
-export function logoPathOrPlaceholder(logoPath) {
-  const s = logoPath == null ? "" : String(logoPath).trim();
-  return s || LENDER_LOGO_PLACEHOLDER;
 }

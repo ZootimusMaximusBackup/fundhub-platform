@@ -13,6 +13,12 @@ import { printBlackReports } from "./black-report-pdf.mjs";
 import { violationsByBureauFromMergedCrs } from "../metro2/diy/from-crs.mjs";
 import { maybeComplaintFiles, COMPLAINT_FOLDER } from "../metro2/diy/package.mjs";
 import { LETTER_TYPES } from "../metro2/letters/catalog.mjs";
+import {
+  loadPriorOutcomes,
+  stampPriorOutcomes,
+  reachedEscalation,
+  highestEscalationRound
+} from "./prior-outcome.mjs";
 
 const { generateLetters, generateDisputeLetters } = letterGenMod;
 const { generateAllSummaryDocuments } = summaryMod;
@@ -215,18 +221,44 @@ async function uiqDeliverablePdfs(crsResult, personal, pack, _generate = generat
 // This file only decides WHETHER the pack has earned them, and renames the
 // resulting files into the pack's own naming convention.
 //
-// THE ONE RULE THAT MATTERS — read before touching this:
+// THE TWO RULES THAT MATTER — read before touching this:
 //
-//   A complaint may never ship without dispute letters in the SAME pack.
+//   1. A complaint may never ship unless the client has ACTUALLY REACHED the
+//      escalation rounds, R4 or later, on a recorded and human-confirmed answer.
+//   2. A complaint may never ship without dispute letters in the SAME pack.
 //
 // Both complaints say, in the client's own voice and signed under penalty of
 // perjury, "I disputed inaccurate information with the consumer reporting
-// agencies." If this pack produced no dispute letter, that sentence is false and
-// the client is being asked to swear to it. Filing a federal complaint before any
-// dispute was mailed is also out of order — the CFPB and the state AG both expect
-// the bureau rounds first. So the gate is on the letters this pack actually
-// produced, never on the stored credit pull, which is what the pull says the
-// client COULD dispute rather than what was written.
+// agencies." If that is not true, the client is being asked to swear to it
+// anyway. Filing a federal complaint before the bureau rounds are done is also
+// out of order — the CFPB and the state AG both expect them first, and the cover
+// sheet that ships with these two PDFs says so in capitals.
+//
+// RULE 1 IS NEW, AND IT REPLACES A GATE THAT WAS WRONG (2026-08-28).
+//
+// Until now the only test was rule 2 — did this pack write any dispute letter at
+// all. That is a proxy, and a weak one: a pack writes a Round 1 letter for a
+// client on their very first day, so the complaints were released to a client
+// who had disputed nothing yet and heard back from nobody. The sworn sentence
+// was false and the complaints were out of order, which is the same defect
+// already fixed on main in the Round 3 letter text.
+//
+// The round the client is actually on became knowable when the recorded bureau
+// answer was wired to this pack (./prior-outcome.mjs). Rule 1 uses it. An item
+// only sits at R4 because R1, R2 and R3 were each answered "verified" and a
+// human confirmed each one (../metro2/inbound/confirm.mjs →
+// ../metro2/rounds/state.mjs applyItemOutcome). Nothing else can put it there —
+// not a default, not a guess, not an empty result set. See the header of
+// ./prior-outcome.mjs `reachedEscalation`.
+//
+// RULE 2 IS KEPT, not replaced. It is now the pack-health check it always really
+// was: if the engine produced no bureau letter this run, something is wrong with
+// the pack and it ships nothing at all. It is reported first for that reason —
+// "no_dispute_letters" means the pack broke, "not_escalated" means the client is
+// simply not there yet, which is the normal state for almost every client.
+//
+// Neither rule reads the stored credit pull to decide. The pull says what the
+// client COULD dispute, never what was disputed or what came back.
 //
 // The other rules held here, deliberately:
 //  * No violations found → no complaint. A complaint with no named account is a
@@ -274,13 +306,28 @@ export function complaintIdentityFromPersonal(personal) {
  * @param {object}   args.personal       the client record the letters were addressed from
  * @param {string}   args.pack           "repair" or "funding"
  * @param {object[]} args.disputeLetters the dispute letters THIS pack produced.
- *   Not optional and never defaulted: an empty list means no complaint. See the
- *   ONE RULE above.
+ *   Not optional and never defaulted: an empty list means no complaint. See
+ *   RULE 2 above.
+ * @param {object[]} args.priorOutcomes the recorded, human-confirmed bureau
+ *   answers on file for this client (./prior-outcome.mjs loadPriorOutcomes).
+ *   Not optional and never defaulted: an empty list means the client is on
+ *   Round 1 and gets no complaint. See RULE 1 above.
  */
-export async function buildEscalationComplaints({ storedCrs, personal, pack, disputeLetters } = {}) {
+export async function buildEscalationComplaints({
+  storedCrs,
+  personal,
+  pack,
+  disputeLetters,
+  priorOutcomes
+} = {}) {
   if (pack !== "repair") return { files: [], skip: "not_repair" };
   if (!(disputeLetters || []).some(isDisputeLetter)) {
     return { files: [], skip: "no_dispute_letters" };
+  }
+  // RULE 1. The client must have reached R4+ on a confirmed bureau answer. No
+  // recorded answer means Round 1, and Round 1 has not earned a sworn complaint.
+  if (!reachedEscalation(priorOutcomes)) {
+    return { files: [], skip: "not_escalated" };
   }
   if (!storedCrs) return { files: [], skip: "no_stored_crs" };
   try {
@@ -314,11 +361,18 @@ export async function buildLetterPack({
   personal,
   pack = "funding",
   generateDeliverablesFn = generateDeliverables,
-  storedCrs = null
+  storedCrs = null,
+  // Confirmed bureau answers already on file. Empty means every account is
+  // still on Round 1 — which is exactly the behaviour of this function before
+  // the wire existed. See ./prior-outcome.mjs for why nothing may default here.
+  priorOutcomes = []
 } = {}) {
   const who = personal || { name: "Client", address: "" };
   const path = pack === "repair" ? "repair" : "fundable";
   const bureaus = bureausFromEngine(crsResult);
+  // The one place a round advances. An account moves off Round 1 only because a
+  // human confirmed the bureau's answer and the round machine recorded it.
+  const rounds = stampPriorOutcomes(bureaus, priorOutcomes);
   const letters = await generateLetters({
     path,
     bureaus,
@@ -363,7 +417,10 @@ export async function buildLetterPack({
     storedCrs,
     personal: who,
     pack,
-    disputeLetters: letterFiles
+    disputeLetters: letterFiles,
+    // The same recorded answers that moved the rounds above. A client who never
+    // reached R4 gets no sworn complaint. See RULE 1 in the block above.
+    priorOutcomes
   });
   const files = [...earned, ...escalation.files];
   let reason = null;
@@ -385,7 +442,14 @@ export async function buildLetterPack({
     deliverableSkip: uiq.skip,
     summarySkip,
     complaintCount: escalation.files.length,
-    complaintSkip: escalation.skip
+    complaintSkip: escalation.skip,
+    // How many accounts were moved off Round 1 by a recorded bureau answer, and
+    // how many recorded answers named an account this pull does not contain.
+    roundsAdvanced: rounds.stamped,
+    roundsUnmatched: rounds.unmatched,
+    // The furthest escalation round on record, or null when the client has not
+    // reached one. This is what released the complaints, or what withheld them.
+    escalationRound: highestEscalationRound(priorOutcomes)
   };
 }
 
@@ -465,13 +529,24 @@ export async function buildLetterPackForClient(
     engineFault = String(err && err.message || err).slice(0, 240);
     engineSkip = engineFault;
   }
+  // The confirmed bureau answers this client already has on file. Read-only, and
+  // a failure is reported rather than thrown: the worst a hiccup here may cost
+  // is an escalation, never the client's Round 1 letters.
+  const prior = await loadPriorOutcomes(db, { clientId });
   try {
-    const packOut = await buildLetterPack({ crsResult: engine, personal, pack, storedCrs });
+    const packOut = await buildLetterPack({
+      crsResult: engine,
+      personal,
+      pack,
+      storedCrs,
+      priorOutcomes: prior.outcomes
+    });
     return {
       ...packOut,
       reason: sharpenEmptyReason(packOut.reason, { engineSkip, engineFault }),
       engineSkip,
-      engineOutcome: engine?.outcome ?? null
+      engineOutcome: engine?.outcome ?? null,
+      priorOutcomeSkip: prior.skip
     };
   } catch (err) {
     return {

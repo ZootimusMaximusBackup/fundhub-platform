@@ -23,7 +23,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import {
-  gate, gateAndRecord, inQuietHours, easternHour,
+  gate, gateAndRecord, inQuietHours, hourInZone,
   isProveSimRecipient, emailLooksLikeProveSim, phoneIsAgentProveLine,
   QUIET_START_HOUR, QUIET_END_HOUR, QUIET_HOURS_TZ, GATE_SOURCE
 } from "./gate.mjs";
@@ -94,8 +94,9 @@ function fakeDb({
   };
 }
 
-// 2026-08-01 is a Saturday in EDT (UTC-4). 16:00Z = 12:00 Eastern — the middle
-// of the open window, so it isolates every non-quiet-hours case from the clock.
+// 2026-08-01 is a Saturday. Arizona is UTC-7 all year, so 16:00Z = 09:00 — the
+// middle of the open window, and it isolates every non-quiet-hours case from
+// the clock.
 const MIDDAY = () => new Date("2026-08-01T16:00:00Z");
 
 const base = { orgId: ORG, clientId: CLIENT, channel: "sms", body: "Hello, your file was updated." };
@@ -269,7 +270,7 @@ describe("opt-out", () => {
   });
 
   // Quiet hours are untouched by the allowance above.
-  test("a partner welcome text at 2am Eastern still waits for 11:00", async () => {
+  test("a partner welcome text at 11pm Arizona still waits for 8:00", async () => {
     const res = await gate(fakeDb(), {
       ...base,
       clientId: null,
@@ -287,53 +288,53 @@ describe("opt-out", () => {
 // ---------------------------------------------------------------------------
 
 describe("quiet hours", () => {
-  // Each case is an exact instant, named in Eastern. EDT is UTC-4 in August.
+  // Each case is an exact instant, named in Arizona time, which is UTC-7 all year.
   const at = (iso) => gate(fakeDb(), base, { now: () => new Date(iso) });
 
-  test("blocks a text at 11:30pm Eastern", async () => {
-    const res = await at("2026-08-02T03:30:00Z"); // 23:30 EDT
+  test("blocks a text at 8:30pm Arizona", async () => {
+    const res = await at("2026-08-02T03:30:00Z"); // 20:30 MST
     assert.strictEqual(res.state, "blocked");
     assert.ok(codes(res).includes("quiet_hours"), JSON.stringify(codes(res)));
   });
 
-  test("blocks a text at 3am Eastern", async () => {
-    const res = await at("2026-08-01T07:00:00Z"); // 03:00 EDT
+  test("blocks a text at midnight Arizona", async () => {
+    const res = await at("2026-08-01T07:00:00Z"); // 00:00 MST
     assert.strictEqual(res.state, "blocked");
     assert.ok(codes(res).includes("quiet_hours"));
   });
 
-  test("blocks a text at 10:59am Eastern — one minute before the window opens", async () => {
-    const res = await at("2026-08-01T14:59:00Z"); // 10:59 EDT
+  test("blocks a text at 7:59am Arizona — one minute before the window opens", async () => {
+    const res = await at("2026-08-01T14:59:00Z"); // 07:59 MST
     assert.strictEqual(res.state, "blocked");
     assert.ok(codes(res).includes("quiet_hours"));
   });
 
   // The boundaries, both sides. These are where an off-by-one lives.
-  test("allows a text at exactly 11:00am Eastern — the window opens", async () => {
-    const res = await at("2026-08-01T15:00:00Z"); // 11:00 EDT
+  test("allows a text at exactly 8:00am Arizona — the window opens", async () => {
+    const res = await at("2026-08-01T15:00:00Z"); // 08:00 MST
     assert.strictEqual(res.state, "allowed", JSON.stringify(codes(res)));
   });
 
-  test("allows a text at 10:59pm Eastern — one minute before the window closes", async () => {
-    const res = await at("2026-08-02T02:59:00Z"); // 22:59 EDT
+  test("allows a text at 7:59pm Arizona — one minute before the window closes", async () => {
+    const res = await at("2026-08-02T02:59:00Z"); // 19:59 MST
     assert.strictEqual(res.state, "allowed", JSON.stringify(codes(res)));
   });
 
-  test("blocks a text at exactly 11:00pm Eastern — the window closes", async () => {
-    const res = await at("2026-08-02T03:00:00Z"); // 23:00 EDT
+  test("blocks a text at exactly 8:00pm Arizona — the window closes", async () => {
+    const res = await at("2026-08-02T03:00:00Z"); // 20:00 MST
     assert.strictEqual(res.state, "blocked");
     assert.ok(codes(res).includes("quiet_hours"));
   });
 
   // Email is exempt. A gate that held overnight email would stop the drip
   // campaigns for half of every day and be switched off by whoever noticed.
-  test("does not block email at 3am Eastern", async () => {
+  test("does not block email at midnight Arizona", async () => {
     const res = await gate(fakeDb(), { ...base, channel: "email" },
       { now: () => new Date("2026-08-01T07:00:00Z") });
     assert.strictEqual(res.state, "allowed", JSON.stringify(codes(res)));
   });
 
-  test("does not hold a +sim- plus-tag text at 3am Eastern", async () => {
+  test("does not hold a +sim- plus-tag text at midnight Arizona", async () => {
     const res = await gate(
       fakeDb({ client: { email: "stanbridgejchris+sim-fund@gmail.com", phone: "+16616054248" } }),
       base,
@@ -343,7 +344,7 @@ describe("quiet hours", () => {
     assert.ok(!codes(res).includes("quiet_hours"));
   });
 
-  test("does not hold an e2e+ text at 3am Eastern", async () => {
+  test("does not hold an e2e+ text at midnight Arizona", async () => {
     const res = await gate(
       fakeDb({ client: { email: "e2e+aff-prove@fundhub.ai", phone: "+16616054248" } }),
       base,
@@ -352,7 +353,7 @@ describe("quiet hours", () => {
     assert.strictEqual(res.state, "allowed", JSON.stringify(codes(res)));
   });
 
-  test("does not hold a +colin-qa text at 3am Eastern", async () => {
+  test("does not hold a +colin-qa text at midnight Arizona", async () => {
     const res = await gate(
       fakeDb({ client: { email: "stanbridgejchris+colin-qa@gmail.com", phone: "+16616054248" } }),
       base,
@@ -361,7 +362,7 @@ describe("quiet hours", () => {
     assert.strictEqual(res.state, "allowed", JSON.stringify(codes(res)));
   });
 
-  test("still holds a normal client at 3am Eastern", async () => {
+  test("still holds a normal client at midnight Arizona", async () => {
     const res = await gate(
       fakeDb({ client: { email: "person@example.com", phone: "+15551234567" } }),
       base,
@@ -381,25 +382,27 @@ describe("quiet hours", () => {
     assert.ok(codes(res).includes("quiet_hours"));
   });
 
-  // Daylight saving. The same UTC instant is inside the window in winter and
-  // outside it in summer. A hardcoded UTC offset passes one of these and fails
-  // the other — which is the entire reason the zone is named rather than offset.
-  test("is measured in Eastern across the daylight-saving change", () => {
-    // 15:30Z: 11:30 EDT in summer (open) but 10:30 EST in winter (closed).
-    assert.strictEqual(inQuietHours(new Date("2026-07-01T15:30:00Z")), false, "July 15:30Z is 11:30 EDT — open");
-    assert.strictEqual(inQuietHours(new Date("2026-01-01T15:30:00Z")), true, "January 15:30Z is 10:30 EST — closed");
+  // Arizona does not observe daylight saving. That is the property this test
+  // exists to hold: the same UTC instant is the same local hour in July and in
+  // January, so the window does not drift an hour twice a year the way it did
+  // when it was measured in Eastern. If somebody swaps the zone back to one
+  // that shifts, these two lines stop agreeing.
+  test("does not move across the daylight-saving change", () => {
+    // 15:30Z is 08:30 in Phoenix in both seasons — just inside the open window.
+    assert.strictEqual(inQuietHours(new Date("2026-07-01T15:30:00Z")), false, "July 15:30Z is 08:30 MST — open");
+    assert.strictEqual(inQuietHours(new Date("2026-01-01T15:30:00Z")), false, "January 15:30Z is 08:30 MST — open");
   });
 
-  test("reads the Eastern hour, not UTC", () => {
-    assert.strictEqual(easternHour(new Date("2026-08-01T16:00:00Z")), 12); // EDT, UTC-4
-    assert.strictEqual(easternHour(new Date("2026-01-01T16:00:00Z")), 11); // EST, UTC-5
+  test("reads the Arizona hour, not UTC", () => {
+    assert.strictEqual(hourInZone(new Date("2026-08-01T16:00:00Z")), 9); // MST, UTC-7
+    assert.strictEqual(hourInZone(new Date("2026-01-01T16:00:00Z")), 9); // MST, UTC-7 — unchanged
   });
 
   // Midnight is the value ICU disagrees about — "24" in some builds, "00" in
   // others. Either way it must be inside the window.
-  test("treats midnight Eastern as inside the window", () => {
-    assert.strictEqual(easternHour(new Date("2026-08-01T04:00:00Z")), 0);
-    assert.strictEqual(inQuietHours(new Date("2026-08-01T04:00:00Z")), true);
+  test("treats midnight Arizona as inside the window", () => {
+    assert.strictEqual(hourInZone(new Date("2026-08-01T07:00:00Z")), 0);
+    assert.strictEqual(inQuietHours(new Date("2026-08-01T07:00:00Z")), true);
   });
 
   // The window wraps midnight, so it is an OR and not a range. Written the
@@ -407,14 +410,14 @@ describe("quiet hours", () => {
   test("the window is open for a contiguous stretch of the day", () => {
     const open = [];
     for (let h = 0; h < 24; h++) {
-      // 2026-08-01, EDT: Eastern hour h is UTC hour h+4.
-      const d = new Date(Date.UTC(2026, 7, 1 + (h + 4 >= 24 ? 1 : 0), (h + 4) % 24, 30));
+      // 2026-08-01, Arizona: local hour h is UTC hour h+7.
+      const d = new Date(Date.UTC(2026, 7, 1 + (h + 7 >= 24 ? 1 : 0), (h + 7) % 24, 30));
       if (!inQuietHours(d)) open.push(h);
     }
     const expected = [];
     for (let h = QUIET_END_HOUR; h < QUIET_START_HOUR; h++) expected.push(h);
     assert.deepStrictEqual(open, expected,
-      `expected the open window to be ${QUIET_END_HOUR}:00-${QUIET_START_HOUR}:00 Eastern`);
+      `expected the open window to be ${QUIET_END_HOUR}:00-${QUIET_START_HOUR}:00 Arizona`);
   });
 });
 
@@ -656,7 +659,7 @@ describe("reasons", () => {
     const res = await gate(
       fakeDb({ optedOut: new Set([`${CLIENT}:sms`]) }),
       { ...base, body: "We guarantee a 100 point score increase." },
-      { now: () => new Date("2026-08-01T07:00:00Z") } // 3am Eastern
+      { now: () => new Date("2026-08-01T07:00:00Z") } // midnight Arizona
     );
     assert.strictEqual(res.state, "blocked");
     const c = codes(res);
@@ -713,10 +716,10 @@ describe("gateAndRecord", () => {
 // ---------------------------------------------------------------------------
 
 describe("configuration", () => {
-  test("the quiet window is 23:00-11:00 Eastern", () => {
-    assert.strictEqual(QUIET_START_HOUR, 23);
-    assert.strictEqual(QUIET_END_HOUR, 11);
-    assert.strictEqual(QUIET_HOURS_TZ, "America/New_York");
+  test("the quiet window is 20:00-08:00 Arizona", () => {
+    assert.strictEqual(QUIET_START_HOUR, 20);
+    assert.strictEqual(QUIET_END_HOUR, 8);
+    assert.strictEqual(QUIET_HOURS_TZ, "America/Phoenix");
   });
 });
 
