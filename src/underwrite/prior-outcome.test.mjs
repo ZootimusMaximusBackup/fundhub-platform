@@ -23,6 +23,7 @@ import {
   highestEscalationRound
 } from "./prior-outcome.mjs";
 import { buildLetterPackForClient } from "./letter-pack.mjs";
+import { applyItemOutcome } from "../metro2/rounds/state.mjs";
 
 /** A derogatory account the Metro 2 checker reliably finds defects on. */
 const SIGNET = Object.freeze({
@@ -329,6 +330,52 @@ describe("reachedEscalation — R4 is earned, never assumed", () => {
     assert.equal(highestEscalationRound([...at("R1"), ...at("R3")]), null);
     assert.equal(highestEscalationRound([]), null);
     assert.equal(highestEscalationRound(null), null);
+  });
+});
+
+describe("the human gate and the complaint gate agree", () => {
+  // COMPLIANCE REVIEW REQUIRED — dispute logic.
+  //
+  // An R3 answer that no person confirmed is held by
+  // ../metro2/rounds/state.mjs applyItemOutcome. It must also fail to release
+  // the sworn complaints — the two gates have to line up, or a held item still
+  // hands the client a CFPB complaint.
+  const asRow = (item) => ({
+    bureau: "EX",
+    creditor: item.creditor,
+    account_last4: item.account_last4,
+    round: item.round,
+    status: item.status,
+    outcome: item.outcome
+  });
+  const r3Item = { creditor: "A BANK", account_last4: "1234", round: "R3", status: "sent" };
+
+  test("A MACHINE-HELD R3 ANSWER RELEASES NOTHING", () => {
+    const held = applyItemOutcome(r3Item, "verified");
+    assert.equal(held.round, "R3");
+    assert.equal(held.status, "verified");
+    // loadPriorOutcomes only returns status 'escalated'. This row would not even
+    // come back — and if it somehow did, the round is still R3.
+    assert.equal(reachedEscalation([asRow(held)]), false,
+      "an unconfirmed R3 answer released the sworn complaints");
+    assert.equal(highestEscalationRound([asRow(held)]), null);
+  });
+
+  test("the same answer, confirmed by a person, does release them", () => {
+    const advanced = applyItemOutcome(r3Item, "verified", { humanConfirmed: true });
+    assert.equal(advanced.round, "R4");
+    assert.equal(advanced.status, "escalated");
+    assert.equal(reachedEscalation([asRow(advanced)]), true);
+    assert.equal(highestEscalationRound([asRow(advanced)]), "R4");
+  });
+
+  test("R1 and R2 answers still advance with no person, and still release nothing", () => {
+    for (const round of ["R1", "R2"]) {
+      const auto = applyItemOutcome({ ...r3Item, round }, "verified");
+      assert.equal(auto.status, "escalated", `${round} stopped advancing on its own`);
+      assert.equal(reachedEscalation([asRow(auto)]), false,
+        `${round} released a complaint it has not earned`);
+    }
   });
 });
 

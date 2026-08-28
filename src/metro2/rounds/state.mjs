@@ -1,6 +1,8 @@
 // Per-item round state. Rounds advance per item, not per letter.
 // Bureau sequence is R1–R6; trial programs cap earlier via roundsCap (repair_programs).
 
+import { isEscalationRound } from "../letters/catalog.mjs";
+
 export const ITEM_STATUS = Object.freeze({
   OPEN: "open",
   SENT: "sent",
@@ -51,12 +53,65 @@ export function caseStatusFromItems(items = []) {
   return openish ? "open" : "round_complete";
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// THE ONE PLACE A ROUND MOVES — AND THE ONE CROSSING A MACHINE MAY NOT MAKE
+//
+// COMPLIANCE REVIEW REQUIRED — dispute logic.
+//
+// A client can upload the bureau's reply from the portal, an AI reads it, and
+// when the reading is confident the round advances with NOBODY IN THE LOOP
+// (src/repair/parse-loop.mjs runParseAdvanceLoop; src/repair/response-agent.test.mjs
+// "C1 clear letter auto-advances" pins that and it is intended behaviour).
+//
+// That is fine going up the bureau ladder. R1→R2 and R2→R3 produce another
+// letter to a credit bureau: a wrong move costs a letter and is recoverable, and
+// the speed is worth it. THOSE PATHS ARE UNCHANGED BY THIS BLOCK.
+//
+// Crossing into R4 is a different class of mistake. R4 and R5 are the CFPB and
+// state attorney general complaints (../letters/catalog.mjs ROUND_LADDER), and
+// reaching R4 is what releases them into the client's pack
+// (../../underwrite/prior-outcome.mjs reachedEscalation). Those two documents are
+// signed by the consumer UNDER PENALTY OF PERJURY. A machine reading a scanned
+// letter must not be what decides a person swears to something.
+//
+// Owner-set 2026-08-28: auto-advance stays for R1→R2 and R2→R3; crossing INTO
+// the escalation rounds requires a human confirmation.
+//
+// So: entering an escalation round needs `humanConfirmed`. That flag means a real
+// person — a staff id, the confirmation ../inbound/confirm.mjs already
+// represents — never a system sentinel and never a default. It arrives false
+// unless someone passes it, so the safe answer is the one you get by doing
+// nothing.
+//
+// A refused crossing is NOT a loss. The item stays at its own round with status
+// 'verified', which `itemsNeedingEscalation` below still reports, and the parse
+// that produced it is held unconfirmed so it surfaces on the exceptions queue
+// (api/repair/exceptions.mjs) for a person to confirm. Nothing is dropped; the
+// decision is just handed to a human.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * True when advancing out of `round` would land on an escalation round, so a
+ * human has to say so. Reuses ../letters/catalog.mjs — one definition of which
+ * rounds are escalation, not a second copy here.
+ */
+export function crossesIntoEscalation(round, roundsCap = 6) {
+  const nr = nextRound(round, roundsCap);
+  return !!nr && isEscalationRound(nr);
+}
+
 /**
  * Apply a confirmed parse outcome to one item.
  * Cap hit → closed + blocked_at_cap (trial → upsell path).
+ *
+ * @param {object} opts
+ * @param {number} [opts.roundsCap]
+ * @param {boolean} [opts.humanConfirmed] a real person confirmed this outcome.
+ *   Required to cross into R4+. Defaults false — see the block above.
  */
 export function applyItemOutcome(item, outcome, opts = {}) {
   const roundsCap = opts.roundsCap == null ? 6 : opts.roundsCap;
+  const humanConfirmed = opts.humanConfirmed === true;
   const o = String(outcome || "").toLowerCase();
   const base = { ...item, outcome: o, updated: true };
   if (o === "deleted") return { ...base, status: ITEM_STATUS.DELETED };
@@ -70,6 +125,16 @@ export function applyItemOutcome(item, outcome, opts = {}) {
         status: ITEM_STATUS.CLOSED,
         round: item.round,
         blocked_at_cap: true
+      };
+    }
+    // The crossing a machine may not make on its own. The item keeps its round.
+    if (isEscalationRound(nr) && !humanConfirmed) {
+      return {
+        ...base,
+        status: ITEM_STATUS.VERIFIED,
+        round: item.round,
+        awaiting_human_confirmation: true,
+        would_advance_to: nr
       };
     }
     return { ...base, status: ITEM_STATUS.ESCALATED, round: nr };

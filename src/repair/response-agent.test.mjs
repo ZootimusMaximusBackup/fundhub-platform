@@ -89,3 +89,103 @@ describe("C1/C2 bureau-response agent shapes", () => {
     assert.equal(r.skipped, true);
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// A MACHINE MAY NOT CARRY A CLIENT INTO R4
+//
+// COMPLIANCE REVIEW REQUIRED — dispute logic.
+//
+// "C1 clear letter auto-advances" above is intended behaviour and stays. But it
+// runs on an R1 item. The same confident read on an R3 item would cross into R4,
+// where the CFPB and state attorney general complaints — signed by the consumer
+// under penalty of perjury — are released into their pack.
+//
+// Owner-set 2026-08-28: that crossing needs a person.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const R3_ITEMS = [{
+  id: ITEM_ID, case_id: CASE_ID, creditor: "Midland",
+  account_last4: "4521", round: "R3", status: "sent"
+}];
+const VERIFIED_TEXT = "Experian response for account ending 4521: the item was verified as accurate. Account 4521 verified.";
+const STAFF_ID = "55555555-5555-5555-5555-555555555555";
+
+function r3Db() {
+  const db = fakeDb();
+  const inner = db.query.bind(db);
+  db.query = async (sql, params = []) => {
+    if (String(sql).includes("FROM dispute_items")) return { rows: R3_ITEMS.map((r) => ({ ...r })) };
+    return inner(sql, params);
+  };
+  return db;
+}
+
+describe("crossing into R4 needs a person, end to end", () => {
+  it("A CONFIDENT MACHINE READ OF AN R3 ANSWER DOES NOT REACH R4", async () => {
+    const db = r3Db();
+    const out = await runParseAdvanceLoop(db, {
+      orgId: ORG, clientId: CLIENT, text: VERIFIED_TEXT, items: R3_ITEMS, onEvent: async () => ({})
+    });
+    assert.ok(out.parseResult.confidence >= 0.85,
+      "this fixture must be a CONFIDENT read — otherwise it proves nothing new");
+    assert.equal(out.status, "held", "a confident R3 verify auto-advanced into R4");
+    assert.equal(out.heldForEscalation, true);
+    assert.equal(db.itemUpdates.length, 0, "no item may be written on the way to R4");
+  });
+
+  it("the held parse lands where a person will see it", async () => {
+    const db = r3Db();
+    const out = await runParseAdvanceLoop(db, {
+      orgId: ORG, clientId: CLIENT, text: VERIFIED_TEXT, items: R3_ITEMS, onEvent: async () => ({})
+    });
+    const row = db.responses.find((r) => r.id === out.responseId);
+    assert.equal(row.confirmed, false, "an unconfirmed crossing must not be stored as confirmed");
+    assert.equal(row.confirmed_by, null);
+    // The exceptions queue lists parses under 0.85 OR stamped heldForEscalation.
+    // This one is above the threshold, so the stamp is the only thing that shows
+    // it to anybody. api/repair/exceptions.mjs reads exactly this key.
+    assert.equal(row.parse_json.heldForEscalation, true,
+      "without this stamp the held parse is invisible on the exceptions screen");
+  });
+
+  it("A PERSON CONFIRMING IT DOES REACH R4", async () => {
+    const db = r3Db();
+    const held = await runParseAdvanceLoop(db, {
+      orgId: ORG, clientId: CLIENT, text: VERIFIED_TEXT, items: R3_ITEMS, onEvent: async () => ({})
+    });
+    const confirmed = await confirmHeldParse(db, {
+      orgId: ORG, responseId: held.responseId, confirmedBy: STAFF_ID,
+      confirmedOutcomes: [{ itemId: ITEM_ID, outcome: "verified" }], onEvent: async () => ({})
+    });
+    assert.equal(confirmed.status, "advanced");
+    assert.equal(db.itemUpdates[0].status, "escalated");
+    assert.equal(db.itemUpdates[0].round, "R4", "a confirmed R3 answer must reach R4");
+  });
+
+  it("A SYSTEM SENTINEL IS NOT A PERSON, EVEN THROUGH THE CONFIRM PATH", async () => {
+    const db = r3Db();
+    const held = await runParseAdvanceLoop(db, {
+      orgId: ORG, clientId: CLIENT, text: VERIFIED_TEXT, items: R3_ITEMS, onEvent: async () => ({})
+    });
+    const out = await confirmHeldParse(db, {
+      orgId: ORG, responseId: held.responseId, confirmedBy: "system_high_confidence",
+      confirmedOutcomes: [{ itemId: ITEM_ID, outcome: "verified" }], onEvent: async () => ({})
+    });
+    assert.equal(out.ok, false, "a sentinel bought an escalation");
+    assert.equal(out.reason, "escalation_needs_human");
+    assert.equal(db.itemUpdates.length, 0);
+  });
+
+  it("R1 STILL AUTO-ADVANCES THROUGH THE SAME PATH — nothing was broken", async () => {
+    // The regression guard. If this ever goes red, the gate leaked down the ladder.
+    const db = fakeDb();
+    const out = await runParseAdvanceLoop(db, {
+      orgId: ORG, clientId: CLIENT,
+      text: "Experian response for account ending 4521: the item was verified as accurate. Account 4521 verified.",
+      items: OPEN_ITEMS, onEvent: async () => ({})
+    });
+    assert.equal(out.status, "advanced", "an R1 item stopped advancing on its own");
+    assert.equal(db.itemUpdates[0].round, "R2");
+    assert.equal(db.responses[0].confirmed_by, null, "R1 still needs no person");
+  });
+});

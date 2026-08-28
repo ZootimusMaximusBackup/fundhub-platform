@@ -1,13 +1,14 @@
 import { parseResponseText } from "../metro2/inbound/parse-response.mjs";
-import { confirmParse } from "../metro2/inbound/confirm.mjs";
+import { confirmParse, isRealStaffId } from "../metro2/inbound/confirm.mjs";
 import { onRepairEvent } from "./handlers.mjs";
 
 const OPENISH = new Set(["open", "sent", "unaddressed", "escalated", "verified"]);
 export const AUTO_THRESHOLD = 0.85;
-const STAFF_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// One definition of "is this a real person", shared with the escalation gate in
+// ../metro2/inbound/confirm.mjs. It used to be a second copy of the same regex.
 function staffIdOrNull(value) {
-  return typeof value === "string" && STAFF_UUID.test(value.trim()) ? value.trim() : null;
+  return isRealStaffId(value) ? value.trim() : null;
 }
 
 export async function loadOpenDisputeItems(db, { orgId, clientId }) {
@@ -90,8 +91,34 @@ export async function runParseAdvanceLoop(db, {
     }
     return { ok: true, status: "advanced", event: "repair.response.parsed", parseResult, responseId: row?.id || null, advanced: confirmed };
   }
-  const row = await insertDisputeResponse(db, { orgId, clientId, caseId, rawText: text, parseResult, confirmed: false });
-  return { ok: true, status: "held", event: "repair.parse.low_confidence", parseResult, responseId: row?.id || null, advanced: null, confirmReason: confirmed.reason || null };
+  // Held. Either the read was not confident enough, or it was confident but
+  // wanted to cross into R4+ — the escalation rounds, where the sworn CFPB and
+  // state AG complaints live — and no person has said so
+  // (../metro2/rounds/state.mjs applyItemOutcome).
+  //
+  // The escalation hold is stamped into parse_json because the exceptions queue
+  // used to list only parses under the confidence threshold, and this one is
+  // ABOVE it. Without the stamp a confident machine read that was correctly
+  // refused would sit in the table where nobody could see it.
+  const heldForEscalation = confirmed.heldForEscalation === true;
+  const row = await insertDisputeResponse(db, {
+    orgId,
+    clientId,
+    caseId,
+    rawText: text,
+    parseResult: heldForEscalation ? { ...parseResult, heldForEscalation: true } : parseResult,
+    confirmed: false
+  });
+  return {
+    ok: true,
+    status: "held",
+    event: "repair.parse.low_confidence",
+    parseResult,
+    responseId: row?.id || null,
+    advanced: null,
+    confirmReason: confirmed.reason || null,
+    ...(heldForEscalation ? { heldForEscalation: true } : {})
+  };
 }
 
 export async function confirmHeldParse(db, {
