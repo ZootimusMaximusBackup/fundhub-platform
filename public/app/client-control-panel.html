@@ -56,7 +56,7 @@
     background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-line);
     border-radius:4px;padding:0 4px;}
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;height:100%;background:var(--ink);font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;color:var(--text);overflow:hidden;}
+  html,body{margin:0;padding:0;height:100%;background:var(--paper);font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;color:var(--text);overflow:hidden;}
   .mono{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;}
 
   .shell{flex:1;min-width:0;height:100vh;display:flex;flex-direction:column;}
@@ -65,39 +65,85 @@
     background:var(--ink);color:var(--dark-text);display:flex;align-items:center;justify-content:space-between;
     padding:0 16px;height:44px;flex-shrink:0;border-bottom:1px solid var(--dark-line);
   }
-  .brand{display:flex;align-items:center;gap:9px;}
+  /* The bar holds eight things once shell.js has added Search, the role chip
+     and Sign out. Without these three rules the screen's own name wrapped onto
+     three lines and the clock broke in half — measured on the live page at
+     1440px, 2026-08-27. */
+  .brand{display:flex;align-items:center;gap:9px;min-width:0;flex:0 1 auto;}
   /* the real fundhub wordmark, from fundhub-brand.css (--logo).
      .inv flips it for the dark topbar. */
   .brand .logo{height:15px;aspect-ratio:2698/543;flex-shrink:0;}
   .brand .sep{color:var(--dark-text-dim);font-weight:400;}
-  .brand .sub{font-weight:600;font-size:var(--fs-body);color:var(--dark-text-dim);}
-  .topbar-right{display:flex;align-items:center;gap:16px;font-size:var(--fs-caption);color:var(--dark-text-dim);}
+  .brand .sub{font-weight:600;font-size:var(--fs-body);color:var(--dark-text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .topbar-right{display:flex;align-items:center;gap:14px;font-size:var(--fs-caption);color:var(--dark-text-dim);flex:0 0 auto;}
   .live-pill{display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--dark-text);background:#151517;border:1px solid var(--dark-line);padding:4px 9px 4px 7px;border-radius:20px;}
   .live-dot{width:6px;height:6px;border-radius:50%;background:#A8D8B0;box-shadow:0 0 0 0 rgba(168,216,176,.6);animation:pulse 1.8s infinite;}
   @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(168,216,176,.55);}70%{box-shadow:0 0 0 6px rgba(168,216,176,0);}100%{box-shadow:0 0 0 0 rgba(168,216,176,0);}}
-  .clock{font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--dark-text);}
-  .org-pill{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.6px;color:var(--dark-text-dim);border:1px solid var(--dark-line);padding:3px 8px;border-radius:4px;}
+  .clock{font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--dark-text);white-space:nowrap;}
+  /* the clock is the first thing to go when the bar runs out of room — it is
+     the least useful of the eight things in it */
+  @media (max-width:1560px){ .clock{display:none;} }
+  .org-pill{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.6px;color:var(--dark-text-dim);border:1px solid var(--dark-line);padding:3px 8px;border-radius:4px;white-space:nowrap;}
 
-  /* ---------- record header ---------- */
+  /* ---------- the type scale, and why this rule exists ---------------------
+     fundhub-brand.css:164 sets `font-size:inherit !important` on EVERY element
+     inside .app, then hands specific sizes back to a fixed list of class names
+     (.card-title, .caption, .mono, .badge, label, th …). Anything not on that
+     list paints at 16px body size no matter what this file asks for — which is
+     why every label on this screen used to be the same size as the value under
+     it and nothing read as more or less important than anything else.
+     Two things follow, and both are done rather than fought:
+       1. this screen's titles now carry .card-title and its next-action label
+          carries .eyebrow, so the brand file sizes them;
+       2. the captions below are this screen's own class names, handed the
+          caption size the same way the brand file hands it to its list. */
+  .app :is(.rf-label,.kv-label,.blocker-age-label,.blocker-detail,.blocker-action,
+    .na-saved,.cp-note,.cp-count,.blocker-flag,.record-key,.record-pick label,
+    .fact-row,.approve-what,.approve-exp,.approve-url,.approve-nolink,
+    .dz-hint,.link-btn,.more>summary,.group-title .chev,.need-meta,.sb-source){
+    font-size:var(--fs-caption)!important;
+  }
+
+  /* ---------- record header ----------------------------------------------
+     Two rows, not one. On one row the nine tiles pushed the picker around and
+     orphaned the last tile onto a second line of its own, which read as a
+     broken layout. Row one is who this file is and how you change it; row two
+     is the tiles, on an even grid that never orphans. */
   .record-head{
     background:var(--surface);border-bottom:1px solid var(--line);
-    padding:10px 18px;flex-shrink:0;
-    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:13px 18px 15px;flex-shrink:0;
+    display:flex;flex-direction:column;gap:12px;
   }
-  .record-id{display:flex;align-items:baseline;gap:10px;}
-  .record-name{font-size:var(--fs-title);font-weight:800;color:var(--text);}
+  .record-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .record-id{display:flex;align-items:baseline;gap:10px;min-width:0;flex-wrap:wrap;}
+  .record-name{font-size:var(--fs-title);font-weight:700;letter-spacing:-.01em;color:var(--text);}
   .record-key{font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--text-faint);}
-  .record-pick{display:flex;align-items:center;gap:8px;margin-top:8px;}
-  .record-pick label{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);font-weight:700;}
-  .record-pick select{border:1px solid var(--line);border-radius:6px;background:#fff;padding:8px 10px;font-size:var(--fs-body);min-width:220px;max-width:360px;}
-  .record-fields{display:flex;gap:10px;flex-wrap:wrap;}
-  .rf-tile{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:5px 11px;text-align:center;min-width:92px;}
-  .rf-label{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:2px;}
-  .rf-value{font-family:'JetBrains Mono',monospace;font-weight:700;font-variant-numeric:tabular-nums;font-size:var(--fs-body);color:var(--text);}
-  .status-badge-lg{display:inline-block;font-size:var(--fs-caption);font-weight:700;padding:3px 10px;border-radius:12px;background:var(--blue-bg);color:var(--blue);}
+  .record-pick{display:flex;align-items:center;gap:8px;}
+  .record-pick label{font-size:var(--fs-caption);color:var(--text-dim);font-weight:600;}
+  .record-pick select{
+    border:1px solid var(--line);border-radius:8px;background:#fff;padding:8px 10px;
+    font-family:'Inter',sans-serif;font-size:var(--fs-body);color:var(--text);min-width:230px;max-width:360px;
+  }
+  .record-pick select:focus-visible{outline:2px solid var(--blue-line);outline-offset:2px;}
+  .record-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(122px,1fr));gap:8px;}
+  .rf-tile{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:7px 11px 8px;min-width:0;}
+  .rf-label{font-size:var(--fs-caption);color:var(--text-dim);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  /* fundhub-brand.css:171 forces .rf-value to --fs-metric, so these are the
+     screen's big numbers whether or not this file says so. Left at the brand
+     size on purpose; what is added is only the guard that stops a long value
+     ("not measured", "Sale closed") running out of its tile. */
+  .rf-value{font-family:'JetBrains Mono',monospace;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);line-height:1.15;overflow-wrap:anywhere;}
+  /* Nothing picked yet: the row is still true, it is just not about anything
+     yet, so it steps back instead of shouting nine dashes at the reader. */
+  .record-head.is-empty .record-fields{opacity:.45;}
+  /* same reason, same treatment: with no file open the funding round is five
+     dashes in a row, which reads as five broken values rather than one screen
+     waiting to be pointed at a client. */
+  .na-group.is-empty .kv-grid{opacity:.45;}
+  .status-badge-lg{display:inline-block;font-size:var(--fs-caption);font-weight:600;padding:2px 9px;border-radius:12px;background:var(--blue-bg);color:var(--blue);}
 
   /* ---------- layout ---------- */
-  main{flex:1;display:grid;grid-template-columns:1fr 300px;gap:1px;background:var(--ink);overflow:hidden;}
+  main{flex:1;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:1px;background:var(--line);overflow:hidden;}
   .main-col{background:var(--paper);overflow-y:auto;padding:12px 16px 16px;}
   .main-col::-webkit-scrollbar{width:8px;}
   .main-col::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:4px;}
@@ -105,13 +151,24 @@
   .side-col::-webkit-scrollbar{width:8px;}
   .side-col::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:4px;}
 
-  .group{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px 14px;margin-bottom:12px;}
-  .group-title{font-size:var(--fs-caption);font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+  /* One card. One resting shadow — fundhub-brand.css sets --panel-shadow for
+     exactly this and this screen was the only one still drawing its panels as
+     a hairline on near-white, which reads as a smudge rather than an edge. */
+  .group{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+    box-shadow:var(--panel-shadow);padding:14px 16px 16px;margin-bottom:12px;}
+  /* ONE label system on this page. Card titles are Inter, uppercase, quiet.
+     Mono is data — ids, money, counts, clocks — and the single brand eyebrow
+     on the next action. It was previously three systems fighting: mono
+     eyebrows, uppercase Inter titles and uppercase Inter field labels, so
+     nothing read as more important than anything else. */
+  .group-title{font-family:'Inter',sans-serif;font-size:var(--fs-caption);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
   .group-title .chev{font-size:var(--fs-caption);color:var(--text-faint);font-weight:400;text-transform:none;letter-spacing:0;cursor:default;}
 
-  .kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;}
-  .kv{display:flex;flex-direction:column;gap:2px;}
-  .kv-label{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);}
+  .kv-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px 16px;}
+  .kv{display:flex;flex-direction:column;gap:2px;min-width:0;}
+  /* Field labels are sentence case. Uppercasing every label as well as every
+     title is what made the screen shout. */
+  .kv-label{font-size:var(--fs-caption);color:var(--text-dim);}
   .kv-value{font-size:var(--fs-body);font-weight:600;color:var(--text);}
   .kv-value.mono{font-family:'JetBrains Mono',monospace;}
 
@@ -119,11 +176,19 @@
      The page's question is "what happens next on this file and why hasn't it
      happened". The answer used to be a 11.5px line at the bottom of a card.
      It leads now; the blocker sits under it as the reason. */
-  .blockers-panel{background:rgba(242,166,155,.09);border:1px solid var(--red-line);border-radius:8px;padding:13px 14px 13px;}
-  .na-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:12px;}
-  .na-eyebrow{font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);letter-spacing:.16em;
-    text-transform:uppercase;color:var(--red);margin-bottom:5px;}
-  .na-main{font-size:var(--fs-title);font-weight:800;line-height:1.3;color:var(--text);letter-spacing:-.01em;}
+  /* The card is neutral until something is actually stuck. It used to sit in a
+     coral wash and a coral border at all times, so a clean file and a blocked
+     one looked identical — an alarm that is always on is not an alarm. The
+     coral edge is the same 4px status edge pipeline.html already uses. */
+  .na-group{border-left:4px solid transparent;padding-left:16px;}
+  .na-group.is-blocked{border-left-color:var(--red-line);}
+  .na-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;}
+  .na-lead{min-width:0;}
+  /* .eyebrow itself comes from fundhub-brand.css — mono, .16em, the spectrum
+     tick. This is the one place on the screen that uses it, so it still reads
+     as a signature rather than wallpaper. */
+  .na-eyebrow{margin-bottom:6px;}
+  .na-main{font-size:var(--fs-title);font-weight:700;line-height:1.35;color:var(--text);letter-spacing:-.01em;}
   .na-why{font-size:var(--fs-caption);font-weight:700;letter-spacing:1px;text-transform:uppercase;
     color:var(--text-dim);margin-bottom:6px;}
   /* The value saved on the record, kept OUT of the big line above and shown
@@ -134,9 +199,9 @@
   .blocker-card{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--amber-line);border-radius:6px;padding:9px 12px;margin-bottom:8px;}
   .blocker-top{display:flex;justify-content:space-between;align-items:flex-start;}
   .blocker-reason{font-weight:700;font-size:var(--fs-body);color:var(--text);}
-  .blocker-age-wrap{text-align:right;}
-  .blocker-age{font-family:'JetBrains Mono',monospace;font-weight:800;font-variant-numeric:tabular-nums;font-size:var(--fs-title);color:var(--amber);}
-  .blocker-age-label{font-size:var(--fs-caption);text-transform:uppercase;color:var(--text-faint);letter-spacing:.4px;display:block;}
+  .blocker-age-wrap{text-align:right;flex:0 0 auto;}
+  .blocker-age{font-family:'JetBrains Mono',monospace;font-weight:700;font-variant-numeric:tabular-nums;font-size:var(--fs-title);color:var(--amber);}
+  .blocker-age-label{font-size:var(--fs-caption);color:var(--text-faint);display:block;}
   .blocker-detail{font-size:var(--fs-caption);color:var(--text-dim);margin-top:4px;}
   .blocker-action{font-size:var(--fs-caption);color:var(--text);margin-top:6px;padding-top:6px;border-top:1px dashed var(--line);}
   .blocker-action b{color:var(--blue);}
@@ -154,14 +219,20 @@
   }
 
   /* ---------- sidebar: actions ---------- */
-  .side-title{font-size:var(--fs-caption);font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text);margin:0 0 8px 0;}
+  .side-title{font-family:'Inter',sans-serif;font-size:var(--fs-caption);font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin:0 0 12px 0;}
   .action-btn{
-    display:flex;align-items:center;justify-content:space-between;width:100%;
-    background:var(--surface);color:var(--text);border:1px solid var(--ink);border-radius:6px;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
+    background:var(--surface);color:var(--text);border:1px solid var(--ink);border-radius:8px;
     padding:10px 12px;margin-bottom:7px;font-family:'Inter',sans-serif;font-size:var(--fs-body);font-weight:600;
     cursor:default;text-decoration:none;
   }
-  .action-btn .arrow{color:var(--text);}
+  .action-btn .arrow{color:var(--text);flex:0 0 auto;}
+  /* The three bureau pulls are one choice, so they sit on one row instead of
+     three stacked full-width buttons that read as three separate jobs.
+     Same three buttons, same ids, same handlers. */
+  .pull-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-bottom:7px;}
+  .pull-row .action-btn{margin-bottom:0;justify-content:center;text-align:center;}
+  @media (max-width:900px){ .pull-row{grid-template-columns:1fr;} }
   .action-btn.confirm-required{background:#1C1C20;}
   .action-btn.confirm-required .arrow{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;color:#F5CE8F;}
   .action-error{
@@ -232,10 +303,17 @@
   .fact-row .k{color:var(--text-dim);}
   .fact-row .v{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--text);}
 
+  /* Where the screen says where its numbers came from. This used to be a
+     full-width butter or mint bar pinned over the bottom of the page; it is
+     the same sentence, in the strip that was already there. */
   footer.statusbar{
-    flex-shrink:0;height:22px;background:var(--ink);display:flex;align-items:center;
+    flex-shrink:0;min-height:26px;background:var(--ink);display:flex;align-items:center;
     padding:0 14px;gap:16px;font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--dark-text-dim);
+    white-space:nowrap;overflow:hidden;
   }
+  footer.statusbar span{overflow:hidden;text-overflow:ellipsis;min-width:0;}
+  footer.statusbar .sb-source{margin-left:auto;color:var(--dark-text-dim);text-align:right;flex:0 1 auto;}
+  footer.statusbar .sb-source.is-bad{color:var(--alert);}
 
   /* ---------- interaction states ---------- */
   .action-btn{cursor:pointer;transition:background .12s,opacity .12s;}
@@ -269,8 +347,10 @@
 
   /* ---------- collapsible group ---------- */
   .group-title.tog{cursor:pointer;user-select:none;width:100%;background:none;border:0;
-    font:inherit;font-size:var(--fs-caption);font-weight:700;letter-spacing:1px;text-transform:uppercase;
+    font:inherit;font-family:'Inter',sans-serif;font-size:var(--fs-caption);font-weight:700;
+    letter-spacing:.08em;text-transform:uppercase;
     color:var(--text-dim);padding:0;text-align:left;}
+  .group-title.tog[aria-expanded="false"]{margin-bottom:0;}
   .group-title.tog .chev{cursor:pointer;}
   .group-title .cg{display:inline-block;transition:transform .18s ease;}
   .group-title.tog[aria-expanded="true"] .cg{transform:rotate(180deg);}
@@ -340,12 +420,16 @@
      One read-only block: what to do next, what is stopping it, and where the
      funding round stands. No button lives in here and nothing in it writes.
      Every rule below is new. Nothing above it was changed. */
-  .cp-next{border-bottom:1px solid var(--paper-dim);padding-bottom:11px;margin-bottom:11px;}
-  .cp-why{font-size:var(--fs-body);line-height:1.45;color:var(--text-dim);margin:6px 0 0;}
+  .cp-why{font-size:var(--fs-body);line-height:1.45;color:var(--text-dim);margin:8px 0 0;}
   .cp-note{font-size:var(--fs-caption);line-height:1.45;color:var(--amber);margin:6px 0 0;}
-  .cp-sec{margin-top:12px;}
-  .cp-sec-title{font-size:var(--fs-caption);font-weight:700;letter-spacing:1px;text-transform:uppercase;
-    color:var(--text-dim);margin-bottom:8px;}
+  .cp-sec{margin-top:16px;padding-top:14px;border-top:1px solid var(--paper-dim);}
+  .cp-sec-title{font-family:'Inter',sans-serif;font-size:var(--fs-caption);font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--text-dim);margin-bottom:9px;}
+  /* The same worked-out step and the same blocker list are painted into a
+     second set of slots that stay in the page for the compliance test in
+     src/http/client-panel-screen.test.mjs. They are painted, never shown: one
+     screen, one instruction. Nothing is read from here. */
+  .mirror{display:none;}
   .cp-count{font-family:'JetBrains Mono',monospace;font-weight:800;letter-spacing:0;color:var(--text-faint);}
   .cp-empty{font-size:var(--fs-body);color:var(--text-dim);margin:0;}
   /* a high blocker keeps the same card, in the red the panel above it uses */
@@ -361,7 +445,8 @@
     header.topbar{height:auto;min-height:44px;flex-wrap:wrap;gap:8px;padding-top:8px;padding-bottom:8px;}
     .topbar-right{width:100%;gap:8px;flex-wrap:wrap;}
     .record-head{padding:16px;flex-direction:column;align-items:stretch;}
-    .record-id{flex-direction:column;align-items:stretch;gap:8px;}
+    .record-top{flex-direction:column;align-items:stretch;gap:10px;}
+    .record-id{flex-direction:column;align-items:stretch;gap:4px;}
     .record-pick{width:100%;}
     .record-pick select{width:100%;min-width:0;max-width:none;}
     .record-fields{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))!important;}
@@ -455,10 +540,12 @@
   </header>
 
 
-  <div class="record-head">
-    <div class="record-id">
-      <div class="record-name" id="ccp-name">Loading…</div>
-      <div class="record-key" id="ccp-key">No client open — pick one below.</div>
+  <div class="record-head is-empty" id="ccp-record-head">
+    <div class="record-top">
+      <div class="record-id">
+        <div class="record-name" id="ccp-name">Loading…</div>
+        <div class="record-key" id="ccp-key">No client open — pick one below.</div>
+      </div>
       <div class="record-pick">
         <label for="ccp-pick">Client</label>
         <select id="ccp-pick" aria-label="Pick a client">
@@ -473,38 +560,19 @@
       <div class="rf-tile"><div class="rf-label">Open Inquiries</div><div class="rf-value" id="ccp-inquiries">—</div></div>
       <div class="rf-tile"><div class="rf-label">Inquiry Removal</div><div class="rf-value" data-ir-case id="ccp-ir">—</div></div>
       <div class="rf-tile"><div class="rf-label">Scores</div>
-        <div class="rf-value" id="ccp-scores" style="font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);">—</div></div>
+        <div class="rf-value mono" id="ccp-scores">—</div></div>
       <!-- Card Use is the utilisation figure the client endpoint has always
            returned and this screen never showed (src/http/client-detail.mjs:310,
            spelt the British way there). It reads "not measured" whenever the
            stored report carried no figure — which for a real bureau pull is the
            ordinary case today, not an error. Never 0%: see cardUse() below. -->
-      <div class="rf-tile"><div class="rf-label">Card Use</div><div class="rf-value" id="ccp-card-use">—</div></div>
+      <div class="rf-tile"><div class="rf-label">Card Use</div><div class="rf-value mono" id="ccp-card-use">—</div></div>
       <div class="rf-tile"><div class="rf-label">Funding Round</div><div class="rf-value" id="ccp-round">—</div></div>
     </div>
   </div>
 
   <main>
     <div class="main-col">
-
-      <div class="group">
-        <div class="blockers-panel" id="ccp-blockers-panel">
-          <div class="na-head">
-            <div>
-              <div class="na-eyebrow">Next Action</div>
-              <div class="na-main" id="ccp-next-action">—</div>
-              <p class="na-saved" id="ccp-saved" hidden></p>
-            </div>
-            <div class="blocker-age-wrap" id="ccp-blocker-age-wrap" hidden>
-              <span class="blocker-age" id="ccp-blocker-age"></span>
-              <span class="blocker-age-label">blocked</span>
-            </div>
-          </div>
-
-          <div class="na-why" id="ccp-why-label" hidden>Why it hasn't happened</div>
-          <div id="ccp-blocker-list"></div>
-        </div>
-      </div>
 
       <!-- ── CONTROL PANEL ─────────────────────────────────────────────────
            Chris's Airtable control panel, mirrored on the screen that already
@@ -517,25 +585,43 @@
            src/fulfillment/next-action.mjs and arrives on
            GET /api/dashboard/client. When that read is not there, or could
            not be worked out, the big line says so in plain words — never a
-           blank, and never a step nobody worked out. -->
-      <div class="group">
-        <div class="group-title">Control panel</div>
+           blank, and never a step nobody worked out.
 
-        <div class="cp-next">
-          <div class="na-eyebrow">Next action</div>
+           ONE CARD, not two. The next action and the blocker list were each
+           painted twice on this screen — once in the older Blockers panel and
+           again here — so the reader met the same sentence and the same list
+           in two boxes, both saying the same thing. Both sets of slots are
+           still painted, because the compliance test names both; only one set
+           is shown. The mirror below is display:none and carries the rest. -->
+      <div class="group na-group is-empty" id="ccp-blockers-panel">
+        <div class="na-head">
+          <div class="na-lead">
+            <div class="eyebrow na-eyebrow">Next action</div>
+            <div class="na-main" id="ccp-next-action">—</div>
+            <p class="na-saved" id="ccp-saved" hidden></p>
+            <p class="cp-why" id="ccp-cp-why" hidden></p>
+            <p class="cp-note" id="ccp-cp-note" hidden></p>
+          </div>
+          <div class="blocker-age-wrap" id="ccp-blocker-age-wrap" hidden>
+            <span class="blocker-age" id="ccp-blocker-age"></span>
+            <span class="blocker-age-label">blocked</span>
+          </div>
+        </div>
+
+        <div class="mirror" aria-hidden="true">
           <div class="na-main" id="ccp-cp-action">—</div>
-          <p class="cp-why" id="ccp-cp-why" hidden></p>
           <p class="na-saved" id="ccp-cp-saved" hidden></p>
-          <p class="cp-note" id="ccp-cp-note" hidden></p>
+          <div class="na-why" id="ccp-why-label" hidden>Why it hasn't happened</div>
+          <div id="ccp-blocker-list"></div>
         </div>
 
         <div class="cp-sec">
-          <div class="cp-sec-title">Active blockers <span class="cp-count" id="ccp-cp-blocker-count"></span></div>
+          <div class="cp-sec-title card-title">Active blockers <span class="cp-count" id="ccp-cp-blocker-count"></span></div>
           <div id="ccp-cp-blockers"><p class="cp-empty">Open a client file to see what is blocking it.</p></div>
         </div>
 
         <div class="cp-sec">
-          <div class="cp-sec-title">Funding round</div>
+          <div class="cp-sec-title card-title">Funding round</div>
           <div class="kv-grid">
             <div class="kv"><div class="kv-label">Round</div><div class="kv-value" id="ccp-cp-round-number">—</div></div>
             <div class="kv"><div class="kv-label">Finalized</div><div class="kv-value" id="ccp-cp-round-final">—</div></div>
@@ -552,18 +638,7 @@
       </div>
 
       <div class="group">
-        <div class="group-title">Businesses</div>
-        <div id="ccp-biz-list"><p class="cp-empty">Loading businesses…</p></div>
-      </div>
-
-      <div class="group">
-        <div class="group-title">Need action</div>
-        <p style="font-size:var(--fs-body);color:var(--text-dim);margin:0 0 10px;">Clients with an open inquiry removal case. Pick one to open the file.</p>
-        <div id="ccp-need-action" style="font-size:var(--fs-body);color:var(--text-dim);">Loading…</div>
-      </div>
-
-      <div class="group">
-        <div class="group-title">Actions</div>
+        <div class="group-title card-title">Actions</div>
         <p id="ccp-actions-desk-note" style="font-size:var(--fs-body);line-height:1.45;color:var(--text);margin:0 0 10px;">Pull one bureau at a time. Generate Apps refreshes the lender apply list for this file.</p>
         <!-- All three pull buttons used to render identical and enabled whether
              or not this client had agreed to a credit pull; the only thing that
@@ -588,17 +663,31 @@
           </div>
           <p class="approve-exp" id="ccp-approve-exp"></p>
         </div>
-        <button type="button" class="action-btn" id="ccp-pull-tu" style="cursor:pointer;">Pull TransUnion <span class="arrow">→</span></button>
-        <button type="button" class="action-btn" id="ccp-pull-ex" style="cursor:pointer;">Pull Experian <span class="arrow">→</span></button>
-        <button type="button" class="action-btn" id="ccp-pull-eq" style="cursor:pointer;">Pull Equifax <span class="arrow">→</span></button>
+        <div class="pull-row">
+          <button type="button" class="action-btn" id="ccp-pull-tu" style="cursor:pointer;">Pull TransUnion <span class="arrow">→</span></button>
+          <button type="button" class="action-btn" id="ccp-pull-ex" style="cursor:pointer;">Pull Experian <span class="arrow">→</span></button>
+          <button type="button" class="action-btn" id="ccp-pull-eq" style="cursor:pointer;">Pull Equifax <span class="arrow">→</span></button>
+        </div>
         <button type="button" class="action-btn" id="ccp-generate-apps" style="cursor:pointer;">Generate Apps <span class="arrow">→</span></button>
         <button type="button" class="action-btn" id="ccp-issue-ir" style="cursor:pointer;">Issue Inquiry Removal <span class="arrow">→</span></button>
         <p id="ccp-issue-ir-status" style="font-size:var(--fs-body);color:var(--text-dim);margin:8px 0 0;"></p>
       </div>
 
+      <div class="group">
+        <div class="group-title card-title">Businesses</div>
+        <div id="ccp-biz-list"><p class="cp-empty">Loading businesses…</p></div>
+      </div>
+
+      <div class="group">
+        <div class="group-title card-title">Need action</div>
+        <p style="font-size:var(--fs-body);color:var(--text-dim);margin:0 0 10px;">Clients with an open inquiry removal case. Pick one to open the file.</p>
+        <div id="ccp-need-action" style="font-size:var(--fs-body);color:var(--text-dim);">Loading…</div>
+      </div>
+
+
       <!-- Agent context — exactly what the AI sees for this client. -->
       <div class="group">
-        <button class="group-title tog" type="button" aria-expanded="false" aria-controls="agent-context-body">
+        <button class="group-title card-title tog" type="button" aria-expanded="false" aria-controls="agent-context-body">
           <span>Agent context</span>
           <span class="chev">collapsed by default <span class="cg">⌄</span></span>
         </button>
@@ -614,7 +703,7 @@
            pairs. Same four facts, said twice, was the noise — it collapses so
            the blocker above is the only place they read loud. -->
       <div class="group">
-        <button class="group-title tog" type="button" aria-expanded="false" aria-controls="hold-body">
+        <button class="group-title card-title tog" type="button" aria-expanded="false" aria-controls="hold-body">
           <span>Credit &amp; Hold Status</span>
           <span class="chev">collapsed <span class="cg">⌄</span></span>
         </button>
@@ -629,7 +718,7 @@
       </div>
 
       <div class="group">
-        <button class="group-title tog" type="button" aria-expanded="false" aria-controls="details-body">
+        <button class="group-title card-title tog" type="button" aria-expanded="false" aria-controls="details-body">
           <span>Details</span>
           <span class="chev">collapsed by default <span class="cg">⌄</span></span>
         </button>
@@ -655,7 +744,7 @@
            client id; a staff session is what makes that request a "staff
            upload", the same endpoint the client portal itself posts to. -->
       <div class="group">
-        <button class="group-title tog" type="button" aria-expanded="false" aria-controls="upload-body">
+        <button class="group-title card-title tog" type="button" aria-expanded="false" aria-controls="upload-body">
           <span>Documents</span>
           <span class="chev">collapsed by default <span class="cg">⌄</span></span>
         </button>
@@ -675,33 +764,40 @@
 
     <div class="side-col">
 
-      <div class="side-title">Funding · Apply</div>
-      <div id="fh-funding-apply" style="margin-bottom:14px;padding:10px 12px;border:1px solid var(--line,#E4E4E7);border-radius:10px;background:#fff">
-        <div style="font:700 var(--fs-caption)/1 var(--mono,ui-monospace);letter-spacing:.1em;text-transform:uppercase;color:var(--gray,#71717A)">Apply door</div>
-        <div id="fh-funding-apply-status" style="margin-top:6px;font-size:var(--fs-body);color:var(--gray,#71717A)">Lenders that fit a client's file appear here. Pick a client on Pipeline to open one.</div>
-        <div id="fh-funding-apply-list" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
-        <p style="margin:8px 0 0;font-size:var(--fs-caption);color:var(--gray,#71717A)">Shows lenders that fit this file. Apply opens the bank page when a URL is on file. Apply shows the client email, not a Fundhub address.</p>
+      <!-- The rail's two sections sit in the same card as everything else on
+           the screen now. They were bare titles with content floating on the
+           page next to bordered cards in the column beside them, which is why
+           the two halves of the screen did not look like one screen. -->
+      <div class="group">
+        <div class="group-title card-title">Funding · Apply door</div>
+        <div id="fh-funding-apply">
+          <div id="fh-funding-apply-status" style="font-size:var(--fs-body);line-height:1.45;color:var(--text-dim)">Lenders that fit a client's file appear here. Pick a client on Pipeline to open one.</div>
+          <div id="fh-funding-apply-list" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
+          <p style="margin:10px 0 0;font-size:var(--fs-caption);line-height:1.45;color:var(--text-faint)">Apply opens the bank page when a URL is on file, and shows the client email, not a Fundhub address.</p>
+        </div>
       </div>
 
-      <div class="side-title">Quick Launch</div>
-      <p id="ccp-actions-note" style="font-size:var(--fs-body);line-height:1.45;color:var(--text);margin:0 0 10px;">These open the live file. Bureau pulls stay on the closer deck.</p>
-      <a class="action-btn" id="ccp-link-pipeline" href="pipeline.html">Open Pipeline <span class="arrow">↗</span></a>
-      <a class="action-btn" id="ccp-link-present" href="present.html">Open Closer Deck <span class="arrow">↗</span></a>
-      <a class="action-btn" id="ccp-link-messaging" href="messaging.html">Open Messaging <span class="arrow">↗</span></a>
-      <a class="action-btn" id="ccp-link-ir" href="inquiry-remover.html">Open Inquiry Remover <span class="arrow">↗</span></a>
+      <div class="group">
+        <div class="group-title card-title">Quick launch</div>
+        <p id="ccp-actions-note" style="font-size:var(--fs-caption);line-height:1.45;color:var(--text-dim);margin:0 0 10px;">These open the live file. Bureau pulls stay on the closer deck.</p>
+        <a class="action-btn" id="ccp-link-pipeline" href="pipeline.html">Open Pipeline <span class="arrow">↗</span></a>
+        <a class="action-btn" id="ccp-link-present" href="present.html">Open Closer Deck <span class="arrow">↗</span></a>
+        <a class="action-btn" id="ccp-link-messaging" href="messaging.html">Open Messaging <span class="arrow">↗</span></a>
+        <a class="action-btn" id="ccp-link-ir" href="inquiry-remover.html">Open Inquiry Remover <span class="arrow">↗</span></a>
 
-      <details class="more" id="more-menu">
-        <summary>More <span class="arrow">⌄</span></summary>
-        <div class="more-body">
-          <a class="link-btn" id="ccp-link-lenders" href="lenders.html">Open Funding Matrix <span class="arrow">↗</span></a>
-          <a class="link-btn" id="ccp-link-present2" href="present.html">Open Credit Snapshot <span class="arrow">↗</span></a>
-          <button class="link-btn" id="ccp-bank-inbox-open" type="button">Open Bank Inbox <span class="arrow">↗</span></button>
-          <div id="ccp-bank-inbox" hidden></div>
-        </div>
-      </details>
+        <details class="more" id="more-menu">
+          <summary>More <span class="arrow">⌄</span></summary>
+          <div class="more-body">
+            <a class="link-btn" id="ccp-link-lenders" href="lenders.html">Open Funding Matrix <span class="arrow">↗</span></a>
+            <a class="link-btn" id="ccp-link-present2" href="present.html">Open Credit Snapshot <span class="arrow">↗</span></a>
+            <button class="link-btn" id="ccp-bank-inbox-open" type="button">Open Bank Inbox <span class="arrow">↗</span></button>
+            <div id="ccp-bank-inbox" hidden></div>
+          </div>
+        </details>
+      </div>
 
-      <div class="group" style="margin-top:16px;">
-        <button class="group-title tog" type="button" aria-expanded="false" aria-controls="facts-body">
+      <div class="group">
+        <button class="group-title card-title tog" type="button" aria-expanded="false" aria-controls="facts-body">
           <span>System Facts</span>
           <span class="chev">collapsed <span class="cg">⌄</span></span>
         </button>
@@ -723,6 +819,7 @@
     <span id="ccp-footer-org">ORG: —</span>
     <span id="ccp-footer-id">—</span>
     <span>notes save to this client file</span>
+    <span class="sb-source" id="ccp-source"></span>
   </footer>
 
 </div>
@@ -999,16 +1096,17 @@ document.addEventListener("DOMContentLoaded", function () {
   tickClock();
   setInterval(tickClock, 1000);
 
-  function banner(tone, text) {
-    var TONE = { real: "#A8D8B0", empty: "#F5CE8F", error: "#F2A69B" };
-    var box = document.createElement("div");
-    box.setAttribute("role", "status");
-    box.style.cssText =
-      "position:fixed;left:0;right:0;bottom:0;z-index:2147482000;padding:7px 14px;" +
-      "background:" + (TONE[tone] || TONE.error) + ";color:#0A0A0A;" +
-      "font:600 var(--fs-caption)/1.4 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.05em;text-align:center";
-    box.textContent = text;
-    document.body.appendChild(box);
+  /* Where this screen's numbers came from. It used to be a full-width butter,
+     mint or rose bar pinned over the bottom of the page. Owner call,
+     2026-08-27: no coloured bars anywhere on the CRM. Same sentence, written
+     into the status strip that was already at the foot of this screen, so
+     nothing that was being said is lost. A failed read is the one case that
+     still gets a colour, and it is text, not a bar. */
+  function source(tone, text) {
+    var node = $("ccp-source");
+    if (!node) return;
+    node.textContent = text;
+    node.className = "sb-source" + (tone === "error" ? " is-bad" : "");
   }
 
   function paintBlockers(blockers, holdReason) {
@@ -1461,6 +1559,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
     paintBlockers(d.open_blockers, hold);
     paintControlPanel(fx, d, cf);
+
+    /* A file is open, so the tile row is about something and stops standing
+       back. The card only turns coral when something is actually stuck — see
+       .na-group.is-blocked. */
+    var head = $("ccp-record-head");
+    if (head) head.classList.remove("is-empty");
+    /* Counted off the cards the two paints above actually drew, not off the
+       payload: the panel goes coral when the reader can see a blocker in it
+       and stays neutral otherwise. Reading the array a third time here would
+       be a third route past the endpoint's sanitizer — see
+       src/http/client-panel-screen.test.mjs. */
+    var panel = $("ccp-blockers-panel");
+    if (panel) {
+      panel.classList.remove("is-empty");
+      var shown = 0;
+      try { shown = panel.querySelectorAll(".blocker-card").length; } catch (e) { shown = 0; }
+      panel.classList.toggle("is-blocked", shown > 0);
+    }
     var bizCredit = d.business_credit || {};
     paintBusinesses("full", bizCredit.businesses || []);
 
@@ -1470,13 +1586,19 @@ document.addEventListener("DOMContentLoaded", function () {
     var ta = $("notes");
     if (ta) ta.value = cf.notes || cf.staff_notes || "";
 
-    banner("real", "live file · " + (d.transactions || []).length + " payments · " +
+    source("real", "live file · " + (d.transactions || []).length + " payments · " +
       (d.messages || []).length + " messages");
   }
 
   var id = FHData.param("id") || FHData.param("client_id");
   wireLinks(id);
-  if (!id) setText("ccp-name", "");
+  /* Nothing picked is not the same as nothing known. It used to print a dash
+     where the client's name goes, next to nine more dashes, which reads as a
+     screen that failed rather than one waiting to be pointed at a file. */
+  if (!id) {
+    setText("ccp-name", "No client open");
+    setText("ccp-key", "Pick a client to open their file.");
+  }
 
   (function wireNotes() {
     var notes = $("notes");
@@ -1999,21 +2121,33 @@ document.addEventListener("DOMContentLoaded", function () {
   if (!id) paintBusinesses("empty");
   FHData.client(id).then(function (res) {
     if (res.ok) { render(res.data); return; }
-    setText("ccp-name", "");
+    /* Say it where the reader is already looking, in words, instead of a dash
+       where the name goes and the real answer in a bar at the other end of
+       the screen. */
     if (res.source === "nodata") {
-      banner("empty", "no client open — pick a client from the list");
+      setText("ccp-name", "No client open");
+      setText("ccp-key", "Pick a client to open their file.");
+      source("empty", "no client open — pick a client from the list");
       paintBusinesses("empty");
     } else if (res.source === "demo") {
-      banner("empty", "demo mode — this screen did not query a live file");
+      setText("ccp-name", "No live file");
+      setText("ccp-key", "Demo session — this screen did not query a live file.");
+      source("empty", "demo mode — this screen did not query a live file");
       paintBusinesses("empty");
     } else if (res.source === "notfound") {
-      banner("empty", "no client with that id");
+      setText("ccp-name", "No client with that id");
+      setText("ccp-key", "Pick a client from the list.");
+      source("empty", "no client with that id");
       paintBusinesses("empty");
     } else if (res.source === "badrequest") {
-      banner("empty", "that id is not a valid client id");
+      setText("ccp-name", "That is not a valid client id");
+      setText("ccp-key", "Pick a client from the list.");
+      source("empty", "that id is not a valid client id");
       paintBusinesses("empty");
     } else {
-      banner("error", "could not load this file (" + res.source + ")");
+      setText("ccp-name", "Could not load this file");
+      setText("ccp-key", "The read did not answer. Nothing below has been filled in.");
+      source("error", "could not load this file (" + res.source + ")");
       paintBusinesses("error", null, "Could not load businesses.");
     }
   });

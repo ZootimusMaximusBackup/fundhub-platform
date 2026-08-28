@@ -1,6 +1,7 @@
 /* DB access for lenders + bureau observations. */
 
 import { INLINE_EDIT_FIELDS, LENDER_CSV_COLUMNS, isLenderTable } from "./tables.mjs";
+import { isTipRow } from "./tips.mjs";
 import { buildObservation } from "./observations.mjs";
 import { parseLenderCsv, serializeLenderCsv } from "./csv.mjs";
 import { matchLenders } from "./match.mjs";
@@ -194,7 +195,12 @@ export async function importLendersCsv(db, { orgId, text, staff, logoByExternalI
   const { rows, errors } = parseLenderCsv(text);
   let imported = 0;
   let updated = 0;
+  let skipped_tips = 0;
   for (const row of rows) {
+    if (isTipRow(row.name)) {
+      skipped_tips++;
+      continue;
+    }
     try {
       const logoPath = logoByExternalId && row.external_row_id
         ? logoByExternalId[row.external_row_id]
@@ -224,7 +230,7 @@ export async function importLendersCsv(db, { orgId, text, staff, logoByExternalI
       errors.push(`${row.name}: ${e.message || e.code || "failed"}`);
     }
   }
-  return { imported, updated, errors, parsed: rows.length };
+  return { imported, updated, errors, parsed: rows.length, skipped_tips };
 }
 
 export async function exportLendersCsv(db, { orgId, ...filters }) {

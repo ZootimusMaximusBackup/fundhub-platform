@@ -24,6 +24,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   gate, gateAndRecord, inQuietHours, easternHour,
+  isProveSimRecipient, emailLooksLikeProveSim, phoneIsAgentProveLine,
   QUIET_START_HOUR, QUIET_END_HOUR, QUIET_HOURS_TZ, GATE_SOURCE
 } from "./gate.mjs";
 import { clearRuleCache } from "../compliance/screen.mjs";
@@ -67,7 +68,10 @@ const RULES = seededRules();
 /* A db stand-in. `optedOut` is the set of "<client>:<channel>" pairs currently
    opted out. writes[] records every mutation so the tests can assert on what was
    persisted — and, just as importantly, on what was not. */
-function fakeDb({ rules = RULES, optedOut = new Set(), failOptOut = false } = {}) {
+function fakeDb({
+  rules = RULES, optedOut = new Set(), failOptOut = false,
+  client = { email: "person@example.com", phone: "+15551234567" }
+} = {}) {
   const writes = [];
   return {
     writes,
@@ -76,6 +80,7 @@ function fakeDb({ rules = RULES, optedOut = new Set(), failOptOut = false } = {}
         if (failOptOut) throw new Error("connection terminated unexpectedly");
         return { rows: optedOut.has(`${params[0]}:${params[1]}`) ? [{ "?column?": 1 }] : [] };
       }
+      if (sql.includes("FROM clients")) return { rows: client ? [client] : [] };
       if (sql.includes("FROM compliance_rules")) return { rows: rules };
       if (sql.includes("UPDATE messages")) { writes.push({ kind: "message", sql, params }); return { rows: [] }; }
       // createTask's dedupe probe: no existing task, so the insert proceeds.
@@ -235,6 +240,54 @@ describe("quiet hours", () => {
     const res = await gate(fakeDb(), { ...base, channel: "email" },
       { now: () => new Date("2026-08-01T07:00:00Z") });
     assert.strictEqual(res.state, "allowed", JSON.stringify(codes(res)));
+  });
+
+  test("does not hold a +sim- plus-tag text at 3am Eastern", async () => {
+    const res = await gate(
+      fakeDb({ client: { email: "stanbridgejchris+sim-fund@gmail.com", phone: "+16616054248" } }),
+      base,
+      { now: () => new Date("2026-08-01T07:00:00Z") }
+    );
+    assert.strictEqual(res.state, "allowed", JSON.stringify(codes(res)));
+    assert.ok(!codes(res).includes("quiet_hours"));
+  });
+
+  test("does not hold an e2e+ text at 3am Eastern", async () => {
+    const res = await gate(
+      fakeDb({ client: { email: "e2e+aff-prove@fundhub.ai", phone: "+16616054248" } }),
+      base,
+      { now: () => new Date("2026-08-01T07:00:00Z") }
+    );
+    assert.strictEqual(res.state, "allowed", JSON.stringify(codes(res)));
+  });
+
+  test("does not hold a +colin-qa text at 3am Eastern", async () => {
+    const res = await gate(
+      fakeDb({ client: { email: "stanbridgejchris+colin-qa@gmail.com", phone: "+16616054248" } }),
+      base,
+      { now: () => new Date("2026-08-01T07:00:00Z") }
+    );
+    assert.strictEqual(res.state, "allowed", JSON.stringify(codes(res)));
+  });
+
+  test("still holds a normal client at 3am Eastern", async () => {
+    const res = await gate(
+      fakeDb({ client: { email: "person@example.com", phone: "+15551234567" } }),
+      base,
+      { now: () => new Date("2026-08-01T07:00:00Z") }
+    );
+    assert.strictEqual(res.state, "blocked");
+    assert.ok(codes(res).includes("quiet_hours"));
+  });
+
+  test("the agent prove line alone does not skip quiet hours", async () => {
+    const res = await gate(
+      fakeDb({ client: { email: "person@example.com", phone: "+16616054248" } }),
+      base,
+      { now: () => new Date("2026-08-01T07:00:00Z") }
+    );
+    assert.strictEqual(res.state, "blocked");
+    assert.ok(codes(res).includes("quiet_hours"));
   });
 
   // Daylight saving. The same UTC instant is inside the window in winter and
@@ -573,5 +626,26 @@ describe("configuration", () => {
     assert.strictEqual(QUIET_START_HOUR, 23);
     assert.strictEqual(QUIET_END_HOUR, 11);
     assert.strictEqual(QUIET_HOURS_TZ, "America/New_York");
+  });
+});
+
+describe("prove/sim identity", () => {
+  test("plus-tags match and near-misses do not", () => {
+    assert.equal(emailLooksLikeProveSim("stanbridgejchris+sim-fund@gmail.com"), true);
+    assert.equal(emailLooksLikeProveSim("e2e+aff-prove@fundhub.ai"), true);
+    assert.equal(emailLooksLikeProveSim("stanbridgejchris+colin-qa@gmail.com"), true);
+    assert.equal(emailLooksLikeProveSim("person+similar@example.com"), false);
+    assert.equal(emailLooksLikeProveSim("person+simulation@example.com"), false);
+    assert.equal(emailLooksLikeProveSim("e2e@fundhub.ai"), false);
+    assert.equal(emailLooksLikeProveSim("person@example.com"), false);
+  });
+
+  test("agent prove line is recognized but does not make a real email a sim file", () => {
+    assert.equal(phoneIsAgentProveLine("+16616054248"), true);
+    assert.equal(phoneIsAgentProveLine("661-605-4248"), true);
+    assert.equal(isProveSimRecipient({ email: "person@example.com", phone: "+16616054248" }), false);
+    assert.equal(isProveSimRecipient({
+      email: "stanbridgejchris+sim-fund@gmail.com", phone: "+16616054248"
+    }), true);
   });
 });

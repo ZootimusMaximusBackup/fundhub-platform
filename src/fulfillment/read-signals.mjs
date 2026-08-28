@@ -178,6 +178,14 @@ const REAL_CRS_SQL = `
      AND COALESCE(is_demo, false) = false
    GROUP BY client_id`;
 
+/* Rows the control panel would paint as scores — including a planted sample.
+   Demo rows still do not count as a live bureau pull (REAL_CRS_SQL above). */
+const PAINTED_CRS_SQL = `
+  SELECT client_id, result, created_at
+    FROM crs_results
+   WHERE org_id = $1::uuid
+     AND client_id = ANY($2::uuid[])`;
+
 const ACTIVE_INQUIRY_SQL = `
   SELECT client_id, case_status::text AS case_status, fraud_alert_after
     FROM inquiry_removal_cases
@@ -211,6 +219,17 @@ const DISPUTE_CASES_SQL = `
    WHERE org_id = $1::uuid
      AND client_id = ANY($2::uuid[])
      AND status = 'awaiting_response'`;
+
+/* Repair letter counts — same statuses src/repair/cases.mjs LIST_SQL uses.
+   No is_demo column on dispute_letters (160_metro2_dispute_engine.sql). */
+const REPAIR_LETTERS_SQL = `
+  SELECT client_id,
+         COUNT(*) FILTER (WHERE status IN ('generated', 'ready'))::int AS letters_ready,
+         COUNT(*) FILTER (WHERE status IN ('sent', 'delivered'))::int AS letters_sent
+    FROM dispute_letters
+   WHERE org_id = $1::uuid
+     AND client_id = ANY($2::uuid[])
+   GROUP BY client_id`;
 
 /* The funding card. "Prepare Next Round" fires when it sits on the Approved
    stage of the card-stacking board. cards stores ids, so the two keys the
@@ -255,6 +274,17 @@ const BALANCES_SQL = `
      AND client_id = ANY($2::uuid[])
      AND balance_due > 0`;
 
+const OPEN_PAYMENT_LINK_STATUSES = Object.freeze(["created", "sent"]);
+
+const PAYMENT_LINKS_SQL = `
+  SELECT client_id, id, purpose, description, amount_cents, status, paid_at
+    FROM payment_links
+   WHERE org_id = $1::uuid
+     AND client_id = ANY($2::uuid[])
+     AND status = ANY($3::text[])
+     AND paid_at IS NULL
+     AND COALESCE(is_demo, false) = false`;
+
 /**
  * gatherListSignals — every derivation signal for a whole page of clients, in
  * one round of parallel reads. Returns a Map keyed by client id.
@@ -272,7 +302,8 @@ export async function gatherListSignals(db, { orgId, clientIds } = {}) {
   const args = [orgId, ids];
   const [
     consentRows, crsRows, inquiryRows, docRows,
-    respRows, caseRows, cardRows, taskRows, roundRows, balanceRows
+    respRows, caseRows, letterRows, cardRows, taskRows, roundRows, balanceRows,
+    linkRows, paintedCrsRows
   ] = await Promise.all([
     safeRows(db, consentSql(), [orgId, ids, SOFT_PULL_KIND], "consent"),
     safeRows(db, REAL_CRS_SQL, args, "crs_results"),
@@ -280,10 +311,13 @@ export async function gatherListSignals(db, { orgId, clientIds } = {}) {
     safeRows(db, DOCUMENTS_SQL, args, "documents"),
     safeRows(db, DISPUTE_RESPONSES_SQL, args, "dispute_responses"),
     safeRows(db, DISPUTE_CASES_SQL, args, "dispute_cases"),
+    safeRows(db, REPAIR_LETTERS_SQL, args, "dispute_letters"),
     safeRows(db, CARD_SQL, [orgId, ids, CARD_STACKING_PIPELINE], "cards"),
     safeRows(db, OPEN_TASKS_SQL, args, "tasks"),
     safeRows(db, ROUNDS_SQL, args, "funding_rounds"),
-    safeRows(db, BALANCES_SQL, args, "v_invoice_balance")
+    safeRows(db, BALANCES_SQL, args, "v_invoice_balance"),
+    safeRows(db, PAYMENT_LINKS_SQL, [orgId, ids, OPEN_PAYMENT_LINK_STATUSES], "payment_links"),
+    safeRows(db, PAINTED_CRS_SQL, args, "crs_results_painted")
   ]);
 
   const consentBy = byClient(consentRows);
@@ -292,10 +326,13 @@ export async function gatherListSignals(db, { orgId, clientIds } = {}) {
   const docsBy = byClient(docRows);
   const respBy = byClient(respRows);
   const caseBy = byClient(caseRows);
+  const letterBy = byClient(letterRows);
   const cardBy = byClient(cardRows);
   const taskBy = byClient(taskRows);
   const roundBy = byClient(roundRows);
   const balanceBy = byClient(balanceRows);
+  const linkBy = byClient(linkRows);
+  const paintedCrsBy = byClient(paintedCrsRows);
   const now = new Date();
 
   for (const id of ids) {
@@ -317,9 +354,17 @@ export async function gatherListSignals(db, { orgId, clientIds } = {}) {
     if (docRows !== null) signals.doc_packet = checkDocPacket(docsBy.get(id) || []);
     if (respRows !== null) signals.dispute_responses = respBy.get(id) || [];
     if (caseRows !== null) signals.dispute_cases = caseBy.get(id) || [];
+    if (letterRows !== null) {
+      const row = (letterBy.get(id) || [])[0];
+      signals.repair_letters = {
+        letters_ready: row ? Number(row.letters_ready) : 0,
+        letters_sent: row ? Number(row.letters_sent) : 0
+      };
+    }
     if (cardRows !== null) signals.card = (cardBy.get(id) || [])[0] || null;
     if (taskRows !== null) signals.tasks = taskBy.get(id) || [];
     if (roundRows !== null) signals.funding_rounds = roundBy.get(id) || [];
+    if (linkRows !== null) signals.payment_links = linkBy.get(id) || [];
 
     /* openBlockers() (src/http/client-detail.mjs:169-215) is REUSED, not
        rebuilt — the same function the control panel already paints. It also
@@ -332,7 +377,8 @@ export async function gatherListSignals(db, { orgId, clientIds } = {}) {
       signals.blocker_inputs = {
         tasks: taskBy.get(id) || [],
         fundingRounds: roundBy.get(id) || [],
-        invoices: balanceBy.get(id) || []
+        invoices: balanceBy.get(id) || [],
+        crsResults: paintedCrsRows === null ? undefined : (paintedCrsBy.get(id) || [])
       };
     } else {
       /* A FAILED BLOCKER READ IS NOT "NOTHING IS BLOCKING THIS FILE".
@@ -382,7 +428,8 @@ export function signalsForListRow(row, batched) {
       client: { custom_fields: customFields },
       tasks: inputs.tasks,
       fundingRounds: inputs.fundingRounds,
-      invoices: inputs.invoices
+      invoices: inputs.invoices,
+      crsResults: inputs.crsResults
     });
   }
   return signals;
@@ -403,7 +450,7 @@ export async function gatherDetailSignals(db, { orgId, clientId, consentStatus }
   const args = [orgId, ids];
   const out = {};
 
-  const [consent, crsRows, docRows, respRows, caseRows, cardRows] = await Promise.all([
+  const [consent, crsRows, docRows, respRows, caseRows, letterRows, cardRows, linkRows] = await Promise.all([
     (async () => {
       try {
         return await consentStatus(db, { orgId, clientId, kind: SOFT_PULL_KIND });
@@ -416,7 +463,9 @@ export async function gatherDetailSignals(db, { orgId, clientId, consentStatus }
     safeRows(db, DOCUMENTS_SQL, args, "documents"),
     safeRows(db, DISPUTE_RESPONSES_SQL, args, "dispute_responses"),
     safeRows(db, DISPUTE_CASES_SQL, args, "dispute_cases"),
-    safeRows(db, CARD_SQL, [orgId, ids, CARD_STACKING_PIPELINE], "cards")
+    safeRows(db, REPAIR_LETTERS_SQL, args, "dispute_letters"),
+    safeRows(db, CARD_SQL, [orgId, ids, CARD_STACKING_PIPELINE], "cards"),
+    safeRows(db, PAYMENT_LINKS_SQL, [orgId, ids, OPEN_PAYMENT_LINK_STATUSES], "payment_links")
   ]);
 
   // Left absent, never defaulted, when the read failed. See the header.
@@ -425,7 +474,15 @@ export async function gatherDetailSignals(db, { orgId, clientId, consentStatus }
   if (docRows !== null) out.doc_packet = checkDocPacket(docRows);
   if (respRows !== null) out.dispute_responses = respRows;
   if (caseRows !== null) out.dispute_cases = caseRows;
+  if (letterRows !== null) {
+    const row = letterRows[0];
+    out.repair_letters = {
+      letters_ready: row ? Number(row.letters_ready) : 0,
+      letters_sent: row ? Number(row.letters_sent) : 0
+    };
+  }
   if (cardRows !== null) out.card = cardRows[0] || null;
+  if (linkRows !== null) out.payment_links = linkRows;
 
   return out;
 }

@@ -37,7 +37,8 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 export const DEFAULT_TTL_SECONDS = 60 * 60 * 24 * 30;  // 30 days
-export const MAX_TTL_SECONDS = 60 * 60 * 24 * 90;      // 90 days
+export const MAX_TTL_SECONDS = 60 * 60 * 24 * 365 * 10; // 10 years — employment links must not die mid-hire
+export const EMPLOYMENT_LINK_TTL_SECONDS = MAX_TTL_SECONDS;
 const SCHEME = "c1";
 
 /**

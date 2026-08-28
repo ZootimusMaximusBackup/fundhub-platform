@@ -18,7 +18,7 @@ flowchart TD
     WHO -->|Yes| CAN[Can reach]
     CAN --> A_auth[Signing in and out — 6 routes]
     CAN --> A_brand[brand — 1 route]
-    CAN --> A_campaigns[Campaigns — 8 routes]
+    CAN --> A_campaigns[Campaigns — 9 routes]
     CAN --> A_climate[climate — 2 routes]
     CAN --> A_contracts[contracts — 1 route]
     CAN --> A_creative[Creative Factory — 7 routes]
@@ -55,7 +55,7 @@ flowchart TD
 
 ## What they can reach
 
-**54 of 195 routes.**
+**55 of 196 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -71,6 +71,7 @@ flowchart TD
 | `/api/campaigns/detail` | GET | partner, staff |
 | `/api/campaigns/fatigue` | GET | partner, staff |
 | `/api/campaigns/list` | GET | partner, staff |
+| `/api/campaigns/meta-agency` | POST | partner, staff |
 | `/api/campaigns/spend` | GET | partner, staff |
 | `/api/campaigns/sync` | POST | partner, staff |
 | `/api/campaigns/write` | POST | partner, staff |
@@ -86,7 +87,7 @@ flowchart TD
 | `/api/creative/library` | GET | partner, staff |
 | `/api/creative/run` | POST | partner, staff |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
-| `/api/gifts/message-blaster` | GET, HEAD | affiliate, partner |
+| `/api/gifts/message-blaster` | GET, HEAD | staff, affiliate, partner |
 | `/api/health` | — | anyone |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
@@ -121,7 +122,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**141 of 195 routes.**
+**141 of 196 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

@@ -176,7 +176,8 @@ Talk like a person, not a script robot. Go slow. Listen more than you talk.
    (Do **not** say “Do you have $3,000 right now?” as the first money question. **[Alec]** He said scary money questions too early kill the talk. We agree on the *soft ask*. We still must learn if they can pay cash.)
 6. “Do you have a business, or is this personal?”  
    (If personal: “That’s fine. You do not need a business to talk to us.” **[Fundhub]**)
-7. “Is this a now thing, or a later thing?”
+7. **Required if they add a company on the soft-pull form:** they type **when that company was incorporated** (month and year is enough). You must **verify** that date. Do **not** take their word. Check the state filing or the articles. Then check **Incorporation date verified** on the call card. A wrong date can raise or kill the pre-approval number. **[Fundhub]**
+8. “Is this a now thing, or a later thing?”
 
 If they are a **maybe** on funding, still finish the listen. Then pick a smaller yes ($32 or a course), not a fake “you’re approved.”
 
@@ -480,6 +481,7 @@ If they agree on the call: stay on until they pay, or set one clear next time. T
 | Made-up wins, “thousands of clients,” screenshots you do not have | Lie. |
 | “This isn’t really debt.” | It can be. |
 | “You must have an LLC / aged corp.” | Not our rule. |
+| Take their incorporation date as fact | You must verify it. The form date is their claim. |
 | “I can finance the deposit / the repair.” | False. |
 | “The deposit is extra on top of 10%.” | False. |
 

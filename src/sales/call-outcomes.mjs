@@ -28,7 +28,8 @@ const CHECKLIST_KEYS = [
   "call_recorded",
   "personal_guarantee",
   "month_14_cliff",
-  "bank_decides"
+  "bank_decides",
+  "incorporation_verified"
 ];
 
 function normalizeChecklist(raw) {

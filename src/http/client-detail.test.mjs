@@ -188,6 +188,37 @@ describe("client detail derivations", () => {
     assert.match(overdue.detail, /USD 250\.00/);
   });
 
+  test("painted scores hide the stale CRS-incomplete task", () => {
+    const painted = [{
+      result: { scores: { ex: 718, eq: 724, tu: 731 }, environment: "simulated" },
+      created_at: "2026-08-27T00:00:00Z"
+    }];
+    const b = openBlockers({
+      client: { custom_fields: {} },
+      tasks: [
+        { id: "t1", title: "Cannot start funding — CRS incomplete", done: false, source_workflow: "c-05-pre-funding-review" },
+        { id: "t2", title: "Provision funding inbox", done: false }
+      ],
+      fundingRounds: [{ id: "r1", round_number: 1, hold_reason: "Awaiting CRS" }],
+      invoices: [],
+      crsResults: painted
+    });
+    assert.equal(b.some((x) => /CRS incomplete/i.test(x.label || "")), false);
+    assert.equal(b.some((x) => x.kind === "funding_hold"), false);
+    assert.equal(b.some((x) => x.label === "Provision funding inbox"), true);
+  });
+
+  test("without painted scores the CRS-incomplete task still blocks", () => {
+    const b = openBlockers({
+      client: { custom_fields: {} },
+      tasks: [{ id: "t1", title: "Cannot start funding — CRS incomplete", done: false }],
+      fundingRounds: [],
+      invoices: []
+    });
+    assert.equal(b.length, 1);
+    assert.match(b[0].label, /CRS incomplete/);
+  });
+
   test("a zero balance and a paid gate produce no blocker", () => {
     const b = openBlockers({
       client: { custom_fields: { crs_paid: true, deposit_paid: true, sale_closed: true } },
@@ -269,12 +300,14 @@ describe("client detail derivations", () => {
       businesses: [
         {
           name: "Acme LLC",
+          age_months: 30,
           entity_data: {
             state: "AZ",
             ein: "12-3456789",
             address_line1: "1 Main St",
             city: "Phoenix",
             postal_code: "85001",
+            incorporated_date: "2024-02",
             scores: { intelliscore: 72, fsr: 40 }
           }
         },
@@ -301,6 +334,10 @@ describe("client detail derivations", () => {
     assert.equal(hit.businesses[0].extra_owner_name, null);
     assert.equal(hit.businesses[0].extra_owners_warning, false);
     assert.equal(hit.businesses[0].address, "1 Main St Phoenix, AZ 85001");
+    assert.equal(hit.businesses[0].incorporated_date, "2024-02");
+    assert.equal(hit.businesses[0].age_months, 30);
+    assert.equal(hit.businesses[1].incorporated_date, null);
+    assert.equal(hit.businesses[1].age_months, null);
     assert.equal(hit.businesses[1].name, "Beta Inc");
     assert.equal(hit.businesses[1].state, "NV");
     assert.equal(hit.businesses[1].ein, "98-7654321");

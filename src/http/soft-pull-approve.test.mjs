@@ -2,6 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   parseSoftPullBusinesses,
+  parseIncorporatedDate,
+  ageMonthsFromIncorporated,
   normalizeSoftPullEin,
   replaceSoftPullBusinesses,
   ensureSoftPullCheckout
@@ -17,6 +19,7 @@ function row(over = {}) {
     state: "az",
     postal_code: "85001",
     ein: "123456789",
+    incorporated_date: "2020-01",
     ...over
   };
 }
@@ -41,6 +44,8 @@ test("parseSoftPullBusinesses: accepts complete rows including 6+", () => {
   assert.equal(one[0].state, "AZ");
   assert.equal(one[0].ein, "12-3456789");
   assert.equal(one[0].extra_owner_name, null);
+  assert.equal(one[0].incorporated_date, "2020-01");
+  assert.equal(one[0].age_months, ageMonthsFromIncorporated("2020-01"));
   assert.equal(softPullTotalCents(one.length), 4200);
 
   const six = parseSoftPullBusinesses(Array.from({ length: 6 }, (_, i) => row({
@@ -65,6 +70,29 @@ test("parseSoftPullBusinesses: EIN is required when a row is present", () => {
   );
 });
 
+test("parseIncorporatedDate accepts month/year or full date", () => {
+  assert.equal(parseIncorporatedDate("2020-01"), "2020-01");
+  assert.equal(parseIncorporatedDate("2020-01-15"), "2020-01-15");
+  assert.equal(parseIncorporatedDate("2020-13"), null);
+  assert.equal(parseIncorporatedDate("2020-02-30"), null);
+  assert.equal(parseIncorporatedDate(""), null);
+});
+
+test("ageMonthsFromIncorporated does not invent a default", () => {
+  assert.equal(ageMonthsFromIncorporated(""), null);
+  assert.equal(ageMonthsFromIncorporated("not-a-date"), null);
+  assert.equal(ageMonthsFromIncorporated("2099-01", new Date("2026-08-25T00:00:00Z")), null);
+  assert.equal(ageMonthsFromIncorporated("2024-08", new Date("2026-08-25T00:00:00Z")), 24);
+  assert.equal(ageMonthsFromIncorporated("2024-08-26", new Date("2026-08-25T00:00:00Z")), 23);
+});
+
+test("parseSoftPullBusinesses: incorporation date is required when a row is present", () => {
+  assert.throws(
+    () => parseSoftPullBusinesses([row({ incorporated_date: "" })]),
+    (e) => e instanceof ConsentError && e.code === "business_incorporated_required"
+  );
+});
+
 test("parseSoftPullBusinesses: refuses more than 20", () => {
   const rows = Array.from({ length: 21 }, (_, i) => row({
     name: "Biz " + i,
@@ -83,13 +111,13 @@ test("parseSoftPullBusinesses: incomplete row fails", () => {
   );
 });
 
-test("replaceSoftPullBusinesses writes ein and extra_owner_name into entity_data", async () => {
+test("replaceSoftPullBusinesses writes ein, incorporated_date, and age_months", async () => {
   const inserts = [];
   const db = {
     async query(sql, params) {
       if (/DELETE FROM businesses/i.test(sql)) return { rows: [] };
       if (/INSERT INTO businesses/i.test(sql)) {
-        inserts.push(JSON.parse(params[3]));
+        inserts.push({ age_months: params[3], entity: JSON.parse(params[4]) });
         return { rows: [] };
       }
       throw new Error("unexpected: " + String(sql).slice(0, 80));
@@ -102,11 +130,13 @@ test("replaceSoftPullBusinesses writes ein and extra_owner_name into entity_data
     businesses: parsed
   });
   assert.equal(inserts.length, 1);
-  assert.equal(inserts[0].source, "soft_pull_approve");
-  assert.equal(inserts[0].ein, "12-3456789");
-  assert.equal(inserts[0].extra_owner_name, "Pat Lee");
-  assert.equal(inserts[0].address_line1, "1 Main St");
-  assert.equal(inserts[0].state, "AZ");
+  assert.equal(inserts[0].age_months, parsed[0].age_months);
+  assert.equal(inserts[0].entity.source, "soft_pull_approve");
+  assert.equal(inserts[0].entity.ein, "12-3456789");
+  assert.equal(inserts[0].entity.incorporated_date, "2020-01");
+  assert.equal(inserts[0].entity.extra_owner_name, "Pat Lee");
+  assert.equal(inserts[0].entity.address_line1, "1 Main St");
+  assert.equal(inserts[0].entity.state, "AZ");
 });
 
 test("ensureSoftPullCheckout reuses matching open link", async () => {

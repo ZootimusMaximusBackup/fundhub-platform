@@ -44,6 +44,7 @@ export const OBSERVATION_SOURCES = Object.freeze([
 export const LENDER_CSV_COLUMNS = Object.freeze([
   "lender_table",
   "name",
+  "logo_path",
   "product_name",
   "application_url",
   "lender_row_url",

@@ -5,13 +5,14 @@ import {
   buildCloserDeck,
   selectedOfferKey,
   generateDeckLetters,
+  sendDeckPayLink,
   CloserDeckError
 } from "./closer-deck.mjs";
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const CID = "22222222-2222-4222-8222-222222222222";
 
-function fakeDb({ client = null, crs = null } = {}) {
+function fakeDb({ client = null, crs = null, businesses = [] } = {}) {
   return {
     async query(sql) {
       const s = String(sql);
@@ -20,6 +21,9 @@ function fakeDb({ client = null, crs = null } = {}) {
       }
       if (/FROM crs_results/i.test(s)) {
         return { rows: crs ? [crs] : [] };
+      }
+      if (/FROM businesses/i.test(s)) {
+        return { rows: businesses };
       }
       if (/FROM payment_links/i.test(s)) return { rows: [] };
       if (/FROM soft_pull_requests/i.test(s)) return { rows: [] };
@@ -107,6 +111,32 @@ test("stored closer payload maps FICO, total, reasons — no invented numbers", 
   assert.equal(out.income_estimates.equifax.annual, 81000);
 });
 
+test("two saved companies raise the stored pre-approval vs one, all else equal", async () => {
+  const crs = {
+    outcome_tier: "FULL_FUNDING",
+    created_at: "2026-08-16T00:00:00Z",
+    result: {
+      environment: "production",
+      outcome: "FULL_FUNDING",
+      preapprovals: { totalPersonal: 100000, totalBusiness: 50000, totalCombined: 150000 },
+      scores: { perBureau: { ex: 720, tu: 710, eq: 705 } }
+    }
+  };
+  const one = await buildCloserDeck(fakeDb({
+    client: { ...CLIENT, outcome_tier: "FULL_FUNDING" },
+    crs,
+    businesses: [{ id: "b1" }]
+  }), { orgId: ORG, clientId: CID });
+  const two = await buildCloserDeck(fakeDb({
+    client: { ...CLIENT, outcome_tier: "FULL_FUNDING" },
+    crs,
+    businesses: [{ id: "b1" }, { id: "b2" }]
+  }), { orgId: ORG, clientId: CID });
+  assert.equal(one.engine.total, 150000);
+  assert.equal(two.engine.total, 200000);
+  assert.ok(two.engine.total > one.engine.total);
+});
+
 test("empty CRS object is unavailable, not zeros", async () => {
   const out = await buildCloserDeck(fakeDb({ client: CLIENT, crs: { result: {}, outcome_tier: null } }), {
     orgId: ORG, clientId: CID
@@ -122,6 +152,32 @@ test("selectedOfferKey: funding vs descent vs education", () => {
   assert.equal(selectedOfferKey({ edu: false, forceRepair: true, tier: "FULL_FUNDING", rung: 1 }), "REPAIR_TRIAL");
   assert.equal(selectedOfferKey({ edu: true, forceRepair: false, tier: "REPAIR_ONLY", rung: 0 }), "FUNDING_MASTERY");
   assert.equal(selectedOfferKey({ edu: true, forceRepair: false, tier: "REPAIR_ONLY", rung: 1 }), "UWIQ_DELIVERABLES");
+});
+
+test("first-sale offers skip the upsell gate; deliverables still require it", async () => {
+  const db = fakeDb({ client: CLIENT });
+  const args = {
+    orgId: ORG,
+    clientId: CID,
+    staffId: "s1",
+    checkoutBaseUrl: "https://pay.example/checkout",
+    env: {}
+  };
+  for (const offerKey of ["FUNDING_DFY", "REPAIR_DFY", "REPAIR_TRIAL", "FUNDING_MASTERY"]) {
+    await assert.rejects(
+      () => sendDeckPayLink(db, { ...args, offerKey }),
+      (e) => e instanceof CloserDeckError && e.code !== "sale_motion_required",
+      offerKey + " must mint as a first sale"
+    );
+  }
+  await assert.rejects(
+    () => sendDeckPayLink(db, { ...args, offerKey: "UWIQ_DELIVERABLES" }),
+    (e) => e instanceof CloserDeckError && e.code === "sale_motion_required" && e.status === 400
+  );
+  await assert.rejects(
+    () => sendDeckPayLink(db, { ...args, offerKey: "UWIQ_DELIVERABLES", saleMotion: "upsell" }),
+    (e) => e instanceof CloserDeckError && e.code !== "sale_motion_required"
+  );
 });
 
 test("generateDeckLetters refuses the qualified funding offer", async () => {

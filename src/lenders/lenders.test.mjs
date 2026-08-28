@@ -81,6 +81,7 @@ test("CSV round-trip keeps lender_table and name", () => {
     {
       lender_table: "BizLOC_Stated",
       name: "Example Bank",
+      logo_path: "/assets/lenders/example-bank.png",
       bureaus_pulled: "EQ",
       priority_tier: 2,
       active: true
@@ -91,6 +92,7 @@ test("CSV round-trip keeps lender_table and name", () => {
   assert.equal(rows.length, 1);
   assert.equal(rows[0].lender_table, "BizLOC_Stated");
   assert.equal(rows[0].name, "Example Bank");
+  assert.equal(rows[0].logo_path, "/assets/lenders/example-bank.png");
   assert.equal(rows[0].priority_tier, 2);
 });
 

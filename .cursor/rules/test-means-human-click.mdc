@@ -21,6 +21,6 @@ Automated checks still run. They are not the finish.
 - A green `npm test` alone
 - A green Playwright run alone, if nobody clicked the page like a person
 
-Live Playwright is the score gate (see `live-playwright-100-before-manual.mdc`). It is still a script. After **100/100**, the agent still does the human click path. Then Chris does exactly one manual pass.
+Live Playwright is the score gate (see `live-playwright-100-before-manual.mdc`). It is still a script. After **100/100**, the agent still does the human click path. **Owner override (2026-08-25):** do not ask him. Agent walks it. Only if he *offers* a pass, then he does one.
 
 Fake e2e emails only: `e2e+aff-*@`, `e2e+wl-*@`. Never print passwords.

@@ -25,11 +25,11 @@ flowchart TD
     CAN --> A_read[Reading data — 2 routes]
     CAN --> A_top_level[Everything else — 5 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 170 routes]
+    WHO -->|Yes| CANT[Blocked — 171 routes]
     CANT --> B_auth[Signing in and out — 5 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_brand[brand — 1 blocked]
-    CANT --> B_campaigns[Campaigns — 8 blocked]
+    CANT --> B_campaigns[Campaigns — 9 blocked]
     CANT --> B_chat[chat — 4 blocked]
     CANT --> B_company_brain[company-brain — 4 blocked]
     CANT --> B_consent[consent — 1 blocked]
@@ -54,7 +54,7 @@ flowchart TD
 
 ## What they can reach
 
-**25 of 195 routes.**
+**25 of 196 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -69,7 +69,7 @@ flowchart TD
 | `/api/climate/geocode` | OPTIONS | anyone |
 | `/api/contracts/sign` | GET, POST | anyone |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
-| `/api/gifts/message-blaster` | GET, HEAD | affiliate, partner |
+| `/api/gifts/message-blaster` | GET, HEAD | staff, affiliate, partner |
 | `/api/health` | — | anyone |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
@@ -91,7 +91,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**170 of 195 routes.**
+**171 of 196 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -115,6 +115,7 @@ flowchart TD
 | `/api/campaigns/detail` | GET | partner, staff |
 | `/api/campaigns/fatigue` | GET | partner, staff |
 | `/api/campaigns/list` | GET | partner, staff |
+| `/api/campaigns/meta-agency` | POST | partner, staff |
 | `/api/campaigns/spend` | GET | partner, staff |
 | `/api/campaigns/sync` | POST | partner, staff |
 | `/api/campaigns/write` | POST | partner, staff |

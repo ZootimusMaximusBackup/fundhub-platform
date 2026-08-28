@@ -1,11 +1,10 @@
 // Synthesize a cited answer from retrieved chunks.
-// The model call goes through src/agents/model.mjs (Claude / Anthropic Messages
-// API) — the one completion path in this repo. Embeddings stay on OpenAI
-// (see embed.mjs); Anthropic has no embeddings API.
+// The model call goes through src/agents/model.mjs (OpenAI first, Claude
+// fallback). Embeddings stay on OpenAI (see embed.mjs).
 // If no API key (or the model fails), fall back to an extractive answer —
 // never invent a document that was not retrieved.
 
-import { callModel } from "../agents/model.mjs";
+import { callModel, liveModelProvider } from "../agents/model.mjs";
 
 function citationsFrom(chunks) {
   return (chunks || []).map((c, i) => ({
@@ -58,7 +57,7 @@ export async function synthesizeAnswer({
   const cites = citationsFrom(chunks);
   if (!cites.length) return extractiveAnswer(query, chunks);
 
-  if (!env.ANTHROPIC_API_KEY) return extractiveAnswer(query, chunks);
+  if (!liveModelProvider(env)) return extractiveAnswer(query, chunks);
 
   const context = cites.map((c) =>
     `[${c.n}] file="${c.fileName}" tier=${c.accessTier || "?"}\n${c.excerpt}`

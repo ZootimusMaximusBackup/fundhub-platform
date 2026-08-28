@@ -136,6 +136,25 @@ describe("POST /api/closer-deck", () => {
     assert.equal(res.body.error, "commas_not_configured");
   });
 
+  test("first-sale offers skip sale_motion_required; deliverables still require it", async () => {
+    process.env.COMMAS_CHECKOUT_BASE_URL = "https://pay.example/checkout";
+    for (const key of ["FUNDING_DFY", "REPAIR_DFY", "REPAIR_TRIAL", "FUNDING_MASTERY"]) {
+      const res = await post({
+        action: "send_pay_link",
+        client_id: CID,
+        offer_key: key
+      });
+      assert.notEqual(res.body.error, "sale_motion_required", key);
+    }
+    const blocked = await post({
+      action: "send_pay_link",
+      client_id: CID,
+      offer_key: "UWIQ_DELIVERABLES"
+    });
+    assert.equal(blocked.statusCode, 400);
+    assert.equal(blocked.body.error, "sale_motion_required");
+  });
+
   test("soft pull without Commas config is 503", async () => {
     const res = await post({
       action: "send_soft_pull",

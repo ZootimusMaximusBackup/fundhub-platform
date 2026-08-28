@@ -8,6 +8,7 @@ import { matchForClient } from "../lenders/store.mjs";
 import { triMerge } from "../http/client-detail.mjs";
 import { toBureaus } from "../underwrite/adapter.mjs";
 import { computeUnderwrite } from "../underwrite/engine.mjs";
+import { applyStackedBusinessFunding } from "../underwrite/business-funding.mjs";
 
 function money(n) {
   if (n == null || !Number.isFinite(Number(n))) return null;
@@ -48,6 +49,7 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
     crs,
     tradelines,
     liabilities,
+    businesses,
     underwriteHint,
     conv,
     messages,
@@ -100,6 +102,12 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
       `SELECT * FROM card_liabilities
         WHERE client_id = $1 AND org_id = $2
         ORDER BY as_of DESC`,
+      [clientId, orgId]
+    ),
+    db.query(
+      `SELECT age_months FROM businesses
+        WHERE client_id = $1 AND org_id = $2
+        ORDER BY created_at ASC`,
       [clientId, orgId]
     ),
     db.query(
@@ -165,11 +173,15 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
     tradelines: tradelines.rows,
     liabilities: liabilities.rows,
     crsResults: crs.rows,
-    customFields: client.custom_fields || {}
+    customFields: client.custom_fields || {},
+    businesses: businesses.rows
   });
-  const underwriteData = computeUnderwrite(
-    underwriteAdapter.bureaus,
-    underwriteAdapter.businessAgeMonths
+  const underwriteData = applyStackedBusinessFunding(
+    computeUnderwrite(
+      underwriteAdapter.bureaus,
+      underwriteAdapter.businessAgeMonths
+    ),
+    underwriteAdapter.businessAges
   );
   const precall = buildPrecall({
     client,
@@ -260,7 +272,8 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
         { id: "recorded", label: "Call is recorded" },
         { id: "personal_guarantee", label: "Personal guarantee" },
         { id: "month14", label: "Month-14 cliff" },
-        { id: "bank_decides", label: "Bank decides, not us" }
+        { id: "bank_decides", label: "Bank decides, not us" },
+        { id: "incorporation_verified", label: "Incorporation date verified — do not take their word" }
       ],
       never: ["guaranteed", "won't affect credit", "we have relationships", "0% forever"],
       recording_metrics: {

@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <title>Fundhub — Pipeline</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1591,6 +1594,8 @@ restore();
         bizSec.appendChild(rowAlways("Business" + n, row.name));
         bizSec.appendChild(rowAlways("State" + n, row.state));
         bizSec.appendChild(rowAlways("EIN" + n, row.ein));
+        bizSec.appendChild(rowAlways("Incorporated" + n, row.incorporated_date));
+        bizSec.appendChild(rowAlways("Age (months)" + n, row.age_months));
         if (row.address) bizSec.appendChild(rowAlways("Address" + n, row.address));
         if (row.extra_owners_warning) {
           bizSec.appendChild(rowAlways(

@@ -67,7 +67,7 @@ let plan;
 
 /* Every statement the handler ran, in order. The count is the whole point of
    the opt-in tests below: this endpoint made 3 reads before this work, and the
-   fulfillment layer adds 11 more. Those 11 must only happen when asked. */
+   fulfillment layer adds 13 more. Those 13 must only happen when asked. */
 let queries;
 
 function freshPlan() {
@@ -89,7 +89,9 @@ function freshPlan() {
     disputeResponses: [],
     disputeCases: [],
     cards: [],
+    repairLetters: [],
     openTasks: [],
+    paymentLinks: [],
     rollupRow: {
       total_clients: 0, needs_pull: 0, action_needed: 0,
       total_prequal: null, total_prequal_clients: 0
@@ -126,6 +128,7 @@ async function stubQuery(sql, params) {
   if (/FROM documents/.test(text)) return rowsOrThrow(plan.documents, "documents");
   if (/FROM dispute_responses/.test(text)) return rowsOrThrow(plan.disputeResponses, "dispute_responses");
   if (/FROM dispute_cases/.test(text)) return rowsOrThrow(plan.disputeCases, "dispute_cases");
+  if (/FROM dispute_letters/.test(text)) return rowsOrThrow(plan.repairLetters, "dispute_letters");
   if (/FROM cards ca/.test(text)) return rowsOrThrow(plan.cards, "cards");
   if (/FROM tasks\b/.test(text) && /done = false/.test(text)) return rowsOrThrow(plan.openTasks, "tasks");
   if (/FROM funding_rounds/.test(text) && /client_id = ANY/.test(text)) {
@@ -133,6 +136,9 @@ async function stubQuery(sql, params) {
   }
   if (/FROM v_invoice_balance/.test(text) && /client_id = ANY/.test(text)) {
     return rowsOrThrow(plan.invoices, "v_invoice_balance");
+  }
+  if (/FROM payment_links/.test(text) && /client_id = ANY/.test(text)) {
+    return rowsOrThrow(plan.paymentLinks, "payment_links");
   }
 
   // ── everything the two endpoints already read ────────────────────────────
@@ -244,6 +250,32 @@ describe("dashboard reads: the fulfillment next action", () => {
     assert.equal(r.body.next_action_degraded, false);
   });
 
+  test("unpaid Funding Mastery is Collect payment, not No step applies", async () => {
+    plan.detailRow = detailRow({
+      outcome_tier: null,
+      custom_fields: { crs_status: "Complete" }
+    });
+    plan.consentRows = [];
+    plan.realCrsCounts = [{ client_id: CLIENT_ID, n: 1 }];
+    plan.paymentLinks = [{
+      client_id: CLIENT_ID,
+      description: "Funding Mastery course (A to Z)",
+      status: "sent",
+      amount_cents: 500000,
+      paid_at: null
+    }];
+
+    const r = res();
+    await clientHandler(req({ id: CLIENT_ID }), r);
+
+    assert.equal(r.code, 200, JSON.stringify(r.body));
+    assert.equal(r.body.next_action && r.body.next_action.key, "collect_payment",
+      "Course Horse with unpaid Mastery must say Collect payment. Got: " +
+      JSON.stringify(r.body.next_action));
+    assert.equal(r.body.next_action.label, "Collect payment");
+    assert.equal(r.body.next_action_degraded, false);
+  });
+
   test("client detail keeps every field it answered with before", async () => {
     plan.detailRow = detailRow();
     plan.consentRows = [consentRow()];
@@ -281,7 +313,7 @@ describe("dashboard reads: the fulfillment next action", () => {
   /* ── the derivation is OPT-IN ──────────────────────────────────────────────
      This endpoint is not only the Fulfillment lens. It is also the client
      picker on the Client Control Panel, and anything else that wants a list of
-     clients. The derivation costs eleven extra reads, so it happens only when
+     clients.      The derivation costs fourteen extra reads, so it happens only when
      the caller asks with ?fulfillment=1. Everyone else must get back exactly
      what they got before this work existed — same reads, same reply. */
 
@@ -303,7 +335,7 @@ describe("dashboard reads: the fulfillment next action", () => {
       "the tile count ran for a caller that never asked for tiles");
   });
 
-  test("somebody asked: the eleven extra reads happen, and only then", async () => {
+  test("somebody asked: the fourteen extra reads happen, and only then", async () => {
     plan.listRows = [listRow()];
     plan.consentRows = [consentRow()];
 
@@ -311,11 +343,12 @@ describe("dashboard reads: the fulfillment next action", () => {
     await clientsHandler(req(LENS), r);
 
     assert.equal(r.code, 200, JSON.stringify(r.body));
-    assert.equal(queries.length, 14,
-      "expected the 3 original reads plus the 11 the fulfillment layer adds, got " +
+    assert.equal(queries.length, 17,
+      "expected the 3 original reads plus the 14 the fulfillment layer adds, got " +
       queries.length);
     assert.ok(queries.some((q) => /FROM client_consents/.test(q)), "the consent read never ran");
     assert.ok(queries.some((q) => /AS total_clients/.test(q)), "the tile count never ran");
+    assert.ok(queries.some((q) => /FROM payment_links/.test(q)), "the unpaid Mastery read never ran");
   });
 
   test("nobody asked: the reply carries not one key more than it did before", async () => {
@@ -670,6 +703,48 @@ describe("dashboard reads: the fulfillment next action", () => {
       "is nothing at all. Got: " + JSON.stringify(r.body.next_action));
     assert.equal(r.body.next_action_degraded, false,
       "that nothing must be a truthful nothing, not a read that failed");
+  });
+
+  test("Send Letters beats Remove Inquiries on the list when letters are unsent", async () => {
+    plan.listRows = [listRow({
+      outcome_tier: "REPAIR_ONLY",
+      custom_fields_raw: {}
+    })];
+    plan.consentRows = [consentRow()];
+    plan.realCrsCounts = [{ client_id: CLIENT_ID, n: 1 }];
+    plan.inquiryCases = [{ client_id: CLIENT_ID, case_status: "Queued", fraud_alert_after: null }];
+    plan.repairLetters = [{ client_id: CLIENT_ID, letters_ready: 4, letters_sent: 0 }];
+
+    const r = res();
+    await clientsHandler(req(LENS), r);
+
+    assert.equal(r.code, 200, JSON.stringify(r.body));
+    assert.equal(r.body.clients[0].next_action && r.body.clients[0].next_action.key, "send_letters",
+      "a leftover inquiry case hid the repair send job: " +
+      JSON.stringify(r.body.clients[0].next_action));
+    assert.equal(r.body.clients[0].next_action.label, "Send Letters");
+  });
+
+  test("Send Letters beats Remove Inquiries on the control panel when letters are unsent", async () => {
+    plan.detailRow = detailRow({
+      outcome_tier: "REPAIR_ONLY",
+      custom_fields: {}
+    });
+    plan.consentRows = [consentRow()];
+    plan.realCrsCounts = [{ client_id: CLIENT_ID, n: 1 }];
+    plan.inquiryCases = [{
+      client_id: CLIENT_ID, case_status: "Queued", fraud_alert_after: null,
+      requested_at: new Date("2026-08-01T00:00:00Z"), created_at: new Date("2026-08-01T00:00:00Z")
+    }];
+    plan.repairLetters = [{ client_id: CLIENT_ID, letters_ready: 4, letters_sent: 0 }];
+
+    const r = res();
+    await clientHandler(req({ id: CLIENT_ID }), r);
+
+    assert.equal(r.code, 200, JSON.stringify(r.body));
+    assert.equal(r.body.next_action && r.body.next_action.key, "send_letters",
+      "a leftover inquiry case hid the repair send job: " + JSON.stringify(r.body.next_action));
+    assert.equal(r.body.next_action.label, "Send Letters");
   });
 
   test("GATE B on the list: a tier nobody recorded gets no funding chip either", async () => {

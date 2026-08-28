@@ -116,8 +116,20 @@ test("verifySession looks the session up by hash and slides expiry in one statem
   assert.match(q.sql, /revoked_at IS NULL/, "revoked rows cannot match");
   assert.equal(q.params[0], hashToken(token));
   assert.deepEqual(out.staff, {
-    id: "staff-1", org_id: "org-1", role: "closer", email: "a@b.com", name: "A", status: "active"
+    id: "staff-1", org_id: "org-1", role: "closer", email: "a@b.com", name: "A", status: "active",
+    avatarUrl: null
   });
+});
+
+test("verifySession projects a set avatar_key into avatarUrl", async () => {
+  const token = newToken();
+  const db = fakeDb([[/WITH live AS/, [{
+    session_id: "sess-1", expires_at: new Date(), staff_id: "staff-1", org_id: "org-1",
+    role: "closer", email: "a@b.com", name: "A", status: "active", active_flag: null,
+    avatar_key: "netlify-blob://documents/staff-avatars/org-1/staff-1/deadbeef.png"
+  }]]]);
+  const out = await verifySession(db, token);
+  assert.equal(out.staff.avatarUrl, "/api/staff/avatar", "the frontend gets a path, never the raw storage key");
 });
 
 test("verifySession returns null when no live row matches", async () => {

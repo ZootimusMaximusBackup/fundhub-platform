@@ -388,7 +388,8 @@
           call_recorded: !!(document.getElementById("d1") && document.getElementById("d1").checked),
           personal_guarantee: !!(document.getElementById("d2") && document.getElementById("d2").checked),
           month_14_cliff: !!(document.getElementById("d3") && document.getElementById("d3").checked),
-          bank_decides: !!(document.getElementById("d4") && document.getElementById("d4").checked)
+          bank_decides: !!(document.getElementById("d4") && document.getElementById("d4").checked),
+          incorporation_verified: !!(document.getElementById("d5") && document.getElementById("d5").checked)
         },
         repair_referral: !!(document.getElementById("fh-repair-referral") && document.getElementById("fh-repair-referral").checked)
       };

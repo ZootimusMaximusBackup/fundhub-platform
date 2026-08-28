@@ -7,7 +7,7 @@
 //   - fail closed: caller keeps live access_tier at owner until auto/approve
 
 import { ACCESS_TIERS } from "./access.mjs";
-import { callModel } from "../agents/model.mjs";
+import { callModel, liveModelProvider } from "../agents/model.mjs";
 
 export const AUTO_TIERS = new Set(["public", "sales", "staff"]);
 export const REVIEW_TIERS = new Set(["owner", "affiliate"]);
@@ -127,7 +127,7 @@ export async function classifyWithModel(input = {}, {
   // If heuristic already found an auto tier, keep it — no spend.
   if (heuristic.autoAssignable) return heuristic;
 
-  if (!env.ANTHROPIC_API_KEY) return heuristic;
+  if (!liveModelProvider(env)) return heuristic;
 
   const res = await callModel({
     system:

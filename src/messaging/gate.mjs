@@ -142,6 +142,39 @@ export function inQuietHours(date, timeZone = QUIET_HOURS_TZ) {
   return hour >= QUIET_START_HOUR || hour < QUIET_END_HOUR;
 }
 
+/* Prove / sim identity. Quiet hours still bind every real customer. These
+   patterns are the plus-tags and agent self-loop used for fire proves — not
+   a force flag, and not a path a live client can opt into. */
+const AGENT_PROVE_PHONE_DIGITS = "16616054248";
+
+export function emailLooksLikeProveSim(email) {
+  const local = String(email || "").split("@")[0].toLowerCase();
+  if (!local) return false;
+  return local.startsWith("e2e+")
+    || local.includes("+sim-")
+    || local.includes("+colin-qa");
+}
+
+export function phoneIsAgentProveLine(phone) {
+  const digits = String(phone || "").replace(/\D/g, "");
+  if (!digits) return false;
+  return digits === AGENT_PROVE_PHONE_DIGITS || digits === "6616054248";
+}
+
+/** True only for a prove/sim file. The agent line alone is never enough. */
+export function isProveSimRecipient({ email } = {}) {
+  return emailLooksLikeProveSim(email);
+}
+
+export async function recipientSkipsQuietHours(db, clientId) {
+  if (!clientId) return false;
+  const { rows } = await db.query(
+    `SELECT email, phone FROM clients WHERE id = $1 LIMIT 1`,
+    [clientId]
+  );
+  return isProveSimRecipient(rows[0] || {});
+}
+
 /* gate(db, message, options) → { state, reasons[], task }
 
    message: {
@@ -211,10 +244,16 @@ async function run(db, message, { now = () => new Date(), timeZone = QUIET_HOURS
   // Texts only. Measured in Eastern at the moment of sending, which is also why
   // a message held here is held rather than failed: it becomes sendable on its
   // own at 11am without anyone editing it.
+  //
+  // Prove/sim plus-tag files are outside this rule so a night fire can be
+  // proven. Real customers still wait. Not a force / skipCompliance option.
   if (QUIET_HOURS_CHANNELS.has(channel) && inQuietHours(now(), timeZone)) {
-    reasons.push(r("quiet_hours", "tcpa",
-      `Text messages are not sent between ${QUIET_START_HOUR}:00 and ${QUIET_END_HOUR}:00 Eastern. This one is being held until the window opens.`,
-      { citation: "TCPA 47 C.F.R. 64.1200(c)(1)", retryable: true }));
+    const skip = await recipientSkipsQuietHours(db, clientId);
+    if (!skip) {
+      reasons.push(r("quiet_hours", "tcpa",
+        `Text messages are not sent between ${QUIET_START_HOUR}:00 and ${QUIET_END_HOUR}:00 Eastern. This one is being held until the window opens.`,
+        { citation: "TCPA 47 C.F.R. 64.1200(c)(1)", retryable: true }));
+    }
   }
 
   // ---- 3. Restricted words -------------------------------------------------
