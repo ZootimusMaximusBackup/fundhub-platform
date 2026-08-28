@@ -1,8 +1,11 @@
 # Homepage “any negatives?” — fixer 2026-08-25
 
-**Status:** claimed → shipping  
+**Status:** done — live  
 **Owner:** fundhub-fixer  
+**PR:** https://github.com/ZootimusMaximusBackup/fundhub-platform/pull/141 (merged `6b856e1d`)  
 **Named row:** homepage survey 750+ + business still MANUAL_REVIEW / thank-you because negatives was missing.
+
+**Live prove (agent click, 2026-08-25):** `https://fundhub.ai/#apply` showed “Any negatives on your credit report?”. 750+ / No / has business landed on `https://apply.fundhub.ai/funding-book-call` (“You Are Qualified.”). Live API same path: qualification PASS. No card charge. No live CRS.
 
 ## What we control
 
