@@ -126,7 +126,7 @@ export const OUTCOME = Object.freeze({
    and the gate's own wording says the opposite.
 
    So a text inside the window is never gated at all. It is put back on the queue
-   with its due time moved to the next 11:00 Eastern, no verdict is recorded, and
+   with its due time moved to the next 08:00 Arizona, no verdict is recorded, and
    it is gated fresh when it wakes — which is what the gate's header asks for
    anyway, since opt-out state must be read at the instant of sending and not
    eleven hours earlier.
@@ -171,7 +171,7 @@ export function nextQuietHoursEnd(from, timeZone = QUIET_HOURS_TZ) {
   const hour = +p.hour % 24;
 
   // Before the window opens today → today. Otherwise (we are at or past the
-  // 23:00 start) → tomorrow. Date.UTC normalises a day past the month's end.
+  // 20:00 start) → tomorrow. Date.UTC normalises a day past the month's end.
   const dayShift = hour < QUIET_END_HOUR ? 0 : 1;
   const wall = Date.UTC(+p.year, +p.month - 1, +p.day + dayShift, QUIET_END_HOUR, 0, 0);
 

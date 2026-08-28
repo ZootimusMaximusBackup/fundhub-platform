@@ -73,10 +73,10 @@ test("AG-04 row wins over the vendor file when it is ready", async () => {
   assert.equal(placed[0].agent.prompt, dbPrompt);
 });
 
-test("quiet-hours-blocks-or-delays-josh: 11pm Eastern waits until 11am, then dials once", async () => {
+test("quiet-hours-blocks-or-delays-josh: 8pm Arizona waits until 8am, then dials once", async () => {
   const placed = [];
   const sleeps = [];
-  const night = new Date("2026-08-02T03:00:00Z"); // 11pm Eastern
+  const night = new Date("2026-08-02T03:00:00Z"); // 8pm Arizona
   const step = {
     ...fakeStep(),
     sleepUntil: async (id, date) => { sleeps.push({ id, date }); }
@@ -98,10 +98,10 @@ test("quiet-hours-blocks-or-delays-josh: 11pm Eastern waits until 11am, then dia
   assert.equal(placed.length, 1, "one call after the wait, not two");
 });
 
-test("quiet-hours-blocks-or-delays-josh: daytime Eastern dials once with no wait", async () => {
+test("quiet-hours-blocks-or-delays-josh: daytime Arizona dials once with no wait", async () => {
   const placed = [];
   const sleeps = [];
-  const afternoon = new Date("2026-08-02T18:00:00Z"); // 2pm Eastern
+  const afternoon = new Date("2026-08-02T18:00:00Z"); // 11am Arizona
   const step = {
     ...fakeStep(),
     sleepUntil: async (id, date) => { sleeps.push({ id, date }); }
