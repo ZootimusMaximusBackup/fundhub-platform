@@ -8,7 +8,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="robots" content="noindex">
-<meta name="description" content="Fundhub Credit Solutions LLC. Set up your account, pull all three bureaus, and we read every line.">
+<meta name="description" content="Fundhub Credit Solutions LLC. Get your own credit report and score through SmartCredit&reg;, a credit monitoring product.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -69,6 +69,11 @@
   .consent input{margin-top:3px;width:16px;height:16px;flex:0 0 auto;accent-color:var(--blue)}
   .consent label{font-size:12.5px;color:var(--gray);line-height:1.5}
   .consent a{color:var(--ink);text-decoration:underline}
+  /* `hidden` must actually hide. `.btn` sets display:block, which beats the browser
+     default for [hidden], so the old tracking link stayed on screen underneath the
+     mounted widget. */
+  [hidden]{display:none !important}
+
   .btn{display:block;width:100%;background:var(--blue);color:#fff;font-family:var(--sans);font-size:15.5px;
     font-weight:600;padding:15px;border:1px solid var(--blue);border-radius:9px;cursor:pointer;
     text-align:center;transition:background .15s,border-color .15s}
@@ -76,12 +81,52 @@
   .btn-ghost{background:transparent;color:var(--gray);border:1px solid var(--line);margin-top:10px;
     font-size:14.5px;font-weight:500;padding:13px}
   .btn-ghost:hover{background:var(--soft);border-color:var(--line)}
-  .undercta{margin-top:12px;text-align:center;font-family:var(--mono);font-size:10px;
-    letter-spacing:.13em;text-transform:uppercase;color:var(--gray2)}
   .disclaim{margin-top:16px;font-size:12px;color:var(--gray2);line-height:1.55;text-align:center}
   .err{margin:0 0 10px;font-size:13px;color:#9b1c1c;text-align:center}
 
-  .steps{max-width:700px;margin:44px auto 0;display:grid;grid-template-columns:repeat(3,1fr);
+  /* ── SmartCredit(R) block ────────────────────────────────────────────────
+     ConsumerDirect compliance review item 2: their branding must read as
+     clearly SEPARATE from ours. So this block gets its own bordered card, its
+     own rule above the heading, real empty space from the Fundhub wordmark in
+     the header, and plain black on white for everything that describes
+     SmartCredit. The ONE blue thing inside this card is a Fundhub button that
+     goes to a Fundhub call — blue there says "this bit is ours", which is the
+     separation, not a breach of it.
+     BRANDING UNVERIFIED: the guidelines PDF has not been read by anyone here.
+     No SmartCredit logo, no SmartCredit colours, no "powered by" lockup until
+     it has been. Words only is the conservative choice, not their stated rule. */
+  .scbox{max-width:560px;width:calc(100% - 48px);margin:36px auto 0;background:#fff;
+    border:1px solid var(--ink);border-radius:14px;padding:26px 24px}
+  .scbox .rule{height:2px;background:var(--ink);width:44px;border-radius:1px}
+  .scbox h2{margin-top:14px;font-size:20px;font-weight:700;letter-spacing:-.025em;line-height:1.25}
+  .scbox p{margin-top:13px;font-size:14.5px;line-height:1.6;color:var(--ink)}
+  .scbox p.quiet{color:var(--gray)}
+  .sc-callout{margin-top:18px;padding:15px 16px;border:1px solid var(--ink);border-radius:9px}
+  .sc-callout .h{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink)}
+  .sc-callout p{margin-top:9px;font-size:14.5px;font-weight:600;line-height:1.6}
+  .sc-callout p.plain{font-weight:400}
+  .sc-legal{margin-top:16px;font-size:13.5px;line-height:1.6;color:var(--ink)}
+  .sc-legal a{text-decoration:underline}
+  .sc-legal .missing{border-bottom:1px dotted var(--gray2);color:var(--gray)}
+  .btn-sc{background:var(--ink);border-color:var(--ink);margin-top:6px}
+  .btn-sc:hover{background:#262626;border-color:#262626}
+  .sc-slot{margin-top:18px}
+  .sc-state{margin-top:18px;padding:16px;border:1px solid var(--ink);border-radius:9px;
+    font-size:14.5px;line-height:1.6}
+  .sc-state h3{font-size:16px;font-weight:700;letter-spacing:-.02em}
+  .sc-state p{margin-top:9px}
+  .sc-state .acts{margin-top:14px;display:grid;gap:8px}
+
+  /* Fundhub's own service. Compliance item 7 — presented distinctly, never
+     bundled into one package with the SmartCredit membership. */
+  .fhbox{max-width:560px;width:calc(100% - 48px);margin:22px auto 0;background:var(--paper);
+    border:1px solid var(--line);border-radius:14px;padding:24px}
+  .fhbox .rule{height:2px;width:44px;border-radius:1px;background:var(--spectrum)}
+  .fhbox h2{margin-top:14px;font-size:19px;font-weight:700;letter-spacing:-.025em}
+  .fhbox p{margin-top:12px;font-size:14.5px;line-height:1.6;color:var(--ink)}
+
+  .steps{max-width:560px;margin:22px auto 0;display:grid;grid-template-columns:repeat(2,1fr);
     border-top:1px solid var(--line)}
   @media(max-width:700px){.steps{grid-template-columns:1fr}}
   .stp{padding:20px 18px;border-right:1px solid var(--line)}
@@ -92,18 +137,7 @@
   .stp .t{margin-top:8px;font-size:15px;font-weight:600;letter-spacing:-.01em}
   .stp .d{margin-top:6px;font-size:13.5px;color:var(--gray);line-height:1.55}
 
-  .marq{margin-top:56px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
-    overflow:hidden;padding:13px 0;background:rgba(252,252,252,.7)}
-  .marq-track{display:flex;width:max-content;animation:marq 46s linear infinite}
-  .marq-set{display:flex;align-items:center}
-  .marq-set span{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
-    color:var(--gray);white-space:nowrap;padding:0 16px}
-  .marq-set i{width:10px;height:2px;background:var(--spectrum);border-radius:1px;flex:0 0 auto}
-  @keyframes marq{to{transform:translateX(-50%)}}
-  .marq:hover .marq-track{animation-play-state:paused}
-  @media(prefers-reduced-motion:reduce){.marq-track{animation:none}}
-
-  footer{position:relative;padding:34px 0 44px;overflow:hidden}
+  footer{position:relative;padding:48px 0 44px;overflow:hidden}
   .disc{font-size:12px;color:var(--gray2);line-height:1.6;max-width:70ch;margin:0 auto;text-align:center}
   .disc p{margin-bottom:9px}
   .foot-bottom{margin-top:18px;text-align:center;font-size:12px;color:var(--gray)}
@@ -131,9 +165,9 @@
   <div class="wrap">
     <section class="hero">
       <span class="eyebrow">Credit Report</span>
-      <h1>Let&rsquo;s See What&rsquo;s On Your Report</h1>
-      <p class="lede">Set up your account and we pull all three bureaus, then read every line and
-        mark what is being reported wrong. Takes about two minutes.</p>
+      <h1>Get Your Own Credit Report</h1>
+      <p class="lede">Get your own credit report and score through SmartCredit&reg;, a credit
+        monitoring product. Set up takes about two minutes.</p>
     </section>
   </div>
 
@@ -163,34 +197,89 @@
         Msg &amp; data rates may apply. Msg frequency varies. Reply STOP to opt out, HELP for help.
         See our <a href="/privacy/">Privacy Policy</a> and <a href="/terms/">Terms</a>.</label>
     </div>
-    <p class="err" id="err" role="alert" hidden></p>
-    <a class="btn" id="go" href="https://smartcredit.com/cblp/?PID=29056">Get My Credit Report</a>
-    <a class="btn btn-ghost" id="book" href="https://apply.fundhub.ai/schedule/phonecall">Or book a call first</a>
-    <p class="undercta">All three bureaus &middot; membership from $19.99 &middot; no free trial</p>
-    <p class="disclaim">Your report is set up in your own name, with your own login, and you keep it.
-      Fundhub Credit Solutions LLC does not repair credit or contact bureaus on your behalf.</p>
   </form>
 
-  <div class="wrap">
+  <!-- ══ SmartCredit(R) ═══════════════════════════════════════════════════════
+       Its own bordered card, its own rule, its own heading, no Fundhub blue,
+       and clear space from the Fundhub wordmark in the header. ConsumerDirect
+       compliance review items 2, 3, 4, 6, 8, 9, 10, 11 and 12 all live in here.
+       Do not merge this card into the Fundhub card — item 7 forbids presenting
+       the two as one package. -->
+  <section class="scbox" aria-labelledby="sc-h">
+    <span class="rule" aria-hidden="true"></span>
+    <h2 id="sc-h">SmartCredit&reg; &mdash; a credit monitoring product</h2>
+
+    <p>SmartCredit&reg; is a credit monitoring product. It lets you see your own credit report
+      and it tells you when your report changes. That is what the membership is. It is not a
+      Fundhub product and it is not part of Fundhub Credit Solutions LLC.</p>
+
+    <div class="sc-callout">
+      <div class="h">Read this before you sign up</div>
+      <p class="plain">You are joining SmartCredit&reg;, a credit monitoring product. This is a
+        separate membership with a separate company. You pay SmartCredit&reg; directly, every
+        month. It is not part of anything you buy from Fundhub Credit Solutions LLC, and buying
+        one does not get you the other.</p>
+    </div>
+
+    <div class="sc-callout">
+      <div class="h">What it costs</div>
+      <p>This is a monthly membership. Build costs $29.99 every month. Protect costs $19.99
+        every month. There is no free trial. You will be charged every month until you cancel.</p>
+      <p class="plain">Your SmartCredit&reg; membership starts as soon as you finish the
+        SmartCredit&reg; sign-up screens and your card is accepted. There is no free trial, so
+        your first monthly charge happens then.</p>
+    </div>
+
+    <!-- Item 9. The four addresses are NOT in this repo and are NOT invented. They come from
+         env vars by name (CONSUMER_DIRECT_SERVICE_AGREEMENT_URL and friends). Until those are
+         set the four names print as plain text, so the gap is visible on the page. -->
+    <p class="sc-legal" id="sc-legal">Before you sign up, please read the SmartCredit&reg;
+      <span class="missing" data-sc-doc="serviceAgreement">Service Agreement</span>,
+      <span class="missing" data-sc-doc="privacyPolicy">Privacy Policy</span>,
+      <span class="missing" data-sc-doc="termsOfUse">Terms of Use</span>, and
+      <span class="missing" data-sc-doc="consumerRights">Consumer Rights</span>.</p>
+
+    <div class="consent">
+      <input type="checkbox" id="sc-agree" name="smartcredit_agree">
+      <label for="sc-agree">I have read and agree to the SmartCredit&reg; Service Agreement,
+        Privacy Policy, and Terms of Use. I understand this is a separate SmartCredit&reg;
+        membership and that I will be charged every month until I cancel.</label>
+    </div>
+
+    <p class="err" id="sc-err" role="alert" hidden></p>
+    <a class="btn btn-sc" id="go" href="https://smartcredit.com/cblp/?PID=29056">Get My Credit Report</a>
+
+    <!-- ConsumerDirect's own widgets are mounted in here by the script at the end of the page. -->
+    <div class="sc-slot" id="sc-slot"></div>
+    <div class="sc-state" id="sc-state" role="status" hidden></div>
+
+    <p class="quiet">Cancelling is separate too. You can cancel your SmartCredit&reg; membership
+      at any time and still keep anything you bought from Fundhub Credit Solutions LLC. You can
+      stop working with Fundhub Credit Solutions LLC and still keep your SmartCredit&reg;
+      membership. Cancelling one does not cancel the other. You cancel each one with the company
+      you bought it from.<span id="sc-cancel"></span></p>
+  </section>
+
+  <!-- ══ Fundhub Credit Solutions LLC ════════════════════════════════════════
+       A separate service, bought separately. Item 7 — no bundling. -->
+  <section class="fhbox" aria-labelledby="fh-h">
+    <span class="rule" aria-hidden="true"></span>
+    <h2 id="fh-h">Fundhub Credit Solutions LLC</h2>
+    <p>Our service is separate and you buy it separately. Signing up for SmartCredit&reg; does
+      not buy it and does not include it.</p>
+    <p class="disclaim">Your report is set up in your own name, with your own login, and you keep
+      it. Fundhub Credit Solutions LLC does not repair credit or contact bureaus on your behalf.</p>
     <div class="steps">
       <div class="stp"><div class="n">01</div>
-        <div class="t">Set up your account</div>
-        <div class="d">Two minutes. Your report, your login, in your name.</div></div>
+        <div class="t">We go through your report with you</div>
+        <div class="d">We explain what each item on your report means, in plain words. We do not
+          repair credit and we do not contact the bureaus for you.</div></div>
       <div class="stp"><div class="n">02</div>
-        <div class="t">We read every line</div>
-        <div class="d">Each problem gets named, with the rule it breaks and the law behind it.</div></div>
-      <div class="stp"><div class="n">03</div>
-        <div class="t">We go through it together</div>
-        <div class="d">Thirty minutes on the phone. You already have the findings in hand.</div></div>
+        <div class="t">We talk it through</div>
+        <div class="d">Thirty minutes on the phone. You already have your report in hand.</div></div>
     </div>
-  </div>
-
-  <div class="marq" aria-hidden="true">
-    <div class="marq-track">
-      <div class="marq-set"><span>Fair Credit Reporting Act &middot; 15 U.S.C. &sect; 1681</span><i></i><span>All three bureaus</span><i></i><span>You have the right to dispute what is inaccurate</span><i></i><span>Bureaus must investigate &mdash; 30 days</span><i></i><span>Unverifiable information must be deleted or corrected</span><i></i><span>Every finding cited to the law it breaks</span><i></i><span>No score promises &middot; no guarantees</span><i></i></div>
-      <div class="marq-set"><span>Fair Credit Reporting Act &middot; 15 U.S.C. &sect; 1681</span><i></i><span>All three bureaus</span><i></i><span>You have the right to dispute what is inaccurate</span><i></i><span>Bureaus must investigate &mdash; 30 days</span><i></i><span>Unverifiable information must be deleted or corrected</span><i></i><span>Every finding cited to the law it breaks</span><i></i><span>No score promises &middot; no guarantees</span><i></i></div>
-    </div>
-  </div>
+    <a class="btn btn-ghost" id="book" href="https://apply.fundhub.ai/schedule/phonecall">Or book a call first</a>
+  </section>
 </main>
 
 <footer>
@@ -198,8 +287,14 @@
     <div class="disc">
       <p><strong>PLEASE NOTE:</strong> Fundhub Credit Solutions LLC is not a law firm, a bank, or a
         lender. Nothing on this page is legal advice, and no outcome is guaranteed.</p>
-      <p>The rights described above are set out in the Fair Credit Reporting Act, 15 U.S.C. &sect; 1681.
-        You may exercise every one of them yourself, at no cost, without hiring anyone.</p>
+      <p>SmartCredit&reg; is a credit monitoring product and a separate membership with a separate
+        company. You can cancel your SmartCredit&reg; membership at any time and still keep anything
+        you bought from Fundhub Credit Solutions LLC. Cancelling one does not cancel the other.</p>
+      <!-- Item 3. BRANDING UNVERIFIED: the exact legal owner name and the exact attribution
+           sentence are in the ConsumerDirect branding guidelines PDF, which nobody here has read.
+           This line names no company on purpose. Swap it for their required wording once the PDF
+           has been read. -->
+      <p>SmartCredit is a registered trademark. It is not owned by Fundhub Credit Solutions LLC.</p>
     </div>
     <div class="foot-bottom">&copy; 2026 FUNDHUB CREDIT SOLUTIONS LLC. All rights reserved.
       &nbsp;&middot;&nbsp; <a href="/privacy/">Privacy Policy</a>
@@ -214,7 +309,34 @@
       var BOOK = "https://apply.fundhub.ai/schedule/phonecall";
       var go = document.getElementById("go");
       var book = document.getElementById("book");
-      var err = document.getElementById("err");
+      var agree = document.getElementById("sc-agree");
+      var sms = document.getElementById("sms");
+      var scErr = document.getElementById("sc-err");
+      var slot = document.getElementById("sc-slot");
+      var state = document.getElementById("sc-state");
+      var widget = null;   /* the SmartCredit config, once the server answers */
+      var mounted = false;
+
+      /* ── ConsumerDirect's signal ───────────────────────────────────────────
+         Their widget shouts "cd-signup-next-step" at the page on every step.
+         Their file is loaded async+defer, so it can start before or after this
+         script. Attach FIRST, before the config fetch and before any mount, or
+         the first step or two slip past unheard.
+
+         PRIVACY: e.detail also carries a sign-up token and the person's email
+         address. Those name a real person. Nothing below reads either one, and
+         neither is ever logged, put in a web address, or sent anywhere from this
+         page. Only e.detail.step is read. */
+      document.addEventListener("cd-signup-next-step", function (e) {
+        var step = String((e && e.detail && e.detail.step) || "");
+        /* Three failure signals arrive in the same "step" slot as the good steps.
+           Anything that treats "a step arrived" as progress will read a fraud
+           block as progress. Each one is a stop, and they are told apart. */
+        if (step === "ConfirmationStep") return showDone();
+        if (step === "SignupErrorOutsideUS") return showStuck("outside_us");
+        if (step === "SignupErrorBlackbox") return showStuck("blackbox");
+        if (step === "SignupError") return showStuck("general");
+      });
 
       book.addEventListener("click", function (e) {
         e.preventDefault();
@@ -228,46 +350,229 @@
         .then(function (cfg) {
           if (cfg && cfg.bookUrl) { BOOK = cfg.bookUrl; book.setAttribute("href", BOOK); }
           var sc = cfg && cfg.smartCredit;
-          if (sc && sc.clientKey && sc.pid) { mountWidget(sc); return; }
-          if (sc && sc.affiliateUrl) go.setAttribute("href", sc.affiliateUrl);
+          if (!sc) return;
+          paintLegal(sc.legal);
+          if (sc.clientKey && sc.pid) { widget = sc; return; }
+          if (sc.affiliateUrl) go.setAttribute("href", sc.affiliateUrl);
         })
         .catch(function () {});
 
-      go.addEventListener("click", function () {
-        if (!document.getElementById("sms").checked) return;
+      /* Item 9. Turn the four document names into real links, but ONLY for
+         addresses the server actually holds. An address that was never given
+         stays plain text — a made-up or dead link is worse than a visible gap. */
+      function paintLegal(legal) {
+        if (!legal) return;
+        var names = document.querySelectorAll("#sc-legal [data-sc-doc]");
+        for (var i = 0; i < names.length; i++) {
+          var el = names[i];
+          var href = legal[el.getAttribute("data-sc-doc")];
+          if (!href) continue;
+          var a = document.createElement("a");
+          a.href = href;
+          a.target = "_blank";
+          a.rel = "noopener noreferrer";
+          a.textContent = el.textContent;
+          el.parentNode.replaceChild(a, el);
+        }
+        if (legal.cancelUrl) {
+          var tail = document.getElementById("sc-cancel");
+          var link = document.createElement("a");
+          link.href = legal.cancelUrl;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = "How to cancel SmartCredit®";
+          tail.appendChild(document.createTextNode(" "));
+          tail.appendChild(link);
+          tail.appendChild(document.createTextNode("."));
+        }
+      }
+
+      /* Item 10. The agreement box genuinely refuses. It used to be decorative:
+         the control is a plain link and nothing stopped the click. */
+      go.addEventListener("click", function (e) {
+        if (!agree.checked) {
+          e.preventDefault();
+          scErr.textContent = "Please tick the box to say you agree to the SmartCredit® " +
+            "Service Agreement, Privacy Policy and Terms of Use.";
+          scErr.hidden = false;
+          agree.focus();
+          return;
+        }
+        scErr.hidden = true;
+        remember();
+        if (widget) { e.preventDefault(); mountWidget(widget); }
+      });
+
+      /* The SMS box is Fundhub's own marketing consent and is deliberately NOT a
+         condition of getting a credit report. What is fixed here: it used to be
+         written down as `true` no matter what the person actually ticked. */
+      function remember() {
         try {
           sessionStorage.setItem("fh_opt", JSON.stringify({
             first_name: document.getElementById("first").value,
             last_name: document.getElementById("last").value,
             email: document.getElementById("email").value,
             phone: document.getElementById("phone").value,
-            sms_consent: true
+            sms_consent: sms.checked === true
           }));
-        } catch (e) { /* private mode — the link still works */ }
-      });
+        } catch (err) { /* private mode — the link still works */ }
+      }
+
+      function el(tag, id, attrs) {
+        var n = document.createElement(tag);
+        if (id) n.id = id;
+        for (var k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) {
+          n.setAttribute(k, attrs[k]);
+        }
+        return n;
+      }
+
+      /* Prefill what the person already typed above, so they do not type it twice.
+         Name and email only. Date of birth, address and Social Security number are
+         "rich prefill", which ConsumerDirect has to switch on for this account
+         first, and nobody has asked them. Never put any of this in the URL. */
+      function prefillBlock() {
+        var customer = {};
+        var first = document.getElementById("first").value.trim();
+        var last = document.getElementById("last").value.trim();
+        var email = document.getElementById("email").value.trim();
+        if (first) customer.firstName = first;
+        if (last) customer.lastName = last;
+        if (email) customer.email = email;
+        if (!Object.keys(customer).length) return null;
+        var s = el("script", "cd-signup-prefill", { type: "application/json" });
+        /* "</script" inside a value would close this block early. */
+        s.textContent = JSON.stringify({ customer: customer }).replace(/</g, "\\u003c");
+        return s;
+      }
 
       function mountWidget(sc) {
-        var slot = document.createElement("div");
-        slot.style.marginTop = "18px";
-        var pid = document.createElement("input");
-        pid.type = "hidden";
-        pid.name = "PID";
-        pid.value = sc.pid;
-        var box = document.createElement("div");
-        box.id = "cd-signup-widget";
-        box.setAttribute("data-clientkey", sc.clientKey);
-        box.setAttribute("data-memberurl", sc.memberUrl);
-        box.setAttribute("data-productname", sc.productName || "smartcredit");
+        if (mounted) return;
+        mounted = true;
+
+        /* Their own approved co-marketing wording — the partnership sentence that
+           names both companies. Item 2 / 6 / 12, written by them, not guessed by us.
+           UNVERIFIED: nobody has read what it actually prints. Our own wording above
+           stands on its own if this renders nothing. */
+        slot.appendChild(el("div", "cd-marketing-message-widget", {
+          "data-companyname": "Fundhub Credit Solutions LLC"
+        }));
+
+        /* Item 8 — ConsumerDirect calls the plans box "required unless custom plan
+           display created". Ours is shown above AND theirs is shown here, so the
+           prices come from them and stay right by themselves. */
+        slot.appendChild(el("div", "cd-memberplans-widget"));
+
+        /* Item 11 — shows the person where SmartCredit sign-up begins and how far in. */
+        slot.appendChild(el("div", "cd-progress-widget"));
+
+        /* How ConsumerDirect knows the signup came from us. Without it we may not
+           get credited for the customer. */
+        var pid = el("input", null, { type: "hidden", name: "PID", value: sc.pid });
         slot.appendChild(pid);
+
+        var box = el("div", "cd-signup-widget", {
+          "data-clientkey": sc.clientKey,
+          "data-memberurl": sc.memberUrl,
+          "data-productname": sc.productName || "smartcredit"
+        });
+        if (sc.theme) box.setAttribute("data-theme", sc.theme);
         slot.appendChild(box);
-        go.parentNode.insertBefore(slot, go);
+
+        var pre = prefillBlock();
+        if (pre) slot.appendChild(pre);
+
         go.hidden = true;
+
         var s = document.createElement("script");
         s.type = "module";
         s.async = true;
         s.defer = true;
         s.src = sc.scriptUrl;
         document.body.appendChild(s);
+      }
+
+      function paintState(heading, body, acts) {
+        state.textContent = "";
+        var h = document.createElement("h3");
+        h.textContent = heading;
+        state.appendChild(h);
+        for (var i = 0; i < body.length; i++) {
+          var p = document.createElement("p");
+          p.textContent = body[i];
+          state.appendChild(p);
+        }
+        if (acts && acts.length) {
+          var row = document.createElement("div");
+          row.className = "acts";
+          for (var j = 0; j < acts.length; j++) row.appendChild(acts[j]);
+          state.appendChild(row);
+        }
+        state.hidden = false;
+        state.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+
+      function bookButton(label) {
+        var a = document.createElement("a");
+        a.className = "btn";
+        a.href = BOOK;
+        a.textContent = label;
+        a.addEventListener("click", function (e) { e.preventDefault(); location.assign(BOOK); });
+        return a;
+      }
+
+      function restartButton() {
+        var b = document.createElement("a");
+        b.className = "btn btn-ghost";
+        b.href = "#";
+        b.textContent = "Start the sign-up over";
+        b.addEventListener("click", function (e) {
+          e.preventDefault();
+          /* Their own reset. Wipes the part-finished signup and goes back to step one. */
+          if (window.CDWidgets && typeof window.CDWidgets.restartSignup === "function") {
+            state.hidden = true;
+            window.CDWidgets.restartSignup();
+          } else {
+            location.reload();
+          }
+        });
+        return b;
+      }
+
+      function showDone() {
+        /* Their own confirmation screen stays on the page — it is their branding
+           and their wording, and hiding it would take that away. Ours sits under it. */
+        paintState("You are signed up with SmartCredit®.", [
+          /* NOT stated: that SmartCredit emails a login. ConsumerDirect never says so
+             anywhere we have read, so the page does not claim it. */
+          "Your monthly SmartCredit® membership has started. SmartCredit® will charge " +
+            "you every month until you cancel.",
+          "Fundhub Credit Solutions LLC is a separate company and a separate thing you buy. " +
+            "If you want us to go through your report with you, book a call."
+        ], [bookButton("Book my call")]);
+      }
+
+      function showStuck(kind) {
+        if (kind === "outside_us") {
+          return paintState("SmartCredit® could not finish your sign-up.", [
+            "SmartCredit® could not confirm a United States address for you. " +
+              "SmartCredit® memberships are for people with a United States address.",
+            "You can start over and check your address, or book a call and we will help."
+          ], [restartButton(), bookButton("Book a call instead")]);
+        }
+        if (kind === "blackbox") {
+          /* Deliberately no restart button. If their fraud screen stopped someone,
+             sending them straight back through it again is the wrong move. */
+          return paintState("SmartCredit® stopped this sign-up.", [
+            "SmartCredit®'s security check stopped this sign-up. Please do not try again " +
+              "right now.",
+            "Book a call and we will help you sort it out with SmartCredit®."
+          ], [bookButton("Book a call")]);
+        }
+        return paintState("SmartCredit® could not finish your sign-up.", [
+          "Something went wrong on the SmartCredit® sign-up screens.",
+          "You can start over, or book a call and we will help."
+        ], [restartButton(), bookButton("Book a call instead")]);
       }
     })();
   </script>
