@@ -1,20 +1,20 @@
 // In-repo Underwrite IQ pack. Letters from letter-generator. Analysis docs
-// from the existing UIQ Claude + render-pdf path (credit analysis, roadmap,
-// funding snapshot, lender list). No Vercel. No GoHighLevel.
+// from the WeasyPrint black-report printer (credit analysis, roadmap,
+// funding snapshot, lender list) filled from UnderwriteIQ data. No Claude JSON dump.
 
 import letterGenMod from "./vendor/letter-generator.cjs";
 import summaryMod from "./vendor/summary-doc-generator.cjs";
 import buildDocsMod from "./vendor/build-documents.cjs";
 import generateDeliverablesMod from "./vendor/generate-deliverables.cjs";
-import renderPdfMod from "./vendor/render-pdf.cjs";
 import { runTierEngineFromCrsResult } from "../finance/crs-tier.mjs";
-import { documentsFromDeliverables, hasFundingAnalysisPdfs, FUNDING_ANALYSIS_FILENAMES } from "./letter-pack-filter.mjs";
+import { hasFundingAnalysisPdfs, FUNDING_ANALYSIS_FILENAMES } from "./letter-pack-filter.mjs";
+import { buildBlackReportClient, hasBlackReportSource, mergeStoredUnderwrite } from "./black-report-client.mjs";
+import { printBlackReports } from "./black-report-pdf.mjs";
 
 const { generateLetters, generateDisputeLetters } = letterGenMod;
 const { generateAllSummaryDocuments } = summaryMod;
 const { buildDocuments } = buildDocsMod;
 const { generateDeliverables } = generateDeliverablesMod;
-const { renderAllPDFs } = renderPdfMod;
 
 const FUNDING_SUMMARIES = new Set(["funding_summary", "business_prep_summary"]);
 const REPAIR_SUMMARIES = new Set(["repair_plan_summary", "issue_priority_sheet"]);
@@ -176,22 +176,17 @@ function asFiles(list) {
     });
 }
 
-async function uiqDeliverablePdfs(crsResult, personal, pack, generate = generateDeliverables) {
+async function uiqDeliverablePdfs(crsResult, personal, pack, _generate = generateDeliverables, storedCrs = null) {
   if (pack !== "funding") return { files: [], skip: "not_funding" };
-  if (!crsResult) return { files: [], skip: "no_engine" };
-  if (!process.env.ANTHROPIC_API_KEY) return { files: [], skip: "no_anthropic_key" };
+  if (!crsResult && !storedCrs) return { files: [], skip: "no_engine" };
+  const source = mergeStoredUnderwrite(crsResult, storedCrs);
+  if (!source) return { files: [], skip: "no_engine" };
+  if (!hasBlackReportSource(source)) return { files: [], skip: "no_scores" };
   try {
-    const d = await generate(crsResult, personal, { pack: "funding" });
-    const documents = documentsFromDeliverables(d.documents);
-    if (!documents.length) return { files: [], skip: "claude_empty" };
-    const pdfs = await renderAllPDFs({
-      documents,
-      letters: [],
-      personal,
-      engineData: crsResult
-    });
-    const files = asFiles(pdfs);
-    if (!files.length) return { files: [], skip: "render_empty" };
+    const client = buildBlackReportClient({ crsResult: source, personal });
+    const printed = await printBlackReports({ client });
+    const files = printed.files || [];
+    if (!files.length) return { files: [], skip: printed.skip || "render_empty" };
     return { files, skip: null };
   } catch (err) {
     return { files: [], skip: String(err && err.message || err).slice(0, 240) };
@@ -202,7 +197,8 @@ export async function buildLetterPack({
   crsResult,
   personal,
   pack = "funding",
-  generateDeliverablesFn = generateDeliverables
+  generateDeliverablesFn = generateDeliverables,
+  storedCrs = null
 } = {}) {
   const who = personal || { name: "Client", address: "" };
   const path = pack === "repair" ? "repair" : "fundable";
@@ -241,7 +237,7 @@ export async function buildLetterPack({
       summarySkip = String(err && err.message || err).slice(0, 240);
     }
   }
-  const uiq = await uiqDeliverablePdfs(crsResult, who, pack, generateDeliverablesFn);
+  const uiq = await uiqDeliverablePdfs(crsResult, who, pack, generateDeliverablesFn, storedCrs);
   const files = [...uiq.files, ...asFiles(summaries), ...asFiles(letters)];
   let reason = null;
   // An empty pack with no engine result is a different state from an empty pack
@@ -309,6 +305,7 @@ export async function buildLetterPackForClient(
   }
   const personal = personalFromClient(row);
   let engine = null;
+  let storedCrs = null;
   let engineSkip = null;
   // engineFault mirrors engineSkip but is set only on a throw, so the reason
   // logic can tell a broken pull apart from a client who simply has no pull yet.
@@ -320,8 +317,9 @@ export async function buildLetterPackForClient(
     );
     if (!crs.rows[0]?.result) engineSkip = PACK_REASON.NO_CRS_RESULT;
     else {
+      storedCrs = crs.rows[0].result;
       try {
-        engine = runEngine(crs.rows[0].result, {
+        engine = runEngine(storedCrs, {
           submittedName: personal.name,
           submittedAddress: personal.address
         });
@@ -335,7 +333,7 @@ export async function buildLetterPackForClient(
     engineSkip = engineFault;
   }
   try {
-    const packOut = await buildLetterPack({ crsResult: engine, personal, pack });
+    const packOut = await buildLetterPack({ crsResult: engine, personal, pack, storedCrs });
     return {
       ...packOut,
       reason: sharpenEmptyReason(packOut.reason, { engineSkip, engineFault }),

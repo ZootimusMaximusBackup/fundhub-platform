@@ -1,5 +1,7 @@
 // Closer deck payload + live actions.
-// Reads stored CRS + survey. Never invents FICO, totals, or reason copy.
+// Reads stored CRS + survey. Never invents FICO or reason copy.
+// Headline pre-approval is the UnderwriteIQ stack (same compute as
+// api/read/underwrite.mjs), not the stored CRS canned total.
 
 import { getOffer, offerAllowsLetters, offersForClient, formatCents } from "../config/offers.mjs";
 import { isFundingPath } from "../config/product-path.mjs";
@@ -291,6 +293,14 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
       capital: cf(client, "cf_svy_available_capital"),
       motivation: cf(client, "cf_svy_money_change_now")
     },
+    /* Every company on the file, so the deck can ask for a missing
+       incorporation month/year instead of guessing the age. */
+    businesses: bizRes.rows.map((b) => ({
+      id: b.id,
+      name: b.name || null,
+      age_months: numOrNull(b.age_months),
+      incorporated_date: b.incorporated_date || null
+    })),
     /* Bureau income guesses for closer leverage — not paystubs, not bank balances. */
     income_estimates: income,
     engine,

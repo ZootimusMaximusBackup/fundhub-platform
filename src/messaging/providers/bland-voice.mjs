@@ -47,6 +47,7 @@
 // A refusal is never a fake success. Every path returns a named reason.
 
 import { postJson, classify, redact, success, failure, rejection } from "./http.mjs";
+import { phoneIsAgentProveLine } from "../gate.mjs";
 
 export const PROVIDER = "bland_voice";
 export const CHANNELS = new Set(["voice"]);
@@ -65,6 +66,40 @@ export const BLAND_API_BASE = "https://api.bland.ai/v1";
    half returns to the same door. */
 export const DEFAULT_WEBHOOK_URL = "https://fundhub.ai/api/webhooks/bland";
 
+/* THE NOTICE THAT HAS TO RIDE WITH THE TAPE.
+   `record: true` in placeCall's body asks Bland to tape the call. Nothing else
+   in this system tells the person that: searched 2026-08-27, there is no
+   disclosure in any agents.prompt, in any seeded message template, or anywhere
+   else in the repo. Recording someone without telling them is not allowed in
+   the two-party-consent states (California, Florida, Pennsylvania, Washington,
+   Illinois, Massachusetts and others), and this dials consumers.
+
+   It lives HERE — not in a caller, not in the prompt — for two reasons:
+
+     1. placeCall is the only body in this file that sets `record`, and BOTH of
+        its callers reach consumers: api/agent-call.mjs (Agent Editor, placed by
+        hand) and src/workflows/ai-set-01-josh-setter.mjs (placed automatically
+        on booking.created). Fixing one caller leaves the other silent.
+        placeConfiguredCall — the bureau path — sets no `record` and so needs
+        none of this; if it ever starts taping, it needs this too.
+
+     2. agents.prompt is owner-editable in the Agent Editor. A notice living
+        there can be removed by a save that meant nothing by it, and the tape
+        would keep rolling with no words in front of it.
+
+   Binding the words to the same object that carries `record` is what makes
+   "taped but not told" unrepresentable rather than merely discouraged. */
+export const RECORDING_NOTICE =
+  "FIRST, before anything else you say, speak this sentence exactly, and say " +
+  'nothing before it: "Just so you know, this call is recorded." ' +
+  "Then continue with the instructions that follow.";
+
+/** The spoken script with the notice in front of it. Exported so the test can
+    assert against the real words instead of retyping them. */
+export function taskWithRecordingNotice(prompt) {
+  return `${RECORDING_NOTICE}\n\n${String(prompt)}`;
+}
+
 /** E.164-ish. Bland wants a dialable string; this rejects the obviously wrong
     rather than trying to be a phone-number library. */
 export function normalizePhone(raw) {
@@ -75,6 +110,14 @@ export function normalizePhone(raw) {
   if (digits.length === 10) return `+1${digits}`;
   if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
   return null;
+}
+
+/** First words Bland speaks. Empty first_sentence + wait_for_greeting hung up our prove line in ~0.13s. */
+export function firstSentenceFromPrompt(prompt) {
+  const text = String(prompt || "").replace(/\s+/g, " ").trim();
+  if (!text) return "Hey — can you hear me?";
+  const cut = text.match(/^(.{1,160}?[.!?])(?:\s|$)/);
+  return (cut ? cut[1] : text).slice(0, 160).trim();
 }
 
 /**
@@ -167,12 +210,33 @@ export async function placeCall({
     };
   }
 
+  const proveLine = phoneIsAgentProveLine(to);
   const body = {
     phone_number: to,
     // THE POINT OF THE WHOLE FILE: the words come from the database row the
     // Agent Editor saves, never from a file in vendor/.
-    task: String(agent.prompt),
-    wait_for_greeting: true,
+    // Wrapped, not replaced: the recording notice is prepended because `record`
+    // is true below. See RECORDING_NOTICE.
+    task: taskWithRecordingNotice(agent.prompt),
+    first_sentence: firstSentenceFromPrompt(agent.prompt),
+    // The agent SMS line auto-answers silent. Waiting for a greeting ends the call in ~0.13s.
+    wait_for_greeting: !proveLine,
+    /* PICKUP — INERT UNTIL THE ACCOUNT OWNS A NUMBER. Asks Bland to dial from the
+       destination's own area code. Measured 2026-08-27: it changed nothing, because
+       `GET /v1/inbound` returns `{"inbound_numbers":[]}` — this account owns no
+       phone number, so there is no local number to dial from and Bland falls back
+       to the same shared pool line (+1 659 946 5643). That shared line is why five
+       consecutive AG-04 calls to the same 661 handset came back `no-answer` with
+       `started_at: null`: the carrier never completed the call, so the robot never
+       got to speak. Buying a Bland number is the fix; this line is what makes it
+       take effect the moment one exists. Do not read it as today's cure. */
+    local_dialing: true,
+    /* THE TAPE. Bland defaults `record` to false, so recording_url came back null on
+       every call ever placed here — including the ones that did connect and talk.
+       "Empty tape" was not a symptom of the hang-up; it was guaranteed separately. */
+    /* Paired with taskWithRecordingNotice() on `task` above. Do not set this
+       true anywhere that does not also carry the notice. */
+    record: true,
     webhook: webhookUrl || String(env.BLAND_WEBHOOK_URL || "").trim() || DEFAULT_WEBHOOK_URL,
     metadata: {
       ...(metadata || {}),

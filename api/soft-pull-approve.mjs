@@ -14,7 +14,10 @@
 // Live CRS / Experian Business in this repo does not return that date.
 
 import { db } from "../src/db.mjs";
-import { isUuid } from "../src/http/read-api.mjs";
+import { isUuid, ROLE_SETS, requireRole } from "../src/http/read-api.mjs";
+import { requireAuth } from "../src/http/middleware/requireAuth.mjs";
+import { requireClientInOrg } from "../src/http/client-scope.mjs";
+import { requireSessionOrg } from "../src/http/session-org.mjs";
 import { dbDown } from "../src/http/db-down.mjs";
 import { verifySoftPullApproveToken } from "../src/consent/approve-token.mjs";
 import {
@@ -310,6 +313,13 @@ export async function ensureSoftPullCheckout(database, {
 export default async function handler(req, res, deps = {}) {
   const database = deps.db ?? db;
   const env = deps.env ?? process.env;
+
+  if (req.method === "POST" && String((req.body || {}).action || "") === "stamp_incorporated") {
+    return stampIncorporatedAsStaff(req, res, {
+      database,
+      requireAuth: deps.requireAuth ?? requireAuth
+    });
+  }
 
   try {
     const raw = tokenFrom(req);

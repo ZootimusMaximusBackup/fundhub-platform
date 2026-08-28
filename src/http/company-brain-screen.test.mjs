@@ -42,6 +42,14 @@ test("company-brain.html tells the reader an upload waits for owner approval", (
   assert.match(HTML, /before it can be used in answers/i);
 });
 
+test("company-brain.html reads the saved staff role and can Approve a waiting file", () => {
+  // Login writes fh_role. The old fh_session key was never set, so the owner
+  // badge said "staff" and the Approve box stayed hidden on the live page.
+  assert.match(HTML, /fh_role/);
+  assert.match(HTML, /data-decide="approve"/);
+  assert.match(HTML, />Approve</);
+});
+
 test("company-brain.html is in shell ALL and linked from documents sidebar", () => {
   assert.match(SHELL, /"company-brain\.html"/);
   const docs = fs.readFileSync(path.join(APP, "documents.html"), "utf8");

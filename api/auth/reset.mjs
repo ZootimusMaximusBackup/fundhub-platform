@@ -1,4 +1,4 @@
-// POST /api/auth/reset — the public half of staff password reset. Open, like
+// POST /api/auth/reset — the public half of password reset. Open, like
 // /api/auth/login: no session required, because a locked-out person by
 // definition has no session. See api/auth/admin-reset.mjs for the other half,
 // which does require one (owner/admin) and is kept in its own file so this
@@ -6,9 +6,10 @@
 // a branch a journey generator has to guess at.
 //
 //   { action: "request", email }
-//     ALWAYS replies { ok:true }. When the address is a live staff login,
-//     Resend sends the reset link to that same address. mailed is true only
-//     when Resend accepted the send. The token is never returned here.
+//     ALWAYS replies { ok:true }. When the address is a live staff, affiliate,
+//     or partner login, Resend sends the reset link to that same address.
+//     mailed is true only when Resend accepted the send. The token is never
+//     returned here.
 //
 //   { action: "confirm", token, password }
 //     The token IS the credential. Sets the new password and revokes every

@@ -68,6 +68,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .tab{background:transparent;border:0;border-bottom:2px solid transparent;cursor:pointer;padding:11px 13px;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.13em;text-transform:uppercase;color:var(--gray2);margin-bottom:-1px}
 .tab:hover{color:var(--ink)}.tab.on{color:var(--ink);border-bottom-color:var(--ink)}
 .tabpane{display:none}.tabpane.on{display:block}
+.slo-skel{padding:16px}
+.slo-skel-row{height:40px;margin-bottom:8px;border-radius:7px;background:var(--soft)}
 .badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:var(--fs-caption);font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
 .b-ok{background:rgba(168,216,176,.24);border-color:var(--ok);color:#2C5138}
 .b-warn{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
@@ -258,6 +260,7 @@ table.grid th:nth-child(3),table.grid th:nth-child(5),table.grid th:nth-child(6)
         <div class="tabs">
           <button class="tab on" data-tab="products">Products</button>
           <button class="tab" data-tab="rules">Commission rules</button>
+          <button class="tab" data-tab="slo" id="sloTab" hidden>SLO connections</button>
         </div>
 
         <!-- PRODUCTS -->
@@ -292,6 +295,48 @@ table.grid th:nth-child(3),table.grid th:nth-child(5),table.grid th:nth-child(6)
                  product edits "are not saved to the server yet", which is coming-soon
                  wording and was wrong about products besides: product edits DO save
                  through /api/products. -->
+          </div>
+        </div>
+
+        <!-- SLO CONNECTIONS — owner map. ClickFunnels keeps the page and checkout. -->
+        <div class="tabpane" id="tab-slo">
+          <div class="card-hd">
+            <div>
+              <div class="eyebrow">LIVE SLO CONNECTIONS</div>
+              <div id="sloLiveCount" class="mono" style="font-size:var(--fs-metric);font-weight:600;margin-top:8px">—</div>
+              <div id="sloLiveHint" style="font-size:var(--fs-caption);color:var(--gray);margin-top:2px">Which maps are on, and what each one unlocks.</div>
+            </div>
+            <div class="spacer"></div>
+            <button class="btn dark mono" type="button" id="addSloBtn">Add connection</button>
+          </div>
+          <div id="sloErr" class="empty" hidden></div>
+          <div id="sloLoad" class="slo-skel" hidden>
+            <div class="slo-skel-row"></div>
+            <div class="slo-skel-row"></div>
+          </div>
+          <div style="overflow-x:auto">
+            <table class="grid">
+              <thead><tr><th>Name</th><th>Funnel ID</th><th>ClickFunnels product</th><th>Fundhub product</th><th>On</th></tr></thead>
+              <tbody id="sloBody"></tbody>
+            </table>
+          </div>
+          <div class="card-bd" id="sloForm" hidden>
+            <div class="eyebrow">CONNECTION</div>
+            <input type="hidden" id="slo_id">
+            <div class="grid2" style="margin-top:12px">
+              <div class="field" style="grid-column:1/-1"><label>Name</label><input id="slo_name" placeholder="Course SLO"></div>
+              <div class="field"><label>ClickFunnels funnel ID</label><input id="slo_funnel" class="mono" placeholder="funnel id"></div>
+              <div class="field"><label>ClickFunnels product ID</label><input id="slo_cfprod" class="mono" placeholder="product id"></div>
+              <div class="field" style="grid-column:1/-1"><label>Fundhub product</label><select id="slo_product"></select></div>
+            </div>
+            <div class="swrow">
+              <div class="swl"><div class="n">On</div><div class="d">Off means a paid webhook will not write a purchase.</div></div>
+              <div class="sw on" id="slo_active"></div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+              <button class="btn dark mono" type="button" id="sloSave">Save connection</button>
+              <button class="btn mono" type="button" id="sloCancel">Cancel</button>
+            </div>
           </div>
         </div>
 
@@ -1028,6 +1073,154 @@ document.addEventListener("DOMContentLoaded", function () {
     set("kAccrued", usd(accrued));
     set("kPaid", usd(paid));
     return "live ledger · " + rows.length + " entries · " + usd(accrued) + " accrued";
+  });
+
+  function token() {
+    try { return localStorage.getItem("fh_token") || ""; } catch (e) { return ""; }
+  }
+  function showSloForm(row) {
+    var form = document.getElementById("sloForm");
+    if (!form) return;
+    document.getElementById("slo_id").value = row && row.id ? row.id : "";
+    document.getElementById("slo_name").value = row && row.name ? row.name : "";
+    document.getElementById("slo_funnel").value = row && row.cf_funnel_id ? row.cf_funnel_id : "";
+    document.getElementById("slo_cfprod").value = row && row.cf_product_id ? row.cf_product_id : "";
+    var sel = document.getElementById("slo_product");
+    var want = row && (row.product_code || row.product_id) ? String(row.product_code || row.product_id) : "";
+    if (sel && want) sel.value = want;
+    var sw = document.getElementById("slo_active");
+    if (sw) {
+      if (!row || row.active !== false) sw.classList.add("on");
+      else sw.classList.remove("on");
+    }
+    form.hidden = false;
+  }
+  function hideSloForm() {
+    var form = document.getElementById("sloForm");
+    if (form) form.hidden = true;
+  }
+  function fillSloProducts() {
+    var sel = document.getElementById("slo_product");
+    if (!sel) return;
+    var rows = (typeof PRODUCTS !== "undefined" ? PRODUCTS : []).slice();
+    sel.innerHTML = "<option value=\"\">Pick a Fundhub product</option>";
+    rows.forEach(function (p) {
+      var o = document.createElement("option");
+      o.value = p.id;
+      o.textContent = p.name + (p.id ? " (· " + p.id + ")" : "");
+      sel.appendChild(o);
+    });
+  }
+  function renderSlo(rows, errText) {
+    var body = document.getElementById("sloBody");
+    var load = document.getElementById("sloLoad");
+    var err = document.getElementById("sloErr");
+    if (load) load.hidden = true;
+    if (err) {
+      if (errText) { err.hidden = false; err.textContent = errText; }
+      else { err.hidden = true; err.textContent = ""; }
+    }
+    var live = (rows || []).filter(function (r) { return r.active !== false; }).length;
+    set("sloLiveCount", String(live));
+    set("sloLiveHint", live === 1
+      ? "1 map is on. A signed paid webhook writes that Fundhub product."
+      : live + " maps are on. A signed paid webhook writes the mapped Fundhub product.");
+    if (!body) return;
+    if (errText) {
+      body.innerHTML = "";
+      return;
+    }
+    if (!rows || !rows.length) {
+      body.innerHTML = '<tr><td colspan="5" class="empty">No SLO connections yet. Add one to map a ClickFunnels product to a Fundhub product.</td></tr>';
+      return;
+    }
+    body.innerHTML = rows.map(function (r) {
+      return '<tr class="clik" data-slo="' + esc(r.id) + '">' +
+        "<td><div style=\"font-weight:600\">" + esc(r.name) + "</div></td>" +
+        '<td class="mono">' + esc(r.cf_funnel_id) + "</td>" +
+        '<td class="mono">' + esc(r.cf_product_id) + "</td>" +
+        "<td>" + esc(r.product_name || r.product_code || "—") + "</td>" +
+        "<td>" + (r.active !== false ? '<span class="badge b-ok">On</span>' : '<span class="badge b-gray">Off</span>') + "</td></tr>";
+    }).join("");
+    body.querySelectorAll("tr[data-slo]").forEach(function (tr) {
+      tr.addEventListener("click", function () {
+        var row = rows.filter(function (x) { return x.id === tr.dataset.slo; })[0];
+        fillSloProducts();
+        showSloForm(row);
+      });
+    });
+  }
+  function loadSlo() {
+    var load = document.getElementById("sloLoad");
+    if (load) load.hidden = false;
+    if (!window.FHData || typeof FHData.read !== "function") {
+      renderSlo([], "SLO connections could not be loaded. Try again.");
+      return;
+    }
+    FHData.read("slo-connections", { limit: 200 }).then(function (res) {
+      if (!res || !res.ok) {
+        var msg = (res && res.error) || "SLO connections could not be loaded. Try again.";
+        if (res && res.source === "unauthorized") {
+          msg = "SLO connections are for the owner.";
+        }
+        renderSlo([], msg);
+        return;
+      }
+      renderSlo((res.data && res.data.items) || [], null);
+    });
+  }
+  fetch("/api/auth/session", {
+    headers: { accept: "application/json", authorization: "Bearer " + token() }
+  }).then(function (r) { return r.json(); }).then(function (sess) {
+    var role = String(sess && sess.staff && sess.staff.role || "").toLowerCase();
+    if (role !== "owner" && role !== "admin") return;
+    var tab = document.getElementById("sloTab");
+    if (tab) tab.hidden = false;
+    loadSlo();
+  }).catch(function () {});
+
+  var addSlo = document.getElementById("addSloBtn");
+  if (addSlo) addSlo.addEventListener("click", function () {
+    fillSloProducts();
+    showSloForm(null);
+  });
+  var sloCancel = document.getElementById("sloCancel");
+  if (sloCancel) sloCancel.addEventListener("click", hideSloForm);
+  var sloSw = document.getElementById("slo_active");
+  if (sloSw) sloSw.addEventListener("click", function () { this.classList.toggle("on"); });
+  var sloSave = document.getElementById("sloSave");
+  if (sloSave) sloSave.addEventListener("click", function () {
+    if (!window.FHData || typeof FHData.write !== "function") {
+      alert("Not available — the data layer has not loaded.");
+      return;
+    }
+    var name = document.getElementById("slo_name").value.trim();
+    var funnel = document.getElementById("slo_funnel").value.trim();
+    var cfprod = document.getElementById("slo_cfprod").value.trim();
+    var productCode = document.getElementById("slo_product").value.trim();
+    if (!name) { alert("This connection needs a name."); return; }
+    if (!funnel) { alert("Paste the ClickFunnels funnel ID."); return; }
+    if (!cfprod) { alert("Paste the ClickFunnels product ID."); return; }
+    if (!productCode) { alert("Pick a Fundhub product."); return; }
+    sloSave.disabled = true;
+    var payload = {
+      name: name,
+      cf_funnel_id: funnel,
+      cf_product_id: cfprod,
+      product_code: productCode,
+      active: document.getElementById("slo_active").classList.contains("on")
+    };
+    var id = document.getElementById("slo_id").value.trim();
+    if (id) payload.id = id;
+    FHData.write("/api/slo-connections", payload).then(function (res) {
+      sloSave.disabled = false;
+      if (!res || !res.ok) {
+        alert("Could not save connection: " + ((res && res.error) || "request failed"));
+        return;
+      }
+      hideSloForm();
+      loadSlo();
+    });
   });
 });
 </script>

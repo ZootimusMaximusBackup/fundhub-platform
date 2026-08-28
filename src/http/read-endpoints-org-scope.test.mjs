@@ -85,6 +85,8 @@ const NO_ORG_COLUMN = new Map([
   ["deal-math.mjs", "no SQL — dealMath() computes from query params and throws without orgId; handler passes orgId: staff.org_id"],
   ["my-numbers.mjs", "scoped in src/sales/metrics.mjs closerMyNumbers() — every query binds org_id from the session"],
   ["sales-floor.mjs", "scoped in src/sales/metrics.mjs salesFloor() — every query binds org_id from the session"],
+  ["unrecorded-calls.mjs", "scoped in src/sales/unrecorded.mjs listUnrecordedCalls(), which binds o.org_id = $1 and returns [] without an org"],
+  ["ops-pulse.mjs", "scoped in src/ops/pulse.mjs computePulse() — every query binds org_id from the session"],
   ["closer-deck.mjs", "scoped in src/sales/closer-deck.mjs buildCloserDeck() — every query binds org_id from the session"],
   /* Lender reads write no SQL in the handler. listLenders / matchForClient /
      listObservations in src/lenders/store.mjs always bind org_id = $1::uuid from
@@ -108,6 +110,9 @@ const NO_ORG_COLUMN = new Map([
   /* Customer insight interviews — handler writes no SQL. listInsights() in
      src/insights/store.mjs binds org_id = $1 and throws without an org. */
   ["customer-insights.mjs", "scoped in src/insights/store.mjs listInsights(), which binds org_id = $1 and throws without an org"],
+  /* Owner SLO map — handler writes no SQL. listConnections() in
+     src/slo/connections.mjs binds org_id = $1::uuid and returns [] without an org. */
+  ["slo-connections.mjs", "scoped in src/slo/connections.mjs listConnections(), which binds org_id = $1::uuid and returns [] without an org"],
 ]);
 
 /* An allow-listed endpoint must still prove it hands the SESSION's org to

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Lender mark">
+  <rect width="64" height="64" fill="#111113"/>
+  <rect x="5" y="5" width="54" height="54" rx="8" fill="none" stroke="#F5CE8F" stroke-width="1.75"/>
+  <path d="M32 24.5 39.5 32 32 39.5 24.5 32 Z" fill="#F5CE8F"/>
+  <rect x="30.4" y="10" width="3.2" height="9" rx="1.2" fill="#F5CE8F"/>
+  <rect x="30.4" y="45" width="3.2" height="9" rx="1.2" fill="#F5CE8F"/>
+  <rect x="10" y="30.4" width="9" height="3.2" rx="1.2" fill="#F5CE8F"/>
+  <rect x="45" y="30.4" width="9" height="3.2" rx="1.2" fill="#F5CE8F"/>
+</svg>

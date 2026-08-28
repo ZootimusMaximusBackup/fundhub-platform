@@ -436,6 +436,10 @@
         '<span class="r"><span class="chip ' + ((disc.unlogged_calls || 0) > 0 ? "bad" : "on") +
         '"><span class="cd"></span>' + (disc.unlogged_calls != null ? disc.unlogged_calls : "—") +
         "</span></span></div>" +
+        '<div class="row"><span class="l"><b>Calls not recorded</b><em>Logged sales calls with no recording and no transcript</em></span>' +
+        '<span class="r"><span class="chip ' + ((disc.unrecorded_calls || 0) > 0 ? "bad" : "on") +
+        '"><span class="cd"></span>' + (disc.unrecorded_calls != null ? disc.unrecorded_calls : "0") +
+        "</span></span></div>" +
         '<div class="row"><span class="l"><b>Shifts started late</b><em>' +
         (disc.shifts_detail && disc.shifts_detail.reason ? disc.shifts_detail.reason :
           (typeof disc.shifts_started_late === "number" ? "" : (disc.shifts_started_late === null ?

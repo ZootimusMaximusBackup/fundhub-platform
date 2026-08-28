@@ -153,6 +153,18 @@ export function buildStatusRequest(opts) {
   };
 }
 
+export function buildExpectedRequest(opts) {
+  const o = opts || {};
+  requireInquiryId(o.inquiryId);
+  const expected = blankToNull(o.expectedName);
+  if (expected === null) throw new ViewError("an expected name is required");
+  return {
+    method: "POST",
+    path: "/api/inquiries",
+    body: { inquiry_id: o.inquiryId, action: "expected", expected_name: expected }
+  };
+}
+
 export function buildAttemptsRequest(opts) {
   const o = opts || {};
   requireInquiryId(o.inquiryId);
@@ -557,6 +569,12 @@ export function buildCaseSendRequest(opts) {
   return { method: "POST", path: "/api/inquiry-cases", body: body };
 }
 
+export function buildInquiryGenerateRequest(opts) {
+  const o = opts || {};
+  if (!isUuid(o.caseId)) throw new ViewError("case id must be a uuid");
+  return { method: "POST", path: "/api/inquiry-cases", body: { id: o.caseId, action: "generate" } };
+}
+
 /* ── REPAIR PANE ─────────────────────────────────────────────────────────────
    Same desk, other toggle. Send is human-only. No letter without an id. */
 
@@ -627,6 +645,7 @@ export const VIEW = {
   buildAttemptRequest: buildAttemptRequest,
   buildConfirmRequest: buildConfirmRequest,
   buildStatusRequest: buildStatusRequest,
+  buildExpectedRequest: buildExpectedRequest,
   buildAttemptsRequest: buildAttemptsRequest,
   buildIdentityRequest: buildIdentityRequest,
   buildRevealRequest: buildRevealRequest,
@@ -649,6 +668,7 @@ export const VIEW = {
   caseUiStatus: caseUiStatus,
   caseCallState: caseCallState,
   buildCaseSendRequest: buildCaseSendRequest,
+  buildInquiryGenerateRequest: buildInquiryGenerateRequest,
   bureauLabel: bureauLabel,
   repairStagePill: repairStagePill,
   buildRepairSendRequest: buildRepairSendRequest,

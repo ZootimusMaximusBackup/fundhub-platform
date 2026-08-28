@@ -14,6 +14,7 @@
 
 import { hashPassword, validatePassword } from "./hash.mjs";
 import { newToken, hashToken, revokeAllForStaff } from "./session.mjs";
+import { revokeAllForAccount } from "./account-session.mjs";
 import { resolveDefaultOrg } from "./org.mjs";
 import { normalizeEmail } from "./login.mjs";
 
@@ -114,9 +115,9 @@ export async function inviteStaff(db, { actor, email, name, role, orgId, ttl = I
 }
 
 // requestPasswordReset — always reports ok, and returns a token only when the
-// address actually belongs to a staff member who can use one. The caller emails
-// the token if present and says "check your inbox" either way, so the endpoint
-// does not become a staff-directory oracle.
+// address belongs to staff, an affiliate, or a partner who can use one. The
+// caller emails the token if present and says "check your inbox" either way,
+// so the endpoint does not become a directory oracle.
 export async function requestPasswordReset(db, { email, orgId, ttl = RESET_TTL_MS } = {}) {
   const org = orgId || (await resolveDefaultOrg(db));
   const normEmail = normalizeEmail(email);
@@ -126,23 +127,49 @@ export async function requestPasswordReset(db, { email, orgId, ttl = RESET_TTL_M
     `SELECT id, status FROM staff WHERE org_id = $1 AND lower(email) = $2 LIMIT 1`,
     [org, normEmail]
   )).rows[0];
-  // Suspended accounts do not get to reset their way back in.
-  if (!staff || staff.status === "suspended") return { ok: true, token: null };
+  if (staff) {
+    // Suspended accounts do not get to reset their way back in.
+    if (staff.status === "suspended") return { ok: true, token: null };
+
+    await db.query(
+      `UPDATE password_resets SET used_at = now()
+        WHERE staff_id = $1 AND kind = 'reset' AND used_at IS NULL`,
+      [staff.id]
+    );
+
+    const token = newToken();
+    const expiresAt = new Date(Date.now() + ttl);
+    await db.query(
+      `INSERT INTO password_resets (org_id, staff_id, token_hash, kind, expires_at)
+       VALUES ($1,$2,$3,'reset',$4)`,
+      [org, staff.id, hashToken(token), expiresAt]
+    );
+    return { ok: true, token, expiresAt, staffId: staff.id };
+  }
+
+  const account = (await db.query(
+    `SELECT id, status, kind FROM accounts
+      WHERE org_id = $1 AND lower(email) = $2
+        AND kind IN ('affiliate', 'partner')
+      LIMIT 1`,
+    [org, normEmail]
+  )).rows[0];
+  if (!account || account.status === "suspended") return { ok: true, token: null };
 
   await db.query(
     `UPDATE password_resets SET used_at = now()
-      WHERE staff_id = $1 AND kind = 'reset' AND used_at IS NULL`,
-    [staff.id]
+      WHERE account_id = $1 AND kind = 'reset' AND used_at IS NULL`,
+    [account.id]
   );
 
   const token = newToken();
   const expiresAt = new Date(Date.now() + ttl);
   await db.query(
-    `INSERT INTO password_resets (org_id, staff_id, token_hash, kind, expires_at)
-     VALUES ($1,$2,$3,'reset',$4)`,
-    [org, staff.id, hashToken(token), expiresAt]
+    `INSERT INTO password_resets (org_id, staff_id, account_id, token_hash, kind, expires_at)
+     VALUES ($1, NULL, $2, $3, 'reset', $4)`,
+    [org, account.id, hashToken(token), expiresAt]
   );
-  return { ok: true, token, expiresAt, staffId: staff.id };
+  return { ok: true, token, expiresAt, accountId: account.id };
 }
 
 // setPasswordWithToken — the one path that writes a password_hash. Accepts both
@@ -165,11 +192,27 @@ export async function setPasswordWithToken(db, { token, password, expectKind = n
         AND used_at IS NULL
         AND expires_at > now()
         AND ($2::text IS NULL OR kind = $2::text)
-      RETURNING staff_id, org_id, kind`,
+      RETURNING staff_id, account_id, org_id, kind`,
     [hashToken(token), expectKind]
   )).rows[0];
 
   if (!consumed) return { ok: false, status: 400, error: "invalid_or_expired_token" };
+
+  if (consumed.account_id) {
+    const account = (await db.query(
+      `UPDATE accounts
+          SET password_hash = $2,
+              status = CASE WHEN status = 'suspended' THEN status ELSE 'active' END
+        WHERE id = $1
+        RETURNING id, org_id, email, name, kind, status`,
+      [consumed.account_id, passwordHash]
+    )).rows[0];
+    if (!account) return { ok: false, status: 400, error: "invalid_or_expired_token" };
+    const revoked = await revokeAllForAccount(db, consumed.account_id);
+    return { ok: true, account, kind: consumed.kind, sessionsRevoked: revoked };
+  }
+
+  if (!consumed.staff_id) return { ok: false, status: 400, error: "invalid_or_expired_token" };
 
   // A suspended account cannot be reactivated by redeeming an old token.
   const staff = (await db.query(

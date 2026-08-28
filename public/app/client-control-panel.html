@@ -1559,6 +1559,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     paintBlockers(d.open_blockers, hold);
     paintControlPanel(fx, d, cf);
+    var bizCredit = d.business_credit || {};
+    paintBusinesses("full", bizCredit.businesses || []);
 
     /* A file is open, so the tile row is about something and stops standing
        back. The card only turns coral when something is actually stuck — see
@@ -1590,7 +1592,7 @@ document.addEventListener("DOMContentLoaded", function () {
       (d.messages || []).length + " messages");
   }
 
-  var id = FHData.param("id") || FHData.param("client_id");
+  var id = FHData.param("id") || FHData.param("client_id") || FHData.param("client") || FHData.param("contact");
   wireLinks(id);
   /* Nothing picked is not the same as nothing known. It used to print a dash
      where the client's name goes, next to nine more dashes, which reads as a
@@ -2184,7 +2186,7 @@ document.addEventListener("DOMContentLoaded", function () {
       input  = document.getElementById("staff-file-input"),
       list   = document.getElementById("staff-filelist"),
       status = document.getElementById("staff-upload-status"),
-      clientId = FHData.param("id") || FHData.param("client_id");
+      clientId = FHData.param("id") || FHData.param("client_id") || FHData.param("client") || FHData.param("contact");
 
   if (!zone) return;
 
@@ -2262,8 +2264,10 @@ document.addEventListener("DOMContentLoaded", function () {
 (function () {
   "use strict";
   var clientId = (typeof FHData !== "undefined" && FHData.param)
-    ? (FHData.param("id") || FHData.param("client_id") || "")
-    : (new URLSearchParams(location.search).get("id") || new URLSearchParams(location.search).get("client_id") || "");
+    ? (FHData.param("id") || FHData.param("client_id") || FHData.param("client") || FHData.param("contact") || "")
+    : (function (p) {
+        return p.get("id") || p.get("client_id") || p.get("client") || p.get("contact") || "";
+      })(new URLSearchParams(location.search));
   var statusEl = document.getElementById("fh-funding-apply-status");
   var listEl = document.getElementById("fh-funding-apply-list");
   if (!statusEl || !listEl) return;

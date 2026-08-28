@@ -248,7 +248,7 @@ test("the RAW seed — no emit step — is readable as a real bureau pull", { sk
   assert.deepEqual(adapter.available, ["experian", "equifax", "transunion"],
     "all three bureaus answered in the seeded pull, so all three must reach the engine");
   assert.deepEqual(adapter.missing.client.map((m) => m.field), ["hasLLC"],
-    "hasLLC has no column anywhere and is missing by design (src/underwrite/adapter.mjs:69-73); " +
+    "this seed has no businesses row, so hasLLC is missing; " +
     "anything else in this list is a field the seed forgot to write");
 
   const underwrite = computeUnderwrite(adapter.bureaus, adapter.businessAgeMonths);

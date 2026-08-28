@@ -17,7 +17,14 @@
 import { test, before, after, describe } from "node:test";
 import assert from "node:assert";
 import { db, close } from "../db.mjs";
-import { asStaff, asPartner } from "../partners/rls.mjs";
+import { asStaff as _asStaff, asPartner as _asPartner } from "../partners/rls.mjs";
+import { rlsPool, rlsIsReal, closeRlsPool } from "../testing/rls-pool.mjs";
+
+/* SET UP as the owner, ASSERT as the unprivileged role. A superuser
+   bypasses every RLS policy, so these isolation assertions are only
+   meaningful through APP_DATABASE_URL. See src/testing/rls-pool.mjs. */
+const asStaff = (fn, deps) => _asStaff(fn, { pool: rlsPool, ...(deps || {}) });
+const asPartner = (partnerId, fn, deps) => _asPartner(partnerId, fn, { pool: rlsPool, ...(deps || {}) });
 
 const HAVE_DB = !!process.env.DATABASE_URL;
 const SLUG = "ep-test-";

@@ -3,7 +3,7 @@
 import { db } from "../src/db.mjs";
 import { requireAuth } from "../src/http/middleware/requireAuth.mjs";
 import { ROLE_SETS, requireRole, isUuid } from "../src/http/read-api.mjs";
-import { setApplicationStatus, listApplicationDecisions, ApplicationStatusError } from "../src/applications/status.mjs";
+import { setApplicationStatus, listApplicationDecisions, listClientDecisionPlays, logBankDecision, ApplicationStatusError } from "../src/applications/status.mjs";
 import { dbDown } from "../src/http/db-down.mjs";
 
 export default async function handler(req, res, deps = {}) {
@@ -25,32 +25,55 @@ export default async function handler(req, res, deps = {}) {
 
   try {
     if (req.method === "GET") {
-      const applicationId = (req.query || {}).application_id;
-      if (!isUuid(applicationId)) {
-        return res.status(400).json({ ok: false, error: "application_id required" });
+      const q = req.query || {};
+      const limit = Number(q.limit) || 50;
+      if (isUuid(q.application_id)) {
+        const decisions = await listApplicationDecisions(database, {
+          orgId,
+          applicationId: q.application_id,
+          limit
+        });
+        return res.status(200).json({ ok: true, decisions });
       }
-      const decisions = await listApplicationDecisions(database, {
-        orgId,
-        applicationId,
-        limit: Number((req.query || {}).limit) || 50
-      });
-      return res.status(200).json({ ok: true, decisions });
+      if (isUuid(q.client_id)) {
+        const decisions = await listClientDecisionPlays(database, {
+          orgId,
+          clientId: q.client_id,
+          limit
+        });
+        return res.status(200).json({ ok: true, decisions });
+      }
+      return res.status(400).json({ ok: false, error: "application_id or client_id required" });
     }
 
     const body = req.body || {};
-    if (!isUuid(body.application_id)) {
-      return res.status(400).json({ ok: false, error: "application_id required" });
+    const playName = body.play_name || body.playName || null;
+    if (isUuid(body.application_id)) {
+      const application = await setApplicationStatus(database, {
+        orgId,
+        applicationId: body.application_id,
+        status: body.status,
+        eventType: body.event_type || "status_change",
+        staff,
+        notes: body.notes || null,
+        playName,
+        patch: body.patch || null
+      });
+      return res.status(200).json({ ok: true, application });
     }
-    const application = await setApplicationStatus(database, {
-      orgId,
-      applicationId: body.application_id,
-      status: body.status,
-      eventType: body.event_type || "status_change",
-      staff,
-      notes: body.notes || null,
-      patch: body.patch || null
-    });
-    return res.status(200).json({ ok: true, application });
+    if (isUuid(body.client_id) && isUuid(body.lender_id)) {
+      const application = await logBankDecision(database, {
+        orgId,
+        clientId: body.client_id,
+        lenderId: body.lender_id,
+        status: body.status,
+        playName,
+        staff,
+        notes: body.notes || null
+      });
+      return res.status(200).json({ ok: true, application });
+    }
+    return res.status(400).json({ ok: false, error: "application_id required" });
   } catch (err) {
     if (err instanceof ApplicationStatusError) {
       return res.status(err.status || 400).json({ ok: false, error: err.code, message: err.message });

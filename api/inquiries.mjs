@@ -34,7 +34,7 @@ import { requirePrincipal } from "../src/http/middleware/requirePrincipal.mjs";
 import { requireActiveShift } from "../src/http/middleware/requireActiveShift.mjs";
 import { SUPER_ROLES } from "../src/http/middleware/requireRole.mjs";
 import { isUuid, CLIENT_DATA_ERRORS } from "../src/http/read-api.mjs";
-import { logAttempt, confirmRemoval, setStatus, listAttempts, InquiryWriteError } from "../src/inquiries/work.mjs";
+import { logAttempt, confirmRemoval, setStatus, setExpectedName, listAttempts, InquiryWriteError } from "../src/inquiries/work.mjs";
 import { emit } from "../src/events/bus.mjs";
 
 export default async function handler(req, res) {
@@ -104,8 +104,14 @@ export default async function handler(req, res) {
         case "status":
           inquiry = await setStatus(db, { inquiryId, staffId, orgId, status: body.status });
           break;
+        case "expected":
+          inquiry = await setExpectedName(db, {
+            inquiryId, staffId, orgId,
+            expectedName: body.expected_name || body.expectedName
+          });
+          break;
         default:
-          return res.status(400).json({ ok: false, error: "action must be one of: attempt, confirm, status" });
+          return res.status(400).json({ ok: false, error: "action must be one of: attempt, confirm, status, expected" });
       }
 
       /* Emit inquiry.removed when a row is confirmed/cleared so C-03 can run.

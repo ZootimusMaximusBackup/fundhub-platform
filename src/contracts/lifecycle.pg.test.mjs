@@ -64,6 +64,16 @@ describe("contracts — the full lifecycle", { skip: !HAVE_DB ? "no DATABASE_URL
     }
     await db.query(`ALTER TABLE contract_templates DISABLE TRIGGER trg_contract_templates_no_delete`);
     await db.query(`DELETE FROM contract_templates WHERE template_key LIKE $1`, [KEY_LIKE]);
+    /* KEY_LIKE does not catch everything this test writes: it also creates a
+       plain 'FUNDING-AGREEMENT' template. Those rows carry created_by pointing
+       at the test staff, and contract_templates_created_by_fkey does not
+       cascade, so the staff DELETE below fails on them. Clear by author as well
+       as by key, inside the same trigger-disabled window. */
+    await db.query(
+      `DELETE FROM contract_templates
+        WHERE created_by IN (SELECT id FROM staff WHERE email LIKE $1)`,
+      [STAFF_EMAIL_LIKE]
+    );
     await db.query(`ALTER TABLE contract_templates ENABLE TRIGGER trg_contract_templates_no_delete`);
     await db.query(`DELETE FROM staff WHERE email LIKE $1`, [STAFF_EMAIL_LIKE]);
   };

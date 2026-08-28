@@ -13,6 +13,7 @@ import {
 import { safeError } from "../../src/http/health.mjs";
 import { defaultOrgId } from "../../src/events/bus.mjs";
 import { resolveClient } from "../../src/handlers/client-lifecycle.mjs";
+import { normalizePhone } from "../../src/messaging/providers/bland-voice.mjs";
 
 const KNOWN_PAYLOAD_KEYS = new Set(
   CF_SURVEY_QUESTIONS.filter((q) => q.type !== "contact").map((q) => q.payloadKey)
@@ -52,7 +53,8 @@ export function parseSurveySubmitBody(body) {
 
   const name = cleanStr(body.name || body.full_name, 120);
   const email = cleanStr(body.email, 160).toLowerCase();
-  const phone = cleanStr(body.phone || body.mobile, 40);
+  const rawPhone = cleanStr(body.phone || body.mobile, 40);
+  const phone = normalizePhone(rawPhone) || rawPhone;
   const business = cleanStr(body.business || body.business_name, 160);
   const source = cleanStr(body.source, 80) || "website:home";
   const answersIn = body.answers && typeof body.answers === "object" ? body.answers : {};

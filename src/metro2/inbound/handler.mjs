@@ -31,7 +31,7 @@ export async function handleInboundResponse(db, {
     items,
     parseResult,
     confirmedOutcomes: parseResult.outcomes,
-    confirmedBy: confirmedBy || "system_high_confidence",
+    confirmedBy: confirmedBy || null,
     threshold: autoConfirmThreshold
   });
   return {

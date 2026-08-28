@@ -152,7 +152,7 @@ function detailsFor(missing = {}, field) {
  * computeUnderwrite result, next to the engine constant it was compared against,
  * so an owner reading the sentence can see the arithmetic that produced it.
  */
-function basisFor(topic, uw) {
+function basisFor(topic, uw, llc = {}) {
   const m = uw?.metrics ?? {};
   const o = uw?.optimization ?? {};
   const p = uw?.personal ?? {};
@@ -214,10 +214,13 @@ function basisFor(topic, uw) {
     case "llc":
       return {
         fundable: uw?.fundable ?? null,
-        has_llc: null,
-        llc_age_months: null,
-        note: "fundhub stores no LLC or business-entity field; the engine was given no LLC data " +
-              "and applied its own defaults (no LLC, age 0)"
+        has_llc: llc.hasLLC ?? null,
+        llc_age_months: llc.llcAgeMonths ?? null,
+        note: llc.hasLLC
+          ? "read from the companies saved on this client (`businesses`); the age is the oldest " +
+            "stored age_months"
+          : "no company is saved on this client, so the engine applied its own defaults " +
+            "(no LLC, age 0)"
       };
 
     case "fallback":
@@ -247,7 +250,7 @@ function basisFor(topic, uw) {
  * @returns {Array} [{ text, id, topic, engine, recognised, basis,
  *                     restsOnMissingData, missingFields }]
  */
-export function annotateSuggestions(suggestions = [], uw = {}, missing = {}) {
+export function annotateSuggestions(suggestions = [], uw = {}, missing = {}, llc = {}) {
   const missingNames = missingFieldNames(missing);
 
   return (Array.isArray(suggestions) ? suggestions : []).map((text) => {
@@ -278,7 +281,7 @@ export function annotateSuggestions(suggestions = [], uw = {}, missing = {}) {
       topic: entry.topic,
       engine: ENGINES.UNDERWRITE_IQ,
       recognised: true,
-      basis: basisFor(entry.topic, uw),
+      basis: basisFor(entry.topic, uw, llc),
       // The honest-partial rule. True means at least one number this sentence
       // rests on was never entered, so the sentence is running on the engine's
       // zero-default rather than on a measurement.
@@ -370,7 +373,10 @@ export function buildReport({ underwrite, suggestions, adapter, fundhubUtilizati
                   "a line with no stored open date reads as unseasoned"
     },
     underwrite: uw,
-    suggestions: annotateSuggestions(suggestions, uw, missing),
+    suggestions: annotateSuggestions(suggestions, uw, missing, {
+      hasLLC: adapter?.hasLLC ?? null,
+      llcAgeMonths: adapter?.llcAgeMonths ?? null
+    }),
     utilizationVoices,
     dataCompleteness: {
       // Which bureaus the engine actually assessed, and which it was not given.

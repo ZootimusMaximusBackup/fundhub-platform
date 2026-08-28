@@ -20,7 +20,7 @@ const res = () => {
 };
 
 describe("/api/finance/entities", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
-  let org, client, owner;
+  let orgId, client, owner;
 
   const call = async ({ method = "POST", body, query = {}, token } = {}) => {
     const r = res();
@@ -39,19 +39,23 @@ describe("/api/finance/entities", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
   }
 
   before(async () => {
-    org = await resolveDefaultOrg(db);
+    /* resolveDefaultOrg returns the id STRING (src/auth/org.mjs:14 caches
+       r.rows[0].id), not a row. This read `org.id`, which was undefined, so
+       every INSERT here passed NULL for org_id and the whole file died in
+       before() on the staff not-null constraint - 0 tests ever ran. */
+    orgId = await resolveDefaultOrg(db);
     await purge();
     const staffId = (await db.query(
       `INSERT INTO staff (org_id, name, role, email, status)
        VALUES ($1,'Owner','owner',$2,'active') RETURNING id`,
-      [org.id, `entities_http_test_owner@example.com`]
+      [orgId, `entities_http_test_owner@example.com`]
     )).rows[0].id;
-    owner = { id: staffId, token: (await createSession(db, { staffId, orgId: org.id })).token };
+    owner = { id: staffId, token: (await createSession(db, { staffId, orgId: orgId })).token };
 
     client = (await db.query(
       `INSERT INTO clients (org_id, first_name, last_name, email)
        VALUES ($1,'Ent','Test',$2) RETURNING id`,
-      [org.id, `entities.http.test.one@example.com`]
+      [orgId, `entities.http.test.one@example.com`]
     )).rows[0].id;
   });
 

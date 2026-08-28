@@ -69,6 +69,16 @@ test("client-portal offer tiles hide list prices except the fixed $32 soft pull"
   assert.ok(html.includes("price:'$32'"), "soft pull $32 stays visible");
 });
 
+test("lenders.html with a client uses the match list, not the whole book", () => {
+  const html = fs.readFileSync(path.join(APP, "lenders.html"), "utf8");
+  assert.ok(html.includes("scopedClientId"), "must read client_id from the URL");
+  assert.ok(html.includes("/api/read/lender-matches"), "open-client desk must load matches");
+  assert.ok(
+    /if \(scopedClientId\)[\s\S]*\/api\/read\/lender-matches/.test(html),
+    "client-open load must call lender-matches, not only the full book"
+  );
+});
+
 test("client-control-panel.html binds the live URL client and does not fake a pull", () => {
   const html = fs.readFileSync(path.join(APP, "client-control-panel.html"), "utf8");
   assert.ok(html.includes("FHData.client(id)"), "must read GET /api/dashboard/client");
@@ -88,6 +98,13 @@ test("client-control-panel.html binds the live URL client and does not fake a pu
   assert.match(html, /JSON\.stringify\(\{ client_id: id, bureau: spec\.bureau \}\)/);
   assert.ok(!/JSON\.stringify\(\{[^}]*simulate/.test(html), "CCP must not send simulate on a staff pull");
   assert.ok(html.includes("/api/read/lender-matches"), "Generate Apps must refresh the live lender match list");
+  assert.ok(html.includes("/api/applications"), "Bank yes/no must stamp a play on the existing applications door");
+  assert.ok(html.includes("/api/applications?client_id="), "Apply list must read saved plays back onto the row");
+  assert.ok(html.includes("Play name (optional)"), "staff can type or pick a play");
+  assert.ok(
+    html.includes("Apply shows the client email, not a Fundhub address"),
+    "Apply door must tell staff to use the client email, not Fundhub"
+  );
 });
 
 test("sales-floor.html does not ship a hardcoded manager name or fake cash", () => {
@@ -207,6 +224,16 @@ test("galaxy.html does not seed sample standing workers", () => {
   assert.ok(/var STANDING = \[\]/.test(html));
   assert.ok(!/\['marcus','dc'\]/.test(html));
   assert.ok(!/Jordan Blake|Marcus Webb|Nina Torres/.test(html));
+});
+
+test("Galaxy rails do not paint Alt-Fin (Lendflow)", () => {
+  for (const file of ["galaxy.html", "partner-galaxy.html"]) {
+    const html = fs.readFileSync(path.join(APP, file), "utf8");
+    assert.ok(!/name:'Alt-Fin \(Lendflow\)'/.test(html),
+      file + " still labels an Alt-Fin (Lendflow) rail");
+    assert.ok(/name:'Card Stacking'/.test(html),
+      file + " must still show Card Stacking");
+  }
 });
 
 test("client-control-panel right column is paper, not a black gutter", () => {

@@ -130,3 +130,50 @@ export async function linkMessage(db, { messageId, conversationId } = {}) {
   );
   return { linked: res.rows.length > 0 };
 }
+
+/**
+ * threadMessage(db, { orgId, clientId, channel, messageId, createdAt, source })
+ *
+ * Upsert the (client, channel) thread and point one already-written `messages`
+ * row at it. The two calls above, in the order every writer needs them.
+ *
+ * WHY THIS IS EXPORTED RATHER THAN LIVING IN ONE HANDLER. It was a private
+ * function in src/handlers/comms.mjs, so the two webhook handlers threaded
+ * their rows and NOTHING ELSE DID. Every workflow send — the welcome email, the
+ * welcome text, the round-started text — wrote conversation_id NULL, and
+ * api/read/inbox.mjs lists `conversations`. A client whose only messages were
+ * automatic therefore had no row in the staff inbox at all: the company had
+ * texted them and the Messaging screen could not find them by name. 600 of the
+ * 844 message rows on production were unthreaded when this was written, 15
+ * clients entirely invisible. The fix is one helper every writer can call, not
+ * a second copy of these six lines per writer.
+ *
+ * NEVER THROWS, and that is deliberate rather than lazy. The message row is
+ * already committed by the time this runs. A thread write that fails must not
+ * turn a sent message into a failed send — the consequence of failing is a row
+ * that is missing from a list, and the consequence of throwing is a client who
+ * never gets told anything. The cost is stated where it is paid: a thread whose
+ * pulse write failed sorts by created_at instead. See api/read/inbox.mjs.
+ *
+ * NO CLIENT, NO THREAD. conversations.client_id is NOT NULL — an inbound SMS
+ * from a number nobody recognises, or a contract email to a counterparty who is
+ * not the client on file, belongs to no client's thread. NULL stays, honestly.
+ */
+export async function threadMessage(
+  db, { orgId, clientId, channel, messageId, createdAt = null, source = "conversations" } = {}
+) {
+  if (!clientId || !messageId) return null;
+  try {
+    // summary is not passed: no caller has one, and sentiment is never written
+    // at all — see the header of this file.
+    const convo = await upsertConversation(db, { orgId, clientId, channel, lastPulseAt: createdAt || null });
+    await linkMessage(db, { messageId, conversationId: convo.id });
+    return convo;
+  } catch (err) {
+    console.error(
+      `[${source}] conversation threading failed for ${channel} message ` +
+      `${messageId}: ${err && err.message}`
+    );
+    return null;
+  }
+}

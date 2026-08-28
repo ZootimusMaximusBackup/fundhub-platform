@@ -224,6 +224,14 @@ export function defaultContractValues({ offerKey = null, tier = null } = {}) {
       funding_scope: "Full done-for-you funding program: matching, rounds, and inquiry sweeps."
     };
   }
+  if (templateKey === "FUNDING-MASTERY-AGREEMENT") {
+    return {
+      ...base,
+      program_fee: price || "$5,000",
+      term_days: "365",
+      scope: "Funding Mastery program access: the full A-to-Z course on your own file. This is education. You do the work."
+    };
+  }
   return base;
 }
 

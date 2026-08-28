@@ -22,12 +22,20 @@
 // survey nudge, n-01 cold nurture and at-01 first-touch capture, so emitting it
 // here would chase an education buyer for a funding survey they never started.
 // A canonical name is not invented and allowNonCanonical is not passed.
+//
+// THE SALES CARD IS WRITTEN DIRECTLY, for the same reason. The homepage's card
+// only appears because onEntryCaptured calls advanceCardToStage; the event is
+// how that handler is reached, not what draws the card. Calling the helper here
+// puts the enrollment on Sales/new_lead without waking the funding nurture
+// workflows that entry.captured triggers.
 
 import { db } from "../../src/db.mjs";
 import { defaultOrgId } from "../../src/events/bus.mjs";
 import { resolveClient } from "../../src/handlers/client-lifecycle.mjs";
 import { safeError } from "../../src/http/health.mjs";
 import { createEnrollment, isProgram, EnrollmentError } from "../../src/education/enrollments.mjs";
+import { advanceCardToStage } from "../../src/workflows/cards.mjs";
+import { normalizePhone } from "../../src/messaging/providers/bland-voice.mjs";
 
 function readBody(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
@@ -64,7 +72,8 @@ export function parseEducationEnrollBody(body) {
   const program = cleanStr(body.program, 60);
   const name = cleanStr(body.full_name || body.name, 120);
   const email = cleanStr(body.email, 160).toLowerCase();
-  const phone = cleanStr(body.phone || body.mobile, 40);
+  const rawPhone = cleanStr(body.phone || body.mobile, 40);
+  const phone = normalizePhone(rawPhone) || rawPhone;
   const pageUrl = cleanStr(body.page_url, 500);
 
   if (!isProgram(program)) return { ok: false, error: "unknown_program" };
@@ -126,9 +135,28 @@ export async function runEducationEnroll(parsed, deps = {}) {
     pageUrl: parsed.page_url
   });
 
+  // Put the person on the Sales board. Forward-only, so an enrollment from
+  // someone already further along cannot drag their card backward. A card that
+  // cannot be placed must not lose the enrollment row written above.
+  let carded = false;
+  if (clientId) {
+    try {
+      const advance = deps.advanceCardToStage || advanceCardToStage;
+      const placed = await advance(database, {
+        orgId,
+        clientId,
+        pipelineKey: "sales",
+        stageKey: "new_lead"
+      });
+      carded = !!(placed && (placed.moved || placed.reason === "already_at_or_past"));
+    } catch {
+      carded = false;
+    }
+  }
+
   // The id is returned so a support person can be pointed at one row. Nothing
   // about it is a credential and it grants access to nothing.
-  return { ok: true, id: row.id, status: row.status, clientId };
+  return { ok: true, id: row.id, status: row.status, clientId, carded };
 }
 
 export default async function handler(req, res) {

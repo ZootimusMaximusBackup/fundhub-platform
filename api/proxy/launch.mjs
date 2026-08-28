@@ -14,6 +14,8 @@ export const PROXY_ROLES = new Set(["owner", "funding_advisor"]);
 const NEXT_STEP = {
   oxylabs_credentials_missing:
     "The proxy account is not set up yet. Ask the owner to add the proxy login before applying.",
+  oxylabs_auth_failed:
+    "The proxy login was rejected. The owner needs to fix OXYLABS_USERNAME and OXYLABS_PASSWORD (account id, no customer- prefix).",
   client_location_missing:
     "Add the client's city and state on their file, then try Apply again.",
   application_url_missing:
@@ -97,6 +99,7 @@ export default async function handler(req, res, deps = {}) {
       verification: result.verification,
       application_url: result.application_url,
       lender: result.lender,
+      bank_form_email: result.bank_form_email,
       routing_active: false,
       extension_required: true,
       notice:

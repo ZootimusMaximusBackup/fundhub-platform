@@ -159,6 +159,11 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .doc-need .dn-age{font-family:var(--mono);font-size:var(--fs-caption);color:var(--amber)}
 .upload-btn{background:var(--ink);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-weight:700;font-size:var(--fs-body);transition:background .12s,opacity .12s}
 .upload-btn:hover{background:var(--ink2)}
+/* The door has to ask WHAT the file is. Without a subtype every portal upload
+   landed as "other", and checkDocPacket() matches on subtype — so the identity
+   packet could never be completed from the portal, through any door. */
+.door-type{display:block;width:100%;margin-bottom:8px;padding:9px 11px;border:1px solid var(--amber-line);border-radius:8px;background:#fff;font-size:var(--fs-body);font-family:inherit;color:var(--ink)}
+.door-type:focus-visible{outline:2px solid var(--blue-line);outline-offset:2px}
 .upload-btn:disabled{opacity:.6;cursor:progress}
 .upload-btn:focus-visible,.file-x:focus-visible,.upload-more:focus-visible{outline:2px solid var(--blue-line);outline-offset:2px}
 .upload-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -550,16 +555,38 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
         <div id="upload-doors" class="upload-doors">
           <div class="upload-door door-funding" data-kind="client_upload">
             <div class="door-title">Funding documents</div>
+            <select class="door-type" data-subtype aria-label="What kind of document is this?">
+              <option value="">What is this? (helps us file it)</option>
+              <option value="id_document">Photo ID</option>
+              <option value="proof_of_address">Proof of address</option>
+              <option value="bank_statement">Bank statement</option>
+              <option value="ssn_card">Social Security card</option>
+              <option value="proof_of_income">Proof of income</option>
+              <option value="tax_return">Tax return</option>
+              <option value="additional_fraud_docs">Fraud / identity theft papers</option>
+              <option value="other">Something else</option>
+            </select>
             <button class="upload-btn" type="button" data-upload-btn>Upload funding docs</button>
             <input type="file" data-file-input multiple hidden accept=".pdf,.png,.jpg,.jpeg,.heic">
           </div>
           <div class="upload-door door-inquiry" data-kind="inquiry_doc">
             <div class="door-title">Inquiry documents</div>
+            <select class="door-type" data-subtype aria-label="What kind of document is this?">
+              <option value="">What is this? (helps us file it)</option>
+              <option value="ftc_report">FTC identity theft report</option>
+              <option value="id_document">Photo ID</option>
+              <option value="other">Something else</option>
+            </select>
             <button class="upload-btn" type="button" data-upload-btn>Upload inquiry docs</button>
             <input type="file" data-file-input multiple hidden accept=".pdf,.png,.jpg,.jpeg,.heic">
           </div>
           <div class="upload-door door-bureau" data-kind="bureau_response">
             <div class="door-title">Upload your bureau response</div>
+            <select class="door-type" data-subtype aria-label="What kind of document is this?">
+              <option value="">What is this? (helps us file it)</option>
+              <option value="bureau_letter">Letter from a credit bureau</option>
+              <option value="other">Something else</option>
+            </select>
             <button class="upload-btn" type="button" data-upload-btn>Upload bureau response</button>
             <input type="file" data-file-input multiple hidden accept=".pdf,.png,.jpg,.jpeg,.heic">
           </div>
@@ -1144,14 +1171,21 @@ document.addEventListener('DOMContentLoaded', function(){
     try { var a=JSON.parse(localStorage.getItem("fh_account")||"null"); return a&&(a.clientId||a.client_id)||null; } catch(e){ return null; }
   }
   [].slice.call(root.querySelectorAll(".upload-door")).forEach(function(door){
-    var btn=door.querySelector("[data-upload-btn]"), input=door.querySelector("[data-file-input]"), kind=door.getAttribute("data-kind")||"client_upload", picked=[];
+    var btn=door.querySelector("[data-upload-btn]"), input=door.querySelector("[data-file-input]"), kind=door.getAttribute("data-kind")||"client_upload", typeSel=door.querySelector("[data-subtype]"), picked=[];
     if(!btn||!input) return;
     btn.addEventListener("click", function(){
       if(!picked.length){ input.click(); return; }
       var id=clientId();
       if(!window.FHData||!id){ btn.textContent="Uploads are off"; return; }
       btn.textContent="Sending…";
-      FHData.uploadFiles("/api/documents-upload", picked, { client_id: id, kind: kind }).then(function(res){
+      /* subtype is what checkDocPacket() matches on. Left unset the server
+         defaults it to "other", which is exactly the old behaviour — so an
+         unanswered picker is no worse than before, and an answered one is what
+         finally lets a portal upload complete the identity packet. */
+      var fields = { client_id: id, kind: kind };
+      var sub = typeSel && typeSel.value ? typeSel.value : "";
+      if (sub) fields.subtype = sub;
+      FHData.uploadFiles("/api/documents-upload", picked, fields).then(function(res){
         btn.textContent = res.ok ? "Sent" : "Try again";
         if(res.ok) picked=[];
       });
@@ -1238,12 +1272,43 @@ document.addEventListener("DOMContentLoaded", async function () {
   function setFundingVisible(hasFunding) {
     document.body.classList.toggle("no-funding", !hasFunding);
   }
-  function setUploadDoors(active) {
-    var f=!!(active&&active.funding), i=!!(active&&active.inquiry), b=!!(active&&active.bureau_response);
+  /* TWO READS OPEN THESE DOORS AND EITHER CAN LAND FIRST.
+     Entitlements say which paid lanes this client holds. portal-summary says
+     whether an inquiry case is open on their file. Both drive the same three
+     doors, so each records what it learned and asks for one repaint instead of
+     overwriting the other's answer. */
+  var doorLanes = { funding: false, inquiry: false, bureau_response: false };
+  var inquiryCaseOpen = false;
+
+  function applyDoors() {
+    var f = doorLanes.funding;
+    var i = doorLanes.inquiry || inquiryCaseOpen;
+    var b = doorLanes.bureau_response;
     document.body.classList.toggle("no-funding-door", !f);
     document.body.classList.toggle("no-inquiry-door", !i);
     document.body.classList.toggle("no-bureau-door", !b);
     document.body.classList.toggle("no-upload-doors", !(f||i||b));
+    /* The whole "Send a file" card hides with the last door — an empty card
+       titled "Use the door that matches what you have" is worse than none. */
+    document.body.classList.toggle("no-docs", !(f||i||b));
+  }
+  function setUploadDoors(active) {
+    doorLanes = {
+      funding: !!(active && active.funding),
+      inquiry: !!(active && active.inquiry),
+      bureau_response: !!(active && active.bureau_response)
+    };
+    applyDoors();
+  }
+  /* AN OPEN INQUIRY CASE IS ITS OWN KEY TO THE INQUIRY DOOR.
+     The inquiry-removal product grants no entitlement on purpose
+     (db/migrations/180_product_entitlements_seed.sql), so gating this door on
+     entitlements alone left every inquiry client reading "0 unlocked" with
+     nowhere to send the ID, proof of address and authorization DOC-01 had just
+     asked them for. */
+  function setInquiryCaseOpen(open) {
+    inquiryCaseOpen = !!open;
+    applyDoors();
   }
   function doorsFromEntitlementCodes(codes) {
     var set={}; (codes||[]).forEach(function(c){set[String(c||"").toLowerCase()]=1;});
@@ -1674,6 +1739,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   FHData.wire(FHData.portalSummary(clientId ? { client_id: clientId } : {}),
     "portal-summary", function (data) {
       if (!STAFF_ROLES[roleHint()]) paintDocs(data.documents || []);
+      setInquiryCaseOpen(data.inquiry_open);
       var note = document.getElementById("doc-agent-note");
       if (note) {
         var msg = data.doc_agent_message;
@@ -1708,9 +1774,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       rows.forEach(function (e) { if (e.active) active[e.entitlement_code] = e; });
 
       setFundingVisible(!!active[FUNDING_CODE]);
-      var doorState = doorsFromEntitlementCodes(Object.keys(active));
-      setUploadDoors(doorState);
-      document.body.classList.toggle("no-docs", !(doorState.funding || doorState.inquiry || doorState.bureau_response));
+      setUploadDoors(doorsFromEntitlementCodes(Object.keys(active)));
       paintOwn(active);
       if (active[FUNDING_CODE]) {
         var sbLive = document.getElementById("sb-main");

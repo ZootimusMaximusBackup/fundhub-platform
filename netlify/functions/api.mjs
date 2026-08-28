@@ -27,9 +27,10 @@
 // until someone decides, in writing, whether it is reachable.
 
 import { safeError } from "../../src/http/health.mjs";
-// Keep fontkit in the function zip. letter-generator require()s it at
-// load time; without this import the whole /api/* function 502s.
+// Keep fontkit and pg in the function zip. esbuild leaves both external;
+// without these imports the whole /api/* function 502s (health, login, Start D1).
 import "@pdf-lib/fontkit";
+import "pg";
 import authLogin from "../../api/auth/login.mjs";
 import authLogout from "../../api/auth/logout.mjs";
 import authSession from "../../api/auth/session.mjs";
@@ -78,6 +79,7 @@ import readAgentContext from "../../api/read/agent-context.mjs";
 import readAgentShadowLog from "../../api/read/agent-shadow-log.mjs";
 import readInquiries from "../../api/read/inquiries.mjs";
 import readProducts from "../../api/read/products.mjs";
+import readSloConnections from "../../api/read/slo-connections.mjs";
 import readConversations from "../../api/read/conversations.mjs";
 import readInbox from "../../api/read/inbox.mjs";
 import readMessages from "../../api/read/messages.mjs";
@@ -108,6 +110,7 @@ import readMyNumbers from "../../api/read/my-numbers.mjs";
 import readSalesFloor from "../../api/read/sales-floor.mjs";
 import readCompanyActivity from "../../api/read/company-activity.mjs";
 import readCallOutcomes from "../../api/read/call-outcomes.mjs";
+import readUnrecordedCalls from "../../api/read/unrecorded-calls.mjs";
 import callOutcomesWrite from "../../api/call-outcomes.mjs";
 import readCustomerInsights from "../../api/read/customer-insights.mjs";
 import customerInsightsWrite from "../../api/customer-insights.mjs";
@@ -207,6 +210,7 @@ import agentCall from "../../api/agent-call.mjs";
 import pipelineCards from "../../api/pipeline-cards.mjs";
 import pipelineClients from "../../api/pipeline-clients.mjs";
 import productsWrite from "../../api/products.mjs";
+import sloConnectionsWrite from "../../api/slo-connections.mjs";
 import clientNotes from "../../api/client-notes.mjs";
 import commissionRules from "../../api/commission-rules.mjs";
 import commissionsWrite from "../../api/commissions.mjs";
@@ -289,6 +293,8 @@ export const ROUTES = {
   /* Products & Commissions product ladder edits. ROLE_SETS.FINANCE — prices are
      configuration, same gate as other money-config writes. */
   "products": productsWrite,
+  /* Owner SLO Connections. ROLE_SETS.OPS. Maps ClickFunnels IDs to a product. */
+  "slo-connections": sloConnectionsWrite,
   "client-notes": clientNotes,
   "commission-rules": commissionRules,
   /* Commission ledger Approve / Mark paid. ROLE_SETS.FINANCE. Does not send money. */
@@ -357,6 +363,7 @@ export const ROUTES = {
   "read/agent-shadow-log": readAgentShadowLog,
   "read/inquiries": readInquiries,
   "read/products": readProducts,
+  "read/slo-connections": readSloConnections,
   "read/conversations": readConversations,
 
   /* The staff reply inbox's two reads. "read/inbox" is the thread list across
@@ -491,6 +498,7 @@ export const ROUTES = {
   "read/sales-floor": readSalesFloor,
   "read/company-activity": readCompanyActivity,
   "read/call-outcomes": readCallOutcomes,
+  "read/unrecorded-calls": readUnrecordedCalls,
   "call-outcomes": callOutcomesWrite,
   "read/customer-insights": readCustomerInsights,
   "customer-insights": customerInsightsWrite,

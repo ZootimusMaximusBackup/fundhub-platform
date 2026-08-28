@@ -125,18 +125,30 @@ describe("the Documents screen — sent contracts (moved here from Contracts)", 
     assert.match(DOCS, /byDoc\[/, "rows are decorated by lookup, so a miss leaves them plain");
   });
 
-  /* Owner split, 2026-08-17: Documents watches four classes. A fifth kind
-     (client_upload) and a blank uploaded template must not be invented into
-     one of those four. */
-  test("it watches the four named classes and does not invent a fifth", () => {
+  /* Owner split, 2026-08-17: the four outbound classes stay distinct.
+     2026-08-25: bank / FTC / portal files are a named Uploads class of their
+     own — they must not be invented as a soft-pull, contract, invoice, or
+     deliverable. A blank uploaded template still leaves the list. */
+  test("it watches the named classes and does not invent an upload as one of the four outbound classes", () => {
     assert.match(DOCS, /n:'Soft-pull authorizations'/);
     assert.match(DOCS, /n:'Contracts'/);
     assert.match(DOCS, /n:'Invoices'/);
     assert.match(DOCS, /n:'UnderwriteIQ deliverables'/);
+    assert.match(DOCS, /n:'Uploads'/);
+    assert.match(DOCS, /client_upload:\s*"upload"/);
+    assert.match(DOCS, /inquiry_doc:\s*"upload"/);
+    assert.match(DOCS, /bureau_response:\s*"upload"/);
     assert.match(DOCS, /subtype === "template_source"/,
       "blank uploaded templates must leave this list — they are not sent or received");
     assert.equal(/cls = "auth"; unmapped\+\+/.test(DOCS), false,
       "an unknown kind must not be filed as a soft-pull authorization");
+  });
+
+  test("it asks for that person's documents when the URL has a real id", () => {
+    assert.match(DOCS, /docParams\.client_id = cid/);
+    assert.match(DOCS, /FHData\.documents\(docParams\)/);
+    assert.doesNotMatch(DOCS, /localStorage\.getItem\("fh_client"\)/,
+      "last-open client must not hide another person's files from the filter");
   });
 
   test("it never paints a sample banner or duplicate record count over real rows", () => {

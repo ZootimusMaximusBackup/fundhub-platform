@@ -325,7 +325,7 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
     var code = document.createElement("code");
     code.textContent = scopedClientId;
     applyBanner.appendChild(code);
-    applyBanner.appendChild(document.createTextNode(". Click Apply to verify a residential exit near the client, then open the lender URL. Extension = one-click; without it you get copyable proxy settings (routing is NOT claimed active). Chrome proxy is profile-wide; PAC limits to the lender host."));
+    applyBanner.appendChild(document.createTextNode(". Click Apply to check a nearby exit. The bank page opens the safe way only if the Fundhub Proxy add-on is on. If the add-on is off, Apply will not open the bank page — do not open the bank link from this computer."));
     var emptyBanner = document.getElementById("emptyBanner");
     if (emptyBanner && emptyBanner.parentNode) emptyBanner.parentNode.insertBefore(applyBanner, emptyBanner);
   }
@@ -336,15 +336,16 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
     document.getElementById("lenderEmpty").classList.toggle("hide", rows.length > 0);
     document.getElementById("emptyBanner").style.display = rows.length ? "none" : "block";
     document.getElementById("listMeta").textContent = rows.length
-      ? rows.length + " lender" + (rows.length === 1 ? "" : "s")
-      : "Empty — import from Airtable";
+      ? (scopedClientId
+          ? rows.length + " fit"
+          : rows.length + " lender" + (rows.length === 1 ? "" : "s"))
+      : (scopedClientId ? "No lenders fit this file" : "Empty — import from Airtable");
     rows.forEach(function (L) {
       var tr = document.createElement("tr");
       tr.dataset.id = L.id;
       tr.innerHTML =
-        '<td>' + (L.logo_path
-          ? '<img class="lender-logo" src="' + esc(L.logo_path) + '" alt="" width="28" height="28"/>'
-          : '<span class="lender-logo missing" aria-hidden="true"></span>') + '</td>' +
+        '<td><img class="lender-logo" src="' + esc(L.logo_path || "/assets/lenders/placeholder.svg") +
+          '" alt="" width="28" height="28" onerror="this.onerror=null;this.src=\'/assets/lenders/placeholder.svg\'"/></td>' +
         '<td><input data-f="name" value="' + esc(L.name) + '"/></td>' +
         '<td><select data-f="lender_table">' + TABLES.map(function (t) {
           return '<option value="' + t + '"' + (t === L.lender_table ? " selected" : "") + ">" + t + "</option>";
@@ -425,8 +426,27 @@ table.grid .dirty{background:rgba(245,206,143,.25)}
   }
 
   function loadList() {
-    var p = filterQuery();
     document.getElementById("listMeta").textContent = "Loading…";
+    if (scopedClientId) {
+      var mp = new URLSearchParams();
+      mp.set("client_id", scopedClientId);
+      var matchTable = document.getElementById("fTable").value;
+      if (matchTable) mp.set("lender_table", matchTable);
+      fetch("/api/read/lender-matches?" + mp.toString(), { headers: headers() })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d.ok) { toast(d.message || d.error || "Load failed"); rows = []; render(); return; }
+          rows = d.matches || [];
+          render();
+        })
+        .catch(function () {
+          rows = [];
+          render();
+          document.getElementById("listMeta").textContent = "Could not load (sign in?)";
+        });
+      return;
+    }
+    var p = filterQuery();
     fetch("/api/read/lenders?" + p.toString(), { headers: headers() })
       .then(function (r) { return r.json(); })
       .then(function (d) {

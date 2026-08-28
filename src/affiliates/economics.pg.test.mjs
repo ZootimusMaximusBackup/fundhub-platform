@@ -271,16 +271,29 @@ describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
   });
 
   test("a more specific rule wins: affiliate override beats tier default", async () => {
+    /* effective_from set explicitly INTO THE PAST rather than left to now().
+
+       findRule() filters `effective_from <= $5` where $5 is a JavaScript
+       `new Date()`, while the default effective_from is Postgres `now()`. Those
+       are two different clocks, and when the JS one reads even a millisecond
+       earlier the freshly-inserted rule is not yet in force and findRule
+       correctly returns nothing — so this test failed intermittently in a way
+       that looked like broken precedence. Adding a debug query before the call
+       made it pass, which is the tell.
+
+       Pinning the fixture removes the race without weakening the assertion: the
+       rules are unambiguously in force, so what is being tested is precedence
+       and nothing else. */
     await db.query(
       `UPDATE affiliate_commission_rules SET active = false WHERE org_id = $1`, [org]);
     await db.query(
       `INSERT INTO affiliate_commission_rules
-         (org_id, name, tier, calc_method, percent, amount_basis, scope_rule)
-       VALUES ($1,'tier default','direct','percent',10,'sale_price','first_paid_product')`, [org]);
+         (org_id, name, tier, calc_method, percent, amount_basis, scope_rule, effective_from)
+       VALUES ($1,'tier default','direct','percent',10,'sale_price','first_paid_product', now() - interval '1 hour')`, [org]);
     await db.query(
       `INSERT INTO affiliate_commission_rules
-         (org_id, name, tier, affiliate_id, calc_method, percent, amount_basis, scope_rule)
-       VALUES ($1,'A override','direct',$2,'percent',25,'sale_price','first_paid_product')`,
+         (org_id, name, tier, affiliate_id, calc_method, percent, amount_basis, scope_rule, effective_from)
+       VALUES ($1,'A override','direct',$2,'percent',25,'sale_price','first_paid_product', now() - interval '1 hour')`,
       [org, affA]);
 
     const forA = await findRule(db, { orgId: org, tier: "direct", affiliateId: affA });
@@ -335,9 +348,12 @@ describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
 
   test("basisFor implements each documented basis", async () => {
     const sale = await mkSale(client1, repairProduct, 1500);
-    await db.query(`INSERT INTO sale_payments (org_id, sale_id, kind, amount)
-                    VALUES ($1,$2,'deposit',500), ($1,$2,'installment',400),
-                           ($1,$2,'refund',100)`, [org, sale]);
+    /* product_id is NOT NULL since 247_commission_money_chain_identity.sql
+       (the owner's money-chain identity work, 2026-08-20). This insert predates
+       it and threw, taking the whole test with it. Same product the sale is for. */
+    await db.query(`INSERT INTO sale_payments (org_id, sale_id, product_id, kind, amount)
+                    VALUES ($1,$2,$3,'deposit',500), ($1,$2,$3,'installment',400),
+                           ($1,$2,$3,'refund',100)`, [org, sale, repairProduct]);
     assert.equal(await basisFor(db, { amountBasis: "sale_price", saleId: sale }), 1500);
     assert.equal(await basisFor(db, { amountBasis: "deposit_collected", saleId: sale }), 500);
     assert.equal(await basisFor(db, { amountBasis: "cash_collected", saleId: sale }), 900,

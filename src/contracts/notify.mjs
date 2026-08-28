@@ -52,6 +52,7 @@ import { renderTemplate } from "../lib/render-template.mjs";
 import { dispatchOne } from "../messaging/dispatch.mjs";
 import { settingsFor } from "../messaging/outbox.mjs";
 import { createTask } from "../lib/create-task.mjs";
+import { threadMessage } from "../conversations/store.mjs";
 
 /** The two pieces of copy this feature sends. Seeded in db/seed/008. */
 export const SEND_TEMPLATE_KEY = "CONTRACT-SEND-EMAIL";
@@ -148,12 +149,21 @@ export async function queueSignerMessages(db, {
           provider, provider_ref, status, compliance_check_passed, to_address, subject)
        VALUES ($1,$2,'outbound','email',$3,$4,NULL,$5,'queued',true,$6,$7)
        ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING
-       RETURNING id`,
+       RETURNING id, created_at`,
       [orgId, signer.client_id || null, template.template_key, body,
        `contract:${contract.id}:${signer.id}:${purpose}`, signer.email, subject]);
 
-    if (rows[0]) out.queued.push(rows[0].id);
-    else out.skipped.push({ name: signer.name, reason: "already_queued" });
+    if (rows[0]) {
+      out.queued.push(rows[0].id);
+      /* On the client's email thread, so the Messaging screen can find them by
+         name. A counterparty who is not the client on file has no client_id and
+         so gets no thread — the helper returns null and the row keeps its NULL,
+         which is the same rule the comment above the INSERT states. */
+      await threadMessage(db, {
+        orgId, clientId: signer.client_id || null, channel: "email",
+        messageId: rows[0].id, createdAt: rows[0].created_at, source: "contracts"
+      });
+    } else out.skipped.push({ name: signer.name, reason: "already_queued" });
   }
   return out;
 }

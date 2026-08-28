@@ -67,6 +67,27 @@ export const GATE_SOURCE = "messaging-gate";
     guessing which rules apply is the failure this exists to prevent. */
 export const CHANNELS = new Set(["sms", "email", "voice"]);
 
+/** Welcome mail for a partner or affiliate. They are not client rows, so these
+    keys are the only emails allowed out with no clientId attached. */
+export const PARTNER_WELCOME_KEYS = new Set(["AF1", "EMAIL-PARTNER-WELCOME"]);
+
+/** The partner welcome TEXT. Same standing as the email above: a partner has no
+    clients row, so there is no opt-out record to read for them.
+
+    The extra condition that makes this safe is upstream, not here.
+    src/partners/welcome.mjs writes this row ONLY when the applicant ticked the
+    text box on the apply form, so the row existing is itself the consent
+    record — there is no path that queues this key without it.
+
+    Quiet hours are untouched: a partner text queued at 2am still waits for
+    11:00 Eastern like everyone else's. */
+export const PARTNER_WELCOME_SMS_KEYS = new Set(["SMS-PARTNER-WELCOME"]);
+
+/** A destination we could actually text. Deliberately stricter than the email
+    branch's `includes("@")`: a partner text with no real number on the row
+    falls back to recipient_unknown and is blocked, not sent into the dark. */
+const E164 = /^\+[1-9]\d{7,14}$/;
+
 /** Quiet hours, US Eastern, inclusive start and exclusive end.
     23:00 through 10:59 is closed; 11:00 through 22:59 is open. */
 export const QUIET_START_HOUR = 23;
@@ -179,7 +200,8 @@ export async function recipientSkipsQuietHours(db, clientId) {
 
    message: {
      orgId,     — required. Missing means we do not know whose rules apply.
-     clientId,  — required. Missing means opt-out state cannot be established.
+     clientId,  — required for client mail. Affiliate welcome AF1 records
+                  toAddress instead; missing both is a block.
      channel,   — 'sms' | 'email' | 'voice'
      body,      — the rendered text that would be sent
      messageId  — optional; the messages.id row this decision is about, carried
@@ -212,7 +234,7 @@ export async function gate(db, message = {}, options = {}) {
 }
 
 async function run(db, message, { now = () => new Date(), timeZone = QUIET_HOURS_TZ } = {}) {
-  const { orgId, clientId, channel, body = "", messageId = null } = message;
+  const { orgId, clientId, channel, body = "", messageId = null, templateKey = null, toAddress = null } = message;
 
   // NOTE WHAT IS NOT DESTRUCTURED ABOVE: createdAt, scheduledAt, queuedAt.
   // They are absent on purpose — see the sleeping-workflow note in the header.
@@ -231,10 +253,18 @@ async function run(db, message, { now = () => new Date(), timeZone = QUIET_HOURS
   // Read now, from the database, per channel. A missing clientId is a block and
   // not a pass: a message with nobody attached has no opt-out record to check,
   // and "we could not find a record" must never resolve to "nobody objected".
-  if (!clientId) {
+  // A partner or affiliate is not a client row, so their own welcome mail has
+  // no clientId to look up. The address is on the queued row and they asked for
+  // it by filling in the apply form.
+  const welcomeKey = String(templateKey || "");
+  const welcomeTo = String(toAddress || "");
+  const partnerWelcome =
+    (channel === "email" && PARTNER_WELCOME_KEYS.has(welcomeKey) && welcomeTo.includes("@"))
+    || (channel === "sms" && PARTNER_WELCOME_SMS_KEYS.has(welcomeKey) && E164.test(welcomeTo));
+  if (!clientId && !partnerWelcome) {
     reasons.push(r("recipient_unknown", "consent",
       "This message has no client attached, so we cannot check whether they asked us to stop. It was not sent."));
-  } else if (await isOptedOut(db, clientId, channel)) {
+  } else if (clientId && await isOptedOut(db, clientId, channel)) {
     reasons.push(r("opted_out", "consent",
       `This person asked us to stop contacting them on ${channel}. It was not sent.`,
       { citation: "TCPA 47 U.S.C. 227" }));

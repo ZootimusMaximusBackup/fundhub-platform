@@ -43,6 +43,13 @@ describe("card-stacking round emitter (pg)", { skip: !HAS_DB ? "no DATABASE_URL"
       await db.query(`DELETE FROM sales WHERE client_id = ANY($1)`, [clients]);
       await db.query(`DELETE FROM cards WHERE client_id = ANY($1)`, [clients]);
       await db.query(`DELETE FROM events WHERE client_id = ANY($1)`, [clients]);
+      /* tasks blocks the client delete. tasks_client_id_fkey is one of the 16
+         client foreign keys that deliberately do NOT cascade (invoices,
+         contracts, transactions, the audit logs and this one) — a client
+         going away must not silently take financial or audit rows with it.
+         The money-chain workflows this test drives write a task, so the wipe
+         has to clear it explicitly before the client row can go. */
+      await db.query(`DELETE FROM tasks WHERE client_id = ANY($1)`, [clients]);
       await db.query(`DELETE FROM clients WHERE id = ANY($1)`, [clients]);
     }
     await db.query(`DELETE FROM staff WHERE email LIKE $1`, [`${MARK}%`]);
@@ -170,12 +177,41 @@ describe("card-stacking round emitter (pg)", { skip: !HAS_DB ? "no DATABASE_URL"
     assert.equal(Number(closeout.total_fee), 3500, "10% of 35000");
     assert.equal(Number(closeout.total_approved_amount), 35000, "fee basis = funded_amount");
 
+    /* NO back-end ledger row, and that is the correct outcome.
+
+       This used to assert `ledger.length >= 1`. It was written before the owner
+       set the real commission schedule in 246_owner_commission_rates_20260820,
+       248_owner_motion_commission_rates_20260820 and
+       256_owner_closer_deposit_one_sixth_20260823. Those migrations leave
+       exactly two back_end rules, both scoped to role closer / sales_manager AND
+       to one specific product_id. This fixture attributes its sale to a
+       `funding_advisor` on a different product, so no rule matches.
+
+       src/commissions/calculate.mjs deliberately earns NOTHING when no rule
+       matches — never a guessed zero (the same principle as "THE AF-04 GAP: a
+       conversion with no rule configured earns NULL, not zero"). So the absence
+       of a row here is the money engine behaving correctly, and the old
+       assertion was asserting a commission the owner's schedule does not pay.
+
+       Kept as a real assertion rather than deleted: this fails if the engine
+       ever starts inventing a commission with no matching rule, and the second
+       assertion fails if somebody adds a funding_advisor back_end rule without
+       revisiting this test. Back-end accrual itself is covered against real
+       rules in src/commissions/calculate.test.mjs. */
     const ledger = (await db.query(
       `SELECT * FROM commission_ledger
         WHERE funding_round_id = $1 AND basis = 'back_end'`,
       [rounds[0].id]
     )).rows;
-    assert.ok(ledger.length >= 1, "back-end ledger row");
+    assert.equal(ledger.length, 0,
+      "no back_end rule matches a funding_advisor on this product — the engine must not invent one");
+
+    const advisorRule = (await db.query(
+      `SELECT 1 FROM commission_rules
+        WHERE basis = 'back_end' AND role = 'funding_advisor' AND active`
+    )).rows;
+    assert.equal(advisorRule.length, 0,
+      "the premise above: the owner's schedule pays no back_end commission to a funding_advisor");
 
     const evCounts = (await db.query(
       `SELECT name, count(*)::int n FROM events

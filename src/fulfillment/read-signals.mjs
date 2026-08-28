@@ -588,7 +588,15 @@ function rollupsSql() {
      because Pull CRS already beats everything below it. */
   const hasFraudAlert = `
     ( 'fraud:alert-present' = ANY(COALESCE(c.tags, ARRAY[]::text[]))
-      OR TRIM(c.custom_fields->>'round_hold_reason') = 'Fraud Alert'
+      /* COALESCE IS LOAD-BEARING. Without it this is TRIM(NULL) = 'Fraud Alert',
+         which is NULL, not false — and a client with no round_hold_reason is the
+         common case. NULL then poisons the whole OR (false OR NULL OR false is
+         NULL), NOT NULL is NULL, and COUNT(*) FILTER drops the row: measured
+         2026-08-27, needs_pull AND needs_consent both read 0 for a client who
+         satisfied every other term. The two counts are supposed to split one
+         population, so a client vanishing from BOTH is the tell. The third term
+         below already guards its NULL with COALESCE; this one did not. */
+      OR TRIM(COALESCE(c.custom_fields->>'round_hold_reason', '')) = 'Fraud Alert'
       OR EXISTS (
         SELECT 1 FROM inquiry_removal_cases irc
          WHERE irc.client_id = c.id

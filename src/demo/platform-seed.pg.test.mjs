@@ -40,5 +40,15 @@ test("demo mode isolation", { skip: !hasDb }, async () => {
   )).rows[0].n;
   assert.equal(left, 0, "platform demo clients wiped");
 
+  /* PUT IT BACK. This file ends by proving the wipe works, which leaves the
+     database with no demo data at all — and scripts/run-suite.mjs runs every
+     *.pg.test.mjs against ONE database, in filename order. Everything after this
+     that needs the demo fixtures (demo-logins, galaxy/company-activity,
+     conversations/inbox-read) then failed, describing a seed that was fine as
+     broken. The wipe assertion above has already been made, so re-seeding costs
+     the test nothing and leaves the database as this file found it. */
+  await seedPlatformDemo(db, { orgId });
+  await setDemoMode(db, { orgId, enabled: false });
+
   await close().catch(() => {});
 });

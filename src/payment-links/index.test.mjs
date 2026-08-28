@@ -178,6 +178,15 @@ describe("createPaymentLink", () => {
     assert.equal(db.rows.length, 0);
   });
 
+  test("purpose invoice is accepted and stored as custom", async () => {
+    const db = fakeDb();
+    const link = await mint(db, {
+      orgId: ORG, clientId: CLIENT, purpose: "invoice", amountCents: 10000, checkoutBaseUrl: BASE_URL
+    });
+    assert.equal(link.purpose, "custom");
+    assert.equal(link.description, "Invoice");
+  });
+
   test("an unknown purpose is refused", async () => {
     const db = fakeDb();
     await assert.rejects(

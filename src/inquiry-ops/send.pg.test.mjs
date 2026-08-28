@@ -24,7 +24,24 @@ describe("inquiry send + doc flip", { skip: !HAS_DB ? "no DATABASE_URL" : false 
       await db.query(`DELETE FROM inquiry_log WHERE client_id = ANY($1)`, [clients]);
       await db.query(`DELETE FROM inquiry_prep WHERE client_id = ANY($1)`, [clients]);
       await db.query(`DELETE FROM inquiry_removal_cases WHERE client_id = ANY($1)`, [clients]);
-      await db.query(`DELETE FROM documents WHERE client_id = ANY($1)`, [clients]);
+      /* documents carries trg_documents_no_delete — "documents are never deleted,
+         register a superseding version instead". A test wipe is the one place
+         that has to get past it. Same disable/enable pattern already used in
+         lifecycle.pg.test.mjs:52, documents-upload.pg.test.mjs:95 and
+         download-route.pg.test.mjs:49; re-enabled in a finally so a failure here
+         cannot leave the guard off for the rest of the run. */
+      await db.query(`ALTER TABLE documents DISABLE TRIGGER trg_documents_no_delete`).catch(() => {});
+      try {
+        await db.query(`DELETE FROM documents WHERE client_id = ANY($1)`, [clients]);
+      } finally {
+        await db.query(`ALTER TABLE documents ENABLE TRIGGER trg_documents_no_delete`).catch(() => {});
+      }
+      /* messages_client_id_fkey blocks too — messages is another of the 16 client
+         foreign keys deliberately left non-cascading, so a sent message cannot
+         disappear with the client it was sent to. The inquiry send path this
+         test exercises queues one. */
+      await db.query(`DELETE FROM events WHERE client_id = ANY($1)`, [clients]);
+      await db.query(`DELETE FROM messages WHERE client_id = ANY($1)`, [clients]);
       await db.query(`DELETE FROM cards WHERE client_id = ANY($1)`, [clients]);
       await db.query(`DELETE FROM clients WHERE id = ANY($1)`, [clients]);
     }

@@ -57,7 +57,7 @@
     if (event.source !== global) return;
     var data = event.data;
     if (!data || data.source !== SOURCE || data.direction !== "extension-to-page") return;
-    if (data.type === "ready" || data.type === "pong") {
+    if (data.type === "ready" || data.type === "pong" || data.type === "fh-proxy-pong") {
       extensionPresent = !!(data.ok !== false);
     }
     if (data.requestId && pending[data.requestId]) {
@@ -65,9 +65,20 @@
     }
   });
 
+  function extensionReplyOk(res) {
+    return !!(res && res.ok && (res.type === "pong" || res.type === "fh-proxy-pong" || res.type === "ready"));
+  }
+
+  /* No page-level banner. This file is loaded by three screens and used to push
+     a yellow bar onto the top of all of them on every load, whether or not the
+     screen could start an application. The warning it carried is not lost: the
+     moment anyone actually clicks Apply without the add-on, openManualUi() below
+     states it in the modal — same words, same yellow, at the point of action —
+     and NOT_ROUTED_WARNING covers both failure paths. Detection itself is
+     unchanged; only the banner is gone. */
   function detectExtension() {
     return extRequest("ping").then(function (res) {
-      extensionPresent = !!(res && res.ok && res.type === "pong");
+      extensionPresent = extensionReplyOk(res);
       return extensionPresent;
     });
   }
@@ -267,27 +278,40 @@
           var c = d.connection || {};
           var url = d.application_url;
 
+          function bankEmailBlock() {
+            var pack = d.bank_form_email || {};
+            var email = pack.email || "";
+            var warn = pack.warning || "";
+            var rows = '<div style="margin-top:12px;padding:10px 12px;border-radius:8px;background:#FFFBEB;border:1px solid #FCD34D">' +
+              "<div><b>Bank form email</b> — put this on the bank page, not a fundhub.ai address.</div>";
+            if (email) {
+              rows += fieldRow("Client email (copy onto the bank form)", email, true);
+            }
+            if (warn) {
+              rows += '<p style="margin:8px 0 0;color:#B45309"><b>Warning.</b> ' + esc(warn) + "</p>";
+            }
+            rows += "</div>";
+            return rows;
+          }
+
           function openManualUi(routingNote) {
             var body =
               '<p style="margin:0 0 8px;padding:8px 10px;background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px">' +
               esc(routingNote) + "</p>" +
               verificationBlock(v) +
-              "<p style=\"margin:12px 0 4px\">Manual proxy settings (use only if the extension is not active):</p>" +
+              bankEmailBlock() +
+              "<p style=\"margin:12px 0 4px\">Proxy settings (only if you can set a computer proxy first):</p>" +
               fieldRow("Host", c.host, true) +
               fieldRow("Port", c.port, true) +
               fieldRow("Username (includes city + sessid)", c.username, true) +
               fieldRow("Password", c.password, true) +
-              fieldRow("Application URL", url, true) +
-              '<p style="margin-top:10px;color:#71717A;font-size:12px">Set these in your system/browser proxy, confirm the exit city matches above, then open the application URL. Click <b>End session</b> when finished so normal browsing is not affected.</p>';
+              fieldRow("Application URL (do not open on this computer)", url, true) +
+              '<p style="margin-top:10px;color:#71717A;font-size:12px">The bank page will not open the safe way from this desk. Do not open the bank link here — the bank would see this office. Turn the Fundhub Proxy add-on on, reload, then click Apply again. Click <b>End session</b> when finished.</p>';
 
             showModal(lenderName, body, [
               {
-                label: "Open application URL",
-                primary: true,
-                onClick: function () { global.open(url, "_blank", "noopener"); }
-              },
-              {
                 label: "End session",
+                primary: true,
                 onClick: function () {
                   endSession().then(hideModal);
                 }
@@ -299,7 +323,7 @@
 
           if (!hasExt) {
             openManualUi(
-              "Chrome extension not detected. Browser routing is NOT active. Use the copyable proxy settings below, or install the Fundhub Proxy extension (see extension/README.md)."
+              "Chrome extension not detected. Browser routing is NOT active. The bank page will not open the safe way. Do not open the bank link from this computer."
             );
             return;
           }
@@ -316,7 +340,7 @@
               openManualUi(
                 "Extension is installed but did not activate routing (" +
                 esc((extRes && extRes.error) || "unknown") +
-                "). Browser routing is NOT active — use the manual settings."
+                "). Browser routing is NOT active. The bank page will not open the safe way. Do not open the bank link from this computer."
               );
               return;
             }
@@ -327,6 +351,7 @@
               ". Only the lender host is PAC-routed; Chrome’s proxy API is still browser-wide — end the session when done." +
               "</p>" +
               verificationBlock(v) +
+              bankEmailBlock() +
               "<p style=\"margin-top:10px\">The lender application tab should be open. Confirm the exit city above <b>before</b> you submit the bank form.</p>";
 
             showModal(lenderName, body, [

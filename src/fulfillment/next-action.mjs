@@ -68,7 +68,8 @@
 import { isFundingPath, isRepairOnlyPath } from "../config/product-path.mjs";
 
 /* ────────────────────────────────────────────────────────────────────────────
-   THE ORDER. Chris's ten, in Chris's words, first match wins.
+   THE ORDER. First match wins. Send Letters sits above Remove Inquiries
+   so a leftover inquiry case cannot hide a repair send job.
 
    `key`       snake_case, stable, safe in a URL or a CSS class.
    `label`     Chris's exact display words. Do not reword these.
@@ -81,12 +82,14 @@ export const NEXT_ACTIONS = Object.freeze([
   Object.freeze({ key: "clear_fraud_alert",   label: "Clear Fraud Alert",   isFunding: false }),
   Object.freeze({ key: "get_consent",         label: "Get Consent",         isFunding: false }),
   Object.freeze({ key: "pull_crs",            label: "Pull CRS",            isFunding: false }),
+  Object.freeze({ key: "send_letters",        label: "Send Letters",        isFunding: false }),
   Object.freeze({ key: "remove_inquiries",    label: "Remove Inquiries",    isFunding: false }),
   Object.freeze({ key: "collect_documents",   label: "Collect Documents",   isFunding: false }),
   Object.freeze({ key: "review_disputes",     label: "Review Disputes",     isFunding: false }),
   Object.freeze({ key: "review_funding_file", label: "Review Funding File", isFunding: true }),
   Object.freeze({ key: "prepare_next_round",  label: "Prepare Next Round",  isFunding: true }),
   Object.freeze({ key: "apply_for_funding",   label: "Apply for Funding",   isFunding: true }),
+  Object.freeze({ key: "collect_payment",     label: "Collect payment",     isFunding: false }),
   Object.freeze({ key: "ready_to_fund",       label: "Ready to Fund",       isFunding: true })
 ]);
 
@@ -133,6 +136,7 @@ const CRS_COMPLETE = "Complete";
 const PRE_FUNDING_REVIEW_WORKFLOW = "c-05-pre-funding-review";
 const CARD_STACKING_PIPELINE = "funding_card_stacking";
 const CARD_STACKING_APPROVED_STAGE = "approved";
+const CARD_STACKING_APPLY_NOW_STAGE = "apply_now";
 
 /* ── tiny readers. Every one of them answers "I cannot tell" as null. ──────── */
 
@@ -210,6 +214,7 @@ function buildContext(signals) {
   }
 
   const inquiryCases = rowsOf(signals.inquiry_cases);
+  const repairLetters = isPlainObject(signals.repair_letters) ? signals.repair_letters : null;
   const docPacket = isPlainObject(signals.doc_packet) ? signals.doc_packet : null;
   const disputeResponses = rowsOf(signals.dispute_responses);
   const disputeCases = rowsOf(signals.dispute_cases);
@@ -225,7 +230,8 @@ function buildContext(signals) {
     // consentValid: true / false / null, where null means "nobody asked".
     consentValid, consentReason,
     realCrsCount,
-    inquiryCases, docPacket, disputeResponses, disputeCases, tasks, rounds, card,
+    inquiryCases, repairLetters, docPacket, disputeResponses, disputeCases, tasks, rounds, card,
+    paymentLinks: rowsOf(signals.payment_links),
     now
   };
 
@@ -266,7 +272,7 @@ function completedCreditPull(ctx) {
   return ctx.realCrsCount > 0;
 }
 
-/* ── the ten evaluators ───────────────────────────────────────────────────── */
+/* ── the evaluators ───────────────────────────────────────────────────────── */
 
 /* 1. CLEAR FRAUD ALERT.
    Three sources, any one of them (Phase 0 §3 row 1):
@@ -327,7 +333,23 @@ function evaluatePullCrs(ctx) {
   return YES("They paid for their credit report and we have not pulled it yet.");
 }
 
-/* 4. REMOVE INQUIRIES.
+/* 4. SEND LETTERS.
+   Same facts the Specialist repair desk uses (src/repair/lens.mjs deriveChip):
+   letters written (generated/ready) and none sent. Ranked ABOVE Remove
+   Inquiries so a leftover inquiry case cannot hide that job. A missing
+   signal is NO, not UNKNOWN — this chip is optional. A failed letter read
+   must not degrade the whole walk into the old stored "Remove Inquiries". */
+function evaluateSendLetters(ctx) {
+  if (ctx.repairLetters === null) return NO();
+  const ready = num(ctx.repairLetters.letters_ready);
+  const sent = num(ctx.repairLetters.letters_sent);
+  if (ready !== null && ready > 0 && (sent === null || sent === 0)) {
+    return YES("Letters are written and have not been sent yet.");
+  }
+  return NO();
+}
+
+/* 5. REMOVE INQUIRIES.
    An inquiry_removal_cases row in any active state — src/inquiry-ops/gate.mjs:8. */
 function evaluateRemoveInquiries(ctx) {
   const open = ctx.inquiryCases.filter((c) => ACTIVE_INQUIRY_STATES.includes(str(c.case_status)));
@@ -335,7 +357,7 @@ function evaluateRemoveInquiries(ctx) {
   return YES("They have credit inquiries we are still working to get taken off.");
 }
 
-/* 5. COLLECT DOCUMENTS.
+/* 6. COLLECT DOCUMENTS.
    Tag docs:missing (f-02:42, f-06:46), OR the inquiry case is Blocked and the
    identity packet comes back short (src/inquiry-ops/doc-gate.mjs). */
 function evaluateCollectDocuments(ctx) {
@@ -353,7 +375,7 @@ function evaluateCollectDocuments(ctx) {
   return NO();
 }
 
-/* 6. REVIEW DISPUTES.
+/* 7. REVIEW DISPUTES.
    A dispute_responses row nobody has confirmed, OR a dispute_cases row sitting
    at awaiting_response past its response_due_at
    (db/migrations/160_metro2_dispute_engine.sql:30, :76). */
@@ -377,7 +399,7 @@ function evaluateReviewDisputes(ctx) {
   return NO();
 }
 
-/* 7. REVIEW FUNDING FILE — a funding chip, GATE B applies.
+/* 8. REVIEW FUNDING FILE — a funding chip, GATE B applies.
    Credit status Complete AND an open review task raised by
    src/workflows/c-05-pre-funding-review.mjs. That workflow also raises
    "Cannot start funding — CRS incomplete" under the same source_workflow; the
@@ -392,7 +414,7 @@ function evaluateReviewFundingFile(ctx) {
   return YES("Their credit report is in and someone still has to read it before we send applications.");
 }
 
-/* 8. PREPARE NEXT ROUND — a funding chip, GATE B applies.
+/* 9. PREPARE NEXT ROUND — a funding chip, GATE B applies.
    The funding card sits on the approved stage (db/seed/002_pipelines.sql:35),
    OR the newest funding round has an approved amount above zero.
    A NULL approved_amount is UNKNOWN and does not fire this. */
@@ -410,18 +432,49 @@ function evaluatePrepareNextRound(ctx) {
   return NO();
 }
 
-/* 9. APPLY FOR FUNDING — a funding chip, GATE B applies.
+/* 10. APPLY FOR FUNDING — a funding chip, GATE B applies.
+   The funding card sits on Apply Now (staff MOVE), OR
    custom_fields.ready_for_next_round true (c-03:45) AND the outcome tier is a
    funding tier. The tier check is not optional — leaving it out is Phase 0
-   defect 1, live today: a repair-only client being told to apply. */
+   defect 1, live today: a repair-only client being told to apply.
+   A card already on Apply Now is handled first in deriveNextAction so that
+   job is not hidden by an earlier chip. */
 function evaluateApplyForFunding(ctx) {
   if (!fundingChipsAllowed(ctx)) return NO();
+  if (cardOnApplyNow(ctx)) {
+    return YES("Their funding card is sitting on Apply Now, so it is time to apply.");
+  }
   if (ctx.cf === null) return NO();
   if (ctx.cf.ready_for_next_round !== true) return NO();
   return YES("Their file is clean and their plan includes funding, so it is time to apply.");
 }
 
-/* 10. READY TO FUND — a funding chip, GATE B applies.
+/* 11. COLLECT PAYMENT.
+   Unpaid Funding Mastery (the $5k course pay link / invoice). Missing
+   payment_links is NO, not UNKNOWN — this chip is optional and must not
+   degrade a file we did not ask about money on. */
+function evaluateCollectPayment(ctx) {
+  const unpaidMastery = ctx.paymentLinks.some((row) => {
+    if (row.paid_at) return false;
+    const status = str(row.status);
+    if (status === "paid" || status === "expired" || status === "void") return false;
+    if (status !== null && status !== "created" && status !== "sent") return false;
+    const blob = [str(row.description), str(row.purpose), str(row.product_code)]
+      .filter(Boolean)
+      .join(" ");
+    return /mastery/i.test(blob);
+  });
+  if (!unpaidMastery) return NO();
+  return YES("Their Funding Mastery course is unpaid.");
+}
+
+function cardOnApplyNow(ctx) {
+  return !!(ctx.card
+    && str(ctx.card.pipeline_key) === CARD_STACKING_PIPELINE
+    && str(ctx.card.stage_key) === CARD_STACKING_APPLY_NOW_STAGE);
+}
+
+/* 12. READY TO FUND — a funding chip, GATE B applies.
    The lead's addition, ranked last, and flagged to Chris. Nothing in the
    system writes this status; it is derived: no active blockers, the newest
    round is not on hold, and the document packet is complete.
@@ -444,12 +497,14 @@ const EVALUATORS = Object.freeze({
   clear_fraud_alert: (ctx) => ctx.fraud,
   get_consent: evaluateGetConsent,
   pull_crs: evaluatePullCrs,
+  send_letters: evaluateSendLetters,
   remove_inquiries: evaluateRemoveInquiries,
   collect_documents: evaluateCollectDocuments,
   review_disputes: evaluateReviewDisputes,
   review_funding_file: evaluateReviewFundingFile,
   prepare_next_round: evaluatePrepareNextRound,
   apply_for_funding: evaluateApplyForFunding,
+  collect_payment: evaluateCollectPayment,
   ready_to_fund: evaluateReadyToFund
 });
 
@@ -766,14 +821,25 @@ export function deriveNextAction(signals) {
     let degraded = false;
     let chosen = null;
 
-    for (const spec of NEXT_ACTIONS) {
-      const evaluator = EVALUATORS[spec.key];
-      if (!evaluator) continue;
-      const v = evaluator(ctx);
-      if (!v || v.verdict === "unknown") { degraded = true; break; }
-      if (v.verdict === "yes") {
-        chosen = { key: spec.key, label: spec.label, why: v.why };
-        break;
+    // Staff parked the card on Apply Now — applying is the job. Repair-only
+    // still refuses. A missing product tier does not hide that job.
+    const applyNowJob = cardOnApplyNow(ctx) && !isRepairOnlyPath(ctx.tier);
+    if (applyNowJob) {
+      chosen = {
+        key: "apply_for_funding",
+        label: "Apply for Funding",
+        why: "Their funding card is sitting on Apply Now, so it is time to apply."
+      };
+    } else {
+      for (const spec of NEXT_ACTIONS) {
+        const evaluator = EVALUATORS[spec.key];
+        if (!evaluator) continue;
+        const v = evaluator(ctx);
+        if (!v || v.verdict === "unknown") { degraded = true; break; }
+        if (v.verdict === "yes") {
+          chosen = { key: spec.key, label: spec.label, why: v.why };
+          break;
+        }
       }
     }
 
@@ -784,7 +850,7 @@ export function deriveNextAction(signals) {
       chosen = null;
       degraded = true;
     }
-    if (chosen && guardFundingProduct(chosen, { outcomeTier: ctx.tier }) !== chosen) {
+    if (chosen && !applyNowJob && guardFundingProduct(chosen, { outcomeTier: ctx.tier }) !== chosen) {
       chosen = null;
       degraded = true;
     }

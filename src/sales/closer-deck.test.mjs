@@ -103,8 +103,23 @@ test("stored closer payload maps FICO, total, reasons — no invented numbers", 
   assert.equal(out.engine.tier, "FUNDING_PLUS_REPAIR");
   assert.equal(out.engine.fico.ex, 712);
   assert.equal(out.engine.fico.tu, 648);
-  assert.equal(out.engine.total, 127500);
   assert.equal(out.engine.afterFix, 214000);
+  /* Headline dollars come from the UnderwriteIQ stack, not the canned CRS 127500. */
+  const { toBureaus } = await import("../underwrite/adapter.mjs");
+  const { computeUnderwrite } = await import("../underwrite/engine.mjs");
+  const { applyStackedBusinessFunding } = await import("../underwrite/business-funding.mjs");
+  const adapter = toBureaus({
+    tradelines: [],
+    liabilities: [],
+    crsResults: [crs],
+    customFields: CLIENT.custom_fields,
+    businesses: []
+  });
+  const stacked = applyStackedBusinessFunding(
+    computeUnderwrite(adapter.bureaus, adapter.businessAgeMonths),
+    adapter.businessAges
+  );
+  assert.equal(out.engine.total, stacked.totals.total_combined_funding);
   assert.equal(out.engine.negItems, 5);
   assert.equal(out.engine.reasons[0][0], "M2-013 · TU");
   assert.equal(out.income_estimates.experian.annual, 97000);
@@ -187,4 +202,40 @@ test("generateDeckLetters refuses the qualified funding offer", async () => {
     }),
     (e) => e instanceof CloserDeckError && e.code === "letters_blocked_funding_route" && e.status === 409
   );
+});
+
+/* Hole 16 — a multi-company file was priced off business ages nobody asked
+   for. The deck payload now carries every company and its incorporation date,
+   so Present can ask for the ones that are blank. */
+test("deck payload carries every company and its incorporation date", async () => {
+  const out = await buildCloserDeck(fakeDb({
+    client: CLIENT,
+    businesses: [
+      { id: "b1", name: "Fund Horse Holdings", age_months: 48, incorporated_date: null },
+      { id: "b2", name: "Fund Horse Logistics", age_months: 79, incorporated_date: "2020-01" },
+      { id: "b3", name: "Fund Horse Retail", age_months: 24, incorporated_date: null }
+    ]
+  }), { orgId: ORG, clientId: CID });
+
+  assert.equal(out.businesses.length, 3);
+  assert.deepEqual(out.businesses.map((b) => b.name), [
+    "Fund Horse Holdings", "Fund Horse Logistics", "Fund Horse Retail"
+  ]);
+  assert.deepEqual(out.businesses.map((b) => b.incorporated_date), [null, "2020-01", null]);
+  assert.deepEqual(out.businesses.map((b) => b.age_months), [48, 79, 24]);
+});
+
+test("a missing incorporation date stays null — never defaulted to a guess", async () => {
+  const out = await buildCloserDeck(fakeDb({
+    client: CLIENT,
+    businesses: [{ id: "b1", name: "Only Co", age_months: null, incorporated_date: "" }]
+  }), { orgId: ORG, clientId: CID });
+
+  assert.equal(out.businesses[0].incorporated_date, null);
+  assert.equal(out.businesses[0].age_months, null);
+});
+
+test("a file with no company gets an empty list, not a fake row", async () => {
+  const out = await buildCloserDeck(fakeDb({ client: CLIENT }), { orgId: ORG, clientId: CID });
+  assert.deepEqual(out.businesses, []);
 });

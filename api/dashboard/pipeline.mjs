@@ -46,6 +46,8 @@ const CARDS_SQL = `
     (c.custom_fields->>'total_funding_estimate') AS total_funding_estimate,
     c.custom_fields->>'cf_svy_self_reported_fico' AS survey_fico_raw,
     c.custom_fields->>'cf_svy_self_reported_fico_label' AS survey_fico_label,
+    pr.name AS partner_name,
+    pr.contact_email AS partner_email,
     EXISTS (
       SELECT 1
         FROM conversations conv
@@ -78,8 +80,10 @@ const CARDS_SQL = `
     ) AS email_needs_reply
   FROM cards cd
   JOIN pipelines p ON p.id = cd.pipeline_id
-  JOIN clients   c ON c.id = cd.client_id AND c.org_id = p.org_id
+  LEFT JOIN clients c ON c.id = cd.client_id AND c.org_id = p.org_id
+  LEFT JOIN partners pr ON pr.id = cd.partner_id AND pr.org_id = p.org_id
   WHERE p.key = $1 AND p.org_id = $2 AND cd.org_id = $2
+    AND (c.id IS NOT NULL OR pr.id IS NOT NULL)
     AND ($4::boolean OR COALESCE(c.is_demo, false) = false)
     AND (c.custom_fields->>'crm_archived_at' IS NULL)
   ORDER BY cd.entered_at DESC
@@ -123,8 +127,8 @@ export default async function handler(req, res) {
       bucket.push({
         id: r.id,
         client_id: r.client_id,
-        name: (r.is_demo ? "DEMO · " : "") + ([r.first_name, r.last_name].filter(Boolean).join(" ") || "(unnamed)"),
-        email: r.email || null,
+        name: (r.is_demo ? "DEMO · " : "") + ([r.first_name, r.last_name].filter(Boolean).join(" ") || r.partner_name || "(unnamed)"),
+        email: r.email || r.partner_email || null,
         phone: r.phone || null,
         sms_needs_reply: !!r.sms_needs_reply,
         email_needs_reply: !!r.email_needs_reply,

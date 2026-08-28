@@ -39,6 +39,18 @@ import { isDraftTemplateCopy, isDraftTemplateRow } from "./draft-guard.mjs";
 import { fenceVerdict, MESSAGING_DRY_RUN } from "../lib/dry-run.mjs";
 import { signUnsubscribeUrl, withUnsubscribeFooter } from "./unsubscribe.mjs";
 
+/* GHL-DOC is retired. Leftover queued SMS-DOC-02 must not transmit. */
+const RETIRED_GHL_DOC_SMS = "SMS-DOC-02-REQUEST-MORE";
+
+async function isRetiredGhlDocSms(db, message) {
+  if (message.template_key !== RETIRED_GHL_DOC_SMS) return false;
+  const { rows } = await db.query(
+    `SELECT status FROM agents WHERE org_id = $1 AND code = 'GHL-DOC' LIMIT 1`,
+    [message.org_id]
+  );
+  return !rows[0] || String(rows[0].status || "") === "retired";
+}
+
 /* Unedited sample copy, recognised by the opening of the standard lorem-ipsum
    passage rather than by any single Latin word. "dolor", "sit" and "amet" all
    occur in real Spanish and Portuguese sentences, and a guard that blocks a
@@ -382,7 +394,9 @@ export async function dispatchOne(db, message, options = {}) {
       clientId: message.client_id,
       channel: message.channel,
       body: message.rendered_body,
-      messageId: message.id
+      messageId: message.id,
+      templateKey: message.template_key,
+      toAddress: message.to_address
     }, now ? { now } : {});
 
     if (verdict.state !== "allowed") {
@@ -440,6 +454,14 @@ export async function dispatchOne(db, message, options = {}) {
         return await finalise(db, message, "blocked", OUTCOME.BLOCKED,
           "draft_template", null);
       }
+    }
+
+    if (await isRetiredGhlDocSms(db, message)) {
+      console.warn(
+        `[dispatch] blocked message ${message.id}: GHL-DOC is retired; SMS-DOC-02 not sent`
+      );
+      return await finalise(db, message, "blocked", OUTCOME.BLOCKED,
+        "retired_ghl_doc", null);
     }
 
     // ---- 2. Routing --------------------------------------------------------

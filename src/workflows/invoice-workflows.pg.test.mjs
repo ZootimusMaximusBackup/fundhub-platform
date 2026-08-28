@@ -125,7 +125,19 @@ describe("invoice-writing workflows against real Postgres",
     const res = await ds02({
       event: ev("payment.received", { productName: "Consulting Services Package", amount: 1000 },
         { clientId: diyClient, orgId: org, id: "00000000-0000-4000-8000-00000000d201" }),
-      db, step: fakeStep(), fetchImpl: okFetch
+      db, step: fakeStep(), fetchImpl: okFetch,
+      /* Letter BUILDING needs a real credit file this fixture deliberately does
+         not have, so deliverLetters answered {delivered:false,
+         reason:"no_crs_result"} - a documented, correct outcome
+         (letter-pack.mjs:51), not a fault - and every downstream assertion below
+         failed describing it as "letters were never delivered".
+
+         What THIS file is for is the Postgres half: the invoice row is really
+         written, and the steps after it really run. So the delivery step is
+         injected, exactly as ds-02-diy-letters.test.mjs:12 does. Building the
+         pack for real is covered in src/metro2/diy/deliver.test.mjs, which
+         asserts delivered === true in three places. */
+      deliverLettersFn: async () => ({ delivered: true, letterCount: 1, event: "diy.package.ready" })
     });
     assert.equal(res.done, true);
 

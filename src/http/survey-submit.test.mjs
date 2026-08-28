@@ -50,6 +50,12 @@ test("parseSurveySubmitBody requires name and email; phone and SMS are optional"
   });
   assert.equal(ok.ok, true);
   assert.equal(ok.email, "ada@example.com");
+  const e164 = parseSurveySubmitBody({
+    name: "Ada Lovelace",
+    email: "ada@example.com",
+    phone: "6616054248",
+  });
+  assert.equal(e164.phone, "+16616054248");
   assert.deepEqual(ok.answers, {
     cf_svy_self_reported_fico: "750+",
     cf_svy_funding_target_amount: "Less than $50k",
@@ -104,8 +110,28 @@ test("runSurveySubmit score without negatives → MANUAL_REVIEW", async () => {
     },
     { emit: async () => ({ id: "x", deduped: false }), ensureRegistered: () => {}, db: {} }
   );
-  // Survey has no has_negatives question; classifier gate 2 absent → MANUAL_REVIEW
+  // Missing gate-2 answer (ClickFunnels or incomplete post) still MANUAL_REVIEW
   assert.equal(result.qualification, MANUAL_REVIEW);
+});
+
+test("parseSurveySubmitBody keeps homepage cf_svy_has_negatives", () => {
+  const ok = parseSurveySubmitBody({
+    name: "Ada Lovelace",
+    email: "ada@example.com",
+    answers: {
+      cf_svy_self_reported_fico: "750+",
+      cf_svy_has_negatives: "No",
+      cf_svy_has_business: "Yes, 1-2 years",
+    },
+    answers_by_id: {
+      current_score: "750+",
+      has_negatives: "No",
+      has_business: "Yes, 1-2 years",
+    },
+  });
+  assert.equal(ok.ok, true);
+  assert.equal(ok.answers.cf_svy_has_negatives, "No");
+  assert.equal(ok.answers.cf_svy_self_reported_fico, "750+");
 });
 
 test("runSurveySubmit MANUAL_REVIEW when gate answers missing", async () => {

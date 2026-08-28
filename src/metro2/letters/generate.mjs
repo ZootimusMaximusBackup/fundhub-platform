@@ -73,6 +73,15 @@ function capItemStatutes(v) {
   return out.slice(0, 3);
 }
 
+function accountLine(v) {
+  const who = String(v?.creditor || "").trim();
+  const last4 = String(v?.account_last4 || v?.accountLast4 || "").replace(/\D/g, "").slice(-4);
+  if (!who && !last4) return null;
+  if (who && last4) return `Account: ${who} · ending ${last4}`;
+  if (who) return `Account: ${who}`;
+  return `Account ending ${last4}`;
+}
+
 function formatViolationParagraph(v) {
   if (!v?.ruleId) return null;
   const observed = v.observed == null ? "not populated as required" : JSON.stringify(v.observed);
@@ -83,6 +92,7 @@ function formatViolationParagraph(v) {
     `Violation ${v.ruleId} — ${plainName(v)}`,
     fieldLine(v),
     `Severity: ${sev}`,
+    accountLine(v),
     v.reason || "Reporting defect identified by deterministic Metro 2 check.",
     `Observed: ${observed}. Expected: ${expected}.`,
     statutes.length ? `Legal basis: ${statutes.join("; ").replace(/\.$/, "")}.` : null

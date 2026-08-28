@@ -281,3 +281,12 @@ test("the bottom band was closed up, not left as a blank strip", () => {
   assert.match(CODE, /GH\s*=\s*H\s*;/,
     "the sky is not using the full height of the canvas");
 });
+
+test("the gift Download button is not under the header", () => {
+  /* Live walk 2026-08-25: .topbar-right (own-url + shell chip) overflowed the
+     44px header and ate clicks on #blasterBtn. Keep the header in its box. */
+  assert.match(HTML, /header\.topbar\{[^}]*overflow:hidden/,
+    "header overflow can sit on the Download button");
+  assert.match(HTML, /\.gift-strip\{[^}]*z-index:6/,
+    "gift strip must sit above leftover header overflow");
+});

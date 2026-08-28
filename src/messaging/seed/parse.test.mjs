@@ -47,12 +47,18 @@ test("parseSmsCurrent: one row per ## KEY header", () => {
   ]);
 });
 
+/* The session footer the 2026-08-21 sweep appended to every fixture block.
+   The parser preserves body lines verbatim and has not changed since 2026-08-06;
+   these expectations had simply never been updated to the fixture, which is why
+   they sat red. Named once so the next footer change is one edit, not seven. */
+const FOOTER = "\n\u2014 Josh at Fundhub. Reply STOP to opt out.";
+
 test("parseSmsCurrent: plain-text body under the header, multi-line preserved", () => {
   const rows = parseSmsCurrent(read("SMS-TEMPLATES-CURRENT.md"), "fixture");
   const r = rows.find((x) => x.templateKey === "SMS-FIX-01-PLAIN");
   assert.equal(
     r.body,
-    "Hey {{contact.first_name}}, line one.\nLine two with {{custom_values.booking_link}}. Reply STOP to opt out."
+    "Hey {{contact.first_name}}, line one.\nLine two with {{custom_values.booking_link}}." + FOOTER
   );
 });
 
@@ -60,7 +66,7 @@ test("parseSmsCurrent: single-line body", () => {
   const rows = parseSmsCurrent(read("SMS-TEMPLATES-CURRENT.md"), "fixture");
   assert.equal(
     rows.find((x) => x.templateKey === "SMS-CLEAN-01-PLAIN").body,
-    "Body sits directly under the header. Reply STOP to opt out."
+    "Body sits directly under the header." + FOOTER
   );
 });
 
@@ -126,11 +132,16 @@ test("parseHeader: single-space header absorbs the name into the key (reported, 
   assert.equal(parseHeader("## S-01 New Lead Intake   [folder: S - Series Sales Emails]").key, "S-01 New Lead Intake");
 });
 
+/* Same 2026-08-21 sweep as FOOTER above, in the email shape. EM-01 used to end
+   in " Unsubscribe"; the sweep replaced that with the signature block. The
+   parser is untouched since 2026-08-06 — only the fixture moved. */
+const EMAIL_FOOTER = "\n\n\u2013 Josh\nFundHub.ai\n\nFundHub.ai \u2022 Funding Intelligence for Entrepreneurs";
+
 test("parseEmailTemplates: first line is the subject, the rest is the body", () => {
   const rows = parseEmailTemplates(read("EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md"), "fixture");
   const r = rows.find((x) => x.templateKey === "EM-01");
   assert.equal(r.subject, "Subject line one");
-  assert.equal(r.body, " Hey {{contact.first_name}},\n\n Body line with {{sender_name}}.\n\n Unsubscribe");
+  assert.equal(r.body, " Hey {{contact.first_name}},\n\n Body line with {{sender_name}}." + EMAIL_FOOTER);
   assert.equal(r.channel, "email");
 });
 
@@ -195,8 +206,8 @@ test("validate: a duplicate key with different copy keeps both, suffixing the la
   const { seedable, problems } = validate(fixtureTemplates());
   const first = seedable.find((t) => t.templateKey === "EM-DUP");
   const second = seedable.find((t) => t.templateKey === "EM-DUP--2");
-  assert.equal(first.body, " Body A.");
-  assert.equal(second.body, " Body B.");
+  assert.equal(first.body, " Body A." + EMAIL_FOOTER);
+  assert.equal(second.body, " Body B." + EMAIL_FOOTER);
   assert.equal(second.disambiguatedFrom, "EM-DUP");
   assert.equal(problems.duplicates.find((d) => d.templateKey === "EM-DUP").resolution, "disambiguated");
 });

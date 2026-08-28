@@ -2,13 +2,15 @@
 //
 // The affiliates page used to show "Application received" without writing
 // anything. This door creates the affiliate or white-label row, a password
-// login, and the personal URL. The first password is returned once. There is
-// no mailbox yet, so hiding it would leave them with no way in.
+// login, and the personal URL. The first password is returned once. Affiliate
+// apply also queues catalog AF1. White-label has no drip templates.
 
 import crypto from "node:crypto";
 import { db, pool } from "../../src/db.mjs";
 import { createAccount } from "../../src/auth/account-session.mjs";
 import { resolveDefaultOrg } from "../../src/auth/org.mjs";
+import { queueAffiliateTemplate } from "../../src/affiliates/drip.mjs";
+import { queuePartnerWelcome } from "../../src/partners/welcome.mjs";
 import { safeError } from "../../src/http/health.mjs";
 
 const APP_ORIGIN = "https://fundhub.ai";
@@ -59,6 +61,43 @@ export function slugFromName(name) {
 
 export function generateFirstPassword() {
   return crypto.randomBytes(12).toString("base64url");
+}
+
+export async function placeWhiteLabelRailCard(qx, { orgId, partnerId, stageKey = "active" } = {}) {
+  if (!qx || !orgId || !partnerId) return { placed: false, reason: "missing_args" };
+  const stage = await qx.query(
+    `SELECT ps.id AS stage_id, ps.pipeline_id
+       FROM pipeline_stages ps
+       JOIN pipelines p ON p.id = ps.pipeline_id
+      WHERE p.key = 'affiliates_white_label'
+        AND ps.key = $1
+        AND p.org_id = $2
+        AND ps.org_id = $2
+      LIMIT 1`,
+    [stageKey, orgId]
+  );
+  const row = stage.rows[0];
+  if (!row) return { placed: false, reason: "stage_not_found" };
+
+  const existing = await qx.query(
+    `SELECT id FROM cards WHERE partner_id = $1 AND pipeline_id = $2 LIMIT 1`,
+    [partnerId, row.pipeline_id]
+  );
+  if (existing.rows[0]) {
+    await qx.query(`UPDATE cards SET stage_id = $2 WHERE id = $1`, [
+      existing.rows[0].id,
+      row.stage_id
+    ]);
+    return { placed: true, created: false, cardId: existing.rows[0].id };
+  }
+
+  const ins = await qx.query(
+    `INSERT INTO cards (org_id, partner_id, pipeline_id, stage_id)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id`,
+    [orgId, partnerId, row.pipeline_id, row.stage_id]
+  );
+  return { placed: true, created: true, cardId: ins.rows[0]?.id || null };
 }
 
 export function parsePartnerApplyBody(body) {
@@ -134,6 +173,8 @@ function defaultApplyBody(displayName) {
 export async function runPartnerApply(parsed, deps = {}) {
   const database = deps.db || db;
   const create = deps.createAccount || createAccount;
+  const queueDrip = deps.queueAffiliateTemplate || queueAffiliateTemplate;
+  const queueWelcome = deps.queuePartnerWelcome || queuePartnerWelcome;
   const resolveOrg = deps.resolveDefaultOrg || resolveDefaultOrg;
   const password = deps.password || generateFirstPassword();
   const connect = deps.connect || (() => pool().connect());
@@ -182,6 +223,15 @@ export async function runPartnerApply(parsed, deps = {}) {
         password,
         affiliateId
       });
+      try {
+        await queueDrip(client, {
+          orgId,
+          email: parsed.email,
+          name: parsed.name,
+          trackingId,
+          eventId: affiliateId
+        });
+      } catch { /* apply still commits; sweeper backfills plus-tag sims */ }
     } else {
       const invitedBy = await inviterId(client, orgId);
       if (!invitedBy) {
@@ -228,10 +278,27 @@ export async function runPartnerApply(parsed, deps = {}) {
            updated_at = now()`,
         [orgId, partnerId, `${display} apply`, JSON.stringify(body)]
       );
+      await placeWhiteLabelRailCard(client, { orgId, partnerId, stageKey: "active" });
       sitePath = `/sites/${partnerId}/apply`;
     }
 
     await client.query("COMMIT");
+    // White-label used to hear nothing after "you are in". Queued after the
+    // commit so the partner row exists even if the mailbox is down.
+    if (partnerId) {
+      await queueWelcome(database, {
+        orgId,
+        partnerId,
+        email: parsed.email,
+        phone: parsed.phone,
+        name: parsed.name,
+        brand: display,
+        kind: "partner",
+        loginUrl: `${APP_ORIGIN}/login.html`,
+        siteUrl: sitePath ? `${APP_ORIGIN}${sitePath}` : null,
+        smsConsent: parsed.sms_consent
+      });
+    }
     return {
       ok: true,
       kind: parsed.kind,

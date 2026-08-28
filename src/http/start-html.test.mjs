@@ -28,4 +28,9 @@ test("start.html lands on apply.fundhub.ai/apply with a1+ref, not the CF root", 
     "must not send people to bare apply.fundhub.ai/ (wrong CF theme)"
   );
   assert.ok(html.includes('localStorage.setItem("fh_ref", ref)'), "must stash ref for later attribution");
+  assert.match(
+    html,
+    /fetch\("\/api\/public\/affiliate-click"/,
+    "must record the visit before bouncing to apply"
+  );
 });

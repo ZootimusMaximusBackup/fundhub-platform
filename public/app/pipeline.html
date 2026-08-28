@@ -52,7 +52,6 @@
   .live-dot{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 60%,transparent);animation:livepulse 1.8s infinite;}
   @keyframes livepulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 55%,transparent);}70%{box-shadow:0 0 0 6px color-mix(in srgb,var(--ok) 0%,transparent);}100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 0%,transparent);}}
   .clock{font-family:var(--mono);font-size:var(--fs-caption);color:var(--dark-text);}
-  .org-pill{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.6px;color:var(--dark-text-dim);border:1px solid var(--dark-line);padding:3px 8px;border-radius:4px;}
 
   /* ══════════════════════════════════════════════════════════════════════════
      SHARED CHROME — collapsible grouped sidebar. Identical across every file.
@@ -195,9 +194,25 @@
   .fh-del-actions .go{background:#6E2A22;color:#fff;border-color:#6E2A22}
   .fh-del-actions .go:disabled{opacity:.4;cursor:not-allowed}
   .fh-new-actions .go{background:var(--ink);color:#fff;border-color:var(--ink)}
-  .board{display:flex;gap:10px;padding:10px 14px 14px;align-items:stretch;height:100%;position:relative;width:max-content;}
+  /* 2026-08-27 (owner-set): columns STRETCH to fill a wide window instead of
+     stopping short of the right edge.
+     width:max-content is GONE and must not come back. With a growable .col it
+     no longer means "as wide as the columns" — intrinsic sizing resolves each
+     item at its CONTENT max-content, so the board measured 3501px wide with
+     338px columns at every viewport and scrolled even at 3440. Letting the
+     board take its normal auto width (the scroll wrap's width) is what gives
+     .col free space to grow into; when the columns need more than that they
+     overflow and .board-wrap scrolls, exactly as before. */
+  .board{display:flex;gap:10px;padding:10px 14px 14px;align-items:stretch;height:100%;position:relative;}
+  /* Trailing breathing room after the last column when scrolled right, which
+     the old width:max-content used to provide via padding. */
+  .board::after{content:"";flex:0 0 4px;}
 
-  .col{width:238px;flex-shrink:0;background:var(--paper-dim);border:1px solid var(--line);border-radius:8px;
+  /* grow to share a wide board, never shrink below the width a card was
+     designed for. Was width:238px + flex-shrink:0, which pinned the board at
+     2498px however wide the monitor got — 714px of empty board to the right
+     of the last column at 3440, measured 2026-08-27. */
+  .col{flex:1 1 238px;min-width:238px;background:var(--paper-dim);border:1px solid var(--line);border-radius:8px;
     display:flex;flex-direction:column;height:100%;max-height:100%;}
   .col.drop-target{background:var(--info-bg);border-color:var(--info);box-shadow:0 0 0 2px color-mix(in srgb,var(--info) 40%,transparent);}
 
@@ -499,7 +514,6 @@
       <div class="sub">Pipeline</div>
     </div>
     <div class="topbar-right">
-      <div class="org-pill">Org: Fundhub</div>
       <div class="clock">—</div>
       <div class="live-pill"><span class="live-dot"></span>LIVE</div>
     </div>
@@ -510,7 +524,7 @@
   <nav class="railbar">
     <div class="rail-tab active" data-rail="R-01"><span class="rt-code">R-01</span>Sales</div>
     <div class="rail-tab" data-rail="R-02"><span class="rt-code">R-02</span>Funding: Card Stacking</div>
-    <div class="rail-tab" data-rail="R-03"><span class="rt-code">R-03</span>Funding: Alt-Fin (Lendflow)</div>
+    <!-- R-03 Alt-Fin (Lendflow) parked 2026-08-25 — adapter + webhook stay. -->
     <div class="rail-tab" data-rail="R-04"><span class="rt-code">R-04</span>Optimization (Repair) Rounds</div>
     <div class="rail-tab" data-rail="R-05"><span class="rt-code">R-05</span>Inquiry Removal</div>
     <div class="rail-tab" data-rail="R-06"><span class="rt-code">R-06</span>AR / Collections</div>
@@ -579,13 +593,7 @@
             <div class="rm-dest">Funding: Card Stacking · Apply Now</div>
           </div>
         </div>
-        <div class="rm-item" data-pipeline-key="funding_altfin" data-stage-key="app_created">
-          <span class="rm-dot"></span>
-          <div>
-            <div class="rm-label">Alt-Fin (Lendflow)</div>
-            <div class="rm-dest">Funding: Alt-Fin · App Created</div>
-          </div>
-        </div>
+        <!-- funding_altfin MOVE dest parked 2026-08-25 — do not send files to Lendflow from the desk. -->
         <div class="rm-item" data-pipeline-key="optimization" data-stage-key="round_sent">
           <span class="rm-dot"></span>
           <div>
@@ -787,7 +795,7 @@ function restore(){
   });
 }
 
-function persistCardMove(card, pipelineKey, stageKey, onFail){
+function persistCardMove(card, pipelineKey, stageKey, onFail, onOk){
   if(typeof FHData === 'undefined' || !FHData.write){
     if(onFail) onFail('data layer not loaded');
     return;
@@ -820,6 +828,7 @@ function persistCardMove(card, pipelineKey, stageKey, onFail){
     if(window.FHPipelineBoard && typeof window.FHPipelineBoard.invalidate === 'function'){
       window.FHPipelineBoard.invalidate(pipelineKey);
     }
+    if(typeof onOk === 'function') onOk();
   });
 }
 
@@ -945,28 +954,12 @@ menu.addEventListener('click',function(e){
   menu.hidden=true; moveCard=null;
   persistCardMove(card, pipelineKey, stageKey, function(msg){
     alert('Could not save the move: ' + msg);
+  }, function(){
+    // After the save, open the dest rail so Apply Now is the column they see.
+    if(window.FHPipelineBoard && typeof window.FHPipelineBoard.showPipeline === 'function'){
+      window.FHPipelineBoard.showPipeline(pipelineKey);
+    }
   });
-  // Cross-rail: remove from this board after a successful write path starts;
-  // invalidate + leave the card until refetch if same rail.
-  var currentKey = window.FHPipelineBoard && window.FHPipelineBoard.currentKey;
-  if(currentKey && pipelineKey !== currentKey){
-    var from=colOf(card);
-    if(from){
-      var amt=amountOf(card);
-      bump(from,-1,-amt);
-      if(card.parentNode) card.parentNode.removeChild(card);
-    }
-  }else if(currentKey && pipelineKey === currentKey){
-    // Same pipeline: find the destination column and move the card there.
-    var dest=null;
-    cols().forEach(function(c){ if(c.dataset.stageKey===stageKey) dest=c; });
-    if(dest && dest!==colOf(card)){
-      var amt2=amountOf(card);
-      var from2=colOf(card);
-      dest.querySelector('.col-body').appendChild(card);
-      bump(from2,-1,-amt2); bump(dest,1,amt2);
-    }
-  }
 });
 document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ menu.hidden=true; moveCard=null; } });
 
@@ -1831,13 +1824,6 @@ restore();
     var body = document.createElement("div");
     body.className = "col-body";
     (stage.cards || []).forEach(function (c) { body.appendChild(cardEl(c)); });
-    if (!(stage.cards || []).length) {
-      var empty = document.createElement("div");
-      empty.className = "empty-rail-note";
-      empty.style.cssText = "margin:16px 8px;font-size:var(--fs-caption);";
-      empty.textContent = "No cards in this stage";
-      body.appendChild(empty);
-    }
     col.appendChild(head); col.appendChild(body);
     return col;
   }
@@ -1877,10 +1863,10 @@ restore();
     }
     if (r.shown === 0) {
       banner("real",
-        "live board · " + label.toLowerCase() +
+        label.toLowerCase() +
         " · no cards on this rail yet — stages are ready, nobody has been placed here");
     } else {
-      banner("real", "live board · " + label.toLowerCase() + " pipeline");
+      banner("real", label.toLowerCase() + " pipeline");
     }
   }
 
@@ -1927,11 +1913,33 @@ restore();
     });
   }
 
+  function showPipeline(pipelineKey) {
+    var rail = null;
+    Object.keys(PIPELINE_KEYS).forEach(function (rk) {
+      if (PIPELINE_KEYS[rk] === pipelineKey) rail = rk;
+    });
+    if (!rail) return;
+    delete cache[pipelineKey];
+    var tab = document.querySelector('.rail-tab[data-rail="' + rail + '"]');
+    var tabs = document.querySelectorAll('.rail-tab');
+    for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+    if (tab) tab.classList.add('active');
+    var name = tab
+      ? [].filter.call(tab.childNodes, function (n) { return n.nodeType === 3; })
+          .map(function (n) { return n.textContent; }).join('').trim()
+      : pipelineKey;
+    var railLabel = document.getElementById('railLabel');
+    if (railLabel && name) railLabel.textContent = name;
+    load(rail, name || pipelineKey);
+  }
+
   // Exposed so the rail-tab click handler (defined earlier in the page) can
-  // drive the same loader. currentKey / invalidate are used by drag + MOVE.
+  // drive the same loader. currentKey / invalidate / showPipeline are used by
+  // drag + MOVE.
   window.FHPipelineBoard = {
     load: load,
     currentKey: activePipelineKey,
+    showPipeline: showPipeline,
     invalidate: function (key) {
       if (key) delete cache[key];
       else Object.keys(cache).forEach(function (k) { delete cache[k]; });

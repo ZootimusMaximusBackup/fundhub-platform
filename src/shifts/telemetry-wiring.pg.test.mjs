@@ -103,7 +103,11 @@ describe("autoCloseStale with real telemetry flowing", { skip: !HAS_DB ? "no DAT
   /** Do a real piece of work. The `call_made` row is a side effect of this, not
    *  of anything the test wrote. */
   const workTheInquiry = (shiftId, outcome) =>
-    logAttempt(db, { inquiryId, staffId, kind: "call", outcome, shiftId });
+    /* orgId is REQUIRED by logAttempt (work.mjs:82 throws 403 without it) and
+       was never passed here, so every call in this file threw before writing a
+       single staff_event and all five tests died. The org is already resolved
+       in before(); it just never reached the call. */
+    logAttempt(db, { inquiryId, staffId, orgId, kind: "call", outcome, shiftId });
 
   /** Time passing, staged: move this shift's activity further into the past. */
   const ageActivityByMinutes = (shiftId, minutes) => db.query(
@@ -225,7 +229,7 @@ describe("autoCloseStale with real telemetry flowing", { skip: !HAS_DB ? "no DAT
     await workTheInquiry(shiftId, "No answer");
     await ageActivityByMinutes(shiftId, 45);
 
-    const unlinked = await logAttempt(db, { inquiryId, staffId, kind: "call", outcome: "off the clock", shiftId: null });
+    const unlinked = await logAttempt(db, { inquiryId, staffId, orgId, kind: "call", outcome: "off the clock", shiftId: null });
     assert.ok(unlinked, "the attempt itself still succeeds");
     assert.equal((await db.query(
       `SELECT count(*)::int AS n FROM staff_events WHERE staff_id = $1 AND shift_id IS NULL`, [staffId])).rows[0].n,

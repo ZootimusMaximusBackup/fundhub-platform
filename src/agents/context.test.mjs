@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { fetchContext, formatPromptBlock } from "./context.mjs";
 
 const ORG = "00000000-0000-4000-8000-000000000001";
@@ -73,4 +75,10 @@ test("formatPromptBlock omits empty interview blocks", () => {
   });
   assert.doesNotMatch(text, /Customer interviews/);
   assert.match(text, /Jane Doe/);
+});
+
+test("closer context reads spoken words from call_outcomes.transcript", () => {
+  const src = readFileSync(fileURLToPath(new URL("./context.mjs", import.meta.url)), "utf8");
+  assert.match(src, /SELECT outcome, notes, recording_url, transcript, logged_at/);
+  assert.match(src, /said: /);
 });

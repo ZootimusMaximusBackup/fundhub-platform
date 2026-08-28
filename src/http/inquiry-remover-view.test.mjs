@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   ATTEMPT_KINDS, COUNTING_KINDS, ViewError, isUuid, blankToNull, pill,
-  buildAttemptRequest, buildConfirmRequest, buildStatusRequest,
+  buildAttemptRequest, buildConfirmRequest, buildStatusRequest, buildExpectedRequest,
   buildAttemptsRequest, buildIdentityRequest, buildRevealRequest,
   describeFailure, interpretWrite, interpretIdentity, interpretReveal,
   maskedSsnLabel, canReveal, formatRevealed,
@@ -98,6 +98,11 @@ test("buildStatusRequest: a blank status is refused — free text does not mean 
 test("buildStatusRequest: names the status action so it cannot be confused with confirm", () => {
   const r = buildStatusRequest({ inquiryId: ID, status: "Awaiting CRS" });
   assert.deepEqual(r.body, { inquiry_id: ID, action: "status", status: "Awaiting CRS" });
+});
+
+test("buildExpectedRequest: staff type the expected name; actual stays on the file", () => {
+  const r = buildExpectedRequest({ inquiryId: ID, expectedName: "Chase Ink" });
+  assert.deepEqual(r.body, { inquiry_id: ID, action: "expected", expected_name: "Chase Ink" });
 });
 
 test("buildAttemptsRequest: reads the row history with a GET, not a write", () => {
@@ -533,17 +538,25 @@ test("the embedded copy runs in a browser-shaped sandbox and exposes every expor
 test("VIEW exposes every export the screen calls, so a rename cannot half-land", () => {
   for (const name of [
     "ATTEMPT_KINDS", "isUuid", "pill", "buildAttemptRequest", "buildConfirmRequest",
-    "buildStatusRequest", "buildIdentityRequest", "buildRevealRequest",
+    "buildStatusRequest", "buildExpectedRequest", "buildIdentityRequest", "buildRevealRequest",
     "interpretWrite", "interpretIdentity", "interpretReveal",
     "maskedSsnLabel", "canReveal", "formatRevealed",
     "createRowState", "beginWrite", "settleWrite", "failWrite",
     "attemptsDelta", "pendingLabel",
-    "caseUiStatus", "caseCallState", "buildCaseSendRequest",
+    "caseUiStatus", "caseCallState", "buildCaseSendRequest", "buildInquiryGenerateRequest",
     "bureauLabel", "repairStagePill", "buildRepairSendRequest",
     "buildRepairConfirmParseRequest"
   ]) {
     assert.ok(VIEW[name], name + " is missing from VIEW");
   }
+});
+
+test("buildInquiryGenerateRequest: posts generate to /api/inquiry-cases", () => {
+  const r = VIEW.buildInquiryGenerateRequest({ caseId: ID });
+  assert.equal(r.method, "POST");
+  assert.equal(r.path, "/api/inquiry-cases");
+  assert.deepEqual(r.body, { id: ID, action: "generate" });
+  assert.throws(() => VIEW.buildInquiryGenerateRequest({ caseId: "not-a-uuid" }), /must be a uuid/);
 });
 
 test("buildCaseSendRequest: human send only, portal needs reference", () => {
@@ -594,6 +607,16 @@ test("repair pane calls the copied VIEW, not a missing window.VIEW", () => {
   assert.match(HTML_SRC, /var V = window\.FHInquiryView;/);
   assert.match(HTML_SRC, /V\.buildRepairSendRequest/);
   assert.match(HTML_SRC, /V\.buildRepairConfirmParseRequest/);
+});
+
+test("Inquiries Generate posts generate to inquiry-cases, not repair generate", () => {
+  assert.match(HTML_SRC, /buildInquiryGenerateRequest\(\{\s*caseId:/);
+  const start = HTML_SRC.indexOf('if (act === "generate-letters")');
+  const end = HTML_SRC.indexOf('if (act === "upload-fraud")');
+  assert.ok(start > 0 && end > start, "generate-letters handler missing");
+  const inquiriesGen = HTML_SRC.slice(start, end);
+  assert.equal(inquiriesGen.includes("/api/repair/generate"), false);
+  assert.match(inquiriesGen, /inquiry items on this case/);
 });
 
 /* ── rules that live in the HTML itself ────────────────────────────────────── */

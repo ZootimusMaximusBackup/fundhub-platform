@@ -638,6 +638,26 @@ describe("nextQuietHoursEnd", () => {
    single human step between here and a client reading Latin: somebody pressing
    Approve in the template editor on a row they have not read. */
 
+test("dispatch: SMS-DOC-02 is blocked when GHL-DOC is retired", async () => {
+  const db = fakeDb();
+  const orig = db.query.bind(db);
+  db.query = async (sql, params) => {
+    if (sql.includes("FROM agents")) {
+      return { rows: [{ status: "retired" }] };
+    }
+    return orig(sql, params);
+  };
+  const f = spy();
+  const res = await dispatchOne(db, claimed({
+    channel: "sms",
+    template_key: "SMS-DOC-02-REQUEST-MORE",
+    rendered_body: "got your upload — one thing needs fixing"
+  }), { fetchImpl: f, env: ENV, now: MIDDAY });
+  assert.strictEqual(res.outcome, OUTCOME.BLOCKED);
+  assert.strictEqual(res.detail, "retired_ghl_doc");
+  assert.strictEqual(f.calls.length, 0, "retired GHL-DOC must not reach a provider");
+});
+
 test("dispatch: a message whose copy is still lorem ipsum is blocked, not sent", async () => {
   const db = fakeDb();
   const f = spy();

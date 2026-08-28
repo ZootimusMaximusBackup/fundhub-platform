@@ -4,6 +4,7 @@
 
 import { gatherRepairSignals, gatherRepairDetailSignals } from "./read-repair-signals.mjs";
 import { rollupCounts } from "./lens.mjs";
+import { buildRoundPlan } from "./round-plan.mjs";
 
 export const NEED_ME_STAGES = Object.freeze([
   "letters_generated",
@@ -196,16 +197,18 @@ export async function getRepairCase(db, { orgId, clientId } = {}) {
 
   const lettersRes = await loadLetters(db, orgId, clientId);
   const itemsRes = await db.query(
-    `SELECT id, rule_id, severity, field, creditor, account_last4, round, status, outcome
-       FROM dispute_items
-      WHERE org_id = $1::uuid AND client_id = $2::uuid
-      ORDER BY CASE severity
+    `SELECT di.id, di.rule_id, di.severity, di.field, di.creditor, di.account_last4,
+            di.round, di.status, di.outcome, dc.bureau
+       FROM dispute_items di
+       JOIN dispute_cases dc ON dc.id = di.case_id
+      WHERE di.org_id = $1::uuid AND di.client_id = $2::uuid
+      ORDER BY CASE di.severity
                  WHEN 'deletion' THEN 0
                  WHEN 'strong' THEN 1
                  WHEN 'moderate' THEN 2
                  ELSE 3
                END,
-               created_at DESC
+               di.created_at DESC
       LIMIT 100`,
     [orgId, clientId]
   );
@@ -223,10 +226,18 @@ export async function getRepairCase(db, { orgId, clientId } = {}) {
     can_send: READY_LETTER.has(row.status) && Boolean(row.body_text)
   }));
 
+  const items = itemsRes.rows || [];
+  const rounds = buildRoundPlan({
+    roundsCap: file?.rounds_cap,
+    items,
+    letters
+  });
+
   return {
     file,
     letters,
-    items: itemsRes.rows || [],
+    items,
+    rounds,
     can_send: letters.some((l) => l.can_send),
     timeline: detailSignals.timeline || [],
     signer_name: detailSignals.signer_name != null ? detailSignals.signer_name : null,

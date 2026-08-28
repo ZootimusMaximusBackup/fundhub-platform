@@ -55,6 +55,76 @@ test("onDocsReceivedGhlDoc: inquiry_doc is skipped so the inquiry gate keeps tha
   assert.equal(res.reason, "not_ghl_doc_kind");
 });
 
+test("onDocsReceivedGhlDoc: retired GHL-DOC does not queue SMS-DOC-02", async () => {
+  const { SMS_DOC_02 } = await import("./ghl-doc.mjs");
+  const { pgFake } = await import("../workflows/test-support.mjs");
+  const db = pgFake({
+    clients: [{ id: CLIENT, org_id: ORG, email: "a@b.com", custom_fields: {} }],
+    templates: [
+      { org_id: ORG, template_key: SMS_DOC_02, channel: "sms", body: "got your upload — one thing needs fixing", compliance_passed: true }
+    ]
+  });
+  const origQuery = db.query.bind(db);
+  db.query = async (sql, params) => {
+    if (/FROM agents/.test(sql)) {
+      return { rows: [{
+        code: AGENT_CODE,
+        status: "retired",
+        prompt: "You are the Document Check agent. Return JSON.",
+        output_schema: { outcome: "accept, request_more, or hold" }
+      }] };
+    }
+    return origQuery(sql, params);
+  };
+  let modelCalls = 0;
+  const runs = [];
+  const res = await onDocsReceivedGhlDoc(db, event({
+    kind: "client_upload",
+    subtype: "id_document",
+    document_id: "doc-1"
+  }), {
+    loadBytesImpl: async () => ({ buffer: Buffer.from("img"), mimeType: "image/png" }),
+    callModelImpl: async () => {
+      modelCalls += 1;
+      return { mode: "live", text: JSON.stringify({ outcome: "request_more" }), error: null };
+    },
+    recordRunImpl: async (_db, row) => { runs.push(row); return row; }
+  });
+  assert.equal(res.done, false);
+  assert.equal(res.reason, "ghl_doc_retired");
+  assert.equal(modelCalls, 0);
+  assert.equal(db.messages.length, 0);
+  assert.equal(runs.length, 1);
+  assert.equal(runs[0].agentCode, AGENT_CODE);
+  assert.equal(runs[0].outcome, "ghl_doc_retired");
+});
+
+test("onDocsReceivedGhlDoc: draft GHL-DOC does not run", async () => {
+  const res = await onDocsReceivedGhlDoc({
+    async query(sql) {
+      if (/FROM agents/.test(sql)) {
+        return { rows: [{
+          code: AGENT_CODE,
+          status: "draft",
+          prompt: "You are the Document Check agent. Return JSON."
+        }] };
+      }
+      return { rows: [] };
+    }
+  }, event({
+    kind: "client_upload",
+    subtype: "id_document",
+    document_id: "doc-1"
+  }), {
+    loadBytesImpl: async () => ({ buffer: Buffer.from("img"), mimeType: "image/png" }),
+    callModelImpl: async () => {
+      throw new Error("draft must not call the model");
+    }
+  });
+  assert.equal(res.done, false);
+  assert.equal(res.reason, "ghl_doc_not_live");
+});
+
 test("onDocsReceivedGhlDoc: runs GHL-DOC and does not send", async () => {
   const runs = [];
   const prompts = [];

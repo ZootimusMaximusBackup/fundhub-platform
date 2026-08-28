@@ -112,7 +112,7 @@ export default async function handler(req, res, deps = {}) {
         [clientId, orgId]
       ),
       database.query(
-        `SELECT result, created_at FROM crs_results
+        `SELECT id, result, created_at FROM crs_results
           WHERE client_id = $1 AND org_id = $2
           ORDER BY created_at DESC`,
         [clientId, orgId]
@@ -125,7 +125,45 @@ export default async function handler(req, res, deps = {}) {
       )
     ]);
 
-    const tradelines = tradelinesRes.rows;
+    /* ── THE ACCOUNTS MUST COME OUT OF THE SAME FILE THE SCORES DID ──
+
+       `tradelines` rows are written at pull time by ingestCrsResult()
+       (src/tradelines/store.mjs). Every write path into `crs_results` calls it
+       — recordPull(), fulfilWithin() and coordinateCrsResult() in
+       src/finance/soft-pulls.mjs — so in the ordinary case the table and the
+       stored payload agree and nothing below changes anything.
+
+       WHEN THAT INGEST DID NOT RUN, THIS ENDPOINT TOLD TWO STORIES FROM ONE
+       FILE. The `crs_results` row is still there, so three scores were read out
+       of it; no accounts were, because accounts were only ever read from the
+       table. Measured on live 2026-08-27 for client 89f1a12f-f824-4451-9a53-
+       5705b55374ca: the stored pull lists four open accounts (a $25,000 Amex
+       opened 2020-08, a $12,000 Chase opened 2019-04, an $8,000 Capital One
+       opened 2021-01 and a $28,000 auto loan opened 2022-06) and `tradelines`
+       held none of them, so the same read reported 718 / 724 / 731 AND "your
+       file is thin", $0 personal, $0 business. Two of that night's four planted
+       clients were in this state.
+
+       So: fall back to the accounts already inside the newest stored pull that
+       carries any, through the SAME normalizer the ingest uses. One reader of a
+       pull payload, which is the rule src/finance/soft-pulls.mjs already states.
+       Nothing is invented, nothing is inferred and nothing is written — these
+       are lines that were in the file this endpoint was already reading.
+
+       ONLY WHEN THE TABLE IS EMPTY. A client with stored rows is untouched, so
+       this can neither double-count nor disagree with the screens that read
+       `tradelines` directly (api/read/tradelines.mjs, api/read/finance-os.mjs).
+
+       THE RULE LIVES IN ONE PLACE — src/tradelines/index.mjs's linesForEngine.
+       src/sales/closer-deck.mjs runs the same three engine calls to produce the
+       pre-approval a closer reads out to the client, and the two must never be
+       able to answer "how much can this person get" differently.
+
+       `tradelineSource` is returned so a reader can always tell which of the two
+       they are looking at. It is never a guess: "none" means the file carried no
+       accounts either, and the adapter still reports that as a missing field. */
+    const { tradelines, source: tradelineSource } =
+      linesForEngine(tradelinesRes.rows, crsRes.rows);
 
     // ── pure from here down ──
     const adapter = toBureaus({
@@ -141,12 +179,13 @@ export default async function handler(req, res, deps = {}) {
       adapter.businessAges
     );
 
-    // NO `user` OBJECT IS PASSED. fundhub stores no LLC field, and passing
-    // { hasLLC: false } would be asserting something about this client that
-    // nobody recorded. The engine applies its own defaults either way; the
-    // difference is that the adapter has named `hasLLC` as missing, so the
-    // report marks the resulting sentence as resting on a default.
-    const suggestions = buildSuggestions(underwrite);
+    // Company on file (`businesses`) is "has a company." Stored age is
+    // `businesses.age_months`. No company still leaves hasLLC missing, so the
+    // report marks the engine's "no LLC" default as a default.
+    const suggestions = buildSuggestions(underwrite, {
+      hasLLC: adapter.hasLLC,
+      llcAgeMonths: adapter.llcAgeMonths ?? 0
+    });
 
     // fundhub's own utilization reading, from the four rules that already exist.
     // Included so both engines' utilization lines appear together, each stamped
@@ -162,7 +201,7 @@ export default async function handler(req, res, deps = {}) {
     const report = buildReport({ underwrite, suggestions, adapter, fundhubUtilization });
     report.engine.upstreamCommit = UPSTREAM.commit;
 
-    return res.status(200).json({ ok: true, clientId, ...report });
+    return res.status(200).json({ ok: true, clientId, tradelineSource, ...report });
   } catch (e) {
     if (CLIENT_DATA_ERRORS.has(e.code)) {
       return res.status(400).json({ ok: false, error: "bad request parameter" });

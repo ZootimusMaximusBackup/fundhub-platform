@@ -243,7 +243,17 @@ export async function seedPlatformDemo(db, { orgId } = {}) {
     }
   }
 
-  let tpl = (await q(db, `SELECT id,template_key,kind FROM contract_templates WHERE org_id=$1 AND template_key='FUNDING-AGREEMENT' LIMIT 1`, [orgId])).rows[0];
+  /* NOT IDEMPOTENT UNTIL THIS LINE MATCHED WHAT IT WRITES. The lookup asked for
+     'FUNDING-AGREEMENT' while the INSERT below mints 'DEMO-FUNDING-AGREEMENT',
+     so the seed could never find its own row: run it twice on an org whose base
+     'FUNDING-AGREEMENT' template is absent and the second call died on
+     contract_templates_org_key_uniq. That is exactly what happens in the suite,
+     where an earlier file deletes the base template, and it is what a second
+     'Reseed demo data' click would do on any org that never had one.
+     Accepting either key makes the seed genuinely idempotent. */
+  let tpl = (await q(db, `SELECT id,template_key,kind FROM contract_templates
+     WHERE org_id=$1 AND template_key IN ('FUNDING-AGREEMENT','DEMO-FUNDING-AGREEMENT')
+     ORDER BY (template_key = 'FUNDING-AGREEMENT') DESC LIMIT 1`, [orgId])).rows[0];
   if (!tpl) tpl = (await db.query(`INSERT INTO contract_templates (org_id,template_key,name,kind,subtype,body,manual_fields,signature_required,created_by,is_demo)
     VALUES ($1,'DEMO-FUNDING-AGREEMENT','Demo Funding Agreement','contract','funding_agreement',E'DEMO\n{{contact.full_name}}','[]'::jsonb,true,$2,true) RETURNING id,template_key,kind`, [orgId,owner.id])).rows[0];
   for (const s of [{n:1,status:"signed"},{n:2,status:"sent"},{n:5,status:"draft"}]) {
@@ -344,7 +354,40 @@ export async function wipeDemoData(db, { orgId } = {}) {
   if (!orgId) throw new TypeError("wipeDemoData: orgId required");
   // fundhub_app cannot DISABLE TRIGGER. Migration 150 lets is_demo rows delete.
   await db.query(`UPDATE orgs SET demo_mode_enabled=false, updated_at=now() WHERE id=$1`, [orgId]);
-  const clientIds = (await db.query(`SELECT id FROM clients WHERE org_id=$1 AND is_demo`, [orgId])).rows.map(r => r.id);
+  /* THE ROSTER ANCHOR IS NOT DEMO DATA. accounts_client_id_fkey is ON DELETE
+     CASCADE, so removing the client row behind client@demo.fundhub.local takes
+     the client-portal LOGIN with it — and db/migrations/094_demo_logins.sql is
+     the only thing that writes that account. Migrations are recorded in
+     schema_migrations, so db/migrate.mjs never re-runs 094: the login was gone
+     for good. This wipe is reachable in production through api/demo/mode.mjs
+     (routed as demo/mode), so a staff member emptying demo data permanently
+     locked everyone out of the client portal, which is the exact problem 094
+     exists to solve.
+
+     Everything else demo still goes. The nine roster logins and the one client
+     row that anchors one of them stay. */
+  /* ONLY WHAT seedPlatformDemo MADE. Its clients are demo.client.N@<domain>
+     (demoClientEmail). The OTHER demo clients at that domain are migration
+     094/096 roster fixtures — client@ (anchors the client-portal login, via
+     accounts_client_id_fkey ON DELETE CASCADE) and partner-client@ (the ONLY
+     client the demo partner owns, which is what makes partner-galaxy non-empty).
+
+     Deleting those was permanent. 094/096 are recorded in schema_migrations, so
+     db/migrate.mjs never re-runs them, and seedPlatformDemo cannot replace them:
+     it builds its own partner under a different slug (demo-partner-platform vs
+     the roster's demo-partner), so a reseed attaches clients to a partner the
+     login does not point at. Measured: after wipe+reseed, clients matching the
+     partner account went 1 -> 0 and stayed there.
+
+     This wipe is reachable in production through api/demo/mode.mjs (routed
+     demo/mode), so emptying demo data locked the client portal out entirely and
+     left the white-label partner signed in with an empty book, for good. */
+  const clientIds = (await db.query(
+    `SELECT id FROM clients
+      WHERE org_id=$1 AND is_demo
+        AND lower(COALESCE(email,'')) LIKE 'demo.client.%@' || $2`,
+    [orgId, DEMO_EMAIL_DOMAIN]
+  )).rows.map(r => r.id);
 
   if (clientIds.length) {
     const byOrgDemo = [
@@ -445,7 +488,22 @@ export async function wipeDemoData(db, { orgId } = {}) {
       `DELETE FROM funding_rounds WHERE client_id=ANY($1)`,
       `DELETE FROM tradelines WHERE client_id=ANY($1)`,
       `DELETE FROM crs_results WHERE client_id=ANY($1)`,
-      `DELETE FROM accounts WHERE client_id=ANY($1)`,
+      /* NOT the nine roster logins. db/migrations/094_demo_logins.sql is the ONLY
+         thing that writes owner@/admin@/client@/affiliate@/partner@… at
+         demo.fundhub.local (src/auth/demo-roster.mjs says so in its own header:
+         "THE SQL IS STILL THE AUTHORITY"). Migrations are recorded in
+         schema_migrations, so db/migrate.mjs will never re-run 094 — deleting
+         those rows destroyed the nine demo logins PERMANENTLY, and this wipe is
+         reachable in production through api/demo/mode.mjs, routed as demo/mode.
+         Those accounts exist so the client, affiliate and white-label partner
+         portals can be opened at all; without them every one of those screens is
+         behind a login form with nothing to type into it, which is the exact
+         problem 094 was written to fix.
+
+         Demo DATA accounts still go. The roster stays. */
+      `DELETE FROM accounts
+        WHERE client_id=ANY($1)
+          AND lower(COALESCE(email,'')) NOT LIKE '%@demo.fundhub.local'`,
       `DELETE FROM clients WHERE id=ANY($1) AND is_demo`
     ];
     for (const sql of byClient) await wipeQ(db, sql, [clientIds]);
@@ -454,7 +512,25 @@ export async function wipeDemoData(db, { orgId } = {}) {
   await wipeQ(db, `DELETE FROM staff_events WHERE org_id=$1 AND is_demo`, [orgId]);
   await wipeQ(db, `DELETE FROM shifts WHERE org_id=$1 AND is_demo`, [orgId]);
   await wipeQ(db, `DELETE FROM lenders WHERE org_id=$1 AND is_demo`, [orgId]);
-  await wipeQ(db, `DELETE FROM partners WHERE org_id=$1 AND is_demo AND slug=$2`, [orgId, DEMO_PARTNER.slug]);
+  /* KEEP THE PARTNER THE ROSTER LOGIN POINTS AT. seedPlatformDemo finds its
+     partner by SLUG and mints a new row when none exists, so deleting this one
+     and re-seeding produced a partner with the same slug and a NEW id — while
+     accounts.partner_id for partner@demo.fundhub.local still held the old one.
+     The white-label partner could sign in and owned no clients, permanently,
+     because every future reseed attached them to the new id. Measured:
+     after wipe+reseed, clients matching the account's partner_id went 1 -> 0.
+
+     Same reasoning as the client anchor above, and the same production path:
+     api/demo/mode.mjs (routed demo/mode) reaches this. */
+  await wipeQ(db,
+    `DELETE FROM partners
+      WHERE org_id=$1 AND is_demo AND slug=$2
+        AND id NOT IN (
+          SELECT partner_id FROM accounts
+           WHERE partner_id IS NOT NULL
+             AND lower(COALESCE(email,'')) LIKE '%@' || $3
+        )`,
+    [orgId, DEMO_PARTNER.slug, DEMO_EMAIL_DOMAIN]);
   await wipeQ(db, `DELETE FROM affiliates WHERE org_id=$1 AND is_demo AND tracking_id=$2`, [orgId, DEMO_AFFILIATE.tracking_id]);
   await wipeQ(db, `DELETE FROM contract_templates WHERE org_id=$1 AND is_demo`, [orgId]);
   await wipeQ(db, `DELETE FROM journeys WHERE org_id=$1 AND is_demo`, [orgId]);

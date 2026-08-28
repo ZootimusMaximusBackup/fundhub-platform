@@ -64,13 +64,27 @@ const FUNDING = [
   { org_id: "org-1", pipeline_key: "funding_card_stacking", stage_key: "action_required", pipeline_id: "pipe-fund", stage_id: "st-action", sort_order: 3 }
 ];
 
-test("funding gate blocks apply_now when documents are pending", async () => {
+test("funding gate does not block Apply Now when documents are pending", async () => {
   const db = pgFake({
     pipelineStages: FUNDING,
     clients: [{ id: "cl-1", org_id: "org-1", custom_fields: { round_hold_reason: "Documents Pending Approval" } }]
   });
   const res = await moveCardToStage(db, {
     orgId: "org-1", clientId: "cl-1", pipelineKey: "funding_card_stacking", stageKey: "apply_now"
+  });
+  assert.equal(res.moved, true);
+});
+
+test("funding gate still blocks later stages when documents are pending", async () => {
+  const db = pgFake({
+    pipelineStages: [
+      ...FUNDING,
+      { org_id: "org-1", pipeline_key: "funding_card_stacking", stage_key: "round_submitted", pipeline_id: "pipe-fund", stage_id: "st-round", sort_order: 1 }
+    ],
+    clients: [{ id: "cl-1", org_id: "org-1", custom_fields: { round_hold_reason: "Documents Pending Approval" } }]
+  });
+  const res = await moveCardToStage(db, {
+    orgId: "org-1", clientId: "cl-1", pipelineKey: "funding_card_stacking", stageKey: "round_submitted"
   });
   assert.equal(res.moved, false);
   assert.equal(res.reason, "funding_gate_closed");

@@ -242,11 +242,15 @@
      Owner-set 2026-08-19 kill pass. These screens stay in ALL and in
      allowedFor(), so typing the address still opens them. gateLinks() hides
      only the .navitem rows. In-page links and background jobs are untouched.
-     No Retired flyout (owner picked nothing). */
+     No Retired flyout (owner picked nothing).
+
+     company-brain.html came OFF this list 2026-08-27, owner-set, superseding
+     the 2026-08-19 entry. The screen is live and answering, and the class
+     quizzes (ramp-quizzes.js) are only reachable from it — with the row
+     hidden the only way in was typing the address, so nobody found either. */
   var NAV_HIDDEN = [
     "finance-os.html",
     "consent-capture.html",
-    "company-brain.html",
     "galaxy.html",
     "partner-galaxy.html",
     "ops-admin.html",
@@ -531,13 +535,50 @@
      control panel, where `id` IS the client — on agent-editor.html or
      brand-studio.html `id` means something else entirely, and remembering an
      agent's id as a client would send the next click to the wrong record. */
+  /* READING is permissive; WRITING stays per-screen.
+
+     Hole 10 taught client-control-panel.html, closer-dashboard.html and
+     present.js to open a file from ?id=, ?client_id=, ?client= or ?contact=,
+     because links into this product come from ClickFunnels, from email, and
+     from staff pasting a URL, and they do not agree on one name. urlClient()
+     was left reading only client_id (plus "id" on the control panel), so the
+     PAGE would open the right client while the SHELL around it thought no
+     client was selected - the rail rows then pointed at a different file, or
+     at none.
+
+     "client" and "contact" are safe on every screen: nothing else in the app
+     uses those names.
+
+     "id" IS NOT, and stays gated to CLIENT_SCREENS. agent-editor.html?id= is an
+     AGENT id; reading it as a client would remember a record that is not a
+     person and send the next click there. src/http/app-client-carry.test.mjs
+     "an ?id= on some other screen is NOT read as a client" pins that, and it is
+     the reason this function cannot simply take every spelling everywhere.
+
+     CLIENT_SCREENS is unchanged and still governs which name we WRITE when
+     building a link, so nothing about outgoing URLs changes here.
+
+     Known duplication, left alone deliberately: this same alias list exists in
+     four places with four different orderings (present.js:91,
+     client-control-panel.html:1474/2050/2128/2130, closer-dashboard.html:225).
+     Unifying them is a refactor across four files, not part of closing this
+     gap. */
+  var CLIENT_ID_ALIASES = ["client_id", "client", "contact"];
+
   function urlClient() {
     try {
       var q = new URLSearchParams(location.search);
-      var v = q.get("client_id");
-      if (!v && CLIENT_SCREENS[PAGE] === "id") v = q.get("id");
-      v = String(v == null ? "" : v).trim();
-      return UUID_RE.test(v) ? v : "";
+      var names = CLIENT_ID_ALIASES.slice();
+      if (CLIENT_SCREENS[PAGE] === "id") names.push("id");
+      var v = "";
+      for (var i = 0; i < names.length && !v; i++) {
+        var raw = q.get(names[i]);
+        raw = String(raw == null ? "" : raw).trim();
+        /* Only a real uuid wins, so a junk ?client=foo cannot shadow a good
+           ?client_id=<uuid> further down the list. */
+        if (UUID_RE.test(raw)) v = raw;
+      }
+      return v;
     } catch (e) { return ""; }
   }
 
@@ -751,6 +792,7 @@
           "padding-left:0!important}" +
         /* see setDrawer() — floating chrome outranks the rail on z-index */
         "html.fh-drawer-open #fh-shell-chip," +
+        "html.fh-drawer-open #fh-shell-chip-show," +
         "html.fh-drawer-open #fh-shell-search-btn{display:none!important}" +
         /* The menu button is fixed at top-left, which is exactly where a page
            title sits. Without this the ☰ lands on top of "Hiring", "Pipeline"
@@ -1265,6 +1307,61 @@
   // screen either. 135px clears the tallest of those (agent-editor's header,
   // 125px) with a little to spare; pinned to both edges so it wraps to the
   // available width instead of running off it.
+  /* The chip can be dismissed. It is fixed above everything on screens with no
+     top bar, and on a 390px phone it is furniture the owner may not want during
+     a call. Hidden state persists per browser, same key shape as CLIENT_KEY /
+     ENTITY_KEY / ROLE_KEY above.
+
+     Hiding it must never strand Sign out, so hiding swaps in a restore pill that
+     brings the whole chip back. Both controls are 40px hit areas per
+     UI-STANDARDS.md §5 and §11. */
+  var CHIP_HIDDEN_KEY = "fh_chip_hidden";
+
+  function readChipHidden() {
+    try { return localStorage.getItem(CHIP_HIDDEN_KEY) === "1"; }
+    catch (e) { return false; }
+  }
+
+  function writeChipHidden(hidden) {
+    try {
+      if (hidden) localStorage.setItem(CHIP_HIDDEN_KEY, "1");
+      else localStorage.removeItem(CHIP_HIDDEN_KEY);
+    } catch (e) {}
+  }
+
+  /* Always injected, unlike CHIP_BREAKPOINT_CSS which only goes in when the chip
+     could not be placed in a header.
+
+     The 40px target is grown with a transparent ::before rather than padding so
+     the chip does not get taller — it sits inside real topbars whose height is
+     set by the page, and on phones it wraps. 16px of separation from Sign out is
+     deliberate: UI-STANDARDS §5 keeps a consequential action away from a safe
+     one, and 40px of invisible target either side of a 20px glyph would
+     otherwise reach into the Sign out box. */
+  var CHIP_CONTROL_CSS =
+    "#fh-shell-chip-hide{position:relative;pointer-events:auto;flex-shrink:0;" +
+      "background:none;border:0;color:#A1A1AA;font:inherit;font-size:14px;line-height:1;" +
+      "cursor:pointer;padding:0;margin-left:16px;width:20px;height:20px;" +
+      "display:flex;align-items:center;justify-content:center;border-radius:6px;" +
+      "-webkit-tap-highlight-color:transparent}" +
+    "#fh-shell-chip-hide::before{content:'';position:absolute;left:50%;top:50%;" +
+      "width:40px;height:40px;transform:translate(-50%,-50%)}" +
+    "#fh-shell-chip-hide:hover{color:#fff;background:#26262B}" +
+    "#fh-shell-chip-hide:focus-visible{color:#fff;outline:2px solid #A1A1AA;outline-offset:2px}" +
+    "#fh-shell-chip-show{pointer-events:auto;display:none;align-items:center;" +
+      "justify-content:center;min-width:40px;height:40px;padding:0 14px;flex-shrink:0;" +
+      "margin-left:8px;background:#0A0A0A;color:#A1A1AA;border:1px solid #26262B;" +
+      "border-radius:10px;font:500 11px/1 'JetBrains Mono',monospace;letter-spacing:.06em;" +
+      "cursor:pointer;-webkit-tap-highlight-color:transparent}" +
+    "#fh-shell-chip-show:hover{color:#fff}" +
+    "#fh-shell-chip-show:focus-visible{color:#fff;outline:2px solid #A1A1AA;outline-offset:2px}" +
+    /* No header to sit in: the pill takes the chip's own fixed corner, and the
+       same two breakpoints, so it never lands on page content. */
+    "#fh-shell-chip-show[data-fh-fixed]{position:fixed;top:12px;right:14px;" +
+      "z-index:2147483000;margin-left:0}" +
+    "@media (max-width:1200px){#fh-shell-chip-show[data-fh-fixed]{top:66px;right:10px}}" +
+    "@media (max-width:480px){#fh-shell-chip-show[data-fh-fixed]{top:auto;bottom:10px;right:110px}}";
+
   var CHIP_BREAKPOINT_CSS =
     "@media (max-width:1200px){#fh-shell-chip{top:66px !important;right:10px !important}}" +
     /* Phones: dock it to the bottom instead of hanging it at top:135px.
@@ -1307,8 +1404,21 @@
     var clear = edge;
     var narrow = window.matchMedia && window.matchMedia("(max-width:1200px)").matches;
     var phone = window.matchMedia && window.matchMedia("(max-width:480px)").matches;
+    /* A hidden chip is not 337px of anything. offsetWidth reads 0 while it is
+       display:none and `|| 337` would silently restore the old reservation,
+       leaving every topbar padded for a bar that is not on screen and parking
+       Search a chip-width from the edge. Measure the restore pill instead —
+       that is what actually occupies the corner once the chip is dismissed. */
+    var showPill = document.getElementById("fh-shell-chip-show");
+    var chipHidden = !!(chip && chip.style.display === "none");
+    var chipW = 0;
     if (chip) {
-      clear += (chip.offsetWidth || 337) + gap;
+      chipW = chipHidden
+        ? ((showPill && showPill.offsetWidth) || 74)
+        : (chip.offsetWidth || 337);
+    }
+    if (chip) {
+      clear += chipW + gap;
     }
     if (search && chip) {
       // Always dock Search immediately left of the chip (same row), never on
@@ -1330,12 +1440,12 @@
       } else if (narrow) {
         search.style.top = "66px";
         search.style.left = "auto";
-        search.style.right = (edge + (chip.offsetWidth || 200) + gap) + "px";
+        search.style.right = (edge + (chipW || 200) + gap) + "px";
         clear += (search.offsetWidth || 110) + gap;
       } else {
         search.style.top = "";
         search.style.left = "auto";
-        search.style.right = (edge + (chip.offsetWidth || 337) + gap) + "px";
+        search.style.right = (edge + (chipW || 337) + gap) + "px";
         clear += (search.offsetWidth || 110) + gap;
       }
     } else if (search) {
@@ -1637,7 +1747,23 @@
        chip reuse the same row, so it reserves real space exactly once. */
     var row = document.getElementById("fh-shell-account-row");
     if (!row) {
-      var host = document.querySelector(".shell, .main, .content, main, .app-shell, .app");
+      /* Try each host IN ORDER, innermost first — do NOT put these back into one
+         grouped querySelector. A selector list returns the first match in
+         DOCUMENT order, not in list order, and .app is an ANCESTOR of .shell, so
+         the grouped form always resolved to .app and never to the content column
+         it was written to prefer.
+         That is invisible while .app is display:block (the row is just a
+         full-width block, which is what my-numbers and sales-floor get). On the
+         screens that set .app{display:flex} it is not: the row becomes a flex
+         ITEM and takes horizontal space away from the content beside it.
+         Measured on journeys at 3440 on 2026-08-27 — the row sat between the
+         rail and the content and ate 718px, so the screen never reached the
+         left edge no matter how wide the window got. */
+      var host = null;
+      var hostSel = [".shell", ".main", ".content", "main", ".app-shell", ".app"];
+      for (var hi = 0; hi < hostSel.length && !host; hi++) {
+        host = document.querySelector(hostSel[hi]);
+      }
       if (!host) return false;
       row = document.createElement("div");
       row.id = "fh-shell-account-row";
@@ -1667,16 +1793,17 @@
        on hover, because a pointer-events:none element is never hovered. The
        labels themselves are still visible. */
     el.style.cssText = "display:flex;gap:10px;align-items:center;background:#0A0A0A;color:#fff;border:1px solid #26262B;border-radius:10px;padding:8px 12px;font:500 11px/1 'JetBrains Mono',monospace;letter-spacing:.06em;flex-shrink:0;margin-left:8px";
-    /* Name the tab count next to the role. The bounce this shell used to cause
-       was invisible in the chip: it said "closer" while the sidebar advertised
-       19 tabs, six of which that role cannot open. Saying "closer · 6 tabs"
-       makes a narrow role legible instead of something you discover by
-       clicking. An unrecognised role says so outright. */
+    /* The chip names who you are and what role you hold — nothing else. It used
+       to append the tab count ("closer · 6 tabs"); that number is chrome the
+       owner reads past, and the sidebar in front of him already IS the list.
+       The count still rides in the hover tooltip below, where it costs no
+       pixels. An unrecognised role still says so outright, in amber, because
+       that one is a real warning and not decoration. */
     var role = normRole(staff.role);
     var ok = allowedFor(role);
     var menu = menuFor(ok);
     var known = isKnownRole(role);
-    var roleText = role + " · " + menu.length + (menu.length === 1 ? " tab" : " tabs");
+    var roleText = role;
     var roleTitle = known
       ? "role " + role + " — " + menu.length + " of " + ALL.length + " screens. Change the map in shell.js ROLE_TABS."
       : "role \"" + role + "\" is not in shell.js ROLE_TABS — falling back to the shared Work tabs. Add it to the map.";
@@ -1684,8 +1811,28 @@
       '<span title="' + esc(roleTitle) + '" style="color:' + (known ? "#A1A1AA" : "#F5CE8F") + '">' +
         esc(staff.name || staff.email) + " · " + esc(roleText) + (known ? "" : " ?") + "</span>" +
       '<span id="fh-shell-src" title="checking the backend…" style="background:#3F3F46;color:#E4E4E7;border-radius:6px;padding:3px 7px;font-weight:700">···</span>' +
-      '<button id="fh-shell-out" style="pointer-events:auto;background:none;border:1px solid #3F3F46;color:#E4E4E7;border-radius:6px;padding:4px 9px;font:inherit;cursor:pointer">Sign out</button>';
-    if (!placeInHeader(el)) {
+      '<button id="fh-shell-out" style="pointer-events:auto;background:none;border:1px solid #3F3F46;color:#E4E4E7;border-radius:6px;padding:4px 9px;font:inherit;cursor:pointer">Sign out</button>' +
+      /* pointer-events:auto, same reason Sign out sets it: the chip body is
+         deliberately click-through, so a control inside it has to turn its own
+         back on or it is dead. Set in CHIP_CONTROL_CSS with the hit area. */
+      '<button id="fh-shell-chip-hide" type="button" aria-label="Hide this bar" ' +
+        'title="Hide this bar. A small ‘account’ button brings it back.">×</button>';
+    var ctrlStyle = document.createElement("style");
+    ctrlStyle.id = "fh-shell-chip-control-style";
+    ctrlStyle.textContent = CHIP_CONTROL_CSS;
+    (document.head || document.documentElement).appendChild(ctrlStyle);
+
+    /* The way back. Sign out lives in the chip and nowhere else, so the chip may
+       never become unreachable — hiding it swaps this in. */
+    var showBtn = document.createElement("button");
+    showBtn.id = "fh-shell-chip-show";
+    showBtn.type = "button";
+    showBtn.textContent = "account";
+    showBtn.setAttribute("aria-label", "Show the account bar");
+    showBtn.title = "Show the account bar — Sign out lives there.";
+
+    var inHeader = placeInHeader(el);
+    if (!inHeader) {
       var style = document.createElement("style");
       style.id = "fh-shell-chip-style";
       style.textContent = CHIP_BREAKPOINT_CSS;
@@ -1697,7 +1844,38 @@
       el.style.pointerEvents = "none";
       document.body.appendChild(el);
     }
+    /* Follow the chip: in the header it sits in that same row and takes real
+       space, so nothing reflows when the two swap. Fixed only when the chip is
+       fixed, on the chip's own corner and breakpoints. */
+    if (inHeader && el.parentNode) {
+      el.parentNode.insertBefore(showBtn, el.nextSibling);
+    } else {
+      showBtn.setAttribute("data-fh-fixed", "1");
+      document.body.appendChild(showBtn);
+    }
+
+    function setChipHidden(hidden) {
+      el.style.display = hidden ? "none" : "flex";
+      showBtn.style.display = hidden ? "flex" : "none";
+      el.setAttribute("aria-hidden", hidden ? "true" : "false");
+      writeChipHidden(hidden);
+      // Search is positioned off the chip's measured width — remeasure both ways.
+      try { layoutShellChrome(); } catch (e) {}
+    }
+
     document.getElementById("fh-shell-out").addEventListener("click", signOut);
+    document.getElementById("fh-shell-chip-hide").addEventListener("click", function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      setChipHidden(true);
+      showBtn.focus();
+    });
+    showBtn.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      setChipHidden(false);
+    });
+    setChipHidden(readChipHidden());
 
     /* One badge, the truth about this screen's data. A screen drawing its
        built-in sample rows must not look like one reading the database. */

@@ -184,16 +184,19 @@ test("two dispatchers cannot claim the same message", { skip: !RUN }, async () =
 });
 
 test("the routing table answers the dispatcher's lookup", { skip: !RUN }, async () => {
-  // Migration 110 seeds these two rows per org. If the seed or the column names
-  // drift, the dispatcher holds every message and this is where that shows up.
+  // Migration 110 seeds these two rows per org, and 164_resend_twilio_routing.sql
+  // repointed BOTH: email mailgun -> resend, sms ghl_relay -> twilio. This test
+  // still named the pre-164 pair, so it failed while describing a routing table
+  // the product stopped using. If the seed or the column names drift, the
+  // dispatcher holds every message and this is where that shows up.
   const { rows } = await db.query(
     `SELECT channel, provider, enabled FROM message_channel_routing
       WHERE org_id = $1 ORDER BY channel`,
     [orgId]
   );
   assert.deepEqual(rows, [
-    { channel: "email", provider: "mailgun", enabled: true },
-    { channel: "sms", provider: "ghl_relay", enabled: true }
+    { channel: "email", provider: "resend", enabled: true },
+    { channel: "sms", provider: "twilio", enabled: true }
   ]);
 });
 

@@ -38,7 +38,7 @@ const HONEST_MESSAGES = Object.freeze({
   no_credit_file: "No credit file on record for this client.",
   no_violations: "The credit file looks clean — nothing to dispute.",
   missing_identity: "Client is missing a legal name on the record.",
-  no_authorization: "No signed dispute authorization on file."
+  no_authorization: "No signed repair agreement or staff authorization on file."
 });
 
 export default async function handler(req, res, deps = {}) {

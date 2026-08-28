@@ -140,6 +140,31 @@ describe("messaging.html — the unread indication", () => {
     assert.deepEqual(V.filterRows(rows, { filter: "all", q: "thanks" }).map((r) => r.id), ["2"]);
     assert.deepEqual(V.filterRows(rows, { filter: "all", q: "nobody" }), []);
   });
+
+  /* HOLE 15, the half the database fix does not reach. The screen opens on
+     "Needs reply". Everything the system sends is outbound, so a client we have
+     only ever texted is never on that tab — and typing their name into a box
+     labelled "Search people and messages" answered "Nothing matches what you
+     typed" about somebody the company had messaged three times. */
+  test("a search looks at everyone, even from the Needs-reply tab", () => {
+    const V = loadViewModel();
+    const rows = [
+      { id: "1", first_name: "Ada", needs_reply: true, last_body: "hello" },
+      { id: "2", first_name: "Horse", last_name: "Twentyseven", needs_reply: false, last_body: "You're in" }
+    ];
+    assert.deepEqual(
+      V.filterRows(rows, { filter: "reply", q: "horse" }).map((r) => r.id), ["2"],
+      "a person we have only sent to is still hidden from the search");
+    // And clearing the box hands the tab back, unchanged.
+    assert.deepEqual(V.filterRows(rows, { filter: "reply", q: "" }).map((r) => r.id), ["1"]);
+    assert.deepEqual(V.filterRows(rows, { filter: "reply", q: "  " }).map((r) => r.id), ["1"]);
+  });
+
+  test("and it says so, rather than quietly widening what the tab means", () => {
+    const V = loadViewModel();
+    assert.equal(V.searchScopeNote(12, false, "horse", "reply"), "Searching everyone, not just Needs reply.");
+    assert.equal(V.searchScopeNote(12, false, "horse", "all"), "");
+  });
 });
 
 describe("messaging.html — who sent a message", () => {
@@ -391,15 +416,20 @@ describe("messaging.html — what happens when there are a lot of conversations"
       "threads among the loaded page while looking like it shows all of them");
     // Switching tabs is a new question, so it refetches rather than re-slicing.
     assert.match(HTML, /state\.filter = tab\.getAttribute\("data-filter"\);\s*\n[\s\S]{0,300}?loadList\(\)/);
+    // ...and a search lifts it, or the server would hand back a page that
+    // cannot contain the person being searched for.
+    assert.match(HTML, /state\.filter === "reply" && !String\(state\.q[\s\S]{0,40}?params\.needs_reply = 1/);
+    // Crossing empty↔typed is what changes that query, so it refetches once.
+    assert.match(HTML, /was !== now && state\.filter === "reply"[\s\S]{0,40}?loadList/);
   });
 
   test("the search box says when it is only searching what is loaded", () => {
     const V = loadViewModel();
-    assert.equal(V.searchScopeNote(200, true, "ada"), "Searching the 200 most recent conversations only.");
+    assert.equal(V.searchScopeNote(200, true, "ada", "all"), "Searching the 200 most recent conversations only.");
     // Nothing to disclose when everything is loaded, or when nobody is searching.
-    assert.equal(V.searchScopeNote(12, false, "ada"), "");
-    assert.equal(V.searchScopeNote(200, true, ""), "");
-    assert.equal(V.searchScopeNote(200, true, "   "), "");
+    assert.equal(V.searchScopeNote(12, false, "ada", "all"), "");
+    assert.equal(V.searchScopeNote(200, true, "", "all"), "");
+    assert.equal(V.searchScopeNote(200, true, "   ", "all"), "");
   });
 
   test("the inbox refreshes itself, so a message that arrives is actually seen", () => {

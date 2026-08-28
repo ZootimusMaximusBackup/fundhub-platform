@@ -38,17 +38,19 @@ const keyOf = (signals) => deriveNextAction(signals).next_action?.key ?? null;
 
 describe("the order is Chris's, exactly", () => {
 
-  test("ten chips, in Chris's words, in Chris's order", () => {
+  test("twelve chips, in Chris's words, in Chris's order", () => {
     assert.deepEqual(NEXT_ACTIONS.map((a) => [a.key, a.label]), [
       ["clear_fraud_alert", "Clear Fraud Alert"],
       ["get_consent", "Get Consent"],
       ["pull_crs", "Pull CRS"],
+      ["send_letters", "Send Letters"],
       ["remove_inquiries", "Remove Inquiries"],
       ["collect_documents", "Collect Documents"],
       ["review_disputes", "Review Disputes"],
       ["review_funding_file", "Review Funding File"],
       ["prepare_next_round", "Prepare Next Round"],
       ["apply_for_funding", "Apply for Funding"],
+      ["collect_payment", "Collect payment"],
       ["ready_to_fund", "Ready to Fund"]
     ]);
   });
@@ -118,6 +120,24 @@ describe("every chip fires on its own evidence", () => {
     assert.equal(keyOf(base({ custom_fields: { crs_paid: true } })), "pull_crs");
   });
 
+  test("Send Letters — ready letters and none sent", () => {
+    assert.equal(keyOf(base({ repair_letters: { letters_ready: 4, letters_sent: 0 } })), "send_letters");
+  });
+
+  test("Send Letters outranks Remove Inquiries when letters are the repair job", () => {
+    assert.equal(keyOf(base({
+      inquiry_cases: [{ case_status: "Queued" }],
+      repair_letters: { letters_ready: 4, letters_sent: 0 }
+    })), "send_letters");
+  });
+
+  test("Send Letters does NOT fire when letters were already sent", () => {
+    assert.equal(keyOf(base({
+      inquiry_cases: [{ case_status: "Queued" }],
+      repair_letters: { letters_ready: 0, letters_sent: 4 }
+    })), "remove_inquiries");
+  });
+
   test("Remove Inquiries — an active case", () => {
     for (const s of ["Queued", "Scheduled", "In Progress", "Escalated", "Blocked"]) {
       assert.equal(keyOf(base({ inquiry_cases: [{ case_status: s }] })), "remove_inquiries", s);
@@ -135,7 +155,7 @@ describe("every chip fires on its own evidence", () => {
   /* FINDING, recorded not fixed. Chip 5's second route — "the inquiry case is
      Blocked and the identity packet comes back short" — can never be the
      answer under Chris's order. "Blocked" is also one of the five ACTIVE
-     inquiry states (src/inquiry-ops/gate.mjs:8), so Remove Inquiries at rank 4
+     inquiry states (src/inquiry-ops/gate.mjs:8), so Remove Inquiries at rank 5
      always fires first. The route is kept because it is the approved mapping
      and it becomes reachable the moment the order changes; this test pins the
      shadowing so it is visible rather than silent. */
@@ -193,6 +213,73 @@ describe("every chip fires on its own evidence", () => {
 
   test("Apply for Funding — ready for next round on a funding tier", () => {
     assert.equal(keyOf(base({ custom_fields: { ready_for_next_round: true } })), "apply_for_funding");
+  });
+
+  test("Apply for Funding — the funding card sits on Apply Now", () => {
+    assert.equal(keyOf(base({
+      card: { pipeline_key: "funding_card_stacking", stage_key: "apply_now" }
+    })), "apply_for_funding");
+  });
+
+  test("Apply Now is the job even with no product tier and an open inquiry", () => {
+    const r = deriveNextAction(base({
+      outcome_tier: null,
+      inquiry_cases: [{ case_status: "Queued" }],
+      consent: { valid: false, reason: "none_on_file", consent: null },
+      card: { pipeline_key: "funding_card_stacking", stage_key: "apply_now" }
+    }));
+    assert.equal(r.next_action.key, "apply_for_funding");
+    assert.equal(r.next_action.label, "Apply for Funding");
+    assert.equal(r.degraded, false);
+  });
+
+  test("Apply Now does not give a repair-only file a funding chip", () => {
+    const r = deriveNextAction(base({
+      outcome_tier: "REPAIR_ONLY",
+      card: { pipeline_key: "funding_card_stacking", stage_key: "apply_now" }
+    }));
+    assert.ok(!FUNDING_CHIP_KEYS.includes(r.next_action?.key ?? null));
+  });
+
+  test("Collect payment — unpaid Funding Mastery pay link", () => {
+    const r = deriveNextAction(base({
+      outcome_tier: null,
+      custom_fields: { crs_status: "Complete" },
+      crs_results: [{ is_demo: false }],
+      payment_links: [{
+        description: "Funding Mastery course (A to Z)",
+        status: "sent",
+        amount_cents: 500000,
+        paid_at: null
+      }]
+    }));
+    assert.equal(r.next_action.key, "collect_payment");
+    assert.equal(r.next_action.label, "Collect payment");
+    assert.match(r.next_action.why, /unpaid/i);
+    assert.equal(r.degraded, false);
+  });
+
+  test("Collect payment does NOT fire when Mastery is already paid", () => {
+    assert.equal(keyOf(base({
+      payment_links: [{
+        description: "Funding Mastery course (A to Z)",
+        status: "paid",
+        amount_cents: 500000,
+        paid_at: "2026-08-26T12:00:00Z"
+      }]
+    })), null);
+  });
+
+  test("Collect payment does NOT fire on an unpaid non-Mastery link", () => {
+    assert.equal(keyOf(base({
+      payment_links: [{
+        description: "Diagnostic soft pull",
+        purpose: "diagnostic",
+        status: "sent",
+        amount_cents: 3200,
+        paid_at: null
+      }]
+    })), null);
   });
 
   test("Ready to Fund — nothing blocking, no hold, packet complete", () => {
@@ -1221,7 +1308,7 @@ describe("defence in depth: the guards that cannot fire today", () => {
   };
 
   test("GATE A: Pull CRS keeps its own consent belt, under its own predicate", () => {
-    const fn = sliceBetween("function evaluatePullCrs", "/* 4. REMOVE INQUIRIES");
+    const fn = sliceBetween("function evaluatePullCrs", "/* 4. SEND LETTERS");
     assert.match(fn, /if\s*\(\s*ctx\.consentValid\s*!==\s*true\s*\)\s*return\s+NO\(\)/,
       "Pull CRS lost its own consent check. It is unreachable while Get Consent " +
       "outranks it — and it is the only thing left if that ranking is ever changed. " +

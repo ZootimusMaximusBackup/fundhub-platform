@@ -12,9 +12,17 @@
 
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { db } from "../db.mjs";
 import handler, { likePattern, emptyGroups } from "../../api/read/search.mjs";
 import { ROLE_SETS } from "./read-api.mjs";
+
+const SEARCH_SRC = fs.readFileSync(
+  path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../api/read/search.mjs"),
+  "utf8"
+);
 
 const TOKEN = "search-test-session-token";
 const ORG = "00000000-0000-4000-8000-0000000000aa";
@@ -161,5 +169,29 @@ describe("api/read/search — org scope and empty q", () => {
     for (const key of Object.keys(emptyGroups())) {
       assert.ok(Array.isArray(r.body.groups[key]), `${key} missing from groups`);
     }
+  });
+
+  test("card search also matches a white-label partner name", () => {
+    assert.match(SEARCH_SRC, /pr\.name ILIKE/);
+    assert.match(SEARCH_SRC, /LEFT JOIN partners/i);
+  });
+
+  /* partner-apply writes the COMPANY into partners.name and partners.brand_name.
+     The contact person's own name only ever reaches their accounts row, so a
+     staff member searching the name they were given got nothing back. */
+  test("card search also matches the partner's contact person by name", () => {
+    assert.match(SEARCH_SRC, /a\.name ILIKE/,
+      "the partner's contact name is not searched — searching the person's name finds nobody");
+    assert.match(SEARCH_SRC, /a\.kind = 'partner'/,
+      "the accounts lookup is not confined to partner logins");
+    assert.match(SEARCH_SRC, /a\.org_id = cd\.org_id/,
+      "the accounts lookup is not org-scoped");
+  });
+
+  /* A join would have returned the same card once per login. */
+  test("the contact-name lookup cannot duplicate a card", () => {
+    assert.doesNotMatch(SEARCH_SRC, /JOIN accounts/i,
+      "accounts is joined rather than EXISTS-tested — a partner with two logins " +
+      "would appear twice in search results");
   });
 });

@@ -7,6 +7,8 @@ alwaysApply: true
 
 **Owner-approved (2026-08-24, doc-gate session):** Fences for a full agentic company audit (act-as-client + staff + docs + mail + phone). Reinforces existing owner laws; does not replace `CLAUDE.md` or the audit/fix skills.
 
+Sims / Full E2E: assume paid and skip ClickFunnels apply — see `sim-assume-paid.mdc`.
+
 ## Hard stops (never without an explicit “GO” in that message)
 
 - Live **credit Pull**

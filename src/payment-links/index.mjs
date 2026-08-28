@@ -138,8 +138,15 @@ export async function createPaymentLink(db, {
 }) {
   if (!orgId) throw new TypeError("createPaymentLink: orgId is required");
   if (!clientId) throw new TypeError("createPaymentLink: clientId is required");
+  /* The live create-invoice door sends purpose "invoice". The table check
+     still only allows deposit / diagnostic / repair / custom, so invoice
+     is accepted here and stored as custom — a word that already works. */
+  if (purpose === "invoice") {
+    purpose = "custom";
+    if (!String(description || "").trim()) description = "Invoice";
+  }
   if (!PURPOSES.has(purpose)) {
-    throw new TypeError(`createPaymentLink: purpose must be one of ${[...PURPOSES].join(", ")}`);
+    throw new TypeError(`createPaymentLink: purpose must be one of ${[...PURPOSES].join(", ")}, invoice`);
   }
   if (purpose === "custom" && !String(description || "").trim()) {
     throw new TypeError("createPaymentLink: a custom link needs a description");

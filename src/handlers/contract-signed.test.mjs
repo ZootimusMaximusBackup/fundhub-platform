@@ -346,7 +346,8 @@ describe("branching on template_key", () => {
     assert.equal(describeContract("CREDIT-REPAIR-AGREEMENT"), "credit repair agreement");
     assert.equal(describeContract("REPAIR-TRIAL-AGREEMENT"), "repair test-run agreement");
     assert.equal(describeContract("REPAIR-AND-FUNDING-AGREEMENT"), "repair and funding agreement");
-    assert.equal(Object.keys(CONTRACT_LABELS).length, 5);
+    assert.equal(describeContract("FUNDING-MASTERY-AGREEMENT"), "Funding Mastery program agreement");
+    assert.equal(Object.keys(CONTRACT_LABELS).length, 6);
   });
 
   test("a key we do not know gets NO invented description", () => {

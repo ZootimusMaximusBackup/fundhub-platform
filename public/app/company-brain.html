@@ -335,6 +335,8 @@ button,input,select,textarea{font:inherit;color:inherit}
   function isDemo() { try { return localStorage.getItem("fh_demo") === "1"; } catch (e) { return false; } }
   function role() {
     try {
+      var cached = localStorage.getItem("fh_role");
+      if (cached) return cached;
       var s = JSON.parse(localStorage.getItem("fh_session") || "null");
       return (s && (s.role || (s.staff && s.staff.role))) || "";
     } catch (e) { return ""; }
@@ -777,6 +779,16 @@ button,input,select,textarea{font:inherit;color:inherit}
     rejected: { badge: "b-alert", word: "turned down", say: "This will not be used in answers." }
   };
 
+  function reviewIdForUpload(u) {
+    var uid = String((u && u.id) || "");
+    if (!uid) return "";
+    for (var i = 0; i < state.reviews.length; i++) {
+      var r = state.reviews[i];
+      if (String(r.file_id || r.fileId || "") === uid) return r.id;
+    }
+    return u.pendingReviewId || u.reviewId || "";
+  }
+
   function renderUploads() {
     if (state.uploadsState === "loading") {
       docList.innerHTML = '<div class="sk"></div><div class="sk"></div><div class="sk short"></div>';
@@ -800,11 +812,22 @@ button,input,select,textarea{font:inherit;color:inherit}
       if (u.uploadedByName) meta.push("added by " + u.uploadedByName);
       var stamp = when(u.uploadedAt);
       if (stamp) meta.push(stamp);
+      var actions = "";
+      if (isOwner && key === "pending") {
+        var rid = reviewIdForUpload(u);
+        if (rid) {
+          actions = '<div class="drow">' +
+            '<button class="btn sm dark" type="button" data-decide="approve" data-id="' + esc(rid) + '">Approve</button>' +
+            '<button class="btn sm" type="button" data-decide="reject" data-id="' + esc(rid) + '">Turn down</button>' +
+            "</div>";
+        }
+      }
       return '<div class="docrow" title="' + esc(fullTime(u.uploadedAt)) + '">' +
         '<div class="dn">' + esc(u.name || "Untitled file") + "</div>" +
         '<div class="drow"><span class="badge ' + look.badge + '">' + esc(look.word) + "</span></div>" +
         (meta.length ? '<div class="dm mono">' + esc(meta.join(" · ")) + "</div>" : "") +
         (look.say ? '<div class="dsay mono">' + esc(look.say) + "</div>" : "") +
+        actions +
         "</div>";
     }).join("");
   }
@@ -869,12 +892,11 @@ button,input,select,textarea{font:inherit;color:inherit}
       state.reviews = j.reviews || [];
       state.reviewsState = "ok";
       renderReviews();
+      renderUploads();
     });
   }
 
-  reviewList.addEventListener("click", function (ev) {
-    var btn = ev.target.closest("[data-decide]");
-    if (!btn) return;
+  function decideFromButton(btn) {
     btn.disabled = true;
     apiPost("/api/company-brain/reviews", {
       review_id: btn.getAttribute("data-id"),
@@ -885,12 +907,20 @@ button,input,select,textarea{font:inherit;color:inherit}
         state.reviewsState = "error";
         state.reviewsError = friendly(j);
         renderReviews();
+        renderUploads();
         return;
       }
       loadReviews();
       loadUploads();
     });
-  });
+  }
+  function onDecideClick(ev) {
+    var btn = ev.target.closest("[data-decide]");
+    if (!btn) return;
+    decideFromButton(btn);
+  }
+  reviewList.addEventListener("click", onDecideClick);
+  docList.addEventListener("click", onDecideClick);
   document.getElementById("refreshReviews").addEventListener("click", loadReviews);
 
   /* ── class quizzes (Documents panel) ────────────────────────────────── */

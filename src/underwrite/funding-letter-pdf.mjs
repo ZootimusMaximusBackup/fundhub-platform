@@ -1,5 +1,5 @@
-// Persist + load funding-stack PDFs (inquiry_removal + personal_info only).
-// Uses the existing documents registry — no parallel blob store.
+// Persist + load funding-stack PDFs: inquiry_removal, personal_info, and the
+// four WeasyPrint analysis reports. Uses the existing documents registry.
 // COMPLIANCE REVIEW REQUIRED — bureau / dispute letter adjacent.
 
 import { KINDS, buildDocumentKey } from "../documents/kinds.mjs";
@@ -21,6 +21,20 @@ export const FUNDING_LETTER_SUBTYPE = Object.freeze({
   personal_info: "funding_personal_info"
 });
 
+export const FUNDING_ANALYSIS_SUBTYPE = Object.freeze({
+  credit_analysis: "credit_analysis_report",
+  roadmap: "credit_optimization_roadmap",
+  funding_snapshot: "funding_snapshot",
+  lender_match: "bank_lender_match_list"
+});
+
+const ANALYSIS_TITLES = Object.freeze({
+  credit_analysis: "Credit Analysis Report",
+  roadmap: "Credit Optimization Roadmap",
+  funding_snapshot: "Funding Snapshot",
+  lender_match: "Bank and Lender Match List"
+});
+
 const TYPE_ORDER = ["inquiry_removal", "personal_info"];
 
 function letterTypeOf(file) {
@@ -38,8 +52,22 @@ function letterBureau(file) {
     || bureauFromFilename(file?.filename || file?.name || file?.path);
 }
 
+function analysisTypeOf(file) {
+  if (FUNDING_ANALYSIS_SUBTYPE[file?.type]) return file.type;
+  if (FUNDING_ANALYSIS_SUBTYPE[file?.docType]) return file.docType;
+  const fn = String(file?.filename || file?.name || file?.path || "").toLowerCase();
+  if (fn.includes("credit_analysis") || fn.includes("credit-analysis")) return "credit_analysis";
+  if (fn.includes("optimization_roadmap") || fn.includes("optimization-roadmap") || /(?:^|[\\/_])(?:credit[-_])?optimization[-_]roadmap/.test(fn)) {
+    return "roadmap";
+  }
+  if (fn.includes("funding_snapshot") || fn.includes("funding-snapshot")) return "funding_snapshot";
+  if (fn.includes("lender_match") || fn.includes("lender-match") || fn.includes("bank-lender")) return "lender_match";
+  return null;
+}
+
 /**
- * Store funding-stack letter PDFs in documents (one row per client+type+bureau).
+ * Store funding-stack letter PDFs and the four analysis reports.
+ * Letters: one row per client+type+bureau. Analysis: one row per subtype.
  * Skips dispute / Metro 2 round letters even if they are in the pack.
  */
 export async function persistFundingLetterFiles(db, store, {
@@ -54,32 +82,60 @@ export async function persistFundingLetterFiles(db, store, {
   }
   const stored = [];
   for (const file of files || []) {
-    if (!isFundingLetterFile(file) || isDisputeLetterFile(file)) continue;
-    const type = letterTypeOf(file);
-    const bureau = letterBureau(file);
-    const subtype = type ? FUNDING_LETTER_SUBTYPE[type] : null;
     const body = file.content || file.buffer || file.pdf || file.bytes;
-    if (!type || !bureau || !subtype || !body) continue;
+    if (!body) continue;
 
+    const isLetter = isFundingLetterFile(file) && !isDisputeLetterFile(file);
+    const analysisType = analysisTypeOf(file);
+    if (!isLetter && !analysisType) continue;
+
+    if (isLetter) {
+      const type = letterTypeOf(file);
+      const bureau = letterBureau(file);
+      const subtype = type ? FUNDING_LETTER_SUBTYPE[type] : null;
+      if (!type || !bureau || !subtype) continue;
+
+      const { document } = await storeAndRegister(db, store, {
+        orgId,
+        clientId,
+        kind: KINDS.DELIVERABLE,
+        subtype,
+        discriminator: bureau,
+        title: `${type === "inquiry_removal" ? "Inquiry removal" : "Personal info"} — ${bureau}`,
+        body,
+        mimeType: "application/pdf",
+        filename: file.filename || file.name || `${type}_${bureau.toLowerCase()}.pdf`,
+        generatedBy,
+        sourceEventId: sourceEventId
+          ? `${sourceEventId}:${subtype}:${bureau}`
+          : null,
+        metadata: { stack: "funding", letterType: type, bureau }
+      });
+      stored.push({
+        bureau,
+        type,
+        documentId: document?.id || null,
+        documentKey: document?.document_key || null
+      });
+      continue;
+    }
+
+    const subtype = FUNDING_ANALYSIS_SUBTYPE[analysisType];
     const { document } = await storeAndRegister(db, store, {
       orgId,
       clientId,
       kind: KINDS.DELIVERABLE,
       subtype,
-      discriminator: bureau,
-      title: `${type === "inquiry_removal" ? "Inquiry removal" : "Personal info"} — ${bureau}`,
+      title: ANALYSIS_TITLES[analysisType],
       body,
       mimeType: "application/pdf",
-      filename: file.filename || file.name || `${type}_${bureau.toLowerCase()}.pdf`,
+      filename: file.filename || file.name || `${analysisType}.pdf`,
       generatedBy,
-      sourceEventId: sourceEventId
-        ? `${sourceEventId}:${subtype}:${bureau}`
-        : null,
-      metadata: { stack: "funding", letterType: type, bureau }
+      sourceEventId: sourceEventId ? `${sourceEventId}:${subtype}` : null,
+      metadata: { stack: "funding", docType: analysisType }
     });
     stored.push({
-      bureau,
-      type,
+      type: analysisType,
       documentId: document?.id || null,
       documentKey: document?.document_key || null
     });

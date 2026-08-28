@@ -126,6 +126,20 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
       `DELETE FROM events WHERE client_id IN (SELECT id FROM clients WHERE email = $1)`, [EMAIL]);
     await db.query(
       `DELETE FROM repair_decision_log WHERE client_id IN (SELECT id FROM clients WHERE email = $1)`, [EMAIL]);
+
+      /* contracts carries trg_contracts_no_delete — "contracts are never
+         deleted, void it instead". A test wipe is the one place that has to get
+         past it, the same way lifecycle.pg.test.mjs:48 and tamper.pg.test.mjs:64
+         already do. Without this the wipe threw, before() never finished, and
+         all five tests in this file died together. Re-enabled in a finally so a
+         failure cannot leave the guard off for the rest of the run. */
+      await db.query(`ALTER TABLE contracts DISABLE TRIGGER trg_contracts_no_delete`).catch(() => {});
+      try {
+        await db.query(
+          `DELETE FROM contracts WHERE client_id IN (SELECT id FROM clients WHERE email = $1)`, [EMAIL]);
+      } finally {
+        await db.query(`ALTER TABLE contracts ENABLE TRIGGER trg_contracts_no_delete`).catch(() => {});
+      }
     await db.query(`DELETE FROM clients WHERE email = $1`, [EMAIL]);
   }
 
@@ -140,7 +154,7 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
   /* A client with a real name and a real postal address. Both come from the
      fixture, never from the module under test — the whole point is that a name
      is never fabricated when one is absent. */
-  async function buildClient({ result = null, withAddress = true, name = ["Real", "Person"], authorized = true } = {}) {
+  async function buildClient({ result = null, withAddress = true, name = ["Real", "Person"], authorized = true, agreement } = {}) {
     clientId = (await db.query(
       `INSERT INTO clients (org_id, email, first_name, last_name)
        VALUES ($1,$2,$3,$4) RETURNING id`, [orgId, EMAIL, name[0], name[1]]
@@ -164,6 +178,40 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
            'typed', $3, 'staff', $4::uuid
          )`,
         [orgId, clientId, `${name[0]} ${name[1]}`, staffId]
+      );
+    }
+    const hasAgreement = agreement !== undefined ? agreement : authorized;
+    if (hasAgreement) {
+      let tpl = (await db.query(
+        `SELECT id, template_key FROM contract_templates
+          WHERE org_id = $1::uuid
+            AND (subtype = 'credit_repair' OR template_key ILIKE '%REPAIR%')
+          LIMIT 1`,
+        [orgId]
+      )).rows[0];
+      if (!tpl) {
+        tpl = (await db.query(
+          `INSERT INTO contract_templates
+             (org_id, template_key, name, kind, subtype, body, created_by)
+           VALUES (
+             $1::uuid, 'CREDIT-REPAIR-AGREEMENT', 'Credit repair agreement',
+             'contract', 'credit_repair', 'Repair agreement body', $2::uuid
+           )
+           RETURNING id, template_key`,
+          [orgId, staffId]
+        )).rows[0];
+      }
+      await db.query(
+        `INSERT INTO contracts (
+           org_id, client_id, template_id, template_key, title, kind, subtype,
+           status, created_by, rendered_body, body_sha, sent_at, signed_at, signer_name
+         ) VALUES (
+           $1::uuid, $2::uuid, $3::uuid, $4, 'Credit repair agreement',
+           'contract', 'credit_repair', 'signed', $5::uuid,
+           'Signed repair agreement', $6, now(), now(), $7
+         )`,
+        [orgId, clientId, tpl.id, tpl.template_key, staffId,
+         "sha256:" + "ab".repeat(32), `${name[0]} ${name[1]}`]
       );
     }
     if (result) {
@@ -219,6 +267,21 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
     assert.equal(r.body.ok, false);
     assert.equal(r.body.reason, "no_authorization");
     assert.equal(await countRows("dispute_letters"), 0);
+  });
+
+  test("staff consent without a signed repair agreement still writes letters", async () => {
+    await wipeClient();
+    await buildClient({
+      result: { bureausPulled: ["EQ"], bureaus: { EQ: equifaxReport() } },
+      authorized: true,
+      agreement: false
+    });
+
+    const r = await post({ client_id: clientId });
+
+    assert.equal(r.code, 200);
+    assert.equal(r.body.ok, true, JSON.stringify(r.body));
+    assert.equal(await countRows("dispute_letters"), 1);
   });
 
   test("no credit file on record: refuses, and writes no dispute rows at all", async () => {

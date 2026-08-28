@@ -14,7 +14,6 @@ flowchart LR
   subgraph EXT[External systems]
     direction TB
     ext_bland["Bland AI voice-call"]
-    ext_calcom["Cal.com booking"]
     ext_clickfunnels["ClickFunnels webhook"]
     ext_commas["Commas (formerly FanBasis) payment"]
     ext_crs["CRS engine output"]
@@ -25,12 +24,11 @@ flowchart LR
     ext_oxylabs["Oxylabs residential proxy adapter."]
     ext_resend_events["Resend delivery events"]
     ext_twilio_status["Twilio delivery-status callback"]
-    ext_twilio["Twilio inbound SMS"]
+    ext_twilio["Twilio inbound SMS + voice-answer"]
   end
   subgraph ADP[Adapters — verify, normalize, emit]
     direction TB
     adp_bland["bland<br/>HMAC-SHA256"]
-    adp_calcom["calcom<br/>HMAC-SHA256"]
     adp_clickfunnels["clickfunnels<br/>HMAC-SHA256"]
     adp_commas["commas<br/>HMAC-SHA256"]
     adp_crs["crs<br/>direct call"]
@@ -48,7 +46,6 @@ flowchart LR
   ING[[Inngest functions<br/>durable, with waits]]
 
   ext_bland --> adp_bland
-  ext_calcom --> adp_calcom
   ext_clickfunnels --> adp_clickfunnels
   ext_commas --> adp_commas
   ext_crs --> adp_crs
@@ -61,7 +58,6 @@ flowchart LR
   ext_twilio_status --> adp_twilio_status
   ext_twilio --> adp_twilio
   adp_bland -- "call.completed" --> BUS
-  adp_calcom -- "booking.created<br/>booking.rescheduled<br/>booking.cancelled<br/>booking.noshow" --> BUS
   adp_clickfunnels -- "entry.captured<br/>survey.submitted<br/>booking.created<br/>booking.rescheduled<br/>booking.cancelled" --> BUS
   adp_commas -- "diagnostic.paid<br/>deposit.paid<br/>sale.closed<br/>payment.received<br/>payment.failed<br/>payment.expired<br/>payment.canceled<br/>payment.refunded<br/>payment.disputed" --> BUS
   adp_crs -- "analysis.completed<br/>decision.rendered" --> BUS
@@ -126,36 +122,36 @@ flowchart LR
 | event | group | bus handlers | Inngest functions |
 |---|---|---|---|
 | `entry.captured` | journey spine | `onEntryCaptured` | 5 |
-| `survey.submitted` | journey spine | `onSurveySubmitted` | 2 |
+| `survey.submitted` | journey spine | `onSurveySubmitted` | 1 |
 | `diagnostic.paid` | journey spine | `onDiagnosticPaid`, `onDiagnosticPaidSoftPull`, `onDiagnosticPaidMoney` | 2 |
 | `analysis.completed` | journey spine | `onAnalysisCompleted` | 8 |
-| `booking.created` | journey spine | `onBookingCreated`, `onInterviewBooked` | 8 |
-| `booking.rescheduled` | journey spine | `onBookingRescheduled` | 0 |
+| `booking.created` | journey spine | `onBookingCreated`, `onInterviewBooked` | 9 |
+| `booking.rescheduled` | journey spine | `onBookingRescheduled` | 2 |
 | `booking.cancelled` | journey spine | `onBookingCancelled` | 0 |
 | `booking.noshow` | journey spine | `onBookingNoshow` | 1 |
 | `call.completed` | journey spine | `onCallCompleted` | 4 |
 | `decision.rendered` | journey spine | `onDecisionRendered` | 0 |
-| `deposit.paid` | journey spine | `onDepositPaid`, `onPaidMidCheckin`, `onDepositPaidGate`, `onDepositPaidMoney` | 2 |
-| `sale.closed` | journey spine | `onSaleClosed`, `onPaidMidCheckin`, `onSaleClosedMoney` | 0 |
+| `deposit.paid` | journey spine | `onDepositPaid`, `onPaidMidCheckin`, `onDepositPaidGate`, `onDepositPaidMoney`, `onDealCloseWinAlert` | 3 |
+| `sale.closed` | journey spine | `onSaleClosed`, `onPaidMidCheckin`, `onSaleClosedMoney`, `onDealCloseWinAlert` | 0 |
 | `round.started` | journey spine | `onRoundStartedMoney` | 7 |
 | `round.submitted` | journey spine | — | 1 |
 | `round.approved` | journey spine | — | 3 |
-| `round.funded` | journey spine | `onRoundFundedInsights`, `onRoundFundedMoney` | 5 |
-| `round.closeout` | journey spine | `onRoundCloseoutGate` | 0 |
+| `round.funded` | journey spine | `onRoundFundedInsights`, `onRoundFundedMoney` | 4 |
+| `round.closeout` | journey spine | `onRoundCloseoutGate` | 1 |
 | `file.finalized` | journey spine | — | 0 |
-| `payment.received` | side events | `onPaymentReceived`, `onPaymentReceivedMoney`, `onPaymentReceivedForLink` | 1 |
+| `payment.received` | side events | `onPaymentReceived`, `onPaymentReceivedMoney`, `onPaymentReceivedForLink` | 2 |
 | `payment.failed` | side events | `onPaymentFailed` | 0 |
 | `payment.expired` | side events | — | 0 |
 | `payment.canceled` | side events | — | 0 |
 | `payment.refunded` | side events | `onPaymentRefunded` | 0 |
 | `payment.disputed` | side events | `onPaymentDisputed` | 0 |
-| `docs.received` | side events | `onDocsReceivedFlipInquiryGate` | 1 |
+| `docs.received` | side events | `onDocsReceivedFlipInquiryGate` | 3 |
 | `inquiry.removed` | side events | — | 1 |
 | `inquiry.gate.raised` | side events | — | 0 |
 | `inquiry.gate.clear` | side events | — | 0 |
 | `inquiry.docs.needed` | side events | `onInquiryDocsNeeded` | 0 |
 | `letter.generated` | side events | — | 0 |
-| `message.inbound` | side events | `onMessageInbound` | 1 |
+| `message.inbound` | side events | `onMessageInbound`, `onInboundMmsDocs` | 1 |
 | `mail.response` | side events | `onMailResponse` | 3 |
 | `message.queued` | outbound messaging | — | 0 |
 | `message.sent` | outbound messaging | — | 0 |
@@ -163,9 +159,9 @@ flowchart LR
 | `message.blocked` | outbound messaging | — | 0 |
 | `commission.earned` | commission + billing | — | 0 |
 | `commission.approved` | commission + billing | — | 0 |
-| `commission.paid` | commission + billing | — | 0 |
+| `commission.paid` | commission + billing | `onCommissionPaidAlert` | 0 |
 | `invoice.created` | commission + billing | — | 0 |
-| `invoice.sent` | commission + billing | — | 0 |
+| `invoice.sent` | commission + billing | — | 1 |
 | `invoice.paid` | commission + billing | — | 0 |
 | `invoice.voided` | commission + billing | — | 0 |
 | `contract.sent` | contracts | — | 0 |
@@ -181,6 +177,7 @@ flowchart LR
 | `repair.response.received` | credit repair | — | 0 |
 | `repair.response.parsed` | credit repair | — | 0 |
 | `repair.parse.low_confidence` | credit repair | — | 0 |
+| `repair.response.retake` | credit repair | — | 0 |
 | `repair.item.deleted` | credit repair | — | 0 |
 | `repair.item.verified` | credit repair | — | 0 |
 | `repair.item.updated` | credit repair | — | 0 |

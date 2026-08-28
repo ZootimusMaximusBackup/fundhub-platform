@@ -11,7 +11,7 @@ import { _resetOrgCache } from "./org.mjs";
 const OWNER = { id: "owner-1", org_id: "org-1", role: "owner" };
 const PASSWORD = "a perfectly fine passphrase";
 
-function fakeDb({ existingStaff = null, catalogShape = true, roleKnown = true, consumed = undefined } = {}) {
+function fakeDb({ existingStaff = null, existingAccount = null, catalogShape = true, roleKnown = true, consumed = undefined } = {}) {
   const calls = [];
   return {
     calls,
@@ -31,6 +31,22 @@ function fakeDb({ existingStaff = null, catalogShape = true, roleKnown = true, c
       }
       if (/SELECT id, status, name, role FROM staff/.test(sql)) return { rows: existingStaff ? [existingStaff] : [] };
       if (/SELECT id, status FROM staff/.test(sql)) return { rows: existingStaff ? [existingStaff] : [] };
+      if (/SELECT id, status, kind FROM accounts/.test(sql)) {
+        return { rows: existingAccount ? [existingAccount] : [] };
+      }
+      if (/UPDATE accounts\s+SET password_hash/.test(sql)) {
+        return { rows: existingAccount ? [{
+          id: existingAccount.id,
+          org_id: "org-1",
+          email: existingAccount.email || "e2e+aff-x@fundhub.ai",
+          name: "A",
+          kind: existingAccount.kind || "affiliate",
+          status: "active"
+        }] : [] };
+      }
+      if (/UPDATE account_sessions SET revoked_at/.test(sql)) {
+        return { rows: [{ id: "sess-1" }] };
+      }
       if (/UPDATE staff SET role =/.test(sql)) {
         if (!existingStaff) return { rows: [] };
         return { rows: [{ id: existingStaff.id, email: "a@b.c", name: "A", role: params[1], status: "invited" }] };
@@ -243,6 +259,48 @@ test("a new reset token burns any earlier unused one", async () => {
   const db = fakeDb({ existingStaff: { id: "s", status: "active" } });
   await requestPasswordReset(db, { email: "x@y.z" });
   assert.ok(db.calls.some((c) => /UPDATE password_resets SET used_at/.test(c.sql) && /kind = 'reset'/.test(c.sql)));
+});
+
+test("requestPasswordReset mails affiliate and partner accounts, not clients", async () => {
+  _resetOrgCache();
+  const aff = await requestPasswordReset(
+    fakeDb({ existingAccount: { id: "acct-a", status: "active", kind: "affiliate" } }),
+    { email: "e2e+aff-click26@fundhub.ai" }
+  );
+  assert.equal(aff.ok, true);
+  assert.match(aff.token, /^[A-Za-z0-9_-]{43}$/);
+  assert.equal(aff.accountId, "acct-a");
+
+  _resetOrgCache();
+  const partner = await requestPasswordReset(
+    fakeDb({ existingAccount: { id: "acct-p", status: "active", kind: "partner" } }),
+    { email: "e2e+wl-click26@fundhub.ai" }
+  );
+  assert.equal(partner.accountId, "acct-p");
+
+  _resetOrgCache();
+  const client = await requestPasswordReset(fakeDb({ existingAccount: null }), { email: "client@x.io" });
+  assert.deepEqual(client, { ok: true, token: null });
+
+  _resetOrgCache();
+  const suspended = await requestPasswordReset(
+    fakeDb({ existingAccount: { id: "acct-s", status: "suspended", kind: "affiliate" } }),
+    { email: "e2e+aff-x@fundhub.ai" }
+  );
+  assert.deepEqual(suspended, { ok: true, token: null });
+});
+
+test("an affiliate reset token writes the account password and kills those sessions", async () => {
+  const db = fakeDb({
+    existingAccount: { id: "acct-a", status: "active", kind: "affiliate" },
+    consumed: { staff_id: null, account_id: "acct-a", org_id: "org-1", kind: "reset" }
+  });
+  const out = await resetPassword(db, { token: "t".repeat(43), password: PASSWORD });
+  assert.equal(out.ok, true);
+  assert.equal(out.account.id, "acct-a");
+  assert.ok(db.stmts().some((s) => /UPDATE accounts\s+SET password_hash/.test(s)));
+  assert.ok(db.stmts().some((s) => /UPDATE account_sessions SET revoked_at/.test(s)));
+  assert.ok(!db.stmts().some((s) => /UPDATE staff\s+SET password_hash/.test(s)));
 });
 
 // ------------------------------------------------------------ suspend

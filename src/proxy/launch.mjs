@@ -1,6 +1,7 @@
 // Orchestrate an Oxylabs Apply session: resolve client geo → verify exit → audit row.
 
 import { launchCredentials, generateSessid } from "../adapters/oxylabs.mjs";
+import { pickBankFormEmail } from "./bank-form-email.mjs";
 import {
   ProxySessionError,
   insertProxySession,
@@ -74,11 +75,11 @@ export async function launchProxySession(db, {
     );
   }
 
-  const loc = resolveClientLocation(client.custom_fields);
+  const loc = resolveClientLocation(client.custom_fields, client.businesses);
   if (!loc.city && !loc.state) {
     throw new ProxySessionError(
       "client_location_missing",
-      "Client has no city or state on file (business_city / home_city / city and business_state / state). Cannot geo-target.",
+      "Client has no city or state on the person or any company on the file. Cannot geo-target.",
       400
     );
   }
@@ -190,6 +191,7 @@ export async function launchProxySession(db, {
     lender: lender
       ? { id: lender.id, name: lender.name, product_name: lender.product_name }
       : null,
+    bank_form_email: pickBankFormEmail(client),
     // Only the Chrome extension can turn routing on in the advisor's browser.
     routing_active: false,
     extension_required: true
