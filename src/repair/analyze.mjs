@@ -23,6 +23,7 @@ import { violationsByBureauFromMergedCrs } from "../metro2/diy/from-crs.mjs";
 import { isCollectorFinding } from "../metro2/diy/collectors.mjs";
 import { generateLetter } from "../metro2/letters/generate.mjs";
 import { buildFurnisherValidationLetter } from "../metro2/letters/furnisher-validation.mjs";
+import { loadComplaintFilings } from "../metro2/rounds/complaint-filing.mjs";
 import {
   createCase,
   insertItems,
@@ -371,6 +372,13 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
       const priorResponses = round === "R1"
         ? []
         : await loadPriorResponses(db, { orgId, clientId, bureau, claims });
+      // Round 6 is the only rung that stands on the complaints, and it may only
+      // say they were filed if a mailing is ON RECORD. Read, never assumed: these
+      // rows are dispute_letters already marked 'sent' or 'delivered'. Empty here
+      // — including on a read failure — means Round 6 says nothing about them.
+      const priorFilings = round === "R6"
+        ? (await loadComplaintFilings(db, { clientId, orgId })).filings
+        : [];
 
       let letter;
       try {
@@ -381,6 +389,7 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
           round,
           priorLetters,
           priorResponses,
+          priorFilings,
           seed: `${clientId}:${bureau}:${round}`
         });
       } catch (err) {

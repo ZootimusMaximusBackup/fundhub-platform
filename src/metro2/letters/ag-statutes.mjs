@@ -66,6 +66,45 @@ export const CFPB_FILING = Object.freeze({
   companyResponseDays: 15
 });
 
+/**
+ * The same CFPB address as `CFPB_FILING.mail`, in the structured shape the mail
+ * provider needs (src/messaging/providers/mail-letter.mjs). Not a second
+ * address — src/metro2/letters/ag-statutes.test.mjs fails if the two drift.
+ *
+ * There is deliberately NO equivalent for the state attorneys general. See
+ * `agPostalAddress` below.
+ */
+export const CFPB_MAIL_ADDRESS = Object.freeze({
+  company_name: "Consumer Financial Protection Bureau",
+  address_line1: "P.O. Box 27170",
+  address_line2: null,
+  address_city: "Washington",
+  address_state: "DC",
+  address_zip: "20038",
+  address_country: "US"
+});
+
+/**
+ * The postal address of a state attorney general's office.
+ *
+ * COMPLIANCE REVIEW REQUIRED — dispute logic.
+ *
+ * ALWAYS NULL, ON PURPOSE. `AG_BY_STATE` carries an office NAME and a web
+ * PORTAL for five states, and a generated placeholder for the other forty-five.
+ * It has never carried a street address for any of them, and none was invented
+ * here — a wrong address means a sworn complaint is mailed into a void and the
+ * client believes it was filed.
+ *
+ * So Fundhub cannot mail a state AG complaint today. `complaintDestination` in
+ * ../rounds/complaint-filing.mjs refuses that send with `ag_postal_address_unknown`
+ * rather than guessing, no filing row is written, and Round 6 stays silent about
+ * a state AG filing. Fill this in — per state, from the office's own published
+ * mailing address — and the rest of the path works unchanged.
+ */
+export function agPostalAddress(_state) {
+  return null;
+}
+
 export const BUREAU_DISPUTE_ADDRESSES = Object.freeze({
   EQ: Object.freeze({
     name: "Equifax Information Services LLC",

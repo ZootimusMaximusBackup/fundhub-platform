@@ -216,7 +216,8 @@ const BASELINE_ESCALATION_TAIL = Object.freeze([
 const manifest = (pack) => pack.files.map((f) => [f.filename, f.type ?? null, f.bureau ?? null]);
 
 /* ─────────────── stored credit pulls, for the repair pack ───────────────
-   buildLetterPackForClient makes exactly two reads and writes nothing, so a
+   buildLetterPackForClient makes three reads and writes nothing — the client,
+   the stored credit pull, and the confirmed bureau answers on file — so a
    read-only stub is enough to run the real entry point the app calls. */
 
 const SANDBOX = path.resolve(
@@ -249,7 +250,17 @@ const STORED_UNSCOREABLE = Object.freeze({
   }]
 });
 
-function fakeClientDb(storedCrs) {
+/**
+ * A client who genuinely reached the escalation rounds: Round 3 was answered
+ * "verified" and a human confirmed it, so the round machine moved the account up
+ * to R4. Only that pair of facts — status 'escalated', outcome 'verified' —
+ * survives the SQL filter in ../underwrite/prior-outcome.mjs loadPriorOutcomes.
+ */
+const ESCALATED_R4 = Object.freeze([
+  Object.freeze({ bureau: "EX", creditor: "EXAMPLE BANK NA", account_last4: "1234", round: "R4" })
+]);
+
+function fakeClientDb(storedCrs, priorOutcomes = []) {
   return {
     async query(sql) {
       if (/FROM clients/i.test(sql)) {
@@ -263,6 +274,9 @@ function fakeClientDb(storedCrs) {
         };
       }
       if (/FROM crs_results/i.test(sql)) return { rows: storedCrs ? [{ result: storedCrs }] : [] };
+      // The confirmed bureau answers on file. Empty is the default and means the
+      // client is still on Round 1, which is where every client starts.
+      if (/FROM dispute_items/i.test(sql)) return { rows: [...priorOutcomes] };
       return { rows: [] };
     }
   };
@@ -415,10 +429,14 @@ describe("baseline — the document pack a client receives", () => {
     pinned(pack.reason, null, "the repair pack's reason code");
     pinned(pack.deliverableCount, 0, "funding analysis documents in a repair pack");
     pinned(pack.deliverableSkip, "not_funding", "why a repair pack has no funding analysis");
-    // No stored pull means no findings to complain about. Recorded so nobody
-    // reads this test as cover for the escalation path — it is not.
+    // No recorded bureau answer means this client is on Round 1, and Round 1 has
+    // not earned a complaint sworn under penalty of perjury. That gate is checked
+    // before the stored pull, so the reason reads "not_escalated" and no longer
+    // "no_stored_crs" (changed 2026-08-28 with the escalation gate; both mean
+    // zero complaint files). Recorded so nobody reads this test as cover for the
+    // escalation path — it is not.
     pinned(pack.complaintCount, 0, "complaints in a repair pack built with no stored credit pull");
-    pinned(pack.complaintSkip, "no_stored_crs", "why that pack has no complaints");
+    pinned(pack.complaintSkip, "not_escalated", "why that pack has no complaints");
   });
 
   test("no credit pull: the pack says so, and says which kind of nothing", async () => {
@@ -443,9 +461,29 @@ describe("baseline — the document pack a client receives", () => {
    closer-deck actually call — with a stored credit pull in the database stub. */
 
 describe("baseline — the repair pack a client receives, with a credit pull on file", () => {
-  test("a readable pull: dispute letters, then the conditional complaints", async () => {
+  test("A ROUND 1 CLIENT: the same letters, and NO sworn complaint", async () => {
+    // Pinned as its own baseline because it is the common case. Almost every
+    // client is here. Until 2026-08-28 this client received both complaints.
     const pack = await buildLetterPackForClient(fakeClientDb(STORED_SCOREABLE), { clientId: "cl-1", pack: "repair" });
+    pinned(pack.reason, null, "the repair pack's reason code for a Round 1 client");
+    const rows = manifest(pack);
+    assert.ok(rows.filter(([name]) => /round\d/.test(name)).length > 0,
+      "UNDERWRITEIQ OUTPUT CHANGED — a Round 1 client stopped receiving dispute letters.");
+    assert.deepEqual(rows.filter(([name]) => name.startsWith("06-complaints-CONDITIONAL/")), [],
+      "UNDERWRITEIQ OUTPUT CHANGED — a client on Round 1 is being handed a complaint "
+      + "they must sign under penalty of perjury, saying they already disputed.");
+    pinned(pack.complaintCount, 0, "complaints for a client with no recorded bureau answer");
+    pinned(pack.complaintSkip, "not_escalated", "why a Round 1 client has no complaints");
+    pinned(pack.escalationRound, null, "the escalation round on record for a Round 1 client");
+  });
+
+  test("a readable pull at R4: dispute letters, then the conditional complaints", async () => {
+    const pack = await buildLetterPackForClient(
+      fakeClientDb(STORED_SCOREABLE, ESCALATED_R4),
+      { clientId: "cl-1", pack: "repair" }
+    );
     pinned(pack.reason, null, "the repair pack's reason code with a readable credit pull");
+    pinned(pack.escalationRound, "R4", "the recorded round that released the complaints");
     pinned(pack.engineSkip, null, "the engine skip reason for the sandbox pull");
 
     const rows = manifest(pack);

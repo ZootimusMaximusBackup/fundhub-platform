@@ -9,7 +9,11 @@ import handler, {
   smartCreditFromEnv,
   parseOptimizeCheckoutBody,
   optimizePageConfig,
-  runOptimizeCheckout
+  runOptimizeCheckout,
+  smartCreditLegalFromEnv,
+  widgetThemeFromEnv,
+  SMART_CREDIT_LEGAL_ENV,
+  SMART_CREDIT_CANCEL_ENV
 } from "../../api/public/optimize.mjs";
 
 function mockRes() {
@@ -127,4 +131,71 @@ test("GET /api/public/optimize?view=roadmap returns the existing brain plan", as
   assert.equal(res.out.body.bookUrl, BOOK_URL);
   assert.equal(res.out.body.rounds.length, 6);
   assert.ok(res.out.body.rounds[0].attacks.length > 0);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPLIANCE REVIEW REQUIRED — the SmartCredit policy links (ConsumerDirect
+// compliance item 9) and the cancellation route (item 12). Neither address was
+// ever given to us. They are read from env by NAME, never invented, and the
+// page prints the document name as plain text when the name is unset.
+// ─────────────────────────────────────────────────────────────────────────────
+
+test("the four SmartCredit policy addresses are null until someone sets them", () => {
+  const legal = smartCreditLegalFromEnv({});
+  assert.equal(legal.serviceAgreement, null);
+  assert.equal(legal.privacyPolicy, null);
+  assert.equal(legal.termsOfUse, null);
+  assert.equal(legal.consumerRights, null);
+  assert.equal(legal.cancelUrl, null);
+});
+
+test("the env var NAMES are the contract, and they are stable", () => {
+  assert.deepEqual(SMART_CREDIT_LEGAL_ENV, {
+    serviceAgreement: "CONSUMER_DIRECT_SERVICE_AGREEMENT_URL",
+    privacyPolicy: "CONSUMER_DIRECT_PRIVACY_POLICY_URL",
+    termsOfUse: "CONSUMER_DIRECT_TERMS_OF_USE_URL",
+    consumerRights: "CONSUMER_DIRECT_CONSUMER_RIGHTS_URL"
+  });
+  assert.equal(SMART_CREDIT_CANCEL_ENV, "CONSUMER_DIRECT_CANCEL_URL");
+});
+
+test("a policy address is taken only when it is https", () => {
+  const legal = smartCreditLegalFromEnv({
+    CONSUMER_DIRECT_SERVICE_AGREEMENT_URL: "https://example.com/agreement",
+    CONSUMER_DIRECT_PRIVACY_POLICY_URL: "http://example.com/privacy",
+    CONSUMER_DIRECT_TERMS_OF_USE_URL: "javascript:alert(1)",
+    CONSUMER_DIRECT_CONSUMER_RIGHTS_URL: "not a url"
+  });
+  assert.equal(legal.serviceAgreement, "https://example.com/agreement");
+  assert.equal(legal.privacyPolicy, null, "plain http is refused, not downgraded silently");
+  assert.equal(legal.termsOfUse, null, "a script address is never printed as a link");
+  assert.equal(legal.consumerRights, null);
+});
+
+test("the widget look defaults to ConsumerDirect's own, and rejects anything unknown", () => {
+  assert.equal(widgetThemeFromEnv({}), "sc");
+  assert.equal(widgetThemeFromEnv({ CONSUMER_DIRECT_WIDGET_THEME: "galaxy" }), "galaxy");
+  assert.equal(widgetThemeFromEnv({ CONSUMER_DIRECT_WIDGET_THEME: "MATERIAL" }), "material");
+  assert.equal(widgetThemeFromEnv({ CONSUMER_DIRECT_WIDGET_THEME: "fundhub-blue" }), "sc");
+});
+
+test("the compliance wording travels on BOTH shapes — widget and plain link", () => {
+  const dark = smartCreditFromEnv({ CONSUMER_DIRECT_CONSUMER_RIGHTS_URL: "https://example.com/rights" });
+  assert.equal(dark.clientKey, undefined, "still the plain-link shape");
+  assert.equal(dark.legal.consumerRights, "https://example.com/rights");
+
+  const live = smartCreditFromEnv({
+    CONSUMER_DIRECT_CLIENT_KEY: "key-1",
+    CONSUMER_DIRECT_PID: "29056",
+    CONSUMER_DIRECT_CONSUMER_RIGHTS_URL: "https://example.com/rights"
+  });
+  assert.equal(live.legal.consumerRights, "https://example.com/rights");
+  assert.equal(live.theme, "sc");
+});
+
+test("no key means no widget — production runs on the tracking link on purpose", () => {
+  const cfg = optimizePageConfig({});
+  assert.equal(cfg.smartCredit.clientKey, undefined);
+  assert.equal(cfg.smartCredit.affiliateUrl, SMART_CREDIT_AFFILIATE_URL);
+  assert.equal(cfg.smartCredit.scriptUrl, undefined, "their file is never loaded without a key");
 });

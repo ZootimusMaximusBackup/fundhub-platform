@@ -6,12 +6,21 @@
 // must travel with them — and, above everything else, the cases where NO
 // complaint may be produced.
 //
-// THE RULE THESE TESTS EXIST FOR
+// THE TWO RULES THESE TESTS EXIST FOR
 // Both complaints say, in the client's own voice and signed under penalty of
-// perjury, that the client already disputed with the credit bureaus. If the pack
-// wrote no dispute letter, that sentence is false. So: no dispute letter in the
-// pack, no complaint in the pack. Every test below that says "no complaint" is
-// protecting a client from swearing to something that did not happen.
+// perjury, that the client already disputed with the credit bureaus.
+//
+//   1. The client must have ACTUALLY REACHED the escalation rounds — R4 or
+//      later — on a bureau answer a human recorded and confirmed. A client on
+//      Round 1 has not disputed anything yet, so that sworn sentence is false
+//      and a federal complaint would be filed out of order.
+//   2. The pack must also contain a dispute letter this run, or the pack broke.
+//
+// Rule 1 was added 2026-08-28. Before it, the only test was rule 2, and a pack
+// writes a Round 1 letter for a client on their first day — so the complaints
+// were released to clients who had disputed nothing and heard back from nobody.
+// Every test below that says "no complaint" is protecting a client from swearing
+// to something that did not happen.
 //
 // These tests run through buildLetterPackForClient — the function the app itself
 // calls — not only through the piece parts. A green result on the piece parts
@@ -55,6 +64,24 @@ const PERSONAL = Object.freeze({
  */
 const DISPUTE_LETTERS = Object.freeze([
   Object.freeze({ filename: "ex_round1.pdf", type: "dispute", bureau: "experian" })
+]);
+
+/**
+ * A client who genuinely reached the escalation rounds.
+ *
+ * This is the shape loadPriorOutcomes returns, and the row could only exist if
+ * Round 1, Round 2 and Round 3 were each answered "verified" and a human
+ * confirmed each answer — the SQL in loadPriorOutcomes filters on
+ * status = 'escalated' AND outcome = 'verified', which only
+ * ../metro2/rounds/state.mjs applyItemOutcome can set.
+ */
+const ESCALATED_R4 = Object.freeze([
+  Object.freeze({ bureau: "EX", creditor: "EXAMPLE BANK NA", account_last4: "1234", round: "R4" })
+]);
+
+/** The same client, still working the bureau rounds. Not escalation. */
+const NOT_ESCALATED_R2 = Object.freeze([
+  Object.freeze({ bureau: "EX", creditor: "EXAMPLE BANK NA", account_last4: "1234", round: "R2" })
 ]);
 
 /** A stored credit pull in the shape crs_results.result arrives in. */
@@ -117,11 +144,14 @@ const STORED_CRS_SCOREABLE = mergeBureauReports({
 });
 
 /**
- * The two reads buildLetterPackForClient makes. Nothing is written, so this is
+ * The three reads buildLetterPackForClient makes — the client, the stored credit
+ * pull, and the confirmed bureau answers already on file (which this stub has
+ * none of, so every account here is still on Round 1). Nothing is written, so
+ * this is
  * a stub, not a database — the point is to exercise the real entry point the
  * app calls rather than the piece parts underneath it.
  */
-function fakeClientDb(storedCrs) {
+function fakeClientDb(storedCrs, priorOutcomes = []) {
   return {
     async query(sql) {
       if (/FROM clients/i.test(sql)) {
@@ -137,6 +167,9 @@ function fakeClientDb(storedCrs) {
       if (/FROM crs_results/i.test(sql)) {
         return { rows: storedCrs ? [{ result: storedCrs }] : [] };
       }
+      // The confirmed bureau answers. Default empty — a client with no recorded
+      // answer is on Round 1, which is where every client starts.
+      if (/FROM dispute_items/i.test(sql)) return { rows: [...priorOutcomes] };
       return { rows: [] };
     }
   };
@@ -156,7 +189,8 @@ describe("repair pack — the escalation ladder", () => {
       storedCrs: STORED_CRS,
       personal: PERSONAL,
       pack: "repair",
-      disputeLetters: DISPUTE_LETTERS
+      disputeLetters: DISPUTE_LETTERS,
+      priorOutcomes: ESCALATED_R4
     });
     assert.equal(out.skip, null, "the complaints must not be skipped on a pull with findings");
     assert.deepEqual(out.files.map((f) => f.filename), [COVER_FILE, CFPB_FILE, AG_FILE],
@@ -174,7 +208,8 @@ describe("repair pack — the escalation ladder", () => {
       storedCrs: STORED_CRS,
       personal: PERSONAL,
       pack: "repair",
-      disputeLetters: DISPUTE_LETTERS
+      disputeLetters: DISPUTE_LETTERS,
+      priorOutcomes: ESCALATED_R4
     });
     const cover = out.files[0];
     assert.equal(cover.filename, COVER_FILE);
@@ -191,7 +226,8 @@ describe("repair pack — the escalation ladder", () => {
       storedCrs: STORED_CRS,
       personal: PERSONAL,
       pack: "repair",
-      disputeLetters: DISPUTE_LETTERS
+      disputeLetters: DISPUTE_LETTERS,
+      priorOutcomes: ESCALATED_R4
     });
     const cfpb = await textOf(out.files[1]);
     const ag = await textOf(out.files[2]);
@@ -214,7 +250,8 @@ describe("repair pack — the escalation ladder", () => {
       storedCrs: STORED_CRS,
       personal: PERSONAL,
       pack: "repair",
-      disputeLetters: DISPUTE_LETTERS
+      disputeLetters: DISPUTE_LETTERS,
+      priorOutcomes: ESCALATED_R4
     });
     const cfpb = await textOf(out.files[1]);
     assert.match(cfpb, /DATE — not mailed yet/,
@@ -227,7 +264,9 @@ describe("repair pack — the escalation ladder", () => {
       storedCrs: STORED_CRS,
       personal: PERSONAL,
       pack: "repair",
-      disputeLetters: []
+      disputeLetters: [],
+      // Escalation on record, so this isolates rule 2 on its own.
+      priorOutcomes: ESCALATED_R4
     });
     assert.deepEqual(out.files, [],
       "a client must never be handed a sworn statement that they disputed, when nothing was written");
@@ -238,7 +277,8 @@ describe("repair pack — the escalation ladder", () => {
     const out = await buildEscalationComplaints({
       storedCrs: STORED_CRS,
       personal: PERSONAL,
-      pack: "repair"
+      pack: "repair",
+      priorOutcomes: ESCALATED_R4
     });
     assert.deepEqual(out.files, []);
     assert.equal(out.skip, "no_dispute_letters");
@@ -252,10 +292,106 @@ describe("repair pack — the escalation ladder", () => {
       disputeLetters: [
         { filename: "personal_info_ex.pdf", type: "personal_info" },
         { filename: "inquiry_ex.pdf", type: "inquiry_removal" }
-      ]
+      ],
+      priorOutcomes: ESCALATED_R4
     });
     assert.deepEqual(out.files, []);
     assert.equal(out.skip, "no_dispute_letters");
+  });
+
+  // ── RULE 1: the client must have actually reached the escalation rounds ──
+
+  test("NO RECORDED BUREAU ANSWER, NO COMPLAINT — the client is still on Round 1", async () => {
+    const out = await buildEscalationComplaints({
+      storedCrs: STORED_CRS,
+      personal: PERSONAL,
+      pack: "repair",
+      disputeLetters: DISPUTE_LETTERS,
+      priorOutcomes: []
+    });
+    assert.deepEqual(out.files, [],
+      "a Round 1 client must never be handed a sworn complaint saying they already disputed");
+    assert.equal(out.skip, "not_escalated");
+  });
+
+  test("A MISSING PRIOR-OUTCOME LIST IS A REFUSAL, NEVER A PASS", async () => {
+    // No argument at all must read as "not escalated", never as "assume yes".
+    const out = await buildEscalationComplaints({
+      storedCrs: STORED_CRS,
+      personal: PERSONAL,
+      pack: "repair",
+      disputeLetters: DISPUTE_LETTERS
+    });
+    assert.deepEqual(out.files, []);
+    assert.equal(out.skip, "not_escalated");
+  });
+
+  test("STILL WORKING THE BUREAU ROUNDS IS NOT ESCALATION — R1, R2, R3 all refuse", async () => {
+    for (const round of ["R1", "R2", "R3", "FURNISHER"]) {
+      const out = await buildEscalationComplaints({
+        storedCrs: STORED_CRS,
+        personal: PERSONAL,
+        pack: "repair",
+        disputeLetters: DISPUTE_LETTERS,
+        priorOutcomes: [{ bureau: "EX", creditor: "EXAMPLE BANK NA", account_last4: "1234", round }]
+      });
+      assert.deepEqual(out.files, [], `a client on ${round} was handed a sworn complaint`);
+      assert.equal(out.skip, "not_escalated");
+    }
+  });
+
+  test("EMPTY OR JUNK ROUND DATA NEVER COUNTS AS ESCALATION", async () => {
+    const junk = [
+      [{ round: null }],
+      [{ round: "" }],
+      [{ round: "   " }],
+      [{ round: "R9" }],
+      [{ round: 4 }],
+      [{ round: "round 4" }],
+      [{}],
+      [null],
+      "R4",
+      null,
+      undefined
+    ];
+    for (const priorOutcomes of junk) {
+      const out = await buildEscalationComplaints({
+        storedCrs: STORED_CRS,
+        personal: PERSONAL,
+        pack: "repair",
+        disputeLetters: DISPUTE_LETTERS,
+        priorOutcomes
+      });
+      assert.deepEqual(out.files, [],
+        `${JSON.stringify(priorOutcomes)} was treated as escalation`);
+      assert.equal(out.skip, "not_escalated");
+    }
+  });
+
+  test("R5 and R6 release the complaints too — R4 is not the only rung", async () => {
+    for (const round of ["R5", "R6"]) {
+      const out = await buildEscalationComplaints({
+        storedCrs: STORED_CRS,
+        personal: PERSONAL,
+        pack: "repair",
+        disputeLetters: DISPUTE_LETTERS,
+        priorOutcomes: [{ bureau: "EX", creditor: "EXAMPLE BANK NA", account_last4: "1234", round }]
+      });
+      assert.equal(out.skip, null, `a client on ${round} was refused their complaints`);
+      assert.deepEqual(out.files.map((f) => f.filename), [COVER_FILE, CFPB_FILE, AG_FILE]);
+    }
+  });
+
+  test("one escalated account among many still-early ones is enough", async () => {
+    const out = await buildEscalationComplaints({
+      storedCrs: STORED_CRS,
+      personal: PERSONAL,
+      pack: "repair",
+      disputeLetters: DISPUTE_LETTERS,
+      priorOutcomes: [...NOT_ESCALATED_R2, ...ESCALATED_R4]
+    });
+    assert.equal(out.skip, null);
+    assert.equal(out.files.length, 3);
   });
 
   test("no findings, no complaint — a claim about nothing is never produced", async () => {
@@ -263,7 +399,8 @@ describe("repair pack — the escalation ladder", () => {
       storedCrs: STORED_CRS_CLEAN,
       personal: PERSONAL,
       pack: "repair",
-      disputeLetters: DISPUTE_LETTERS
+      disputeLetters: DISPUTE_LETTERS,
+      priorOutcomes: ESCALATED_R4
     });
     assert.deepEqual(out.files, []);
     assert.equal(out.skip, "no_violations");
@@ -274,7 +411,8 @@ describe("repair pack — the escalation ladder", () => {
       storedCrs: null,
       personal: PERSONAL,
       pack: "repair",
-      disputeLetters: DISPUTE_LETTERS
+      disputeLetters: DISPUTE_LETTERS,
+      priorOutcomes: ESCALATED_R4
     });
     assert.deepEqual(out.files, []);
     assert.equal(out.skip, "no_stored_crs");
@@ -285,7 +423,8 @@ describe("repair pack — the escalation ladder", () => {
       storedCrs: STORED_CRS,
       personal: PERSONAL,
       pack: "funding",
-      disputeLetters: DISPUTE_LETTERS
+      disputeLetters: DISPUTE_LETTERS,
+      priorOutcomes: ESCALATED_R4
     });
     assert.deepEqual(out.files, []);
     assert.equal(out.skip, "not_repair");
@@ -293,11 +432,32 @@ describe("repair pack — the escalation ladder", () => {
 });
 
 describe("repair pack — through buildLetterPackForClient, the real entry point", () => {
-  test("a scoreable pull: dispute letters first, conditional complaints last", async () => {
+  test("A CLIENT WHO NEVER REACHED R4 GETS THEIR LETTERS AND NO COMPLAINT", async () => {
+    // The regression this gate exists for, through the function the app calls.
+    // A brand-new client with a readable credit pull and no recorded bureau
+    // answer used to receive both sworn complaints on day one.
     const pack = await buildLetterPackForClient(
       fakeClientDb(STORED_CRS_SCOREABLE),
       { clientId: "cl-1", pack: "repair" }
     );
+    assert.equal(pack.reason, null);
+    const list = names(pack);
+    assert.ok(list.filter((n) => /round\d/.test(n)).length > 0,
+      "the bureau letters must still ship — withholding a complaint costs nothing else");
+    assert.deepEqual(list.filter(isComplaint), [],
+      "a client on Round 1 received a complaint sworn under penalty of perjury");
+    assert.equal(pack.complaintCount, 0);
+    assert.equal(pack.complaintSkip, "not_escalated");
+    assert.equal(pack.escalationRound, null);
+  });
+
+  test("a scoreable pull: dispute letters first, conditional complaints last", async () => {
+    const pack = await buildLetterPackForClient(
+      fakeClientDb(STORED_CRS_SCOREABLE, ESCALATED_R4),
+      { clientId: "cl-1", pack: "repair" }
+    );
+    assert.equal(pack.escalationRound, "R4",
+      "the pack must say which recorded round released the complaints");
     assert.equal(pack.reason, null);
     assert.equal(pack.engineSkip, null, "the sandbox pull must score cleanly");
 
