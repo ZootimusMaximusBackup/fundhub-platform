@@ -216,7 +216,8 @@ const BASELINE_ESCALATION_TAIL = Object.freeze([
 const manifest = (pack) => pack.files.map((f) => [f.filename, f.type ?? null, f.bureau ?? null]);
 
 /* ─────────────── stored credit pulls, for the repair pack ───────────────
-   buildLetterPackForClient makes exactly two reads and writes nothing, so a
+   buildLetterPackForClient makes three reads and writes nothing — the client,
+   the stored credit pull, and the confirmed bureau answers on file — so a
    read-only stub is enough to run the real entry point the app calls. */
 
 const SANDBOX = path.resolve(
