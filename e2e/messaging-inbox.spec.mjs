@@ -236,7 +236,7 @@ test.describe("sending a reply", () => {
     await page.locator("#sendBtn").click();
 
     const status = page.locator("#sendStatus");
-    await expect(status).toContainText("11:00am Eastern");
+    await expect(status).toContainText("8:00am Arizona time");
     await expect(status).toContainText("do not need to send it again");
     await expect(status).not.toContainText("failed");
     await expect(status).not.toContainText("Not sent");
@@ -276,19 +276,19 @@ test.describe("sending a reply", () => {
 test.describe("the texting-hours warning", () => {
 
   test("during the day it states the rule without alarm", async ({ page }) => {
-    await freezeClock(page, "2026-08-02T17:00:00Z");   // 1pm Eastern
+    await freezeClock(page, "2026-08-02T17:00:00Z");   // 10am Arizona
     await wire(page);
     await page.goto(SCREEN);
     await page.locator(".convo").first().click();
 
     const note = page.locator("#quietNote");
     await expect(note).toBeVisible();
-    await expect(note).toContainText("11:00am to 11:00pm Eastern");
+    await expect(note).toContainText("8:00am to 8:00pm Arizona time");
     await expect(note).not.toHaveClass(/closed/);
   });
 
-  test("at two in the morning it warns before a word is typed", async ({ page }) => {
-    await freezeClock(page, "2026-08-02T06:00:00Z");   // 2am Eastern
+  test("at eleven at night it warns before a word is typed", async ({ page }) => {
+    await freezeClock(page, "2026-08-02T06:00:00Z");   // 11pm Arizona
     await wire(page);
     await page.goto(SCREEN);
     await page.locator(".convo").first().click();

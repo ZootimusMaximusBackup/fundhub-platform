@@ -543,3 +543,41 @@ describe("the destination box", () => {
       "there is no staff voice compose, and inventing one is a step no journey names");
   });
 });
+
+/* ───────────────────────────────────────────────────────────────────────────
+   THE BROWSER TEST'S WORDS MUST BE THE SCREEN'S WORDS.
+
+   CLAUDE.md §12 records that `npm test` globs `src/**` and `scripts/**` only.
+   e2e/ is not in it — it runs under `npm run test:e2e`, in CI, in a browser.
+   So when the texting-hours copy moved from Eastern to Arizona time, every
+   unit test here was updated and went green, and two Playwright specs kept
+   asserting the old sentence for another twenty minutes until CI said so.
+
+   This closes that loop from the side that DOES run on every `npm test`: pull
+   the quoted sentences straight out of the browser spec and check the screen
+   still says them. It fails locally, in seconds, the next time the copy moves
+   and the spec does not.
+   ─────────────────────────────────────────────────────────────────────────── */
+test("the texting-hours copy the browser test expects is the copy the screen ships", () => {
+  const specPath = path.resolve(HERE, "../../e2e/messaging-inbox.spec.mjs");
+  const spec = fs.readFileSync(specPath, "utf8");
+  const html = fs.readFileSync(path.resolve(HERE, "../../public/app/messaging.html"), "utf8");
+
+  // Every toContainText("...") the spec asserts against #quietNote or #sendStatus.
+  const quoted = [...spec.matchAll(/toContainText\("([^"]+)"\)/g)].map((m) => m[1]);
+  const aboutHours = quoted.filter((t) => /am|pm|Texting hours|send it again/i.test(t));
+
+  assert.ok(aboutHours.length >= 3,
+    `expected the browser spec to still assert the texting-hours wording, found ${aboutHours.length}`);
+
+  for (const phrase of aboutHours) {
+    assert.ok(
+      html.includes(phrase),
+      `e2e/messaging-inbox.spec.mjs expects "${phrase}" but messaging.html does not say it`
+    );
+  }
+
+  // And the old zone must not survive in either place.
+  assert.ok(!/Eastern/.test(spec), "the browser spec still mentions Eastern");
+  assert.ok(!/Eastern/.test(html), "the messaging screen still mentions Eastern");
+});
