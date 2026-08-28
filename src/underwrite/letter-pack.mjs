@@ -10,6 +10,10 @@ import { runTierEngineFromCrsResult } from "../finance/crs-tier.mjs";
 import { hasFundingAnalysisPdfs, FUNDING_ANALYSIS_FILENAMES } from "./letter-pack-filter.mjs";
 import { buildBlackReportClient, hasBlackReportSource, mergeStoredUnderwrite } from "./black-report-client.mjs";
 import { printBlackReports } from "./black-report-pdf.mjs";
+import { buildCfpbComplaint, buildStateAgComplaint, renderComplaintPdf } from "../metro2/letters/complaints.mjs";
+import { violationsByBureauFromMergedCrs } from "../metro2/diy/from-crs.mjs";
+import { accountsFromPack, blankTimeline } from "../metro2/diy/package.mjs";
+import { LETTER_TYPES } from "../metro2/letters/catalog.mjs";
 
 const { generateLetters, generateDisputeLetters } = letterGenMod;
 const { generateAllSummaryDocuments } = summaryMod;
@@ -62,7 +66,9 @@ const NICE_NAME = {
   ...FUNDING_ANALYSIS_FILENAMES,
   funding_summary: "Capital-Readiness-Summary.pdf",
   repair_plan_summary: "Optimization-Plan-Summary.pdf",
-  business_prep_summary: "Business-Readiness-Guide.pdf"
+  business_prep_summary: "Business-Readiness-Guide.pdf",
+  [LETTER_TYPES.CFPB_COMPLAINT]: "CFPB-Complaint.pdf",
+  [LETTER_TYPES.STATE_AG_COMPLAINT]: "State-Attorney-General-Complaint.pdf"
 };
 
 export function personalFromClient(row) {
@@ -193,6 +199,91 @@ async function uiqDeliverablePdfs(crsResult, personal, pack, _generate = generat
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// THE ESCALATION LADDER
+//
+// COMPLIANCE REVIEW REQUIRED — dispute logic and credit-repair messaging.
+//
+// Owner-set 2026-08-28: the repair pack carries the escalation ladder, not just
+// the three bureau letters. Until now `pack === "repair"` produced Metro 2 bureau
+// letters only, while the Round 3 letter text already told the bureau a CFPB
+// complaint was being filed and nothing ever wrote one.
+//
+// Nothing new is authored here. The two complaint documents come from the repair
+// brain that already builds them for the DIY package:
+//   src/metro2/letters/complaints.mjs   — the wording, cites and sworn declaration
+//   src/metro2/diy/from-crs.mjs         — the Metro 2 findings behind the claims
+//   src/metro2/diy/package.mjs          — the account list and the round timeline
+//
+// Rules held here, deliberately:
+//  * No violations found → no complaint. A complaint with no named account is a
+//    claim about nothing, so an empty findings map yields zero files.
+//  * Undated. `undated: true` renders "Date: ____________" and the hand-signed
+//    perjury declaration. A dated complaint requires the client's dispute
+//    authorization (src/metro2/diy/package.mjs), which this path does not carry.
+//  * The timeline is the blank R1/R2/R3 plan, so every date reads
+//    "[DATE — not mailed yet]". No mail date is ever invented.
+//  * A failure here must not lose the bureau letters, so it is caught and
+//    surfaced as `complaintSkip` rather than thrown.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Complaint identity from the same `personal` record the bureau letters use. */
+export function complaintIdentityFromPersonal(personal) {
+  const who = personal && typeof personal === "object" ? personal : {};
+  const cityLine = [who.city, [who.state, who.zip].filter(Boolean).join(" ")]
+    .filter(Boolean).join(", ");
+  const lines = String(who.address || "").split("\n").map((l) => l.trim()).filter(Boolean);
+  // personalFromClient joins street + cityLine with a newline. Drop the city line
+  // so a client with no street on file gets a blank street, never their own city
+  // printed as an address.
+  const street = lines.find((l) => l !== cityLine) || "";
+  const name = String(who.name || "").trim();
+  return {
+    fullName: name && name !== "Client" ? name : "",
+    addressLine1: street,
+    city: String(who.city || "").trim(),
+    state: String(who.state || "").trim(),
+    zip: String(who.zip || "").trim()
+  };
+}
+
+export async function buildEscalationComplaints({ storedCrs, personal, pack } = {}) {
+  if (pack !== "repair") return { files: [], skip: "not_repair" };
+  if (!storedCrs) return { files: [], skip: "no_stored_crs" };
+  try {
+    const byBureau = violationsByBureauFromMergedCrs(storedCrs);
+    const accounts = accountsFromPack(byBureau);
+    if (!accounts.length) return { files: [], skip: "no_violations" };
+    const identity = complaintIdentityFromPersonal(personal);
+    const timeline = blankTimeline();
+    const cfpbText = buildCfpbComplaint({ identity, accounts, timeline, undated: true });
+    const agText = buildStateAgComplaint({ identity, accounts, timeline, undated: true });
+    const [cfpbPdf, agPdf] = await Promise.all([
+      renderComplaintPdf(cfpbText, identity),
+      renderComplaintPdf(agText, identity)
+    ]);
+    return {
+      files: [
+        {
+          filename: NICE_NAME[LETTER_TYPES.CFPB_COMPLAINT],
+          contentType: "application/pdf",
+          content: Buffer.from(cfpbPdf),
+          type: LETTER_TYPES.CFPB_COMPLAINT
+        },
+        {
+          filename: NICE_NAME[LETTER_TYPES.STATE_AG_COMPLAINT],
+          contentType: "application/pdf",
+          content: Buffer.from(agPdf),
+          type: LETTER_TYPES.STATE_AG_COMPLAINT
+        }
+      ],
+      skip: null
+    };
+  } catch (err) {
+    return { files: [], skip: String(err && err.message || err).slice(0, 240) };
+  }
+}
+
 export async function buildLetterPack({
   crsResult,
   personal,
@@ -238,7 +329,9 @@ export async function buildLetterPack({
     }
   }
   const uiq = await uiqDeliverablePdfs(crsResult, who, pack, generateDeliverablesFn, storedCrs);
-  const files = [...uiq.files, ...asFiles(summaries), ...asFiles(letters)];
+  // Escalation last: the client works the bureau rounds first, then files these.
+  const escalation = await buildEscalationComplaints({ storedCrs, personal: who, pack });
+  const files = [...uiq.files, ...asFiles(summaries), ...asFiles(letters), ...escalation.files];
   let reason = null;
   // An empty pack with no engine result is a different state from an empty pack
   // the engine produced. See the PACK_REASON block at the top of this file.
@@ -252,7 +345,9 @@ export async function buildLetterPack({
     reason,
     deliverableCount: uiq.files.length,
     deliverableSkip: uiq.skip,
-    summarySkip
+    summarySkip,
+    complaintCount: escalation.files.length,
+    complaintSkip: escalation.skip
   };
 }
 

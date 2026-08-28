@@ -409,4 +409,7 @@ function roundTrackerTemplate() {
   ].join("\n");
 }
 
-export { coverSheet, decisionTree, buildLetterText };
+// accountsFromPack and blankTimeline are exported so the UnderwriteIQ repair pack
+// (src/underwrite/letter-pack.mjs) builds its CFPB / state AG complaints from the
+// SAME two inputs this DIY package uses. One implementation, not two.
+export { coverSheet, decisionTree, buildLetterText, accountsFromPack, blankTimeline };
