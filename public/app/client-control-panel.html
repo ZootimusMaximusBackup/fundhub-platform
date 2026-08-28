@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fundhub — Client Control Panel</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -677,7 +680,7 @@
         <div style="font:700 var(--fs-caption)/1 var(--mono,ui-monospace);letter-spacing:.1em;text-transform:uppercase;color:var(--gray,#71717A)">Apply door</div>
         <div id="fh-funding-apply-status" style="margin-top:6px;font-size:var(--fs-body);color:var(--gray,#71717A)">Lenders that fit a client's file appear here. Pick a client on Pipeline to open one.</div>
         <div id="fh-funding-apply-list" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
-        <p style="margin:8px 0 0;font-size:var(--fs-caption);color:var(--gray,#71717A)">Shows lenders that fit this file. Apply opens the bank page when a URL is on file.</p>
+        <p style="margin:8px 0 0;font-size:var(--fs-caption);color:var(--gray,#71717A)">Shows lenders that fit this file. Apply opens the bank page when a URL is on file. Apply shows the client email, not a Fundhub address.</p>
       </div>
 
       <div class="side-title">Quick Launch</div>
@@ -881,7 +884,28 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
 
     var main = label ? label : (workedOut ? NONE_APPLIES : NOT_WORKED_OUT);
     var saved = (stored && stored !== main) ? (SAVED_PREFIX + stored) : "";
+    try {
+      if (saved && fx && fx.scores_on_file === true && /^pull crs$/i.test(stored)) saved = "";
+    } catch (e) { /* keep the labelled saved line */ }
     return { main: main, saved: saved };
+  }
+
+  function displayStatus(raw, fx) {
+    var s = "";
+    try { s = raw == null ? "" : String(raw).trim(); } catch (e) { s = ""; }
+    var key = "";
+    try { key = fx && fx.next_action && fx.next_action.key ? String(fx.next_action.key) : ""; } catch (e) { key = ""; }
+    if (s === "New Lead" && key === "apply_for_funding") return "Apply Now";
+    return s;
+  }
+
+  function displayHold(raw, fx) {
+    var h = "";
+    try { h = raw == null ? "" : String(raw).trim(); } catch (e) { h = ""; }
+    try {
+      if (h === "Awaiting CRS" && fx && fx.scores_on_file === true) return "";
+    } catch (e) { /* keep */ }
+    return h;
   }
 
   window.FHClientPanel = {
@@ -891,7 +915,9 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
     SAVED_PREFIX: SAVED_PREFIX,
     money: money,
     tileMoney: tileMoney,
-    nextAction: nextAction
+    nextAction: nextAction,
+    displayStatus: displayStatus,
+    displayHold: displayHold
   };
 })();
 /* FH-CCP-END */
@@ -1270,7 +1296,7 @@ document.addEventListener("DOMContentLoaded", function () {
       box.appendChild(empty);
       return;
     }
-    list.forEach(function (row) {
+    list.forEach(function (row, i) {
       var card = document.createElement("div");
       card.className = "cp-sec";
       var title = document.createElement("div");
@@ -1294,9 +1320,65 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       kv("State", row.state);
       kv("EIN", row.ein, true);
+      kv("Incorporated", row.incorporated_date);
+      kv("Age (months)", row.age_months);
       kv("Address", row.address);
       kv("Extra owner", row.extra_owner_name);
       card.appendChild(grid);
+      var birth = document.createElement("div");
+      birth.style.marginTop = "10px";
+      var birthLab = document.createElement("label");
+      birthLab.setAttribute("for", "ccp-inc-" + i);
+      birthLab.textContent = "When was this business incorporated?";
+      var birthIn = document.createElement("input");
+      birthIn.id = "ccp-inc-" + i;
+      birthIn.type = "month";
+      birthIn.value = row.incorporated_date ? String(row.incorporated_date).slice(0, 7) : "";
+      var birthBtn = document.createElement("button");
+      birthBtn.type = "button";
+      birthBtn.className = "action-btn";
+      birthBtn.style.marginTop = "8px";
+      birthBtn.textContent = "Save month / year";
+      var birthMsg = document.createElement("p");
+      birthMsg.style.fontSize = "var(--fs-caption)";
+      birthMsg.style.margin = "6px 0 0";
+      birthBtn.addEventListener("click", function () {
+        if (!id || !row.name) {
+          birthMsg.textContent = "Open a client file first.";
+          return;
+        }
+        if (!birthIn.value) {
+          birthMsg.textContent = "Enter the month and year.";
+          return;
+        }
+        if (!window.FHData || typeof FHData.write !== "function") {
+          birthMsg.textContent = "Could not save.";
+          return;
+        }
+        birthBtn.disabled = true;
+        birthMsg.textContent = "Saving…";
+        FHData.write("/api/soft-pull-approve", {
+          action: "stamp_incorporated",
+          client_id: id,
+          business_name: row.name,
+          incorporated_date: birthIn.value
+        }).then(function (res) {
+          birthBtn.disabled = false;
+          if (!res || !res.ok) {
+            birthMsg.textContent = (res && (res.error || res.message)) || "Could not save.";
+            return;
+          }
+          birthMsg.textContent = "Saved.";
+          FHData.client(id).then(function (again) {
+            if (again && again.ok) render(again.data);
+          });
+        });
+      });
+      birth.appendChild(birthLab);
+      birth.appendChild(birthIn);
+      birth.appendChild(birthBtn);
+      birth.appendChild(birthMsg);
+      card.appendChild(birth);
       if (row.extra_owners_warning) {
         var flag = document.createElement("p");
         flag.className = "blocker-flag";
@@ -1324,7 +1406,6 @@ document.addEventListener("DOMContentLoaded", function () {
       : cf.deposit_paid ? "Deposit paid"
       : cf.crs_paid ? "Diagnostic paid"
       : "";
-    setText("ccp-status", status);
 
     var prequal = cf.analyzer_prequal_amount || cf.total_funding_estimate;
     setText("ccp-prequal", money(prequal));
@@ -1364,8 +1445,14 @@ document.addEventListener("DOMContentLoaded", function () {
        and the value saved on the record goes in the quiet line under it.
        GATE A — see paintNextAction. */
     var fx = fulfillment(d);
+    if (fx) {
+      try {
+        fx.scores_on_file = tm.experian != null || tm.equifax != null || tm.transunion != null;
+      } catch (e) { fx.scores_on_file = false; }
+    }
+    setText("ccp-status", FHCP.displayStatus(status, fx));
     paintNextAction("ccp-next-action", "ccp-saved", fx, cf);
-    var hold = cf.round_hold_reason || (latestRound && latestRound.hold_reason) || "";
+    var hold = FHCP.displayHold(cf.round_hold_reason || (latestRound && latestRound.hold_reason) || "", fx);
     setText("ccp-hold-reason", hold);
     setText("ccp-credit-status", cf.crs_status || cf.analyzer_status);
     var inc = d.income_estimates || {};
@@ -2076,11 +2163,13 @@ document.addEventListener("DOMContentLoaded", function () {
         listEl.innerHTML = "";
         (d.matches || []).slice(0, 12).forEach(function (m) {
           var row = document.createElement("div");
-          row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px";
+          row.style.cssText = "display:flex;flex-direction:column;gap:6px;padding:8px 0;border-bottom:1px solid var(--line,#E4E4E7)";
+          var top = document.createElement("div");
+          top.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px";
           var label = document.createElement("span");
           label.style.cssText = "font-size:var(--fs-body);min-width:0";
           label.textContent = (m.name || "?") + (m.bureaus_pulled ? (" · " + m.bureaus_pulled) : "");
-          row.appendChild(label);
+          top.appendChild(label);
           if (m.id && m.application_url && window.FHProxyApply) {
             var btn = document.createElement("button");
             btn.type = "button";
@@ -2095,16 +2184,83 @@ document.addEventListener("DOMContentLoaded", function () {
                 lenderName: m.name || "Lender"
               });
             });
-            row.appendChild(btn);
+            top.appendChild(btn);
           } else {
             var miss = document.createElement("span");
             miss.style.cssText = "font-size:var(--fs-caption);color:var(--gray2,#A1A1AA)";
             miss.textContent = "No URL";
-            row.appendChild(miss);
+            top.appendChild(miss);
           }
+          row.appendChild(top);
+          var playRow = document.createElement("div");
+          playRow.style.cssText = "display:flex;flex-wrap:wrap;align-items:center;gap:6px";
+          var play = document.createElement("input");
+          play.type = "text";
+          play.setAttribute("list", "fh-play-names");
+          play.placeholder = "Play name (optional)";
+          if (m.id) play.setAttribute("data-lender-id", m.id);
+          play.style.cssText = "flex:1;min-width:140px;font-size:var(--fs-caption);padding:4px 6px";
+          playRow.appendChild(play);
+          function logBank(status) {
+            var h = { accept: "application/json", "content-type": "application/json" };
+            if (t) h.authorization = "Bearer " + t;
+            return fetch("/api/applications", {
+              method: "POST",
+              headers: h,
+              body: JSON.stringify({
+                client_id: clientId,
+                lender_id: m.id,
+                status: status,
+                play_name: play.value || ""
+              })
+            }).then(function (r) { return r.json(); }).then(function (res) {
+              statusEl.textContent = (res && res.ok)
+                ? ((status === "Approved" ? "Bank yes" : "Bank no") + (play.value ? (" · " + play.value) : "") + " saved.")
+                : ((res && (res.message || res.error)) || "Could not save bank yes/no.");
+            }).catch(function () {
+              statusEl.textContent = "Could not save bank yes/no.";
+            });
+          }
+          var yes = document.createElement("button");
+          yes.type = "button";
+          yes.textContent = "Bank yes";
+          yes.style.cssText = "padding:4px 8px;font-size:var(--fs-caption)";
+          yes.addEventListener("click", function () { logBank("Approved"); });
+          var no = document.createElement("button");
+          no.type = "button";
+          no.textContent = "Bank no";
+          no.style.cssText = "padding:4px 8px;font-size:var(--fs-caption)";
+          no.addEventListener("click", function () { logBank("Denied"); });
+          playRow.appendChild(yes);
+          playRow.appendChild(no);
+          row.appendChild(playRow);
           listEl.appendChild(row);
         });
-        return readyCopy || (n + " lenders ready.");
+        if (!document.getElementById("fh-play-names")) {
+          var dl = document.createElement("datalist");
+          dl.id = "fh-play-names";
+          ["Card stacking first pull", "In-branch visit", "Online only", "Docs first"].forEach(function (name) {
+            var opt = document.createElement("option");
+            opt.value = name;
+            dl.appendChild(opt);
+          });
+          document.body.appendChild(dl);
+        }
+        return fetch("/api/applications?client_id=" + encodeURIComponent(clientId), { headers: headers })
+          .then(function (r) { return r.json(); })
+          .then(function (pack) {
+            var seen = {};
+            ((pack && pack.decisions) || []).forEach(function (dec) {
+              if (!dec.lender_id || !dec.play_name || seen[dec.lender_id]) return;
+              seen[dec.lender_id] = true;
+              var inp = listEl.querySelector('input[data-lender-id="' + dec.lender_id + '"]');
+              if (inp && !inp.value) inp.value = dec.play_name;
+            });
+            return readyCopy || (n + " lenders ready.");
+          })
+          .catch(function () {
+            return readyCopy || (n + " lenders ready.");
+          });
       })
       .catch(function () {
         statusEl.textContent = "Could not load lender matches.";
