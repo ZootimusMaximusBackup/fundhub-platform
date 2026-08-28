@@ -9,6 +9,7 @@ import { aiSet043WayHandoff } from './ai-set-04-3way-handoff.mjs';
 import { at01FirstTouchCapture } from './at-01-first-touch-capture.mjs';
 import { bc01CustomerResponsiveness } from './bc-01-customer-responsiveness.mjs';
 import { bc02CustomerFriction } from './bc-02-customer-friction.mjs';
+import { blakeLeadWatch } from './blake-lead-watch.mjs';
 import { bs01PrecallLauncher } from './bs-01-precall-launcher.mjs';
 import { contractChaser } from './contract-chaser.mjs';
 import { dailyPulse } from './daily-pulse.mjs';
@@ -76,6 +77,8 @@ export const functions = [
   at01FirstTouchCapture,
   bc01CustomerResponsiveness,
   bc02CustomerFriction,
+  /* Blake referral mail → staff text to Chris (name + phone). Never texts the lead. */
+  blakeLeadWatch,
   bs01PrecallLauncher,
   /* Contracts — chase unsigned, daily.
 

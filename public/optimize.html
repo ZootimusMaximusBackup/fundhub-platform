@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Book a call | Fundhub Credit Solutions LLC</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="robots" content="noindex">
+<meta name="description" content="Fundhub Credit Solutions LLC. A line-by-line audit of your credit file, with the rule behind every finding.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Funnel look. Same system as clickfunnels-fragments/04a-book-top.html and
+     04b-book-bottom.html — the booking pair. Grid backdrop, centred
+     hero, two-part headline, soft floating card, marquee, disclaimer footer.
+     Form parts (.field/.consent/.disclaim) stay as the homepage survey builds them. */
+  :root{
+    --spectrum:linear-gradient(90deg,#F2A69B 0%,#F5CE8F 20%,#F2E39B 40%,#A8D8B0 60%,#A9C6E8 80%,#C4B3E5 100%);
+    --paper:#FCFCFC; --ink:#0A0A0A; --ink2:#18181B; --gray:#52525B; --gray2:#8A8A93;
+    --line:#E4E4E7; --soft:#F4F4F5;
+    --blue:#188bf6; --blue-dark:#0f6fd0;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
+    --sans:'Inter',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{overflow-x:hidden}
+  body{color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased}
+  /* one fixed grid layer — survives zoom, same as the funnel */
+  body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background-color:var(--paper);
+    background-image:linear-gradient(rgba(10,10,10,.048) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(10,10,10,.048) 1px,transparent 1px);
+    background-size:44px 44px}
+  a{color:inherit;text-decoration:none}
+  :focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .wrap{max-width:900px;margin:0 auto;padding:0 24px}
+  .logo{display:inline-block;background:url(data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjI2OTguMTQ4NDcxcHQiIGhlaWdodD0iNTQyLjk3ODc1OXB0IiB2aWV3Qm94PSIwIDAgMjY5OC4xNDg0NzEgNTQyLjk3ODc1OSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ieE1pZFlNaWQgbWVldCI+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTE0Mi4wMDAwMDAsNjkxLjkwMjU0NSkgc2NhbGUoMC4xMDAwMDAsLTAuMTAwMDAwKSIgZmlsbD0iIzBBMEEwQSIgc3Ryb2tlPSJub25lIj48cGF0aCBkPSJNMjc4MCA2OTA1IGMtMTAxIC0yMyAtMTg3IC01MyAtMjc1IC05NiAtMjY3IC0xMzMgLTQ1MyAtMzQyIC01NTYgLTYyNCAtNTQgLTE1MCAtNjEgLTIxMiAtNjYgLTU2NSAtMyAtMjMzIC03IC0zMTYgLTE2IC0zMjIgLTcgLTQgLTEwMiAtOCAtMjEzIC04IC0xODIgMCAtMjAyIC0yIC0yMTcgLTE4IC0xNSAtMTcgLTE3IC02NiAtMTcgLTQ5MyAwIC0zNTYgMyAtNDc4IDEyIC00ODcgOSAtOSA3MSAtMTIgMjE4IC0xMiAxNDcgMCAyMDkgLTMgMjE4IC0xMiA5IC05IDEyIC0zMTYgMTIgLTEzMTcgMSAtMTA3MCAzIC0xMzA5IDE0IC0xMzIzIDEyIC0xNyA1MCAtMTggNTMzIC0xOCAzOTAgMCA1MjIgMyA1MzEgMTIgOSA5IDEyIDMxNSAxMiAxMzE2IDAgODc5IDMgMTMxMCAxMCAxMzIzIDEwIDE4IDIzIDE5IDIyNSAxOSAyMTAgMCAyMTQgMCAyMjkgMjIgMTQgMjAgMTYgODIgMTYgNDg0IGwwIDQ2MyAtMjYgMjAgYy0yNSAyMCAtMzkgMjEgLTIzMCAyMSAtMTkxIDAgLTIwNCAxIC0yMTQgMTkgLTYgMTIgLTEwIDEwMCAtMTAgMjE2IDAgMzAxIC01IDI5NSAyNjEgMjk1IDE2NyAwIDE4OCAyIDIwMiAxOCAxNSAxNyAxNyA2OCAxNyA1MzMgLTEgNDEyIC0zIDUxNyAtMTQgNTMyIC0xMiAxNiAtMzggMTcgLTMwNyAxNiAtMTkxIC0xIC0zMTMgLTYgLTM0OSAtMTR6Ii8+PHBhdGggZD0iTTE0MDUxIDY0MDcgYy04IC0xMCAtMTIgLTE5NiAtMTMgLTYzMiAtMyAtNTY4IC00IC02MTkgLTIwIC02MjggLTEzIC05IC0yMSAtNyAtMzUgNSAtMTggMTYgLTE4NSAxMDIgLTI1MyAxMzEgLTIyOSA5NyAtNTQ2IDEzNiAtODI1IDEwMyAtMTk4IC0yNCAtMjY0IC0zOSAtNDE0IC05OCAtMjUwIC05OCAtNDI5IC0yMTUgLTYyNSAtNDExIC03OCAtNzggLTE2MyAtMTY5IC0xODggLTIwMiAtNjMgLTg0IC0xMTggLTE2NCAtMTE4IC0xNzEgMCAtMyAtOCAtMTggLTE5IC0zMiAtNjUgLTk0IC0xNzIgLTM0MyAtMjEwIC00ODkgLTMwIC0xMTcgLTMxIC0xMjIgLTYwIC0zMzMgLTE3IC0xMjAgLTQgLTQzNyAyNCAtNjAwIDUzIC0zMDkgMjI3IC02NzIgNDM2IC05MTEgMjQwIC0yNzUgNDM4IC00MjEgNzM0IC01NDIgMTMwIC01MyAyMTggLTc1IDM4MCAtOTYgOTAgLTEyIDQ0OCAtNyA1MDAgNyAyMiA2IDY1IDE2IDk1IDIzIDEzNiAzMCAzNTkgMTIyIDQ5MiAyMDIgMjAgMTIgNTcgMzUgODIgNTAgNzIgNDQgODAgMzcgODQgLTYzIDIgLTQ2IDggLTkwIDE0IC05NyAxNSAtMTggOTc4IC0xOSA5OTYgLTEgMTcgMTcgMTcgNDc2OSAwIDQ3ODYgLTE5IDE5IC0xMDQxIDE3IC0xMDU3IC0xeiBtLTYzMCAtMjAzNSBjMTMgLTYgNDQgLTE2IDY5IC0yMyA1MyAtMTYgMTYxIC03MSAyMTAgLTEwNyAxNzAgLTEyNyAzMTkgLTMzOSAzNjggLTUyNyAyMiAtODMgMjYgLTEyNCAyNiAtMjcwIDAgLTE1NCAtMTAgLTI2MSAtMjUgLTI3MSAtNSAtMyAtOSAtMTYgLTkgLTMwIDAgLTEzIC00IC0zMiAtOCAtNDIgLTU3IC0xMTkgLTEwNCAtMjA1IC0xMzYgLTI0NiAtNjggLTg4IC0xNTkgLTE3NiAtMjMxIC0yMjUgLTc2IC01MCAtOTIgLTU5IC0xOTcgLTEwMCAtMTI0IC00OCAtMzg2IC00NiAtNTMzIDQgLTEyNSA0MyAtMjM3IDExNyAtMzM0IDIyMyAtOTAgOTggLTExOSAxNDAgLTE2NiAyMzIgLTUwIDk5IC00NyA5MCAtODQgMjM1IC0yOCAxMTEgLTMyIDI0NiAtMTEgMzgwIDE4IDExOSAyMiAxMzUgMzEgMTQxIDUgMyA5IDEzIDkgMjMgMCAzMSA3MCAxNjMgMTI1IDIzNiA2NyA4OSAxNTUgMTgwIDIyNSAyMzIgNjYgNDkgMTY1IDEwMyAxOTAgMTAzIDExIDAgMjEgNCAyNCA5IDYgOSAyOSAxNSAxMjEgMzEgNjEgMTEgMzAzIDUgMzM2IC04eiIvPjxwYXRoIGQ9Ik0xNTU0NyA2NDAyIGMtMTYgLTE3IC0xNyAtMTk3IC0xNyAtMjM4NiAwIC0xNjEzIDMgLTIzNzMgMTAgLTIzODcgMTAgLTE4IDI3IC0xOSA1MzUgLTE5IDMyMSAwIDUyNiA0IDUzMCAxMCAzIDUgNSA0MjcgNSA5MzcgMCA4OTMgNSAxMDg1IDMyIDEyNTggNDMgMjc4IDE0NiA0NTQgMzEzIDUzNiBsNzAgMzQgMTUyIDAgYzEwOCAwIDE1NiAtNCAxNjUgLTEyIDYgLTcgMjAgLTEzIDI5IC0xMyAyNiAwIDkyIC0zOCAxMzcgLTc5IDU5IC01MiAxMDUgLTEyNyAxNDUgLTIzMyAzNCAtOTAgNDIgLTExOSA2OCAtMjU4IDkgLTQ4IDE0IC0zMzggMTYgLTExMTAgMyAtNzE1IDggLTEwNDggMTUgLTEwNTcgOCAtMTAgMTIwIC0xMyA1MjggLTEzIDQzOSAwIDUxOSAyIDUzMCAxNCAxNiAyMSA5IDIzNjAgLTggMjQ1NiAtNyAzNiAtMTcgOTIgLTIzIDEyNSAtMjggMTY1IC03MiAzMDQgLTEzNCA0MzAgLTEyMiAyNDYgLTM3NiA0ODEgLTY3MCA2MTkgLTE1MiA3MiAtMTY5IDc4IC0zMjUgMTE2IC03OSAyMCAtMjUxIDMyIC0zNDYgMjYgLTIzMiAtMTYgLTM3MCAtNTEgLTU0OCAtMTQxIC0xNjEgLTgxIC0xNDcgLTEzNyAtMTQ2IDU2MSAxIDQyNiAtMiA1NzkgLTExIDU5MCAtMTAgMTIgLTk1IDE0IC01MjQgMTQgLTQ4MyAwIC01MTMgLTEgLTUyOCAtMTh6Ii8+PHBhdGggZD0iTTIyOTYyIDY0MDggYy05IC05IC0xMiAtNTU0IC0xMiAtMjM4OSAwIC0xMzA4IDMgLTIzODQgNiAtMjM5MyA1IC0xNCA1OSAtMTYgNTA0IC0xNiAzOTYgMCA1MDAgMyA1MDggMTMgNiA3IDEyIDUxIDE0IDk3IDMgODEgNCA4NSAyNSA4MyAxMiAtMiA1NSAtMjUgOTUgLTUyIDE4NCAtMTIzIDM2MCAtMTk1IDU5OCAtMjQzIDg4IC0xOCA1MTMgLTE4IDU5NSAwIDMzIDcgODMgMTggMTEwIDIzIDIyOSA0OCA1MDMgMTg2IDcwNyAzNTYgMTQ3IDEyMiAzMzcgMzQyIDQxNCA0NzggNTIgOTMgMTE4IDIyNiAxNDAgMjgyIDE0IDM3IDI5IDc3IDM0IDg4IDQgMTEgMTMgNDAgMjAgNjUgNyAyNSAxNiA1NiAyMSA3MCAxMSAzMyAzNCAxMzggNTEgMjI1IDE3IDkyIDE4IDU4OCAxIDY2NSAtNiAzMCAtMTcgODIgLTIzIDExNSAtMTYgODIgLTY2IDI1NiAtOTAgMzEwIC01IDExIC0yNiA1OCAtNDcgMTA1IC01NSAxMjMgLTEyNyAyNDcgLTIwMSAzNDYgLTExOSAxNTkgLTMyMSAzNTkgLTQ0NiA0NDMgLTIwNSAxMzggLTQxMCAyMzAgLTU5NiAyNzEgLTMwIDYgLTY4IDE1IC04NSAyMCAtOTEgMjUgLTQzMSAzMiAtNTg1IDEyIC0xMjIgLTE3IC0yMjcgLTM5IC0zMDQgLTY3IC05NiAtMzMgLTI0OCAtMTA3IC0zMTIgLTE1MCAtNDAgLTI3IC01MCAtMzAgLTU5IC0xNSAtMyA1IC02IDI4MyAtNSA2MTcgMCA1MzggLTEgNjExIC0xNSA2MzEgbC0xNiAyMiAtNTE4IDAgYy0zODkgMCAtNTIwIC0zIC01MjkgLTEyeiBtMjEyMCAtMjA0MSBjMjYgLTcgNTAgLTE2IDU0IC0yMCA0IC00IDE2IC03IDI2IC03IDEwIDAgMjcgLTQgMzggLTEwIDExIC01IDI5IC0xNCA0MCAtMjAgMTc1IC04NyAzNDYgLTI4MCA0MjAgLTQ3MSA0NyAtMTIzIDUzIC0xNTggNTcgLTM2OSA2IC0yMzYgLTEwIC0zMzAgLTgyIC00ODUgLTEwMyAtMjIxIC0yOTUgLTM5OCAtNDk1IC00NTMgLTE5IC02IC01MiAtMTYgLTc0IC0yMiAtODUgLTI3IC0zOTMgLTEyIC00NTggMjEgLTEwIDUgLTI1IDkgLTMzIDkgLTggMCAtMjMgNCAtMzMgOSAtOSA1IC00NiAyMyAtODIgNDEgLTg0IDQyIC0xMzAgNzggLTIwOCAxNTkgLTE0OSAxNTYgLTIxNCAyODEgLTI2MiA1MTEgLTE0IDY2IC04IDM3NSA4IDQzNSA2IDIyIDE0IDU0IDE4IDcwIDExIDUyIDgwIDE5MCAxMjQgMjUxIDU0IDczIDE3MCAxODkgMjMwIDIzMCAxMDIgNjggMjM3IDEyMSAzNTUgMTM4IDU2IDggMzEwIC00IDM1NyAtMTd6Ii8+PHBhdGggZD0iTTkyMTAgNTM4OCBjLTQxIC01IC05MyAtMTQgLTExNSAtMTkgLTIyIC02IC01OCAtMTUgLTgwIC0yMSAtNzggLTIwIC0yMjEgLTgzIC0zMTAgLTEzNSAtNDkgLTMwIC05NiAtNTIgLTEwNSAtNTEgLTEwIDIgLTE2IDE3IC0xOCA0MyAtNyA3OSAyNCA3NSAtNTEyIDc1IC00NDkgMCAtNDc4IC0xIC00OTMgLTE4IC0xNiAtMTcgLTE3IC0xNTggLTE3IC0xODI0IDAgLTE0OTEgMiAtMTgwNyAxMyAtMTgxNyAxOSAtMTUgMTAzNCAtMTYgMTA1MyAwIDExIDkgMTQgMTg4IDE4IDEwMzcgNCA5ODAgOCAxMTMxIDM2IDEyNjYgNDAgMTk5IDE0OCAzMzcgMzMwIDQyMiAxOSA5IDQ2IDIxIDU5IDI4IDE0IDYgNzcgMTEgMTU1IDExIDEyNyAwIDEzMyAtMSAxOTcgLTMyIDExNCAtNTYgMTk4IC0xNTAgMjQ0IC0yNzMgOSAtMjUgMjAgLTU0IDI1IC02NSAxNiAtNDMgMjkgLTkzIDQwIC0xNjAgNiAtMzggMTYgLTk0IDIxIC0xMjQgNSAtMzEgOSAtNDkzIDkgLTEwNzAgMSAtODI5IDMgLTEwMTkgMTQgLTEwMzMgMTIgLTE3IDUwIC0xOCA1MzMgLTE4IDQ0MiAwIDUyMiAyIDUzMyAxNCAxNyAyMSA4IDIzMTcgLTkgMjQyNiAtNjEgMzgyIC0xMDEgNDk4IC0yNDQgNzE1IC03NCAxMTIgLTI2MiAzMDAgLTM3MiAzNzQgLTc5IDUyIC0yOTkgMTY0IC0zNTkgMTgzIC0yMTIgNjYgLTQ0NSA5MCAtNjQ2IDY2eiIvPjxwYXRoIGQ9Ik0zODU1IDUyNjQgYy0xNSAtMTUgLTE2IC0xMTYgLTEyIC0xMTk4IDIgLTg4OCA2IC0xMTk3IDE2IC0xMjQ2IDcgLTM2IDE3IC05MCAyMiAtMTIwIDI3IC0xNDggNzcgLTI5NiAxNTAgLTQ0NSAxNTEgLTMwNyA0NjggLTU3MSA4MzQgLTY5MyAxMzcgLTQ1IDI0MSAtNjIgNDM1IC03MCAzMjggLTE0IDUyMyAzMiA3MjYgMTcwIDM5IDI2IDc3IDQ4IDg1IDQ4IDkgMCAyNCAtMjIgMzYgLTUwIGwyMSAtNTAgNDgxIDAgYzQ2NSAwIDQ4MSAxIDQ5MSAxOSA3IDEzIDEwIDU5OCAxMCAxODE5IDAgMTczMCAtMSAxODAwIC0xOCAxODE1IC0xNyAxNSAtNjggMTcgLTUyMyAxNyAtNDIwIDAgLTUwOCAtMiAtNTI1IC0xNCAtMTkgLTE0IC0xOSAtNDAgLTI1IC0xMDkzIC01IC0xMDQ5IC02IC0xMDgwIC0yNiAtMTE2MyAtNDkgLTE5OSAtOTMgLTI5MSAtMTgzIC0zODAgLTEwNCAtMTA0IC0xODIgLTEzMyAtMzY2IC0xMzIgLTEzNSAwIC0yMTIgMTkgLTI5MSA3MyAtOTcgNjcgLTE4NiAyMTkgLTIyNSAzODQgLTI4IDEyMCAtMzEgMjAyIC0zNyAxMjI2IC01IDg4MiAtOCAxMDY5IC0yMCAxMDgyIC0xMiAxNSAtNjIgMTcgLTUyNyAxNyAtNDYwIDAgLTUxNCAtMiAtNTI5IC0xNnoiLz48cGF0aCBkPSJNMTkyNDcgNTI2MiBjLTE2IC0xNyAtMTcgLTEwOSAtMTcgLTExMTggMCAtMTA1MiA1IC0xMjQ5IDMxIC0xMzg0IDM1IC0xODIgNjEgLTI3NiAxMDIgLTM3NSA0NCAtMTA3IDc4IC0xNzYgMTA5IC0yMjIgMTUgLTIzIDI4IC00NSAyOCAtNDggMCAtMTQgMTIyIC0xNTQgMTkxIC0yMjAgMjAwIC0xODkgNDk1IC0zMzUgNzc0IC0zODQgMjA1IC0zNiA1NTcgLTI2IDY3MyAyMCAxMyA1IDMwIDkgMzkgOSAzNyAwIDI4OSAxMzggMzA4IDE2OSAxMSAxOCA0NSAtNyA0NSAtMzMgMCAtMTIgMTAgLTMyIDIzIC00NCAyMyAtMjIgMjQgLTIyIDQ5NSAtMjIgNDU2IDAgNDcyIDEgNDgyIDE5IDcgMTMgMTAgNTk4IDEwIDE4MTkgMCAxNzMwIC0xIDE4MDAgLTE4IDE4MTUgLTE3IDE1IC02OCAxNyAtNTIzIDE3IC00MjAgMCAtNTA4IC0yIC01MjUgLTE0IC0xOSAtMTQgLTE5IC00MCAtMjUgLTEwODggLTcgLTExMTkgLTYgLTExMDAgLTQ4IC0xMjQ4IC01IC0xOSAtMTMgLTQ2IC0xNiAtNjAgLTI5IC0xMTIgLTExMyAtMjM3IC0xOTYgLTI5MiAtOTUgLTYyIC0xNjYgLTgxIC0zMDkgLTgxIC0xNDcgMCAtMjIzIDIxIC0zMDYgODQgLTEyNiA5NiAtMTkzIDIzNSAtMjM5IDQ5NCAtMTIgNjYgLTE1IDI2NiAtMTUgMTEyMCAwIDkyNSAtMiAxMDQzIC0xNiAxMDYzIGwtMTUgMjIgLTUxMyAwIGMtNDg0IDAgLTUxNCAtMSAtNTI5IC0xOHoiLz48cGF0aCBkPSJNMjc1NDAgMzAxNSBjLTk4IC0yMyAtMTg3IC02MCAtMjYwIC0xMDkgLTk5IC02NiAtMjA4IC0xODkgLTI0OSAtMjgxIC03IC0xNiAtMTcgLTM4IC0yMiAtNDcgLTUgLTEwIC05IC0yNSAtOSAtMzMgMCAtOCAtNCAtMjMgLTkgLTMzIC0yOCAtNTUgLTQxIC0yNTggLTIwIC0zMzYgNiAtMjIgMTUgLTU5IDIxIC04MSAxNyAtNjYgODQgLTE5NyAxMzEgLTI1MyA1MiAtNjMgMTcwIC0xNTQgMjQyIC0xODggMTE3IC01NCAxODIgLTY4IDMyMCAtNjggMTA3IDAgMTQyIDQgMjAwIDIyIDE2NiA1MyAzMDAgMTUwIDM5MiAyODQgOTkgMTQzIDEyNCAyMjcgMTI0IDQxMyAxIDE4NCAtMjQgMjY5IC0xMjQgNDEzIC01MyA3NyAtMTQ0IDE2NyAtMTkzIDE5MiAtMTYgOCAtNDAgMjIgLTU0IDMxIC0xMTEgNzMgLTM0MiAxMDggLTQ5MCA3NHoiLz48L2c+PC9zdmc+) no-repeat center/contain}
+
+  header{padding:18px 0 0;text-align:center}
+  header .logo{width:124px;height:25px}
+  header .cstag{display:block;margin-top:9px;font-family:var(--mono);font-size:9.5px;font-weight:500;
+    letter-spacing:.3em;text-transform:uppercase;color:var(--gray)}
+  @media(max-width:640px){header{padding:11px 0 0}header .logo{width:104px;height:21px}}
+
+  .hero{text-align:center;padding:34px 0 8px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--gray);display:inline-block}
+  .eyebrow::before{content:"";display:inline-block;width:16px;height:2px;background:var(--spectrum);
+    border-radius:1px;margin-right:9px;vertical-align:middle}
+  h1{font-size:clamp(30px,5.2vw,50px);font-weight:700;letter-spacing:-.045em;line-height:.98;
+    margin:20px auto 0;max-width:19ch}
+  h1.sec{font-size:clamp(19px,2.6vw,26px);font-weight:600;color:var(--gray);letter-spacing:-.02em;
+    line-height:1.2;margin-top:16px;max-width:24ch}
+  .lede{margin:20px auto 0;font-size:16.5px;color:var(--gray);max-width:50ch}
+  .terms{margin:16px auto 0;font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--gray2)}
+  @media(max-width:640px){.hero{padding:22px 0 4px}}
+
+  /* the floating card the funnel puts its widget in */
+  .card{max-width:900px;width:calc(100% - 48px);margin:24px auto 0;background:var(--paper);
+    border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 44px rgba(10,10,10,.10);
+    overflow:hidden;padding:26px 22px}
+  .card .inner{max-width:560px;margin:0 auto}
+  .cardhead{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--gray);text-align:center;margin-bottom:20px}
+
+  .field{margin-bottom:16px}
+  .field label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--gray);margin-bottom:7px}
+  .field .opt{text-transform:none;letter-spacing:0;color:var(--gray2)}
+  .field input{width:100%;font-family:var(--sans);font-size:15px;color:var(--ink);background:#fff;
+    border:1px solid var(--line);border-radius:9px;padding:12px 14px;transition:border-color .15s}
+  .field input:focus{outline:none;border-color:var(--blue)}
+  .consent{display:flex;gap:11px;align-items:flex-start;margin:6px 0 18px;padding:14px;
+    background:var(--soft);border-radius:8px}
+  .consent input{margin-top:3px;width:16px;height:16px;flex:0 0 auto;accent-color:var(--blue)}
+  .consent label{font-size:12.5px;color:var(--gray);line-height:1.5}
+  .consent a{color:var(--ink);text-decoration:underline}
+  .assure{margin:8px 0 18px;font-size:14px;color:var(--gray)}
+  .assure div{margin:6px 0}
+  .btn{display:block;width:100%;background:var(--blue);color:#fff;font-family:var(--sans);font-size:15px;
+    font-weight:600;padding:14px;border:1px solid var(--blue);border-radius:9px;cursor:pointer;
+    text-align:center;transition:background .15s,border-color .15s}
+  .btn:hover{background:var(--blue-dark);border-color:var(--blue-dark)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-ghost{background:transparent;color:var(--blue);border:1px solid var(--blue)}
+  .btn-ghost:hover{background:rgba(24,139,246,.07)}
+  .disclaim{margin-top:14px;font-size:12px;color:var(--gray2);line-height:1.5}
+  .err{min-height:1.2em;margin:0 0 10px;font-size:13px;color:#9b1c1c}
+
+  section.next{margin-top:52px}
+  .next h2{font-size:clamp(22px,3vw,28px);font-weight:700;letter-spacing:-.03em;text-align:center}
+  .next .sub{margin:10px auto 0;color:var(--gray);font-size:15.5px;max-width:46ch;text-align:center}
+  #roadmap{margin-top:22px}
+  #roadmap h2{font-size:20px;text-align:left}
+  #roadmap ol{margin:16px 0 0;padding-left:20px;color:var(--gray)}
+  #roadmap li{margin:0 0 12px;color:var(--ink);font-size:15px}
+  #roadmap .hint{font-size:13px;color:var(--gray2);margin-top:4px;line-height:1.45}
+  #roadmap .sub{text-align:left;margin-left:0}
+  #roadmap .btn{margin-top:20px}
+  #file-pull{margin-top:22px}
+  #file-pull h2{font-size:20px}
+
+  /* trust marquee — funnel 04b */
+  .marq{margin-top:56px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    overflow:hidden;padding:13px 0;background:rgba(252,252,252,.7)}
+  .marq-track{display:flex;width:max-content;animation:marq 42s linear infinite}
+  .marq-set{display:flex;align-items:center}
+  .marq-set span{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--gray);white-space:nowrap;padding:0 16px}
+  .marq-set i{width:10px;height:2px;background:var(--spectrum);border-radius:1px;flex:0 0 auto}
+  @keyframes marq{to{transform:translateX(-50%)}}
+  .marq:hover .marq-track{animation-play-state:paused}
+  @media(prefers-reduced-motion:reduce){.marq-track{animation:none}}
+
+  footer{position:relative;padding:34px 0 40px;overflow:hidden}
+  .disc{font-size:12px;color:var(--gray2);line-height:1.6;max-width:70ch;margin:0 auto;text-align:center}
+  .disc p{margin-bottom:9px}
+  .foot-bottom{margin-top:18px;text-align:center;font-size:12px;color:var(--gray)}
+  .foot-bottom a{text-decoration:underline}
+  .sysline{margin-top:14px;text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--gray2)}
+  .pulse{display:inline-block;width:6px;height:6px;border-radius:50%;background:#A8D8B0;margin-right:7px;
+    animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{50%{opacity:.35}}
+  @media(prefers-reduced-motion:reduce){.pulse{animation:none}}
+  .ghost-mark{position:absolute;left:0;right:0;bottom:-8px;z-index:-1;pointer-events:none}
+  .ghost-mark .logo{display:block;width:92vw;aspect-ratio:2698/543;margin:0 auto;opacity:.045}
+
+  /* ── Audit: black-report layer. Ink only, no colour. Mono column heads,
+     1.5px ink rules over hairline separators, black square row numbers.
+     Same parts the UnderwriteIQ black report prints. ────────────────── */
+  .colhead{display:flex;gap:12px;align-items:baseline;margin-top:24px;padding-top:8px;padding-bottom:7px;
+    border-top:1.5px solid var(--ink);font-family:var(--mono);font-size:10px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--gray2)}
+  .colhead .grow{flex:1}
+  .frow{border-top:1px solid var(--line);padding:20px 0 22px;text-align:left}
+  .frow:first-of-type{border-top:none}
+  .frowtop{display:flex;gap:12px;align-items:flex-start}
+  .sq{flex:0 0 auto;width:22px;height:22px;background:var(--ink);color:#fff;font-family:var(--mono);
+    font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+  .rowname{font-size:17px;font-weight:600;letter-spacing:-.01em;line-height:1.35}
+  .rowmeta{margin-top:5px;font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;
+    text-transform:uppercase;color:var(--gray);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .rowmeta .sep{color:var(--line)}
+  .tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+    border:1px solid var(--ink);padding:2px 7px;color:var(--ink);white-space:nowrap}
+  .tag.solid{background:var(--ink);color:#fff}
+  .pair{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);margin-top:16px}
+  .pair > div{padding:12px 14px}
+  .pair > div + div{border-left:1px solid var(--line)}
+  .pair .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gray2)}
+  .pair .v{margin-top:6px;font-family:var(--mono);font-size:13px;color:var(--ink);line-height:1.45}
+  @media(max-width:560px){.pair{grid-template-columns:1fr}.pair>div+div{border-left:none;border-top:1px solid var(--line)}}
+  .reason{margin-top:14px;font-size:14.5px;color:var(--gray);line-height:1.6;max-width:60ch}
+  .laws{margin-top:14px;border-left:1.5px solid var(--ink);padding:2px 0 2px 13px}
+  .laws .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gray2)}
+  .laws .l{font-family:var(--mono);font-size:12px;color:var(--ink);margin-top:5px;line-height:1.5}
+  .laws .l.soft{color:var(--gray)}
+  .sourceline{margin-top:22px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+    color:var(--gray2);line-height:1.7;text-align:left}
+  .astep{margin-top:44px;padding-top:28px;border-top:1px solid var(--line);text-align:left}
+  .stepno{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gray2)}
+  .astep h3{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-top:9px}
+  .astep .sub{margin-top:8px;color:var(--gray);font-size:15px;max-width:56ch;text-align:left}
+  .letters{margin-top:20px;border-top:1.5px solid var(--ink)}
+  .letter{display:flex;gap:14px;align-items:flex-start;padding:15px 0;border-bottom:1px solid var(--line)}
+  .letter .to{flex:0 0 118px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--gray2);padding-top:3px}
+  .letter .t{font-size:15.5px;font-weight:600;letter-spacing:-.01em}
+  .letter .w{margin-top:4px;font-size:14px;color:var(--gray);line-height:1.55;max-width:52ch}
+  @media(max-width:560px){.letter{flex-direction:column;gap:5px}.letter .to{flex:none}}
+  .path{margin-top:24px;position:relative;padding-left:30px}
+  .path::before{content:"";position:absolute;left:6px;top:8px;bottom:34px;width:1.5px;background:var(--ink)}
+  .stn{position:relative;padding:0 0 30px}
+  .stn::before{content:"";position:absolute;left:-30px;top:5px;width:13px;height:13px;background:var(--ink)}
+  .stn.open::before{background:var(--paper);border:1.5px solid var(--ink)}
+  .stn.end::before{background:var(--ink);box-shadow:0 0 0 4px var(--paper),0 0 0 5.5px var(--ink)}
+  .stn .when{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink);font-weight:500}
+  .stn.open .when{color:var(--gray2)}
+  .stn .what{margin-top:6px;font-size:16px;font-weight:600;letter-spacing:-.01em}
+  .stn .why{margin-top:6px;font-size:14.5px;color:var(--gray);line-height:1.6;max-width:54ch}
+  .stn .atk{margin-top:9px;font-family:var(--mono);font-size:11px;color:var(--gray);line-height:1.75}
+  .stn .set{margin-top:9px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--gray2)}
+  .verdict{margin-top:22px;background:var(--ink);color:#fff;padding:26px;border-radius:2px}
+  .verdict .k{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#8a8a8a}
+  .verdict .h{margin-top:11px;font-size:21px;font-weight:700;letter-spacing:-.02em;line-height:1.3;max-width:30ch}
+  .verdict p{margin-top:14px;font-size:15.5px;color:#D4D4D8;line-height:1.65;max-width:56ch}
+  .blockers{margin-top:22px;border-top:1px solid #26262B}
+  .blk{display:flex;gap:13px;padding:15px 0;border-bottom:1px solid #26262B;align-items:flex-start}
+  .blk .n{flex:0 0 auto;width:22px;height:22px;border:1.5px solid #52525B;color:#fff;font-family:var(--mono);
+    font-size:11px;display:flex;align-items:center;justify-content:center}
+  .blk .x{font-size:15px;color:#E4E4E7;line-height:1.55}
+  .release{margin-top:22px;font-size:17px;font-weight:600;color:#fff;letter-spacing:-.01em;
+    line-height:1.45;max-width:40ch}
+  .blank{margin-top:20px;border:1px solid var(--line);background:var(--soft);padding:16px 18px;text-align:left}
+  .blank .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gray2)}
+  .blank .v{margin-top:7px;font-size:14.5px;color:var(--gray);line-height:1.6;max-width:58ch}
+  .blank .v b{color:var(--ink);font-weight:600}
+  .hand{margin-top:20px;border-top:1.5px solid var(--ink)}
+  .hand .h{display:flex;gap:14px;padding:15px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+  .hand .n{flex:0 0 auto;width:22px;height:22px;background:var(--ink);color:#fff;font-family:var(--mono);
+    font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .hand .x{font-size:15.5px;line-height:1.55;max-width:54ch}
+  .say{margin-top:20px;font-size:16px;line-height:1.6;max-width:56ch;text-align:left}
+
+  .pullbox{margin-top:22px;border:1px solid var(--ink);border-radius:12px;padding:24px 22px;background:#fff;text-align:left}
+  .pullbox .k{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--blue)}
+  .pullbox h3{margin-top:10px;font-size:19px;font-weight:700;letter-spacing:-.02em;line-height:1.3;max-width:34ch}
+  .pullbox .sub{margin-top:10px;max-width:56ch}
+  .widgetslot{margin-top:18px}
+  .onhold{margin-top:18px;border-left:2px solid var(--blue);background:var(--soft);padding:13px 15px}
+  .onhold .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gray2)}
+  .onhold .v{margin-top:6px;font-size:14.5px;color:var(--gray);line-height:1.6;max-width:56ch}
+</style>
+</head>
+<body>
+<header>
+  <span class="logo" role="img" aria-label="fundhub"></span>
+  <span class="cstag">Credit Solutions</span>
+</header>
+
+<main>
+  <div class="wrap">
+    <section class="hero">
+      <span class="eyebrow">Credit file audit</span>
+      <h1>Know exactly what is on your file.</h1>
+      <h1 class="sec">And exactly which rules it breaks.</h1>
+      <p class="lede">Fundhub Credit Solutions LLC reads your credit file line by line, names the rule
+        behind every problem it finds, and shows you the law it sits on. Book the call below &mdash;
+        name and phone are optional.</p>
+      <p class="terms">30 minutes &middot; by phone &middot; no cost</p>
+    </section>
+  </div>
+
+  <form class="card" id="opt" novalidate>
+    <div class="inner">
+      <div class="cardhead">Your details &mdash; optional</div>
+      <div class="field">
+        <label for="first">First name <span class="opt">(optional)</span></label>
+        <input id="first" name="first_name" type="text" autocomplete="given-name" placeholder="First">
+      </div>
+      <div class="field">
+        <label for="last">Last name <span class="opt">(optional)</span></label>
+        <input id="last" name="last_name" type="text" autocomplete="family-name" placeholder="Last">
+      </div>
+      <div class="field">
+        <label for="phone">Mobile <span class="opt">(optional)</span></label>
+        <input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="(555) 555-5555">
+      </div>
+      <div class="consent">
+        <input type="checkbox" id="sms" name="sms_consent">
+        <label for="sms">I agree to receive SMS from Fundhub Credit Solutions LLC about my call.
+          Msg &amp; data rates may apply. Msg frequency varies. Reply STOP to opt out, HELP for help.
+          See our <a href="/privacy/">Privacy Policy</a> and <a href="/terms/">Terms</a>.</label>
+      </div>
+      <div class="assure">
+        <div>&mdash; Your audit is built from your own file, never a template.</div>
+        <div>&mdash; Booking the call costs nothing.</div>
+      </div>
+      <a class="btn" id="book" href="https://apply.fundhub.ai/schedule/phonecall">Book a call</a>
+      <p class="disclaim">By booking, you confirm you are the subscriber or authorized user of the
+        phone number entered. Fundhub Credit Solutions LLC does not repair credit or contact
+        bureaus on your behalf.</p>
+    </div>
+  </form>
+
+  <section class="next">
+    <div class="wrap">
+      <h2>Audit</h2>
+      <p class="sub">The audit is the work &mdash; it is not an add-on. The only choice is when.
+        Start it now and it is ready before we speak, or we do it together on the call.</p>
+    </div>
+    <form class="card" id="audit" novalidate>
+      <div class="inner">
+        <div class="field">
+          <label for="email">Email address</label>
+          <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com" required>
+        </div>
+        <p class="err" id="audit-err" role="alert" hidden></p>
+        <button class="btn" id="audit-btn" type="submit">Pay for Audit</button>
+      </div>
+    </form>
+    <div class="card">
+      <div class="inner">
+        <button class="btn btn-ghost" id="roadmap-btn" type="button">See Audit roadmap</button>
+        <div id="roadmap" hidden></div>
+        <div id="file-pull"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="marq" aria-hidden="true">
+    <div class="marq-track">
+      <div class="marq-set"><span>Fair Credit Reporting Act &middot; 15 U.S.C. &sect; 1681</span><i></i><span>You have the right to dispute what is inaccurate</span><i></i><span>Bureaus must investigate &mdash; 30 days</span><i></i><span>Unverifiable information must be deleted or corrected</span><i></i><span>If it cannot be verified, it stops being reported</span><i></i><span>Every finding cited to the law it breaks</span><i></i><span>Escalation to the CFPB and your state Attorney General</span><i></i><span>No score promises &middot; no guarantees</span><i></i></div>
+      <div class="marq-set"><span>Fair Credit Reporting Act &middot; 15 U.S.C. &sect; 1681</span><i></i><span>You have the right to dispute what is inaccurate</span><i></i><span>Bureaus must investigate &mdash; 30 days</span><i></i><span>Unverifiable information must be deleted or corrected</span><i></i><span>If it cannot be verified, it stops being reported</span><i></i><span>Every finding cited to the law it breaks</span><i></i><span>Escalation to the CFPB and your state Attorney General</span><i></i><span>No score promises &middot; no guarantees</span><i></i></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="disc">
+      <p><strong>PLEASE NOTE:</strong> Fundhub Credit Solutions LLC is not a law firm, a bank, or a
+        lender. Nothing on this page is legal advice, and no outcome is guaranteed.</p>
+      <p>The rights described above are set out in the Fair Credit Reporting Act, 15 U.S.C. &sect; 1681.
+        You may exercise every one of them yourself, at no cost, without hiring anyone.</p>
+    </div>
+    <div class="foot-bottom">&copy; 2026 FUNDHUB CREDIT SOLUTIONS LLC. All rights reserved.
+      &nbsp;&middot;&nbsp; <a href="/privacy/">Privacy Policy</a>
+      &nbsp;&middot;&nbsp; <a href="/terms/">Terms of Service</a></div>
+    <div class="sysline"><span class="pulse"></span>systems nominal &middot; fundhub.ai</div>
+  </div>
+  <div class="ghost-mark" aria-hidden="true"><span class="logo"></span></div>
+</footer>
+
+  <script>
+    (function () {
+      var BOOK = "https://apply.fundhub.ai/schedule/phonecall";
+      var book = document.getElementById("book");
+      var audit = document.getElementById("audit");
+      var auditBtn = document.getElementById("audit-btn");
+      var auditErr = document.getElementById("audit-err");
+      var filePull = document.getElementById("file-pull");
+      var roadmapBtn = document.getElementById("roadmap-btn");
+      var roadmapBox = document.getElementById("roadmap");
+      book.addEventListener("click", function (e) {
+        e.preventDefault();
+        location.assign(BOOK);
+      });
+      fetch("/api/public/optimize", { headers: { accept: "application/json" } })
+        .then(function (r) { return r.json(); })
+        .then(function (cfg) {
+          if (cfg && cfg.bookUrl) BOOK = cfg.bookUrl;
+          book.setAttribute("href", BOOK);
+          if (cfg && cfg.audit && cfg.audit.ready === false) {
+            auditBtn.disabled = true;
+            auditErr.hidden = false;
+            auditErr.textContent = "Audit checkout is not ready yet.";
+          }
+          renderPullStep(cfg && cfg.smartCredit ? cfg.smartCredit : null);
+        })
+        .catch(function () { renderPullStep(null); });
+      audit.addEventListener("submit", function (e) {
+        e.preventDefault();
+        auditErr.hidden = true;
+        auditBtn.disabled = true;
+        fetch("/api/public/optimize", {
+          method: "POST",
+          headers: { "content-type": "application/json", accept: "application/json" },
+          body: JSON.stringify({
+            first_name: document.getElementById("first").value,
+            last_name: document.getElementById("last").value,
+            phone: document.getElementById("phone").value,
+            email: document.getElementById("email").value,
+            sms_consent: document.getElementById("sms").checked
+          })
+        })
+          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+          .then(function (out) {
+            if (out.j && out.j.checkoutUrl) {
+              location.assign(out.j.checkoutUrl);
+              return;
+            }
+            auditBtn.disabled = false;
+            auditErr.hidden = false;
+            auditErr.textContent = "Could not start Audit. Try again.";
+          })
+          .catch(function () {
+            auditBtn.disabled = false;
+            auditErr.hidden = false;
+            auditErr.textContent = "Could not start Audit. Try again.";
+          });
+      });
+      roadmapBtn.addEventListener("click", function () {
+        roadmapBtn.disabled = true;
+        fetch("/api/public/optimize?view=roadmap", { headers: { accept: "application/json" } })
+          .then(function (r) { return r.json(); })
+          .then(function (plan) {
+            roadmapBtn.disabled = false;
+            if (!plan || !plan.ok) return;
+            renderRoadmap(plan);
+          })
+          .catch(function () { roadmapBtn.disabled = false; });
+      });
+      /* ── The Audit, drawn from what the engine really returns. ──────────
+         Every row, reason, statute and Metro 2 reference below comes from
+         buildOptimizeRoadmap(). Nothing here is written by hand and nothing is
+         filled in when the data is missing — a blank is left, and labelled. */
+      function el(tag, cls, text) {
+        var n = document.createElement(tag);
+        if (cls) n.className = cls;
+        if (text != null) n.textContent = text;
+        return n;
+      }
+      function stepHead(no, title, sub) {
+        var sec = el("section", "astep");
+        sec.appendChild(el("div", "stepno", "Step " + no + " of 5"));
+        sec.appendChild(el("h3", null, title));
+        if (sub) sec.appendChild(el("p", "sub", sub));
+        return sec;
+      }
+      function renderRoadmap(plan) {
+        roadmapBox.hidden = false;
+        roadmapBox.replaceChildren();
+        var findings = plan.findings || [];
+        var rounds = plan.rounds || [];
+
+        var head = el("section", "astep");
+        head.style.borderTop = "1.5px solid var(--ink)";
+        head.appendChild(el("div", "eyebrow", "Audit roadmap"));
+        head.appendChild(el("h3", null, "Here is the path, with dates on it."));
+        head.appendChild(el("p", "sub", findings.length
+          ? findings.length + " " + (findings.length === 1 ? "line" : "lines") +
+            " on your file are being reported in a way the law does not allow. Below is what they " +
+            "are, how they come off, and when. Where a date is fixed by law we print it. Where it " +
+            "is not, we leave it blank and say so."
+          : "No reportable findings came back on this file."));
+        roadmapBox.appendChild(head);
+
+        /* ── Step 1 — the law these accounts are breaking ───────────────── */
+        var s1 = stepHead(1, "The law these accounts are breaking",
+          "Not an opinion about your accounts. Each row names the rule it breaks, what the file " +
+          "actually says, what the rulebook requires instead, and the law behind it.");
+        var ch = el("div", "colhead");
+        var chn = el("span", null, "#"); chn.style.width = "22px";
+        ch.appendChild(chn);
+        ch.appendChild(el("span", "grow", "Item \u00b7 rule \u00b7 law"));
+        ch.appendChild(el("span", null, "Severity"));
+        s1.appendChild(ch);
+
+        findings.forEach(function (f, i) {
+          var row = el("div", "frow");
+          var top = el("div", "frowtop");
+          top.appendChild(el("div", "sq", String(i + 1).padStart(2, "0")));
+          var idbox = el("div");
+          idbox.appendChild(el("div", "rowname",
+            [f.creditor, f.account_last4 ? "ending " + f.account_last4 : ""]
+              .filter(Boolean).join(" \u00b7 ") || "This account"));
+          var meta = el("div", "rowmeta");
+          [f.bureau, f.field ? "Field " + f.field : "", f.rule_id ? "Rule " + f.rule_id : ""]
+            .filter(Boolean).forEach(function (bit, n) {
+              if (n) meta.appendChild(el("span", "sep", "/"));
+              meta.appendChild(el("span", null, bit));
+            });
+          if (f.severity) {
+            var sev = el("span", "tag" + (f.severity === "moderate" || f.severity === "high" ? " solid" : ""),
+              f.severity);
+            meta.appendChild(sev);
+          }
+          idbox.appendChild(meta);
+          top.appendChild(idbox);
+          row.appendChild(top);
+
+          if (f.observed != null || f.expected != null) {
+            var pair = el("div", "pair");
+            var a = el("div");
+            a.appendChild(el("div", "k", "What the file says"));
+            a.appendChild(el("div", "v", f.observed == null ? "\u2014" : String(f.observed)));
+            var b = el("div");
+            b.appendChild(el("div", "k", "What is required"));
+            b.appendChild(el("div", "v", f.expected == null ? "\u2014" : String(f.expected)));
+            pair.appendChild(a); pair.appendChild(b);
+            row.appendChild(pair);
+          }
+          if (f.reason) row.appendChild(el("p", "reason", f.reason));
+
+          var cites = (f.citations || []).slice();
+          if (cites.length || f.metro2Ref) {
+            var laws = el("div", "laws");
+            laws.appendChild(el("div", "k", "Law relied on"));
+            cites.forEach(function (c) { laws.appendChild(el("div", "l", c)); });
+            if (!cites.length) {
+              laws.appendChild(el("div", "l soft",
+                "No court ruling is on file for this rule. We say so rather than reach for one."));
+            }
+            if (f.metro2Ref) laws.appendChild(el("div", "l soft", "Metro 2 \u2014 " + f.metro2Ref));
+            row.appendChild(laws);
+          }
+          s1.appendChild(row);
+        });
+
+        var srcline = el("div", "sourceline");
+        srcline.appendChild(document.createTextNode(plan.source === "sample"
+          ? "Source \u2014 one stored sample file, so you can see the shape of it."
+          : "Source \u2014 your own file."));
+        srcline.appendChild(document.createElement("br"));
+        srcline.appendChild(document.createTextNode(plan.source === "sample"
+          ? "Your own rows are built the same way, from your own file, and they will not look like these."
+          : "Every row above was read off that file, not typed by anyone."));
+        s1.appendChild(srcline);
+        roadmapBox.appendChild(s1);
+
+        /* ── Step 2 — how they come off ─────────────────────────────────── */
+        var s2 = stepHead(2, "How they come off",
+          "Letters, in a set order. Each one is written from the rows above, so every letter names " +
+          "a different rule and a different line. You sign and send every one \u2014 we do not " +
+          "contact the bureaus for you.");
+        var lwrap = el("div", "letters");
+        var seen = {};
+        rounds.forEach(function (r) {
+          if (seen[r.title]) return;
+          seen[r.title] = true;
+          var L = el("div", "letter");
+          L.appendChild(el("div", "to", "To the bureau"));
+          var body = el("div");
+          body.appendChild(el("div", "t", r.title));
+          if (r.when) body.appendChild(el("div", "w", r.when));
+          L.appendChild(body);
+          lwrap.appendChild(L);
+        });
+        s2.appendChild(lwrap);
+        roadmapBox.appendChild(s2);
+
+        /* ── Step 3 — how long it takes ─────────────────────────────────── */
+        var s3 = stepHead(3, "How long it takes",
+          rounds.length + " rounds. One date on this path is fixed by law, so we can print it now. " +
+          "The rest get set on the call, once we know how the bureau answered.");
+        var path = el("div", "path");
+
+        var st1 = el("div", "stn");
+        st1.appendChild(el("div", "when", "Day 0 \u00b7 the day we mail"));
+        st1.appendChild(el("div", "what", (rounds[0] && rounds[0].title) || "Round 1 goes out"));
+        st1.appendChild(el("div", "why",
+          "Every row above goes out in one mailing, each naming its own rule and its own line in the rulebook."));
+        var atk = (rounds[0] && rounds[0].attacks) || [];
+        if (atk.length) {
+          var ab = el("div", "atk");
+          atk.forEach(function (a, i) {
+            if (i) ab.appendChild(document.createElement("br"));
+            ab.appendChild(document.createTextNode(a));
+          });
+          st1.appendChild(ab);
+        }
+        st1.appendChild(el("div", "set", "Date set by us \u2014 we pick it with you on the call"));
+        path.appendChild(st1);
+
+        var st2 = el("div", "stn");
+        st2.appendChild(el("div", "when", "Day 30 + mail time"));
+        st2.appendChild(el("div", "what", (rounds[1] && rounds[1].title) || "Round 2"));
+        st2.appendChild(el("div", "why",
+          "The bureau has 30 days to answer Round 1. On day 31, if it came back verified, " +
+          "unchanged, or not at all, Round 2 goes out."));
+        st2.appendChild(el("div", "set", "Date set by law \u2014 FCRA \u00a7 1681i(a)(1), the 30-day window"));
+        path.appendChild(st2);
+
+        if (rounds.length > 2) {
+          var st3 = el("div", "stn open");
+          st3.appendChild(el("div", "when", "Date set on the call"));
+          st3.appendChild(el("div", "what", (rounds[2] && rounds[2].title) || "Round 3"));
+          st3.appendChild(el("div", "why",
+            "Goes out once Round 2 comes back. The law puts no clock on this step, so we will not " +
+            "print a day we cannot stand behind."));
+          path.appendChild(st3);
+        }
+        if (rounds.length > 3) {
+          var st4 = el("div", "stn open");
+          st4.appendChild(el("div", "when", "Date set on the call"));
+          st4.appendChild(el("div", "what",
+            "Rounds " + rounds.slice(3).map(function (r) { return r.step.replace("R", ""); }).join(", ")));
+          st4.appendChild(el("div", "why",
+            "More rounds after the final notice. They exist so a bureau that simply keeps saying " +
+            "\u201cverified\u201d runs out of room. " + rounds.length + " is the cap."));
+          st4.appendChild(el("div", "set",
+            "Unverified \u2014 the plan repeats the earlier letters here rather than adding new ones"));
+          path.appendChild(st4);
+        }
+
+        var stEnd = el("div", "stn end");
+        stEnd.appendChild(el("div", "when", "The end of the path"));
+        stEnd.appendChild(el("div", "what", "Every row above has been answered on the record"));
+        stEnd.appendChild(el("div", "why",
+          "Each row is either corrected, removed, or answered by the bureau in writing with the " +
+          "method it used. That is the day this path is finished. We cannot tell you which of those " +
+          "three each row lands on \u2014 nobody honestly can on day one."));
+        path.appendChild(stEnd);
+        s3.appendChild(path);
+
+        var blank = el("div", "blank");
+        blank.appendChild(el("div", "k", "Why some dates are blank"));
+        var bv = el("div", "v");
+        bv.appendChild(document.createTextNode(
+          "One date on this path is fixed by law and we printed it. The others depend on what the " +
+          "bureau sends back, and we have not had that yet. "));
+        bv.appendChild(el("b", null, "A blank here is us refusing to make one up."));
+        bv.appendChild(document.createTextNode(" On the call we set each one with you."));
+        blank.appendChild(bv);
+        s3.appendChild(blank);
+        roadmapBox.appendChild(s3);
+
+        /* ── Step 4 — what the lender's computer reads today ─────────────── */
+        var s4 = stepHead(4, "What the lender\u2019s computer reads today",
+          "This is the hard part of the page. Read it as a reading of the paperwork, because that " +
+          "is all it is.");
+        var v = el("div", "verdict");
+        v.appendChild(el("div", "k", "Reading the file as it stands"));
+        v.appendChild(el("div", "h",
+          "While " + (findings.length === 1 ? "that line is" : "those " + findings.length + " lines are") +
+          " on the file, the software reads it as not fundable."));
+        v.appendChild(el("p", null,
+          "That is a verdict on a document. Not on you. The software never meets you. It reads this " +
+          "file. It reads what is written, and it says no."));
+        var blk = el("div", "blockers");
+        findings.forEach(function (f, i) {
+          var b = el("div", "blk");
+          b.appendChild(el("div", "n", String(i + 1).padStart(2, "0")));
+          b.appendChild(el("div", "x", f.reason || (f.creditor + " is being reported incorrectly.")));
+          blk.appendChild(b);
+        });
+        v.appendChild(blk);
+        v.appendChild(el("div", "release",
+          "Every one of those is a paperwork problem with a rule behind it. Paperwork problems get fixed."));
+        s4.appendChild(v);
+
+        if (plan.today && plan.today.preapprovalKnown === false) {
+          var nb = el("div", "blank");
+          nb.appendChild(el("div", "k", "One number we are not going to print"));
+          var nv = el("div", "v");
+          nv.appendChild(document.createTextNode("Your file came to us "));
+          nv.appendChild(el("b", null, "without a credit limit"));
+          nv.appendChild(document.createTextNode(
+            " on that account. Without the limit there is no way to work out what you would " +
+            "qualify for. Our own software turns that unknown into a zero \u2014 so printing "));
+          nv.appendChild(el("b", null, "$0"));
+          nv.appendChild(document.createTextNode(
+            " would be showing you a made-up number, not an answer. We are leaving it blank. " +
+            "Pulling that limit is the first thing we do on the call."));
+          nb.appendChild(nv);
+          s4.appendChild(nb);
+        }
+        roadmapBox.appendChild(s4);
+
+        /* ── Step 5 — then we get the file fully fundable ────────────────── */
+        var s5 = stepHead(5, "Then we get the file fully fundable",
+          "You did not come here to borrow from us. Fundhub Credit Solutions LLC does not lend and " +
+          "does not fund. There is already a funder who wants to do this deal \u2014 the file is " +
+          "what is standing in the way.");
+        var hand = el("div", "hand");
+        [
+          "We work the path above until the file reads the way the rules say it should.",
+          "You get every letter, every answer and every date as it happens. Nothing about your file is kept from you.",
+          "Then we\u2019ll talk to your funder, and you\u2019ll be able to get what you want."
+        ].forEach(function (t, i) {
+          var h = el("div", "h");
+          h.appendChild(el("div", "n", String(i + 1).padStart(2, "0")));
+          h.appendChild(el("div", "x", t));
+          hand.appendChild(h);
+        });
+        s5.appendChild(hand);
+        s5.appendChild(el("p", "say",
+          "Fundhub Credit Solutions LLC is not where this ends. We are the part in the middle that " +
+          "gets the paperwork right, so the people who already know you can pick the conversation " +
+          "back up."));
+
+        var again = el("a", "btn");
+        again.id = "roadmap-book";
+        again.href = plan.bookUrl || BOOK;
+        again.textContent = "Book a call";
+        again.style.marginTop = "22px";
+        again.addEventListener("click", function (e) {
+          e.preventDefault();
+          location.assign(plan.bookUrl || BOOK);
+        });
+        s5.appendChild(again);
+        s5.appendChild(el("p", "terms", "30 minutes \u00b7 by phone \u00b7 no cost"));
+        s5.appendChild(el("p", "disclaim",
+          "Nothing on this page is a promise that any item will be removed, that any lender will " +
+          "approve you, or that any number on your file will change."));
+        roadmapBox.appendChild(s5);
+      }
+      /* Always drawn. The widget drops into #cd-signup-widget when the keys are
+         live; until then the same block says the file gets pulled on the call, so
+         the step reads the same either way and never leaves a hole. */
+      function renderPullStep(sc) {
+        filePull.replaceChildren();
+        var box = el("div", "pullbox");
+        box.appendChild(el("div", "k", "Start it now"));
+        box.appendChild(el("h3", null, "Pull your file and the audit is ready before we speak."));
+        box.appendChild(el("p", "sub",
+          "The audit reads your credit file. We can read it now or read it together on the call \u2014 " +
+          "doing it now means we spend the call on what to do about it, not on getting it."));
+        if (sc && sc.clientKey && sc.pid && sc.scriptUrl) {
+          var slot = el("div", "widgetslot");
+          slot.id = "cd-mount";
+          box.appendChild(slot);
+          filePull.appendChild(box);
+          mountFilePull(sc, slot);
+          return;
+        }
+        if (sc && sc.affiliateUrl) {
+          var go = el("a", "btn");
+          go.href = sc.affiliateUrl;
+          go.textContent = "Pull your file";
+          go.setAttribute("target", "_blank");
+          go.setAttribute("rel", "noopener noreferrer");
+          box.appendChild(go);
+          filePull.appendChild(box);
+          return;
+        }
+        var w = el("div", "onhold");
+        w.appendChild(el("div", "k", "On the call"));
+        w.appendChild(el("div", "v",
+          "Right now the file is pulled with you on the call, so bring nothing \u2014 we do it live " +
+          "in the first few minutes and the audit is built from it while we talk."));
+        box.appendChild(w);
+        filePull.appendChild(box);
+      }
+      function mountFilePull(sc, slot) {
+        var h = document.createElement("h2");
+        h.textContent = "Pull your file";
+        var note = document.createElement("p");
+        note.className = "sub";
+        note.textContent = "Optional. Only if you want to.";
+        var pid = document.createElement("input");
+        pid.type = "hidden";
+        pid.name = "PID";
+        pid.value = sc.pid;
+        var box = document.createElement("div");
+        box.id = "cd-signup-widget";
+        box.setAttribute("data-clientkey", sc.clientKey);
+        box.setAttribute("data-memberurl", sc.memberUrl);
+        box.setAttribute("data-productname", sc.productName || "smartcredit");
+        slot.appendChild(pid);
+        slot.appendChild(box);
+        var s = document.createElement("script");
+        s.type = "module";
+        s.async = true;
+        s.defer = true;
+        s.src = sc.scriptUrl;
+        document.body.appendChild(s);
+      }
+    })();
+  </script>
+</body>
+</html>

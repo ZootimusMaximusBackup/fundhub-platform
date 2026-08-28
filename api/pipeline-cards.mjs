@@ -89,6 +89,13 @@ export default async function handler(req, res) {
       return Number.isFinite(n) ? n : null;
     };
 
+    // Cross-rail MOVE is a hand-off, not a copy. Without this the client kept
+    // the old rail's card (Sales / Survey Complete) while also showing on the
+    // destination rail, so one person sat open on two boards.
+    const fromPipelineKey = String(
+      body.from_pipeline_key || body.fromPipelineKey || ""
+    ).trim();
+
     const result = await moveCardToStage(db, {
       orgId,
       clientId: String(body.client_id).trim(),
@@ -116,9 +123,25 @@ export default async function handler(req, res) {
       });
     }
 
+    let clearedFrom = false;
+    if (fromPipelineKey && fromPipelineKey !== pipelineKey) {
+      const cleared = await db.query(
+        `DELETE FROM cards
+           WHERE client_id = $1::uuid
+             AND org_id = $2::uuid
+             AND pipeline_id = (
+               SELECT id FROM pipelines
+                WHERE key = $3 AND org_id = $2::uuid LIMIT 1
+             )`,
+        [String(body.client_id).trim(), orgId, fromPipelineKey]
+      );
+      clearedFrom = (cleared.rowCount || 0) > 0;
+    }
+
     return res.status(200).json({
       ok: true,
       action: "move",
+      cleared_from_pipeline: clearedFrom,
       client_id: String(body.client_id).trim(),
       pipeline_key: pipelineKey,
       stage_key: stageKey,
