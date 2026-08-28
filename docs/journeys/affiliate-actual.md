@@ -25,7 +25,7 @@ flowchart TD
     CAN --> A_read[Reading data — 2 routes]
     CAN --> A_top_level[Everything else — 4 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 171 routes]
+    WHO -->|Yes| CANT[Blocked — 175 routes]
     CANT --> B_auth[Signing in and out — 5 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_brand[brand — 1 blocked]
@@ -48,13 +48,14 @@ flowchart TD
     CANT --> B_read[Reading data — 51 blocked]
     CANT --> B_repair[repair — 5 blocked]
     CANT --> B_social[social — 7 blocked]
-    CANT --> B_staff[staff — 2 blocked]
-    CANT --> B_top_level[Everything else — 34 blocked]
+    CANT --> B_staff[staff — 3 blocked]
+    CANT --> B_top_level[Everything else — 33 blocked]
+    WHO -->|Yes| UNV[UNVERIFIED — 1 route whose gate could not be traced]
 ```
 
 ## What they can reach
 
-**25 of 196 routes.**
+**24 of 200 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -90,7 +91,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**171 of 196 routes.**
+**175 of 200 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -265,14 +266,19 @@ flowchart TD
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
 | `/api/social/settings` | GET, POST | staff, partner |
-| `/api/soft-pull-approve` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/staff/avatar` | GET, POST | any signed-in employee |
 | `/api/staff/monitoring-consent` | POST | owner |
 | `/api/staff/telemetry` | GET | owner, admin, sales_manager |
 | `/api/tasks` | GET, PATCH | staff |
 
 ## UNVERIFIED
 
-_None — every route's gate was traced to its source._
+The gate on these could not be traced from the code, so this page does not claim
+either way whether this journey reaches them. Each one is a question for a human.
+
+| Route | Methods | Who the code lets in |
+|---|---|---|
+| `/api/soft-pull-approve` | GET, POST | — |
 
 ## How to check this yourself
 

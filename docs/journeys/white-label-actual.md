@@ -49,13 +49,14 @@ flowchart TD
     CANT --> B_read[Reading data — 51 blocked]
     CANT --> B_repair[repair — 5 blocked]
     CANT --> B_social[social — 1 blocked]
-    CANT --> B_staff[staff — 2 blocked]
-    CANT --> B_top_level[Everything else — 32 blocked]
+    CANT --> B_staff[staff — 3 blocked]
+    CANT --> B_top_level[Everything else — 31 blocked]
+    WHO -->|Yes| UNV[UNVERIFIED — 1 route whose gate could not be traced]
 ```
 
 ## What they can reach
 
-**55 of 196 routes.**
+**54 of 200 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -121,7 +122,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**141 of 196 routes.**
+**145 of 200 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -266,14 +267,19 @@ flowchart TD
 | `/api/shifts` | GET, POST | staff |
 | `/api/slo-connections` | POST | owner, admin |
 | `/api/social/oauth` | — | staff |
-| `/api/soft-pull-approve` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/staff/avatar` | GET, POST | any signed-in employee |
 | `/api/staff/monitoring-consent` | POST | owner |
 | `/api/staff/telemetry` | GET | owner, admin, sales_manager |
 | `/api/tasks` | GET, PATCH | staff |
 
 ## UNVERIFIED
 
-_None — every route's gate was traced to its source._
+The gate on these could not be traced from the code, so this page does not claim
+either way whether this journey reaches them. Each one is a question for a human.
+
+| Route | Methods | Who the code lets in |
+|---|---|---|
+| `/api/soft-pull-approve` | GET, POST | — |
 
 ## How to check this yourself
 
