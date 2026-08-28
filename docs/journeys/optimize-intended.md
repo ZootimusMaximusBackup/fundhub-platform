@@ -14,7 +14,7 @@ flowchart TD
     PAGE --> NAME{Fill first name, last name, phone?}
     NAME -->|Skip| BOOK[Book a call]
     NAME -->|Optional fill| BOOK
-    BOOK --> CAL[https://apply.fundhub.ai/funding-book-call]
+    BOOK --> CAL[https://apply.fundhub.ai/schedule/phonecall]
     PAGE --> AUDIT[Optional Audit form — email]
     AUDIT --> PAY[Pay for Audit]
     PAY --> COMMAS[Commas checkout on Consulting Services Assessment]
@@ -35,7 +35,7 @@ A referred person. Not staff. Not a client login.
 
 1. `/optimize` and `/optimize.com` show the same page.
 2. First name, last name, and phone are optional. The person can book with those blank.
-3. The Book a call button opens the existing survey calendar: `https://apply.fundhub.ai/funding-book-call`.
+3. The Book a call button opens the Fundhub phonecall calendar: `https://apply.fundhub.ai/schedule/phonecall` (Meeting with Chris, 30 min, One-on-One). Not the funding survey calendar.
 4. Audit is optional. The page says Audit. Checkout uses the keep title **Consulting Services Assessment**. No new Commas product.
 5. See Audit roadmap runs the existing repair brain (Metro 2 findings + round plan) on a stored sample file until a Smart Credit pull exists. It shows on this page. Then they book a call.
 6. Smart Credit / pull-your-file only appears when `CONSUMER_DIRECT_CLIENT_KEY` (or `SMART_CREDIT_CLIENT_KEY`) and `CONSUMER_DIRECT_PID` (or `SMART_CREDIT_PID`) are set. New integrations use the Enrollment Widget.
@@ -54,7 +54,7 @@ A referred person. Not staff. Not a client login.
 
 **Should:** Book a call still opens the calendar.
 
-**How you know:** Leave the three fields blank. Click Book a call. The next URL is `https://apply.fundhub.ai/funding-book-call`.
+**How you know:** Leave the three fields blank. Click Book a call. The next URL is `https://apply.fundhub.ai/schedule/phonecall`.
 
 ### 3. Audit checkout
 
