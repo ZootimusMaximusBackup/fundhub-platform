@@ -35,9 +35,10 @@ flowchart TD
     CAN --> A_read[Reading data — 39 routes]
     CAN --> A_repair[repair — 5 routes]
     CAN --> A_social[social — 6 routes]
-    CAN --> A_top_level[Everything else — 25 routes]
+    CAN --> A_staff[staff — 1 route]
+    CAN --> A_top_level[Everything else — 24 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 62 routes]
+    WHO -->|Yes| CANT[Blocked — 64 routes]
     CANT --> B_auth[Signing in and out — 5 blocked]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_brand[brand — 1 blocked]
@@ -56,11 +57,12 @@ flowchart TD
     CANT --> B_social[social — 1 blocked]
     CANT --> B_staff[staff — 2 blocked]
     CANT --> B_top_level[Everything else — 13 blocked]
+    WHO -->|Yes| UNV[UNVERIFIED — 1 route whose gate could not be traced]
 ```
 
 ## What they can reach
 
-**134 of 196 routes.**
+**135 of 200 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -196,19 +198,20 @@ flowchart TD
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
 | `/api/social/settings` | GET, POST | staff, partner |
-| `/api/soft-pull-approve` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/staff/avatar` | GET, POST | any signed-in employee |
 | `/api/tasks` | GET, PATCH | staff |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
 
 ### Worth knowing
 
+- **1 route is open to any signed-in employee, whatever their role.** That is not a gate on this journey specifically — anyone who can sign in reaches it: `/api/staff/avatar`.
 - **7 routes also accept a shared secret instead of a sign-in** (`DASHBOARD_SECRET`), so a caller holding that value reaches them without being anybody in particular: `/api/dashboard/client`, `/api/dashboard/client-archive`, `/api/dashboard/clients`, `/api/dashboard/kpis`, `/api/dashboard/pipeline`, `/api/dashboard/pipeline-counts`, `/api/dashboard/seed`.
 - **15 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/contracts/sign`, `/api/health`, `/api/public/affiliate-click`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/unsubscribe`. These are the sign-in routes and the health check.
 - **5 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/education-enroll` (provider signature), `/api/public/survey-submit` (provider signature), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**62 of 196 routes.**
+**64 of 200 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -279,7 +282,12 @@ flowchart TD
 
 ## UNVERIFIED
 
-_None — every route's gate was traced to its source._
+The gate on these could not be traced from the code, so this page does not claim
+either way whether this journey reaches them. Each one is a question for a human.
+
+| Route | Methods | Who the code lets in |
+|---|---|---|
+| `/api/soft-pull-approve` | GET, POST | — |
 
 ## How to check this yourself
 
