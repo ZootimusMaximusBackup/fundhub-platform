@@ -22,6 +22,9 @@ flowchart TD
     GET --> GATE{CONSUMER_DIRECT or SMART_CREDIT client key + PID?}
     PAGE --> MAP["See Audit roadmap → GET /api/public/optimize?view=roadmap"]
     MAP --> BRAIN["violationsByBureauFromMergedCrs + buildRoundPlan + buildBlackReportClient"]
+    BRAIN --> DETAIL["findings carry reason, citations, observed/expected, metro2Ref — no longer discarded"]
+    BRAIN --> ZERO{"preapprovalKnown?"}
+    ZERO -->|No| BLANK["page prints the blank, never the manufactured $0"]
     BRAIN --> PLAN["Roadmap on the same page"]
     PLAN --> CAL
     GATE -->|No| HIDE["#file-pull stays hidden"]
