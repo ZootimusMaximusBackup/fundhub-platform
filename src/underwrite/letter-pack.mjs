@@ -13,6 +13,7 @@ import { printBlackReports } from "./black-report-pdf.mjs";
 import { violationsByBureauFromMergedCrs } from "../metro2/diy/from-crs.mjs";
 import { maybeComplaintFiles, COMPLAINT_FOLDER } from "../metro2/diy/package.mjs";
 import { LETTER_TYPES } from "../metro2/letters/catalog.mjs";
+import { loadPriorOutcomes, stampPriorOutcomes } from "./prior-outcome.mjs";
 
 const { generateLetters, generateDisputeLetters } = letterGenMod;
 const { generateAllSummaryDocuments } = summaryMod;
@@ -314,11 +315,18 @@ export async function buildLetterPack({
   personal,
   pack = "funding",
   generateDeliverablesFn = generateDeliverables,
-  storedCrs = null
+  storedCrs = null,
+  // Confirmed bureau answers already on file. Empty means every account is
+  // still on Round 1 — which is exactly the behaviour of this function before
+  // the wire existed. See ./prior-outcome.mjs for why nothing may default here.
+  priorOutcomes = []
 } = {}) {
   const who = personal || { name: "Client", address: "" };
   const path = pack === "repair" ? "repair" : "fundable";
   const bureaus = bureausFromEngine(crsResult);
+  // The one place a round advances. An account moves off Round 1 only because a
+  // human confirmed the bureau's answer and the round machine recorded it.
+  const rounds = stampPriorOutcomes(bureaus, priorOutcomes);
   const letters = await generateLetters({
     path,
     bureaus,
@@ -385,7 +393,11 @@ export async function buildLetterPack({
     deliverableSkip: uiq.skip,
     summarySkip,
     complaintCount: escalation.files.length,
-    complaintSkip: escalation.skip
+    complaintSkip: escalation.skip,
+    // How many accounts were moved off Round 1 by a recorded bureau answer, and
+    // how many recorded answers named an account this pull does not contain.
+    roundsAdvanced: rounds.stamped,
+    roundsUnmatched: rounds.unmatched
   };
 }
 
@@ -465,13 +477,24 @@ export async function buildLetterPackForClient(
     engineFault = String(err && err.message || err).slice(0, 240);
     engineSkip = engineFault;
   }
+  // The confirmed bureau answers this client already has on file. Read-only, and
+  // a failure is reported rather than thrown: the worst a hiccup here may cost
+  // is an escalation, never the client's Round 1 letters.
+  const prior = await loadPriorOutcomes(db, { clientId });
   try {
-    const packOut = await buildLetterPack({ crsResult: engine, personal, pack, storedCrs });
+    const packOut = await buildLetterPack({
+      crsResult: engine,
+      personal,
+      pack,
+      storedCrs,
+      priorOutcomes: prior.outcomes
+    });
     return {
       ...packOut,
       reason: sharpenEmptyReason(packOut.reason, { engineSkip, engineFault }),
       engineSkip,
-      engineOutcome: engine?.outcome ?? null
+      engineOutcome: engine?.outcome ?? null,
+      priorOutcomeSkip: prior.skip
     };
   } catch (err) {
     return {

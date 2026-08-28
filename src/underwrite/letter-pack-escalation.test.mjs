@@ -117,7 +117,10 @@ const STORED_CRS_SCOREABLE = mergeBureauReports({
 });
 
 /**
- * The two reads buildLetterPackForClient makes. Nothing is written, so this is
+ * The three reads buildLetterPackForClient makes — the client, the stored credit
+ * pull, and the confirmed bureau answers already on file (which this stub has
+ * none of, so every account here is still on Round 1). Nothing is written, so
+ * this is
  * a stub, not a database — the point is to exercise the real entry point the
  * app calls rather than the piece parts underneath it.
  */
