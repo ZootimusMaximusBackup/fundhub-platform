@@ -19,7 +19,7 @@ flowchart TD
     POST --> KEEP["createCheckoutSession title = Consulting Services Assessment"]
     KEEP --> PAY[Redirect to Commas payment_link]
     PAGE --> GET["GET /api/public/optimize"]
-    GET --> GATE{CONSUMER_DIRECT or SMART_CREDIT client key + PID?}
+    GET --> GATE{Widget client key + PID?}
     PAGE --> MAP["See Audit roadmap → GET /api/public/optimize?view=roadmap"]
     MAP --> BRAIN["violationsByBureauFromMergedCrs + buildRoundPlan + buildBlackReportClient"]
     BRAIN --> DETAIL["findings carry reason, citations, observed/expected, metro2Ref — no longer discarded"]
@@ -27,7 +27,7 @@ flowchart TD
     ZERO -->|No| BLANK["page prints the blank, never the manufactured $0"]
     BRAIN --> PLAN["Roadmap on the same page"]
     PLAN --> CAL
-    GATE -->|No| HIDE["#file-pull stays hidden"]
+    GATE -->|No| AFF["Pull your file → smartcredit.com/?PID=29056"]
     GATE -->|Yes| WIDGET["Enrollment Widget cd-signup.js"]
 ```
 
@@ -49,10 +49,10 @@ flowchart TD
   anywhere**; (2) the Book a call path is a plain `location.assign` and sends **nothing at all** —
   not the name, not the phone, not the consent. Consent is therefore captured in the browser and
   dropped on both paths. Recording it needs a handler change that is not in this commit.
-- `api/public/optimize.mjs` — GET returns `smartCredit: null` unless both a client key and a PID exist. GET `?view=roadmap` runs `src/optimize-page/roadmap.mjs` (metro2 + repair round-plan + UnderwriteIQ client map) on the stored sample file. POST ignores any client product title and always mints **Consulting Services Assessment** via `createCheckoutSession`. Never POST `/public-api/products/create`.
+- `api/public/optimize.mjs` — GET returns the public SmartCredit affiliate URL (`https://www.smartcredit.com/?PID=29056`, from the Sept 2025 Welcome email). Enrollment Widget fields are only added when both a client key and a PID exist. GET `?view=roadmap` runs `src/optimize-page/roadmap.mjs` (metro2 + repair round-plan + UnderwriteIQ client map) on the stored sample file. POST ignores any client product title and always mints **Consulting Services Assessment** via `createCheckoutSession`. Never POST `/public-api/products/create`.
 - `netlify.toml` — `/optimize.com` rewrite (status 200) to `/optimize.html`. Pretty URL `/optimize` is the file itself.
-- No Identity IQ. No CRS. No xyl.in. Smart Credit widget is dark until env names exist.
+- No Identity IQ. No CRS. No xyl.in. Widget stays dark (no client key). Affiliate URL is live.
 
 ## Not in this code
 
-Smart Credit live enroll (no client key / PID in env). Identity IQ. CRS. A new Commas product. Blake ingest. Twilio from Gmail.
+Enrollment Widget (no client key in env). Identity IQ. CRS. A new Commas product. Blake ingest. Twilio from Gmail.

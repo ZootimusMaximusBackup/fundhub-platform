@@ -3,7 +3,7 @@
 // COMPLIANCE REVIEW REQUIRED — credit-repair referral door. Public words on
 // the page stay vague ("Audit"). Commas sees a keep catalog title only.
 //
-// GET  — tells the page whether Smart Credit keys exist. No keys = no widget.
+// GET  — widget when client key + PID exist; else their public affiliate URL.
 // GET ?view=roadmap — existing repair brain on a stored sample file.
 // POST — mints a Commas checkout on Consulting Services Assessment (keep).
 //        Never POST /public-api/products/create. Never invent a catalog title.
@@ -22,6 +22,8 @@ import { buildOptimizeRoadmap } from "../../src/optimize-page/roadmap.mjs";
 
 export const BOOK_URL = "https://apply.fundhub.ai/schedule/phonecall";
 export const AUDIT_KEEP_TITLE = "Consulting Services Assessment";
+/** Official SmartCredit partner link from the Sept 2025 Welcome email (PID 29056). */
+export const SMART_CREDIT_AFFILIATE_URL = "https://www.smartcredit.com/?PID=29056";
 
 function readBody(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
@@ -51,27 +53,37 @@ function isEmail(v) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
 
-/** Widget config only when both a client key and a PID are set. Never invent. */
+/**
+ * Widget only when both a client key and a PID are set. Never invent those.
+ * Affiliate URL is their public partner link (Welcome email → smartcredit.com/?PID=29056).
+ */
 export function smartCreditFromEnv(env = process.env) {
   const clientKey = String(
     env.CONSUMER_DIRECT_CLIENT_KEY || env.SMART_CREDIT_CLIENT_KEY || ""
   ).trim();
   const pid = String(env.CONSUMER_DIRECT_PID || env.SMART_CREDIT_PID || "").trim();
-  if (!clientKey || !pid) return null;
-  const stage = String(env.CONSUMER_DIRECT_ENV || env.SMART_CREDIT_ENV || "")
-    .trim()
-    .toLowerCase() === "stage";
-  return {
-    clientKey,
-    pid,
-    productName: "smartcredit",
-    memberUrl: stage
-      ? "https://stage-sc.consumerdirect.app"
-      : "https://www.smartcredit.com",
-    scriptUrl: stage
-      ? "https://stage-cdn.consumerdirect.io/cd-widgets/latest/cd-signup.js"
-      : "https://cdn.consumerdirect.io/cd-widgets/latest/cd-signup.js"
-  };
+  const affiliateUrl = String(
+    env.CONSUMER_DIRECT_AFFILIATE_URL || env.SMART_CREDIT_AFFILIATE_URL || SMART_CREDIT_AFFILIATE_URL
+  ).trim();
+  if (clientKey && pid) {
+    const stage = String(env.CONSUMER_DIRECT_ENV || env.SMART_CREDIT_ENV || "")
+      .trim()
+      .toLowerCase() === "stage";
+    return {
+      clientKey,
+      pid,
+      affiliateUrl: affiliateUrl || null,
+      productName: "smartcredit",
+      memberUrl: stage
+        ? "https://stage-sc.consumerdirect.app"
+        : "https://www.smartcredit.com",
+      scriptUrl: stage
+        ? "https://stage-cdn.consumerdirect.io/cd-widgets/latest/cd-signup.js"
+        : "https://cdn.consumerdirect.io/cd-widgets/latest/cd-signup.js"
+    };
+  }
+  if (!affiliateUrl) return null;
+  return { affiliateUrl, pid: pid || "29056" };
 }
 
 export function parseOptimizeCheckoutBody(body) {

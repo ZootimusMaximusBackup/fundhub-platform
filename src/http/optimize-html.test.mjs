@@ -47,6 +47,7 @@ test("optimize.html books on schedule/phonecall, not funding-book-call or xyl.in
   assert.match(html, /\/api\/public\/optimize/, "Audit checkout posts to the public optimize door");
   assert.match(html, /See Audit roadmap/, "roadmap stays on this page");
   assert.match(html, /view=roadmap/, "roadmap calls the existing brain door");
+  assert.match(html, /affiliateUrl/, "Pull your file uses their partner affiliate URL when the widget is dark");
 });
 
 test("netlify.toml rewrites /optimize.com to the hidden page, not xyl.in", () => {
