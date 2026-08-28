@@ -43,6 +43,15 @@ Branch: `feat/optimize-apply` (merged)
 
 Smart Credit affiliate / partner client key + PID. When those names exist in env, the Enrollment Widget renders. Until then the slot stays hidden.
 
+## Owner note — already has a SmartCredit account (2026-08-28)
+
+**Owner-set:** Chris already has a SmartCredit / Consumer Direct account. This is not a brand-new signup.
+
+- Email on their co-brand form: `stanbridgejchris@gmail.com` (same as the first inquiry)
+- He was on the final-steps form (special messaging + Fundhub logo ready to submit)
+- Affiliate link / widget client key / PID are still not in `.env` or Netlify — waiting on their portal after he submits that form, or their reply to the partner emails
+- Public page still says **Audit**. No “credit repair” on visitor copy.
+
 ## Live URLs proved 2026-08-28 (clicked like a person)
 
 Paste these to Claude for restyle. Do not restyle in a Grok chat.
