@@ -208,6 +208,15 @@
     font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:1px}
   .hand .x{font-size:15.5px;line-height:1.55;max-width:54ch}
   .say{margin-top:20px;font-size:16px;line-height:1.6;max-width:56ch;text-align:left}
+
+  .pullbox{margin-top:22px;border:1px solid var(--ink);border-radius:12px;padding:24px 22px;background:#fff;text-align:left}
+  .pullbox .k{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--blue)}
+  .pullbox h3{margin-top:10px;font-size:19px;font-weight:700;letter-spacing:-.02em;line-height:1.3;max-width:34ch}
+  .pullbox .sub{margin-top:10px;max-width:56ch}
+  .widgetslot{margin-top:18px}
+  .onhold{margin-top:18px;border-left:2px solid var(--blue);background:var(--soft);padding:13px 15px}
+  .onhold .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gray2)}
+  .onhold .v{margin-top:6px;font-size:14.5px;color:var(--gray);line-height:1.6;max-width:56ch}
 </style>
 </head>
 <body>
@@ -281,7 +290,7 @@
       <div class="inner">
         <button class="btn btn-ghost" id="roadmap-btn" type="button">See Audit roadmap</button>
         <div id="roadmap" hidden></div>
-        <div id="file-pull" hidden></div>
+        <div id="file-pull"></div>
       </div>
     </div>
   </section>
@@ -334,11 +343,13 @@
             auditErr.hidden = false;
             auditErr.textContent = "Audit checkout is not ready yet.";
           }
-          if (cfg && cfg.smartCredit && cfg.smartCredit.clientKey && cfg.smartCredit.pid) {
-            mountFilePull(cfg.smartCredit);
-          }
+          renderPullStep(
+            cfg && cfg.smartCredit && cfg.smartCredit.clientKey && cfg.smartCredit.pid
+              ? cfg.smartCredit
+              : null
+          );
         })
-        .catch(function () {});
+        .catch(function () { renderPullStep(null); });
       audit.addEventListener("submit", function (e) {
         e.preventDefault();
         auditErr.hidden = true;
@@ -666,8 +677,34 @@
           "approve you, or that any number on your file will change."));
         roadmapBox.appendChild(s5);
       }
-      function mountFilePull(sc) {
-        filePull.hidden = false;
+      /* Always drawn. The widget drops into #cd-signup-widget when the keys are
+         live; until then the same block says the file gets pulled on the call, so
+         the step reads the same either way and never leaves a hole. */
+      function renderPullStep(sc) {
+        filePull.replaceChildren();
+        var box = el("div", "pullbox");
+        box.appendChild(el("div", "k", "Start it now"));
+        box.appendChild(el("h3", null, "Pull your file and the audit is ready before we speak."));
+        box.appendChild(el("p", "sub",
+          "The audit reads your credit file. We can read it now or read it together on the call \u2014 " +
+          "doing it now means we spend the call on what to do about it, not on getting it."));
+        if (sc) {
+          var slot = el("div", "widgetslot");
+          slot.id = "cd-mount";
+          box.appendChild(slot);
+          filePull.appendChild(box);
+          mountFilePull(sc, slot);
+          return;
+        }
+        var w = el("div", "onhold");
+        w.appendChild(el("div", "k", "On the call"));
+        w.appendChild(el("div", "v",
+          "Right now the file is pulled with you on the call, so bring nothing \u2014 we do it live " +
+          "in the first few minutes and the audit is built from it while we talk."));
+        box.appendChild(w);
+        filePull.appendChild(box);
+      }
+      function mountFilePull(sc, slot) {
         var h = document.createElement("h2");
         h.textContent = "Pull your file";
         var note = document.createElement("p");
@@ -682,10 +719,8 @@
         box.setAttribute("data-clientkey", sc.clientKey);
         box.setAttribute("data-memberurl", sc.memberUrl);
         box.setAttribute("data-productname", sc.productName || "smartcredit");
-        filePull.appendChild(h);
-        filePull.appendChild(note);
-        filePull.appendChild(pid);
-        filePull.appendChild(box);
+        slot.appendChild(pid);
+        slot.appendChild(box);
         var s = document.createElement("script");
         s.type = "module";
         s.async = true;
