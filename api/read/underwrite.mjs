@@ -47,6 +47,12 @@ import { UPSTREAM, computeUnderwrite, buildSuggestions } from "../../src/underwr
 import { toBureaus } from "../../src/underwrite/adapter.mjs";
 import { applyStackedBusinessFunding } from "../../src/underwrite/business-funding.mjs";
 import { buildReport } from "../../src/underwrite/report.mjs";
+/* Lost in the 2026-08-27 merge (60c1902b) while the call to it, and the long
+   comment explaining it, both stayed. Without this line the endpoint threw
+   "linesForEngine is not defined" on EVERY request — UnderwriteIQ returned
+   nothing at all. Runtime-only: lint parses it fine, because a bare identifier
+   is legal JavaScript right up until it runs. */
+import { linesForEngine } from "../../src/tradelines/index.mjs";
 import { dbDown } from "../../src/http/db-down.mjs";
 
 /**
