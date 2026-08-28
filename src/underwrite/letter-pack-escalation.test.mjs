@@ -240,8 +240,17 @@ describe("repair pack — the escalation ladder", () => {
     assert.match(cfpb, /penalty of perjury/i);
 
     assert.match(ag, /STATE ATTORNEY GENERAL CONSUMER COMPLAINT/);
-    assert.match(ag, /Attorney General of Texas/);
+    // REPLACED, NOT WEAKENED. This line used to be a single /Attorney General of
+    // Texas/ match. The complaint now names the office it is actually MAILED to —
+    // the addressee printed on the state's own complaint form — so that the letter
+    // and the envelope can never name two different offices. That matters most in
+    // Hawaii and Wisconsin, where consumer complaints are handled by a department
+    // that is not the attorney general. Four Texas-specific pins replace the one.
+    assert.match(ag, /Office: Office of the Attorney General, Consumer Protection Division/);
+    assert.match(ag, /texasattorneygeneral\.gov/);
     assert.match(ag, /Deceptive Trade Practices Act/);
+    assert.match(ag, /Tex\. Bus\. & Com\. Code/);
+    assert.match(ag, /laws of Texas/);
     assert.match(ag, /penalty of perjury/i);
   });
 
