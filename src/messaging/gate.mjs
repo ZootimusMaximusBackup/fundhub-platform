@@ -80,7 +80,7 @@ export const PARTNER_WELCOME_KEYS = new Set(["AF1", "EMAIL-PARTNER-WELCOME"]);
     record — there is no path that queues this key without it.
 
     Quiet hours are untouched: a partner text queued at 2am still waits for
-    11:00 Eastern like everyone else's. */
+    08:00 Arizona like everyone else's. */
 export const PARTNER_WELCOME_SMS_KEYS = new Set(["SMS-PARTNER-WELCOME"]);
 
 /** A destination we could actually text. Deliberately stricter than the email
@@ -88,16 +88,23 @@ export const PARTNER_WELCOME_SMS_KEYS = new Set(["SMS-PARTNER-WELCOME"]);
     falls back to recipient_unknown and is blocked, not sent into the dark. */
 const E164 = /^\+[1-9]\d{7,14}$/;
 
-/** Quiet hours, US Eastern, inclusive start and exclusive end.
-    23:00 through 10:59 is closed; 11:00 through 22:59 is open. */
-export const QUIET_START_HOUR = 23;
-export const QUIET_END_HOUR = 11;
+/** Quiet hours, Arizona time, inclusive start and exclusive end.
+    20:00 through 07:59 is closed; 08:00 through 19:59 is open.
+
+    These used to read 23:00/11:00 against America/New_York, which is the same
+    8am-8pm window seen from Phoenix in summer — Eastern was standing in for a
+    zone nobody here works in. Arizona does not observe daylight saving, so
+    naming the real zone also removes the winter drift: the old pair widened to
+    9am-9pm Phoenix once Eastern fell back, which is later than anyone intended
+    to be texting. Summer behaviour is unchanged; winter now starts and ends an
+    hour earlier, which is the tighter side. */
+export const QUIET_START_HOUR = 20;
+export const QUIET_END_HOUR = 8;
 
 /** The timezone quiet hours are measured in. A named zone, not an offset, so
-    the operating system's timezone database handles daylight saving. A
-    hardcoded -05:00 would be an hour wrong for eight months of the year and
-    would send at 10am Eastern every summer. */
-export const QUIET_HOURS_TZ = "America/New_York";
+    the operating system's timezone database stays the authority even though
+    this particular zone never shifts. */
+export const QUIET_HOURS_TZ = "America/Phoenix";
 
 /** Channels quiet hours apply to. Texts wake people up; email does not.
     A Set rather than `channel === "sms"` so adding voice later is a one-word
@@ -128,7 +135,11 @@ function assertNoBypass(options) {
   }
 }
 
-/* easternHour — the hour of the day at `date` in the given zone, 0-23.
+/* hourInZone — the hour of the day at `date` in the given zone, 0-23.
+
+   Named for what it does rather than for one zone: the default moved from
+   Eastern to Arizona and a function called easternHour returning a Phoenix
+   hour is the kind of name that gets trusted and then quietly misread.
 
    Intl carries the timezone database, so daylight saving is handled without
    this file knowing when the transitions are. formatToParts rather than a
@@ -138,7 +149,7 @@ function assertNoBypass(options) {
 
    Exported because it is the whole of the quiet-hours decision and is worth
    testing directly against the transition dates. */
-export function easternHour(date, timeZone = QUIET_HOURS_TZ) {
+export function hourInZone(date, timeZone = QUIET_HOURS_TZ) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone, hour: "numeric", hour12: false
   }).formatToParts(date);
@@ -148,7 +159,7 @@ export function easternHour(date, timeZone = QUIET_HOURS_TZ) {
     // Unreadable clock. Throwing lands in gate()'s catch, which blocks — the
     // correct direction when we cannot tell what time it is where the
     // recipient's phone is.
-    throw new Error(`easternHour: could not read the hour in ${timeZone}`);
+    throw new Error(`hourInZone: could not read the hour in ${timeZone}`);
   }
   return hour % 24;
 }
@@ -159,7 +170,7 @@ export function easternHour(date, timeZone = QUIET_HOURS_TZ) {
    start <= h < end. Getting that backwards yields a window that is never open,
    which is why it is its own exported function with its own tests. */
 export function inQuietHours(date, timeZone = QUIET_HOURS_TZ) {
-  const hour = easternHour(date, timeZone);
+  const hour = hourInZone(date, timeZone);
   return hour >= QUIET_START_HOUR || hour < QUIET_END_HOUR;
 }
 
@@ -271,9 +282,9 @@ async function run(db, message, { now = () => new Date(), timeZone = QUIET_HOURS
   }
 
   // ---- 2. Quiet hours ------------------------------------------------------
-  // Texts only. Measured in Eastern at the moment of sending, which is also why
+  // Texts only. Measured in Arizona at the moment of sending, which is also why
   // a message held here is held rather than failed: it becomes sendable on its
-  // own at 11am without anyone editing it.
+  // own at 8am without anyone editing it.
   //
   // Prove/sim plus-tag files are outside this rule so a night fire can be
   // proven. Real customers still wait. Not a force / skipCompliance option.
@@ -281,7 +292,7 @@ async function run(db, message, { now = () => new Date(), timeZone = QUIET_HOURS
     const skip = await recipientSkipsQuietHours(db, clientId);
     if (!skip) {
       reasons.push(r("quiet_hours", "tcpa",
-        `Text messages are not sent between ${QUIET_START_HOUR}:00 and ${QUIET_END_HOUR}:00 Eastern. This one is being held until the window opens.`,
+        `Text messages are not sent between ${QUIET_START_HOUR}:00 and ${QUIET_END_HOUR}:00 Arizona time. This one is being held until the window opens.`,
         { citation: "TCPA 47 C.F.R. 64.1200(c)(1)", retryable: true }));
     }
   }

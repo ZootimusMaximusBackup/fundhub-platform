@@ -21,7 +21,7 @@ const ORG = "00000000-0000-4000-8000-000000000001";
 const CLIENT = "00000000-0000-4000-8000-000000000003";
 const MSG = "00000000-0000-4000-8000-000000000004";
 
-// Midday Eastern, so nothing lands inside quiet hours and defers for the wrong
+// Midday Arizona, so nothing lands inside quiet hours and defers for the wrong
 // reason — a deferral would also show zero calls and prove nothing.
 const MIDDAY = () => new Date("2026-08-01T16:00:00Z");
 

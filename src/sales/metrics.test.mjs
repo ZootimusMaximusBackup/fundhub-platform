@@ -8,13 +8,27 @@ import {
   filterCloserRoster,
   isBlockedCloserIdentity,
   isOwnerSetCloser,
-  nyDateString,
+  localDateString,
   OWNER_SET_CLOSER
 } from "./metrics.mjs";
 
-test("nyDateString is YYYY-MM-DD in America/New_York", () => {
-  assert.match(nyDateString(new Date("2026-08-17T16:00:00.000Z")), /^\d{4}-\d{2}-\d{2}$/);
-  assert.equal(nyDateString(new Date("2026-08-17T16:00:00.000Z")), "2026-08-17");
+test("localDateString is YYYY-MM-DD in America/Phoenix", () => {
+  assert.match(localDateString(new Date("2026-08-17T16:00:00.000Z")), /^\d{4}-\d{2}-\d{2}$/);
+  assert.equal(localDateString(new Date("2026-08-17T16:00:00.000Z")), "2026-08-17");
+});
+
+// The boundary that moved. 04:00Z is already tomorrow in Eastern but still
+// 9pm the previous evening in Arizona, so a call logged then belongs on the
+// board the floor was actually working — which is the whole point of the change.
+test("a late Arizona evening still counts as that same day", () => {
+  assert.equal(localDateString(new Date("2026-08-18T04:00:00.000Z")), "2026-08-17");
+});
+
+// Arizona does not observe daylight saving, so the cutover is the same instant
+// in January as in August. Eastern moved it by an hour twice a year.
+test("the day boundary does not shift with daylight saving", () => {
+  assert.equal(localDateString(new Date("2026-01-18T06:59:00.000Z")), "2026-01-17");
+  assert.equal(localDateString(new Date("2026-07-18T06:59:00.000Z")), "2026-07-17");
 });
 
 test("owner-set closer is Chris Stanbridge", () => {
