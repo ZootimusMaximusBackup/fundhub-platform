@@ -72,11 +72,31 @@ function itemsFromFindings(findings) {
         round: "R1",
         creditor: v.creditor || v.subject || "",
         account_last4: v.account_last4 || v.accountLast4 || "",
-        rule_id: v.ruleId || v.rule_id || ""
+        rule_id: v.ruleId || v.rule_id || "",
+        // The engine computes all of the below and this function used to throw it
+        // away, so the page could only ever draw a bare list. Passed through now.
+        // No new engine work — these are the same objects from
+        // violationsByBureauFromMergedCrs(), just not discarded.
+        severity: v.severity || "",
+        field: v.field || "",
+        observed: v.observed ?? null,
+        expected: v.expected ?? null,
+        reason: v.reason || "",
+        citations: Array.isArray(v.citations) ? v.citations.slice() : [],
+        metro2Ref: v.metro2Ref || "",
+        scope: v.scope || ""
       });
     }
   }
   return items;
+}
+
+/** True only when the stored file actually carries a preapproval figure. */
+function hasPreapprovalData(file) {
+  const block = file && typeof file === "object" ? file.preapprovals : null;
+  if (!block) return false;
+  if (Array.isArray(block)) return block.length > 0;
+  return Object.keys(block).length > 0;
 }
 
 function money(n) {
@@ -96,8 +116,9 @@ export function buildOptimizeRoadmap({ crsResult = null, personal = null } = {})
     personal: personal || { name: "You" }
   });
   const findings = violationsByBureauFromMergedCrs(file);
+  const items = itemsFromFindings(findings);
   const rounds = buildRoundPlan({
-    items: itemsFromFindings(findings),
+    items,
     letters: [],
     roundsCap: 6
   });
@@ -113,12 +134,22 @@ export function buildOptimizeRoadmap({ crsResult = null, personal = null } = {})
     bookUrl: BOOK_URL,
     today: {
       preapproval: money(client.preapproval_now),
-      util: client.util_pct || ""
+      util: client.util_pct || "",
+      // buildBlackReportClient forces a missing preapproval to 0
+      // (src/underwrite/black-report-client.mjs). A 0 that means "we never had
+      // the credit limit" is NOT a number to show anybody — it reads as
+      // "you qualify for nothing". NULL means unknown and must survive
+      // (CLAUDE.md), so say plainly whether the figure is real.
+      preapprovalKnown: hasPreapprovalData(file)
     },
     later: {
       preapproval: money(client.preapproval_after)
     },
     accounts,
+    // The findings themselves, not just the round plan built from them. The page
+    // needs the reason, the citations and the observed/expected pair to show a
+    // person WHY a line is wrong rather than just that it is.
+    findings: items,
     rounds: rounds.map((r) => ({
       step: r.round,
       title: r.title,

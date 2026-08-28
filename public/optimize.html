@@ -128,6 +128,85 @@
   @media(prefers-reduced-motion:reduce){.pulse{animation:none}}
   .ghost-mark{position:absolute;left:0;right:0;bottom:-8px;z-index:-1;pointer-events:none}
   .ghost-mark .logo{display:block;width:92vw;aspect-ratio:2698/543;margin:0 auto;opacity:.045}
+
+  /* ── Audit: black-report layer. Ink only, no colour. Mono column heads,
+     1.5px ink rules over hairline separators, black square row numbers.
+     Same parts the UnderwriteIQ black report prints. ────────────────── */
+  .colhead{display:flex;gap:12px;align-items:baseline;margin-top:24px;padding-top:8px;padding-bottom:7px;
+    border-top:1.5px solid var(--ink);font-family:var(--mono);font-size:10px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--gray2)}
+  .colhead .grow{flex:1}
+  .frow{border-top:1px solid var(--line);padding:20px 0 22px;text-align:left}
+  .frow:first-of-type{border-top:none}
+  .frowtop{display:flex;gap:12px;align-items:flex-start}
+  .sq{flex:0 0 auto;width:22px;height:22px;background:var(--ink);color:#fff;font-family:var(--mono);
+    font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+  .rowname{font-size:17px;font-weight:600;letter-spacing:-.01em;line-height:1.35}
+  .rowmeta{margin-top:5px;font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;
+    text-transform:uppercase;color:var(--gray);display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .rowmeta .sep{color:var(--line)}
+  .tag{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+    border:1px solid var(--ink);padding:2px 7px;color:var(--ink);white-space:nowrap}
+  .tag.solid{background:var(--ink);color:#fff}
+  .pair{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);margin-top:16px}
+  .pair > div{padding:12px 14px}
+  .pair > div + div{border-left:1px solid var(--line)}
+  .pair .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gray2)}
+  .pair .v{margin-top:6px;font-family:var(--mono);font-size:13px;color:var(--ink);line-height:1.45}
+  @media(max-width:560px){.pair{grid-template-columns:1fr}.pair>div+div{border-left:none;border-top:1px solid var(--line)}}
+  .reason{margin-top:14px;font-size:14.5px;color:var(--gray);line-height:1.6;max-width:60ch}
+  .laws{margin-top:14px;border-left:1.5px solid var(--ink);padding:2px 0 2px 13px}
+  .laws .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gray2)}
+  .laws .l{font-family:var(--mono);font-size:12px;color:var(--ink);margin-top:5px;line-height:1.5}
+  .laws .l.soft{color:var(--gray)}
+  .sourceline{margin-top:22px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+    color:var(--gray2);line-height:1.7;text-align:left}
+  .astep{margin-top:44px;padding-top:28px;border-top:1px solid var(--line);text-align:left}
+  .stepno{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--gray2)}
+  .astep h3{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-top:9px}
+  .astep .sub{margin-top:8px;color:var(--gray);font-size:15px;max-width:56ch;text-align:left}
+  .letters{margin-top:20px;border-top:1.5px solid var(--ink)}
+  .letter{display:flex;gap:14px;align-items:flex-start;padding:15px 0;border-bottom:1px solid var(--line)}
+  .letter .to{flex:0 0 118px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--gray2);padding-top:3px}
+  .letter .t{font-size:15.5px;font-weight:600;letter-spacing:-.01em}
+  .letter .w{margin-top:4px;font-size:14px;color:var(--gray);line-height:1.55;max-width:52ch}
+  @media(max-width:560px){.letter{flex-direction:column;gap:5px}.letter .to{flex:none}}
+  .path{margin-top:24px;position:relative;padding-left:30px}
+  .path::before{content:"";position:absolute;left:6px;top:8px;bottom:34px;width:1.5px;background:var(--ink)}
+  .stn{position:relative;padding:0 0 30px}
+  .stn::before{content:"";position:absolute;left:-30px;top:5px;width:13px;height:13px;background:var(--ink)}
+  .stn.open::before{background:var(--paper);border:1.5px solid var(--ink)}
+  .stn.end::before{background:var(--ink);box-shadow:0 0 0 4px var(--paper),0 0 0 5.5px var(--ink)}
+  .stn .when{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink);font-weight:500}
+  .stn.open .when{color:var(--gray2)}
+  .stn .what{margin-top:6px;font-size:16px;font-weight:600;letter-spacing:-.01em}
+  .stn .why{margin-top:6px;font-size:14.5px;color:var(--gray);line-height:1.6;max-width:54ch}
+  .stn .atk{margin-top:9px;font-family:var(--mono);font-size:11px;color:var(--gray);line-height:1.75}
+  .stn .set{margin-top:9px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--gray2)}
+  .verdict{margin-top:22px;background:var(--ink);color:#fff;padding:26px;border-radius:2px}
+  .verdict .k{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#8a8a8a}
+  .verdict .h{margin-top:11px;font-size:21px;font-weight:700;letter-spacing:-.02em;line-height:1.3;max-width:30ch}
+  .verdict p{margin-top:14px;font-size:15.5px;color:#D4D4D8;line-height:1.65;max-width:56ch}
+  .blockers{margin-top:22px;border-top:1px solid #26262B}
+  .blk{display:flex;gap:13px;padding:15px 0;border-bottom:1px solid #26262B;align-items:flex-start}
+  .blk .n{flex:0 0 auto;width:22px;height:22px;border:1.5px solid #52525B;color:#fff;font-family:var(--mono);
+    font-size:11px;display:flex;align-items:center;justify-content:center}
+  .blk .x{font-size:15px;color:#E4E4E7;line-height:1.55}
+  .release{margin-top:22px;font-size:17px;font-weight:600;color:#fff;letter-spacing:-.01em;
+    line-height:1.45;max-width:40ch}
+  .blank{margin-top:20px;border:1px solid var(--line);background:var(--soft);padding:16px 18px;text-align:left}
+  .blank .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gray2)}
+  .blank .v{margin-top:7px;font-size:14.5px;color:var(--gray);line-height:1.6;max-width:58ch}
+  .blank .v b{color:var(--ink);font-weight:600}
+  .hand{margin-top:20px;border-top:1.5px solid var(--ink)}
+  .hand .h{display:flex;gap:14px;padding:15px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+  .hand .n{flex:0 0 auto;width:22px;height:22px;background:var(--ink);color:#fff;font-family:var(--mono);
+    font-size:11px;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .hand .x{font-size:15.5px;line-height:1.55;max-width:54ch}
+  .say{margin-top:20px;font-size:16px;line-height:1.6;max-width:56ch;text-align:left}
 </style>
 </head>
 <body>
@@ -300,43 +379,290 @@
           })
           .catch(function () { roadmapBtn.disabled = false; });
       });
+      /* ── The Audit, drawn from what the engine really returns. ──────────
+         Every row, reason, statute and Metro 2 reference below comes from
+         buildOptimizeRoadmap(). Nothing here is written by hand and nothing is
+         filled in when the data is missing — a blank is left, and labelled. */
+      function el(tag, cls, text) {
+        var n = document.createElement(tag);
+        if (cls) n.className = cls;
+        if (text != null) n.textContent = text;
+        return n;
+      }
+      function stepHead(no, title, sub) {
+        var sec = el("section", "astep");
+        sec.appendChild(el("div", "stepno", "Step " + no + " of 5"));
+        sec.appendChild(el("h3", null, title));
+        if (sub) sec.appendChild(el("p", "sub", sub));
+        return sec;
+      }
       function renderRoadmap(plan) {
         roadmapBox.hidden = false;
         roadmapBox.replaceChildren();
-        var h = document.createElement("h2");
-        h.textContent = "Audit roadmap";
-        var note = document.createElement("p");
-        note.className = "sub";
-        note.textContent = plan.source === "sample"
-          ? "Built from a stored sample file so you can see the path. On the call we design this together."
-          : "Built from your file. On the call we design this together.";
-        var list = document.createElement("ol");
-        (plan.rounds || []).forEach(function (r) {
-          var li = document.createElement("li");
-          var title = document.createElement("strong");
-          title.textContent = r.step + " — " + (r.when || r.title || "");
-          li.appendChild(title);
-          if (r.attacks && r.attacks.length) {
-            var bits = document.createElement("div");
-            bits.className = "hint";
-            bits.textContent = r.attacks.slice(0, 4).join(" · ");
-            li.appendChild(bits);
+        var findings = plan.findings || [];
+        var rounds = plan.rounds || [];
+
+        var head = el("section", "astep");
+        head.style.borderTop = "1.5px solid var(--ink)";
+        head.appendChild(el("div", "eyebrow", "Audit roadmap"));
+        head.appendChild(el("h3", null, "Here is the path, with dates on it."));
+        head.appendChild(el("p", "sub", findings.length
+          ? findings.length + " " + (findings.length === 1 ? "line" : "lines") +
+            " on your file are being reported in a way the law does not allow. Below is what they " +
+            "are, how they come off, and when. Where a date is fixed by law we print it. Where it " +
+            "is not, we leave it blank and say so."
+          : "No reportable findings came back on this file."));
+        roadmapBox.appendChild(head);
+
+        /* ── Step 1 — the law these accounts are breaking ───────────────── */
+        var s1 = stepHead(1, "The law these accounts are breaking",
+          "Not an opinion about your accounts. Each row names the rule it breaks, what the file " +
+          "actually says, what the rulebook requires instead, and the law behind it.");
+        var ch = el("div", "colhead");
+        var chn = el("span", null, "#"); chn.style.width = "22px";
+        ch.appendChild(chn);
+        ch.appendChild(el("span", "grow", "Item \u00b7 rule \u00b7 law"));
+        ch.appendChild(el("span", null, "Severity"));
+        s1.appendChild(ch);
+
+        findings.forEach(function (f, i) {
+          var row = el("div", "frow");
+          var top = el("div", "frowtop");
+          top.appendChild(el("div", "sq", String(i + 1).padStart(2, "0")));
+          var idbox = el("div");
+          idbox.appendChild(el("div", "rowname",
+            [f.creditor, f.account_last4 ? "ending " + f.account_last4 : ""]
+              .filter(Boolean).join(" \u00b7 ") || "This account"));
+          var meta = el("div", "rowmeta");
+          [f.bureau, f.field ? "Field " + f.field : "", f.rule_id ? "Rule " + f.rule_id : ""]
+            .filter(Boolean).forEach(function (bit, n) {
+              if (n) meta.appendChild(el("span", "sep", "/"));
+              meta.appendChild(el("span", null, bit));
+            });
+          if (f.severity) {
+            var sev = el("span", "tag" + (f.severity === "moderate" || f.severity === "high" ? " solid" : ""),
+              f.severity);
+            meta.appendChild(sev);
           }
-          list.appendChild(li);
+          idbox.appendChild(meta);
+          top.appendChild(idbox);
+          row.appendChild(top);
+
+          if (f.observed != null || f.expected != null) {
+            var pair = el("div", "pair");
+            var a = el("div");
+            a.appendChild(el("div", "k", "What the file says"));
+            a.appendChild(el("div", "v", f.observed == null ? "\u2014" : String(f.observed)));
+            var b = el("div");
+            b.appendChild(el("div", "k", "What is required"));
+            b.appendChild(el("div", "v", f.expected == null ? "\u2014" : String(f.expected)));
+            pair.appendChild(a); pair.appendChild(b);
+            row.appendChild(pair);
+          }
+          if (f.reason) row.appendChild(el("p", "reason", f.reason));
+
+          var cites = (f.citations || []).slice();
+          if (cites.length || f.metro2Ref) {
+            var laws = el("div", "laws");
+            laws.appendChild(el("div", "k", "Law relied on"));
+            cites.forEach(function (c) { laws.appendChild(el("div", "l", c)); });
+            if (!cites.length) {
+              laws.appendChild(el("div", "l soft",
+                "No court ruling is on file for this rule. We say so rather than reach for one."));
+            }
+            if (f.metro2Ref) laws.appendChild(el("div", "l soft", "Metro 2 \u2014 " + f.metro2Ref));
+            row.appendChild(laws);
+          }
+          s1.appendChild(row);
         });
-        var again = document.createElement("a");
-        again.className = "btn";
+
+        var srcline = el("div", "sourceline");
+        srcline.appendChild(document.createTextNode(plan.source === "sample"
+          ? "Source \u2014 one stored sample file, so you can see the shape of it."
+          : "Source \u2014 your own file."));
+        srcline.appendChild(document.createElement("br"));
+        srcline.appendChild(document.createTextNode(plan.source === "sample"
+          ? "Your own rows are built the same way, from your own file, and they will not look like these."
+          : "Every row above was read off that file, not typed by anyone."));
+        s1.appendChild(srcline);
+        roadmapBox.appendChild(s1);
+
+        /* ── Step 2 — how they come off ─────────────────────────────────── */
+        var s2 = stepHead(2, "How they come off",
+          "Letters, in a set order. Each one is written from the rows above, so every letter names " +
+          "a different rule and a different line. You sign and send every one \u2014 we do not " +
+          "contact the bureaus for you.");
+        var lwrap = el("div", "letters");
+        var seen = {};
+        rounds.forEach(function (r) {
+          if (seen[r.title]) return;
+          seen[r.title] = true;
+          var L = el("div", "letter");
+          L.appendChild(el("div", "to", "To the bureau"));
+          var body = el("div");
+          body.appendChild(el("div", "t", r.title));
+          if (r.when) body.appendChild(el("div", "w", r.when));
+          L.appendChild(body);
+          lwrap.appendChild(L);
+        });
+        s2.appendChild(lwrap);
+        roadmapBox.appendChild(s2);
+
+        /* ── Step 3 — how long it takes ─────────────────────────────────── */
+        var s3 = stepHead(3, "How long it takes",
+          rounds.length + " rounds. One date on this path is fixed by law, so we can print it now. " +
+          "The rest get set on the call, once we know how the bureau answered.");
+        var path = el("div", "path");
+
+        var st1 = el("div", "stn");
+        st1.appendChild(el("div", "when", "Day 0 \u00b7 the day we mail"));
+        st1.appendChild(el("div", "what", (rounds[0] && rounds[0].title) || "Round 1 goes out"));
+        st1.appendChild(el("div", "why",
+          "Every row above goes out in one mailing, each naming its own rule and its own line in the rulebook."));
+        var atk = (rounds[0] && rounds[0].attacks) || [];
+        if (atk.length) {
+          var ab = el("div", "atk");
+          atk.forEach(function (a, i) {
+            if (i) ab.appendChild(document.createElement("br"));
+            ab.appendChild(document.createTextNode(a));
+          });
+          st1.appendChild(ab);
+        }
+        st1.appendChild(el("div", "set", "Date set by us \u2014 we pick it with you on the call"));
+        path.appendChild(st1);
+
+        var st2 = el("div", "stn");
+        st2.appendChild(el("div", "when", "Day 30 + mail time"));
+        st2.appendChild(el("div", "what", (rounds[1] && rounds[1].title) || "Round 2"));
+        st2.appendChild(el("div", "why",
+          "The bureau has 30 days to answer Round 1. On day 31, if it came back verified, " +
+          "unchanged, or not at all, Round 2 goes out."));
+        st2.appendChild(el("div", "set", "Date set by law \u2014 FCRA \u00a7 1681i(a)(1), the 30-day window"));
+        path.appendChild(st2);
+
+        if (rounds.length > 2) {
+          var st3 = el("div", "stn open");
+          st3.appendChild(el("div", "when", "Date set on the call"));
+          st3.appendChild(el("div", "what", (rounds[2] && rounds[2].title) || "Round 3"));
+          st3.appendChild(el("div", "why",
+            "Goes out once Round 2 comes back. The law puts no clock on this step, so we will not " +
+            "print a day we cannot stand behind."));
+          path.appendChild(st3);
+        }
+        if (rounds.length > 3) {
+          var st4 = el("div", "stn open");
+          st4.appendChild(el("div", "when", "Date set on the call"));
+          st4.appendChild(el("div", "what",
+            "Rounds " + rounds.slice(3).map(function (r) { return r.step.replace("R", ""); }).join(", ")));
+          st4.appendChild(el("div", "why",
+            "More rounds after the final notice. They exist so a bureau that simply keeps saying " +
+            "\u201cverified\u201d runs out of room. " + rounds.length + " is the cap."));
+          st4.appendChild(el("div", "set",
+            "Unverified \u2014 the plan repeats the earlier letters here rather than adding new ones"));
+          path.appendChild(st4);
+        }
+
+        var stEnd = el("div", "stn end");
+        stEnd.appendChild(el("div", "when", "The end of the path"));
+        stEnd.appendChild(el("div", "what", "Every row above has been answered on the record"));
+        stEnd.appendChild(el("div", "why",
+          "Each row is either corrected, removed, or answered by the bureau in writing with the " +
+          "method it used. That is the day this path is finished. We cannot tell you which of those " +
+          "three each row lands on \u2014 nobody honestly can on day one."));
+        path.appendChild(stEnd);
+        s3.appendChild(path);
+
+        var blank = el("div", "blank");
+        blank.appendChild(el("div", "k", "Why some dates are blank"));
+        var bv = el("div", "v");
+        bv.appendChild(document.createTextNode(
+          "One date on this path is fixed by law and we printed it. The others depend on what the " +
+          "bureau sends back, and we have not had that yet. "));
+        bv.appendChild(el("b", null, "A blank here is us refusing to make one up."));
+        bv.appendChild(document.createTextNode(" On the call we set each one with you."));
+        blank.appendChild(bv);
+        s3.appendChild(blank);
+        roadmapBox.appendChild(s3);
+
+        /* ── Step 4 — what the lender's computer reads today ─────────────── */
+        var s4 = stepHead(4, "What the lender\u2019s computer reads today",
+          "This is the hard part of the page. Read it as a reading of the paperwork, because that " +
+          "is all it is.");
+        var v = el("div", "verdict");
+        v.appendChild(el("div", "k", "Reading the file as it stands"));
+        v.appendChild(el("div", "h",
+          "While " + (findings.length === 1 ? "that line is" : "those " + findings.length + " lines are") +
+          " on the file, the software reads it as not fundable."));
+        v.appendChild(el("p", null,
+          "That is a verdict on a document. Not on you. The software never meets you. It reads this " +
+          "file. It reads what is written, and it says no."));
+        var blk = el("div", "blockers");
+        findings.forEach(function (f, i) {
+          var b = el("div", "blk");
+          b.appendChild(el("div", "n", String(i + 1).padStart(2, "0")));
+          b.appendChild(el("div", "x", f.reason || (f.creditor + " is being reported incorrectly.")));
+          blk.appendChild(b);
+        });
+        v.appendChild(blk);
+        v.appendChild(el("div", "release",
+          "Every one of those is a paperwork problem with a rule behind it. Paperwork problems get fixed."));
+        s4.appendChild(v);
+
+        if (plan.today && plan.today.preapprovalKnown === false) {
+          var nb = el("div", "blank");
+          nb.appendChild(el("div", "k", "One number we are not going to print"));
+          var nv = el("div", "v");
+          nv.appendChild(document.createTextNode("Your file came to us "));
+          nv.appendChild(el("b", null, "without a credit limit"));
+          nv.appendChild(document.createTextNode(
+            " on that account. Without the limit there is no way to work out what you would " +
+            "qualify for. Our own software turns that unknown into a zero \u2014 so printing "));
+          nv.appendChild(el("b", null, "$0"));
+          nv.appendChild(document.createTextNode(
+            " would be showing you a made-up number, not an answer. We are leaving it blank. " +
+            "Pulling that limit is the first thing we do on the call."));
+          nb.appendChild(nv);
+          s4.appendChild(nb);
+        }
+        roadmapBox.appendChild(s4);
+
+        /* ── Step 5 — then we get the file fully fundable ────────────────── */
+        var s5 = stepHead(5, "Then we get the file fully fundable",
+          "You did not come here to borrow from us. Fundhub Credit Solutions LLC does not lend and " +
+          "does not fund. A funder sent you here because they could not do the deal with the file " +
+          "as it stands.");
+        var hand = el("div", "hand");
+        [
+          "We work the path above until the file reads the way the rules say it should.",
+          "You get every letter, every answer and every date as it happens. Nothing about your file is kept from you.",
+          "Then we\u2019ll talk to your funder, and you\u2019ll be able to get what you want."
+        ].forEach(function (t, i) {
+          var h = el("div", "h");
+          h.appendChild(el("div", "n", String(i + 1).padStart(2, "0")));
+          h.appendChild(el("div", "x", t));
+          hand.appendChild(h);
+        });
+        s5.appendChild(hand);
+        s5.appendChild(el("p", "say",
+          "Fundhub Credit Solutions LLC is not where this ends. We are the part in the middle that " +
+          "gets the paperwork right, so the people who already know you can pick the conversation " +
+          "back up."));
+
+        var again = el("a", "btn");
         again.id = "roadmap-book";
         again.href = plan.bookUrl || BOOK;
         again.textContent = "Book a call";
+        again.style.marginTop = "22px";
         again.addEventListener("click", function (e) {
           e.preventDefault();
           location.assign(plan.bookUrl || BOOK);
         });
-        roadmapBox.appendChild(h);
-        roadmapBox.appendChild(note);
-        roadmapBox.appendChild(list);
-        roadmapBox.appendChild(again);
+        s5.appendChild(again);
+        s5.appendChild(el("p", "terms", "30 minutes \u00b7 by phone \u00b7 no cost"));
+        s5.appendChild(el("p", "disclaim",
+          "Nothing on this page is a promise that any item will be removed, that any lender will " +
+          "approve you, or that any number on your file will change."));
+        roadmapBox.appendChild(s5);
       }
       function mountFilePull(sc) {
         filePull.hidden = false;
