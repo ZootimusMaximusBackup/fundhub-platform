@@ -43,13 +43,14 @@ padding, `company-brain` app height), so it has to keep working, not be deleted.
 | # | Unit | File | Owner | Status |
 |---|------|------|-------|--------|
 | A | The shared strip 15 screens inherit | `public/app/data.js` | this thread | **claimed** |
-| B | Pipeline's own copy | `public/app/pipeline.html` | unclaimed | pending |
-| C | Partner Galaxy's own copy | `public/app/partner-galaxy.html` | unclaimed | pending |
-| D | Calendar's own copy | `public/app/calendar.html` | unclaimed | pending |
-| E | Live sweep, all screens, after A–D land | verify only | unclaimed | blocked on A–D |
+| B | Pipeline's own copy | `public/app/pipeline.html` | this thread | **done** |
+| C | Partner Galaxy's own copy | `public/app/partner-galaxy.html` | this thread | **done — nothing to change** |
+| D | Calendar's own copy | `public/app/calendar.html` | this thread | **done** |
+| E | Live sweep, all screens | this thread | **done** |
 
 A, B, C and D are four different files with no shared code. **No dependencies —
-all parallel.** E waits for the other four.
+all parallel.** E waits for the other four. All five ran in this thread in the
+end, on one branch: `fix/no-colour-bars-2026-08-28`, PR #267.
 
 Screens covered by A (they call `FHData.explain`): agent-editor, brand-studio,
 calendar, campaign-manager, client-portal, closer-dashboard, finance-os,
@@ -108,11 +109,46 @@ strip renders, background `rgb(10,10,10)`, text `rgb(242,166,155)`, saying
 a few minutes." Evidence and both scripts in
 `docs/workflows/colour-bars-2026-08-28-evidence/` (gitignored).
 
-### B — public/app/pipeline.html
-_(filled in on completion)_
+### B — public/app/pipeline.html — **done 2026-08-28**
 
-### C — public/app/partner-galaxy.html
-_(filled in on completion)_
+Had the full mint/peach/rose map hand-rolled in the file. `real` and `sample`
+render nothing; `error` renders in app ink with the sentence in `var(--alert)`.
 
-### D — public/app/calendar.html
-_(filled in on completion)_
+Two messages would have been swallowed by simply deleting the green tone, so
+they move to a new `note` tone that still renders, in app ink with ordinary
+text — this is the part worth reviewing:
+
+* `"Archived <name> · removed from pipeline"` — the only confirmation an archive
+  has ever given anyone.
+* `"<rail> · no cards on this rail yet — stages are ready, nobody has been
+  placed here"` — an empty rail explaining that it is empty on purpose.
+
+`"live pipeline"` renders nothing now; a full board says it better. Dropping
+`sample` loses nothing: every caller of it in `failBoard()` also calls
+`showNote()`, which puts the same sentence on the board itself.
+
+### C — public/app/partner-galaxy.html — **done 2026-08-28, no change needed**
+
+Its bottom strip is already `#0A0A0A` with `#E4E4E7` text — app ink, not a
+colour. It only appeared in the first sweep because it shares the z-index.
+Checked live: zero colour bars. No edit made.
+
+### D — public/app/calendar.html — **done 2026-08-28**
+
+One rose strip, for the case where the page never finished loading. Same
+sentence, now app ink with the text in `var(--alert)`.
+
+Calendar's "live schedule" green bar comes from the shared `FHData.banner`, not
+from this file, so unit A removes it — confirmed by sweeping with `data.js`
+patched and again without it. Its partial-failure warning ("Some of your
+completed calls could not be loaded…") uses the `error` tone, so it is
+unaffected and still shows.
+
+### E — live sweep — **done 2026-08-28**
+
+All eleven screens checked live on https://fundhub.ai as `closer@fundhub.ai`
+with the patched files served over the real backend and every write blocked:
+documents, messaging, closer-dashboard, inquiry-remover, staff-teams,
+ops-admin, finance-os, campaign-manager, pipeline, calendar, partner-galaxy.
+**Zero colour bars on all eleven.** Mint confirmed present before the fix on
+documents, messaging and calendar; gone after.
