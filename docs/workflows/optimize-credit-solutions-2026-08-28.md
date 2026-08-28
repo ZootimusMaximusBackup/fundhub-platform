@@ -16,7 +16,7 @@ Branch: `feat/optimize-apply` (from `origin/main`)
 
 - Entity on every public word: **Fundhub Credit Solutions LLC**
 - Referrals only. Low-key. No “your score will go up.” No “credit repair” on the page.
-- Book URL (reuse, do not invent): `https://apply.fundhub.ai/funding-book-call`
+- Book URL (reuse, do not invent): `https://apply.fundhub.ai/schedule/phonecall`
 - Audit checkout: keep title **Consulting Services Assessment**. Never POST `/public-api/products/create`.
 - Smart Credit: Enrollment Widget only, and only when client key + PID exist.
 - No Identity IQ. No CRS on this page. No Blake ingest. No Twilio from Gmail.

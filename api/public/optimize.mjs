@@ -20,7 +20,7 @@ import { normalizePhone } from "../../src/messaging/providers/bland-voice.mjs";
 import { safeError } from "../../src/http/health.mjs";
 import { buildOptimizeRoadmap } from "../../src/optimize-page/roadmap.mjs";
 
-export const BOOK_URL = "https://apply.fundhub.ai/funding-book-call";
+export const BOOK_URL = "https://apply.fundhub.ai/schedule/phonecall";
 export const AUDIT_KEEP_TITLE = "Consulting Services Assessment";
 
 function readBody(req) {

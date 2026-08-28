@@ -7,9 +7,9 @@ flowchart TD
     PRETTY["/optimize serves public/optimize.html"] --> PAGE[Fundhub Credit Solutions LLC copy]
     REWRITE["/optimize.com rewrite 200 to /optimize.html"] --> PAGE
     PAGE --> FIELDS[Optional first name, last name, phone]
-    PAGE --> BTN["Book a call href = apply.fundhub.ai/funding-book-call"]
+    PAGE --> BTN["Book a call href = apply.fundhub.ai/schedule/phonecall"]
     FIELDS --> BTN
-    BTN --> CAL[Same ClickFunnels / Google Calendar book page the survey uses]
+    BTN --> CAL[Meeting with Chris 30 min One-on-One phonecall calendar]
     PAGE --> AUDIT[Audit form — email]
     AUDIT --> POST["POST /api/public/optimize"]
     POST --> KEEP["createCheckoutSession title = Consulting Services Assessment"]
@@ -26,7 +26,7 @@ flowchart TD
 
 ## Traced paths
 
-- `public/optimize.html` — static page. Entity is Fundhub Credit Solutions LLC. Book a call is an `<a>` to `https://apply.fundhub.ai/funding-book-call`. Audit posts to `/api/public/optimize`. Page copy says Audit, not credit repair.
+- `public/optimize.html` — static page. Entity is Fundhub Credit Solutions LLC. Book a call is an `<a>` to `https://apply.fundhub.ai/schedule/phonecall`. Audit posts to `/api/public/optimize`. Page copy says Audit, not credit repair.
 - `api/public/optimize.mjs` — GET returns `smartCredit: null` unless both a client key and a PID exist. GET `?view=roadmap` runs `src/optimize-page/roadmap.mjs` (metro2 + repair round-plan + UnderwriteIQ client map) on the stored sample file. POST ignores any client product title and always mints **Consulting Services Assessment** via `createCheckoutSession`. Never POST `/public-api/products/create`.
 - `netlify.toml` — `/optimize.com` rewrite (status 200) to `/optimize.html`. Pretty URL `/optimize` is the file itself.
 - No Identity IQ. No CRS. No xyl.in. Smart Credit widget is dark until env names exist.

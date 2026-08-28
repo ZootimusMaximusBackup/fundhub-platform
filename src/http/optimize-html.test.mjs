@@ -1,4 +1,4 @@
-// public/optimize.html is referrals only. Book goes to the survey calendar.
+// public/optimize.html is referrals only. Book goes to the phonecall calendar.
 import { test } from "node:test";
 import assert from "node:assert";
 import fs from "node:fs";
@@ -12,11 +12,16 @@ const TOML = path.resolve(HERE, "../../netlify.toml");
 const html = fs.readFileSync(PAGE, "utf8");
 const toml = fs.readFileSync(TOML, "utf8");
 
-test("optimize.html books on funding-book-call, not xyl.in or Identity IQ", () => {
+test("optimize.html books on schedule/phonecall, not funding-book-call or xyl.in", () => {
   assert.match(
     html,
-    /https:\/\/apply\.fundhub\.ai\/funding-book-call/,
-    "must reuse the survey calendar URL"
+    /https:\/\/apply\.fundhub\.ai\/schedule\/phonecall/,
+    "must reuse the credit-repair phonecall calendar URL"
+  );
+  assert.doesNotMatch(
+    html,
+    /funding-book-call/,
+    "must not send referrals to the funding survey calendar"
   );
   assert.match(html, /Book a call/, "primary button must say what happens");
   assert.match(

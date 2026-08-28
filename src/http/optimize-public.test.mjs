@@ -31,7 +31,7 @@ function mockRes() {
 
 test("AUDIT_KEEP_TITLE is the keep Assessment title, not Audit or a new catalog name", () => {
   assert.equal(AUDIT_KEEP_TITLE, "Consulting Services Assessment");
-  assert.equal(BOOK_URL, "https://apply.fundhub.ai/funding-book-call");
+  assert.equal(BOOK_URL, "https://apply.fundhub.ai/schedule/phonecall");
 });
 
 test("smartCreditFromEnv stays dark when client key or PID is missing", () => {

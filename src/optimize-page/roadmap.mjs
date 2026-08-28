@@ -12,7 +12,7 @@ import { violationsByBureauFromMergedCrs } from "../metro2/diy/from-crs.mjs";
 import { buildRoundPlan } from "../repair/round-plan.mjs";
 import { buildBlackReportClient } from "../underwrite/black-report-client.mjs";
 
-const BOOK_URL = "https://apply.fundhub.ai/funding-book-call";
+const BOOK_URL = "https://apply.fundhub.ai/schedule/phonecall";
 
 /** Same stored Equifax body the metro2 from-crs tests already run. */
 export const SAMPLE_STORED_FILE = Object.freeze({

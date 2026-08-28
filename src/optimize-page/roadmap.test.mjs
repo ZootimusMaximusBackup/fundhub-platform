@@ -6,7 +6,7 @@ test("buildOptimizeRoadmap runs the existing brain on the stored sample file", (
   const out = buildOptimizeRoadmap();
   assert.equal(out.ok, true);
   assert.equal(out.source, "sample");
-  assert.equal(out.bookUrl, "https://apply.fundhub.ai/funding-book-call");
+  assert.equal(out.bookUrl, "https://apply.fundhub.ai/schedule/phonecall");
   assert.equal(out.rounds.length, 6);
   assert.equal(out.rounds[0].step, "R1");
   assert.equal(out.rounds[0].status, "current");
