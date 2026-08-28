@@ -1,0 +1,29 @@
+---
+description: Grok never touches displays — only Claude may change screens
+alwaysApply: true
+---
+
+# Grok does not touch displays
+
+**Owner law (2026-08-28):** Only Claude may change what people see on a screen. Grok (Cursor Grok / any Grok session) does not.
+
+## Never (Grok)
+
+- HTML, CSS, page layout, colors, type, spacing
+- `public/app/*` screens, CRM desks, portal, Present / closer deck UI
+- Copy on buttons, labels, or any visible control
+- Screenshots, marked-up review shots, or “make it look right”
+
+## Always (Grok)
+
+- Backend, APIs, scripts, data, tests, docs, commits — when Chris named that work
+- If a request needs a display change, stop and leave it for Claude
+
+## Example
+
+```text
+Ask: "Fix the UnderwriteIQ import."
+
+❌ Also restyle the UnderwriteIQ page.
+✅ Fix the import. Leave the screen alone.
+```
