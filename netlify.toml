@@ -175,6 +175,13 @@
   to = "/climate/"
   status = 301
 
+# Hidden referral page. Pretty URL /optimize serves optimize.html on its own.
+# /optimize.com needs this rewrite because the ".com" is part of the path.
+[[redirects]]
+  from = "/optimize.com"
+  to = "/optimize.html"
+  status = 200
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"

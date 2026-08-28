@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Book a call | Fundhub Credit Solutions LLC</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="robots" content="noindex">
+<meta name="description" content="Referral page for Fundhub Credit Solutions LLC. Book a call. Audit is optional.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#0A0A0A;--paper:#FCFCFC;--gray:#52525B;--line:#E4E4E7;--sans:Inter,system-ui,sans-serif}
+  *{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.5}
+  .wrap{max-width:520px;margin:12vh auto;padding:0 24px}
+  .code{letter-spacing:.08em;font-size:13px;color:var(--gray);margin-bottom:12px}
+  h1{font-size:28px;font-weight:650;margin:0 0 12px}
+  h2{font-size:18px;font-weight:650;margin:28px 0 8px}
+  p{color:var(--gray);margin:0 0 20px}
+  label{display:block;font-size:13px;font-weight:600;margin:0 0 6px}
+  input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff;color:var(--ink)}
+  .field{margin:0 0 14px}
+  .hint{font-size:13px;color:var(--gray);margin:4px 0 0}
+  a.btn,button.btn{display:inline-block;background:var(--ink);color:#fff;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:600;margin-top:8px;border:0;font:inherit;cursor:pointer}
+  button.btn:disabled{opacity:.5;cursor:not-allowed}
+  .legal{margin-top:28px;font-size:12px;color:var(--gray)}
+  .err{color:#991B1B;font-size:13px;margin:8px 0 0}
+  #file-pull{margin-top:28px}
+  #roadmap{margin-top:28px}
+  #roadmap ol{padding-left:20px;color:var(--gray)}
+  #roadmap li{margin:0 0 10px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="code">Referral</div>
+    <h1>Book a call with Fundhub Credit Solutions LLC</h1>
+    <p>This page is for referrals only. You can book a call now. Name and phone are optional.</p>
+    <form id="opt">
+      <div class="field">
+        <label for="first">First name</label>
+        <input id="first" name="first_name" type="text" autocomplete="given-name">
+      </div>
+      <div class="field">
+        <label for="last">Last name</label>
+        <input id="last" name="last_name" type="text" autocomplete="family-name">
+      </div>
+      <div class="field">
+        <label for="phone">Phone</label>
+        <input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel">
+        <p class="hint">Optional. Leave blank if you just want a call.</p>
+      </div>
+      <a class="btn" id="book" href="https://apply.fundhub.ai/funding-book-call">Book a call</a>
+    </form>
+    <h2>Audit</h2>
+    <p>Optional. An Audit if you want one. You can skip it and still book.</p>
+    <form id="audit">
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="email" required>
+      </div>
+      <button class="btn" id="audit-btn" type="submit">Pay for Audit</button>
+      <p class="err" id="audit-err" hidden></p>
+    </form>
+    <p><button class="btn" id="roadmap-btn" type="button">See Audit roadmap</button></p>
+    <div id="roadmap" hidden></div>
+    <div id="file-pull" hidden></div>
+    <p class="legal">Fundhub Credit Solutions LLC.</p>
+  </div>
+  <script>
+    (function () {
+      var BOOK = "https://apply.fundhub.ai/funding-book-call";
+      var book = document.getElementById("book");
+      var audit = document.getElementById("audit");
+      var auditBtn = document.getElementById("audit-btn");
+      var auditErr = document.getElementById("audit-err");
+      var filePull = document.getElementById("file-pull");
+      var roadmapBtn = document.getElementById("roadmap-btn");
+      var roadmapBox = document.getElementById("roadmap");
+      book.addEventListener("click", function (e) {
+        e.preventDefault();
+        location.assign(BOOK);
+      });
+      fetch("/api/public/optimize", { headers: { accept: "application/json" } })
+        .then(function (r) { return r.json(); })
+        .then(function (cfg) {
+          if (cfg && cfg.bookUrl) BOOK = cfg.bookUrl;
+          book.setAttribute("href", BOOK);
+          if (cfg && cfg.audit && cfg.audit.ready === false) {
+            auditBtn.disabled = true;
+            auditErr.hidden = false;
+            auditErr.textContent = "Audit checkout is not ready yet.";
+          }
+          if (cfg && cfg.smartCredit && cfg.smartCredit.clientKey && cfg.smartCredit.pid) {
+            mountFilePull(cfg.smartCredit);
+          }
+        })
+        .catch(function () {});
+      audit.addEventListener("submit", function (e) {
+        e.preventDefault();
+        auditErr.hidden = true;
+        auditBtn.disabled = true;
+        fetch("/api/public/optimize", {
+          method: "POST",
+          headers: { "content-type": "application/json", accept: "application/json" },
+          body: JSON.stringify({
+            first_name: document.getElementById("first").value,
+            last_name: document.getElementById("last").value,
+            phone: document.getElementById("phone").value,
+            email: document.getElementById("email").value
+          })
+        })
+          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+          .then(function (out) {
+            if (out.j && out.j.checkoutUrl) {
+              location.assign(out.j.checkoutUrl);
+              return;
+            }
+            auditBtn.disabled = false;
+            auditErr.hidden = false;
+            auditErr.textContent = "Could not start Audit. Try again.";
+          })
+          .catch(function () {
+            auditBtn.disabled = false;
+            auditErr.hidden = false;
+            auditErr.textContent = "Could not start Audit. Try again.";
+          });
+      });
+      roadmapBtn.addEventListener("click", function () {
+        roadmapBtn.disabled = true;
+        fetch("/api/public/optimize?view=roadmap", { headers: { accept: "application/json" } })
+          .then(function (r) { return r.json(); })
+          .then(function (plan) {
+            roadmapBtn.disabled = false;
+            if (!plan || !plan.ok) return;
+            renderRoadmap(plan);
+          })
+          .catch(function () { roadmapBtn.disabled = false; });
+      });
+      function renderRoadmap(plan) {
+        roadmapBox.hidden = false;
+        roadmapBox.replaceChildren();
+        var h = document.createElement("h2");
+        h.textContent = "Audit roadmap";
+        var note = document.createElement("p");
+        note.textContent = plan.source === "sample"
+          ? "Built from a stored sample file so you can see the path. On the call we design this together."
+          : "Built from your file. On the call we design this together.";
+        var list = document.createElement("ol");
+        (plan.rounds || []).forEach(function (r) {
+          var li = document.createElement("li");
+          var title = document.createElement("strong");
+          title.textContent = r.step + " — " + (r.when || r.title || "");
+          li.appendChild(title);
+          if (r.attacks && r.attacks.length) {
+            var bits = document.createElement("div");
+            bits.className = "hint";
+            bits.textContent = r.attacks.slice(0, 4).join(" · ");
+            li.appendChild(bits);
+          }
+          list.appendChild(li);
+        });
+        var again = document.createElement("a");
+        again.className = "btn";
+        again.id = "roadmap-book";
+        again.href = plan.bookUrl || BOOK;
+        again.textContent = "Book a call";
+        again.addEventListener("click", function (e) {
+          e.preventDefault();
+          location.assign(plan.bookUrl || BOOK);
+        });
+        roadmapBox.appendChild(h);
+        roadmapBox.appendChild(note);
+        roadmapBox.appendChild(list);
+        roadmapBox.appendChild(again);
+      }
+      function mountFilePull(sc) {
+        filePull.hidden = false;
+        var h = document.createElement("h2");
+        h.textContent = "Pull your file";
+        var note = document.createElement("p");
+        note.textContent = "Optional. Only if you want to.";
+        var pid = document.createElement("input");
+        pid.type = "hidden";
+        pid.name = "PID";
+        pid.value = sc.pid;
+        var box = document.createElement("div");
+        box.id = "cd-signup-widget";
+        box.setAttribute("data-clientkey", sc.clientKey);
+        box.setAttribute("data-memberurl", sc.memberUrl);
+        box.setAttribute("data-productname", sc.productName || "smartcredit");
+        filePull.appendChild(h);
+        filePull.appendChild(note);
+        filePull.appendChild(pid);
+        filePull.appendChild(box);
+        var s = document.createElement("script");
+        s.type = "module";
+        s.async = true;
+        s.defer = true;
+        s.src = sc.scriptUrl;
+        document.body.appendChild(s);
+      }
+    })();
+  </script>
+</body>
+</html>
