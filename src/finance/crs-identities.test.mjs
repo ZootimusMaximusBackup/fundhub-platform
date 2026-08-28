@@ -234,8 +234,9 @@ test("identityForBureau turns a Date birth date into YYYY-MM-DD", () => {
   assert.equal(out.birthDate, "1985-06-02");
 });
 
-test("activeBureausFromEnv: unset keeps all three, EX,EQ drops TransUnion", () => {
+test("activeBureausFromEnv: unset is TU+EX+EQ; override can drop or keep TU", () => {
   assert.deepEqual(activeBureausFromEnv({}), ["TU", "EX", "EQ"]);
+  assert.deepEqual(activeBureausFromEnv({ CRS_ACTIVE_BUREAUS: "TU,EX,EQ" }), ["TU", "EX", "EQ"]);
   assert.deepEqual(activeBureausFromEnv({ CRS_ACTIVE_BUREAUS: "EX,EQ" }), ["EX", "EQ"]);
   assert.deepEqual(activeBureausFromEnv({ CRS_ACTIVE_BUREAUS: " tu , eq " }), ["TU", "EQ"]);
 });

@@ -49,8 +49,9 @@ No new route. No migration — store EIN + extra owner in `businesses.entity_dat
 ## Proof
 
 - Unit tests green for parse / price / client-detail list
-- Form: add 2 businesses with EIN + one extra owner; total = $52; pay button after authorize
-- Staff drawer / full file shows both companies, states, EIN, extra-owner warning
+- Form: add 2 businesses with EIN + one extra owner; total = $52
+- Live POST 201: saved QA Arizona LLC (AZ, extra owner) + QA Texas LLC (TX). Pay link minted at $52. No card charged.
+- Staff file live: both companies on Client Control Panel with extra-owner warning on Arizona.
 
 ## Extra file (needed)
 

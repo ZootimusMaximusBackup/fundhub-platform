@@ -78,11 +78,13 @@ test("POST /api/company-brain/sync runs incremental when configured", async () =
         called = true;
         assert.equal(args.orgId, ORG);
         return { ok: true, mode: "incremental", upserted: 2, deleted: 0 };
-      }
+      },
+      processOrgMeetWords: async () => ({ paired: 1, whispered: 0 })
     }
   );
   assert.equal(called, true);
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.synced, true);
   assert.equal(res.body.upserted, 2);
+  assert.equal(res.body.words_ready, 1);
 });

@@ -175,9 +175,7 @@
   to = "/climate/"
   status = 301
 
-# Temporary public short link -> partner referral (Credit Comeback Club / xyl.in).
-# Saved 2026-08-24, first shipped 2026-08-27 — the original commit never reached
-# main, so fundhub.ai/go 404ed. See docs/company-resources/credit-comeback-club-referral-2026-08-24.md
+# Temporary public short link → partner referral (Credit Comeback Club / xyl.in).
 [[redirects]]
   from = "/go"
   to = "https://xyl.in/e5hosp5"

@@ -1096,22 +1096,28 @@
 
   async function invoiceThisClient() {
     if (!window.FHData || !contactId) { toast("No contact on this deck."); return; }
-    var o = offer(selectedOfferKey());
-    var cents = Math.round(Number(o && o.priceCents));
-    if (!Number.isFinite(cents) || cents <= 0) { toast("Pick an offer first."); return; }
-    toast("Minting invoice…");
-    var r = await window.FHData.write("/api/payment-links", {
-      action: "create",
-      client_id: contactId,
-      purpose: "invoice",
-      description: (o && o.name) || "Invoice",
-      price_cents: cents
-    });
-    if (!r.ok) {
-      toast((r.error && (r.error.message || r.error)) || "Could not mint invoice.");
+    toast("Looking up invoice…");
+    var list = await window.FHData.read("invoices", { client_id: contactId, limit: 5 });
+    if (!list || !list.ok) {
+      toast((list && (list.error || list.message)) || "Could not load invoices.");
       return;
     }
-    toast("Invoice minted. Do not pay.");
+    var items = (list.data && list.data.items) || list.items || [];
+    var open = null;
+    for (var i = 0; i < items.length; i++) {
+      var st = String(items[i].status || "").toLowerCase();
+      if (items[i].id && st !== "void" && st !== "written_off") { open = items[i]; break; }
+    }
+    if (!open) { toast("No invoice on this file yet."); return; }
+    var r = await window.FHData.write("/api/messages-outbound", {
+      action: "email_invoice",
+      invoice_id: open.id
+    });
+    if (!r.ok) {
+      toast((r.error && (r.error.message || r.error)) || "Could not email invoice.");
+      return;
+    }
+    toast("Invoice emailed.");
   }
 
   document.addEventListener("click", function (e) {

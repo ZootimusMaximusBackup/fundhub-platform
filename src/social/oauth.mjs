@@ -61,7 +61,7 @@ export function metaAuthUrl({ appId, redirectUri, state, scopes } = {}) {
 
 export function linkedinAuthUrl({ clientId, redirectUri, state, scopes } = {}) {
   if (!clientId) return { ok: false, reason: "not_configured", missing: ["LINKEDIN_CLIENT_ID"] };
-  const scope = (scopes || ["w_organization_social", "r_organization_social", "openid", "profile"]).join(" ");
+  const scope = (scopes || ["openid", "profile", "email", "w_member_social"]).join(" ");
   const u = new URL(LI_AUTH);
   u.searchParams.set("response_type", "code");
   u.searchParams.set("client_id", clientId);

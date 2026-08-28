@@ -54,7 +54,7 @@ export {
 
 export {
   signContractUrl, verifyContractUrl, verifyContractRequest, secretFromEnv,
-  DEFAULT_TTL_SECONDS, MAX_TTL_SECONDS
+  DEFAULT_TTL_SECONDS, MAX_TTL_SECONDS, EMPLOYMENT_LINK_TTL_SECONDS
 } from "./signed-link.mjs";
 
 export {

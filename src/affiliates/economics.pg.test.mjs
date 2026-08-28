@@ -1,8 +1,8 @@
 // Postgres-backed tests for affiliate economics. Skipped without DATABASE_URL.
 //
 // The four rules under test: first touch is immutable, accrual only on completed
-// outcomes, tier 2 unlocks one-way, and NO RATE IS INVENTED when the schedule is
-// unconfigured.
+// outcomes, tier 2 unlocks one-way, and NO RATE IS INVENTED when no rule matches
+// (owner-set defaults live in migration 261: 20% direct / 5% downline).
 
 import { test, before, beforeEach, after, describe } from "node:test";
 import assert from "node:assert";
@@ -52,7 +52,19 @@ describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
     await db.query(`ALTER TABLE affiliate_referrals DISABLE TRIGGER trg_affiliate_referrals_no_delete`);
     await db.query(`DELETE FROM affiliate_referrals WHERE org_id = $1`, [org]);
     await db.query(`ALTER TABLE affiliate_referrals ENABLE TRIGGER trg_affiliate_referrals_no_delete`);
-    await db.query(`DELETE FROM affiliate_commission_rules WHERE org_id = $1`, [org]);
+    // Keep owner-set AF-04 rows (migration 260). Only clear fixture rules this suite inserts.
+    await db.query(
+      `DELETE FROM affiliate_commission_rules
+        WHERE org_id = $1
+          AND (notes IS NULL OR notes NOT LIKE 'Owner-set 2026-08-24 AF-04%')`,
+      [org]
+    );
+    await db.query(
+      `UPDATE affiliate_commission_rules
+          SET active = true, updated_at = now()
+        WHERE org_id = $1 AND notes LIKE 'Owner-set 2026-08-24 AF-04%'`,
+      [org]
+    );
     await db.query(`DELETE FROM sale_payments WHERE sale_id IN
                      (SELECT id FROM sales WHERE client_id IN
                         (SELECT id FROM clients WHERE first_name = $1))`, [TAG]);
@@ -171,9 +183,11 @@ describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
     assert.equal(r.reason, "no_attribution");
   });
 
-  // ══════════ RULE 4: no rate is invented ══════════
+  // ══════════ RULE 4: no rate is invented when nothing matches ══════════
 
-  test("THE AF-04 GAP: a conversion with no rule configured earns NULL, not zero", async () => {
+  test("a conversion with no matching rule earns NULL, not zero", async () => {
+    await db.query(
+      `UPDATE affiliate_commission_rules SET active = false WHERE org_id = $1`, [org]);
     await attribute(db, { orgId: org, affiliateId: affA, clientId: client1 });
     const sale = await mkSale(client1, repairProduct, 1500);
     const r = await convert(db, { orgId: org, clientId: client1, saleId: sale });
@@ -192,13 +206,31 @@ describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
     assert.equal(gaps.length, 1);
   });
 
-  test("no commission rules ship seeded — the schedule is undecided", async () => {
-    await db.query(`DELETE FROM affiliate_commission_rules WHERE org_id = $1`, [org]);
+  test("with no active rule matching, findRule and commissionFor stay null", async () => {
+    await db.query(
+      `UPDATE affiliate_commission_rules SET active = false WHERE org_id = $1`, [org]);
     assert.equal(await findRule(db, { orgId: org, tier: "direct" }), null);
     assert.equal(commissionFor(null, 1000), null, "no rule must not yield 0");
   });
 
+  test("owner-set schedule rates a repair conversion at 20% of sale price", async () => {
+    await attribute(db, { orgId: org, affiliateId: affA, clientId: client1 });
+    const sale = await mkSale(client1, repairProduct, 1000);
+    const r = await convert(db, { orgId: org, clientId: client1, saleId: sale });
+
+    assert.equal(r.converted, true);
+    assert.equal(r.unrated, false);
+    const row = (await db.query(
+      `SELECT commission_due, basis_amount, rule_snapshot FROM affiliate_referrals
+        WHERE client_id = $1 AND tier = 'direct'`, [client1])).rows[0];
+    assert.equal(Number(row.commission_due), 200); // 20% of 1000
+    assert.equal(Number(row.basis_amount), 1000);
+    assert.equal(Number(row.rule_snapshot.percent), 20);
+  });
+
   test("once a rule is configured, the commission is computed from it", async () => {
+    await db.query(
+      `UPDATE affiliate_commission_rules SET active = false WHERE org_id = $1`, [org]);
     await db.query(
       `INSERT INTO affiliate_commission_rules
          (org_id, name, tier, calc_method, percent, amount_basis, scope_rule)
@@ -219,6 +251,8 @@ describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
   });
 
   test("the rule snapshot means a later rate change cannot restate history", async () => {
+    await db.query(
+      `UPDATE affiliate_commission_rules SET active = false WHERE org_id = $1`, [org]);
     const ruleId = (await db.query(
       `INSERT INTO affiliate_commission_rules
          (org_id, name, tier, calc_method, percent, amount_basis, scope_rule)
@@ -251,6 +285,8 @@ describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
        rules are unambiguously in force, so what is being tested is precedence
        and nothing else. */
     await db.query(
+      `UPDATE affiliate_commission_rules SET active = false WHERE org_id = $1`, [org]);
+    await db.query(
       `INSERT INTO affiliate_commission_rules
          (org_id, name, tier, calc_method, percent, amount_basis, scope_rule, effective_from)
        VALUES ($1,'tier default','direct','percent',10,'sale_price','first_paid_product', now() - interval '1 hour')`, [org]);
@@ -268,6 +304,8 @@ describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
 
   test("a deactivated rule does not pay", async () => {
     await db.query(
+      `UPDATE affiliate_commission_rules SET active = false WHERE org_id = $1`, [org]);
+    await db.query(
       `INSERT INTO affiliate_commission_rules
          (org_id, name, tier, calc_method, percent, amount_basis, scope_rule, active)
        VALUES ($1,'retired','direct','percent',10,'sale_price','first_paid_product',false)`,
@@ -277,6 +315,8 @@ describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
   });
 
   test("an expired or not-yet-effective rule does not pay", async () => {
+    await db.query(
+      `UPDATE affiliate_commission_rules SET active = false WHERE org_id = $1`, [org]);
     await db.query(
       `INSERT INTO affiliate_commission_rules
          (org_id, name, tier, calc_method, percent, amount_basis, scope_rule,

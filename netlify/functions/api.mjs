@@ -71,6 +71,7 @@ import readMessageTemplates from "../../api/read/message-templates.mjs";
 import readStaff from "../../api/read/staff.mjs";
 import staffTelemetry from "../../api/staff/telemetry.mjs";
 import staffMonitoringConsent from "../../api/staff/monitoring-consent.mjs";
+import staffAvatar from "../../api/staff/avatar.mjs";
 import readEntitlements from "../../api/read/entitlements.mjs";
 import readFailedEvents from "../../api/read/failed-events.mjs";
 import readAgents from "../../api/read/agents.mjs";
@@ -132,6 +133,7 @@ import campaignsConnections from "../../api/campaigns/connections.mjs";
 import campaignsActionLog from "../../api/campaigns/action-log.mjs";
 import campaignsSync from "../../api/campaigns/sync.mjs";
 import campaignsWrite from "../../api/campaigns/write.mjs";
+import campaignsMetaAgency from "../../api/campaigns/meta-agency.mjs";
 import socialSchedule from "../../api/social/schedule.mjs";
 import socialPublish from "../../api/social/publish.mjs";
 import socialOauth from "../../api/social/oauth.mjs";
@@ -353,6 +355,7 @@ export const ROUTES = {
   "read/staff": readStaff,
   "staff/telemetry": staffTelemetry,
   "staff/monitoring-consent": staffMonitoringConsent,
+  "staff/avatar": staffAvatar,
   "read/entitlements": readEntitlements,
   "read/failed-events": readFailedEvents,
   "read/agents": readAgents,
@@ -553,6 +556,7 @@ export const ROUTES = {
   "campaigns/action-log": campaignsActionLog,
   "campaigns/sync": campaignsSync,
   "campaigns/write": campaignsWrite,
+  "campaigns/meta-agency": campaignsMetaAgency,
   "social/schedule": socialSchedule,
   "social/publish": socialPublish,
   "social/oauth": socialOauth,

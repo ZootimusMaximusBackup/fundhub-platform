@@ -1,5 +1,6 @@
 // Extract searchable text from a Drive file (metadata + optional bytes/export).
-// Whisper / diarization for A/V is deferred — step 1 only proves download + flag.
+// A/V stays metadata-only here. Words land in meet-transcript.mjs
+// (Drive sibling Transcript doc, or Whisper on a short file).
 
 import { classifyMime } from "./mime.mjs";
 import { extractOfficeText } from "./office.mjs";

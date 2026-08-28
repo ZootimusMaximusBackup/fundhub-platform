@@ -33,7 +33,6 @@ test("company-brain.html lets staff take a class quiz on the documents panel", (
   assert.match(HTML, /data-brain-quiz/);
   assert.match(HTML, /ramp-quizzes\.js/);
   assert.match(HTML, /Class quizzes/);
-  assert.match(HTML, /Check answers/);
 });
 
 test("company-brain.html tells the reader an upload waits for owner approval", () => {

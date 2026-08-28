@@ -46,14 +46,11 @@
 // *** MONEY THAT IS UNKNOWN STAYS UNKNOWN. ***
 //
 // affiliate_referrals.commission_due is numeric(14,2) and NULL means "not
-// calculated" — either not converted, or converted with no rule in force.
-// affiliate_commission_rules ships EMPTY and AF-04 (the rate schedule itself) is
-// undecided, so "converted but unrated" is the NORMAL case today, not an edge.
-//
-// A conversion with no rate is still a conversion. It IS counted in
-// converted_count, its money is counted nowhere, and it is never turned into a
-// zero. `unrated_converted_count` is what carries that NULL to the screen.
-// COALESCE(commission_due, 0) does not appear in this file and must not.
+// calculated" — either not converted, or converted with no matching rule.
+// Owner-set schedule (migration 261, 2026-08-24): Tier 1 20% / Tier 2 5%.
+// A conversion with no matching rule is still counted in converted_count; its
+// money is counted nowhere. `unrated_converted_count` carries that NULL to the
+// screen. COALESCE(commission_due, 0) does not appear in this file and must not.
 //
 // PAID is a different kind of number and a real zero when it is zero:
 // affiliate_payout_lines.amount is NOT NULL, so a settled total is always

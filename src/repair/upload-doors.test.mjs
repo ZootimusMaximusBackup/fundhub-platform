@@ -16,6 +16,12 @@ describe("C3 upload doors — lane gating", () => {
     assert.equal(doors.inquiry, false);
     assert.equal(doors.bureau_response, true);
   });
+  it("inquiry-only unlock opens inquiry door without funding snapshot", () => {
+    const doors = activeUploadDoors(lanesFromEntitlementCodes(["credit-analysis-report"]));
+    assert.equal(doors.funding, false);
+    assert.equal(doors.inquiry, true);
+    assert.equal(doors.bureau_response, false);
+  });
   it("doors stamp the correct document kind", () => {
     assert.equal(kindForDoor("funding"), KINDS.CLIENT_UPLOAD);
     assert.equal(kindForDoor("inquiry"), KINDS.INQUIRY_DOC);

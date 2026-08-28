@@ -125,8 +125,13 @@ export async function resolveProductId(db, orgId, { productId, productName, prod
   if (productName) {
     const r = await db.query(SQL_RESOLVE_PRODUCT, [orgId, String(productName)]);
     if (r.rows[0]?.product_id) return r.rows[0].product_id;
+    const asCode = await db.query(
+      `SELECT id FROM products WHERE org_id = $1 AND lower(code) = lower($2) LIMIT 1`,
+      [orgId, String(productName)]
+    );
+    if (asCode.rows[0]?.id) return asCode.rows[0].id;
   }
-  const code = BUCKET_TO_CODE[productBucket] || null;
+  const code = BUCKET_TO_CODE[productBucket] || productBucket || null;
   if (!code) return null;
   const byCode = await db.query(
     `SELECT id FROM products WHERE org_id = $1 AND lower(code) = lower($2) LIMIT 1`,

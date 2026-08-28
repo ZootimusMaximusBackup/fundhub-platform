@@ -81,7 +81,7 @@ async function downloadWithFfmpeg(url, outPath, referer) {
   return r.ok ? { ok: true } : { ok: false, error: r.stderr.slice(-600) };
 }
 
-/** Open Notion page, play Vimeo iframe, steal /config JSON from network. */
+/** Open Notion page, nudge Vimeo iframe, steal /config JSON from network. */
 async function vimeoUrlsFromNotion(page, notionUrl, embedUrl) {
   const configs = [];
 
@@ -97,22 +97,22 @@ async function vimeoUrlsFromNotion(page, notionUrl, embedUrl) {
 
   try {
     await page.goto(notionUrl, NAV_OPTS);
-    await page.waitForTimeout(3000);
+    await page.waitForTimeout(1500);
 
     const id = vimeoId(embedUrl);
     const iframeSel = id
       ? `iframe[src*="vimeo.com/video/${id}"], iframe[src*="${id}"]`
       : `iframe[src*="vimeo"]`;
 
-    await page.waitForSelector(iframeSel, { timeout: 45_000 }).catch(() => null);
+    await page.waitForSelector(iframeSel, { timeout: 20_000 }).catch(() => null);
     await page.locator(iframeSel).first().scrollIntoViewIfNeeded().catch(() => {});
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(800);
 
     const frame = page.frameLocator(iframeSel).first();
     await frame.locator('[data-play-button], button[aria-label*="Play"], .vp-play, .play').first()
-      .click({ timeout: 10_000 }).catch(() => {});
-    await page.locator(iframeSel).first().click({ timeout: 3000 }).catch(() => {});
-    await page.waitForTimeout(15_000);
+      .click({ timeout: 5000 }).catch(() => {});
+    await page.locator(iframeSel).first().click({ timeout: 2000 }).catch(() => {});
+    await page.waitForTimeout(4000);
   } finally {
     page.off("response", onResponse);
   }
@@ -128,14 +128,26 @@ async function downloadVideo(page, item, notionUrl, outPath) {
   const url = item.url;
 
   if (/vimeo/i.test(url)) {
-    const mediaUrls = await vimeoUrlsFromNotion(page, notionUrl, url);
-    for (const mediaUrl of mediaUrls) {
-      let dl = await downloadWithContext(page, mediaUrl, outPath, notionUrl);
-      if (dl.ok) return { ok: true, method: "vimeo-config" };
-      dl = await downloadWithFfmpeg(mediaUrl, outPath, notionUrl);
-      if (dl.ok) return { ok: true, method: "vimeo-ffmpeg" };
-    }
     const id = vimeoId(url);
+    if (id) {
+      const ytdlp = await downloadWithYtDlp(`https://vimeo.com/${id}`, outPath, notionUrl);
+      if (ytdlp.ok) return { ok: true, method: "vimeo-ytdlp" };
+    }
+    try {
+      const mediaUrls = await vimeoUrlsFromNotion(page, notionUrl, url);
+      for (const mediaUrl of mediaUrls) {
+        let dl = await downloadWithContext(page, mediaUrl, outPath, notionUrl);
+        if (dl.ok) return { ok: true, method: "vimeo-config" };
+        dl = await downloadWithFfmpeg(mediaUrl, outPath, notionUrl);
+        if (dl.ok) return { ok: true, method: "vimeo-ffmpeg" };
+      }
+    } catch (err) {
+      if (id) {
+        const ytdlp = await downloadWithYtDlp(`https://vimeo.com/${id}`, outPath, notionUrl);
+        if (ytdlp.ok) return { ok: true, method: "vimeo-ytdlp-retry" };
+      }
+      return { ok: false, error: err?.message || "vimeo browser failed" };
+    }
     if (id) {
       const dl = await downloadWithYtDlp(`https://vimeo.com/${id}`, outPath, notionUrl);
       if (dl.ok) return { ok: true, method: "vimeo-ytdlp" };
@@ -175,70 +187,76 @@ async function main() {
     return;
   }
 
-  console.log(`Retrying ${failures.length} failed video(s)…\n`);
+  console.log(`Retrying ${failures.length} failed video(s)…`);
 
   const context = await chromium.launchPersistentContext(PROFILE_DIR, {
-    headless: false,
-    viewport: { width: 1440, height: 900 },
+    headless: true,
+    viewport: { width: 1280, height: 720 },
   });
-  const page = context.pages()[0] || (await context.newPage());
+  let page = context.pages()[0] || (await context.newPage());
 
   let ok = 0;
   let fail = 0;
 
   for (const { dir, meta, index, item } of failures) {
-    const slug = path.basename(item.url).replace(/[^a-z0-9]+/gi, "-").slice(0, 30);
-    const videosDir = path.join(dir, "videos");
-    const transcriptsDir = path.join(dir, "transcripts");
-    fs.mkdirSync(videosDir, { recursive: true });
-    fs.mkdirSync(transcriptsDir, { recursive: true });
+    try {
+      if (page.isClosed()) page = await context.newPage();
+      const slug = path.basename(item.url).replace(/[^a-z0-9]+/gi, "-").slice(0, 30);
+      const videosDir = path.join(dir, "videos");
+      const transcriptsDir = path.join(dir, "transcripts");
+      fs.mkdirSync(videosDir, { recursive: true });
+      fs.mkdirSync(transcriptsDir, { recursive: true });
 
-    const videoPath = path.join(videosDir, `retry-${slug}.mp4`);
-    const audioPath = path.join(videosDir, `retry-${slug}.mp3`);
-    const transcriptPath = path.join(transcriptsDir, `retry-${slug}.txt`);
+      const videoPath = path.join(videosDir, `retry-${slug}.mp4`);
+      const audioPath = path.join(videosDir, `retry-${slug}.mp3`);
+      const transcriptPath = path.join(transcriptsDir, `retry-${slug}.txt`);
 
-    console.log(`\n${meta.title}`);
-    console.log(`  ${item.url.slice(0, 90)}`);
+      const dl = await downloadVideo(page, item, meta.url, videoPath);
+      if (!dl.ok) {
+        meta.transcripts[index] = { ...item, status: "download_failed", error: dl.error, retryAt: new Date().toISOString() };
+        writeMeta(dir, meta);
+        fail++;
+        continue;
+      }
 
-    const dl = await downloadVideo(page, item, meta.url, videoPath);
-    if (!dl.ok) {
-      console.log(`  ✗ download: ${dl.error?.slice(0, 100)}`);
-      meta.transcripts[index] = { ...item, status: "download_failed", error: dl.error, retryAt: new Date().toISOString() };
+      const audio = toMp3(videoPath, audioPath);
+      if (!audio.ok) {
+        meta.transcripts[index] = { ...item, status: "audio_failed", error: audio.error, videoPath };
+        writeMeta(dir, meta);
+        fail++;
+        continue;
+      }
+
+      const tx = await transcribeAudio(audioPath, transcriptPath, key);
+      if (!tx.ok) {
+        meta.transcripts[index] = { ...item, status: "transcribe_failed", error: tx.error, videoPath, audioPath };
+        writeMeta(dir, meta);
+        fail++;
+        continue;
+      }
+
+      meta.transcripts[index] = {
+        ...item,
+        status: "done",
+        method: dl.method || "retry",
+        videoPath,
+        audioPath,
+        transcriptPath,
+        retryAt: new Date().toISOString(),
+      };
+      writeMeta(dir, meta);
+      ok++;
+    } catch (err) {
+      if (page.isClosed()) page = await context.newPage();
+      meta.transcripts[index] = {
+        ...item,
+        status: "download_failed",
+        error: err?.message || "retry_crash",
+        retryAt: new Date().toISOString(),
+      };
       writeMeta(dir, meta);
       fail++;
-      continue;
     }
-
-    const audio = toMp3(videoPath, audioPath);
-    if (!audio.ok) {
-      console.log(`  ✗ audio: ${audio.error?.slice(0, 80)}`);
-      meta.transcripts[index] = { ...item, status: "audio_failed", error: audio.error, videoPath };
-      writeMeta(dir, meta);
-      fail++;
-      continue;
-    }
-
-    const tx = await transcribeAudio(audioPath, transcriptPath, key);
-    if (!tx.ok) {
-      console.log(`  ✗ whisper: ${tx.error?.slice(0, 80)}`);
-      meta.transcripts[index] = { ...item, status: "transcribe_failed", error: tx.error, videoPath, audioPath };
-      writeMeta(dir, meta);
-      fail++;
-      continue;
-    }
-
-    meta.transcripts[index] = {
-      ...item,
-      status: "done",
-      method: dl.method || "retry",
-      videoPath,
-      audioPath,
-      transcriptPath,
-      retryAt: new Date().toISOString(),
-    };
-    writeMeta(dir, meta);
-    ok++;
-    console.log(`  ✓ done (${dl.method})`);
   }
 
   await context.close();

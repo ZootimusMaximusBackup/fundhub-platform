@@ -436,8 +436,13 @@ export async function wipeDemoData(db, { orgId } = {}) {
 
     // Every non-CASCADE FK to clients must be cleared before DELETE clients.
     const byClient = [
-      `DELETE FROM document_versions WHERE document_id IN (SELECT id FROM documents WHERE client_id=ANY($1))`,
       `UPDATE documents SET current_version_id=NULL WHERE client_id=ANY($1)`,
+      `DELETE FROM contract_signers WHERE client_id=ANY($1)
+         OR contract_id IN (SELECT id FROM contracts WHERE client_id=ANY($1))`,
+      `DELETE FROM contracts WHERE client_id=ANY($1)`,
+      `UPDATE contract_templates SET document_version_id=NULL
+        WHERE document_version_id IN (SELECT id FROM document_versions WHERE document_id IN (SELECT id FROM documents WHERE client_id=ANY($1)))`,
+      `DELETE FROM document_versions WHERE document_id IN (SELECT id FROM documents WHERE client_id=ANY($1))`,
       `DELETE FROM documents WHERE client_id=ANY($1)`,
       `DELETE FROM events WHERE client_id=ANY($1)`,
       `DELETE FROM bank_inbox WHERE client_id=ANY($1)`,

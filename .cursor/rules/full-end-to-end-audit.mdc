@@ -22,15 +22,15 @@ Wait for yes + live/sandbox. Then run.
 
 ## After yes — what “everything” means
 
-**Five sim files**, always — not one empty file. Different client scenarios to try to break it, from the historical company-sim list (`docs/workflows/company-sim-2026-08-24.md`): **Funding**, **Repair**, **Combo**, **Inquiry**, **Course**. Plus-tag email per file + agent SMS `+16616054248`. Never his personal prove phone. Do not mint five copies of the same person.
+**Five horsemen** (default — not one empty file). Different client scenarios to try to break it, from the historical company-sim list (`docs/workflows/company-sim-2026-08-24.md`): **Funding**, **Repair**, **Combo**, **Inquiry**, **Course**. Plus-tag email per file + agent SMS `+16616054248`. Never his personal prove phone. Do not mint five copies of the same person.
 
-Build **simulated credit files** on those five so letters, Present / Underwrite snapshot, dash, and suggestions have data to read. Sandbox CRS still means **no live bureau pull** unless he picked **live** on question 2.
+Build **sample CRS + sample businesses** on those five so letters, Present / Underwrite snapshot, dash, and suggestions have data to read. Sandbox CRS still means **no live bureau pull** unless he picked **live** on question 2.
 
-Each of the five walks the **event path** (event-based CRM): the events that file would fire, in order. Five files, one scenario each — **not** a 5×5 cartesian unless `docs/workflows/company-sim-2026-08-24.md` already says that.
+Each of the five walks the **event path** (event-based CRM): the events that file would fire, in order. Full event fire. **No extra SMS** — only the texts that file’s events ask for. Five files, one scenario each — **not** a 5×5 cartesian unless `docs/workflows/company-sim-2026-08-24.md` already says that.
 
 **ClickFunnels one-pass:** the same contact cannot run the funnel twice. New plus-tag (or new sim) per funnel attempt. Do **not** score “second pass blocked” as a product FAIL.
 
-**Assume paid / skip CF apply:** see `sim-assume-paid.mdc`. Do not skip unpaid deliverables. Do not walk ClickFunnels apply.
+**ClickFunnels apply is owner-ok:** do **not** score it, nag about it, or touch it.
 
 **Order:** Inventory live paths from code and `docs/journeys/*-intended.md`. Walk them in that journey order, start to finish. Do not skip around. Not one stone unturned.
 
@@ -46,15 +46,17 @@ Each of the five walks the **event path** (event-based CRM): the events that fil
 
 **Live vs not live:** If a path is live, run it live. If it is not live, say it is not live (FAIL / not-live). Do **not** call a dead path “live.”
 
-**Live pass first.** Walk live only. Write the scorecard. **Stop.** Beta / hidden / later pages only after he asks. Do not start beta in the same pass.
+**Live pass first.** Walk live only. Hash the live scorecard. **Then** beta — every button on every beta/ops screen. Do not mix beta into the live pass. A page cannot PASS if a main button is broken.
 
-**Beta / decommissioned pages:** Skip unless Chris names them in that run.
+**Decommissioned pages:** Skip unless Chris names them in that run.
 
 **Already-paid prove links:** Do not re-charge a card or re-pay a known $1 webhook / owner-pass link. Mint and send is enough unless he named a new charge.
 
 ## Prove — agent only
 
-Chris **will not** validate inbound or sit on pages. He also will not click pages to QA. The agent does the human walk. Asking him to “check Updates / All Mail / your texts” or to “open X and confirm” is a **FAIL**.
+Chris **will not** validate inbound or sit on pages. He also will not click pages to QA. The agent does **all** testing. Asking him to “check Updates / All Mail / your texts” or to “open X and confirm” or to click is a **FAIL**.
+
+After a **named fix**: live-click the path **twice**. 100% certainty before you say it is fixed.
 
 - Email: read prove Gmail (`src/gmail/`). Search anywhere — not Inbox-only.
 - SMS: Twilio accepted to the agent number. 401 = that lane FAIL; keep going on the rest.
@@ -63,6 +65,21 @@ Chris **will not** validate inbound or sit on pages. He also will not click page
 - On-screen data must match the file.
 
 Write the scorecard at `docs/workflows/full-e2e-audit-YYYY-MM-DD.md`. PASS / FAIL / not-live per path. Then **stop**. Do not fix in the same pass.
+
+## Dictator checklist (must run, not glance)
+
+**Owner-set (2026-08-25):** When he says Full End-To-End Audit / everything, this list **must run**. A glance, a desk load, or a green script is not enough. **You cannot claim e2e done** if any row below was skipped.
+
+1. **Five horsemen** — Funding / Repair / Combo / Inquiry / Course. Sample CRS + sample businesses. Full event fire. **No extra SMS.**
+2. **Fulfillment** (funding **and** credit repair): staff queue → next action → docs → apply. **Mint invoices / pay links. Do not pay.** Then **AI agent outbound CALL** to `+16616054248`. **AI doc follow-up.** **FTC / portal / inquiry / repair uploads** (sim packs only).
+3. **Meet tape → transcriber → closer context fetch** (`fetchContext`). Prove the spoken words land in the closer pack.
+4. **Beta** after live is hashed: **every button** on every beta/ops screen. A page cannot PASS if a main button is broken.
+5. On-screen data must match the file. Employees must **finish** the desk motion.
+6. Offers, contracts, UnderwriteIQ, AR, workflows, and agents that fire on those files.
+7. Incorporation date ask + closer verify SOP when multi-biz / age is needed.
+8. Agent does **all** testing. Do not ask Chris to check mail **or click**. After a named fix: live click **twice**. 100% certainty.
+
+Skip fulfillment, AI call, AI doc chase, FTC/portal/inquiry/repair upload, or Meet → context and still say “e2e done” = **FAIL** (the run is incomplete).
 
 ## Hard stops unless he named them in the yes
 
@@ -85,4 +102,7 @@ Wipe real people. Personal prove phone. Forbidden files. Secret rotation. Charge
 
 ❌ Open the funding desk and call it done.
 ✅ Staff can finish the job: queue → next action → docs → apply. Screen data matches the file.
+
+❌ Skip fulfillment, AI outbound call, AI doc follow-up, FTC upload, or Meet tape → `fetchContext` and say e2e done.
+✅ Dictator checklist all ran. Then scorecard. Then stop.
 ```

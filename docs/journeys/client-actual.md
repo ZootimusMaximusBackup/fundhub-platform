@@ -28,11 +28,11 @@ flowchart TD
     CAN --> A_read[Reading data — 3 routes]
     CAN --> A_top_level[Everything else — 5 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 169 routes]
+    WHO -->|Yes| CANT[Blocked — 166 routes]
     CANT --> B_auth[Signing in and out — 5 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_brand[brand — 1 blocked]
-    CANT --> B_campaigns[Campaigns — 8 blocked]
+    CANT --> B_campaigns[Campaigns — 9 blocked]
     CANT --> B_chat[chat — 3 blocked]
     CANT --> B_company_brain[company-brain — 4 blocked]
     CANT --> B_content[content — 2 blocked]
@@ -57,7 +57,7 @@ flowchart TD
 
 ## What they can reach
 
-**29 of 198 routes.**
+**30 of 196 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -98,7 +98,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**169 of 198 routes.**
+**166 of 196 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -122,6 +122,7 @@ flowchart TD
 | `/api/campaigns/detail` | GET | partner, staff |
 | `/api/campaigns/fatigue` | GET | partner, staff |
 | `/api/campaigns/list` | GET | partner, staff |
+| `/api/campaigns/meta-agency` | POST | partner, staff |
 | `/api/campaigns/spend` | GET | partner, staff |
 | `/api/campaigns/sync` | POST | partner, staff |
 | `/api/campaigns/write` | POST | partner, staff |

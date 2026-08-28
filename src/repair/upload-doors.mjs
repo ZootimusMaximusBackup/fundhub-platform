@@ -7,8 +7,9 @@ export const DOOR_KINDS = Object.freeze({
 export function lanesFromEntitlementCodes(codes = []) {
   const set = new Set((codes || []).map((c) => String(c || "").toLowerCase()));
   const funding = set.has("funding-snapshot");
+  const inquiry = funding || set.has("credit-analysis-report");
   const repair = set.has("metro2-letter-pack");
-  return { hasFundingLane: funding, hasInquiryLane: funding, hasRepairLane: repair };
+  return { hasFundingLane: funding, hasInquiryLane: inquiry, hasRepairLane: repair };
 }
 export function activeUploadDoors(lanes = {}) {
   return {

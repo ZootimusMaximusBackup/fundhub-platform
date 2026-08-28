@@ -43,6 +43,18 @@ test("unknown age adds nothing — the engine already treats missing age as $0",
   assert.equal(stackedBusinessFunding(100000, [null, null]), 0);
 });
 
+test("no card dollars: extra companies stay $0 — no invented floor", () => {
+  assert.equal(stackedBusinessFunding(0, [18, 18]), 0);
+  const twoShops = applyStackedBusinessFunding({
+    primary_bureau: "experian",
+    per_bureau: { experian: { cardFunding: 0 } },
+    business: { business_funding: 0, can_business_fund: false },
+    totals: { total_personal_funding: 0, total_business_funding: 0, total_combined_funding: 0 }
+  }, [18, 18]);
+  assert.equal(twoShops.totals.total_business_funding, 0);
+  assert.equal(twoShops.totals.total_combined_funding, 0);
+});
+
 test("listed companies use their own age, then the client fallback", () => {
   assert.deepEqual(resolveBusinessAges({ fallbackAgeMonths: 30 }), [30]);
   assert.deepEqual(resolveBusinessAges({ businesses: [], fallbackAgeMonths: 30 }), [30]);

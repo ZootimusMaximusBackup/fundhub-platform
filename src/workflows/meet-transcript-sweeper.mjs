@@ -1,5 +1,6 @@
 // Pull words off Meet recordings already in Drive.
-// Pair a sibling Transcript / Gemini-notes doc. Do not invent a tape.
+// Pair a sibling Transcript / Gemini-notes doc first. Whisper one short leftover
+// per org per pass. Long files wait for the Google transcript doc.
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
@@ -15,7 +16,7 @@ export async function handle({ db: database = db, step, env = process.env } = {}
 }
 
 export const meetTranscriptSweeper = inngest.createFunction(
-  { id: "meet-transcript-sweeper", name: "Meet transcript sweeper (Drive transcript words)" },
+  { id: "meet-transcript-sweeper", name: "Meet transcript sweeper (Drive words + short Whisper)" },
   { cron: SWEEP_CRON },
   async ({ step }) => handle({ db, step })
 );

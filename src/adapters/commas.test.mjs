@@ -697,13 +697,25 @@ test("buildCommasCheckoutUrl: amount in dollars, ref and description on the quer
     baseUrl: "https://pay.commas.io/c/onboarding",
     linkRef: "pl_abc123",
     amountCents: 250000,
-    description: "Onboarding deposit"
+    description: "Consulting Services Engagement"
   });
   const parsed = new URL(url);
   assert.equal(parsed.origin + parsed.pathname, "https://pay.commas.io/c/onboarding");
   assert.equal(parsed.searchParams.get("amount"), "2500.00");
   assert.equal(parsed.searchParams.get("ref"), "pl_abc123");
-  assert.equal(parsed.searchParams.get("description"), "Onboarding deposit");
+  assert.equal(parsed.searchParams.get("description"), "Consulting Services Engagement");
+});
+
+test("buildCommasCheckoutUrl: unsafe description is refused", () => {
+  assert.throws(
+    () => buildCommasCheckoutUrl({
+      baseUrl: "https://pay.commas.io/c/onboarding",
+      linkRef: "pl_abc123",
+      amountCents: 100,
+      description: "Funding deposit"
+    }),
+    (err) => err && err.code === "commas_unsafe_copy"
+  );
 });
 
 test("buildCommasCheckoutUrl: description is optional, everything else is not", () => {

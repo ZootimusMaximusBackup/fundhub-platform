@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Start | fundhub</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta name="robots" content="noindex">
 <style>
   :root{--ink:#0A0A0A;--paper:#FCFCFC;--gray:#52525B;--line:#E4E4E7;--sans:Inter,system-ui,sans-serif;--mono:ui-monospace,SFMono-Regular,monospace}
@@ -20,13 +23,13 @@
     <div class="code" id="code">Referral</div>
     <h1>Continue to apply</h1>
     <p id="lead">This link belongs to an affiliate. We will send you to the Fundhub apply form with their code attached.</p>
-    <a class="btn" id="go" href="https://apply.fundhub.ai/apply">Go to apply</a>
+    <a class="btn" id="go" href="https://apply.fundhub.ai/watch">Go to apply</a>
   </div>
   <script>
     (function () {
-      // Canonical FundHub apply path. Bare apply.fundhub.ai/ 302s to the wrong
-      // ClickFunnels workspace theme (myclickfunnels.com); /apply is the live funnel.
-      var APPLY = "https://apply.fundhub.ai/apply";
+      // Live funnel. Bare apply.fundhub.ai/ can 302 to the wrong CF theme;
+      // /apply headless-bot-skips and drops query params; /watch keeps a1/ref.
+      var APPLY = "https://apply.fundhub.ai/watch";
       var params = new URLSearchParams(location.search);
       var ref = String(params.get("ref") || params.get("a1") || "").trim();
       if (ref) {
@@ -41,13 +44,24 @@
       document.getElementById("go").href = dest;
       function goApply() { location.replace(dest); }
       if (!ref) return;
+      // Record the visit before bounce. Fire-and-forget; never block apply.
       var body = JSON.stringify({ code: ref, source: "start", landing_path: location.pathname + location.search });
-      fetch("/api/public/affiliate-click", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: body,
-        keepalive: true
-      }).catch(function () {}).finally(goApply);
+      var sent = false;
+      try {
+        if (navigator.sendBeacon) {
+          sent = navigator.sendBeacon("/api/public/affiliate-click", new Blob([body], { type: "application/json" }));
+        }
+      } catch (e) {}
+      if (!sent) {
+        fetch("/api/public/affiliate-click", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: body,
+          keepalive: true
+        }).catch(function () {}).finally(goApply);
+        return;
+      }
+      goApply();
     })();
   </script>
 </body>

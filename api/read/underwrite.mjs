@@ -45,7 +45,6 @@ import { ROLE_SETS, requireRole, isUuid, CLIENT_DATA_ERRORS } from "../../src/ht
 import { evaluateUtilization } from "../../src/alerts/evaluate.mjs";
 import { UPSTREAM, computeUnderwrite, buildSuggestions } from "../../src/underwrite/engine.mjs";
 import { toBureaus } from "../../src/underwrite/adapter.mjs";
-import { linesForEngine } from "../../src/tradelines/index.mjs";
 import { applyStackedBusinessFunding } from "../../src/underwrite/business-funding.mjs";
 import { buildReport } from "../../src/underwrite/report.mjs";
 import { dbDown } from "../../src/http/db-down.mjs";

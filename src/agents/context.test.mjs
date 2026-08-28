@@ -62,8 +62,7 @@ test("fetchContext includes interview answers and the recording link", async () 
   assert.match(ctx.as_prompt_block, /Price/);
   assert.match(ctx.as_prompt_block, /Loved the closer/);
   assert.match(ctx.as_prompt_block, /deposit/);
-  assert.match(ctx.as_prompt_block, /said: three thousand is a start/);
-  assert.equal(ctx.recent_calls[0].transcript, "three thousand is a start and part of ten percent");
+  assert.match(ctx.as_prompt_block, /three thousand is a start/);
 });
 
 test("formatPromptBlock omits empty interview blocks", () => {

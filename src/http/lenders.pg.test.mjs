@@ -458,6 +458,23 @@ describe("/api/lenders (create · save · import)", { skip: !HAVE_DB ? "no DATAB
       assert.equal((await lenderRows()).length, 0);
     });
 
+    test("a tip row is skipped and logo_path is stored on a real bank", async () => {
+      await wipeLenders();
+      const csv = [
+        "lender_table,name,logo_path,external_row_id",
+        "OnlineBizCC,T8 Fixture Logo Bank,/assets/lenders/chase.png,T8-LOGO-1",
+        "InBranchBizCC,Apply at one Elan bank then a second,,"
+      ].join("\n");
+      const r = await api({ body: { action: "import", csv }, token: owner.token });
+      assert.equal(r.code, 200, JSON.stringify(r.body));
+      assert.equal(r.body.imported, 1);
+      assert.equal(r.body.skipped_tips, 1);
+      const rows = await lenderRows();
+      assert.equal(rows.length, 1);
+      assert.equal(rows[0].name, "T8 Fixture Logo Bank");
+      assert.equal(rows[0].logo_path, "/assets/lenders/chase.png");
+    });
+
     test("a closer cannot import the lender book", async () => {
       await wipeLenders();
       const r = await api({ body: { action: "import", csv: FIXTURE_CSV }, token: closer.token });
@@ -576,7 +593,7 @@ describe("/api/lenders (create · save · import)", { skip: !HAVE_DB ? "no DATAB
 
   test("the importer accepts every column it advertises", async () => {
     await wipeLenders();
-    // One header line naming all 48 supported columns, one row using them all.
+    // One header line naming every supported column, one row using them all.
     // If a column name here ever stops matching the database, this fails.
     const values = LENDER_CSV_COLUMNS.map((c) => {
       if (c === "lender_table") return "OnlineBizCC";

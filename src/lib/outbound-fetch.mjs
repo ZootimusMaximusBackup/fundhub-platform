@@ -135,7 +135,8 @@ export async function transmit(url, init = {}, {
   env,
   fetchImpl,
   timeoutMs = DEFAULT_TIMEOUT_MS,
-  signal
+  signal,
+  asText = false
 } = {}) {
   if (!KNOWN_FENCES.has(fence)) {
     /* Not a configuration problem — a programming one. Loud, because the fix is
@@ -184,7 +185,7 @@ export async function transmit(url, init = {}, {
       ok: res.ok,
       blocked: false,
       status: res.status,
-      body: parsed,
+      body: asText ? text : parsed,
       headers: readHeaders(res),
       error: res.ok ? null : redact(text || `HTTP ${res.status}`),
       fence
@@ -211,6 +212,15 @@ export function postJsonTo(url, { headers = {}, body, contentType = "application
   return transmit(url, {
     method: "POST",
     headers: { "Content-Type": contentType, ...headers },
+    body
+  }, rest);
+}
+
+/** Multipart POST — Whisper and other file uploads. Do not set Content-Type. */
+export function postFormTo(url, { headers = {}, body, ...rest } = {}) {
+  return transmit(url, {
+    method: "POST",
+    headers,
     body
   }, rest);
 }

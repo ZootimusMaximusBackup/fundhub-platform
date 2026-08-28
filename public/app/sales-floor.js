@@ -386,8 +386,13 @@
         var open = href
           ? '<a href="' + href + '" target="_blank" rel="noopener">Open in Drive</a>'
           : "<em>No link</em>";
+        var words = it.has_words ? " · Words ready" : " · Waiting for words";
+        var snippet = it.excerpt
+          ? "<em>" + esc(String(it.excerpt).slice(0, 160)) + "</em>"
+          : "";
         return '<div class="row"><span class="l"><b>' + (it.name || "Recording") +
-          "</b><em>" + who + " · " + whenLabel + "</em></span><span class=\"r\">" + open + "</span></div>";
+          "</b><em>" + who + " · " + whenLabel + words + "</em>" + snippet +
+          "</span><span class=\"r\">" + open + "</span></div>";
       }).join("");
       var note = items.length
         ? ""

@@ -203,6 +203,7 @@ test("routes: the twenty handlers that were 404ing are now reachable at their do
     "inquiries", "pii", "shifts", "read/conversations",
     "campaigns/list", "campaigns/detail", "campaigns/spend",
     "campaigns/fatigue", "campaigns/connections", "campaigns/action-log",
+    "campaigns/meta-agency",
     "creative/library", "creative/brand-kits", "creative/jobs", "creative/approvals",
     "hiring/candidates", "hiring/application", "hiring/postings",
     "hiring/decisions", "hiring/funnel", "hiring/bench"

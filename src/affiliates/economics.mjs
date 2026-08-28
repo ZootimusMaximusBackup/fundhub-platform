@@ -24,8 +24,9 @@
 //    affiliate, whichever happens first, and unlocking is one-way. Once unlocked,
 //    the recruiter earns a downline override on their recruits' conversions.
 //
-// 4. RATES ARE ROWS. Every amount comes from affiliate_commission_rules. AF-04 —
-//    the actual schedule — is UNDECIDED, and this module does not pick a number.
+// 4. RATES ARE ROWS. Every amount comes from affiliate_commission_rules.
+//    Owner-set 2026-08-24 (migrations 260–261): Tier 1 direct 20%, Tier 2 downline 5%.
+//    This module still does not hardcode those numbers — it reads the rows.
 //    With no rule in force, commission_due stays NULL, the balance stays zero and
 //    nothing pays. `unrated` in the return value is how that stays visible rather
 //    than looking like a zero-value conversion.
@@ -124,8 +125,8 @@ export async function qualifyingOutcome(db, { orgId, clientId, saleId } = {}) {
 }
 
 /* findRule — the rate in force for (tier, product, affiliate), most specific
-   first. Returns null when nothing is configured, which is the shipped state:
-   affiliate_commission_rules is seeded EMPTY because AF-04 is undecided. */
+   first. Returns null when nothing matches. Owner-set defaults live in
+   migration 261 (20% direct / 5% downline); a missing match must not invent a %. */
 export async function findRule(db, {
   orgId, tier, productCode = null, affiliateId = null, asOf = new Date()
 } = {}) {
@@ -227,8 +228,8 @@ export async function basisFor(db, { amountBasis, saleId } = {}) {
    idempotently.
 
    Returns { converted, unrated, commissionDue, reason }. `unrated: true` means the
-   conversion is real but no rule was in force, so commission_due stays NULL —
-   the AF-04 gap, surfaced rather than defaulted to zero. */
+   conversion is real but no rule matched, so commission_due stays NULL —
+   surfaced rather than defaulted to zero. */
 export async function convert(db, {
   orgId, clientId, saleId, sourceEventId = null, now = new Date()
 } = {}) {
@@ -367,9 +368,9 @@ export async function voidReferral(db, { referralId, reason } = {}) {
   return rows[0] || null;
 }
 
-/* unratedConversions — the reporting surface for the AF-04 gap: conversions that
-   earned nothing because no rule was in force. Until this is empty, the schedule
-   is incomplete. */
+/* unratedConversions — conversions that earned nothing because no rule matched.
+   With migration 260 seeded, this should stay empty for normal funding/repair
+   outcomes; it still surfaces gaps if a product or org has no rule. */
 export async function unratedConversions(db, { orgId } = {}) {
   const { rows } = await db.query(
     `SELECT r.id, r.affiliate_id, r.client_id, r.tier, r.converted_at

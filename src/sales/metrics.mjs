@@ -524,11 +524,13 @@ export async function salesFloor(db, { orgId, now = new Date(), env = process.en
     },
     compliance: {
       available: false,
-      reason: recordings.items.length
-        ? "Recordings are in Google Drive. Phrase flags still need transcription — table call_compliance_flags is ready."
-        : (recordings.reason
-          || "No Meet recordings yet. Click Record in Google Meet; the file lands in Drive."),
-      items: unrecordedList
+      reason: recordings.items.some((it) => it.has_words)
+        ? "Call words are on file. Phrase flags are not scored yet."
+        : recordings.items.length
+          ? "Recordings are in Drive. Words fill in after Sync, or in the background for leftover files."
+          : (recordings.reason
+            || "No Meet recordings yet. Click Record in Google Meet; the file lands in Drive."),
+      items: []
     },
     cold_deals: cold,
     discipline: {

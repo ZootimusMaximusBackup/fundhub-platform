@@ -101,6 +101,37 @@ export async function routeGhlDocOutcome(db, { orgId, clientId, eventId, json })
   return { routed: false, reason: "unknown_outcome", outcome };
 }
 
+/** Plain-English on-file facts for the model. Without this, the seeded prompt
+ * claims it "can see" name/address but none were passed — false request_more. */
+export function clientContextLines(client) {
+  const c = client || {};
+  const cf = c.custom_fields && typeof c.custom_fields === "object" ? c.custom_fields : {};
+  const name = [c.first_name, c.last_name].filter(Boolean).join(" ").trim()
+    || String(cf.full_name || cf.name || "").trim()
+    || "(name not on file)";
+  const line1 = String(cf.address_line1 || cf.address || cf.mailing_address || "").trim();
+  const city = String(cf.address_city || cf.city || "").trim();
+  const state = String(cf.address_state || cf.state || "").trim();
+  const zip = String(cf.address_zip || cf.zip || "").trim();
+  const addr = [line1, [city, state].filter(Boolean).join(", "), zip].filter(Boolean).join(" ").trim()
+    || "(address not on file)";
+  const dob = String(cf.dob || cf.date_of_birth || c.dob || "").trim() || "(DOB not on file)";
+  const biz = String(cf.business_name || cf.company_name || "").trim() || "(business name not on file)";
+  const today = new Date().toISOString().slice(0, 10);
+  return [
+    `Client on file — full name: ${name}`,
+    `Client on file — personal address: ${addr}`,
+    `Client on file — DOB: ${dob}`,
+    `Client on file — business name: ${biz}`,
+    `Today's date (UTC): ${today}. A statement period ending on or before today is not "future-dated".`,
+    "You are reviewing ONE uploaded file of the stated type. Judge only that file for that type.",
+    "Do not request other document types (for example Articles) when reviewing a single ID, bank statement, or SSN card.",
+    "If the address printed on the ID or statement matches the personal address on file (ignore case and punctuation), treat the address as matching.",
+    "ZIP+4 extras on an ID (for example 85233-1901 or 85233+1901) still match when street, city, state, and the 5-digit ZIP agree with the address on file.",
+    "If this upload is an ssn_card: it is optional support. If the card is legible and the name matches the client on file, outcome must be accept. Never request_more only because an SSN card is not a photo ID or proof of address."
+  ];
+}
+
 export async function onDocsReceivedGhlDoc(db, event, deps = {}) {
   const {
     env = process.env,
@@ -154,6 +185,12 @@ export async function onDocsReceivedGhlDoc(db, event, deps = {}) {
     return { done: false, reason: "document_bytes_missing" };
   }
 
+  const clientRow = await db.query(
+    `SELECT first_name, last_name, custom_fields FROM clients WHERE id = $1 LIMIT 1`,
+    [clientId]
+  ).catch(() => ({ rows: [] }));
+  const clientCtx = clientContextLines(clientRow.rows?.[0] || null);
+
   const schema = agent.output_schema
     ? (typeof agent.output_schema === "string" ? agent.output_schema : JSON.stringify(agent.output_schema))
     : '{"outcome":"accept|request_more|hold"}';
@@ -163,6 +200,7 @@ export async function onDocsReceivedGhlDoc(db, event, deps = {}) {
     user: [
       `A client uploaded a ${docType} document.`,
       payload.original_filename ? `Filename: ${payload.original_filename}` : "",
+      ...clientCtx,
       "Read the document image. Reply with ONLY a JSON object matching this schema:",
       schema
     ].filter(Boolean).join("\n"),

@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fundhub — Affiliate</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -323,7 +326,9 @@ table.grid tbody tr:hover{background:var(--soft)}
               <td style="border-top:2px solid var(--line)"></td></tr></tfoot>
           </table></div>
           <div style="padding:12px 16px;border-top:1px solid var(--line);background:var(--soft);font-size:var(--fs-body);color:var(--gray);line-height:1.55">
-            Commission accrues — at the rate in your partner agreement — on the <strong>first</strong> paid product on a referred client.
+            Commission accrues on the <strong>first</strong> qualified paid outcome on a referred client:
+            <strong>Tier 1 = 20%</strong> (direct), <strong>Tier 2 = 5%</strong> override (downline, after unlock).
+            Funding pays on deposit collected once funded; repair pays on the enrollment fee.
             Later purchases by the same client do not pay again. A lead that
             never pays never accrues, which is why "Clicked" and "Signed up" rows show no commission.
           </div>
@@ -342,7 +347,7 @@ table.grid tbody tr:hover{background:var(--soft)}
           <div class="card-bd">
             <div class="eyebrow" style="margin-bottom:12px">PARTNER TERMS</div>
             <dl class="terms" style="max-width:74ch">
-              <dt>Rate</dt><dd>first qualified paid outcome on any client attributed to your code, effective 2026-01-15. If the rate ever changes, the version open on the day a client paid is the one that governs that payout.</dd>
+              <dt>Rate</dt><dd>Tier 1: 20% · Tier 2: 5% override. First qualified paid outcome on any client attributed to your code. Effective 2026-08-24. If the rate ever changes, the version open on the day of the outcome governs that payout.</dd>
               <dt>Attribution window</dt><dd>60 days from first click. Last-touch: if another affiliate's link is clicked after yours inside the window, the later click takes the commission.</dd>
               <dt>Qualifying products</dt><dd>Business Financial Assessment ($32) · Consulting Services Deposit ($3,000) · Consulting Services Package (~$1,000 DIY) · Credit Optimization Bundle ($2,000) · Inquiry Removal. The 10% success fee is not a qualifying product.</dd>
               <dt>Payout schedule</dt><dd>Fridays, ACH, on balances above $50. Below that the balance rolls to the next run.</dd>
@@ -467,10 +472,9 @@ renderLeads(); renderPayouts();
 <script>
 
 /* Affiliate — real balances from /api/read/affiliates.
-   NOTE: commission RATE is deliberately not shown as a number here. AF-04 is
-   undecided and affiliate_commission_rules ships empty, so an unrated
-   conversion carries commission_due NULL. Showing 12% would be inventing the
-   schedule; the KPI shows what actually accrued. */
+   Commission RATE: owner-set 2026-08-24 — Tier 1 20% / Tier 2 5% (migration 261).
+   Accrued dollars still come from referral rows; a conversion with no matching
+   rule keeps commission_due NULL (never COALESCE to 0). */
 (function () {
   "use strict";
   var set = function (id, v) { var el = document.getElementById(id); if (el) el.textContent = v; };

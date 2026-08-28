@@ -184,20 +184,25 @@ export async function listRecentRecordings(db, {
 
   const filesRes = await db.query(
     `SELECT bf.id, bf.name, bf.web_view_link, bf.client_id, bf.unattached,
-            bf.indexed_at, bf.created_at, bf.mime_type,
+            bf.indexed_at, bf.created_at, bf.mime_type, bf.needs_transcription,
             c.first_name, c.last_name
        FROM brain_files bf
        LEFT JOIN clients c ON c.id = bf.client_id AND c.org_id = bf.org_id
       WHERE bf.org_id = $1
-        AND bf.needs_transcription = true
         AND COALESCE(bf.indexed_at, bf.created_at) >= $2
+        AND (
+          bf.needs_transcription = true
+          OR bf.mime_type LIKE 'video/%'
+          OR bf.mime_type LIKE 'audio/%'
+          OR bf.name ILIKE '%recording%'
+        )
       ORDER BY COALESCE(bf.indexed_at, bf.created_at) DESC
       LIMIT 40`,
     [orgId, sinceIso]
   );
 
   const outcomeRes = await db.query(
-    `SELECT o.id, o.recording_url, o.logged_at, o.client_id,
+    `SELECT o.id, o.recording_url, o.logged_at, o.client_id, o.transcript,
             c.first_name, c.last_name
        FROM call_outcomes o
        LEFT JOIN clients c ON c.id = o.client_id AND c.org_id = o.org_id
@@ -231,11 +236,31 @@ export async function listRecentRecordings(db, {
 
   const items = [];
   const seenUrl = new Set();
+  const wordsByUrl = new Map();
+  const wordsByClient = new Map();
+  for (const row of outcomeRes.rows || []) {
+    const t = String(row.transcript || "").trim();
+    if (!t) continue;
+    if (row.recording_url) wordsByUrl.set(row.recording_url, t);
+    if (row.client_id) wordsByClient.set(row.client_id, t);
+  }
+
+  function excerptFor(url, clientId, flaggedWords) {
+    const raw = (url && wordsByUrl.get(url))
+      || (clientId && wordsByClient.get(clientId))
+      || "";
+    const has = flaggedWords || !!raw;
+    return {
+      has_words: has,
+      excerpt: raw ? raw.slice(0, 240) : null
+    };
+  }
 
   for (const row of files) {
     const url = row.web_view_link || null;
     if (url) seenUrl.add(url);
     const when = row.indexed_at || row.created_at;
+    const words = excerptFor(url, row.client_id, row.needs_transcription === false);
     items.push({
       id: row.id,
       name: row.name || "Recording",
@@ -244,7 +269,9 @@ export async function listRecentRecordings(db, {
       is_today: isToday(when, now),
       client_id: row.client_id || null,
       client_name: clientDisplayName(row),
-      attached: !!row.client_id
+      attached: !!row.client_id,
+      has_words: words.has_words,
+      excerpt: words.excerpt
     });
   }
 
@@ -252,6 +279,7 @@ export async function listRecentRecordings(db, {
     const url = row.recording_url;
     if (!url || seenUrl.has(url)) continue;
     seenUrl.add(url);
+    const raw = String(row.transcript || "").trim();
     items.push({
       id: `call-${row.id}`,
       name: clientDisplayName(row) ? `${clientDisplayName(row)} call` : "Sales call",
@@ -260,7 +288,9 @@ export async function listRecentRecordings(db, {
       is_today: isToday(row.logged_at, now),
       client_id: row.client_id || null,
       client_name: clientDisplayName(row),
-      attached: true
+      attached: true,
+      has_words: !!raw,
+      excerpt: raw ? raw.slice(0, 240) : null
     });
   }
 

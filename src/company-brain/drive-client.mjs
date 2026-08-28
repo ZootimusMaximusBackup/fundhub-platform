@@ -61,14 +61,15 @@ export function createDriveClient({
    * Drive files.list already returns all files the account can see when
    * corpora=user (default). H-2: no folder filter.
    */
-  async function* listAllFiles({ pageSize = 1000 } = {}) {
+  async function* listAllFiles({ pageSize = 1000, q = "trashed = false", orderBy } = {}) {
     let pageToken = null;
     do {
       const res = await driveFetch("/files", {
         query: {
           pageSize,
           pageToken: pageToken || undefined,
-          q: "trashed = false",
+          q,
+          orderBy: orderBy || undefined,
           fields: `nextPageToken,files(${FILE_FIELDS})`,
           supportsAllDrives: "true",
           includeItemsFromAllDrives: "true"

@@ -36,7 +36,7 @@ export function classifyMime(mimeType) {
   if (mime === "application/pdf") return { kind: "pdf", action: "download" };
   if (OFFICE.has(mime)) return { kind: "office", action: "download" };
   if (mime.startsWith(AUDIO_PREFIX) || mime.startsWith(VIDEO_PREFIX)) {
-    // Whisper later. Index metadata only — do not download Meet recordings.
+    // Index metadata only on walk. Words come from a sibling transcript or Whisper.
     return { kind: "av", action: "download" };
   }
   if (mime.startsWith("text/") || mime === "application/json") {

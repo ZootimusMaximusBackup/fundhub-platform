@@ -95,6 +95,7 @@ test("listRecentRecordings returns today's Drive file and name-matches a client"
             indexed_at: "2026-08-15T16:00:00Z",
             created_at: "2026-08-15T16:00:00Z",
             mime_type: "video/mp4",
+            needs_transcription: true,
             first_name: null,
             last_name: null
           }]
@@ -129,6 +130,7 @@ test("listRecentRecordings returns today's Drive file and name-matches a client"
   assert.equal(out.items[0].client_id, CLIENT);
   assert.equal(out.items[0].is_today, true);
   assert.equal(out.items[0].url, "https://drive.google.com/file/d/rec1");
+  assert.equal(out.items[0].has_words, false);
   assert.equal(updates.length, 1);
 });
 

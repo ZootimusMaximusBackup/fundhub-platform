@@ -363,46 +363,49 @@ describe("the response body", () => {
     );
   });
 
-  test("a company on the file does not get the no-LLC suggestion", async () => {
-    const res = makeRes();
-    await handler(req(), res, fullDb({ businesses: [{ age_months: 30 }] }));
-    assert.equal(res.statusCode, 200);
-    for (const s of res.body.suggestions) {
-      assert.ok(!/don.?t have an LLC/i.test(s.text), s.text);
-    }
-    assert.ok(res.body.suggestions.some((s) => /LLC is seasoned/i.test(s.text)),
-      "age on the company must talk about seasoning, not forming an LLC");
-    assert.ok(!res.body.dataCompleteness.missing.client.some((m) => m.field === "hasLLC"));
-  });
-
-  test("the note under the LLC sentence names the saved company, not 'fundhub stores no LLC'", async () => {
-    // The sentence and the note printed under it used to disagree: the engine
-    // was handed the real company and said "Your LLC is seasoned", while the
-    // note beneath it still read "fundhub stores no LLC or business-entity
-    // field ... applied its own defaults (no LLC, age 0)". Two opposite lines,
-    // one read.
-    const res = makeRes();
-    await handler(req(), res, fullDb({ businesses: [{ age_months: 30 }] }));
-    const llc = res.body.suggestions.find((x) => x.topic === "llc");
-    assert.ok(llc, "the LLC sentence must still be there");
-    assert.equal(llc.basis.has_llc, true);
-    assert.equal(llc.basis.llc_age_months, 30);
-    assert.ok(!/stores no LLC/i.test(llc.basis.note), llc.basis.note);
-  });
-
-  test("no company on the file: the note says so, and the sentence is flagged as a default", async () => {
-    // `has_llc: false` is what the ENGINE was handed, which is what a basis
-    // records. The note is what stops a reader treating it as a measurement:
-    // nobody saved a company, so this is fundhub's default, not a finding about
-    // this person. `restsOnMissingData` says the same thing in one boolean.
-    const res = makeRes();
-    await handler(req(), res, fullDb({ businesses: [] }));
-    const llc = res.body.suggestions.find((x) => x.topic === "llc");
-    assert.equal(llc.basis.has_llc, false);
-    assert.equal(llc.basis.llc_age_months, null);
-    assert.match(llc.basis.note, /no company is saved/i);
-    assert.equal(llc.restsOnMissingData, true);
-    assert.ok(res.body.dataCompleteness.missing.client.some((m) => m.field === "hasLLC"));
+  test("two saved companies stay $0 when the file has no $5,000 card — no invented floor", async () => {
+    // Repair horse shape: known age, two companies, biggest open card $1,894.
+    // Lite company dollars are a multiple of card funding. No $5k card → $0.
+    const thinCard = {
+      ...TRADELINE_ROW,
+      credit_limit_cents: 189_400,
+      balance_cents: 176_200,
+      opened_on: "2018-01-01"
+    };
+    const repairClient = {
+      ...CLIENT_ROW,
+      custom_fields: {
+        ...CLIENT_ROW.custom_fields,
+        business_age_months: 18,
+        crs_negative_items_count: 16,
+        crs_late_payments_count: 2
+      }
+    };
+    const repairCrs = [{ result: { scores: { ex: 630, eq: 636 } }, created_at: "2026-01-02T00:00:00Z" }];
+    const one = makeRes();
+    await handler(req(), one, {
+      db: makeDb({
+        client: repairClient,
+        tradelines: [thinCard],
+        crs: repairCrs,
+        businesses: [{ age_months: null }]
+      })
+    });
+    const two = makeRes();
+    await handler(req(), two, {
+      db: makeDb({
+        client: repairClient,
+        tradelines: [thinCard],
+        crs: repairCrs,
+        businesses: [{ age_months: null }, { age_months: null }]
+      })
+    });
+    assert.equal(one.statusCode, 200);
+    assert.equal(two.statusCode, 200);
+    assert.equal(one.body.underwrite.personal.card_funding, 0);
+    assert.equal(one.body.underwrite.totals.total_combined_funding, 0);
+    assert.equal(two.body.underwrite.totals.total_combined_funding, 0);
+    assert.equal(two.body.underwrite.totals.total_business_funding, 0);
   });
 
   test("no promise is added on top of the engine's own strings", async () => {

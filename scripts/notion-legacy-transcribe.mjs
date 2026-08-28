@@ -66,7 +66,6 @@ async function downloadWithYtDlp(url, outPath, opts = {}) {
     args[0] = fetchUrl;
     args.push("--referer", opts.referer || "https://app.notion.com/");
     args.push("--add-header", "Referer:https://app.notion.com/");
-    args.push("--cookies-from-browser", process.env.NOTION_VIMEO_BROWSER || "chromium");
   }
 
   const r = run(ytdlp, args);
@@ -78,11 +77,16 @@ async function downloadDirect(url, outPath, headers = {}) {
   if (await fileExists(outPath)) return { ok: true, skipped: true };
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
 
-  const res = await fetch(url, { headers, redirect: "follow" });
-  if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
-  const buf = Buffer.from(await res.arrayBuffer());
-  fs.writeFileSync(outPath, buf);
-  return { ok: true };
+  try {
+    const res = await fetch(url, { headers, redirect: "follow" });
+    if (!res.ok) return { ok: false, error: `HTTP ${res.status}` };
+    const buf = Buffer.from(await res.arrayBuffer());
+    fs.writeFileSync(outPath, buf);
+    return { ok: true };
+  } catch (err) {
+    const msg = err?.cause?.code || err?.code || err?.message || "network_error";
+    return { ok: false, error: `download failed: ${msg}` };
+  }
 }
 
 function fileExistsSync(p) {
@@ -105,6 +109,16 @@ async function processVideoItem(pageDir, item, index, notionPageUrl) {
   const videoPath = path.join(videosDir, `${base}.mp4`);
   const audioPath = path.join(videosDir, `${base}.mp3`);
   const transcriptPath = path.join(transcriptsDir, `${base}.txt`);
+
+  if (fileExistsSync(transcriptPath)) {
+    return {
+      ...item,
+      status: "done",
+      videoPath: fileExistsSync(videoPath) ? videoPath : undefined,
+      audioPath: fileExistsSync(audioPath) ? audioPath : undefined,
+      transcriptPath,
+    };
+  }
 
   if (isBadVideoUrl(item.url)) {
     return { ...item, status: "skipped", error: "bogus embed url" };
@@ -200,6 +214,7 @@ async function main() {
 
   let done = 0;
   let failed = 0;
+  let consecutive429 = 0;
 
   for (const pageDir of dirs) {
     const meta = readMeta(pageDir);
@@ -214,10 +229,22 @@ async function main() {
       meta.transcripts[i] = result;
       if (result.status === "done") {
         done++;
+        consecutive429 = 0;
         console.log(`  ✓ ${result.label || result.url}`);
       } else {
         failed++;
         console.log(`  ✗ ${result.label || result.url}: ${result.error}`);
+        if (String(result.error || "").includes("Whisper 429")) {
+          consecutive429++;
+          if (consecutive429 >= 2) {
+            writeMeta(pageDir, meta);
+            console.error("\nStopped: OpenAI is out of money again. Meet words job left running.");
+            process.exitCode = 1;
+            return;
+          }
+        } else {
+          consecutive429 = 0;
+        }
       }
     }
 

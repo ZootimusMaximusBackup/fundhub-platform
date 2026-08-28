@@ -59,6 +59,7 @@ import {
   remindContract, mintLinks
 } from "../src/contracts/index.mjs";
 import { runChase } from "../src/workflows/contract-chaser.mjs";
+import { demoFlagForEmail } from "../src/demo/test-identity.mjs";
 
 /* Which actions need owner or admin. hasRole() treats "owner" as passing every
    gate (SUPER_ROLES), so naming "admin" here covers both. */
@@ -283,11 +284,14 @@ export default async function handler(req, res) {
           }
         }
         const { rows } = await db.query(
-          `INSERT INTO clients (org_id, first_name, last_name, email, phone)
-           VALUES ($1,$2,$3,$4,$5)
+          // is_demo comes from the address, not from the request body — a caller
+          // cannot ask for it. See src/demo/test-identity.mjs.
+          `INSERT INTO clients (org_id, first_name, last_name, email, phone, is_demo)
+           VALUES ($1,$2,$3,$4,$5,$6)
            RETURNING id, first_name, last_name, email, phone`,
           [orgId, first || null, last || null, email || null,
-           String(body.phone ?? "").trim() || null]);
+           String(body.phone ?? "").trim() || null,
+           demoFlagForEmail(email)]);
         return res.status(200).json({
           ok: true, action, client: rows[0], existing: false, message: "Contact added."
         });

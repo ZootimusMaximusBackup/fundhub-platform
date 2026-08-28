@@ -7,6 +7,16 @@
         "matcher": "git\\s+(add|commit|stage|rm|mv)\\b",
         "failClosed": false
       }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "but cursor after-edit"
+      }
+    ],
+    "stop": [
+      {
+        "command": "but cursor stop"
+      }
     ]
   }
 }

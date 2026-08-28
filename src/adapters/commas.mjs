@@ -34,6 +34,7 @@
 import crypto from "node:crypto";
 import { emit, defaultOrgId } from "../events/bus.mjs";
 import { enqueue } from "../payments/commas-inbox.mjs";
+import { assertCommasSafeCopy } from "../payments/commas-safe-copy.mjs";
 /* The SAME resolver every downstream money handler uses, imported rather than
    copied so the two can never drift. Checked for an import cycle before
    adding: client-lifecycle.mjs reaches 17 modules and none of them is this
@@ -295,7 +296,10 @@ export function buildCommasCheckoutUrl({ baseUrl, linkRef, amountCents, descript
   const url = new URL(baseUrl);
   url.searchParams.set("amount", (amountCents / 100).toFixed(2));
   url.searchParams.set("ref", linkRef);
-  if (description) url.searchParams.set("description", description);
+  if (description) {
+    assertCommasSafeCopy(description, { field: "description" });
+    url.searchParams.set("description", description);
+  }
   return url.toString();
 }
 

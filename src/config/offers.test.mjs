@@ -7,8 +7,34 @@ import {
   formatCents,
   offersForClient,
   resolveContractTemplateKey,
-  defaultContractValues
+  defaultContractValues,
+  commasProductTitleFor
 } from "./offers.mjs";
+import { isCommasSafeCopy } from "../payments/commas-safe-copy.mjs";
+
+test("every offer has a Commas product title with no credit/finance words", () => {
+  for (const key of Object.keys(OFFERS)) {
+    const o = OFFERS[key];
+    assert.ok(o.commasProductTitle, key);
+    assert.equal(isCommasSafeCopy(o.commasProductTitle), true, `${key}: ${o.commasProductTitle}`);
+    assert.notEqual(o.commasProductTitle, o.name, key);
+  }
+});
+
+test("commasProductTitleFor resolves from product code and purpose", () => {
+  assert.equal(
+    commasProductTitleFor({ productCode: "card-stacking-dfy" }),
+    "Consulting Services Engagement"
+  );
+  assert.equal(
+    commasProductTitleFor({ purpose: "repair" }),
+    "Consulting Services Standard"
+  );
+  assert.equal(
+    commasProductTitleFor({ invoiceId: "inv-1" }),
+    "Consulting Services Completion"
+  );
+});
 
 test("every offer has a name, integer cents, and financing/letters flags", () => {
   for (const key of Object.keys(OFFERS)) {

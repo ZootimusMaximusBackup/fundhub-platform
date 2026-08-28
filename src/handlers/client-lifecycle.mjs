@@ -18,6 +18,7 @@ import { ensureGhlContactId, config as ghlConfig } from "../messaging/ghl-contac
 import { adaptersBlocked } from "../lib/dry-run.mjs";
 import { upsertSurveyCarbonCopy } from "./client-custom-fields.mjs";
 import { addTags } from "../workflows/tags.mjs";
+import { demoFlagForEmail } from "../demo/test-identity.mjs";
 import { advanceCardToStage } from "../workflows/cards.mjs";
 
 // Last question on the CF apply survey (Available Capital).
@@ -204,11 +205,14 @@ export async function resolveClient(db, event, opts = {}) {
 
   const { firstName, lastName } = splitName(p.name);
   const ins = await db.query(
-    `INSERT INTO clients (org_id, email, first_name, last_name, phone, channel_source)
-     VALUES ($1,$2,$3,$4,$5,$6)
+    // is_demo is set from the address, not from anything the caller passes, so a
+    // hand-made test signup is disposable from birth. See src/demo/test-identity.mjs.
+    `INSERT INTO clients (org_id, email, first_name, last_name, phone, channel_source, is_demo)
+     VALUES ($1,$2,$3,$4,$5,$6,$7)
      ON CONFLICT (org_id, lower(email)) WHERE email IS NOT NULL DO NOTHING
      RETURNING id`,
-    [orgId, email, firstName, lastName, p.phone || null, p.source || null]
+    [orgId, email, firstName, lastName, p.phone || null, p.source || null,
+     demoFlagForEmail(email)]
   );
   if (ins.rows[0]) {
     const clientId = ins.rows[0].id;

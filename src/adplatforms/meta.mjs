@@ -172,6 +172,70 @@ const toCents = (v) => Math.round(Number(v || 0) * 100);
 const int = (v) => Math.trunc(Number(v || 0));
 const num = (v) => (v === undefined || v === null || v === "" ? null : Number(v));
 
+/* Agency (Business-to-Business) helpers. These use Fundhub's agency Business +
+   system-user token — not Social Studio OAuth. The client must still Approve
+   once in Meta Business Settings → Requests; we cannot skip that click. */
+
+export function normalizeMetaBusinessId(raw) {
+  const digits = String(raw || "").replace(/\D/g, "");
+  return digits || null;
+}
+
+export function normalizeMetaAdAccountId(raw) {
+  const s = String(raw || "").trim();
+  if (!s) return null;
+  const bare = s.replace(/^act_/i, "").replace(/\D/g, "");
+  return bare ? `act_${bare}` : null;
+}
+
+export function pendingAdAccountPlaceholder(businessId) {
+  const biz = normalizeMetaBusinessId(businessId);
+  if (!biz) throw new Error("pendingAdAccountPlaceholder: businessId required");
+  return `pending:biz:${biz}`;
+}
+
+/* POST /{agencyBusinessId}/managed_businesses — request partnership by the
+   client's Meta Business ID. Capability varies by app; callers must handle
+   platform errors and still queue a pending CRM row. */
+export async function requestManagedBusiness(
+  { agencyBusinessId, clientBusinessId, accessToken },
+  ctx = {}
+) {
+  const agency = normalizeMetaBusinessId(agencyBusinessId);
+  const client = normalizeMetaBusinessId(clientBusinessId);
+  if (!agency || !client) throw new Error("agency and client business ids required");
+  if (!accessToken) throw new Error("accessToken required");
+  return callPlatform({
+    url: `${BASE}/${API_VERSION}/${agency}/managed_businesses`,
+    token: accessToken,
+    body: { existing_client_business_id: client },
+    ctx
+  });
+}
+
+/* POST /{agencyBusinessId}/client_ad_accounts — request agency tasks on a known
+   client ad account. Often needs App capability / Marketing Partner status. */
+export async function requestClientAdAccountAccess(
+  { agencyBusinessId, adAccountId, accessToken, permittedTasks = ["ADVERTISE", "ANALYZE"] },
+  ctx = {}
+) {
+  const agency = normalizeMetaBusinessId(agencyBusinessId);
+  const act = normalizeMetaAdAccountId(adAccountId);
+  if (!agency || !act) throw new Error("agency business id and ad account id required");
+  if (!accessToken) throw new Error("accessToken required");
+  return callPlatform({
+    url: `${BASE}/${API_VERSION}/${agency}/client_ad_accounts`,
+    token: accessToken,
+    body: {
+      adaccount_id: act,
+      permitted_tasks: permittedTasks
+    },
+    ctx
+  });
+}
+
 export default {
-  PLATFORM, createCampaign, createAdSet, createAd, updateBudget, pause, resume, fetchInsights
+  PLATFORM, createCampaign, createAdSet, createAd, updateBudget, pause, resume, fetchInsights,
+  normalizeMetaBusinessId, normalizeMetaAdAccountId, pendingAdAccountPlaceholder,
+  requestManagedBusiness, requestClientAdAccountAccess
 };

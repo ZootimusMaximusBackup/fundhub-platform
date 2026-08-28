@@ -152,7 +152,8 @@ const ALLOWED_RAW_FETCH = {
    to Claude via src/agents/model.mjs, so they no longer declare a fence.
    embed.mjs stays — embeddings remain on OpenAI. */
 const INTERNAL_CALLERS = new Set([
-  "src/company-brain/embed.mjs"
+  "src/company-brain/embed.mjs",
+  "src/company-brain/transcribe.mjs"
 ]);
 
 function walk(dir, out = []) {

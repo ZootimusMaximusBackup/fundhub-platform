@@ -53,16 +53,21 @@ export async function whisperFile(audioPath, apiKey) {
   form.append("model", "whisper-1");
   form.append("response_format", "text");
 
-  const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}` },
-    body: form,
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    return { ok: false, error: `Whisper ${res.status}: ${err.slice(0, 200)}` };
+  try {
+    const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}` },
+      body: form,
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      return { ok: false, error: `Whisper ${res.status}: ${err.slice(0, 200)}` };
+    }
+    return { ok: true, text: (await res.text()).trim() };
+  } catch (err) {
+    const msg = err?.cause?.code || err?.code || err?.message || "network_error";
+    return { ok: false, error: `Whisper fetch failed: ${msg}` };
   }
-  return { ok: true, text: (await res.text()).trim() };
 }
 
 export async function transcribeAudio(audioPath, outTxt, apiKey) {

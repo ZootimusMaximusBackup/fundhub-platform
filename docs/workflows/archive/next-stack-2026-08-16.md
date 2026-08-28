@@ -3,7 +3,7 @@
 Owner: Chris. Shared board for this batch.
 Prove client: `9af65808-a619-4e65-ae91-239766a006b7` (Chris ProveFunding).
 Org: `fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6`.
-TransUnion stays off. Do not delete staff rows. Do not commit `.env`. Do not invent scores.
+TransUnion is on for soft-pull (owner 2026-08-24; prior “TU stays off” here overridden). Do not delete staff rows. Do not commit `.env`. Do not invent scores.
 
 **COMPLIANCE REVIEW REQUIRED** for LexisNexis (credit-pull type) and any payment / consent screen rewrite.
 
@@ -66,7 +66,7 @@ This is **company** data (profile, people tied to the business, related companie
 
 Prove on Chris ProveFunding / ProveFunding. Store on the file. Panel shows real rows or dashes.
 
-TransUnion stays off. Do not add a consumer bureau.
+TransUnion soft-pull is on (owner 2026-08-24). LexisNexis is company data — still not a consumer FICO bureau add.
 
 ### Demo HTML (when necessary)
 
