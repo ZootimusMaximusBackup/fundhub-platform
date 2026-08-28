@@ -131,6 +131,7 @@ const API_KEYS = [
   "proxy/launch",
   "public/affiliate-click",
   "public/education-enroll",
+  "public/optimize",
   "public/partner-apply",
   "public/partner-page",
   "public/survey-submit",

@@ -159,6 +159,7 @@ import messageBlasterGift from "../../api/gifts/message-blaster.mjs";
 import publicPartnerPage from "../../api/public/partner-page.mjs";
 import publicSurveySubmit from "../../api/public/survey-submit.mjs";
 import publicEducationEnroll from "../../api/public/education-enroll.mjs";
+import publicOptimize from "../../api/public/optimize.mjs";
 import publicPartnerApply from "../../api/public/partner-apply.mjs";
 import publicUnsubscribe from "../../api/public/unsubscribe.mjs";
 import publicAffiliateClick from "../../api/public/affiliate-click.mjs";
@@ -585,6 +586,9 @@ export const ROUTES = {
   "public/survey-submit": publicSurveySubmit,
   /* The /education/enroll/ form. No auth — same class as survey-submit. */
   "public/education-enroll": publicEducationEnroll,
+  /* Hidden referral page at /optimize. GET = Smart Credit gate. POST = Audit
+     checkout on the keep Assessment title. No auth — same class as survey-submit. */
+  "public/optimize": publicOptimize,
   "public/partner-apply": publicPartnerApply,
   /* The door behind the unsubscribe link in every outbound email. No auth —
      same class as survey-submit: the signed token in the URL is the credential,
