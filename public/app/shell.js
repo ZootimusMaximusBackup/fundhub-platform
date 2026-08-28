@@ -1775,6 +1775,183 @@
     return true;
   }
 
+  /* ---------------------------------------------------------------------
+     The employee's own photo, at the head of the account chip.
+
+     WHO GETS IT: employees, and nobody else. api/auth/session.mjs projects a
+     client, affiliate or partner principal into this same staff shape, so the
+     chip cannot tell them apart from a role string alone — but
+     /api/staff/avatar gates on requireAuth, which accepts staff sessions only.
+     Offering the control to those three would be offering a button whose only
+     possible outcome is a 401: they have no staff row for a photo to hang on.
+     Named here rather than derived from ROLE_TABS, because that map lists the
+     three deliberately (see its own comment) and reading "external" out of it
+     would be inferring a second meaning from one list.
+     --------------------------------------------------------------------- */
+  var AVATAR_EXTERNAL_ROLES = ["client", "affiliate", "partner"];
+
+  /* avatarChipHtml — TWO SHAPES, ONE ID.
+
+     A photo renders as a 22px circle. No photo renders as a small "+". Both
+     carry id="fh-shell-avatar", so wireAvatarUpload() binds one selector and
+     never branches on which one is on screen — including after an upload swaps
+     the "+" for the photo in place.
+
+     pointer-events:auto for the same reason Sign out sets it: the chip body is
+     deliberately click-through (see mountChip), so a control inside it has to
+     turn its own back on or it is dead. */
+  function avatarChipHtml(avatarUrl) {
+    var common = "pointer-events:auto;flex-shrink:0;cursor:pointer;padding:0;" +
+      "-webkit-tap-highlight-color:transparent";
+    if (avatarUrl) {
+      return '<img id="fh-shell-avatar" src="' + esc(avatarUrl) + '" alt="Your photo" ' +
+        'title="Change your photo" style="' + common + ';display:block;width:22px;height:22px;' +
+        'border-radius:50%;object-fit:cover;border:1px solid #3F3F46">';
+    }
+    return '<button id="fh-shell-avatar" type="button" aria-label="Add your photo" ' +
+      'title="Add your photo" style="' + common + ';display:flex;align-items:center;' +
+      'justify-content:center;width:16px;height:16px;border-radius:50%;' +
+      'border:1px dashed #52525B;background:none;color:#A1A1AA;font:inherit;' +
+      'font-size:11px;line-height:1">+</button>';
+  }
+
+  /* wireAvatarUpload — the click, the POST, and the swap in place.
+
+     THE FILE INPUT IS OURS. It is built here and hidden, so no screen carries
+     markup for it and nothing in a page's own DOM can collide with it.
+
+     A DEMO SESSION CANNOT UPLOAD. Demo is a localStorage object
+     (fh_demo_staff), not a staff row, so there is no id to attach a photo to
+     and the POST would 401. Saying so inline is the honest answer; opening a
+     file picker that can only end in an error is not.
+
+     THE AUTH HEADER IS getSession()'s, unchanged — the bearer token from
+     localStorage when there is one. content-type is deliberately NOT set: the
+     browser has to write the multipart boundary itself, and naming the type by
+     hand omits the boundary and makes the body unparseable at the other end.
+     This is also why the fetch is written here rather than through
+     FHData.uploadFiles — that helper hardcodes the field name "file", this
+     endpoint reads "photo", and data.js is not loaded on every screen the chip
+     renders on. */
+  function wireAvatarUpload(el, demo) {
+    var input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/png,image/jpeg";
+    input.style.cssText = "position:absolute;width:1px;height:1px;opacity:0;pointer-events:none";
+    el.appendChild(input);
+
+    /* The chip is the positioning context for the error bubble. When the chip
+       could not be placed in a header it is already position:fixed, which is
+       also a positioned ancestor — so only the in-header case needs this. */
+    if (!el.style.position) el.style.position = "relative";
+
+    var busy = false;
+    var errTimer = null;
+
+    function avatarEl() { return document.getElementById("fh-shell-avatar"); }
+
+    function showError(msg) {
+      var box = document.getElementById("fh-shell-avatar-err");
+      if (!box) {
+        box = document.createElement("div");
+        box.id = "fh-shell-avatar-err";
+        box.setAttribute("role", "status");
+        box.style.cssText = "position:absolute;top:100%;left:0;margin-top:6px;max-width:260px;" +
+          "background:#F2A69B;color:#0A0A0A;border-radius:6px;padding:5px 8px;" +
+          "font:500 10px/1.35 'JetBrains Mono',monospace;letter-spacing:.04em;" +
+          "pointer-events:none;z-index:1";
+        el.appendChild(box);
+      }
+      box.textContent = msg;
+      box.style.display = "block";
+      if (errTimer) clearTimeout(errTimer);
+      errTimer = setTimeout(function () { box.style.display = "none"; }, 4000);
+    }
+
+    function setBusy(on) {
+      busy = on;
+      var a = avatarEl();
+      if (!a) return;
+      a.style.opacity = on ? "0.45" : "";
+      a.style.cursor = on ? "progress" : "pointer";
+    }
+
+    function onClick(ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (busy) return;
+      if (demo) {
+        showError("Demo session — sign in for real to add a photo.");
+        return;
+      }
+      /* Cleared first so picking the SAME file twice in a row still fires
+         change — otherwise a retry after a failed upload does nothing. */
+      input.value = "";
+      input.click();
+    }
+
+    function bind() {
+      var a = avatarEl();
+      if (a) a.addEventListener("click", onClick);
+    }
+
+    /* swap — replace the avatar element only, never the chip around it.
+
+       ?v= is a cache-buster. The photo lives at ONE fixed path
+       (/api/staff/avatar), so a browser holding the previous one would keep
+       drawing it after a replacement upload even though the bytes changed. */
+    function swap(url) {
+      var a = avatarEl();
+      if (!a) return;
+      var busted = url ? url + (url.indexOf("?") === -1 ? "?" : "&") + "v=" + Date.now() : null;
+      a.outerHTML = avatarChipHtml(busted);
+      bind();
+      /* The two shapes are different widths (16px "+" vs 22px photo), and
+         Search is positioned off the chip's MEASURED width — remeasure, same
+         as setChipHidden() does for the same reason. */
+      try { layoutShellChrome(); } catch (e) {}
+    }
+
+    function upload(file) {
+      setBusy(true);
+      var t = "";
+      try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+      var form = new FormData();
+      form.append("photo", file, file.name || "photo");
+      fetch("/api/staff/avatar", {
+        method: "POST",
+        headers: t ? { authorization: "Bearer " + t } : {},
+        body: form
+      }).then(function (r) {
+        return r.json().then(
+          function (d) { return { ok: r.ok, body: d }; },
+          function () { return { ok: r.ok, body: null }; }
+        );
+      }).then(function (res) {
+        if (!res.ok || !res.body || !res.body.ok) {
+          throw new Error((res.body && (res.body.message || res.body.error)) || "could not save that photo");
+        }
+        /* Ask the server what the session says now rather than trusting the
+           POST's own reply. The chip has to show what /api/auth/session will
+           report on the next page load, not a value only this tab believes. */
+        return getSession();
+      }).then(function (sess) {
+        swap(sess && sess.staff ? sess.staff.avatarUrl : null);
+        setBusy(false);
+      }).catch(function (err) {
+        setBusy(false);
+        showError(String((err && err.message) || "could not save that photo").slice(0, 120));
+      });
+    }
+
+    input.addEventListener("change", function () {
+      var file = input.files && input.files[0];
+      if (file) upload(file);
+    });
+
+    bind();
+  }
+
   function mountChip(staff, demo) {
     var el = document.createElement("div");
     el.id = "fh-shell-chip";
@@ -1807,7 +1984,11 @@
     var roleTitle = known
       ? "role " + role + " — " + menu.length + " of " + ALL.length + " screens. Change the map in shell.js ROLE_TABS."
       : "role \"" + role + "\" is not in shell.js ROLE_TABS — falling back to the shared Work tabs. Add it to the map.";
+    /* Employees only — see AVATAR_EXTERNAL_ROLES above. Everything else in the
+       chip is unchanged for all three principal kinds. */
+    var canAvatar = AVATAR_EXTERNAL_ROLES.indexOf(role) === -1;
     el.innerHTML =
+      (canAvatar ? avatarChipHtml(staff.avatarUrl) : "") +
       '<span title="' + esc(roleTitle) + '" style="color:' + (known ? "#A1A1AA" : "#F5CE8F") + '">' +
         esc(staff.name || staff.email) + " · " + esc(roleText) + (known ? "" : " ?") + "</span>" +
       '<span id="fh-shell-src" title="checking the backend…" style="background:#3F3F46;color:#E4E4E7;border-radius:6px;padding:3px 7px;font-weight:700">···</span>' +
@@ -1864,6 +2045,7 @@
     }
 
     document.getElementById("fh-shell-out").addEventListener("click", signOut);
+    if (canAvatar) wireAvatarUpload(el, demo);
     document.getElementById("fh-shell-chip-hide").addEventListener("click", function (ev) {
       ev.preventDefault();
       ev.stopPropagation();
