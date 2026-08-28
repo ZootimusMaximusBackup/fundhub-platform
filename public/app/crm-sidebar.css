@@ -249,11 +249,16 @@ html.fh-side-mini .app-shell {
 /* Owner-set retired menu rows stay reachable by direct URL, but never paint in
    the rail. This stylesheet loads before the deferred shell, so the rows are
    hidden on the first frame instead of flashing while the session resolves.
-   Keep this list in lockstep with shell.js NAV_HIDDEN; the nav test checks it. */
+   Keep this list in lockstep with shell.js NAV_HIDDEN; the nav test checks it
+   BOTH ways as of 2026-08-27. It used to check one: every NAV_HIDDEN entry had
+   to appear here, but nothing checked that every entry here was still in
+   NAV_HIDDEN. So when company-brain.html was taken off NAV_HIDDEN the row
+   stayed invisible — this rule was still hiding it, the suite was green, and
+   the screen looked dead on a deploy that had "fixed" it. Do not add an href
+   here without adding it there. */
 .navitem:is(
   [href="finance-os.html"],
   [href="consent-capture.html"],
-  [href="company-brain.html"],
   [href="galaxy.html"],
   [href="partner-galaxy.html"],
   [href="ops-admin.html"],
