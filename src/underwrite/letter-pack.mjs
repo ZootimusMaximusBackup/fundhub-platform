@@ -10,9 +10,8 @@ import { runTierEngineFromCrsResult } from "../finance/crs-tier.mjs";
 import { hasFundingAnalysisPdfs, FUNDING_ANALYSIS_FILENAMES } from "./letter-pack-filter.mjs";
 import { buildBlackReportClient, hasBlackReportSource, mergeStoredUnderwrite } from "./black-report-client.mjs";
 import { printBlackReports } from "./black-report-pdf.mjs";
-import { buildCfpbComplaint, buildStateAgComplaint, renderComplaintPdf } from "../metro2/letters/complaints.mjs";
 import { violationsByBureauFromMergedCrs } from "../metro2/diy/from-crs.mjs";
-import { accountsFromPack, blankTimeline } from "../metro2/diy/package.mjs";
+import { maybeComplaintFiles, COMPLAINT_FOLDER } from "../metro2/diy/package.mjs";
 import { LETTER_TYPES } from "../metro2/letters/catalog.mjs";
 
 const { generateLetters, generateDisputeLetters } = letterGenMod;
@@ -209,23 +208,45 @@ async function uiqDeliverablePdfs(crsResult, personal, pack, _generate = generat
 // letters only, while the Round 3 letter text already told the bureau a CFPB
 // complaint was being filed and nothing ever wrote one.
 //
-// Nothing new is authored here. The two complaint documents come from the repair
-// brain that already builds them for the DIY package:
-//   src/metro2/letters/complaints.mjs   — the wording, cites and sworn declaration
-//   src/metro2/diy/from-crs.mjs         — the Metro 2 findings behind the claims
-//   src/metro2/diy/package.mjs          — the account list and the round timeline
+// Nothing is authored here and nothing is re-implemented here. The complaint
+// pair, its wording, its sworn declaration and the cover sheet that must travel
+// with it all come from the one builder the $1,000 DIY package uses:
+//   src/metro2/diy/package.mjs  maybeComplaintFiles
+// This file only decides WHETHER the pack has earned them, and renames the
+// resulting files into the pack's own naming convention.
 //
-// Rules held here, deliberately:
+// THE ONE RULE THAT MATTERS — read before touching this:
+//
+//   A complaint may never ship without dispute letters in the SAME pack.
+//
+// Both complaints say, in the client's own voice and signed under penalty of
+// perjury, "I disputed inaccurate information with the consumer reporting
+// agencies." If this pack produced no dispute letter, that sentence is false and
+// the client is being asked to swear to it. Filing a federal complaint before any
+// dispute was mailed is also out of order — the CFPB and the state AG both expect
+// the bureau rounds first. So the gate is on the letters this pack actually
+// produced, never on the stored credit pull, which is what the pull says the
+// client COULD dispute rather than what was written.
+//
+// The other rules held here, deliberately:
 //  * No violations found → no complaint. A complaint with no named account is a
 //    claim about nothing, so an empty findings map yields zero files.
-//  * Undated. `undated: true` renders "Date: ____________" and the hand-signed
-//    perjury declaration. A dated complaint requires the client's dispute
-//    authorization (src/metro2/diy/package.mjs), which this path does not carry.
+//  * Undated. `datedComplaints: false` renders "Date: ____________" and the
+//    hand-signed perjury declaration. A dated complaint requires the client's
+//    dispute authorization, which this path does not carry.
 //  * The timeline is the blank R1/R2/R3 plan, so every date reads
 //    "[DATE — not mailed yet]". No mail date is ever invented.
 //  * A failure here must not lose the bureau letters, so it is caught and
 //    surfaced as `complaintSkip` rather than thrown.
 // ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * A Metro 2 dispute round letter to a bureau — the thing a complaint escalates
+ * FROM. Personal-info and inquiry-removal letters are not it.
+ */
+function isDisputeLetter(letter) {
+  return letter?.type === "dispute" || /round\d/.test(letter?.filename || "");
+}
 
 /** Complaint identity from the same `personal` record the bureau letters use. */
 export function complaintIdentityFromPersonal(personal) {
@@ -247,38 +268,42 @@ export function complaintIdentityFromPersonal(personal) {
   };
 }
 
-export async function buildEscalationComplaints({ storedCrs, personal, pack } = {}) {
+/**
+ * @param {object}   args
+ * @param {object?}  args.storedCrs      the stored credit pull, for the findings
+ * @param {object}   args.personal       the client record the letters were addressed from
+ * @param {string}   args.pack           "repair" or "funding"
+ * @param {object[]} args.disputeLetters the dispute letters THIS pack produced.
+ *   Not optional and never defaulted: an empty list means no complaint. See the
+ *   ONE RULE above.
+ */
+export async function buildEscalationComplaints({ storedCrs, personal, pack, disputeLetters } = {}) {
   if (pack !== "repair") return { files: [], skip: "not_repair" };
+  if (!(disputeLetters || []).some(isDisputeLetter)) {
+    return { files: [], skip: "no_dispute_letters" };
+  }
   if (!storedCrs) return { files: [], skip: "no_stored_crs" };
   try {
-    const byBureau = violationsByBureauFromMergedCrs(storedCrs);
-    const accounts = accountsFromPack(byBureau);
-    if (!accounts.length) return { files: [], skip: "no_violations" };
-    const identity = complaintIdentityFromPersonal(personal);
-    const timeline = blankTimeline();
-    const cfpbText = buildCfpbComplaint({ identity, accounts, timeline, undated: true });
-    const agText = buildStateAgComplaint({ identity, accounts, timeline, undated: true });
-    const [cfpbPdf, agPdf] = await Promise.all([
-      renderComplaintPdf(cfpbText, identity),
-      renderComplaintPdf(agText, identity)
-    ]);
-    return {
-      files: [
-        {
-          filename: NICE_NAME[LETTER_TYPES.CFPB_COMPLAINT],
-          contentType: "application/pdf",
-          content: Buffer.from(cfpbPdf),
-          type: LETTER_TYPES.CFPB_COMPLAINT
-        },
-        {
-          filename: NICE_NAME[LETTER_TYPES.STATE_AG_COMPLAINT],
-          contentType: "application/pdf",
-          content: Buffer.from(agPdf),
-          type: LETTER_TYPES.STATE_AG_COMPLAINT
-        }
-      ],
-      skip: null
-    };
+    const built = await maybeComplaintFiles({
+      identity: complaintIdentityFromPersonal(personal),
+      violationsByBureau: violationsByBureauFromMergedCrs(storedCrs),
+      // Undated. The client writes the date and hand-signs the declaration.
+      datedComplaints: false
+    });
+    if (!built.ok) return { files: [], skip: built.reason || "complaint_refused" };
+    if (!built.files.length) return { files: [], skip: "no_violations" };
+    // Same folder, same cover sheet, same order as the DIY package. Only the two
+    // PDF names change, onto this pack's naming convention.
+    const files = built.files.map((f) => {
+      const nice = NICE_NAME[f.type];
+      return {
+        filename: nice ? `${COMPLAINT_FOLDER}/${nice}` : f.path,
+        contentType: f.pdf ? "application/pdf" : "text/plain",
+        content: f.pdf || Buffer.from(String(f.text ?? ""), "utf8"),
+        ...(f.type ? { type: f.type } : {})
+      };
+    });
+    return { files, skip: null };
   } catch (err) {
     return { files: [], skip: String(err && err.message || err).slice(0, 240) };
   }
@@ -302,7 +327,7 @@ export async function buildLetterPack({
   });
   // generateLetters only emits bureau Metro 2 letters when path === "repair".
   // Gold funding packs still include those letters (LETTER_SPEC + owner roster).
-  if (pack !== "repair" && !letters.some((l) => l?.type === "dispute" || /round\d/.test(l?.filename || ""))) {
+  if (pack !== "repair" && !letters.some(isDisputeLetter)) {
     letters.push(...(await generateDisputeLetters({ bureaus, personal: who })));
   }
   let summaries = [];
@@ -329,13 +354,26 @@ export async function buildLetterPack({
     }
   }
   const uiq = await uiqDeliverablePdfs(crsResult, who, pack, generateDeliverablesFn, storedCrs);
-  // Escalation last: the client works the bureau rounds first, then files these.
-  const escalation = await buildEscalationComplaints({ storedCrs, personal: who, pack });
-  const files = [...uiq.files, ...asFiles(summaries), ...asFiles(letters), ...escalation.files];
+  const letterFiles = asFiles(letters);
+  // The documents this pack produced on its own merits. Escalation is NOT in here.
+  const earned = [...uiq.files, ...asFiles(summaries), ...letterFiles];
+  // Escalation last: the client works the bureau rounds first, then files these,
+  // and only if this pack actually wrote the bureau rounds.
+  const escalation = await buildEscalationComplaints({
+    storedCrs,
+    personal: who,
+    pack,
+    disputeLetters: letterFiles
+  });
+  const files = [...earned, ...escalation.files];
   let reason = null;
   // An empty pack with no engine result is a different state from an empty pack
   // the engine produced. See the PACK_REASON block at the top of this file.
-  if (!files.length) {
+  //
+  // Counted against `earned`, never against `files`. A complaint must never make
+  // a failed pack look like it produced something — that is exactly how the
+  // engine error below got swallowed once already.
+  if (!earned.length) {
     reason = crsResult ? PACK_REASON.EMPTY_PACK : PACK_REASON.NO_ENGINE_RESULT;
   } else if (pack !== "repair" && !hasFundingAnalysisPdfs(files)) {
     reason = PACK_REASON.MISSING_FUNDING_ANALYSIS;

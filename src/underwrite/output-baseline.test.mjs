@@ -40,8 +40,16 @@
 //   * The WeasyPrint PDF text itself. It carries today's date and depends on a
 //     Python install that is not on every machine. Locked instead: the CLIENT
 //     dict handed to it, and the sha256 of scripts/black-reports/fundhub_gen.py.
-//   * Anything that needs a database. buildLetterPackForClient reads `clients`;
-//     that path is covered by ./underwriteiq.pg.test.mjs, not here.
+//   * A real database. buildLetterPackForClient is exercised below through a
+//     read-only stub of its two queries — that is deliberate, because building
+//     the repair pack WITHOUT a stored credit pull skips the whole escalation
+//     path and pins nothing. Real Postgres behaviour stays in
+//     ./underwriteiq.pg.test.mjs.
+//   * The exact dispute-letter list produced from the vendored sandbox pull.
+//     Which accounts the scoring engine calls derogatory can move with the
+//     calendar, and this file must never turn into a dated false alarm. What IS
+//     pinned for that pull: that dispute letters exist at all, and the exact
+//     escalation tail that follows them.
 //   * Live Claude summary text. ANTHROPIC_API_KEY is removed below, exactly as
 //     ./letter-pack.test.mjs does, so the letter pack never calls out.
 //   * PDF byte size. PDFs embed timestamps, so byte length is not a stable pin.
@@ -52,12 +60,15 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync, existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { computeUnderwrite, buildSuggestions } from "./engine.mjs";
 import { buildBlackReportClient, emptyBlackReportClient } from "./black-report-client.mjs";
 import { printBlackReports, BLACK_REPORT_SCRIPT } from "./black-report-pdf.mjs";
 import { printBlackReportsNode } from "./black-report-node.mjs";
-import { buildLetterPack, PACK_REASON } from "./letter-pack.mjs";
+import { buildLetterPack, buildLetterPackForClient, PACK_REASON } from "./letter-pack.mjs";
+import { mergeBureauReports } from "../finance/crs-map.mjs";
 import { extractPdfText } from "../company-brain/pdf-text.mjs";
 
 // Never call live Claude from a unit test. Same guard as ./letter-pack.test.mjs.
@@ -189,7 +200,73 @@ const BASELINE_REPAIR_PACK = Object.freeze([
   ["ex_round1.pdf", "dispute", "experian"]
 ]);
 
+/**
+ * The escalation tail of a repair pack built from a stored credit pull. The
+ * folder name and the cover sheet are part of the document, not decoration:
+ * both complaints are sworn under penalty of perjury and are out of order
+ * before Round 3. If this tail ever ships loose, or ships without the cover,
+ * this baseline goes red.
+ */
+const BASELINE_ESCALATION_TAIL = Object.freeze([
+  ["06-complaints-CONDITIONAL/COVER.txt",                            null,                 null],
+  ["06-complaints-CONDITIONAL/CFPB-Complaint.pdf",                   "cfpb_complaint",     null],
+  ["06-complaints-CONDITIONAL/State-Attorney-General-Complaint.pdf", "state_ag_complaint", null]
+]);
+
 const manifest = (pack) => pack.files.map((f) => [f.filename, f.type ?? null, f.bureau ?? null]);
+
+/* ─────────────── stored credit pulls, for the repair pack ───────────────
+   buildLetterPackForClient makes exactly two reads and writes nothing, so a
+   read-only stub is enough to run the real entry point the app calls. */
+
+const SANDBOX = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../vendor/underwriteiq-full/api/lite/crs/sandbox"
+);
+const loadSandbox = (name) => JSON.parse(readFileSync(path.join(SANDBOX, name), "utf8"));
+
+/** A real three-bureau pull the scoring engine can read. */
+const STORED_SCOREABLE = mergeBureauReports({
+  reports: { TU: loadSandbox("tu.json"), EX: loadSandbox("exp.json"), EQ: loadSandbox("efx.json") },
+  requestIds: { TU: "tu-1", EX: "ex-1", EQ: "eq-1" },
+  environment: "sandbox"
+});
+
+/**
+ * A pull stored as one bare bureau file, with no `bureaus` key. The scoring
+ * engine throws on this shape (../finance/crs-tier.test.mjs pins the throw),
+ * so the pack can write no dispute letters at all.
+ */
+const STORED_UNSCOREABLE = Object.freeze({
+  requestedBureaus: { transunion: false, experian: false, equifax: true },
+  responseDetail: { dateRequested: "2026-03-01T21:46:24.834278Z" },
+  creditFiles: [{ creditFileDetail: { creditFileInfileDate: "2026-03-01", creditFileResultStatusType: "FileReturned", sourceType: "Equifax" } }],
+  tradelines: [{
+    accountIdentifier: "5121080011112222", accountOpenedDate: "2019-06-12",
+    accountOwnershipType: "Individual", accountReportedDate: "2024-01-01",
+    accountStatusType: "Open", accountType: "Revolving", creditorName: "EXAMPLE BANK NA",
+    currentBalanceAmount: "1842", currentRatingType: "AsAgreed", sourceType: "Equifax"
+  }]
+});
+
+function fakeClientDb(storedCrs) {
+  return {
+    async query(sql) {
+      if (/FROM clients/i.test(sql)) {
+        return {
+          rows: [{
+            first_name: "Fixture",
+            last_name: "Client",
+            custom_fields: { address: "100 Test Ave", city: "Denton", state: "TX", zip: "76205" },
+            outcome_tier: "REPAIR_ONLY"
+          }]
+        };
+      }
+      if (/FROM crs_results/i.test(sql)) return { rows: storedCrs ? [{ result: storedCrs }] : [] };
+      return { rows: [] };
+    }
+  };
+}
 
 /* ═══════════════ 1. THE SCORING ENGINE ═══════════════ */
 
@@ -331,13 +408,17 @@ describe("baseline — the document pack a client receives", () => {
     }
   });
 
-  test("repair pack: same documents, same order", async () => {
+  test("repair pack, no stored credit pull: same documents, same order", async () => {
     const pack = await buildLetterPack({ crsResult: ENGINE_RESULT, personal: PERSONAL, pack: "repair" });
     assert.deepEqual(manifest(pack), BASELINE_REPAIR_PACK.map((r) => [...r]),
       "UNDERWRITEIQ OUTPUT CHANGED — the repair pack a client receives moved.");
     pinned(pack.reason, null, "the repair pack's reason code");
     pinned(pack.deliverableCount, 0, "funding analysis documents in a repair pack");
     pinned(pack.deliverableSkip, "not_funding", "why a repair pack has no funding analysis");
+    // No stored pull means no findings to complain about. Recorded so nobody
+    // reads this test as cover for the escalation path — it is not.
+    pinned(pack.complaintCount, 0, "complaints in a repair pack built with no stored credit pull");
+    pinned(pack.complaintSkip, "no_stored_crs", "why that pack has no complaints");
   });
 
   test("no credit pull: the pack says so, and says which kind of nothing", async () => {
@@ -346,5 +427,61 @@ describe("baseline — the document pack a client receives", () => {
     pinned(pack.reason, PACK_REASON.NO_ENGINE_RESULT, "the reason code for a client with no credit pull");
     pinned(pack.deliverableSkip, "no_engine", "the funding analysis skip reason with no credit pull");
     pinned(pack.summarySkip, "no_normalized", "the summary skip reason with no credit pull");
+  });
+});
+
+/* ═══════════════ 6. THE REPAIR PACK, THROUGH THE REAL ENTRY POINT ═══════════════
+
+   COMPLIANCE REVIEW REQUIRED — dispute logic and credit-repair messaging.
+
+   Section 5 builds the repair pack with no stored credit pull, so the escalation
+   path exits at its first line and pins nothing about it. That is how the CFPB
+   and state AG complaints once shipped with no dispute letters and no warning
+   sheet while this file stayed green.
+
+   These run buildLetterPackForClient — the function ds-02-diy-letters and
+   closer-deck actually call — with a stored credit pull in the database stub. */
+
+describe("baseline — the repair pack a client receives, with a credit pull on file", () => {
+  test("a readable pull: dispute letters, then the conditional complaints", async () => {
+    const pack = await buildLetterPackForClient(fakeClientDb(STORED_SCOREABLE), { clientId: "cl-1", pack: "repair" });
+    pinned(pack.reason, null, "the repair pack's reason code with a readable credit pull");
+    pinned(pack.engineSkip, null, "the engine skip reason for the sandbox pull");
+
+    const rows = manifest(pack);
+    const disputes = rows.filter(([name]) => /round\d/.test(name));
+    assert.ok(disputes.length > 0,
+      "UNDERWRITEIQ OUTPUT CHANGED — a readable credit pull stopped producing dispute letters.");
+    assert.deepEqual(rows.slice(-3), BASELINE_ESCALATION_TAIL.map((r) => [...r]),
+      "UNDERWRITEIQ OUTPUT CHANGED — the escalation tail moved. The two complaints must " +
+      "come last, inside 06-complaints-CONDITIONAL, behind the cover sheet that says " +
+      "DO NOT FILE WITH ROUND 1.");
+    pinned(pack.complaintCount, 3, "the number of escalation files (cover sheet + two complaints)");
+    pinned(pack.complaintSkip, null, "the escalation skip reason on a readable pull");
+  });
+
+  test("A PULL THE ENGINE CANNOT READ SHIPS NOTHING, AND SAYS WHY", async () => {
+    // The regression. Complaint files must never make a failed pack look like it
+    // produced something: ds-02-diy-letters and closer-deck both decide
+    // Delivered vs Delivery Failed on nothing but "are there files?".
+    const pack = await buildLetterPackForClient(fakeClientDb(STORED_UNSCOREABLE), { clientId: "cl-1", pack: "repair" });
+    pinned(pack.files.length, 0, "the pack for a client whose stored credit pull cannot be read");
+    pinned(pack.complaintCount, 0, "complaints on a pull the engine could not read");
+    pinned(pack.complaintSkip, "no_dispute_letters", "why that pack has no complaints");
+    pinned(pack.reason, "engine_error: rawResponsesFromMerged: no bureau reports to score",
+      "the reason code for a stored credit pull the engine cannot read");
+  });
+
+  test("a readable pull with nothing to dispute: an empty pack, honestly empty", async () => {
+    // The benign case. The engine ran, this client has no dispute to send, and
+    // the complaints do not quietly fill the gap.
+    const pack = await buildLetterPackForClient(
+      fakeClientDb({ bureausPulled: ["EQ"], bureaus: { EQ: STORED_UNSCOREABLE } }),
+      { clientId: "cl-1", pack: "repair" }
+    );
+    pinned(pack.files.length, 0, "the pack for a client with a clean readable pull");
+    pinned(pack.reason, PACK_REASON.EMPTY_PACK, "the reason code for a clean readable pull");
+    pinned(pack.complaintCount, 0, "complaints on a clean readable pull");
+    pinned(pack.complaintSkip, "no_dispute_letters", "why a clean pull has no complaints");
   });
 });
