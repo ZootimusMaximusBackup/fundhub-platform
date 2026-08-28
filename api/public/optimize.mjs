@@ -22,8 +22,19 @@ import { buildOptimizeRoadmap } from "../../src/optimize-page/roadmap.mjs";
 
 export const BOOK_URL = "https://apply.fundhub.ai/schedule/phonecall";
 export const AUDIT_KEEP_TITLE = "Consulting Services Assessment";
-/** Official SmartCredit partner link from the Sept 2025 Welcome email (PID 29056). */
-export const SMART_CREDIT_AFFILIATE_URL = "https://www.smartcredit.com/?PID=29056";
+/**
+ * Official SmartCredit enrollment link. ConsumerDirect Partner Support gave three
+ * on 2026-08-28 and they are NOT interchangeable:
+ *   smartcredit.com/Fundhub            — branded page, no tracking
+ *   smartcredit.com/cblp/?PID=29056    — "for link tracking or integration"  <-- this one
+ *   smartcredito.com/cblp/?PID=29056   — same, Spanish
+ * The bare www.smartcredit.com/?PID= form used before is not the integration link
+ * and does not track. Membership is priced Build $29.99 / Protect $19.99, no trial.
+ */
+export const SMART_CREDIT_AFFILIATE_URL = "https://smartcredit.com/cblp/?PID=29056";
+
+/** Spanish enrollment, same PID, same partner account. Partner Support, 2026-08-28. */
+export const SMART_CREDIT_AFFILIATE_URL_ES = "https://smartcredito.com/cblp/?PID=29056";
 
 function readBody(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
