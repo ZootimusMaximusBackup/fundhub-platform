@@ -1181,7 +1181,12 @@
 
   async function boot() {
     if (!contactId) {
-      state.error = "Open Present from a contact. This page needs ?contact= on the URL.";
+      /* A closer can reach this page with no client on it now that Present is
+         always on the Closer Dashboard (owner-set 2026-08-27). It used to be
+         unreachable, which is why it spoke in URL syntax. UI-STANDARDS §6: say
+         what to do next, in the reader's words. The gate below already renders
+         a "Back to Closer Dashboard" link under this line. */
+      state.error = "Pick a client first. Open a call on the Closer Dashboard, then press Present.";
       state.loaded = true;
       render();
       return;
