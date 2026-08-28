@@ -175,12 +175,6 @@
   to = "/climate/"
   status = 301
 
-# Leftover /go short links. Pretty URL /optimize already serves optimize.html.
-[[redirects]]
-  from = "/go"
-  to = "/optimize"
-  status = 301
-
 # Hidden referral page. Pretty URL /optimize serves optimize.html on its own.
 # /optimize.com needs this rewrite because the ".com" is part of the path.
 [[redirects]]
