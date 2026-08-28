@@ -4,6 +4,7 @@
 
 import { citationsFor, metro2RefFor } from "../rules/citations.mjs";
 import { openingFor, closingFor, roundInstructions, rotateViolations, ROUND } from "./prompts.mjs";
+import { formatComplaintFilings } from "../rounds/complaint-filing.mjs";
 import { resolvedCitationBlock } from "./citations-assert.mjs";
 import { generateWithVarianceGate, structuralFingerprint } from "./variance.mjs";
 import { handwrittenSignOff } from "./sign-block.mjs";
@@ -130,7 +131,8 @@ export function formatPriorEvidence(priorResponses = []) {
  *   seed?: string|number,
  *   undated?: boolean,
  *   date?: string|null,
- *   priorResponses?: object[]
+ *   priorResponses?: object[],
+ *   priorFilings?: object[]
  * }} opts
  */
 export function buildLetterText(opts = {}) {
@@ -158,8 +160,29 @@ export function buildLetterText(opts = {}) {
 
   const paragraphs = ordered.map((v) => formatViolationParagraph(v)).filter(Boolean);
   const evidenceLines = formatPriorEvidence(opts.priorResponses);
-  const evidenceBlock = evidenceLines.length
-    ? ["PRIOR BUREAU RESPONSE (evidence):", ...evidenceLines].join("\n")
+  // ── COMPLAINTS ALREADY FILED — read from the record, never assumed ──
+  //
+  // COMPLIANCE REVIEW REQUIRED — dispute logic.
+  //
+  // Fundhub mails the Round 4 CFPB complaint and the Round 5 state attorney
+  // general complaint, so Round 6 may say they were filed. It may say it ONLY
+  // from `priorFilings`, which the caller loads from dispute_letters rows that
+  // are already status 'sent' or 'delivered' (../rounds/complaint-filing.mjs
+  // loadComplaintFilings). No row, no sentence.
+  //
+  // Gated to R6 because R6 is the only rung that stands on the complaints. And
+  // gated on the lines being non-empty, so a client whose complaints were never
+  // mailed — or whose state attorney general has no postal address on file, which
+  // today is every client — gets exactly the letter they got before this existed.
+  const filingLines = String(round).toUpperCase() === ROUND.R6
+    ? formatComplaintFilings(opts.priorFilings)
+    : [];
+  const evidenceBlock = (evidenceLines.length || filingLines.length)
+    ? [
+      ...(evidenceLines.length ? ["PRIOR BUREAU RESPONSE (evidence):", ...evidenceLines] : []),
+      ...(evidenceLines.length && filingLines.length ? [""] : []),
+      ...(filingLines.length ? ["COMPLAINTS ALREADY FILED (evidence):", ...filingLines] : [])
+    ].join("\n")
     : null;
   const citationBlock = resolvedCitationBlock(ordered);
   const ruleIdList = ordered.map((v) => v.ruleId).join(", ");

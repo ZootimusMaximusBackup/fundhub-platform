@@ -5,6 +5,7 @@ import {
   roundAllowed,
   caseStatusFromItems,
   applyItemOutcome,
+  crossesIntoEscalation,
   preDispatchRecheck
 } from "./state.mjs";
 import { advanceAfterParse, filterForDispatch } from "./advance.mjs";
@@ -143,5 +144,130 @@ describe("rounds state", () => {
     assert.equal(r.ok, true);
     assert.equal(updates[0].round, "R2");
     assert.equal(updates[0].cap, 2);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CROSSING INTO R4 NEEDS A PERSON
+//
+// COMPLIANCE REVIEW REQUIRED — dispute logic.
+//
+// A confident AI read of a client-uploaded bureau letter advances a round with
+// nobody in the loop. That is intended for the bureau ladder. It is NOT intended
+// for the crossing into R4, where the CFPB and state attorney general complaints
+// — signed by the consumer under penalty of perjury — get released.
+//
+// Owner-set 2026-08-28: R1→R2 and R2→R3 stay automatic; entering R4 needs a human.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("the escalation crossing is gated on a human", () => {
+  const verified = (round, opts) => applyItemOutcome({ id: "i1", status: "sent", round }, "verified", opts);
+
+  it("R1→R2 AND R2→R3 STILL ADVANCE WITH NO HUMAN — this must not change", () => {
+    // The thing most likely to break by accident. A wrong move here costs a
+    // letter and is recoverable, and the speed is the point.
+    for (const [from, to] of [["R1", "R2"], ["R2", "R3"]]) {
+      const auto = verified(from);
+      assert.equal(auto.status, "escalated", `${from} stopped advancing on its own`);
+      assert.equal(auto.round, to);
+      assert.equal(auto.awaiting_human_confirmation, undefined);
+      // And it behaves identically when a human IS present.
+      const withHuman = verified(from, { humanConfirmed: true });
+      assert.equal(withHuman.status, "escalated");
+      assert.equal(withHuman.round, to);
+    }
+  });
+
+  it("R3→R4 IS REFUSED WITHOUT A HUMAN — the item keeps its round", () => {
+    const r = verified("R3");
+    assert.equal(r.status, "verified", "an unconfirmed R3 answer must not become escalated");
+    assert.equal(r.round, "R3", "the item must not move to R4");
+    assert.equal(r.awaiting_human_confirmation, true);
+    assert.equal(r.would_advance_to, "R4");
+  });
+
+  it("R3→R4 goes through when a human confirmed it", () => {
+    const r = verified("R3", { humanConfirmed: true });
+    assert.equal(r.status, "escalated");
+    assert.equal(r.round, "R4");
+    assert.equal(r.awaiting_human_confirmation, undefined);
+  });
+
+  it("moves already inside escalation need a human too", () => {
+    for (const [from, to] of [["R4", "R5"], ["R5", "R6"]]) {
+      assert.equal(verified(from).status, "verified", `${from}→${to} advanced with no human`);
+      assert.equal(verified(from).round, from);
+      assert.equal(verified(from, { humanConfirmed: true }).round, to);
+    }
+  });
+
+  it("ONLY THE LITERAL TRUE COUNTS AS A HUMAN", () => {
+    // A truthy sentinel must not buy an escalation. The auto path passes null or
+    // the string "system_high_confidence"; neither is a person.
+    for (const junk of ["system_high_confidence", "true", 1, {}, [], "yes", null, undefined, 0, ""]) {
+      const r = verified("R3", { humanConfirmed: junk });
+      assert.equal(r.status, "verified", `${JSON.stringify(junk)} was accepted as a human`);
+      assert.equal(r.round, "R3");
+    }
+  });
+
+  it("a deleted, updated or unaddressed answer at R3 is unaffected — nothing escalates", () => {
+    for (const outcome of ["deleted", "updated", "unaddressed"]) {
+      const r = applyItemOutcome({ status: "sent", round: "R3" }, outcome);
+      assert.equal(r.awaiting_human_confirmation, undefined);
+      assert.equal(r.round, "R3");
+    }
+  });
+
+  it("the cap still wins — a capped item closes rather than waiting on a human", () => {
+    const r = applyItemOutcome({ status: "sent", round: "R3" }, "verified", { roundsCap: 3 });
+    assert.equal(r.status, "closed");
+    assert.equal(r.blocked_at_cap, true);
+    assert.equal(r.awaiting_human_confirmation, undefined);
+  });
+
+  it("crossesIntoEscalation names exactly the R3→R4 boundary and up", () => {
+    assert.equal(crossesIntoEscalation("R1"), false);
+    assert.equal(crossesIntoEscalation("R2"), false);
+    assert.equal(crossesIntoEscalation("R3"), true);
+    assert.equal(crossesIntoEscalation("R4"), true);
+    assert.equal(crossesIntoEscalation("R5"), true);
+    assert.equal(crossesIntoEscalation("R6"), false, "R6 is the cap — there is nowhere to cross to");
+    assert.equal(crossesIntoEscalation("R3", 3), false, "a trial cap of 3 never reaches R4");
+  });
+
+  it("advanceAfterParse reports the hold, and holds only what needed holding", () => {
+    const items = [
+      { id: "a", status: "sent", round: "R1" },
+      { id: "b", status: "sent", round: "R3" }
+    ];
+    const outcomes = [{ itemId: "a", outcome: "verified" }, { itemId: "b", outcome: "verified" }];
+    const out = advanceAfterParse({ items, outcomes });
+    assert.equal(out.heldForHuman, true);
+    const a = out.items.find((i) => i.id === "a");
+    const b = out.items.find((i) => i.id === "b");
+    assert.equal(a.round, "R2", "the R1 item must still advance on its own");
+    assert.equal(b.round, "R3", "the R3 item must wait for a person");
+    assert.equal(out.log.find((l) => l.itemId === "a").held_for_human, false);
+    assert.equal(out.log.find((l) => l.itemId === "b").held_for_human, true);
+  });
+
+  it("with a human, nothing is held", () => {
+    const out = advanceAfterParse({
+      items: [{ id: "b", status: "sent", round: "R3" }],
+      outcomes: [{ itemId: "b", outcome: "verified" }],
+      humanConfirmed: true
+    });
+    assert.equal(out.heldForHuman, false);
+    assert.equal(out.items[0].round, "R4");
+  });
+
+  it("a held item is still reported as needing escalation — nothing is dropped", () => {
+    const out = advanceAfterParse({
+      items: [{ id: "b", status: "sent", round: "R3" }],
+      outcomes: [{ itemId: "b", outcome: "verified" }]
+    });
+    assert.equal(out.escalate.length, 1, "the held item vanished from the escalation list");
+    assert.equal(out.escalate[0].id, "b");
   });
 });

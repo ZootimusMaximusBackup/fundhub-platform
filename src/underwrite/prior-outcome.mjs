@@ -68,6 +68,7 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { promptPoolRound, ROUND } from "../metro2/letters/prompts.mjs";
+import { isEscalationRound } from "../metro2/letters/catalog.mjs";
 
 /** dispute_cases.bureau code → the scoring engine's tradeline `source` key. */
 const BUREAU_KEY = Object.freeze({
@@ -215,4 +216,58 @@ export function stampPriorOutcomes(bureaus, outcomes = []) {
     }
   }
   return { stamped, unmatched };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HAS THIS CLIENT ACTUALLY REACHED THE ESCALATION ROUNDS?
+//
+// COMPLIANCE REVIEW REQUIRED — dispute logic.
+//
+// This is the gate the CFPB and state attorney general complaints hang on. Both
+// are signed by the consumer under penalty of perjury and both say, in the
+// client's own voice, "I disputed inaccurate information with the consumer
+// reporting agencies". Releasing them before the bureau rounds are genuinely
+// done makes that sworn sentence false and files a federal complaint out of
+// order — the CFPB and the state AG both expect the bureau rounds first.
+//
+// AN ITEM CANNOT REACH R4 BY DEFAULT, BY GUESS, OR BY EMPTY DATA.
+//
+// The rows this reads come from `loadPriorOutcomes` above, which filters in SQL
+// on status = 'escalated' AND outcome = 'verified'. Only
+// ../metro2/rounds/state.mjs `applyItemOutcome` can produce that pair, only on a
+// recorded "verified" answer, and it is only ever called behind the human
+// confirmation gate in ../metro2/inbound/confirm.mjs. So a row reaching here is
+// by construction an answer a person read and confirmed.
+//
+// Round R4 on top of that means the ladder was climbed the whole way: R1 was
+// answered verified to reach R2, R2 answered verified to reach R3, R3 answered
+// verified to reach R4. Three confirmed bureau answers. An item nobody answered
+// is 'open' or 'sent' and never appears here. An empty list is not escalation —
+// it is a client on Round 1, which is where every client starts.
+//
+// The round is read straight off the row and never inferred. No default, no
+// fallback, no "assume the highest we have seen".
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * True only when a recorded, human-confirmed answer put at least one item on an
+ * escalation round (R4, R5 or R6).
+ *
+ * @param {object[]} outcomes rows from loadPriorOutcomes
+ */
+export function reachedEscalation(outcomes = []) {
+  if (!Array.isArray(outcomes)) return false;
+  return outcomes.some((row) => isEscalationRound(row?.round));
+}
+
+/** The furthest escalation round on record, or null. For reporting only. */
+export function highestEscalationRound(outcomes = []) {
+  if (!Array.isArray(outcomes)) return null;
+  let best = null;
+  for (const row of outcomes) {
+    const r = String(row?.round || "").trim().toUpperCase();
+    if (!isEscalationRound(r)) continue;
+    if (best == null || r > best) best = r;
+  }
+  return best;
 }
