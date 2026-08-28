@@ -149,8 +149,8 @@ test("app clocks are not frozen on Jul 26", () => {
       assert.ok(!/Jul 26/.test(clock), file + " clock markup still says Jul 26: " + clock);
     }
     assert.ok(
-      /timeZone:\s*["']America\/New_York["']/.test(html),
-      file + " does not tick in America/New_York"
+      /timeZone:\s*["']America\/Phoenix["']/.test(html),
+      file + " does not tick in America/Phoenix"
     );
     assert.ok(
       !/new Date\(\s*2026\s*,\s*6\s*,\s*26/.test(html),
@@ -176,7 +176,7 @@ test("closer-dashboard.html is not Jordan/Priya furniture", () => {
   assert.ok(!/showing sample markup/.test(html));
   assert.ok(html.includes("Open from a client"));
   assert.ok(html.includes("funding numbers stay dashes") || html.includes("not sourced yet"));
-  assert.ok(/timeZone:\s*["']America\/New_York["']/.test(html));
+  assert.ok(/timeZone:\s*["']America\/Phoenix["']/.test(html));
 });
 
 test("ops, affiliate, and partner galaxy do not ship sample people as live", () => {
@@ -287,10 +287,10 @@ test("closer-call.js does not paint builder notes", () => {
   assert.ok(!/Use \/api\/read/.test(js));
 });
 
-test("calendar.html clock and Then rail use America/New_York and skip past due_at", () => {
+test("calendar.html clock and Then rail use America/Phoenix and skip past due_at", () => {
   const html = fs.readFileSync(path.join(APP, "calendar.html"), "utf8");
-  assert.ok(/timeZone:\s*["']America\/New_York["']/.test(html), "calendar clock must pin America/New_York");
-  assert.ok(/timeZoneName:\s*["']short["']/.test(html), "calendar clock must label EDT/EST");
+  assert.ok(/timeZone:\s*["']America\/Phoenix["']/.test(html), "calendar clock must pin America/Phoenix");
+  assert.ok(/timeZoneName:\s*["']short["']/.test(html), "calendar clock must label MST");
   assert.ok(/getTime\(\)\s*>\s*nowMs/.test(html), "Then rail and dated-later must filter after now");
 });
 
@@ -321,4 +321,78 @@ test("honest-ui leftovers screens stay empty without inventing dollars", () => {
     const html = fs.readFileSync(path.join(APP, file), "utf8");
     assert.ok(!FURNITURE.test(html), file + " still has furniture names");
   }
+});
+
+/* ───────────────────────────────────────────────────────────────────────────
+   ARIZONA TIME (owner-set 2026-08-28)
+
+   The CRM ran on America/New_York everywhere. Arizona is where the work
+   happens, so every clock, every timestamp and the quiet-hours window moved to
+   America/Phoenix. Two things are worth a test rather than a comment: that
+   nothing crept back to Eastern, and that a screen cannot ship a topbar with no
+   clock in it — which is how pipeline.html came to show no time at all on a
+   laptop.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+const APP_PAGES = fs.readdirSync(APP).filter((f) => f.endsWith(".html"));
+
+test("no app screen still formats time in Eastern", () => {
+  for (const file of [...APP_PAGES, "shell.js", "data.js"]) {
+    const full = path.join(APP, file);
+    if (!fs.existsSync(full)) continue;
+    const src = fs.readFileSync(full, "utf8");
+    assert.ok(
+      !/America\/New_York/.test(src),
+      file + " still formats a time in America/New_York"
+    );
+  }
+});
+
+test("the shell mounts a clock, in Arizona, on screens that have no clock of their own", () => {
+  const shell = fs.readFileSync(path.join(APP, "shell.js"), "utf8");
+  assert.match(shell, /var CLOCK_TZ = "America\/Phoenix"/, "the shell clock must be Arizona");
+  assert.match(shell, /function mountClock\(/, "the shell must define mountClock");
+  assert.match(shell, /mountClock\(role\);/, "mountClock must actually be called on boot");
+  // It must not paint over a clock the page already drives, or two writers
+  // fight over one element every second.
+  assert.match(shell, /if \(document\.querySelector\("\.clock, #clock"\)\) return;/,
+    "the shell must leave a page's own clock alone");
+  // And it must not put an office clock on the client's own screen.
+  assert.match(shell, /if \(role === "client"\) return;/,
+    "the client portal must not get a staff clock");
+});
+
+test("a page's own media query can no longer hide the clock at laptop width", () => {
+  const shell = fs.readFileSync(path.join(APP, "shell.js"), "utf8");
+  // The un-hide rule and the one width it still allows a clock to disappear at.
+  assert.match(shell, /display:inline-block!important;/,
+    "the shell must override the per-page display:none");
+  assert.match(shell, /@media \(max-width:900px\)/,
+    "the clock may only be hidden below 900px");
+  assert.ok(
+    !/max-width:1[0-9]{3}px\)\{\.clock/.test(shell),
+    "nothing may hide the clock at laptop width again"
+  );
+});
+
+test("every staff screen with a top bar ends up with a clock in it", () => {
+  const NOT_STAFF = new Set(["client-portal.html", "consent-capture.html"]);
+  for (const file of APP_PAGES) {
+    if (NOT_STAFF.has(file)) continue;
+    const html = fs.readFileSync(path.join(APP, file), "utf8");
+    if (!/class="[^"]*\btopbar\b/.test(html)) continue;
+    const ownClock = /class="[^"]*\bclock\b|id="clock"/.test(html);
+    assert.ok(
+      ownClock || html.includes("shell.js"),
+      file + " has a top bar but neither its own clock nor shell.js to mount one"
+    );
+  }
+});
+
+test("quiet hours on the messaging screen match the server, in Arizona words", () => {
+  const html = fs.readFileSync(path.join(APP, "messaging.html"), "utf8");
+  assert.match(html, /var QUIET_TZ = "America\/Phoenix"/);
+  assert.match(html, /var QUIET_START_HOUR = 20;/);
+  assert.match(html, /var QUIET_END_HOUR = 8;/);
+  assert.ok(!/Eastern/.test(html), "the texting-hours copy still says Eastern");
 });

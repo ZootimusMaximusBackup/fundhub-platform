@@ -61,7 +61,7 @@ export async function handle({ event, db: database, step, placeCallImpl = placeC
 
   const { agent, source } = await step.run("resolve-josh", () => resolveJoshAgent(database, event.orgId));
 
-  // Same 11pm–11am Eastern window as SMS. Prove/sim files skip, same as texts.
+  // Same 8pm–8am Arizona window as SMS. Prove/sim files skip, same as texts.
   // Memoize the wake time so a replay after morning does not schedule a second dial.
   const wakeAt = await step.run("quiet-hours-wake", async () => {
     if (await recipientSkipsQuietHours(database, clientId)) return null;

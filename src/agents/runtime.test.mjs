@@ -289,7 +289,7 @@ test("runtime: live + mocked model → reply path uses agent sender (dispatch mo
     payload: { channel: "sms", body: "thursday works", sid: "SM1" }
   }, db, {
     env: { ANTHROPIC_API_KEY: "k" },
-    // Midday Eastern so quiet hours do not defer.
+    // Midday Arizona so quiet hours do not defer.
     now: () => new Date("2026-08-04T18:00:00Z"),
     callModelFn: async () => ({
       mode: "live",

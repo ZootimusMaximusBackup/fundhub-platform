@@ -40,13 +40,13 @@ let convoId = null;
 let otherOrgId = null;
 let otherClientId = null;
 
-/* A clock fixed OUTSIDE quiet hours (15:00 UTC ≈ 10-11am Eastern is inside;
-   18:00 UTC is 13:00/14:00 Eastern, comfortably open on either side of a
-   daylight-saving change). Injected rather than read, so this file's result
+/* A clock fixed OUTSIDE quiet hours: 18:00 UTC is 11:00 in Arizona, the middle
+   of the open window, and Arizona does not shift for daylight saving so it is
+   11:00 on every date of the year. Injected rather than read, so this file's result
    does not depend on what time the suite runs — which is the whole reason the
    gate takes a clock as an argument. */
 const OPEN = () => new Date("2026-03-10T18:00:00Z");
-/* And one inside it: 05:00 UTC is midnight or 1am Eastern, always closed. */
+/* And one inside it: 05:00 UTC is 22:00 the previous evening in Arizona. */
 const CLOSED = () => new Date("2026-03-10T05:00:00Z");
 
 async function wipeClients() {

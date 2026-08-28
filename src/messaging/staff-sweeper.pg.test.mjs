@@ -81,8 +81,8 @@ async function wipe2() {
 
 /* The clock, fixed outside quiet hours, so this file's result does not depend
    on what time the suite happens to run — the same reason the gate takes a
-   clock as an argument at all. 18:00 UTC is early afternoon Eastern on either
-   side of a daylight-saving change. */
+   clock as an argument at all. 18:00 UTC is 11:00 in Arizona, which does not
+   move for daylight saving. */
 const OPEN = () => new Date("2026-03-10T18:00:00Z");
 
 /* Scope every sweep to THIS org. Without it, claimDue races every other

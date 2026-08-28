@@ -773,7 +773,7 @@
         <div id="fh-funding-apply">
           <div id="fh-funding-apply-status" style="font-size:var(--fs-body);line-height:1.45;color:var(--text-dim)">Lenders that fit a client's file appear here. Pick a client on Pipeline to open one.</div>
           <div id="fh-funding-apply-list" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
-          <p style="margin:10px 0 0;font-size:var(--fs-caption);line-height:1.45;color:var(--text-faint)">Apply opens the bank page when a URL is on file, and shows the client email, not a Fundhub address.</p>
+          <p style="margin:10px 0 0;font-size:var(--fs-caption);line-height:1.45;color:var(--text-faint)">Apply opens the bank page when a URL is on file. Apply shows the client email, not a Fundhub address.</p>
         </div>
       </div>
 
@@ -1057,7 +1057,7 @@ document.addEventListener("DOMContentLoaded", function () {
     return d.toLocaleString("en-US", {
       month: "short", day: "numeric", year: "numeric",
       hour: "numeric", minute: "2-digit",
-      timeZone: "America/New_York", timeZoneName: "short"
+      timeZone: "America/Phoenix", timeZoneName: "short"
     });
   }
   function scoreLine(tm) {
@@ -1090,7 +1090,7 @@ document.addEventListener("DOMContentLoaded", function () {
     node.textContent = new Date().toLocaleString("en-US", {
       weekday: "short", month: "short", day: "numeric",
       hour: "numeric", minute: "2-digit", second: "2-digit",
-      timeZone: "America/New_York", timeZoneName: "short"
+      timeZone: "America/Phoenix", timeZoneName: "short"
     });
   }
   tickClock();

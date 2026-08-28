@@ -457,7 +457,6 @@
   <footer class="statusbar">
     <span class="ghost"></span>
     <span>fundhub-calendar · v1</span>
-    <span>org: fundhub</span>
     <span id="footView">—</span>
     <span>context loads 15 minutes before every call</span>
     <span class="nominal"><span class="pulse"></span>systems nominal · fundhub.ai</span>
@@ -566,13 +565,13 @@ function parseYmd(s) {
 function hourLabel(d) {
   return d.toLocaleTimeString("en-US", {
     hour: "numeric", minute: "2-digit",
-    timeZone: "America/New_York"
+    timeZone: "America/Phoenix"
   }).replace(/:\d{2}/, ":00");
 }
 function clockTime(d) {
   return d.toLocaleTimeString("en-US", {
     hour: "numeric", minute: "2-digit",
-    timeZone: "America/New_York"
+    timeZone: "America/Phoenix"
   }).replace(/\s*[AP]M$/i, "");
 }
 function thenTimeLabel(due) {
@@ -580,7 +579,7 @@ function thenTimeLabel(due) {
   if (Math.abs(due.getTime() - Date.now()) <= 24 * 60 * 60 * 1000) return clock;
   return due.toLocaleDateString("en-US", {
     month: "short", day: "numeric",
-    timeZone: "America/New_York"
+    timeZone: "America/Phoenix"
   }) + " " + clock;
 }
 function initials(name) {
@@ -617,7 +616,7 @@ function tickClock() {
   el.textContent = new Date().toLocaleString("en-US", {
     weekday: "short", month: "short", day: "numeric",
     hour: "numeric", minute: "2-digit", second: "2-digit",
-    timeZone: "America/New_York", timeZoneName: "short"
+    timeZone: "America/Phoenix", timeZoneName: "short"
   });
 }
 function dateLabelText(d) {
@@ -1194,7 +1193,7 @@ function loadCoverage() {
       var started = p.started_at ? new Date(p.started_at) : null;
       var since = started ? started.toLocaleTimeString("en-US", {
         hour: "numeric", minute: "2-digit",
-        timeZone: "America/New_York"
+        timeZone: "America/Phoenix"
       }) : "";
       return '<div class="cov-row"><span class="cov-name">' + esc(name) +
         '</span><span class="cov-role">' + esc(role) +
