@@ -207,10 +207,10 @@ export const EMAIL_SIGNER_NAME = "Josh";
 export const EMAIL_SIGNER_TITLE = "Funding Executive · Fundhub.ai";
 /** Compact text wordmark casing (Fundhub.ai brand law — never FundHub). */
 export const EMAIL_WORDMARK = "fundhub.ai";
-/** Legacy raster path (footer uses the Fundhub.ai text mark in the title/tagline). */
+/** Hosted Fundhub wordmark (footer). */
 export const EMAIL_LOGO_PATH = "/assets/email/fundhub-logo.png";
-/** Handwritten-style signature image (absolute URL via emailSignatureUrl). */
-export const EMAIL_SIGNATURE_PATH = "/assets/email/josh-signature.svg";
+/** Handwritten Josh signature (Ms Madi PNG, #111827 on white). */
+export const EMAIL_SIGNATURE_PATH = "/assets/email/josh-signature.png";
 /*
   Brand body face from public/app/fundhub-brand.css --sans.
   Inter is a Google font (same stack the app loads). Linked in the shell <head>
@@ -261,6 +261,7 @@ export function unsubscribeFooter(url, { html = false, env = process.env } = {})
   const phone = emailRepPhone(env);
   const tel = emailRepTelHref(env);
   const signature = emailSignatureUrl(env);
+  const logo = emailLogoUrl(env);
 
   if (!html) {
     return (
@@ -274,6 +275,7 @@ export function unsubscribeFooter(url, { html = false, env = process.env } = {})
 
   const href = escapeHtml(safe);
   const sigSrc = escapeHtml(signature);
+  const logoSrc = escapeHtml(logo);
   const phoneLabel = escapeHtml(phone);
   const telHref = escapeHtml(tel);
 
@@ -283,9 +285,13 @@ export function unsubscribeFooter(url, { html = false, env = process.env } = {})
     `style="margin:20px 0 0;border-collapse:collapse;border-top:1px solid #e5e7eb">` +
     `<tr><td style="padding:16px 0 0 0;text-align:left">` +
 
-    /* Handwritten signature leads — personal email, not a brand dump. */
-    `<img src="${sigSrc}" width="118" height="40" alt="" ` +
-    `style="display:block;margin:0 0 2px;width:118px;height:auto;border:0;outline:none" />` +
+    /* Existing hosted wordmark — same file already on fundhub.ai. */
+    `<img src="${logoSrc}" width="120" height="35" alt="fundhub.ai" ` +
+    `style="display:block;margin:0 0 12px;width:120px;height:auto;border:0;outline:none" />` +
+
+    /* Handwritten signature — PNG so mail apps show it (many skip SVG). */
+    `<img src="${sigSrc}" width="150" height="75" alt="" ` +
+    `style="display:block;margin:0 0 2px;width:150px;height:auto;border:0;outline:none" />` +
 
     `<p style="margin:0;font:400 14px/1.3 ${EMAIL_SANS};color:#111827">` +
     `${escapeHtml(EMAIL_SIGNER_NAME)}` +
