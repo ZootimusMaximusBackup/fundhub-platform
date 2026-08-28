@@ -3,7 +3,10 @@ import assert from "node:assert";
 import { requireAuth, authenticate, attachStaff, bearerToken, AUTH_UNAVAILABLE } from "./requireAuth.mjs";
 import { hashToken, newToken } from "../../auth/session.mjs";
 
-const STAFF = { id: "staff-1", org_id: "org-1", role: "closer", email: "a@b.com", name: "A", status: "active" };
+const STAFF = {
+  id: "staff-1", org_id: "org-1", role: "closer", email: "a@b.com", name: "A", status: "active",
+  avatarUrl: null
+};
 
 function fakeDb({ live = true, throws = false } = {}) {
   const calls = [];

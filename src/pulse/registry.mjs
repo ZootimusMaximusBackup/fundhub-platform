@@ -203,6 +203,7 @@ const API_KEYS = [
   "social/schedule",
   "social/settings",
   "soft-pull-approve",
+  "staff/avatar",
   "staff/monitoring-consent",
   "staff/telemetry",
   "tasks"

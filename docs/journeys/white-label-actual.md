@@ -30,7 +30,7 @@ flowchart TD
     CAN --> A_social[social — 6 routes]
     CAN --> A_top_level[Everything else — 6 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 145 routes]
+    WHO -->|Yes| CANT[Blocked — 146 routes]
     CANT --> B_auth[Signing in and out — 5 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_chat[chat — 4 blocked]
@@ -49,13 +49,13 @@ flowchart TD
     CANT --> B_read[Reading data — 51 blocked]
     CANT --> B_repair[repair — 5 blocked]
     CANT --> B_social[social — 1 blocked]
-    CANT --> B_staff[staff — 2 blocked]
+    CANT --> B_staff[staff — 3 blocked]
     CANT --> B_top_level[Everything else — 32 blocked]
 ```
 
 ## What they can reach
 
-**53 of 198 routes.**
+**53 of 199 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -120,7 +120,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**145 of 198 routes.**
+**146 of 199 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -266,6 +266,7 @@ flowchart TD
 | `/api/slo-connections` | POST | owner, admin |
 | `/api/social/oauth` | — | staff |
 | `/api/soft-pull-approve` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/staff/avatar` | GET, POST | any signed-in employee |
 | `/api/staff/monitoring-consent` | POST | owner |
 | `/api/staff/telemetry` | GET | owner, admin, sales_manager |
 | `/api/tasks` | GET, PATCH | staff |

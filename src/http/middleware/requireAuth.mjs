@@ -5,8 +5,9 @@
 // requireAuth() wrapper touches a res object. That keeps it testable without a
 // fake HTTP layer and usable from any handler shape.
 //
-// Attaches req.staff = { id, role, org_id, email, name, status } and
-// req.session = { id, expiresAt }.
+// Attaches req.staff = { id, role, org_id, email, name, status, avatarUrl } and
+// req.session = { id, expiresAt }. avatarUrl is a fixed path or null, never the
+// raw storage key — see src/auth/session.mjs's verifySession().
 //
 // 401 is clean: { ok: false, error: "unauthorized" }. No detail about WHY —
 // expired, revoked, suspended and never-existed are indistinguishable to the

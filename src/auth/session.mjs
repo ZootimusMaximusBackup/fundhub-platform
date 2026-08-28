@@ -86,7 +86,7 @@ export async function verifySession(db, token, { env = process.env } = {}) {
         RETURNING id, staff_id, org_id, expires_at
      )
      SELECT live.id AS session_id, live.expires_at,
-            s.id AS staff_id, s.org_id, s.role, s.email, s.name, s.status,
+            s.id AS staff_id, s.org_id, s.role, s.email, s.name, s.status, s.avatar_key,
             (to_jsonb(s) ->> 'active') AS active_flag
        FROM live JOIN staff s ON s.id = live.staff_id`,
     [hashToken(token), String(ms)]
@@ -108,7 +108,8 @@ export async function verifySession(db, token, { env = process.env } = {}) {
       role: row.role,
       email: row.email,
       name: row.name,
-      status: row.status
+      status: row.status,
+      avatarUrl: row.avatar_key ? "/api/staff/avatar" : null
     },
     session: { id: row.session_id, expiresAt: row.expires_at }
   };
