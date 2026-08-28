@@ -2375,7 +2375,7 @@ fetch("/api/auth/session", {
     if (ts) {
       var d = new Date(ts);
       if (Number.isFinite(d.getTime())) {
-        when = d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Los_Angeles" });
+        when = d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "America/Phoenix" });
       }
     }
     var words = action ? action.replace(/[._]/g, " ").replace(/\s+/g, " ").trim() : "update";
@@ -2512,7 +2512,7 @@ function loadRepairDesk() {
     var html = letter.html || "";
     if (signerName && bodyEl) {
       var sigDate = signedAt
-        ? new Date(signedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Los_Angeles" })
+        ? new Date(signedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Phoenix" })
         : "";
       html += "\n\n<span class=\"sig\">" + esc(signerName) + "</span>\n" +
         esc(signerName) + "\n<span class=\"sigmeta\">Signed electronically" +
