@@ -3,7 +3,7 @@
 import { generateLetter, buildLetterText, ROUND } from "../letters/generate.mjs";
 import { assertBatchVariance } from "../letters/variance.mjs";
 import { renderLetterPdf } from "../letters/render.mjs";
-import { splitViolations } from "../letters/catalog.mjs";
+import { splitViolations, LETTER_TYPES } from "../letters/catalog.mjs";
 import { buildCfpbComplaint, buildStateAgComplaint, renderComplaintPdf } from "../letters/complaints.mjs";
 import {
   buildFurnisherValidationLetter,
@@ -344,7 +344,21 @@ function slugName(name) {
     .replace(/^-|-$/g, "") || "creditor";
 }
 
-async function maybeComplaintFiles({
+/** The folder the two complaints always ship in. The name is the warning. */
+export const COMPLAINT_FOLDER = "06-complaints-CONDITIONAL";
+
+/**
+ * The ONLY place the CFPB / state AG complaint pair is built.
+ *
+ * COMPLIANCE REVIEW REQUIRED — credit-repair messaging.
+ *
+ * The cover sheet is part of the return value, not an optional extra. Both
+ * complaints are sworn under penalty of perjury and are out of order before
+ * Round 3, so the sheet that says "DO NOT FILE WITH ROUND 1" travels with the
+ * documents wherever they go. Any caller that wants these two PDFs calls this
+ * and ships everything it returns. Do not re-implement it elsewhere.
+ */
+export async function maybeComplaintFiles({
   identity,
   violationsByBureau,
   datedComplaints
@@ -355,7 +369,7 @@ async function maybeComplaintFiles({
   const undated = !datedComplaints;
   const timeline = blankTimeline();
   const files = [
-    { path: "06-complaints-CONDITIONAL/COVER.txt", text: complaintCover() }
+    { path: `${COMPLAINT_FOLDER}/COVER.txt`, text: complaintCover() }
   ];
 
   const cfpbText = buildCfpbComplaint({ identity, accounts, timeline, undated });
@@ -365,12 +379,14 @@ async function maybeComplaintFiles({
     renderComplaintPdf(agText, identity)
   ]);
   files.push({
-    path: "06-complaints-CONDITIONAL/cfpb-complaint.pdf",
+    path: `${COMPLAINT_FOLDER}/cfpb-complaint.pdf`,
+    type: LETTER_TYPES.CFPB_COMPLAINT,
     text: cfpbText,
     pdf: Buffer.from(cfpbPdf)
   });
   files.push({
-    path: "06-complaints-CONDITIONAL/state-ag-complaint.pdf",
+    path: `${COMPLAINT_FOLDER}/state-ag-complaint.pdf`,
+    type: LETTER_TYPES.STATE_AG_COMPLAINT,
     text: agText,
     pdf: Buffer.from(agPdf)
   });
