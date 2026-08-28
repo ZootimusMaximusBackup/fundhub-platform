@@ -4,6 +4,7 @@
 // the page stay vague ("Audit"). Commas sees a keep catalog title only.
 //
 // GET  — tells the page whether Smart Credit keys exist. No keys = no widget.
+// GET ?view=roadmap — existing repair brain on a stored sample file.
 // POST — mints a Commas checkout on Consulting Services Assessment (keep).
 //        Never POST /public-api/products/create. Never invent a catalog title.
 //
@@ -17,6 +18,7 @@ import {
 } from "../../src/payments/commas-api.mjs";
 import { normalizePhone } from "../../src/messaging/providers/bland-voice.mjs";
 import { safeError } from "../../src/http/health.mjs";
+import { buildOptimizeRoadmap } from "../../src/optimize-page/roadmap.mjs";
 
 export const BOOK_URL = "https://apply.fundhub.ai/funding-book-call";
 export const AUDIT_KEEP_TITLE = "Consulting Services Assessment";
@@ -83,11 +85,23 @@ export function parseOptimizeCheckoutBody(body) {
   return { ok: true, firstName, lastName, email, phone };
 }
 
+function viewOf(req) {
+  const q = req?.query || {};
+  if (q.view) return String(q.view);
+  try {
+    const u = new URL(req?.url || "", "https://fundhub.ai");
+    return u.searchParams.get("view") || "";
+  } catch {
+    return "";
+  }
+}
+
 export function optimizePageConfig(env = process.env) {
   return {
     ok: true,
     bookUrl: BOOK_URL,
     audit: { ready: checkoutConfig(env).ok === true },
+    roadmap: { ready: true },
     smartCredit: smartCreditFromEnv(env)
   };
 }
@@ -117,6 +131,9 @@ export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   const method = String(req.method || "GET").toUpperCase();
   if (method === "GET") {
+    if (viewOf(req) === "roadmap") {
+      return res.status(200).json(buildOptimizeRoadmap());
+    }
     return res.status(200).json(optimizePageConfig(process.env));
   }
   if (method !== "POST") {

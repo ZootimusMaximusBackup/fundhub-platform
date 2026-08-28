@@ -40,6 +40,8 @@ test("optimize.html books on funding-book-call, not xyl.in or Identity IQ", () =
   assert.match(html, />Audit</, "page copy must stay vague — Audit");
   assert.doesNotMatch(html, /credit repair/i, "must not say credit repair on the page");
   assert.match(html, /\/api\/public\/optimize/, "Audit checkout posts to the public optimize door");
+  assert.match(html, /See Audit roadmap/, "roadmap stays on this page");
+  assert.match(html, /view=roadmap/, "roadmap calls the existing brain door");
 });
 
 test("netlify.toml rewrites /optimize.com to the hidden page, not xyl.in", () => {

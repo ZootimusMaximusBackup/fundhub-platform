@@ -9,7 +9,7 @@ Branch: `feat/optimize-apply` (from `origin/main`)
 
 | # | Unit | Owner | Status |
 |---|---|---|---|
-| 1 | Hidden public page `/optimize` + `/optimize.com` — book, optional Audit checkout, gated Smart Credit | this chat | **done** |
+| 1 | Hidden public page `/optimize` + `/optimize.com` — book, optional Audit checkout, gated Smart Credit, Audit roadmap from existing repair brain | this chat | **done** |
 | 2 | Smart Credit enroll live on this page | waiting | **wired-but-dark** — no CONSUMER_DIRECT / SMART_CREDIT client key + PID in `.env` or Netlify |
 
 ## Shared brief

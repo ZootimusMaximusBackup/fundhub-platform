@@ -18,6 +18,10 @@ flowchart TD
     PAGE --> AUDIT[Optional Audit form — email]
     AUDIT --> PAY[Pay for Audit]
     PAY --> COMMAS[Commas checkout on Consulting Services Assessment]
+    PAGE --> MAP[See Audit roadmap]
+    MAP --> BRAIN[Existing repair brain on stored sample file]
+    BRAIN --> PLAN[Roadmap on the same page]
+    PLAN --> BOOK
     PAGE --> FILE{Smart Credit client key + PID in env?}
     FILE -->|No| HIDE[Pull your file stays hidden]
     FILE -->|Yes| WIDGET[Enrollment Widget]
@@ -33,9 +37,10 @@ A referred person. Not staff. Not a client login.
 2. First name, last name, and phone are optional. The person can book with those blank.
 3. The Book a call button opens the existing survey calendar: `https://apply.fundhub.ai/funding-book-call`.
 4. Audit is optional. The page says Audit. Checkout uses the keep title **Consulting Services Assessment**. No new Commas product.
-5. Smart Credit / pull-your-file only appears when `CONSUMER_DIRECT_CLIENT_KEY` (or `SMART_CREDIT_CLIENT_KEY`) and `CONSUMER_DIRECT_PID` (or `SMART_CREDIT_PID`) are set. New integrations use the Enrollment Widget.
-6. There is no Identity IQ link. There is no CRS pull.
-7. Copy does not say a score will go up. Copy does not say credit repair.
+5. See Audit roadmap runs the existing repair brain (Metro 2 findings + round plan) on a stored sample file until a Smart Credit pull exists. It shows on this page. Then they book a call.
+6. Smart Credit / pull-your-file only appears when `CONSUMER_DIRECT_CLIENT_KEY` (or `SMART_CREDIT_CLIENT_KEY`) and `CONSUMER_DIRECT_PID` (or `SMART_CREDIT_PID`) are set. New integrations use the Enrollment Widget.
+7. There is no Identity IQ link. There is no CRS pull.
+8. Copy does not say a score will go up. Copy does not say credit repair.
 
 ## Observable ground truth
 

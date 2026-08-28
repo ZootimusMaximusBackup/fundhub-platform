@@ -110,4 +110,16 @@ test("GET /api/public/optimize does not invent Smart Credit keys", async () => {
   assert.equal(res.out.body.ok, true);
   assert.equal(res.out.body.smartCredit, null);
   assert.equal(res.out.body.bookUrl, BOOK_URL);
+  assert.equal(res.out.body.roadmap.ready, true);
+});
+
+test("GET /api/public/optimize?view=roadmap returns the existing brain plan", async () => {
+  const res = mockRes();
+  await handler({ method: "GET", query: { view: "roadmap" } }, res);
+  assert.equal(res.out.statusCode, 200);
+  assert.equal(res.out.body.ok, true);
+  assert.equal(res.out.body.source, "sample");
+  assert.equal(res.out.body.bookUrl, BOOK_URL);
+  assert.equal(res.out.body.rounds.length, 6);
+  assert.ok(res.out.body.rounds[0].attacks.length > 0);
 });

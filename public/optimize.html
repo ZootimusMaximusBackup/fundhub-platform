@@ -29,6 +29,9 @@
   .legal{margin-top:28px;font-size:12px;color:var(--gray)}
   .err{color:#991B1B;font-size:13px;margin:8px 0 0}
   #file-pull{margin-top:28px}
+  #roadmap{margin-top:28px}
+  #roadmap ol{padding-left:20px;color:var(--gray)}
+  #roadmap li{margin:0 0 10px}
 </style>
 </head>
 <body>
@@ -62,6 +65,8 @@
       <button class="btn" id="audit-btn" type="submit">Pay for Audit</button>
       <p class="err" id="audit-err" hidden></p>
     </form>
+    <p><button class="btn" id="roadmap-btn" type="button">See Audit roadmap</button></p>
+    <div id="roadmap" hidden></div>
     <div id="file-pull" hidden></div>
     <p class="legal">Fundhub Credit Solutions LLC.</p>
   </div>
@@ -73,6 +78,8 @@
       var auditBtn = document.getElementById("audit-btn");
       var auditErr = document.getElementById("audit-err");
       var filePull = document.getElementById("file-pull");
+      var roadmapBtn = document.getElementById("roadmap-btn");
+      var roadmapBox = document.getElementById("roadmap");
       book.addEventListener("click", function (e) {
         e.preventDefault();
         location.assign(BOOK);
@@ -122,6 +129,54 @@
             auditErr.textContent = "Could not start Audit. Try again.";
           });
       });
+      roadmapBtn.addEventListener("click", function () {
+        roadmapBtn.disabled = true;
+        fetch("/api/public/optimize?view=roadmap", { headers: { accept: "application/json" } })
+          .then(function (r) { return r.json(); })
+          .then(function (plan) {
+            roadmapBtn.disabled = false;
+            if (!plan || !plan.ok) return;
+            renderRoadmap(plan);
+          })
+          .catch(function () { roadmapBtn.disabled = false; });
+      });
+      function renderRoadmap(plan) {
+        roadmapBox.hidden = false;
+        roadmapBox.replaceChildren();
+        var h = document.createElement("h2");
+        h.textContent = "Audit roadmap";
+        var note = document.createElement("p");
+        note.textContent = plan.source === "sample"
+          ? "Built from a stored sample file so you can see the path. On the call we design this together."
+          : "Built from your file. On the call we design this together.";
+        var list = document.createElement("ol");
+        (plan.rounds || []).forEach(function (r) {
+          var li = document.createElement("li");
+          var title = document.createElement("strong");
+          title.textContent = r.step + " — " + (r.when || r.title || "");
+          li.appendChild(title);
+          if (r.attacks && r.attacks.length) {
+            var bits = document.createElement("div");
+            bits.className = "hint";
+            bits.textContent = r.attacks.slice(0, 4).join(" · ");
+            li.appendChild(bits);
+          }
+          list.appendChild(li);
+        });
+        var again = document.createElement("a");
+        again.className = "btn";
+        again.id = "roadmap-book";
+        again.href = plan.bookUrl || BOOK;
+        again.textContent = "Book a call";
+        again.addEventListener("click", function (e) {
+          e.preventDefault();
+          location.assign(plan.bookUrl || BOOK);
+        });
+        roadmapBox.appendChild(h);
+        roadmapBox.appendChild(note);
+        roadmapBox.appendChild(list);
+        roadmapBox.appendChild(again);
+      }
       function mountFilePull(sc) {
         filePull.hidden = false;
         var h = document.createElement("h2");
