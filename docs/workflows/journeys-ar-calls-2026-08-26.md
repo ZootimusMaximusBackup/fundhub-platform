@@ -136,27 +136,31 @@ No repair intended journey. Spec: `docs/workflows/repair-build-spec-2026-08-21.m
 
 ---
 
-## Half-wired hole closed (this worktree)
+## Voice hook (this worktree — not closed)
 
 Agent line `+16616054248`:
 
 - SMS URL was already `https://fundhub.ai/api/webhooks/twilio`
 - Voice URL was `demo.twilio.com` (0.13s hang-up), then a 120s **twimlet** (not in the repo)
-- **Fix:** same Fundhub Twilio door now answers a `CallSid` with a 120s TwiML pause. Voice URL pointed at that door after deploy.
+- **Fix in code (PR #174):** same Fundhub Twilio door returns a 120s TwiML pause on `CallSid`. A signed probe of live `POST /api/webhooks/twilio` returns that XML.
+- **Live inbound still does not answer.** After Voice URL was pointed at that door, Bland `ded874d8-…` was **no-answer**, talk length empty. Twilio inbound `CAea77d5f6c0e048df48b1fd839eb49e75` rang **60s**, duration **0**. Earlier twimlet calls on the same line completed in 8–9s.
+- **Stuck rule:** two tries (502 deploy, then live TwiML + still no-answer). Did not rewrite the hook a third time.
+- **Voice URL restored** to the 120s twimlet so the prove line is not left dead. SMS stays `https://fundhub.ai/api/webhooks/twilio`.
 
 Did not add a new phone vendor. Did not rebuild B1–B4. Did not touch letters.
 
 ---
 
-## Live prove (fill after walk)
+## Live prove
 
 | Path | Result | Evidence |
 |---|---|---|
-| Call order (book → Josh → no-answer texts) | | |
-| Bland talk time > 5s | | |
-| AR mint pay link / invoice (do not pay) | | |
-| Next AR event (AR-02 queued or not-live) | | |
-| Repair rounds cite | Confirmed in code. No paper. | this board |
+| Call order (book → Josh → no-answer texts) | **FAIL** — Fund Horse has **zero** `booking.created`. Book sequence never started. Staff `/api/agent-call` placed Josh. No `SMS-S04-*` / `SMS-AISET03-*`. | this board |
+| Bland talk time > 5s | **FAIL** — Bland `no-answer`, `call_length` empty. Twilio duration 0. | `josh-bland.json`, `twilio-calls.json` |
+| AR mint pay link / invoice (do not pay) | **PASS** — pay link `f84a7ae3-…` $100, purpose stored as `custom`, status `created`. Not paid. Two unpaid success-fee invoices already on file. | `mint-check.json` |
+| Next AR event (AR-02 queued or not-live) | **PASS (sleeping)** — AR-01 email + SMS already left twice. AR-02 is the same job after a **7 day** sleep. Not a missing wire. Not due tonight. | `after-call.json` |
+| Repair rounds cite | **PASS (code)** — Trial 2 / full 6. R2 holds on trial. 30-day bureau wait. No paper tonight. | this board |
+| AI-SET-03 MSG2/MSG3 | **FAIL** — `rebooked()` treats any past book as a rebook. Josh people already have `booking.created`. Did not change that file. | `ai-set-03-no-answer-cadence.mjs` |
 
 ---
 
@@ -164,4 +168,4 @@ Did not add a new phone vendor. Did not rebuild B1–B4. Did not touch letters.
 
 | PR | What | Merge? |
 |---|---|---|
-| (this branch) | Twilio voice answer on existing `/api/webhooks/twilio` | Open. Isolated. **Do not merge vc/save.** |
+| [#174](https://github.com/ZootimusMaximusBackup/fundhub-platform/pull/174) | Twilio voice answer on existing `/api/webhooks/twilio` | Open. Isolated. **Do not merge vc/save.** Live inbound still FAIL. |
