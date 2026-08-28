@@ -33,23 +33,30 @@
 // complaint is mailed to, and HOW the record is read back.
 //
 // ─────────────────────────────────────────────────────────────────────────────
-// THE STATE ATTORNEY GENERAL CANNOT BE MAILED TODAY. THIS IS A FINDING.
+// 38 STATE ATTORNEYS GENERAL CAN BE MAILED. 12 STILL CANNOT, AND THAT IS A
+// FINDING, NOT A GAP TO PAPER OVER.
 //
-// The CFPB has a published mailing address and it is already in this repository
-// (`CFPB_FILING.mail`). The fifty state attorneys general do not. `AG_BY_STATE`
-// in ../letters/ag-statutes.mjs carries an office NAME and a WEB PORTAL for five
-// states — TX, CA, FL, NY, IL — and a generated placeholder for the rest. It has
-// never carried a street address for any of them.
+// `AG_MAIL_BY_STATE` in ../letters/ag-statutes.mjs now carries a confirmed
+// consumer-complaint mailing address for 38 states, each read off that state's
+// own site or its own printable complaint form and re-checked by a second
+// reader, with the source URL in the comment above it.
 //
-// Fifty addresses were NOT invented here. A wrong address means a complaint the
-// client signed under penalty of perjury is mailed into a void while everyone
-// believes it was filed. So `complaintDestination` refuses a state AG send with
-// `ag_postal_address_unknown`, no filing row is written, and Round 6 stays
-// silent about a state AG filing — exactly as it does today.
+// THE OTHER 12 HAVE NO ENTRY ON PURPOSE (AK, CO, CT, KS, ME, MS, NV, NY, OK, OR,
+// RI, SC). Some publish no postal route for a consumer complaint at all; some
+// route consumers to a different agency; some publish only a general office
+// address, which is not the same thing. Four of them — NV, NY, OK, OR — DO have
+// a published office address, and it is deliberately left out: mailing a
+// complaint the client signed under penalty of perjury to a general office
+// address is the exact failure this path exists to prevent.
 //
-// Fill in `agPostalAddress` in ../letters/ag-statutes.mjs, per state, from each
-// office's own published mailing address, and every other part of this path
-// works unchanged.
+// For those 12 nothing changed: `complaintDestination` refuses the send with
+// `ag_postal_address_unknown`, `sendRepairLetters` stops before mailing, no
+// filing row is written, and Round 6 stays silent about a state AG filing.
+//
+// DO NOT "FIX" A REFUSAL WITH A NEAREST OFFICE OR A GENERAL ADDRESS. Confirm the
+// office's own published complaint mailing address, add it to
+// `AG_MAIL_BY_STATE` with its source, and remove the state from
+// `AG_MAIL_UNRESOLVED` in the same change.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { CFPB_MAIL_ADDRESS, agPostalAddress, agForState } from "../letters/ag-statutes.mjs";
@@ -104,7 +111,8 @@ export function complaintDestination(target, { state } = {}) {
     if (!code) return { ok: false, reason: "client_state_unknown", office: null };
     const ag = agForState(code);
     const postal = agPostalAddress(code);
-    // Always null today. See the finding in this file's header.
+    // Null for the 12 unconfirmed states, and for anything that is not a state.
+    // See the finding in this file's header. Never substitute another address.
     if (!postal || !postal.address_line1) {
       return { ok: false, reason: "ag_postal_address_unknown", office: ag.office || null };
     }
