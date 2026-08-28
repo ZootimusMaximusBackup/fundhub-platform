@@ -7,11 +7,15 @@ flowchart TD
     PRETTY["/optimize serves public/optimize.html"] --> PAGE[Fundhub Credit Solutions LLC copy]
     REWRITE["/optimize.com rewrite 200 to /optimize.html"] --> PAGE
     PAGE --> FIELDS[Optional first name, last name, phone]
+    FIELDS --> CONSENT["sms_consent checkbox — unchecked by default"]
     PAGE --> BTN["Book a call href = apply.fundhub.ai/schedule/phonecall"]
     FIELDS --> BTN
+    CONSENT -.->|"NOT SENT on this path"| BTN
     BTN --> CAL[Meeting with Chris 30 min One-on-One phonecall calendar]
     PAGE --> AUDIT[Audit form — email]
+    CONSENT --> POST
     AUDIT --> POST["POST /api/public/optimize"]
+    POST --> DROP["sms_consent arrives but handler never reads it — NOT STORED"]
     POST --> KEEP["createCheckoutSession title = Consulting Services Assessment"]
     KEEP --> PAY[Redirect to Commas payment_link]
     PAGE --> GET["GET /api/public/optimize"]
@@ -26,7 +30,18 @@ flowchart TD
 
 ## Traced paths
 
-- `public/optimize.html` — static page. Entity is Fundhub Credit Solutions LLC. Book a call is an `<a>` to `https://apply.fundhub.ai/schedule/phonecall`. Audit posts to `/api/public/optimize`. Page copy says Audit, not credit repair.
+- `public/optimize.html` — static page, built on the funnel form system (`.appform` / `.field` /
+  `.consent` / `.btn` / `.disclaim`, same parts as the homepage survey in `public/index.html`).
+  Entity is Fundhub Credit Solutions LLC. Book a call is an `<a>` to
+  `https://apply.fundhub.ai/schedule/phonecall`. Audit posts to `/api/public/optimize`.
+  Page copy says Audit, not credit repair.
+- **SMS consent** — an `sms_consent` checkbox sits under the phone field with the shipped consent
+  wording (msg & data rates, frequency varies, STOP, HELP, Privacy, Terms). Its value is put on the
+  Audit POST body. **Two gaps, both traced, neither invented:**
+  (1) `api/public/optimize.mjs` never reads `sms_consent`, so a ticked box is **not recorded
+  anywhere**; (2) the Book a call path is a plain `location.assign` and sends **nothing at all** —
+  not the name, not the phone, not the consent. Consent is therefore captured in the browser and
+  dropped on both paths. Recording it needs a handler change that is not in this commit.
 - `api/public/optimize.mjs` — GET returns `smartCredit: null` unless both a client key and a PID exist. GET `?view=roadmap` runs `src/optimize-page/roadmap.mjs` (metro2 + repair round-plan + UnderwriteIQ client map) on the stored sample file. POST ignores any client product title and always mints **Consulting Services Assessment** via `createCheckoutSession`. Never POST `/public-api/products/create`.
 - `netlify.toml` — `/optimize.com` rewrite (status 200) to `/optimize.html`. Pretty URL `/optimize` is the file itself.
 - No Identity IQ. No CRS. No xyl.in. Smart Credit widget is dark until env names exist.
