@@ -30,8 +30,12 @@ flowchart TD
 
 ## Traced paths
 
-- `public/optimize.html` — static page, built on the funnel form system (`.appform` / `.field` /
-  `.consent` / `.btn` / `.disclaim`, same parts as the homepage survey in `public/index.html`).
+- `public/optimize.html` — static page, built on the **funnel landing look** taken from
+  `clickfunnels-fragments/04a-book-top.html` + `04b-book-bottom.html` (the booking pair): fixed
+  44px grid backdrop, centred logo, spectrum eyebrow, two-part headline, 900px wrap, soft floating
+  cards (`1px #E4E4E7`, 14px radius, `0 18px 44px` shadow), an FCRA trust marquee, and a
+  disclaimer footer with the ghost wordmark. Form internals (`.field` / `.consent` / `.disclaim`)
+  stay as the homepage survey builds them.
   Entity is Fundhub Credit Solutions LLC. Book a call is an `<a>` to
   `https://apply.fundhub.ai/schedule/phonecall`. Audit posts to `/api/public/optimize`.
   Page copy says Audit, not credit repair.
