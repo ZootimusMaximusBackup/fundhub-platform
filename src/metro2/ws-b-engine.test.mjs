@@ -2,7 +2,17 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { groupFurnisherClaims, ruleBackedClaims } from "../repair/analyze.mjs";
 import { formatPriorEvidence, buildLetterText } from "./letters/generate.mjs";
-import { promptPoolRound, openingFor, ROUND } from "./letters/prompts.mjs";
+import { promptPoolRound, openingFor, closingFor, roundInstructions, ROUND } from "./letters/prompts.mjs";
+import {
+  ESCALATION_ROUNDS,
+  LADDER_ROUNDS,
+  LETTER_TYPES,
+  LETTER_TYPE_LIST,
+  isEscalationRound,
+  letterTypeForRound,
+  roundLadderEntry
+} from "./letters/catalog.mjs";
+import { BUREAU_ROUNDS } from "./rounds/state.mjs";
 
 describe("WS-B furnisher grouping (B1)", () => {
   it("groups collection claims by creditor name_norm", () => {
@@ -97,16 +107,103 @@ describe("WS-B prior evidence in letters (B3)", () => {
   });
 });
 
-describe("WS-B R4–R6 prompt pools (D3)", () => {
-  it("R4 and R6 cycle R2; R5 cycles R3", () => {
-    assert.equal(promptPoolRound("R4"), ROUND.R2);
+describe("WS-B R4–R6 bureau prose pools", () => {
+  // These three used to assert R4→R2, R5→R3, R6→R2, which is the mapping that
+  // sent a client past Round 3 back to the Round 2 method-of-verification
+  // wording forever. The ladder moved to catalog.mjs ROUND_LADDER; what is
+  // pinned here now is the prose rule that replaced it.
+  it("after Round 3 every bureau letter is a final notice — R4, R5 and R6 all take R3", () => {
+    assert.equal(promptPoolRound("R4"), ROUND.R3);
     assert.equal(promptPoolRound("R5"), ROUND.R3);
-    assert.equal(promptPoolRound("R6"), ROUND.R2);
+    assert.equal(promptPoolRound("R6"), ROUND.R3);
   });
 
-  it("R4 opening comes from R2 pool", () => {
-    const r2 = openingFor(0, ROUND.R2);
+  it("R1, R2, R3 and FURNISHER still write in their own voice", () => {
+    assert.equal(promptPoolRound("R1"), ROUND.R1);
+    assert.equal(promptPoolRound("R2"), ROUND.R2);
+    assert.equal(promptPoolRound("R3"), ROUND.R3);
+    assert.equal(promptPoolRound("FURNISHER"), ROUND.FURNISHER);
+  });
+
+  it("NO ROUND EVER STEPS BACK DOWN TO THE ROUND 2 WORDING", () => {
+    // A step down in authority is the opposite of an escalation ladder.
+    for (const round of ["R3", "R4", "R5", "R6"]) {
+      assert.notEqual(promptPoolRound(round), ROUND.R2,
+        `${round} must not ask the method-of-verification question a third time`);
+    }
+  });
+
+  it("R4 opening comes from the R3 final-notice pool", () => {
+    const r3 = openingFor(0, ROUND.R3);
     const r4 = openingFor(0, "R4");
-    assert.equal(r4, r2);
+    assert.equal(r4, r3);
+  });
+
+  it("NO R4-R6 WORDING CLAIMS A COMPLAINT WAS ALREADY FILED", () => {
+    // Nothing in this repository records that a client filed a CFPB or state AG
+    // complaint. Every reference to one in a bureau letter must stay future
+    // tense, or the letter asserts something nobody here can know.
+    const filed = /\b(have|has|already)\s+filed\b|\bi\s+filed\b/i;
+    for (const round of ["R4", "R5", "R6"]) {
+      for (let seed = 0; seed < 6; seed++) {
+        assert.equal(filed.test(openingFor(seed, round)), false,
+          `${round} opening ${seed} claims a filing that is not on record`);
+        assert.equal(filed.test(closingFor(seed, round)), false,
+          `${round} closing ${seed} claims a filing that is not on record`);
+      }
+      const instr = roundInstructions(round);
+      for (const [key, line] of Object.entries(instr)) {
+        if (typeof line !== "string") continue;
+        assert.equal(filed.test(line), false,
+          `${round} ${key} claims a filing that is not on record`);
+      }
+    }
+  });
+});
+
+describe("the round ladder — one, two, three, then stronger law", () => {
+  it("R4 is the CFPB complaint and R5 is the state attorney general complaint", () => {
+    assert.equal(letterTypeForRound("R4"), LETTER_TYPES.CFPB_COMPLAINT);
+    assert.equal(letterTypeForRound("R5"), LETTER_TYPES.STATE_AG_COMPLAINT);
+  });
+
+  it("R1, R2 and R3 are the three bureau letters, in order", () => {
+    assert.equal(letterTypeForRound("R1"), LETTER_TYPES.R1_METRO2);
+    assert.equal(letterTypeForRound("R2"), LETTER_TYPES.R2_FCRA_MOV);
+    assert.equal(letterTypeForRound("R3"), LETTER_TYPES.R3_FINAL_NOTICE);
+  });
+
+  it("R6 REUSES the Round 3 final notice — no eighth letter type was invented", () => {
+    assert.equal(letterTypeForRound("R6"), LETTER_TYPES.R3_FINAL_NOTICE);
+    assert.equal(LETTER_TYPE_LIST.length, 8,
+      "an escalation-final-notice type must not be quietly added; R6 reuses R3");
+  });
+
+  it("R6's label says it is reissued, and does not claim the complaints were filed", () => {
+    const rung = roundLadderEntry("R6");
+    assert.equal(rung.title, "Final notice, reissued");
+    assert.match(rung.sendWhen, /Reuses the Round 3 final notice/);
+    assert.match(rung.sendWhen, /does not claim either complaint was filed/);
+    assert.notEqual(rung.title, roundLadderEntry("R3").title,
+      "R6 must not print R3's title — its timing is different");
+  });
+
+  it("the escalation rounds are exactly R4, R5 and R6", () => {
+    assert.deepEqual([...ESCALATION_ROUNDS], ["R4", "R5", "R6"]);
+    for (const r of ["R1", "R2", "R3", "FURNISHER", "", null, undefined]) {
+      assert.equal(isEscalationRound(r), false, `${r} is not an escalation round`);
+    }
+    for (const r of ["R4", "R5", "R6", "r4"]) {
+      assert.equal(isEscalationRound(r), true, `${r} is an escalation round`);
+    }
+  });
+
+  it("the ladder covers every bureau round the round machine can produce", () => {
+    // Two files list the six rounds. If they ever drift, buildRoundPlan reads a
+    // rung that does not exist.
+    assert.deepEqual([...LADDER_ROUNDS], [...BUREAU_ROUNDS]);
+    for (const round of BUREAU_ROUNDS) {
+      assert.ok(roundLadderEntry(round), `${round} has no rung on the ladder`);
+    }
   });
 });

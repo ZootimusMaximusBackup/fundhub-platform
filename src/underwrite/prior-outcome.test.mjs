@@ -18,7 +18,9 @@ import {
   PRIOR_OUTCOME,
   priorOutcomeForRound,
   loadPriorOutcomes,
-  stampPriorOutcomes
+  stampPriorOutcomes,
+  reachedEscalation,
+  highestEscalationRound
 } from "./prior-outcome.mjs";
 import { buildLetterPackForClient } from "./letter-pack.mjs";
 
@@ -87,10 +89,22 @@ describe("priorOutcomeForRound — which of the pack's three letters a round ear
     assert.equal(priorOutcomeForRound("R3"), PRIOR_OUTCOME.ROUND_3);
   });
 
-  test("R4–R6 reuse the R2/R3 shapes, per promptPoolRound — no second rule", () => {
-    assert.equal(priorOutcomeForRound("R4"), PRIOR_OUTCOME.ROUND_2);
+  test("R4–R6 take the strongest bureau letter that exists, per promptPoolRound", () => {
+    // The vendor letter writer knows three rounds. An item past Round 3 gets its
+    // final-notice letter — the strongest of the three — and the escalation
+    // itself is carried by the CFPB and state AG complaints, which are separate
+    // documents. This used to be ROUND_2 for R4 and R6, which handed a client on
+    // round six the Round 2 method-of-verification letter again.
+    assert.equal(priorOutcomeForRound("R4"), PRIOR_OUTCOME.ROUND_3);
     assert.equal(priorOutcomeForRound("R5"), PRIOR_OUTCOME.ROUND_3);
-    assert.equal(priorOutcomeForRound("R6"), PRIOR_OUTCOME.ROUND_2);
+    assert.equal(priorOutcomeForRound("R6"), PRIOR_OUTCOME.ROUND_3);
+  });
+
+  test("NO ROUND PAST R2 EVER DROPS BACK TO THE ROUND 2 LETTER", () => {
+    for (const round of ["R3", "R4", "R5", "R6"]) {
+      assert.notEqual(priorOutcomeForRound(round), PRIOR_OUTCOME.ROUND_2,
+        `${round} would hand the client the Round 2 letter again`);
+    }
   });
 
   test("nothing recognisable earns nothing — never a default", () => {
@@ -252,5 +266,92 @@ describe("the whole wire — through buildLetterPackForClient, the app's own ent
     assert.equal(pack.roundsAdvanced, 0);
     assert.equal(pack.roundsUnmatched, 1);
     assert.ok(names(pack).includes("ex_round1.pdf"));
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// REACHING THE ESCALATION ROUNDS
+//
+// COMPLIANCE REVIEW REQUIRED — dispute logic.
+//
+// This is the gate the CFPB and state attorney general complaints hang on. Both
+// are signed by the client under penalty of perjury. A client must NEVER reach
+// R4 by default, by guess, or by empty data — only by a real recorded,
+// human-confirmed bureau answer.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("reachedEscalation — R4 is earned, never assumed", () => {
+  const at = (round) => [{ bureau: "EX", creditor: "A BANK", account_last4: "1234", round }];
+
+  test("NOTHING ON FILE IS NOT ESCALATION — this is the default and it must refuse", () => {
+    for (const empty of [[], undefined, null, "", 0, false, {}, "R4"]) {
+      assert.equal(reachedEscalation(empty), false,
+        `${JSON.stringify(empty)} was read as escalation`);
+    }
+  });
+
+  test("still working the bureau rounds is not escalation", () => {
+    for (const round of ["R1", "R2", "R3", "FURNISHER"]) {
+      assert.equal(reachedEscalation(at(round)), false, `${round} was read as escalation`);
+    }
+  });
+
+  test("a recorded answer at R4, R5 or R6 is escalation", () => {
+    for (const round of ["R4", "R5", "R6", "r4"]) {
+      assert.equal(reachedEscalation(at(round)), true, `${round} was not read as escalation`);
+    }
+  });
+
+  test("A MALFORMED ROUND IS NEVER GUESSED UP TO R4", () => {
+    const junk = [null, undefined, "", "   ", "R", "R0", "R7", "R9", "R44", 4, "4",
+      "round 4", "escalated", true, {}, [], "R4X", " R 4 "];
+    for (const round of junk) {
+      assert.equal(reachedEscalation([{ round }]), false,
+        `${JSON.stringify(round)} was guessed into an escalation round`);
+    }
+  });
+
+  test("a row with no round at all refuses", () => {
+    assert.equal(reachedEscalation([{}]), false);
+    assert.equal(reachedEscalation([null]), false);
+    assert.equal(reachedEscalation([undefined]), false);
+    assert.equal(reachedEscalation([{ bureau: "EX", creditor: "A BANK" }]), false);
+  });
+
+  test("one escalated account among many early ones is enough", () => {
+    assert.equal(reachedEscalation([...at("R1"), ...at("R2"), ...at("R5")]), true);
+    assert.equal(reachedEscalation([...at("R1"), ...at("R2"), ...at("R3")]), false);
+  });
+
+  test("highestEscalationRound reports the furthest rung, and null below R4", () => {
+    assert.equal(highestEscalationRound([...at("R4"), ...at("R6"), ...at("R5")]), "R6");
+    assert.equal(highestEscalationRound(at("R4")), "R4");
+    assert.equal(highestEscalationRound([...at("R1"), ...at("R3")]), null);
+    assert.equal(highestEscalationRound([]), null);
+    assert.equal(highestEscalationRound(null), null);
+  });
+});
+
+describe("the escalation gate cannot be reached without the round machine", () => {
+  test("the gate reads only confirmed answers, so it cannot be tricked", async () => {
+    // The gate reads rows from loadPriorOutcomes and nothing else. That query
+    // filters on status = 'escalated' AND outcome = 'verified', which only
+    // ../metro2/rounds/state.mjs applyItemOutcome can set, and only from a
+    // recorded bureau answer a human confirmed. Pinned here so the gate and the
+    // query can never drift apart.
+    const sink = {};
+    await loadPriorOutcomes(fakeDb([], sink), { clientId: "cl-1" });
+    assert.deepEqual(sink.params, ["cl-1", "escalated", "verified"]);
+    assert.match(sink.sql, /di\.round/, "the gate needs the round, so the query must select it");
+    assert.equal(/INSERT|UPDATE|DELETE/i.test(sink.sql), false, "this wire must never write");
+  });
+
+  test("A DATABASE FAILURE WITHHOLDS THE COMPLAINTS, IT DOES NOT RELEASE THEM", async () => {
+    const broken = { async query() { throw new Error("connection lost"); } };
+    const out = await loadPriorOutcomes(broken, { clientId: "cl-1" });
+    assert.deepEqual(out.outcomes, []);
+    assert.ok(out.skip, "the failure must be reported");
+    assert.equal(reachedEscalation(out.outcomes), false,
+      "a hiccup reading the database must never be read as 'this client escalated'");
   });
 });
