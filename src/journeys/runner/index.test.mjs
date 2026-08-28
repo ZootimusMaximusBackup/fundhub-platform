@@ -34,7 +34,9 @@ import { isSyntheticRow } from "./synthetic.mjs";
    fired — add a journey that walks it, or leave it named and known.
 
    If you register a workflow, move this number in the same commit. */
-const REGISTERED = 65;
+/* Bumped 65 -> 66 on 2026-08-28. src/workflows/blake-lead-watch.mjs (Blake
+   referral mail → staff text) was registered; this pin moves with it. */
+const REGISTERED = 66;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);

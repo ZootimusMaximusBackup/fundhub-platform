@@ -6,6 +6,42 @@ import { GMAIL_API_BASE } from "./config.mjs";
 
 const MESSAGE_META_HEADERS = ["Subject", "From", "Date", "To"];
 
+export function decodeGmailBodyData(data) {
+  if (!data) return "";
+  return Buffer.from(String(data).replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
+}
+
+function stripHtml(html) {
+  return String(html || "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/[ \t]+/g, " ")
+    .trim();
+}
+
+/** Prefer text/plain. Fall back to stripped HTML, then the snippet. */
+export function plainTextFromMessage(message) {
+  const plains = [];
+  const htmls = [];
+  function walk(part) {
+    if (!part) return;
+    const mime = String(part.mimeType || "").toLowerCase();
+    if (part.body?.data) {
+      const text = decodeGmailBodyData(part.body.data);
+      if (mime.startsWith("text/plain")) plains.push(text);
+      else if (mime.startsWith("text/html")) htmls.push(text);
+    }
+    for (const child of part.parts || []) walk(child);
+  }
+  walk(message?.payload);
+  if (plains.length) return plains.join("\n");
+  if (htmls.length) return htmls.map(stripHtml).join("\n");
+  return String(message?.snippet || "");
+}
+
 /**
  * Create a Gmail client bound to personal OAuth credentials.
  * Token is refreshed lazily and cached until near expiry.
@@ -133,11 +169,79 @@ export function createGmailClient({
     return hit?.value || null;
   }
 
+  let labelCache = new Map();
+
+  async function listLabels() {
+    const res = await gmailFetch(`/users/${encodeURIComponent(userId)}/labels`);
+    const text = await res.text();
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      throw new Error(`gmail labels.list non-json (${res.status})`);
+    }
+    if (!res.ok) {
+      throw new Error(`gmail labels.list failed (${res.status}): ${json.error?.message || text.slice(0, 200)}`);
+    }
+    return json.labels || [];
+  }
+
+  async function getOrCreateLabel(name) {
+    const key = String(name || "").trim();
+    if (!key) throw new Error("getOrCreateLabel requires a name");
+    if (labelCache.has(key)) return labelCache.get(key);
+    const existing = (await listLabels()).find((l) => l.name === key);
+    if (existing?.id) {
+      labelCache.set(key, existing.id);
+      return existing.id;
+    }
+    const res = await gmailFetch(`/users/${encodeURIComponent(userId)}/labels`, {
+      method: "POST",
+      body: {
+        name: key,
+        labelListVisibility: "labelHide",
+        messageListVisibility: "hide"
+      }
+    });
+    const text = await res.text();
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      throw new Error(`gmail labels.create non-json (${res.status})`);
+    }
+    if (!res.ok) {
+      throw new Error(`gmail labels.create failed (${res.status}): ${json.error?.message || text.slice(0, 200)}`);
+    }
+    labelCache.set(key, json.id);
+    return json.id;
+  }
+
+  async function addLabels(messageId, labelIds) {
+    const res = await gmailFetch(
+      `/users/${encodeURIComponent(userId)}/messages/${encodeURIComponent(messageId)}/modify`,
+      { method: "POST", body: { addLabelIds: labelIds } }
+    );
+    const text = await res.text();
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      throw new Error(`gmail messages.modify non-json (${res.status})`);
+    }
+    if (!res.ok) {
+      throw new Error(`gmail messages.modify failed (${res.status}): ${json.error?.message || text.slice(0, 200)}`);
+    }
+    return json;
+  }
+
   return {
     getProfile,
     listMessages,
     getMessage,
     headerValue,
+    getOrCreateLabel,
+    addLabels,
     /** test helper */
     _clearTokenCache() { cached = null; }
   };
