@@ -37,3 +37,23 @@ export function resolveLogoPath({ name, externalRowId, sidecar, exists }) {
   }
   return null;
 }
+
+/* ── The placeholder half of this module ─────────────────────────────────────
+   Two threads created a file at this path on the same day, for two different
+   jobs: this one resolves a bank name to a mark that exists, and the other
+   handed a missing mark the neutral tile. The merge kept one file and dropped
+   the other, so src/lenders/store.mjs imported a function that was no longer
+   here and esbuild refused to bundle the api function — every deploy from
+   main failed at "building site" with exit code 2 from 02:24 on 2026-08-28.
+   Both halves live here now. Restored from be14a249 unchanged. */
+
+export const LENDER_LOGO_PLACEHOLDER = "/assets/lenders/placeholder.svg";
+
+/**
+ * @param {string|null|undefined} logoPath
+ * @returns {string}
+ */
+export function logoPathOrPlaceholder(logoPath) {
+  const s = logoPath == null ? "" : String(logoPath).trim();
+  return s || LENDER_LOGO_PLACEHOLDER;
+}
