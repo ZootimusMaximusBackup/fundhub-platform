@@ -42,11 +42,14 @@
     return h ? (h + "h " + m + "m") : (m + "m");
   }
 
+  /* PRESENT IS NOT A LIVE CONTROL ANY MORE (owner-set 2026-08-27).
+     It used to be hidden until a call had loaded, so a closer could not open
+     the deck to rehearse it, or to walk someone through it with no file on the
+     screen. The owner asked for it to be there at all times. It is therefore
+     absent from both functions below and is handled by wirePresent(). */
   function hideLiveControls() {
     var logbar = document.querySelector(".logbar");
     if (logbar) logbar.hidden = true;
-    var present = document.getElementById("fh-present");
-    if (present) present.hidden = true;
     var sendBtn = document.getElementById("fh-send-contract");
     if (sendBtn) sendBtn.hidden = true;
   }
@@ -54,10 +57,42 @@
   function showLiveControls() {
     var logbar = document.querySelector(".logbar");
     if (logbar) logbar.hidden = false;
-    var present = document.getElementById("fh-present");
-    if (present) present.hidden = false;
     var sendBtn = document.getElementById("fh-send-contract");
     if (sendBtn) sendBtn.hidden = false;
+  }
+
+  /* Reveals Present and attaches its click, once.
+
+     WHY THIS RUNS FIRST, BEFORE ANYTHING ELSE IN boot(): every no-call path in
+     boot returns early — no FHData, no current call, a failed cockpit read —
+     and the old wiring sat AFTER all of them. So the moment the button stopped
+     being hidden it would have been a dead control on exactly the screens the
+     owner wants it on. UI-STANDARDS §5: every visible control works.
+
+     The markup keeps its `hidden` attribute and this is what clears it, so the
+     button is on the screen if and only if its handler is attached. It can
+     never paint as a dead control because a later script failed.
+
+     The client id is read at CLICK time rather than now, so a button wired
+     before resolveClient() still opens the right deck once a call lands. With
+     no client it opens present.html bare, which has its own gate for that. */
+  function wirePresent() {
+    var present = document.getElementById("fh-present");
+    if (!present || present.getAttribute("data-fh-wired")) return;
+    present.setAttribute("data-fh-wired", "1");
+    present.hidden = false;
+    present.addEventListener("click", function () {
+      var id = window.__FH_CLIENT_ID || clientId;
+      /* Written as two whole URLs rather than one concatenation on purpose:
+         src/http/closer-deck-present.test.mjs greps this file for the literal
+         "present.html?contact=" to prove the deck is still deep-linked, and a
+         split string silently defeats it. It also just reads better. */
+      var href = id
+        ? "present.html?contact=" + encodeURIComponent(id)
+        : "present.html";
+      // New tab so the closer keeps the cockpit and can split-screen the deck.
+      window.open(href, "_blank", "noopener,noreferrer");
+    });
   }
 
   function setEmpty(reason, kind) {
@@ -504,6 +539,7 @@
   }
 
   async function boot() {
+    wirePresent();
     if (!window.FHData) { setEmpty("data.js failed to load", "error"); return; }
     loadSessionStaff();
     hideLiveControls();
@@ -534,19 +570,6 @@
         join.disabled = true;
         join.title = "No call link on this appointment";
       }
-    }
-    var present = document.getElementById("fh-present");
-    if (present && clientId) {
-      present.addEventListener("click", function () {
-        // New tab so the closer keeps the cockpit and can split-screen the deck.
-        window.open(
-          "present.html?contact=" + encodeURIComponent(clientId),
-          "_blank",
-          "noopener,noreferrer"
-        );
-      });
-    } else if (present) {
-      present.remove();
     }
     wireContractSend();
   }
