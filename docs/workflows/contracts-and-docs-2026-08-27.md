@@ -190,3 +190,54 @@ chose on 2026-08-27. FINDING 1 still stands and is unaddressed: the published te
 tryfundhub.com and the closer playbook still carry the old program names. That is a separate task.
 
 ## Batch status: all four workflows complete.
+
+---
+
+## FINDING 4 — the rename is NOT a small job. Do not run it unattended.
+
+I said earlier this was a cleanup task. I was wrong, and here is the evidence.
+
+`funding-mastery` is not a display label. It is a product code with live data behind it:
+
+| Where | What it is | Risk if renamed |
+|---|---|---|
+| `db/migrations/180_product_entitlements_seed.sql:128` | entitlement `funding-mastery-course` | **paying clients lose access to what they bought** |
+| `db/migrations/181_offer_prices_and_trial_product.sql:89,125` | catalog product code + a prior code migration | orphans existing order rows |
+| `src/config/offers.mjs:45` | maps to the Commas checkout title | checkout stops matching the processor |
+| `src/config/offers.mjs:142` | `productCode: "funding-mastery"` | breaks the offer-to-product link |
+| `public/app/pipeline.html:701` | `<option value="funding-mastery">` | value is persisted on existing records |
+| `public/app/client-portal.html:662,667,879` | client-facing tile + `data-book` string | booking automation matches on this string |
+
+Migration 181 already notes this is "the sixth catalog code migration" for this product. Renaming the
+code a seventh time, at night, in a tree shared by five other live sessions, with no one awake to
+check whether a client lost portal access, is the most expensive mistake available here.
+
+### The safe version, for when Chris is awake
+
+**Display names and product codes are two different things.** The client-visible name can change
+without touching a single line of code that gates access. That turns this from a database migration
+into a small, reversible edit.
+
+Change ONLY these, all display strings:
+- `src/config/offers.mjs:137` — `name:` field (leave `key:` and `productCode:` alone)
+- `public/app/pipeline.html:701` — the option's visible text (leave `value="funding-mastery"` alone)
+- `public/app/present.js:386` — sales deck copy
+- `public/app/client-portal.html:662,670` — tile title and label
+- The five closer docs in `docs/company-resources/`
+
+Never touch: any `productCode`, `key`, `value=`, entitlement code, or migration file.
+
+**One thing to verify first:** `data-book="Funding Mastery course (A to Z)"` in client-portal.html
+appears twice and may be string-matched by booking automation. Grep for that exact string across
+`src/` before changing it, or the "Talk to an advisor" button silently stops booking.
+
+**Do it all at once or not at all.** A partial rename is worse than none: the closer reads
+"Capital Academy" off the script while the client is looking at "Funding Mastery" on their screen.
+
+### Also unresolved: the two-versus-one problem
+
+The published terms of service names **two** $5,000 programs (Credit Mastery System, Capital Strategy
+Program). The product has **one** ($5,000 Funding Mastery). Neither old TOS name appears anywhere in
+this repo — they exist only in the published document on tryfundhub.com. So before any rename, Chris
+needs to answer: is Capital Blueprint an existing product being renamed, or a new product that needs
+a code, a price, an entitlement, and a checkout item? The contract for it is written either way.
