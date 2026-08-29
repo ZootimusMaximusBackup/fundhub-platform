@@ -260,6 +260,13 @@
   .c-amt .unit{font-size:var(--fs-caption);font-weight:400;color:var(--text-faint);}
   .c-age{font-family:var(--mono);font-size:var(--fs-caption);color:var(--text-faint);margin-top:2px;}
   .c-age.old{color:var(--ink2);font-weight:700;}
+  /* "A bank said yes, nobody has said how much." Literal amber, not a brand
+     variable: paintBrand in shell.js overwrites --alert / --warn / --info from
+     the company colour ramp, which turns every warning on a tenant board the
+     same blue as everything else. */
+  .c-needs-amount{display:inline-block;margin-top:4px;padding:2px 8px;border-radius:999px;
+    background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;
+    font-size:var(--fs-caption);font-weight:700;letter-spacing:.01em;}
   .c-msg{display:flex;align-items:center;gap:6px;margin-top:3px;min-width:0;}
   .c-msg-link{font-size:var(--fs-caption);color:var(--text-dim);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
   .c-msg-link:hover{color:var(--text);text-decoration:underline;}
@@ -1393,6 +1400,27 @@ restore();
       amt.appendChild(unit);
     }
     card.appendChild(amt);
+
+    /* AN APPROVAL WITH NO DOLLAR AMOUNT, SAID OUT LOUD ON THE BOARD THE
+       FULFILLMENT TEAM ALREADY WATCHES.
+
+       A bank can say yes before anyone knows the limit — the team has to ask
+       the client or wait for the bank's approval email — and recording that
+       approval with no amount is allowed on purpose (owner-set 2026-08-29).
+       What is NOT allowed is nobody ever noticing. Until the dollars are in,
+       that approval is left out of the round's lender breakdown, so no success
+       fee is ever billed for it. Per-client this is chipped on the lender row
+       in the Client Control Panel; this is the same fact across every client,
+       on the card that is stuck.
+
+       ONLY an explicit true paints it. A reply that never carried the key is
+       not evidence of a clean file, and a card must never claim all-clear on
+       something nobody measured — so `undefined` shows nothing at all rather
+       than a green "fine". */
+    if (c.approval_amount_missing === true) {
+      card.appendChild(div("c-needs-amount", "Amount needed"));
+    }
+
     card.appendChild(div("c-age", age(c.entered_at)));
 
     var foot = div("c-foot");

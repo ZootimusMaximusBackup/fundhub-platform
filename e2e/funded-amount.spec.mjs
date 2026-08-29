@@ -48,18 +48,51 @@ function captureWrites(path, writes, reply) {
   };
 }
 
+/* A STANDING-IN BACKEND FOR /api/applications that remembers.
+   The screen both writes approvals and reads them back — reading them back is
+   how a missing amount gets shown and how it gets filled in later — so a stub
+   that forgets between the POST and the GET cannot prove either. `saved` is
+   the application rows this fake file already holds; a POST updates the row
+   for that lender exactly the way logBankDecision does (find by client +
+   lender, patch, never mint a second one).
+
+   AN ABSENT approved_amount STAYS ABSENT. The fake never fills one in, so a
+   test that sees an amount here is seeing one the screen really sent. */
+function applicationsBackend(writes, saved) {
+  return {
+    "/api/applications": async (route, ctx) => {
+      const method = ctx && ctx.method ? ctx.method : route.request().method();
+      if (method === "GET") {
+        return json(route, { ok: true, decisions: [], applications: saved });
+      }
+      if (method !== "POST") return json(route, { ok: false, error: "method_not_allowed" }, 405);
+      const body = JSON.parse(route.request().postData() || "{}");
+      writes.push(body);
+      let row = saved.find((a) => a.lender_id === body.lender_id);
+      if (!row) {
+        row = { id: "app-" + (saved.length + 1), lender_id: body.lender_id, status: null, approved_amount: null };
+        saved.push(row);
+      }
+      row.status = body.status;
+      // Only a real amount overwrites. Absent means nobody said, and the
+      // column keeps whatever it had — the server behaves the same way.
+      if (body.approved_amount !== undefined && body.approved_amount !== null) {
+        row.approved_amount = body.approved_amount;
+      }
+      return json(route, { ok: true, application: row });
+    }
+  };
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    BANK YES — how much the bank approved
    ══════════════════════════════════════════════════════════════════════════ */
 test.describe("client control panel — Bank yes records an amount", () => {
 
-  async function open(page, writes) {
+  async function open(page, writes, saved = []) {
     return openScreen(page, `/app/client-control-panel.html?client_id=${CLIENT_ID}`, OWNER, {
       "/api/read/lender-matches": MATCHES,
-      ...captureWrites("/api/applications", writes, {
-        ok: true,
-        application: { id: "app-1", status: "Approved" }
-      })
+      ...applicationsBackend(writes, saved)
     });
   }
 
@@ -91,14 +124,31 @@ test.describe("client control panel — Bank yes records an amount", () => {
     expect(writes[0].approved_amount).toBe("450.10");
   });
 
-  test("A BLANK BOX SENDS NOTHING — it never sends a zero", async ({ page }) => {
+  /* THIS TEST WAS INVERTED ON PURPOSE (owner-set 2026-08-29).
+     It used to prove a blank box sent NOTHING. The owner corrected the rule:
+     approval and amount are two separate moments, because when a bank comes
+     back the fulfillment team often does not know the limit yet. So a blank
+     box must SAVE the approval — and still must not send a zero. Those are two
+     different things and both are asserted here. */
+  test("A BLANK BOX SAVES THE APPROVAL AND SENDS NO AMOUNT — never a zero", async ({ page }) => {
     const writes = [];
     await open(page, writes);
     await page.getByRole("button", { name: "Bank yes" }).first().click();
-    // Give a request every chance to be made before declaring none was.
-    await page.waitForTimeout(1000);
-    expect(writes).toHaveLength(0);
-    await expect(page.getByText(/not the same as zero/i)).toBeVisible();
+    await expect.poll(() => writes.length, { timeout: 10_000 }).toBe(1);
+    expect(writes[0].status).toBe("Approved");
+    // No key at all. Not 0, not "", not null.
+    expect(Object.prototype.hasOwnProperty.call(writes[0], "approved_amount")).toBe(false);
+  });
+
+  test("after saving with no amount, the row says so and the block counts it", async ({ page }) => {
+    const writes = [];
+    await open(page, writes);
+    await page.getByRole("button", { name: "Bank yes" }).first().click();
+    await expect.poll(() => writes.length, { timeout: 10_000 }).toBe(1);
+    await expect(page.locator(`[data-amount-needed-lender-id="${LENDER_ID}"]`))
+      .toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("#fh-funding-amounts-waiting"))
+      .toContainText(/waiting on its dollar amount/i, { timeout: 10_000 });
   });
 
   test("junk and negatives are refused on the screen, before any request", async ({ page }) => {
@@ -120,6 +170,130 @@ test.describe("client control panel — Bank yes records an amount", () => {
     await expect.poll(() => writes.length, { timeout: 10_000 }).toBe(1);
     expect(writes[0].status).toBe("Denied");
     expect(writes[0].approved_amount).toBeUndefined();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE SECOND MOMENT — the amount arrives later
+   ══════════════════════════════════════════════════════════════════════════ */
+test.describe("client control panel — an approval waiting on its amount", () => {
+
+  const waiting = () => [{
+    id: "app-1", lender_id: LENDER_ID, status: "Approved", approved_amount: null
+  }];
+  const priced = () => [{
+    id: "app-1", lender_id: LENDER_ID, status: "Approved", approved_amount: "45000.00"
+  }];
+
+  async function open(page, writes, saved) {
+    return openScreen(page, `/app/client-control-panel.html?client_id=${CLIENT_ID}`, OWNER, {
+      "/api/read/lender-matches": MATCHES,
+      ...applicationsBackend(writes, saved)
+    });
+  }
+
+  test("an approval with no amount is marked on its row when the screen opens", async ({ page }) => {
+    await open(page, [], waiting());
+    await expect(page.locator(`[data-amount-needed-lender-id="${LENDER_ID}"]`))
+      .toBeVisible({ timeout: 10_000 });
+    await expect(page.locator(`[data-amount-needed-lender-id="${LENDER_ID}"]`))
+      .toHaveText(/amount needed/i);
+    await expect(page.locator("#fh-funding-amounts-waiting"))
+      .toContainText(/1 bank approval is still waiting/i);
+    // And the box is empty, because nothing is known. Never a 0.
+    await expect(page.locator(`input[data-amount-lender-id="${LENDER_ID}"]`)).toHaveValue("");
+  });
+
+  test("an approval that already has an amount shows it back and is not flagged", async ({ page }) => {
+    await open(page, [], priced());
+    await expect(page.locator(`input[data-amount-lender-id="${LENDER_ID}"]`))
+      .toHaveValue("45000.00", { timeout: 10_000 });
+    await expect(page.locator(`[data-amount-needed-lender-id="${LENDER_ID}"]`)).toBeHidden();
+    await expect(page.locator("#fh-funding-amounts-waiting")).toBeHidden();
+  });
+
+  test("typing the amount in later saves it and clears the flag", async ({ page }) => {
+    const writes = [];
+    const saved = waiting();
+    await open(page, writes, saved);
+    await expect(page.locator(`[data-amount-needed-lender-id="${LENDER_ID}"]`))
+      .toBeVisible({ timeout: 10_000 });
+
+    await page.locator(`input[data-amount-lender-id="${LENDER_ID}"]`).fill("$45,000");
+    await page.getByRole("button", { name: "Bank yes" }).first().click();
+
+    await expect.poll(() => writes.length, { timeout: 10_000 }).toBe(1);
+    expect(writes[0].approved_amount).toBe("45000.00");
+    // Same lender, so the fake backend patched the one row rather than adding
+    // a second — the same thing logBankDecision does against a real database.
+    expect(saved).toHaveLength(1);
+
+    await expect(page.locator(`[data-amount-needed-lender-id="${LENDER_ID}"]`))
+      .toBeHidden({ timeout: 10_000 });
+    await expect(page.locator("#fh-funding-amounts-waiting")).toBeHidden();
+  });
+
+  test("the count still shows when no lenders match at all", async ({ page }) => {
+    /* The rot case. A client whose lender list has gone empty has no rows to
+       chip, and that is exactly the file where a waiting approval would never
+       be seen again. The sentence has to be painted on that path too. */
+    await openScreen(page, `/app/client-control-panel.html?client_id=${CLIENT_ID}`, OWNER, {
+      "/api/read/lender-matches": { ok: true, match_count: 0, summary: { lender_count: 0 }, matches: [] },
+      ...applicationsBackend([], waiting())
+    });
+    await expect(page.locator("#fh-funding-amounts-waiting"))
+      .toContainText(/1 bank approval is still waiting/i, { timeout: 10_000 });
+  });
+
+  test("a typo in the box is still refused — a wrong amount is not an unknown", async ({ page }) => {
+    const writes = [];
+    await open(page, writes, waiting());
+    await page.locator(`input[data-amount-lender-id="${LENDER_ID}"]`).fill("forty thousand");
+    await page.getByRole("button", { name: "Bank yes" }).first().click();
+    await page.waitForTimeout(800);
+    expect(writes).toHaveLength(0);
+    await expect(page.locator("#fh-funding-apply-status")).toContainText(/not an amount/i);
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   THE BOARD — the same fact, across every client
+   ══════════════════════════════════════════════════════════════════════════ */
+test.describe("pipeline board — a card says when an approval has no amount", () => {
+
+  function boardWith(cardExtra) {
+    return {
+      "/api/dashboard/pipeline": {
+        ok: true,
+        pipeline: "sales",
+        stages: [{
+          key: "new_lead", name: "New Lead", sort_order: 0, count: 1, amount: 3000,
+          cards: [{
+            id: "card-1", client_id: CLIENT_ID, name: "Dana Whitfield",
+            owner: "Jordan Blake", entered_at: "2026-08-01T10:00:00Z",
+            outcome_tier: null, funded: false, amount: 3000, ...cardExtra
+          }]
+        }],
+        total: 1
+      }
+    };
+  }
+
+  test("the card carries the flag when an approval has no dollar amount", async ({ page }) => {
+    await openScreen(page, "/app/pipeline.html", OWNER, boardWith({ approval_amount_missing: true }));
+    await expect(page.locator(".card .c-needs-amount").first())
+      .toHaveText(/amount needed/i, { timeout: 10_000 });
+  });
+
+  test("no flag when nothing is waiting, and none when the key never arrived", async ({ page }) => {
+    await openScreen(page, "/app/pipeline.html", OWNER, boardWith({ approval_amount_missing: false }));
+    await expect(page.locator(".card .c-needs-amount")).toHaveCount(0);
+
+    // A reply that never carried the key is not evidence of a clean file, but
+    // it is not evidence of a waiting one either — the card must say nothing
+    // rather than invent either answer.
+    await openScreen(page, "/app/pipeline.html", OWNER, boardWith({}));
+    await expect(page.locator(".card .c-needs-amount")).toHaveCount(0);
   });
 });
 

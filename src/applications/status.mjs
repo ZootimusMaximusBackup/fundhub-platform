@@ -284,3 +284,37 @@ export async function listClientDecisionPlays(db, { orgId, clientId, limit = 50 
   );
   return r.rows;
 }
+
+/**
+ * Every application on a client's file, with the one fact the fulfillment team
+ * has to chase afterwards: how much the bank approved.
+ *
+ * WHY THIS EXISTS. An approved amount is OPTIONAL on a "Bank yes" (owner-set
+ * 2026-08-29): when a bank comes back, the funding advisor very often does not
+ * know the limit yet and has to ask the client or wait for the bank's approval
+ * email. "Approved, amount unknown" is a real state. It only stays honest if
+ * the screen can read the approval back — to show what was already saved, to
+ * let the amount be filled in later, and to say out loud which approvals are
+ * still waiting on one.
+ *
+ * listClientDecisionPlays above cannot answer any of that. It reads
+ * application_decisions, throws away every row with no play name, and the
+ * amount does not live on that table at all. This reads the applications rows
+ * themselves, which is where approved_amount is.
+ *
+ * NULL SURVIVES. approved_amount comes back exactly as the column holds it —
+ * null when nobody has said, a dollar string when they have. Never coalesced
+ * to 0: a zero is a claim that the bank approved nothing, and unknown is not
+ * nothing.
+ */
+export async function listClientApplications(db, { orgId, clientId, limit = 200 }) {
+  const r = await db.query(
+    `SELECT id, lender_id, lender_name, bank, status, approved_amount, updated_at
+       FROM applications
+      WHERE org_id = $1::uuid AND client_id = $2::uuid
+      ORDER BY updated_at DESC
+      LIMIT $3`,
+    [orgId, clientId, Math.min(Math.max(Number(limit) || 200, 1), 500)]
+  );
+  return r.rows;
+}

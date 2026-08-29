@@ -185,3 +185,55 @@ describe("both screens actually load and use the shared rule", () => {
     assert.ok(!/approved_amount\s*:\s*0\b/.test(panel), "client-control-panel.html hardcodes a zero approved_amount");
   });
 });
+
+/* ── APPROVAL AND AMOUNT ARE TWO SEPARATE MOMENTS (owner-set 2026-08-29) ─────
+   A bank can say yes before anyone knows the limit — the fulfillment team has
+   to ask the client or wait for the bank's approval email — so "Bank yes" with
+   an empty amount box must SAVE. These pin the three halves of that rule that
+   can each be silently undone by a one-line edit. */
+describe("Bank yes saves with no amount, and the missing amount stays visible", () => {
+  const panel = fs.readFileSync(PANEL, "utf8");
+  const pipeline = fs.readFileSync(PIPELINE, "utf8");
+
+  test("an empty box only skips the amount — it does not refuse the save", () => {
+    // The guard reads the typed value FIRST and only parses a non-empty one.
+    // If this ever becomes `if (status === "Approved") { parse... }` again, a
+    // blank box goes back to refusing and the two moments collapse into one.
+    assert.match(panel, /status === "Approved" && typed !== ""/,
+      "the amount is parsed only when something was actually typed");
+    assert.ok(!/if \(status === "Approved"\) \{\s*\n\s*if \(!window\.FHMoneyInput/.test(panel),
+      "a bare Approved branch would refuse an empty box again");
+  });
+
+  test("a wrong amount is still refused — a typo is not an unknown", () => {
+    assert.match(panel, /FHMoneyInput\.parseAmount\(typed\)/);
+    assert.match(panel, /if \(!parsed\.ok\)/);
+  });
+
+  test("the amount can be filled in later: the box is painted back from what is saved", () => {
+    // The screen reads the application rows, not just the named plays, and puts
+    // the saved dollars back in the same box someone types into.
+    assert.match(panel, /pack && pack\.applications/,
+      "the panel must read back the saved applications");
+    assert.match(panel, /data-amount-lender-id/);
+    assert.match(panel, /amountForBox/);
+  });
+
+  test("an approval with no amount is marked, per row and as a count", () => {
+    assert.match(panel, /isWaitingOnAmount/);
+    assert.match(panel, /fh-funding-amounts-waiting/);
+    assert.match(panel, /still waiting on (its|their) dollar amount/);
+    assert.match(panel, /data-amount-needed-lender-id/);
+  });
+
+  test("the board says it too, and only on an explicit true", () => {
+    // A reply that never carried the key is not evidence of a clean file.
+    assert.match(pipeline, /c\.approval_amount_missing === true/);
+    assert.match(pipeline, /c-needs-amount/);
+  });
+
+  test("nothing coalesces an unknown amount to zero on either screen", () => {
+    assert.ok(!/approved_amount\s*\|\|\s*0/.test(panel));
+    assert.ok(!/approval_amount_missing\s*\|\|\s*0/.test(pipeline));
+  });
+});
