@@ -1,0 +1,269 @@
+// Playwright — the two boxes where a staff member records money.
+//
+// WHAT WAS BROKEN. Nothing in the product could record a dollar amount. The
+// Pipeline board's Funded column is guarded (src/workflows/cards.mjs) because
+// funding_rounds.funded_amount is the basis a client is billed from, so every
+// move onto Funded was refused and nobody could answer the refusal. "Bank yes"
+// on the client control panel recorded that a bank said yes but never for how
+// much.
+//
+// WHAT THESE PROVE, in a real browser, clicking real buttons:
+//   1. the box appears and the amount reaches the request body
+//   2. a BLANK box sends nothing at all — it never sends 0
+//   3. junk and negatives are refused on the screen, before any request
+//
+// (2) is the one that matters. A zero here is a claim that nothing funded, and
+// it would flow straight into an invoice looking perfectly legitimate
+// (docs/CLOSEOUT-FEE-BASIS.md).
+//
+// NO BACKEND — /api/** is answered by page.route() via harness.mjs.
+
+import { test, expect } from "@playwright/test";
+import { openScreen, json, OWNER, CLIENT_ID } from "./harness.mjs";
+
+const LENDER_ID = "bbbbbbbb-1111-4111-8111-111111111111";
+
+const MATCHES = {
+  ok: true,
+  match_count: 1,
+  summary: { lender_count: 1 },
+  matches: [{
+    id: LENDER_ID,
+    name: "Mesa Community Bank",
+    bureaus_pulled: "EX",
+    application_url: "https://bank.example/apply/mesa"
+  }]
+};
+
+/* Captures every POST body the screen sends to an endpoint, so a test can
+   assert on what was sent AND on the fact that nothing was sent at all. */
+function captureWrites(path, writes, reply) {
+  return {
+    [path]: async (route, ctx) => {
+      const method = ctx && ctx.method ? ctx.method : route.request().method();
+      if (method !== "POST") return json(route, { ok: false, error: "method_not_allowed" }, 405);
+      writes.push(JSON.parse(route.request().postData() || "{}"));
+      return json(route, reply);
+    }
+  };
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   BANK YES — how much the bank approved
+   ══════════════════════════════════════════════════════════════════════════ */
+test.describe("client control panel — Bank yes records an amount", () => {
+
+  async function open(page, writes) {
+    return openScreen(page, `/app/client-control-panel.html?client_id=${CLIENT_ID}`, OWNER, {
+      "/api/read/lender-matches": MATCHES,
+      ...captureWrites("/api/applications", writes, {
+        ok: true,
+        application: { id: "app-1", status: "Approved" }
+      })
+    });
+  }
+
+  test("the approved-amount box is on the screen next to Bank yes", async ({ page }) => {
+    await open(page, []);
+    const amt = page.locator('input[data-amount-lender-id]').first();
+    await expect(amt).toBeVisible({ timeout: 10_000 });
+    await expect(amt).toHaveAttribute("placeholder", /approved/i);
+    await expect(page.getByRole("button", { name: "Bank yes" }).first()).toBeVisible();
+  });
+
+  test("a typed amount reaches the request as approved_amount in dollars", async ({ page }) => {
+    const writes = [];
+    await open(page, writes);
+    await page.locator('input[data-amount-lender-id]').first().fill("$45,000");
+    await page.getByRole("button", { name: "Bank yes" }).first().click();
+    await expect.poll(() => writes.length, { timeout: 10_000 }).toBe(1);
+    expect(writes[0].status).toBe("Approved");
+    // Dollars, fixed 2dp — the unit applications.approved_amount stores.
+    expect(writes[0].approved_amount).toBe("45000.00");
+  });
+
+  test("450.10 stays 450.10 — no floating point drift", async ({ page }) => {
+    const writes = [];
+    await open(page, writes);
+    await page.locator('input[data-amount-lender-id]').first().fill("450.10");
+    await page.getByRole("button", { name: "Bank yes" }).first().click();
+    await expect.poll(() => writes.length, { timeout: 10_000 }).toBe(1);
+    expect(writes[0].approved_amount).toBe("450.10");
+  });
+
+  test("A BLANK BOX SENDS NOTHING — it never sends a zero", async ({ page }) => {
+    const writes = [];
+    await open(page, writes);
+    await page.getByRole("button", { name: "Bank yes" }).first().click();
+    // Give a request every chance to be made before declaring none was.
+    await page.waitForTimeout(1000);
+    expect(writes).toHaveLength(0);
+    await expect(page.getByText(/not the same as zero/i)).toBeVisible();
+  });
+
+  test("junk and negatives are refused on the screen, before any request", async ({ page }) => {
+    const writes = [];
+    await open(page, writes);
+    const amt = page.locator('input[data-amount-lender-id]').first();
+    for (const bad of ["abc", "-500", "0"]) {
+      await amt.fill(bad);
+      await page.getByRole("button", { name: "Bank yes" }).first().click();
+      await page.waitForTimeout(300);
+    }
+    expect(writes).toHaveLength(0);
+  });
+
+  test("Bank no still works and carries no amount", async ({ page }) => {
+    const writes = [];
+    await open(page, writes);
+    await page.getByRole("button", { name: "Bank no" }).first().click();
+    await expect.poll(() => writes.length, { timeout: 10_000 }).toBe(1);
+    expect(writes[0].status).toBe("Denied");
+    expect(writes[0].approved_amount).toBeUndefined();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FUNDED — what actually funded
+   ══════════════════════════════════════════════════════════════════════════ */
+test.describe("pipeline board — a move onto Funded carries the money", () => {
+
+  /* The shared parser is what the page asks; driving the whole board through a
+     drag is slow and brittle, so these exercise the page's own module directly
+     in the browser, then assert the wiring that calls it. */
+  test("the shared money rule is loaded and live on the page", async ({ page }) => {
+    await openScreen(page, "/app/pipeline.html", OWNER, {});
+    const out = await page.evaluate(() => {
+      const p = window.FHMoneyInput && window.FHMoneyInput.parseAmount;
+      if (!p) return { missing: true };
+      return {
+        typed: p("$45,000"),
+        pennies: p("450.10"),
+        blank: p(""),
+        zero: p("0"),
+        negative: p("-5"),
+        junk: p("abc")
+      };
+    });
+    expect(out.missing).toBeUndefined();
+    expect(out.typed).toMatchObject({ ok: true, cents: 4500000, dollars: "45000.00" });
+    expect(out.pennies).toMatchObject({ ok: true, cents: 45010, dollars: "450.10" });
+    // Every one of these must refuse. None may come back as a zero amount.
+    expect(out.blank.ok).toBe(false);
+    expect(out.blank.reason).toBe("blank");
+    expect(out.blank.cents).toBeUndefined();
+    expect(out.zero.ok).toBe(false);
+    expect(out.negative.ok).toBe(false);
+    expect(out.junk.ok).toBe(false);
+  });
+
+  /* A Card Stacking board with a real Funded column — the only place the
+     guard fires. Dragging onto it is exactly what a funding advisor does. */
+  const CARD_STACKING_BOARD = {
+    ok: true,
+    pipeline: "funding_card_stacking",
+    total: 1,
+    stages: [
+      {
+        key: "approved", name: "Approved", sort_order: 0, count: 1, amount: 40000,
+        cards: [{
+          id: "card-1", client_id: CLIENT_ID, name: "Dana Whitfield",
+          owner: "Jordan Blake", entered_at: "2026-08-01T10:00:00Z",
+          outcome_tier: null, funded: false, amount: 40000
+        }]
+      },
+      { key: "funded", name: "Funded", sort_order: 1, count: 0, amount: 0, cards: [] }
+    ]
+  };
+
+  /* Drives the drag from the Approved card onto the Funded column, with the
+     amount box answering `answer` (null = the person pressed Cancel). */
+  async function dragToFunded(page, answer, writes) {
+    await openScreen(page, "/app/pipeline.html", OWNER, {
+      "/api/dashboard/pipeline": CARD_STACKING_BOARD,
+      ...captureWrites("/api/pipeline-cards", writes, { ok: true, action: "move" })
+    });
+    // Any alert (a refusal) is dismissed so it cannot block the run.
+    page.on("dialog", (d) => { d.dismiss().catch(() => {}); });
+    await page.evaluate((a) => { window.prompt = () => a; }, answer);
+
+    /* Select the Card Stacking rail. The columns carry whichever rail key was
+       REQUESTED (buildColumn stamps col.dataset.pipelineKey), and the guard
+       only fires for funding_card_stacking — so painting these same stages
+       under the default Sales rail would prove nothing. */
+    await page.evaluate(() => window.FHPipelineBoard.showPipeline("funding_card_stacking"));
+    await expect(page.locator('.col[data-pipeline-key="funding_card_stacking"]').first())
+      .toBeVisible({ timeout: 10_000 });
+
+    const card = page.locator('.card[data-client-id]').first();
+    const dest = page.locator('.col[data-stage-key="funded"] .col-body').first();
+    await expect(card).toBeVisible({ timeout: 10_000 });
+    await expect(dest).toBeVisible();
+    const c = await card.boundingBox();
+    const d = await dest.boundingBox();
+    await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(d.x + d.width / 2, d.y + 20, { steps: 8 });
+    await page.mouse.up();
+  }
+
+  test("a typed amount reaches the request as funded_amount in dollars", async ({ page }) => {
+    const writes = [];
+    await dragToFunded(page, "$45,000", writes);
+    await expect.poll(() => writes.length, { timeout: 10_000 }).toBe(1);
+    expect(writes[0].stage_key).toBe("funded");
+    expect(writes[0].pipeline_key).toBe("funding_card_stacking");
+    expect(writes[0].client_id).toBe(CLIENT_ID);
+    // Dollars, fixed 2dp — what funding_rounds.funded_amount stores and what
+    // guardFundedAmount in src/workflows/cards.mjs is waiting for.
+    expect(writes[0].funded_amount).toBe("45000.00");
+  });
+
+  test("CANCELLING THE BOX SENDS NOTHING — never a zero", async ({ page }) => {
+    const writes = [];
+    await dragToFunded(page, null, writes);
+    await page.waitForTimeout(1200);
+    expect(writes).toHaveLength(0);
+  });
+
+  test("AN EMPTY BOX SENDS NOTHING — empty is not zero", async ({ page }) => {
+    const writes = [];
+    await dragToFunded(page, "", writes);
+    await page.waitForTimeout(1200);
+    expect(writes).toHaveLength(0);
+  });
+
+  test("a move to any other column still needs no amount", async ({ page }) => {
+    // The box must appear on Funded and nowhere else, or every ordinary move
+    // starts nagging for money it does not need.
+    const writes = [];
+    await openScreen(page, "/app/pipeline.html", OWNER, {
+      "/api/dashboard/pipeline": {
+        ...CARD_STACKING_BOARD,
+        stages: [
+          CARD_STACKING_BOARD.stages[0],
+          { key: "action_required", name: "Action Required", sort_order: 1, count: 0, amount: 0, cards: [] }
+        ]
+      },
+      ...captureWrites("/api/pipeline-cards", writes, { ok: true, action: "move" })
+    });
+    let asked = false;
+    await page.evaluate(() => { window.prompt = () => { window.__asked = true; return null; }; });
+    await page.evaluate(() => window.FHPipelineBoard.showPipeline("funding_card_stacking"));
+    await expect(page.locator('.col[data-pipeline-key="funding_card_stacking"]').first())
+      .toBeVisible({ timeout: 10_000 });
+    const card = page.locator('.card[data-client-id]').first();
+    const dest = page.locator('.col[data-stage-key="action_required"] .col-body').first();
+    await expect(card).toBeVisible({ timeout: 10_000 });
+    const c = await card.boundingBox();
+    const d = await dest.boundingBox();
+    await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(d.x + d.width / 2, d.y + 20, { steps: 8 });
+    await page.mouse.up();
+    await expect.poll(() => writes.length, { timeout: 10_000 }).toBe(1);
+    asked = await page.evaluate(() => !!window.__asked);
+    expect(asked).toBe(false);
+    expect(writes[0].funded_amount).toBeUndefined();
+  });
+});

@@ -845,6 +845,7 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
 <!-- Live file only. Missing fields stay a dash. Never a sample person. -->
 <script defer src="data.js"></script>
 <script src="proxy-apply.js"></script>
+<script src="money-input.js"></script>
 <script>
 /* FH-CCP-BEGIN
    THE TWO DECISIONS ON THIS SCREEN THAT CAN QUIETLY BECOME A LIE, kept pure
@@ -2339,21 +2340,57 @@ document.addEventListener("DOMContentLoaded", function () {
           if (m.id) play.setAttribute("data-lender-id", m.id);
           play.style.cssText = "flex:1;min-width:140px;font-size:var(--fs-caption);padding:4px 6px";
           playRow.appendChild(play);
+
+          /* HOW MUCH the bank approved. Until this box existed a "Bank yes"
+             recorded only that a bank said yes, never for how much, so
+             applications.approved_amount stayed empty — and that column is what
+             the Funded move on the Pipeline board reads back to suggest the
+             funded amount (src/funding/card-stacking-rounds.mjs
+             sumApprovedApplications). Dollars, matching the numeric(14,2)
+             column. Only "Bank yes" sends it; a denial has no approved amount. */
+          var amt = document.createElement("input");
+          amt.type = "text";
+          amt.inputMode = "decimal";
+          amt.placeholder = "Approved $";
+          if (m.id) amt.setAttribute("data-amount-lender-id", m.id);
+          amt.style.cssText = "width:110px;font-size:var(--fs-caption);padding:4px 6px";
+          playRow.appendChild(amt);
+
           function logBank(status) {
+            var payload = {
+              client_id: clientId,
+              lender_id: m.id,
+              status: status,
+              play_name: play.value || ""
+            };
+            /* A yes with no dollars is the deadlock this box exists to clear,
+               so refuse it here rather than saving an approval worth nothing.
+               Blank never becomes 0 — a zero would say the bank approved
+               nothing, and unknown is not nothing. */
+            if (status === "Approved") {
+              if (!window.FHMoneyInput || !window.FHMoneyInput.parseAmount) {
+                statusEl.textContent = "The amount box could not load. Nothing was saved.";
+                return Promise.resolve();
+              }
+              var parsed = window.FHMoneyInput.parseAmount(amt.value);
+              if (!parsed.ok) {
+                statusEl.textContent = parsed.message;
+                amt.focus();
+                return Promise.resolve();
+              }
+              payload.approved_amount = parsed.dollars;
+            }
             var h = { accept: "application/json", "content-type": "application/json" };
             if (t) h.authorization = "Bearer " + t;
             return fetch("/api/applications", {
               method: "POST",
               headers: h,
-              body: JSON.stringify({
-                client_id: clientId,
-                lender_id: m.id,
-                status: status,
-                play_name: play.value || ""
-              })
+              body: JSON.stringify(payload)
             }).then(function (r) { return r.json(); }).then(function (res) {
               statusEl.textContent = (res && res.ok)
-                ? ((status === "Approved" ? "Bank yes" : "Bank no") + (play.value ? (" · " + play.value) : "") + " saved.")
+                ? ((status === "Approved" ? "Bank yes" : "Bank no")
+                    + (payload.approved_amount ? (" · $" + payload.approved_amount) : "")
+                    + (play.value ? (" · " + play.value) : "") + " saved.")
                 : ((res && (res.message || res.error)) || "Could not save bank yes/no.");
             }).catch(function () {
               statusEl.textContent = "Could not save bank yes/no.";

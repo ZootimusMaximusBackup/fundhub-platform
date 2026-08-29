@@ -69,7 +69,10 @@ export default async function handler(req, res, deps = {}) {
         status: body.status,
         playName,
         staff,
-        notes: body.notes || null
+        notes: body.notes || null,
+        // How much the bank approved, in dollars. Absent stays absent —
+        // logBankDecision never writes a 0 for an amount nobody gave.
+        approvedAmount: body.approved_amount ?? body.approvedAmount ?? null
       });
       return res.status(200).json({ ok: true, application });
     }

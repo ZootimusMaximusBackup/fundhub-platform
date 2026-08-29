@@ -802,6 +802,49 @@ function restore(){
   });
 }
 
+/* ---- the Funded column is the one move that must carry money ----------------
+   src/workflows/cards.mjs refuses a move onto Funded that has no dollars on it,
+   because funding_rounds.funded_amount is what the success fee is billed from
+   (docs/CLOSEOUT-FEE-BASIS.md). Until this box existed nobody could answer that
+   question, so every drag to Funded bounced and no client was ever billed.
+
+   Blank, Cancel, or a word all ABANDON the move. None of them sends a zero — a
+   zero would be a claim that nothing funded, and "I don't know yet" is not
+   nothing. FHMoneyInput.parseAmount is the shared rule (public/app/money-input.js);
+   it hands back a fixed 2dp DOLLAR string, which is the unit
+   funding_rounds.funded_amount stores. */
+var CARD_STACKING_KEY = 'funding_card_stacking';
+var FUNDED_ASK_TRIES = 3;
+var NO_AMOUNT = 'no funded amount was entered, so nothing was saved.';
+
+function askFundedAmount(card){
+  if(!window.FHMoneyInput || !window.FHMoneyInput.parseAmount){
+    // Fail closed. Never guess an amount just because the helper is missing.
+    return { ok:false, message:'the amount box could not load, so nothing was saved.' };
+  }
+  /* Deliberately NOT prefilled from the card. The number on the card is the
+     column's estimate ("est."), and offering it here invites someone to press
+     OK and record an estimate as the amount that actually funded. A wrong
+     number that looks right is worse than making them type it. */
+  var prefill = '';
+  for(var i=0;i<FUNDED_ASK_TRIES;i++){
+    var raw = window.prompt(
+      'How much actually FUNDED for ' + nameOf(card) + '?\n\n' +
+      'This is the money that reached the account, not the approved amount.\n' +
+      'Dollars, like 45000 or 45,000.50.\n\n' +
+      'Leave it empty to cancel. Empty is not zero.',
+      prefill
+    );
+    if(raw === null) return { ok:false, message:NO_AMOUNT };
+    var parsed = window.FHMoneyInput.parseAmount(raw);
+    if(parsed.ok) return parsed;
+    if(parsed.reason === 'blank') return { ok:false, message:NO_AMOUNT };
+    alert(parsed.message);
+    prefill = raw;
+  }
+  return { ok:false, message:NO_AMOUNT };
+}
+
 function persistCardMove(card, pipelineKey, stageKey, onFail, onOk){
   if(typeof FHData === 'undefined' || !FHData.write){
     if(onFail) onFail('data layer not loaded');
@@ -817,17 +860,27 @@ function persistCardMove(card, pipelineKey, stageKey, onFail, onOk){
     if(onFail) onFail('missing stage');
     return;
   }
-  card.classList.add('saving');
   // The rail this card is leaving. A cross-rail MOVE hands the client over —
   // the old rail must not keep an open card for the same person.
   var fromKey = (window.FHPipelineBoard && window.FHPipelineBoard.currentKey) || null;
-  FHData.write('/api/pipeline-cards', {
+  var body = {
     action: 'move',
     client_id: clientId,
     pipeline_key: pipelineKey,
     stage_key: stageKey,
     from_pipeline_key: (fromKey && fromKey !== pipelineKey) ? fromKey : null
-  }).then(function(res){
+  };
+  // Ask BEFORE the card shows as saving, so a cancelled box leaves no trace.
+  if(pipelineKey === CARD_STACKING_KEY && stageKey === 'funded'){
+    var asked = askFundedAmount(card);
+    if(!asked.ok){
+      if(onFail) onFail(asked.message);
+      return;
+    }
+    body.funded_amount = asked.dollars;
+  }
+  card.classList.add('saving');
+  FHData.write('/api/pipeline-cards', body).then(function(res){
     card.classList.remove('saving');
     if(!res || !res.ok){
       var msg = (res && res.error) || 'move failed';
@@ -1241,6 +1294,7 @@ restore();
      ═══════════════════════════════════════════════════════════════════════ -->
 <script defer src="data.js"></script>
 <script src="proxy-apply.js"></script>
+<script src="money-input.js"></script>
 <script>
 (function () {
   "use strict";
