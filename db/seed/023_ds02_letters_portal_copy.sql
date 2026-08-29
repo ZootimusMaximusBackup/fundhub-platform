@@ -1,8 +1,42 @@
 -- 023_ds02_letters_portal_copy.sql
 -- COMPLIANCE REVIEW REQUIRED — credit-repair messaging, customer-facing copy.
 --
--- Owner 2026-08-29: no attachments and no download links in this email. The
--- client signs in to their portal.
+-- Owner 2026-08-29: no attachments and no per-document download links in this
+-- email. The client signs in to their portal.
+--
+-- Owner 2026-08-29, second call: PUT THE PORTAL LINK IN. The sentence above
+-- said "log into your client portal" and named no address, which left the
+-- client to find it. {{portal_login_url}} now sits on its own line under it.
+-- The owner's two sentences are unchanged — not one word moved.
+--
+-- WHICH TAG, AND WHY THIS ONE. Three tags resolve to the same URL, all filled
+-- by clientContext() in src/workflows/messaging.mjs:
+--   {{portal_login_url}}            <- chosen
+--   {{CLIENT_PORTAL_URL}}
+--   {{custom_values.portal_link}}
+-- src/messaging/merge-tags-registry.mjs is what the template editor checks a
+-- save against, and it is the tie-breaker. Only portal_login_url is classified
+-- "resolvable" and listed in AVAILABLE_TAGS. CLIENT_PORTAL_URL is warn-only and
+-- the editor tells a person it "will send as blank". custom_values.* is
+-- classified UNKNOWN, and classifyChange() BLOCKS an unknown tag that a save
+-- introduces — so writing custom_values.portal_link here would mean no staff
+-- member could ever save an edit to this template again without deleting it
+-- first. (custom_values.booking_link further down is grandfathered: it was in
+-- the stored copy already, so the editor warns instead of refusing.)
+--
+-- NO ANCHOR TAG. This body is plain text. src/messaging/providers/resend.mjs
+-- only sends html when the body matches <!DOCTYPE html|<html|<table, so an <a>
+-- here would reach the client as visible angle brackets. A bare URL on its own
+-- line is what mail clients auto-link, and it is the same shape the
+-- booking_link line below already uses.
+--
+-- WHERE IT LANDS THE CLIENT. /portal-login.html?email=<theirs> — the portal
+-- sign-in page with their address pre-filled. They press the button, get a
+-- one-time sign-in link by email, and that lands on /app/client-portal.html.
+-- Documents are inside the closed "Account & history" drawer on that page,
+-- third tab. There is no deep link to the Documents tab and no token in this
+-- email, so this is NOT one click to the letters. It is the furthest any
+-- existing mechanism reaches without new code.
 --
 -- WHY A NEW FILE AND NOT AN EDIT. The copy this replaces lives in
 -- db/seed/015_live_template_backfill.sql, which is already applied on live.
@@ -37,6 +71,8 @@ SELECT
   $fh023$Hey {{contact.first_name}},
 
 Your correction letters are ready. Log into your client portal to view and download them.
+
+{{portal_login_url}}
 
 These aren't templates. They were generated off your actual report: the specific items we identified, addressed to the specific bureaus reporting them, in the order that makes sense to work them.
 
