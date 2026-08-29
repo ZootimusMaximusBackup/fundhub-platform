@@ -97,6 +97,70 @@ describe("persistDiyPackageFiles", () => {
     assert.equal(out.skipped, "missing_args");
     assert.equal(out.stored.length, 0);
   });
+
+  /* The repair letter pack (../../underwrite/letter-pack.mjs) is the same kind
+     of deliverable through a different builder, and its files are shaped
+     `{ filename, contentType, content, type }`. The exact manifest below is the
+     one ../../underwrite/output-baseline.test.mjs pins. */
+  it("files the repair letter pack by its own type, not by its filename", async () => {
+    const db = makeFakeDb();
+    const store = createStore({ provider: memoryProvider() });
+    const pdf = Buffer.from("%PDF-1.4 test");
+    const out = await persistDiyPackageFiles(db, store, {
+      orgId: "org-1",
+      clientId: "client-1",
+      files: [
+        { filename: "ex_round1.pdf", contentType: "application/pdf", content: pdf, type: "dispute", bureau: "experian" },
+        { filename: "06-complaints-CONDITIONAL/COVER.txt", contentType: "text/plain", content: Buffer.from("DO NOT FILE WITH ROUND 1") },
+        { filename: "06-complaints-CONDITIONAL/CFPB-Complaint.pdf", contentType: "application/pdf", content: pdf, type: "cfpb_complaint" },
+        { filename: "06-complaints-CONDITIONAL/State-Attorney-General-Complaint.pdf", contentType: "application/pdf", content: pdf, type: "state_ag_complaint" }
+      ],
+      sourceEventId: "evt-repair",
+      pack: "repair_letter_pack"
+    });
+
+    assert.equal(out.skipped, null);
+    assert.deepEqual(out.stored.map((s) => s.subtype), [
+      "metro2_dispute_letter_pack",
+      "cfpb_complaint",
+      // The state AG complaint's filename contains no "state-ag-complaint" to
+      // match on. Before the type was read, this was filed as a dispute letter.
+      "state_ag_complaint"
+    ]);
+    assert.equal(out.stored.length, 3, "the text cover sheet must not be stored as a PDF");
+  });
+
+  it("never stores a text cover sheet, even when its bytes arrive as a Buffer", async () => {
+    const db = makeFakeDb();
+    const store = createStore({ provider: memoryProvider() });
+    const out = await persistDiyPackageFiles(db, store, {
+      orgId: "org-1",
+      clientId: "client-1",
+      files: [
+        { filename: "cover.txt", contentType: "text/plain", content: Buffer.from("read me") },
+        { path: "08-round-tracker.pdf.txt", content: Buffer.from("tracker") }
+      ]
+    });
+    assert.deepEqual(out.stored, []);
+    assert.equal(db._documents.length, 0);
+  });
+
+  it("a repair summary keeps its own document type instead of posing as a dispute letter", async () => {
+    const db = makeFakeDb();
+    const store = createStore({ provider: memoryProvider() });
+    const out = await persistDiyPackageFiles(db, store, {
+      orgId: "org-1",
+      clientId: "client-1",
+      files: [{
+        filename: "Optimization-Plan-Summary.pdf",
+        contentType: "application/pdf",
+        content: Buffer.from("%PDF-1.4 plan"),
+        type: "repair_plan_summary"
+      }]
+    });
+    assert.equal(out.stored[0].subtype, "repair_plan_summary");
+    assert.match(db._documents[0].title, /Optimization Plan Summary/);
+  });
 });
 
 describe("deliverDiyPackageInRepo", () => {
