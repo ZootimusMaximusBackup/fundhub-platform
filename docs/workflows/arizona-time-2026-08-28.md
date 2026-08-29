@@ -145,115 +145,129 @@ connecting as the owner rather than as `fundhub_app`.
 
 ## Visual proof — 2026-08-28
 
-Run by a second thread against the live site. **Nothing here was written by hand: every box in
-every picture comes from the browser's own measurement of that element, in the same browser
-that took the shot.**
+Run by a second thread. **This change went live while it was being measured**, so what follows
+is measured on fundhub.ai itself, not on a stand-in. Nothing here was drawn by hand: every red
+box in every picture comes from the browser's own measurement of that element, in the same
+browser that took the shot.
 
-**Short version.** The clock itself works. It is on all fourteen screens that had none, at all
-three window sizes, and it reads Arizona time. Four things are wrong, and one of them stops
-this branch from shipping at all.
+**Short version.** The clock works. It is on all fourteen screens that had none, at 1920, 1440
+and 1024, and it reads Arizona time. Three things are wrong, and all three are on the live site
+right now.
 
-### The four problems, worst first
+### The three problems, worst first
 
-**1. This branch will not merge. `public/app/shell.js` conflicts with `main`.**
-While this work sat on the branch, `main` added a staff photo button to the account bar — in
-the exact same spot in the same file where the clock was added. Git cannot combine them on its
-own. Somebody has to open the file and keep both. It is a small, mechanical fix (delete three
-marker lines, add one closing bracket), but until it is done nothing here reaches the live
-site. Two other files conflict as well: `docs/journeys/CHANGELOG.md` and
-`src/workflows/index.test.mjs`.
+**1. The account bar — the one with Sign out in it — now drops on top of the page.**
 
-*Because of that, everything below was measured twice: once on the branch as it stands, and
-once on a merged copy — `main` plus this branch with that conflict resolved. The merged copy
-is what would actually go live, so that is the one the results below report.*
+The clock does not cover the Search box, the LIVE pill or the account bar. Measured overlap is
+**zero pixels, every screen, every width**. The problem is different: the top bar is a single
+row that wraps when it runs out of room. Adding about 200px of clock to it pushes the account
+bar onto a second line — and that second line falls *outside* the top bar's box, onto whatever
+the page had drawn there.
 
-**2. Two screens got a clock that this file says they did not get.**
-The file says the client portal and the consent screen were left alone. They were not. The
-rule in the code checks *who is looking*, not *which screen they are on*: it skips the clock
-only when the viewer is a client. The consent screen is only ever opened by staff, so it
-always gets a clock. The client portal gets one too whenever the owner opens it — which is a
-documented thing owners do. Pictures 3 and 4.
+| screen | width | account bar lands on (clock OFF) | account bar lands on (clock ON) | top bar height |
+|---|---|---|---|---|
+| affiliate | 1440 | nothing — still inside the top bar | div.lb "YOUR REFERRAL LINK" | 57px → 57px, bar on line 1 → 2 |
+| agent-editor | 1920 | nothing — still inside the top bar | nothing — still inside the top bar | 75px → 133px, bar on line 1 → 2 |
+| brand-studio | 1440 | nothing — still inside the top bar | div.stat "BS-00 / DOMAIN—not connected" | 57px → 57px, bar on line 1 → 2 |
+| company-brain | 1440 | nothing — still inside the top bar | div.convo-hd "☰" | 57px → 57px, bar on line 1 → 2 |
+| contracts | 1440 | nothing — still inside the top bar | div.card-hd "How this works" | 57px → 57px, bar on line 1 → 2 |
+| creative-factory | 1920 | nothing — still inside the top bar | div.stat "JOBS IN FLIGHT00 running · 0 queued" | 57px → 57px, bar on line 1 → 2 |
+| products-commissions | 1920 | nothing — still inside the top bar | nothing — still inside the top bar | 75px → 133px, bar on line 1 → 2 |
+| products-commissions | 1024 | nothing — still inside the top bar | nothing — still inside the top bar | 131px → 189px, bar on line 2 → 3 |
+| lenders | 1440 | nothing — still inside the top bar | nothing — still inside the top bar | 75px → 111px |
+| consent-capture | 1440 | nothing — still inside the top bar | div.cc-wrap "← Back to Client Control Panel" | 57px → 57px, bar on line 1 → 2 |
+
+Read the last column as "how tall the top bar is". Where it grows, everything below it moves
+down. Where the bar drops to a new line, whatever is named in the fourth column is underneath
+it. Eight screens; everything not listed here is pixel-identical with the clock on and off.
+
+This is not guesswork about which element. Each one is whatever the browser reports directly
+underneath the middle of the account bar. Pictures 10a, 10b, 11, 12.
+
+**2. Two screens got a clock this file says they did not get.**
+
+The file says the client portal and the consent screen were left alone. They were not. The rule
+in the code checks *who is looking*, not *which screen they are on* — it skips the clock only
+when the viewer is a client. The consent screen is only ever opened by staff, so it always gets
+one. The client portal gets one whenever the owner opens it, which is a documented owner walk.
+Pictures 3 and 4.
 
 *Not checked:* whether a real client signing into their own portal sees a clock. The code says
-no. I could not prove it, because client accounts sign in by an emailed link, not a password,
-so the test harness cannot log in as one (the sign-in call answers 401). Marked UNVERIFIED
-rather than assumed.
+no. It could not be proved, because client accounts sign in by an emailed link rather than a
+password, so the harness cannot log in as one — the sign-in call answers 401. Marked
+**UNVERIFIED** rather than assumed.
 
-**3. `org: fundhub` is still on six screens.** This file says it "was the only place it
-appeared". That is wrong. What was removed was the grey strip along the bottom of three
-screens. The chip in the **top bar**, right next to the clock, was not touched, and neither
-were three more bottom strips. Still showing it today: **calendar, messaging, client control
-panel, ops & admin, workflows (automations), specialist (inquiry remover)**. The two galaxy
-screens also paint `ORG: fundhub` into the picture they draw, which no text search finds.
-Pictures 5 and 6.
+**3. `org: fundhub` is still on six screens.**
 
-**4. The clock takes the room the account bar needed, and the account bar drops on top of the
-page.** The clock does *not* cover the Search box, the LIVE pill or the account bar — measured
-overlap is **zero pixels on all 81 shots, at every width**. But the top bar is one row that
-wraps. Adding ~200px of clock to it pushes the account bar — the one with **Sign out** in it —
-onto a second line, and that second line falls outside the bar's own box, onto whatever the
-page drew underneath.
-
-On a 1440px laptop this is new on five screens:
-
-| screen | what the account bar now sits on top of |
-|---|---|
-| contracts (Contract templates) | the "How this works" card header |
-| affiliate | the "Your referral link" card header |
-| brand-studio | the "BS-00 / domain — not connected" status row |
-| company-brain | the chat header — "New chat", "owner", "Documents" |
-| consent-capture | "← Back to Client Control Panel" |
-
-Pictures 10a, 10b, 11. At 1024px the bar already landed on page content before this change, so
-that part is not new — but **Products & Commissions grows from two lines to three, 131px to
-189px**, which pushes the whole screen down. Pictures 9a, 9b. Lenders grows from one line to
-two at 1440 (75px to 111px).
+This file says it "was the only place it appeared". That is wrong. What was removed was the
+grey strip along the bottom of three screens. The chip in the **top bar**, sitting right next
+to the clock, was never touched, and neither were three more bottom strips. Still showing it on
+the live site today: **calendar, messaging, client control panel, ops & admin, workflows
+(automations), specialist (inquiry remover)**. The two galaxy screens also paint
+`ORG: fundhub` into the picture they draw, where no text search finds it. Pictures 5 and 6.
 
 ### What passed
 
 * **All fourteen screens that had no clock now have one** — at 1920, 1440 and 1024. Affiliate,
   agent editor, brand studio, campaigns, company brain, content, contract templates, creative
   factory, documents, finance OS, hiring, products & commissions, social studio, staff & teams.
-* **Every clock reads MST.** No screen anywhere showed EDT or EST after the change. Before the
-  change, the pipeline's hidden clock read `Fri, Aug 28, 7:10:53 PM EDT`; after, the same
-  element reads `Fri, Aug 28, 4:10:29 PM MST`. Pictures 1 and 2.
+* **Every clock reads MST.** No screen anywhere showed EDT or EST. Before the change the
+  pipeline's hidden clock read `Fri, Aug 28, 7:10:53 PM EDT`; on the live site the same
+  element now reads `Fri, Aug 28, 4:47:38 PM MST`. Pictures 1 and 2.
 * **Exactly one clock per screen.** The eleven screens that already had their own kept theirs;
-  the shell did not add a second anywhere. Counted on all 81 shots.
+  the shell added a second nowhere. Counted on all 81 live shots.
 * **The owner's own complaint is fixed.** Pipeline on a 1440px laptop showed no time at all.
   It now shows the time. Picture 2.
 * **Zero overlap.** The clock never sits on top of Search, the LIVE pill or the account bar, at
   any width, on any screen.
-* **Narrow windows drop the date and keep the time**, as intended: at 1024 the shell's own
-  clock reads `4:16:07 PM MST`. Picture 7.
-* **The clock and `main`'s new staff photo button fit in the same bar** once the conflict is
-  resolved. Picture 8.
+* **Narrow windows drop the date and keep the time**, as designed: at 1024 the shell's clock
+  reads `4:49:16 PM MST`. Picture 7.
+* **The clock and the new staff photo button share the bar** without trouble. Picture 8.
+
+### The merge conflict — real, and resolved correctly
+
+While this work sat on its branch, separate work on `main` added a staff photo button to the
+account bar, in the same place in `public/app/shell.js` that the clock went in. Git could not
+combine them: `public/app/shell.js`, `docs/journeys/CHANGELOG.md` and
+`src/workflows/index.test.mjs` all conflicted.
+
+It was resolved before this report was finished, by keeping both blocks. **Checked, not
+assumed:** the shell.js now on `main` is line-for-line identical in content to an independent
+resolution made here — only the order of the two blocks differs, and both are function
+definitions in the same wrapper, so the browser treats them the same. Both features are present
+and both are called. Picture 8 shows them side by side on the live site.
 
 ### One thing that is NOT this change's fault
 
-On the branch as it stands — without merging `main` — the account bar runs off the right edge
-of the screen on nineteen of the twenty-seven screens, by up to 886px, taking **Sign out**
-with it. That is not the clock. `main` added a CSS rule that makes a top bar holding the account bar wrap instead of
-overflow, and this branch is older than that rule. Merge `main` in and it goes away. It is
-recorded here only so nobody chases it as a clock bug.
+Measured on the branch on its own, before the merge, the account bar ran up to 886px off the
+right edge of the screen on nineteen of the twenty-seven screens, taking **Sign out** with it.
+That was not the clock: `main` had added a wrapping rule to `crm-sidebar.css` that the branch
+predated. Merging removed it, and the live site does not have it. Recorded only so nobody
+chases it as a clock bug.
 
 ### How this was checked
 
-The change is not deployed, so it could not simply be opened on fundhub.ai. Playwright served
-every `/app/` file from the branch while every `/api/` call still went to the live backend —
-the same "prove a fix before deploying" pattern as
-`docs/workflows/e2e-round-2026-08-27-evidence/hole-18/_prove.mjs`.
-
-* Signed in once as `owner@fundhub.ai`. Password read by the harness from the gitignored
-  `.env`; never printed.
+* **The live site, signed in once as `owner@fundhub.ai`.** Password read by the harness from
+  the gitignored `.env`; never printed.
 * **Read-only.** Every non-GET `/api/**` request was intercepted and answered 599. One write
   was attempted just by opening a screen — `POST /api/messages-outbound`, first seen on ops &
-  admin — and it was blocked. Nothing reached the live database.
-* 216 screenshots: 81 on the branch tree, 81 on the merged tree, 54 on the live site as it is
-  today, at 1920×1080, 1440×900 and 1024×768.
+  admin — and it was blocked. Nothing this run did reached the live database.
+* **Five passes, 378 screenshots**, at 1920×1080, 1440×900 and 1024×768:
+  * `before` — the site as it was before the change shipped (54 shots). The historical baseline.
+  * `after` — the branch's own files served in place of the deployed ones by Playwright, the
+    pattern in `docs/workflows/e2e-round-2026-08-27-evidence/hole-18/_prove.mjs` (81 shots).
+    Taken while the change was still unmerged.
+  * `merged` — `main` plus the branch with the conflict resolved here (81 shots). Taken before
+    the real merge landed; it turned out to match it.
+  * `live` — the deployed site, nothing intercepted at all (81 shots).
+  * `noclock` — **the control.** Today's live files with exactly one line switched off: the
+    call that mounts the clock (81 shots). Same tree, same backend, same browser. Every
+    difference between `live` and `noclock` is the clock and nothing else. That is where the
+    table in problem 1 comes from.
 * Two screens are opened with the test client id from the audit brief: client control panel and
   consent capture.
 
-### Screen by screen — merged tree (`main` + this branch)
+### Screen by screen — the live site
 
 | screen | clock 1920 / 1440 / 1024 | zone | clocks on page | overlaps Search / LIVE / chip | account bar off the right edge | top bar rows (live → this) | org: fundhub |
 |---|---|---|---|---|---|---|---|
@@ -287,29 +301,30 @@ the same "prove a fix before deploying" pattern as
 
 Group A = had no clock before. B = already had one. C = was supposed to have none.
 "clocks on page" counts every visible clock; 1 at every width means no duplicate was added.
-"top bar rows" compares against the live site today.
+"top bar rows" compares against the site as it was before the change.
 
 ### Where the pictures are
 
-Marked-up evidence (red boxes, numbered, with a caption legend on each image):
+Marked up with red boxes, numbered, with a caption legend on each image (CLAUDE.md §8):
 
 `docs/workflows/arizona-clock-2026-08-28-evidence/shots/`
 
 | file | what it shows |
 |---|---|
 | `01-pipeline-1440-BEFORE.png` | the owner's complaint: no time on a laptop |
-| `02-pipeline-1440-AFTER.png` | the same laptop, clock present, reads MST |
+| `02-pipeline-1440-AFTER.png` | the same laptop on the live site — clock present, reads MST |
 | `03-consent-capture-1440-FAIL.png` | a clock on the consent screen, which was meant to be left alone |
 | `04-client-portal-1440-FAIL.png` | a clock on the client portal when the owner opens it |
 | `05-calendar-1440-org-still-there.png` | `ORG: FUNDHUB` still in the calendar top bar |
 | `06-ops-admin-1440-org-still-there.png` | the same on ops & admin |
 | `07-finance-os-1024-narrow.png` | the narrow face: time only, no date, nothing overlapping |
-| `08-merged-1440-pipeline.png` | the clock and `main`'s new photo button in one bar |
+| `08-live-1440-pipeline.png` | the clock and the staff photo button in one bar |
 | `09a` / `09b-products-1024` | top bar grows from two lines to three |
-| `10a` / `10b-contracts-1440` | the account bar drops on top of the page |
+| `10a` / `10b-contracts-1440` | the account bar lands on top of the page |
 | `11-affiliate-1440-covered.png` | the same on the affiliate screen |
+| `12-creative-factory-1920-covered.png` | the same on a full 1920 monitor |
 
-Raw unmarked shots and the measurement JSON for every one of them are in `shots/_raw/`.
-The harness is `_prove.mjs`, the marker is `_apply-marks.py`, the tables come from
-`_report.mjs`. The folder is gitignored (`.gitignore:30`), so the images do not travel with
+Raw unmarked shots and the per-element measurements behind every box are in `shots/_raw/`.
+The harness is `_prove.mjs`, the marker is `_apply-marks.py`, the tables come from `_report.mjs`
+and `_delta.mjs`. The folder is gitignored (`.gitignore:30`), so the images do not travel with
 this file — they are on disk at the path above.
