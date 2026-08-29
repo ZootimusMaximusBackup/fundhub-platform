@@ -294,3 +294,131 @@ dependency. `npm run journeys` unaffected — this adds no route and no gate.
   the SQL on its `$fh023$` dollar quotes.
 * `renderTemplate` on the seed body produces a real URL, not a blank.
 * `classifyChange` on the real before/after: `ok:true`, nothing blocking.
+
+---
+
+# agent-f1b, pass 2 — send it to the portal, and make the portal catch a signed-out client
+
+**COMPLIANCE REVIEW REQUIRED** — credit-repair messaging, customer-facing copy.
+
+Branch: `fix/save-repair-letter-pdfs` (same PR #296)
+Status: `done`
+
+Owner, same day, third call: **"just send it to the portal."** Pass 1 pointed the
+link at the sign-in page, so a client who was *already signed in* still got a
+sign-in form first. Chris's two sentences are still untouched — not one word has
+moved across any of the three passes.
+
+## What the link is now
+
+```
+Your correction letters are ready. Log into your client portal to view and download them.
+
+{{portal_url}}
+```
+
+`{{portal_url}}` renders to `https://fundhub.ai/app/client-portal.html?email=<theirs>`.
+
+## A NEW tag, not a repoint
+
+| Tag | Points at | Status |
+|---|---|---|
+| `{{portal_url}}` | `/app/client-portal.html?email=…` | **new, chosen** |
+| `{{portal_login_url}}` | `/portal-login.html?email=…` | unchanged, still used by 6 other emails |
+| `{{CLIENT_PORTAL_URL}}` | alias of the sign-in page | unchanged |
+| `{{custom_values.portal_link}}` | alias of the sign-in page | unchanged, still unregistered |
+
+`portal_login_url` was **not** repointed. `db/seed/009_u02_funding_delivery_template.sql`
+and `db/migrations/253_repair_email_templates.sql` already send six other emails to
+the sign-in page; changing what that tag means would have moved all of them silently.
+
+`portal_url` was added to **both** `RESOLVABLE_TAGS` and `AVAILABLE_TAGS` in
+`src/messaging/merge-tags-registry.mjs` in the same change, so the template editor
+accepts it and offers it in its tag list. Confirmed by running `classifyChange`
+over the real before/after bodies: nothing blocking. **This is the trap from pass 1
+avoided properly** — that pass rejected `custom_values.portal_link` precisely
+because it was unregistered, and an unregistered tag would freeze this template
+against every future staff edit.
+
+## CORRECTION TO THE BRIEF — the redirect already existed
+
+The instruction said `public/app/client-portal.html` has no redirect and a signed-out
+client gets a half-dead page. **It does have one.** `public/app/shell.js` is loaded
+by that page (line 372) and its pass-2 session check already sent a signed-out
+visitor to `/portal-login.html` through `signInUrl()`.
+
+The `"You are signed out. Sign in and try again."` string at client-portal.html
+line ~2034 is the message shown when a **signature save** comes back 401 — a
+different code path, nothing to do with page load.
+
+Proven, not argued: the new test's first case ("the bounce happens at all") passes
+against the **unmodified** `shell.js`.
+
+## What was actually broken, and is now fixed
+
+The bounce **threw the `?email=` away**. So a signed-out client following the new
+portal link would have landed on an **empty** address box and had to type in the
+address the email already knew — strictly worse than the link it replaced. That is
+the half that was genuinely missing.
+
+`signInUrl()` now reads `email` off the current URL and carries it:
+
+```
+/app/client-portal.html?email=marcus%40example.com   (signed out)
+        -> /portal-login.html?email=marcus%40example.com
+```
+
+`prefillEmailFromQuery()` on that page drops it straight into the box. Carried only
+when present — a cold visit with no parameter still gets the bare page. `?next=` is
+still deliberately **not** added (unchanged): that page reads only `email` and `t`.
+
+**No new sign-in mechanism. No magic code invented.** The existing emailed-link
+flow is untouched.
+
+## Change manifest
+
+| File | Change |
+|---|---|
+| `src/workflows/messaging.mjs` | `clientContext()` gains `portalUrl` and exposes it as `portal_url`. `portal_login_url` and `CLIENT_PORTAL_URL` untouched. |
+| `src/messaging/merge-tags-registry.mjs` | `portal_url` added to `RESOLVABLE_TAGS` and `AVAILABLE_TAGS`. |
+| `public/app/shell.js` | `signInUrl()` carries `?email=` into the portal sign-in bounce. Only the portal branch changed; the staff `/login.html` branch is untouched. |
+| `db/seed/023_ds02_letters_portal_copy.sql` | Body line `{{portal_login_url}}` → `{{portal_url}}`. Header comments record the third owner call and the tag reasoning. |
+| `fundhub-docs/sources/EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md` | Same one-line swap. Confirmed byte-identical to the seed through the real parser. |
+| `src/http/portal-signed-out-bounce.test.mjs` | **NEW.** 6 tests. |
+| `docs/journeys/CHANGELOG.md` | One line prepended (225 → 226, verified). Stray `<<<<<<< HEAD` marker from `main` left untouched. |
+
+No new page, screen, tab, menu row, route, gate, table or migration.
+`db/expected-migrations.mjs` unchanged — no `.sql` file added or renamed.
+
+## Verified
+
+**6 new tests**, executing `shell.js` against a stub browser rather than scanning it
+as text (same harness as `src/http/app-client-carry.test.mjs` — a regex would pass on
+code that never runs): signed-out goes to the CLIENT sign-in page not the staff one;
+the address is carried; an address needing encoding survives intact; no parameter in
+means no empty parameter out; the exact URL `{{portal_url}}` renders bounces
+correctly; a signed-in client is NOT bounced.
+
+**Checked both ways** — 3 of the 6 FAIL against the unmodified `shell.js` and pass
+after, so the test cannot pass vacuously.
+
+**Real browser, both paths**, against the real `public/` tree with only
+`/api/auth/session` stubbed (no database, nothing left this machine):
+
+| | Result |
+|---|---|
+| Signed **out** | `/app/client-portal.html?email=marcus%40example.com` → ends on `/portal-login.html?email=marcus%40example.com`, address box reads `marcus@example.com` |
+| Signed **in** | same URL stays on `/app/client-portal.html`, portal paints, Account & history drawer and Documents tab present |
+
+**Suite:** 7148 tests, 7138 pass, 7 fail, 3 skipped — same seven pre-existing
+failures by name as the branch baseline, none touching messaging, templates or the
+shell. Unit phase exits 1 after 499 files, so 0 `.pg.test.mjs` ran. Lint clean
+(1595 files). `npm run journeys` produced no change.
+
+## Still true, and still worth Chris knowing
+
+The link now opens the portal in one click for a signed-in client. The **letters
+themselves** are still inside the closed "Account & history" drawer, Documents tab.
+There is no deep link to that tab. One click to the portal is what was asked for and
+what shipped; one click to the letters would need a Documents deep link, which was
+not in scope.

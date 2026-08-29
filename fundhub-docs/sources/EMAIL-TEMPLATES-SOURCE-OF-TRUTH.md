@@ -7382,7 +7382,7 @@ Hey {{contact.first_name}},
 
 Your correction letters are ready. Log into your client portal to view and download them.
 
-{{portal_login_url}}
+{{portal_url}}
 
 These aren't templates. They were generated off your actual report: the specific items we identified, addressed to the specific bureaus reporting them, in the order that makes sense to work them.
 
