@@ -45,7 +45,7 @@ import { db } from "../src/db.mjs";
 import { requirePrincipal } from "../src/http/middleware/requirePrincipal.mjs";
 import { ROLE_SETS, requireRole, isUuid } from "../src/http/read-api.mjs";
 import { getDocument } from "../src/documents/retrieve.mjs";
-import { baseUrlFromRequest, DEFAULT_TTL_SECONDS } from "../src/documents/signed-url.mjs";
+import { DEFAULT_TTL_SECONDS } from "../src/documents/signed-url.mjs";
 import { safeError } from "../src/http/health.mjs";
 
 /* Employees who may open a saved file.
@@ -109,10 +109,19 @@ export default async function handler(req, res) {
        reaching another company's document. src/http/read-api.mjs:150-153 records
        the decision to leave scoping to each endpoint's own SQL; ten endpoints
        then kept the comment and skipped the clause. This is the clause. */
+    /* NO baseUrl — the link comes back as a same-origin PATH, deliberately.
+       signDocumentUrl() returns an absolute URL only when it is handed an
+       origin, and working that origin out from request headers means guessing a
+       protocol: with no x-forwarded-proto it has to assume https, which is right
+       behind Netlify and wrong against a plain-http dev server, where the link
+       then fails to load at all. This link is opened by a browser that is
+       already on this origin, so it never needs one. Absolute URLs are for links
+       that LEAVE the page — an email — and that caller passes its own baseUrl
+       (see baseUrlFromRequest in src/documents/signed-url.mjs). */
     const document = await getDocument(db, {
       orgId,
       documentId,
-      sign: { ttlSeconds: DEFAULT_TTL_SECONDS, baseUrl: baseUrlFromRequest(req) }
+      sign: { ttlSeconds: DEFAULT_TTL_SECONDS }
     });
     if (!document) return GONE(res);
 

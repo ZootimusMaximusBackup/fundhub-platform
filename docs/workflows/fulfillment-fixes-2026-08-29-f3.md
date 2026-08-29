@@ -72,7 +72,7 @@ do not undo that; add a separate, properly-gated way to fetch the bytes.
 | `src/pulse/registry.mjs` | `documents-download` added to `API_KEYS`. |
 | `public/app/documents.html` | `dlCell()`, `ACT.download`, `data-dl` branch in the existing delegated listener, `file:` on the row model. |
 | `public/app/data.js` | **New helper** `FHData.documentDownload(id)`. |
-| `src/http/documents-download.pg.test.mjs` | **NEW** — 26 tests covering both surfaces. |
+| `src/http/documents-download.pg.test.mjs` | **NEW** — 27 tests covering both surfaces. |
 | `src/http/simplify-implementation.test.mjs` | One assertion updated to the new call shape — **strengthened, not weakened** (5 params pinned instead of 2). |
 | `docs/journeys/*-actual.md` | Regenerated (`npm run journeys`). |
 | `docs/journeys/CHANGELOG.md` | One line appended. 223 → 224 lines, checked. |
@@ -120,6 +120,12 @@ do not undo that; add a separate, properly-gated way to fetch the bytes.
   `MAX_TTL_SECONDS`; that is for a link inside an email that has to survive a
   weekend, not for a page the reader already has open.
 * **Nothing is logged** — no filename, no storage key, no URL.
+* **Both links are same-origin PATHS, not absolute URLs.** Deriving an origin
+  from request headers means guessing a protocol, and with no
+  `x-forwarded-proto` the helper has to assume https — right behind Netlify,
+  wrong against a plain-http dev server, where the link then will not load at
+  all. Found by the Playwright run, which failed on exactly that before the
+  change. A browser already on the origin needs none. Pinned by a test.
 * **`storage_key` never leaves.** Never selected, deleted again by
   `shapeDocument`, and asserted absent from the whole serialized body.
 * **Both answers are narrowed by an explicit allow-list.** `getDocument()` and
@@ -170,10 +176,15 @@ Three things to hold onto:
 * `npx tsc --noEmit` — exit 0 (note: no tsconfig include set, so this checks
   very little; not a real gate in this repo).
 * `npm test` — see the count and the honest caveat in the report.
-* `src/http/documents-download.pg.test.mjs` — **26/26 pass** against a scratch
+* `src/http/documents-download.pg.test.mjs` — **27/27 pass** against a scratch
   Postgres 16 (`fh_f3_dl`, 216 migrations applied to an empty database).
-* Playwright — staff desk and client portal driven in a real browser against a
-  local dev server on the scratch database.
+* Playwright — **5/5 browser checks pass**. Staff desk and client portal driven
+  in a real browser (Chromium) against a local dev server on the scratch
+  database: the Download button is drawn on a real row, clicking it opens a
+  signed link, and that link returns the exact saved PDF; the portal's
+  Documents tab renders a real link and it returns the same bytes.
+  Screenshots (unannotated, so NOT fix-proof evidence under CLAUDE.md §8) are
+  in this session's scratchpad, not the repo — `*-evidence/` is gitignored.
 
 ## Findings — reported, not fixed (out of scope)
 

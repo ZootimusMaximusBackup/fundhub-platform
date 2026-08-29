@@ -10,11 +10,7 @@ import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs
 import { ROLE_SETS, requireRole, isUuid, redact } from "../../src/http/read-api.mjs";
 import { safeError } from "../../src/http/health.mjs";
 import { listClientLibrary } from "../../src/documents/retrieve.mjs";
-import {
-  secretFromEnv,
-  baseUrlFromRequest,
-  DEFAULT_TTL_SECONDS
-} from "../../src/documents/signed-url.mjs";
+import { secretFromEnv, DEFAULT_TTL_SECONDS } from "../../src/documents/signed-url.mjs";
 import {
   formatPrequalUsd,
   portalCreditScores,
@@ -82,11 +78,18 @@ export default async function handler(req, res) {
      switch to the Documents tab, then click. Anything shorter starts expiring
      links under a client who is simply reading. Deliberately NOT the 7-day
      MAX_TTL_SECONDS: that is for a link inside an email, which has to survive a
-     weekend; a link in a page the reader already has open does not. */
+     weekend; a link in a page the reader already has open does not.
+
+     NO baseUrl, so the link is a same-origin PATH. Working an origin out from
+     request headers means guessing a protocol — with no x-forwarded-proto it
+     has to assume https, which is right behind Netlify and wrong against a
+     plain-http dev server, where the link then will not load at all. The portal
+     renders this link inside a page already served from this origin, so a path
+     is both correct everywhere and one less thing to get wrong. */
   let signing = false;
   try {
     secretFromEnv();
-    signing = { ttlSeconds: DEFAULT_TTL_SECONDS, baseUrl: baseUrlFromRequest(req) };
+    signing = { ttlSeconds: DEFAULT_TTL_SECONDS };
   } catch {
     signing = false;               // no secret, no links — the page still loads
   }

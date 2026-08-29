@@ -351,6 +351,20 @@ describe("opening a saved document", { skip: !HAVE_DB ? "no DATABASE_URL" : fals
       "new fields reached the caller without a decision: " + extra.join(", "));
   });
 
+  test("the minted link is a same-origin path, not an absolute URL with a guessed protocol", async () => {
+    /* Deriving an origin from request headers means guessing a protocol: with no
+       x-forwarded-proto the helper has to assume https, which is right behind
+       Netlify and wrong against a plain-http dev server, where the link then
+       will not load at all. A browser already on this origin needs no origin.
+       Absolute URLs are for links that LEAVE the page — an email — and that
+       caller passes its own baseUrl. */
+    const doc = await upload(staffToken, clientId, "same-origin.pdf");
+    const body = await (await mint(staffToken, doc.id)).json();
+    assert.match(body.document.download.url, /^\/api\/documents\//,
+      "the link carries an origin this endpoint had to guess");
+    assert.equal(body.document.download.url, body.document.download.path);
+  });
+
   test("the response is marked private and uncacheable", async () => {
     const doc = await upload(staffToken, clientId, "no-cache.pdf");
     const r = await mint(staffToken, doc.id);
