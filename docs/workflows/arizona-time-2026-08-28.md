@@ -175,3 +175,43 @@ because it used single quotes.
 Found by checking the deployed site rather than the source tree: the live
 `pipeline.html` was serving `America/Los_Angeles` next to `America/Phoenix` on
 the same page.
+
+## Three defects the visual proof found (same day)
+
+Screenshotting the deployed site found three things the source diff did not.
+
+**1. `org: fundhub` was still on six screens, in the top bar.** The first pass
+removed three lowercase `<span>org: fundhub</span>` from *footer* strips and
+recorded "it was the only place it appeared." That was wrong. A
+`<div class="org-pill">Org: Fundhub</div>` sits inside `.topbar-right`,
+immediately before the clock, on automations, calendar, client-control-panel,
+inquiry-remover, messaging and ops-admin — which is the one the owner was
+actually looking at when he asked for it to go. Removed, with its CSS rule.
+
+**2. The clock landed on two customer screens.** `mountClock` gated on
+`role === "client"` — who is LOOKING, not WHICH SCREEN. Consent capture is only
+ever opened by a staff member, so the gate never fired and it got an office
+clock. Now gated on the page as well, via `CUSTOMER_SCREENS`.
+
+**3. The clock made three top bars wrap at 1024px.** Measured with the same page
+loaded twice and only the `mountClock` call switched off:
+
+| screen | 1920 | 1440 | 1024 |
+|---|---|---|---|
+| agent-editor | 0 | 0 | **+58px** |
+| products-commissions | 0 | 0 | **+58px** |
+| lenders | 0 | 0 | **+50px** |
+| affiliate, brand-studio, company-brain, contracts, creative-factory | 0 | 0 | 0 |
+
+Those three bars have already wrapped to two rows at 1024; the clock pushed them
+to three and shoved the page down under them. The hide breakpoint moved from
+900px to 1100px — where the bars start wrapping, not where the text stops
+fitting. Re-measured after: zero delta on every screen at every width.
+
+Worth recording honestly: the visual-proof run also reported content being
+covered at 1440 and 1920 on affiliate, brand-studio, company-brain, contracts
+and creative-factory. That did **not** reproduce in the measurement above, which
+was run locally against a mocked session rather than signed in against the live
+site. The 1024 growth reproduced exactly. The wider claims are neither confirmed
+nor dismissed here — they were measured a different way, and the difference is
+recorded rather than resolved.

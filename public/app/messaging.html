@@ -81,7 +81,6 @@
   .live-dot{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 60%,transparent);animation:livepulse 1.8s infinite;}
   @keyframes livepulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 55%,transparent);}70%{box-shadow:0 0 0 6px color-mix(in srgb,var(--ok) 0%,transparent);}100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 0%,transparent);}}
   .clock{font-family:var(--mono);font-size:var(--fs-caption);color:var(--dark-text);}
-  .org-pill{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.6px;color:var(--dark-text-dim);border:1px solid var(--dark-line);padding:3px 8px;border-radius:4px;}
 
   /* width:100% is what keeps .fh-maxw (UI-STANDARDS §1) honest here: main is a
      flex item, and giving it auto inline margins to centre it switches off the
@@ -432,7 +431,6 @@
       <div class="sub">Messaging</div>
     </div>
     <div class="topbar-right">
-      <div class="org-pill">Org: Fundhub</div>
       <div class="clock">—</div>
       <div class="live-pill"><span class="live-dot"></span>LIVE</div>
     </div>

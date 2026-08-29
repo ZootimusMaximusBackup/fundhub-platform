@@ -1806,6 +1806,19 @@
   var CLOCK_TZ = "America/Phoenix";
   var CLOCK_WIDE_AT = 1200;
 
+  /* Below this the clock is not shown at all.
+
+     It was 900px, chosen by eye. Measured: at 1024 the clock added 58px to the
+     agent-editor and products-commissions top bars and 50px to lenders — those
+     bars have already wrapped to two rows at that width, and the clock pushed
+     them to three, which shoves the page down under them. At 1440 and 1920 it
+     adds exactly nothing on every screen checked, measured with the same page
+     loaded twice and only this one call switched off.
+
+     So the cut-off is where the bars start wrapping, not where the text stops
+     fitting. Nobody runs the CRM in a 1024px window to read the date. */
+  var CLOCK_HIDE_AT = 1100;
+
   /* The face. Wide bars get the weekday and date the closer dashboard has
      always shown; narrow ones get the time alone, because the date is the part
      you can drop without losing the answer to "what time is it". */
@@ -1828,11 +1841,20 @@
     }
   }
 
+  /* Screens that are a CUSTOMER's view, whoever happens to be signed in.
+     An office clock belongs on a staff desk, not on the page a client reads.
+
+     This was `role === "client"` and that was the wrong question. Role is who
+     is LOOKING; these are about WHICH SCREEN. Consent capture is only ever
+     opened by a staff member, so the role test never fired and it got a clock —
+     measured on the deployed site, not guessed. The client portal has the
+     mirror-image hole: a staff member opening it to check on somebody would
+     have put a clock on a customer surface too. */
+  var CUSTOMER_SCREENS = ["client-portal.html", "consent-capture.html"];
+
   function mountClock(role) {
-    /* The portal is the client's own screen, not a staff screen. Adding an
-       office clock to it would be a change to a customer surface that nobody
-       asked for. */
     if (role === "client") return;
+    if (CUSTOMER_SCREENS.indexOf(PAGE) !== -1) return;
 
     /* Un-hide whatever the page already has, and give every clock on every
        screen one size. !important is required twice over: once to beat the
@@ -1850,7 +1872,7 @@
           "font-size:12px!important;letter-spacing:.02em;line-height:1;" +
           "white-space:nowrap;flex-shrink:0;opacity:.78;" +
         "}" +
-        "@media (max-width:900px){.clock,#clock,#fh-shell-clock{display:none!important;}}";
+        "@media (max-width:" + CLOCK_HIDE_AT + "px){.clock,#clock,#fh-shell-clock{display:none!important;}}";
       document.head.appendChild(css);
     }
 
