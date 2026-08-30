@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import {
   verifyMailgunSignature,
   classifyBankEmail,
+  _classifyFull,
   normalizeMailgunEvent,
   mapToCanonical,
   handleMailgunWebhook,
@@ -138,6 +139,178 @@ test("classifyBankEmail: NOISE — no matching keywords", () => {
 
 test("classifyBankEmail: NOISE — unsubscribe in subject", () => {
   assert.equal(classifyBankEmail("Manage your unsubscribe preferences", "Click here to opt out."), "NOISE");
+});
+
+/* ── A REJECTION READ AS AN APPROVAL ───────────────────────────────────────
+   Live bug, fixed 2026-08-29. The matcher was `lower.includes(keyword)`, and
+   the string "not approved" contains the string "approved". APPROVED is the
+   first rule in the list and the first match won, so a denial letter came out
+   of the classifier as APPROVED — which is not a label sitting in a log. It is
+   read by src/workflows/f-11-bank-email-event-router.mjs, and on APPROVED that
+   workflow moves the client's funding card into the "approved" stage and sets
+   their next action to "Prepare Next Funding Round". A client who had just been
+   turned down was recorded as funded, and the DENIED follow-up that should have
+   adjusted their plan (F-09) never ran.
+
+   Every phrasing below is one banks actually send. The five DENIED cases and
+   the reduced-amount case all returned APPROVED before the fix. */
+
+const DENIALS = [
+  "Unfortunately, you were not approved for the requested credit limit.",
+  "We are unable to approve your application at this time.",
+  "Your application has been declined.",
+  "Adverse action notice: your request was not approved.",
+  "After careful review, we have not approved your application."
+];
+
+for (const body of DENIALS) {
+  test(`classifier: DENIED — ${body}`, () => {
+    assert.equal(classifyBankEmail("Your application", body), "DENIED");
+    // Both entry points, because they used to hold two copies of this logic.
+    assert.equal(_classifyFull({ subject: "Your application", from: "lender@bank.com", body }).event_type, "DENIED");
+  });
+}
+
+const APPROVALS = [
+  "Congratulations! You've been approved for a $5,000 credit limit.",
+  "Your application is approved. Your credit limit is $12,500.",
+  "Approved — welcome aboard."
+];
+
+for (const body of APPROVALS) {
+  test(`classifier: APPROVED — ${body}`, () => {
+    assert.equal(classifyBankEmail("Your application", body), "APPROVED");
+    assert.equal(_classifyFull({ subject: "Your application", from: "lender@bank.com", body }).event_type, "APPROVED");
+  });
+}
+
+/* AN APPROVAL FOR LESS THAN WAS ASKED FOR IS A COUNTEROFFER, DELIBERATELY.
+   Both labels move the card to the same stage, so the stage is not what is at
+   stake — the task title is. APPROVED files "APPROVAL: log amount + update
+   round", which tells staff the round is done. COUNTEROFFER files "COUNTER:
+   review + log offer + next step", which tells them a person has to look at the
+   shortfall and decide what happens next. The second one is the work that
+   actually needs doing, and calling it an approval is how a client ends up
+   $3,000 short with nobody chasing the difference. */
+test("classifier: COUNTEROFFER — an approval cut down to a smaller amount", () => {
+  const body = "We approved you for a reduced amount of $2,000.";
+  assert.equal(classifyBankEmail("Your application", body), "COUNTEROFFER");
+  assert.equal(_classifyFull({ subject: "Your application", from: "lender@bank.com", body }).event_type, "COUNTEROFFER");
+});
+
+test("classifier: COUNTEROFFER — reduced approval with no counteroffer word in it", () => {
+  assert.equal(
+    classifyBankEmail("Decision", "You are approved for a lower credit limit than you requested."),
+    "COUNTEROFFER"
+  );
+});
+
+/* "reduced" ON ITS OWN IS NOT A COUNTEROFFER. It has to be a reduced AMOUNT —
+   a bank cutting your interest rate is good news, not a lesser offer. */
+test("classifier: APPROVED — a reduced rate is still an approval", () => {
+  assert.equal(
+    classifyBankEmail("Decision", "Congratulations, you are approved. Your APR has been reduced."),
+    "APPROVED"
+  );
+});
+
+// --- word boundaries: keywords must not be read out of the middle of words ---
+test("classifier: a refund is not an approval ('refunded' contained 'funded')", () => {
+  assert.notEqual(classifyBankEmail("Account notice", "Your annual fee has been refunded."), "APPROVED");
+});
+
+test("classifier: 'unapproved' is not an approval", () => {
+  assert.notEqual(
+    classifyBankEmail("Account notice", "Your application remains unapproved at this time."),
+    "APPROVED"
+  );
+});
+
+// --- negation must not swallow genuine approvals -----------------------------
+/* The negation test looks for an approval word directly after a negative, with
+   at most one filler word between them. A wider gap starts reading ordinary
+   sentences as denials, and these two are the ones that would break first. */
+test("classifier: APPROVED — 'does not affect your approved limit' is still an approval", () => {
+  assert.equal(
+    classifyBankEmail("Your application", "You are approved. This does not affect your approved limit."),
+    "APPROVED"
+  );
+});
+
+test("classifier: APPROVED — a 'do not reply' footer does not turn an approval into a denial", () => {
+  assert.equal(
+    classifyBankEmail("Your application", "Do not reply to this email. You have been approved for $10,000."),
+    "APPROVED"
+  );
+});
+
+// --- more denial phrasings ---------------------------------------------------
+test("classifier: DENIED — 'cannot approve'", () => {
+  assert.equal(classifyBankEmail("Decision", "We cannot approve your request at this time."), "DENIED");
+});
+
+test("classifier: DENIED — 'will not be approved'", () => {
+  assert.equal(classifyBankEmail("Decision", "Your application will not be approved."), "DENIED");
+});
+
+test("classifier: DENIED — 'could not fund'", () => {
+  assert.equal(classifyBankEmail("Decision", "We regret to inform you we could not fund this request."), "DENIED");
+});
+
+/* Forwarded plain-text bank mail hard-wraps. A denial whose "not approved" fell
+   across a line break was invisible to a literal single-space match. */
+test("classifier: DENIED — 'not approved' split across a line break", () => {
+  assert.equal(classifyBankEmail("Decision", "We are sorry, you were not\napproved for this product."), "DENIED");
+});
+
+// --- outcome still beats process --------------------------------------------
+/* An email that states a decision IS that decision, even when it also asks for
+   something. These passed before the fix by rule order and must keep passing:
+   the fix must not have turned the rule list into a length contest. */
+test("classifier: APPROVED — an approval that also asks for an upload", () => {
+  assert.equal(
+    classifyBankEmail("Your application", "Congratulations! Approved. Please upload your ID to activate the card."),
+    "APPROVED"
+  );
+});
+
+test("classifier: APPROVED — an approval that also says 'verify your identity'", () => {
+  assert.equal(
+    classifyBankEmail("Your application", "You are approved. Verify your identity to finish setup."),
+    "APPROVED"
+  );
+});
+
+test("classifier: DENIED — a denial that also offers an upload to appeal", () => {
+  assert.equal(
+    classifyBankEmail(
+      "Your application",
+      "Unfortunately your application was declined. You may upload additional documentation to appeal."
+    ),
+    "DENIED"
+  );
+});
+
+test("classifier: DENIED — an adverse action notice headed 'Action Required'", () => {
+  assert.equal(
+    classifyBankEmail("Your application", "Adverse Action Notice - Action Required: review the enclosed notice."),
+    "DENIED"
+  );
+});
+
+/* THE WHOLE PATH, NOT JUST THE PURE FUNCTION. classification is what
+   handleMailgunWebhook puts on the mail.response payload, and that payload is
+   what moves the card. Before the fix this emitted APPROVED. */
+test("handleMailgunWebhook: a rejection email emits DENIED, not APPROVED", async () => {
+  _resetOrgCache(); clearHandlers();
+  const seen = [];
+  on("mail.response", (e) => seen.push(e.payload.classification));
+  const body = makeBody({
+    subject: "Your application decision",
+    body: "Unfortunately, you were not approved for the requested credit limit."
+  });
+  await handleMailgunWebhook({ db: fakeDb(), body, signingKey: SIGNING_KEY });
+  assert.deepEqual(seen, ["DENIED"]);
 });
 
 // ---------------------------------------------------------------------------

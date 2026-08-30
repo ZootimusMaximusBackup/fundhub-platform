@@ -95,13 +95,109 @@ const CLASSIFICATION_RULES = [
 
 const DOLLAR_PATTERN = /\$[\d,]+(?:\.\d{2})?/;
 
-function findKeyword(text, keywords) {
+/* ── KEYWORD MATCHING — WORD BOUNDARIES, NOT RAW SUBSTRINGS ────────────────
+   FIXED 2026-08-29. This was `lower.includes(kw)`, and a plain substring test
+   reads words out of the middle of other words. Every one of these was live:
+
+     "not approved"          contained "approved"  → a denial read as APPROVED
+     "refunded"              contained "funded"    → a fee refund read as APPROVED
+     "unapproved"            contained "approved"  → APPROVED
+     "disapproved"           contained "approved"  → APPROVED
+
+   The first one is the expensive one and it is covered twice over — once here,
+   and again by the negation pass below — because a denial misread as an
+   approval moves the client's funding card into the approved stage
+   (src/workflows/f-11-bank-email-event-router.mjs).
+
+   A space inside a keyword matches ANY run of whitespace. Forwarded plain-text
+   bank mail hard-wraps, and "not\napproved" is the same phrase as
+   "not approved"; a literal single-space match would miss it and hand the
+   email straight back to the bug above. */
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const KEYWORD_REGEX_CACHE = new Map();
+function keywordRegex(kw) {
+  let re = KEYWORD_REGEX_CACHE.get(kw);
+  if (!re) {
+    re = new RegExp(`\\b${escapeRegex(kw).replace(/\s+/g, "\\s+")}\\b`, "i");
+    KEYWORD_REGEX_CACHE.set(kw, re);
+  }
+  return re;
+}
+
+/* Returns the span as well as the keyword. The span is what lets a longer,
+   more specific phrase from one rule cancel a shorter phrase from another rule
+   sitting inside it — see suppressOverlapped. */
+function findKeywordMatch(text, keywords) {
   if (!text) return null;
-  const lower = text.toLowerCase();
   for (const kw of keywords) {
-    if (lower.includes(kw)) return kw;
+    const m = keywordRegex(kw).exec(text);
+    if (m) return { keyword: kw, index: m.index, length: m[0].length };
   }
   return null;
+}
+
+/* ── WHAT THE BANK DID TO THE WORD "APPROVED" ──────────────────────────────
+   Two modifiers change the decision an email is reporting, and neither can be
+   settled by counting keywords — a denial and an approval share almost all of
+   their vocabulary. "Unfortunately, you were not approved for the requested
+   credit limit" contains the APPROVED keyword "credit limit" fair and square;
+   what makes it a denial is the word "not" in front of "approved".
+
+   So these two run BEFORE the keyword contest and remove the APPROVED matches
+   outright. The bank has stated its decision; no context word outranks it.
+
+     negated  ("not approved", "unable to approve", "cannot fund")  → DENIED
+     reduced  ("approved for a reduced amount")                     → COUNTEROFFER
+
+   The filler list between the modifier and the approval word is deliberately a
+   closed set of function words rather than `\w+`. A wider gap starts eating
+   ordinary sentences: "this does not affect your approved limit" is an approval,
+   and a two-word wildcard would read it as a denial. */
+const APPROVAL_WORD = "(?:approve|approved|approves|approving|approval|approvals|fund|funded|funding)";
+const NEGATOR = "(?:not|never|cannot|can['’]t|won['’]t|unable\\s+to|declined\\s+to|refused\\s+to|regret\\s+to)";
+const NEGATION_FILLER = "(?:be|been|being|yet|currently|able\\s+to|going\\s+to|likely\\s+to|in\\s+a\\s+position\\s+to)\\s+";
+const NEGATED_APPROVAL = new RegExp(`\\b${NEGATOR}\\s+(?:${NEGATION_FILLER})?${APPROVAL_WORD}\\b`, "i");
+
+/* "reduced" on its own is NOT enough — "you are approved, your APR has been
+   reduced" is an approval. It has to be a reduced AMOUNT. */
+const REDUCED_AMOUNT = /\b(?:reduced|lower|lowered|partial|smaller|decreased)\s+(?:\w+\s+){0,1}?(?:amount|limit|line|offer|sum|figure)\b|\bpartial\s+approval\b/i;
+const ANY_APPROVAL_WORD = new RegExp(`\\b${APPROVAL_WORD}\\b`, "i");
+
+function findModifiedApproval(subject, body) {
+  for (const source of ["subject", "body"]) {
+    const text = (source === "subject" ? subject : body) || "";
+    if (!text) continue;
+    const neg = NEGATED_APPROVAL.exec(text);
+    if (neg) {
+      return { event_type: "DENIED", source, keyword: neg[0].toLowerCase().replace(/\s+/g, " "), index: neg.index, length: neg[0].length };
+    }
+  }
+  for (const source of ["subject", "body"]) {
+    const text = (source === "subject" ? subject : body) || "";
+    if (!text || !ANY_APPROVAL_WORD.test(text)) continue;
+    const red = REDUCED_AMOUNT.exec(text);
+    if (red) {
+      return { event_type: "COUNTEROFFER", source, keyword: red[0].toLowerCase().replace(/\s+/g, " "), index: red.index, length: red[0].length };
+    }
+  }
+  return null;
+}
+
+/* A SHORTER PHRASE INSIDE A LONGER ONE IS NOT A SECOND SIGNAL — it is the same
+   words being read twice, and the more specific reading is the right one. This
+   is what makes "not approved" (DENIED) beat "approved" (APPROVED) regardless
+   of which rule is listed first, without reordering the rule list. */
+function suppressOverlapped(matches) {
+  return matches.filter((m) => !matches.some((n) =>
+    n !== m &&
+    n.source === m.source &&
+    n.length > m.length &&
+    n.index <= m.index &&
+    n.index + n.length >= m.index + m.length
+  ));
 }
 
 function isNoise(from, subject) {
@@ -116,46 +212,57 @@ function isNoise(from, subject) {
   return null;
 }
 
-// classifyBankEmail — pure, returns the classification string (event_type).
-export function classifyBankEmail(subject, body) {
-  const noiseMatch = isNoise(null, subject); // from not available to this pure fn
-  if (noiseMatch) return "NOISE";
-
-  const text = body || "";
-  const matches = [];
-
-  for (const rule of CLASSIFICATION_RULES) {
-    const subjectMatch = findKeyword(subject, rule.keywords);
-    const bodyMatch = findKeyword(text, rule.keywords);
-    if (subjectMatch || bodyMatch) {
-      matches.push({ event_type: rule.event_type });
-    }
-  }
-
-  return matches.length === 0 ? "NOISE" : matches[0].event_type;
-}
-
-// Full classifier (takes from as well, mirrors classifyEmail exactly).
+/* ONE IMPLEMENTATION, TWO ENTRY POINTS. classifyBankEmail and classifyFull used
+   to hold a byte-for-byte copy of this loop each, so the substring bug had to be
+   found and fixed twice and the two could silently drift apart. classifyFull is
+   now the only implementation; classifyBankEmail reads its event_type. The only
+   real difference was that classifyBankEmail has no From header to noise-check,
+   which is a null argument, not a second function. */
 function classifyFull({ subject, from, body }) {
   const noiseMatch = isNoise(from, subject);
   if (noiseMatch) return { event_type: "NOISE", confidence: "high", matched_rule: `noise_filter:${noiseMatch}` };
 
   const text = body || "";
-  const matches = [];
 
+  // Decided before the keyword contest, and it wins it — see findModifiedApproval.
+  const modified = findModifiedApproval(subject, text);
+
+  let matches = [];
   for (const rule of CLASSIFICATION_RULES) {
-    const subjectMatch = findKeyword(subject, rule.keywords);
-    const bodyMatch = findKeyword(text, rule.keywords);
-    if (subjectMatch || bodyMatch) {
-      const source = subjectMatch ? "subject" : "body";
-      const keyword = subjectMatch || bodyMatch;
-      let hasDollarAmount = false;
-      if (rule.dollarAmountBoost) {
-        hasDollarAmount = DOLLAR_PATTERN.test(subject || "") || DOLLAR_PATTERN.test(text);
-      }
-      matches.push({ event_type: rule.event_type, source, keyword, hasDollarAmount });
+    /* An approval word the bank negated or cut down is not an approval. Drop
+       the whole rule rather than the single keyword: the leftovers ("credit
+       limit", "approval") are the denial letter describing what it is denying. */
+    if (modified && rule.event_type === "APPROVED") continue;
+
+    let m = null;
+    if (modified && rule.event_type === modified.event_type) {
+      m = modified; // the decisive phrase, reported in place of the rule's own keyword
+    } else {
+      const subjectMatch = findKeywordMatch(subject, rule.keywords);
+      const bodyMatch = subjectMatch ? null : findKeywordMatch(text, rule.keywords);
+      const hit = subjectMatch || bodyMatch;
+      if (hit) m = { ...hit, source: subjectMatch ? "subject" : "body" };
     }
+    if (!m) continue;
+
+    let hasDollarAmount = false;
+    if (rule.dollarAmountBoost) {
+      hasDollarAmount = DOLLAR_PATTERN.test(subject || "") || DOLLAR_PATTERN.test(text);
+    }
+    matches.push({ event_type: rule.event_type, ...m, hasDollarAmount });
   }
+
+  // The decisive phrase may name a rule whose own keywords never fired —
+  // "approved for a lower credit limit" is a counteroffer with no counteroffer word in it.
+  if (modified && !matches.some((m) => m.event_type === modified.event_type)) {
+    matches.push({ event_type: modified.event_type, ...modified, hasDollarAmount: false });
+    // Back into rule order. Everything already in the list is in that order, so
+    // this only places the one row just added.
+    const rank = (t) => CLASSIFICATION_RULES.findIndex((r) => r.event_type === t);
+    matches.sort((a, b) => rank(a.event_type) - rank(b.event_type));
+  }
+
+  matches = suppressOverlapped(matches);
 
   if (matches.length === 0) return { event_type: "NOISE", confidence: "low", matched_rule: "no_keyword_match" };
 
@@ -164,6 +271,14 @@ function classifyFull({ subject, from, body }) {
   const dollarNote = best.hasDollarAmount ? "+dollar_amount" : "";
   return { event_type: best.event_type, confidence, matched_rule: `${best.source}:${best.keyword}${dollarNote}` };
 }
+
+// classifyBankEmail — pure, returns the classification string (event_type).
+export function classifyBankEmail(subject, body) {
+  return classifyFull({ subject, from: null, body }).event_type;
+}
+
+// Exported for the classifier tests only — the adapter itself calls classifyFull.
+export { classifyFull as _classifyFull };
 
 // ---------------------------------------------------------------------------
 // 3. Normalize raw Mailgun body into a flat event
