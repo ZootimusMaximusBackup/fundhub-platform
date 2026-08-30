@@ -100,6 +100,15 @@ async function clientContext(db, clientId) {
   const fullName = [c.first_name, c.last_name].filter(Boolean).join(" ") || null;
   const base = String(process.env.APP_BASE_URL || process.env.URL || "https://fundhub.ai").replace(/\/+$/, "");
   const portalLoginUrl = `${base}/portal-login.html?email=${encodeURIComponent(c.email || "")}`;
+  /* THE PORTAL ITSELF, not the sign-in page (owner-set 2026-08-29: "just send it
+     to the portal"). A client who is already signed in lands on their own file
+     and never sees a sign-in form. A signed-out one is bounced by
+     public/app/shell.js signInUrl() to /portal-login.html — and the ?email= here
+     is what it carries across, so they arrive with their address pre-filled,
+     exactly where portal_login_url used to put them. Losing that parameter
+     silently downgrades the signed-out journey, which is why signInUrl() reads
+     it rather than this URL being cleaned up. */
+  const portalUrl = `${base}/app/client-portal.html?email=${encodeURIComponent(c.email || "")}`;
   const cf = c.custom_fields || {};
   const bookingLink =
     cf.calendar_booking_link ||
@@ -122,6 +131,11 @@ async function clientContext(db, clientId) {
     calendar: { booking_link: bookingLink },
     // Used by U-02 funding delivery CTA (and any later portal buttons).
     portal_login_url: portalLoginUrl,
+    /* portal_url is the portal; portal_login_url is the sign-in page. Both are
+       kept because they are genuinely different destinations, and the older tag
+       is already in live copy (db/seed/009, db/migrations/253) — repointing it
+       would silently move six other emails. */
+    portal_url: portalUrl,
     CLIENT_PORTAL_URL: portalLoginUrl,
     custom_fields: cf,
     reschedule_link: bookingLink,

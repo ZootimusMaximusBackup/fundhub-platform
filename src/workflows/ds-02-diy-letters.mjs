@@ -22,6 +22,8 @@ import { mergeCustomFields } from "./custom-fields.mjs";
 import { createInvoice, depositKey } from "../invoices/index.mjs";
 import { createTask } from "../lib/create-task.mjs";
 import { deliverDiyPackageInRepo } from "../metro2/diy/deliver.mjs";
+import { persistDiyPackageFiles } from "../metro2/diy/persist.mjs";
+import { storeFromEnv } from "../documents/store.mjs";
 import { buildLetterPackForClient } from "../underwrite/letter-pack.mjs";
 
 export const EMAIL_TEMPLATE_KEY = "EMAIL-DS02-DIY-LETTERS-READY";
@@ -50,10 +52,10 @@ async function createInvoiceTaskOnce(db, { orgId, clientId, eventId }) {
 
 /** In-repo only — Fundhub letter-pack (gold templates + UIQ data). No external UIQ. */
 async function deliverLettersInRepo(db, {
-  clientId, orgId, identity, violationsByBureau
+  clientId, orgId, identity, violationsByBureau, store = null, sourceEventId = null
 } = {}) {
   const enginePack = await deliverDiyPackageInRepo(db, {
-    clientId, orgId, identity, violationsByBureau, seed: `${orgId}:${clientId}`
+    clientId, orgId, identity, violationsByBureau, seed: `${orgId}:${clientId}`, store
   });
   if (enginePack.delivered) return enginePack;
   if (enginePack.reason && enginePack.reason !== "no_violations") return enginePack;
@@ -66,33 +68,58 @@ async function deliverLettersInRepo(db, {
       event: "diy.package.generating"
     };
   }
+  // THE BYTES ARE THE DELIVERABLE. Until now this fallback mapped the pack down
+  // to a filename and a byte COUNT and dropped the PDFs on the floor, while the
+  // client was emailed "your correction letters are ready". The engine path
+  // above has always persisted (deliver.mjs); this one now uses the same
+  // registry through the same helper. Never report delivered without storing.
+  let persisted = { stored: [], skipped: "not_attempted" };
+  if (db && orgId && clientId) {
+    try {
+      persisted = await persistDiyPackageFiles(db, store || storeFromEnv(), {
+        orgId,
+        clientId,
+        files,
+        generatedBy: SOURCE_WORKFLOW,
+        sourceEventId: sourceEventId || `${orgId}:${clientId}`,
+        pack: "repair_letter_pack"
+      });
+    } catch (err) {
+      persisted = { stored: [], skipped: String(err && err.message || err).slice(0, 240) };
+    }
+  }
   return {
     delivered: true,
     letterCount: files.length,
     files: files.map((f) => ({
       path: f.filename || f.name || f.path,
-      bytes: f.buffer?.byteLength || f.pdf?.byteLength || f.bytes?.byteLength || 0
+      bytes: f.buffer?.byteLength || f.content?.byteLength || f.pdf?.byteLength || f.bytes?.byteLength || 0
     })),
+    documents: persisted.stored,
+    persistSkipped: persisted.skipped,
     event: "diy.package.ready",
     engineSkip: pack.engineSkip || null
   };
 }
 
 async function deliverLetters(fetchImpl, {
-  clientId, orgId, env, db, identity, violationsByBureau
+  clientId, orgId, env, db, identity, violationsByBureau, store = null, sourceEventId = null
 } = {}) {
-  return deliverLettersInRepo(db, { clientId, orgId, identity, violationsByBureau });
+  return deliverLettersInRepo(db, {
+    clientId, orgId, identity, violationsByBureau, store, sourceEventId
+  });
 }
 
 async function deliverLettersOnce(db, fetchImpl, {
-  clientId, orgId, eventId, env, identity, violationsByBureau, deliverLettersFn = deliverLetters
+  clientId, orgId, eventId, env, identity, violationsByBureau, store = null,
+  deliverLettersFn = deliverLetters
 }) {
   const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
   if (r.rows[0]?.custom_fields?.diy_delivered_event_id === eventId) {
     return { delivered: true, skipped: true };
   }
   const result = await deliverLettersFn(fetchImpl, {
-    clientId, orgId, env, db, identity, violationsByBureau
+    clientId, orgId, env, db, identity, violationsByBureau, store, sourceEventId: eventId || null
   });
   if (result.delivered) {
     await db.query(`UPDATE clients SET custom_fields = custom_fields || $2::jsonb WHERE id = $1`,
@@ -103,7 +130,7 @@ async function deliverLettersOnce(db, fetchImpl, {
 
 // handle — pure business logic. `fetchImpl` is injected (defaults to global fetch)
 // so tests can supply a fake instead of making a real network call.
-export async function handle({ event, db, step, fetchImpl = globalThis.fetch, deliverLettersFn = null }) {
+export async function handle({ event, db, step, fetchImpl = globalThis.fetch, deliverLettersFn = null, store = null }) {
   if (!isDiyProduct(event.payload?.productName ?? event.payload?.product)) {
     return { done: false, reason: "not_diy_product" };
   }
@@ -145,6 +172,7 @@ export async function handle({ event, db, step, fetchImpl = globalThis.fetch, de
     env: event.env,
     identity: event.payload?.identity,
     violationsByBureau: event.payload?.violationsByBureau,
+    store,
     deliverLettersFn: deliverLettersFn || deliverLetters
   }));
   const email = await step.run("send-email", () =>

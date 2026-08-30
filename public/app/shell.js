@@ -1145,13 +1145,33 @@
      every step, so it is not added — a parameter that does nothing reads as a
      promise the page does not keep.
 
+     BUT ?email= IS CARRIED, and that is the same rule, not an exception to it.
+     portal-login.html reads exactly two parameters and this is one of them:
+     prefillEmailFromQuery() drops it straight into the address box. Owner-set
+     2026-08-29, the DIY letters email stopped pointing at portal-login.html and
+     started pointing at the portal itself ({{portal_url}} in
+     src/workflows/messaging.mjs), so this bounce is now the ONLY thing standing
+     between a signed-out client and a sign-in form they have to fill in by
+     hand. Dropping the address here would have made the new link worse than the
+     one it replaced. Carried only when it is actually there — a cold visit with
+     no parameter still gets the bare page, exactly as before.
+
      AFFILIATES ARE NOT CLIENTS and must keep /login.html. src/auth/magic-link.mjs
      refuses any kind other than "client" as not_eligible, and affiliate accounts
      do carry a real password — routing them to the portal page would invent a
      second dead end rather than remove one. */
   function signInUrl(withNext, lastRole) {
     var staffish = lastRole && lastRole !== "client";
-    if (PAGE === "client-portal.html" && !staffish) return "/portal-login.html";
+    if (PAGE === "client-portal.html" && !staffish) {
+      var email = "";
+      try {
+        email = new URLSearchParams(location.search).get("email") || "";
+      } catch (e) { email = ""; }
+      email = String(email).trim();
+      return email
+        ? "/portal-login.html?email=" + encodeURIComponent(email)
+        : "/portal-login.html";
+    }
     return withNext ? "/login.html?next=/app/" + PAGE : "/login.html";
   }
 
