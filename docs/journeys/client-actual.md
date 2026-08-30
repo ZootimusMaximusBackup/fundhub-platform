@@ -26,7 +26,7 @@ flowchart TD
     CAN --> A_finance[Finance — 1 route]
     CAN --> A_public[public — 7 routes]
     CAN --> A_read[Reading data — 3 routes]
-    CAN --> A_top_level[Everything else — 5 routes]
+    CAN --> A_top_level[Everything else — 6 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 170 routes]
     CANT --> B_auth[Signing in and out — 5 blocked]
@@ -58,7 +58,7 @@ flowchart TD
 
 ## What they can reach
 
-**30 of 201 routes.**
+**31 of 202 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -75,6 +75,7 @@ flowchart TD
 | `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/content/welcome-video` | GET, HEAD | staff, client |
 | `/api/contracts/sign` | GET, POST | anyone |
+| `/api/documents-download` | GET | staff, client |
 | `/api/documents-upload` | POST | staff, client |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
 | `/api/finance/soft-pull` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
@@ -100,7 +101,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**170 of 201 routes.**
+**170 of 202 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

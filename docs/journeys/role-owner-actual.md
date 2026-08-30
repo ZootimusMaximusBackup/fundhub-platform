@@ -44,7 +44,7 @@ flowchart TD
     CAN --> A_repair[repair — 5 routes]
     CAN --> A_social[social — 7 routes]
     CAN --> A_staff[staff — 3 routes]
-    CAN --> A_top_level[Everything else — 37 routes]
+    CAN --> A_top_level[Everything else — 38 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 2 routes]
     CANT --> B_chat[chat — 1 blocked]
@@ -54,7 +54,7 @@ flowchart TD
 
 ## What they can reach
 
-**198 of 201 routes.**
+**199 of 202 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -125,6 +125,7 @@ flowchart TD
 | `/api/dashboard/seed` | — | staff |
 | `/api/demo/mode` | DELETE, GET, POST | owner, admin |
 | `/api/demo/simulate` | DELETE, POST | owner, admin |
+| `/api/documents-download` | GET | staff, client |
 | `/api/documents-upload` | POST | staff, client |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
 | `/api/finance/alerts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -266,7 +267,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**2 of 201 routes.**
+**2 of 202 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

@@ -255,6 +255,27 @@ window.FHData = (function () {
     commissionRules: function () { return get("/api/commission-rules"); },
     invoices:        function (p) { return this.read("invoices", p); },
     documents:       function (p) { return this.read("documents", p); },
+
+    /* GET /api/documents-download?id= → data.document.download.{url,expiresAt}
+       A FRESH link to a file that is already saved.
+
+       Not under /api/read/, so it does not go through read() above.
+
+       WHY IT IS A SEPARATE CALL AND NOT A FIELD ON documents(). A signed link is
+       a bearer credential with a clock on it: anyone holding the URL can fetch
+       the bytes until it expires, sign-in or no sign-in. Attaching one to every
+       row of a 200-row list would mint 200 live credentials to answer a question
+       nobody asked, and drop all of them into any log or cache that keeps a copy
+       of that response. This mints exactly one, when somebody clicks.
+
+       The link is short-lived on purpose (fifteen minutes, fixed server-side —
+       the query string cannot ask for longer). Open it, do not store it: a link
+       held in a variable across a long session will stop working, and the fix is
+       to call this again rather than to ask for a longer life. */
+    documentDownload: function (id) {
+      return get("/api/documents-download?id=" + encodeURIComponent(id || ""));
+    },
+
     fundingRounds:   function (p) { return this.read("funding-rounds", p); },
     affiliates:      function (p) { return this.read("affiliates", p); },
     partners:        function (p) { return this.read("partners", p); },
