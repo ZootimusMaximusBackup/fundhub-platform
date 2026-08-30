@@ -199,6 +199,7 @@ import softPullApprove from "../../api/soft-pull-approve.mjs";
 import { webHandler as inngestWeb } from "../../api/inngest.mjs";
 import documentById from "../../api/documents/[id].mjs";
 import documentsUpload from "../../api/documents-upload.mjs";
+import documentsDownload from "../../api/documents-download.mjs";
 import paymentLinks from "../../api/payment-links.mjs";
 import contracts from "../../api/contracts.mjs";
 import readContracts from "../../api/read/contracts.mjs";
@@ -748,6 +749,19 @@ export const ROUTES = {
   // signed download route, /api/documents/<uuid>), so this lives at its own
   // top-level path instead of depending on ROUTES being checked first.
   "documents-upload": documentsUpload,
+
+  // Mint a fresh signed link for an already-saved document. Named for the same
+  // reason as the line above — "documents/download" would sit under the
+  // "documents/" prefix branch and depend on lookup order, which
+  // src/http/routes.test.mjs refuses on purpose.
+  //
+  // Routed in the same commit as the handler, because the whole point of this
+  // endpoint is that the retrieval half of the documents feature was built and
+  // never connected: src/documents/retrieve.mjs's readers had zero callers, so
+  // an uploaded ID or a generated letter was openable exactly once, for fifteen
+  // minutes, in the reply to its own upload. An unrouted handler here would
+  // reproduce that failure precisely.
+  "documents-download": documentsDownload,
 
   // Consent capture — the gate in front of the route directly above. Routed in
   // the same commit as the handler, the migration and the screen, because an

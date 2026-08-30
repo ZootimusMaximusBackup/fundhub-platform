@@ -340,7 +340,14 @@ test("client portal summary ignores requested client ids and returns only sessio
   const bizRead = calls.find((call) => /FROM businesses/i.test(call.sql));
   const inquiryRead = calls.find((call) => /FROM inquiry_removal_cases/i.test(call.sql));
   assert.deepEqual(clientRead.params, [CLIENT, ORG]);
-  assert.deepEqual(documentRead.params, [ORG, CLIENT]);
+  /* The document read is now listClientLibrary() rather than a hand-written
+     SELECT, so its parameter list is longer. The property being pinned has not
+     changed and has not been relaxed: parameters 1 and 2 are the SESSION's org
+     and the SESSION's client, never the client_id the caller asked for. The
+     other three are the reader's non-filtering defaults — no kind filter, no id
+     pre-filter, expired rows still listed — which is what the old SELECT did,
+     so all five are pinned rather than only the two that used to exist. */
+  assert.deepEqual(documentRead.params, [ORG, CLIENT, null, null, true]);
   assert.deepEqual(crsRead.params, [CLIENT, ORG]);
   assert.deepEqual(bizRead.params, [CLIENT, ORG]);
   /* The inquiry-door flag is read on the SAME session-owned client, never the
