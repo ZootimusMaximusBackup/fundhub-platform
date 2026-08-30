@@ -772,6 +772,11 @@
         <div class="group-title card-title">Funding · Apply door</div>
         <div id="fh-funding-apply">
           <div id="fh-funding-apply-status" style="font-size:var(--fs-body);line-height:1.45;color:var(--text-dim)">Lenders that fit a client's file appear here. Pick a client on Pipeline to open one.</div>
+          <!-- A bank said yes and nobody has recorded how much yet. That is a
+               real, allowed state — but it has to be VISIBLE, because until the
+               dollars are in, this round cannot be billed a success fee and the
+               approval quietly rots. Hidden until there is one to report. -->
+          <div id="fh-funding-amounts-waiting" hidden style="margin-top:8px;font-size:var(--fs-body);line-height:1.45;font-weight:600;color:#92400E;background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:8px 10px"></div>
           <div id="fh-funding-apply-list" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
           <p style="margin:10px 0 0;font-size:var(--fs-caption);line-height:1.45;color:var(--text-faint)">Apply opens the bank page when a URL is on file. Apply shows the client email, not a Fundhub address.</p>
         </div>
@@ -845,6 +850,7 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
 <!-- Live file only. Missing fields stay a dash. Never a sample person. -->
 <script defer src="data.js"></script>
 <script src="proxy-apply.js"></script>
+<script src="money-input.js"></script>
 <script>
 /* FH-CCP-BEGIN
    THE TWO DECISIONS ON THIS SCREEN THAT CAN QUIETLY BECOME A LIE, kept pure
@@ -2270,7 +2276,60 @@ document.addEventListener("DOMContentLoaded", function () {
       })(new URLSearchParams(location.search));
   var statusEl = document.getElementById("fh-funding-apply-status");
   var listEl = document.getElementById("fh-funding-apply-list");
+  var waitEl = document.getElementById("fh-funding-amounts-waiting");
   if (!statusEl || !listEl) return;
+
+  /* ── APPROVAL AND AMOUNT ARE TWO SEPARATE MOMENTS ────────────────────────
+     Owner-set 2026-08-29. When a bank comes back, the fulfillment team often
+     does not know the limit yet — they have to ask the client, or wait for the
+     bank's approval email to land in this client's inbox. So a "Bank yes" with
+     an empty amount box SAVES, and applications.approved_amount keeps its NULL.
+
+     NULL IS UNKNOWN AND MUST SURVIVE. Nothing on this screen ever sends a 0 for
+     an amount nobody typed: an empty box sends no approved_amount key at all,
+     so the column is not written. A zero would be a claim that the bank
+     approved nothing, and it would flow into a success-fee invoice looking
+     perfectly legitimate (docs/CLOSEOUT-FEE-BASIS.md).
+
+     BUT AN UNKNOWN AMOUNT CANNOT BE ALLOWED TO ROT. Until the dollars are in,
+     that approval is missing from the round's lender breakdown, so the client
+     is never billed for it. So every approval still waiting on an amount is
+     marked on its own row AND counted in one sentence at the top of this block.
+
+     THE FUNDED COLUMN IS UNAFFECTED and stays strictly gated — a card still
+     cannot reach Funded without a dollar amount. Two moments, two rules. */
+  var AMOUNT_WAITING_CHIP = "Amount needed";
+
+  /* One place that decides whether a saved application is still waiting.
+     Approved, and no amount recorded. A recorded 0 is a fact, not an unknown,
+     and would not count here — but nothing in this screen can create one. */
+  function isWaitingOnAmount(app) {
+    if (!app || String(app.status || "") !== "Approved") return false;
+    var a = app.approved_amount;
+    return a === null || a === undefined || String(a).trim() === "";
+  }
+
+  /* The saved dollars, as a person should see them in the box they type into.
+     Anything unreadable comes back empty rather than guessed. */
+  function amountForBox(app) {
+    if (!app) return "";
+    var a = app.approved_amount;
+    if (a === null || a === undefined) return "";
+    var s = String(a).trim();
+    if (!/^\d+(\.\d+)?$/.test(s)) return "";
+    return s;
+  }
+
+  function paintWaiting(count) {
+    if (!waitEl) return;
+    if (!count) { waitEl.hidden = true; waitEl.textContent = ""; return; }
+    waitEl.textContent = (count === 1
+      ? "1 bank approval is still waiting on its dollar amount."
+      : count + " bank approvals are still waiting on their dollar amount.")
+      + " Type it in the Approved $ box and press Bank yes. Until then this round cannot be billed.";
+    waitEl.hidden = false;
+  }
+
   function loadMatches(readyCopy) {
     if (!clientId) {
       statusEl.textContent = "Pick a client first.";
@@ -2295,7 +2354,10 @@ document.addEventListener("DOMContentLoaded", function () {
             : "No lenders fit this client's state / inquiry profile.";
           statusEl.textContent = empty;
           listEl.innerHTML = "";
-          return empty;
+          /* No lender rows to chip, but approvals on this file can still be
+             waiting on a dollar amount — and one nobody can see is the one that
+             rots. The count sentence is painted either way. */
+          return refreshSaved().then(function () { return empty; });
         }
         statusEl.textContent = readyCopy || (n + " fit. Click Apply to verify exit IP, then open the bank URL.");
         listEl.innerHTML = "";
@@ -2339,22 +2401,89 @@ document.addEventListener("DOMContentLoaded", function () {
           if (m.id) play.setAttribute("data-lender-id", m.id);
           play.style.cssText = "flex:1;min-width:140px;font-size:var(--fs-caption);padding:4px 6px";
           playRow.appendChild(play);
+
+          /* HOW MUCH the bank approved — OPTIONAL, and filled in whenever the
+             team learns it. It is the column the Funded move on the Pipeline
+             board reads back to suggest the funded amount
+             (src/funding/card-stacking-rounds.mjs sumApprovedApplications).
+             Dollars, matching the numeric(14,2) column. Only "Bank yes" sends
+             it; a denial has no approved amount.
+
+             THIS IS ALSO WHERE AN AMOUNT IS ADDED LATER. The box is filled back
+             in from the saved approval below, so the same box that took the
+             first "Bank yes" is the box someone comes back to when the bank
+             finally says how much. Type it, press Bank yes again, and the SAME
+             application row is updated — logBankDecision finds the existing row
+             by client + lender, so there is no second approval. */
+          var amt = document.createElement("input");
+          amt.type = "text";
+          amt.inputMode = "decimal";
+          amt.placeholder = "Approved $";
+          if (m.id) amt.setAttribute("data-amount-lender-id", m.id);
+          amt.style.cssText = "width:110px;font-size:var(--fs-caption);padding:4px 6px";
+          playRow.appendChild(amt);
+
+          /* The row's own marker for "this bank said yes and we still do not
+             know for how much". Plain amber, written literally rather than from
+             the brand ramp, because a tenant's brand colours overwrite the
+             --alert/--warn/--info variables and this warning would go the same
+             blue as everything else. */
+          var needChip = document.createElement("span");
+          needChip.className = "fh-amount-needed";
+          needChip.textContent = AMOUNT_WAITING_CHIP;
+          needChip.hidden = true;
+          if (m.id) needChip.setAttribute("data-amount-needed-lender-id", m.id);
+          needChip.style.cssText = "font-size:var(--fs-caption);padding:2px 8px;border-radius:999px;"
+            + "background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;white-space:nowrap;font-weight:600";
+          playRow.appendChild(needChip);
+
           function logBank(status) {
+            var payload = {
+              client_id: clientId,
+              lender_id: m.id,
+              status: status,
+              play_name: play.value || ""
+            };
+            /* AN EMPTY BOX IS ALLOWED ON A YES. "Approved, amount unknown" is a
+               real state, so a blank box sends no approved_amount at all and the
+               column keeps its NULL. Blank is never 0.
+
+               A box with something WRONG in it still refuses, because that is a
+               typo, not an unknown — and saving a typo silently would be worse
+               than either. */
+            var typed = String(amt.value == null ? "" : amt.value).trim();
+            if (status === "Approved" && typed !== "") {
+              if (!window.FHMoneyInput || !window.FHMoneyInput.parseAmount) {
+                statusEl.textContent = "The amount box could not load. Nothing was saved.";
+                return Promise.resolve();
+              }
+              var parsed = window.FHMoneyInput.parseAmount(typed);
+              if (!parsed.ok) {
+                statusEl.textContent = parsed.message;
+                amt.focus();
+                return Promise.resolve();
+              }
+              payload.approved_amount = parsed.dollars;
+            }
             var h = { accept: "application/json", "content-type": "application/json" };
             if (t) h.authorization = "Bearer " + t;
             return fetch("/api/applications", {
               method: "POST",
               headers: h,
-              body: JSON.stringify({
-                client_id: clientId,
-                lender_id: m.id,
-                status: status,
-                play_name: play.value || ""
-              })
+              body: JSON.stringify(payload)
             }).then(function (r) { return r.json(); }).then(function (res) {
-              statusEl.textContent = (res && res.ok)
-                ? ((status === "Approved" ? "Bank yes" : "Bank no") + (play.value ? (" · " + play.value) : "") + " saved.")
-                : ((res && (res.message || res.error)) || "Could not save bank yes/no.");
+              if (res && res.ok) {
+                var waitingNow = (status === "Approved" && !payload.approved_amount);
+                needChip.hidden = !waitingNow;
+                statusEl.textContent = (status === "Approved" ? "Bank yes" : "Bank no")
+                  + (payload.approved_amount ? (" · $" + payload.approved_amount) : "")
+                  + (play.value ? (" · " + play.value) : "")
+                  + " saved."
+                  + (waitingNow ? " Add the dollar amount here as soon as the bank tells you." : "");
+                // Re-count what is still waiting across every lender on the file.
+                return refreshSaved();
+              }
+              statusEl.textContent = (res && (res.message || res.error)) || "Could not save bank yes/no.";
             }).catch(function () {
               statusEl.textContent = "Could not save bank yes/no.";
             });
@@ -2384,21 +2513,63 @@ document.addEventListener("DOMContentLoaded", function () {
           });
           document.body.appendChild(dl);
         }
-        return fetch("/api/applications?client_id=" + encodeURIComponent(clientId), { headers: headers })
-          .then(function (r) { return r.json(); })
-          .then(function (pack) {
-            var seen = {};
-            ((pack && pack.decisions) || []).forEach(function (dec) {
-              if (!dec.lender_id || !dec.play_name || seen[dec.lender_id]) return;
-              seen[dec.lender_id] = true;
-              var inp = listEl.querySelector('input[data-lender-id="' + dec.lender_id + '"]');
-              if (inp && !inp.value) inp.value = dec.play_name;
+        /* WHAT IS ALREADY SAVED ON THIS FILE, painted back onto the rows.
+           Two jobs, one read:
+             * the play name and the approved amount go back into the boxes they
+               were typed into, so the amount box is where somebody returns to
+               add a dollar figure they did not have the first time;
+             * every approval still waiting on an amount is chipped on its row
+               and counted in the sentence at the top of this block.
+           Runs on load AND after every save, so the count can never be stale. */
+        function refreshSaved() {
+          return fetch("/api/applications?client_id=" + encodeURIComponent(clientId), { headers: headers })
+            .then(function (r) { return r.json(); })
+            .then(function (pack) {
+              var seen = {};
+              ((pack && pack.decisions) || []).forEach(function (dec) {
+                if (!dec.lender_id || !dec.play_name || seen[dec.lender_id]) return;
+                seen[dec.lender_id] = true;
+                var inp = listEl.querySelector('input[data-lender-id="' + dec.lender_id + '"]');
+                if (inp && !inp.value) inp.value = dec.play_name;
+              });
+
+              /* Newest application per lender wins — listClientApplications
+                 orders by updated_at DESC, so the first row seen for a lender is
+                 the current one. */
+              var waiting = 0;
+              var done = {};
+              ((pack && pack.applications) || []).forEach(function (app) {
+                if (!app) return;
+                if (app.lender_id) {
+                  if (done[app.lender_id]) return;
+                  done[app.lender_id] = true;
+                  var box = listEl.querySelector('input[data-amount-lender-id="' + app.lender_id + '"]');
+                  var chip = listEl.querySelector('[data-amount-needed-lender-id="' + app.lender_id + '"]');
+                  var saved = amountForBox(app);
+                  // Never overwrite something a person is part-way through typing.
+                  if (box && !box.value && saved) box.value = saved;
+                  if (chip) chip.hidden = !isWaitingOnAmount(app);
+                }
+                /* Counted even with no lender on the row. An imported approval
+                   that carries only a bank name has no row here to chip, and an
+                   approval nobody can see is exactly the one that rots. */
+                if (isWaitingOnAmount(app)) waiting += 1;
+              });
+              /* Counted across the whole file, not just the lenders showing —
+                 an approval from a bank that has dropped off the match list is
+                 exactly the one that would otherwise rot unnoticed. */
+              paintWaiting(waiting);
+              return waiting;
+            })
+            .catch(function () {
+              // A read that did not arrive is not a file with nothing waiting.
+              // Leave the sentence exactly as it was rather than clearing it.
+              return null;
             });
-            return readyCopy || (n + " lenders ready.");
-          })
-          .catch(function () {
-            return readyCopy || (n + " lenders ready.");
-          });
+        }
+        return refreshSaved().then(function () {
+          return readyCopy || (n + " lenders ready.");
+        });
       })
       .catch(function () {
         statusEl.textContent = "Could not load lender matches.";
