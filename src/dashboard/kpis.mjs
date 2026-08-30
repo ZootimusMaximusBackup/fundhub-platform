@@ -34,7 +34,10 @@ export async function computeKpis(db, { orgId, period = "7d" } = {}) {
 
   const [cash, funded, booked, showed, closed, clients, spend] = await Promise.all([
     db.query(
-      `SELECT COALESCE(SUM(amount_paid), 0)::bigint AS cents
+      /* transactions.amount_paid is DOLLARS (numeric 14,2). Sum stays numeric
+         and keeps the cents; the caller converts. A ::bigint cast here would
+         truncate the cents AND label dollars as cents — a 100x understatement. */
+      `SELECT COALESCE(SUM(amount_paid), 0) AS dollars
          FROM transactions
         WHERE org_id = $1
           AND status IN ('paid','succeeded','complete','completed')
@@ -45,7 +48,7 @@ export async function computeKpis(db, { orgId, period = "7d" } = {}) {
       /* Count real funded rounds (money-chain source of truth), not clients.funded
          which can lag or stay false when rounds already landed. */
       `SELECT count(DISTINCT client_id)::int AS n,
-              COALESCE(SUM(funded_amount), 0)::bigint AS cents
+              COALESCE(SUM(funded_amount), 0) AS dollars
          FROM funding_rounds
         WHERE org_id = $1
           AND status = 'funded'
@@ -95,7 +98,8 @@ export async function computeKpis(db, { orgId, period = "7d" } = {}) {
     ).catch(() => ({ rows: [{ cents: null }] }))
   ]);
 
-  const cashCents = Number(cash.rows[0]?.cents || 0);
+  // transactions.amount_paid is dollars (numeric 14,2), not cents.
+  const cashCents = Math.round(Number(cash.rows[0]?.dollars || 0) * 100);
   const fundedN = Number(funded.rows[0]?.n || 0);
   // funding_rounds.funded_amount is dollars (numeric 14,2), not cents.
   const fundedCents = Math.round(Number(funded.rows[0]?.dollars || 0) * 100);
