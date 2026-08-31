@@ -195,3 +195,44 @@ Files added: `.claude/skills/<10 names>` — symlinks only, no content.
 Files modified: this board.
 Code, config, routes, journeys, exports, props: none touched.
 `.cursor/` : untouched.
+
+
+---
+
+## W1 — DISCOVERY PROVEN, 2026-08-31
+
+Not "expected" any more. The ten skills appeared in a live Claude Code session
+skill list minutes after the links were pushed:
+
+fundhub-agent-tester · fundhub-auditor · fundhub-builder · fundhub-fixer ·
+fundhub-orchestrator · fundhub-perf-auditor · fundhub-repo-hygiene ·
+fundhub-system-map · fundhub-ui-auditor · fundhub-version-control
+
+`.claude/workflows/avatar-builder.js` and `deep-research.js` load alongside them.
+
+The board's earlier "NOT yet proven" note is superseded. W1 is done and observed.
+
+---
+
+## Owner decision — 2026-08-31: conflict A resolved
+
+Chris, asked whether screenshot marks should be boxes or circles:
+
+> "Draw around the object in question."
+
+**The shape is not the rule. Enclosing the exact element is the rule.**
+
+Box or circle, whichever fits the thing being marked — a wide toolbar wants a
+box, a round avatar wants a circle. What is forbidden is marking *near* the
+element, marking the surrounding chrome, or pointing with an arrow alone.
+Draw around the object itself.
+
+W3 writes this into both homes so they stop disagreeing:
+- `CLAUDE.md` §8 currently says "red boxes" → becomes draw around the element.
+- `audit-screenshot-markups.mdc` currently says "numbered red circles + yellow
+  arrows" → same wording.
+
+Everything else about marks is unchanged and still required: red, numbered when
+there is more than one, legend line per mark burned into the PNG.
+
+**Conflict A is closed. No open questions remain on this batch.**
