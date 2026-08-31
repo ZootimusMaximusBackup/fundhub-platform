@@ -17,7 +17,7 @@ the audit/fix router never fires and none of the ten skills exist.
 
 | ID | Task | Owner | Status |
 |---|---|---|---|
-| W1 | Symlink the 10 `.cursor/skills/*` dirs into `.claude/skills/` | unclaimed | `pending` |
+| W1 | Symlink the 10 `.cursor/skills/*` dirs into `.claude/skills/` | Claude (this session) | `done` |
 | W2 | Conflict audit: 21 rules vs CLAUDE.md (read-only) | Claude (this session) | `done` |
 | W3 | Load the always-on rules in Claude Code without renumbering CLAUDE.md | unclaimed | `blocked` → unblocked by W2 |
 
@@ -162,3 +162,36 @@ Raised and closed the same day. Owner-set 2026-08-31: leave Grok out entirely.
 `grok-no-displays.mdc` is not to be edited, imported, or reasoned about in this
 migration. It stays exactly as it is, Cursor-only, untouched. No open question
 remains here — do not re-raise it.
+
+
+---
+
+## W1 — Skills linked (COMPLETE)
+
+`.claude/skills/` now holds 10 symlinks pointing at `../../.cursor/skills/<name>`.
+
+Verified:
+- All 10 resolve — `SKILL.md` readable through every new path.
+- Git stores all 10 as **mode 120000** (symlink), not 100644 (copy).
+  Total diff: 10 files, 10 insertions. One line per link, no content duplicated.
+- Every skill's frontmatter carries `name` and `description`, and every declared
+  `name` matches its directory. Claude Code can discover on all ten.
+- `.cursor/` is byte-for-byte unchanged. `git status --porcelain .cursor/` is empty.
+  Cursor keeps working exactly as before.
+- `npm run lint` clean (1747 files).
+
+**NOT yet proven:** Claude Code loads its skill list at session start, so this
+session cannot see the links it just made. First proof is a **fresh** Claude Code
+session in this repo — the ten `fundhub-*` skills should appear in its skill list.
+Until someone opens that session, discovery is expected, not demonstrated.
+
+**Branch also brought current with `main`** (was 53 behind). Merge was clean, no
+conflicts. Conflict surface for this batch is two paths nothing else touches:
+`.claude/skills/` (new) and this board file (new).
+
+### Change manifest — W1
+
+Files added: `.claude/skills/<10 names>` — symlinks only, no content.
+Files modified: this board.
+Code, config, routes, journeys, exports, props: none touched.
+`.cursor/` : untouched.
