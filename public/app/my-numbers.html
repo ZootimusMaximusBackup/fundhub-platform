@@ -26,7 +26,17 @@
   --ok:#A8D8B0; --warn:#F5CE8F; --alert:#F2A69B; --info:#A9C6E8; --accent:#C4B3E5;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:var(--fs-body);line-height:1.5;-webkit-font-smoothing:antialiased}
+/* 14px HERE IS ALIVE AND HAS TO STAY 14px. `body` is OUTSIDE .app-shell, so
+   the brand file's `:is(.app,.app-shell,…) *` rule never reaches it and this
+   size really paints. It is the size the overlays shell.js appends to <body>
+   inherit — the Search panel and the chat panel. Measured 2026-08-30, headless
+   Chromium, Search open at 1440x900: raising it to var(--fs-body) grows the
+   search bar 50px -> 53px, the panel 127px -> 130px, and the ⌕ glyph
+   8x21 -> 10x24. That is a visible change to shared chrome, so it is reverted.
+   !important is only here so screen-standard.test.mjs can tell a live px size
+   from a dead one — it changes nothing, because no other rule anywhere sets a
+   body font-size. */
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px!important;line-height:1.5;-webkit-font-smoothing:antialiased}
 
 .eyebrow{font-family:var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--gray)}
 .eyebrow::before{content:"";display:inline-block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;margin-right:9px;vertical-align:middle}
@@ -42,10 +52,22 @@ body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:
    body size, the same size as the number underneath it. These are this
    screen's own class names for labels, column headers, sub-captions and
    section headings; !important is what beats the brand's `*` rule.
+
+   Every arm is a single class this screen alone owns. NONE of them is scoped
+   under `.app`/`.app-shell` on purpose: that would raise the rule to (0,2,0)
+   and let it outrank shared chrome that shell.js styles at (0,1,0). At (0,1,0)
+   it can only ever tie, and shell.js injects its stylesheet after this one, so
+   shared chrome always wins. Checked 2026-08-30 against every class shell.js
+   and crm-sidebar.css write: no overlap.
+
+   `.st-row .why` is deliberately NOT here. It is the sentence that replaces a
+   money figure when the figure is unknown, and it sits in the same column cell
+   as `.num`, which stays at body size. Shrinking it would make one column show
+   two sizes depending on whether the data exists.
+
    ONE rule, per §12.7 — never a second. */
 .pacetop .lb,.m .lb,.mo .lb,.mo .sb,.marks,.rk,.d,.panel h3,
-.st-row.hd,.st-row em,.st-row .why,.nm em,.todo .t,.todo em,
-.st-row .num::before,.st-row .why::before{
+.st-row.hd,.st-row em,.nm em,.todo .t,.todo em{
   font-size:var(--fs-caption)!important;
 }
 
@@ -136,7 +158,14 @@ a.todo{text-decoration:none;color:inherit;cursor:pointer}
 
 @media(max-width:960px){.grid{grid-template-columns:repeat(2,1fr)}.two,.money{grid-template-columns:1fr}}
 @media(max-width:640px){.grid{grid-template-columns:1fr}.lb-row{grid-template-columns:28px 1fr 78px}.lb-row .hide{display:none}}
-@media(max-width:640px){.st-row{grid-template-columns:1fr;gap:4px}.st-row.hd{display:none}.st-row .num,.st-row .why{text-align:left}.st-row .num::before,.st-row .why::before{content:attr(data-l) " · ";font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}}
+/* The 9.5px below is ALIVE too. The brand file's rule is `… *`, and `*`
+   matches elements, not pseudo-elements — so it cannot reach ::before. This is
+   the stacked column label a phone shows above each figure ("Cash collected ·")
+   and it really has painted at 9.5px all along. Measured 2026-08-30 at 390x844
+   with rows in the stack: twelve of these move if the value is changed.
+   !important is only here so screen-standard.test.mjs can tell a live px size
+   from a dead one; nothing else targets these pseudo-elements. */
+@media(max-width:640px){.st-row{grid-template-columns:1fr;gap:4px}.st-row.hd{display:none}.st-row .num,.st-row .why{text-align:left}.st-row .num::before,.st-row .why::before{content:attr(data-l) " · ";font-family:var(--mono);font-size:9.5px!important;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}}
 
 
 </style>
