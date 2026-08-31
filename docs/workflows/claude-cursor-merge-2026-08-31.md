@@ -57,7 +57,7 @@ and `.claude/settings.json`. Nothing was edited.
 | `verify-scratch-only` | 22 | yes | **§12 — says so itself** | TRIM to the delta |
 | `ui-standards` | 15 | glob | **§3 says the same thing** | TRIM to the delta |
 | `audit-screenshot-markups` | 52 | glob | **§8 Annotated screenshots** | TRIM — see conflict A |
-| `grok-no-displays` | 29 | yes | n/a | **DO NOT IMPORT** — about Grok sessions, inert in Claude Code |
+| `grok-no-displays` | 29 | yes | n/a | **DO NOT IMPORT, DO NOT EDIT** — owner-set: out of scope |
 
 ### Contradictions — findings for Chris, NOT reconciled
 
@@ -116,7 +116,7 @@ Exports/props/routes/journeys touched: none.
 
 ---
 
-## Owner decision — 2026-08-31: Claude does not click; Grok does
+## Owner decision — 2026-08-31: Claude does not click, full stop
 
 **Owner-set, final.** Chris:
 
@@ -137,8 +137,9 @@ Exports/props/routes/journeys touched: none.
 
 ### Who owns the physical click pass
 
-Grok. It is automated there and cheap. Claude hands off; Claude does not
-schedule, request, or perform it.
+**Not Claude's concern.** Owner-set 2026-08-31: leave it out. Claude does not
+perform it, does not schedule it, does not ask who will, and does not mention
+it in a task report. The step simply is not in Claude's definition of done.
 
 ### This resolves conflict B
 
@@ -155,12 +156,9 @@ requirement.
 | `test-means-human-click.mdc` | Retitle/scope to Grok. Its core claim — "a green Playwright run alone does not count, the agent must click like a person" — is now **false for Claude**. Do not import as written. |
 | `live-playwright-100-before-manual.mdc` | Drop "After that score... the agent still does the human click path" and the 2026-08-25 "agent walks it" override, for Claude. The 100/100 gate itself stays. |
 
-### NEW conflict F — surfaced by this decision
+### Conflict F — WITHDRAWN
 
-`grok-no-displays.mdc` (owner law 2026-08-28) lists under **Never (Grok)**:
-
-> "Screenshots, marked-up review shots, or 'make it look right'"
-
-Grok cannot own the click-through pass and also be banned from taking
-screenshots of screens. One of the two has to give. Flagging only — not
-reconciled. Chris decides.
+Raised and closed the same day. Owner-set 2026-08-31: leave Grok out entirely.
+`grok-no-displays.mdc` is not to be edited, imported, or reasoned about in this
+migration. It stays exactly as it is, Cursor-only, untouched. No open question
+remains here — do not re-raise it.
