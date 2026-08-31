@@ -83,8 +83,12 @@ test.describe("white-label application success screen", () => {
 
     await expect(page.locator("#success-cred")).toBeHidden();
     await expect(page.locator("#success-login")).toBeHidden();
-    await expect(page.locator("#success")).not.toContainText(/first password/i);
-    await expect(page.locator("#success")).not.toContainText(/log in now/i);
+    /* useInnerText, because textContent reads hidden nodes too and the point
+       here is what a person can SEE. */
+    await expect(page.locator("#success"))
+      .not.toContainText(/first password/i, { useInnerText: true });
+    await expect(page.locator("#success"))
+      .not.toContainText(/log in now/i, { useInnerText: true });
   });
 
   test("shows the review-call steps, addressed to the email they typed", async ({ page }) => {
