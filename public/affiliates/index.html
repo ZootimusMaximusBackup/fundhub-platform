@@ -716,5 +716,30 @@
     });
   });
 </script>
+<script>
+/* Preselect the application track from ?track= in the address.
+   The white-label offer page at /partner/ links here with ?track=white_label.
+   Values match the TRACKS map in api/public/partner-apply.mjs: affiliate,
+   white_label, white-label, partner, wl. Anything else is ignored and the
+   visitor just picks a track by hand, which is the behaviour without a param. */
+(function(){
+  var ALLOWED={affiliate:'affiliate','white_label':'white_label','white-label':'white_label',
+               partner:'white_label',wl:'white_label'};
+  function go(){
+    var raw=new URLSearchParams(location.search).get('track')||'';
+    var want=ALLOWED[raw.trim().toLowerCase()];
+    if(!want) return;
+    var sel=document.getElementById('p-track');
+    if(!sel) return;
+    for(var i=0;i<sel.options.length;i++){
+      if(sel.options[i].value===want){ sel.selectedIndex=i; break; }
+    }
+    var form=document.getElementById('apply');
+    if(form&&form.scrollIntoView) form.scrollIntoView();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go);
+  else go();
+})();
+</script>
 </body>
 </html>
