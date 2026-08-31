@@ -87,4 +87,66 @@ test.describe("pipeline board", () => {
       expect(writes[0].stage_key).toBe("booked");
     }
   });
+
+  // ── the "in stage" clock ─────────────────────────────────────────────────
+  //
+  // The board prints entered_at and labels it "in stage". Until migration 271
+  // that column was stamped once when the card was created and never updated,
+  // so a card moved into Funded five minutes ago printed "20d in stage" —
+  // exactly what a card nobody had touched in twenty days printed. 271 makes
+  // the column true. These two prove the SCREEN honours it: it must read
+  // entered_at and nothing else, and the Age filter must select on that same
+  // number.
+
+  const agedStages = (enteredAt) => ({
+    ok: true,
+    pipeline: "sales",
+    total: 1,
+    stages: [
+      {
+        key: "new_lead", name: "New Lead", sort_order: 0, count: 1, amount: 0,
+        cards: [{
+          id: "card-1", client_id: CLIENT_ID, name: "Dana Whitfield",
+          owner: "Jordan Blake", entered_at: enteredAt,
+          outcome_tier: null, funded: false, amount: 3000
+        }]
+      },
+      { key: "booked", name: "Booked", sort_order: 2, count: 0, amount: 0, cards: [] }
+    ]
+  });
+
+  const agoISO = (mins) => new Date(Date.now() - mins * 60000).toISOString();
+
+  test("a card that entered its stage minutes ago prints minutes, not its age", async ({ page }) => {
+    await openScreen(page, "/app/pipeline.html", OWNER, {
+      "/api/dashboard/pipeline": agedStages(agoISO(7))
+    });
+    // Seven minutes in stage. The card may be weeks old; the board must not say so.
+    await expect(page.locator(".card .c-age")).toHaveText("7m in stage");
+  });
+
+  test("a card that has genuinely sat prints days in stage", async ({ page }) => {
+    await openScreen(page, "/app/pipeline.html", OWNER, {
+      "/api/dashboard/pipeline": agedStages(agoISO(5 * 1440))
+    });
+    await expect(page.locator(".card .c-age")).toHaveText("5d in stage");
+  });
+
+  test("'Over 3d in stage' keeps a stalled card and drops a just-moved one", async ({ page }) => {
+    // Stalled: last moved five days ago. Survives the filter.
+    await openScreen(page, "/app/pipeline.html", OWNER, {
+      "/api/dashboard/pipeline": agedStages(agoISO(5 * 1440))
+    });
+    await page.locator("#filterBtn").click();
+    await page.locator("#fAge").selectOption("4320");
+    await expect(page.locator(".card[data-client-id]")).toBeVisible();
+
+    // Same card, moved seven minutes ago. Filtered out — however old it is.
+    await openScreen(page, "/app/pipeline.html", OWNER, {
+      "/api/dashboard/pipeline": agedStages(agoISO(7))
+    });
+    await page.locator("#filterBtn").click();
+    await page.locator("#fAge").selectOption("4320");
+    await expect(page.locator(".card[data-client-id]")).toBeHidden();
+  });
 });
