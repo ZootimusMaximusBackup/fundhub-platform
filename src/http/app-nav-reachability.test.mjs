@@ -189,6 +189,10 @@ describe("app shell — the lists this test reads", () => {
         "journeys.html",
         "ops-admin.html",
         "partner-galaxy.html",
+        /* The partner classroom (docs/specs/W7-curriculum.md). Like
+           partner-galaxy.html it is a principal screen no employee sidebar
+           offers; unlike it, there is no row in the markup at all. */
+        "partner-training.html",
         "social-studio.html"
       ].sort()
     );

@@ -2,9 +2,29 @@
 // are written or read.
 //
 // A row here is a REQUEST to enroll, nothing more. It is not a payment, not a
-// purchase and not access to any course. Nothing in this repo grants a student
-// portal today: there is no lessons table, no player, no entitlement check.
-// Do not add code that implies otherwise.
+// purchase and not access to any course. Do not add code that implies otherwise.
+//
+// WHAT CHANGED, AND WHAT DID NOT (2026-08-31). This header used to end "Nothing
+// in this repo grants a student portal today: there is no lessons table, no
+// player, no entitlement check." Two of those three are now out of date, and the
+// honest correction matters more than the tidy sentence:
+//
+//   * There IS a curriculum, a progress record and an entitlement check — for
+//     the WHITE-LABEL PARTNER program only. db/migrations/284_training_delivery.sql
+//     and src/training/ carry the thirteen modules and four gates of
+//     docs/specs/W7-curriculum.md, which is what the $10,000 partner entry buys
+//     (docs/specs/W0-decisions.md). Access is decided in
+//     src/training/entitlement.mjs and the screen is public/app/partner-training.html.
+//   * There is still NO PLAYER anywhere — no video, no quiz engine, no
+//     certificate. W7's training is a live cohort; the record is of attendance
+//     and gates, not of content watched.
+//
+// THAT IS A DIFFERENT PRODUCT FROM THIS FILE, and the two must not be wired
+// together. `education_enrollments` is the PUBLIC education funnel at
+// /education/ — 'credit-mastery' and 'capital-strategy', sold to anybody, with
+// no partner and no gates. src/training/ is keyed on `partners.id`. An
+// enrollment request here grants nothing there, and nothing here should start
+// reading `training_modules`.
 //
 // Table: db/migrations/245_education_enrollments.sql.
 

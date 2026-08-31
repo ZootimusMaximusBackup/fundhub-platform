@@ -316,7 +316,12 @@ html.fh-side-mini .app-shell {
   [href="hiring.html"],
   [href="affiliate.html"],
   [href="agent-editor.html"],
-  [href="content-admin.html"]
+  [href="content-admin.html"],
+  /* partner-training.html has no sidebar row to hide — it is a partner screen
+     reached from Partner Home. It is listed so this block and shell.js's
+     NAV_HIDDEN stay the same list, which is what
+     src/http/app-nav-reachability.test.mjs checks in both directions. */
+  [href="partner-training.html"]
 ) {
   display: none !important;
 }

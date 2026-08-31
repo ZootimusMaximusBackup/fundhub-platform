@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { defaultBody } from "./templates.mjs";
+import { defaultBody, legalBlocks } from "./templates.mjs";
 import { generateSectionCopy } from "./copy-generate.mjs";
 
 const PID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -101,7 +101,11 @@ describe("generateSectionCopy", () => {
     });
     assert.equal(out.results[0].state, "needs_approval");
     assert.equal(out.body.sections.find((s) => s.id === "hero").headline, "A funding review");
-    assert.equal(out.body.sections.filter((s) => s.locked).length, 3);
+    /* Counted from legalBlocks() rather than typed. A locked count typed into a
+       test turns "a required disclosure was added" into a failure that reads
+       like a regression — and the assertion that matters here is that the AI
+       write left every locked block alone, not how many there are. */
+    assert.equal(out.body.sections.filter((s) => s.locked).length, legalBlocks("Acme").length);
     assert.ok(db.inserts.some((x) => x.kind === "usage"));
     assert.ok(db.inserts.some((x) => x.kind === "history"));
   });

@@ -392,6 +392,61 @@ const mockData = {
   }
 };
 
+/* ===========================================================================
+   6. broker_upload_rows — RETAIN. REGISTERED, COUNTED, NEVER PURGED.
+   ---------------------------------------------------------------------------
+   Declined-deal rows a broker uploaded to the $27 Decline Autopsy
+   (decline_autopsy_rows). They describe consumers who never agreed to give
+   FundHub anything, which is exactly why the table has no name, SSN, e-mail,
+   phone or address column at all — see db/migrations/275_decline_autopsy.sql.
+
+   ACTION IS 'retain'. Owner-set 2026-08-31 (docs/specs/W0-decisions.md):
+   "Retain in full. No purge." So no retention period is configured for this
+   class, loadPolicy() reports retainDays as ABSENT, and the runner skips it and
+   removes nothing. This handler exists so the class is COUNTABLE and AUDITABLE,
+   not so it is destroyed on a clock.
+
+   count() and purge() still refuse an unset period through ctxOrThrow, exactly
+   like every other class here. That is not decoration: if somebody ever DOES set
+   a period, the mechanism has to be the same one everything else uses, and until
+   then the refusal is what makes "nothing purges" true rather than merely
+   intended.
+
+   DELETE, not de-identify, if that day ever comes: there is no identity left to
+   strip, so a tombstone would be clutter. The two ways rows actually disappear
+   today are the buyer's own delete button and a refund, both of which run
+   through src/autopsy/store.mjs and stamp a reason on the parent row.
+=========================================================================== */
+const brokerUploadRows = {
+  dataClass: "broker_upload_rows",
+  action: "retain",
+  label: "broker Decline Autopsy uploads",
+  why: "Retain: owner-set 2026-08-31, these are kept in full and no purge is scheduled. Registered here so the class is counted and auditable rather than invisible.",
+
+  async count(db, ctx) {
+    const { orgId, retainDays } = ctxOrThrow(ctx, "broker_upload_rows");
+    const r = await db.query(
+      `SELECT count(*)::bigint AS n
+         FROM decline_autopsy_rows
+        WHERE org_id = $1
+          AND created_at < now() - make_interval(days => $2::int)`,
+      [orgId, retainDays]
+    );
+    return { expired: num(one(r).n) };
+  },
+
+  async purge(tx, ctx) {
+    const { orgId, retainDays } = ctxOrThrow(ctx, "broker_upload_rows");
+    const r = await tx.query(
+      `DELETE FROM decline_autopsy_rows
+        WHERE org_id = $1
+          AND created_at < now() - make_interval(days => $2::int)`,
+      [orgId, retainDays]
+    );
+    return { affected: num(r?.rowCount) };
+  }
+};
+
 /* The registry, in the order a report should read: most sensitive first. Keyed
    by the same strings the retention_policy CHECK constraint enforces. */
 export const CLASSES = Object.freeze({
@@ -399,7 +454,8 @@ export const CLASSES = Object.freeze({
   pii_access_log: piiAccessLog,
   soft_pull_ledger: softPullLedger,
   bank_transactions: bankTransactions,
-  mock_data: mockData
+  mock_data: mockData,
+  broker_upload_rows: brokerUploadRows
 });
 
 /* A class list that cannot silently drift from policy.mjs. If DATA_CLASSES gains
