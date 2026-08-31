@@ -79,7 +79,14 @@ function pgFake() {
       }
       if (/INSERT INTO bank_inbox/.test(sql)) {
         const raw = JSON.parse(params[5]);
-        bank.push({ org_id: params[0], client_id: params[1], classification: params[2], __event_id: raw.__event_id });
+        // subject, body_preview and raw are recorded too: the row used to carry
+        // the SAME sentence in subject and body_preview, which is what erased
+        // the paragraph stating the approved amount. Tests below hold that shut.
+        bank.push({
+          org_id: params[0], client_id: params[1], classification: params[2],
+          subject: params[3], body_preview: params[4], raw,
+          __event_id: raw.__event_id
+        });
         return { rows: [] };
       }
       // --- clients.tags add (addTags, mirrors src/workflows/tags.mjs) ---
@@ -213,6 +220,67 @@ test("mail.response: inserts bank_inbox once, replay guard skips the second", as
   await onMailResponse(e, db);
   assert.equal(db.bank.length, 1);
   assert.equal(db.bank[0].classification, "APPROVED");
+});
+
+/* THE PREVIEW COLUMN NO LONGER DUPLICATES THE SUBJECT.
+   It used to bind p.subject to both columns, so every Bank Inbox row read the
+   same sentence twice, the text of the email was never kept, and the screen's
+   `body_preview || classification || received_at` fallback could never reach
+   its second or third option. */
+test("mail.response: body_preview is the email's preview, NOT the subject again", async () => {
+  const db = pgFake();
+  await onMailResponse(ev("mail.response", {
+    from: "bank@lender.com",
+    subject: "Your application decision",
+    bodyPreview: "Congratulations! You have been approved for a credit limit of $5,000.",
+    classification: "APPROVED",
+    amountCandidates: ["5000.00"],
+    amountCandidatesFound: 1,
+    source: "mailgun"
+  }, { id: "evt-mail-preview" }), db);
+  const row = db.bank[0];
+  assert.equal(row.subject, "Your application decision");
+  assert.equal(row.body_preview, "Congratulations! You have been approved for a credit limit of $5,000.");
+  assert.notEqual(row.body_preview, row.subject);
+});
+
+test("mail.response: no preview stores NULL, so the screen can fall through", async () => {
+  const db = pgFake();
+  await onMailResponse(ev("mail.response", {
+    from: "bank@lender.com", subject: "Approved", classification: "APPROVED", source: "mailgun"
+  }, { id: "evt-mail-nopreview" }), db);
+  assert.equal(db.bank[0].body_preview, null, "NULL, never the subject and never an empty string");
+});
+
+test("mail.response: a blank preview is stored as NULL, not as an empty string", async () => {
+  const db = pgFake();
+  await onMailResponse(ev("mail.response", {
+    from: "bank@lender.com", subject: "Approved", bodyPreview: "   ",
+    classification: "APPROVED", source: "mailgun"
+  }, { id: "evt-mail-blankpreview" }), db);
+  assert.equal(db.bank[0].body_preview, null);
+});
+
+test("mail.response: the bank's own dollar figures survive into the row", async () => {
+  const db = pgFake();
+  await onMailResponse(ev("mail.response", {
+    from: "bank@lender.com", subject: "Your new card", classification: "APPROVED",
+    bodyPreview: "Credit limit $7,500. Annual fee $95.",
+    amountCandidates: ["7500.00", "95.00"], amountCandidatesFound: 2, source: "mailgun"
+  }, { id: "evt-mail-amounts" }), db);
+  assert.deepEqual(db.bank[0].raw.amountCandidates, ["7500.00", "95.00"]);
+  assert.equal(db.bank[0].raw.amountCandidatesFound, 2);
+});
+
+test("mail.response: a denial carries no amounts into the row", async () => {
+  const db = pgFake();
+  await onMailResponse(ev("mail.response", {
+    from: "bank@lender.com", subject: "Your application decision", classification: "DENIED",
+    bodyPreview: "Unfortunately you were not approved for the requested $10,000.",
+    source: "mailgun"
+  }, { id: "evt-mail-denied" }), db);
+  assert.equal(db.bank[0].classification, "DENIED");
+  assert.equal("amountCandidates" in db.bank[0].raw, false);
 });
 
 test("booking.created: creates a task once (dedup by booking uid), creates client from email", async () => {

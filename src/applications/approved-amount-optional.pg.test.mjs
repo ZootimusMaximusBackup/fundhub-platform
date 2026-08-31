@@ -23,10 +23,15 @@
 //      allowed to be incomplete, the number a client is billed from is not.
 //
 //   4. A NULL approved amount does not break the closeout that bills the
-//      client. src/funding/closeout.mjs filters `COALESCE(approved_amount,0)>0`
-//      on the lender breakdown, so an unpriced approval is simply LEFT OUT of
-//      the breakdown rather than counted as a zero, and the fee itself is
-//      computed from funding_rounds.funded_amount either way.
+//      client, and it does not get billed. An approval with no recorded amount
+//      is not a CONFIRMED approval, so it is left out of the lender breakdown
+//      AND out of the fee basis — never counted as a zero.
+//
+//      UPDATED owner-set 2026-08-30: the fee basis is now the confirmed
+//      approvals total, not funding_rounds.funded_amount. That makes the
+//      distinction this whole file is about — "approved" versus "approved for
+//      a known amount" — the thing the client is billed from, so it matters
+//      more here than it ever did. docs/CLOSEOUT-FEE-BASIS.md.
 
 import { describe, test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -61,7 +66,10 @@ describe("approval now, amount later (pg)", { skip: !HAS_DB ? "no DATABASE_URL" 
       await db.query(`DELETE FROM application_decisions WHERE application_id IN (
         SELECT id FROM applications WHERE client_id = ANY($1))`, [clients]).catch(() => {});
       await db.query(`DELETE FROM applications WHERE client_id = ANY($1)`, [clients]).catch(() => {});
+      await db.query(`DELETE FROM funding_round_sales WHERE funding_round_id IN (
+        SELECT id FROM funding_rounds WHERE client_id = ANY($1))`, [clients]).catch(() => {});
       await db.query(`DELETE FROM funding_rounds WHERE client_id = ANY($1)`, [clients]).catch(() => {});
+      await db.query(`DELETE FROM sales WHERE client_id = ANY($1)`, [clients]).catch(() => {});
       await db.query(`DELETE FROM cards WHERE client_id = ANY($1)`, [clients]).catch(() => {});
       await db.query(`DELETE FROM events WHERE client_id = ANY($1)`, [clients]).catch(() => {});
       await db.query(`DELETE FROM tasks WHERE client_id = ANY($1)`, [clients]).catch(() => {});
@@ -83,6 +91,21 @@ describe("approval now, amount later (pg)", { skip: !HAS_DB ? "no DATABASE_URL" 
        VALUES ($1, $2, 'Amount', 'Later', 'FULL_FUNDING') RETURNING id`,
       [orgId, `${MARK}.client@example.com`]
     )).rows[0].id;
+
+    /* A funding sale at 10%. There is no fee without one: the rate the client
+       is billed at is the rate agreed on their sale, and no agreed rate is a
+       refusal rather than a house default (owner-set 2026-08-30). */
+    const fundingProductId = (await db.query(
+      `SELECT id FROM products WHERE org_id = $1 AND code = 'card-stacking-dfy' LIMIT 1`,
+      [orgId]
+    )).rows[0]?.id;
+    assert.ok(fundingProductId, "card-stacking-dfy product must exist");
+    await db.query(
+      `INSERT INTO sales (org_id, client_id, product_id, agreed_price,
+                          agreed_success_fee_percent, status, sold_at)
+       VALUES ($1, $2, $3, 3000, 10, 'active', now())`,
+      [orgId, clientId, fundingProductId]
+    );
 
     lenderA = (await db.query(
       `INSERT INTO lenders (org_id, lender_table, name, active, priority_tier,
@@ -230,12 +253,25 @@ describe("approval now, amount later (pg)", { skip: !HAS_DB ? "no DATABASE_URL" 
     assert.equal(round.status, "funded");
     assert.equal(Number(round.funded_amount), 45000);
 
-    const { closeout, items } = await createFundingCloseout(db, {
+    /* money-chain links the round to the client's sale at round.started; this
+       file deliberately runs with an empty bus, so the link is made here. The
+       closeout reads the agreed rate through it. */
+    await db.query(
+      `INSERT INTO funding_round_sales (org_id, funding_round_id, sale_id, link_method)
+       SELECT $1, $2, id, 'explicit' FROM sales WHERE client_id = $3 LIMIT 1
+       ON CONFLICT (funding_round_id) DO NOTHING`,
+      [orgId, round.id, clientId]
+    );
+
+    const { closeout, items, feeBasis } = await createFundingCloseout(db, {
       orgId,
       fundingRoundId: round.id
     });
     assert.ok(closeout, "the success-fee closeout is created");
-    assert.equal(Number(closeout.total_fee), 4500, "10% of the 45000 that funded");
+    assert.equal(feeBasis, 45000,
+      "the basis is the ONE confirmed approval — the unpriced one adds nothing, not a zero");
+    assert.equal(Number(closeout.total_approved_amount), 45000);
+    assert.equal(Number(closeout.total_fee), 4500, "10% of the 45000 confirmed");
     assert.equal(items.length, 1,
       "only the approval with a real amount is a line item — the unpriced one is left out, not billed as 0");
   });
