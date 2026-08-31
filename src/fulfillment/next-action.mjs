@@ -747,11 +747,23 @@ function summariseRound(rounds) {
     if (a !== null && b !== null && a > b) best = r;
   }
   const status = str(best.status);
+  /* WHEN THIS ROUND OPENED. An approval that has been waiting on a dollar
+     figure since June looks exactly like one from this morning unless a date
+     comes through with it. Passed straight along as the ISO string the column
+     holds, never reformatted here and never guessed: a row with no created_at
+     comes back null, and the screen prints nothing rather than "today". */
+  let started = null;
+  if (best.created_at instanceof Date) {
+    started = Number.isFinite(best.created_at.getTime()) ? best.created_at.toISOString() : null;
+  } else {
+    started = str(best.created_at);
+  }
   return {
     number: num(best.round_number),
     status,
     hold_reason: str(best.hold_reason),
     approved_amount: best.approved_amount === undefined ? null : best.approved_amount,
+    started_at: started,
     finalized: status === null ? null : TERMINAL_ROUND_STATUSES.includes(status.toLowerCase())
   };
 }
@@ -806,7 +818,8 @@ const FALLBACK = () => ({
  *   next_action: { key: string, label: string, why: string } | null,
  *   active_blockers: Array<{ key: string, label: string, severity: string }>,
  *   funding_round: { number: number|null, status: string|null, hold_reason: string|null,
- *                    approved_amount: unknown, finalized: boolean|null } | null,
+ *                    approved_amount: unknown, started_at: string|null,
+ *                    finalized: boolean|null } | null,
  *                  — null on any tier that is not one of the three funding
  *                    tiers, including REPAIR_ONLY. Gate B, see below.
  *   degraded: boolean

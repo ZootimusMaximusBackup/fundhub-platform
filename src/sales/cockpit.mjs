@@ -9,6 +9,7 @@ import { triMerge } from "../http/client-detail.mjs";
 import { toBureaus } from "../underwrite/adapter.mjs";
 import { computeUnderwrite } from "../underwrite/engine.mjs";
 import { applyStackedBusinessFunding } from "../underwrite/business-funding.mjs";
+import { offersForClient } from "../config/offers.mjs";
 
 function money(n) {
   if (n == null || !Number.isFinite(Number(n))) return null;
@@ -110,10 +111,19 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
         ORDER BY created_at ASC`,
       [clientId, orgId]
     ),
+    /* The round AND its closeout in one query. cockpit.mjs used to select the
+       round id and throw it away, while the screen printed a hardcoded 10%.
+       funding_closeout.fee_percent is the real number; a LEFT JOIN is what
+       makes "no closeout row yet" survive as NULL instead of becoming 10. */
     db.query(
-      `SELECT id FROM funding_rounds
-        WHERE client_id = $1 AND org_id = $2
-        ORDER BY round_number DESC LIMIT 1`,
+      `SELECT fr.id,
+              fc.fee_percent, fc.total_fee, fc.total_approved_amount,
+              fc.status AS closeout_status
+         FROM funding_rounds fr
+         LEFT JOIN funding_closeout fc
+           ON fc.funding_round_id = fr.id AND fc.org_id = fr.org_id
+        WHERE fr.client_id = $1 AND fr.org_id = $2
+        ORDER BY fr.round_number DESC LIMIT 1`,
       [clientId, orgId]
     ),
     db.query(
@@ -199,6 +209,51 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
       }
     : null;
 
+  /* THE SUCCESS FEE, FROM funding_closeout — not a constant.
+     0.10 used to be hardcoded here, so the screen printed "10%" whatever the
+     file said. fee_percent is a fraction (0.1000 = 10%). Where no closeout row
+     exists the percent is the house default and `source` says so out loud, so
+     the screen can label it a default instead of stating it as this round's
+     agreed fee. */
+  const closeoutRow = underwriteHint.rows[0] || null;
+  const closeoutPct = closeoutRow && closeoutRow.fee_percent != null
+    ? Number(closeoutRow.fee_percent)
+    : null;
+  const successFee = closeoutPct != null && Number.isFinite(closeoutPct)
+    ? {
+        success_fee_percent: closeoutPct,
+        success_fee_source: "closeout",
+        success_fee_note: "From this round's closeout record.",
+        closeout_total_fee: money(closeoutRow.total_fee),
+        closeout_total_approved: money(closeoutRow.total_approved_amount),
+        closeout_status: closeoutRow.closeout_status || null
+      }
+    : {
+        success_fee_percent: 0.10,
+        success_fee_source: "default",
+        success_fee_note: "House default — no closeout on this round yet.",
+        closeout_total_fee: null,
+        closeout_total_approved: null,
+        closeout_status: null
+      };
+
+  /* THE TIME OF THIS CALL — one field, or null.
+     upcomingCalls() orders THIS client's task first (see its ORDER BY), so the
+     head of the list is this call when it belongs to this client and is some
+     other client's call when it does not. The screen used to have to infer
+     that; inferring it on a deep link to a client with no booked task produced
+     a time that belonged to somebody else. */
+  const headTask = upNext[0] || null;
+  const currentCall = headTask && String(headTask.client_id) === String(clientId)
+    ? { due_at: headTask.due_at, task_id: headTask.task_id, title: headTask.title || null }
+    : null;
+  /* And the one after it, asked of the table rather than read off up_next — see
+     nextCallAfter() for the three shapes that array gets wrong. Always present
+     on the payload: null means "no later call", never "we did not look". */
+  const nextCall = currentCall
+    ? await nextCallAfter(db, { orgId, staffId, after: currentCall.due_at })
+    : null;
+
   return {
     staff: {
       id: staffId,
@@ -225,7 +280,10 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
     },
     client: {
       id: client.id,
-      name: [client.first_name, client.last_name].filter(Boolean).join(" ") || client.email || "Client",
+      /* The headline of the whole screen. "Client" read as a real answer —
+         it looks like a name in a 32px h1. This says out loud that nobody
+         typed one, so the closer knows to ask rather than to trust it. */
+      name: [client.first_name, client.last_name].filter(Boolean).join(" ") || client.email || "Name not on file",
       business_name: client.business_name,
       city: null,
       state: null,
@@ -242,7 +300,7 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
     credit,
     underwrite: {
       ...underwriteData,
-      funding_round_id: underwriteHint.rows[0]?.id || null,
+      funding_round_id: closeoutRow?.id || null,
       matched_lenders: Number(lenders.match_count || lenders.matches?.length || 0),
       lenders: lenders.matches || [],
       lenders_reason: (lenders.match_count || 0) === 0
@@ -252,9 +310,14 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
     },
     deal: {
       latest_payment: depositProduct,
-      success_fee_percent: 0.10,
-      success_fee_note: "Fee percent from funding_closeout default (10%). Exact fee appears after a round closeout."
+      ...successFee
     },
+    current_call: currentCall,
+    next_call: nextCall,
+    /* The offer catalog, so the closer can mint a pay link without leaving this
+       screen. Pure config — offersForClient() reads no table — so this is not a
+       second client read and the merge spec's one-data-path rule still holds. */
+    offers: offersForClient(),
     precall,
     templates_sent: templatesSent.rows.map((r) => r.template_key),
     join_url: (await db.query(
@@ -384,6 +447,61 @@ export async function upcomingCalls(db, { orgId, staffId, includeClientId }) {
     [orgId, staffId, includeClientId]
   );
   return r.rows;
+}
+
+/* THE CALL AFTER THIS ONE — asked as its own question, because up_next cannot
+   answer it.
+
+   up_next is not in time order and is not complete. Its ORDER BY forces every
+   one of the open client's tasks to the front whatever the clock says, and then
+   LIMIT 5 cuts the list. Measured against a real Postgres on 2026-08-31, three
+   ordinary days break any answer read off that array:
+
+     A) open client booked 3:00 PM, somebody else at 11:00 AM
+        -> array order is 3:00 PM, 11:00 AM, so "next" was 11:00 AM: FOUR HOURS
+           BEFORE the call it was printed beside.
+     B) open client has 10:00 AM and 4:00 PM, somebody else at 11:00 AM
+        -> array order is 10:00, 4:00 PM, 11:00, so "next" was 4:00 PM and the
+           closer's real next appointment was never named. Six hours of runway
+           on the screen, one hour in life.
+     C) open client at 3:00 PM with five other calls at 9, 10, 11, 12 and 4:00 PM
+        -> LIMIT 5 keeps 3:00 PM, 9, 10, 11, 12 and DROPS the 4:00 PM. Sorting
+           the array by time still answers "nothing after this", which is false.
+
+   C is why this is a query and not a loop: the honest answer is not in the array
+   at any ordering. One row, ordered by time, no client weighting, no truncation.
+   Returns null only when there genuinely is no later call.
+
+   TWO time bounds, not one. `after` alone is not enough: this client's tasks are
+   kept from date_trunc('day', now()) onward, so opening a client whose call was
+   at 9:00 AM makes `after` a time in the PAST, and "the first row after 9:00 AM"
+   can be a 10:00 AM that came and went and was never dispositioned. up_next has
+   dropped that 10:00 AM already (it filters everybody else by due_at >= now()),
+   so the headline named a finished call while the rail beside it named the real
+   one. Both halves of the screen answer from the same clock or neither does. */
+export async function nextCallAfter(db, { orgId, staffId, after }) {
+  if (!after) return null;
+  const r = await db.query(
+    `SELECT nt.id AS task_id, nt.client_id, nt.due_at, nt.title,
+            COALESCE(NULLIF(trim(c.first_name || ' ' || c.last_name), ''), c.email, 'Client') AS name
+       FROM tasks nt
+       LEFT JOIN clients c ON c.id = nt.client_id AND c.org_id = nt.org_id
+       LEFT JOIN call_outcomes o ON o.task_id = nt.id
+      WHERE nt.org_id = $1
+        AND nt.assignee_role = 'closer'
+        AND (nt.assignee_staff_id = $2 OR nt.assignee_staff_id IS NULL)
+        AND nt.due_at IS NOT NULL
+        AND o.id IS NULL
+        AND nt.due_at > $3
+        AND nt.due_at >= now()
+      ORDER BY nt.due_at ASC
+      LIMIT 1`,
+    [orgId, staffId, after]
+  );
+  const row = r.rows[0];
+  return row
+    ? { due_at: row.due_at, task_id: row.task_id, client_id: row.client_id, name: row.name || null }
+    : null;
 }
 
 async function quietClients(db, { orgId, staffId }) {
