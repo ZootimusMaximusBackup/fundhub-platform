@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert";
 import { handle, EMAIL_TEMPLATE_KEY, SMS_TEMPLATE_KEY } from "./f-07-funding-locked.mjs";
+import { NO_CONFIRMED_APPROVALS, NO_AGREED_FEE_PERCENT } from "../funding/success-fee.mjs";
 import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
 const withTemplates = () => [
@@ -13,6 +14,7 @@ test("happy path: fee ready sends email + sms and creates an invoice task", asyn
   const res = await handle({ event: ev("round.funded", { approvedAmount: 25000, feePercent: 12 }, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.done, true);
   assert.equal(res.feeReady, true);
+  assert.equal(res.feeAmount, "3000.00", "25000 of confirmed approvals at 12%");
   assert.equal(res.invoiceTask.created, true);
   assert.equal(db.messages.length, 2);
   assert.equal(db.tasks.length, 1);
@@ -22,11 +24,48 @@ test("happy path: fee ready sends email + sms and creates an invoice task", asyn
   assert.equal(db.invoices[0].status, "sent");
 });
 
-test("branch: fee not ready flags ops + creates a fix-fee task, no send", async () => {
+test("the fee comes off the confirmed approved total, at the rate on the sale", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }], templates: withTemplates() });
+  const res = await handle({
+    event: ev("round.funded", { approvedAmount: 35000, feePercent: 10, fundedAmount: 90000 }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+  assert.equal(res.feeAmount, "3500.00", "10% of the 35000 confirmed, not of the 90000 funded");
+  assert.equal(Number(db.invoices[0].amount_due), 3500);
+});
+
+test("no confirmed approvals: no invoice, no send, a named reason and a task", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com" }], templates: withTemplates() });
+  const res = await handle({
+    event: ev("round.funded", { approvedAmount: null, feePercent: 10, fundedAmount: 50000 }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+  assert.equal(res.feeReady, false);
+  assert.equal(res.reason, NO_CONFIRMED_APPROVALS);
+  assert.equal(res.task.created, true);
+  assert.equal(db.invoices.length, 0, "a round with nothing confirmed must not be billed at all");
+  assert.equal(db.messages.length, 0);
+  assert.deepEqual(db.clients[0].tags, ["ops:action-required"]);
+});
+
+test("zero confirmed is a refusal, never a $0 invoice", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com" }], templates: withTemplates() });
+  const res = await handle({
+    event: ev("round.funded", { approvedAmount: 0, feePercent: 10 }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+  assert.equal(res.feeReady, false);
+  assert.equal(res.reason, NO_CONFIRMED_APPROVALS);
+  assert.equal(db.invoices.length, 0);
+});
+
+test("no agreed fee rate: named refusal, no invoice — never a default 10%", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com" }], templates: withTemplates() });
   const res = await handle({ event: ev("round.funded", { approvedAmount: 25000 }, { clientId: "cl-1" }), db, step: fakeStep() });
   assert.equal(res.feeReady, false);
+  assert.equal(res.reason, NO_AGREED_FEE_PERCENT);
   assert.equal(res.task.created, true);
+  assert.equal(db.invoices.length, 0);
   assert.equal(db.messages.length, 0);
   assert.deepEqual(db.clients[0].tags, ["ops:action-required"]);
 });
@@ -38,4 +77,5 @@ test("duplicate delivery: replaying the same event does not double-send or doubl
   await handle({ event, db, step: fakeStep() });
   assert.equal(db.messages.length, 2);
   assert.equal(db.tasks.length, 1);
+  assert.equal(db.invoices.length, 1, "the same round must never be invoiced twice");
 });
