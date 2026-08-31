@@ -209,6 +209,18 @@ Flagged changes ship only after explicit human approval. Never draft customer-fa
 
 **Commit working states.** Commit whenever the suite is green and a unit is complete. Small commits mean a bad build costs minutes to undo instead of a day.
 
+**Delete your branch when it lands (owner-set 2026-08-31).** A branch whose work is merged is finished. Delete it in the same breath as the merge — `git push origin --delete <branch>` — and delete the local copy too. Nobody has ever come back to one.
+
+On 2026-08-31 there were **fifteen** branches sitting on the remote with nothing open against them. Ten were a week stale. Three carried real work nobody could see, because a branch with no pull request is invisible to everyone but the agent that made it. That is the actual cost: not clutter, but work that quietly never ships.
+
+So, every time:
+
+* **Merged → delete it.** Both remote and local, immediately, no exceptions.
+* **Not merged and you are done with it → say so and delete it.** Name what was on it in your task report first, so the decision to drop it is Chris's and not a silent one.
+* **Not merged and still live → open a pull request now.** An unmerged branch with no pull request is not "in progress", it is lost. If it is not ready, it still gets a draft PR so it exists somewhere a human looks.
+
+Before you report a task complete, run `git branch -r --no-merged origin/main` and account for every line it prints. An unexplained branch in that list is an unfinished task, not a housekeeping detail.
+
 **Checkpoint when context fills.** If a session is long or has gone sideways, write current state to the workflow file and tell me to start fresh. Do not push a degraded session forward. Quality drops well before you run out of room.
 
 **Conventions.** Simplest thing that works, no speculative abstraction. No new dependencies without asking. Match existing patterns in the file you are editing over your own preference. Never commit secrets — no keys, tokens, or PII in code, fixtures, or logs. Delete dead code you create.
