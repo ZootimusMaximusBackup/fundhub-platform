@@ -324,8 +324,17 @@ test("buildView: lines the waterfall cannot use are counted, not silently droppe
 test("bannerText: every region with no source in this response is named on screen", () => {
   const text = bannerText(buildView(apiResponse(FIVE, { requestedAmount: 35000 })));
   assert.ok(text.includes(NOT_SOURCED));
-  for (const region of ["pipeline", "shift stats", "Deal Math", "per-card minimums"]) {
+  /* "pipeline" and "shift stats" left this list on 2026-08-30, and that is a
+     tightening rather than a loosening. Both tiles were CUT from the screen on
+     2026-08-17 (owner-set) and src/http/closer-ui-honest.test.mjs now fails if
+     either comes back, so a banner naming them promised a source for two things
+     that no longer exist. The two regions still on the screen with no source
+     behind them are asserted exactly as before. */
+  for (const region of ["Deal Math", "per-card minimums"]) {
     assert.ok(text.includes(region), `the banner does not mention ${region}: ${text}`);
+  }
+  for (const gone of ["pipeline", "shift stats"]) {
+    assert.ok(!text.includes(gone), `the banner names ${gone}, which is not on this screen any more`);
   }
 });
 
