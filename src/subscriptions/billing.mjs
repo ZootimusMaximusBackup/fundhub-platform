@@ -28,6 +28,87 @@ import { assertPriceCents } from "./index.mjs";
     src/subscriptions/billing.test.mjs reading the migration file. */
 export const BILLING_INTERVALS = Object.freeze(["monthly", "annual"]);
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   SUBSCRIPTIONS COMMAS BILLS ITSELF, AND WHY THEY CARRY A DIFFERENT PROVIDER.
+
+   COMPLIANCE REVIEW REQUIRED (CLAUDE.md §7): payment rails and fee timing.
+
+   Commas DOES bill subscriptions natively. A checkout session of type
+   "subscription" with `subscription.frequency_days` hands them the schedule,
+   the card, the retries and the dunning; they charge on that cadence and fire
+   `subscription.renewed` afterwards
+   (createCheckoutSession in src/payments/commas-api.mjs, mapToCanonical in
+   src/adapters/commas.mjs).
+
+   For those arrangements our `subscriptions` row is a MIRROR of what Commas
+   already did. It is never an instruction to charge, and this rail — the
+   sweeper, the ledger, the retry budget — must not touch it. If it did, the
+   customer would be charged twice for one period: once by Commas on their
+   cadence and once by us on ours. That is the single worst outcome available
+   in this module.
+
+   THE MARKER IS `subscriptions.provider`, and it is a marker rather than a new
+   column because 075 already made that column mean exactly this: "the
+   processor for this arrangement". `provider` is on 075's MUTABLE list (it is
+   not a term), it is `text` with only a non-empty CHECK, and it is already
+   read by planCharge() and written by startSubscription(). A row that says
+   `commas_subscription` says: Commas holds the card and the calendar.
+
+   A plain `commas` row is unchanged and still ours to bill.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/** `subscriptions.provider` for an arrangement Commas bills on its own cadence. */
+export const PROCESSOR_BILLED_PROVIDER = "commas_subscription";
+
+/** Every provider value that means "the processor bills this, we never do".
+ *  A list rather than one string so a second processor is one entry, not a
+ *  second copy of this rule spread across four files. */
+export const PROCESSOR_BILLED_PROVIDERS = Object.freeze([PROCESSOR_BILLED_PROVIDER]);
+
+/** Does this provider name mean the processor owns the schedule?
+ *  Compared lower/trimmed for the same reason 271 keys its constraint on
+ *  lower(btrim(tier)): 'Commas_Subscription ' must not read as a new rail. */
+export function isProcessorBilledProvider(provider) {
+  return PROCESSOR_BILLED_PROVIDERS.includes(String(provider ?? "").trim().toLowerCase());
+}
+
+/** Does this subscription row belong to the processor's own biller? */
+export function isProcessorBilled(sub) {
+  return !!sub && isProcessorBilledProvider(sub.provider);
+}
+
+/**
+ * The cadence every Commas-billed product in this repository is minted with.
+ *
+ * THIRTY DAYS IS NOT A CALENDAR MONTH, and the difference is the reason this
+ * is a separate number from BILLING_INTERVALS' "monthly". Commas' API field is
+ * `frequency_days`; it counts days, so a 31 January subscription renews on
+ * 2 March, not on 28 February. advancePeriod() below does calendar-month
+ * arithmetic for OUR rail and must not be used to mirror theirs — the two
+ * would drift a day or two apart every February and the mirrored periods would
+ * stop lining up with the charges they describe.
+ *
+ * ONE NUMBER, ONE HOME. api/public/funnel-checkout.mjs mints with it and
+ * src/handlers/commas-subscriptions.mjs mirrors with it, so a cadence change is
+ * one edit rather than two numbers that quietly disagree.
+ */
+export const COMMAS_FREQUENCY_DAYS = 30;
+
+/**
+ * addDays — day arithmetic for a processor cadence measured in days.
+ *
+ * Deliberately NOT advancePeriod(): see COMMAS_FREQUENCY_DAYS. UTC
+ * milliseconds, so a daylight-saving boundary cannot move a billing period.
+ */
+export function addDays(from, days) {
+  const start = toDate(from, "addDays: from");
+  const n = Number(days);
+  if (!Number.isInteger(n) || n <= 0) {
+    throw new RangeError(`addDays: days must be a positive integer — got ${JSON.stringify(days)}`);
+  }
+  return new Date(start.getTime() + n * 24 * 60 * MINUTE_MS);
+}
+
 /**
  * How many times one period may be attempted before it is abandoned.
  *
@@ -139,6 +220,20 @@ export function chargeIdempotencyKey({ subscriptionId, periodStart } = {}) {
  */
 export function notBillableReason(sub, { now = new Date() } = {}) {
   if (!sub) return "no_subscription";
+
+  /* THE PROCESSOR'S OWN SUBSCRIPTION, AND THIS REFUSAL COMES FIRST.
+     It is checked before `closed`, before `cancelled` and before the money,
+     because it is the one refusal that must never be overturned by a later
+     condition changing. A cancelled row could be un-cancelled tomorrow and a
+     NULL price could be filled in; neither makes a Commas-billed arrangement
+     ours to charge. Reporting "cancelled" for one of these rows would be true
+     and would still be the wrong answer, because it invites somebody to fix
+     the cancellation and get a double charge.
+
+     scheduleBilling() in billing-store.mjs calls this before it will put a row
+     on the rail, so this single line is also what stops one of these ever
+     getting a next_charge_at in the first place. */
+  if (isProcessorBilled(sub)) return "billed_by_processor";
 
   if (sub.effective_to != null) return "closed";
   if (sub.cancelled_at != null || sub.status === "cancelled") return "cancelled";
@@ -270,4 +365,7 @@ export function classifyChargeResult(result, { attempt = 1, maxAttempts = MAX_AT
   };
 }
 
-export default { notBillableReason, planCharge, classifyChargeResult, advancePeriod, chargeIdempotencyKey, retryAt };
+export default {
+  notBillableReason, planCharge, classifyChargeResult, advancePeriod,
+  chargeIdempotencyKey, retryAt, addDays, isProcessorBilled
+};

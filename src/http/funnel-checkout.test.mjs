@@ -20,6 +20,7 @@ import { fileURLToPath } from "node:url";
 
 import handler, {
   BOARD_RENEWAL_STATE,
+  SUBSCRIPTION_CHECKOUT_ERROR,
   FUNNEL_SLUGS,
   PARTNER_APPLY_URL,
   WINNERS_BOARD_PRICE_CENTS,
@@ -34,6 +35,7 @@ import handler, {
   trialPriceCents
 } from "../../api/public/funnel-checkout.mjs";
 import { getOffer, getPartnerAddOn } from "../config/offers.mjs";
+import { COMMAS_FREQUENCY_DAYS } from "../subscriptions/billing.mjs";
 import { AUTOPSY_PRICE_CENTS } from "../autopsy/fields.mjs";
 import { LIVE_TRIAL_PRICE_CENTS, PARTNER_ENTRY_PRICE_CENTS } from "../trials/constants.mjs";
 
@@ -139,7 +141,12 @@ test("the catalogue carries no earnings figure of any kind", () => {
      modelled figure gets onto a public page by accident. */
   const allowed = new Set([
     "slug", "key", "name", "productCode", "billing", "selfServe", "page",
-    "priceCents", "priceDisplay", "priceLabel", "available", "applyUrl", "renewal"
+    "priceCents", "priceDisplay", "priceLabel", "available", "applyUrl", "renewal",
+    /* VETTED 2026-08-31: the billing cadence in days, the same number the
+       Commas subscription session is minted with. It is fee timing — how often
+       the buyer is charged — and it is not, and can never become, a figure
+       describing what they might earn. */
+    "frequencyDays"
   ]);
   for (const item of funnelCatalogue(LIVE_ENV).items) {
     for (const k of Object.keys(item)) assert.ok(allowed.has(k), `unvetted public field "${k}"`);
@@ -279,19 +286,82 @@ test("board: records the ask BEFORE minting, and carries attribution onto both",
   /* Commas only ever sees a keep catalog title. No credit or finance wording,
      and no title invented here. */
   assert.equal(minted[0].productTitle, "Consulting Services Package");
+
+  /* THE FIX THIS ENDPOINT SHIPPED. The board is $47 a MONTH and used to mint a
+     one-time session, so it charged month one and stopped. */
+  assert.equal(minted[0].type, "subscription",
+    "a monthly price must mint a subscription, or the page overstates what the buyer bought");
+  assert.equal(minted[0].frequencyDays, COMMAS_FREQUENCY_DAYS);
+  assert.equal(evt.payload.frequency_days, COMMAS_FREQUENCY_DAYS,
+    "the cadence is recorded with the ask — it is how the renewal webhook finds this purchase again");
 });
 
-test("board: renewal is declared not-automated, and the page is given the words", async () => {
+test("a one-time item is still a one-time session — no cadence smuggled onto it", async () => {
+  const minted = [];
+  for (const item of ["trial"]) {
+    await runFunnelCheckout(
+      parseFunnelCheckoutBody({ item, email: "a@b.co" }),
+      {
+        db: noDb, env: LIVE_ENV, orgId: "o", emit: () => ({}),
+        createCheckoutSession: (opts) => { minted.push(opts); return { ok: true, paymentLink: "https://x/y" }; }
+      }
+    );
+  }
+  assert.equal(minted[0].type, undefined, "the default one-time type is left alone");
+  assert.equal(minted[0].frequencyDays, undefined);
+});
+
+/* ───────────────────────────────────────────────────────────────────────────
+   A MONTHLY ITEM CANNOT BE SOLD THROUGH THE QUERY-LINK DOOR
+   COMPLIANCE: fee timing. buildCommasCheckoutUrl() puts an amount on a URL and
+   has no way to say "and again in 30 days". Selling the board through it would
+   take one $47 payment against a page promising a subscription.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+test("board: the fallback door is refused, not used to take one payment", async () => {
+  let minted = 0;
+  const out = await runFunnelCheckout(
+    parseFunnelCheckoutBody({ item: "board", email: "a@b.co" }),
+    {
+      db: noDb, env: FALLBACK_ENV, orgId: "o",
+      emit: () => { throw new Error("nothing may be recorded — the ask was refused first"); },
+      buildCommasCheckoutUrl: () => { minted += 1; return "https://pay.example.com/checkout?amount=47.00"; }
+    }
+  );
+  assert.equal(out.ok, false);
+  assert.equal(out.error, SUBSCRIPTION_CHECKOUT_ERROR);
+  assert.equal(minted, 0, "no payable URL exists for a subscription we cannot actually mint");
+
+  /* And the catalogue says so, so the page renders a disabled button rather
+     than a live one that 503s. The one-time items are unaffected. */
+  const bySlug = Object.fromEntries(funnelCatalogue(FALLBACK_ENV).items.map((i) => [i.slug, i]));
+  assert.equal(bySlug.board.available, false);
+  assert.equal(bySlug.trial.available, true, "the fallback still sells a one-time item");
+  assert.equal(bySlug.autopsy.available, true);
+});
+
+test("board: the cadence on the catalogue is the cadence that is minted", async () => {
+  const bySlug = Object.fromEntries(funnelCatalogue(LIVE_ENV).items.map((i) => [i.slug, i]));
+  assert.equal(bySlug.board.frequencyDays, COMMAS_FREQUENCY_DAYS);
+  assert.equal(bySlug.trial.frequencyDays, null, "a one-time buy has no cadence to state");
+  assert.equal(bySlug.autopsy.frequencyDays, null);
+  assert.equal(bySlug.board.priceLabel, "$47/month");
+});
+
+test("board: renewal is Commas', and the page is given the words", async () => {
   const out = await runFunnelCheckout(
     parseFunnelCheckoutBody({ item: "board", email: "a@b.co" }),
     { db: noDb, env: LIVE_ENV, orgId: "o", emit: () => ({}), createCheckoutSession: () => ({ ok: true, paymentLink: "https://x/y" }) }
   );
   assert.equal(out.renewal, BOARD_RENEWAL_STATE);
-  assert.equal(BOARD_RENEWAL_STATE, "not_automated");
+  assert.equal(BOARD_RENEWAL_STATE, "commas_subscription");
 
   const notice = funnelCatalogue(LIVE_ENV).notices.board_renewal;
-  assert.match(notice, /first month/i, "a monthly price with no rail must say what is actually charged");
+  assert.match(notice, /first month/i, "the buyer must be told what today's charge covers");
   assert.match(notice, /renews/i);
+  assert.match(notice, /cancel/i, "fee timing includes how it stops");
+  assert.match(notice, new RegExp(`${COMMAS_FREQUENCY_DAYS} days`),
+    "the cadence on the page is the cadence the session is minted with");
 
   /* A one-time item must not claim a renewal state at all. */
   const trial = await runFunnelCheckout(

@@ -131,7 +131,24 @@ export const CANONICAL_EVENTS = [
   "diy.package.generating",
   "diy.package.ready",
   "diy.package.delivered",
-  "diy.package.downloaded"
+  "diy.package.downloaded",
+  /* SUBSCRIPTIONS COMMAS BILLS ITSELF. mapToCanonical() in
+     src/adapters/commas.mjs maps `subscription.*` webhooks onto these five
+     names, and emit() rejects any name that is not on this list — so without
+     them the adapter throws on every subscription webhook, the inbox row is
+     marked failed, and it retries forever. A renewal ALSO emits
+     payment.received above, because it is money that actually moved; the names
+     below are the lifecycle of the arrangement and move nothing on their own.
+     Consumed by src/handlers/commas-subscriptions.mjs.
+
+     Keep the line below short — scripts/diagrams/generate.mjs uses the comment
+     line immediately above a group as that group's section name in the table. */
+  // processor-billed subscriptions
+  "subscription.started",
+  "subscription.renewed",
+  "subscription.past_due",
+  "subscription.canceled",
+  "subscription.completed"
 ];
 
 export const isCanonical = (name) => CANONICAL_EVENTS.includes(name);

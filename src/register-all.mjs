@@ -16,6 +16,7 @@ import { register as registerInquiryGate } from "./handlers/inquiry-gate.mjs";
 import { register as registerInquiryDocs } from "./handlers/inquiry-docs.mjs";
 import { register as registerInboundMmsDocs } from "./handlers/inbound-mms-docs.mjs";
 import { register as registerCommasDisputes } from "./handlers/commas-disputes.mjs";
+import { register as registerCommasSubscriptions } from "./handlers/commas-subscriptions.mjs";
 import { register as registerDiagnosticSoftPull } from "./handlers/diagnostic-soft-pull.mjs";
 import { register as registerContractSigned } from "./handlers/contract-signed.mjs";
 import { register as registerContractConsent } from "./handlers/contract-consent.mjs";
@@ -56,6 +57,12 @@ export function registerAll() {
      these two events never reverse it, but the task text reads better when the
      payment it refers to is on file. */
   registerCommasDisputes();
+  /* Subscriptions Commas bills on its own cadence. No ordering constraint: the
+     five subscription.* names have exactly one emitter (the Commas adapter) and
+     exactly one listener (this handler). It writes a MIRROR of what Commas
+     already did and charges nothing — see the header of
+     src/handlers/commas-subscriptions.mjs. */
+  registerCommasSubscriptions();
   /* Soft pull must run even when Inngest is off — same sync rule as card
      placement on entry.captured. After money-chain so the client/tx exist. */
   registerDiagnosticSoftPull();

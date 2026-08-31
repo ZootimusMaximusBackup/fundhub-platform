@@ -52,6 +52,32 @@
 // is not the same act as switching live billing on for every scheduled row. The
 // same reasoning message-dispatch-sweeper.mjs records for the outbound switch:
 // the gate moves, it does not disappear.
+//
+//
+// ═══════════════════════════════════════════════════════════════════════════
+// WHAT CHANGED 2026-08-31, AND WHICH PART OF THE FINDING ABOVE IS NOW DEAD.
+//
+// "COMMAS EXPOSES NO SUBSCRIPTION PRIMITIVE" was wrong. POST /checkout-sessions
+// accepts type "subscription" with `subscription.frequency_days`; Commas then
+// holds the card, charges on that cadence, runs the retries and the dunning,
+// and reports each success as `subscription.renewed`. That is a subscription
+// primitive, and it is the right shape for the $47/month Winner's Board and
+// for the monthly partner add-ons.
+//
+// WHAT IT IS NOT is a merchant-initiated "charge the token you already hold"
+// call, which is the endpoint THIS FILE would need. So the registry below is
+// still empty, resolveCharger() still refuses, and that half of the finding
+// stands: we cannot charge a stored card on a cycle of our own.
+//
+// The two rails are therefore separate and must stay separate. A subscription
+// Commas bills carries `provider = 'commas_subscription'`
+// (PROCESSOR_BILLED_PROVIDER in src/subscriptions/billing.mjs) and is refused
+// by four independent locks, of which instrumentRefusal() below is one. A
+// subscription this rail would bill carries plain `commas`. Charging one row
+// on both rails is the worst outcome in this codebase, and nothing in either
+// path can reach the other.
+
+import { isProcessorBilled } from "./billing.mjs";
 
 /** Must be exactly "true" for a charge to be attempted. Absent, empty, "1",
     "yes" and "TRUE" all mean off — a flag that guesses is a flag that gets
@@ -137,6 +163,14 @@ export function resolveCharger({ provider = "commas", env = process.env } = {}) 
  */
 export function instrumentRefusal(sub) {
   if (!sub) return "no_subscription";
+  /* COMMAS HOLDS THE CARD FOR THIS ONE, AND COMMAS CHARGES IT.
+     The last of the four locks on double billing — see the header block in
+     src/subscriptions/billing.mjs. It is first here because it is the only
+     refusal that is about WHOSE rail this is rather than about what we hold:
+     saying "no card on file" for a Commas-billed subscription would be true
+     and would read as a gap somebody should close by attaching one, which is
+     the exact wrong conclusion. There is no gap. Commas has the card. */
+  if (isProcessorBilled(sub)) return "billed_by_processor";
   if (sub.partner_id != null) {
     return "no_partner_instrument";
   }

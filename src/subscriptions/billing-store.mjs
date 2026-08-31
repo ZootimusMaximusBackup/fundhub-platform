@@ -35,7 +35,10 @@
 // what somebody was paying.
 
 import { assertPriceCents } from "./index.mjs";
-import { MAX_ATTEMPTS, planCharge, notBillableReason } from "./billing.mjs";
+import {
+  MAX_ATTEMPTS, planCharge, notBillableReason,
+  PROCESSOR_BILLED_PROVIDERS, isProcessorBilledProvider
+} from "./billing.mjs";
 
 const SUB_COLUMNS = `
   id, org_id, client_id, partner_id, tier, status, price_cents, currency, card_id,
@@ -69,6 +72,15 @@ function required(value, name) {
  *
  * ORDER BY next_charge_at — oldest debt first, so a backlog drains in the order
  * it accrued rather than by whatever the planner felt like.
+ *
+ * THE PROVIDER PREDICATE IS THE FIRST OF FOUR LOCKS ON DOUBLE BILLING. A row
+ * whose `provider` says Commas holds the card and the calendar
+ * (PROCESSOR_BILLED_PROVIDERS in billing.mjs) is not due to us on any date, so
+ * the sweeper never even sees it. The other three, in the order they would be
+ * hit if this one were ever deleted: notBillableReason() refuses it,
+ * claimCharge() below refuses it without writing a ledger row, and
+ * instrumentRefusal() in charger.mjs refuses it. Each is independent and each
+ * is enough on its own.
  */
 export async function listDueSubscriptions(db, { orgId = null, now = new Date(), limit = 100 } = {}) {
   const cap = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 500) : 100;
@@ -83,10 +95,11 @@ export async function listDueSubscriptions(db, { orgId = null, now = new Date(),
         AND billing_interval IS NOT NULL
         AND price_cents IS NOT NULL
         AND price_cents > 0
+        AND lower(btrim(provider)) <> ALL($3::text[])
         AND ($2::uuid IS NULL OR org_id = $2::uuid)
       ORDER BY next_charge_at ASC, id ASC
       LIMIT ${cap}`,
-    [now, orgId]
+    [now, orgId, [...PROCESSOR_BILLED_PROVIDERS]]
   );
   return res.rows;
 }
@@ -110,6 +123,18 @@ export async function listDueSubscriptions(db, { orgId = null, now = new Date(),
 export async function claimCharge(db, input = {}) {
   const orgId = required(input.orgId ?? input.org_id, "claimCharge: orgId");
   const subscriptionId = required(input.subscriptionId ?? input.subscription_id, "claimCharge: subscriptionId");
+
+  /* NOTHING COMMAS BILLS CAN BE CLAIMED, AND THE REFUSAL IS BEFORE THE INSERT.
+     This is the door to a processor call, so shutting it here is what makes
+     the skip structural rather than careful: a caller that skipped every other
+     check still cannot get past this line, and it writes no ledger row on the
+     way out. A row in subscription_charges means "we tried to move money", and
+     we are never going to try on one of these — Commas already did.
+     The mirror of a charge Commas made is recordProcessorCharge() below, which
+     writes a `succeeded` row and calls nobody. */
+  if (isProcessorBilledProvider(input.provider)) {
+    return { claimed: false, reason: "billed_by_processor", charge: null };
+  }
   const key = String(required(input.idempotencyKey ?? input.idempotency_key, "claimCharge: idempotencyKey")).trim();
   const periodStart = required(input.periodStart ?? input.period_start, "claimCharge: periodStart");
   const periodEnd = required(input.periodEnd ?? input.period_end, "claimCharge: periodEnd");
@@ -298,6 +323,180 @@ export async function advanceFromCharge(db, { orgId, chargeId } = {}) {
         AND s.next_charge_at = c.period_start
       RETURNING ${SUB_COLUMNS.split(",").map((x) => `s.${x.trim()}`).join(", ")}`,
     [orgId, chargeId]
+  );
+  return res.rows[0] ?? null;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE MIRROR — writing down money COMMAS ALREADY TOOK.
+   COMPLIANCE REVIEW REQUIRED (CLAUDE.md §7): payment rails and fee timing.
+
+   Everything above this line is the rail that ASKS for money. The two
+   functions below are the opposite: they record what a processor did on its
+   own schedule, after it happened, because it told us so on a webhook. They
+   call nobody, they claim nothing, and there is no path from either of them to
+   a charge.
+
+   THEY ARE THE ONLY WRITERS FOR A `commas_subscription` ROW, and claimCharge()
+   refuses one, so the two shapes cannot be confused: an arrangement is either
+   ours to bill or theirs to bill, and the provider column says which.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * recordProcessorCharge — one renewal Commas has already taken, written down.
+ *
+ * Returns { recorded, reason, charge, advanced }. `recorded: false` with a
+ * charge attached is the normal answer to a replayed webhook, not a failure.
+ *
+ * WHAT MAKES A REPLAY SAFE. The bus redelivers, the dead-letter queue retries,
+ * and a handler may run any number of times for one renewal. Two independent
+ * guards, because they catch different things:
+ *
+ *   `already`     — a charge row on this subscription already carries THIS
+ *                   provider reference (the processor's payment id). This is
+ *                   the one that survives the period moving: a second run
+ *                   reads an already-advanced subscription and would compute a
+ *                   later period, so a period-only guard would happily insert a
+ *                   row for a month nobody paid for.
+ *   ON CONFLICT   — 276's UNIQUE (subscription_id, period_start), which is what
+ *                   adjudicates two deliveries racing on the same period.
+ *
+ * THE PROVIDER REFERENCE IS THEREFORE REQUIRED. A renewal with no payment id
+ * on it cannot be recorded safely, so it is refused and named rather than
+ * written on a guessed anchor. NULL means unknown and must survive.
+ *
+ * THE PERIOD IS THE CALLER'S, and it must come off the subscription row (the
+ * period after the one currently recorded), never off a clock. Commas charges
+ * in advance on its cadence, the same shape 276's header describes for ours.
+ *
+ * ADVANCING IS IN THE SAME STATEMENT for the reason settleSucceeded() gives:
+ * a crash between two statements would leave a recorded payment whose
+ * arrangement never moved on. A past-due plan that pays goes back to active,
+ * which is what `subscription.recovered` means.
+ */
+export async function recordProcessorCharge(db, {
+  orgId, subscriptionId, periodStart, periodEnd, amountCents, currency = null,
+  providerRef = null, provider = null, chargedAt = null, idempotencyKey = null
+} = {}) {
+  required(orgId, "recordProcessorCharge: orgId");
+  required(subscriptionId, "recordProcessorCharge: subscriptionId");
+  required(periodStart, "recordProcessorCharge: periodStart");
+  required(periodEnd, "recordProcessorCharge: periodEnd");
+
+  const ref = providerRef == null ? "" : String(providerRef).trim();
+  if (!ref) {
+    return {
+      recorded: false,
+      reason: "no_provider_ref",
+      charge: null,
+      advanced: false
+    };
+  }
+
+  const cents = assertPriceCents(amountCents, "recordProcessorCharge: amountCents");
+  if (!Number.isInteger(cents) || cents <= 0) {
+    throw new RangeError(
+      `recordProcessorCharge: amountCents must be a positive integer — got ${JSON.stringify(amountCents)}`
+    );
+  }
+
+  const key = String(
+    idempotencyKey || `commas:sub:${subscriptionId}:payment:${ref}`
+  ).trim();
+  const cols = CHARGE_COLUMNS.split(",").map((c) => c.trim());
+  const pick = (alias) => cols.map((c) => `${alias}.${c}`).join(", ");
+
+  const res = await db.query(
+    `WITH sub AS (
+       SELECT id, org_id FROM subscriptions
+        WHERE id = $2 AND org_id = $1 AND effective_to IS NULL
+     ), already AS (
+       SELECT ${CHARGE_COLUMNS} FROM subscription_charges
+        WHERE org_id = $1 AND subscription_id = $2 AND provider_ref = $10
+        ORDER BY period_start DESC LIMIT 1
+     ), ins AS (
+       INSERT INTO subscription_charges
+         (org_id, subscription_id, idempotency_key, period_start, period_end,
+          amount_cents, currency, status, attempt, provider, provider_ref, charged_at)
+       SELECT s.org_id, s.id, $3, $4::timestamptz, $5::timestamptz,
+              $6, COALESCE($7, 'USD'), 'succeeded', 1, COALESCE($8, 'commas_subscription'),
+              $10, COALESCE($9::timestamptz, now())
+         FROM sub s
+        WHERE NOT EXISTS (SELECT 1 FROM already)
+       ON CONFLICT (subscription_id, period_start) DO NOTHING
+       RETURNING ${CHARGE_COLUMNS}
+     ), advanced AS (
+       UPDATE subscriptions s
+          SET current_period_start = i.period_start,
+              current_period_end   = i.period_end,
+              status = CASE WHEN s.status = 'past_due' THEN 'active' ELSE s.status END
+         FROM ins i
+        WHERE s.id = i.subscription_id AND s.effective_to IS NULL
+       RETURNING s.id
+     ), conflicted AS (
+       SELECT ${CHARGE_COLUMNS} FROM subscription_charges
+        WHERE org_id = $1 AND subscription_id = $2 AND period_start = $4::timestamptz
+     )
+     SELECT ${pick("i")}, true AS recorded, 'recorded'::text AS outcome,
+            (SELECT count(*) FROM advanced) AS advanced_rows
+       FROM ins i
+      UNION ALL
+     SELECT ${pick("a")}, false AS recorded, 'already_recorded'::text AS outcome,
+            0::bigint AS advanced_rows
+       FROM already a WHERE NOT EXISTS (SELECT 1 FROM ins)
+      UNION ALL
+     SELECT ${pick("c")}, false AS recorded, 'period_already_recorded'::text AS outcome,
+            0::bigint AS advanced_rows
+       FROM conflicted c
+      WHERE NOT EXISTS (SELECT 1 FROM ins) AND NOT EXISTS (SELECT 1 FROM already)`,
+    [orgId, subscriptionId, key, periodStart, periodEnd, cents,
+      currency, provider, chargedAt, ref]
+  );
+
+  const row = res.rows[0] ?? null;
+  if (!row) {
+    /* No live subscription with that id in that org — or another writer took
+       this period between this statement's snapshot and now. Both mean the
+       same thing to the caller: nothing was written here, and nothing should
+       be retried blindly. */
+    return { recorded: false, reason: "not_recorded", charge: null, advanced: false };
+  }
+  return {
+    recorded: row.recorded === true,
+    reason: row.recorded === true ? null : row.outcome,
+    charge: row,
+    advanced: Number(row.advanced_rows ?? 0) > 0
+  };
+}
+
+/**
+ * markProcessorPastDue — Commas says the card failed. Show it, change nothing
+ * else.
+ *
+ * SCOPED TO PROCESSOR-BILLED ROWS ONLY, deliberately. Flipping a subscription
+ * past_due is a money state other screens read, and the only thing entitled to
+ * set it on our own rail is a real failed attempt with a ledger row behind it
+ * (settleFailed above). This is the other rail's equivalent and it must not
+ * become a general-purpose switch.
+ *
+ * IT DOES NOT MOVE THE PERIOD OR SCHEDULE ANYTHING. Commas owns the retries and
+ * the dunning; if the customer fixes the card, `subscription.recovered` comes
+ * back and recordProcessorCharge() returns the row to active. A cancelled row
+ * is left alone — a cancellation already answered the question.
+ */
+export async function markProcessorPastDue(db, { orgId, subscriptionId } = {}) {
+  required(orgId, "markProcessorPastDue: orgId");
+  required(subscriptionId, "markProcessorPastDue: subscriptionId");
+  const res = await db.query(
+    `UPDATE subscriptions
+        SET status = 'past_due'
+      WHERE id = $2 AND org_id = $1
+        AND effective_to IS NULL
+        AND cancelled_at IS NULL
+        AND status = 'active'
+        AND lower(btrim(provider)) = ANY($3::text[])
+      RETURNING ${SUB_COLUMNS}`,
+    [orgId, subscriptionId, [...PROCESSOR_BILLED_PROVIDERS]]
   );
   return res.rows[0] ?? null;
 }

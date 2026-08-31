@@ -91,24 +91,20 @@ import {
   PARTNER_ENTRY_PRODUCT_CODE
 } from "../../src/trials/constants.mjs";
 import { AUTOPSY_PRICE_CENTS } from "../../src/autopsy/fields.mjs";
+import { COMMAS_FREQUENCY_DAYS } from "../../src/subscriptions/billing.mjs";
 import { AUTOPSY_PRODUCT_CODE, autopsyPriceCents, runAutopsyCheckout } from "./decline-autopsy.mjs";
 
 /**
  * $47/month. Spec docs/specs/W2-creative-intelligence.md A1, owner-set.
  *
- * KNOWN GAP, STATED RATHER THAN PAPERED OVER. There is no WINNERS_BOARD entry
- * in src/config/offers.mjs and no `winners-board` row in PARTNER_ADD_ONS, so
- * this price has no home in the catalogue. offers.mjs is owned by another
- * workflow in this batch and was not editable from here. The constant sits
- * beside the only code that charges it, which is exactly what
- * src/autopsy/fields.mjs (AUTOPSY_PRICE_CENTS) and src/trials/constants.mjs
- * (LIVE_TRIAL_PRICE_CENTS) already had to do for the same reason.
- *
- * boardPriceCents() below reads offers.mjs FIRST, so the day a WINNERS_BOARD
- * entry lands there it becomes the single source with no code change here, and
- * src/http/funnel-checkout.test.mjs fails if one lands carrying a different
- * number. Two numbers that disagree is the bug; two numbers a test holds
- * together is a seam.
+ * THE FALLBACK, NOT THE SOURCE. src/config/offers.mjs now carries a
+ * WINNERS_BOARD entry, and boardPriceCents() below reads it FIRST, so the
+ * catalogue is the single source. This constant stays as the last resort for
+ * the same reason src/autopsy/fields.mjs (AUTOPSY_PRICE_CENTS) and
+ * src/trials/constants.mjs (LIVE_TRIAL_PRICE_CENTS) keep theirs: the price
+ * lives beside the only code that charges it. src/http/funnel-checkout.test.mjs
+ * fails if the two ever disagree. Two numbers that disagree is the bug; two
+ * numbers a test holds together is a seam.
  */
 export const WINNERS_BOARD_PRICE_CENTS = 4700;
 
@@ -210,22 +206,40 @@ export function getFunnelItem(slug) {
 }
 
 /**
- * RENEWAL IS NOT WIRED, AND THE PAGE SAYS SO.
+ * RENEWAL IS WIRED, AND COMMAS OWNS IT.
  *
- * The Winner's Board is $47 a MONTH. The recurring rail in this repository
- * (src/subscriptions/store.mjs → billing-store.mjs → the five-minute sweeper) bills a
- * `subscriptions` row, and 271 requires that row to name a partner. A stranger
- * buying the board on a public page is not a partner and has no partners row,
- * and `winners-board` is not one of the three codes in PARTNER_ADD_ONS that
- * src/subscriptions/partner-addons.mjs will accept — buyAddOn() throws on it
- * today (src/subscriptions/partner-addons.test.mjs asserts exactly that).
+ * COMPLIANCE REVIEW REQUIRED (CLAUDE.md §7) — payment rails and fee timing.
  *
- * So this charges the FIRST MONTH and records the purchase, and returns
- * renewal: "not_automated" so the page can say it in plain words rather than
- * implying a subscription nobody can bill. Silently charging month one while
- * showing "$47/month" would be a fee-timing misstatement on a public page.
+ * THIS USED TO CHARGE ONE MONTH. The board is $47 a MONTH and this endpoint
+ * minted a one-time checkout for it, on the finding that Commas had no
+ * subscription primitive. That finding was wrong. POST /checkout-sessions
+ * takes type "subscription" with `subscription.frequency_days`
+ * (createCheckoutSession in src/payments/commas-api.mjs), and Commas then holds
+ * the card, charges every cadence and fires `subscription.renewed`. A page
+ * showing "$47/month" beside a till that took one payment was a fee-timing
+ * misstatement, and it is fixed by minting the real thing rather than by
+ * softening the words.
+ *
+ * OUR SWEEPER IS NOT INVOLVED AND MUST NEVER BE. The local `subscriptions` row
+ * this creates (src/handlers/commas-subscriptions.mjs, on the webhook) is a
+ * MIRROR carrying `provider = 'commas_subscription'`, which four independent
+ * locks in src/subscriptions/billing*.mjs and charger.mjs refuse to bill.
+ * Charging the buyer on both rails is the worst outcome available here.
  */
-export const BOARD_RENEWAL_STATE = "not_automated";
+export const BOARD_RENEWAL_STATE = "commas_subscription";
+
+/**
+ * A monthly item cannot be sold through the query-link fallback, and this is
+ * a fee-timing decision, not a limitation to work around.
+ *
+ * buildCommasCheckoutUrl() builds a hosted URL with an amount on the query
+ * string. It has no way to say "and again every 30 days", so a board sold
+ * through it would take exactly one $47 payment while the page said
+ * "$47/month". Refusing is the honest half of that choice: the board is
+ * unavailable until FANBASIS_CHECKOUT_API_KEY is set, and the catalogue says
+ * so, rather than the page quietly overstating what the buyer signed up for.
+ */
+export const SUBSCRIPTION_CHECKOUT_ERROR = "subscription_checkout_unavailable";
 
 /** One catalogue row, as JSON a public page can render. Prices only — never a
  *  figure describing what a buyer might earn. */
@@ -242,9 +256,14 @@ function itemForPage(item, env) {
     priceCents: cents,
     priceDisplay: formatCents(cents),
     priceLabel: priceLabel(cents, item.billing),
-    available: cents != null && (!item.selfServe || checkoutReady(env)),
+    available: cents != null && (!item.selfServe || checkoutReady(env, item)),
     applyUrl: item.selfServe ? null : PARTNER_APPLY_URL,
-    renewal: item.billing === "monthly" ? BOARD_RENEWAL_STATE : null
+    renewal: item.billing === "monthly" ? BOARD_RENEWAL_STATE : null,
+    /* The cadence the buyer is agreeing to, in days, straight off the number
+       the session is minted with. A page that says "$47/month" beside a till
+       that bills every 30 days should be able to read the 30 rather than be
+       told it. Null for anything that does not renew. */
+    frequencyDays: item.billing === "monthly" ? COMMAS_FREQUENCY_DAYS : null
   };
 }
 
@@ -257,9 +276,20 @@ export function priceLabel(cents, billing) {
   return billing === "monthly" ? `${display}/month` : `${display} once`;
 }
 
-/** Can we actually take money right now? Either Commas door counts. */
-export function checkoutReady(env = process.env) {
-  if (checkoutConfig(env).ok === true) return true;
+/**
+ * Can we actually take money right now?
+ *
+ * For a one-time item, either Commas door counts. For a MONTHLY one, only the
+ * checkout-session API does: see SUBSCRIPTION_CHECKOUT_ERROR. The query-link
+ * fallback cannot carry a cadence, so a board sold through it would take one
+ * payment while the page promised a subscription. Reporting the board as
+ * unavailable is the honest answer; selling it anyway is a fee-timing
+ * misstatement on a public page.
+ */
+export function checkoutReady(env = process.env, item = null) {
+  const sessionApi = checkoutConfig(env).ok === true;
+  if (item && item.billing === "monthly") return sessionApi;
+  if (sessionApi) return true;
   return Boolean(String(env?.COMMAS_CHECKOUT_BASE_URL || "").trim());
 }
 
@@ -271,11 +301,16 @@ export function funnelCatalogue(env = process.env) {
     checkout: { ready: checkoutReady(env) },
     applyUrl: PARTNER_APPLY_URL,
     items: ITEMS.map((i) => itemForPage(i, env)),
-    /* Said on the page, not only in a comment. See BOARD_RENEWAL_STATE. */
+    /* Said on the page, not only in a comment. See BOARD_RENEWAL_STATE.
+       WHAT THE BUYER IS AGREEING TO, IN THE WORDS THEY WILL READ. The card is
+       charged today for the first month and again on the same cadence until
+       they stop it. Fee timing stated up front is the whole point of this
+       string; no earnings figure appears in it, and none may. */
     notices: {
       board_renewal:
-        "This pays for your first month. Nothing renews on its own yet — "
-        + "we will email you before there is ever a second charge."
+        `Your card is charged today for the first month, then every `
+        + `${COMMAS_FREQUENCY_DAYS} days until you cancel. It renews on its own. `
+        + `Cancel any time and the next charge stops.`
     }
   };
 }
@@ -377,6 +412,15 @@ export async function runFunnelCheckout(parsed, deps = {}) {
 
   if (!checkoutReady(env)) return { ok: false, error: "checkout_not_configured" };
 
+  /* A MONTHLY ITEM NEEDS THE SUBSCRIPTION API, NOT JUST A CHECKOUT DOOR.
+     Refused here, before anything is recorded and before a payable URL exists,
+     because the alternative is a buyer paying $47 once against a page that
+     promised a subscription. See SUBSCRIPTION_CHECKOUT_ERROR. */
+  const monthly = item.billing === "monthly";
+  if (monthly && (deps.checkoutConfig || checkoutConfig)(env).ok !== true) {
+    return { ok: false, error: SUBSCRIPTION_CHECKOUT_ERROR };
+  }
+
   const ref = deps.ref || newFunnelRef();
   const orgId = deps.orgId || (await resolveDefaultOrg(dbh));
 
@@ -394,6 +438,11 @@ export async function runFunnelCheckout(parsed, deps = {}) {
       amount_cents: amountCents,
       currency: "USD",
       billing: item.billing,
+      /* The cadence Commas is being handed, recorded with the ask. This is the
+         row src/handlers/commas-subscriptions.mjs reads back by `ref` when the
+         subscription webhook arrives, because a public funnel purchase has no
+         payment_links row for the adapter to resolve a product code from. */
+      frequency_days: monthly ? COMMAS_FREQUENCY_DAYS : null,
       email: parsed.email,
       name: parsed.name,
       track: parsed.track,
@@ -419,6 +468,16 @@ export async function runFunnelCheckout(parsed, deps = {}) {
 
   if ((deps.checkoutConfig || checkoutConfig)(env).ok === true) {
     const mintOpts = { amountCents, productTitle, metadata, env };
+    /* THE ONE LINE THAT MAKES THE BOARD A SUBSCRIPTION. type "subscription"
+       plus a cadence hands Commas the card, the schedule, the retries and the
+       dunning; createCheckoutSession() refuses the type without the cadence,
+       so a missing number cannot become a silent one-off. Our own recurring
+       sweeper is not involved and is structurally barred from these rows —
+       see BOARD_RENEWAL_STATE. */
+    if (monthly) {
+      mintOpts.type = "subscription";
+      mintOpts.frequencyDays = COMMAS_FREQUENCY_DAYS;
+    }
     if (deps.fetchImpl) mintOpts.fetchImpl = deps.fetchImpl;
     const minted = await (deps.createCheckoutSession || createCheckoutSession)(mintOpts);
     if (!minted?.ok || !minted.paymentLink) {
@@ -427,7 +486,8 @@ export async function runFunnelCheckout(parsed, deps = {}) {
     checkoutUrl = String(minted.paymentLink);
   } else {
     /* The query-link fallback, byte-identical to the one createPaymentLink
-       falls back to when the checkout-session key is absent. */
+       falls back to when the checkout-session key is absent. ONE-TIME ITEMS
+       ONLY — a monthly one was refused above, before this branch. */
     checkoutUrl = (deps.buildCommasCheckoutUrl || buildCommasCheckoutUrl)({
       baseUrl: String(env.COMMAS_CHECKOUT_BASE_URL).trim(),
       linkRef: ref,
@@ -454,7 +514,10 @@ const STATUS_BY_ERROR = Object.freeze({
   price_missing: 500,
   offer_missing: 500,
   not_self_serve: 409,
-  checkout_not_configured: 503
+  checkout_not_configured: 503,
+  /* 503, same as an unconfigured till: the offer is real and the door is shut,
+     which is a "come back later", not a bad request from the buyer. */
+  [SUBSCRIPTION_CHECKOUT_ERROR]: 503
 });
 
 export default async function handler(req, res, deps = {}) {
