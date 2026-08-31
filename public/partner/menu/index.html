@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="/partner/funnel.css"/>
 </head>
 <body>
-<header><div class="wrap"><div class="logo">fundhub<span>.</span></div></div></header>
+<header><div class="wrap"><div class="logo" role="img" aria-label="fundhub"></div></div></header>
 <main>
 <section class="sect" style="padding-top:22px">
   <div class="wrap">
@@ -49,7 +49,7 @@
     <span class="kicker">Add-Ons</span>
     <div class="h2">Bought On Top of the Partnership. Monthly. Stackable.</div>
     <div class="prose">
-      <p>Add-ons sit on top of the entry fee — they are not included in it, and none of them is required.
+      <p>Add-ons sit on top of the <span class="price" data-price="partner">&mdash;</span> entry — they are not included in it, and none of them is required.
       <strong>Marketing is an add-on, not part of the entry fee.</strong> You choose what you want and you can stack them.</p>
     </div>
     <div class="callout"><p>Add-on pricing is set on your review call against what you're actually running, so we're not going to print a number here that turns out to be wrong for you.</p></div>
@@ -75,17 +75,35 @@
     <div class="h2">Before You Ask.</div>
     <div class="faq">
       <details open><summary>Do I have to work up the ladder?</summary><div class="a">No. There's no order and no prerequisite. You can apply for the partnership today having bought none of the rest.</div></details>
-      <details><summary>Do the smaller purchases come off the entry fee?</summary><div class="a">No. Each one is its own thing at its own price, and none of them comes off the entry fee. We'd rather tell you here than at checkout.</div></details>
+      <details><summary>Do the smaller purchases come off the entry fee?</summary><div class="a">No. Each one is its own thing at its own price. We'd rather tell you here than at checkout.</div></details>
       <details><summary>Is there a monthly fee on the partnership?</summary><div class="a">No. <span class="price" data-price-label="partner">&mdash;</span>, with no monthly base fee at any point. Add-ons are monthly, but they're optional and separate.</div></details>
       <details><summary>Which lenders do you work with?</summary><div class="a">We don't share that with partners or affiliates. That's firm, and it doesn't change at any price on this page.</div></details>
     </div>
   </div>
 </section>
 </main>
-<footer><div class="wrap"><div class="prose">
-  <p><strong>Disclosure.</strong> FundHub LLC is not a bank or a lender. Nothing on this page is an offer of credit, a promise of funding, or a guarantee of any credit or income outcome. Revenue splits and fees are commercial terms, not earnings projections. Partnership acceptance is decided on a review call at FundHub's sole discretion.</p>
-  <p>&copy; <span id="yr"></span> FundHub LLC &middot; <a href="/privacy/">Privacy</a> &middot; <a href="/terms/">Terms</a></p>
-</div></div></footer>
+<div class="marq" aria-hidden="true"><div class="marq-track" id="mq"></div></div>
+
+<footer>
+  <div class="wrap">
+    <div class="disc">
+      <p><strong>PARTNER DISCLAIMER:</strong> Fundhub LLC is not a bank or a lender. We are a funding advisory and application service. Nothing on this page is an offer of credit, a promise of funding, or a guarantee of any credit outcome. The revenue split described is a commercial term of the partnership, not a projection or guarantee of income.</p>
+      <p><strong>NOT AFFILIATED WITH META:</strong> This site is not part of Facebook, Instagram, or Meta Platforms, Inc., and is not endorsed by Meta in any way. Facebook&trade; and Instagram&trade; are trademarks of Meta Platforms, Inc.</p>
+    </div>
+    <div class="foot-bottom">&copy; <span id="yr"></span> FUNDHUB LLC. All rights reserved. &nbsp;&middot;&nbsp; <a href="/privacy/">Privacy Policy</a> &nbsp;&middot;&nbsp; <a href="/terms/">Terms of Service</a></div>
+    <div class="sysline"><span class="pulse"></span>systems nominal &middot; fundhub.ai</div>
+  </div>
+  <div class="ghost-mark" aria-hidden="true"><span class="logo"></span></div>
+</footer>
+<script>
+(function(){
+  var items=["Your brand","Your book","Your renewals","Our fulfillment","50% of funding",
+             "50% of repair","No monthly base fee","Financing available"];
+  var set='<div class="marq-set">'+items.map(function(t){return "<span>"+t+"</span><i></i>"}).join("")+'</div>';
+  var mq=document.getElementById("mq"); if(mq) mq.innerHTML=set+set;
+  var y=document.getElementById("yr"); if(y) y.textContent=new Date().getFullYear();
+})();
+</script>
 <script src="/partner/funnel.js" defer></script>
 </body>
 </html>

@@ -12,14 +12,15 @@
 <link rel="stylesheet" href="/partner/funnel.css"/>
 </head>
 <body>
-<header><div class="wrap"><div class="logo">fundhub<span>.</span></div></div></header>
+<header><div class="wrap"><div class="logo" role="img" aria-label="fundhub"></div></div></header>
 <main>
 <section class="sect" style="padding-top:22px">
   <div class="wrap">
     <span class="kicker"><span class="price" data-price="trial">&mdash;</span> &middot; Live Trial &middot; Seven days</span>
-    <h1>Seven Days With Your Name on the Front and Our Engine Behind It.</h1>
-    <p class="lede">Real calls. Real files. Your brand. You find out what running a funding company
-      actually feels like <strong>before</strong> you decide about the partnership.</p>
+    <h1>You Want the Partnership. You Just Want to Feel the Work First.</h1>
+    <p class="lede">Seven days under your own brand. Real calls, real files, our fulfillment behind you —
+      so you can find out what running a funding company actually feels like <strong>before</strong>
+      you put <span class="price" data-price="partner">&mdash;</span> behind the decision.</p>
     <a class="btn" href="#buy">Start the Trial &mdash; <span class="price" data-price="trial">&mdash;</span></a>
     <p class="sub">Optional &middot; Never required &middot; You can buy the partnership direct without it</p>
   </div>
@@ -57,7 +58,7 @@
     <div class="h2">Seven Days Won't Show You Everything.</div>
     <div class="prose">
       <p>A funding file can take longer than a week to close. So the trial shows you the work, the pace, the calls and how the machine behaves — <strong>it does not promise you a funded client inside seven days</strong>, and anyone telling you otherwise is selling you something.</p>
-      <p>What you're buying is a look under the hood while it's running. That's it, and it's worth the money to some people and nothing to others.</p>
+      <p>What you're buying is a look under the hood while it's running. That's it, and it's worth <span class="price" data-price="trial">&mdash;</span> to some people and nothing to others.</p>
     </div>
     <form class="buy" id="buy" data-checkout="trial" novalidate>
       <div class="row two">
@@ -84,7 +85,7 @@
     <div class="h2">The Things People Ask.</div>
     <div class="faq">
       <details open><summary>Do I have to do the trial before the partnership?</summary><div class="a">No. It's optional and always has been. Anyone can apply for the review call and buy the partnership direct without ever touching this page.</div></details>
-      <details><summary>Does the trial fee come off the entry fee?</summary><div class="a">No. The trial is its own thing at its own price, and it does not come off the entry fee. We'd rather say that plainly than have you find out at checkout.</div></details>
+      <details><summary>Does the trial price come off the entry fee?</summary><div class="a">No. The trial is its own thing at its own price. We'd rather say that plainly than have you find out at checkout.</div></details>
       <details><summary>Will I get a funded client in seven days?</summary><div class="a">We won't promise that. Funding files run on their own timeline and seven days is often not enough. You'll see real work in motion, which is what you're paying for.</div></details>
       <details><summary>Do I see the whole CRM during the trial?</summary><div class="a">No — the same partner view a full partner gets. Your clients and your files. Not the full internal system, because we do the fulfillment inside it.</div></details>
       <details><summary>What if I decide against the partnership?</summary><div class="a">Then it ends after seven days and nothing renews. If you still want to work with us there's an affiliate track with no entry fee.</div></details>
@@ -92,10 +93,28 @@
   </div>
 </section>
 </main>
-<footer><div class="wrap"><div class="prose">
-  <p><strong>Disclosure.</strong> FundHub LLC is not a bank or a lender. The Live Trial is a seven-day working arrangement. It is not an offer of credit, not a guarantee of any funding outcome for you or any client, and not a guarantee of acceptance into the partnership. Acceptance is decided on a review call at FundHub's sole discretion.</p>
-  <p>&copy; <span id="yr"></span> FundHub LLC &middot; <a href="/privacy/">Privacy</a> &middot; <a href="/terms/">Terms</a></p>
-</div></div></footer>
+<div class="marq" aria-hidden="true"><div class="marq-track" id="mq"></div></div>
+
+<footer>
+  <div class="wrap">
+    <div class="disc">
+      <p><strong>PARTNER DISCLAIMER:</strong> Fundhub LLC is not a bank or a lender. We are a funding advisory and application service. Nothing on this page is an offer of credit, a promise of funding, or a guarantee of any credit outcome. The revenue split described is a commercial term of the partnership, not a projection or guarantee of income.</p>
+      <p><strong>NOT AFFILIATED WITH META:</strong> This site is not part of Facebook, Instagram, or Meta Platforms, Inc., and is not endorsed by Meta in any way. Facebook&trade; and Instagram&trade; are trademarks of Meta Platforms, Inc.</p>
+    </div>
+    <div class="foot-bottom">&copy; <span id="yr"></span> FUNDHUB LLC. All rights reserved. &nbsp;&middot;&nbsp; <a href="/privacy/">Privacy Policy</a> &nbsp;&middot;&nbsp; <a href="/terms/">Terms of Service</a></div>
+    <div class="sysline"><span class="pulse"></span>systems nominal &middot; fundhub.ai</div>
+  </div>
+  <div class="ghost-mark" aria-hidden="true"><span class="logo"></span></div>
+</footer>
+<script>
+(function(){
+  var items=["Your brand","Your book","Your renewals","Our fulfillment","50% of funding",
+             "50% of repair","No monthly base fee","Financing available"];
+  var set='<div class="marq-set">'+items.map(function(t){return "<span>"+t+"</span><i></i>"}).join("")+'</div>';
+  var mq=document.getElementById("mq"); if(mq) mq.innerHTML=set+set;
+  var y=document.getElementById("yr"); if(y) y.textContent=new Date().getFullYear();
+})();
+</script>
 <script src="/partner/funnel.js" defer></script>
 </body>
 </html>

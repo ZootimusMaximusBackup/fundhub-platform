@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="/partner/funnel.css"/>
 </head>
 <body>
-<header><div class="wrap"><div class="logo">fundhub<span>.</span></div></div></header>
+<header><div class="wrap"><div class="logo" role="img" aria-label="fundhub"></div></div></header>
 <main>
 <section class="sect" style="padding-top:22px">
   <div class="wrap">
@@ -45,7 +45,7 @@
       <div class="num"><b>01</b><div><h3>Why it actually died</h3><p>The specific reason the file failed underwriting — not the category the decline letter gave you.</p></div></div>
       <div class="num"><b>02</b><div><h3>Whether it was survivable</h3><p>Some files were dead on arrival. Some were killed by how they were submitted. You find out which is which.</p></div></div>
       <div class="num"><b>03</b><div><h3>What's still alive</h3><p>Deals in your folder that could still fund today with a different structure or sequence.</p></div></div>
-      <div class="num"><b>04</b><div><h3>The pattern across all of them</h3><p>The mistake you're repeating. This is usually the part that's worth more than what you paid.</p></div></div>
+      <div class="num"><b>04</b><div><h3>The pattern across all of them</h3><p>The mistake you're repeating. This is usually the part that's worth more than the <span class="price" data-price="autopsy">&mdash;</span>.</p></div></div>
     </div>
     <div class="callout"><p><strong>What this is not:</strong> we don't re-submit your files, contact your clients, or take the deals. It's a read on your declines and it stays yours.</p></div>
   </div>
@@ -53,10 +53,10 @@
 
 <section class="sect">
   <div class="wrap">
-    <span class="kicker">Why It's This Cheap</span>
+    <span class="kicker">Why It Costs What It Does</span>
     <div class="h2">Because We'd Rather Show You Than Tell You.</div>
     <div class="prose">
-      <p>We're not making money at this price. We're showing you how we read a file, because that read is the whole business — and it's hard to describe and easy to demonstrate.</p>
+      <p>We're not making money at <span class="price" data-price="autopsy">&mdash;</span>. We're showing you how we read a file, because that read is the whole business — and it's hard to describe and easy to demonstrate.</p>
       <p>If it's useful, you'll want to know what else is behind it. If it isn't, you're out <span class="price" data-price="autopsy">&mdash;</span> and you still learned why your deals died. That's a fair trade in both directions.</p>
     </div>
     <form class="buy" id="buy" data-checkout="autopsy" novalidate>
@@ -74,7 +74,7 @@
         we will not hold other people&rsquo;s data from somebody who never became a customer.
         Take the names off before you upload &mdash; we refuse a file that still has them.</p>
     </form>
-    <p class="sub">One flat fee &middot; No subscription &middot; Nothing recurring</p>
+    <p class="sub"><span class="price" data-price-label="autopsy">&mdash;</span> &middot; No subscription &middot; Nothing recurring</p>
   </div>
 </section>
 
@@ -86,15 +86,33 @@
       <details open><summary>How many files can I send?</summary><div class="a">Send the folder. If it's enormous we'll tell you before we start rather than after you've paid.</div></details>
       <details><summary>Do you contact my clients?</summary><div class="a">No. Never. We read the files you send and we send you back what we found. Your clients stay yours and hear nothing from us.</div></details>
       <details><summary>Will you tell me which lender to use?</summary><div class="a">No. We don't share lender information with anyone outside the company — that's a firm line, not a paywall. What you get is why the file failed and what would have to change.</div></details>
-      <details><summary>Is this a subscription?</summary><div class="a">No. One flat fee, once. There's nothing recurring attached to it.</div></details>
+      <details><summary>Is this a subscription?</summary><div class="a">No. <span class="price" data-price-label="autopsy">&mdash;</span>. There's nothing recurring attached to it.</div></details>
     </div>
   </div>
 </section>
 </main>
-<footer><div class="wrap"><div class="prose">
-  <p><strong>Disclosure.</strong> FundHub LLC is not a bank or a lender. A Decline Autopsy is an analysis of files you provide. It is not an offer of credit, a promise of funding, and not a guarantee that any file will fund.</p>
-  <p>&copy; <span id="yr"></span> FundHub LLC &middot; <a href="/privacy/">Privacy</a> &middot; <a href="/terms/">Terms</a></p>
-</div></div></footer>
+<div class="marq" aria-hidden="true"><div class="marq-track" id="mq"></div></div>
+
+<footer>
+  <div class="wrap">
+    <div class="disc">
+      <p><strong>PARTNER DISCLAIMER:</strong> Fundhub LLC is not a bank or a lender. We are a funding advisory and application service. Nothing on this page is an offer of credit, a promise of funding, or a guarantee of any credit outcome. The revenue split described is a commercial term of the partnership, not a projection or guarantee of income.</p>
+      <p><strong>NOT AFFILIATED WITH META:</strong> This site is not part of Facebook, Instagram, or Meta Platforms, Inc., and is not endorsed by Meta in any way. Facebook&trade; and Instagram&trade; are trademarks of Meta Platforms, Inc.</p>
+    </div>
+    <div class="foot-bottom">&copy; <span id="yr"></span> FUNDHUB LLC. All rights reserved. &nbsp;&middot;&nbsp; <a href="/privacy/">Privacy Policy</a> &nbsp;&middot;&nbsp; <a href="/terms/">Terms of Service</a></div>
+    <div class="sysline"><span class="pulse"></span>systems nominal &middot; fundhub.ai</div>
+  </div>
+  <div class="ghost-mark" aria-hidden="true"><span class="logo"></span></div>
+</footer>
+<script>
+(function(){
+  var items=["Your brand","Your book","Your renewals","Our fulfillment","50% of funding",
+             "50% of repair","No monthly base fee","Financing available"];
+  var set='<div class="marq-set">'+items.map(function(t){return "<span>"+t+"</span><i></i>"}).join("")+'</div>';
+  var mq=document.getElementById("mq"); if(mq) mq.innerHTML=set+set;
+  var y=document.getElementById("yr"); if(y) y.textContent=new Date().getFullYear();
+})();
+</script>
 <script src="/partner/funnel.js" defer></script>
 </body>
 </html>

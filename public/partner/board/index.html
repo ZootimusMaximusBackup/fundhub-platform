@@ -12,12 +12,12 @@
 <link rel="stylesheet" href="/partner/funnel.css"/>
 </head>
 <body>
-<header><div class="wrap"><div class="logo">fundhub<span>.</span></div></div></header>
+<header><div class="wrap"><div class="logo" role="img" aria-label="fundhub"></div></div></header>
 <main>
 <section class="sect" style="padding-top:22px">
   <div class="wrap">
     <span class="kicker"><span class="price" data-price-label="board">&mdash;</span> &middot; Winner's Board</span>
-    <h1>Stop Guessing What Works in Funding Ads. Watch What Refuses to Die.</h1>
+    <h1>You Already Know Your Ads Stop Working. You Just Can't See What's Still Running.</h1>
     <p class="lede">Every month: the ads running in the funding vertical, and — the part that actually matters —
       <strong>which ones are still running after everyone else's got turned off.</strong></p>
     <a class="btn" href="#buy">Get the Board &mdash; <span class="price" data-price-label="board">&mdash;</span></a>
@@ -58,7 +58,7 @@
     <span class="kicker">Who It's For</span>
     <div class="h2">People Who Are Running Ads, or About To.</div>
     <div class="quals">
-      <div class="qual"><div class="qh yes">Worth it if:</div><ul>
+      <div class="qual"><div class="qh yes">Worth <span class="price" data-price="board">&mdash;</span> if:</div><ul>
         <li>You're spending on funding ads now</li>
         <li>You're about to start and don't want to fund everyone else's education</li>
         <li>You write copy for this vertical</li>
@@ -94,16 +94,34 @@
     <div class="faq">
       <details open><summary>How often does it update?</summary><div class="a">Continuously, with a monthly summary of what changed — what's new, what died, what's going stale.</div></details>
       <details><summary>Do you show spend or ROAS?</summary><div class="a">No. Nobody outside those ad accounts has that, and anyone showing you a spend figure for someone else's ad is guessing. Run time is the honest signal and it's the one we build on.</div></details>
-      <details><summary>Can I cancel?</summary><div class="a">Any time, and there is no contract. Right now you pay for your first month and nothing renews on its own &mdash; we email you before there is ever a second charge, so cancelling is simply not replying.</div></details>
+      <details><summary>Can I cancel?</summary><div class="a">Any time. It's month to month with no contract.</div></details>
       <details><summary>Is this the same as a swipe file?</summary><div class="a">No. A swipe file is a pile of screenshots with no survival data. The board is organised around how long each ad has been running, which is the part that tells you whether it works.</div></details>
     </div>
   </div>
 </section>
 </main>
-<footer><div class="wrap"><div class="prose">
-  <p><strong>Disclosure.</strong> FundHub LLC is not a bank or a lender. The Winner's Board is observed public advertising activity, compiled for reference. It is not affiliated with or endorsed by any advertising platform, contains no confidential account data, and is not a guarantee that any approach will perform.</p>
-  <p>&copy; <span id="yr"></span> FundHub LLC &middot; <a href="/privacy/">Privacy</a> &middot; <a href="/terms/">Terms</a></p>
-</div></div></footer>
+<div class="marq" aria-hidden="true"><div class="marq-track" id="mq"></div></div>
+
+<footer>
+  <div class="wrap">
+    <div class="disc">
+      <p><strong>PARTNER DISCLAIMER:</strong> Fundhub LLC is not a bank or a lender. We are a funding advisory and application service. Nothing on this page is an offer of credit, a promise of funding, or a guarantee of any credit outcome. The revenue split described is a commercial term of the partnership, not a projection or guarantee of income.</p>
+      <p><strong>NOT AFFILIATED WITH META:</strong> This site is not part of Facebook, Instagram, or Meta Platforms, Inc., and is not endorsed by Meta in any way. Facebook&trade; and Instagram&trade; are trademarks of Meta Platforms, Inc.</p>
+    </div>
+    <div class="foot-bottom">&copy; <span id="yr"></span> FUNDHUB LLC. All rights reserved. &nbsp;&middot;&nbsp; <a href="/privacy/">Privacy Policy</a> &nbsp;&middot;&nbsp; <a href="/terms/">Terms of Service</a></div>
+    <div class="sysline"><span class="pulse"></span>systems nominal &middot; fundhub.ai</div>
+  </div>
+  <div class="ghost-mark" aria-hidden="true"><span class="logo"></span></div>
+</footer>
+<script>
+(function(){
+  var items=["Your brand","Your book","Your renewals","Our fulfillment","50% of funding",
+             "50% of repair","No monthly base fee","Financing available"];
+  var set='<div class="marq-set">'+items.map(function(t){return "<span>"+t+"</span><i></i>"}).join("")+'</div>';
+  var mq=document.getElementById("mq"); if(mq) mq.innerHTML=set+set;
+  var y=document.getElementById("yr"); if(y) y.textContent=new Date().getFullYear();
+})();
+</script>
 <script src="/partner/funnel.js" defer></script>
 </body>
 </html>

@@ -666,6 +666,42 @@
       el.addEventListener('mouseleave',function(){el.style.transform='';});
     });
   })();
+  /* ── PRESELECT THE APPLICATION TRACK FROM ?track= ───────────────────────
+     The white-label offer page at /partner/ links here with ?track=white_label.
+     Values match the TRACKS map in api/public/partner-apply.mjs: affiliate,
+     white_label, white-label, partner, wl. Anything else is ignored and the
+     visitor picks a track by hand, which is the behaviour without a param.
+
+     THIS SITS ABOVE THE SUBMIT HANDLER, IN THE SAME SCRIPT, ON PURPOSE.
+     src/http/partner-apply-success-screen.test.mjs lifts that handler out of
+     this file by slicing from it to the last closing script tag, then runs the
+     slice with no window and no location. A second script block makes the
+     slice swallow markup; the same code below the handler puts a location read
+     inside it. Above the handler it is outside the slice, and it is the right
+     order anyway: fill the form in on arrival, then wire up sending it.
+
+     (And nothing in this file may write a closing script tag inside a comment.
+     The HTML parser ends the element at the first one it sees, comment or not,
+     which silently cuts the rest of this script loose as page text.) */
+  (function(){
+    var ALLOWED={affiliate:'affiliate','white_label':'white_label','white-label':'white_label',
+                 partner:'white_label',wl:'white_label'};
+    function go(){
+      var raw=new URLSearchParams(location.search).get('track')||'';
+      var want=ALLOWED[raw.trim().toLowerCase()];
+      if(!want) return;
+      var sel=document.getElementById('p-track');
+      if(!sel) return;
+      for(var i=0;i<sel.options.length;i++){
+        if(sel.options[i].value===want){ sel.selectedIndex=i; break; }
+      }
+      var form=document.getElementById('apply');
+      if(form&&form.scrollIntoView) form.scrollIntoView();
+    }
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go);
+    else go();
+  })();
+
   document.getElementById('pform').addEventListener('submit',function(e){
     e.preventDefault();
     var name=document.getElementById('p-name').value.trim();
@@ -747,5 +783,6 @@
     });
   });
 </script>
+
 </body>
 </html>
