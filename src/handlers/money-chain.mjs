@@ -1076,11 +1076,19 @@ export async function onRoundFundedMoney(event, db) {
 
   const commission = await writeBackEndCommissions(db, { roundId: round.id, event });
 
-  // Success-fee closeout from Approved applications (10%). Idempotent per round.
+  // Success-fee closeout from CONFIRMED APPROVALS (owner-set 2026-08-30).
+  // Idempotent per round. Refuses — no row, named reason — when nothing on the
+  // round is confirmed or the sale agreed no rate. It never writes a $0 fee.
+  //
+  // feePercentUnits, not feePercent: the event carries PERCENT UNITS (10 = 10%)
+  // while funding_closeout.fee_percent stores a fraction (0.10). Passing the
+  // payload straight into the old `feePercent` argument silently fell back to a
+  // hardcoded 10% for every rate that was not 10. Omitted, the rate is read
+  // from the sale — which is where it belongs on both funding rails.
   const closeout = await createFundingCloseoutSafe(db, {
     orgId: event.orgId,
     fundingRoundId: round.id,
-    feePercent: p.feePercent != null ? Number(p.feePercent) : undefined
+    feePercentUnits: p.feePercent != null ? Number(p.feePercent) : null
   });
 
   // Distinct from round.funded — inquiry gate (and anything else between rounds)

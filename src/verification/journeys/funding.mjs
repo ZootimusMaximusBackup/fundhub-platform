@@ -541,8 +541,10 @@ export async function runFundingJourney(db, ctx, collector) {
     opReturnedOk: true
   });
 
-  // Insert a lender + Approved application BEFORE round.funded for line-item
-  // coverage. Fee basis is funding_rounds.funded_amount (see docs/CLOSEOUT-FEE-BASIS.md).
+  // Insert a lender + Approved application BEFORE round.funded. This is not
+  // just line-item coverage any more: the Approved application's amount IS the
+  // fee basis (confirmed approvals, owner-set 2026-08-30, see
+  // docs/CLOSEOUT-FEE-BASIS.md). Without it there is nothing to bill.
   let lenderId = null;
   try {
     lenderId = (await db.query(
@@ -677,7 +679,7 @@ export async function runFundingJourney(db, ctx, collector) {
     });
   }
 
-  // Closeout — THE silent $0 trap if no Approved apps
+  // Closeout — the Approved application seeded above IS the basis now
   const closeout = rounds[0] ? (await db.query(
     `SELECT * FROM funding_closeout WHERE funding_round_id = $1`, [rounds[0].id]
   )).rows[0] : null;
@@ -692,7 +694,7 @@ export async function runFundingJourney(db, ctx, collector) {
   } else {
     collector.assertEq({
       section, journey, role, id: "fund-closeout-fee",
-      claim: "Closeout total_fee is $5000 (10% of round funded_amount $50000)",
+      claim: "Closeout total_fee is $5000 (10% of the $50000 confirmed approvals)",
       expected: MONEY.expectedSuccessFee,
       actual: Number(closeout.total_fee),
       file: "src/funding/closeout.mjs"
@@ -708,7 +710,7 @@ export async function runFundingJourney(db, ctx, collector) {
       collector.silent({
         section, journey, role, id: "fund-closeout-zero",
         claim: "Closeout fee non-zero when round funded for $50000",
-        detail: "Fee must come from funding_rounds.funded_amount. A $0 fee on a funded round is silent revenue loss.",
+        detail: "Fee must come from the confirmed approvals total. A $0 fee row must never be written at all — a round with nothing confirmed refuses.",
         file: "src/funding/closeout.mjs",
         p0: false,
         expected: { total_fee: MONEY.expectedSuccessFee },

@@ -23,7 +23,16 @@ test("Bank Inbox reads one client inside the session org and never returns raw p
 
   assert.deepEqual(result.rows, []);
   assert.match(call.sql, /WHERE org_id = \$1::uuid[\s\S]*AND client_id = \$2::uuid/);
-  assert.doesNotMatch(call.sql, /\braw\b/);
+  /* THE RAW PAYLOAD STILL NEVER LEAVES THIS PROCESS.
+     This used to forbid the word "raw" anywhere in the statement. The rule it
+     was written to protect is that the `raw` COLUMN — the whole inbound bank
+     email — is never handed to a browser, and that rule is unchanged and
+     asserted below. What changed on 2026-08-30 is that two named keys are read
+     OUT of it: the dollar figures the bank's own email stated, which the
+     classifier used to find and throw away, and which a funding advisor
+     otherwise retypes by hand. Two keys are not the payload. */
+  assert.doesNotMatch(call.sql, /(^|[\s,])raw(\s*,|\s+AS\b)/i);
+  assert.match(call.sql, /raw->'amountCandidates'\s+AS amount_candidates/);
   assert.deepEqual(call.params, ["org-1", "client-1", 26, 0]);
 });
 

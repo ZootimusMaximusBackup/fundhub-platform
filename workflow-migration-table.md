@@ -483,7 +483,7 @@ work and need sequencing as new builds.
 | F-04 | Round Approvals (F3/F5/F7...F21) | MIGRATED | `src/workflows/f-04-round-approvals.mjs`. Trigger `round.approved`. Audit fix: real ready-to-paste SMS + email-subject copy. |
 | F-05 | Inquiry Cleanup Gate (Between Rounds) | MIGRATED | `src/workflows/f-05-inquiry-cleanup-gate.mjs`. Trigger `round.approved` (same stage as F-04, different reaction). Flips open `inquiry_log` rows to Pending Removal; C-02 (Inquiry Removal pipeline) takes over from there — out of this batch's scope. |
 | F-06 | Funding Conditions / Missing Docs | MIGRATED | `src/workflows/f-06-funding-conditions-missing-docs.mjs`. Ported the live [AGENT DRAFT] copy. Original trigger ("Custom Field: Funding Condition Required = true") replaced with `mail.response` (classification MISSING_DOCS) + `docs.received` for the clear-hold half — see decision below re: no new event invented. |
-| F-07 | Funding Locked (F22) | MIGRATED (partial — see decision below) | `src/workflows/f-07-funding-locked.mjs`. Trigger `round.funded`. Audit fix: real ready-to-paste SMS + FR22 email copy. **Commission/Balance-Due calculation deliberately NOT automated** — touches money with an unclear formula in the source; a human-facing invoice task is created instead of a computed number. |
+| F-07 | Funding Locked (F22) | MIGRATED | `src/workflows/f-07-funding-locked.mjs`. Trigger `round.funded`. Audit fix: real ready-to-paste SMS + FR22 email copy. **SUPERSEDED 2026-08-30 — the fee IS computed and invoiced now.** The withheld-formula note below is history: the owner settled the basis (confirmed approvals × the rate agreed on the client's sale, `docs/CLOSEOUT-FEE-BASIS.md`), so nothing is guessed. The invoice task remains, alongside the invoice rather than instead of it. |
 | F-08 | Post-Funding Monitoring (F23) | MIGRATED | `src/workflows/f-08-post-funding-monitoring.mjs`. Trigger `round.funded`. Audit fix: dangling trailing wait removed. N-04 enrollment needs no explicit step — it already listens on `round.funded` directly. |
 | F-09 | Funding Declined / No Path | MIGRATED | `src/workflows/f-09-funding-declined-no-path.mjs`. Original trigger ("Tag Added: funding:no-path") replaced with `mail.response` (classification DENIED) — the same concrete upstream signal F-11 already classifies, rather than an undocumented tag-assigner. Gate: Product Path = Funding. |
 | F-10 | Client Funding Inbox Provisioner | MIGRATED (partial — see decision below) | `src/workflows/f-10-client-funding-inbox-provisioner.mjs`. Trigger `round.started`. **The external `provision_client_funding_inbox` webhook is NOT called** — no adapter exists for it and none was documented; a deterministic forwarding address is computed locally and an ops task created for the real provisioning + confirmation call instead. |
@@ -592,14 +592,18 @@ Per the mode change above — logged here for Darwin to review, not gated on app
    "set hold_reason on the client's most recent funding round" stands in for "the
    round this bank email is actually about." Fine for a single-round-in-flight
    client; could mis-target if a client somehow has two rounds open at once.
-4. **F-07 commission/balance-due — deliberately withheld, not just simplified.**
+4. **F-07 commission/balance-due — RESOLVED 2026-08-30. Kept for the record.**
    GHL's own steps show a straight field copy (Commission Owed = Total Approved
    Amount; Balance Due = Commission Owed) with no visible fee-percent multiplication,
    despite the gate checking that a fee percent exists. Whether `total_approved_amount`
-   already *is* the fee amount, or something else, isn't resolvable from anything
-   read for this port. Since this is money reaching a real client's invoice, no
-   formula was guessed — an "Invoice Client" task carries the raw inputs for a human
-   to calculate instead.
+   already *is* the fee amount, or something else, was not resolvable from anything
+   read for this port, so no formula was guessed at the time.
+   **The owner has since settled it and the formula no longer comes from GHL at all:**
+   fee = confirmed approvals × the success fee percent agreed on the client's sale
+   (`docs/CLOSEOUT-FEE-BASIS.md`, owner-set 2026-08-30). F-07 computes and raises the
+   invoice. A round with nothing confirmed, or a sale with no agreed rate, still
+   refuses with a named reason and a task — it is never billed a guessed or zero
+   amount.
 5. **F-10/F-10R/POD-01B external webhooks.** Three GHL workflows call external
    systems (`provision_client_funding_inbox`, its inbound confirmation, `lookup_pod`)
    that have no adapter anywhere in this codebase and no documented API contract.
