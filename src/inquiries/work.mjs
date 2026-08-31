@@ -285,6 +285,40 @@ export async function listAttempts(db, { inquiryId, orgId }) {
   return res.rows;
 }
 
+/* listRecentLetters — the desk's "Recent Letters Issued" block, which until now
+ * had no reader at all. The markup was static: it said "No letters issued yet"
+ * after the fortieth letter went out, because nothing ever wrote into it.
+ *
+ * The true source already existed. Every letter and every portal upload is
+ * logged as an inquiry_attempts row by logAttempt(), from the one place that
+ * sends (src/inquiry-ops/send.mjs). Nothing had ever read them back across the
+ * org, so this is a read of a trail that has been written the whole time.
+ *
+ * Letters and portal uploads only. A 'call' or a 'note' is not a letter, and
+ * putting them in a list headed "Letters Issued" would be the same class of
+ * untruth this block already had.
+ */
+export async function listRecentLetters(db, { orgId, limit = 8 } = {}) {
+  if (!orgId) throw new InquiryWriteError("orgId is required", { status: 403 });
+  const cap = Math.min(Math.max(Number(limit) || 8, 1), 50);
+  const res = await db.query(
+    `SELECT a.id, a.kind, a.outcome, a.created_at,
+            il.bureau,
+            TRIM(COALESCE(s.name,'')) AS staff_name,
+            TRIM(COALESCE(c.first_name,'') || ' ' || COALESCE(c.last_name,'')) AS client_name
+       FROM inquiry_attempts a
+       JOIN inquiry_log il ON il.id = a.inquiry_id AND il.org_id = $1::uuid
+       LEFT JOIN clients c ON c.id = il.client_id
+       LEFT JOIN staff s ON s.id = a.staff_id
+      WHERE a.org_id = $1::uuid
+        AND a.kind IN ('letter', 'portal')
+      ORDER BY a.created_at DESC
+      LIMIT $2`,
+    [orgId, cap]
+  );
+  return res.rows;
+}
+
 /* withTransaction — BEGIN/COMMIT around a callback, using a dedicated
    connection. A real transaction, which took catching to get right.
 

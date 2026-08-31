@@ -76,15 +76,61 @@ export const REFUSAL_TEXT = Object.freeze({
    when the row does carry an amount: an approval that is not ours to bill is
    not ours to bill at any size. status stays 'Approved' throughout, so
    approval-rate reporting still sees the bank's yes. */
+
+/* ── ONE DEFINITION, EVERY PLACE THAT ASKS THE QUESTION ────────────────────
+   "Is this bank yes worth anything yet?" was answered in three different
+   places, in three slightly different ways, and they already disagreed:
+
+     * this file (the biller)          — NULL or <= 0, and not excluded
+     * api/dashboard/pipeline.mjs      — NULL only, and excluded rows still
+                                         flagged, so the "Doesn't count" button
+                                         that shipped 2026-08-30 left the board
+                                         card saying "Amount needed" for good
+     * client-control-panel.html       — its own JavaScript copy
+
+   A screen cannot import a module, so the third one stays written in the page —
+   but the two SQL callers now share one string, and
+   src/http/client-panel-screen.test.mjs pins the screen's copy against it.
+
+   The alias is OUR OWN literal, never anything a request can reach, and it is
+   still checked: a typo that reached the query as text would be a SQL fault
+   nobody could read. */
+function aliasPrefix(alias) {
+  const a = String(alias || "");
+  if (a === "") return "";
+  if (!/^[a-z_][a-z0-9_]*$/.test(a)) {
+    throw new TypeError(`approval SQL alias must be a plain identifier, got ${JSON.stringify(alias)}`);
+  }
+  return a + ".";
+}
+
+/** A bank yes that is NOT worth anything on the bill yet: approved, nobody has
+ *  recorded it as not counting, and no usable dollar amount. NULL means nobody
+ *  has told us; a non-positive number is an older import, and neither one can
+ *  be invoiced. */
+export function unpricedApprovalConditions(alias = "") {
+  const c = aliasPrefix(alias);
+  return `${c}status = 'Approved'
+   AND ${c}approval_excluded_at IS NULL
+   AND (${c}approved_amount IS NULL OR ${c}approved_amount <= 0)`;
+}
+
+/** The mirror: a bank yes we HAVE confirmed a number for, which is what the
+ *  success fee is a percent of. */
+export function confirmedApprovalConditions(alias = "") {
+  const c = aliasPrefix(alias);
+  return `${c}status = 'Approved'
+   AND ${c}approval_excluded_at IS NULL
+   AND ${c}approved_amount IS NOT NULL
+   AND ${c}approved_amount > 0`;
+}
+
 const SQL_CONFIRMED_APPROVALS = `
 SELECT id, approved_amount, lender_name, bank, status
   FROM applications
  WHERE funding_round_id = $1::uuid
    AND ($2::uuid IS NULL OR org_id = $2::uuid)
-   AND status = 'Approved'
-   AND approval_excluded_at IS NULL
-   AND approved_amount IS NOT NULL
-   AND approved_amount > 0
+   AND ${confirmedApprovalConditions()}
  ORDER BY created_at ASC`;
 
 /* The mirror image of the query above, and the reason it exists: every bank yes
@@ -103,9 +149,7 @@ SELECT id, lender_id, approved_amount,
   FROM applications
  WHERE funding_round_id = $1::uuid
    AND ($2::uuid IS NULL OR org_id = $2::uuid)
-   AND status = 'Approved'
-   AND approval_excluded_at IS NULL
-   AND (approved_amount IS NULL OR approved_amount <= 0)
+   AND ${unpricedApprovalConditions()}
  ORDER BY created_at ASC`;
 
 /* The rate the client agreed to, frozen on the sale this round is linked to.

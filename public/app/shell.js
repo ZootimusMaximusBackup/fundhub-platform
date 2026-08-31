@@ -33,6 +33,9 @@
     "agent-editor.html", "automations.html", "products-commissions.html",
     "staff-teams.html",
     "inquiry-remover.html", "affiliate.html", "client-portal.html", "partner-galaxy.html", "brand-studio.html",
+    /* The $10,000 curriculum (docs/specs/W7-curriculum.md). A partner screen,
+       reachable by URL, offered by no sidebar — see PRINCIPAL_ONLY below. */
+    "partner-training.html",
     "campaign-manager.html", "social-studio.html", "creative-factory.html", "hiring.html",
     /* Finance OS is one screen now, not twelve. money-map.html,
        banking-surface.html, card-stack.html, bank-accounts.html,
@@ -98,8 +101,11 @@
 
   /* Screens that are not part of the shared employee rail. partner-galaxy is
      deliberately unlinked for staff (employees use galaxy.html). brand-studio
-     is a partner brand tool — owner/admin still reach it via "*". */
-  var PRINCIPAL_ONLY = ["partner-galaxy.html", "brand-studio.html"];
+     is a partner brand tool — owner/admin still reach it via "*".
+     partner-training is the partner's own classroom (docs/specs/W7-curriculum.md);
+     staff record against it through /api/training-progress, not through this
+     screen, so no employee sidebar links to it either. */
+  var PRINCIPAL_ONLY = ["partner-galaxy.html", "brand-studio.html", "partner-training.html"];
 
   /* NOT PART OF THE SHARED STAFF SURFACE — waiting on a human approval, not on
      a nav decision, or gated narrower than STAFF at the API itself.
@@ -263,7 +269,12 @@
     "hiring.html",
     "affiliate.html",
     "agent-editor.html",
-    "content-admin.html"
+    "content-admin.html",
+    /* partner-training.html — the $10,000 curriculum. It is a PARTNER screen and
+       there is no sidebar row for it at all (see PRINCIPAL_ONLY), so it sits here
+       for the same reason partner-galaxy.html does: an employee typing the
+       address still reaches it, and no staff menu offers it. */
+    "partner-training.html"
   ];
 
   function menuFor(ok) {
@@ -372,7 +383,23 @@
           failing. social-studio.html asks (/api/partner-marketing/usage);
           campaign-manager.html asks nothing, so this row would hand every
           partner a live campaigns desk whether their suite is on or off. */
-    partner: ["partner-galaxy.html", "brand-studio.html", "social-studio.html", "creative-factory.html"]
+    /* THE FIFTH ROW, AND WHY IT IS NOT A BREACH OF "FOUR SCREENS".
+       docs/specs/W6-pricing-menu.md lists what the $10,000 buys as six separate
+       lines, and TWO of them are on this list: "Their portal — Brand Studio,
+       Social Studio, Creative Factory, Partner Home — four screens. NOT the CRM"
+       and, on its own line above it, "Training — curriculum per the curriculum
+       spec". The four is a statement about the PORTAL, which is unchanged: a
+       partner still cannot see or move a client file, a pipeline card, a
+       contract, a payment link or a lender match, and partner-training.html
+       reads none of those. The classroom is the other line item, and until now
+       it had nowhere to live (W7's gap list: "THERE IS NO COURSE DELIVERY
+       SYSTEM").
+       IT IS STILL A COUNT THAT MOVED. docs/specs/W7-curriculum.md M10 teaches
+       partners "the four screens a partner can open" by name, so that module's
+       wording is now one behind the product. Flagged in the unit report rather
+       than reconciled here — editing a spec to match code is the one thing
+       CLAUDE.md §4 forbids most plainly. */
+    partner: ["partner-galaxy.html", "brand-studio.html", "social-studio.html", "creative-factory.html", "partner-training.html"]
   };
 
   /* Where each role lands when it arrives at /app/ with no screen named, or

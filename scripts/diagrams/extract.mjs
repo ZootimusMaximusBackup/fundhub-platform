@@ -178,7 +178,10 @@ export function extractBusHandlers(dir = "src/handlers") {
   const handlers = [];
   for (const file of listMjs(dir)) {
     const src = read(path.join(dir, file));
-    for (const m of src.matchAll(/\bon\("([a-z.]+)",\s*(\w+)\)/g)) {
+    /* Underscores are part of an event name — `subscription.past_due` is one.
+       Without `_` here that registration is invisible and the generated table
+       says the event has no handler when it has one. */
+    for (const m of src.matchAll(/\bon\("([a-z._]+)",\s*(\w+)\)/g)) {
       handlers.push({ module: file.replace(/\.mjs$/, ""), event: m[1], fn: m[2] });
     }
   }

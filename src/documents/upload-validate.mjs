@@ -35,6 +35,73 @@ export function sniffMimeType(buffer) {
   return null;
 }
 
+/* ---------------------------------------------------------------------------
+   CSV — A SEPARATE, NAMED BRANCH. NOT part of sniffMimeType().
+   ---------------------------------------------------------------------------
+   A CSV has no magic number, so it cannot be proven the way %PDF or the PNG
+   signature can. The best available check is negative: the bytes decode cleanly
+   as UTF-8, hold no NUL, and the first line has a comma in it.
+
+   That check is loose enough that it would ACCEPT ORDINARY PROSE — the string
+   "just some text, not a document at all" passes it — which is exactly why it
+   lives in its own function instead of inside sniffMimeType(). Every existing
+   caller of sniffMimeType()/validateUpload() relies on a NULL for anything that
+   is not a jpg, png or pdf, and api/documents-upload.mjs's whole file-type gate
+   is built on that. Widening it here to let one new endpoint take a CSV would
+   quietly widen it for every endpoint.
+
+   So: text/csv is opt-in. Only a caller that WANTS a CSV calls these, and it
+   then has to parse the thing before it trusts it (src/autopsy/parse.mjs does).
+   ALLOWED_MIME_TYPES is deliberately unchanged.
+--------------------------------------------------------------------------- */
+
+export const CSV_MIME_TYPE = "text/csv";
+
+/** How much of the head is examined. Enough to catch a binary, cheap on a big
+ *  file. */
+export const CSV_SNIFF_BYTES = 8 * 1024;
+
+/** sniffCsv — "text/csv" when the bytes could be a CSV, otherwise null. */
+export function sniffCsv(buffer) {
+  if (!buffer || buffer.length === 0) return null;
+  const head = buffer.subarray(0, CSV_SNIFF_BYTES);
+  if (head.includes(0x00)) return null;                 // a NUL means binary
+  let text;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(head);
+  } catch {
+    return null;                                        // not valid UTF-8
+  }
+  const firstLine = text.split(/\r?\n/, 1)[0] ?? "";
+  if (!firstLine.includes(",")) return null;            // no separator, no CSV
+  return CSV_MIME_TYPE;
+}
+
+/**
+ * validateCsvUpload — the size cap and the CSV sniff, in one verdict. Same
+ * shape as validateUpload() so a caller handles both the same way. Never throws.
+ *
+ * @returns {{ok:true, mimeType:"text/csv"} | {ok:false, code:string, message:string}}
+ */
+export function validateCsvUpload({ buffer, declaredMimeType = null, maxBytes = DEFAULT_MAX_BYTES } = {}) {
+  if (!buffer || buffer.length === 0) {
+    return { ok: false, code: "empty_file", message: "the file is empty" };
+  }
+  if (buffer.length > maxBytes) {
+    return {
+      ok: false, code: "file_too_large",
+      message: `file is ${buffer.length} bytes, over the ${maxBytes} byte limit`
+    };
+  }
+  if (sniffCsv(buffer) !== CSV_MIME_TYPE) {
+    return {
+      ok: false, code: "invalid_file_type",
+      message: `that does not read as a CSV — save it as comma-separated text and try again (declared type: ${declaredMimeType || "unknown"})`
+    };
+  }
+  return { ok: true, mimeType: CSV_MIME_TYPE };
+}
+
 /**
  * validateUpload — one file in, a verdict out. Never throws; the caller turns
  * a rejection into the HTTP response.

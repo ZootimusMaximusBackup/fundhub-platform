@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Winner's Board — See What's Actually Running in Funding</title>
-<meta name="description" content="The ads running in the funding vertical right now, and which ones keep running. $47 a month."/>
+<meta name="description" content="The ads running in the funding vertical right now, and which ones keep running. Monthly, cancel any time."/>
 <link rel="icon" href="/favicon.svg"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -16,11 +16,11 @@
 <main>
 <section class="sect" style="padding-top:22px">
   <div class="wrap">
-    <span class="kicker">$47/month &middot; Winner's Board</span>
+    <span class="kicker"><span class="price" data-price-label="board">&mdash;</span> &middot; Winner's Board</span>
     <h1>You Already Know Your Ads Stop Working. You Just Can't See What's Still Running.</h1>
     <p class="lede">Every month: the ads running in the funding vertical, and — the part that actually matters —
       <strong>which ones are still running after everyone else's got turned off.</strong></p>
-    <a class="btn" href="#buy">Get the Board — $47/mo</a>
+    <a class="btn" href="#buy">Get the Board &mdash; <span class="price" data-price-label="board">&mdash;</span></a>
     <p class="sub">Cancel any time &middot; No contract &middot; Updated continuously</p>
   </div>
 </section>
@@ -58,7 +58,7 @@
     <span class="kicker">Who It's For</span>
     <div class="h2">People Who Are Running Ads, or About To.</div>
     <div class="quals">
-      <div class="qual"><div class="qh yes">Worth $47 if:</div><ul>
+      <div class="qual"><div class="qh yes">Worth <span class="price" data-price="board">&mdash;</span> if:</div><ul>
         <li>You're spending on funding ads now</li>
         <li>You're about to start and don't want to fund everyone else's education</li>
         <li>You write copy for this vertical</li>
@@ -70,7 +70,19 @@
         <li>You want spend and revenue numbers, which nobody outside those accounts has</li>
       </ul></div>
     </div>
-    <a class="btn" id="buy" href="/affiliates/?track=board">Get the Board — $47/mo</a>
+    <form class="buy" id="buy" data-checkout="board" novalidate>
+      <div class="row two">
+        <div class="field"><label for="b-first">First name</label>
+          <input id="b-first" name="first_name" type="text" autocomplete="given-name"/></div>
+        <div class="field"><label for="b-last">Last name</label>
+          <input id="b-last" name="last_name" type="text" autocomplete="family-name"/></div>
+      </div>
+      <div class="row"><div class="field"><label for="b-email">Email &mdash; where your access goes</label>
+        <input id="b-email" name="email" type="email" autocomplete="email" required/></div></div>
+      <button type="submit" disabled>Get the Board &mdash; <span class="price" data-price-label="board">&mdash;</span></button>
+      <p class="err" data-checkout-error role="alert"></p>
+      <p class="fine" data-notice="board_renewal"></p>
+    </form>
     <p class="sub">Cancel any time &middot; No contract</p>
   </div>
 </section>
@@ -110,5 +122,6 @@
   var y=document.getElementById("yr"); if(y) y.textContent=new Date().getFullYear();
 })();
 </script>
+<script src="/partner/funnel.js" defer></script>
 </body>
 </html>

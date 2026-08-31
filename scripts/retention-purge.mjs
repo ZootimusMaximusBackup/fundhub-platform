@@ -232,13 +232,23 @@ function report({ actor, result, applied, didApply }) {
       lines.push("");
       continue;
     }
-    const verb = item.action === "delete" ? "would delete" : "would de-identify";
+    /* Three actions now, not two. 'retain' arrived with broker_upload_rows
+       (db/migrations/275_decline_autopsy.sql): kept in full, on purpose. A
+       retain class has no period, so it lands in the SKIPPED branch above and
+       these lines are not reached — but printing "DE-IDENTIFY" for it if one
+       ever were would be a lie in the operator's own report. */
+    const WORDS = {
+      delete: { future: "would delete", shout: "DELETE", past: "deleted" },
+      de_identify: { future: "would de-identify", shout: "DE-IDENTIFY", past: "de-identified" },
+      retain: { future: "would keep", shout: "RETAIN", past: "kept" }
+    };
+    const w = WORDS[item.action] ?? WORDS.de_identify;
     lines.push(`  keeps ${item.retainDays} days${item.signedOff ? "" : "   *** NOT SIGNED OFF ***"}`);
-    lines.push(`  ${item.action === "delete" ? "DELETE" : "DE-IDENTIFY"} — ${item.why}`);
+    lines.push(`  ${w.shout} — ${item.why}`);
 
     const did = applied?.find((a) => a.dataClass === item.dataClass);
-    lines.push(did ? `  ${item.action === "delete" ? "deleted" : "de-identified"}: ${did.affected} rows`
-                   : `  ${verb}: ${item.expired} rows`);
+    lines.push(did ? `  ${w.past}: ${did.affected} rows`
+                   : `  ${w.future}: ${item.expired} rows`);
 
     if (item.clientsTouched !== undefined) lines.push(`  covering ${item.clientsTouched} clients`);
     if (item.unknownCost !== undefined) {

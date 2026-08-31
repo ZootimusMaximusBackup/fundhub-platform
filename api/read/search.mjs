@@ -272,6 +272,27 @@ async function searchCards(database, orgId, pattern, limit) {
                   AND a.kind = 'partner'
                   AND a.name ILIKE $2 ESCAPE '\\'
              )
+          /* AND THE APPLICANT, WHO HAS NO LOGIN YET. The accounts lookup above
+             stopped finding the human on 2026-08-31, twice over:
+
+               an APPLICATION now stops at partners status 'invited' — no login
+               is minted until somebody approves it, so there is no accounts row
+               to search at all for the whole review window; and
+
+               approvePartnerApplication() names the account it finally does
+               create after partners.name, which is the COMPANY. So even an
+               approved partner's accounts.name reads "Sim WL Book E2e27", never
+               "Sim Wlabel E2e27".
+
+             The person's name survives in exactly one place the form writes:
+             partners.notes, on a line reading contact=<name> (with their phone,
+             their audience answer and their SMS tick). Searching it makes a
+             staff member typing the name of the human they just spoke to find
+             the card, which is the failure the 2026-08-27 walk recorded as
+             "Search does not look at partners". Staff-only endpoint, and notes
+             are matched but never returned — the row still renders as the
+             partner's name and stage. */
+          OR pr.notes ILIKE $2 ESCAPE '\\'
           OR s.name ILIKE $2 ESCAPE '\\'
           OR p.name ILIKE $2 ESCAPE '\\'
           OR cd.owner ILIKE $2 ESCAPE '\\'

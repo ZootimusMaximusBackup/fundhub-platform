@@ -164,16 +164,32 @@ test("pipeline cards mark sms/email needs_reply when that person wrote last", { 
    left out of the round's lender breakdown and no success fee is ever billed
    for it. So the card carries the fact.
 
-   NULL ONLY. A recorded 0 is a fact somebody typed and is not a missing
-   amount. This test fails if the flag ever widens to `COALESCE(...) = 0`. */
+   NULL IS UNKNOWN AND STILL SURVIVES — nothing here turns an unknown amount
+   into 0 (CLAUDE.md §12).
+
+   REVISED 2026-08-30. This used to say "NULL ONLY", and that was wrong in two
+   ways, both of which were live defects on the board:
+
+     * A recorded 0 is not a fact anybody could bill. guardFundedAmount refuses
+       the Funded move on NULL OR <= 0, so a legacy 0 was clean on the board and
+       blocked at the move — a wall with no warning in front of it.
+     * An approval somebody has recorded as NOT COUNTING (the "Doesn't count"
+       button, db/migrations/272_approval_excluded.sql, shipped the same day
+       this flag did) still said "Amount needed" on its card, forever.
+
+   The flag now reads the same string the biller reads —
+   unpricedApprovalConditions() in src/funding/success-fee.mjs — so the board,
+   the Funded guard and the invoice cannot drift apart again. Both cases are
+   asserted below. */
 test("a card flags an approval that has no dollar amount, and a recorded amount clears it",
   { skip: !HAS_DB }, async () => {
-    const cardOnBoard = async () => {
+    const cardOn = async (key) => {
       const res = makeRes();
-      await pipeline(asStaff(token, { key: "sales" }), res);
+      await pipeline(asStaff(token, { key }), res);
       assert.equal(res.statusCode, 200);
       return res.body.stages.find((s) => s.count === 1).cards[0];
     };
+    const cardOnBoard = () => cardOn("funding_card_stacking");
 
     assert.equal((await cardOnBoard()).approval_amount_missing, false,
       "a file with no approvals at all has nothing waiting");
@@ -196,6 +212,42 @@ test("a card flags an approval that has no dollar amount, and a recorded amount 
     assert.equal((await cardOnBoard()).approval_amount_missing, false,
       "once the dollars are recorded the card stops asking");
 
+    // A RECORDED ZERO IS NOT A PRICED APPROVAL. It cannot be invoiced, and
+    // guardFundedAmount refuses the Funded move on it, so the board has to say
+    // so too or the refusal arrives with no warning in front of it.
+    await db.query(`UPDATE applications SET approved_amount = 0 WHERE id = $1`, [appId]);
+    assert.equal((await cardOnBoard()).approval_amount_missing, true,
+      "a zero cannot be billed, so the card must still ask for the amount");
+
+    // MARKED AS NOT COUNTING — the way out. The bank's yes is untouched; what
+    // is recorded is that we are not billing for it. The card must stop asking.
+    await db.query(
+      `UPDATE applications
+          SET approved_amount = NULL,
+              approval_excluded_at = now(),
+              approval_excluded_by = 'Dana Advisor',
+              approval_exclusion_reason = 'client never used it'
+        WHERE id = $1`,
+      [appId]
+    );
+    assert.equal((await cardOnBoard()).approval_amount_missing, false,
+      "an approval recorded as not counting must stop asking for an amount");
+    assert.equal(
+      (await db.query(`SELECT status FROM applications WHERE id = $1`, [appId])).rows[0].status,
+      "Approved",
+      "excluding an approval must not rewrite what the bank said");
+
+    // Undo it and the ask comes straight back.
+    await db.query(
+      `UPDATE applications
+          SET approval_excluded_at = NULL, approval_excluded_by = NULL,
+              approval_exclusion_reason = NULL
+        WHERE id = $1`,
+      [appId]
+    );
+    assert.equal((await cardOnBoard()).approval_amount_missing, true,
+      "reinstating an approval puts it back in the queue");
+
     // A DENIED bank with no amount is not a missing amount — a denial has none.
     await db.query(`UPDATE applications SET status = 'Denied', approved_amount = NULL WHERE id = $1`, [appId]);
     assert.equal((await cardOnBoard()).approval_amount_missing, false,
@@ -203,6 +255,81 @@ test("a card flags an approval that has no dollar amount, and a recorded amount 
 
     await db.query(`DELETE FROM applications WHERE id = $1`, [appId]);
     await db.query(`DELETE FROM funding_rounds WHERE id = $1`, [roundId]);
+  });
+
+/* THE FLAG BELONGS TO THE FUNDING RAIL AND TO THE ROUND SOMEBODY IS WORKING.
+
+   This is now the source of the "Waiting on us" number at the top of
+   pipeline.html, so anything the flag over-reports inflates the one figure the
+   screen exists to answer. Each case below made the board claim more work than
+   actually existed. See the comment above CARDS_SQL's approval_amount_missing
+   in api/dashboard/pipeline.mjs. */
+test("an approval with no amount is not chased on the wrong rail, the wrong round, or after it was written off",
+  { skip: !HAS_DB }, async () => {
+    const cardOn = async (key) => {
+      const res = makeRes();
+      await pipeline(asStaff(token, { key }), res);
+      assert.equal(res.statusCode, 200);
+      return res.body.stages.find((s) => s.count === 1).cards[0];
+    };
+
+    const round1 = (await db.query(
+      `INSERT INTO funding_rounds (org_id, client_id, round_number, status, product)
+       VALUES ($1, $2, 1, 'closed', 'card_stacking') RETURNING id`,
+      [orgId, clientId])).rows[0].id;
+    const appId = (await db.query(
+      `INSERT INTO applications (org_id, funding_round_id, client_id, bank, status)
+       VALUES ($1, $2, $3, 'Mesa Community Bank', 'Approved') RETURNING id`,
+      [orgId, round1, clientId])).rows[0].id;
+
+    assert.equal((await cardOn("funding_card_stacking")).approval_amount_missing, true,
+      "the newest round IS round 1 right now, so it is flagged");
+
+    // THE RAIL. One SQL statement serves all eight boards. The same client's
+    // Sales card and Inquiry Removal card used to carry this funding chip,
+    // where nobody looking at those boards can do anything about it.
+    assert.equal((await cardOn("sales")).approval_amount_missing, false,
+      "a funding fact must not leak onto the Sales board");
+    assert.equal((await cardOn("inquiry_removal")).approval_amount_missing, false,
+      "a funding fact must not leak onto the Inquiry Removal board");
+
+    // THE ROUND. A blank amount left behind in round 1 used to keep flagging
+    // through rounds 2 and 3, forever.
+    const round2 = (await db.query(
+      `INSERT INTO funding_rounds (org_id, client_id, round_number, status, product)
+       VALUES ($1, $2, 2, 'open', 'card_stacking') RETURNING id`,
+      [orgId, clientId])).rows[0].id;
+    assert.equal((await cardOn("funding_card_stacking")).approval_amount_missing, false,
+      "round 1's leftover must not follow the client into round 2");
+
+    // And a genuinely blank approval on the round being worked still shows.
+    const app2 = (await db.query(
+      `INSERT INTO applications (org_id, funding_round_id, client_id, bank, status)
+       VALUES ($1, $2, $3, 'Second Bank', 'Approved') RETURNING id`,
+      [orgId, round2, clientId])).rows[0].id;
+    assert.equal((await cardOn("funding_card_stacking")).approval_amount_missing, true,
+      "the round being worked is still chased");
+
+    // WRITTEN OFF. Migration 272: somebody recorded, with their name and the
+    // time on it, that this approval does not count — withdrawn, or never
+    // used. The Client Control Panel has always honoured that and this board
+    // did not, so the two screens disagreed about the same client and the
+    // board kept asking a question that had already been answered.
+    await db.query(
+      `UPDATE applications
+          SET approval_excluded_at = now(), approval_excluded_by = 'test',
+              approval_exclusion_reason = 'never used'
+        WHERE id = $1`, [app2]);
+    assert.equal((await cardOn("funding_card_stacking")).approval_amount_missing, false,
+      "an approval somebody has written off is not still waiting on anybody");
+
+    // Reinstating it puts the question back — the decision is reversible.
+    await db.query(`UPDATE applications SET approval_excluded_at = NULL WHERE id = $1`, [app2]);
+    assert.equal((await cardOn("funding_card_stacking")).approval_amount_missing, true,
+      "putting the approval back in the round puts the chase back too");
+
+    await db.query(`DELETE FROM applications WHERE id = ANY($1::uuid[])`, [[appId, app2]]);
+    await db.query(`DELETE FROM funding_rounds WHERE id = ANY($1::uuid[])`, [[round1, round2]]);
   });
 
 test("an unknown pipeline key is a 404, not a silent empty board", { skip: !HAS_DB }, async () => {

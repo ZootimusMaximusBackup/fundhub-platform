@@ -332,8 +332,10 @@ describe("the class list cannot drift", () => {
     for (const name of DATA_CLASSES) {
       assert.ok(CLASSES[name], `no handler for ${name}`);
       assert.equal(CLASSES[name].dataClass, name);
-      assert.ok(["delete", "de_identify"].includes(CLASSES[name].action));
-      assert.ok(CLASSES[name].why?.length > 20, `${name} does not say why it deletes or de-identifies`);
+      // Three actions now. 'retain' arrived with broker_upload_rows: kept in
+      // full, on purpose, with no purge scheduled (owner-set 2026-08-31).
+      assert.ok(["delete", "de_identify", "retain"].includes(CLASSES[name].action));
+      assert.ok(CLASSES[name].why?.length > 20, `${name} does not say why it deletes, de-identifies or retains`);
     }
   });
 
@@ -345,13 +347,18 @@ describe("the class list cannot drift", () => {
     }
   });
 
-  test("the five classes are the ones the task named", () => {
+  test("the six classes are the ones the task named", () => {
     assert.deepEqual([...DATA_CLASSES], [
       "crs_raw_payloads",
       "pii_access_log",
       "soft_pull_ledger",
       "bank_transactions",
-      "mock_data"
+      "mock_data",
+      // Broker Decline Autopsy uploads. REGISTERED, NEVER PURGED — owner-set
+      // 2026-08-31, "retain in full, no purge". It is in this list so it is
+      // counted and auditable, not so it is destroyed on a clock. See
+      // db/migrations/275_decline_autopsy.sql.
+      "broker_upload_rows"
     ]);
   });
 });

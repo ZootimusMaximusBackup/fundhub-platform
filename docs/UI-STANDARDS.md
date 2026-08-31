@@ -153,11 +153,29 @@ That is pipeline.html:215. The cards inside it carry the shadow; the column does
 
 So every status carries a second signal — a word, a shape, or a position:
 
-- pipeline.html:243-244 — a held card gets a **left stripe** (`border-left:4px solid`) *and* a tint. The stripe survives the ramp because its position, not its hue, is what says "this one is stuck".
-- pipeline.html:278-281 — `.hold-badge` says HELD in words, in a pill.
-- pipeline.html:263-268 — `.c-needs-amount` is deliberately **literal amber** (`#FEF3C7` / `#92400E` / `#FCD34D`), not a brand variable, with the reason written above the rule. That is the escape valve when a warning must stay amber on every tenant. Use it sparingly and write the reason down, exactly as that rule does.
+- pipeline.html:216-225 — the headline counters say **"on a bank" / "on the client" / "nothing recorded"** in words, and the chosen one is a solid ink **fill**, not a tint. A word survives any ramp; a fill still reads as chosen when every hue in the ramp is the same.
+- pipeline.html:343-353 — `.c-needs-amount` is deliberately **literal amber** (`#FEF3C7` / `#92400E` / `#FCD34D`), not a brand variable, with the reason written above the rule, *and* it says "Amount needed" in words. That is the escape valve when a warning must stay amber on every tenant. Use it sparingly and write the reason down, exactly as that rule does.
 
 Never ship a legend whose only key is colour, and never write "the red ones need attention" in copy.
+
+**Two examples this section used to give have never once painted (corrected 2026-08-30).** They were `.card.held` (a left stripe plus a tint) and `.hold-badge` (the word HELD in a pill), and both are real CSS sitting in pipeline.html to this day — `.card.held` at :323-324, `.hold-badge` at :358-363. Nothing ever puts either class on an element. `cardEl()` does not add `held`, so the "Held only" filter matches nothing and the `— held` figure has been a dash since the day it shipped. The hold data exists (`clients.custom_fields.round_hold_reason`, written by seven workflows) and the board has never read it.
+
+They are named here rather than deleted because the shape of the stripe is still the right answer and somebody will want it back. **But do not cite dead CSS as the model.** An example that has never run cannot show you that it works, and the next person copies it believing it has been proven. Before this section points at a rule, open the screen and check the class is actually applied to something.
+
+**The class being applied is still not proof that anything paints.** The same commit that corrected the two examples above shipped a third dead rule eleven lines from `.card.held`, and its class *was* applied:
+
+```css
+.card.fh-spot{box-shadow:0 0 0 3px var(--spectrum);}   /* painted nothing */
+```
+
+`--spectrum` is a `linear-gradient` — `fundhub-brand.css` defines it, and `rampToSpectrum()` in `shell.js` rebuilds it from the six-stop brand ramp for every white-label tenant. **The colour component of `box-shadow` must be a `<color>`.** A gradient there makes the whole declaration invalid at computed-value time, so `box-shadow` fell back to its initial value, `none`. `background:var(--spectrum)` on the same screen (`.drop-line`) is correct, because a background *does* take a gradient — so the token looks proven right next to the rule it breaks.
+
+Worse than a missing nicety: `.card.fh-spot` is (0,2,0), which outranks the resting `:is(.app,.app-shell) :is(.card,…)` shadow at 12.2. Killing it took the card's own elevation with it, so the card the user had just been jumped to was **the only flat card on the board** — the feedback was inverted, not absent. Measured 2026-08-30: spotted card `none`, every neighbour `rgba(10,10,10,.04) 0 1px 2px, rgba(10,10,10,.06) 0 2px 8px`.
+
+Two rules follow, and they are cheap:
+
+- **A shadow, outline, border-colour or text-shadow takes a colour token. Never `--spectrum`.** Use `--ink` for a ring you need on every tenant — a ramp stop such as `--accent` is `ramp[5]`, which a one-hue tenant can wash out to the board behind it. Add the resting token back where you are overriding it: `box-shadow:var(--panel-shadow),0 0 0 3px var(--ink)`.
+- **Assert the computed style, never the class.** `toHaveClass(/fh-spot/)` passed green the entire time the rule was inert, which is why nobody caught it. `e2e/pipeline-waiting-on.spec.mjs` now reads `getComputedStyle().boxShadow` and compares it to an untouched card beside it, because "looks exactly like its neighbours" is the failure being tested for.
 
 ### 12.7 The type trap, and its one escape hatch
 

@@ -54,12 +54,13 @@ async function wipe(orgId) {
     `DELETE FROM bank_accounts      WHERE org_id = $1`,
     `DELETE FROM soft_pull_requests WHERE org_id = $1`,
     `DELETE FROM crs_results        WHERE org_id = $1`,
+    `DELETE FROM decline_autopsy_uploads WHERE org_id = $1`,
     `DELETE FROM clients            WHERE org_id = $1`,
     `DELETE FROM staff              WHERE org_id = $1`
   ]) await db.query(sql, [orgId]);
 }
 
-/* One expired row in each of the five classes, aged past any plausible retention
+/* One expired row in each of the six classes, aged past any plausible retention
    period. Every value here is chosen to satisfy the constraints those tables
    actually carry — 085's non-zero amount and settled-row date rule, 077's
    non-blank reason and requester agreement. */
@@ -104,9 +105,25 @@ async function seedExpired(orgId, clientId, staffId, { tag }) {
      VALUES ($1,'booking.created',$2,$3,${OLD})`,
     [orgId, `demo:${tag}:booking.created`, clientId]
   );
+  /* broker_upload_rows. NOTE THE SHAPE: no client_id, and no contact column
+     exists on decline_autopsy_rows to put one in. That is the point of the
+     table. In production this class has NO retention period at all (owner-set:
+     retain in full), so the runner never reaches its purge — the fixture exists
+     so the mechanism is still exercised the same way every other class's is. */
+  const autopsy = (await db.query(
+    `INSERT INTO decline_autopsy_uploads (org_id, autopsy_ref, buyer_email, paid_at, created_at)
+     VALUES ($1,$2,$3,${OLD},${OLD}) RETURNING id`,
+    [orgId, `ret${tag.replace(/[^a-z0-9]/gi, "").toLowerCase()}`.padEnd(24, "0").slice(0, 32),
+     `retention-suite-${tag}@broker.test`]
+  )).rows[0].id;
+  await db.query(
+    `INSERT INTO decline_autopsy_rows (org_id, autopsy_id, row_label, fico_band, created_at)
+     VALUES ($1,$2,'A-1','720+',${OLD})`,
+    [orgId, autopsy]
+  );
 }
 
-/* The five row counts, as one object. This is the measurement the headline test
+/* The six row counts, as one object. This is the measurement the headline test
    takes before and after a dry run. */
 async function census(orgId) {
   const { rows } = await db.query(
@@ -114,7 +131,8 @@ async function census(orgId) {
             (SELECT count(*) FROM pii_access_log     WHERE org_id = $1)::int AS pii,
             (SELECT count(*) FROM soft_pull_requests WHERE org_id = $1)::int AS pulls,
             (SELECT count(*) FROM bank_transactions  WHERE org_id = $1)::int AS bank,
-            (SELECT count(*) FROM events             WHERE org_id = $1)::int AS events`,
+            (SELECT count(*) FROM events             WHERE org_id = $1)::int AS events,
+            (SELECT count(*) FROM decline_autopsy_rows WHERE org_id = $1)::int AS autopsy_rows`,
     [orgId]
   );
   return rows[0];
