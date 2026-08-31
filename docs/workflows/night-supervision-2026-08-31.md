@@ -34,8 +34,8 @@ tracked separately.
 |---|---|---|---|
 | Funding panel — close the split | `fix/funding-panel-close-the-split` | 315 | **finished** |
 | Pipeline — waiting-on triage | `feat/pipeline-waiting-on-triage` | 316 | **finished** |
-| Closer call rhythm | `fix/closer-call-rhythm` | 314 | **rescued** — see below |
-| Specialist desk rhythm | `fix/specialist-desk-rhythm` | 317 | **rescued** — see below |
+| Closer call rhythm | `fix/closer-call-rhythm` | 314 | **finished** (rescued — see below) |
+| Specialist desk rhythm | `fix/specialist-desk-rhythm` | 317 | **finished** (rescued — see below) |
 | Repair contract fee mismatch | `claude/awesome-matsumoto-3dd47a` | none | **stopped early** |
 
 ### The near-miss — two threads had finished work that existed only on this laptop
@@ -70,7 +70,25 @@ fast-forwards — nothing rewritten, nothing lost:
 - `de6e3b1c` -> PR 314 (`3eea200d..de6e3b1c`)
 - `4f6d11fb` -> PR 317 (`e04554a0..4f6d11fb`)
 
-Both pull requests now carry the whole thread. CI is re-running on the new heads.
+Both pull requests now carry the whole thread.
+
+## Final state — 07:31, every thread quiet
+
+No worktree has been written to in ten minutes. No test run is going. All five
+threads are finished.
+
+CI re-ran on the two new heads and settled. All four pull requests fail **exactly**
+the same three jobs `main` fails on its own, and nothing else:
+
+| PR | head | failing jobs |
+|---|---|---|
+| 314 | `de6e3b1c` | the same three as `main` |
+| 315 | `b438afe2` | the same three as `main` |
+| 316 | `43b8a606` | the same three as `main` |
+| 317 | `4f6d11fb` | the same three as `main` |
+
+Checked job by job, by name, not by count. Not one of them introduces a failure.
+All four clear the merge bar.
 
 ### Thread that stopped early — repair contract fee mismatch
 
