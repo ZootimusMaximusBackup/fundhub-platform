@@ -21,6 +21,22 @@ function publicCase(row) {
   };
 }
 
+/**
+ * The case queue, oldest first, with the size of the WHOLE queue beside it.
+ *
+ * Two things changed here on 2026-08-30, and they are the same bug seen twice:
+ *
+ *  1. ORDER BY was `requested_at DESC` — newest first. With a LIMIT, that means
+ *     the rows dropped off the end are the OLDEST ones, which are exactly the
+ *     cases the desk exists to clear. A worklist is worked top to bottom, so the
+ *     top has to be the oldest.
+ *  2. The screen counted its headline over whatever page it happened to get, so
+ *     past the limit the number silently under-reported. `total` is COUNT(*) over
+ *     the same WHERE clause, before LIMIT, so the screen can say plainly when it
+ *     is showing a slice.
+ *
+ * Returns { cases, total }. Callers that only want rows read `.cases`.
+ */
 export async function listCases(db, {
   orgId,
   activeOnly = true,
@@ -51,6 +67,7 @@ export async function listCases(db, {
   params.push(Math.max(Number(offset) || 0, 0));
   const r = await db.query(
     `SELECT c.*,
+            COUNT(*) OVER () AS queue_total,
             cl.first_name AS client_first_name,
             cl.last_name AS client_last_name,
             cl.email AS client_email,
@@ -58,11 +75,20 @@ export async function listCases(db, {
        FROM inquiry_removal_cases c
        LEFT JOIN clients cl ON cl.id = c.client_id
       WHERE ${where.join(" AND ")}
-      ORDER BY c.requested_at DESC NULLS LAST, c.created_at DESC
+      ORDER BY c.requested_at ASC NULLS LAST, c.created_at ASC
       LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
   );
-  return r.rows.map(publicCase);
+  const rows = r.rows || [];
+  /* No rows means no window to read a count from. That is honestly zero here —
+     COUNT(*) OVER () counts the same WHERE clause, so an empty page from a
+     zero-offset read IS an empty queue. */
+  const total = rows.length ? Number(rows[0].queue_total) : 0;
+  const cases = rows.map((row) => {
+    const { queue_total, ...rest } = row;
+    return publicCase(rest);
+  });
+  return { cases, total: Number.isFinite(total) ? total : cases.length };
 }
 
 export async function getActiveCaseForClient(db, { orgId, clientId }) {

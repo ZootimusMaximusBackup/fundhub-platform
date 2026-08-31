@@ -580,9 +580,215 @@ export function buildInquiryGenerateRequest(opts) {
 
 const BUREAU_NAMES = Object.freeze({ EX: "Experian", EQ: "Equifax", TU: "TransUnion" });
 
+/* ONE BUREAU, WRITTEN TWO WAYS, COUNTED AS TWO BUREAUS.
+
+   inquiry_removal_cases.selected_bureaus_raw is called "raw" because it is: it
+   carries whatever the source handed us. src/inquiry-ops/send.mjs copies it
+   straight onto inquiry_log.bureau, and inquiry_log.bureau is plain `text` with
+   no CHECK (db/schema/001_init.sql:173). Today's writers put the two-letter code
+   there — EX / EQ / TU, per the ai_bureau_config seed in migration 155 — while
+   rows that arrived from the old Airtable runtime hold the full name.
+
+   The screen's three bureau chips compared against the full name only. Against
+   code rows every chip read 0 and "none in queue" while the queue was full, and
+   pressing one emptied the table under the words "all done for today". Against a
+   MIX the counts would have been quietly short, which is worse than obviously
+   zero.
+
+   So nothing on this screen compares one bureau string to another. Both sides go
+   through bureauKey first, and an unrecognised value keeps its own uppercase
+   form rather than being folded into one of the three — an unknown bureau is its
+   own thing, not a silent member of somebody else's count. */
+const BUREAU_KEYS = Object.freeze({
+  EX: "EX", EXPERIAN: "EX",
+  EQ: "EQ", EQUIFAX: "EQ",
+  TU: "TU", TRANSUNION: "TU", "TRANS UNION": "TU"
+});
+
+export function bureauKey(raw) {
+  const s = String(raw == null ? "" : raw).trim().toUpperCase();
+  if (!s) return "";
+  return BUREAU_KEYS[s] || s;
+}
+
 export function bureauLabel(code) {
-  const k = String(code || "").toUpperCase();
+  const k = bureauKey(code);
   return BUREAU_NAMES[k] || k || "—";
+}
+
+/** countByBureau — the chip counts, keyed the one way the chips are keyed. */
+export function countByBureau(rows, pick) {
+  const out = {};
+  const list = Array.isArray(rows) ? rows : [];
+  for (const row of list) {
+    const key = bureauKey(typeof pick === "function" ? pick(row) : (row && row.bureau));
+    if (!key) continue;
+    out[key] = (out[key] || 0) + 1;
+  }
+  return out;
+}
+
+/* ── THE QUEUE YOU EMPTY ─────────────────────────────────────────────────────
+   Inquiry removal is an errand with an end: check the papers, read the draft,
+   press Send. The only cases that need a PERSON are the ones nothing has been
+   sent on yet. Everything else is in the mail, or the sweeper is phoning the
+   bureau on its own clock, and neither of those is hers to move. A headline that
+   counts them all is a number that does not go down when she works. */
+
+export function caseIsReadyToSend(row) {
+  return caseUiStatus(row).label === "Ready for Review";
+}
+
+/** Whole days since a timestamp, or null when there is no usable timestamp. */
+export function waitingDays(since, now) {
+  if (!since) return null;
+  const then = new Date(since).getTime();
+  if (!Number.isFinite(then)) return null;
+  const asOf = now instanceof Date ? now : (now ? new Date(now) : new Date());
+  const n = asOf.getTime();
+  if (!Number.isFinite(n)) return null;
+  const days = Math.floor((n - then) / 86400000);
+  return days < 0 ? 0 : days;
+}
+
+/** Words for waitingDays(). null renders as an em-dash — unknown, never zero. */
+export function waitingLabel(days) {
+  if (days == null) return "—";
+  if (days <= 0) return "today";
+  return days + (days === 1 ? " day" : " days");
+}
+
+/* Oldest first, and the cases already out of her hands sink.
+
+   api/read/inquiries.mjs orders by updated_at DESC and src/inquiry-ops/cases.mjs
+   by requested_at DESC, so the row she just worked jumped to the top and the one
+   nobody has touched sank out of sight — the exact opposite of a worklist. A
+   case with no date sorts to the bottom of its own group rather than being given
+   a date it does not have. */
+export function sortCasesOldestFirst(rows) {
+  const list = Array.isArray(rows) ? rows.slice() : [];
+  const age = (c) => {
+    const v = c && (c.requested_at || c.created_at);
+    const t = v ? new Date(v).getTime() : NaN;
+    return Number.isFinite(t) ? t : Infinity;
+  };
+  const rank = (c) => (caseIsReadyToSend(c) ? 0 : 1);
+  return list.sort((a, b) => (rank(a) - rank(b)) || (age(a) - age(b)));
+}
+
+/** The next action, said once: the oldest case that is waiting on a person. */
+export function nextInquiryAction(rows, opts) {
+  const o = opts || {};
+  const list = Array.isArray(rows) ? rows : [];
+  let best = null;
+  let bestAge = Infinity;
+  for (const row of list) {
+    if (!caseIsReadyToSend(row)) continue;
+    const v = row && row.requested_at;
+    const t = v ? new Date(v).getTime() : NaN;
+    const age = Number.isFinite(t) ? t : Infinity;
+    if (best === null || age < bestAge) { best = row; bestAge = age; }
+  }
+  if (!best) return null;
+  const who = blankToNull(best.client_name) || blankToNull(best.client_email)
+    || blankToNull(best.case_id) || "this case";
+  const parts = [who];
+  const bureau = bureauLabel(best.selected_bureaus_raw);
+  if (bureau && bureau !== "—") parts.push(bureau);
+  const days = waitingDays(best.requested_at, o.now);
+  if (days != null) parts.push("waiting " + waitingLabel(days));
+  return { caseId: best.id || null, text: "Send the oldest — " + parts.join(", ") };
+}
+
+/* THE DOC PACKET, WITHOUT INVENTING AN ANSWER.
+
+   The screen used to print "complete" for every case that was not already
+   Blocked, and Blocked is only ever set at send time (src/inquiry-ops/send.mjs
+   :166-170). So a packet nobody had looked at read "complete" on the one screen
+   whose whole job is deciding whether to press Send.
+
+   There are three states here, not two, and the third is the honest word for
+   "nobody has checked yet". */
+export function docsPacketLabel(row) {
+  const r = row || {};
+  if (r.docs_complete === true) return "complete";
+  if (r.docs_complete === false) return "chasing";
+  if (String(r.case_status || "") === "Blocked") return "chasing";
+  return "not checked";
+}
+
+const DOC_WORDS = Object.freeze({
+  id_document: "photo ID",
+  proof_of_address: "proof of address",
+  authorization: "signed authorization",
+  ssn_card: "Social Security card"
+});
+
+/** Names what is missing, in plain words. "" when nothing is known to be. */
+export function docsMissingWords(missing) {
+  const list = Array.isArray(missing) ? missing.filter(Boolean).map(String) : [];
+  if (!list.length) return "";
+  return list.map((m) => DOC_WORDS[m] || m.replace(/_/g, " ")).join(", ");
+}
+
+/* ── THE ONE NUMBER, TOP LEFT ────────────────────────────────────────────────
+   Both panes fill one slot, and both say where the number came from.
+
+   `total` is the reader's COUNT(*) over the whole caseload. When it is bigger
+   than the page that was actually fetched, the line underneath says so, because
+   a page count standing in for a caseload count is a headline that silently
+   under-reports the day it matters. A missing total is unknown, not zero. */
+export function inquiryHeadline(rows, opts) {
+  const o = opts || {};
+  const list = Array.isArray(rows) ? rows : [];
+  const ready = list.filter(caseIsReadyToSend);
+  const total = Number(o.total);
+  const capped = Number.isFinite(total) && total > list.length;
+  let sub;
+  if (!ready.length) {
+    sub = list.length ? "nothing is waiting on you" : "no active cases";
+  } else {
+    let oldest = null;
+    for (const row of ready) {
+      const d = waitingDays(row.requested_at, o.now);
+      if (d != null && (oldest === null || d > oldest)) oldest = d;
+    }
+    sub = oldest === null
+      ? "oldest waiting — no request date on file"
+      : "oldest waiting " + waitingLabel(oldest);
+  }
+  if (capped) sub += " · counted over the first " + list.length + " of " + total;
+  return { value: String(ready.length), label: "Ready to send", sub: sub };
+}
+
+export function repairHeadline(payload) {
+  const p = payload || {};
+  const files = Array.isArray(p.files) ? p.files : [];
+  const total = Number(p.total);
+  const capped = Number.isFinite(total) && total > files.length;
+  const open = Number.isFinite(total) ? total : files.length;
+  return {
+    value: p.need_me == null ? "—" : String(p.need_me),
+    label: "Need me",
+    sub: capped
+      ? "counted over the first " + files.length + " of " + open + " open"
+      : "of " + open + " open"
+  };
+}
+
+/* The repair pane's next action: the first file the rows themselves say needs
+   her. The caller passes in the chip label its own lens derived, so the sentence
+   and the row can never disagree about which file is first. */
+export function nextRepairAction(files, needLabelOf) {
+  const list = Array.isArray(files) ? files : [];
+  if (typeof needLabelOf !== "function") return null;
+  for (const f of list) {
+    const need = blankToNull(needLabelOf(f));
+    if (!need) continue;
+    const who = blankToNull(f && f.name) || "this file";
+    return { clientId: (f && f.client_id) || null, text: who + " — " + need };
+  }
+  return null;
 }
 
 export function repairStagePill(stageKey) {
@@ -669,7 +875,19 @@ export const VIEW = {
   caseCallState: caseCallState,
   buildCaseSendRequest: buildCaseSendRequest,
   buildInquiryGenerateRequest: buildInquiryGenerateRequest,
+  bureauKey: bureauKey,
   bureauLabel: bureauLabel,
+  countByBureau: countByBureau,
+  caseIsReadyToSend: caseIsReadyToSend,
+  waitingDays: waitingDays,
+  waitingLabel: waitingLabel,
+  sortCasesOldestFirst: sortCasesOldestFirst,
+  nextInquiryAction: nextInquiryAction,
+  docsPacketLabel: docsPacketLabel,
+  docsMissingWords: docsMissingWords,
+  inquiryHeadline: inquiryHeadline,
+  repairHeadline: repairHeadline,
+  nextRepairAction: nextRepairAction,
   repairStagePill: repairStagePill,
   buildRepairSendRequest: buildRepairSendRequest,
   buildRepairConfirmParseRequest: buildRepairConfirmParseRequest

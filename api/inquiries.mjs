@@ -34,7 +34,7 @@ import { requirePrincipal } from "../src/http/middleware/requirePrincipal.mjs";
 import { requireActiveShift } from "../src/http/middleware/requireActiveShift.mjs";
 import { SUPER_ROLES } from "../src/http/middleware/requireRole.mjs";
 import { isUuid, CLIENT_DATA_ERRORS } from "../src/http/read-api.mjs";
-import { logAttempt, confirmRemoval, setStatus, setExpectedName, listAttempts, InquiryWriteError } from "../src/inquiries/work.mjs";
+import { logAttempt, confirmRemoval, setStatus, setExpectedName, listAttempts, listRecentLetters, InquiryWriteError } from "../src/inquiries/work.mjs";
 import { emit } from "../src/events/bus.mjs";
 
 export default async function handler(req, res) {
@@ -48,6 +48,18 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === "GET") {
+      /* ?recent=letters — the Specialist desk's "Recent Letters Issued" block.
+         Same endpoint, same auth, same org binding as the per-row history below;
+         it reads the letter/portal rows of the same table across the queue
+         instead of down one inquiry. Read-only, so it sits with the GET branch
+         and outside the shift gate, for the reason written above. */
+      if (String((req.query || {}).recent || "") === "letters") {
+        const letters = await listRecentLetters(db, {
+          orgId,
+          limit: Number((req.query || {}).limit) || 8
+        });
+        return res.status(200).json({ ok: true, letters });
+      }
       const inquiryId = (req.query || {}).inquiry_id;
       if (!isUuid(inquiryId)) return res.status(400).json({ ok: false, error: "inquiry_id must be a uuid" });
       return res.status(200).json({ ok: true, attempts: await listAttempts(db, { inquiryId, orgId }) });
