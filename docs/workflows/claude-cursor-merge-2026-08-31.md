@@ -113,3 +113,54 @@ Files read: `.cursor/rules/*.mdc` (21), `.cursor/skills/*/SKILL.md` (10, headers
 `fundhub-auditor` in full), `CLAUDE.md`, `.claude/settings.json`, `package.json`.
 Files written: this board only.
 Exports/props/routes/journeys touched: none.
+
+---
+
+## Owner decision — 2026-08-31: Claude does not click; Grok does
+
+**Owner-set, final.** Chris:
+
+> "For Claude, I don't want you to go through and start clicking on things
+> because you just take forever and it uses up a lot of resources. I'd rather
+> have Grok do that, which is automated. Don't add the actual physical clicking
+> like a person. Playwright is 100% fine. And you can test the code on each
+> button, so you can see that it's firing, which you can assume is working."
+
+### The bar for Claude on a UI change
+
+1. Live Playwright, **100/100** against the deployed site. Unchanged — this
+   still counts and still gates.
+2. **Per-button fire check in code** — trace each control to its handler and
+   show it fires. Seeing it fire is sufficient. Assume it works from there.
+3. **No human click-through by Claude.** Not "agent walks the path in a
+   browser," not a manual pass, not a person-like motion. Removed for Claude.
+
+### Who owns the physical click pass
+
+Grok. It is automated there and cheap. Claude hands off; Claude does not
+schedule, request, or perform it.
+
+### This resolves conflict B
+
+Conflict B asked whether a green Playwright run is "done." Answer: for Claude,
+yes — Playwright 100/100 plus the per-button fire check. CLAUDE.md §6 item 4
+gets the strict Playwright half written in, and does NOT get a human-click
+requirement.
+
+### W3 must amend these, not just import them
+
+| File | What changes |
+|---|---|
+| `CLAUDE.md` §6 item 4 | "Playwright check on any UI change" → live 100/100 + per-button fire check. No Claude click pass. |
+| `test-means-human-click.mdc` | Retitle/scope to Grok. Its core claim — "a green Playwright run alone does not count, the agent must click like a person" — is now **false for Claude**. Do not import as written. |
+| `live-playwright-100-before-manual.mdc` | Drop "After that score... the agent still does the human click path" and the 2026-08-25 "agent walks it" override, for Claude. The 100/100 gate itself stays. |
+
+### NEW conflict F — surfaced by this decision
+
+`grok-no-displays.mdc` (owner law 2026-08-28) lists under **Never (Grok)**:
+
+> "Screenshots, marked-up review shots, or 'make it look right'"
+
+Grok cannot own the click-through pass and also be banned from taking
+screenshots of screens. One of the two has to give. Flagging only — not
+reconciled. Chris decides.
