@@ -14,7 +14,7 @@
 </head>
 <body>
 
-<header><div class="wrap"><div class="logo">fundhub<span>.</span></div></div></header>
+<header><div class="wrap"><div class="logo" role="img" aria-label="fundhub"></div></div></header>
 
 <!-- 1. ABOVE THE FOLD -->
 <main>
@@ -257,13 +257,14 @@
 
 <footer>
   <div class="wrap">
-    <div class="prose">
-      <p><strong>Partner disclosure.</strong> FundHub LLC is not a bank or a lender. We are a funding advisory and application service. Nothing on this page is an offer of credit, a promise of funding, or a guarantee of any credit outcome for you or for any client you refer.</p>
-      <p><strong>No earnings claim.</strong> The revenue split described here is the commercial term of the partnership. It is not a projection, a representation, or a guarantee of income. What a partnership produces depends on the partner.</p>
-      <p><strong>Partnership terms.</strong> Entry fee, revenue split, referral bonus and production standard are as stated above and are set out in full in the partnership agreement. Acceptance is decided on a review call and is at FundHub's sole discretion. Financing, where used, is a separate arrangement with a third party and is not a condition of acceptance.</p>
-      <p>&copy; <span id="yr"></span> FundHub LLC &middot; <a href="/privacy/">Privacy</a> &middot; <a href="/terms/">Terms</a></p>
+    <div class="disc">
+      <p><strong>PARTNER DISCLAIMER:</strong> Fundhub LLC is not a bank or a lender. We are a funding advisory and application service. Nothing on this page is an offer of credit, a promise of funding, or a guarantee of any credit outcome. The revenue split described is a commercial term of the partnership, not a projection or guarantee of income.</p>
+      <p><strong>NOT AFFILIATED WITH META:</strong> This site is not part of Facebook, Instagram, or Meta Platforms, Inc., and is not endorsed by Meta in any way. Facebook&trade; and Instagram&trade; are trademarks of Meta Platforms, Inc.</p>
     </div>
+    <div class="foot-bottom">&copy; <span id="yr"></span> FUNDHUB LLC. All rights reserved. &nbsp;&middot;&nbsp; <a href="/privacy/">Privacy Policy</a> &nbsp;&middot;&nbsp; <a href="/terms/">Terms of Service</a></div>
+    <div class="sysline"><span class="pulse"></span>systems nominal &middot; fundhub.ai</div>
   </div>
+  <div class="ghost-mark" aria-hidden="true"><span class="logo"></span></div>
 </footer>
 
 <script>
@@ -273,17 +274,12 @@
    ========================================================================= */
 var PROGRAM_NAME = "the FundHub Partner Program";
 
-(function () {
-  document.querySelectorAll("[data-program]").forEach(function (el) {
-    el.textContent = PROGRAM_NAME;
-  });
-  document.getElementById("yr").textContent = new Date().getFullYear();
-
-  var items = ["Your brand", "Our fulfillment", "50% of funding", "50% of repair",
-               "Half the success fee", "No monthly fee", "Financing available",
-               "$2,000 partner referral bonus", "Ad account connected free"];
-  var set = items.map(function (t) { return "<span>" + t + "</span>"; }).join("");
-  document.getElementById("mq").innerHTML = "<div>" + set + "</div><div>" + set + "</div>";
+(function(){
+  var items=["Your brand","Your book","Your renewals","Our fulfillment","50% of funding",
+             "50% of repair","No monthly base fee","Financing available"];
+  var set='<div class="marq-set">'+items.map(function(t){return "<span>"+t+"</span><i></i>"}).join("")+'</div>';
+  var mq=document.getElementById("mq"); if(mq) mq.innerHTML=set+set;
+  var y=document.getElementById("yr"); if(y) y.textContent=new Date().getFullYear();
 })();
 </script>
 </body>
