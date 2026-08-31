@@ -96,6 +96,8 @@ If something is genuinely unsafe or broken, say it once, plainly, and then drop 
 3. Produce a plan in plain English. Name: files to be touched, journeys affected, how the change will be verified.
 4. Wait for approval. Do not write code in the same turn as the plan.
 
+Touching anything under `public/app/`? `docs/UI-STANDARDS.md` is law. Read it first.
+
 ## 4. Journey documentation
 
 Every flow in this system is documented as a Mermaid flowchart. This is how a non-coder sees what the system actually does. Keeping it accurate is part of the work, not a nice-to-have.

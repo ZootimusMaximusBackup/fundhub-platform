@@ -23,10 +23,15 @@
 //      allowed to be incomplete, the number a client is billed from is not.
 //
 //   4. A NULL approved amount does not break the closeout that bills the
-//      client. src/funding/closeout.mjs filters `COALESCE(approved_amount,0)>0`
-//      on the lender breakdown, so an unpriced approval is simply LEFT OUT of
-//      the breakdown rather than counted as a zero, and the fee itself is
-//      computed from funding_rounds.funded_amount either way.
+//      client, and it does not get billed. An approval with no recorded amount
+//      is not a CONFIRMED approval, so it is left out of the lender breakdown
+//      AND out of the fee basis — never counted as a zero.
+//
+//      UPDATED owner-set 2026-08-30: the fee basis is now the confirmed
+//      approvals total, not funding_rounds.funded_amount. That makes the
+//      distinction this whole file is about — "approved" versus "approved for
+//      a known amount" — the thing the client is billed from, so it matters
+//      more here than it ever did. docs/CLOSEOUT-FEE-BASIS.md.
 
 import { describe, test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -34,7 +39,7 @@ import { db, close } from "../db.mjs";
 import { resolveDefaultOrg } from "../auth/org.mjs";
 import { _resetOrgCache } from "../events/bus.mjs";
 import { clearHandlers } from "../events/registry.mjs";
-import { logBankDecision } from "./status.mjs";
+import { logBankDecision, setApprovalExclusion } from "./status.mjs";
 import { guardFundedAmount } from "../funding/card-stacking-rounds.mjs";
 import { moveCardToStage } from "../workflows/cards.mjs";
 import { createFundingCloseout } from "../funding/closeout.mjs";
@@ -61,7 +66,10 @@ describe("approval now, amount later (pg)", { skip: !HAS_DB ? "no DATABASE_URL" 
       await db.query(`DELETE FROM application_decisions WHERE application_id IN (
         SELECT id FROM applications WHERE client_id = ANY($1))`, [clients]).catch(() => {});
       await db.query(`DELETE FROM applications WHERE client_id = ANY($1)`, [clients]).catch(() => {});
+      await db.query(`DELETE FROM funding_round_sales WHERE funding_round_id IN (
+        SELECT id FROM funding_rounds WHERE client_id = ANY($1))`, [clients]).catch(() => {});
       await db.query(`DELETE FROM funding_rounds WHERE client_id = ANY($1)`, [clients]).catch(() => {});
+      await db.query(`DELETE FROM sales WHERE client_id = ANY($1)`, [clients]).catch(() => {});
       await db.query(`DELETE FROM cards WHERE client_id = ANY($1)`, [clients]).catch(() => {});
       await db.query(`DELETE FROM events WHERE client_id = ANY($1)`, [clients]).catch(() => {});
       await db.query(`DELETE FROM tasks WHERE client_id = ANY($1)`, [clients]).catch(() => {});
@@ -83,6 +91,21 @@ describe("approval now, amount later (pg)", { skip: !HAS_DB ? "no DATABASE_URL" 
        VALUES ($1, $2, 'Amount', 'Later', 'FULL_FUNDING') RETURNING id`,
       [orgId, `${MARK}.client@example.com`]
     )).rows[0].id;
+
+    /* A funding sale at 10%. There is no fee without one: the rate the client
+       is billed at is the rate agreed on their sale, and no agreed rate is a
+       refusal rather than a house default (owner-set 2026-08-30). */
+    const fundingProductId = (await db.query(
+      `SELECT id FROM products WHERE org_id = $1 AND code = 'card-stacking-dfy' LIMIT 1`,
+      [orgId]
+    )).rows[0]?.id;
+    assert.ok(fundingProductId, "card-stacking-dfy product must exist");
+    await db.query(
+      `INSERT INTO sales (org_id, client_id, product_id, agreed_price,
+                          agreed_success_fee_percent, status, sold_at)
+       VALUES ($1, $2, $3, 3000, 10, 'active', now())`,
+      [orgId, clientId, fundingProductId]
+    );
 
     lenderA = (await db.query(
       `INSERT INTO lenders (org_id, lender_table, name, active, priority_tier,
@@ -149,10 +172,16 @@ describe("approval now, amount later (pg)", { skip: !HAS_DB ? "no DATABASE_URL" 
   });
 
   test("2. an approval with no amount still cannot be marked funded", async () => {
-    // The guard itself, asked directly.
+    /* THE REASON CODE CHANGED ON 2026-08-30, and it got more specific.
+       It used to be `funded_amount_required` — the round was refused because
+       nothing could suggest a funded amount. Now the blank approval is refused
+       in its own right, BEFORE the funded amount is even considered, because we
+       bill a percent of the approvals that carry an amount and a blank one is
+       never invoiced. Same answer to the same question — the card does not
+       reach Funded — but the refusal now names the bank to go and fill in. */
     const guard = await guardFundedAmount(db, { orgId, clientId });
     assert.equal(guard.ok, false, "the funded guard must still refuse");
-    assert.equal(guard.reason, "funded_amount_required");
+    assert.equal(guard.reason, "approval_amounts_missing");
     assert.equal(guard.suggestedFundedAmount, null,
       "an approval with no amount suggests nothing — it must not suggest 0");
 
@@ -164,7 +193,7 @@ describe("approval now, amount later (pg)", { skip: !HAS_DB ? "no DATABASE_URL" 
       stageKey: "funded"
     });
     assert.equal(move.moved, false, "the card must not reach Funded");
-    assert.equal(move.reason, "funded_amount_required");
+    assert.equal(move.reason, "approval_amounts_missing");
 
     const round = (await db.query(
       `SELECT status, funded_amount FROM funding_rounds WHERE client_id = $1`,
@@ -204,11 +233,32 @@ describe("approval now, amount later (pg)", { skip: !HAS_DB ? "no DATABASE_URL" 
   test("4. with the amount in, the round funds — and the closeout ignores an unpriced approval", async () => {
     // A SECOND bank that said yes and whose limit nobody has learned yet. It
     // must not drag the fee down, and it must not crash the closeout.
-    await logBankDecision(db, {
+    const unpriced = await logBankDecision(db, {
       orgId,
       clientId,
       lenderId: lenderB,
       status: "Approved",
+      staff: { name: "Funding Advisor" }
+    });
+
+    /* SINCE 2026-08-30 THAT SECOND APPROVAL BLOCKS THE ROUND. It would never be
+       invoiced — we bill a percent of the approvals that carry an amount — so
+       closing the round on top of it is money we silently never charge for.
+       The refusal names the bank. */
+    const blocked = await moveCardToStage(db, {
+      orgId, clientId, pipelineKey: "funding_card_stacking", stageKey: "funded"
+    });
+    assert.equal(blocked.moved, false, "an unpriced approval must hold the round open");
+    assert.equal(blocked.reason, "approval_amounts_missing");
+
+    /* The way out, and the only way out: somebody says on the record that this
+       approval does not count. The bank's yes is NOT changed — this is not a
+       denial — so everything below still reads it as an approval. */
+    await setApprovalExclusion(db, {
+      orgId,
+      applicationId: unpriced.id,
+      excluded: true,
+      reason: "Bank never told us the limit and the client did not use it",
       staff: { name: "Funding Advisor" }
     });
 
@@ -230,12 +280,25 @@ describe("approval now, amount later (pg)", { skip: !HAS_DB ? "no DATABASE_URL" 
     assert.equal(round.status, "funded");
     assert.equal(Number(round.funded_amount), 45000);
 
-    const { closeout, items } = await createFundingCloseout(db, {
+    /* money-chain links the round to the client's sale at round.started; this
+       file deliberately runs with an empty bus, so the link is made here. The
+       closeout reads the agreed rate through it. */
+    await db.query(
+      `INSERT INTO funding_round_sales (org_id, funding_round_id, sale_id, link_method)
+       SELECT $1, $2, id, 'explicit' FROM sales WHERE client_id = $3 LIMIT 1
+       ON CONFLICT (funding_round_id) DO NOTHING`,
+      [orgId, round.id, clientId]
+    );
+
+    const { closeout, items, feeBasis } = await createFundingCloseout(db, {
       orgId,
       fundingRoundId: round.id
     });
     assert.ok(closeout, "the success-fee closeout is created");
-    assert.equal(Number(closeout.total_fee), 4500, "10% of the 45000 that funded");
+    assert.equal(feeBasis, 45000,
+      "the basis is the ONE confirmed approval — the unpriced one adds nothing, not a zero");
+    assert.equal(Number(closeout.total_approved_amount), 45000);
+    assert.equal(Number(closeout.total_fee), 4500, "10% of the 45000 confirmed");
     assert.equal(items.length, 1,
       "only the approval with a real amount is a line item — the unpriced one is left out, not billed as 0");
   });

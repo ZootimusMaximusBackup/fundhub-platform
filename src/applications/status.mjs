@@ -255,6 +255,121 @@ export async function logBankDecision(db, {
   });
 }
 
+/**
+ * Record that a bank approval DOES NOT COUNT toward this round — or put it back.
+ *
+ * WHY THIS EXISTS. A round can no longer be marked Funded while any approval on
+ * it has no dollar amount (guardFundedAmount, src/funding/card-stacking-rounds.mjs),
+ * because we bill a percent of the approvals that carry an amount and a blank
+ * one is never invoiced. But some approvals are never going to have an amount:
+ * the bank said yes and the client never used the card, or the approval was
+ * withdrawn. Without this, one dead row holds a round open forever.
+ *
+ * IT IS NOT A DENIAL, AND IT MUST NEVER LOOK LIKE ONE. applications.status is
+ * what the BANK said, and it is left exactly as it was — 'Approved'. The bank
+ * did approve. src/plays/outcomes.mjs reads approval-vs-denial off that column
+ * ('Approved' → yes, 'Denied' → no), so writing 'Denied' here would invert the
+ * approval rate, and a third status would delete the yes from the report
+ * altogether. What we decided to do about the approval is a different fact, and
+ * it lives in its own columns (migration 272).
+ *
+ * WHO AND WHEN ARE THE POINT. This is a decision somebody makes, so it is
+ * refused without a staff member to put against it, and it appends an
+ * application_decisions row exactly as every status change does — the same
+ * audit trail, a different event_type. That row carries status NULL on purpose:
+ * an exclusion is not a bank outcome, and listOutcomesForLaterPlays reads
+ * `status IN ('Approved','Denied')`, so a NULL keeps it out of the bank yes/no
+ * history instead of showing up there as a second, phantom approval.
+ *
+ * THE AMOUNT IS NEVER TOUCHED. approved_amount keeps its NULL. "We are not
+ * billing for this" is not a claim that the bank approved nothing — that claim
+ * is a zero, and it is refused on the way in (normalizeApprovedAmount).
+ */
+export async function setApprovalExclusion(db, {
+  orgId,
+  applicationId,
+  excluded = true,
+  reason = null,
+  staff = null
+} = {}) {
+  const who = staff
+    ? String(staff.name || staff.email || staff.id || "").trim().slice(0, 200)
+    : "";
+  if (!who) {
+    throw new ApplicationStatusError(
+      "Excluding an approval is a decision that gets recorded against a person. No signed-in staff member, so nothing was saved.",
+      { code: "staff_required", status: 403 }
+    );
+  }
+
+  const current = await db.query(
+    `SELECT id, status, approval_excluded_at
+       FROM applications
+      WHERE org_id = $1::uuid AND id = $2::uuid`,
+    [orgId, applicationId]
+  );
+  const app = current.rows[0];
+  if (!app) {
+    throw new ApplicationStatusError("application not found", {
+      code: "not_found",
+      status: 404
+    });
+  }
+
+  /* Only a bank YES can be excluded. Excluding a denial or an application still
+     in flight would mean nothing, and quietly accepting it would hide whichever
+     bug sent it. */
+  if (excluded && String(app.status || "") !== "Approved") {
+    throw new ApplicationStatusError(
+      `Only an approved application can be marked as not counting. This one is "${app.status || "not set"}".`,
+      { code: "not_approved" }
+    );
+  }
+
+  const cleanReason = reason == null ? null : String(reason).trim().slice(0, 500) || null;
+
+  const updated = await db.query(
+    excluded
+      ? `UPDATE applications
+            SET approval_excluded_at = now(),
+                approval_excluded_by = $3,
+                approval_exclusion_reason = $4,
+                updated_at = now()
+          WHERE org_id = $1::uuid AND id = $2::uuid
+          RETURNING *`
+      : `UPDATE applications
+            SET approval_excluded_at = NULL,
+                approval_excluded_by = NULL,
+                approval_exclusion_reason = NULL,
+                updated_at = now()
+          WHERE org_id = $1::uuid AND id = $2::uuid
+          RETURNING *`,
+    excluded ? [orgId, applicationId, who, cleanReason] : [orgId, applicationId]
+  );
+  const row = updated.rows[0];
+
+  await db.query(
+    `INSERT INTO application_decisions (
+       org_id, application_id, event_type, status, lender_table, decided_at, created_by, notes
+     ) VALUES (
+       $1::uuid, $2::uuid, $3, NULL, $4::lender_table, now(), $5, $6
+     )`,
+    [
+      orgId,
+      row.id,
+      excluded ? "approval_excluded" : "approval_reinstated",
+      row.lender_table || null,
+      who,
+      cleanReason
+        || (excluded
+          ? "Approval marked as not counting toward the round"
+          : "Approval put back — it counts toward the round again")
+    ]
+  );
+
+  return row;
+}
+
 export async function listApplicationDecisions(db, { orgId, applicationId, limit = 50 }) {
   const r = await db.query(
     `SELECT *
@@ -306,10 +421,15 @@ export async function listClientDecisionPlays(db, { orgId, clientId, limit = 50 
  * null when nobody has said, a dollar string when they have. Never coalesced
  * to 0: a zero is a claim that the bank approved nothing, and unknown is not
  * nothing.
+ *
+ * The three approval_excluded_* columns ride along so the screen can tell the
+ * difference between an approval still waiting on its amount and one somebody
+ * has recorded as not counting — and can show who did that, and undo it.
  */
 export async function listClientApplications(db, { orgId, clientId, limit = 200 }) {
   const r = await db.query(
-    `SELECT id, lender_id, lender_name, bank, status, approved_amount, updated_at
+    `SELECT id, lender_id, lender_name, bank, status, approved_amount, updated_at,
+            approval_excluded_at, approval_excluded_by, approval_exclusion_reason
        FROM applications
       WHERE org_id = $1::uuid AND client_id = $2::uuid
       ORDER BY updated_at DESC
