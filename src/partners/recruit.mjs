@@ -91,7 +91,7 @@ export function isEntryFeeProduct(identity) {
  * arrived" and "nothing arrived" are different answers and only one of them
  * means the recruiter is owed nothing yet.
  *
- * @param {{remittedCents?: number|null, entryFeeCents?: number, bonusPct?: number}} [args]
+ * @param {{remittedCents?: number|string|null, entryFeeCents?: number, bonusPct?: number}} [args]
  * @returns {{remittedCents: number|null, entryFeeCents: number, bonusCents: number,
  *            fundhubNetCents: number|null, negative: boolean}}
  */

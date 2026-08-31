@@ -16,6 +16,7 @@ import { dailyPulse } from './daily-pulse.mjs';
 import { messageDispatchSweeper } from './message-dispatch-sweeper.mjs';
 import { meetTranscriptSweeper } from './meet-transcript-sweeper.mjs';
 import { subscriptionBillingSweeper } from './subscription-billing-sweeper.mjs';
+import { partnerProductionFloorReview } from './partner-production-floor.mjs';
 import { c00CrsSoftPullRequest } from './c-00-crs-soft-pull-request.mjs';
 import { c02InquiryCreated } from './c-02-inquiry-created.mjs';
 import { c02bInquiryRemovalRequested } from './c-02b-inquiry-removal-requested.mjs';
@@ -129,6 +130,24 @@ export const functions = [
 
      COMPLIANCE REVIEW REQUIRED: payment rails and fee timing. */
   subscriptionBillingSweeper,
+
+  /* THE ONLY FILTER ON THE PARTNER BASE. Registered 2026-08-31. The $10,000 entry
+     fee is financeable down to a 405 FICO (W0-decisions.md), so entry screens
+     nobody and production is the whole quality control: ten funding clients a
+     month, on the ladder in W1-money-model.md §6. Runs on the 1st.
+
+     REGISTERING IT CAN LOWER A PARTNER'S SHARE FROM 50 TO 20 — and cannot restate
+     one cent already earned, because partner_revenue.share_pct_applied is frozen
+     on every row (042). It also reaches nobody until a partner has an
+     activated_at: every partner active before 282 has that column NULL on purpose,
+     and src/partners/floors.mjs refuses to score a partner whose start date is
+     unknown rather than guessing it.
+
+     It never touches partners.status — 'paused' blocks payouts through 042's
+     trigger, which would withhold money the partner genuinely earned.
+
+     COMPLIANCE REVIEW REQUIRED: automatic change to a revenue-share percentage. */
+  partnerProductionFloorReview,
   c00CrsSoftPullRequest,
   c02InquiryCreated,
   c02bInquiryRemovalRequested,

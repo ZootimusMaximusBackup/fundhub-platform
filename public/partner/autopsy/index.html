@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Decline Autopsy — Find Out Why Your Dead Deals Died</title>
-<meta name="description" content="Upload the deals that got declined. We tell you exactly why each one died and which ones are still alive. $27."/>
+<meta name="description" content="Upload the deals that got declined. We tell you exactly why each one died and which ones are still alive. One flat fee."/>
 <link rel="icon" href="/favicon.svg"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -16,11 +16,11 @@
 <main>
 <section class="sect" style="padding-top:22px">
   <div class="wrap">
-    <span class="kicker">$27 &middot; Decline Autopsy</span>
+    <span class="kicker"><span class="price" data-price="autopsy">&mdash;</span> &middot; Decline Autopsy</span>
     <h1>You Have a Folder of Dead Deals. Some of Them Aren't Dead.</h1>
     <p class="lede">Send us the files that got declined. We tell you <strong>exactly why each one died</strong>,
       which ones were never going to fund, and which ones are still alive right now with a different approach.</p>
-    <a class="btn" href="#buy">Autopsy My Declines — $27</a>
+    <a class="btn" href="#buy">Autopsy My Declines &mdash; <span class="price" data-price="autopsy">&mdash;</span></a>
     <p class="sub">One flat fee &middot; No subscription &middot; Findings back in writing</p>
   </div>
 </section>
@@ -45,7 +45,7 @@
       <div class="num"><b>01</b><div><h3>Why it actually died</h3><p>The specific reason the file failed underwriting — not the category the decline letter gave you.</p></div></div>
       <div class="num"><b>02</b><div><h3>Whether it was survivable</h3><p>Some files were dead on arrival. Some were killed by how they were submitted. You find out which is which.</p></div></div>
       <div class="num"><b>03</b><div><h3>What's still alive</h3><p>Deals in your folder that could still fund today with a different structure or sequence.</p></div></div>
-      <div class="num"><b>04</b><div><h3>The pattern across all of them</h3><p>The mistake you're repeating. This is usually the part that's worth more than the $27.</p></div></div>
+      <div class="num"><b>04</b><div><h3>The pattern across all of them</h3><p>The mistake you're repeating. This is usually the part that's worth more than what you paid.</p></div></div>
     </div>
     <div class="callout"><p><strong>What this is not:</strong> we don't re-submit your files, contact your clients, or take the deals. It's a read on your declines and it stays yours.</p></div>
   </div>
@@ -53,14 +53,28 @@
 
 <section class="sect">
   <div class="wrap">
-    <span class="kicker">Why It's $27</span>
+    <span class="kicker">Why It's This Cheap</span>
     <div class="h2">Because We'd Rather Show You Than Tell You.</div>
     <div class="prose">
-      <p>We're not making money at $27. We're showing you how we read a file, because that read is the whole business — and it's hard to describe and easy to demonstrate.</p>
-      <p>If it's useful, you'll want to know what else is behind it. If it isn't, you're out $27 and you still learned why your deals died. That's a fair trade in both directions.</p>
+      <p>We're not making money at this price. We're showing you how we read a file, because that read is the whole business — and it's hard to describe and easy to demonstrate.</p>
+      <p>If it's useful, you'll want to know what else is behind it. If it isn't, you're out <span class="price" data-price="autopsy">&mdash;</span> and you still learned why your deals died. That's a fair trade in both directions.</p>
     </div>
-    <a class="btn" id="buy" href="/affiliates/?track=autopsy">Autopsy My Declines — $27</a>
-    <p class="sub">Flat $27 &middot; No subscription &middot; Nothing recurring</p>
+    <form class="buy" id="buy" data-checkout="autopsy" novalidate>
+      <div class="row two">
+        <div class="field"><label for="a-first">First name</label>
+          <input id="a-first" name="first_name" type="text" autocomplete="given-name"/></div>
+        <div class="field"><label for="a-last">Last name</label>
+          <input id="a-last" name="last_name" type="text" autocomplete="family-name"/></div>
+      </div>
+      <div class="row"><div class="field"><label for="a-email">Email &mdash; where the findings go</label>
+        <input id="a-email" name="email" type="email" autocomplete="email" required/></div></div>
+      <button type="submit" disabled>Autopsy My Declines &mdash; <span class="price" data-price="autopsy">&mdash;</span></button>
+      <p class="err" data-checkout-error role="alert"></p>
+      <p class="fine">You pay first, then you upload your files. That order is deliberate:
+        we will not hold other people&rsquo;s data from somebody who never became a customer.
+        Take the names off before you upload &mdash; we refuse a file that still has them.</p>
+    </form>
+    <p class="sub">One flat fee &middot; No subscription &middot; Nothing recurring</p>
   </div>
 </section>
 
@@ -72,7 +86,7 @@
       <details open><summary>How many files can I send?</summary><div class="a">Send the folder. If it's enormous we'll tell you before we start rather than after you've paid.</div></details>
       <details><summary>Do you contact my clients?</summary><div class="a">No. Never. We read the files you send and we send you back what we found. Your clients stay yours and hear nothing from us.</div></details>
       <details><summary>Will you tell me which lender to use?</summary><div class="a">No. We don't share lender information with anyone outside the company — that's a firm line, not a paywall. What you get is why the file failed and what would have to change.</div></details>
-      <details><summary>Is this a subscription?</summary><div class="a">No. $27 once. There's nothing recurring attached to it.</div></details>
+      <details><summary>Is this a subscription?</summary><div class="a">No. One flat fee, once. There's nothing recurring attached to it.</div></details>
     </div>
   </div>
 </section>
@@ -81,6 +95,6 @@
   <p><strong>Disclosure.</strong> FundHub LLC is not a bank or a lender. A Decline Autopsy is an analysis of files you provide. It is not an offer of credit, a promise of funding, and not a guarantee that any file will fund.</p>
   <p>&copy; <span id="yr"></span> FundHub LLC &middot; <a href="/privacy/">Privacy</a> &middot; <a href="/terms/">Terms</a></p>
 </div></div></footer>
-<script>document.getElementById("yr").textContent=new Date().getFullYear();</script>
+<script src="/partner/funnel.js" defer></script>
 </body>
 </html>

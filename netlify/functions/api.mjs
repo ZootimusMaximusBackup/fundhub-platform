@@ -67,6 +67,7 @@ import readBankInbox from "../../api/read/bank-inbox.mjs";
 import readFundingRounds from "../../api/read/funding-rounds.mjs";
 import readAffiliates from "../../api/read/affiliates.mjs";
 import readPartners from "../../api/read/partners.mjs";
+import readPartnerProduction from "../../api/read/partner-production.mjs";
 import readMessageTemplates from "../../api/read/message-templates.mjs";
 import readStaff from "../../api/read/staff.mjs";
 import staffTelemetry from "../../api/staff/telemetry.mjs";
@@ -162,6 +163,7 @@ import publicSurveySubmit from "../../api/public/survey-submit.mjs";
 import publicEducationEnroll from "../../api/public/education-enroll.mjs";
 import publicOptimize from "../../api/public/optimize.mjs";
 import publicPartnerApply from "../../api/public/partner-apply.mjs";
+import publicFunnelCheckout from "../../api/public/funnel-checkout.mjs";
 import trialsEligibility from "../../api/trials/eligibility.mjs";
 import trialsProvision from "../../api/trials/provision.mjs";
 import trialsDashboard from "../../api/trials/dashboard.mjs";
@@ -363,6 +365,11 @@ export const ROUTES = {
   "read/proxy-sessions": readProxySessions,
   "read/affiliates": readAffiliates,
   "read/partners": readPartners,
+  /* Where a partner stands against the production floor — the only filter on the
+     partner base (W0-decisions.md, W1-money-model.md §6). The monthly job writes
+     the verdicts; without this line nothing could read one back and the warning
+     §6 promises the partner would have no surface. */
+  "read/partner-production": readPartnerProduction,
   "read/message-templates": readMessageTemplates,
   "read/staff": readStaff,
   "staff/telemetry": staffTelemetry,
@@ -607,6 +614,13 @@ export const ROUTES = {
      checkout on the keep Assessment title. No auth — same class as survey-submit. */
   "public/optimize": publicOptimize,
   "public/partner-apply": publicPartnerApply,
+  /* The self-serve till for the /partner/ funnel pages. GET returns every
+     price those pages render (nothing is typed into the HTML); POST mints a
+     real Commas checkout for the Decline Autopsy, the Winner's Board and the
+     Live Trial. The $10,000 entry is REFUSED here on purpose — it is sold on a
+     review call, so its CTA stays the application above. No auth: same class
+     as public/survey-submit. COMPLIANCE REVIEW REQUIRED — fee timing. */
+  "public/funnel-checkout": publicFunnelCheckout,
   /* The Live Trial. $297, seven days, docs/specs/W4-live-trial.md.
      eligibility is PUBLIC and runs in front of the pay button — Meta will not
      run a money-related ad from an unverified business, and finding that out

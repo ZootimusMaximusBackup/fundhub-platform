@@ -10,6 +10,8 @@ export const ALLOWED_UNMONITORED = {
   "contracts/sign": "Signed contract link. GET without id/exp/sig answers 404 on purpose. That is not downtime.",
   "public/decline-autopsy-upload": "POST only — the paid autopsy_ref plus the merchant attestation are the credential. A GET answers 405 by design, and pinging it with a body would write somebody's declined-deal rows. The sales page at public/decline-autopsy is the monitored door for this offer.",
   "public/decline-autopsy-report": "Signed, expiring report link. A GET without org/ref/exp/sig answers 404 on purpose — and it answers that identically for a forged signature, so the endpoint cannot be used to find out which references exist. That refusal is correct behaviour, not downtime.",
+  "trials/provision": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would create a partner row, an affiliate row and a login for a trial nobody bought. The eligibility gate and the live dashboard are the monitored doors for this offer.",
+  "trials/convert": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would stamp a partner agreement or pause a partner. Day 8 is a human decision, not an uptime probe.",
   "sidebar.fragment.html": "Shared chrome fragment mounted into other pages. Not a live desk."
 };
 
@@ -143,6 +145,11 @@ const API_KEYS = [
      are not — see ALLOWED_UNMONITORED. */
   "public/decline-autopsy",
   "public/education-enroll",
+  /* The self-serve till for the /partner/ funnel pages. A plain GET answers 200
+     with every price those five pages render and whether checkout is actually
+     configured, so it is a real uptime door: if this is down, three sales pages
+     show an em dash where the price goes and their buy buttons stay disabled. */
+  "public/funnel-checkout",
   "public/optimize",
   "public/partner-apply",
   "public/partner-page",
@@ -218,7 +225,14 @@ const API_KEYS = [
   "soft-pull-approve",
   "staff/monitoring-consent",
   "staff/telemetry",
-  "tasks"
+  "tasks",
+  /* The Live Trial's two public-facing doors. `trials/eligibility` is the gate
+     that runs in front of the pay button — if it is down, nobody can buy the
+     trial and nobody is told why. `trials/dashboard` is the screen a person
+     paid $297 to watch for seven days; an outage there is the product missing.
+     Its two write siblings are not pingable — see ALLOWED_UNMONITORED. */
+  "trials/dashboard",
+  "trials/eligibility"
 ];
 
 const DESK_FILES = [
