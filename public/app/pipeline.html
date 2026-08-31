@@ -1272,6 +1272,9 @@ function applyFilters(){
     c.classList.toggle('filtered',!hit);
   });
   syncWaitButtons();
+  /* The headline's "longest wait" link points at ONE card. If this pass hid
+     that card, the link has nowhere to go and must stop being a control. */
+  if(typeof window.fhSyncHeadlineNext==='function') window.fhSyncHeadlineNext();
 }
 window.fhApplyFilters=applyFilters;
 function applySort(){
@@ -1672,6 +1675,7 @@ restore();
   var hlNextLink = document.getElementById("hlNextLink");
   var hlNextNote = document.getElementById("hlNextNote");
   var hlNextTarget = null;
+  var hlNextLabel = "";
 
   function hlNote(text) {
     if (!hlNextNote) return;
@@ -1706,14 +1710,33 @@ restore();
         : "Nothing on this rail is waiting on someone here.");
       return;
     }
+    hlNextLabel = next.name + " — " + age(next.entered_at) +
+      (next.stage ? ", " + next.stage : "");
     if (hlNextLink) {
-      hlNextLink.hidden = false;
-      hlNextLink.textContent = "Longest wait: " + next.name + " — " + age(next.entered_at) +
-        (next.stage ? ", " + next.stage : "");
+      hlNextLink.textContent = "Longest wait: " + hlNextLabel;
       hlNextLink.setAttribute("href", "#" + cardAnchor(next.id));
     }
-    hlNote("");
+    hlSyncNext();
   }
+
+  /* THE LINK MUST NOT OUTLIVE THE CARD IT POINTS AT. A filter hides a card
+     with .card.filtered{display:none}, which leaves the node in the DOM: so
+     getElementById still finds it, the click handler's `if (!el) return` never
+     fires, and scrollIntoView on a box-less element scrolls nowhere. Filtering
+     the board — including with the counters in this same row — used to leave an
+     underlined link that did nothing whatever when pressed, and rang a card
+     nobody could see. Now it drops to plain text the moment its card is off the
+     board, which is the rule already stated at .hl-next: a control that cannot
+     do anything must not render as one. The name is kept in the note, because
+     the fact is still true — it is only unreachable from here. */
+  function hlSyncNext() {
+    if (!hlNextLink || !hlNextTarget) return;
+    var el = document.getElementById(cardAnchor(hlNextTarget.id));
+    var reachable = !!el && !el.classList.contains("filtered");
+    hlNextLink.hidden = !reachable;
+    hlNote(reachable ? "" : "This filter hides the longest wait: " + hlNextLabel + ".");
+  }
+  window.fhSyncHeadlineNext = hlSyncNext;
 
   // One place that turns a card id into its anchor, so the link and the card
   // can never spell it differently.
@@ -1724,7 +1747,8 @@ restore();
       ev.preventDefault();
       if (!hlNextTarget) return;
       var el = document.getElementById(cardAnchor(hlNextTarget.id));
-      if (!el) return;
+      // display:none leaves the node findable, so "exists" is not "reachable".
+      if (!el || el.classList.contains("filtered")) return;
       try { el.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" }); }
       catch (e) { el.scrollIntoView(); }
       el.classList.add("fh-spot");

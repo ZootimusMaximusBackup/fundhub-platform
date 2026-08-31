@@ -136,6 +136,42 @@ test.describe("pipeline — the headline answers what is waiting on us", () => {
     expect(await spot.evaluate((el) => getComputedStyle(el).boxShadow)).toBe(ringed);
   });
 
+  test("a filter that hides the card stops the jump being a control at all", async ({ page }) => {
+    /* .card.filtered is display:none, and display:none leaves the node in the
+       DOM. So getElementById still found it, the handler's `if (!el) return`
+       never fired, scrollIntoView on a box-less element scrolled nowhere, and
+       the ring was painted on a card nobody could see: an underlined link that
+       did nothing whatever when pressed. Measured here with the board's OWN
+       counter, because two controls in the same row silently killing each
+       other is the worst version of it. */
+    const old = new Date(Date.now() - 9 * DAY).toISOString();
+    await openScreen(page, "/app/pipeline.html", OWNER, board([
+      stage("new_lead", "New Lead", [
+        card({ id: "older", name: "Older Person", sms_needs_reply: true, entered_at: old })
+      ]),
+      stage("round_submitted", "Round Submitted", [card({ id: "bank", name: "With Bank" })])
+    ]));
+
+    const link = page.locator("#hlNextLink");
+    const target = page.locator("#fh-card-older");
+    await expect(link).toContainText("Older Person", { timeout: 10_000 });
+
+    // "on a bank" — the longest wait is not a bank card, so it leaves the board.
+    await page.locator("#hlBank").click();
+    await expect(target).toHaveClass(/filtered/);
+    await expect(link).toBeHidden();
+    // The fact is still true, so it survives as plain text. Only the control goes.
+    await expect(page.locator("#hlNextNote"))
+      .toContainText("This filter hides the longest wait: Older Person");
+
+    // Clear the filter: the control comes back, and it still does its job.
+    await page.locator("#hlBank").click();
+    await expect(link).toBeVisible();
+    await expect(page.locator("#hlNextNote")).toBeHidden();
+    await link.click();
+    await expect(target).toHaveClass(/fh-spot/);
+  });
+
   test("nothing waiting says so in words — never a bare zero with no meaning", async ({ page }) => {
     await openScreen(page, "/app/pipeline.html", OWNER, board([
       stage("round_submitted", "Round Submitted", [card({ id: "a" })])
