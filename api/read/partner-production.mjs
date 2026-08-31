@@ -42,14 +42,18 @@ import {
    src/http/partner-production-read.test.mjs. An endpoint whose query only ever
    runs behind an HTTP handler is one whose column names go unchecked until a
    partner opens the screen. */
-export const fetchRows = async (tx, { partnerId, query = {} }) => {
-  // org_id and the activation date come off the partner row rather than the
-  // session: the standing is a property of the partner, and RLS has already
-  // decided which partner this caller may see.
+export const fetchRows = async (tx, { partnerId, query = {}, principal = null }) => {
+  /* THE ORG COMES FROM THE SESSION, never from the partner row and never from the
+     query string. Binding it here is the C1 rule (src/http/read-endpoints-org-scope.test.mjs)
+     and it is a real second lock rather than a formality: withPartnerScope's RLS
+     policy filters on partner_id alone, so an org filter is what stops a partner
+     id belonging to another company from resolving at all. A session with no org
+     matches no row — it fails closed. */
+  const orgId = principal && (principal.orgId || principal.org_id) || null;
   const partner = (await tx.query(
     `SELECT id, org_id, status, revenue_share_pct, activated_at
-       FROM partners WHERE id = $1 LIMIT 1`,
-    [partnerId]
+       FROM partners WHERE id = $1 AND org_id = $2 LIMIT 1`,
+    [partnerId, orgId]
   )).rows[0];
   if (!partner) return [];
 

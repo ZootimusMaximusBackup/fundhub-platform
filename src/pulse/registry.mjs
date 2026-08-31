@@ -194,6 +194,7 @@ const API_KEYS = [
   "read/my-numbers",
   "read/ops-pulse",
   "read/partners",
+  "read/partner-production",
   "read/portal-contracts",
   "read/portal-summary",
   "read/products",

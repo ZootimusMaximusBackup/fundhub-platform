@@ -17,6 +17,7 @@ import { FLOOR_CLIENTS_PER_MONTH, WINDOW_DAYS } from "../partners/floors.mjs";
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const PARTNER = "22222222-2222-4222-8222-222222222222";
+const PRINCIPAL = { kind: "partner", partnerId: PARTNER, orgId: ORG };
 
 function stubTx(script) {
   const calls = [];
@@ -52,7 +53,7 @@ describe("the payload", () => {
       ["ORDER BY window_end DESC", { rows: [] }],
       ["WITH surviving", { rows: [{ funding_clients: 12 }] }]
     ]);
-    const [row] = await fetchRows(tx, { partnerId: PARTNER, query: {} });
+    const [row] = await fetchRows(tx, { partnerId: PARTNER, query: {}, principal: PRINCIPAL });
     assert.equal(row.floor_per_month, FLOOR_CLIENTS_PER_MONTH);
     assert.equal(row.floor_clients, 30);
     assert.equal(row.window_days, WINDOW_DAYS);
@@ -69,7 +70,7 @@ describe("the payload", () => {
       ["ORDER BY window_end DESC", { rows: [] }],
       ["WITH surviving", { rows: [{ funding_clients: 3 }] }]
     ]);
-    const [row] = await fetchRows(tx, { partnerId: PARTNER, query: {} });
+    const [row] = await fetchRows(tx, { partnerId: PARTNER, query: {}, principal: PRINCIPAL });
     assert.equal(row.latest, null);
     assert.equal(row.evaluable, false);
     assert.equal(row.not_evaluated_reason, "no_activation_date");
@@ -88,7 +89,7 @@ describe("the payload", () => {
       }],
       ["WITH surviving", { rows: [{ funding_clients: 9 }] }]
     ]);
-    const [row] = await fetchRows(tx, { partnerId: PARTNER, query: {} });
+    const [row] = await fetchRows(tx, { partnerId: PARTNER, query: {}, principal: PRINCIPAL });
     assert.equal(row.latest.outcome, "warning");
     assert.equal(row.current.fundingClients, 9);
     assert.equal(row.current.shortBy, 21);
@@ -96,9 +97,31 @@ describe("the payload", () => {
     assert.ok(row.next_review_at instanceof Date);
   });
 
+  test("the org is bound from the SESSION, never from the query string", async () => {
+    const tx = stubTx([
+      ["FROM partners WHERE id = $1", partnerRow()],
+      ["ORDER BY window_end DESC", { rows: [] }],
+      ["WITH surviving", { rows: [{ funding_clients: 0 }] }]
+    ]);
+    await fetchRows(tx, {
+      partnerId: PARTNER, principal: PRINCIPAL,
+      query: { org_id: "99999999-9999-4999-8999-999999999999" }
+    });
+    const lookup = tx.calls[0];
+    assert.match(lookup.sql, /org_id = \$2/, "audit finding C1 — the org must be bound");
+    assert.deepEqual(lookup.params, [PARTNER, ORG]);
+  });
+
+  test("a session with no org matches no partner — it fails closed", async () => {
+    const tx = stubTx([["FROM partners WHERE id = $1", { rows: [] }]]);
+    const rows = await fetchRows(tx, { partnerId: PARTNER, query: {}, principal: {} });
+    assert.deepEqual(rows, []);
+    assert.equal(tx.calls[0].params[1], null);
+  });
+
   test("a partner the scope cannot see yields no row rather than an error", async () => {
     const tx = stubTx([["FROM partners WHERE id = $1", { rows: [] }]]);
-    assert.deepEqual(await fetchRows(tx, { partnerId: PARTNER, query: {} }), []);
+    assert.deepEqual(await fetchRows(tx, { partnerId: PARTNER, query: {}, principal: PRINCIPAL }), []);
   });
 
   test("?history is passed through, and floors.mjs clamps it", async () => {
@@ -107,7 +130,7 @@ describe("the payload", () => {
       ["ORDER BY window_end DESC", { rows: [] }],
       ["WITH surviving", { rows: [{ funding_clients: 0 }] }]
     ]);
-    await fetchRows(tx, { partnerId: PARTNER, query: { history: "500" } });
+    await fetchRows(tx, { partnerId: PARTNER, query: { history: "500" }, principal: PRINCIPAL });
     const call = tx.calls.find((c) => c.sql.includes("LIMIT $3"));
     assert.equal(call.params[2], 24);
   });
