@@ -247,6 +247,12 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
   const currentCall = headTask && String(headTask.client_id) === String(clientId)
     ? { due_at: headTask.due_at, task_id: headTask.task_id, title: headTask.title || null }
     : null;
+  /* And the one after it, asked of the table rather than read off up_next — see
+     nextCallAfter() for the three shapes that array gets wrong. Always present
+     on the payload: null means "no later call", never "we did not look". */
+  const nextCall = currentCall
+    ? await nextCallAfter(db, { orgId, staffId, after: currentCall.due_at })
+    : null;
 
   return {
     staff: {
@@ -307,6 +313,7 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
       ...successFee
     },
     current_call: currentCall,
+    next_call: nextCall,
     /* The offer catalog, so the closer can mint a pay link without leaving this
        screen. Pure config — offersForClient() reads no table — so this is not a
        second client read and the merge spec's one-data-path rule still holds. */
@@ -440,6 +447,52 @@ export async function upcomingCalls(db, { orgId, staffId, includeClientId }) {
     [orgId, staffId, includeClientId]
   );
   return r.rows;
+}
+
+/* THE CALL AFTER THIS ONE — asked as its own question, because up_next cannot
+   answer it.
+
+   up_next is not in time order and is not complete. Its ORDER BY forces every
+   one of the open client's tasks to the front whatever the clock says, and then
+   LIMIT 5 cuts the list. Measured against a real Postgres on 2026-08-31, three
+   ordinary days break any answer read off that array:
+
+     A) open client booked 3:00 PM, somebody else at 11:00 AM
+        -> array order is 3:00 PM, 11:00 AM, so "next" was 11:00 AM: FOUR HOURS
+           BEFORE the call it was printed beside.
+     B) open client has 10:00 AM and 4:00 PM, somebody else at 11:00 AM
+        -> array order is 10:00, 4:00 PM, 11:00, so "next" was 4:00 PM and the
+           closer's real next appointment was never named. Six hours of runway
+           on the screen, one hour in life.
+     C) open client at 3:00 PM with five other calls at 9, 10, 11, 12 and 4:00 PM
+        -> LIMIT 5 keeps 3:00 PM, 9, 10, 11, 12 and DROPS the 4:00 PM. Sorting
+           the array by time still answers "nothing after this", which is false.
+
+   C is why this is a query and not a loop: the honest answer is not in the array
+   at any ordering. One row, ordered by time, no client weighting, no truncation.
+   Returns null only when there genuinely is no later call. */
+export async function nextCallAfter(db, { orgId, staffId, after }) {
+  if (!after) return null;
+  const r = await db.query(
+    `SELECT nt.id AS task_id, nt.client_id, nt.due_at, nt.title,
+            COALESCE(NULLIF(trim(c.first_name || ' ' || c.last_name), ''), c.email, 'Client') AS name
+       FROM tasks nt
+       LEFT JOIN clients c ON c.id = nt.client_id AND c.org_id = nt.org_id
+       LEFT JOIN call_outcomes o ON o.task_id = nt.id
+      WHERE nt.org_id = $1
+        AND nt.assignee_role = 'closer'
+        AND (nt.assignee_staff_id = $2 OR nt.assignee_staff_id IS NULL)
+        AND nt.due_at IS NOT NULL
+        AND o.id IS NULL
+        AND nt.due_at > $3
+      ORDER BY nt.due_at ASC
+      LIMIT 1`,
+    [orgId, staffId, after]
+  );
+  const row = r.rows[0];
+  return row
+    ? { due_at: row.due_at, task_id: row.task_id, client_id: row.client_id, name: row.name || null }
+    : null;
 }
 
 async function quietClients(db, { orgId, staffId }) {

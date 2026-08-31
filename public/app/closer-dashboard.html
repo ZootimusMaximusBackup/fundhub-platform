@@ -109,12 +109,25 @@
 
   .calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start;}
   .calc-grid[hidden],#breakdown[hidden]{display:none!important;}
-  /* The two calculators keep the brand resting shadow so they still read as
-     two panels — the 1px outline on top of it was the redundant half. */
-  /* border:0 AND box-shadow:none in the same rule — the only legal way to take
-     a container off the frame (§12.4). Half of it paints a floating grey smudge
-     around nothing, which is what this screen and .big-tile were both doing. */
-  .calc-panel{background:var(--surface);border:0;box-shadow:none;border-radius:8px;padding:24px;}
+  /* The two calculators come OFF the frame: no border and no shadow. They are
+     blocks inside the page, not panels floating above it, and the grid gap is
+     what separates them.
+     border:0 AND box-shadow:none in the same rule — the only legal way to do
+     that (§12.4). Half of it paints a floating grey smudge around nothing,
+     which is what this screen and .big-tile were both doing. `.calc-panel` is
+     on the brand file's shadow list (fundhub-brand.css:130-137), so the
+     box-shadow:none is what actually takes the shadow off — AND IT NEEDS THE
+     `.app` IN FRONT OF IT TO DO SO. That brand rule is
+     `:is(.app,.app-shell) :is(...,.calc-panel,...)`, which is two classes;
+     a bare `.calc-panel{box-shadow:none}` is one, loses on specificity, and
+     paints nothing at all. Measured in Chromium on 2026-08-31: without the
+     `.app` the computed box-shadow was still
+     `rgba(10,10,10,.04) 0 1px 2px, rgba(10,10,10,.06) 0 2px 8px` — the exact
+     floating-smudge state §12.4 forbids, with the file claiming it was fixed.
+     Two classes ties the brand rule and this stylesheet is loaded after it, so
+     order decides. `.cockpit-main .panel` on line 344 is the same shape and is
+     why that one has worked all along. */
+  .app .calc-panel{background:var(--surface);border:0;box-shadow:none;border-radius:8px;padding:24px;}
   /* LOADING STATE — set only while a /api/read/tradelines request is in flight,
      removed the moment it resolves either way. Nothing else in the design keys
      off this attribute; it is not a second visual state to maintain. */
@@ -123,7 +136,10 @@
   .calc-title{font-weight:800;}
   .calc-client{font-family:var(--mono);color:var(--text-faint);}
 
-  .big-tile{background:var(--soft);border:0;box-shadow:none;border-radius:8px;padding:16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;}
+  /* `.app` for the same reason as .calc-panel above: .big-tile is on the brand
+     file's shadow list too, so one class does not reach it. A tinted group box
+     (§12.5), not a panel. */
+  .app .big-tile{background:var(--soft);border:0;box-shadow:none;border-radius:8px;padding:16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;}
   .big-tile>.lbl{flex:1 0 100%;margin-top:8px;}
   .big-tile .lbl{text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);}
   .big-tile .val{font-family:var(--mono);font-weight:800;}

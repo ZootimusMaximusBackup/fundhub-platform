@@ -76,6 +76,10 @@ function stubDb(overrides = {}) {
       if (/FROM clients c\b/.test(flat) && /WHERE c\.id/.test(flat)) return { rows: rows.clients };
       if (/FROM staff\b/.test(flat)) return { rows: rows.staff };
       if (/FROM funding_rounds fr\b/.test(flat)) return { rows: rows.funding_rounds || [] };
+      // `FROM tasks nt` is nextCallAfter()'s own one-row question and must NOT
+      // be answered out of the up_next fixture — the whole point of that query
+      // is that it does not come from the same list.
+      if (/FROM tasks nt\b/.test(flat)) return { rows: rows.next_task || [] };
       if (/FROM tasks t\b/.test(flat)) return { rows: rows.tasks || [] };
       if (/FROM transactions\b/.test(flat)) return { rows: rows.transactions || [] };
       if (/FROM crs_results\b/.test(flat)) return { rows: rows.crs_results || [] };
@@ -130,6 +134,42 @@ describe("the call screen's money is sourced or it says it is not", () => {
     assert.ok(out.current_call, "the headline's time must be a field, not something the screen infers");
     assert.equal(out.current_call.task_id, "t-1");
     assert.equal(new Date(out.current_call.due_at).toISOString(), due.toISOString());
+  });
+
+  test("next_call is its own question, not the second row of up_next", async () => {
+    const due = new Date("2026-09-01T17:00:00.000Z");
+    const db = stubDb({
+      // up_next holds THIS client's own later task ahead of everybody else's,
+      // which is what the ORDER BY does. Reading "next" off it named 4:00 PM.
+      tasks: [
+        { task_id: "t-1", client_id: CLIENT, due_at: due, title: "Closing call", name: "Ada Byron" },
+        { task_id: "t-late", client_id: CLIENT, due_at: new Date("2026-09-01T23:00:00.000Z"), title: "Follow-up", name: "Ada Byron" },
+        { task_id: "t-real", client_id: "99999999-9999-9999-9999-999999999999", due_at: new Date("2026-09-01T18:00:00.000Z"), title: "Closing call", name: "Sam" }
+      ],
+      next_task: [{
+        task_id: "t-real", client_id: "99999999-9999-9999-9999-999999999999",
+        due_at: new Date("2026-09-01T18:00:00.000Z"), name: "Sam"
+      }]
+    });
+    const out = await buildCockpit(db, { orgId: ORG, staffId: STAFF, clientId: CLIENT });
+    assert.equal(out.next_call.task_id, "t-real",
+      "the call after this one is the closer's real next appointment, not this client's own later task");
+    assert.ok(
+      db.seen.some((s) => /FROM tasks nt\b/.test(String(s).replace(/\s+/g, " "))),
+      "buildCockpit must ASK for the next call. up_next is ordered client-first and cut at " +
+      "LIMIT 5, so the answer is not in it at any ordering — see cockpit-next-call.pg.test.mjs."
+    );
+  });
+
+  test("next_call is null, never missing, when nothing follows this call", async () => {
+    const db = stubDb({
+      tasks: [{ task_id: "t-1", client_id: CLIENT, due_at: new Date("2026-09-01T17:00:00.000Z"), title: "Closing call", name: "Ada Byron" }]
+    });
+    const out = await buildCockpit(db, { orgId: ORG, staffId: STAFF, clientId: CLIENT });
+    assert.ok("next_call" in out,
+      'the key must always be on the payload — an absent field and "no later call" are ' +
+      'different answers and the screen prints "nothing after this" for the second one');
+    assert.equal(out.next_call, null);
   });
 
   test("current_call is null when the next booked call belongs to somebody else", async () => {
@@ -192,6 +232,40 @@ describe("closer-call.js never states what it does not know", () => {
       "Let the server resolve it inside its own window."
     );
     assert.ok(!/state\.transactionId/.test(src), "the stale id must not be kept at all");
+  });
+
+  test("the headline's 'next' is not picked out of up_next", () => {
+    const src = js();
+    // Comments stripped first: this is a rule about what the code reads, and
+    // the comment inside paintWhen names up_next on purpose, to say why not.
+    const paintWhen = src
+      .slice(src.indexOf("function paintWhen"), src.indexOf("function paint(data)"))
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/\/\/[^\n]*/g, "");
+    assert.ok(paintWhen.length > 100, "paintWhen moved — this guard is reading the wrong slice");
+    assert.ok(
+      !/up_next/.test(paintWhen),
+      "paintWhen is reading up_next again.\n\n" +
+      "up_next is ordered `CASE WHEN t.client_id = $3 THEN 0 ELSE 1 END, t.due_at ASC` and cut at\n" +
+      "LIMIT 5. Measured against a real Postgres: the open client at 3:00 PM with somebody else at\n" +
+      "11:00 AM printed 'next 11:00 AM' — four hours BEFORE the call it sat beside. The open client\n" +
+      "with 10:00 AM and 4:00 PM, and somebody else at 11:00 AM, printed 'next 4:00 PM' and never\n" +
+      "named the 11:00. And with five other calls on the day the LIMIT drops the real next one, so\n" +
+      "even sorting the array answers 'nothing after this' over a call that exists.\n" +
+      "Use data.next_call (src/sales/cockpit.mjs nextCallAfter)."
+    );
+    assert.match(paintWhen, /data\.next_call/,
+      "the call after this one comes from the server's own one-row query");
+  });
+
+  test("a call on another day is not printed as a bare clock time", () => {
+    const src = js();
+    assert.match(src, /function whenText/,
+      "upcomingCalls keeps THIS client's tasks from date_trunc('day', now()) onward, not just " +
+      "today, so a deep link to somebody booked next Tuesday rendered a flat '2:00 PM' with " +
+      "nothing to say which day. whenText() puts the date on the front when it is not today.");
+    assert.ok(!/function clockTime/.test(src),
+      "the date-blind helper is back; every caller of it prints a time that is only true on today");
   });
 
   test("the funding bands keep 'no pull' and 'nothing fundable' apart", () => {

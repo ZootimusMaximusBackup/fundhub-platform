@@ -315,3 +315,123 @@ that already existed.
 | `docs/journeys/CHANGELOG.md` | one line |
 
 No route added, no endpoint added, no migration, no env var touched, no new surface.
+
+
+---
+
+# CORRECTION PASS — 2026-08-31, worktree `wf_489b6cce-e68-4`
+
+An adversarial verifier re-ran this branch rather than reading it. Most of the
+account held up. One thing did not, and it was in the headline itself.
+
+## What was wrong, and how it was measured
+
+**1. "next 11:00 AM" could name a call that is BEFORE this one, or skip the real
+next one entirely.**
+
+`paintWhen()` took the first element of `up_next[]` that was not the current
+task. `up_next` comes from `upcomingCalls()`, whose ORDER BY is
+
+```
+ORDER BY CASE WHEN t.client_id = $3 THEN 0 ELSE 1 END, t.due_at ASC
+LIMIT 5
+```
+
+Every one of the OPEN client's tasks is forced to the front of that list
+whatever the clock says, and the list is then cut at five rows.
+
+Measured by seeding real rows into a scratch Postgres and running the real
+query — not simulated:
+
+| day | array order the query returned | screen said | truth |
+|---|---|---|---|
+| A. open client 3:00 PM, someone else 11:00 AM | 3:00 PM, 11:00 AM | next **11:00 AM** | nothing after this — 11:00 is four hours EARLIER |
+| B. open client 10:00 AM and 4:00 PM, someone else 11:00 AM | 10:00, 4:00 PM, 11:00 | next **4:00 PM** | **11:00 AM** — six hours of runway on screen, one in life |
+| C. open client 3:00 PM, others at 9, 10, 11, 12 **and 4:00 PM** | 3:00 PM, 9, 10, 11, 12 | — | the 4:00 PM is **cut by LIMIT 5** |
+
+C is why the fix is a query and not a loop. Sorting the array by time fixes A
+and B and still answers "nothing after this" in C, over a call that exists.
+
+**Fix.** `nextCallAfter()` in `src/sales/cockpit.mjs` asks the table for one row,
+strictly after this call's time, ordered by time, no client weighting, no
+truncation. The payload carries it as `next_call` — always present, `null` only
+when there genuinely is no later call. `paintWhen()` prints that field and a
+guard test fails if it ever reads `up_next` again.
+
+**2. A call on another day printed as a bare clock time.** `upcomingCalls` keeps
+THIS client's tasks from `date_trunc('day', now())` onward, not today only, so a
+deep link to somebody booked next Tuesday read `2:00 PM · in 100h 0m` with
+nothing to say which day. `whenText()` puts the date in front when it is not
+today.
+
+**3. The `box-shadow:none` this branch added painted nothing.** Not a verifier
+finding — found while checking its neighbour, and confirmed in Chromium.
+`fundhub-brand.css:130-137` is `:is(.app,.app-shell) :is(…,.calc-panel,.big-tile,…)`,
+which is **two classes**. This branch wrote `.calc-panel{box-shadow:none}`, which
+is one, loses on specificity, and does nothing at all — while reading in the file
+exactly like a fix. Computed box-shadow before: `rgba(10,10,10,.04) 0 1px 2px,
+rgba(10,10,10,.06) 0 2px 8px`, with `border:0` — the floating grey smudge around
+nothing that §12.4 forbids, live on the screen, with the file claiming otherwise.
+`.app ` in front of both selectors ties the brand rule, and this stylesheet loads
+after it, so order decides. Computed box-shadow now: `none`.
+
+**4. "The closer is named ONCE" was overstated.** Counted in the browser by
+walking every visible text node: the name is visible **twice** — the shell's
+account chip in the topbar, and the `[data-fh-call-staff]` pill in the call
+toolbar, which predates this branch. The topbar itself does hold one identity,
+and that part was real. The spec now counts and pins **2**, so it cannot grow
+quietly.
+
+## Found, not fixed — deliberately
+
+* `saveOutcome` (`public/app/closer-call.js`) still routes to
+  `state.data.up_next[0]` after logging, which by the same ordering is the
+  client just finished. **Pre-existing on `main`.** Out of scope here.
+* The rail's "Up next" list renders `up_next` in that same non-chronological
+  order. Also pre-existing.
+* `src/ui/screen-standard.test.mjs` checks the §12.4 rule by **reading the CSS
+  text**. It sees `box-shadow:none` and passes, whether or not the declaration
+  ever reaches the element. That is how item 3 above got through. Fixing it for
+  every screen is a shared-guard change and is not this branch's to make; the
+  browser assertion added here covers this screen only.
+
+## Verification, this pass
+
+* `npm run lint` — clean, 1613 files.
+* `npm test` — **the runner never reaches the database phase.**
+  `scripts/run-suite.mjs` exits after the unit phase when it is red, and it is
+  red on `main`, so `0 skipped` in that summary means "never ran", not "nothing
+  to run". The two phases were measured separately.
+  * **Unit phase: 7320 tests, 7309 pass, 11 fail, 0 skipped.** The same 11 by
+    name with this branch's files reverted to `main`. None names this screen.
+  * **Database phase, run by hand at concurrency 1 exactly as the runner would:**
+    own scratch Postgres 16.14 (`fh_314fix`), built from zero, 219 migrations,
+    **138 files, 1961 tests, 1931 pass, 29 fail, 1 skipped.** Every failure is a
+    partner-isolation / row-level-security suite — the documented artifact of
+    connecting as the database owner (CLAUDE.md §12) — and none of them reads
+    this screen. Database dropped afterwards.
+* **Playwright** — `e2e/closer-call-rhythm.spec.mjs`, **16 tests, 16 pass**.
+  The 5 new assertions were run against the pre-correction code first and
+  **4 of the headline ones failed and the frame one failed**, so each gate
+  exercises its gate.
+  *Repeat of the earlier warning, because it bit again:* the static server is
+  `reuseExistingServer` on port 43117 and another worktree was holding it. A
+  full run came back with sixteen failures that were really another tree's
+  files. Run with `E2E_PORT` set to something private.
+* Journeys — `npm run journeys:check` up to date. One CHANGELOG line appended,
+  line count checked before and after (244 -> 245).
+
+## Manifest — correction pass
+
+| file | what |
+|---|---|
+| `src/sales/cockpit.mjs` | **new export `nextCallAfter()`**; `next_call` on the payload |
+| `public/app/closer-call.js` | `paintWhen` reads `next_call`; `clockTime` -> date-aware `whenText` |
+| `public/app/closer-dashboard.html` | `.app ` on `.calc-panel` and `.big-tile` so `box-shadow:none` applies; stale comment corrected |
+| `src/sales/cockpit-honest-money.test.mjs` | +4 tests: `next_call` sourcing, always-present key, paint-path guards |
+| `src/sales/cockpit-next-call.pg.test.mjs` | **new** — 6 tests, real SQL, the A/B/C days |
+| `e2e/closer-call-rhythm.spec.mjs` | +5 browser tests; identity claim replaced with a measured count |
+| `docs/journeys/CHANGELOG.md` | one line |
+
+No route added, no endpoint added, no migration, no env var touched, no new
+surface, `--fh-maxw` untouched, no user-visible empty-state wording changed.

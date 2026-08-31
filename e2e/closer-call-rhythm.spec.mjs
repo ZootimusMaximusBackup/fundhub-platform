@@ -49,6 +49,7 @@ function cockpit(over = {}) {
     },
     precall: { conversation_count: 0, summary: "No conversation summary on file yet." },
     current_call: { due_at: DUE, task_id: "task-1", title: "Closing call" },
+    next_call: { due_at: NEXT_DUE, task_id: "task-2", client_id: "bbbb", name: "Sam Okafor" },
     up_next: [
       { task_id: "task-1", client_id: CLIENT_ID, due_at: DUE, title: "Closing call", name: "Dana Whitfield" },
       { task_id: "task-2", client_id: "bbbb", due_at: NEXT_DUE, title: "Closing call", name: "Sam Okafor" }
@@ -118,10 +119,16 @@ test("the person on the call is the first thing on the page, with the time besid
   const h1 = page.locator("#ccp-who-name");
   await expect(h1).toHaveText("Dana Whitfield");
 
-  // The signed-in closer is named ONCE, in the topbar, never above the client.
-  // The page keeps its own #whoName for the case where the shell mounts no
-  // account chip, and stands it down when the shell's chip is there — so this
-  // asserts the outcome (one identity, up and to the right), not the mechanism.
+  // ONE IDENTITY IN THE TOPBAR — which is not the same as one on the screen,
+  // and this spec used to claim the second thing. Counted in the browser on
+  // 2026-08-31 by walking every visible text node for the closer's name:
+  //   • span#whoName < span.who-chip < .topbar-right   — HIDDEN
+  //   • span < div#fh-shell-chip < .topbar-right       — visible
+  //   • span.chip[data-fh-call-staff] < .call-toolbar  — visible
+  // Two visible, not one. The bar is un-crowded and that is real; the pill in
+  // the call toolbar below it is a THIRD painter of the same name and predates
+  // this branch (public/app/closer-call.js on main, line 129). It is recorded
+  // here rather than removed, so the count cannot quietly grow again.
   await expect(page.locator("#whoName")).toHaveText("Casey Reed");
   const shellChip = page.locator("#fh-shell-chip");
   const pageChip = page.locator(".who-chip");
@@ -130,6 +137,22 @@ test("the person on the call is the first thing on the page, with the time besid
   if (await shellChip.count()) {
     await expect(pageChip, "two identities in one bar is what crowded it").toBeHidden();
   }
+  const named = await page.evaluate(() => {
+    const out = [];
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      if (!/Casey Reed/.test(n.textContent || "")) continue;
+      const r = n.parentElement.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) out.push(n.parentElement.className || n.parentElement.tagName);
+    }
+    return out;
+  });
+  expect(
+    named.length,
+    "the signed-in closer is painted in a new place. Known and allowed: the shell's account " +
+    "chip in the topbar, and the pre-existing [data-fh-call-staff] pill in the call toolbar. " +
+    `Found ${named.length}: ${named.join(" / ")}`
+  ).toBe(2);
   const staffBox = await visible.boundingBox();
   const clientBox = await h1.boundingBox();
   expect(staffBox.y, "the signed-in name belongs in the topbar, above the content")
@@ -163,6 +186,112 @@ test("real money paints as money, and the fee comes off the closeout", async ({ 
   const deal = page.locator(".panel").nth(1);
   await expect(deal).toContainText("15%");
   await expect(deal).not.toContainText("15% · default");
+});
+
+/* ── THE OTHER HALF OF THE HEADLINE ───────────────────────────────────────
+   "next 11:00 AM" was picked off up_next[], and up_next cannot answer that
+   question: its ORDER BY forces the OPEN client's tasks to the front whatever
+   the clock says, and LIMIT 5 then cuts the list. All three fixtures below are
+   the array shapes a real Postgres returned on 2026-08-31 — see
+   src/sales/cockpit-next-call.pg.test.mjs, which produced them by seeding rows
+   and running the real query. The server now answers with its own one-row
+   next_call and the screen prints that; these prove the screen prints THAT and
+   not the array. ───────────────────────────────────────────────────────────── */
+
+/** The clock string the browser itself would render, so no assertion here is
+    pinned to the time zone the suite happens to run in. */
+const clock = (page, iso) => page.evaluate(
+  (s) => new Date(s).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }), iso);
+
+test("a call earlier in the day is never named as the one AFTER this call", async ({ page }) => {
+  await freezeClock(page, NOW);
+  const LATE = "2026-09-01T22:00:00.000Z";   // this client, hours from now
+  const EARLY = "2026-09-01T18:00:00.000Z";  // somebody else, before that
+  await openScreen(page, url, CLOSER, handlers({
+    "/api/read/closer-call": cockpit({
+      current_call: { due_at: LATE, task_id: "task-late", title: "Closing call" },
+      // The server looked and there is genuinely nothing after this one.
+      next_call: null,
+      // …but the array puts the earlier call at [1], which is what got printed.
+      up_next: [
+        { task_id: "task-late", client_id: CLIENT_ID, due_at: LATE, name: "Dana Whitfield" },
+        { task_id: "task-early", client_id: "bbbb", due_at: EARLY, name: "Sam Okafor" }
+      ]
+    })
+  }));
+  const when = page.locator("#ccp-call-when");
+  await expect(when).toContainText(await clock(page, LATE));
+  await expect(when, "a time BEFORE this call cannot be the call after it")
+    .not.toContainText(await clock(page, EARLY));
+  await expect(when).toContainText("nothing after this");
+});
+
+test("the closer's real next appointment is named, not this client's own later task", async ({ page }) => {
+  await freezeClock(page, NOW);
+  const OWN_LATER = "2026-09-01T23:00:00.000Z";
+  await openScreen(page, url, CLOSER, handlers({
+    "/api/read/closer-call": cockpit({
+      current_call: { due_at: DUE, task_id: "task-1", title: "Closing call" },
+      next_call: { due_at: NEXT_DUE, task_id: "task-2", client_id: "bbbb", name: "Sam Okafor" },
+      up_next: [
+        { task_id: "task-1", client_id: CLIENT_ID, due_at: DUE, name: "Dana Whitfield" },
+        { task_id: "task-own", client_id: CLIENT_ID, due_at: OWN_LATER, name: "Dana Whitfield" },
+        { task_id: "task-2", client_id: "bbbb", due_at: NEXT_DUE, name: "Sam Okafor" }
+      ]
+    })
+  }));
+  const when = page.locator("#ccp-call-when");
+  await expect(when).toContainText("next " + await clock(page, NEXT_DUE));
+  await expect(
+    when,
+    "this client's own later task sorts ahead of everybody else's in up_next. Printing it " +
+    "shows six hours of runway where there is one."
+  ).not.toContainText(await clock(page, OWN_LATER));
+});
+
+test('a later call the array never carried does not become "nothing after this"', async ({ page }) => {
+  await freezeClock(page, NOW);
+  const LATE = "2026-09-01T22:00:00.000Z";
+  const CUT = "2026-09-01T23:00:00.000Z";  // real, and past the LIMIT 5
+  await openScreen(page, url, CLOSER, handlers({
+    "/api/read/closer-call": cockpit({
+      current_call: { due_at: LATE, task_id: "task-late", title: "Closing call" },
+      next_call: { due_at: CUT, task_id: "task-cut", client_id: "cccc", name: "Rae Nolan" },
+      // Five rows, every one of them before the open call: this is what the
+      // query returns when the day is busy, and the real next call is not in it.
+      up_next: [
+        { task_id: "task-late", client_id: CLIENT_ID, due_at: LATE, name: "Dana Whitfield" },
+        { task_id: "t-a", client_id: "b1", due_at: "2026-09-01T17:00:00.000Z", name: "One" },
+        { task_id: "t-b", client_id: "b2", due_at: "2026-09-01T18:00:00.000Z", name: "Two" },
+        { task_id: "t-c", client_id: "b3", due_at: "2026-09-01T19:00:00.000Z", name: "Three" },
+        { task_id: "t-d", client_id: "b4", due_at: "2026-09-01T20:00:00.000Z", name: "Four" }
+      ]
+    })
+  }));
+  const when = page.locator("#ccp-call-when");
+  await expect(when).toContainText("next " + await clock(page, CUT));
+  await expect(when, "sorting the array would have said this, over a call that exists")
+    .not.toContainText("nothing after this");
+});
+
+test("a call on another day says which day, not a bare clock time", async ({ page }) => {
+  await freezeClock(page, NOW);
+  const NEXT_WEEK = "2026-09-08T21:00:00.000Z";  // a different day in every time zone
+  await openScreen(page, url, CLOSER, handlers({
+    "/api/read/closer-call": cockpit({
+      current_call: { due_at: NEXT_WEEK, task_id: "task-tue", title: "Closing call" },
+      next_call: null,
+      up_next: [{ task_id: "task-tue", client_id: CLIENT_ID, due_at: NEXT_WEEK, name: "Dana Whitfield" }]
+    })
+  }));
+  const when = page.locator("#ccp-call-when");
+  const dated = await page.evaluate(
+    (s) => new Date(s).toLocaleDateString([], { month: "short", day: "numeric" }), NEXT_WEEK);
+  await expect(
+    when,
+    "upcomingCalls keeps this client's tasks from the start of TODAY onward, not today only, " +
+    "so a call booked next week rendered a flat clock time with nothing to say which day"
+  ).toContainText(dated);
 });
 
 /* ── THE STATE THIS WHOLE BATCH EXISTS FOR ────────────────────────────────── */
@@ -269,6 +398,35 @@ test("nothing slides sideways on a 390px phone", async ({ page }) => {
   const overflow = await page.evaluate(() =>
     document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow, "the page itself must never scroll sideways (UI-STANDARDS §11)").toBeLessThanOrEqual(1);
+});
+
+/* ── THE FRAME, AS THE BROWSER RESOLVES IT ────────────────────────────────── */
+
+test("the two blocks that dropped their border really did drop the shadow too", async ({ page }) => {
+  await freezeClock(page, NOW);
+  await openScreen(page, url, CLOSER, handlers({ "/api/read/closer-call": funded() }));
+  const frame = await page.evaluate(() => [".calc-panel", ".big-tile"].map((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return { sel, missing: true };
+    const cs = getComputedStyle(el);
+    return { sel, shadow: cs.boxShadow, border: cs.borderTopWidth };
+  }));
+  for (const f of frame) {
+    expect(f.missing, `${f.sel} is not on the page`).toBeFalsy();
+    expect(f.border, `${f.sel} is meant to be a plain block`).toBe("0px");
+    expect(
+      f.shadow,
+      `${f.sel} keeps the app-wide resting shadow with no border — the floating grey smudge ` +
+      "around nothing that UI-STANDARDS §12.4 forbids.\n\n" +
+      "This is the trap that makes it invisible: fundhub-brand.css:130-137 is " +
+      "`:is(.app,.app-shell) :is(...,.calc-panel,.big-tile,...)`, which is TWO classes. A rule " +
+      "written as `.calc-panel{box-shadow:none}` is one class, loses on specificity, and paints " +
+      "nothing whatsoever — while reading in the file exactly like a fix. src/ui/" +
+      "screen-standard.test.mjs cannot catch that: it reads the CSS text and sees the " +
+      "declaration. Only the browser knows whether it applied, which is why this assertion is " +
+      "here and not there. Put `.app ` in front of the selector."
+    ).toBe("none");
+  }
 });
 
 /* ── LOADING AND ERROR ────────────────────────────────────────────────────── */

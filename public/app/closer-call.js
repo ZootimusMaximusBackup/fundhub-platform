@@ -35,11 +35,21 @@
       style: "currency", currency: "USD", maximumFractionDigits: 0
     });
   }
-  function clockTime(iso) {
+  /* A bare clock time is only true on today. upcomingCalls() keeps THIS
+     client's tasks from `date_trunc('day', now())` onward, not from today
+     only, so a deep link to somebody booked next Tuesday used to render a flat
+     "2:00 PM" with nothing to say which day. The date goes on the front the
+     moment the call is not today. */
+  function whenText(iso, now) {
     if (!iso) return null;
     var d = new Date(iso);
     if (isNaN(d.getTime())) return null;
-    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    var clock = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    var ref = now ? new Date(now) : new Date();
+    var today = d.getFullYear() === ref.getFullYear() &&
+      d.getMonth() === ref.getMonth() && d.getDate() === ref.getDate();
+    if (today) return clock;
+    return d.toLocaleDateString([], { month: "short", day: "numeric" }) + " " + clock;
   }
   /* "in 25m" / "35m ago" — the only place the back-to-back rhythm is said out
      loud. Never a bare number: a signed minute count with no word is unreadable
@@ -164,7 +174,7 @@
     var el = document.getElementById("ccp-call-when");
     if (!el) return;
     var cur = data.current_call || null;
-    var at = cur ? clockTime(cur.due_at) : null;
+    var at = cur ? whenText(cur.due_at) : null;
     if (!at) {
       el.hidden = false;
       el.textContent = "no booked time";
@@ -173,16 +183,14 @@
     var bits = [at];
     var rel = untilText(cur.due_at);
     if (rel) bits.push(rel);
-    /* The gap to the call AFTER this one. up_next[0] is this call when it is
-       booked, so the next one is [1]. */
-    var list = data.up_next || [];
-    var next = null;
-    for (var i = 0; i < list.length; i++) {
-      if (cur.task_id && list[i].task_id === cur.task_id) continue;
-      next = list[i];
-      break;
-    }
-    var nextAt = next ? clockTime(next.due_at) : null;
+    /* The gap to the call AFTER this one. THIS IS NOT READ OFF up_next.
+       That array is ordered client-first, not by the clock, and is cut at five
+       rows, so picking from it named a time four hours BEFORE this call, or
+       skipped the closer's real next appointment, or said "nothing after this"
+       over a call the LIMIT had dropped. next_call is the server's own
+       one-row answer (src/sales/cockpit.mjs nextCallAfter). */
+    var next = data.next_call || null;
+    var nextAt = next ? whenText(next.due_at) : null;
     el.hidden = false;
     el.textContent = bits.join(" · ") + (nextAt ? "  ·  next " + nextAt : "  ·  nothing after this");
   }
