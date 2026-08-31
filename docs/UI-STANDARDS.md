@@ -153,11 +153,14 @@ That is pipeline.html:215. The cards inside it carry the shadow; the column does
 
 So every status carries a second signal — a word, a shape, or a position:
 
-- pipeline.html:243-244 — a held card gets a **left stripe** (`border-left:4px solid`) *and* a tint. The stripe survives the ramp because its position, not its hue, is what says "this one is stuck".
-- pipeline.html:278-281 — `.hold-badge` says HELD in words, in a pill.
-- pipeline.html:263-268 — `.c-needs-amount` is deliberately **literal amber** (`#FEF3C7` / `#92400E` / `#FCD34D`), not a brand variable, with the reason written above the rule. That is the escape valve when a warning must stay amber on every tenant. Use it sparingly and write the reason down, exactly as that rule does.
+- pipeline.html:216-225 — the headline counters say **"on a bank" / "on the client" / "nothing recorded"** in words, and the chosen one is a solid ink **fill**, not a tint. A word survives any ramp; a fill still reads as chosen when every hue in the ramp is the same.
+- pipeline.html:343-353 — `.c-needs-amount` is deliberately **literal amber** (`#FEF3C7` / `#92400E` / `#FCD34D`), not a brand variable, with the reason written above the rule, *and* it says "Amount needed" in words. That is the escape valve when a warning must stay amber on every tenant. Use it sparingly and write the reason down, exactly as that rule does.
 
 Never ship a legend whose only key is colour, and never write "the red ones need attention" in copy.
+
+**Two examples this section used to give have never once painted (corrected 2026-08-30).** They were `.card.held` (a left stripe plus a tint) and `.hold-badge` (the word HELD in a pill), and both are real CSS sitting in pipeline.html to this day — `.card.held` at :323-324, `.hold-badge` at :358-363. Nothing ever puts either class on an element. `cardEl()` does not add `held`, so the "Held only" filter matches nothing and the `— held` figure has been a dash since the day it shipped. The hold data exists (`clients.custom_fields.round_hold_reason`, written by seven workflows) and the board has never read it.
+
+They are named here rather than deleted because the shape of the stripe is still the right answer and somebody will want it back. **But do not cite dead CSS as the model.** An example that has never run cannot show you that it works, and the next person copies it believing it has been proven. Before this section points at a rule, open the screen and check the class is actually applied to something.
 
 ### 12.7 The type trap, and its one escape hatch
 

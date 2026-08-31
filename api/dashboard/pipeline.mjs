@@ -87,14 +87,50 @@ const CARDS_SQL = `
        (src/funding/closeout.mjs filters COALESCE(approved_amount,0) > 0), so
        the client is never billed a success fee for it.
        NULL means UNKNOWN here, and only NULL. A recorded 0 is a fact somebody
-       entered and is not flagged. */
-    EXISTS (
-      SELECT 1
-        FROM applications a
-       WHERE a.client_id = c.id
-         AND a.org_id = p.org_id
-         AND a.status = 'Approved'
-         AND a.approved_amount IS NULL
+       entered and is not flagged.
+
+       ── THREE THINGS THIS USED TO GET WRONG (fixed 2026-08-30) ─────────────
+       The board is now the source of the "waiting on us" headline at the top
+       of pipeline.html, so an over-broad flag is no longer only an untidy
+       chip — it inflates the one number the screen exists to answer. Each of
+       the three below made the count say MORE work than actually exists.
+
+       1. AN EXCLUDED APPROVAL IS NOT WAITING. Migration 272 added
+          approval_excluded_at: a recorded decision, with a name and a time on
+          it, that this approval does not count — withdrawn, or never used.
+          The Client Control Panel has always honoured it
+          (isWaitingOnAmount, client-control-panel.html) and this board did
+          not, so the two screens disagreed about the same client and the
+          board kept chasing a question somebody had already answered.
+
+       2. THE ROUND, NOT THE WHOLE FILE. This matched every application the
+          client has ever had, so one blank amount left behind in round 1 kept
+          flagging through rounds 2 and 3 forever. Only the client's newest
+          round is the round anybody is working.
+
+       3. THE RAIL. One CARDS_SQL serves all eight rails, so the same client's
+          Sales card and Inquiry Removal card carried a funding chip that
+          nobody looking at those boards can act on. Applications live inside
+          funding rounds; the flag belongs on the funding rails only. */
+    (
+      p.key IN ('funding_card_stacking', 'funding_altfin')
+      AND EXISTS (
+        SELECT 1
+          FROM applications a
+         WHERE a.client_id = c.id
+           AND a.org_id = p.org_id
+           AND a.status = 'Approved'
+           AND a.approved_amount IS NULL
+           AND a.approval_excluded_at IS NULL
+           AND a.funding_round_id = (
+                 SELECT fr.id
+                   FROM funding_rounds fr
+                  WHERE fr.client_id = c.id
+                    AND fr.org_id = p.org_id
+                  ORDER BY fr.round_number DESC, fr.created_at DESC
+                  LIMIT 1
+               )
+      )
     ) AS approval_amount_missing
   FROM cards cd
   JOIN pipelines p ON p.id = cd.pipeline_id
