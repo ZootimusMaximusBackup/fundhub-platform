@@ -8,10 +8,13 @@ export const ALLOWED_UNMONITORED = {
   "webhooks/[provider]": "Signed webhook POST only. A GET ping is not uptime and can look like a replay.",
   "documents/[id]": "Per-document GET needs a real id and a signed-in caller. Not a desk ping.",
   "contracts/sign": "Signed contract link. GET without id/exp/sig answers 404 on purpose. That is not downtime.",
+  "public/decline-autopsy-upload": "POST only — the paid autopsy_ref plus the merchant attestation are the credential. A GET answers 405 by design, and pinging it with a body would write somebody's declined-deal rows. The sales page at public/decline-autopsy is the monitored door for this offer.",
+  "public/decline-autopsy-report": "Signed, expiring report link. A GET without org/ref/exp/sig answers 404 on purpose — and it answers that identically for a forged signature, so the endpoint cannot be used to find out which references exist. That refusal is correct behaviour, not downtime.",
   "sidebar.fragment.html": "Shared chrome fragment mounted into other pages. Not a live desk."
 };
 
 const API_KEYS = [
+  "adintel/board",
   "agent-call",
   "agents",
   "ai-bureau-config",
@@ -132,6 +135,10 @@ const API_KEYS = [
   "proxy/end",
   "proxy/launch",
   "public/affiliate-click",
+  /* The Decline Autopsy sales page. A plain GET answers 200 with the price, the
+     row cap and the field list, so it is a real uptime door. Its two siblings
+     are not — see ALLOWED_UNMONITORED. */
+  "public/decline-autopsy",
   "public/education-enroll",
   "public/optimize",
   "public/partner-apply",

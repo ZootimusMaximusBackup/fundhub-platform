@@ -22,7 +22,7 @@
 // last week — and placement spread is a signal about the advertiser's
 // confidence over the creative's whole life, not this week's snapshot.
 //
-// RUNS AS STAFF. The RLS policies in 275 let a partner READ this pile and never
+// RUNS AS STAFF. The RLS policies in 278 let a partner READ this pile and never
 // write to it. The ingest job is FundHub's own job; it must not be invoked
 // inside a partner-scoped transaction.
 

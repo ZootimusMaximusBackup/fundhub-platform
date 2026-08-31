@@ -6,6 +6,7 @@
 import { register as registerLifecycle } from "./handlers/client-lifecycle.mjs";
 import { register as registerComms } from "./handlers/comms.mjs";
 import { register as registerPaymentLinks } from "./handlers/payment-links.mjs";
+import { register as registerPartnerAddOns } from "./handlers/partner-addons.mjs";
 import { register as registerMoneyChain } from "./handlers/money-chain.mjs";
 import { register as registerPurchaseRouting } from "./handlers/purchase-routing.mjs";
 import { register as registerStaffCompAlerts } from "./handlers/staff-comp-alerts.mjs";
@@ -25,6 +26,11 @@ export function registerAll() {
   registerLifecycle();
   registerComms();
   registerPaymentLinks();
+  /* White-label add-ons. STRICTLY AFTER registerPaymentLinks: that handler is
+     what marks the link 'paid', and this one refuses to start a partner's
+     recurring add-on off an ask that has not been paid. Handler order is
+     registration order. It ignores every client payment. */
+  registerPartnerAddOns();
   registerMoneyChain();
   /* Payment -> fulfilment board. Strictly after money-chain: handler order is
      registration order, and this reads the sale money-chain has just written to

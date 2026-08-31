@@ -36,7 +36,7 @@
 //      refused. requireAuth is NOT used and could not be: it ignores a `roles`
 //      key entirely (CLAUDE.md §12) and it answers a different question.
 //   2. withPartnerScope — every query runs inside the scoped transaction, so the
-//      RLS policies in 275 apply. On these tables that policy grants READ to a
+//      RLS policies in 278 apply. On these tables that policy grants READ to a
 //      scoped caller and WRITE to nobody but staff.
 //   3. redact() — the last pass over the body, whatever the SQL selected.
 //

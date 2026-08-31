@@ -37,7 +37,7 @@
 //
 // It cannot, and the reason is structural rather than careful. Every path to a
 // processor call runs through claimCharge(), which INSERTs the ledger row
-// against 275's `UNIQUE (subscription_id, period_start)` BEFORE the call. A
+// against 276's `UNIQUE (subscription_id, period_start)` BEFORE the call. A
 // replay, a second concurrent pass, a restarted container: all of them recompute
 // the identical period from the same unadvanced `next_charge_at`, collide on
 // that index, get `claimed: false` and return without calling anybody. There is

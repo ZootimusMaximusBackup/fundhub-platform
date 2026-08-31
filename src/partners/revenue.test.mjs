@@ -574,4 +574,78 @@ describe("voidForRefund — reverse by voiding, never by deleting", () => {
       /whole cents/
     );
   });
+
+  test("a bad amount is refused BEFORE the row is voided, not after", async () => {
+    // The refusal used to land after the UPDATE, which left the accrual reversed
+    // on the strength of an argument the function had already rejected.
+    const db = fakeDb();
+    await accrueForPayment(db, { orgId: ORG, salePaymentId: PAYMENT });
+    await assert.rejects(
+      () => voidForRefund(db, { orgId: ORG, transactionId: TX, reason: "refund:x", refundedCents: 1.5 }),
+      /whole cents/
+    );
+    assert.equal(db.rows[0].status, "accrued", "nothing may be voided on a bad argument");
+  });
+});
+
+/* refundedCents is what a refund webhook actually carries: how much went BACK,
+   not how much survived. The caller should not have to read partner_revenue to
+   work out the difference — and if it did, the gross it read could be a
+   different row from the one the void actually caught. */
+describe("voidForRefund — a refund stated as what went back", () => {
+  test("the survivor is the voided row's own gross minus the refund", async () => {
+    // $3,000 accrued, $1,000 refunded. $2,000 survives; half of it is $1,000.
+    const db = fakeDb();
+    await accrueForPayment(db, { orgId: ORG, salePaymentId: PAYMENT });
+    const out = await voidForRefund(db, {
+      orgId: ORG, transactionId: TX, reason: `refund:${TX}`, refundedCents: 100000
+    });
+    assert.equal(out.voided, 1);
+    assert.equal(out.reaccrued, 1);
+    assert.equal(out.netCents, 200000);
+    assert.equal(db.rows[1].gross_amount, "2000.00");
+    assert.equal(db.rows[1].share_amount, "1000.00");
+    assert.equal(db.rows[1].share_pct_applied, 50, "the frozen rate, not today's");
+  });
+
+  test("a refund for the whole payment re-accrues nothing", async () => {
+    const db = fakeDb();
+    await accrueForPayment(db, { orgId: ORG, salePaymentId: PAYMENT });
+    const out = await voidForRefund(db, {
+      orgId: ORG, transactionId: TX, reason: "refund:x", refundedCents: 300000
+    });
+    assert.equal(out.voided, 1);
+    assert.equal(out.reaccrued, 0);
+    assert.equal(db.rows.length, 1);
+  });
+
+  test("a refund bigger than the payment floors the survivor at zero", async () => {
+    const db = fakeDb();
+    await accrueForPayment(db, { orgId: ORG, salePaymentId: PAYMENT });
+    const out = await voidForRefund(db, {
+      orgId: ORG, transactionId: TX, reason: "refund:x", refundedCents: 900000
+    });
+    assert.equal(out.reaccrued, 0, "partner_revenue_share_ck forbids a negative row");
+    assert.equal(db.rows.length, 1);
+  });
+
+  test("an explicit net beats a derived one", async () => {
+    const db = fakeDb();
+    await accrueForPayment(db, { orgId: ORG, salePaymentId: PAYMENT });
+    const out = await voidForRefund(db, {
+      orgId: ORG, transactionId: TX, reason: "refund:x",
+      netRemainingCents: 50000, refundedCents: 100000
+    });
+    assert.equal(out.netCents, 50000);
+    assert.equal(db.rows[1].gross_amount, "500.00");
+  });
+
+  test("saying neither is a full reversal, which is the common case", async () => {
+    const db = fakeDb();
+    await accrueForPayment(db, { orgId: ORG, salePaymentId: PAYMENT });
+    const out = await voidForRefund(db, { orgId: ORG, transactionId: TX, reason: "refund:x" });
+    assert.equal(out.voided, 1);
+    assert.equal(out.reaccrued, 0);
+    assert.equal(db.rows.length, 1);
+  });
 });

@@ -7,7 +7,7 @@
 // PERIOD, AND IT IS THE DATABASE THAT ENFORCES IT, NOT THIS FILE.
 //
 // claimCharge() writes the ledger row BEFORE any processor is called, against
-// 275's `UNIQUE (subscription_id, period_start)`. There is exactly one code
+// 276's `UNIQUE (subscription_id, period_start)`. There is exactly one code
 // path to a charge and it runs through that INSERT. A replayed sweep, two
 // overlapping passes, a restarted container mid-cycle — every one of them
 // computes the same period from the same unadvanced `next_charge_at`, hits the
@@ -29,7 +29,7 @@
 // WHAT MOVES ON A LIVE SUBSCRIPTION ROW, AND WHY THAT IS LEGAL
 //
 // 075's trg_subscriptions_terms_immutable freezes tier, price_cents, currency,
-// effective_from, org_id, client_id (271 added partner_id, 275 added
+// effective_from, org_id, client_id (271 added partner_id, 276 added
 // billing_interval once set). Everything this module writes is on the other
 // list — status, the period window, next_charge_at. No UPDATE here can restate
 // what somebody was paying.
@@ -379,7 +379,7 @@ export async function listStuckCharges(db, { orgId = null, olderThan = null, lim
  * cancelled or unpriced subscription would create a row the sweeper picks up
  * every pass and can never charge.
  *
- * `billing_interval` is set only when it is NULL: 275's trigger permits
+ * `billing_interval` is set only when it is NULL: 276's trigger permits
  * NULL → 'monthly' as first-time configuration and raises on a change, which is
  * the difference between switching billing on and rewriting what somebody
  * agreed to.

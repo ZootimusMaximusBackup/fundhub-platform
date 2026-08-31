@@ -1,4 +1,4 @@
--- 275_subscription_billing.sql — the recurring billing rail: a next-charge
+-- 276_subscription_billing.sql — the recurring billing rail: a next-charge
 -- column, and the ledger that makes charging a card twice impossible.
 --
 -- COMPLIANCE REVIEW REQUIRED (CLAUDE.md §7). This file is a payment-rail and

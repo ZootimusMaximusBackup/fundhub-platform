@@ -24,11 +24,12 @@ flowchart TD
     CAN --> A_contracts[contracts — 1 route]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 1 route]
-    CAN --> A_public[public — 7 routes]
+    CAN --> A_public[public — 10 routes]
     CAN --> A_read[Reading data — 3 routes]
     CAN --> A_top_level[Everything else — 6 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 171 routes]
+    WHO -->|Yes| CANT[Blocked — 172 routes]
+    CANT --> B_adintel[adintel — 1 blocked]
     CANT --> B_auth[Signing in and out — 5 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_brand[brand — 1 blocked]
@@ -59,7 +60,7 @@ flowchart TD
 
 ## What they can reach
 
-**31 of 203 routes.**
+**34 of 207 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -84,6 +85,9 @@ flowchart TD
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
 | `/api/public/affiliate-click` | POST | anyone |
+| `/api/public/decline-autopsy` | GET, POST | anyone |
+| `/api/public/decline-autopsy-report` | DELETE, GET | anyone |
+| `/api/public/decline-autopsy-upload` | POST | **not a sign-in** — provider signature |
 | `/api/public/education-enroll` | POST | **not a sign-in** — provider signature |
 | `/api/public/optimize` | GET, POST | **not a sign-in** — provider signature |
 | `/api/public/partner-apply` | POST | anyone |
@@ -97,15 +101,16 @@ flowchart TD
 
 ### Worth knowing
 
-- **15 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/contracts/sign`, `/api/health`, `/api/public/affiliate-click`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/unsubscribe`. These are the sign-in routes and the health check.
-- **6 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/education-enroll` (provider signature), `/api/public/optimize` (provider signature), `/api/public/survey-submit` (provider signature), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
+- **17 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/contracts/sign`, `/api/health`, `/api/public/affiliate-click`, `/api/public/decline-autopsy`, `/api/public/decline-autopsy-report`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/unsubscribe`. These are the sign-in routes and the health check.
+- **7 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/decline-autopsy-upload` (provider signature), `/api/public/education-enroll` (provider signature), `/api/public/optimize` (provider signature), `/api/public/survey-submit` (provider signature), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**171 of 203 routes.**
+**172 of 207 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
+| `/api/adintel/board` | — | partner, staff |
 | `/api/agent-call` | POST | owner, admin, sales_manager, closer, setter, inquiry_specialist |
 | `/api/agents` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/ai-bureau-config` | POST | owner, admin, funding_advisor |

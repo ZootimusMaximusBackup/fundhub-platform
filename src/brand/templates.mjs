@@ -38,8 +38,43 @@ export function legalBlocks(entityName) {
       locked: true,
       headline: "Messages",
       text: "Message and data rates may apply. Reply STOP to opt out and HELP for help."
+    },
+    /* WHO ACTUALLY PERFORMS THE WORK. The consumer sees this brand; FundHub
+       runs the funding and credit services behind it. Telling them so is
+       required from day one of a Live Trial (docs/specs/W4-live-trial.md §5.4)
+       and is the honest answer on every white-label surface, so it lives in
+       legalBlocks rather than in a trial-only template.
+
+       IT IS LOCKED, AND THAT IS THE WHOLE POINT. isLockedSection() above stops
+       the AI copywriter reaching it and stops a PATCH from the partner's own
+       page editor overwriting it. A disclosure a model can rewrite, or a
+       partner can delete, is not a disclosure. generateSectionCopy() in
+       src/brand/copy-generate.mjs must never produce this text — the wording is
+       fixed, not generated. */
+    {
+      id: FULFILMENT_DISCLOSURE_ID,
+      type: "legal",
+      locked: true,
+      headline: "Who performs these services",
+      text: `Funding and credit services offered here are provided and performed by FundHub. ${name} is an independent marketing partner and is not the provider of these services.`
     }
   ];
+}
+
+/** The id of the locked fulfilment disclosure. Exported so a publish path can
+    assert the block survived, by id, without matching on prose. */
+export const FULFILMENT_DISCLOSURE_ID = "legal-fulfilment";
+
+/** hasFulfilmentDisclosure(body) → boolean.
+
+    True only when the block is present AND still locked. A section that kept
+    the id but lost `locked` is an editable disclosure, which is the failure
+    this check exists to catch. */
+export function hasFulfilmentDisclosure(body) {
+  const sections = body && Array.isArray(body.sections) ? body.sections : [];
+  return sections.some(
+    (s) => s && String(s.id || "") === FULFILMENT_DISCLOSURE_ID && isLockedSection(s) && String(s.text || "").trim() !== ""
+  );
 }
 
 function unlocked(funnelKey, name) {
@@ -122,4 +157,12 @@ export function mergeBodyJson(existing, incoming) {
   return { ...current, ...next, sections: merged };
 }
 
-export default { FUNNELS, isLockedSection, legalBlocks, defaultBody, mergeBodyJson };
+export default {
+  FUNNELS,
+  isLockedSection,
+  legalBlocks,
+  defaultBody,
+  mergeBodyJson,
+  FULFILMENT_DISCLOSURE_ID,
+  hasFulfilmentDisclosure
+};

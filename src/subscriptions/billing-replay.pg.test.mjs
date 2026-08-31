@@ -12,7 +12,7 @@
 //
 // Double-charging is a race, and a race is decided by the database. A fake `db`
 // object can be written to return whatever the test needs and would prove only
-// that the fake behaves. What has to be true is that 275's
+// that the fake behaves. What has to be true is that 276's
 // `UNIQUE (subscription_id, period_start)` refuses the second claim, for every
 // writer that ever exists — a replayed cron, two overlapping passes, a
 // restarted container, a hand-run script.

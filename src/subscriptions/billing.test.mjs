@@ -1,4 +1,4 @@
-// The billing cycle's arithmetic, and what migration 275 must still say.
+// The billing cycle's arithmetic, and what migration 276 must still say.
 //
 // No database needed. The behaviour against a real Postgres — which is where
 // the double-charge guarantee actually lives — is proved in
@@ -23,7 +23,7 @@ import {
 } from "./charger.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const MIGRATION = path.join(ROOT, "db", "migrations", "275_subscription_billing.sql");
+const MIGRATION = path.join(ROOT, "db", "migrations", "276_subscription_billing.sql");
 const sql = () => fs.readFileSync(MIGRATION, "utf8");
 
 const ORG = "11111111-1111-4111-8111-111111111111";
@@ -50,10 +50,10 @@ function billable(over = {}) {
 const NOW = new Date("2026-08-15T09:00:00.000Z");
 
 // ---------------------------------------------------------------------------
-describe("migration 275 — the schedule and the ledger", () => {
+describe("migration 276 — the schedule and the ledger", () => {
   test("the file is still there", () => {
     assert.ok(fs.existsSync(MIGRATION),
-      "db/migrations/275_subscription_billing.sql is gone — supersede it with a new numbered "
+      "db/migrations/276_subscription_billing.sql is gone — supersede it with a new numbered "
       + "migration rather than deleting it: db/migrate.mjs keys schema_migrations by "
       + "'<dir>/<file>', so editing or removing an applied file is a silent no-op.");
   });

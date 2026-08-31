@@ -30,6 +30,7 @@ import { safeError } from "../../src/http/health.mjs";
 import { getOffer, COMMAS_DEFAULT_PRODUCT_TITLE } from "../../src/config/offers.mjs";
 import { checkoutConfig, createCheckoutSession } from "../../src/payments/commas-api.mjs";
 import { createAutopsy, newAutopsyRef, markPaid, getAutopsyByRef } from "../../src/autopsy/store.mjs";
+import { AUTOPSY_PRODUCT_CODE } from "../../src/autopsy/report.mjs";
 import {
   ACCEPTED_FIELDS,
   ATTESTATION_TEXT,
@@ -50,7 +51,10 @@ import {
  */
 export const AUTOPSY_KEEP_TITLE = COMMAS_DEFAULT_PRODUCT_TITLE;
 
-export const AUTOPSY_PRODUCT_CODE = "decline-autopsy";
+/* One definition, not two. src/autopsy/report.mjs owns it because that is where
+   the test proving it accrues no commission lives; it is re-exported here so a
+   caller reading the checkout does not have to go looking. */
+export { AUTOPSY_PRODUCT_CODE };
 
 /**
  * The price. Reads src/config/offers.mjs first so that when the frozen

@@ -88,6 +88,12 @@ const ALLOWED_RAW_FETCH = {
     "Defaults fetchImpl and passes it to src/agents/model.mjs. Never calls it.",
   "src/creative/providers/copy.mjs":
     "Passes ctx.fetch to src/agents/model.mjs. Never calls fetch itself.",
+  "src/creative-intel/job.mjs":
+    "Passes ctx.fetch down to the ad-intelligence classifier, which asks a " +
+    "language model to label COMPETITOR ad copy through src/agents/model.mjs. " +
+    "Never calls fetch itself. Cannot reach a client and cannot change a vendor " +
+    "record — the vendor adapters in src/creative-intel/vendors/ read recorded " +
+    "fixtures and open no socket at all.",
   "api/social/generate.mjs":
     "Wraps globalThis.fetch only to attach an AbortSignal for callModel. The " +
     "model call itself is already fenced via src/agents/model.mjs. No client " +

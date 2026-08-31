@@ -14,7 +14,7 @@
 //
 // THE CYCLE, IN ONE PARAGRAPH. `next_charge_at` is both when the next charge is
 // due and where the next period starts — charging in advance makes those the
-// same instant (see 275's header). So the period being bought is always
+// same instant (see 276's header). So the period being bought is always
 // [next_charge_at, advance(next_charge_at, interval)), the idempotency key is
 // anchored on that start, and a successful charge moves the window forward to
 // exactly that period and sets next_charge_at to its end. Replaying the whole
@@ -24,7 +24,7 @@
 
 import { assertPriceCents } from "./index.mjs";
 
-/** The two cadences 275's CHECK allows. Kept in sync with the constraint by
+/** The two cadences 276's CHECK allows. Kept in sync with the constraint by
     src/subscriptions/billing.test.mjs reading the migration file. */
 export const BILLING_INTERVALS = Object.freeze(["monthly", "annual"]);
 

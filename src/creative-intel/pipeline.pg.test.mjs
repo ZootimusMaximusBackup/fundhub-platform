@@ -40,9 +40,20 @@ const asPartner = (partnerId, fn, deps) => _asPartner(partnerId, fn, { pool: rls
 const HAVE_DB = !!process.env.DATABASE_URL;
 const SLUG = "adintel-test-";
 
-/* The recorded fixture's weeks. Fixed dates, so the arithmetic below is a
-   statement about the code and not about the day the suite happens to run. */
-const WEEKS = ["2026-W31", "2026-W32", "2026-W33", "2026-W34", "2026-W35"];
+/* Fixed weeks, so the arithmetic below is a statement about the code and not
+   about the day the suite happens to run.
+
+   W31-W35 are the weeks the recorded fixture actually contains observations
+   for. W36 and W37 are rolled up as well and have NO new observations, which is
+   the point: the death watch only fires two weeks after a leader stops, so a
+   run that ends on the last week with data can never see the signal the board
+   is sold on. Rolling forward past the data is what a real Monday morning does
+   anyway — the world does not stop producing weeks when a competitor stops
+   producing ads. */
+const WEEKS = ["2026-W31", "2026-W32", "2026-W33", "2026-W34", "2026-W35",
+               "2026-W36", "2026-W37"];
+const LIVE_WEEK = "2026-W35";   // the last week with observations in it
+const QUIET_WEEK = "2026-W37";  // two weeks after everything went dark
 
 /* A deterministic stand-in for the model. Each creative gets an angle derived
    from its own text, so the classification is stable across runs and the
@@ -201,7 +212,7 @@ describe("ad intelligence — Layers 1 and 2", { skip: !HAVE_DB ? "no DATABASE_U
            FROM ad_creative_signals s
            JOIN ad_creatives_seen c ON c.org_id = s.org_id AND c.content_hash = s.content_hash
           WHERE s.org_id = $1 AND s.iso_week = $2 AND c.body_text LIKE 'Need $50,000%'`,
-        [org, WEEKS[4]]));
+        [org, LIVE_WEEK]));
       assert.equal(rows.length, 1);
       assert.equal(rows[0].ad_age_days, 28, "five weekly sightings is a 28-day span");
     });
@@ -212,7 +223,7 @@ describe("ad intelligence — Layers 1 and 2", { skip: !HAVE_DB ? "no DATABASE_U
            FROM ad_creative_signals s
            JOIN ad_creatives_seen c ON c.org_id = s.org_id AND c.content_hash = s.content_hash
           WHERE s.org_id = $1 AND s.iso_week = $2 AND c.advertiser_id = 'adv-fundrocket'
-            AND c.body_text LIKE 'Your revenue%'`, [org, WEEKS[4]]));
+            AND c.body_text LIKE 'Your revenue%'`, [org, LIVE_WEEK]));
       assert.equal(rows.length, 1);
       assert.equal(rows[0].relaunch_count, 1);
     });
@@ -224,7 +235,7 @@ describe("ad intelligence — Layers 1 and 2", { skip: !HAVE_DB ? "no DATABASE_U
            JOIN ad_creatives_seen c ON c.org_id = s.org_id AND c.content_hash = s.content_hash
           WHERE s.org_id = $1 AND s.iso_week = $2
             AND (c.body_text LIKE 'We pulled%' OR c.body_text LIKE 'Need $50,000%')`,
-        [org, WEEKS[4]]));
+        [org, LIVE_WEEK]));
       const moved = rows.find((r) => r.body_text.startsWith("We pulled"));
       const stable = rows.find((r) => r.body_text.startsWith("Need $50,000"));
       assert.equal(moved.landing_page_changed, true);
@@ -236,7 +247,7 @@ describe("ad intelligence — Layers 1 and 2", { skip: !HAVE_DB ? "no DATABASE_U
         `SELECT c.body_text, s.offer_price_cents
            FROM ad_creative_signals s
            JOIN ad_creatives_seen c ON c.org_id = s.org_id AND c.content_hash = s.content_hash
-          WHERE s.org_id = $1 AND s.iso_week = $2`, [org, WEEKS[4]]));
+          WHERE s.org_id = $1 AND s.iso_week = $2`, [org, LIVE_WEEK]));
       const priced = rows.find((r) => r.body_text.startsWith("Need $50,000"));
       assert.equal(Number(priced.offer_price_cents), 5_000_000);
       const unpriced = rows.find((r) => r.body_text.startsWith("The 3 lenders"));
@@ -255,13 +266,15 @@ describe("ad intelligence — Layers 1 and 2", { skip: !HAVE_DB ? "no DATABASE_U
       // before it. It is deliberately NOT sticky — "new this week" stops being
       // true next week, and a flag that never clears is a flag nobody reads.
       const flagged = rows.filter((r) => r.new_entrant === true).map((r) => r.iso_week);
-      assert.deepEqual(flagged, ["2026-W35"]);
+      assert.deepEqual(flagged, [LIVE_WEEK]);
     });
 
     test("the death watch fires for a former leader that went dark", async () => {
+      // The leader of W36 stopped being observed on 30 August. By the end of
+      // W37 that is 14 days of silence, which is the whole signal.
       const { rows } = await asStaff((tx) => tx.query(
         `SELECT count(*)::int AS n FROM ad_creative_signals
-          WHERE org_id = $1 AND death_watch IS TRUE`, [org]));
+          WHERE org_id = $1 AND iso_week = $2 AND death_watch IS TRUE`, [org, QUIET_WEEK]));
       assert.ok(rows[0].n >= 1,
         "nothing was ever reported dead — the differentiating signal is not firing");
     });
@@ -269,7 +282,7 @@ describe("ad intelligence — Layers 1 and 2", { skip: !HAVE_DB ? "no DATABASE_U
     test("cross-platform echo sees the hook on more than one platform", async () => {
       const { rows } = await asStaff((tx) => tx.query(
         `SELECT max(cross_platform_echo) AS m FROM ad_creative_signals
-          WHERE org_id = $1 AND iso_week = $2`, [org, WEEKS[4]]));
+          WHERE org_id = $1 AND iso_week = $2`, [org, LIVE_WEEK]));
       assert.ok(Number(rows[0].m) >= 2,
         "no creative echoed across platforms — the one signal no single-platform tool can compute");
     });
@@ -278,7 +291,7 @@ describe("ad intelligence — Layers 1 and 2", { skip: !HAVE_DB ? "no DATABASE_U
       const { rows } = await asStaff((tx) => tx.query(
         `SELECT winner_score_rank, winner_score_band FROM ad_creative_signals
           WHERE org_id = $1 AND iso_week = $2 AND winner_score_rank IS NOT NULL
-          ORDER BY winner_score_rank`, [org, WEEKS[4]]));
+          ORDER BY winner_score_rank`, [org, LIVE_WEEK]));
       assert.ok(rows.length > 0);
       rows.forEach((r, i) => assert.equal(r.winner_score_rank, i + 1));
       assert.ok(rows.every((r) => ["hot", "warm", "cold"].includes(r.winner_score_band)));
@@ -287,16 +300,16 @@ describe("ad intelligence — Layers 1 and 2", { skip: !HAVE_DB ? "no DATABASE_U
     test("recomputing a week is idempotent — one row per creative per week", async () => {
       const before = await asStaff((tx) => tx.query(
         `SELECT count(*)::int AS n FROM ad_creative_signals WHERE org_id = $1 AND iso_week = $2`,
-        [org, WEEKS[4]]));
-      await asStaff((tx) => computeWeek(tx, { orgId: org, week: WEEKS[4] }));
+        [org, LIVE_WEEK]));
+      await asStaff((tx) => computeWeek(tx, { orgId: org, week: LIVE_WEEK }));
       const after = await asStaff((tx) => tx.query(
         `SELECT count(*)::int AS n FROM ad_creative_signals WHERE org_id = $1 AND iso_week = $2`,
-        [org, WEEKS[4]]));
+        [org, LIVE_WEEK]));
       assert.equal(after.rows[0].n, before.rows[0].n);
     });
 
     test("the saturation map counts advertisers and finds open angles", async () => {
-      const map = await asStaff((tx) => saturationForWeek(tx, { orgId: org, week: WEEKS[4] }));
+      const map = await asStaff((tx) => saturationForWeek(tx, { orgId: org, week: LIVE_WEEK }));
       assert.ok(map.cells.length > 0, "the grid is empty");
       assert.ok(map.angles.length >= 10, "every taxonomy angle must appear, including empty ones");
       assert.equal(map.angles[0].advertisers, 0, "the least contested angle should be first");
@@ -309,14 +322,14 @@ describe("ad intelligence — Layers 1 and 2", { skip: !HAVE_DB ? "no DATABASE_U
   describe("the board read model", () => {
     test("the movers feed returns ranked rows a partner can read", async () => {
       const rows = await asPartner(partner, (tx) =>
-        feedForWeek(tx, { orgId: org, week: WEEKS[4], limit: 50 }));
+        feedForWeek(tx, { orgId: org, week: LIVE_WEEK, limit: 50 }));
       assert.ok(rows.length > 0, "the board is empty for the partner who bought it");
       assert.ok(rows.every((r) => r.winner_score_rank), "every row must carry a rank");
     });
 
     test("the raw Winner Score never appears in a board row", async () => {
       const rows = await asPartner(partner, (tx) =>
-        feedForWeek(tx, { orgId: org, week: WEEKS[4], limit: 50 }));
+        feedForWeek(tx, { orgId: org, week: LIVE_WEEK, limit: 50 }));
       const body = JSON.stringify(rows);
       assert.ok(!body.includes("winner_score\":"), "the raw score reached a partner-facing row");
       for (const r of rows) {
@@ -330,7 +343,7 @@ describe("ad intelligence — Layers 1 and 2", { skip: !HAVE_DB ? "no DATABASE_U
       // Hiding it would leave a partner free to find the same ad themselves and
       // copy it. Showing it labelled is the control.
       const rows = await asPartner(partner, (tx) =>
-        feedForWeek(tx, { orgId: org, week: WEEKS[4], limit: 100 }));
+        feedForWeek(tx, { orgId: org, week: LIVE_WEEK, limit: 100 }));
       const risky = rows.find((r) => r.do_not_copy);
       assert.ok(risky, "the fixture's banned-claim ad should reach the board, badged");
       assert.equal(risky.compliance_risk, "implies_guaranteed_approval");
@@ -338,21 +351,21 @@ describe("ad intelligence — Layers 1 and 2", { skip: !HAVE_DB ? "no DATABASE_U
 
     test("the death-watch view returns what stopped, with the date it was last seen", async () => {
       const rows = await asPartner(partner, (tx) =>
-        deathWatchForWeek(tx, { orgId: org, week: WEEKS[4], limit: 50 }));
+        deathWatchForWeek(tx, { orgId: org, week: QUIET_WEEK, limit: 50 }));
       assert.ok(rows.length >= 1, "the differentiating view is empty");
       assert.ok(rows[0].last_observed_on, "a death watch without a date is not actionable");
     });
 
     test("new entrants are grouped by advertiser, not repeated per creative", async () => {
       const r = await asPartner(partner, (tx) =>
-        newEntrantsForWeek(tx, { orgId: org, week: WEEKS[4] }));
+        newEntrantsForWeek(tx, { orgId: org, week: LIVE_WEEK }));
       const ids = r.entrants.map((e) => e.advertiser_id);
       assert.equal(new Set(ids).size, ids.length, "an advertiser was listed twice");
     });
 
     test("the partner-facing saturation map excludes FundHub's own advertisers", async () => {
       const map = await asPartner(partner, (tx) =>
-        saturationForBoard(tx, { orgId: org, week: WEEKS[4] }));
+        saturationForBoard(tx, { orgId: org, week: LIVE_WEEK }));
       const body = JSON.stringify(map);
       assert.ok(!body.includes("adv-fundhub-own"), "FundHub's own account reached a partner");
     });
@@ -360,7 +373,7 @@ describe("ad intelligence — Layers 1 and 2", { skip: !HAVE_DB ? "no DATABASE_U
     test("weeksAvailable lists the rolled-up weeks newest first", async () => {
       const weeks = await asPartner(partner, (tx) => weeksAvailable(tx, { orgId: org }));
       assert.ok(weeks.length >= WEEKS.length);
-      assert.equal(weeks[0].iso_week, WEEKS[WEEKS.length - 1]);
+      assert.equal(weeks[0].iso_week, QUIET_WEEK);
     });
   });
 
@@ -372,9 +385,9 @@ describe("ad intelligence — Layers 1 and 2", { skip: !HAVE_DB ? "no DATABASE_U
       // 100 partners each holding their own copy of the same 31,000 competitor
       // rows would make the saturation map meaningless.
       const mine = await asPartner(partner, (tx) =>
-        feedForWeek(tx, { orgId: org, week: WEEKS[4], limit: 50 }));
+        feedForWeek(tx, { orgId: org, week: LIVE_WEEK, limit: 50 }));
       const theirs = await asPartner(stranger, (tx) =>
-        feedForWeek(tx, { orgId: org, week: WEEKS[4], limit: 50 }));
+        feedForWeek(tx, { orgId: org, week: LIVE_WEEK, limit: 50 }));
       assert.ok(mine.length > 0 && theirs.length > 0);
       assert.deepEqual(
         theirs.map((r) => r.content_hash),
@@ -405,7 +418,7 @@ describe("ad intelligence — Layers 1 and 2", { skip: !HAVE_DB ? "no DATABASE_U
     test("a partner cannot rewrite a Winner Score", { skip: WRITE_SKIP }, async () => {
       const r = await asPartner(partner, (tx) => tx.query(
         `UPDATE ad_creative_signals SET winner_score_band = 'hot'
-          WHERE org_id = $1 AND iso_week = $2`, [org, WEEKS[4]]));
+          WHERE org_id = $1 AND iso_week = $2`, [org, LIVE_WEEK]));
       assert.equal(r.rowCount, 0, "a partner rewrote the board's ranking");
     });
 

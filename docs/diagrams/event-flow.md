@@ -143,8 +143,8 @@ flowchart LR
 | `payment.failed` | side events | `onPaymentFailed` | 0 |
 | `payment.expired` | side events | — | 0 |
 | `payment.canceled` | side events | — | 0 |
-| `payment.refunded` | side events | `onPaymentRefunded` | 0 |
-| `payment.disputed` | side events | `onPaymentDisputed` | 0 |
+| `payment.refunded` | side events | `onPaymentRefunded`, `onPaymentRefundedMoney` | 0 |
+| `payment.disputed` | side events | `onPaymentDisputed`, `onPaymentDisputedMoney` | 0 |
 | `docs.received` | side events | `onDocsReceivedFlipInquiryGate` | 3 |
 | `inquiry.removed` | side events | — | 1 |
 | `inquiry.gate.raised` | side events | — | 0 |

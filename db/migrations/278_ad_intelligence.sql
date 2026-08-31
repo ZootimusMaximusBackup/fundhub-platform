@@ -1,4 +1,4 @@
--- 275_ad_intelligence.sql — Layer 1 (rented raw ad data) and Layer 2 (the built
+-- 278_ad_intelligence.sql — Layer 1 (rented raw ad data) and Layer 2 (the built
 -- intelligence) of the Creative Intelligence Spine. docs/specs/W2-creative-intelligence.md
 -- §6.7 and §7.6.
 --

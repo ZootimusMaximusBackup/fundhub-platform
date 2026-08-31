@@ -72,7 +72,9 @@ function fakeDb({
         return { rows: id ? [{ id }] : [] };
       }
       if (/FROM sale_payments\s+WHERE org_id/i.test(text)) {
-        const hit = payments.filter((p) => params[1] && p.transaction_id !== null);
+        // Params are (org_id, transaction_id): the row hangs off the transaction
+        // the provider reference just resolved to.
+        const hit = params[0] === ORG && params[1] === TX ? payments : [];
         return { rows: hit.length ? [hit[0]] : [] };
       }
       if (/UPDATE partner_revenue/i.test(text)) {

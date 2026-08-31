@@ -27,7 +27,7 @@
 //
 // SO: COMMAS EXPOSES NO SUBSCRIPTION PRIMITIVE WE CAN BUILD ON, and the honest
 // design is our own scheduler creating one charge per cycle against a stored
-// instrument. Everything else in this slice — 275's ledger, billing.mjs,
+// instrument. Everything else in this slice — 276's ledger, billing.mjs,
 // billing-store.mjs, the sweeper — is that scheduler, and it is complete.
 //
 // This file is the one piece that cannot be written from what the repo knows.
