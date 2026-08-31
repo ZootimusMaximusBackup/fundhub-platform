@@ -44,6 +44,7 @@ import { grantFromTransaction } from "../entitlements/entitlements.mjs";
 import { createFundingCloseoutSafe } from "../funding/closeout.mjs";
 import { attachGateToRound } from "../inquiry-ops/gate.mjs";
 import { accrueForPaymentSafe } from "../partners/revenue.mjs";
+import { convertSafe } from "../affiliates/economics.mjs";
 
 /** Semantic product bucket → products.code when name/alias resolve fails. */
 export const BUCKET_TO_CODE = Object.freeze({
@@ -433,6 +434,35 @@ export async function ensureSalePayment(db, event, {
      no partner_id — the direct book, which is most of them — returns
      { accrued: false, reason: "no_partner" } and writes nothing.
      See src/partners/revenue.mjs and docs/specs/W1-money-model.md §7. */
+  /* THE AFFILIATE'S CUT — the other half of the same hole.
+     src/affiliates/economics.mjs has exported convert() since 033 and, until
+     today, NO production file called it: attribute() recorded who referred a
+     client and nothing ever turned that into money (W1-money-model.md finding
+     F1). It rides here for the same reason the partner accrual does — one
+     durable moment, one place to keep in step.
+
+     It is safe to attempt on EVERY payment. qualifyingOutcome() routes on the
+     product code and, on funding, additionally demands a funded round, so a
+     course sale, a soft pull or a signed deal that never funded all come back
+     "does not qualify" and write nothing. Conversion is idempotent: the UPDATE
+     is guarded on status = 'attributed', so a re-delivered webhook reports
+     "already_converted" rather than paying twice. convertSafe never throws.
+
+     Ordering is deliberate. The partner's half is recorded first, then the
+     affiliate's share of that half — the arithmetic is independent (the basis
+     reads sale_payments, not partner_revenue) but the books read in the order
+     the money actually splits.
+
+     WHY IT IS NOT ALSO HUNG OFF round.funded. round.funded writes no
+     sale_payments row — it funds the round and raises the success-fee closeout,
+     and the cash for that closeout arrives later as its own payment.received.
+     Converting at round.funded would freeze the affiliate's basis on the deposit
+     alone, which is the deposit-only schedule the owner replaced on 2026-08-31.
+     The consequence, recorded and not hidden: a deal that funds and then never
+     pays its success fee never reaches another payment event, so its referral
+     stays 'attributed' and earns nothing. Nothing regresses — until today no
+     production path called convert() at all — but a funded-and-unpaid deal is
+     still a gap, and closing it needs an owner call on what it should pay. */
   const settle = async (paymentRow, created) => {
     if (!paymentRow) return { payment: null, created: false };
     const partnerRevenue = await accrueForPaymentSafe(db, {
@@ -442,7 +472,12 @@ export async function ensureSalePayment(db, event, {
       transactionId: paymentRow.transaction_id ?? transactionId,
       sourceEventId: paymentRow.source_event_id ?? sourceEventId
     });
-    return { payment: paymentRow, created, partnerRevenue };
+    const affiliate = await convertSafe(db, {
+      orgId,
+      saleId,
+      sourceEventId: paymentRow.source_event_id ?? sourceEventId
+    });
+    return { payment: paymentRow, created, partnerRevenue, affiliate };
   };
 
   const ins = await db.query(

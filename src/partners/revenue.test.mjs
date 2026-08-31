@@ -117,6 +117,15 @@ describe("the allow-list decides what shares, and e-products are not on it", () 
     }
   });
 
+  test("the partner's own paid add-ons are fundhub revenue and share nothing", () => {
+    // The partner buys these FROM fundhub; they are not something a partner's
+    // client bought, so there is no half to pay. They are excluded because they
+    // are not on the list, which is the allow-list doing its job with no edit.
+    for (const code of ["creative-intelligence", "dfy-marketing", "lead-flow"]) {
+      assert.equal(sharesWithPartner(code), false, `${code} must not share`);
+    }
+  });
+
   test("an unknown or missing product code shares nothing", () => {
     assert.equal(sharesWithPartner(null), false);
     assert.equal(sharesWithPartner(undefined), false);

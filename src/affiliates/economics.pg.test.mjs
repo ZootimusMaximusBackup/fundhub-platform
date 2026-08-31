@@ -52,17 +52,26 @@ describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
     await db.query(`ALTER TABLE affiliate_referrals DISABLE TRIGGER trg_affiliate_referrals_no_delete`);
     await db.query(`DELETE FROM affiliate_referrals WHERE org_id = $1`, [org]);
     await db.query(`ALTER TABLE affiliate_referrals ENABLE TRIGGER trg_affiliate_referrals_no_delete`);
-    // Keep owner-set AF-04 rows (migration 260). Only clear fixture rules this suite inserts.
+    /* Keep every owner-set row (260, 261 and 272). Only clear fixture rules this
+       suite inserts, which carry no note at all.
+
+       The pattern used to name AF-04 specifically. Migration 272 opens the
+       funding rows on a 2026-08-31 note, so that pattern would have DELETED the
+       live schedule the moment this suite ran. Matching on 'Owner-set ' keeps
+       every migration-seeded row, whatever date it carries. */
     await db.query(
       `DELETE FROM affiliate_commission_rules
         WHERE org_id = $1
-          AND (notes IS NULL OR notes NOT LIKE 'Owner-set 2026-08-24 AF-04%')`,
+          AND (notes IS NULL OR notes NOT LIKE 'Owner-set %')`,
       [org]
     );
+    /* Re-activating the closed rows is safe: 260/261/272 leave their windows
+       abutting, never overlapping, so affiliate_commission_rules_no_overlap
+       holds and findRule() still reads only the row in force today. */
     await db.query(
       `UPDATE affiliate_commission_rules
           SET active = true, updated_at = now()
-        WHERE org_id = $1 AND notes LIKE 'Owner-set 2026-08-24 AF-04%'`,
+        WHERE org_id = $1 AND notes LIKE 'Owner-set %'`,
       [org]
     );
     await db.query(`DELETE FROM sale_payments WHERE sale_id IN
@@ -359,6 +368,12 @@ describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
     assert.equal(await basisFor(db, { amountBasis: "cash_collected", saleId: sale }), 900,
       "refunds must be excluded");
     assert.equal(await basisFor(db, { amountBasis: "first_payment", saleId: sale }), 500);
+    /* 272 added the fifth. These fixture clients carry no partner_id, so there is
+       no partner half to take from and the basis is the cash in full — the same
+       900. The partner cases live in success-fee-share.pg.test.mjs, which has a
+       partner to point at. */
+    assert.equal(await basisFor(db, { amountBasis: "partner_share_of_cash", saleId: sale }), 900,
+      "a fundhub-direct client has no partner half; the whole of the cash is the basis");
     await assert.rejects(() => basisFor(db, { amountBasis: "vibes", saleId: sale }),
       /unknown amount_basis/);
   });
