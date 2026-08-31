@@ -221,6 +221,8 @@ So, every time:
 
 Before you report a task complete, run `git branch -r --no-merged origin/main` and account for every line it prints. An unexplained branch in that list is an unfinished task, not a housekeeping detail.
 
+**Agents cannot do the deleting from the hosted environment (measured 2026-08-31).** `git push origin --delete <branch>` returns `HTTP 403` from the egress proxy — a policy denial, the same class as `api.netlify.com` in §11 — and the GitHub MCP server has `create_branch` and `list_branches` but no delete. Ordinary pushes are unaffected. So an agent's job is to get every branch to the point where deleting it is obviously safe, list them with a one-line verdict each, and hand Chris the list. Do not retry the 403 and do not route around it.
+
 **Checkpoint when context fills.** If a session is long or has gone sideways, write current state to the workflow file and tell me to start fresh. Do not push a degraded session forward. Quality drops well before you run out of room.
 
 **Conventions.** Simplest thing that works, no speculative abstraction. No new dependencies without asking. Match existing patterns in the file you are editing over your own preference. Never commit secrets — no keys, tokens, or PII in code, fixtures, or logs. Delete dead code you create.
