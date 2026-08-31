@@ -22,6 +22,15 @@ export function generateLinkRef() {
   return `pl_${crypto.randomBytes(12).toString("hex")}`;
 }
 
+/* resolveLinkContext — the product, sale and staff a link belongs to.
+ *
+ * A PARTNER ADD-ON LINK HAS NO CLIENT, so every client-scoped lookup below is
+ * guarded on `clientId` rather than run with a NULL that would quietly match
+ * nothing. `sales.client_id` and `call_outcomes.client_id` are both NOT NULL,
+ * so those three queries can only ever return zero rows for a partner — the
+ * guard makes that a decision instead of an accident, and saves three round
+ * trips on every partner purchase. Product resolution is org-scoped and runs
+ * for both, because a partner add-on IS a products row (271). */
 async function resolveLinkContext(db, {
   orgId,
   clientId,
@@ -50,6 +59,9 @@ async function resolveLinkContext(db, {
     }
   }
   let sale = null;
+  if (saleId && !clientId) {
+    throw new TypeError("createPaymentLink: a partner link cannot carry a sale — a sale belongs to a client");
+  }
   if (saleId) {
     const result = await db.query(
       `SELECT s.id, s.product_id, s.sale_motion, p.code AS product_code
@@ -67,7 +79,7 @@ async function resolveLinkContext(db, {
     if (saleMotion != null && sale.sale_motion !== saleMotion) {
       throw new TypeError("createPaymentLink: sale and sale motion do not match");
     }
-  } else if (product) {
+  } else if (product && clientId) {
     sale = (await db.query(
       `SELECT id, product_id
          FROM sales
@@ -98,7 +110,7 @@ async function resolveLinkContext(db, {
     salesManagerStaffId ||= attrs.find((row) => row.role === "sales_manager")?.staff_id || null;
   }
 
-  if ((product || sale) && (!closerStaffId || !salesManagerStaffId)) {
+  if (clientId && (product || sale) && (!closerStaffId || !salesManagerStaffId)) {
     const recentActors = (await db.query(
       `SELECT DISTINCT ON (s.role) s.id AS staff_id, s.role
          FROM call_outcomes co
@@ -128,7 +140,7 @@ async function resolveLinkContext(db, {
  *  Prefer FANBASIS_CHECKOUT_API_KEY → live checkout-session API.
  *  Fall back to COMMAS_CHECKOUT_BASE_URL query links only for tests / legacy. */
 export async function createPaymentLink(db, {
-  orgId, clientId, purpose, description = null, amountCents,
+  orgId, clientId = null, partnerId = null, purpose, description = null, amountCents,
   currency = "USD", createdByStaffId = null, createdByRole = null,
   productId = null, productCode = null, saleId = null, saleMotion = null,
   invoiceId = null, fundingRoundId = null,
@@ -137,7 +149,16 @@ export async function createPaymentLink(db, {
   env = process.env, fetchImpl = fetch
 }) {
   if (!orgId) throw new TypeError("createPaymentLink: orgId is required");
-  if (!clientId) throw new TypeError("createPaymentLink: clientId is required");
+  /* EXACTLY ONE OWNER, the same rule 277's CHECK enforces in the database.
+     A link addressed to both a client and a partner has no answer to "whose
+     money is this"; a link addressed to neither still shows a payable URL and
+     names nobody. Refused here so the caller gets a sentence rather than a
+     constraint name. The `clientId is required` message is preserved for the
+     case that actually happens — a client caller that forgot it. */
+  if (!clientId && !partnerId) throw new TypeError("createPaymentLink: clientId is required");
+  if (clientId && partnerId) {
+    throw new TypeError("createPaymentLink: a link belongs to a client or a partner, never both");
+  }
   /* The live create-invoice door sends purpose "invoice". The table check
      still only allows deposit / diagnostic / repair / custom, so invoice
      is accepted here and stored as custom — a word that already works. */
@@ -195,6 +216,7 @@ export async function createPaymentLink(db, {
       metadata: {
         link_ref: linkRef,
         client_id: clientId,
+        partner_id: partnerId,
         org_id: orgId,
         product_id: context.productId,
         sale_id: context.saleId,
@@ -229,18 +251,18 @@ export async function createPaymentLink(db, {
 
   const result = await db.query(
     `INSERT INTO payment_links
-       (org_id, client_id, purpose, description, amount_cents, currency,
+       (org_id, client_id, partner_id, purpose, description, amount_cents, currency,
         link_ref, checkout_url, created_by_staff_id, commas_session_id,
         product_id, sale_id, sale_motion, closer_staff_id, sales_manager_staff_id,
         invoice_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+     VALUES ($1,$2,$17,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
      RETURNING *`,
     [
       orgId, clientId, purpose, description, amountCents, currency,
       linkRef, checkoutUrl, createdByStaffId, commasSessionId,
       context.productId, context.saleId, saleMotion,
       context.closerStaffId, context.salesManagerStaffId,
-      invoiceId
+      invoiceId, partnerId
     ]
   );
   return result.rows[0];
@@ -313,6 +335,20 @@ export async function getPaymentLink(db, { id, orgId }) {
 export async function getByLinkRef(db, { linkRef }) {
   const result = await db.query(`SELECT * FROM payment_links WHERE link_ref = $1`, [linkRef]);
   return result.rows[0] ?? null;
+}
+
+/** listPaymentLinksForPartner — every ask addressed to one partner, newest
+ *  first. The partner mirror of listPaymentLinksForClient; separate rather than
+ *  a branch inside it, because a caller holding a client id must never be able
+ *  to read a partner's asks by passing the wrong argument name. */
+export async function listPaymentLinksForPartner(db, { orgId, partnerId }) {
+  if (!orgId) throw new TypeError("listPaymentLinksForPartner: orgId is required");
+  if (!partnerId) throw new TypeError("listPaymentLinksForPartner: partnerId is required");
+  const result = await db.query(
+    `SELECT * FROM payment_links WHERE org_id = $1 AND partner_id = $2 ORDER BY created_at DESC`,
+    [orgId, partnerId]
+  );
+  return result.rows;
 }
 
 export async function listPaymentLinksForClient(db, { orgId, clientId }) {

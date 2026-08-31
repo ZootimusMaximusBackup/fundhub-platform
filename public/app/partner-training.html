@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Training · Fundhub</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="fundhub-brand.css">
+<link rel="stylesheet" href="crm-sidebar.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script defer src="shell.js"></script>
+<style>
+:root{
+  --spectrum:linear-gradient(90deg,#F2A69B 0%,#F5CE8F 20%,#F2E39B 40%,#A8D8B0 60%,#A9C6E8 80%,#C4B3E5 100%);
+  --paper:#FCFCFC; --ink:#0A0A0A; --ink2:#18181B;
+  --gray:#52525B; --gray2:#A1A1AA;
+  --line:#E4E4E7; --soft:#F4F4F5;
+  --card:#111113; --cardline:#26262B; --cardtext:#E4E4E7;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
+  --sans:'Inter',system-ui,-apple-system,sans-serif;
+  --ok:#A8D8B0; --warn:#F5CE8F; --alert:#F2A69B; --info:#A9C6E8; --accent:#C4B3E5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+
+.eyebrow{font-family:var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--gray)}
+.eyebrow::before{content:"";display:inline-block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;margin-right:9px;vertical-align:middle}
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;padding:4px 9px;border:1px solid var(--line);border-radius:20px;color:var(--gray);white-space:nowrap}
+.chip .cd{width:6px;height:6px;border-radius:50%;background:var(--gray2)}
+.chip.on .cd{background:var(--ok)} .chip.wip .cd{background:var(--warn)} .chip.bad .cd{background:var(--alert)}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--ok);position:relative;flex:0 0 auto}
+.pulse::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1px solid var(--ok);animation:pulse 2s ease-out infinite}
+@keyframes pulse{to{transform:scale(1.9);opacity:0}}
+
+header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;position:sticky;top:0;background:var(--paper);z-index:20}
+.hl,.hr{display:flex;align-items:center;gap:12px}
+
+.shell{padding:24px 22px}
+.sec{margin-bottom:26px}
+.sech{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.note{color:var(--gray2)}
+
+/* the one sentence the gates exist to be able to say */
+.release{background:var(--card);color:var(--cardtext);border-radius:12px;padding:20px 22px}
+.release .lb{font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
+.release .big{font-weight:500;letter-spacing:-.02em;margin-top:8px;line-height:1.35}
+
+/* gates */
+.gates{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.gate{border:1px solid var(--line);border-radius:10px;padding:15px 16px;background:var(--paper)}
+.gate.done{border-color:var(--ok);background:rgba(168,216,176,.08)}
+.gt{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.gcode{font-family:var(--mono);letter-spacing:.12em;color:var(--gray)}
+.gate h4{font-weight:600;margin-top:9px;letter-spacing:-.01em}
+.gwk{color:var(--gray2);margin-top:3px}
+.gbl{color:var(--gray);margin-top:8px}
+
+/* what is next */
+.next{border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.next .lb{font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
+.next .vl{font-weight:500;margin-top:4px}
+.next .row+.row{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+
+/* modules */
+.mods{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.mrow{display:grid;grid-template-columns:52px 1fr 86px 56px 150px;gap:12px;align-items:baseline;padding:11px 16px;border-top:1px solid var(--line)}
+.mrow:first-child{border-top:none}
+.mrow.hd{font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gray2);background:var(--soft)}
+.mrow b{font-weight:500}
+.mno{font-family:var(--mono);color:var(--gray)}
+.cert{font-style:normal;display:block;color:var(--accent)}
+.mwk,.mgate{color:var(--gray)}
+.mmsg{padding:14px 16px;color:var(--gray)}
+
+/* refusal */
+.blocked{border:1px solid var(--warn);background:rgba(245,206,143,.12);border-radius:10px;padding:18px 20px}
+.blocked h3{font-weight:600;margin-bottom:6px}
+.blocked .msg{color:var(--ink2)}
+
+@media(max-width:1000px){.gates{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){
+  .gates{grid-template-columns:1fr}
+  .mrow{grid-template-columns:1fr;gap:4px}
+  .mrow.hd{display:none}
+  .mwk::before,.mgate::before,.mst::before{content:attr(data-l) " · ";font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
+}
+
+/* ── THE ONE ESCAPE HATCH (UI-STANDARDS.md §12.7) ─────────────────────────────
+   This screen mounts .app-shell, and fundhub-brand.css:184-186 sets
+   `font-size:inherit !important` on EVERY element inside it. An important
+   author rule beats a normal one whatever the load order, so every plain px
+   size this file used to carry was discarded by the browser — the screen was
+   painting flat at 16px and the twenty-one declarations above had never once
+   had an effect. They are gone rather than left as decoration.
+
+   These class names are h3/h4/div/b/em, so they miss the brand's own caption
+   list (.chip .eyebrow .note label th .caption .sub .mono …), which is why they
+   need naming here. ONE rule, not two: a second is how a screen ends up with
+   six sizes and no hierarchy (§3).
+
+   Not listed on purpose: .release .big and .next .vl. `.big` and `.vl` are on
+   the brand's METRIC list, so those two already paint at --fs-metric. That is
+   the size they have been rendering at all along, and it is the right one — the
+   release sentence and the next gate are what a partner opens this screen for. */
+.app-shell :is(.gate h4,.blocked h3,.gcode,.gwk,.gbl,.mno,.cert,
+  .mwk,.mgate,.mmsg,.mrow,.blocked .msg,.release .lb,.next .lb,.mrow.hd){
+  font-size:var(--fs-caption)!important;
+}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+<aside class="side" id="side">
+  <div class="side-top"><a class="logo inv" href="pipeline.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
+  <nav class="side-scroll" id="fh-side-nav">
+
+<div class="navgroup" data-fh-section="home"><button class="navhead" type="button">Home<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="partner-galaxy.html"><span class="ico">⌂</span><span class="lbl">Home</span></a>
+</div></div>
+
+<div class="navgroup" data-fh-section="sales"><button class="navhead" type="button">Sales<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
+        <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
+        <a class="navitem" href="my-numbers.html"><span class="ico">＃</span><span class="lbl">My numbers</span></a>
+        <a class="navitem" href="sales-floor.html"><span class="ico">▣</span><span class="lbl">Sales floor</span></a>
+        <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
+</div></div>
+
+<div class="navgroup" data-fh-section="funding"><button class="navhead" type="button">Funding<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="lenders.html"><span class="ico">⬡</span><span class="lbl">Lenders</span></a>
+        <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
+        <a class="navitem" href="finance-os.html"><span class="ico">▩</span><span class="lbl">Finance OS</span></a>
+</div></div>
+
+<div class="navgroup" data-fh-section="client-ops"><button class="navhead" type="button">Client ops<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="consent-capture.html"><span class="ico">☑</span><span class="lbl">Consent</span></a>
+        <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
+        <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
+        <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Specialist</span></a>
+        <a class="navitem" href="company-brain.html"><span class="ico">◎</span><span class="lbl">Company Brain</span></a>
+</div></div>
+
+<div class="navgroup" data-fh-section="watch"><button class="navhead" type="button">Watch<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
+        <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
+</div></div>
+
+<div class="navgroup" data-fh-section="automation"><button class="navhead" type="button">Automation<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+        <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
+        <a class="navitem" href="journeys.html"><span class="ico">⇝</span><span class="lbl">Journeys</span></a>
+</div></div>
+
+<div class="navgroup" data-fh-section="marketing"><button class="navhead" type="button">Marketing<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
+        <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
+        <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
+        <a class="navitem" href="content-admin.html"><span class="ico">▭</span><span class="lbl">Content</span></a>
+</div></div>
+
+<div class="navgroup" data-fh-section="admin"><button class="navhead" type="button">Admin<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+        <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
+        <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem" href="contracts.html"><span class="ico">✒</span><span class="lbl">Contract templates</span></a>
+        <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
+</div></div>
+
+<div class="navgroup" data-fh-section="portals"><button class="navhead" type="button">Portals<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
+        <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+</div></div>
+
+  </nav>
+  <div class="side-foot"><span class="pulse"></span><span class="who">fundhub</span></div>
+</aside>
+<div class="stage" id="fh-stage">
+
+<header>
+  <div class="hl">
+    <span class="eyebrow">Training / the twelve weeks</span>
+    <span class="chip" id="trCount"><span class="cd"></span>—</span>
+    <span class="chip" id="trGateCount"><span class="cd"></span>—</span>
+  </div>
+  <div class="hr">
+    <a class="chip" href="partner-galaxy.html" style="text-decoration:none">Back to Home</a>
+    <span class="pulse"></span>
+  </div>
+</header>
+
+<div class="shell">
+
+  <!-- Shown when the endpoint refuses. It carries the reason, in words: an
+       unsigned agreement and a paused account are different problems with
+       different fixes, and "not signed in" is neither of them. -->
+  <div class="sec" id="trBlocked" hidden>
+    <div class="blocked">
+      <h3>The training is not open yet</h3>
+      <p class="msg">—</p>
+      <p class="note" style="margin-top:10px">Nothing is wrong with your login. This is about the account, not the password.</p>
+    </div>
+  </div>
+
+  <div id="trBody" hidden>
+
+    <div class="sec">
+      <div class="release">
+        <div class="lb">Where you stand</div>
+        <div class="big" id="trSelling">—</div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sech">
+        <span class="eyebrow">The four gates</span>
+        <span class="note">No gate, no selling. They are passed in order.</span>
+      </div>
+      <div class="gates" id="trGates"></div>
+    </div>
+
+    <div class="sec">
+      <div class="sech"><span class="eyebrow">What is next</span></div>
+      <div class="next">
+        <div class="row">
+          <div class="lb">Next module</div>
+          <div class="vl" id="trNextModule">—</div>
+        </div>
+        <div class="row">
+          <div class="lb">Next gate</div>
+          <div class="vl" id="trNextGate">—</div>
+          <p class="note" id="trNextGateBlocks" style="margin-top:5px"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="sech">
+        <span class="eyebrow">The thirteen modules</span>
+        <span class="note">in the order you meet them, which is not the order they are numbered</span>
+      </div>
+      <div class="mods">
+        <div class="mrow hd"><span>No.</span><span>Module</span><span>Week</span><span>Gate</span><span>Status</span></div>
+        <div id="trModules"><div class="mmsg">Loading your training…</div></div>
+      </div>
+      <p class="note" style="margin-top:11px">
+        FundHub marks these off as you go — attendance is taken on every live session.
+        You cannot mark your own, and that is deliberate: a certification you gave
+        yourself would not be a certification.
+      </p>
+    </div>
+
+    <div class="sec">
+      <div class="sech"><span class="eyebrow">What this screen is not</span></div>
+      <p class="note">
+        There are no videos, quizzes or certificates here. The training is a live
+        cohort — twelve weeks, four of teaching and eight of supervised production
+        — and this page is the record of where you are in it.
+      </p>
+    </div>
+
+  </div>
+
+</div>
+
+</div>
+</div>
+<script src="partner-training.js"></script>
+</body>
+</html>

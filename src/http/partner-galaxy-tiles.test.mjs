@@ -36,6 +36,16 @@
  * is a SHAPE of source: a tile with no named source, or a random number reaching
  * a dollar sign. It opens no browser and touches no database, so it runs in the
  * blocking CI job, which runs with no database on purpose.
+ *
+ * FOLLOW-UP, SAME DAY. "None of the six had such a source" above is a record of
+ * what was true when T10-02 shipped — it is not still true. Three read sources
+ * now exist: partner_revenue for Cash Collected Today, the SAME
+ * countFundingClients() the production floor counts with for Funded Today, and
+ * /api/campaigns/spend's underlying view for Cost / Funded Client. Those three
+ * are back, wired to api/read/partner-home-tiles.mjs, checked below by name.
+ * Close Rate, Show Rate and Movement Today still have no source and stay gone.
+ * The rule from THE OWNER'S RULE above is exactly what makes this an update
+ * rather than a reversal: wire a tile to real data once the read exists.
  */
 
 import test from "node:test";
@@ -80,6 +90,14 @@ function stripComments(src) {
 const BLOCKS = inlineScripts(HTML);
 const RAW_SCRIPT = BLOCKS.join("\n");
 const CODE = stripComments(RAW_SCRIPT);
+
+/* The markup a partner actually sees — HTML with every inline <script>'s BODY
+   removed (not just its comments). A banned tile name may legitimately appear
+   in a code comment explaining why it stays banned (the audit block below
+   does exactly that); it must never appear as real markup text. Same script
+   regex as inlineScripts() above, so this and CODE agree on what "a script
+   block" is. */
+const HTML_OUTSIDE_SCRIPTS = HTML.replace(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/g, " ");
 
 /* ------------------------------------------------------------------ *
  * The two halves of this screen, and why the line between them matters.
@@ -154,21 +172,45 @@ test("every tile on this screen names the read it comes from", () => {
     "Never show a number a partner cannot trace.");
 });
 
-test("the six invented tiles are gone by name", () => {
-  /* Named individually so a failure says which one came back rather than
-     "a tile matched a pattern". */
-  const gone = [
-    "Cash Collected Today",
-    "Funded Today",
-    "Close Rate",
-    "Show Rate",
-    "Movement Today",
-    "Cost / Funded Client"
-  ];
-  const back = gone.filter((label) => CODE.includes(label));
-  assert.deepEqual(back, [],
-    "these tile labels are back on the partner Home screen. None of them has a " +
+test("the three still-unsourced tiles are gone by name — script AND markup", () => {
+  /* T10-02 follow-up. Three of the original six now have a partner-scoped
+     source and are back (checked below); these three still do not, and stay
+     out. Named individually so a failure says which one came back rather than
+     "a tile matched a pattern". Checked against the visible markup too, not
+     only CODE — these three must never appear as plain text on the page,
+     which would be the exact same untruth with none of the guard rails above.
+     HTML_OUTSIDE_SCRIPTS, not raw HTML: the audit comment a few paragraphs up
+     legitimately NAMES all three, in a code comment, to explain why they are
+     banned — that mention is not the bug this test looks for. */
+  const stillGone = ["Close Rate", "Show Rate", "Movement Today"];
+  const backInCode = stillGone.filter((label) => CODE.includes(label));
+  const backInMarkup = stillGone.filter((label) => HTML_OUTSIDE_SCRIPTS.includes(label));
+  assert.deepEqual(backInCode, [],
+    "these tile labels are back in this screen's script. None of them has a " +
     "partner-scoped read behind it — see the audit comment in the file.");
+  assert.deepEqual(backInMarkup, [],
+    "these tile labels are back in this screen's visible markup. None of them has a " +
+    "partner-scoped read behind it — see the audit comment in the file.");
+});
+
+test("the three sourced tiles are on screen, each pointed at the real endpoint", () => {
+  /* The other half of T10-02 follow-up: Cash Collected Today, Funded Today and
+     Cost / Funded Client came back because api/read/partner-home-tiles.mjs now
+     gives each one a real, partner-scoped source. This is deliberately a
+     POSITIVE assertion, not just "no longer banned" — a silent future deletion
+     of one of these three would be exactly the kind of drift the six-tile
+     audit above exists to catch, just in the opposite direction. */
+  const back = ["Cash Collected Today", "Funded Today", "Cost / Funded Client"];
+  const missing = back.filter((label) => !CODE.includes(label));
+  assert.deepEqual(missing, [],
+    "a tile that should have a real source is missing from the screen: " + missing.join(", "));
+
+  const withoutTheRightSource = tiles().filter((t) =>
+    back.some((label) => t.includes(`'${label}'`)) &&
+    !t.includes("source: \"/api/read/partner-home-tiles\"") &&
+    !t.includes("source: '/api/read/partner-home-tiles'"));
+  assert.deepEqual(withoutTheRightSource, [],
+    "one of the three sourced tiles is not pointed at /api/read/partner-home-tiles");
 });
 
 test("the machinery that fed the tiles is gone, not merely unused", () => {
@@ -229,12 +271,15 @@ test("no dice roll feeds a money figure on the canvas", () => {
     "the dice-rolled deposit amount is back");
 });
 
-test("the one dollar figure left on this screen is read, not invented", () => {
-  /* Deleting six invented figures is only half the job. The screen does print
-     one real money figure — the partner's own accrued balance — and it must keep
-     coming from the server. If this read is ever dropped, the screen would be
-     honest and empty, which is fine, but nobody should discover that by
-     accident: this test is what makes it a decision. */
+test("the accrued-balance figure is read, not invented", () => {
+  /* Deleting six invented figures was only half the job. The screen prints a
+     real money figure — the partner's own accrued balance — and it must keep
+     coming from the server. (The Home tiles above print three more, each with
+     its own source check; this one predates them and is checked separately
+     because it lives in a different script block, fed by a different read.)
+     If THIS read is ever dropped, the screen would be honest and empty, which
+     is fine, but nobody should discover that by accident: this test is what
+     makes it a decision. */
   const reader = BLOCKS.find((b) => b.includes("FHData.partners"));
   assert.ok(reader,
     "the partner census read is gone. Nothing on this screen reads money any more — " +

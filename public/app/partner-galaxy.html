@@ -37,6 +37,45 @@
     --alert-bg:color-mix(in srgb,var(--alert) 28%,#fff);
   }
 
+  /* ---------- THE ONE CAPTION RULE (UI-STANDARDS §12.7) --------------------
+     fundhub-brand.css sets `:is(.app,…) * {font-size:inherit !important}`, so
+     twenty-eight px sizes written in this file were painting nothing at all.
+     Measured 2026-08-30, signed in on the live app: 24 of them read back the
+     inherited 16px and the other four (.av, .brand .sub, footer.statusbar,
+     .gift-strip .note) read back 13px, because the brand file's caption list
+     already covers those names. Not one read back the size written next to it.
+     They are gone, and 645 element measurements across three widths say the
+     page is identical to before they went.
+     The names below are the worker panel's own — `p-` is this screen's prefix,
+     no shared stylesheet and no shell.js injection touches any of them — and
+     they are all small labels: the eyebrow, role line, close button, pace
+     badge, "Right now" label, section headings, key/value rows, timeline rows,
+     file chips and footnote. `!important` is what beats the brand's inherit.
+     ONE rule, never two.
+     DELIBERATELY OUT OF THIS LIST, and the reason matters more than the list:
+     a `.app :is(…)` selector scores (0,2,0), so it OUTRANKS a shared one-class
+     rule even when both are !important. Any name that shared chrome also owns
+     therefore has to stay out, or this screen silently overrides the whole app:
+       .clock     — shell.js sizes every clock in the app at 12px !important.
+       .live-pill — the house LIVE pill, carried by eight other screens.
+       .census    — topbar chrome, shared with galaxy.html.
+       .legend    — the reading key, shared with five other screens; it also
+                    sits in a 22px nowrap strip with overflow:hidden, so
+                    shrinking it UNCOVERS keys that were clipped. That is a
+                    change to what is on screen, not to type size, and it is
+                    not this pass's to make.
+       .legend b  — inherits .legend either way. */
+  .app :is(.p-kicker,.p-role,.p-close,.p-pace,.p-now-k,.p-sec-t,
+    .p-row,.p-tl-i,.p-chip,.p-foot,
+    /* T10-02's home tiles. The label and the comparison line are captions;
+       .tile-value is already on the brand's metric list via --fs-metric. These
+       joined THIS rule rather than starting a second one — §12.7 allows a
+       screen exactly one escape hatch, and a second is how a screen ends up
+       with six sizes and no hierarchy. */
+    .tile-label,.tile-compare,.home-tiles-status){
+    font-size:var(--fs-caption)!important;
+  }
+
   *{box-sizing:border-box;}
   html,body{
     margin:0;padding:0;height:100%;
@@ -85,21 +124,21 @@
   }
   /* ---------- worker avatars: filled = a person, outlined = an agent ---------- */
   .av{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;
-    justify-content:center;font-size:8px;font-weight:800;letter-spacing:-.2px;vertical-align:middle;
+    justify-content:center;font-weight:800;letter-spacing:-.2px;vertical-align:middle;
     font-family:var(--mono);}
   .av.human{background:var(--ink);color:#fff;border:1px solid var(--ls-line);}
   .av.agent{background:#fff;color:var(--ls-strong);border:1.5px solid var(--accent);}
   .brand{display:flex;align-items:baseline;gap:9px;}
-  .brand .name{font-weight:700;font-size:14px;letter-spacing:-.01em;}
+  .brand .name{font-weight:700;letter-spacing:-.01em;}
   .brand .sep{color:var(--text-faint);font-weight:400;}
-  .brand .sub{font-weight:600;font-size:12.5px;color:var(--text-dim);}
-  .topbar-right{display:flex;align-items:center;gap:16px;font-size:11.5px;color:var(--text-dim);flex-wrap:wrap;min-width:0;justify-content:flex-end}
-  .census{font-family:var(--mono);font-size:11px;color:var(--text-faint);}
+  .brand .sub{font-weight:600;color:var(--text-dim);}
+  .topbar-right{display:flex;align-items:center;gap:16px;color:var(--text-dim);flex-wrap:wrap;min-width:0;justify-content:flex-end}
+  .census{font-family:var(--mono);color:var(--text-faint);}
   .census b{color:var(--text-dim);font-weight:600;}
   .census .warn{color:var(--alert);font-weight:700;}
-  .clock{font-family:var(--mono);font-size:12px;color:var(--text);}
+  .clock{font-family:var(--mono);color:var(--text);}
   .live-pill{
-    display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;
+    display:flex;align-items:center;gap:6px;font-family:var(--mono);
     color:var(--text);background:var(--card);border:1px solid var(--cardline);
     padding:4px 9px 4px 7px;border-radius:20px;
   }
@@ -113,10 +152,10 @@
     display:flex;align-items:center;gap:16px;flex-wrap:nowrap;
     background:var(--card);border-bottom:1px solid var(--line-soft);
     padding:0 16px;height:22px;flex-shrink:0;
-    font-size:9.5px;color:var(--gray);letter-spacing:.15px;white-space:nowrap;overflow:hidden;
+    color:var(--gray);letter-spacing:.15px;white-space:nowrap;overflow:hidden;
     position:relative;z-index:5;
   }
-  .legend b{color:var(--gray2);font-weight:600;letter-spacing:.5px;text-transform:uppercase;font-size:9px;}
+  .legend b{color:var(--gray2);font-weight:600;letter-spacing:.5px;text-transform:uppercase;}
   .legend i{font-style:normal;display:flex;align-items:center;gap:5px;}
   .sw{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
   .sw.n{background:var(--gray);} .sw.g{background:var(--ok);}
@@ -127,7 +166,7 @@
   footer.statusbar{
     flex-shrink:0;height:26px;background:var(--ink);
     display:flex;align-items:center;padding:0 14px;gap:16px;
-    font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:lowercase;
+    font-family:var(--mono);letter-spacing:.06em;text-transform:lowercase;
     color:var(--gray);position:relative;overflow:hidden;z-index:5;
     border-top:1px solid var(--cardline);
   }
@@ -150,14 +189,58 @@
     background:rgba(242,227,155,.08);
     position:relative;z-index:6;
   }
-  .gift-strip .copy{flex:1;min-width:220px;color:var(--text-dim);font-size:12px;line-height:1.55}
-  .gift-strip .copy strong{color:var(--text);font-weight:600;display:block;margin-bottom:4px;font-size:13px}
+  .gift-strip .copy{flex:1;min-width:220px;color:var(--text-dim);line-height:1.55}
+  .gift-strip .copy strong{color:var(--text);font-weight:600;display:block;margin-bottom:4px;}
   .gift-strip .btn{
     border:1px solid var(--lemon);background:var(--lemon);color:var(--ink);
-    border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;
+    border-radius:7px;padding:8px 14px;font-weight:600;cursor:pointer;
   }
   .gift-strip .btn:hover{filter:brightness(1.05)}
-  .gift-strip .note{font-family:var(--mono);font-size:11px;color:var(--text-faint);flex-basis:100%;margin-top:2px}
+  .gift-strip .note{font-family:var(--mono);color:var(--text-faint);flex-basis:100%;margin-top:2px}
+
+  /* ---------- home tiles: T10-02 — the three KPI tiles that have a real,
+     partner-scoped source (see the audit comment in the canvas script below
+     for the three that still do not, and stay off this screen).
+     UI-STANDARDS.md §3: the number is the hero at 2-3x its label, tabular
+     numerals. §7: every metric carries a comparison, and no border around
+     everything — a tile reads as a group by its fill and the gap around it,
+     never by a stroke. §2: 12-column grid, three cards at span 4, 8/16/24
+     spacing only. Colors are this file's own aliases onto
+     fundhub-brand.css tokens (--card/--cardline/--text/--text-dim/--text-faint),
+     never a hardcoded hex. ---------- */
+  .home-tiles{
+    display:grid;grid-template-columns:repeat(12,1fr);gap:16px;
+    padding:16px;flex-shrink:0;position:relative;z-index:6;
+  }
+  .home-tiles .tile{
+    grid-column:span 4;min-width:0;
+    background:var(--card);border-radius:10px;padding:16px;
+  }
+  .home-tiles .tile-label{
+    font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+    color:var(--text-dim);margin-bottom:8px;
+  }
+  .home-tiles .tile-value{
+    font:800 var(--fs-metric)/1.15 var(--sans);
+    font-variant-numeric:tabular-nums;color:var(--text);
+    min-height:1.15em;
+  }
+  .home-tiles .tile-value.skeleton{
+    color:transparent;background:var(--cardline);border-radius:4px;
+    animation:tileSkeleton 1.4s ease-in-out infinite;
+  }
+  @keyframes tileSkeleton{0%,100%{opacity:.5}50%{opacity:1}}
+  .home-tiles .tile-compare{
+    margin-top:8px;color:var(--text-faint);font-family:var(--mono);
+    font-variant-numeric:tabular-nums;
+  }
+  .home-tiles-status{
+    grid-column:1/-1;color:var(--text-faint);font-family:var(--mono);
+  }
+  @media (max-width:640px){
+    .home-tiles{grid-template-columns:1fr;gap:8px;padding:8px 16px 0;}
+    .home-tiles .tile{grid-column:auto;}
+  }
 
   /* ---------- worker panel (light surface, close reading) ---------- */
   #panel{
@@ -176,16 +259,16 @@
   .p-scroll::-webkit-scrollbar{width:8px;}
   .p-scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
   .p-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
-  .p-kicker{font-size:9px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--ls-text-dim);margin-bottom:5px;}
-  .p-name{font-size:17px;font-weight:800;line-height:1.15;letter-spacing:-.2px;}
-  .p-role{font-size:11.5px;color:var(--ls-text-dim);margin-top:2px;}
+  .p-kicker{font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--ls-text-dim);margin-bottom:5px;}
+  .p-name{font-weight:800;line-height:1.15;letter-spacing:-.2px;}
+  .p-role{color:var(--ls-text-dim);margin-top:2px;}
   .p-close{
-    font-family:var(--mono);font-size:11px;color:var(--ls-text-dim);
+    font-family:var(--mono);color:var(--ls-text-dim);
     border:1px solid var(--ls-line);border-radius:5px;padding:2px 6px;cursor:pointer;
     background:transparent;line-height:1.4;flex-shrink:0;
   }
   .p-close:hover{background:var(--soft);color:var(--ls-text);}
-  .p-pace{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;
+  .p-pace{display:inline-flex;align-items:center;gap:6px;font-weight:700;
     padding:3px 9px;border-radius:11px;margin-top:9px;letter-spacing:.2px;}
   .p-pace.on{background:var(--soft);color:var(--ls-text-dim);}
   .p-pace.ahead{background:var(--ok-bg);color:var(--ls-strong);}
@@ -199,28 +282,28 @@
   }
   .p-now.blocked{background:var(--alert-bg);border-left-color:var(--alert);}
   .p-now.behind{background:var(--warn-bg);border-left-color:var(--warn);}
-  .p-now-k{font-size:8.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ls-text-dim);margin-bottom:3px;}
-  .p-now-v{font-size:12.5px;line-height:1.35;font-weight:500;}
+  .p-now-k{font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ls-text-dim);margin-bottom:3px;}
+  .p-now-v{line-height:1.35;font-weight:500;}
 
   .p-sec{margin-top:14px;}
-  .p-sec-t{font-size:9px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--ls-text-dim);
+  .p-sec-t{font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--ls-text-dim);
     padding-bottom:5px;border-bottom:1px solid var(--ls-line);margin-bottom:2px;}
   .p-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
-    font-size:12px;padding:6px 0;border-bottom:1px solid var(--ls-line-soft);}
+    padding:6px 0;border-bottom:1px solid var(--ls-line-soft);}
   .p-row:last-child{border-bottom:none;}
   .p-row .k{color:var(--ls-text-dim);}
-  .p-row .v{font-family:var(--mono);font-weight:600;font-size:11.5px;text-align:right;}
+  .p-row .v{font-family:var(--mono);font-weight:600;text-align:right;}
   .p-row .v.amber,.p-row .v.red,.p-row .v.green{color:var(--ls-strong);font-weight:700;}
 
   .p-tl{margin-top:4px;}
-  .p-tl-i{display:flex;gap:10px;font-size:11.5px;padding:5px 0;line-height:1.35;border-bottom:1px solid var(--ls-line-soft);}
+  .p-tl-i{display:flex;gap:10px;padding:5px 0;line-height:1.35;border-bottom:1px solid var(--ls-line-soft);}
   .p-tl-i:last-child{border-bottom:none;}
-  .p-tl-i .t{font-family:var(--mono);font-size:10.5px;color:var(--ls-text-dim);white-space:nowrap;padding-top:1px;min-width:46px;}
+  .p-tl-i .t{font-family:var(--mono);color:var(--ls-text-dim);white-space:nowrap;padding-top:1px;min-width:46px;}
   .p-tl-i.now .x{font-weight:700;}
   .p-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;}
-  .p-chip{font-size:10.5px;background:var(--soft);border:1px solid var(--ls-line);border-radius:4px;padding:2px 7px;color:var(--ls-text-dim);}
+  .p-chip{background:var(--soft);border:1px solid var(--ls-line);border-radius:4px;padding:2px 7px;color:var(--ls-text-dim);}
   .p-foot{margin-top:15px;padding-top:9px;border-top:1px solid var(--ls-line);
-    font-size:9.5px;line-height:1.5;color:var(--gray2);}
+    line-height:1.5;color:var(--gray2);}
 </style>
 <script defer src="shell.js"></script>
 </head>
@@ -331,6 +414,8 @@
     <button class="btn" type="button" id="blasterBtn">Download</button>
     <div class="note" id="blasterStatus"></div>
   </div>
+
+  <section class="home-tiles" id="homeTiles" aria-label="Today's numbers"></section>
 
   <div class="sky-wrap">
     <canvas id="sky"></canvas>
@@ -450,35 +535,48 @@ var RAILS = [
   {name:'Affiliates + Hiring',amp:22, ph:5.6, stages:['Referral Received','Application In'], quiet:true}
 ];
 
-/* ---------- company KPIs — DELETED, and here is the audit that deleted them ---
-   Every partner-reachable read was checked before any tile was removed. A source
-   only counted if a PARTNER principal could call it and it was scoped to THAT
-   partner; an org-wide staff number shown to a partner is a different untruth,
-   not a fix.
+/* ---------- company KPIs — six were DELETED (T10-02); THREE are back (T10-02
+   follow-up) because a partner-scoped read now exists for each. This comment
+   is the audit that decided which, and it is kept current rather than left as
+   a record of the original delete — a stale "none exists" note next to a tile
+   that now renders would be exactly the kind of untruth this screen exists to
+   refuse.
 
-   Partner-reachable reads, in full: /api/read/partners (own row only, via
-   src/partners/scope.mjs), /api/partner-pages, /api/partner-brand,
-   /api/partner-marketing/{usage,copy-history}, /api/campaigns/{list,detail,spend,
-   fatigue,connections,action-log}, /api/creative/{library,jobs,approvals,
-   brand-kits}, /api/social/posts, /api/read/company-brain-affiliate.
+   Every partner-reachable read was checked before any tile was added back. A
+   source only counts if a PARTNER principal can call it and it is scoped to
+   THAT partner; an org-wide staff number shown to a partner is a different
+   untruth, not a fix. The three below are rendered as real DOM tiles
+   (.home-tiles, further down this file) fed by GET /api/read/partner-home-tiles
+   (api/read/partner-home-tiles.mjs) — never drawn on the canvas, which is why
+   the checks lower in this comment block scope themselves to the canvas
+   script alone and would not see these tiles at all.
 
-     Cash Collected Today  — none exists. /api/read/partners carries
-                             balance_accrued and total_paid, which are lifetime
-                             revenue-share totals with no date dimension at all
-                             (v_partner_balance, db/migrations/042_partners.sql).
-                             Neither one means "collected today".
-     Funded Today          — none exists. No partner-scoped read reports funding.
+     Cash Collected Today  — SUM(partner_revenue.share_amount) for the UTC day,
+                             the partner's own accrual rows, status <> 'void'
+                             (db/migrations/042_partners.sql). No rows today is
+                             a real zero, not "not known".
+     Funded Today           — countFundingClients() (src/partners/floors.mjs),
+                             the SAME definition the production floor counts
+                             with, so this tile and the floor decision can
+                             never disagree.
+     Cost / Funded Client   — today's ad spend (v_partner_spend_vs_ceiling,
+                             db/migrations/046_ad_platforms.sql, the
+                             scope='partner' row) divided by Funded Today.
+                             Either side unknown -> "not known", never $0 and
+                             never a divide-by-zero.
+
+   Still none of the other three. Nothing partner-scoped reports a show, a
+   close, or a movement, and an org-wide staff number is not a substitute:
+
      Close Rate            — none exists.
-     Show Rate             — none exists.
-     Movement Today        — none exists.
-     Cost / Funded Client  — none exists. /api/campaigns/spend gives a partner
-                             their own ad spend, but nothing partner-scoped gives
-                             a funded-client count, so the ratio is uncomputable.
+     Show Rate              — none exists.
+     Movement Today         — none exists.
 
-   Six of six had no source, so the whole strip is gone rather than sitting there
-   showing a dash. If a tile is ever added back it must carry a `source` naming
-   the read it comes from — src/http/partner-galaxy-tiles.test.mjs enforces that,
-   and fails the build if a tile appears without one. */
+   Every tile on this screen — sourced or not — must carry a `source` naming
+   the read it comes from, or be absent. src/http/partner-galaxy-tiles.test.mjs
+   enforces that and fails the build on a tile with no source, and separately
+   fails the build if Close Rate, Show Rate or Movement Today reappear by name
+   anywhere on this screen. */
 
 /* ============================================================
    2. CANVAS + LAYOUT
@@ -1683,6 +1781,111 @@ requestAnimationFrame(draw);
       var unsigned = rows.length - signed;
       return "live partner census · " + rows.length + " partner(s) · " + money + " · " +
              (unsigned ? unsigned + " agreement(s) unsigned" : "all agreements signed");
+    });
+  });
+})();
+</script>
+<script>
+/* Home tiles — T10-02 follow-up. The three KPI tiles that have a real,
+   partner-scoped source: see the audit comment near the top of the canvas
+   script for which three still do not and why they stay off this screen.
+
+   Every tile below carries a `source` naming the read it comes from —
+   src/http/partner-galaxy-tiles.test.mjs fails the build on one that doesn't.
+   Built as real DOM nodes fed by a fetch, same family as the wl-own-url
+   banner and the partner-census read just above — never drawn on the canvas,
+   which is why the canvas script's own checks assume no fetch happens there. */
+(function () {
+  "use strict";
+
+  var HOME_TILES = [
+    { id: "cash-collected-today", label: "Cash Collected Today", source: "/api/read/partner-home-tiles" },
+    { id: "funded-today", label: "Funded Today", source: "/api/read/partner-home-tiles" },
+    { id: "cost-per-funded-client", label: "Cost / Funded Client", source: "/api/read/partner-home-tiles" }
+  ];
+
+  var host = document.getElementById("homeTiles");
+  if (!host) return;
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  // Skeletons render immediately, in the real layout — UI-STANDARDS.md §6:
+  // never a blank strip, never a full-page spinner, while the read is in flight.
+  HOME_TILES.forEach(function (t) {
+    var card = el("div", "tile");
+    card.setAttribute("data-tile", t.id);
+    card.appendChild(el("div", "tile-label", t.label));
+    var val = el("div", "tile-value skeleton", "");
+    val.id = "tile-value-" + t.id;
+    card.appendChild(val);
+    var cmp = el("div", "tile-compare", " ");
+    cmp.id = "tile-compare-" + t.id;
+    card.appendChild(cmp);
+    host.appendChild(card);
+  });
+  var statusEl = el("div", "home-tiles-status", "");
+  statusEl.id = "homeTilesStatus";
+  statusEl.hidden = true;
+  host.appendChild(statusEl);
+
+  // Whole dollars, comma-grouped — matches the accrued-balance figure already
+  // on this screen (the partner-census script above), not a second money style.
+  function fmtDollars(cents) { return "$" + Math.round(cents / 100).toLocaleString("en-US"); }
+  function fmtCount(n) { return Number(n).toLocaleString("en-US"); }
+
+  function setTile(id, valueText, compareText) {
+    var v = document.getElementById("tile-value-" + id);
+    var c = document.getElementById("tile-compare-" + id);
+    if (v) { v.textContent = valueText; v.classList.remove("skeleton"); }
+    if (c) c.textContent = compareText || " ";
+  }
+
+  function showStatus(text) {
+    if (!statusEl) return;
+    statusEl.textContent = text || "";
+    statusEl.hidden = !text;
+  }
+
+  // Zero is a real answer and renders as zero. Unknown renders as "not known",
+  // never $0 — the rule the whole endpoint (api/read/partner-home-tiles.mjs)
+  // is built around; this function only ever DISPLAYS what it decided.
+  function paint(d) {
+    setTile("cash-collected-today", fmtDollars(d.cash_collected_today_cents),
+      fmtDollars(d.cash_collected_yesterday_cents) + " yesterday");
+
+    setTile("funded-today", fmtCount(d.funded_today),
+      fmtCount(d.funded_yesterday) + " yesterday");
+
+    var spendKnown = d.ad_spend_today_cents !== null && d.ad_spend_today_cents !== undefined;
+    if (d.cost_per_funded_client_cents === null || d.cost_per_funded_client_cents === undefined) {
+      setTile("cost-per-funded-client", "not known",
+        spendKnown ? "no funded clients yet" : "ad spend not tracked");
+    } else {
+      var clientsWord = d.funded_today === 1 ? " client" : " clients";
+      setTile("cost-per-funded-client", fmtDollars(d.cost_per_funded_client_cents),
+        (spendKnown ? fmtDollars(d.ad_spend_today_cents) : "spend not known") +
+        " ÷ " + fmtCount(d.funded_today) + clientsWord);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    // data.js carries `defer`, so FHData exists by DOMContentLoaded — same
+    // reasoning as the partner-census script above.
+    if (typeof FHData === "undefined" || typeof FHData.read !== "function") {
+      showStatus("Could not load today's numbers right now.");
+      return;
+    }
+    FHData.read("partner-home-tiles").then(function (res) {
+      if (res && res.ok && res.data) { paint(res.data); return; }
+      var source = res && res.source;
+      showStatus((source === "unauthorized" || source === "demo")
+        ? "Sign in to see today's numbers."
+        : "Could not load today's numbers right now.");
     });
   });
 })();

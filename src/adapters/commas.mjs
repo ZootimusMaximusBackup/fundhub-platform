@@ -387,6 +387,50 @@ export function mapToCanonical(evt) {
      the generic failed/succeeded pair, so a refund can never fall through into
      "succeeded" and credit the money a second time. */
 
+  /* SUBSCRIPTION EVENTS COME FIRST, and the order is load-bearing.
+     "subscription.canceled" contains "cancel", so without this block it fell
+     into the abandoned-checkout branch below and a partner who ended a paid
+     plan was recorded as someone who never paid at all. Worse,
+     "subscription.renewed" matched nothing and returned an EMPTY list: Commas
+     charges the card every frequency_days and fires that event, so a real
+     recurring payment arrived and this adapter dropped it silently. That bug
+     only ever shows up in month two.
+
+     COMMAS BILLS SUBSCRIPTIONS, WE DO NOT. type "subscription" on a checkout
+     session hands the schedule, the card, the retries and the dunning to
+     them. Everything below is therefore a REPORT of something that already
+     happened, never an instruction to charge. */
+  if (t.startsWith("subscription.")) {
+    /* A renewal is money that actually moved. It emits payment.received like
+       any other money-in fact, so one ledger writer sees every dollar
+       regardless of which door it came through. */
+    if (t.includes("renewed") || t.includes("recovered")) {
+      out.push({ name: "payment.received", product: productOf(evt) });
+      out.push({ name: "subscription.renewed", product: productOf(evt) });
+      return out;
+    }
+    /* The rest move no money. They change the STATE of an arrangement, and
+       they are emitted under their own names so nothing downstream mistakes a
+       lifecycle change for a payment. */
+    if (t.includes("created")) {
+      out.push({ name: "subscription.started", product: productOf(evt) });
+      return out;
+    }
+    if (t.includes("past_due")) {
+      out.push({ name: "subscription.past_due", product: productOf(evt) });
+      return out;
+    }
+    if (t.includes("cancel")) {
+      out.push({ name: "subscription.canceled", product: productOf(evt) });
+      return out;
+    }
+    if (t.includes("completed")) {
+      out.push({ name: "subscription.completed", product: productOf(evt) });
+      return out;
+    }
+    return out; // an unknown subscription.* — recorded nowhere rather than guessed
+  }
+
   /* expired / canceled — ABANDONED CHECKOUTS, NOT DECLINES.
      A link that timed out, or a customer who backed out before paying. No
      money moved, so there is no money event and deliberately no

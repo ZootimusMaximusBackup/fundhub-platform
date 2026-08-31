@@ -7,9 +7,10 @@
     outcome: null,
     belief: null,
     taskId: null,
-    transactionId: null,
     saving: false,
-    data: null
+    data: null,
+    offers: [],
+    payWatch: null
   };
 
   function $(sel) { return document.querySelector(sel); }
@@ -34,6 +35,55 @@
       style: "currency", currency: "USD", maximumFractionDigits: 0
     });
   }
+  /* A bare clock time is only true on today. upcomingCalls() keeps THIS
+     client's tasks from `date_trunc('day', now())` onward, not from today
+     only, so a deep link to somebody booked next Tuesday used to render a flat
+     "2:00 PM" with nothing to say which day. The date goes on the front the
+     moment the call is not today. */
+  function whenText(iso, now) {
+    if (!iso) return null;
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    var clock = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    var ref = now ? new Date(now) : new Date();
+    var today = d.getFullYear() === ref.getFullYear() &&
+      d.getMonth() === ref.getMonth() && d.getDate() === ref.getDate();
+    if (today) return clock;
+    return d.toLocaleDateString([], { month: "short", day: "numeric" }) + " " + clock;
+  }
+  /* "in 25m" / "35m ago" — the only place the back-to-back rhythm is said out
+     loud. Never a bare number: a signed minute count with no word is unreadable
+     at a glance mid-call. */
+  function untilText(iso, now) {
+    if (!iso) return null;
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    var mins = Math.round((d.getTime() - (now || Date.now())) / 60000);
+    var abs = Math.abs(mins);
+    var span = abs < 60 ? (abs + "m") : (Math.floor(abs / 60) + "h " + (abs % 60) + "m");
+    if (mins > 1) return "in " + span;
+    if (mins < -1) return span + " ago";
+    return "now";
+  }
+
+  /* ONE primary control at a time (UI-STANDARDS §5). The screen used to paint
+     Join filled and disabled at the same time, so its loudest element was a
+     dead button. `k` is the filled style; this moves it, never duplicates it. */
+  function setPrimary(id) {
+    var ids = ["fh-join", "fh-present", "fh-send-contract", "fh-pay-link"];
+    ids.forEach(function (candidate) {
+      var el = document.getElementById(candidate);
+      if (!el) return;
+      if (candidate === id && !el.disabled) el.classList.add("k");
+      else el.classList.remove("k");
+    });
+    var save = document.getElementById("fh-save-next");
+    if (save) {
+      if (id === "fh-save-next") save.classList.add("k");
+      else save.classList.remove("k");
+    }
+  }
+
   function elapsed(ms) {
     if (!ms) return "";
     var m = Math.floor(ms / 60000);
@@ -50,15 +100,19 @@
   function hideLiveControls() {
     var logbar = document.querySelector(".logbar");
     if (logbar) logbar.hidden = true;
-    var sendBtn = document.getElementById("fh-send-contract");
-    if (sendBtn) sendBtn.hidden = true;
+    ["fh-send-contract", "fh-pay-link"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.hidden = true;
+    });
   }
 
   function showLiveControls() {
     var logbar = document.querySelector(".logbar");
     if (logbar) logbar.hidden = false;
-    var sendBtn = document.getElementById("fh-send-contract");
-    if (sendBtn) sendBtn.hidden = false;
+    ["fh-send-contract", "fh-pay-link"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.hidden = false;
+    });
   }
 
   /* Reveals Present and attaches its click, once.
@@ -101,10 +155,44 @@
     var meta = document.getElementById("ccp-who-meta");
     if (h1) h1.textContent = kind === "error" ? "Could not load" : "No call right now";
     if (meta) meta.textContent = reason || "No booked call right now.";
-    var sendBtn = document.getElementById("fh-send-contract");
-    var sendPanel = document.getElementById("fh-contract-panel");
-    if (sendBtn) sendBtn.remove();
-    if (sendPanel) sendPanel.remove();
+    var gone = ["fh-send-contract", "fh-contract-panel", "fh-pay-link", "fh-pay-panel"];
+    gone.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.remove();
+    });
+    var when = document.getElementById("ccp-call-when");
+    if (when) when.hidden = true;
+    var note = document.getElementById("fh-money-note");
+    if (note) { note.hidden = true; note.textContent = ""; }
+  }
+
+  /* THE TIME OF THIS CALL, beside the name.
+     `current_call` is a real field on the payload (src/sales/cockpit.mjs) and is
+     null when this client has no booked task — the screen used to infer it from
+     the head of up_next, which on a deep link showed somebody else's time. */
+  function paintWhen(data) {
+    var el = document.getElementById("ccp-call-when");
+    if (!el) return;
+    var cur = data.current_call || null;
+    var at = cur ? whenText(cur.due_at) : null;
+    if (!at) {
+      el.hidden = false;
+      el.textContent = "no booked time";
+      return;
+    }
+    var bits = [at];
+    var rel = untilText(cur.due_at);
+    if (rel) bits.push(rel);
+    /* The gap to the call AFTER this one. THIS IS NOT READ OFF up_next.
+       That array is ordered client-first, not by the clock, and is cut at five
+       rows, so picking from it named a time four hours BEFORE this call, or
+       skipped the closer's real next appointment, or said "nothing after this"
+       over a call the LIMIT had dropped. next_call is the server's own
+       one-row answer (src/sales/cockpit.mjs nextCallAfter). */
+    var next = data.next_call || null;
+    var nextAt = next ? whenText(next.due_at) : null;
+    el.hidden = false;
+    el.textContent = bits.join(" · ") + (nextAt ? "  ·  next " + nextAt : "  ·  nothing after this");
   }
 
   function paint(data) {
@@ -131,6 +219,8 @@
     paintStaff(staff);
 
     text($(".who h1"), client.name);
+    paintWhen(data);
+    state.offers = Array.isArray(data.offers) ? data.offers : [];
     var meta = client.business_name || "";
     if (client.age_months != null) meta += (meta ? " · " : "") + client.age_months + " mo in business";
     if (client.pipeline) meta += (meta ? " · " : "") + (client.pipeline.stage_name || client.pipeline.stage_key);
@@ -140,8 +230,10 @@
       text(calcClient, client.name);
       calcClient.hidden = false;
     }
-    var dashboardSub = document.querySelector(".topbar .sub");
-    if (dashboardSub && client.name) dashboardSub.textContent = "Closer Dashboard · " + client.name;
+    /* The topbar subtitle is NOT rewritten with the client's name any more.
+       It duplicated the 32px h1 four inches below it, it had no truncation, and
+       in a bar that already carries eight things it is what pushed the screen's
+       own name into an ellipsis at 1440px. UI-STANDARDS §12.8. */
 
     // Funding bands come from this same canonical cockpit payload.
     var bands = document.querySelectorAll(".bands .band");
@@ -160,7 +252,7 @@
           ? "No lenders match this file yet."
           : n + " lender" + (n === 1 ? "" : "s") + " match this file.");
     }
-    paintUnderwrite(data.underwrite || {});
+    paintUnderwrite(data.underwrite || {}, credit);
 
     // Credit panel
     var tables = document.querySelectorAll(".panel table");
@@ -191,12 +283,29 @@
       }
     }
     if (tables[1]) {
+      /* The transaction id is deliberately NOT kept. It used to be stored here
+         and posted with the outcome, and buildCockpit's payment query has no
+         time bound — so a repeat client who paid four months ago had that old
+         payment attached to today's call, and the closer's cash was logged as
+         the old amount. The server resolves the payment itself inside its own
+         48-hour window (src/sales/call-outcomes.mjs resolveCashCollected). */
       var pay = deal.latest_payment;
-      state.transactionId = pay && pay.transaction_id;
+      var paidWhen = pay && pay.created_at ? new Date(pay.created_at) : null;
+      var paidLabel = paidWhen && !isNaN(paidWhen.getTime())
+        ? paidWhen.toLocaleDateString() : null;
+      /* A fraction on the payload (0.10 = 10%), and "default" is said out loud
+         where no closeout row exists yet — the screen used to print a flat 10%
+         whatever the file held. */
+      var feePct = deal.success_fee_percent;
+      var feeText = feePct == null || !Number.isFinite(Number(feePct))
+        ? "—"
+        : (Math.round(Number(feePct) * 1000) / 10) + "%" +
+          (deal.success_fee_source === "default" ? " · default" : "");
       tables[1].innerHTML =
         "<tr><td>Latest payment on file</td><td class='hi'>" + (pay ? pay.amount_display : "—") + "</td></tr>" +
+        "<tr><td>Paid on</td><td>" + (paidLabel || "—") + "</td></tr>" +
         "<tr><td>Product</td><td>" + (pay && pay.product_name ? pay.product_name : "—") + "</td></tr>" +
-        "<tr><td>Success fee</td><td>" + ((deal.success_fee_percent || 0.1) * 100) + "%</td></tr>" +
+        "<tr><td>Success fee</td><td>" + feeText + "</td></tr>" +
         "<tr><td colspan='2' style='text-align:left;color:var(--gray)'>" + (deal.success_fee_note || "") + "</td></tr>";
     }
 
@@ -222,15 +331,15 @@
     }
 
     // Up next
-    var sections = document.querySelectorAll("aside.rail section");
-    if (sections[0]) {
+    var upNextSection = document.querySelector("aside.rail [data-fh-up-next], aside.rail section[data-fh-up-next]");
+    if (upNextSection) {
       var next = (data.up_next || []).map(function (u) {
         var t = u.due_at ? new Date(u.due_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "—";
         return '<div class="q"><span class="t">' + t + "</span><div><b>" + (u.name || "Client") +
           "</b><em>" + (u.title || "") + "</em></div></div>";
       }).join("") || '<div class="q"><span class="t">—</span><div><b>No upcoming booked calls</b><em>Calendar tasks with due times will show here</em></div></div>';
-      sections[0].querySelectorAll(".q").forEach(function (n) { n.remove(); });
-      sections[0].insertAdjacentHTML("beforeend", next);
+      upNextSection.querySelectorAll(".q").forEach(function (n) { n.remove(); });
+      upNextSection.insertAdjacentHTML("beforeend", next);
     }
 
     // Remap objection row to seven beliefs
@@ -366,9 +475,9 @@
       var fields = (t && t.manual_fields) || [];
       if (!fields.length) { blanks.innerHTML = ""; return; }
       blanks.innerHTML = fields.map(function (f) {
-        return '<div style="margin-top:10px"><label for="fh-blank-' + esc(f.key) + '" style="display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);margin-bottom:5px">' +
+        return '<div class="sp-field"><label for="fh-blank-' + esc(f.key) + '">' +
           esc(f.label || f.key) + (f.required ? " *" : "") + "</label>" +
-          '<input id="fh-blank-' + esc(f.key) + '" data-blank="' + esc(f.key) + '" type="text" style="width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 9px"></div>';
+          '<input id="fh-blank-' + esc(f.key) + '" data-blank="' + esc(f.key) + '" type="text"></div>';
       }).join("");
       if (window.FHContractSend && window.FHContractSend.fillBlankInputs) {
         var picked = selected();
@@ -435,10 +544,11 @@
         lastLink = r.link || "";
         if (link) {
           link.value = lastLink;
-          link.style.display = lastLink ? "block" : "none";
+          link.hidden = !lastLink;
         }
         if (copy) copy.disabled = !lastLink;
         setMsg(r.message || "Sent. Copy the link and give it to them.");
+        setPrimary("fh-pay-link");
         if (lastLink) window.FHContractSend.copyText(lastLink);
       });
     });
@@ -449,6 +559,137 @@
         setTimeout(function () { copy.textContent = "Copy link"; }, 1400);
       });
     });
+  }
+
+  /* -------------------------------------------------------------------------
+     THE PAY LINK, ON THIS SCREEN.
+
+     Taking money used to mean leaving this tab, opening the 24-slide deck and
+     paging to slide 23. This is the SAME write the deck does - POST
+     /api/closer-deck {action:"send_pay_link"} - so there is one send path, not
+     two, and no new endpoint. Offers ride on the one fixed closer-call read.
+
+     COMPLIANCE REVIEW REQUIRED - this control mints a payment link.
+     ------------------------------------------------------------------------- */
+  var PRIMARY_PAY_OFFERS = ["FUNDING_DFY", "REPAIR_DFY", "REPAIR_TRIAL", "FUNDING_MASTERY"];
+
+  function wirePayLink() {
+    var btn = document.getElementById("fh-pay-link");
+    var panel = document.getElementById("fh-pay-panel");
+    var sel = document.getElementById("fh-pay-offer");
+    var motionField = document.getElementById("fh-pay-motion-field");
+    var motion = document.getElementById("fh-pay-motion");
+    var go = document.getElementById("fh-pay-go");
+    var msg = document.getElementById("fh-pay-msg");
+    if (!btn || !panel || !sel || !go) return;
+    if (!clientId) { btn.remove(); panel.remove(); return; }
+
+    function setMsg(t) { if (msg) msg.textContent = t || ""; }
+    function esc(v) {
+      return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
+    function paintMotion() {
+      if (!motionField) return;
+      /* The server refuses an alternate-ladder link without a motion
+         (src/sales/closer-deck.mjs). Asking here beats a 400 mid-call. */
+      motionField.hidden = PRIMARY_PAY_OFFERS.indexOf(sel.value) !== -1;
+    }
+
+    var offers = state.offers || [];
+    if (!offers.length) {
+      sel.innerHTML = '<option value="">No offers in the catalog</option>';
+      go.disabled = true;
+      setMsg("No offers came back with this call, so no link can be made.");
+    } else {
+      sel.innerHTML = offers.map(function (o) {
+        return '<option value="' + esc(o.key) + '">' + esc(o.name) +
+          (o.priceDisplay ? " \u00b7 " + esc(o.priceDisplay) : "") + "</option>";
+      }).join("");
+      paintMotion();
+    }
+    sel.addEventListener("change", paintMotion);
+
+    btn.hidden = false;
+    btn.addEventListener("click", function () {
+      if (!panel.hasAttribute("hidden")) { panel.setAttribute("hidden", ""); return; }
+      panel.removeAttribute("hidden");
+      setMsg("Pick the offer, then send. They get it by email and text.");
+    });
+
+    go.addEventListener("click", async function () {
+      var key = sel.value;
+      if (!key) { setMsg("Pick an offer first."); return; }
+      if (motionField && !motionField.hidden && !(motion && motion.value)) {
+        setMsg("Choose downsell or upsell for this offer.");
+        return;
+      }
+      go.disabled = true;
+      setMsg("Sending\u2026");
+      var r = await window.FHData.write("/api/closer-deck", {
+        action: "send_pay_link",
+        client_id: clientId,
+        offer_key: key,
+        sale_motion: (motionField && motionField.hidden) ? null : (motion ? motion.value : null)
+      });
+      go.disabled = false;
+      if (!r.ok) {
+        setMsg((r.error && (r.error.message || r.error)) || "Could not send the pay link.");
+        return;
+      }
+      setMsg("Sent. Stay on the call until it posts.");
+      watchForPayment();
+    });
+  }
+
+  /* -------------------------------------------------------------------------
+     MOVE WITH THE CALL.
+
+     The rhythm is: send the link, keep them on the line, watch it land. The
+     screen read its data once at boot and then could not tell the closer
+     anything, so they sat looking at a page that had stopped listening.
+
+     This re-reads the SAME fixed read (GET /api/read/closer-call) - no second
+     client read, so the merge spec's one-data-path rule still holds. It is
+     bounded on purpose: every 20 seconds, at most 5 minutes, and it stops the
+     moment a payment that was not there before appears.
+     ------------------------------------------------------------------------- */
+  function payNote(cls, words) {
+    var el = document.getElementById("fh-money-note");
+    if (!el) return;
+    el.className = "money-note" + (cls ? " " + cls : "");
+    el.textContent = words;
+    el.hidden = false;
+  }
+
+  function watchForPayment() {
+    if (state.payWatch || !clientId || !window.FHData) return;
+    var before = state.data && state.data.deal && state.data.deal.latest_payment;
+    var beforeId = before ? before.transaction_id : null;
+    var tries = 0;
+    payNote("watching", "Watching for the payment. This checks every 20 seconds.");
+    state.payWatch = setInterval(async function () {
+      tries += 1;
+      if (tries > 15) {
+        clearInterval(state.payWatch);
+        state.payWatch = null;
+        payNote("", "No payment yet after 5 minutes. Reload the page to check again.");
+        return;
+      }
+      var r = await window.FHData.read("closer-call", { client_id: clientId });
+      if (!r || !r.ok) return;
+      var now = r.data && r.data.deal && r.data.deal.latest_payment;
+      if (!now || (beforeId && now.transaction_id === beforeId)) return;
+      clearInterval(state.payWatch);
+      state.payWatch = null;
+      payNote("posted", "Payment posted \u00b7 " + (now.amount_display || "amount on file") +
+        (now.product_name ? " \u00b7 " + now.product_name : ""));
+      paint(r.data);
+      /* The money is in. The next thing they do is log it and take the next
+         call, so that is what the one primary button becomes. */
+      setPrimary("fh-save-next");
+    }, 20000);
   }
 
   async function saveOutcome() {
@@ -462,7 +703,9 @@
         outcome: state.outcome,
         belief_failed: state.belief === "none" ? null : state.belief,
         task_id: state.taskId,
-        transaction_id: state.transactionId,
+        /* transaction_id is deliberately absent. See the note in paint(): the
+           server picks the payment inside its own 48-hour window, which is what
+           "money from this call" means. Sending an id from here bypassed it. */
         checklist: {
           call_recorded: !!(document.getElementById("d1") && document.getElementById("d1").checked),
           personal_guarantee: !!(document.getElementById("d2") && document.getElementById("d2").checked),
@@ -490,10 +733,28 @@
     }
   }
 
-  function paintUnderwrite(uw) {
+  /* THE THREE MONEY BANDS — the biggest numbers on the screen.
+     ZERO IS NOT UNKNOWN. The engine returns total_personal_funding and
+     total_combined_funding as the NUMBER 0 when it has nothing to work with
+     (src/underwrite/vendor/underwriter.cjs, src/underwrite/business-funding.mjs),
+     never null. money() treated 0 as a real figure, so a client with no credit
+     pull showed "Realistic $0 · After optimization $0" and a closer read that as
+     "this person can get nothing." It meant "nobody has pulled their credit."
+     CLAUDE.md §12: NULL means unknown and must survive.
+
+     Three states, kept apart, and the third one is said in words rather than as
+     a bare $0 so it can never be mistaken for the second:
+       no pull on file            → dash + the reason
+       pull on file, engine blank → dash + "not in the answer"
+       pull on file, computes 0   → "None yet" + why */
+  function paintUnderwrite(uw, credit) {
     var bands = document.querySelectorAll(".bands .band");
     var personal = uw.personal || {};
     var totals = uw.totals || {};
+    var pullOnFile = !!(credit && credit.available);
+    var noPullReason = (credit && credit.reason && !/crs_results|row|table|column/i.test(credit.reason))
+      ? credit.reason
+      : "No credit pull on file yet";
     function dollarsToCents(v) {
       if (v == null || !Number.isFinite(Number(v))) return null;
       return Math.round(Number(v) * 100);
@@ -503,28 +764,46 @@
       ? totals.total_personal_funding
       : personal.total_personal_funding;
     var real = dollarsToCents(realDollars);
-    var opt = dollarsToCents(
-      totals.total_combined_funding != null ? totals.total_combined_funding : realDollars
-    );
+    /* No fallback to the realistic figure. The old one printed the SAME number
+       under two different labels, one of which was then wrong. */
+    var opt = dollarsToCents(totals.total_combined_funding);
     function setBand(i, cents, note) {
       var b = bands[i];
       if (!b) return;
       var bv = b.querySelector(".bv");
       var bn = b.querySelector(".bn");
-      if (bv) bv.textContent = cents == null ? "—" : money(cents);
-      if (bn) bn.textContent = cents == null ? "Not in UnderwriteIQ response" : note;
+      var value, reason;
+      if (!pullOnFile) {
+        value = "—";
+        reason = noPullReason;
+      } else if (cents == null) {
+        value = "—";
+        reason = "Not in the UnderwriteIQ answer";
+      } else if (cents === 0) {
+        value = "None yet";
+        reason = "Pull is on file — the report finds nothing fundable";
+      } else {
+        value = money(cents);
+        reason = note;
+      }
+      if (bv) bv.textContent = value;
+      if (bn) bn.textContent = reason;
     }
     setBand(0, cons, "Conservative");
     setBand(1, real, "Realistic · round 1");
-    setBand(2, opt, "After optimization");
+    /* Label matches the arithmetic. total_combined_funding is personal funding
+       PLUS business stacking (src/underwrite/business-funding.mjs) — it is not
+       the engine's own `optimization` block, which this screen never reads.
+       "After optimization" over that sum was a wrong label on a real number. */
+    setBand(2, opt, "Personal + business stacked");
   }
 
   async function resolveClient() {
     if (clientId) return clientId;
     var nowR = await window.FHData.read("closer-now");
     if (!nowR.ok) {
-      setEmpty((nowR.error && (nowR.error.message || nowR.error)) ||
-        ("Could not load current call (" + nowR.source + ")"), "error");
+      window.FHData.explain(nowR, "the next call");
+      setEmpty("The bar along the bottom of the screen says why.", "error");
       return null;
     }
     var cur = nowR.data && nowR.data.current;
@@ -551,19 +830,29 @@
 
     var r = await window.FHData.read("closer-call", { client_id: clientId });
     if (!r.ok) {
-      setEmpty((r.error && (r.error.message || r.error)) || ("Could not load cockpit (" + r.source + ")"), "error");
+      /* FHData.explain is the house wording for a failed read - one sentence,
+         written once, for all nineteen screens. The old line pasted the read's
+         internal source name straight into the closer's field of view: a word
+         they do not know, attached to a system they cannot check. */
+      window.FHData.explain(r, "this call");
+      setEmpty("The bar along the bottom of the screen says why.", "error");
       return;
     }
     paint(r.data);
     showLiveControls();
 
     var join = document.getElementById("fh-join");
+    var hasJoinUrl = false;
     if (join) {
       var url = (r.data && r.data.join_url) || "";
       if (url) {
+        hasJoinUrl = true;
         join.disabled = false;
         join.removeAttribute("title");
         join.addEventListener("click", function () {
+          /* The call has started, so the next thing they will reach for is the
+             money, not this button. */
+          setPrimary("fh-pay-link");
           window.open(url, "_blank", "noopener");
         });
       } else {
@@ -572,6 +861,11 @@
       }
     }
     wireContractSend();
+    wirePayLink();
+    /* One filled button, and it is never a disabled one. With no meeting link
+       on the appointment the loudest thing on the screen used to be a grey
+       Join button that could not be pressed. */
+    setPrimary(hasJoinUrl ? "fh-join" : "fh-pay-link");
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);

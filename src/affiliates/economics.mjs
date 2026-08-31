@@ -26,15 +26,27 @@
 //
 // 4. RATES ARE ROWS. Every amount comes from affiliate_commission_rules.
 //    Owner-set 2026-08-24 (migrations 260–261): Tier 1 direct 20%, Tier 2 downline 5%.
+//    Owner-set 2026-08-31 (migration 272): on FUNDING those same two rates now
+//    apply to the partner's half of every non-refund payment on the sale, so an
+//    affiliate earns on the 10% success fee and not only on the deposit. Rates
+//    are versioned — 272 closes the deposit-basis rows and opens new ones; it
+//    never UPDATEs a live percent.
 //    This module still does not hardcode those numbers — it reads the rows.
 //    With no rule in force, commission_due stays NULL, the balance stays zero and
 //    nothing pays. `unrated` in the return value is how that stays visible rather
 //    than looking like a zero-value conversion.
+//
+// WHERE THIS IS CALLED FROM. attribute() runs on the referral-capture workflow
+// (src/workflows/af-02-referral-ownership-capture.mjs). convertSafe() runs from
+// ensureSalePayment() in src/handlers/money-chain.mjs — the one place a
+// sale_payments row is written, which is the one durable moment money is known to
+// have arrived. Until 2026-08-31 nothing in production called convert() at all
+// and no affiliate commission was ever accrued (W1-money-model.md finding F1).
 
 // Which products count as which kind of completed outcome. Product CODES, matched
 // against products.code, because routing on a dollar amount is how a price change
 // silently re-routes an outcome.
-import { toCents, fromCents, percentOf } from "../commissions/money.mjs";
+import { toCents, fromCents, percentOf, applySplit } from "../commissions/money.mjs";
 
 export const FUNDING_PRODUCT_CODES = ["card-stacking-dfy"];
 export const REPAIR_PRODUCT_CODES = ["repair-bundle"];
@@ -114,11 +126,13 @@ export async function qualifyingOutcome(db, { orgId, clientId, saleId } = {}) {
       [sale.client_id]
     );
     if (!funded.rows[0]) return { qualifies: false, reason: "funding_not_completed" };
-    return { qualifies: true, kind: "funded_engagement", productCode: code };
+    return { qualifies: true, kind: "funded_engagement", productCode: code,
+             clientId: sale.client_id };
   }
 
   if (REPAIR_PRODUCT_CODES.includes(code)) {
-    return { qualifies: true, kind: "repair_enrolment", productCode: code };
+    return { qualifies: true, kind: "repair_enrolment", productCode: code,
+             clientId: sale.client_id };
   }
 
   return { qualifies: false, reason: code ? `not_qualifying:${code}` : "no_product" };
@@ -197,8 +211,74 @@ function fromCentsNumber(cents) {
   return Number(fromCents(cents));
 }
 
+/* THE PARTNER'S HALF, as a basis. 272_affiliate_success_fee_share adds
+   'partner_share_of_cash' to the amount_basis enum, so this is the code change
+   033's note says an enum value costs.
+
+   WHAT IT IS. Every non-refund payment on the sale — the funding deposit AND the
+   10% success fee that lands months later — multiplied by the partner's own
+   revenue_share_pct. Owner-set 2026-08-31 (docs/specs/W0-decisions.md, "Affiliates
+   earn on the back end"): a sub-affiliate is paid out of the PARTNER'S half, so
+   the partner's half is what their rate applies to, and fundhub's 50% cannot move
+   however many people sit under the partner:
+
+     $12,000 collected → partner half $6,000 → tier 1 20% = $1,200
+                                             → tier 2  5% =   $300
+     fundhub keeps $6,000, every time.
+
+   WHEN THERE IS NO PARTNER. A fundhub-direct client has no partner half to take
+   from — fundhub owns the whole of that cash and pays its own affiliate out of
+   it — so the basis is the cash in full. That is a real change for the direct
+   book: the schedule used to pay on the deposit alone and now pays on everything
+   collected, which is exactly the owner decision, applied to everyone.
+
+   WHEN THE PARTNER CANNOT BE READ. A client naming a partner this query cannot
+   reach (deleted, or another org) is UNKNOWN, and unknown is null — never zero
+   and never the undiluted cash. convert() leaves commission_due NULL, and
+   unratedConversions() lists it.
+
+   KNOWN LIMIT, RECORDED NOT HIDDEN. A referral converts ONCE (033's design: one
+   status flip, one frozen rule_snapshot, scope_rule 'first_paid_product'), so
+   this basis is whatever had been collected at that moment. A success fee paid
+   in one go is the whole fee and the affiliate is paid on all of it. A success
+   fee paid in three instalments converts on the first one, and the two after it
+   do not raise the commission — the partner accrues 50% of each instalment, the
+   affiliate does not. Making the affiliate follow every instalment means
+   re-opening a converted referral, which is the one thing the frozen snapshot
+   exists to prevent, so it is an owner decision and not a code fix. */
+const SQL_PARTNER_SHARE_OF_CASH = `
+  SELECT COALESCE(sum(sp.amount) FILTER (WHERE sp.kind <> 'refund'), 0) AS cash,
+         c.partner_id           AS partner_id,
+         pt.revenue_share_pct   AS share_pct
+    FROM sales s
+    JOIN clients c ON c.id = s.client_id AND c.org_id = s.org_id
+    LEFT JOIN partners pt ON pt.id = c.partner_id AND pt.org_id = s.org_id
+    LEFT JOIN sale_payments sp ON sp.sale_id = s.id AND sp.org_id = s.org_id
+   WHERE s.id = $1
+   GROUP BY c.partner_id, pt.revenue_share_pct`;
+
+async function partnerShareOfCash(db, saleId) {
+  const { rows } = await db.query(SQL_PARTNER_SHARE_OF_CASH, [saleId]);
+  const row = rows[0];
+  if (!row) return 0;                       // no such sale — same answer the other bases give
+
+  const cashCents = toCents(row.cash);
+  if (row.partner_id == null) return fromCentsNumber(cashCents);
+
+  if (row.share_pct === null || row.share_pct === undefined) return null;
+  const pct = Number(row.share_pct);
+  if (!Number.isFinite(pct)) return null;
+  // applySplit refuses a split of zero. A partner on 0% has no half, which is an
+  // answer, not a crash.
+  if (pct <= 0) return 0;
+  return fromCentsNumber(applySplit(cashCents, pct));
+}
+
 /* basisFor — what the rate applies to. The enum is a formula per value and is
-   NOT admin-editable (033's note); adding one is a code change. */
+   NOT admin-editable (033's note); adding one is a code change.
+
+   Returns a dollar Number, or null when the formula's inputs are genuinely
+   unknown. null is NOT zero: convert() must not turn it into a settled $0. */
 export async function basisFor(db, { amountBasis, saleId } = {}) {
   const one = async (sql, params) => {
     const { rows } = await db.query(sql, params);
@@ -219,6 +299,8 @@ export async function basisFor(db, { amountBasis, saleId } = {}) {
       return one(`SELECT amount AS v FROM sale_payments
                    WHERE sale_id = $1 AND kind <> 'refund'
                    ORDER BY created_at ASC LIMIT 1`, [saleId]);
+    case "partner_share_of_cash":
+      return partnerShareOfCash(db, saleId);
     default:
       throw new Error(`basisFor: unknown amount_basis "${amountBasis}"`);
   }
@@ -236,10 +318,18 @@ export async function convert(db, {
   const outcome = await qualifyingOutcome(db, { orgId, clientId, saleId });
   if (!outcome.qualifies) return { converted: false, reason: outcome.reason };
 
+  /* The money chain knows the sale, not the client. sales.client_id is NOT NULL
+     and qualifyingOutcome has already read it, so the sale is both the cheaper
+     and the safer answer than resolving the client a second time from the event
+     — resolveClient() CREATES a client when it cannot find one, and a commission
+     writer must never mint one. */
+  const forClientId = clientId || outcome.clientId || null;
+  if (!forClientId) return { converted: false, reason: "no_client" };
+
   const refs = await db.query(
     `SELECT id, affiliate_id, tier, status FROM affiliate_referrals
       WHERE client_id = $1 AND status IN ('attributed', 'converted')`,
-    [clientId]
+    [forClientId]
   );
   if (!refs.rows.length) return { converted: false, reason: "no_attribution" };
 
@@ -269,7 +359,11 @@ export async function convert(db, {
     let due = null, basis = null, snapshot = {};
     if (rule) {
       basis = await basisFor(db, { amountBasis: rule.amount_basis, saleId });
-      const c = commissionFor(rule, basis);
+      /* A null basis is UNKNOWN. commissionFor would read it as Number(null) = 0
+         and hand back a settled $0 commission, which looks exactly like a
+         correct answer. Leaving commission_due NULL keeps it in
+         unratedConversions() where somebody sees it. */
+      const c = basis == null ? null : commissionFor(rule, basis);
       due = c ? c.amount : null;
       snapshot = {
         rule_name: rule.name, calc_method: rule.calc_method,
@@ -294,7 +388,10 @@ export async function convert(db, {
 
     results.push({
       referralId: ref.id, tier: ref.tier, affiliateId: ref.affiliate_id,
-      converted: true, unrated: !rule, commissionDue: due, basisAmount: basis
+      // unrated is "commission_due came out NULL" — no rule matched, OR the
+      // rule's basis was unknown. It is the same condition unratedConversions()
+      // selects on, so the flag and the report can never disagree.
+      converted: true, unrated: due === null, commissionDue: due, basisAmount: basis
     });
   }
 
@@ -314,6 +411,32 @@ export async function convert(db, {
     results,
     tier2Unlocked: unlocked
   };
+}
+
+/** One greppable prefix for a conversion that fell over. */
+export const CONVERT_FAILED = "[affiliate-economics] conversion failed";
+
+/* convertSafe — the money chain's entry point. Identical to convert() except
+   that it cannot throw.
+
+   An affiliate conversion failing must never stop fundhub from recording that
+   money arrived: the payment row and the partner's half are the load-bearing
+   writes, and this rides behind both. Same shape and same reason as
+   accrueForPaymentSafe in src/partners/revenue.mjs. convert() is idempotent, so
+   a failure here is re-drivable from the same sale with no double-pay risk. */
+export async function convertSafe(db, args = {}) {
+  try {
+    return await convert(db, args);
+  } catch (err) {
+    const msg = err && err.message ? err.message : String(err);
+    console.warn(
+      `${CONVERT_FAILED}: ${msg} ` +
+      `(org=${args.orgId || "?"} sale=${args.saleId || "?"}). ` +
+      `The payment is recorded; the conversion can be re-driven from the same ` +
+      `sale, which is idempotent.`
+    );
+    return { converted: false, reason: "convert_error", error: msg };
+  }
 }
 
 /* maybeUnlockTier2 — tier 2 opens on the FIRST funded referral OR the FIRST

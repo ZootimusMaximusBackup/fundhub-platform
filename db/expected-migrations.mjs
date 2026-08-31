@@ -205,6 +205,20 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/269_partner_views_security_invoker.sql",
   "migrations/270_dispute_letter_complaint_targets.sql",
   "migrations/271_cards_entered_at_on_stage_change.sql",
+  "migrations/271_partner_subscriptions_and_addons.sql",
+  "migrations/272_affiliate_success_fee_share_20260831.sql",
+  "migrations/272_approval_excluded.sql",
+  "migrations/273_repair_fee_charged_once.sql",
+  "migrations/274_partner_rail_backfill.sql",
+  "migrations/275_decline_autopsy.sql",
+  "migrations/276_subscription_billing.sql",
+  "migrations/277_partner_payment_links.sql",
+  "migrations/278_ad_intelligence.sql",
+  "migrations/280_live_trials.sql",
+  "migrations/281_partner_recruited_by.sql",
+  "migrations/282_partner_production_floor.sql",
+  "migrations/283_partner_license_template.sql",
+  "migrations/284_training_delivery.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql",
   "seed/007_contract_templates.sql",
@@ -225,7 +239,8 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "seed/020_staff_targets_model_bars.sql",
   "seed/021_funding_mastery_agreement.sql",
   "seed/022_partner_welcome.sql",
-  "seed/023_ds02_letters_portal_copy.sql"
+  "seed/023_ds02_letters_portal_copy.sql",
+  "seed/024_partner_welcome_password.sql"
 ]);
 
 export default EXPECTED_MIGRATIONS;

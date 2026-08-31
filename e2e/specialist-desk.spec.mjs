@@ -254,3 +254,146 @@ test("the owner still gets both buttons on the same screen", async ({ page }) =>
   await expect(actions.locator("[data-act=repair-pull]")).toHaveCount(1);
   await expect(actions.locator("[data-act=repair-clean]")).toHaveCount(1);
 });
+
+/* ── BUG 4: the zero that meant "go home" ──────────────────────────────────── */
+
+/* Three open cases, none of them ready and none of them sent. Two are Blocked,
+   which src/inquiry-ops/send.mjs writes when the identity packet is short — the
+   send was REFUSED and somebody has to chase documents. One is Escalated. */
+const STUCK_CASES = {
+  ok: true,
+  total: 3,
+  cases: [
+    {
+      id: "c1111111-1111-4111-8111-111111111111", client_name: "Dana Whitfield",
+      case_status: "Blocked", requested_at: "2026-08-18T09:00:00Z",
+      selected_bureaus_raw: "EQ", open_inquiry_count: 3,
+      docs_complete: false, docs_missing: ["id_document"]
+    },
+    {
+      id: "c2222222-2222-4222-8222-222222222222", client_name: "Sam Rivera",
+      case_status: "Blocked", requested_at: "2026-08-20T09:00:00Z",
+      selected_bureaus_raw: "TU", open_inquiry_count: 1,
+      docs_complete: false, docs_missing: ["proof_of_address"]
+    },
+    {
+      id: "c3333333-3333-4333-8333-333333333333", client_name: "Alvin Torres",
+      case_status: "Escalated", requested_at: "2026-08-10T09:00:00Z",
+      selected_bureaus_raw: "EX", open_inquiry_count: 2
+    }
+  ]
+};
+
+test("three blocked cases are counted in words, not hidden behind a zero", async ({ page }) => {
+  await openScreen(page, "/app/inquiry-remover.html", SPECIALIST, {
+    "/api/read/inquiry-cases": STUCK_CASES,
+    "/api/read/inquiries": { ok: true, count: 0, limit: 200, offset: 0, hasMore: false, items: [] },
+    "/api/pii": { ok: true, identity: null }
+  });
+
+  // The number is still the honest one: none of these is ready to send, and
+  // counting them as ready would be the same lie pointing the other way.
+  await expect(page.locator("#deskValue")).toHaveText("0");
+  await expect(page.locator("#deskLabel")).toHaveText("Ready to send");
+
+  // What changed is the sentence under it. It used to read "nothing is waiting
+  // on you", with the rows below printing "chasing" in their own Docs column.
+  await expect(page.locator("#deskSub")).toHaveText("3 cases need a person before they can be sent");
+
+  const quiet = page.locator("#deskNextNone");
+  await expect(quiet).toBeVisible();
+  await expect(quiet).toHaveText("Nothing is ready to send — 3 cases need a person before they can be sent.");
+  await expect(quiet).not.toContainText("every open case is already sent");
+
+  // And the rows themselves still say what the headline is now agreeing with.
+  await expect(page.locator("#caseQueueBody tr.case-main")).toHaveCount(3);
+  await expect(page.locator("#caseQueueBody")).toContainText("Blocked (docs)");
+  await expect(page.locator("#caseQueueBody")).toContainText("chasing");
+});
+
+test("with everything genuinely in the mail, it still says she is clear", async ({ page }) => {
+  // The guard against the fix over-firing. These two are out of her hands.
+  await openScreen(page, "/app/inquiry-remover.html", SPECIALIST, {
+    "/api/read/inquiry-cases": {
+      ok: true, total: 2,
+      cases: [
+        { id: "c4444444-4444-4444-8444-444444444444", client_name: "Dana Whitfield",
+          case_status: "In Progress", requested_at: "2026-08-20T09:00:00Z",
+          selected_bureaus_raw: "EQ", open_inquiry_count: 1 },
+        { id: "c5555555-5555-4555-8555-555555555555", client_name: "Sam Rivera",
+          case_status: "Queued", requested_at: "2026-08-21T09:00:00Z",
+          first_delivery_at: "2026-08-22T09:00:00Z",
+          selected_bureaus_raw: "TU", open_inquiry_count: 1 }
+      ]
+    },
+    "/api/read/inquiries": { ok: true, count: 0, limit: 200, offset: 0, hasMore: false, items: [] },
+    "/api/pii": { ok: true, identity: null }
+  });
+
+  await expect(page.locator("#deskValue")).toHaveText("0");
+  await expect(page.locator("#deskSub")).toHaveText("nothing is waiting on you");
+  await expect(page.locator("#deskNextNone"))
+    .toHaveText("Nothing is waiting on you — every open case is already sent.");
+});
+
+/* ── BUG 5: the letters card, refused ──────────────────────────────────────── */
+
+test("a refused letters read does not leave 'No letters issued yet' standing as the answer", async ({ page }) => {
+  /* GET /api/inquiries?recent=letters is limited to the four roles that work
+     this desk. A role that is refused must not be shown a sentence claiming the
+     company has never sent a letter — that is a false answer sitting where the
+     real one was refused. */
+  let asked = 0;
+  await openScreen(page, "/app/inquiry-remover.html", SPECIALIST, {
+    "/api/read/inquiry-cases": { ok: true, total: 0, cases: [] },
+    "/api/read/inquiries": { ok: true, count: 0, limit: 200, offset: 0, hasMore: false, items: [] },
+    "/api/pii": { ok: true, identity: null },
+    "/api/inquiries": (route, { url }) => {
+      if (!url.includes("recent=letters")) return { ok: true, attempts: [] };
+      asked++;
+      return json(route, { ok: false, error: "forbidden", message: "this endpoint is limited to owner, admin, inquiry_specialist, funding_advisor" }, 403);
+    }
+  });
+
+  expect(asked).toBe(1);
+  await expect(page.locator("#lettersEmpty")).toBeHidden();
+  await expect(page.locator("#lettersList .letter-row.live")).toHaveCount(0);
+  // FHData's house wording for a refusal, so the reader is told rather than lied to.
+  await expect(page.locator("#fh-data-banner")).toContainText(/may not be allowed/i);
+});
+
+test("a letters read that comes back empty does say so", async ({ page }) => {
+  // The other half: "refused" and "there are none" must not look the same.
+  await openScreen(page, "/app/inquiry-remover.html", SPECIALIST, {
+    "/api/read/inquiry-cases": { ok: true, total: 0, cases: [] },
+    "/api/read/inquiries": { ok: true, count: 0, limit: 200, offset: 0, hasMore: false, items: [] },
+    "/api/pii": { ok: true, identity: null },
+    "/api/inquiries": (route, { url }) =>
+      url.includes("recent=letters") ? { ok: true, letters: [] } : { ok: true, attempts: [] }
+  });
+
+  await expect(page.locator("#lettersEmpty")).toBeVisible();
+  await expect(page.locator("#lettersEmpty")).toContainText("No letters issued yet");
+});
+
+test("the letters that exist are drawn", async ({ page }) => {
+  await openScreen(page, "/app/inquiry-remover.html", SPECIALIST, {
+    "/api/read/inquiry-cases": { ok: true, total: 0, cases: [] },
+    "/api/read/inquiries": { ok: true, count: 0, limit: 200, offset: 0, hasMore: false, items: [] },
+    "/api/pii": { ok: true, identity: null },
+    "/api/inquiries": (route, { url }) =>
+      url.includes("recent=letters")
+        ? { ok: true, letters: [{
+            id: "l1", kind: "letter", outcome: "queued_for_delivery",
+            created_at: "2026-08-29T17:00:00Z", bureau: "EQ",
+            staff_name: "Robin Ellis", client_name: "Dana Whitfield"
+          }] }
+        : { ok: true, attempts: [] }
+  });
+
+  await expect(page.locator("#lettersEmpty")).toBeHidden();
+  const row = page.locator("#lettersList .letter-row.live");
+  await expect(row).toHaveCount(1);
+  await expect(row).toContainText("Dana Whitfield");
+  await expect(row).toContainText("Equifax");
+});

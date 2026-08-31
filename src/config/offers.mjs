@@ -43,7 +43,13 @@ const COMMAS_TITLE_BY_PRODUCT_CODE = Object.freeze({
   "repair-bundle": "Consulting Services Standard",
   "repair-trial": "Consulting Services Trial",
   "funding-mastery": "Consulting Services Program",
-  "inquiry-removal": "Consulting Services Records"
+  "inquiry-removal": "Consulting Services Records",
+  // The white-label partner add-ons (PARTNER_ADD_ONS below). Listed here as
+  // well as on the add-on so a resolve that only knows the product code still
+  // lands on the right vendor title.
+  "creative-intelligence": "Consulting Services Insights",
+  "dfy-marketing": "Consulting Services Retainer",
+  "lead-flow": "Consulting Services Introductions"
 });
 
 const COMMAS_TITLE_BY_PURPOSE = Object.freeze({
@@ -63,7 +69,7 @@ export function commasProductTitleFor({
 } = {}) {
   if (invoiceId) return COMMAS_INVOICE_PRODUCT_TITLE;
   if (commasProductTitle) return String(commasProductTitle).trim();
-  const offer = getOffer(offerKey);
+  const offer = getOffer(offerKey) || getPartnerAddOn(offerKey);
   if (offer?.commasProductTitle) return offer.commasProductTitle;
   const code = String(productCode || offer?.productCode || "").trim().toLowerCase();
   if (code && COMMAS_TITLE_BY_PRODUCT_CODE[code]) return COMMAS_TITLE_BY_PRODUCT_CODE[code];
@@ -140,11 +146,212 @@ export const OFFERS = Object.freeze({
     letters: false,
     paymentPurpose: "custom",
     productCode: "funding-mastery",
+    commasProductTitle: "Consulting Services Program",
+    contractTemplateKey: "FUNDING-MASTERY-AGREEMENT"
+  }),
+
+  /* The three self-serve doors on the partner funnel, plus the entry fee.
+     These landed after the units that needed them: src/trials/constants.mjs and
+     api/public/funnel-checkout.mjs each carried their own copy so they could be
+     built before this catalogue caught up, and each holds a drift test that
+     fails if the number here disagrees. This is now the source; those tests are
+     what keep it the only one.
+
+     All four are E-PRODUCTS. Per W0-decisions.md the 50% partner share covers
+     funding and repair only, so none of these product codes may ever appear in
+     FUNDING_PRODUCT_CODES or REPAIR_PRODUCT_CODES. */
+
+  DECLINE_AUTOPSY: Object.freeze({
+    key: "DECLINE_AUTOPSY",
+    name: "Decline Autopsy",
+    priceCents: 2700,
+    financing: false,
+    letters: false,
+    paymentPurpose: "custom",
+    productCode: "decline-autopsy",
+    commasProductTitle: "Consulting Services Assessment"
+  }),
+
+  WINNERS_BOARD: Object.freeze({
+    key: "WINNERS_BOARD",
+    name: "Winner's Board",
+    priceCents: 4700,
+    financing: false,
+    letters: false,
+    paymentPurpose: "custom",
+    productCode: "winners-board",
+    commasProductTitle: "Consulting Services Insights"
+  }),
+
+  LIVE_TRIAL: Object.freeze({
+    key: "LIVE_TRIAL",
+    name: "Live Trial — seven days under your brand",
+    priceCents: 29700,
+    financing: false,
+    letters: false,
+    paymentPurpose: "custom",
+    productCode: "live-trial",
+    commasProductTitle: "Consulting Services Trial"
+  }),
+
+  /* Financeable, because price is a payment question and never a qualification
+     one — the review call decides who becomes a partner, not a lender. */
+  PARTNER_ENTRY: Object.freeze({
+    key: "PARTNER_ENTRY",
+    name: "White-label partner program",
+    priceCents: 1000000,
+    financing: true,
+    letters: false,
+    paymentPurpose: "custom",
+    productCode: "partner-entry",
     commasProductTitle: "Consulting Services Program"
   })
 });
 
 export const OFFER_KEYS = Object.freeze(Object.keys(OFFERS));
+
+// ───────────────────────────────────────────────────────────────────────────
+// THE WHITE-LABEL PARTNER ADD-ON MENU (docs/specs/W6-pricing-menu.md).
+// Owner-set 2026-08-31. COMPLIANCE REVIEW REQUIRED — recurring fee timing.
+//
+// A partner pays $10,000 once to join and nothing monthly. These three are the
+// menu on top of that: stack freely, cancel freely, none a prerequisite for
+// another. The 50/50 split never moves for any of them.
+//
+// WHY THESE ARE NOT IN `OFFERS`, AND WHY THAT IS NOT A STYLE CHOICE. `OFFERS`
+// is the CLIENT catalogue — line 1 of this file calls it the closer-deck
+// catalog, src/sales/closer-deck.mjs feeds every entry of it to the client
+// present page through offersForClient(), sendDeckPayLink() will build a
+// client pay link for any key in it, and api/pipeline-clients.mjs accepts any
+// productCode in it as a product to put a CLIENT on a board. Dropping three
+// partner-only add-ons in there would offer a client "Done-For-You Marketing,
+// $2,497/month" on the deck. Same shape, same Object.freeze, same integer
+// cents, same commasProductTitleFor resolution — separate map, because the
+// audience is different.
+//
+// THE SHAPE GAINS ONE FIELD THE Offer SHAPE HAS NO WAY TO SAY: `billing`.
+// Every existing Offer is a single charge on a pay link, so nothing in the
+// Offer typedef can express "every month" or "each time one is delivered".
+// `billing` says which, and `unitLabel` says what one unit is when the answer
+// is per_unit. priceCents stays what it is everywhere else — integer cents for
+// ONE billing unit. Nothing existing was bent to fit.
+//
+// `financing` IS DELIBERATELY ABSENT. Whether FundHub finances a monthly
+// add-on the way it finances the $10,000 entry is an owner decision nobody has
+// made. Absent means not recorded. It is not false.
+//
+// NONE OF THESE EVER PAYS A PARTNER. They are FundHub revenue: `partnerShare`
+// is false on all three, their products.code must never join the partner
+// accrual allow-list W1-money-model.md §7 specifies, and no partner_revenue
+// row may be written for one. src/config/partner-add-ons.test.mjs holds that.
+// ───────────────────────────────────────────────────────────────────────────
+
+/** @typedef {"CREATIVE_INTELLIGENCE"|"DFY_MARKETING"|"LEAD_FLOW"} PartnerAddOnKey */
+
+/**
+ * @typedef {object} PartnerAddOn
+ * @property {PartnerAddOnKey} key
+ * @property {string} name
+ * @property {number} priceCents  integer cents for ONE billing unit
+ * @property {"monthly"|"per_unit"} billing  how often priceCents is charged
+ * @property {string|null} unitLabel  what one unit is, when billing is per_unit
+ * @property {"partner"} audience  sold to a partner, never to a client
+ * @property {boolean} partnerShare  false: FundHub revenue, never a partner_revenue row
+ * @property {boolean} letters  DS-02 / letter pack may never fire for these
+ * @property {string} productCode  products.code (db/migrations/271), and the
+ *   `tier` written on the partner's `subscriptions` row
+ * @property {string} commasProductTitle  vendor checkout title only
+ * @property {string} summary  one plain line, for a menu screen
+ */
+
+/** @type {Readonly<Record<PartnerAddOnKey, PartnerAddOn>>} */
+export const PARTNER_ADD_ONS = Object.freeze({
+  CREATIVE_INTELLIGENCE: Object.freeze({
+    key: "CREATIVE_INTELLIGENCE",
+    name: "Creative Intelligence",
+    priceCents: 29700,
+    billing: "monthly",
+    unitLabel: null,
+    audience: "partner",
+    partnerShare: false,
+    letters: false,
+    productCode: "creative-intelligence",
+    commasProductTitle: "Consulting Services Insights",
+    summary:
+      "Hooks written for their offer, their own segment so partners never bid against each other, the Winner's Board, and their numbers read back to them."
+  }),
+  DFY_MARKETING: Object.freeze({
+    key: "DFY_MARKETING",
+    name: "Done-For-You Marketing",
+    priceCents: 249700,
+    billing: "monthly",
+    unitLabel: null,
+    audience: "partner",
+    partnerShare: false,
+    letters: false,
+    productCode: "dfy-marketing",
+    commasProductTitle: "Consulting Services Retainer",
+    // The partner's own ad spend is theirs and never lands on FundHub's books,
+    // so it is not a price here and must not be added to one.
+    summary:
+      "FundHub builds the creative, runs the campaigns and manages the ad account. The partner still pays for their own ads on top."
+  }),
+  LEAD_FLOW: Object.freeze({
+    key: "LEAD_FLOW",
+    name: "Lead Flow",
+    priceCents: 9900,
+    billing: "per_unit",
+    unitLabel: "booked call",
+    audience: "partner",
+    partnerShare: false,
+    letters: false,
+    productCode: "lead-flow",
+    commasProductTitle: "Consulting Services Introductions",
+    summary:
+      "Booked, screened calls with business owners handed straight to the partner."
+  })
+});
+
+export const PARTNER_ADD_ON_KEYS = Object.freeze(Object.keys(PARTNER_ADD_ONS));
+
+/** One add-on by key, or null. Deliberately separate from getOffer(): a client
+ *  offer and a partner add-on must never resolve through the same door. */
+export function getPartnerAddOn(key) {
+  if (!key) return null;
+  return PARTNER_ADD_ONS[String(key)] || null;
+}
+
+/** "$297/month" · "$99 per booked call". Composed, never a second copy of a
+ *  price. Returns null when the price is not a number rather than inventing a
+ *  free one. */
+export function partnerAddOnPriceLabel(addOn) {
+  const a = typeof addOn === "string" ? getPartnerAddOn(addOn) : addOn;
+  const price = formatCents(a && a.priceCents);
+  if (!price) return null;
+  if (a.billing === "per_unit") {
+    return a.unitLabel ? `${price} per ${a.unitLabel}` : `${price} per unit`;
+  }
+  if (a.billing === "monthly") return `${price}/month`;
+  return price;
+}
+
+/** The menu, as JSON a partner screen can render. No internals. */
+export function partnerAddOnsForMenu() {
+  return PARTNER_ADD_ON_KEYS.map((k) => {
+    const a = PARTNER_ADD_ONS[k];
+    return {
+      key: a.key,
+      name: a.name,
+      summary: a.summary,
+      priceCents: a.priceCents,
+      priceDisplay: formatCents(a.priceCents),
+      priceLabel: partnerAddOnPriceLabel(a),
+      billing: a.billing,
+      unitLabel: a.unitLabel,
+      productCode: a.productCode
+    };
+  });
+}
 
 export function getOffer(key) {
   if (!key) return null;
@@ -191,9 +398,18 @@ export function defaultContractValues({ offerKey = null, tier = null } = {}) {
     };
   }
   if (templateKey === "CREDIT-REPAIR-AGREEMENT") {
+    /* one_time_fee, NOT monthly_fee. REPAIR_DFY is $1,000 charged once (owner
+       decision 2026-08-31), and the blank this fills used to be called
+       monthly_fee inside a template sentence reading "per month while services
+       are active" — so the same $1,000 rendered as $1,000 a month for the
+       180-day term. db/migrations/273_repair_fee_charged_once.sql rewrites that
+       sentence and renames the blank; this is the other half of that rename.
+       src/contracts/offer-fee-language.test.mjs fails if the two drift apart
+       again. term_days stays: it is how long the work runs, not a billing
+       period, and the corrected copy says so. */
     return {
       ...base,
-      monthly_fee: price || "$1,000",
+      one_time_fee: price || "$1,000",
       term_days: "180",
       scope: "Done-for-you credit repair: forensic review, dispute rounds, creditor escalations, and live dashboard access."
     };
