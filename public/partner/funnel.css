@@ -118,3 +118,10 @@ footer a{color:var(--gray)}
            color:var(--gray);padding:0 22px;white-space:nowrap}
 @keyframes mq{to{transform:translateX(-50%)}}
 @media(prefers-reduced-motion:reduce){.marq-track{animation:none}}
+
+/* Early qualify/disqualify block. The DR framework puts light gatekeeping right
+   after the hook, not at the bottom of the page: it deters time-wasters before
+   they cost a call, and it sharpens who the pixel learns from. */
+.gate{max-width:60ch;margin:26px auto 0;border:1px solid var(--line);border-left:3px solid var(--ink);
+      background:var(--card);border-radius:0 10px 10px 0;padding:16px 20px}
+.gate p{margin:0;font-size:15px;color:var(--ink2)}
