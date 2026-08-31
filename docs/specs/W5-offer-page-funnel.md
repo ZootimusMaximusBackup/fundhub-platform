@@ -586,7 +586,7 @@ moves.
 | 7 | Client funds $120,000. Total 10% fee 1,200,000¢, **less the 300,000¢ deposit already credited** | 900,000 invoiced | The deposit counts toward the 10%; it is not additional |
 | 7a | FundHub half — `applySplit(900000, 50)` | 450,000 | FundHub |
 | 7b | P's half | 450,000 | P |
-| 7c | Affiliates on the back end | **0** | Live rules are deposit-basis only (migrations 260/261). See O4. |
+| 7c | Affiliates on the back end | **Tier 1 20% / Tier 2 5% of the success fee, out of the PARTNER's half** | **CHANGED 2026-08-31 (owner-set).** Live rules are deposit-basis only today, so this needs a NEW rule row in migrations 260/261's versioned schedule. See `W0-decisions.md`. |
 
 **Lifetime on that one funded deal**
 
@@ -751,7 +751,7 @@ Carried from W1, still open and still relevant to this page:
 |---|---|
 | **O1** | **What is the 90-day production floor, in dollars of collected client cash?** It is the only partner filter that exists. Whatever it is, **the number goes on this page and in the agreement**, or the first downgrade is a fight. |
 | **O2** | Hold the affiliate's 20%+5% from the partner's payout, or pay gross and recover later? |
-| **O3** | Is there a hold-back period before a partner accrual is payable? |
+| ~~O3~~ | **CLOSED — no hold-back, pay fast.** See `W0-decisions.md`. |
 | **O4** | Do a partner's affiliates earn anything on the 10% success fee? Today: no. |
 | **O5** | Is the $10,000 refundable, and in what window? **This one has to be answered before the page ships** — a page selling a $10,000 financed product with no refund statement is a page that will be asked about the refund policy by every applicant. |
 | **O6** | On downgrade, accept the small basis difference or build exact parity? |

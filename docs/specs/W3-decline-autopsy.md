@@ -35,7 +35,7 @@ rewriting this spec.
 |---|---|---|
 | A1 | Price is **$27** (2,700 cents), one time, no subscription. | §7 checkout, `src/config/offers.mjs` entry |
 | A2 | The upload cap is **25 rows**. Marketing says "your last 20". | §5 limits |
-| A3 | Uploaded rows are kept **30 days**, then deleted. | §8 retention |
+| ~~A3~~ | **SUPERSEDED (owner-set 2026-08-31): uploaded rows are RETAINED IN FULL. No purge.** Register the retention class without a purge schedule. See `W0-decisions.md`. | §8 retention |
 | A4 | Version 1 accepts **CSV and manual typing only**. PDF turn-down letters are accepted as attachments but **not read by machine**. | §5, §12 (this is the biggest scope lever) |
 | A5 | The report is delivered **on screen plus a PDF**, no email required. | §6 |
 | A6 | Sister offers in the same ladder: Winner's Board $47/mo, Live Trial $297. Named here only so the report's "next step" copy is consistent. | §9 |
@@ -462,7 +462,10 @@ under an explicit `--apply`.
 `loadPolicy()` returns `retainDays` as *absent*, not null, when nobody has decided
 — and its own comment explains why: `"retainDays" in policy` is the question "has
 anybody decided this", and a zero must never be able to answer it. So **nothing
-purges until Chris sets a number.** A3 proposes 30 days. That is a proposal, not a
+purges until Chris sets a number.** **CLOSED 2026-08-31 (owner-set): rows are
+RETAINED IN FULL and no purge schedule is configured for this class — register the
+class so it is counted and auditable, but do not schedule a purge. See
+`W0-decisions.md`.** The original proposal below is retained for mechanism only, not a
 setting.
 
 **Three ways an upload dies:**

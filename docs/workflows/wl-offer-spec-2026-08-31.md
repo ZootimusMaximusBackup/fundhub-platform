@@ -7,6 +7,7 @@ migrations applied, nothing built.** Branch `claude/white-label-models-offer-pag
 
 | # | Spec | File | Status |
 |---|---|---|---|
+| **W0** | **Owner decisions — READ FIRST, supersedes the rest** | `docs/specs/W0-decisions.md` | **done** |
 | W1 | Money model | `docs/specs/W1-money-model.md` | done |
 | W2 | Creative intelligence spine | `docs/specs/W2-creative-intelligence.md` | done |
 | W3 | Decline Autopsy | `docs/specs/W3-decline-autopsy.md` | done |
@@ -88,20 +89,33 @@ the recruit bonus is advertised widely.
    vendor. Every number in AdSpy, BigSpy, Minea and the rest is inferred. Layer 1
    data costs ~$51/month; two Winner's Board subscribers cover the entire bill.
 
-## Open — owner decisions
+## Decisions — closed 2026-08-31
 
-| Ref | Question |
+Recorded in full in `docs/specs/W0-decisions.md`, which **supersedes** any spec passage
+that disagrees with it.
+
+| Was open | Decided |
 |---|---|
-| W1 O1 | **What is the 90-day production floor, in dollars of collected client cash?** Now the only partner filter. Mechanism is fully specified; the number is a judgement call |
-| W1 O2 | Hold a partner's payout while their affiliate is attributed but unconverted, or pay gross and recover later? |
-| W1 O3 | Hold-back period before a partner accrual becomes payable (e.g. 30 days past the refund window)? |
-| W1 O5 | Is the $10,000 entry refundable, and in what window? |
-| W4 D1 | Zero calls book in seven days — service remedy (recommended) or cash refund? |
-| W4 D2 | Funding-only trials in v1 (recommended), or funding and repair from day one? |
-| W4 D3 | Who owns the mandatory day-0 creative approval gate? A gate nobody owns is not a gate |
-| W5 O1 | **What is the $10,000 product called?** Must be a genuine training/enablement program (Commas finances courses only). Blocks page copy |
-| W5 O2 | Is the Live Trial required before entry, or can an applicant buy in directly? |
-| W3 Q5 | Retention period for uploaded decline rows. 30 days is a proposal, not a decision |
+| Production floor | **10 clients per month.** Below it, the partnership ends. Not a dollar figure |
+| Hold-back before paying a partner | **None.** Pay as fast as possible |
+| Hold a payout against an unconverted affiliate | **No.** Pay the partner |
+| Affiliates on the 10% success fee | **Yes** — changes live behaviour, needs a new rule row |
+| Funding-only trials in v1 | **No.** Funding and repair are one ecosystem, always sold together |
+| Is the Live Trial required | **Optional.** Anyone can buy in directly |
+| Creative sign-off | Applies **when FundHub runs the marketing** — which is a separate paid package |
+| Decline-autopsy data retention | **Retain in full. No purge** |
+| $10,000 entry refund | **Short window.** Recorded as 3 days pending the exact figure |
+| What the $10,000 is | The white-label program **plus training** — curriculum in design |
+
+## Still open
+
+| Item | Why it matters |
+|---|---|
+| **Pricing restructure** | Base $10,000 has no monthly, but marketing/licensing/done-for-you add-ons may. That makes the model a **menu**, not a price. Not specced anywhere — largest open item |
+| **The training curriculum** | Research running. Modules must be agreed before any page describes the deliverable |
+| **What the $10,000 includes besides training** | The deliverable list has to be real before it is published |
+| **The Ascension funnel** | Does not exist and is not in the repo. To be built in its own batch now the offers are settled |
+| **Exact refund window** | "Short" is recorded as 3 days |
 
 ## Compliance
 

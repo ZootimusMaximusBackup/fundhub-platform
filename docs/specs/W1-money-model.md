@@ -228,7 +228,8 @@ The events already exist in
 `payment.disputed`.
 
 **Known consequence, stated plainly:** a partner can be paid and then have the
-money reversed. There is no hold-back period specified here. If Chris wants one,
+money reversed. There is **no hold-back period** — owner-set, see `W0-decisions.md`;
+the original text below is retained for the mechanism only. If Chris wants one,
 it is a `partner_payouts.status = 'held'` with a `hold_reason` — the schema
 already supports it. **Open question O3.**
 
@@ -648,9 +649,9 @@ do not edit the intended file. One line appended to
 
 | # | Question | Why it matters |
 |---|---|---|
-| **O1** | **What is the 90-day production floor, in dollars of collected client cash?** | §6. This is the only partner filter that exists. FundHub has zero measured partners, so there is no number to derive it from — it is a judgement call. The mechanism works with any number. |
+| ~~O1~~ | **CLOSED — the floor is 10 CLIENTS PER MONTH**, not a dollar figure. See `W0-decisions.md`. The §6 mechanism stands; the threshold is a client count. |
 | **O2** | When a partner's affiliate is attributed but has not converted yet, do we **hold** the affiliate's share from the partner's payout (O2-a), or pay gross and recover later (O2-b)? | §4. Affects whether a partner can go negative. |
-| **O3** | Is there a **hold-back period** before a partner accrual is payable (e.g. 30 days past the refund window)? | §2. Today a partner can be paid and then charged back. |
+| ~~O3~~ | **CLOSED — NO hold-back.** Pay as fast as possible. A post-payment reversal is FundHub's loss and is not recovered from the partner. See `W0-decisions.md`. |
 | **O4** | Should a partner's affiliates earn anything on the **success fee**? Today the live rules say no — deposit only. | §4(b). A new rule row, not a code change. |
 | **O5** | Is the **$10,000 entry fee refundable**, and in what window? | §5. Schema handles it either way. |
 | **O6** | On downgrade, accept the small basis difference (cash-collected vs deposit-collected) or build exact affiliate-schedule parity? | §6. Recommend accepting it; one ledger. |

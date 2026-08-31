@@ -795,8 +795,8 @@ intended journey does not cover, **stop and ask**.
 Three things, all owner calls, none of them for an agent:
 
 1. **§5.1** — service remedy or cash refund when zero calls book.
-2. **§9.3** — funding-only trials in version one (recommended), or funding and
-   repair from day one.
+2. ~~**§9.3**~~ — **CLOSED. Funding and repair are ONE ecosystem and are always set
+   up together. There is no funding-only version.** See `W0-decisions.md`.
 3. **U7** — who holds the day-0 approval gate.
 
 Everything else in this document is either locked, specified, or listed as
