@@ -108,12 +108,19 @@ const CARDS_SQL = `
 
        NULL still means UNKNOWN and still survives (CLAUDE.md §12): nothing here
        defaults an unknown amount to 0. */
-    EXISTS (
-      SELECT 1
-        FROM applications a
-       WHERE a.client_id = c.id
-         AND a.org_id = p.org_id
-         AND ${unpricedApprovalConditions("a")}
+    /* THE RAIL. One CARDS_SQL serves all eight rails, so without this the same
+       client's Sales card and Inquiry Removal card carried a funding chip that
+       nobody looking at those boards can act on. Applications live inside
+       funding rounds; the flag belongs on the funding rails only. */
+    (
+      p.key IN ('funding_card_stacking', 'funding_altfin')
+      AND EXISTS (
+        SELECT 1
+          FROM applications a
+         WHERE a.client_id = c.id
+           AND a.org_id = p.org_id
+           AND ${unpricedApprovalConditions("a")}
+      )
     ) AS approval_amount_missing
   FROM cards cd
   JOIN pipelines p ON p.id = cd.pipeline_id

@@ -121,7 +121,13 @@
   .select .sl-k{color:var(--text-dim);}
   .select .caret{color:var(--text-faint);font-size:var(--fs-caption);}
   .select.on{background:var(--alert-bg);border-color:var(--alert-line);color:var(--ink2);font-weight:700;}
-  .filter-spacer{flex:1;}
+  /* .filter-spacer is GONE (2026-08-30). It was `flex:1` and its whole job was
+     shoving .board-summary to the FAR RIGHT of the third bar — so the only
+     numbers on this screen finished as far from the top-left as the layout
+     could put them, and the leftmost thing on every bar was a filter. That is
+     the exact shape UI-STANDARDS §1 forbids, on the screen §12 names as the
+     reference. The summary now leads .headline instead and nothing needs
+     pushing, so the spacer is not repositioned, it is deleted. */
 
   /* ---------- one Filter control; the four selects live behind it ---------- */
   .filter-btn{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);
@@ -144,6 +150,119 @@
   .board-summary{font-family:var(--mono);font-size:var(--fs-body);color:var(--text-dim);display:flex;gap:12px;align-items:center;}
   .board-summary b{color:var(--text);}
   .board-summary .held-n{color:var(--ink2);font-weight:700;}
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     THE HEADLINE ROW — "what is waiting on me", answered before you read
+     anything else. Added 2026-08-30.
+
+     UI-STANDARDS §1: top-left is the one number the person came for, never a
+     filter. §12 names THIS screen as the reference for the frame, and this
+     screen was breaking rule 1 of the standard it is the reference for: the
+     leftmost thing on the rail bar and on the filter bar was a control, and
+     the only numbers sat far right on the third bar.
+
+     NO FONT SIZE IS WRITTEN HERE, ON PURPOSE (§12.7). The number is `.big`
+     and the label is `.eyebrow`, and fundhub-brand.css:189-204 hands those two
+     the only sizes a screen is allowed to have — 32px metric and 13px caption,
+     free, on every tenant. This screen has never spent its one escape hatch
+     and still has not: a px size written in here would be thrown away by
+     `:is(.app,.app-shell,.shell,.main,.fh-maxw) *{font-size:inherit
+     !important}` and would paint nothing at all.
+
+     STATUS IS NEVER COLOUR ALONE (§12.6). Every counter in this row carries
+     its meaning in WORDS — "on a bank", "on the client" — because
+     paintBrand() in shell.js overwrites --alert/--warn/--ok/--info from the
+     tenant's own ramp, so a single-hue white-label company paints every state
+     the same colour and a colour-only legend says nothing there.
+     ══════════════════════════════════════════════════════════════════════════ */
+  .headline{background:var(--surface);border-bottom:1px solid var(--line);flex-shrink:0;
+    display:flex;align-items:flex-end;gap:24px;padding:8px 14px 9px;flex-wrap:wrap;}
+  .headline[hidden]{display:none;}
+
+  /* The metric and the one next action, stacked. Nothing else is allowed at
+     this weight — §12 rule 2 is "the next action, said ONCE". */
+  .hl-lead{display:flex;flex-direction:column;gap:1px;min-width:0;flex:0 1 auto;}
+  /* The number is also the button that filters the board to it. One state, two
+     ways in — it never disagrees with the "Waiting on" select, because it sets
+     that select and lets the existing filter machinery do the work. */
+  .hl-metric{display:flex;flex-direction:column;gap:1px;line-height:1.06;
+    background:transparent;border:0;box-shadow:none;padding:0;margin:0;
+    text-align:left;cursor:pointer;font-family:var(--sans);align-items:flex-start;}
+  .hl-metric .big{font-weight:800;letter-spacing:-.02em;color:var(--text);
+    font-variant-numeric:tabular-nums;}
+  .hl-metric .big.none{color:var(--text-faint);}
+  .hl-metric.on .big{text-decoration:underline;text-underline-offset:5px;}
+
+  /* The next action, one line, one weight. A link when there is a real card to
+     jump to; plain text when there is not, because a control that cannot do
+     anything must not render at all (§5). It is a link and not a button on
+     purpose: the 40px tap floor the brand file puts on every <button> would
+     make this single line taller than the number above it. */
+  .hl-next{display:flex;align-items:baseline;gap:6px;min-width:0;max-width:640px;}
+  .hl-next-btn{font-weight:700;color:var(--text);cursor:pointer;
+    text-decoration:underline;text-underline-offset:2px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+  .hl-next-btn[hidden]{display:none;}
+  .hl-next-btn:hover{color:var(--ink2);}
+  .hl-note{color:var(--text-dim);overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+  .hl-note[hidden]{display:none;}
+  /* WHEN THE LINK IS GONE, THE NOTE IS THE WHOLE MESSAGE, SO LET IT WRAP.
+     .hl-note is one clipped line by default because it normally sits beside
+     the jump link and must not push it off the row. But when a filter hides
+     that link the note carries the only thing left — which client is waiting
+     longest, and at what stage — and it is the first note on this screen built
+     from a client's own name. Measured at 1440px: "Christopher Stanbridge — 9d
+     in stage, Round Submitted" lost 39px and "Maria Gonzalez-Hernandez — 9d in
+     stage, Action Required" lost 61px, both cutting the stage off the end. The
+     640px cap on .hl-next already relaxes on phones (see the max-width:640px
+     block); this does the same thing on the one row where the link is absent,
+     at every width. */
+  .hl-next:has(> .hl-next-btn[hidden]) .hl-note{
+    white-space:normal;overflow:visible;text-overflow:clip;}
+  /* Where the jump lands, so the eye can find the card it was sent to. A ring,
+     not a fill — it has to read on a card that is already tinted for hold.
+
+     THE COLOUR SLOT OF A SHADOW TAKES A COLOUR AND NOTHING ELSE. This rule
+     shipped as `0 0 0 3px var(--spectrum)` and painted nothing: --spectrum is a
+     linear-gradient (fundhub-brand.css defines it, and rampToSpectrum() in
+     shell.js rebuilds it for every white-label tenant from the six-stop brand
+     ramp). A gradient in a <color> slot is invalid at
+     computed-value time, so the whole declaration fell back to `none` — and
+     because .card.fh-spot (0,2,0) outranks the brand file's resting
+     :is(.app,.app-shell) :is(.card,...) shadow, the card the user had just been
+     sent to became the ONLY card on the board with no shadow at all. Measured
+     2026-08-30: spotted card box-shadow "none", every neighbour
+     "rgba(10,10,10,.04) 0 1px 2px, rgba(10,10,10,.06) 0 2px 8px". The feedback
+     was inverted, not merely absent. --spectrum is fine on .drop-line below
+     because that one is a background, and a background does take a gradient.
+
+     Ink, not --accent: this screen already argues at .hl-count.on that a fill
+     survives any brand ramp and a tint does not, and --accent is ramp[5], which
+     a one-hue tenant can leave as pale as the board behind it. --ink is the
+     same validated hex the chosen counter fills with, so the card you were sent
+     to and the counter you pressed read as the same act. The resting shadow is
+     restored ahead of the ring rather than replaced, so the card still sits on
+     the board the way its neighbours do — the ring is what is added.
+
+     :hover is named because .card:hover (0,2,0) is declared LATER in this file
+     and would otherwise win the tie and drop the ring the moment the pointer
+     crossed the card it just scrolled to. */
+  .card.fh-spot,.card.fh-spot:hover{box-shadow:var(--panel-shadow),0 0 0 3px var(--ink);}
+
+  /* Reference, below the action and never above it (§12 rule 3). */
+  .hl-ref{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto;}
+  .hl-count{display:flex;align-items:baseline;gap:6px;background:var(--surface);
+    border:1px solid var(--line);border-radius:7px;padding:4px 10px;cursor:pointer;
+    font-family:var(--sans);color:var(--text-dim);white-space:nowrap;}
+  .hl-count:hover{border-color:var(--gray2);color:var(--text);}
+  .hl-count b{font-family:var(--mono);font-weight:700;color:var(--text);
+    font-variant-numeric:tabular-nums;}
+  /* The chosen one is filled ink, not tinted — a fill survives any brand ramp,
+     a tint does not. It also keeps its word, so the state is never the colour. */
+  .hl-count.on{background:var(--ink);border-color:var(--ink);color:#fff;font-weight:700;}
+  .hl-count.on b{color:#fff;}
+  .hl-sep{width:1px;align-self:stretch;background:var(--line);margin:0 2px;}
 
   /* ---------- error banner ---------- */
   .errbar{display:flex;align-items:center;gap:9px;background:var(--alert-bg);border-bottom:1px solid var(--alert-line);
@@ -430,10 +549,19 @@
        at this width, not the narrowest. */
     .filterbar .search{width:auto;flex:1 1 auto;min-width:0;}
     .filter-chips{flex-wrap:wrap;}
-    /* The spacer is what pushed the summary off the right edge. On a phone
-       there is nothing to push against, so it stands down and the summary
-       takes a full line of its own. */
-    .filter-spacer{display:none;}
+
+    /* THE HEADLINE IS FIRST ON A PHONE TOO, AND IT STACKS.
+       The number and its next action keep the top of the screen; the
+       reference counters drop underneath them onto their own line instead of
+       being pushed off the right edge by margin-left:auto, which at 390px is
+       exactly what the old .filter-spacer did to the money summary. Nothing
+       is hidden and nothing is reordered — the same figures, in the same
+       order, allowed a second line. */
+    .headline{gap:10px;padding:8px 14px 10px;}
+    .hl-lead{flex:1 0 100%;}
+    .hl-ref{flex:1 0 100%;margin-left:0;gap:6px;}
+    .hl-next,.hl-next-btn,.hl-note{max-width:100%;white-space:normal;overflow:visible;}
+    .hl-sep{display:none;}
     .board-summary{flex:1 0 100%;flex-wrap:wrap;}
     /* Each figure stays whole. Wrapping BETWEEN them is fine; wrapping inside
        one is what chopped "$50,000" in half. */
@@ -547,6 +675,45 @@
     <div class="rail-tab" data-rail="R-09"><span class="rt-code">R-09</span>Hiring</div>
   </nav>
 
+  <!-- ══ HEADLINE ══════════════════════════════════════════════════════════
+       The one number this screen exists to answer, top-left, before any
+       control (UI-STANDARDS §1). "Waiting on US", not "me": nothing in this
+       system assigns a card to a person — cards.owner is never written by
+       production code, only by demo seeds — so a per-person number would be
+       invented, and every real card's footer already reads "unassigned".
+
+       Every figure in this row is summed from the board that is on screen. No
+       new endpoint, no new table, no second read that could disagree with the
+       cards underneath it.
+       ═══════════════════════════════════════════════════════════════════ -->
+  <div class="headline" id="headline">
+    <div class="hl-lead">
+      <button type="button" class="hl-metric" id="hlUs" data-wait="us"
+              title="Cards on this rail where the next move is someone here. Click to show only those.">
+        <span class="eyebrow">Waiting on us</span>
+        <span class="big" id="hlUsN">—</span>
+      </button>
+      <div class="hl-next">
+        <a class="hl-next-btn" id="hlNextLink" href="#" hidden></a>
+        <span class="hl-note" id="hlNextNote">Loading the board&hellip;</span>
+      </div>
+    </div>
+    <div class="hl-ref">
+      <button type="button" class="hl-count" id="hlBank" data-wait="bank"
+              title="Sitting in Round Submitted — the round is with the lenders and the next move is theirs."><b>—</b> on a bank</button>
+      <button type="button" class="hl-count" id="hlClient" data-wait="client"
+              title="Sitting in Action Required — a lender has come back needing something from the file."><b>—</b> on the client</button>
+      <button type="button" class="hl-count" id="hlNone" data-wait="none"
+              title="Nothing on the card says whose move it is. Not a claim that there is nothing to do."><b>—</b> nothing recorded</button>
+      <div class="hl-sep"></div>
+      <div class="board-summary">
+        <span><b id="sumCount">—</b> cards</span>
+        <span><b id="sumMoney">—</b> est.</span>
+        <span class="held-n" id="sumHeld" title="the pipeline API does not return hold status">— held</span>
+      </div>
+    </div>
+  </div>
+
   <!-- FILTERS — one control; active filters surface as chips -->
   <div class="filterbar">
     <!-- LENS SWITCH — the same page, looked at two ways. Board is the default
@@ -559,14 +726,18 @@
     <button class="filter-btn" id="filterBtn" aria-expanded="false">⚟ Filter<span class="fb-n" id="filterN" hidden>0</span></button>
     <button type="button" class="filter-btn" id="fhNewClient">New Client</button>
     <div class="filter-chips" id="filterChips"></div>
-    <div class="filter-spacer"></div>
-    <div class="board-summary">
-      <span><b id="sumCount">—</b> cards</span>
-      <span><b id="sumMoney">—</b> est.</span>
-      <span class="held-n" id="sumHeld" title="the pipeline API does not return hold status">— held</span>
-    </div>
   </div>
   <div class="filterpanel" id="filterPanel" hidden>
+    <!-- WAITING ON — the triage control. Every value is read off facts the
+         board already carries; see fhWaitingOn() below for the precedence and
+         for why a card can only ever land in one of them. -->
+    <div class="select"><span class="sl-k">Waiting on:</span><select id="fWait">
+      <option value="">Anyone</option>
+      <option value="us">Us — someone here</option>
+      <option value="us_amount">Us — an approval amount</option>
+      <option value="bank">A bank</option>
+      <option value="client">The client</option>
+      <option value="none">Nothing recorded</option></select></div>
     <div class="select"><span class="sl-k">Owner:</span><select id="fOwner"><option value="">Anyone</option></select></div>
     <div class="select"><span class="sl-k">Hold:</span><select id="fHold">
       <option value="">Any</option><option value="held">Held only</option><option value="clear">Not held</option></select></div>
@@ -575,7 +746,8 @@
       <option value="1440">Over 1d in stage</option><option value="4320">Over 3d in stage</option></select></div>
     <div class="select"><span class="sl-k">Sort:</span><select id="fSort">
       <option value="">Manual</option><option value="name">Name A–Z</option>
-      <option value="amt">Amount, high first</option><option value="age">Longest in stage</option></select></div>
+      <option value="amt">Amount, high first</option><option value="age">Longest in stage</option>
+      <option value="needs">Amount needed first</option></select></div>
     <button class="fp-clear" id="filterClear">Clear all</button>
   </div>
 
@@ -1038,7 +1210,7 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ menu.hidd
 /* ---------- filters, search, sort ---------- */
 var q=document.getElementById('q'), fOwner=document.getElementById('fOwner'),
     fHold=document.getElementById('fHold'), fAge=document.getElementById('fAge'),
-    fSort=document.getElementById('fSort');
+    fSort=document.getElementById('fSort'), fWait=document.getElementById('fWait');
 
 /* owner list is built from who actually appears on the cards.
 
@@ -1064,18 +1236,44 @@ function rebuildOwnerOptions(){
 window.rebuildOwnerOptions = rebuildOwnerOptions;
 rebuildOwnerOptions();
 
-/* "3h 40m in stage" / "22m in stage" / "2d 4h in stage" -> minutes */
+/* HOW LONG THIS CARD HAS BEEN IN ITS STAGE, IN MINUTES.
+
+   The timestamp first, the words only as a fallback. cardEl() writes the raw
+   entered_at onto the element; this used to read the RENDERED text back off
+   the card instead ("4h in stage"), and that text has already been rounded to
+   the nearest hour or day by age(). So a card sitting 3h 40m answered 240
+   minutes, and "over 3 days" was being decided by a number that had been
+   rounded before anything compared it. The words are for the reader; the
+   filter uses the clock.
+
+   A card with no readable timestamp answers 0 — unknown, so it never satisfies
+   an "over N" filter and never wins "longest in stage". Unknown must not be
+   able to win a comparison it was never measured for. */
 function ageMins(card){
+  var iso=card.dataset && card.dataset.enteredAt;
+  if(iso){
+    var t=Date.parse(iso);
+    if(!isNaN(t)) return Math.max(0, Math.round((Date.now()-t)/60000));
+  }
   var el=card.querySelector('.c-age'); if(!el) return 0;
-  var t=el.textContent, m=0, x;
-  if((x=/(\d+)\s*d/.exec(t))) m+=parseInt(x[1],10)*1440;
-  if((x=/(\d+)\s*h/.exec(t))) m+=parseInt(x[1],10)*60;
-  if((x=/(\d+)\s*m/.exec(t))) m+=parseInt(x[1],10);
+  var t2=el.textContent, m=0, x;
+  if((x=/(\d+)\s*d/.exec(t2))) m+=parseInt(x[1],10)*1440;
+  if((x=/(\d+)\s*h/.exec(t2))) m+=parseInt(x[1],10)*60;
+  if((x=/(\d+)\s*m/.exec(t2))) m+=parseInt(x[1],10);
   return m;
+}
+/* Does this card match the "Waiting on" choice? Reads the bucket cardEl()
+   stamped on the element from the shared pure rule, so a card can never be
+   counted in the headline and hidden by the filter at the same time. */
+function waitHit(card, want){
+  if(!want) return true;
+  if(want==='us_amount') return (card.dataset&&card.dataset.needsAmount)==='1';
+  return (card.dataset&&card.dataset.wait)===want;
 }
 function applyFilters(){
   var term=(q.value||'').trim().toLowerCase();
   var owner=fOwner.value, hold=fHold.value, age=parseInt(fAge.value||'0',10);
+  var wait=fWait?fWait.value:'';
   cards().forEach(function(c){
     var hit=true;
     if(term && nameOf(c).toLowerCase().indexOf(term)<0) hit=false;
@@ -1083,9 +1281,15 @@ function applyFilters(){
     if(hit&&hold==='held'  && !c.classList.contains('held')) hit=false;
     if(hit&&hold==='clear' &&  c.classList.contains('held')) hit=false;
     if(hit&&age && ageMins(c)<age) hit=false;
+    if(hit&&!waitHit(c,wait)) hit=false;
     c.classList.toggle('filtered',!hit);
   });
+  syncWaitButtons();
+  /* The headline's "longest wait" link points at ONE card. If this pass hid
+     that card, the link has nowhere to go and must stop being a control. */
+  if(typeof window.fhSyncHeadlineNext==='function') window.fhSyncHeadlineNext();
 }
+window.fhApplyFilters=applyFilters;
 function applySort(){
   var mode=fSort.value; if(!mode) return;
   cols().forEach(function(col){
@@ -1095,17 +1299,47 @@ function applySort(){
       if(mode==='name') return nameOf(a).localeCompare(nameOf(b));
       if(mode==='amt')  return amountOf(b)-amountOf(a);
       if(mode==='age')  return ageMins(b)-ageMins(a);
+      /* Approvals with no dollar amount to the top, and among those the one
+         that has been waiting longest — the order somebody chasing amounts
+         works in. */
+      if(mode==='needs'){
+        var na=waitHit(a,'us_amount')?1:0, nb=waitHit(b,'us_amount')?1:0;
+        return nb-na || ageMins(b)-ageMins(a);
+      }
       return 0;
     });
     var more=body.querySelector('.col-more');
     list.forEach(function(c){ body.insertBefore(c, more||null); });
   });
 }
-[q,fOwner,fHold,fAge].forEach(function(el){
+[q,fOwner,fHold,fAge,fWait].forEach(function(el){
+  if(!el) return;
   el.addEventListener('input',applyFilters);
   el.addEventListener('change',applyFilters);
 });
 fSort.addEventListener('change',applySort);
+
+/* THE HEADLINE COUNTERS ARE THE SAME FILTER, NOT A SECOND ONE.
+   Each one writes into #fWait and lets the existing machinery run, so the
+   chip, the Clear all button and the count on the Filter control all keep
+   working with nothing added. Pressing the one that is already on clears it. */
+function syncWaitButtons(){
+  var v=fWait?fWait.value:'';
+  [].forEach.call(document.querySelectorAll('[data-wait]'),function(btn){
+    var mine=btn.getAttribute('data-wait');
+    btn.classList.toggle('on', v===mine || (mine==='us' && v==='us_amount'));
+    btn.setAttribute('aria-pressed', String(btn.classList.contains('on')));
+  });
+}
+[].forEach.call(document.querySelectorAll('[data-wait]'),function(btn){
+  btn.addEventListener('click',function(){
+    if(!fWait) return;
+    var want=btn.getAttribute('data-wait');
+    fWait.value = (fWait.value===want) ? '' : want;
+    applyFilters();
+    if(typeof syncChips==='function') syncChips();
+  });
+});
 
 /* ---------- the four selects hide behind one Filter control ----------
    An active filter is never hidden: it comes back out as a chip, so the bar
@@ -1113,7 +1347,8 @@ fSort.addEventListener('change',applySort);
 var fBtn=document.getElementById('filterBtn'), fPanel=document.getElementById('filterPanel'),
     fN=document.getElementById('filterN'), fChips=document.getElementById('filterChips'),
     fClear=document.getElementById('filterClear');
-var CONTROLS=[{el:fOwner,k:'Owner'},{el:fHold,k:'Hold'},{el:fAge,k:'Age'},{el:fSort,k:'Sort'}];
+var CONTROLS=[{el:fWait,k:'Waiting on'},{el:fOwner,k:'Owner'},{el:fHold,k:'Hold'},
+              {el:fAge,k:'Age'},{el:fSort,k:'Sort'}].filter(function(c){return !!c.el;});
 
 function labelOf(c){ return c.el.options[c.el.selectedIndex].textContent.trim(); }
 function syncChips(){
@@ -1324,6 +1559,103 @@ restore();
     return { count: count, money: money };
   }
   window.FHPipelineSummary = fhPipelineSummary;
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     WHOSE MOVE IS IT? — the one question this board could not answer.
+
+     Pure, DOM-free and beside fhPipelineSummary on purpose: the counters at
+     the top, the "Waiting on" filter and the next-action line all call these
+     same functions, so the number in the headline and the cards left on the
+     board after filtering can never tell two different stories.
+
+     EVERY VALUE IS A FACT ALREADY ON THE CARD. Nothing here reads a new table,
+     opens a new route or infers a state from a payment flag:
+
+       sms_needs_reply / email_needs_reply
+           A real EXISTS over `messages`: the newest message on that thread is
+           inbound. The client wrote and nobody here has answered. Someone here
+           owes a reply — that is waiting on US.
+       approval_amount_missing
+           A bank said yes on the client's CURRENT round and no dollar amount
+           has been recorded, the approval has not been marked as not counting,
+           and this is a funding rail. Somebody here has to type the number in.
+           Also waiting on US.
+       the stage the card is sitting in
+           `round_submitted` — the round has gone to the lenders, so the next
+           move is a bank's.
+           `action_required` — a lender has come back needing something from
+           the file, so the next move is the client's.
+
+     THOSE TWO STAGE KEYS AND NO OTHERS. Every other stage on every other rail
+     comes back "none", and "none" is stated on screen as *nothing recorded* —
+     never as "nothing to do". The system holds no record of whose move it is,
+     and saying so is the honest answer. Guessing a party from a stage name we
+     have not agreed on would be exactly the kind of number that looks real and
+     is not.
+
+     EXACTLY ONE BUCKET PER CARD. A card can be sitting in Round Submitted AND
+     have a text nobody answered. If both counted, the four figures would add
+     to more than the card count and the row would contradict itself on its own
+     first line. So: us wins first, because a reply we owe is a thing a person
+     here can do right now; bank and client are stages and a card has only one
+     stage. us + bank + client + none === the card count, always, and
+     src/http/pipeline-screen.test.mjs proves it.
+     ───────────────────────────────────────────────────────────────────────── */
+  var FH_WAIT_STAGE = { round_submitted: "bank", action_required: "client" };
+
+  function fhWaitingOn(card, stageKey) {
+    if (!card) return "none";
+    // Only an explicit true. A reply that never carried the key is not
+    // evidence of a clean file, and must never be counted as one.
+    if (card.sms_needs_reply === true) return "us";
+    if (card.email_needs_reply === true) return "us";
+    if (card.approval_amount_missing === true) return "us";
+    return FH_WAIT_STAGE[String(stageKey == null ? "" : stageKey)] || "none";
+  }
+
+  // The filter predicate, so the select and the counters share one rule.
+  // "us_amount" is a subset of "us", not a fifth bucket — it never changes a
+  // count, it only narrows what the board shows.
+  function fhWaitMatches(card, stageKey, want) {
+    if (!want) return true;
+    if (want === "us_amount") return !!card && card.approval_amount_missing === true;
+    return fhWaitingOn(card, stageKey) === want;
+  }
+
+  function fhPipelineWaiting(stages) {
+    var t = { us: 0, bank: 0, client: 0, none: 0, cards: 0 };
+    (stages || []).forEach(function (s) {
+      ((s && s.cards) || []).forEach(function (c) {
+        t[fhWaitingOn(c, s && s.key)] += 1;
+        t.cards += 1;
+      });
+    });
+    return t;
+  }
+
+  /* THE ONE CARD TO GO TO NEXT: of everything waiting on someone here, the one
+     that has been waiting longest. A card whose entered_at cannot be read is
+     never picked — an unreadable date is unknown, and unknown must not
+     masquerade as "waited the longest". Returns null when nothing qualifies,
+     which the screen says in words rather than showing a zero. */
+  function fhNextUp(stages) {
+    var best = null, bestT = Infinity;
+    (stages || []).forEach(function (s) {
+      ((s && s.cards) || []).forEach(function (c) {
+        if (fhWaitingOn(c, s && s.key) !== "us") return;
+        var t = Date.parse(c && c.entered_at);
+        if (isNaN(t) || t >= bestT) return;
+        bestT = t;
+        best = { id: c.id, client_id: c.client_id, name: c.name, stage: s.name, entered_at: c.entered_at };
+      });
+    });
+    return best;
+  }
+
+  window.FHPipelineWaiting = fhPipelineWaiting;
+  window.FHWaitingOn = fhWaitingOn;
+  window.FHWaitMatches = fhWaitMatches;
+  window.FHNextUp = fhNextUp;
   /* FH-SUMMARY-END */
 
   // Held count has no honest value here: no card the API returns carries a
@@ -1336,6 +1668,105 @@ restore();
   function setSummary(totals) {
     if (sumCountEl) sumCountEl.textContent = totals ? String(totals.count) : "—";
     if (sumMoneyEl) sumMoneyEl.textContent = totals ? usd(totals.money) : "—";
+  }
+
+  /* ── THE HEADLINE ────────────────────────────────────────────────────────
+     Painted from the SAME stages array the columns are built from, in the same
+     applyBoard() call, so the number at the top and the cards underneath it
+     are two views of one thing rather than two reads that can drift apart.
+
+     A DASH IS NOT A ZERO. Before a rail answers, and after a rail fails to
+     answer, every figure here is "—" and the line underneath says the number
+     is unknown. A 0 would be a claim that nothing is waiting, which is the
+     opposite of what an unanswered read means. */
+  var hlEls = {
+    us: document.getElementById("hlUsN"),
+    bank: document.querySelector("#hlBank b"),
+    client: document.querySelector("#hlClient b"),
+    none: document.querySelector("#hlNone b")
+  };
+  var hlNextLink = document.getElementById("hlNextLink");
+  var hlNextNote = document.getElementById("hlNextNote");
+  var hlNextTarget = null;
+  var hlNextLabel = "";
+
+  function hlNote(text) {
+    if (!hlNextNote) return;
+    hlNextNote.textContent = text;
+    hlNextNote.hidden = !text;
+  }
+
+  function clearHeadline(note) {
+    Object.keys(hlEls).forEach(function (k) {
+      if (hlEls[k]) hlEls[k].textContent = "—";
+    });
+    if (hlEls.us) hlEls.us.classList.add("none");
+    hlNextTarget = null;
+    if (hlNextLink) { hlNextLink.hidden = true; hlNextLink.textContent = ""; hlNextLink.removeAttribute("href"); }
+    hlNote(note || "");
+  }
+
+  function setHeadline(stages) {
+    var t = fhPipelineWaiting(stages);
+    Object.keys(hlEls).forEach(function (k) {
+      if (hlEls[k]) hlEls[k].textContent = String(t[k]);
+    });
+    // A real, measured zero is a good answer and is allowed to look like one.
+    if (hlEls.us) hlEls.us.classList.toggle("none", t.us === 0);
+
+    var next = fhNextUp(stages);
+    hlNextTarget = next;
+    if (!next) {
+      if (hlNextLink) { hlNextLink.hidden = true; hlNextLink.textContent = ""; hlNextLink.removeAttribute("href"); }
+      hlNote(t.cards === 0
+        ? "No cards on this rail."
+        : "Nothing on this rail is waiting on someone here.");
+      return;
+    }
+    hlNextLabel = next.name + " — " + age(next.entered_at) +
+      (next.stage ? ", " + next.stage : "");
+    if (hlNextLink) {
+      hlNextLink.textContent = "Longest wait: " + hlNextLabel;
+      hlNextLink.setAttribute("href", "#" + cardAnchor(next.id));
+    }
+    hlSyncNext();
+  }
+
+  /* THE LINK MUST NOT OUTLIVE THE CARD IT POINTS AT. A filter hides a card
+     with .card.filtered{display:none}, which leaves the node in the DOM: so
+     getElementById still finds it, the click handler's `if (!el) return` never
+     fires, and scrollIntoView on a box-less element scrolls nowhere. Filtering
+     the board — including with the counters in this same row — used to leave an
+     underlined link that did nothing whatever when pressed, and rang a card
+     nobody could see. Now it drops to plain text the moment its card is off the
+     board, which is the rule already stated at .hl-next: a control that cannot
+     do anything must not render as one. The name is kept in the note, because
+     the fact is still true — it is only unreachable from here. */
+  function hlSyncNext() {
+    if (!hlNextLink || !hlNextTarget) return;
+    var el = document.getElementById(cardAnchor(hlNextTarget.id));
+    var reachable = !!el && !el.classList.contains("filtered");
+    hlNextLink.hidden = !reachable;
+    hlNote(reachable ? "" : "This filter hides the longest wait: " + hlNextLabel + ".");
+  }
+  window.fhSyncHeadlineNext = hlSyncNext;
+
+  // One place that turns a card id into its anchor, so the link and the card
+  // can never spell it differently.
+  function cardAnchor(id) { return "fh-card-" + String(id); }
+
+  if (hlNextLink) {
+    hlNextLink.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      if (!hlNextTarget) return;
+      var el = document.getElementById(cardAnchor(hlNextTarget.id));
+      // display:none leaves the node findable, so "exists" is not "reachable".
+      if (!el || el.classList.contains("filtered")) return;
+      try { el.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" }); }
+      catch (e) { el.scrollIntoView(); }
+      el.classList.add("fh-spot");
+      setTimeout(function () { el.classList.remove("fh-spot"); }, 2200);
+    });
   }
 
   function initials(name) {
@@ -1359,7 +1790,7 @@ restore();
 
   /* Built with createElement and textContent throughout: card names and owners
      are client data and must never be interpreted as markup. */
-  function cardEl(c) {
+  function cardEl(c, stageKey) {
     function div(cls, text) {
       var d = document.createElement("div");
       d.className = cls;
@@ -1368,7 +1799,19 @@ restore();
     }
     var card = div("card");
     if (c.client_id) card.dataset.clientId = c.client_id;
-    if (c.id) card.dataset.cardId = c.id;
+    if (c.id) { card.dataset.cardId = c.id; card.id = cardAnchor(c.id); }
+
+    /* WHOSE MOVE IT IS, AND WHEN THE CARD ARRIVED — written onto the element
+       so the filter bar reads the same values the headline counted.
+
+       entered_at is stored raw. The age filter used to re-read the rounded
+       words back off the card ("4h in stage"), so "over 3 days" was answered
+       with a number that had already been rounded to the nearest hour or day
+       before anything compared it. The words stay for the reader; the filter
+       now uses the timestamp. */
+    card.dataset.wait = fhWaitingOn(c, stageKey);
+    if (c.approval_amount_missing === true) card.dataset.needsAmount = "1";
+    if (c.entered_at) card.dataset.enteredAt = c.entered_at;
 
     var top = div("c-top");
     top.appendChild(div("av agent", initials(c.name)));
@@ -1913,6 +2356,7 @@ restore();
   function showLoading(label) {
     showNote("Loading " + (label || "the board") + "…");
     setSummary(null);
+    clearHeadline("Loading " + (label || "the board") + "…");
   }
 
   function buildColumn(stage, pipelineKey) {
@@ -1934,7 +2378,7 @@ restore();
     head.appendChild(headTop); head.appendChild(moneyEl);
     var body = document.createElement("div");
     body.className = "col-body";
-    (stage.cards || []).forEach(function (c) { body.appendChild(cardEl(c)); });
+    (stage.cards || []).forEach(function (c) { body.appendChild(cardEl(c, stage.key)); });
     col.appendChild(head); col.appendChild(body);
     return col;
   }
@@ -1969,8 +2413,14 @@ restore();
   function applyBoard(stages, rail, label, key) {
     var r = paint(stages, key);
     setSummary(fhPipelineSummary(stages));
+    setHeadline(stages);
     if (typeof window.rebuildOwnerOptions === "function") {
       try { window.rebuildOwnerOptions(); } catch (e) {}
+    }
+    // A rail that arrives while a filter is on must obey it, or the board
+    // shows cards the filter says are hidden.
+    if (typeof window.fhApplyFilters === "function") {
+      try { window.fhApplyFilters(); } catch (e) {}
     }
     if (r.shown === 0) {
       banner("note",
@@ -1981,6 +2431,11 @@ restore();
 
   function failBoard(res, label) {
     setSummary(null);
+    // The read did not answer, so the count is UNKNOWN and says so. A 0 here
+    // would read as "nothing is waiting on you", which is the one thing a
+    // failed read can never prove. The reason itself is carried by the banner
+    // and the board note below, in the house wording, not repeated here.
+    clearHeadline("The board did not load, so this number is unknown.");
     while (board.firstChild) board.removeChild(board.firstChild);
     if (res.source === "demo") {
       showNote(label + " — demo session. The board was not loaded from the database.");
@@ -2434,7 +2889,7 @@ restore();
      panel does not spring open, an already-hidden Archive button stays
      hidden, and no filter is re-applied or cleared. */
   var boardOnly = [];
-  [".search", "#filterBtn", "#fhNewClient", "#filterChips", ".board-summary", "#filterPanel"].forEach(function (sel) {
+  [".search", "#filterBtn", "#fhNewClient", "#filterChips", ".headline", ".board-summary", "#filterPanel"].forEach(function (sel) {
     var el = document.querySelector(sel);
     if (el) boardOnly.push(el);
   });
