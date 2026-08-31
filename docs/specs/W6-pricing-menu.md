@@ -80,18 +80,24 @@ The Brain, pointed at them: hooks written for their offer, their segment assigne
 they are not bidding against other partners, the Winner's Board, and their own
 performance data read back to them.
 
-**Recommended: $497/month.** Evidence: Credit Repair Cloud charges $179–$599/month for
-software alone; the 7 Figures partner program charges $97–$197/month; FundHub's own
-public Winner's Board is $47/month. A partner gets the Board plus segment assignment
-plus their own numbers, so it prices above the public tier and inside the market band.
+**$297/month — SET 2026-08-31 from market research.** Building this themselves needs three
+subscriptions: an ad-spy tool (AdSpy $149), an AI creative writer (AdCreative.ai Scale-Up
+$149) and campaign read-back (Motion $250) — about $548/month for tools that know nothing
+about business funding. Sits mid-band against the vertical software this buyer already
+pays for: Credit Repair Cloud $179–$599, DisputeFox $129–$499. Below $150 it reads as a
+thin wrapper; above $400 the buy-three-tools-separately saving disappears.
 
 ### 2. Done-For-You Marketing
 
 FundHub builds the creative, runs the campaigns, manages the account. The partner still
 funds their own ad spend.
 
-**Recommended: $2,497/month + their ad spend.** Evidence: this is agency work, and
-agencies charge $2,000–$5,000/month for less than a full funnel plus fulfilment behind it.
+**$2,497/month + their ad spend — SET 2026-08-31.** Agencies charge 10–20% of spend; at the
+$25,000/month these partners run that is $2,500–$5,000, so this is the literal floor of the
+band. It has to be the floor: FundHub already keeps 50% of the revenue those ads produce,
+and a full market rate on top is charging twice for the same result. Across the real spend
+range it is 12.5% at $20K, 10% at $25K, 8.3% at $30K — it quietly gets cheaper as the
+partner scales, which is what real agencies do.
 
 This is the add-on that triggers the creative approval gate in `W4-live-trial.md` — when
 FundHub runs the marketing, FundHub signs off on the creative.
@@ -100,14 +106,15 @@ FundHub runs the marketing, FundHub signs off on the creative.
 
 FundHub hands the partner booked calls.
 
-**Recommended: $197 per booked call.** Evidence: FundHub's own measured cost is ~$33 per
-booked call (thin sample, `docs/workflows/ads-waterfall-projections-2026-08-26.md`);
-brokers in this market pay $80–$200 for an MCA live transfer. Priced per unit rather
-than monthly because it is the easiest thing to sell to a partner who has just paid
-$10,000 and wants motion this week.
+**$99 per booked call — SET 2026-08-31.** An MCA live transfer runs $75–$150 and a live
+transfer is a *worse* product than a call already on the calendar with a screened owner.
+Appointment agencies charge $50–$300 per booked meeting with a small-business owner.
+FundHub's own cost is ~$33, so $99 is about 3x — enough to cover setters, screening and
+rebooking no-shows without a partner calling it gouging. Under $50 it prices like a raw
+lead and invites partners to burn calls carelessly.
 
-> **Prices above are recommendations, not owner-set.** They are marked as such
-> deliberately — see "Open" below.
+> **These three prices are SET and SHIPPED**, pinned to the cent in
+> `src/config/partner-add-ons.test.mjs` and catalogued in `src/config/offers.mjs`.
 
 ---
 
@@ -127,7 +134,16 @@ The machinery mostly exists and should be reused rather than rebuilt.
 the schema is built on — every rate is a row. `subscriptions.price_cents` is nullable and
 **NULL means "nobody has recorded what this costs"**, not zero. Do not default it.
 
-### The blocker
+### ~~The blocker~~ — RESOLVED
+
+**Fixed by `db/migrations/271_partner_subscriptions_and_addons.sql`** (option 1 below, as
+recommended). A partner can now hold a subscription. The migration also closed a real hole:
+the old uniqueness rule watched only `client_id`, and Postgres skips that check when the
+column is NULL — so without the new rule a partner could have been billed twice for the
+same add-on with nothing complaining.
+
+The original analysis follows.
+
 
 **`subscriptions.client_id` is `NOT NULL REFERENCES clients(id)`. Entitlements are
 client-scoped too** — `forClient(db, { orgId, clientId })`, reading `v_client_entitlements`.
@@ -183,7 +199,7 @@ AND ON EVERY CLIENT THEY CLOSE
 
 | Item | Note |
 |---|---|
-| **The three prices** | $497 / $2,497 / $197 are recommendations from market comparables. Owner has not set them |
+| ~~The three prices~~ | **CLOSED — $297 / $2,497 / $99, set from market research and shipped** |
 | **Bundling** | Whether Intelligence + Done-For-You sell as a discounted package, or strictly à la carte |
 | **Partner subscription scoping** | Option 1 above is recommended but not chosen |
 | **Recurring collection** | Must be verified working before anything monthly is sold |

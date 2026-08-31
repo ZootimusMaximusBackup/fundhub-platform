@@ -113,8 +113,8 @@ that disagrees with it.
 
 | Item | Why it matters |
 |---|---|
-| **Add-on prices** | The menu is specced (`W6-pricing-menu.md`). The three prices — $497 / $2,497 / $197 — are recommendations from market comps, not owner-set |
-| **Partner subscriptions don't fit the schema** | `subscriptions.client_id` is NOT NULL and points at `clients`; entitlements are client-scoped too. A partner add-on cannot be recorded today. Migration needed before anything monthly sells |
+| ~~Add-on prices~~ | **CLOSED — $297/mo, $2,497/mo, $99 per booked call.** Researched, set and shipped in `src/config/offers.mjs` |
+| ~~Partner subscriptions don't fit the schema~~ | **CLOSED — migration 271 shipped.** A partner can hold a subscription, and it closed a double-billing hole the old rule left open |
 | **The training curriculum** | Research running. Modules must be agreed before any page describes the deliverable |
 | **What the $10,000 includes besides training** | The deliverable list has to be real before it is published |
 | **The Ascension funnel** | Does not exist and is not in the repo. To be built in its own batch now the offers are settled |

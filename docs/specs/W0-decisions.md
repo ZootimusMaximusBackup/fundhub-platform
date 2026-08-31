@@ -132,7 +132,7 @@ partner-side flow, not as the Ascension funnel itself.
 
 | Item | Note |
 |---|---|
-| ~~Pricing restructure~~ | **CLOSED — specced in `W6-pricing-menu.md`.** The three add-on prices themselves remain owner-settable |
+| ~~Pricing restructure~~ | **CLOSED and SHIPPED.** Menu in `W6-pricing-menu.md`; prices set at $297/mo, $2,497/mo, $99 per booked call |
 | **Exact refund window** | "Short" is recorded as 3 days pending confirmation |
 | **The $10,000 training curriculum** | Research in progress; modules to be agreed before the page describes the deliverable |
 | **What the $10,000 includes besides training** | The deliverable list must be real before it is published |
