@@ -74,36 +74,53 @@
   .clock{font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--dark-text);}
   .org-pill{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.6px;color:var(--dark-text-dim);border:1px solid var(--dark-line);padding:3px 8px;border-radius:4px;}
 
-  .stat-head{background:var(--surface);border-bottom:1px solid var(--line);padding:9px 18px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:16px;}
-  .who{display:flex;align-items:baseline;gap:9px;}
-  .who-name{font-size:var(--fs-title);font-weight:800;}
-  .who-role{font-size:var(--fs-caption);color:var(--text-dim);}
-  .stat-tiles{display:flex;gap:10px;}
-  /* Tiles are min-width:88px in a non-wrapping flex row, so four of them
-     plus gaps run past a 390px phone and drag the page sideways. Wrap
-     instead of stacking — they stay scannable two-up. Mobile only. */
-  @media (max-width:640px){ .stat-tiles{flex-wrap:wrap;} }
+  .stat-head{background:var(--surface);border-bottom:1px solid var(--line);padding:16px 18px;flex-shrink:0;display:flex;align-items:flex-start;justify-content:space-between;gap:24px;}
+  /* THE ANSWER, THEN THE ACTION — UI-STANDARDS §12 rules 1 and 2.
+     One number top-left at metric size, its comparison directly under it, and
+     under that the single next thing to do, said once at one weight. The
+     operator's own name is NOT in this stack: it is already in the status bar
+     and in the role chip shell.js injects, and §12 rule 1 says top-left is
+     never the reader's own name. It sits on the right, at caption size, where
+     it identifies the session without competing with the number. */
+  .deskhead{display:flex;flex-direction:column;gap:8px;min-width:0;}
+  .dh-value{font-family:'JetBrains Mono',monospace;font-weight:800;line-height:1.05;}
+  .dh-next{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-height:40px;}
+  .dh-next .qbtn{max-width:min(560px,60vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .dh-quiet{color:var(--text-dim);}
+  .who{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right;flex:0 0 auto;}
+  .who-name{font-weight:700;}
+  .who-role{color:var(--text-dim);}
+  /* THE FIVE TILES ARE A FILTER STRIP, NOT THE HEADLINE.
+     fundhub-brand.css:228-233 forces .stat-tiles to repeat(4,1fr) app-wide, so
+     the fifth filter ("Trial ending") wrapped to a second row and grew the
+     header band to 131px. These carry their own class instead: same tiles, same
+     ids, same data-filter keys, same aria-pressed — read by
+     src/http/repair-desk-screen.test.mjs and e2e/specialist-desk.spec.mjs — but
+     laid out as controls under the action, which is where §12 rule 3 puts
+     reference and filters. */
+  .desk-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+  .desk-filters[hidden]{display:none;}
   .stat-tile{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:5px 12px;text-align:center;min-width:88px;}
   .desk-toggle{display:flex;gap:8px;padding:8px 18px;background:var(--surface);border-bottom:1px solid var(--line);flex-shrink:0;}
-  .desk-tab{font:600 var(--fs-body)/1 'Inter',sans-serif;min-height:40px;padding:8px 16px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--text);cursor:pointer;}
+  .desk-tab{font-weight:600;line-height:1;font-family:'Inter',sans-serif;min-height:40px;padding:8px 16px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--text);cursor:pointer;}
   .desk-tab[aria-selected="true"]{background:var(--ink);color:var(--dark-text);border-color:var(--ink);}
   .desk-tab:focus-visible{outline:2px solid var(--blue-line);outline-offset:2px;}
   .sk{height:14px;background:var(--paper-dim);border-radius:4px;max-width:160px;}
   .repair-empty{padding:28px 16px;text-align:center;color:var(--text-dim);font-size:var(--fs-body);}
   .repair-empty a{color:var(--text);font-weight:700;}
-  .repair-empty .big{font:700 var(--fs-title)/1.2 'Inter',sans-serif;color:var(--text);margin-bottom:6px;}
+  .repair-empty .big{font-weight:700;line-height:1.2;font-family:'Inter',sans-serif;color:var(--text);margin-bottom:6px;}
   #repairNote{font-size:var(--fs-body);color:var(--text-dim);margin:0 0 10px;}
   .repair-err{padding:16px;border:1px solid var(--red-line);background:var(--red-bg);color:var(--red);border-radius:8px;font-size:var(--fs-body);}
   #pane-repair[hidden],#pane-inquiries[hidden],#repair-exceptions[hidden]{display:none;}
   /* brand.css sets .stat-tiles{display:grid !important}; that beats [hidden]. */
   .stat-tiles[hidden]{display:none!important;}
   .stat-label{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;color:var(--text-dim);margin-bottom:2px;}
-  .stat-value{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:var(--fs-metric);font-variant-numeric:tabular-nums;}
+  .stat-value{font-family:'JetBrains Mono',monospace;font-weight:700;font-variant-numeric:tabular-nums;}
   /* Repair desk tiles as filters · wireframe §8.1 */
   #repair-stats .stat-tile[role="button"]{cursor:pointer;text-align:left;min-width:96px;}
   #repair-stats .stat-tile[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);}
   #repair-stats .stat-tile:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
-  .repair-chip{display:inline-block;border-radius:999px;padding:4px 11px;font:700 12px 'Inter',sans-serif;color:var(--ink);white-space:nowrap;border:1px solid transparent;}
+  .repair-chip{display:inline-block;border-radius:999px;padding:4px 11px;font-weight:700;font-family:'Inter',sans-serif;color:var(--ink);white-space:nowrap;border:1px solid transparent;}
   .repair-chip.needs_agreement{background:var(--alert);}
   .repair-chip.review_answer{background:var(--accent);}
   .repair-chip.send_letters{background:var(--info);}
@@ -112,9 +129,9 @@
   .repair-chip.round_done{background:var(--warn);}
   .repair-chip.trial_done{background:var(--spectrum);}
   .repair-chip.none{background:none;color:var(--gray);font-weight:500;}
-  .repair-wdot{display:inline-flex;align-items:center;gap:5px;margin-left:6px;font:600 11px 'JetBrains Mono',monospace;color:var(--red);white-space:nowrap;}
+  .repair-wdot{display:inline-flex;align-items:center;gap:5px;margin-left:6px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--red);white-space:nowrap;}
   .repair-wdot::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--alert);border:1px solid var(--red);}
-  .repair-due{font:600 .875rem 'JetBrains Mono',monospace;white-space:nowrap;}
+  .repair-due{font-weight:600;font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;white-space:nowrap;}
   .repair-due.late{color:var(--red);}
   .repair-due.dim{color:var(--gray);font-weight:500;}
   tr.repair-row.filtered-out{display:none;}
@@ -123,12 +140,12 @@
   .repair-xgrid{display:grid;grid-template-columns:1.1fr 1.1fr .9fr;gap:14px;}
   @media (max-width:760px){.repair-xgrid{grid-template-columns:1fr;}}
   .repair-xcard{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;}
-  .repair-xcard h3{margin:0 0 8px;font:700 12px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--gray);}
+  .repair-xcard h3{margin:0 0 8px;font-weight:700;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--gray);}
   .repair-xcard ul{margin:0;padding:0;list-style:none;}
-  .repair-xcard li{padding:7px 0;border-bottom:1px dashed var(--line);font-size:.9rem;}
+  .repair-xcard li{padding:7px 0;border-bottom:1px dashed var(--line);}
   .repair-xcard li:last-child{border-bottom:0;}
   .repair-xcard li[role="button"]{cursor:pointer;}
-  .repair-tag{font:600 10px 'JetBrains Mono',monospace;border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--gray);margin-left:6px;white-space:nowrap;}
+  .repair-tag{font-weight:600;font-family:'JetBrains Mono',monospace;border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--gray);margin-left:6px;white-space:nowrap;}
   .repair-tag.del{background:var(--ok);border-color:var(--ok);color:var(--ink);}
   .repair-tag.strong{background:var(--warn);border-color:var(--warn);color:var(--ink);}
   .repair-tag.mod{background:var(--soft);}
@@ -139,25 +156,34 @@
   .repair-ldrawer .pane{position:absolute;top:0;right:0;bottom:0;width:min(560px,94vw);background:#fff;border-left:1px solid var(--line);box-shadow:-8px 0 24px rgba(10,10,10,.12);display:flex;flex-direction:column;}
   .repair-ldrawer .pane::before{content:"";display:block;height:3px;background:var(--spectrum);}
   .repair-lhead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 16px 12px;border-bottom:1px solid var(--line);}
-  .repair-lhead .t{font:700 var(--fs-body) 'Inter',sans-serif;}
-  .repair-lhead .m{font:500 11px 'JetBrains Mono',monospace;color:var(--gray);margin-top:3px;}
+  .repair-lhead .t{font-weight:700;font-family:'Inter',sans-serif;}
+  .repair-lhead .m{font-weight:500;font-family:'JetBrains Mono',monospace;color:var(--gray);margin-top:3px;}
   .repair-lbody{flex:1;overflow:auto;padding:16px;background:var(--paper);}
-  .repair-letter{background:#fff;border:1px solid var(--line);border-radius:10px;padding:22px 24px;font:400 .9rem/1.6 'Inter',sans-serif;white-space:pre-wrap;max-width:52ch;}
-  .repair-letter .sig{font:italic 400 1.45rem 'Snell Roundhand','Segoe Script','Brush Script MT',cursive;display:inline-block;margin:2px 0 3px;}
-  .repair-letter .sigmeta{font:500 11px 'JetBrains Mono',monospace;color:var(--gray);}
+  .repair-letter{background:#fff;border:1px solid var(--line);border-radius:10px;padding:22px 24px;font-weight:400;line-height:1.6;font-family:'Inter',sans-serif;white-space:pre-wrap;max-width:52ch;}
+  .repair-letter .sig{font-style:italic;font-weight:400;font-family:'Snell Roundhand','Segoe Script','Brush Script MT',cursive;display:inline-block;margin:2px 0 3px;}
+  .repair-letter .sigmeta{font-weight:500;font-family:'JetBrains Mono',monospace;color:var(--gray);}
   .repair-lfoot{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);align-items:center;}
   .repair-cmodal{position:fixed;inset:0;display:none;z-index:60;align-items:center;justify-content:center;}
   .repair-cmodal.open{display:flex;}
   .repair-cmodal .cscrim{position:absolute;inset:0;background:rgba(10,10,10,.35);}
   .repair-ccard{position:relative;background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;width:min(420px,92vw);box-shadow:0 8px 32px rgba(10,10,10,.18);}
-  .repair-ccard h3{margin:0 0 8px;font:700 var(--fs-body) 'Inter',sans-serif;}
-  .repair-ccard p{margin:0 0 12px;color:var(--gray);font-size:.9rem;}
-  .repair-ccard input{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:600 13px 'JetBrains Mono',monospace;}
+  .repair-ccard h3{margin:0 0 8px;font-weight:700;font-family:'Inter',sans-serif;}
+  .repair-ccard p{margin:0 0 12px;color:var(--gray);}
+  .repair-ccard input{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-weight:600;font-family:'JetBrains Mono',monospace;}
   .repair-cact{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;}
   #repairStateBlock{display:none;padding:34px 18px 40px;text-align:center;color:var(--gray);}
   #pane-repair.state-empty #repairStateBlock,#pane-repair.state-error #repairStateBlock{display:block;}
   #pane-repair.state-empty #repairTableWrap,#pane-repair.state-error #repairTableWrap{display:none;}
   #pane-repair.state-loading #repairTableWrap{opacity:.55;}
+
+  /* A TABLE KEEPS ITS OWN SCROLL BOX — UI-STANDARDS §1 and §11.
+     Measured at 1440x900 before this: the repair table's right edge sat at
+     1478px, #repairTableWrap was overflow-x:visible, and body{overflow:hidden}
+     swallowed the rest. No scrollbar, no clue anything was missing — and the
+     column being cut off was Due, the countdown the whole triage rhythm runs
+     on. The box scrolls; the page never does. */
+  .fh-scroll-x{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .fh-scroll-x > table.queue{min-width:720px;}
 
   main{flex:1;overflow-y:auto;padding:22px 24px 20px;background:var(--paper);}
   main::-webkit-scrollbar{width:8px;}
@@ -180,15 +206,28 @@
   table.queue td{padding:8px 12px;font-size:var(--fs-body);border-bottom:1px solid var(--paper-dim);vertical-align:middle;}
   table.queue tr:last-child td{border-bottom:none;}
   table.queue tr.stuck td{background:rgba(242,166,155,.09);}
-  .status-pill{display:inline-block;font-size:var(--fs-caption);font-weight:700;padding:2px 8px;border-radius:10px;}
+  .status-pill{display:inline-block;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap;}
   .status-pill.confirmed{background:var(--green-bg);color:var(--green);}
   .status-pill.progress{background:var(--blue-bg);color:var(--blue);}
   .status-pill.new{background:var(--paper-dim);color:var(--text-dim);}
   .status-pill.noanswer{background:var(--amber-bg);color:var(--amber);}
-  .stuck-age{font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--amber);font-size:var(--fs-body);}
+  .stuck-age{font-family:'JetBrains Mono',monospace;font-weight:800;color:var(--amber);}
+  /* HOW LONG THIS ONE HAS BEEN WAITING, from inquiry_removal_cases.requested_at.
+     Age carries a WORD and a POSITION as well as a colour, because
+     shell.js paintBrand() repaints --alert/--warn from the tenant's own ramp and
+     a single-hue brand paints every state the same (§12.6). "6 days" is the
+     word; the column is the position; "· oldest" marks the top of the queue. */
+  .queue-age{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--text-dim);}
+  .queue-age.old{color:var(--amber);font-weight:800;}
+  .queue-age .oldest{font-weight:800;color:var(--amber);}
 
   .letters-list{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
   .letter-row{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid var(--paper-dim);font-size:var(--fs-body);}
+  /* `display:flex` above beats the browser's own [hidden]{display:none}, exactly
+     as .stat-tiles does on line 116. Without this, `empty.hidden = true` sets
+     the attribute and changes nothing — so "No letters issued yet" sat above
+     the letters it was denying. Class-level display needs a class-level undo. */
+  .letter-row[hidden]{display:none;}
   .letter-row:last-child{border-bottom:none;}
   .letter-row .lt-name{font-weight:700;}
   .letter-row .lt-detail{color:var(--text-dim);font-size:var(--fs-caption);}
@@ -233,7 +272,7 @@
   .call-state.live,.call-state.transferred{color:var(--green,#2f7d4a);}
   .hold-time{font-family:'JetBrains Mono',monospace;font-size:var(--fs-body);font-weight:800;color:var(--amber);}
   .case-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
-  .case-actions button{font:700 var(--fs-caption)/1 'Inter',sans-serif;letter-spacing:.04em;text-transform:uppercase;
+  .case-actions button{font-weight:700;line-height:1;font-family:'Inter',sans-serif;letter-spacing:.04em;text-transform:uppercase;
     border:1px solid var(--line);background:var(--surface);padding:8px 12px;border-radius:6px;cursor:pointer;}
   .case-actions button.primary{background:var(--text);color:var(--surface);}
   .case-detail{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:12px;background:var(--surface);}
@@ -297,6 +336,30 @@
   .worklog .wl-pend{color:var(--text-faint);}
   .status-pending{font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--text-faint);}
   /* ---------- shared chrome: the 23-item sidebar, identical on every internal surface ---------- */
+  /* ═══ THIS SCREEN'S ONE FONT-SIZE ESCAPE HATCH — UI-STANDARDS §12.7 ═══
+     fundhub-brand.css:184-186 sets font-size:inherit !important on every
+     element inside .app, so a plain px or rem size written anywhere above is
+     thrown away by the browser. Every class named below is a caption — a pill,
+     a tag, a timestamp, a piece of row metadata — and every one of them is a
+     class THIS SCREEN owns and defines. Nothing shared is listed: .chip,
+     .eyebrow, .av, .mono, .statusbar, .clock and .live-pill belong to the brand
+     file and to shell.js, and a rule here at (0,2,0) would beat their (0,1,0)
+     rules and silently resize them on every screen in the app.
+
+     ONE RULE. Never a second — that is how a screen ends up with six sizes and
+     no hierarchy (§3). Anything else that needs to be small takes a whitelisted
+     class instead: caption, sub, mono, stat-label, cmp, hint. */
+  .app :is(.who-name, .who-role,
+           .section-title, .filter-note,
+           .bureau-chip .bn, .bureau-chip .bs,
+           .status-pill, .queue-age, .call-state,
+           .lt-detail, .lt-time, .worklog, .pii-note, .status-pending,
+           .repair-chip, .repair-wdot, .repair-due, .repair-tag,
+           .repair-xcard h3, .repair-lhead .m, .repair-letter .sigmeta,
+           .repair-ccard p, .repair-ccard input){
+    font-size:var(--fs-caption) !important;
+  }
+
   .app{display:flex;min-height:100vh}
   
   
@@ -406,22 +469,18 @@
   </div>
 
   <div class="stat-head">
+    <div class="deskhead">
+      <div class="stat-label" id="deskLabel">Ready to send</div>
+      <div class="vl dh-value" id="deskValue">—</div>
+      <div class="cmp" id="deskSub">reading the queue…</div>
+      <div class="dh-next">
+        <button type="button" class="qbtn primary" id="deskNext" hidden></button>
+        <span class="cmp dh-quiet" id="deskNextNone">reading the queue…</span>
+      </div>
+    </div>
     <div class="who">
       <div class="who-name"><span class="av human" id="whoAv">—</span> <span id="whoName">—</span></div>
       <div class="who-role" id="whoRole">—</div>
-    </div>
-    <div class="stat-tiles" id="inq-stats">
-      <div class="stat-tile"><div class="stat-label">Need me</div><div class="stat-value" data-stat="left">—</div></div>
-      <div class="stat-tile"><div class="stat-label">Worked</div><div class="stat-value" data-stat="worked">—</div></div>
-      <div class="stat-tile"><div class="stat-label">Calls</div><div class="stat-value" data-stat="calls">—</div></div>
-      <div class="stat-tile"><div class="stat-label">Confirmed</div><div class="stat-value" data-stat="confirmed">—</div></div>
-    </div>
-    <div class="stat-tiles" id="repair-stats" hidden>
-      <div class="stat-tile" role="button" tabindex="0" aria-pressed="false" data-filter="need"><div class="stat-label">Need me</div><div class="stat-value" id="repairNeedMe">—</div></div>
-      <div class="stat-tile" role="button" tabindex="0" aria-pressed="false" data-filter="ready"><div class="stat-label">Ready to send</div><div class="stat-value" id="repairReady">—</div></div>
-      <div class="stat-tile" role="button" tabindex="0" aria-pressed="false" data-filter="wait"><div class="stat-label">Waiting on bureau</div><div class="stat-value" id="repairWaiting">—</div></div>
-      <div class="stat-tile" role="button" tabindex="0" aria-pressed="false" data-filter="stuck"><div class="stat-label">Stuck</div><div class="stat-value" id="repairStalled">—</div></div>
-      <div class="stat-tile" role="button" tabindex="0" aria-pressed="false" data-filter="trial"><div class="stat-label">Trial ending</div><div class="stat-value" id="repairTrial">—</div></div>
     </div>
   </div>
 
@@ -429,20 +488,45 @@
 
     <div id="pane-inquiries" role="tabpanel" aria-labelledby="tab-inquiries">
 
+    <div class="section fh-maxw" id="caseQueueSection">
+      <div class="section-title">Inquiry removal cases — oldest first</div>
+      <p class="cmp" style="color:var(--text-dim);margin:0 0 10px">
+        Click a row to upload an FTC or police report, review the letter, and send.
+        Nothing mails until you press send. The system never files an FTC report for you.
+      </p>
+      <div class="fh-scroll-x">
+        <table class="queue" id="caseQueueTable">
+          <thead>
+            <tr>
+              <th>Client</th><th>Waiting</th><th>Bureau</th><th>Items</th><th>Status</th>
+              <th>Docs</th><th>Delivery</th><th>Call</th><th>Round</th>
+            </tr>
+          </thead>
+          <tbody id="caseQueueBody">
+            <tr><td colspan="9" style="color:var(--text-dim)">Loading cases…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="dh-next">
+        <button type="button" class="qbtn" id="caseMoreBtn" hidden></button>
+        <span class="cmp" id="caseMore" role="status" aria-live="polite"></span>
+      </div>
+    </div>
+
     <div class="section fh-maxw">
-      <div class="section-title">Queue by Bureau</div>
+      <div class="section-title">Work queue — one row per disputed line</div>
       <div class="bureau-row" id="bureau-row" hidden>
-        <button type="button" class="bureau-chip" data-bureau="Equifax" aria-pressed="false">
+        <button type="button" class="bureau-chip" data-bureau="EQ" aria-pressed="false">
           <div class="bn">Equifax</div>
           <div class="bc zero">0</div>
           <div class="bs">none in queue</div>
         </button>
-        <button type="button" class="bureau-chip" data-bureau="TransUnion" aria-pressed="false">
+        <button type="button" class="bureau-chip" data-bureau="TU" aria-pressed="false">
           <div class="bn">TransUnion</div>
           <div class="bc zero">0</div>
           <div class="bs">none in queue</div>
         </button>
-        <button type="button" class="bureau-chip" data-bureau="Experian" aria-pressed="false">
+        <button type="button" class="bureau-chip" data-bureau="EX" aria-pressed="false">
           <div class="bn">Experian</div>
           <div class="bc zero">0</div>
           <div class="bs">none in queue</div>
@@ -450,39 +534,24 @@
       </div>
       <div id="no-open-inquiries" hidden>No open inquiries</div>
       <div class="filter-note" id="filter-note" role="status" aria-live="polite"></div>
-    </div>
-
-    <div class="section fh-maxw" id="caseQueueSection">
-      <div class="section-title">Inquiry removal cases</div>
-      <p style="font-size:var(--fs-body);color:var(--text-dim);margin:0 0 10px">
-        Click a row to upload an FTC or police report, review the letter, and send.
-        Nothing mails until you press send. The system never files an FTC report for you.
-      </p>
-      <table class="queue" id="caseQueueTable">
-        <thead>
-          <tr>
-            <th>Client</th><th>Bureau</th><th>Items</th><th>Status</th>
-            <th>Docs</th><th>Delivery</th><th>Call</th><th>Round</th>
-          </tr>
-        </thead>
-        <tbody id="caseQueueBody">
-          <tr><td colspan="8" style="color:var(--text-dim)">Loading cases…</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="section fh-maxw">
-      <div class="section-title">Work Queue</div>
-      <table class="queue" id="workQueueTable">
-        <tr><th>Client</th><th>Bureau</th><th>Actual</th><th>Expected</th><th>Call State</th><th>Hold</th><th>Attempts</th><th>Status</th></tr>
-        <tr id="queue-status-row"><td colspan="7" style="text-align:center;padding:28px 16px;color:var(--text-dim);">Loading inquiry queue…</td></tr>
-      </table>
+      <div class="desk-filters" id="inq-stats">
+        <div class="stat-tile"><div class="stat-label">Still open</div><div class="stat-value" data-stat="left">—</div></div>
+        <div class="stat-tile"><div class="stat-label">Worked</div><div class="stat-value" data-stat="worked">—</div></div>
+        <div class="stat-tile"><div class="stat-label">Calls</div><div class="stat-value" data-stat="calls">—</div></div>
+        <div class="stat-tile"><div class="stat-label">Confirmed</div><div class="stat-value" data-stat="confirmed">—</div></div>
+      </div>
+      <div class="fh-scroll-x">
+        <table class="queue" id="workQueueTable">
+          <tr><th>Client</th><th>Bureau</th><th>Actual</th><th>Expected</th><th>Call State</th><th>Hold</th><th>Attempts</th><th>Status</th></tr>
+          <tr id="queue-status-row"><td colspan="7" style="text-align:center;padding:28px 16px;color:var(--text-dim);">Loading inquiry queue…</td></tr>
+        </table>
+      </div>
     </div>
 
     <div class="section fh-maxw">
       <div class="section-title">Recent Letters Issued</div>
-      <div class="letters-list">
-        <div class="letter-row">
+      <div class="letters-list" id="lettersList">
+        <div class="letter-row" id="lettersEmpty">
           <div><div class="lt-name">No letters issued yet</div><div class="lt-detail">This list fills when a letter actually goes out.</div></div>
         </div>
         <a class="letter-more" href="documents.html">All letters<span class="lm-ar">↗</span></a>
@@ -499,9 +568,16 @@
       <div class="section fh-maxw">
         <div class="section-title">Repair desk</div>
         <p id="repairNote">One look tells you what needs doing. Press a tile to filter. Nothing mails until you press Send.</p>
+        <div class="desk-filters" id="repair-stats">
+          <div class="stat-tile" role="button" tabindex="0" aria-pressed="false" data-filter="need"><div class="stat-label">Need me</div><div class="stat-value" id="repairNeedMe">—</div></div>
+          <div class="stat-tile" role="button" tabindex="0" aria-pressed="false" data-filter="ready"><div class="stat-label">Ready to send</div><div class="stat-value" id="repairReady">—</div></div>
+          <div class="stat-tile" role="button" tabindex="0" aria-pressed="false" data-filter="wait"><div class="stat-label">Waiting on bureau</div><div class="stat-value" id="repairWaiting">—</div></div>
+          <div class="stat-tile" role="button" tabindex="0" aria-pressed="false" data-filter="stuck"><div class="stat-label">Stuck</div><div class="stat-value" id="repairStalled">—</div></div>
+          <div class="stat-tile" role="button" tabindex="0" aria-pressed="false" data-filter="trial"><div class="stat-label">Trial ending</div><div class="stat-value" id="repairTrial">—</div></div>
+        </div>
         <div id="repairErr" class="repair-err" hidden></div>
         <div id="repairStateBlock" class="repair-empty" hidden></div>
-        <div id="repairTableWrap">
+        <div id="repairTableWrap" class="fh-scroll-x">
           <table class="queue" id="repairTable">
             <thead>
               <tr>
@@ -1122,9 +1198,260 @@ function buildInquiryGenerateRequest(opts) {
 
 const BUREAU_NAMES = Object.freeze({ EX: "Experian", EQ: "Equifax", TU: "TransUnion" });
 
+/* ONE BUREAU, WRITTEN TWO WAYS, COUNTED AS TWO BUREAUS.
+
+   inquiry_removal_cases.selected_bureaus_raw is called "raw" because it is: it
+   carries whatever the source handed us. src/inquiry-ops/send.mjs copies it
+   straight onto inquiry_log.bureau, and inquiry_log.bureau is plain `text` with
+   no CHECK (db/schema/001_init.sql:173). Today's writers put the two-letter code
+   there — EX / EQ / TU, per the ai_bureau_config seed in migration 155 — while
+   rows that arrived from the old Airtable runtime hold the full name.
+
+   The screen's three bureau chips compared against the full name only. Against
+   code rows every chip read 0 and "none in queue" while the queue was full, and
+   pressing one emptied the table under the words "all done for today". Against a
+   MIX the counts would have been quietly short, which is worse than obviously
+   zero.
+
+   So nothing on this screen compares one bureau string to another. Both sides go
+   through bureauKey first, and an unrecognised value keeps its own uppercase
+   form rather than being folded into one of the three — an unknown bureau is its
+   own thing, not a silent member of somebody else's count. */
+const BUREAU_KEYS = Object.freeze({
+  EX: "EX", EXPERIAN: "EX",
+  EQ: "EQ", EQUIFAX: "EQ",
+  TU: "TU", TRANSUNION: "TU", "TRANS UNION": "TU"
+});
+
+function bureauKey(raw) {
+  const s = String(raw == null ? "" : raw).trim().toUpperCase();
+  if (!s) return "";
+  return BUREAU_KEYS[s] || s;
+}
+
 function bureauLabel(code) {
-  const k = String(code || "").toUpperCase();
+  const k = bureauKey(code);
   return BUREAU_NAMES[k] || k || "—";
+}
+
+/** countByBureau — the chip counts, keyed the one way the chips are keyed. */
+function countByBureau(rows, pick) {
+  const out = {};
+  const list = Array.isArray(rows) ? rows : [];
+  for (const row of list) {
+    const key = bureauKey(typeof pick === "function" ? pick(row) : (row && row.bureau));
+    if (!key) continue;
+    out[key] = (out[key] || 0) + 1;
+  }
+  return out;
+}
+
+/* ── THE QUEUE YOU EMPTY ─────────────────────────────────────────────────────
+   Inquiry removal is an errand with an end: check the papers, read the draft,
+   press Send. The only cases that need a PERSON are the ones nothing has been
+   sent on yet. Everything else is in the mail, or the sweeper is phoning the
+   bureau on its own clock, and neither of those is hers to move. A headline that
+   counts them all is a number that does not go down when she works. */
+
+function caseIsReadyToSend(row) {
+  return caseUiStatus(row).label === "Ready for Review";
+}
+
+/* THE CASES THE HEADLINE DOES NOT COUNT, COUNTED SEPARATELY.
+   "Ready to send" is the right number and it is honestly derived, but the
+   sentence under it used to be "nothing is waiting on you" whenever that number
+   was zero — including when every open case was Blocked or Escalated.
+
+   Blocked is written by src/inquiry-ops/send.mjs when the identity packet is
+   short: the send was REFUSED, nothing left the building, and the fix is a
+   person chasing documents. It is not ready and it is not sent, so a screen that
+   answers zero and says "go home" is the same untruth this desk was rebuilt to
+   remove. Blocked is counted however far the case got, because caseUiStatus
+   reads that status before it looks at any timestamp.
+
+   WHAT THIS DOES NOT COUNT, deliberately: Escalated, and the `st || "Unknown"`
+   fallback for a status nobody has taught this screen, are only counted while
+   NOTHING HAS GONE OUT YET. caseUiStatus checks call_fired_at, then call_due_at
+   / first_delivery_at / letter_provider_id / portal_confirmation, before it ever
+   falls through to the raw status — so an Escalated case whose bureau call
+   already fired reads "Awaiting Call", and one whose letter already landed reads
+   "Sent". Both leave this count at zero. That is the intended answer: an
+   Escalated case that HAS been sent is out of her hands, and
+   inquiry-remover-view.test.mjs pins it. Do not read this as "Escalated is
+   caught" — measured, an Escalated row with call_fired_at set returns 0 here.
+
+   These four labels are the settled ones — counted by the headline, or out of
+   her hands. */
+const SETTLED_CASE_LABELS = new Set(["Ready for Review", "Sent", "Awaiting Call", "Complete"]);
+
+function casesNeedingAPerson(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  return list.filter((row) => !SETTLED_CASE_LABELS.has(caseUiStatus(row).label));
+}
+
+/** Whole days since a timestamp, or null when there is no usable timestamp. */
+function waitingDays(since, now) {
+  if (!since) return null;
+  const then = new Date(since).getTime();
+  if (!Number.isFinite(then)) return null;
+  const asOf = now instanceof Date ? now : (now ? new Date(now) : new Date());
+  const n = asOf.getTime();
+  if (!Number.isFinite(n)) return null;
+  const days = Math.floor((n - then) / 86400000);
+  return days < 0 ? 0 : days;
+}
+
+/** Words for waitingDays(). null renders as an em-dash — unknown, never zero. */
+function waitingLabel(days) {
+  if (days == null) return "—";
+  if (days <= 0) return "today";
+  return days + (days === 1 ? " day" : " days");
+}
+
+/* Oldest first, and the cases already out of her hands sink.
+
+   api/read/inquiries.mjs orders by updated_at DESC and src/inquiry-ops/cases.mjs
+   by requested_at DESC, so the row she just worked jumped to the top and the one
+   nobody has touched sank out of sight — the exact opposite of a worklist. A
+   case with no date sorts to the bottom of its own group rather than being given
+   a date it does not have. */
+function sortCasesOldestFirst(rows) {
+  const list = Array.isArray(rows) ? rows.slice() : [];
+  const age = (c) => {
+    const v = c && (c.requested_at || c.created_at);
+    const t = v ? new Date(v).getTime() : NaN;
+    return Number.isFinite(t) ? t : Infinity;
+  };
+  const rank = (c) => (caseIsReadyToSend(c) ? 0 : 1);
+  return list.sort((a, b) => (rank(a) - rank(b)) || (age(a) - age(b)));
+}
+
+/** The next action, said once: the oldest case that is waiting on a person. */
+function nextInquiryAction(rows, opts) {
+  const o = opts || {};
+  const list = Array.isArray(rows) ? rows : [];
+  let best = null;
+  let bestAge = Infinity;
+  for (const row of list) {
+    if (!caseIsReadyToSend(row)) continue;
+    const v = row && row.requested_at;
+    const t = v ? new Date(v).getTime() : NaN;
+    const age = Number.isFinite(t) ? t : Infinity;
+    if (best === null || age < bestAge) { best = row; bestAge = age; }
+  }
+  if (!best) return null;
+  const who = blankToNull(best.client_name) || blankToNull(best.client_email)
+    || blankToNull(best.case_id) || "this case";
+  const parts = [who];
+  const bureau = bureauLabel(best.selected_bureaus_raw);
+  if (bureau && bureau !== "—") parts.push(bureau);
+  const days = waitingDays(best.requested_at, o.now);
+  if (days != null) parts.push("waiting " + waitingLabel(days));
+  return { caseId: best.id || null, text: "Send the oldest — " + parts.join(", ") };
+}
+
+/* THE DOC PACKET, WITHOUT INVENTING AN ANSWER.
+
+   The screen used to print "complete" for every case that was not already
+   Blocked, and Blocked is only ever set at send time (src/inquiry-ops/send.mjs
+   :166-170). So a packet nobody had looked at read "complete" on the one screen
+   whose whole job is deciding whether to press Send.
+
+   There are three states here, not two, and the third is the honest word for
+   "nobody has checked yet". */
+function docsPacketLabel(row) {
+  const r = row || {};
+  if (r.docs_complete === true) return "complete";
+  if (r.docs_complete === false) return "chasing";
+  if (String(r.case_status || "") === "Blocked") return "chasing";
+  return "not checked";
+}
+
+const DOC_WORDS = Object.freeze({
+  id_document: "photo ID",
+  proof_of_address: "proof of address",
+  authorization: "signed authorization",
+  ssn_card: "Social Security card"
+});
+
+/** Names what is missing, in plain words. "" when nothing is known to be. */
+function docsMissingWords(missing) {
+  const list = Array.isArray(missing) ? missing.filter(Boolean).map(String) : [];
+  if (!list.length) return "";
+  return list.map((m) => DOC_WORDS[m] || m.replace(/_/g, " ")).join(", ");
+}
+
+/* ── THE ONE NUMBER, TOP LEFT ────────────────────────────────────────────────
+   Both panes fill one slot, and both say where the number came from.
+
+   `total` is the reader's COUNT(*) over the whole caseload. When it is bigger
+   than the page that was actually fetched, the line underneath says so, because
+   a page count standing in for a caseload count is a headline that silently
+   under-reports the day it matters. A missing total is unknown, not zero.
+
+   AND IT SAYS WHAT IT DID NOT COUNT. The number is "ready to send" and Blocked
+   and Escalated cases are not ready to send, so folding them in would be a lie
+   in the other direction. What was wrong was the sentence underneath: with three
+   blocked cases and nothing ready, this said "nothing is waiting on you" — a
+   zero standing in for work the screen had decided not to count. It names them
+   now, in both branches. */
+function inquiryHeadline(rows, opts) {
+  const o = opts || {};
+  const list = Array.isArray(rows) ? rows : [];
+  const ready = list.filter(caseIsReadyToSend);
+  const waiting = casesNeedingAPerson(list).length;
+  const waitingWords = waiting === 1
+    ? "1 case needs a person before it can be sent"
+    : waiting + " cases need a person before they can be sent";
+  const total = Number(o.total);
+  const capped = Number.isFinite(total) && total > list.length;
+  let sub;
+  if (!ready.length) {
+    if (waiting) sub = waitingWords;
+    else sub = list.length ? "nothing is waiting on you" : "no active cases";
+  } else {
+    let oldest = null;
+    for (const row of ready) {
+      const d = waitingDays(row.requested_at, o.now);
+      if (d != null && (oldest === null || d > oldest)) oldest = d;
+    }
+    sub = oldest === null
+      ? "oldest waiting — no request date on file"
+      : "oldest waiting " + waitingLabel(oldest);
+    if (waiting) sub += " · " + waitingWords;
+  }
+  if (capped) sub += " · counted over the first " + list.length + " of " + total;
+  return { value: String(ready.length), label: "Ready to send", sub: sub };
+}
+
+function repairHeadline(payload) {
+  const p = payload || {};
+  const files = Array.isArray(p.files) ? p.files : [];
+  const total = Number(p.total);
+  const capped = Number.isFinite(total) && total > files.length;
+  const open = Number.isFinite(total) ? total : files.length;
+  return {
+    value: p.need_me == null ? "—" : String(p.need_me),
+    label: "Need me",
+    sub: capped
+      ? "counted over the first " + files.length + " of " + open + " open"
+      : "of " + open + " open"
+  };
+}
+
+/* The repair pane's next action: the first file the rows themselves say needs
+   her. The caller passes in the chip label its own lens derived, so the sentence
+   and the row can never disagree about which file is first. */
+function nextRepairAction(files, needLabelOf) {
+  const list = Array.isArray(files) ? files : [];
+  if (typeof needLabelOf !== "function") return null;
+  for (const f of list) {
+    const need = blankToNull(needLabelOf(f));
+    if (!need) continue;
+    const who = blankToNull(f && f.name) || "this file";
+    return { clientId: (f && f.client_id) || null, text: who + " — " + need };
+  }
+  return null;
 }
 
 function repairStagePill(stageKey) {
@@ -1211,7 +1538,20 @@ const VIEW = {
   caseCallState: caseCallState,
   buildCaseSendRequest: buildCaseSendRequest,
   buildInquiryGenerateRequest: buildInquiryGenerateRequest,
+  bureauKey: bureauKey,
   bureauLabel: bureauLabel,
+  countByBureau: countByBureau,
+  caseIsReadyToSend: caseIsReadyToSend,
+  casesNeedingAPerson: casesNeedingAPerson,
+  waitingDays: waitingDays,
+  waitingLabel: waitingLabel,
+  sortCasesOldestFirst: sortCasesOldestFirst,
+  nextInquiryAction: nextInquiryAction,
+  docsPacketLabel: docsPacketLabel,
+  docsMissingWords: docsMissingWords,
+  inquiryHeadline: inquiryHeadline,
+  repairHeadline: repairHeadline,
+  nextRepairAction: nextRepairAction,
   repairStagePill: repairStagePill,
   buildRepairSendRequest: buildRepairSendRequest,
   buildRepairConfirmParseRequest: buildRepairConfirmParseRequest
@@ -1273,6 +1613,11 @@ window.__fhQueueReady = (function () {
     var el = document.querySelector('[data-stat="' + name + '"]');
     if (el) el.textContent = String(n);
   }
+  /* Both sides of every bureau comparison go through FHInquiryView.bureauKey.
+     The chips used to carry data-bureau="Equifax" and the rows carry whatever
+     inquiry_log.bureau holds, which today is the two-letter code — so the keys
+     could never match, all three chips read 0 while thirty inquiries were open,
+     and pressing one emptied the table under the words "all done for today". */
   function paintBureaus(byBureau) {
     byBureau = byBureau || {};
     var total = Object.keys(byBureau).reduce(function (sum, key) {
@@ -1285,7 +1630,7 @@ window.__fhQueueReady = (function () {
     [].slice.call(document.querySelectorAll('.bureau-chip[data-bureau]')).forEach(function (c) {
       var bc = c.querySelector('.bc');
       var bs = c.querySelector('.bs');
-      var n = byBureau[c.dataset.bureau] || 0;
+      var n = byBureau[VIEW.bureauKey(c.dataset.bureau)] || 0;
       c.classList.remove('blocked');
       if (bc) {
         bc.textContent = String(n);
@@ -1297,7 +1642,8 @@ window.__fhQueueReady = (function () {
   }
 
 
-  var pill = window.FHInquiryView.pill;
+  var VIEW = window.FHInquiryView;
+  var pill = VIEW.pill;
 
   function cell(html) { var td = document.createElement('td'); td.innerHTML = html; return td; }
   function esc(v) {
@@ -1351,12 +1697,19 @@ window.__fhQueueReady = (function () {
       if (p.done || Number(it.call_attempts) > 0) worked++;
       if (p.done) confirmed++; else {
         left++;
-        byBureau[it.bureau] = (byBureau[it.bureau] || 0) + 1;
+        var bkey = VIEW.bureauKey(it.bureau);
+        if (bkey) byBureau[bkey] = (byBureau[bkey] || 0) + 1;
       }
 
       var tr = document.createElement('tr');
       tr.setAttribute('data-row', '');
-      if (it.bureau) tr.dataset.bureau = it.bureau;
+      /* data-bureau holds the NORMALISED key, because it is what the chips,
+         the filter and bumpChip() all compare against. The raw value is kept
+         beside it so the cell can still show what the record actually says. */
+      if (it.bureau) {
+        tr.dataset.bureau = VIEW.bureauKey(it.bureau);
+        tr.dataset.bureauRaw = it.bureau;
+      }
       if (p.done) tr.dataset.done = '1';
       if (it.id) tr.dataset.id = it.id;
       if (it.client_id) tr.dataset.clientId = it.client_id;
@@ -1366,7 +1719,7 @@ window.__fhQueueReady = (function () {
       tr.setAttribute('aria-expanded', 'false');
       tr.appendChild(cell('<span class="rowchev">&#9656;</span>' +
         esc(it.client_name || '(unnamed client)')));
-      tr.appendChild(cell(esc(it.bureau || '—')));
+      tr.appendChild(cell(esc(VIEW.bureauLabel(it.bureau))));
       tr.appendChild(cell(esc(it.inquiry_name || it.inquiry || '—')));
       tr.appendChild(cell(esc(it.expected_name || '—')));
       tr.appendChild(cell('<span class="call-state ' + callStateClass(it.call_state) + '">' +
@@ -1526,7 +1879,7 @@ window.__fhInitQueue = function(){
       c.setAttribute('aria-pressed', String(c.dataset.bureau === filter));
     });
     note.textContent = filter
-      ? 'filtered · ' + filter + ' · ' + shown + ' of ' + rows.length + ' rows'
+      ? 'filtered · ' + V.bureauLabel(filter) + ' · ' + shown + ' of ' + rows.length + ' rows'
       : '';
     if(emptyRow){ emptyRow.remove(); emptyRow = null; }
     if(shown === 0){
@@ -1941,6 +2294,50 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
   window.__fhInitQueue();
 }
 
+/* ── THE HEADLINE SLOT ──────────────────────────────────────────────────────
+   UI-STANDARDS §12 rules 1 and 2: one number top-left, and the next action said
+   once directly under it. There is one slot and two desks, so each pane hands
+   its answer in here and the toggle decides which one is showing. A pane that
+   has not loaded yet, or whose read failed, puts an em-dash in — never a zero.
+   NULL means unknown and unknown must survive all the way to the screen. */
+window.FHDeskHead = (function () {
+  var store = {};
+  var active = "inquiries";
+  function paint() {
+    var s = store[active] || {};
+    var head = s.head || {};
+    var l = document.getElementById("deskLabel");
+    var v = document.getElementById("deskValue");
+    var sub = document.getElementById("deskSub");
+    var btn = document.getElementById("deskNext");
+    var none = document.getElementById("deskNextNone");
+    if (l) l.textContent = head.label || "—";
+    if (v) v.textContent = head.value == null ? "—" : head.value;
+    if (sub) sub.textContent = head.sub || "";
+    if (!btn || !none) return;
+    if (s.action && s.action.text) {
+      btn.textContent = s.action.text;
+      btn.hidden = false;
+      /* onclick, not addEventListener: this button is reused every reload, so
+         assignment REPLACES the previous handler instead of stacking one. */
+      btn.onclick = s.action.onClick || null;
+      none.hidden = true;
+    } else {
+      btn.hidden = true;
+      btn.onclick = null;
+      none.hidden = false;
+      none.textContent = s.quiet || "";
+    }
+  }
+  return {
+    put: function (pane, head, action, quiet) {
+      store[pane] = { head: head, action: action, quiet: quiet };
+      if (pane === active) paint();
+    },
+    show: function (pane) { active = pane; paint(); }
+  };
+})();
+
 /* Inquiry removal case queue — expanding rows on this same page (no new route). */
 (function loadCaseQueue() {
   var EXPANDED = null;
@@ -1977,17 +2374,24 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
       var cls = state === "delivered" ? "chip done" : state === "sent" ? "chip on" : "chip";
       return '<span class="' + cls + '">' + label + (state === "empty" ? "" : " · " + state) + "</span>";
     }
-    var bureau = String(C.selected_bureaus_raw || "").toUpperCase();
+    var bureau = window.FHInquiryView.bureauKey(C.selected_bureaus_raw);
     var html = chip("Letter", mail);
     if (bureau === "EX") html += chip("Portal", portal);
     return html;
   }
+  /* docsLabel used to return "complete" for every case that was not already
+     Blocked — and Blocked is only ever set at send time, so a packet nobody had
+     looked at read "complete" on the screen that decides whether to send. The
+     real answer now rides in on the case row (api/read/inquiry-cases.mjs asks
+     src/inquiry-ops/doc-gate.mjs for it); the third state, "not checked", is
+     what an unread or failed packet honestly says. */
   function docsLabel(C) {
-    return C.case_status === "Blocked" ? "chasing" : "complete";
+    return window.FHInquiryView.docsPacketLabel(C);
   }
   function detailHtml(C) {
-    var bureau = String(C.selected_bureaus_raw || "").toUpperCase();
+    var bureau = window.FHInquiryView.bureauKey(C.selected_bureaus_raw);
     var blocked = C.case_status === "Blocked";
+    var missingWords = window.FHInquiryView.docsMissingWords(C.docs_missing);
     var letter = C.letter_draft_html || "<p><em>No draft letter yet.</em></p>";
     var portalBlock = bureau === "EX"
       ? '<label style="display:block;font-size:var(--fs-body);margin:8px 0 4px">Experian portal reference (required if uploading)</label>' +
@@ -2020,7 +2424,9 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
         '</div>' +
         '<div class="case-col">' +
           '<h4>Identity packet</h4>' +
-          '<p style="font-size:var(--fs-body);color:var(--text-dim)">Docs: ' + esc(docsLabel(C)) + '. SSN stays masked; reveal uses /api/pii with an audit reason.</p>' +
+          '<p style="color:var(--text-dim)">Docs: ' + esc(docsLabel(C)) +
+            (missingWords ? ' — still needed: ' + esc(missingWords) : '') +
+            '. SSN stays masked; reveal uses /api/pii with an audit reason.</p>' +
           '<a class="qbtn" href="documents.html?client_id=' + encodeURIComponent(C.client_id || "") + '">Open documents</a>' +
           '<h4 style="margin-top:14px">Send</h4>' +
           (blocked
@@ -2232,52 +2638,286 @@ if (window.__fhQueueReady && typeof window.__fhQueueReady.then === 'function') {
       });
     });
   }
-  function renderCases(cases) {
-    var body = document.getElementById("caseQueueBody");
+  /* ── A QUEUE YOU EMPTY, WORKED TOP TO BOTTOM ─────────────────────────────
+     Every decision below — which case is next, how old it is, whether the
+     packet is complete, what the headline says — comes from FHInquiryView, the
+     copied-and-tested module above. Nothing here decides anything; it draws.
+
+     THREE THINGS CHANGED HERE ON 2026-08-30:
+
+       1. OLDEST FIRST. The reader ordered by requested_at DESC, so the case she
+          had just worked jumped to the top and the one nobody had touched sank
+          out of sight. A worklist is worked from the top, so the top has to be
+          the oldest thing still waiting.
+       2. TWENTY-FIVE ROWS, THEN A BUTTON (UI-STANDARDS §6). Nothing on this
+          screen paginated anywhere.
+       3. ONE ROW REBUILT PER CLICK, NOT FORTY. renderCases() used to redraw
+          every row AND every hidden detail on every single click — including a
+          textarea holding up to 8,000 characters of letter text per case. At 40
+          cases that is 40 textareas destroyed and 40 rebuilt to open one
+          drawer, and every open field in the row you were typing in lost. */
+  var PAGE_ROWS = 25;
+  var allCases = [];
+  var caseTotal = null;
+  var pageSize = PAGE_ROWS;
+  var nextCaseId = null;
+
+  function caseBody() { return document.getElementById("caseQueueBody"); }
+
+  function rowHtml(C) {
+    var V = window.FHInquiryView;
+    var st = uiStatus(C);
+    var days = V.waitingDays(C.requested_at);
+    /* Age carries a word and a position, never colour alone (§12.6):
+       shell.js paintBrand() repaints --alert and --warn off the tenant's ramp,
+       so a one-hue brand paints every state the same. */
+    return "<td><span class=\"rowchev\">▶</span>" + esc(C.client_name || C.client_email || C.case_id) + "</td>" +
+      "<td class=\"queue-age" + (days != null && days >= 3 ? " old" : "") + "\">" +
+        esc(V.waitingLabel(days)) +
+        (nextCaseId && C.id === nextCaseId ? " <span class=\"oldest\">· oldest</span>" : "") + "</td>" +
+      "<td class=\"mono\">" + esc(V.bureauLabel(C.selected_bureaus_raw)) + "</td>" +
+      "<td>" + esc(C.open_inquiry_count || 0) + "</td>" +
+      "<td><span class=\"status-pill " + esc(st.cls) + "\">" + esc(st.label) + "</span></td>" +
+      "<td>" + esc(docsLabel(C)) + "</td>" +
+      "<td>" + deliveryChips(C) + "</td>" +
+      "<td>" + esc(callState(C)) + "</td>" +
+      "<td class=\"mono\">" + esc(C.funding_round_id ? String(C.funding_round_id).slice(0, 8) : "—") + "</td>";
+  }
+
+  function closeAllDetails() {
+    var body = caseBody();
     if (!body) return;
-    if (!cases || !cases.length) {
-      body.innerHTML = '<tr><td colspan="8" style="color:var(--text-dim)">No active cases.</td></tr>';
+    [].slice.call(body.querySelectorAll("tr.case-detail-row")).forEach(function (r) { r.remove(); });
+    [].slice.call(body.querySelectorAll("tr.case-main")).forEach(function (r) {
+      r.setAttribute("aria-expanded", "false");
+    });
+    EXPANDED = null;
+  }
+
+  function toggleCase(tr, C) {
+    var wasOpen = tr.getAttribute("aria-expanded") === "true";
+    closeAllDetails();
+    if (wasOpen) return;
+    EXPANDED = C.id;
+    tr.setAttribute("aria-expanded", "true");
+    var detail = document.createElement("tr");
+    detail.className = "case-detail-row";
+    detail.innerHTML = '<td colspan="9">' + detailHtml(C) + "</td>";
+    tr.parentNode.insertBefore(detail, tr.nextSibling);
+    bindDetail(detail, C);
+  }
+
+  function openCase(id) {
+    if (!id) return;
+    var idx = -1;
+    for (var i = 0; i < allCases.length; i++) {
+      if (allCases[i] && allCases[i].id === id) { idx = i; break; }
+    }
+    if (idx < 0) return;
+    if (idx >= pageSize) { pageSize = allCases.length; renderCases(); }
+    var body = caseBody();
+    var tr = body && body.querySelector('[data-case-row="' + id + '"]');
+    if (!tr) return;
+    if (tr.getAttribute("aria-expanded") !== "true") toggleCase(tr, allCases[idx]);
+    if (tr.scrollIntoView) tr.scrollIntoView({ block: "center" });
+  }
+
+  function renderCases() {
+    var body = caseBody();
+    var moreBtn = document.getElementById("caseMoreBtn");
+    var moreNote = document.getElementById("caseMore");
+    if (!body) return;
+    if (!allCases.length) {
+      body.innerHTML = '<tr><td colspan="9" style="color:var(--text-dim)">No active cases.</td></tr>';
+      if (moreBtn) moreBtn.hidden = true;
+      if (moreNote) moreNote.textContent = "";
       return;
     }
+    var page = allCases.slice(0, pageSize);
     body.innerHTML = "";
-    cases.forEach(function (C) {
-      var st = uiStatus(C);
+    page.forEach(function (C) {
       var tr = document.createElement("tr");
       tr.className = "case-main";
-      tr.setAttribute("aria-expanded", EXPANDED === C.id ? "true" : "false");
-      tr.innerHTML =
-        "<td><span class=\"rowchev\">▶</span>" + esc(C.client_name || C.client_email || C.case_id) + "</td>" +
-        "<td class=\"mono\">" + esc(C.selected_bureaus_raw || "—") + "</td>" +
-        "<td>" + esc(C.open_inquiry_count || 0) + "</td>" +
-        "<td><span class=\"status-pill " + esc(st.cls) + "\">" + esc(st.label) + "</span></td>" +
-        "<td>" + esc(docsLabel(C)) + "</td>" +
-        "<td>" + deliveryChips(C) + "</td>" +
-        "<td>" + esc(callState(C)) + "</td>" +
-        "<td class=\"mono\">" + esc(C.funding_round_id ? String(C.funding_round_id).slice(0, 8) : "—") + "</td>";
+      tr.setAttribute("aria-expanded", "false");
+      tr.setAttribute("data-case-row", C.id || "");
+      tr.innerHTML = rowHtml(C);
       body.appendChild(tr);
-      var detail = document.createElement("tr");
-      detail.className = "case-detail-row";
-      detail.hidden = EXPANDED !== C.id;
-      detail.innerHTML = '<td colspan="8">' + detailHtml(C) + "</td>";
-      body.appendChild(detail);
-      bindDetail(detail, C);
-      tr.addEventListener("click", function () {
-        EXPANDED = EXPANDED === C.id ? null : C.id;
-        renderCases(cases);
-      });
+      tr.addEventListener("click", function () { toggleCase(tr, C); });
     });
+    var hidden = allCases.length - page.length;
+    if (moreBtn) {
+      moreBtn.hidden = hidden <= 0;
+      moreBtn.textContent = "Show the other " + hidden;
+    }
+    if (moreNote) {
+      /* Two different sentences, because they mean different things: rows this
+         page is holding back, and rows the READ never fetched. */
+      moreNote.textContent = hidden > 0
+        ? "showing the oldest " + page.length + " of " + allCases.length
+        : (caseTotal != null && caseTotal > allCases.length
+            ? "showing the oldest " + allCases.length + " of " + caseTotal + " open cases"
+            : "");
+    }
+    if (EXPANDED) {
+      var open = body.querySelector('[data-case-row="' + EXPANDED + '"]');
+      var keep = EXPANDED;
+      EXPANDED = null;
+      if (open) {
+        for (var i = 0; i < page.length; i++) {
+          if (page[i] && page[i].id === keep) { toggleCase(open, page[i]); break; }
+        }
+      }
+    }
   }
+
+  function paintHead() {
+    var V = window.FHInquiryView;
+    var head = V.inquiryHeadline(allCases, { total: caseTotal });
+    var next = V.nextInquiryAction(allCases);
+    nextCaseId = next ? next.caseId : null;
+    /* THE QUIET LINE, WHEN THERE IS NO BUTTON TO PRESS.
+       nextInquiryAction only ever names a case that is ready to send, so with
+       three Blocked cases and nothing ready it returns null and this line is
+       what she reads. It used to say "every open case is already sent", which
+       was flatly untrue: Blocked means the send was refused and somebody has to
+       chase identity documents. It counts them now instead of sending her home. */
+    var waiting = V.casesNeedingAPerson(allCases).length;
+    var quiet;
+    if (!allCases.length) {
+      quiet = "No cases are open.";
+    } else if (waiting) {
+      quiet = "Nothing is ready to send — " + (waiting === 1
+        ? "1 case needs a person before it can be sent."
+        : waiting + " cases need a person before they can be sent.");
+    } else {
+      quiet = "Nothing is waiting on you — every open case is already sent.";
+    }
+    window.FHDeskHead.put(
+      "inquiries",
+      head,
+      next ? { text: next.text, onClick: function () { openCase(next.caseId); } } : null,
+      quiet
+    );
+  }
+
+  function headFailed(http) {
+    /* An em-dash, not a zero. "We could not look" and "there is nothing" are
+       different sentences and only one of them means she can go home. */
+    window.FHDeskHead.put(
+      "inquiries",
+      { label: "Ready to send", value: "—", sub: "the case queue could not be read" },
+      null,
+      http === 403
+        ? "This queue is for staff on this desk."
+        : "The case queue could not be read. Reload the page to try again."
+    );
+  }
+
   function load() {
-    fetch("/api/read/inquiry-cases?active_only=true", { headers: headers() })
-      .then(function (r) { return r.json(); })
-      .then(function (d) { renderCases((d && d.cases) || []); })
+    fetch("/api/read/inquiry-cases?active_only=true&limit=500", { headers: headers() })
+      .then(function (r) {
+        return r.json().then(
+          function (d) { return { http: r.status, d: d }; },
+          function () { return { http: r.status, d: null }; }
+        );
+      })
+      .then(function (pack) {
+        var d = pack.d;
+        var body = caseBody();
+        if (!d || d.ok !== true) {
+          if (body) {
+            body.innerHTML = '<tr><td colspan="9" style="color:var(--text-dim)">' +
+              (pack.http === 403
+                ? "This queue is for staff on this desk."
+                : "Could not load cases (sign in?).") + "</td></tr>";
+          }
+          headFailed(pack.http);
+          return;
+        }
+        allCases = window.FHInquiryView.sortCasesOldestFirst(d.cases || []);
+        caseTotal = typeof d.total === "number" ? d.total : null;
+        pageSize = PAGE_ROWS;
+        paintHead();
+        renderCases();
+      })
       .catch(function () {
-        var body = document.getElementById("caseQueueBody");
-        if (body) body.innerHTML = '<tr><td colspan="8" style="color:var(--text-dim)">Could not load cases (sign in?).</td></tr>';
+        var body = caseBody();
+        if (body) body.innerHTML = '<tr><td colspan="9" style="color:var(--text-dim)">Could not load cases (sign in?).</td></tr>';
+        headFailed(0);
       });
+  }
+  var moreBtnEl = document.getElementById("caseMoreBtn");
+  if (moreBtnEl) {
+    moreBtnEl.addEventListener("click", function () {
+      pageSize = allCases.length;
+      renderCases();
+    });
   }
   load();
 })();
+
+/* ── RECENT LETTERS ISSUED — the block that never had a reader ─────────────
+   This was static markup. Nothing on the page wrote into .letters-list (the only
+   two writers targeted #repairExceptionsList), so it said "No letters issued
+   yet" after the fortieth letter had gone out — a sentence that was true on day
+   one and never true again.
+
+   The trail existed the whole time: src/inquiry-ops/send.mjs logs a letter or
+   portal attempt through logAttempt() every time a person presses Send. Nothing
+   had ever read them back across the desk. GET /api/inquiries?recent=letters
+   does now — same org binding as the per-row history, and limited to the four
+   roles that work this desk (api/inquiries.mjs). A setter or a closer gets a 403
+   here, which is the point: these rows name clients and say which bureau each
+   one's dispute letter went to.
+
+   FHData.wire, not a hand-rolled fetch: it is the one thing in the app that
+   tells "the read failed" apart from "the read worked and there is nothing", and
+   those two must never both come out as the empty row. */
+function loadRecentLetters() {
+  var list = document.getElementById("lettersList");
+  var empty = document.getElementById("lettersEmpty");
+  if (!list || !empty || !window.FHData || !window.FHData.recentLetters) return;
+  /* "No letters issued yet" is an ANSWER, so it waits for one. It ships visible
+     in the markup, and paint() below only ever turns it back on for a read that
+     came back with zero rows — so leaving it up here would let it stand as the
+     answer while the read is still in flight, and keep standing if the read is
+     refused or fails. Hidden until something is known. */
+  empty.hidden = true;
+  function esc(v) {
+    return String(v == null ? "" : v)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  var V = window.FHInquiryView;
+  FHData.wire(FHData.recentLetters(8), "recent letters", function (data) {
+    var rows = (data && data.letters) || [];
+    [].slice.call(list.querySelectorAll(".letter-row.live")).forEach(function (r) { r.remove(); });
+    if (!rows.length) { empty.hidden = false; return null; }
+    empty.hidden = true;
+    var anchor = list.querySelector(".letter-more");
+    rows.forEach(function (row) {
+      var div = document.createElement("div");
+      div.className = "letter-row live";
+      div.innerHTML =
+        '<div><div class="lt-name">' + esc(row.client_name || "(unnamed client)") + "</div>" +
+        '<div class="lt-detail">' + esc(V.bureauLabel(row.bureau)) + " \u00b7 " +
+          esc(row.kind === "portal" ? "portal upload" : "letter") +
+          (row.staff_name ? " \u00b7 " + esc(row.staff_name) : "") + "</div></div>" +
+        '<div class="lt-time">' + esc(V.formatWhen(row.created_at) || "") + "</div>";
+      list.insertBefore(div, anchor);
+    });
+    return rows.length + (rows.length === 1 ? " letter" : " letters") + " issued";
+  });
+}
+/* data.js carries `defer`, so window.FHData does not exist yet while this
+   script is being parsed. Reading here would mean never reading at all, and the
+   block would paint a convincing "No letters issued yet" instead of saying so —
+   the same trap the wiring block at the top of this file already fell into
+   once. Wait for the event, exactly as calendar.html and pipeline.html do. */
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", loadRecentLetters);
+} else {
+  loadRecentLetters();
+}
 </script>
 <script>
 function tickClock() {
@@ -2452,15 +3092,35 @@ fetch("/api/auth/session", {
     if (repairPane) repairPane.hidden = !repair;
     if (inqStats) inqStats.hidden = repair;
     if (repairStats) repairStats.hidden = !repair;
+    /* One headline slot, two desks. The Repair side has not been read yet on
+       first open, so it shows an em-dash and says so rather than borrowing the
+       Inquiries number for a second. */
+    if (window.FHDeskHead) window.FHDeskHead.show(repair ? "repair" : "inquiries");
     if (repair && !loaded) {
       loaded = true;
+      window.FHDeskHead.put("repair",
+        { label: "Need me", value: "—", sub: "reading the repair queue…" },
+        null, "Reading the repair queue…");
       loadRepairDesk();
     }
   }
 
   tabs.forEach(function (t) {
-    t.addEventListener("click", function () { show(t.getAttribute("data-pane")); });
+    t.addEventListener("click", function () {
+      var pane = t.getAttribute("data-pane");
+      /* Which desk you were working is worth one line of memory. A repair file
+         is a thirty-day cycle: somebody who lives on that side had to press
+         Repair again after every reload, and the first thing they saw each time
+         was somebody else's queue. Per-viewer, per-browser, and the page still
+         works exactly as before when storage is unavailable. */
+      try { localStorage.setItem("fh_specialist_pane", pane); } catch (e) {}
+      show(pane);
+    });
   });
+
+  var remembered = "";
+  try { remembered = localStorage.getItem("fh_specialist_pane") || ""; } catch (e) {}
+  if (remembered === "repair") show("repair");
 })();
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -2818,6 +3478,12 @@ function loadRepairDesk() {
   }).then(function (pack) {
     if (!pack.d || pack.d.ok !== true) {
       dashTiles();
+      window.FHDeskHead.put("repair",
+        { label: "Need me", value: "—", sub: "the repair queue could not be read" },
+        null,
+        pack.http === 403
+          ? "This queue is for staff on this desk."
+          : "The repair queue could not be read. Press Retry.");
       setPaneState("error");
       showStateMessage(
         '<div class="big">Couldn\'t load</div>' +
@@ -2831,6 +3497,13 @@ function loadRepairDesk() {
     clearErr();
     setTiles(pack.d);
     loadedFiles = pack.d.files || [];
+    /* The same top-left slot the Inquiries pane fills, filled from the rollup
+       the ROWS are derived from — src/repair/lens.mjs rollupCounts() over the
+       same deriveChip/tileSets the table runs, so the number and the list can
+       never disagree. "of 40 open" is the comparison §7 asks for: this count
+       never reaches zero, so the number alone says nothing. */
+    window.FHDeskHead.put("repair", V.repairHeadline(pack.d), null,
+      "Nothing needs you — every file is waiting on a bureau.");
     if (!loadedFiles.length) {
       setPaneState("empty");
       showStateMessage('<div class="big">No repair clients yet.</div><p>Close a client on repair and they land here on their own.</p>');
@@ -2840,6 +3513,32 @@ function loadRepairDesk() {
     setPaneState("loaded");
     hideStateMessage();
     if (!body) return;
+    /* ── TRIAGE ORDER: who needs me, then how late it is ────────────────────
+       A caseload you nurse is not a queue you empty — it never reaches zero, so
+       the question is never "what is left" but "which of these forty need me
+       today, and which are correctly quiet waiting on a bureau". So the files
+       that need a person come first, and inside each group the most overdue is
+       at the top, because Due is the clock this whole desk runs on.
+
+       The reader hands them back need-me-stage first then updated_at, which is
+       recency — the file touched most recently, not the file most overdue. A
+       row three days past its bureau deadline was landing tenth.
+
+       A file with no due date sorts to the bottom of its own group rather than
+       being treated as due now. The quiet rows are NOT hidden: they stay on the
+       list carrying the words "Waiting on the bureau", because a triage board
+       that hides two thirds of the caseload is a board you cannot trust. */
+    loadedFiles = loadedFiles.slice().sort(function (a, b) {
+      var an = L.tileSets(a, L.deriveChip(a)).indexOf("need") !== -1 ? 0 : 1;
+      var bn = L.tileSets(b, L.deriveChip(b)).indexOf("need") !== -1 ? 0 : 1;
+      if (an !== bn) return an - bn;
+      var at = a && a.response_due_at ? new Date(a.response_due_at).getTime() : NaN;
+      var bt = b && b.response_due_at ? new Date(b.response_due_at).getTime() : NaN;
+      if (!Number.isFinite(at) && !Number.isFinite(bt)) return 0;
+      if (!Number.isFinite(at)) return 1;
+      if (!Number.isFinite(bt)) return -1;
+      return at - bt;
+    });
     body.innerHTML = loadedFiles.map(function (f) {
       var chip = L.deriveChip(f);
       var due = L.dueWords(f.response_due_at);
@@ -2867,8 +3566,30 @@ function loadRepairDesk() {
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleRepairRow(tr); }
       });
     });
+    /* THE NEXT ACTION, SAID ONCE. Bound after the rows exist, so the sentence
+       and the row it opens are the same file. The chip comes from the same
+       FHRepairLens call the row's own Needs cell used — a second derivation
+       here is how a headline starts naming a file the table does not show. */
+    var nextUp = V.nextRepairAction(loadedFiles, function (f) {
+      var chip = L.deriveChip(f);
+      return L.tileSets(f, chip).indexOf("need") !== -1 ? chip.label : "";
+    });
+    window.FHDeskHead.put("repair", V.repairHeadline(pack.d),
+      nextUp ? {
+        text: "Open " + nextUp.text,
+        onClick: function () {
+          var row = body.querySelector('[data-repair-row="' + nextUp.clientId + '"]');
+          if (!row) return;
+          if (row.scrollIntoView) row.scrollIntoView({ block: "center" });
+          if (row.getAttribute("aria-expanded") !== "true") toggleRepairRow(row);
+        }
+      } : null,
+      "Nothing needs you — every file is waiting on a bureau.");
   }).catch(function () {
     dashTiles();
+    window.FHDeskHead.put("repair",
+      { label: "Need me", value: "—", sub: "the repair queue could not be read" },
+      null, "The repair queue could not be read. Press Retry.");
     setPaneState("error");
     showStateMessage(
       '<div class="big">Couldn\'t load</div>' +
@@ -2982,7 +3703,7 @@ function loadRepairDesk() {
             }).join("") + "</ul>"
           : '<p class="lt-detail">No letters ready. Analysis has to finish first.</p>';
         var timeHtml = timeline.length
-          ? '<ul class="mono" style="font-size:.8rem">' + timeline.map(function (t) {
+          ? '<ul class="mono">' + timeline.map(function (t) {
               return "<li>" + esc(t.words || L.timelineLine(t)) + "</li>";
             }).join("") + "</ul>"
           : '<p class="lt-detail">No timeline yet.</p>';

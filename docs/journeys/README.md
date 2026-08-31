@@ -41,8 +41,8 @@ have no automation tree at all. See `src/journeys/seed-journeys.mjs`'s header.
 |---|---|---|
 | [client](./client-actual.md) ([intended](./client-intended.md)) | `client` | reaches 31 of 202 routes |
 | [role-owner](./role-owner-actual.md) ([intended](./role-owner-intended.md)) | `owner` | reaches 199 of 202 routes |
-| [role-sales-manager](./role-sales-manager-actual.md) ([intended](./role-sales-manager-intended.md)) | `sales_manager` | reaches 151 of 202 routes |
-| [role-closer](./role-closer-actual.md) ([intended](./role-closer-intended.md)) | `closer` | reaches 137 of 202 routes |
+| [role-sales-manager](./role-sales-manager-actual.md) ([intended](./role-sales-manager-intended.md)) | `sales_manager` | reaches 149 of 202 routes |
+| [role-closer](./role-closer-actual.md) ([intended](./role-closer-intended.md)) | `closer` | reaches 135 of 202 routes |
 | [role-funding-advisor](./role-funding-advisor-actual.md) ([intended](./role-funding-advisor-intended.md)) | `funding_advisor` | reaches 139 of 202 routes |
 | [role-inquiry-remover](./role-inquiry-remover-actual.md) ([intended](./role-inquiry-remover-intended.md)) | `inquiry_specialist` | reaches 133 of 202 routes |
 | [affiliate](./affiliate-actual.md) ([intended](./affiliate-intended.md)) | `affiliate` | reaches 25 of 202 routes |
@@ -70,6 +70,7 @@ Endpoints name a set like `ROLE_SETS.FINANCE`. Those names mean:
 | `OPS` | owner, admin |
 | `HIRING` | owner, admin |
 | `LENDERS` | owner, admin, funding_advisor |
+| `SPECIALIST_DESK` | owner, admin, inquiry_specialist, funding_advisor |
 
 > **There is no automatic super-role on the read path.** An owner reaches these routes
 > only because `owner` is written into each set by hand. Remove it from one and the owner

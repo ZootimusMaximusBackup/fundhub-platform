@@ -105,3 +105,47 @@ export async function evaluateDocGate(db, { orgId, clientId, items = [] }) {
   const docs = await loadClientDocuments(db, { orgId, clientId });
   return checkDocPacket(docs, { requireSsn: disputeNeedsSsn(items) });
 }
+
+/* loadDocPackets — the same answer, for a whole queue, in one query.
+ *
+ * The Specialist's case list needs this per row, and calling evaluateDocGate()
+ * a hundred times is a hundred round trips. One lift, grouped in memory, the
+ * way src/fulfillment/read-signals.mjs:199-207 already does it — same two
+ * columns, same live-document filter.
+ *
+ * requireSsn is deliberately left off, matching src/handlers/inquiry-docs.mjs
+ * :82,103: the SSN card is only required when the dispute itself touches SSN
+ * data, and which items are staged is not known from the case row alone. The
+ * authoritative check still runs inside src/inquiry-ops/send.mjs before
+ * anything is posted; this is the queue's advance warning, not the gate.
+ *
+ * RETURNS NULL WHEN THE READ FAILS. A packet nobody could check must not come
+ * back looking checked — the caller shows "not checked", never "complete".
+ */
+export async function loadDocPackets(db, { orgId, clientIds = [] } = {}) {
+  const ids = [...new Set((clientIds || []).filter(Boolean).map(String))];
+  const out = new Map();
+  if (!orgId || !ids.length) return out;
+  let rows;
+  try {
+    const r = await db.query(
+      `SELECT client_id, kind, subtype
+         FROM documents
+        WHERE org_id = $1::uuid
+          AND client_id = ANY($2::uuid[])
+          AND (expires_at IS NULL OR expires_at > now())`,
+      [orgId, ids]
+    );
+    rows = r.rows || [];
+  } catch {
+    return null;
+  }
+  const byClient = new Map();
+  for (const row of rows) {
+    const key = String(row.client_id);
+    if (!byClient.has(key)) byClient.set(key, []);
+    byClient.get(key).push(row);
+  }
+  for (const id of ids) out.set(id, checkDocPacket(byClient.get(id) || []));
+  return out;
+}

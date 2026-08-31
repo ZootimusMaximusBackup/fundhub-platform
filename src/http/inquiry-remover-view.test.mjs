@@ -544,8 +544,11 @@ test("VIEW exposes every export the screen calls, so a rename cannot half-land",
     "createRowState", "beginWrite", "settleWrite", "failWrite",
     "attemptsDelta", "pendingLabel",
     "caseUiStatus", "caseCallState", "buildCaseSendRequest", "buildInquiryGenerateRequest",
-    "bureauLabel", "repairStagePill", "buildRepairSendRequest",
-    "buildRepairConfirmParseRequest"
+    "bureauKey", "bureauLabel", "countByBureau", "repairStagePill", "buildRepairSendRequest",
+    "buildRepairConfirmParseRequest",
+    "caseIsReadyToSend", "casesNeedingAPerson", "waitingDays", "waitingLabel", "sortCasesOldestFirst",
+    "nextInquiryAction", "docsPacketLabel", "docsMissingWords",
+    "inquiryHeadline", "repairHeadline", "nextRepairAction"
   ]) {
     assert.ok(VIEW[name], name + " is missing from VIEW");
   }
@@ -709,4 +712,374 @@ test("the comment above paintRow no longer points at a cell that was deleted", (
     false,
     "the stale stuck-age comment is back"
   );
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE SPECIALIST DESK'S TWO RHYTHMS (2026-08-30)
+
+   Inquiry removal is a QUEUE YOU EMPTY: a one-to-three-day errand, worked
+   oldest first, and the headline goes DOWN when the person works. Credit repair
+   is a CASELOAD YOU NURSE: thirty days a round, up to six rounds, and its
+   headline never reaches zero — which is why it needs a comparison beside it to
+   mean anything at all.
+
+   Every test below is about a number the screen puts in front of somebody, and
+   every one of them is a number that used to be wrong.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const NOW = new Date("2026-08-30T12:00:00Z");
+const daysAgo = (n) => new Date(NOW.getTime() - n * 86400000).toISOString();
+
+test("bureauKey folds a code and a full name onto the same key", () => {
+  // THE BUG THIS ENDS: the screen's three chips carried data-bureau="Equifax"
+  // and the rows carry inquiry_log.bureau, which today holds the two-letter
+  // code. The keys could never match, so all three chips read 0 and "none in
+  // queue" while thirty inquiries were open — and pressing one emptied the
+  // table under the words "all done for today".
+  assert.equal(VIEW.bureauKey("EX"), "EX");
+  assert.equal(VIEW.bureauKey("Experian"), "EX");
+  assert.equal(VIEW.bureauKey(" experian "), "EX");
+  assert.equal(VIEW.bureauKey("Equifax"), "EQ");
+  assert.equal(VIEW.bureauKey("TransUnion"), "TU");
+  assert.equal(VIEW.bureauKey("Trans Union"), "TU");
+  assert.equal(VIEW.bureauKey(""), "");
+  assert.equal(VIEW.bureauKey(null), "");
+  // An unrecognised bureau keeps its own identity rather than being folded into
+  // one of the three. A wrong count is worse than an obviously unknown one.
+  assert.equal(VIEW.bureauKey("Innovis"), "INNOVIS");
+});
+
+test("bureauLabel names a bureau however the record spelled it", () => {
+  assert.equal(VIEW.bureauLabel("EX"), "Experian");
+  assert.equal(VIEW.bureauLabel("Experian"), "Experian");
+  assert.equal(VIEW.bureauLabel("EQ"), "Equifax");
+  assert.equal(VIEW.bureauLabel("TU"), "TransUnion");
+  assert.equal(VIEW.bureauLabel(null), "—");
+});
+
+test("countByBureau counts codes and names as one bureau, and skips blanks", () => {
+  const counts = VIEW.countByBureau([
+    { bureau: "EX" }, { bureau: "Experian" }, { bureau: "EQ" },
+    { bureau: null }, { bureau: "" }
+  ]);
+  assert.deepEqual(counts, { EX: 2, EQ: 1 });
+  assert.deepEqual(VIEW.countByBureau(null), {});
+  // and it can be pointed at a different field on the row
+  assert.deepEqual(
+    VIEW.countByBureau([{ selected_bureaus_raw: "TransUnion" }], (r) => r.selected_bureaus_raw),
+    { TU: 1 }
+  );
+});
+
+test("caseIsReadyToSend is true only while a case is still waiting on a person", () => {
+  // The whole reason the inquiry headline can go down when she works: a case in
+  // the mail, or one the sweeper is already phoning the bureau about, is not
+  // hers to move.
+  assert.equal(VIEW.caseIsReadyToSend({ case_status: "Queued" }), true);
+  assert.equal(VIEW.caseIsReadyToSend({ case_status: "Scheduled" }), true);
+  assert.equal(VIEW.caseIsReadyToSend({ case_status: "Queued", first_delivery_at: daysAgo(1) }), false);
+  assert.equal(VIEW.caseIsReadyToSend({ case_status: "Queued", letter_provider_id: "pg_1" }), false);
+  assert.equal(VIEW.caseIsReadyToSend({ case_status: "Queued", call_fired_at: daysAgo(0) }), false);
+  assert.equal(VIEW.caseIsReadyToSend({ case_status: "Blocked" }), false);
+  assert.equal(VIEW.caseIsReadyToSend({ case_status: "Completed" }), false);
+});
+
+test("waitingDays and waitingLabel: unknown stays unknown, never zero", () => {
+  assert.equal(VIEW.waitingDays(daysAgo(6), NOW), 6);
+  assert.equal(VIEW.waitingDays(daysAgo(0), NOW), 0);
+  assert.equal(VIEW.waitingDays(null, NOW), null);
+  assert.equal(VIEW.waitingDays("not a date", NOW), null);
+  // A clock skew must not read as "waiting -1 days".
+  assert.equal(VIEW.waitingDays(new Date(NOW.getTime() + 86400000).toISOString(), NOW), 0);
+  assert.equal(VIEW.waitingLabel(6), "6 days");
+  assert.equal(VIEW.waitingLabel(1), "1 day");
+  assert.equal(VIEW.waitingLabel(0), "today");
+  assert.equal(VIEW.waitingLabel(null), "—");
+});
+
+test("sortCasesOldestFirst: waiting-on-a-person first, oldest first, undated last", () => {
+  // The reader used to order requested_at DESC, so the case she had just worked
+  // jumped to the top and the one nobody had touched sank out of sight.
+  const sorted = VIEW.sortCasesOldestFirst([
+    { id: "recent", case_status: "Queued", requested_at: daysAgo(1) },
+    { id: "sent-old", case_status: "Queued", requested_at: daysAgo(20), first_delivery_at: daysAgo(19) },
+    { id: "oldest", case_status: "Queued", requested_at: daysAgo(9) },
+    { id: "undated", case_status: "Queued" }
+  ]);
+  assert.deepEqual(sorted.map((r) => r.id), ["oldest", "recent", "undated", "sent-old"]);
+  // and the input array is not mutated
+  const input = [{ id: "a", case_status: "Queued", requested_at: daysAgo(2) },
+                 { id: "b", case_status: "Queued", requested_at: daysAgo(5) }];
+  VIEW.sortCasesOldestFirst(input);
+  assert.deepEqual(input.map((r) => r.id), ["a", "b"]);
+});
+
+test("nextInquiryAction names the oldest case that is waiting on a person", () => {
+  const next = VIEW.nextInquiryAction([
+    { id: "b", case_status: "Queued", requested_at: daysAgo(2), client_name: "Sam Rivera", selected_bureaus_raw: "EQ" },
+    { id: "a", case_status: "Queued", requested_at: daysAgo(6), client_name: "Dana Whitfield", selected_bureaus_raw: "EX" },
+    { id: "z", case_status: "Queued", requested_at: daysAgo(40), first_delivery_at: daysAgo(39), client_name: "Already Sent" }
+  ], { now: NOW });
+  assert.equal(next.caseId, "a");
+  assert.equal(next.text, "Send the oldest — Dana Whitfield, Experian, waiting 6 days");
+  // Nothing to do is null, not a sentence about an imaginary case.
+  assert.equal(VIEW.nextInquiryAction([{ case_status: "Completed" }], { now: NOW }), null);
+  assert.equal(VIEW.nextInquiryAction([], { now: NOW }), null);
+  assert.equal(VIEW.nextInquiryAction(null), null);
+  // An undated case is still workable, and is still named.
+  const undated = VIEW.nextInquiryAction([{ id: "u", case_status: "Queued", case_id: "IRC-9" }], { now: NOW });
+  assert.equal(undated.caseId, "u");
+  assert.equal(undated.text, "Send the oldest — IRC-9");
+});
+
+test("docsPacketLabel has three states, and 'not checked' is one of them", () => {
+  // THE BUG THIS ENDS: the screen returned "complete" for every case that was
+  // not already Blocked, and Blocked is only ever set at send time. So a packet
+  // nobody had looked at read "complete" on the screen whose whole job is
+  // deciding whether to press Send.
+  assert.equal(VIEW.docsPacketLabel({ docs_complete: true }), "complete");
+  assert.equal(VIEW.docsPacketLabel({ docs_complete: false }), "chasing");
+  assert.equal(VIEW.docsPacketLabel({ case_status: "Blocked" }), "chasing");
+  assert.equal(VIEW.docsPacketLabel({ case_status: "Queued" }), "not checked");
+  assert.equal(VIEW.docsPacketLabel({}), "not checked");
+  assert.equal(VIEW.docsPacketLabel(null), "not checked");
+  // A failed read arrives as an absent field, and must NOT read as complete.
+  assert.equal(VIEW.docsPacketLabel({ case_status: "In Progress", docs_complete: undefined }), "not checked");
+});
+
+test("docsMissingWords says what is missing in the client's words", () => {
+  assert.equal(
+    VIEW.docsMissingWords(["id_document", "proof_of_address", "authorization"]),
+    "photo ID, proof of address, signed authorization"
+  );
+  assert.equal(VIEW.docsMissingWords(["ssn_card"]), "Social Security card");
+  assert.equal(VIEW.docsMissingWords([]), "");
+  assert.equal(VIEW.docsMissingWords(undefined), "");
+  // an unmapped key is said, not swallowed
+  assert.equal(VIEW.docsMissingWords(["utility_bill"]), "utility bill");
+});
+
+test("inquiryHeadline counts what a person can act on, and says how old it is", () => {
+  const rows = [
+    { id: "a", case_status: "Queued", requested_at: daysAgo(6) },
+    { id: "b", case_status: "Queued", requested_at: daysAgo(2) },
+    { id: "c", case_status: "Queued", requested_at: daysAgo(30), first_delivery_at: daysAgo(29) }
+  ];
+  const h = VIEW.inquiryHeadline(rows, { now: NOW, total: 3 });
+  assert.equal(h.label, "Ready to send");
+  assert.equal(h.value, "2");
+  assert.equal(h.sub, "oldest waiting 6 days");
+});
+
+test("inquiryHeadline says when it only counted a page, instead of under-reporting", () => {
+  // api/read/inquiry-cases.mjs returns COUNT(*) over the whole queue. When the
+  // page is smaller than the queue, the headline is a page count and has to say
+  // so — silently under-reporting is worst on the busiest day.
+  const rows = [{ id: "a", case_status: "Queued", requested_at: daysAgo(4) }];
+  const h = VIEW.inquiryHeadline(rows, { now: NOW, total: 143 });
+  assert.equal(h.value, "1");
+  assert.match(h.sub, /counted over the first 1 of 143/);
+  // A total that matches the page says nothing extra.
+  assert.equal(VIEW.inquiryHeadline(rows, { now: NOW, total: 1 }).sub, "oldest waiting 4 days");
+  // A missing total is unknown, and unknown adds no claim.
+  assert.equal(VIEW.inquiryHeadline(rows, { now: NOW }).sub, "oldest waiting 4 days");
+});
+
+test("inquiryHeadline never invents an age it does not have", () => {
+  const h = VIEW.inquiryHeadline([{ id: "a", case_status: "Queued" }], { now: NOW });
+  assert.equal(h.value, "1");
+  assert.equal(h.sub, "oldest waiting — no request date on file");
+  // Empty and "all sent" are different sentences.
+  assert.equal(VIEW.inquiryHeadline([], { now: NOW }).sub, "no active cases");
+  assert.equal(
+    VIEW.inquiryHeadline([{ case_status: "Completed" }], { now: NOW }).sub,
+    "nothing is waiting on you"
+  );
+});
+
+/* ── the zero that was standing in for work ────────────────────────────────── */
+
+test("casesNeedingAPerson: Blocked and Escalated are work, not settled", () => {
+  // src/inquiry-ops/cases.mjs ACTIVE admits five statuses. Two of them are
+  // neither ready to send nor out of the building.
+  const rows = [
+    { id: "queued", case_status: "Queued" },
+    { id: "blocked", case_status: "Blocked" },
+    { id: "escalated", case_status: "Escalated" },
+    { id: "sent", case_status: "In Progress" },
+    { id: "calling", case_status: "Queued", call_fired_at: daysAgo(1) },
+    { id: "done", case_status: "Completed" }
+  ];
+  assert.deepEqual(VIEW.casesNeedingAPerson(rows).map((r) => r.id), ["blocked", "escalated"]);
+  assert.deepEqual(VIEW.casesNeedingAPerson([]), []);
+  assert.deepEqual(VIEW.casesNeedingAPerson(null), []);
+});
+
+test("casesNeedingAPerson: a status this screen has never been taught is work, not nothing", () => {
+  // caseUiStatus falls back to `st || "Unknown"`. A case in a state nobody has
+  // explained is exactly the one a person should look at, so it must not be
+  // quietly absorbed into "everything is sent".
+  assert.equal(VIEW.casesNeedingAPerson([{ id: "x", case_status: "Waiting On Legal" }]).length, 1);
+  assert.equal(VIEW.casesNeedingAPerson([{ id: "x" }]).length, 1);
+});
+
+test("casesNeedingAPerson: a Blocked case that already went out is not counted twice", () => {
+  // caseUiStatus reads Blocked FIRST, before the delivery columns, so a case
+  // that was blocked stays blocked here even with a letter id on it. That is the
+  // gate's own order and this follows it rather than inventing a second one.
+  assert.equal(VIEW.casesNeedingAPerson([{ case_status: "Blocked", letter_provider_id: "L1" }]).length, 1);
+  // An Escalated case that HAS been sent is out of her hands, and is not counted.
+  assert.equal(VIEW.casesNeedingAPerson([{ case_status: "Escalated", first_delivery_at: daysAgo(2) }]).length, 0);
+});
+
+test("inquiryHeadline does not let a zero stand in for three blocked cases", () => {
+  /* THE BUG. Blocked is written by src/inquiry-ops/send.mjs when the identity
+     packet is short: the send was REFUSED and somebody has to chase documents.
+     With three such cases and nothing ready, the sub-line said "nothing is
+     waiting on you" — the screen telling her she could go home while its own
+     Docs column printed "chasing" on the rows underneath. */
+  const rows = [
+    { id: "a", case_status: "Blocked", requested_at: daysAgo(10) },
+    { id: "b", case_status: "Blocked", requested_at: daysAgo(12) },
+    { id: "c", case_status: "Escalated", requested_at: daysAgo(20) }
+  ];
+  const h = VIEW.inquiryHeadline(rows, { now: NOW, total: 3 });
+  // The NUMBER is still honest: none of these is ready to send, and folding them
+  // in would be the same lie pointing the other way.
+  assert.equal(h.value, "0");
+  assert.equal(h.sub, "3 cases need a person before they can be sent");
+  assert.equal(h.sub.includes("nothing is waiting on you"), false);
+
+  // One reads as one.
+  assert.equal(
+    VIEW.inquiryHeadline([{ id: "a", case_status: "Blocked" }], { now: NOW }).sub,
+    "1 case needs a person before it can be sent"
+  );
+});
+
+test("inquiryHeadline names the uncounted cases even when something IS ready", () => {
+  const rows = [
+    { id: "a", case_status: "Queued", requested_at: daysAgo(6) },
+    { id: "b", case_status: "Blocked", requested_at: daysAgo(12) }
+  ];
+  const h = VIEW.inquiryHeadline(rows, { now: NOW, total: 2 });
+  assert.equal(h.value, "1");
+  assert.equal(h.sub, "oldest waiting 6 days · 1 case needs a person before it can be sent");
+});
+
+test("inquiryHeadline still says 'nothing is waiting on you' when that is true", () => {
+  // The guard against the fix over-firing: everything open really is in the mail.
+  const rows = [
+    { id: "a", case_status: "In Progress" },
+    { id: "b", case_status: "Queued", first_delivery_at: daysAgo(3) },
+    { id: "c", case_status: "Queued", call_fired_at: daysAgo(1) }
+  ];
+  assert.equal(VIEW.inquiryHeadline(rows, { now: NOW, total: 3 }).sub, "nothing is waiting on you");
+});
+
+test("repairHeadline pairs a number that never reaches zero with what it is out of", () => {
+  const h = VIEW.repairHeadline({ need_me: 17, total: 40, files: new Array(40).fill({}) });
+  assert.equal(h.label, "Need me");
+  assert.equal(h.value, "17");
+  assert.equal(h.sub, "of 40 open");
+  // Past the reader's cap it says which of the two it counted.
+  const capped = VIEW.repairHeadline({ need_me: 17, total: 143, files: new Array(100).fill({}) });
+  assert.equal(capped.sub, "counted over the first 100 of 143 open");
+  // A missing rollup is an em-dash. Never a zero standing in for unknown.
+  assert.equal(VIEW.repairHeadline({ files: [] }).value, "—");
+  assert.equal(VIEW.repairHeadline({ need_me: null, files: [] }).value, "—");
+  assert.equal(VIEW.repairHeadline({}).value, "—");
+  assert.equal(VIEW.repairHeadline({ need_me: 0, total: 12, files: [] }).value, "0");
+});
+
+test("nextRepairAction names the first file the rows themselves say needs a person", () => {
+  const files = [
+    { client_id: "c1", name: "Quiet File" },
+    { client_id: "c2", name: "Dana Whitfield" },
+    { client_id: "c3", name: "Also Needs" }
+  ];
+  const needs = (f) => (f.client_id === "c1" ? "" : "Send letters");
+  const next = VIEW.nextRepairAction(files, needs);
+  assert.equal(next.clientId, "c2");
+  assert.equal(next.text, "Dana Whitfield — Send letters");
+  assert.equal(VIEW.nextRepairAction(files, () => ""), null);
+  assert.equal(VIEW.nextRepairAction(files), null);
+  assert.equal(VIEW.nextRepairAction(null, needs), null);
+});
+
+/* ── the screen itself ─────────────────────────────────────────────────────── */
+
+test("the bureau chips are keyed the way the rows are keyed", () => {
+  // The chips carried full names; the rows carry codes. Both sides now go
+  // through bureauKey, and the chip's own data-bureau is the key.
+  const keys = [...HTML_SRC.matchAll(/<button[^>]*data-bureau="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(
+    keys.sort(), ["EQ", "EX", "TU"],
+    "a bureau chip is keyed by something other than the code the rows carry"
+  );
+  assert.ok(HTML_SRC.includes("byBureau[VIEW.bureauKey(c.dataset.bureau)]"));
+  assert.ok(HTML_SRC.includes("var bkey = VIEW.bureauKey(it.bureau);"));
+});
+
+test("the docs column asks the reader instead of assuming", () => {
+  assert.ok(HTML_SRC.includes("return window.FHInquiryView.docsPacketLabel(C);"));
+  assert.ok(
+    !HTML_SRC.includes('return C.case_status === "Blocked" ? "chasing" : "complete";'),
+    "the invented 'complete' is back on the docs column"
+  );
+});
+
+test("Recent Letters Issued has a reader, and waits for the data layer", () => {
+  // The block was static markup: it said "No letters issued yet" after the
+  // fortieth letter went out, because nothing ever wrote into .letters-list.
+  assert.ok(HTML_SRC.includes("FHData.recentLetters(8)"));
+  assert.ok(HTML_SRC.includes("FHData.wire(FHData.recentLetters"));
+  // data.js is deferred, so a read at parse time is a read that never happens.
+  assert.ok(HTML_SRC.includes('document.addEventListener("DOMContentLoaded", loadRecentLetters)'));
+});
+
+test("the top-left slot is a metric class, not a px size the brand file eats", () => {
+  // fundhub-brand.css hands 32px back to .vl for free; a px size written here
+  // would be discarded. UI-STANDARDS §12.7.
+  assert.ok(HTML_SRC.includes('<div class="vl dh-value" id="deskValue">—</div>'));
+  assert.match(HTML_SRC, /id="deskLabel"/);
+  assert.match(HTML_SRC, /id="deskSub"/);
+  assert.match(HTML_SRC, /id="deskNext"/);
+});
+
+test("the screen spends exactly one font-size escape hatch", () => {
+  // §12.7: one rule per screen, with !important, with the reason above it. A
+  // second one is how a screen ends up with six sizes and no hierarchy.
+  const styles = (HTML_SRC.match(/<style[^>]*>[\s\S]*?<\/style>/gi) || []).join("\n");
+  const hatches = styles.match(/font-size\s*:[^;}]*!important/gi) || [];
+  assert.equal(hatches.length, 1, "expected exactly one !important font-size rule, found " + hatches.length);
+  // and it names only classes this screen owns — never the shared chrome.
+  const rule = HTML_SRC.slice(HTML_SRC.indexOf(".app :is(.who-name"), HTML_SRC.indexOf("font-size:var(--fs-caption) !important"));
+  for (const shared of [".chip", ".eyebrow", ".av", ".mono", ".statusbar", ".clock", ".live-pill", ".stat-label"]) {
+    assert.ok(
+      !new RegExp("[(,\\s]" + shared.replace(".", "\\.") + "[,)\\s]").test(rule),
+      shared + " belongs to the brand file or shell.js — resizing it here resizes it app-wide"
+    );
+  }
+});
+
+test("the tables scroll inside their own box instead of being clipped by the page", () => {
+  // Measured before this: the repair table's right edge sat at 1478px in a
+  // 1440px viewport, #repairTableWrap was overflow-x:visible, and
+  // body{overflow:hidden} swallowed the rest. The cut-off column was Due.
+  assert.match(HTML_SRC, /\.fh-scroll-x\{overflow-x:auto/);
+  assert.match(HTML_SRC, /<div id="repairTableWrap" class="fh-scroll-x">/);
+  assert.match(HTML_SRC, /<div class="fh-scroll-x">\s*<table class="queue" id="caseQueueTable">/);
+});
+
+test("the case queue paginates and rebuilds one row per click, not forty", () => {
+  assert.ok(HTML_SRC.includes("var PAGE_ROWS = 25;"));
+  assert.match(HTML_SRC, /id="caseMoreBtn"/);
+  // The old shape: every click re-rendered the whole list, throwing away every
+  // hidden detail including an 8,000-character letter textarea per case.
+  assert.ok(
+    !HTML_SRC.includes("renderCases(cases);"),
+    "clicking a case row rebuilds the whole table again"
+  );
+  assert.ok(HTML_SRC.includes("tr.parentNode.insertBefore(detail, tr.nextSibling);"));
 });

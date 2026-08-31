@@ -347,6 +347,14 @@ window.FHData = (function () {
     /* The LOCAL inquiry_log queue. Not /api/inquiry — that proxies the external
        Airtable runtime and returns its shape, not these columns. */
     inquiries:       function (p) { return this.read("inquiries", p); },
+    /* GET /api/inquiries?recent=letters → data.letters[] — the letter and portal
+       rows of inquiry_attempts, newest first, for the Specialist desk's "Recent
+       Letters Issued" block. Not a /api/read/ resource, so it calls get()
+       directly the way pipelineCounts and commissionRules do. */
+    recentLetters:   function (limit) {
+      return get("/api/inquiries?recent=letters" +
+        (limit ? "&limit=" + encodeURIComponent(limit) : ""));
+    },
     inquiryCases:    function (p) { return this.read("inquiry-cases", p); },
 
     /* GET /api/partner-brand — not under /api/read, so it gets its own reader

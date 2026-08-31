@@ -144,16 +144,30 @@ async function attachSignals(db, orgId, rows) {
 export async function listRepairCases(db, { orgId, limit = 100 } = {}) {
   if (!orgId) throw new Error("orgId required");
   const cap = Math.min(Math.max(Number(limit) || 100, 1), 200);
+  /* `total` is COUNT(*) over the same WHERE clause, before the LIMIT. The tiles
+     are computed from the rows that came back, so past the cap they count a page
+     and not a caseload — and a headline that says "17 need me" when it only
+     looked at the first 100 of 143 files is under-reporting on exactly the day
+     the desk is busiest. The screen says which of the two it is showing; it can
+     only do that if the reader tells it the real size. */
   const r = await db.query(
-    `${LIST_SQL}
-     ORDER BY (ps.key = ANY($2::text[])) DESC, c.updated_at DESC
+    `SELECT sub.*, COUNT(*) OVER () AS queue_total FROM (
+       ${LIST_SQL}
+     ) sub
+     ORDER BY (sub.stage_key = ANY($2::text[])) DESC, sub.updated_at DESC
      LIMIT $3`,
     [orgId, [...NEED_ME_STAGES], cap]
   );
-  const files = await attachSignals(db, orgId, r.rows || []);
+  const rows = (r.rows || []).map((row) => {
+    const { queue_total, ...rest } = row;
+    return rest;
+  });
+  const total = (r.rows || []).length ? Number(r.rows[0].queue_total) : 0;
+  const files = await attachSignals(db, orgId, rows);
   const rollups = rollupCounts(files);
   return {
     files,
+    total: Number.isFinite(total) ? total : files.length,
     need_me: rollups.need_me,
     ready: rollups.ready,
     waiting: rollups.waiting,
