@@ -33,7 +33,10 @@ const SPEC = {
   "dpc-05": "funding_advisor", "n-06": "funding_advisor", "u-02": "funding_advisor",
   "u-05": "funding_advisor", "ai-set-04": "closer",
   "c-02": "inquiry_specialist", "c-03": "inquiry_specialist",
-  "s-06": "closer", "s-08": "closer",
+  // s-06 was "closer" and that was wrong: the task it raises is "Funding intake
+  // — pull CRS", which is fulfilment work. Closers sell and close; funding
+  // advisors deliver. Corrected 2026-08-30 with the code.
+  "s-06": "funding_advisor", "s-08": "closer",
   "ds-02": "admin"
 };
 

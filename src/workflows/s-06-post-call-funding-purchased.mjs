@@ -16,6 +16,17 @@ import { createTask } from "../lib/create-task.mjs";
 
 const SOURCE_WORKFLOW = "s-06-post-call-funding-purchased";
 
+/* The client is promised the round starts within 24 hours of paying, so that is
+   the deadline on the work that starts it. A due date is also the difference
+   between a task existing and a task being SEEN: the only screen that reads
+   tasks (public/app/calendar.html) drops every row whose due_at is null, so the
+   version of this task without one reached nobody. */
+const INTAKE_DUE_HOURS = 24;
+
+function dueInHours(hours) {
+  return new Date(Date.now() + hours * 60 * 60 * 1000);
+}
+
 async function createIntakeTaskOnce(db, { orgId, clientId, eventId }) {
   const dup = await db.query(`SELECT 1 FROM tasks WHERE client_id = $1 AND source_workflow = $2 AND body = $3`, [clientId, SOURCE_WORKFLOW, eventId]);
   if (dup.rows[0]) return { created: false };
@@ -24,7 +35,10 @@ async function createIntakeTaskOnce(db, { orgId, clientId, eventId }) {
       clientId: clientId,
       title: "Funding intake — pull CRS",
       sourceWorkflow: SOURCE_WORKFLOW,
-      assigneeRole: "closer",
+      // Fulfilment work, not sales work. Closers sell and close; funding
+      // advisors deliver, and pulling the CRS is delivery.
+      assigneeRole: "funding_advisor",
+      dueAt: dueInHours(INTAKE_DUE_HOURS),
       eventId: eventId
     });
   return { created: true };
