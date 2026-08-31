@@ -17,6 +17,9 @@ import { requireSessionOrg } from "../../src/http/session-org.mjs";
 import { safeError } from "../../src/http/health.mjs";
 import { orgDemoModeEnabled } from "../../src/demo/exclude-demo.mjs";
 import { surveyFicoBand } from "../../src/survey/cf-question-map.mjs";
+// One definition of "a bank yes that is not worth anything yet" — see the
+// EXISTS below and the block comment on the export itself.
+import { unpricedApprovalConditions } from "../../src/funding/success-fee.mjs";
 
 // Stages first, so a stage with no cards still renders as an empty column
 // rather than vanishing from the board. Org always from the session.
@@ -86,15 +89,38 @@ const CARDS_SQL = `
        in, that approval is left out of the round's lender breakdown
        (src/funding/closeout.mjs filters COALESCE(approved_amount,0) > 0), so
        the client is never billed a success fee for it.
-       NULL means UNKNOWN here, and only NULL. A recorded 0 is a fact somebody
-       entered and is not flagged. */
-    EXISTS (
-      SELECT 1
-        FROM applications a
-       WHERE a.client_id = c.id
-         AND a.org_id = p.org_id
-         AND a.status = 'Approved'
-         AND a.approved_amount IS NULL
+
+       THE CONDITION IS NOT WRITTEN HERE ANY MORE. It is the same string the
+       biller uses (src/funding/success-fee.mjs), for two reasons that were both
+       live defects on 2026-08-30:
+
+         * EXCLUSION. The "Doesn't count" button and the columns behind it
+           (db/migrations/272_approval_excluded.sql) shipped the same day this
+           flag did, and this query never learned about them — so an approval
+           somebody had explicitly recorded as not counting, with their name and
+           a reason against it, kept saying "Amount needed" on its board card
+           forever. The button looked broken on the board the fulfillment team
+           actually watches.
+         * A NON-POSITIVE AMOUNT. This asked for NULL only, while
+           guardFundedAmount refuses the Funded move on NULL OR <= 0. A legacy
+           0 was therefore clean on the board and blocked at the move — a wall
+           with no warning in front of it. One definition, one answer.
+
+       NULL still means UNKNOWN and still survives (CLAUDE.md §12): nothing here
+       defaults an unknown amount to 0. */
+    /* THE RAIL. One CARDS_SQL serves all eight rails, so without this the same
+       client's Sales card and Inquiry Removal card carried a funding chip that
+       nobody looking at those boards can act on. Applications live inside
+       funding rounds; the flag belongs on the funding rails only. */
+    (
+      p.key IN ('funding_card_stacking', 'funding_altfin')
+      AND EXISTS (
+        SELECT 1
+          FROM applications a
+         WHERE a.client_id = c.id
+           AND a.org_id = p.org_id
+           AND ${unpricedApprovalConditions("a")}
+      )
     ) AS approval_amount_missing
   FROM cards cd
   JOIN pipelines p ON p.id = cd.pipeline_id

@@ -1,44 +1,80 @@
-/* Funding closeout — records the 10% success fee when a round is finalized.
+/* Funding closeout — records the success fee when a round is finalized.
    Hooked from round.funded (money-chain). Idempotent per funding_round_id.
 
-   OWNER DECISION (2026-08-04, operational fix from END-TO-END-VERIFICATION):
-   The fee basis is funding_rounds.funded_amount — what the client actually
-   received / is billed 10% of. Approved application rows are a lender
-   breakdown only. Computing the fee from Approved apps alone meant a funded
-   round with no per-lender Approved rows silently billed $0.
+   OWNER DECISION (owner-set 2026-08-30, final — supersedes 2026-08-04):
+   The fee basis is CONFIRMED APPROVALS, not funding_rounds.funded_amount.
+   Chris: "Approved is correct. They can really be used interchangeably.
+   Technically we are getting people approved, NOT funding the actual credit
+   cards. But yeah if that is cool then make sure we bill based on confirmed
+   approvals."
+
+   "Confirmed approvals" is defined once, in src/funding/success-fee.mjs, and
+   both this file and the invoicing workflow (F-07) read it from there so the
+   closeout record and the invoice can never disagree. See
+   docs/CLOSEOUT-FEE-BASIS.md.
+
+   THE OLD $0 TRAP IS GONE, THE OTHER WAY ROUND. The 2026-08-04 note said a
+   funded round with no Approved rows "silently billed $0", and fixed that by
+   billing the funded amount. That fix is reversed. A round with nothing
+   confirmed now REFUSES with a named reason: no closeout row, no invoice, and
+   a task for a person. It still never writes a $0 fee.
+
+   COMPLIANCE REVIEW REQUIRED: fee basis.
 */
 
-const DEFAULT_FEE_PERCENT = 0.10;
+import { toCents, fromCents, roundHalfUp } from "../commissions/money.mjs";
+import {
+  listConfirmedApprovals,
+  agreedFeePercent,
+  amountOrNull,
+  successFeeCents,
+  NO_CONFIRMED_APPROVALS,
+  NO_AGREED_FEE_PERCENT
+} from "./success-fee.mjs";
 
-function money(n) {
-  const v = Number(n);
-  return Number.isFinite(v) ? Math.round(v * 100) / 100 : 0;
+/**
+ * A dollar amount, rounded to cents — or null when it is not a number.
+ *
+ * THIS USED TO RETURN 0 FOR UNKNOWN, and that was a latent silent $0 invoice:
+ * Number(null) is 0 and Number.isFinite(0) is true, so money(null) answered
+ * "zero dollars" to a question nobody had answered. Unknown must survive as
+ * unknown (CLAUDE.md §12); every caller below treats null as a refusal.
+ */
+export function money(n) {
+  const v = amountOrNull(n);
+  if (v == null) return null;
+  return Math.round(v * 100) / 100;
 }
 
 /**
  * Create or refresh a closeout for a funded round.
  *
- * Fee = feePercent × funding_rounds.funded_amount.
- * Approved applications are recorded as line items when present; they do not
- * gate or replace the fee.
+ * Fee = feePercentUnits × the confirmed approved total.
+ *
+ * `feePercentUnits` is in PERCENT UNITS — 10 means 10%, NOT 0.10. The name
+ * says "Units" because the funding_closeout.fee_percent COLUMN stores the same
+ * rate as a fraction (0.10), and the two were one silent factor of 100 apart.
+ * Omit it and the rate is read from the sale this round is linked to.
+ *
+ * REFUSES, rather than billing zero, when:
+ *   - the round does not exist                (closeout_no_round)
+ *   - nothing on the round is confirmed       (closeout_no_confirmed_approvals)
+ *   - the client's sale agreed no fee percent (closeout_no_fee_percent)
  *
  * @param {import("pg").Pool|object} db
- * @param {{ orgId: string, fundingRoundId: string, feePercent?: number }} opts
- * @returns {Promise<{ closeout: object, items: object[], created: boolean }>}
+ * @param {{ orgId: string, fundingRoundId: string, feePercentUnits?: number }} opts
+ * @returns {Promise<{ closeout: object, items: object[], created: boolean, feeBasis: number }>}
  */
 export async function createFundingCloseout(db, {
   orgId,
   fundingRoundId,
-  feePercent = DEFAULT_FEE_PERCENT
+  feePercentUnits = null
 } = {}) {
   if (!orgId || !fundingRoundId) {
     const err = new Error("orgId and fundingRoundId required");
     err.code = "closeout_args";
     throw err;
   }
-
-  const pct = Number(feePercent);
-  const feePct = Number.isFinite(pct) && pct >= 0 && pct <= 1 ? pct : DEFAULT_FEE_PERCENT;
 
   const roundRes = await db.query(
     `SELECT id, funded_amount, approved_amount, status
@@ -54,29 +90,60 @@ export async function createFundingCloseout(db, {
     throw err;
   }
 
-  // Fee basis = funded amount on the round. Fall back only if funded is null
-  // and approved_amount on the round itself is set (not application rows).
-  const feeBasis = money(
-    round.funded_amount != null && Number(round.funded_amount) > 0
-      ? round.funded_amount
-      : round.approved_amount
-  );
-  const totalFee = money(feeBasis * feePct);
-  const balanceDue = totalFee;
-  // Column name is historical ("total_approved_amount"); value is the fee basis
-  // (funded amount). Do not rename without a migration — screens already read it.
-  const totalApproved = feeBasis;
+  // Fee basis = confirmed approvals. Every Approved application on this round
+  // that carries a real recorded amount, and nothing else. funded_amount and
+  // funding_rounds.approved_amount are read for nothing here on purpose.
+  const apps = await listConfirmedApprovals(db, { orgId, fundingRoundId });
+  let basisCents = 0;
+  for (const a of apps) {
+    const dollars = money(a.approved_amount);
+    if (dollars == null) continue;
+    basisCents += toCents(dollars);
+  }
+  if (!(basisCents > 0)) {
+    const err = new Error(
+      "no confirmed approvals on this round — nothing to bill. " +
+      "An Approved application with no recorded amount is not a confirmed approval."
+    );
+    err.code = "closeout_no_confirmed_approvals";
+    err.reason = NO_CONFIRMED_APPROVALS;
+    throw err;
+  }
 
-  const apps = await db.query(
-    `SELECT id, approved_amount, lender_name, bank, status
-       FROM applications
-      WHERE org_id = $1::uuid
-        AND funding_round_id = $2::uuid
-        AND status = 'Approved'
-        AND COALESCE(approved_amount, 0) > 0
-      ORDER BY created_at ASC`,
-    [orgId, fundingRoundId]
-  );
+  // The rate the client agreed to, in percent units. Never a default.
+  let pct = amountOrNull(feePercentUnits);
+  let saleId = null;
+  if (pct == null) {
+    const agreed = await agreedFeePercent(db, { orgId, fundingRoundId });
+    pct = agreed.feePercent;
+    saleId = agreed.saleId;
+  }
+  if (pct == null || !(pct > 0) || pct > 100) {
+    const err = new Error(
+      "no agreed success fee percent for this round — set agreed_success_fee_percent on the client's sale"
+    );
+    err.code = "closeout_no_fee_percent";
+    err.reason = NO_AGREED_FEE_PERCENT;
+    throw err;
+  }
+
+  const feeBasis = Number(fromCents(basisCents));
+  const totalFeeCents = successFeeCents(feeBasis, pct);
+  if (totalFeeCents == null || !(totalFeeCents > 0)) {
+    const err = new Error("success fee worked out to nothing — refusing to write a $0 closeout");
+    err.code = "closeout_no_confirmed_approvals";
+    err.reason = NO_CONFIRMED_APPROVALS;
+    throw err;
+  }
+  const totalFee = fromCents(totalFeeCents);
+  const balanceDue = totalFee;
+  // The column is called total_approved_amount and, under the 2026-08-30
+  // decision, that name is finally accurate: this IS the confirmed approved
+  // total. It used to hold the funded amount under a name that said otherwise.
+  const totalApproved = fromCents(basisCents);
+  // The COLUMN stores the rate as a fraction (numeric(6,4), default 0.10);
+  // `pct` above is percent units. This is the only place the two meet.
+  const feePctStored = roundHalfUp((pct / 100) * 10000) / 10000;
 
   const existing = await db.query(
     `SELECT * FROM funding_closeout
@@ -97,7 +164,7 @@ export async function createFundingCloseout(db, {
               updated_at = now()
         WHERE id = $1
         RETURNING *`,
-      [existing.rows[0].id, totalApproved, totalFee, balanceDue, feePct]
+      [existing.rows[0].id, totalApproved, totalFee, balanceDue, feePctStored]
     );
     closeout = upd.rows[0];
     await db.query(
@@ -111,29 +178,25 @@ export async function createFundingCloseout(db, {
          balance_due, fee_percent, status
        ) VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, 'open')
        RETURNING *`,
-      [orgId, fundingRoundId, totalApproved, totalFee, balanceDue, feePct]
+      [orgId, fundingRoundId, totalApproved, totalFee, balanceDue, feePctStored]
     );
     closeout = ins.rows[0];
     created = true;
   }
 
-  // Lender breakdown for audit. Item fees are proportional shares of totalFee
-  // when apps exist; they must sum to totalFee (not re-derive from app × pct).
+  // Lender breakdown for audit — one row per confirmed approval, which is the
+  // same set the basis was summed from. Item fees are proportional shares of
+  // totalFee and must sum to it exactly, so the last row takes the remainder
+  // rather than re-deriving from its own amount × percent.
   const items = [];
-  const appSum = apps.rows.reduce((s, a) => s + money(a.approved_amount), 0);
-  let allocated = 0;
-  for (let i = 0; i < apps.rows.length; i++) {
-    const a = apps.rows[i];
-    const approved = money(a.approved_amount);
-    let fee;
-    if (i === apps.rows.length - 1) {
-      fee = money(totalFee - allocated);
-    } else if (appSum > 0 && totalFee > 0) {
-      fee = money((approved / appSum) * totalFee);
-      allocated = money(allocated + fee);
-    } else {
-      fee = 0;
-    }
+  let allocatedCents = 0;
+  for (let i = 0; i < apps.length; i++) {
+    const a = apps[i];
+    const approvedCents = toCents(money(a.approved_amount));
+    const feeCents = i === apps.length - 1
+      ? totalFeeCents - allocatedCents
+      : roundHalfUp((approvedCents / basisCents) * totalFeeCents);
+    if (i !== apps.length - 1) allocatedCents += feeCents;
     const item = await db.query(
       `INSERT INTO funding_closeout_items (
          org_id, funding_closeout_id, application_id,
@@ -144,19 +207,21 @@ export async function createFundingCloseout(db, {
         orgId,
         closeout.id,
         a.id,
-        approved,
-        fee,
+        fromCents(approvedCents),
+        fromCents(feeCents),
         a.lender_name || a.bank || null
       ]
     );
     items.push(item.rows[0]);
   }
 
-  return { closeout, items, created, feeBasis };
+  return { closeout, items, created, feeBasis, feePercent: pct, saleId };
 }
 
 /**
  * Safe wrapper for event handlers — never throws into the bus.
+ * A refusal comes back as { closeout: null, error: <named reason> }, which is a
+ * real answer the caller must surface. It is never a $0 closeout.
  */
 export async function createFundingCloseoutSafe(db, opts) {
   try {
@@ -170,5 +235,3 @@ export async function createFundingCloseoutSafe(db, opts) {
     };
   }
 }
-
-export { DEFAULT_FEE_PERCENT };

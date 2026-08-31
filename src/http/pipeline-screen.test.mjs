@@ -19,18 +19,30 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SCREEN = path.resolve(HERE, "../../public/app/pipeline.html");
 const HTML = fs.readFileSync(SCREEN, "utf8");
 
+/* The screen with every comment stripped — markup comments and CSS/JS block
+   comments alike. Some assertions below are about what the page SAYS or what
+   it PAINTS, and a note explaining why an old shape was removed must not be
+   able to fail the test that proves it was removed. */
+const SHIPPED = HTML
+  .replace(/<!--[\s\S]*?-->/g, "")
+  .replace(/\/\*[\s\S]*?\*\//g, "");
+
 const BEGIN = "/* FH-SUMMARY-BEGIN */";
 const END = "/* FH-SUMMARY-END */";
 
-function loadSummaryFn() {
+function loadBlock() {
   const a = HTML.indexOf(BEGIN);
   const b = HTML.indexOf(END);
   assert.ok(a !== -1 && b > a, "the FH-SUMMARY markers are gone from pipeline.html");
-  const sandbox = { window: {} };
+  const sandbox = { window: {}, Date, Infinity, isNaN, String, Object };
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
   vm.runInContext(HTML.slice(a + BEGIN.length, b), sandbox, { filename: SCREEN + "#FH-SUMMARY" });
-  return sandbox.window.FHPipelineSummary;
+  return sandbox.window;
+}
+
+function loadSummaryFn() {
+  return loadBlock().FHPipelineSummary;
 }
 
 const stage = (count, amount) => ({ count, amount, cards: [] });
@@ -65,6 +77,227 @@ describe("public/app/pipeline.html — board-summary totals", () => {
     const totals = fn([{ cards: [] }, stage(5, 1000)]);
     assert.equal(totals.count, 5);
     assert.equal(totals.money, 1000);
+  });
+});
+
+/* ────────────────────────────────────────────────────────────────────────────
+   "WHAT IS WAITING ON ME" — the question this board could not answer.
+
+   A funding advisor with forty clients on one rail had no way to see which
+   cards needed a person here. The facts were all on the screen already, one
+   card at a time, and nothing added them up.
+
+   These tests pin the RULE, not the layout: which bucket a card lands in, that
+   it lands in exactly one, and that a number is never invented when the answer
+   is unknown. The rule lives in a pure function inside the FH-SUMMARY markers
+   with no DOM anywhere near it, which is why it can be tested at all.
+   ──────────────────────────────────────────────────────────────────────────── */
+describe("public/app/pipeline.html — whose move is it", () => {
+
+  const card = (over) => Object.assign({
+    id: "c1", client_id: "cl1", name: "A Person", entered_at: "2026-08-01T00:00:00Z",
+    sms_needs_reply: false, email_needs_reply: false, approval_amount_missing: false
+  }, over || {});
+
+  test("a client who wrote and got no answer is waiting on us, on any rail", () => {
+    const { FHWaitingOn } = loadBlock();
+    assert.equal(FHWaitingOn(card({ sms_needs_reply: true }), "new_lead"), "us");
+    assert.equal(FHWaitingOn(card({ email_needs_reply: true }), "requested"), "us");
+  });
+
+  test("an approval with no dollar amount is waiting on us", () => {
+    const { FHWaitingOn } = loadBlock();
+    assert.equal(FHWaitingOn(card({ approval_amount_missing: true }), "approved"), "us");
+  });
+
+  test("Round Submitted is a bank, Action Required is the client", () => {
+    const { FHWaitingOn } = loadBlock();
+    assert.equal(FHWaitingOn(card(), "round_submitted"), "bank");
+    assert.equal(FHWaitingOn(card(), "action_required"), "client");
+  });
+
+  test("every other stage answers 'nothing recorded' rather than guessing a party", () => {
+    // The screen says "nothing recorded", never "nothing to do". Inventing a
+    // party from a stage name nobody agreed on is exactly the kind of number
+    // that looks real and is not.
+    const { FHWaitingOn } = loadBlock();
+    for (const key of ["new_lead", "booked", "apply_now", "funded", "intake",
+                       "awaiting_response", "invoice_sent", "", null, undefined]) {
+      assert.equal(FHWaitingOn(card(), key), "none", "stage " + key + " must not be guessed");
+    }
+  });
+
+  test("only an explicit true counts — a missing key is not evidence of a clean file", () => {
+    const { FHWaitingOn } = loadBlock();
+    assert.equal(FHWaitingOn({ id: "x" }, "new_lead"), "none");
+    assert.equal(FHWaitingOn(card({ sms_needs_reply: "true" }), "new_lead"), "none",
+      "a string is not a true; a card must never claim work from a value nobody measured");
+    assert.equal(FHWaitingOn(null, "round_submitted"), "none");
+  });
+
+  test("a card lands in exactly one bucket, so the counters can never out-count the board", () => {
+    // This is the assertion that stops the first row of the screen
+    // contradicting itself. A card CAN be sitting in Round Submitted and have
+    // a text nobody answered; if both counted, the four figures would add to
+    // more than the card count.
+    const { FHPipelineWaiting } = loadBlock();
+    const t = FHPipelineWaiting([
+      { key: "round_submitted", cards: [
+        card({ id: "1", sms_needs_reply: true }),   // both true at once
+        card({ id: "2" })
+      ] },
+      { key: "action_required", cards: [card({ id: "3" })] },
+      { key: "apply_now", cards: [card({ id: "4", approval_amount_missing: true }), card({ id: "5" })] }
+    ]);
+    assert.deepEqual(t, { us: 2, bank: 1, client: 1, none: 1, cards: 5 });
+    assert.equal(t.us + t.bank + t.client + t.none, t.cards, "the four buckets must equal the card count");
+  });
+
+  test("an empty rail is a real zero, and a rail that never answered is not counted at all", () => {
+    const { FHPipelineWaiting } = loadBlock();
+    assert.deepEqual(FHPipelineWaiting([]), { us: 0, bank: 0, client: 0, none: 0, cards: 0 });
+    assert.deepEqual(FHPipelineWaiting(null), { us: 0, bank: 0, client: 0, none: 0, cards: 0 });
+  });
+
+  test("'us — an approval amount' narrows what is shown without moving a count", () => {
+    const { FHWaitMatches } = loadBlock();
+    const c = card({ approval_amount_missing: true });
+    assert.equal(FHWaitMatches(c, "apply_now", "us"), true);
+    assert.equal(FHWaitMatches(c, "apply_now", "us_amount"), true);
+    assert.equal(FHWaitMatches(card({ sms_needs_reply: true }), "apply_now", "us_amount"), false,
+      "an unanswered text is waiting on us but is not a missing approval amount");
+    assert.equal(FHWaitMatches(c, "apply_now", ""), true, "no choice shows everything");
+  });
+
+  test("the next card up is the one waiting on us that has waited longest", () => {
+    const { FHNextUp } = loadBlock();
+    const next = FHNextUp([
+      { key: "apply_now", name: "Apply Now", cards: [
+        card({ id: "new", name: "Newer", sms_needs_reply: true, entered_at: "2026-08-20T00:00:00Z" }),
+        card({ id: "old", name: "Older", sms_needs_reply: true, entered_at: "2026-08-02T00:00:00Z" })
+      ] },
+      { key: "round_submitted", name: "Round Submitted", cards: [
+        card({ id: "oldest", name: "Oldest", entered_at: "2026-01-01T00:00:00Z" })   // bank, not us
+      ] }
+    ]);
+    assert.equal(next.id, "old", "the oldest card WAITING ON US, not the oldest card");
+    assert.equal(next.stage, "Apply Now");
+  });
+
+  test("a card with an unreadable date never wins 'longest wait'", () => {
+    // Unknown must not be able to win a comparison it was never measured for.
+    const { FHNextUp } = loadBlock();
+    const next = FHNextUp([{ key: "apply_now", name: "Apply Now", cards: [
+      card({ id: "broken", sms_needs_reply: true, entered_at: null }),
+      card({ id: "real", sms_needs_reply: true, entered_at: "2026-08-10T00:00:00Z" })
+    ] }]);
+    assert.equal(next.id, "real");
+    assert.equal(FHNextUp([{ key: "apply_now", cards: [card({ sms_needs_reply: true, entered_at: "nonsense" })] }]), null);
+  });
+
+  test("nothing waiting on us returns null, so the screen can say it in words", () => {
+    const { FHNextUp } = loadBlock();
+    assert.equal(FHNextUp([{ key: "round_submitted", cards: [card()] }]), null);
+    assert.equal(FHNextUp([]), null);
+  });
+});
+
+describe("public/app/pipeline.html — the headline row", () => {
+
+  test("the number is top-left, above and before every control", () => {
+    // UI-STANDARDS §1. The headline must come before the filter bar in the
+    // markup, or the first thing on the page is a control again.
+    const headline = HTML.indexOf('<div class="headline"');
+    const filterbar = HTML.indexOf('<div class="filterbar"');
+    const railbar = HTML.indexOf('<nav class="railbar"');
+    assert.ok(headline !== -1, "the headline row is gone");
+    assert.ok(headline > railbar && headline < filterbar,
+      "the headline must sit between the rail switcher and the filter bar");
+  });
+
+  test("the metric uses the brand's own sizes and spends no escape hatch", () => {
+    // §12.7: a px font-size written in this screen's <style> is thrown away by
+    // fundhub-brand.css. `.big` and `.eyebrow` are handed --fs-metric and
+    // --fs-caption for free, which is why this row needed no size of its own.
+    assert.match(HTML, /<span class="eyebrow">Waiting on us<\/span>/);
+    assert.match(HTML, /<span class="big" id="hlUsN">—<\/span>/);
+  });
+
+  test("it says 'us', not 'me' — nothing in this system assigns a card to a person", () => {
+    // cards.owner is never written by production code (src/workflows/cards.mjs,
+    // api/public/partner-apply.mjs); only demo seeds set it. A per-person
+    // number would be invented, so the screen does not offer one.
+    assert.match(SHIPPED, /Waiting on us/);
+    assert.ok(!/Waiting on me/i.test(SHIPPED), "there is no card assignment to base a per-person number on");
+  });
+
+  test("every figure starts as a dash and a failed read puts it back to one", () => {
+    // A 0 would claim nothing is waiting. That is the one thing an unanswered
+    // read can never prove.
+    assert.match(HTML, /function clearHeadline\(note\)/);
+    assert.match(HTML, /hlEls\[k\]\.textContent = "—"/);
+    assert.match(HTML, /clearHeadline\("The board did not load, so this number is unknown\."\)/);
+    assert.match(HTML, /clearHeadline\("Loading " \+ \(label \|\| "the board"\) \+ "…"\)/);
+  });
+
+  test("the headline is painted from the same stages the columns are built from", () => {
+    // One read, two views. A second fetch could disagree with the cards under it.
+    assert.match(HTML, /setSummary\(fhPipelineSummary\(stages\)\);\s*\n\s*setHeadline\(stages\);/);
+  });
+
+  test("the counters carry words, never colour alone", () => {
+    // §12.6: paintBrand() overwrites --alert/--warn/--ok/--info from the
+    // tenant ramp, so a one-hue white-label company paints every state the
+    // same colour and a colour-only counter says nothing there.
+    for (const word of ["on a bank", "on the client", "nothing recorded"]) {
+      assert.ok(HTML.includes(word), "the counter lost its word: " + word);
+    }
+  });
+
+  test("clicking a counter drives the same filter the select does", () => {
+    // One state, two ways in. Two independent filters would drift.
+    assert.match(HTML, /fWait\.value = \(fWait\.value===want\) \? '' : want;/);
+    assert.match(HTML, /id="fWait"/);
+    assert.match(HTML, /\{el:fWait,k:'Waiting on'\}/, "it must join the chip / clear-all machinery");
+  });
+
+  test("the lens hides the headline with the rest of the board-only chrome", () => {
+    assert.match(HTML, /"#filterChips", "\.headline", "\.board-summary"/);
+  });
+});
+
+describe("public/app/pipeline.html — the age filter reads the clock, not the words", () => {
+
+  test("cardEl writes the raw timestamp onto the card", () => {
+    assert.match(HTML, /card\.dataset\.enteredAt = c\.entered_at/);
+  });
+
+  test("ageMins prefers the timestamp and only falls back to the rendered text", () => {
+    // age() rounds to the nearest hour or day for the reader. Re-reading that
+    // rounded text back off the card meant "over 3 days" was decided by a
+    // number that had already been rounded before anything compared it.
+    assert.match(HTML, /var iso=card\.dataset && card\.dataset\.enteredAt;/);
+    assert.match(HTML, /if\(!isNaN\(t\)\) return Math\.max\(0, Math\.round\(\(Date\.now\(\)-t\)\/60000\)\);/);
+  });
+
+  test("a card with no readable date answers 0, so it never satisfies an 'over N' filter", () => {
+    assert.match(HTML, /if\(hit&&age && ageMins\(c\)<age\) hit=false;/);
+  });
+});
+
+describe("public/app/pipeline.html — Amount needed is filterable and sortable", () => {
+
+  test("the flag reaches the DOM as something a filter can read", () => {
+    assert.match(HTML, /if \(c\.approval_amount_missing === true\) card\.dataset\.needsAmount = "1";/);
+  });
+
+  test("there is a sort that puts approvals with no amount first", () => {
+    assert.match(HTML, /<option value="needs">Amount needed first<\/option>/);
+    assert.match(HTML, /if\(mode==='needs'\)\{/);
+  });
+
+  test("within that sort the longest wait comes first", () => {
+    assert.match(HTML, /return nb-na \|\| ageMins\(b\)-ageMins\(a\);/);
   });
 });
 
@@ -640,8 +873,20 @@ describe("public/app/pipeline.html — the phone layout", () => {
   test("the filter bar wraps instead of squeezing, and no control is dropped", () => {
     const css = phoneBlock();
     assert.match(css, /\.filterbar\{[^}]*flex-wrap:wrap/, "the bar must be allowed a second line");
-    assert.match(css, /\.filter-spacer\{display:none;\}/,
-      "the spacer is what pushed the summary off the right edge");
+    /* The .filter-spacer rule that used to be asserted here is GONE, because
+       the spacer itself is gone (2026-08-30). Its whole job was pushing
+       .board-summary to the far right of the filter bar, and the summary no
+       longer lives there — it sits in .headline, at the top of the page, next
+       to the number the screen is for. The phone-side risk it guarded against
+       has not gone away, so it is guarded on the new element instead:
+       .hl-ref must stand its margin-left:auto down and take a line of its
+       own, or the counters get pushed off the right edge at 390px exactly the
+       way the money figures used to be. */
+    assert.match(css, /\.hl-ref\{[^}]*margin-left:0/,
+      "margin-left:auto is what would push the counters off the right edge on a phone");
+    assert.match(css, /\.hl-ref\{flex:1 0 100%/, "the counters need a line of their own");
+    assert.match(css, /\.hl-lead\{flex:1 0 100%;\}/,
+      "the number and its next action keep the top of the screen");
     assert.match(css, /\.board-summary\{flex:1 0 100%/, "the summary needs a line of its own");
     assert.match(css, /\.filterbar \.search\{[^}]*flex:1 1 auto/,
       "the search must stretch rather than shrink to an icon");
@@ -671,7 +916,18 @@ describe("public/app/pipeline.html — the phone layout", () => {
     assert.match(HTML, /\.lr-side\{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0;max-width:48%;\}/);
     assert.match(HTML, /\.lr-blocker\{[^}]*white-space:nowrap;\}/);
     assert.match(HTML, /\.search\{[^}]*width:230px;/);
-    assert.match(HTML, /\.filter-spacer\{flex:1;\}/);
+    assert.match(HTML, /\.hl-ref\{display:flex;[^}]*margin-left:auto;\}/,
+      "on a desktop the counters sit to the right of the number; the phone block is what stands that down");
+  });
+
+  test("the spacer that pushed the only numbers to the far right is gone for good", () => {
+    // UI-STANDARDS §1: top-left is the number, never a filter. `.filter-spacer
+    // {flex:1}` existed to do the exact opposite — it shoved .board-summary as
+    // far from the top-left as one row allows, which left a filter as the
+    // leftmost thing on all three bars of the reference screen. If it comes
+    // back, so does the shape.
+    assert.ok(!/\.filter-spacer\s*\{/.test(SHIPPED), "the .filter-spacer rule is back");
+    assert.ok(!/class="filter-spacer"/.test(SHIPPED), "the spacer element is back in the filter bar");
   });
 
   test("every phone rule is inside the query — none of them can reach a desktop", () => {
@@ -682,8 +938,74 @@ describe("public/app/pipeline.html — the phone layout", () => {
     for (const rule of [".board-summary > span{white-space:nowrap",
                         ".fh-lens-row{flex-direction:column",
                         ".lr-blocker{white-space:normal",
-                        ".filter-spacer{display:none"]) {
+                        ".hl-lead{flex:1 0 100%",
+                        ".hl-sep{display:none"]) {
       assert.ok(!outside.includes(rule), "a phone-only rule escaped the media query: " + rule);
+    }
+  });
+});
+
+/* ── The jump highlight has to PAINT ────────────────────────────────────────
+ *
+ * e2e/pipeline-waiting-on.spec.mjs measures the computed ring in a real
+ * browser, which is the honest proof. This is the cheap backstop that runs on
+ * every `npm test` while Playwright is a separate command: a gradient sitting
+ * in a colour slot is invalid whatever the rest of the page does, so it can be
+ * caught by reading the file.
+ *
+ * The rule shipped as `box-shadow:0 0 0 3px var(--spectrum)`. --spectrum is a
+ * linear-gradient. box-shadow's colour component must be a <color>, so the
+ * declaration was invalid at computed-value time and fell back to `none` —
+ * taking the resting card shadow with it and leaving the card the user had
+ * just been sent to as the only flat one on the board.
+ */
+describe("public/app/pipeline.html — the jump highlight paints something", () => {
+
+  /* Every value this screen's own CSS assigns to `prop`. */
+  function declarations(prop) {
+    const out = [];
+    const re = new RegExp("(?:^|[;{])\\s*" + prop + "\\s*:([^;}]+)", "g");
+    let m;
+    while ((m = re.exec(SHIPPED)) !== null) out.push(m[1].trim());
+    return out;
+  }
+
+  test("no shadow, outline or border on this screen puts a gradient in a colour slot", () => {
+    // --spectrum is the only gradient token the brand file hands out. It is
+    // legal on `background` — .drop-line uses it correctly — and on none of
+    // these, every one of which takes a <color>.
+    for (const prop of ["box-shadow", "outline", "outline-color", "border-color", "text-shadow"]) {
+      for (const value of declarations(prop)) {
+        assert.ok(!/--spectrum/.test(value),
+          prop + " takes a colour, not a gradient: `" + prop + ":" + value +
+          "` is invalid at computed-value time and paints nothing at all");
+      }
+    }
+  });
+
+  test("the spot rule keeps the resting card shadow instead of replacing it", () => {
+    const m = SHIPPED.match(/\.card\.fh-spot[^{]*\{([^}]*)\}/);
+    assert.ok(m, "the .card.fh-spot rule is gone — if the highlight was removed, remove this test with it");
+    const body = m[1];
+    assert.match(body, /box-shadow:\s*var\(--panel-shadow\)/,
+      "without --panel-shadow first, .card.fh-spot (0,2,0) beats the brand file's resting card shadow " +
+      "and the card the jump lands on goes FLATTER than its neighbours");
+    assert.match(body, /0 0 0 3px var\(--ink\)/,
+      "the ring needs the validated ink hex — a ramp stop such as --accent can be washed out to the " +
+      "board colour by a one-hue tenant (UI-STANDARDS 12.6)");
+  });
+
+  test("the spot rule survives the pointer landing on the card", () => {
+    // .card:hover is declared later in the file at the same specificity (0,2,0)
+    // and wins the tie, so the spot rule has to name :hover itself. Measured
+    // 2026-08-30: stripping `:hover` from that selector in the live CSSOM drops
+    // the ring to `rgba(0,0,0,.07) 0 1px 3px` the moment the card is hovered.
+    const spot = SHIPPED.indexOf(".card.fh-spot");
+    const hover = SHIPPED.indexOf(".card:hover");
+    assert.ok(spot !== -1 && hover !== -1, "one of .card.fh-spot / .card:hover has gone");
+    if (hover > spot) {
+      assert.match(SHIPPED, /\.card\.fh-spot:hover/,
+        ".card:hover is declared after .card.fh-spot and outranks it on a tie, so the spot rule must name :hover");
     }
   });
 });

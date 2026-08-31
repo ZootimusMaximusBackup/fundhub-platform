@@ -25,11 +25,11 @@
   --ok:#A8D8B0; --warn:#F5CE8F; --alert:#F2A69B; --info:#A9C6E8; --accent:#C4B3E5;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
 
-.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gray)}
+.eyebrow{font-family:var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--gray)}
 .eyebrow::before{content:"";display:inline-block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;margin-right:9px;vertical-align:middle}
-.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:4px 9px;border:1px solid var(--line);border-radius:20px;color:var(--gray);white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;padding:4px 9px;border:1px solid var(--line);border-radius:20px;color:var(--gray);white-space:nowrap}
 .chip .cd{width:6px;height:6px;border-radius:50%;background:var(--gray2)}
 .chip.on .cd{background:var(--ok)} .chip.wip .cd{background:var(--warn)} .chip.bad .cd{background:var(--alert)}
 .pulse{width:8px;height:8px;border-radius:50%;background:var(--ok);position:relative;flex:0 0 auto}
@@ -42,51 +42,73 @@ header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-
 .shell{padding:24px 22px}
 .sec{margin-bottom:26px}
 .sech{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
-.note{font-size:11.5px;color:var(--gray2)}
+.note{color:var(--gray2)}
 
 /* the one sentence the gates exist to be able to say */
 .release{background:var(--card);color:var(--cardtext);border-radius:12px;padding:20px 22px}
-.release .lb{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
-.release .big{font-size:19px;font-weight:500;letter-spacing:-.02em;margin-top:8px;line-height:1.35}
+.release .lb{font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
+.release .big{font-weight:500;letter-spacing:-.02em;margin-top:8px;line-height:1.35}
 
 /* gates */
 .gates{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
 .gate{border:1px solid var(--line);border-radius:10px;padding:15px 16px;background:var(--paper)}
 .gate.done{border-color:var(--ok);background:rgba(168,216,176,.08)}
 .gt{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.gcode{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--gray)}
-.gate h4{font-size:14px;font-weight:600;margin-top:9px;letter-spacing:-.01em}
-.gwk{font-size:11.5px;color:var(--gray2);margin-top:3px}
-.gbl{font-size:12px;color:var(--gray);margin-top:8px}
+.gcode{font-family:var(--mono);letter-spacing:.12em;color:var(--gray)}
+.gate h4{font-weight:600;margin-top:9px;letter-spacing:-.01em}
+.gwk{color:var(--gray2);margin-top:3px}
+.gbl{color:var(--gray);margin-top:8px}
 
 /* what is next */
 .next{border:1px solid var(--line);border-radius:10px;padding:16px 18px}
-.next .lb{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
-.next .vl{font-size:16px;font-weight:500;margin-top:4px}
+.next .lb{font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
+.next .vl{font-weight:500;margin-top:4px}
 .next .row+.row{margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
 
 /* modules */
 .mods{border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.mrow{display:grid;grid-template-columns:52px 1fr 86px 56px 150px;gap:12px;align-items:baseline;padding:11px 16px;border-top:1px solid var(--line);font-size:13px}
+.mrow{display:grid;grid-template-columns:52px 1fr 86px 56px 150px;gap:12px;align-items:baseline;padding:11px 16px;border-top:1px solid var(--line)}
 .mrow:first-child{border-top:none}
-.mrow.hd{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2);background:var(--soft)}
+.mrow.hd{font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gray2);background:var(--soft)}
 .mrow b{font-weight:500}
-.mno{font-family:var(--mono);font-size:11px;color:var(--gray)}
-.cert{font-style:normal;display:block;font-size:11px;color:var(--accent)}
-.mwk,.mgate{color:var(--gray);font-size:12px}
-.mmsg{padding:14px 16px;font-size:12.5px;color:var(--gray)}
+.mno{font-family:var(--mono);color:var(--gray)}
+.cert{font-style:normal;display:block;color:var(--accent)}
+.mwk,.mgate{color:var(--gray)}
+.mmsg{padding:14px 16px;color:var(--gray)}
 
 /* refusal */
 .blocked{border:1px solid var(--warn);background:rgba(245,206,143,.12);border-radius:10px;padding:18px 20px}
-.blocked h3{font-size:15px;font-weight:600;margin-bottom:6px}
-.blocked .msg{font-size:13px;color:var(--ink2)}
+.blocked h3{font-weight:600;margin-bottom:6px}
+.blocked .msg{color:var(--ink2)}
 
 @media(max-width:1000px){.gates{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:640px){
   .gates{grid-template-columns:1fr}
   .mrow{grid-template-columns:1fr;gap:4px}
   .mrow.hd{display:none}
-  .mwk::before,.mgate::before,.mst::before{content:attr(data-l) " · ";font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
+  .mwk::before,.mgate::before,.mst::before{content:attr(data-l) " · ";font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
+}
+
+/* ── THE ONE ESCAPE HATCH (UI-STANDARDS.md §12.7) ─────────────────────────────
+   This screen mounts .app-shell, and fundhub-brand.css:184-186 sets
+   `font-size:inherit !important` on EVERY element inside it. An important
+   author rule beats a normal one whatever the load order, so every plain px
+   size this file used to carry was discarded by the browser — the screen was
+   painting flat at 16px and the twenty-one declarations above had never once
+   had an effect. They are gone rather than left as decoration.
+
+   These class names are h3/h4/div/b/em, so they miss the brand's own caption
+   list (.chip .eyebrow .note label th .caption .sub .mono …), which is why they
+   need naming here. ONE rule, not two: a second is how a screen ends up with
+   six sizes and no hierarchy (§3).
+
+   Not listed on purpose: .release .big and .next .vl. `.big` and `.vl` are on
+   the brand's METRIC list, so those two already paint at --fs-metric. That is
+   the size they have been rendering at all along, and it is the right one — the
+   release sentence and the next gate are what a partner opens this screen for. */
+.app-shell :is(.gate h4,.blocked h3,.gcode,.gwk,.gbl,.mno,.cert,
+  .mwk,.mgate,.mmsg,.mrow,.blocked .msg,.release .lb,.next .lb,.mrow.hd){
+  font-size:var(--fs-caption)!important;
 }
 </style>
 </head>

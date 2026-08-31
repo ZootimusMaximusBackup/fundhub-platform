@@ -37,6 +37,45 @@
     --alert-bg:color-mix(in srgb,var(--alert) 28%,#fff);
   }
 
+  /* ---------- THE ONE CAPTION RULE (UI-STANDARDS §12.7) --------------------
+     fundhub-brand.css sets `:is(.app,…) * {font-size:inherit !important}`, so
+     twenty-eight px sizes written in this file were painting nothing at all.
+     Measured 2026-08-30, signed in on the live app: 24 of them read back the
+     inherited 16px and the other four (.av, .brand .sub, footer.statusbar,
+     .gift-strip .note) read back 13px, because the brand file's caption list
+     already covers those names. Not one read back the size written next to it.
+     They are gone, and 645 element measurements across three widths say the
+     page is identical to before they went.
+     The names below are the worker panel's own — `p-` is this screen's prefix,
+     no shared stylesheet and no shell.js injection touches any of them — and
+     they are all small labels: the eyebrow, role line, close button, pace
+     badge, "Right now" label, section headings, key/value rows, timeline rows,
+     file chips and footnote. `!important` is what beats the brand's inherit.
+     ONE rule, never two.
+     DELIBERATELY OUT OF THIS LIST, and the reason matters more than the list:
+     a `.app :is(…)` selector scores (0,2,0), so it OUTRANKS a shared one-class
+     rule even when both are !important. Any name that shared chrome also owns
+     therefore has to stay out, or this screen silently overrides the whole app:
+       .clock     — shell.js sizes every clock in the app at 12px !important.
+       .live-pill — the house LIVE pill, carried by eight other screens.
+       .census    — topbar chrome, shared with galaxy.html.
+       .legend    — the reading key, shared with five other screens; it also
+                    sits in a 22px nowrap strip with overflow:hidden, so
+                    shrinking it UNCOVERS keys that were clipped. That is a
+                    change to what is on screen, not to type size, and it is
+                    not this pass's to make.
+       .legend b  — inherits .legend either way. */
+  .app :is(.p-kicker,.p-role,.p-close,.p-pace,.p-now-k,.p-sec-t,
+    .p-row,.p-tl-i,.p-chip,.p-foot,
+    /* T10-02's home tiles. The label and the comparison line are captions;
+       .tile-value is already on the brand's metric list via --fs-metric. These
+       joined THIS rule rather than starting a second one — §12.7 allows a
+       screen exactly one escape hatch, and a second is how a screen ends up
+       with six sizes and no hierarchy. */
+    .tile-label,.tile-compare,.home-tiles-status){
+    font-size:var(--fs-caption)!important;
+  }
+
   *{box-sizing:border-box;}
   html,body{
     margin:0;padding:0;height:100%;
@@ -85,21 +124,21 @@
   }
   /* ---------- worker avatars: filled = a person, outlined = an agent ---------- */
   .av{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;
-    justify-content:center;font-size:8px;font-weight:800;letter-spacing:-.2px;vertical-align:middle;
+    justify-content:center;font-weight:800;letter-spacing:-.2px;vertical-align:middle;
     font-family:var(--mono);}
   .av.human{background:var(--ink);color:#fff;border:1px solid var(--ls-line);}
   .av.agent{background:#fff;color:var(--ls-strong);border:1.5px solid var(--accent);}
   .brand{display:flex;align-items:baseline;gap:9px;}
-  .brand .name{font-weight:700;font-size:14px;letter-spacing:-.01em;}
+  .brand .name{font-weight:700;letter-spacing:-.01em;}
   .brand .sep{color:var(--text-faint);font-weight:400;}
-  .brand .sub{font-weight:600;font-size:12.5px;color:var(--text-dim);}
-  .topbar-right{display:flex;align-items:center;gap:16px;font-size:11.5px;color:var(--text-dim);flex-wrap:wrap;min-width:0;justify-content:flex-end}
-  .census{font-family:var(--mono);font-size:11px;color:var(--text-faint);}
+  .brand .sub{font-weight:600;color:var(--text-dim);}
+  .topbar-right{display:flex;align-items:center;gap:16px;color:var(--text-dim);flex-wrap:wrap;min-width:0;justify-content:flex-end}
+  .census{font-family:var(--mono);color:var(--text-faint);}
   .census b{color:var(--text-dim);font-weight:600;}
   .census .warn{color:var(--alert);font-weight:700;}
-  .clock{font-family:var(--mono);font-size:12px;color:var(--text);}
+  .clock{font-family:var(--mono);color:var(--text);}
   .live-pill{
-    display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;
+    display:flex;align-items:center;gap:6px;font-family:var(--mono);
     color:var(--text);background:var(--card);border:1px solid var(--cardline);
     padding:4px 9px 4px 7px;border-radius:20px;
   }
@@ -113,10 +152,10 @@
     display:flex;align-items:center;gap:16px;flex-wrap:nowrap;
     background:var(--card);border-bottom:1px solid var(--line-soft);
     padding:0 16px;height:22px;flex-shrink:0;
-    font-size:9.5px;color:var(--gray);letter-spacing:.15px;white-space:nowrap;overflow:hidden;
+    color:var(--gray);letter-spacing:.15px;white-space:nowrap;overflow:hidden;
     position:relative;z-index:5;
   }
-  .legend b{color:var(--gray2);font-weight:600;letter-spacing:.5px;text-transform:uppercase;font-size:9px;}
+  .legend b{color:var(--gray2);font-weight:600;letter-spacing:.5px;text-transform:uppercase;}
   .legend i{font-style:normal;display:flex;align-items:center;gap:5px;}
   .sw{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
   .sw.n{background:var(--gray);} .sw.g{background:var(--ok);}
@@ -127,7 +166,7 @@
   footer.statusbar{
     flex-shrink:0;height:26px;background:var(--ink);
     display:flex;align-items:center;padding:0 14px;gap:16px;
-    font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:lowercase;
+    font-family:var(--mono);letter-spacing:.06em;text-transform:lowercase;
     color:var(--gray);position:relative;overflow:hidden;z-index:5;
     border-top:1px solid var(--cardline);
   }
@@ -150,14 +189,14 @@
     background:rgba(242,227,155,.08);
     position:relative;z-index:6;
   }
-  .gift-strip .copy{flex:1;min-width:220px;color:var(--text-dim);font-size:12px;line-height:1.55}
-  .gift-strip .copy strong{color:var(--text);font-weight:600;display:block;margin-bottom:4px;font-size:13px}
+  .gift-strip .copy{flex:1;min-width:220px;color:var(--text-dim);line-height:1.55}
+  .gift-strip .copy strong{color:var(--text);font-weight:600;display:block;margin-bottom:4px;}
   .gift-strip .btn{
     border:1px solid var(--lemon);background:var(--lemon);color:var(--ink);
-    border-radius:7px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer;
+    border-radius:7px;padding:8px 14px;font-weight:600;cursor:pointer;
   }
   .gift-strip .btn:hover{filter:brightness(1.05)}
-  .gift-strip .note{font-family:var(--mono);font-size:11px;color:var(--text-faint);flex-basis:100%;margin-top:2px}
+  .gift-strip .note{font-family:var(--mono);color:var(--text-faint);flex-basis:100%;margin-top:2px}
 
   /* ---------- home tiles: T10-02 — the three KPI tiles that have a real,
      partner-scoped source (see the audit comment in the canvas script below
@@ -178,7 +217,7 @@
     background:var(--card);border-radius:10px;padding:16px;
   }
   .home-tiles .tile-label{
-    font-size:9.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+    font-weight:700;letter-spacing:.6px;text-transform:uppercase;
     color:var(--text-dim);margin-bottom:8px;
   }
   .home-tiles .tile-value{
@@ -192,11 +231,11 @@
   }
   @keyframes tileSkeleton{0%,100%{opacity:.5}50%{opacity:1}}
   .home-tiles .tile-compare{
-    margin-top:8px;font-size:11px;color:var(--text-faint);font-family:var(--mono);
+    margin-top:8px;color:var(--text-faint);font-family:var(--mono);
     font-variant-numeric:tabular-nums;
   }
   .home-tiles-status{
-    grid-column:1/-1;font-size:11px;color:var(--text-faint);font-family:var(--mono);
+    grid-column:1/-1;color:var(--text-faint);font-family:var(--mono);
   }
   @media (max-width:640px){
     .home-tiles{grid-template-columns:1fr;gap:8px;padding:8px 16px 0;}
@@ -220,16 +259,16 @@
   .p-scroll::-webkit-scrollbar{width:8px;}
   .p-scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
   .p-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
-  .p-kicker{font-size:9px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--ls-text-dim);margin-bottom:5px;}
-  .p-name{font-size:17px;font-weight:800;line-height:1.15;letter-spacing:-.2px;}
-  .p-role{font-size:11.5px;color:var(--ls-text-dim);margin-top:2px;}
+  .p-kicker{font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--ls-text-dim);margin-bottom:5px;}
+  .p-name{font-weight:800;line-height:1.15;letter-spacing:-.2px;}
+  .p-role{color:var(--ls-text-dim);margin-top:2px;}
   .p-close{
-    font-family:var(--mono);font-size:11px;color:var(--ls-text-dim);
+    font-family:var(--mono);color:var(--ls-text-dim);
     border:1px solid var(--ls-line);border-radius:5px;padding:2px 6px;cursor:pointer;
     background:transparent;line-height:1.4;flex-shrink:0;
   }
   .p-close:hover{background:var(--soft);color:var(--ls-text);}
-  .p-pace{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;
+  .p-pace{display:inline-flex;align-items:center;gap:6px;font-weight:700;
     padding:3px 9px;border-radius:11px;margin-top:9px;letter-spacing:.2px;}
   .p-pace.on{background:var(--soft);color:var(--ls-text-dim);}
   .p-pace.ahead{background:var(--ok-bg);color:var(--ls-strong);}
@@ -243,28 +282,28 @@
   }
   .p-now.blocked{background:var(--alert-bg);border-left-color:var(--alert);}
   .p-now.behind{background:var(--warn-bg);border-left-color:var(--warn);}
-  .p-now-k{font-size:8.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ls-text-dim);margin-bottom:3px;}
-  .p-now-v{font-size:12.5px;line-height:1.35;font-weight:500;}
+  .p-now-k{font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ls-text-dim);margin-bottom:3px;}
+  .p-now-v{line-height:1.35;font-weight:500;}
 
   .p-sec{margin-top:14px;}
-  .p-sec-t{font-size:9px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--ls-text-dim);
+  .p-sec-t{font-weight:700;letter-spacing:1.1px;text-transform:uppercase;color:var(--ls-text-dim);
     padding-bottom:5px;border-bottom:1px solid var(--ls-line);margin-bottom:2px;}
   .p-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;
-    font-size:12px;padding:6px 0;border-bottom:1px solid var(--ls-line-soft);}
+    padding:6px 0;border-bottom:1px solid var(--ls-line-soft);}
   .p-row:last-child{border-bottom:none;}
   .p-row .k{color:var(--ls-text-dim);}
-  .p-row .v{font-family:var(--mono);font-weight:600;font-size:11.5px;text-align:right;}
+  .p-row .v{font-family:var(--mono);font-weight:600;text-align:right;}
   .p-row .v.amber,.p-row .v.red,.p-row .v.green{color:var(--ls-strong);font-weight:700;}
 
   .p-tl{margin-top:4px;}
-  .p-tl-i{display:flex;gap:10px;font-size:11.5px;padding:5px 0;line-height:1.35;border-bottom:1px solid var(--ls-line-soft);}
+  .p-tl-i{display:flex;gap:10px;padding:5px 0;line-height:1.35;border-bottom:1px solid var(--ls-line-soft);}
   .p-tl-i:last-child{border-bottom:none;}
-  .p-tl-i .t{font-family:var(--mono);font-size:10.5px;color:var(--ls-text-dim);white-space:nowrap;padding-top:1px;min-width:46px;}
+  .p-tl-i .t{font-family:var(--mono);color:var(--ls-text-dim);white-space:nowrap;padding-top:1px;min-width:46px;}
   .p-tl-i.now .x{font-weight:700;}
   .p-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;}
-  .p-chip{font-size:10.5px;background:var(--soft);border:1px solid var(--ls-line);border-radius:4px;padding:2px 7px;color:var(--ls-text-dim);}
+  .p-chip{background:var(--soft);border:1px solid var(--ls-line);border-radius:4px;padding:2px 7px;color:var(--ls-text-dim);}
   .p-foot{margin-top:15px;padding-top:9px;border-top:1px solid var(--ls-line);
-    font-size:9.5px;line-height:1.5;color:var(--gray2);}
+    line-height:1.5;color:var(--gray2);}
 </style>
 <script defer src="shell.js"></script>
 </head>

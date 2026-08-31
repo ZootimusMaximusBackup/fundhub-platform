@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { extractFromCrsResult } from "./extract-disputables.mjs";
 import { renderLetterDraft } from "./letter-draft.mjs";
-import { checkDocPacket, disputeNeedsSsn } from "./doc-gate.mjs";
+import { checkDocPacket, disputeNeedsSsn, loadDocPackets } from "./doc-gate.mjs";
 
 test("extractFromCrsResult: inquiries grouped per bureau", () => {
   const buckets = extractFromCrsResult({
@@ -97,4 +97,62 @@ test("checkDocPacket: SSN required only when opted in", () => {
   assert.equal(checkDocPacket(docs).complete, true);
   assert.equal(checkDocPacket(docs, { requireSsn: true }).complete, false);
   assert.equal(disputeNeedsSsn([{ category: "ssn", value: "xxx" }]), true);
+});
+
+/* ── loadDocPackets — the same answer, for a whole queue, in one query ──────
+ *
+ * The Specialist's case list needs the identity packet per row, and the screen
+ * used to invent it: it printed "complete" for every case that was not already
+ * Blocked, and Blocked is only set at send time. So a packet nobody had looked
+ * at read "complete" on the screen that decides whether to press Send.
+ *
+ * The point of these three tests is the last one. A failed read must come back
+ * as NULL, so the caller says "not checked" — never "complete".
+ */
+
+function fakeDb(rows, { fail = false } = {}) {
+  return {
+    calls: [],
+    async query(sql, params) {
+      this.calls.push({ sql, params });
+      if (fail) throw new Error("relation \"documents\" does not exist");
+      return { rows };
+    }
+  };
+}
+
+test("loadDocPackets: one query for the page, grouped per client", async () => {
+  const A = "aaaaaaaa-1111-4111-8111-111111111111";
+  const B = "bbbbbbbb-2222-4222-8222-222222222222";
+  const db = fakeDb([
+    { client_id: A, kind: "client_upload", subtype: "id_document" },
+    { client_id: A, kind: "client_upload", subtype: "proof_of_address" },
+    { client_id: A, kind: "authorization", subtype: "soft_pull_consent" },
+    { client_id: B, kind: "client_upload", subtype: "id_document" }
+  ]);
+  const out = await loadDocPackets(db, { orgId: "org-1", clientIds: [A, B] });
+  assert.equal(db.calls.length, 1, "one lift for the whole page, not one per row");
+  assert.equal(out.get(A).complete, true);
+  assert.equal(out.get(B).complete, false);
+  assert.deepEqual(out.get(B).missing, ["proof_of_address", "authorization"]);
+});
+
+test("loadDocPackets: a client with no documents is answered, not skipped", async () => {
+  const A = "aaaaaaaa-1111-4111-8111-111111111111";
+  const out = await loadDocPackets(fakeDb([]), { orgId: "org-1", clientIds: [A] });
+  assert.equal(out.get(A).complete, false);
+  // and nothing to ask about asks nothing
+  assert.equal((await loadDocPackets(fakeDb([]), { orgId: "org-1", clientIds: [] })).size, 0);
+});
+
+test("loadDocPackets: a failed read is null, so nothing can read as complete", async () => {
+  // "We could not look" and "we looked and it is short" are different sentences
+  // to the person deciding whether to mail a dispute letter. A thrown query that
+  // came back as an empty Map would have quietly said "chasing" for everyone;
+  // one that came back as a populated Map would have said "complete".
+  const out = await loadDocPackets(fakeDb([], { fail: true }), {
+    orgId: "org-1",
+    clientIds: ["aaaaaaaa-1111-4111-8111-111111111111"]
+  });
+  assert.equal(out, null);
 });
