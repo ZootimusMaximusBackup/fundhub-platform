@@ -35,7 +35,7 @@ flowchart TD
     CAN --> A_repair[repair — 5 routes]
     CAN --> A_social[social — 6 routes]
     CAN --> A_staff[staff — 1 route]
-    CAN --> A_top_level[Everything else — 24 routes]
+    CAN --> A_top_level[Everything else — 25 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 68 routes]
     CANT --> B_auth[Signing in and out — 5 blocked]
@@ -62,7 +62,7 @@ flowchart TD
 
 ## What they can reach
 
-**132 of 201 routes.**
+**133 of 202 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -114,6 +114,7 @@ flowchart TD
 | `/api/dashboard/pipeline` | — | staff |
 | `/api/dashboard/pipeline-counts` | — | staff |
 | `/api/dashboard/seed` | — | staff |
+| `/api/documents-download` | GET | staff, client |
 | `/api/documents-upload` | POST | staff, client |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
 | `/api/finance/alerts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -208,7 +209,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**68 of 201 routes.**
+**68 of 202 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

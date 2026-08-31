@@ -44,6 +44,7 @@ import { isUuid } from "../src/http/read-api.mjs";
 import { storeAndRegister } from "../src/documents/register.mjs";
 import { getDocument } from "../src/documents/retrieve.mjs";
 import { storeFromEnv } from "../src/documents/store.mjs";
+import { baseUrlFromRequest } from "../src/documents/signed-url.mjs";
 import { KINDS, isKnownSubtype } from "../src/documents/kinds.mjs";
 import { isPortalUploadKind } from "../src/repair/upload-doors.mjs";
 import { validateUpload, maxUploadBytes } from "../src/documents/upload-validate.mjs";
@@ -142,7 +143,7 @@ export default async function handler(req, res) {
       }, { orgId, clientId });
 
       const shaped = await getDocument(db, {
-        orgId, documentId: document.id, sign: { baseUrl: baseUrlFrom(req) }
+        orgId, documentId: document.id, sign: { baseUrl: baseUrlFromRequest(req) }
       });
       results.push(shaped);
     }
@@ -159,18 +160,6 @@ export default async function handler(req, res) {
 function ownsClient(principal, clientId) {
   if (principal.kind === "staff") return true;
   return !!principal.clientId && String(principal.clientId) === String(clientId).trim();
-}
-
-/* baseUrlFrom — best-effort absolute origin so the signed link the response
-   hands back is usable straight off the client without the caller having to
-   know its own host. Falls back to a relative path (signDocumentUrl's default)
-   if the request carries nothing usable — still a correct, working link. */
-function baseUrlFrom(req) {
-  const h = req?.headers || {};
-  const host = h.host || h["x-forwarded-host"];
-  if (!host) return null;
-  const proto = (h["x-forwarded-proto"] || "https").split(",")[0].trim();
-  return `${proto}://${host}`;
 }
 
 function cryptoRandomId() {

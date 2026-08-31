@@ -297,6 +297,17 @@ function ctCell(d){
     (acts.length?'<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">'+acts.join('')+'</div>':'');
 }
 
+/* The Download control, in the Document cell — no new column, no new screen.
+   Drawn only for a row that HAS bytes behind it (d.file, set by the loader from
+   the row's mime_type). A row whose file was never generated has nothing to
+   fetch, and UI-STANDARDS §4 says a screen does not render a control that
+   cannot finish. The click is handled by ACT.download below, which asks the API
+   for a fresh link at that moment — the link is never held in this markup. */
+function dlCell(d){
+  if(!d.file || !d.id) return '';
+  return '<div style="margin-top:6px"><button class="btn sm" data-dl="'+esc(d.id)+'">Download</button></div>';
+}
+
 function pending(d){
   return d.gen!=='generated' || d.del==='not_sent' || d.del==='bounced' ||
          d.sig==='awaiting' || d.sig==='expired';
@@ -366,7 +377,7 @@ function render(){
     var g=GEN[d.gen],dl=DEL[d.del],s=SIG[d.sig];
     var isP=pending(d);
     return '<tr class="'+(isP&&d.age>=14?'stale':'')+'">'+
-      '<td><div style="font-weight:600">'+esc(d.doc)+'</div><div class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.08em">'+esc(d.sub)+'</div></td>'+
+      '<td><div style="font-weight:600">'+esc(d.doc)+'</div><div class="mono" style="font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.08em">'+esc(d.sub)+'</div>'+dlCell(d)+'</td>'+
       '<td>'+esc(d.client)+'</td>'+
       '<td><span class="badge b-gray">'+CN[d.cls]+'</span></td>'+
       '<td><span class="badge '+g[0]+'">'+g[1]+'</span></td>'+
@@ -553,6 +564,37 @@ renderTabs(); renderClassbar(); render();
         say("b-ok", (res.data && res.data.message) || "The contract was voided.");
         decorateContracts();   // re-read the state rather than guess the new badge
       });
+    },
+
+    /* Open a saved file — an uploaded ID, a bank statement, a generated letter.
+       NOT the contract path above: a contract's bytes arrive base64 inside JSON
+       from api/contracts.mjs, while a registry document is fetched through a
+       short-lived signed link that api/documents/[id].mjs resolves.
+
+       TWO STEPS, AND THE FIRST ONE IS THE POINT. The link does not exist until
+       it is asked for: /api/documents-download mints one, valid for fifteen
+       minutes, only for a caller who is signed in right now and only for a
+       document inside their own company. Before this endpoint existed the ONLY
+       link a file ever got was minted in the reply to its upload, so anything
+       older than fifteen minutes could not be opened by anybody.
+
+       window.open with the link, rather than an <a download>: the bytes come
+       back with the document's own content type and the browser does the right
+       thing with a PDF or an image. The URL is never written into the page, so
+       a screenshot or a copied row does not carry a working credential. */
+    download: function (id, btn) {
+      var was = btn.textContent;
+      btn.disabled = true; btn.textContent = "opening…";
+      FHData.documentDownload(id).then(function (res) {
+        btn.disabled = false; btn.textContent = was;
+        var link = res.ok && res.data && res.data.document
+          && res.data.document.download && res.data.document.download.url;
+        if (!link) {
+          say("b-alert", (res && res.error) || "That file could not be opened.");
+          return;
+        }
+        window.open(link, "_blank", "noopener");
+      });
     }
   };
 
@@ -562,7 +604,16 @@ renderTabs(); renderClassbar(); render();
   var tblBody = document.getElementById("body");
   if (tblBody) {
     tblBody.addEventListener("click", function (ev) {
-      var btn = ev.target && ev.target.closest ? ev.target.closest("button[data-ct]") : null;
+      var t = ev.target;
+      if (!t || !t.closest) return;
+
+      // The Download control on the Document cell. Checked first because it
+      // carries a document id, not a contract id, and the two must not be
+      // handed to each other's endpoint.
+      var dl = t.closest("button[data-dl]");
+      if (dl) return ACT.download(dl.getAttribute("data-dl"), dl);
+
+      var btn = t.closest("button[data-ct]");
       if (!btn) return;
       var fn = ACT[btn.getAttribute("data-ct")];
       if (fn) fn(btn.getAttribute("data-cid"), btn);
@@ -681,6 +732,11 @@ renderTabs(); renderClassbar(); render();
           // Carried so the contract lookup below has something to join on. It is
           // the documents row id, not a storage key — redact() strips those.
           id: r.id,
+          /* Does this row have bytes behind it? mime_type is written when a
+             version is actually stored, so a document that was registered but
+             never generated has none — and dlCell() draws no Download button
+             for it rather than offering a click that would 404. */
+          file: !!r.mime_type,
           doc: r.title || r.document_key || "—",
           cls: cls,
           sub: (r.subtype ? r.subtype + " · " : "") + "v" + (r.current_version || 1),

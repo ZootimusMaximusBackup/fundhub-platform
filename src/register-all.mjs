@@ -7,6 +7,7 @@ import { register as registerLifecycle } from "./handlers/client-lifecycle.mjs";
 import { register as registerComms } from "./handlers/comms.mjs";
 import { register as registerPaymentLinks } from "./handlers/payment-links.mjs";
 import { register as registerMoneyChain } from "./handlers/money-chain.mjs";
+import { register as registerPurchaseRouting } from "./handlers/purchase-routing.mjs";
 import { register as registerStaffCompAlerts } from "./handlers/staff-comp-alerts.mjs";
 import { register as registerCustomerInsights } from "./handlers/customer-insights.mjs";
 import { register as registerInquiryGate } from "./handlers/inquiry-gate.mjs";
@@ -25,6 +26,10 @@ export function registerAll() {
   registerComms();
   registerPaymentLinks();
   registerMoneyChain();
+  /* Payment -> fulfilment board. Strictly after money-chain: handler order is
+     registration order, and this reads the sale money-chain has just written to
+     decide which board the client belongs on. */
+  registerPurchaseRouting();
   /* After money-chain so sale_attributions exist when a deal-close win SMS runs. */
   registerStaffCompAlerts();
   registerCustomerInsights();

@@ -29,7 +29,13 @@ import {
   recordComplaintFiling
 } from "./complaint-filing.mjs";
 import { buildLetterText } from "../letters/generate.mjs";
-import { CFPB_FILING, CFPB_MAIL_ADDRESS, agPostalAddress } from "../letters/ag-statutes.mjs";
+import {
+  AG_MAIL_BY_STATE,
+  AG_MAIL_UNRESOLVED,
+  CFPB_FILING,
+  CFPB_MAIL_ADDRESS,
+  agPostalAddress
+} from "../letters/ag-statutes.mjs";
 
 const VIOLATIONS = [{
   ruleId: "M2-005",
@@ -99,15 +105,40 @@ describe("where a complaint is mailed", () => {
     }
   });
 
-  test("NO STATE ATTORNEY GENERAL CAN BE MAILED — no address was invented", () => {
-    // The finding. AG_BY_STATE carries an office name and a web portal, never a
-    // street address. Fifty addresses were not guessed. Until agPostalAddress is
-    // filled in, this send is refused and no filing row is ever written.
-    for (const state of ["TX", "CA", "FL", "NY", "IL", "WY", "ZZ"]) {
-      assert.equal(agPostalAddress(state), null, `${state} gained an invented address`);
+  // REPLACED, NOT WEAKENED. This test used to read "NO STATE ATTORNEY GENERAL CAN
+  // BE MAILED — no address was invented" and pinned agPostalAddress returning null
+  // for every state, because the repository held no state AG addresses at all.
+  // 38 confirmed addresses have since been added (src/metro2/letters/ag-statutes.mjs,
+  // each with its source URL). The rule that test protected is unchanged and is
+  // now pinned harder, in both directions, by the two tests below: a state with a
+  // confirmed address mails to THAT address and nothing else, and a state without
+  // one is still refused with nothing substituted for it.
+
+  test("A STATE WITH NO CONFIRMED ADDRESS IS STILL REFUSED — nothing is substituted", () => {
+    // The 12 states whose complaint mailing address could not be confirmed, plus
+    // codes that are not states at all. Four of the 12 (NV, NY, OK, OR) do publish
+    // a general office address; mailing a sworn complaint there is the failure
+    // this refusal exists to prevent, so they are refused like the rest.
+    const cannotMail = [...Object.keys(AG_MAIL_UNRESOLVED), "DC", "PR", "GU", "ZZ"];
+    assert.equal(cannotMail.length, 16, "the unresolved list changed without this test being read");
+    for (const state of cannotMail) {
+      assert.equal(agPostalAddress(state), null, `${state} gained an unreviewed address`);
       const dest = complaintDestination(COMPLAINT_TARGET.STATE_AG, { state });
       assert.equal(dest.ok, false, `${state} was mailable without an address on file`);
       assert.equal(dest.reason, "ag_postal_address_unknown");
+      assert.equal(dest.to, undefined, `${state} was handed a destination anyway`);
+    }
+  });
+
+  test("a confirmed state mails to the address on file, and to nothing else", () => {
+    for (const state of Object.keys(AG_MAIL_BY_STATE)) {
+      const dest = complaintDestination(COMPLAINT_TARGET.STATE_AG, { state });
+      assert.equal(dest.ok, true, `${state} has a confirmed address but was refused`);
+      assert.deepEqual(dest.to, agPostalAddress(state),
+        `${state} was mailed somewhere other than its address on file`);
+      assert.equal(dest.to.address_state, state, `${state} was mailed to another state`);
+      assert.equal(dest.office, dest.to.company_name,
+        `${state} names one office and mails to another`);
     }
   });
 

@@ -34,7 +34,10 @@ export async function computeKpis(db, { orgId, period = "7d" } = {}) {
 
   const [cash, funded, booked, showed, closed, clients, spend] = await Promise.all([
     db.query(
-      `SELECT COALESCE(SUM(amount_paid), 0)::bigint AS cents
+      /* transactions.amount_paid is DOLLARS (numeric 14,2). Sum stays numeric
+         and keeps the cents; the caller converts. A ::bigint cast here would
+         truncate the cents AND label dollars as cents — a 100x understatement. */
+      `SELECT COALESCE(SUM(amount_paid), 0) AS dollars
          FROM transactions
         WHERE org_id = $1
           AND status IN ('paid','succeeded','complete','completed')
@@ -45,7 +48,7 @@ export async function computeKpis(db, { orgId, period = "7d" } = {}) {
       /* Count real funded rounds (money-chain source of truth), not clients.funded
          which can lag or stay false when rounds already landed. */
       `SELECT count(DISTINCT client_id)::int AS n,
-              COALESCE(SUM(funded_amount), 0)::bigint AS cents
+              COALESCE(SUM(funded_amount), 0) AS dollars
          FROM funding_rounds
         WHERE org_id = $1
           AND status = 'funded'
@@ -95,7 +98,8 @@ export async function computeKpis(db, { orgId, period = "7d" } = {}) {
     ).catch(() => ({ rows: [{ cents: null }] }))
   ]);
 
-  const cashCents = Number(cash.rows[0]?.cents || 0);
+  // transactions.amount_paid is dollars (numeric 14,2), not cents.
+  const cashCents = Math.round(Number(cash.rows[0]?.dollars || 0) * 100);
   const fundedN = Number(funded.rows[0]?.n || 0);
   // funding_rounds.funded_amount is dollars (numeric 14,2), not cents.
   const fundedCents = Math.round(Number(funded.rows[0]?.dollars || 0) * 100);
@@ -118,8 +122,20 @@ export async function computeKpis(db, { orgId, period = "7d" } = {}) {
     costPerFunded = Math.round(spendCents / fundedN);
   }
 
-  // Pipeline movement = cards that changed stage today (entered_at in window for days=1,
-  // or in the period). Use cards.entered_at as the best available signal.
+  // Pipeline movement = cards that entered their current stage inside the window.
+  //
+  // This asked the right question against a column that could not answer it.
+  // cards.entered_at was stamped once at insert and never updated, so until
+  // migration 271 this counted cards CREATED in the window, not cards MOVED —
+  // a board where nothing moved all week still reported movement, and a week of
+  // heavy stage changes on old cards reported none. 271 adds a trigger that
+  // stamps entered_at whenever stage_id actually changes, so the column now
+  // means what this query always assumed. The SQL is unchanged and correct.
+  //
+  // A newly created card counts, and should: it entered its first stage in the
+  // window. Cards that existed before 271 shipped carry their creation time
+  // until their next real move; there was no stage-change history to backfill
+  // from.
   const moved = await db.query(
     `SELECT count(*)::int AS n
        FROM cards cd

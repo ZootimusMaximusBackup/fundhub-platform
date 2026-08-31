@@ -4,6 +4,9 @@
 // the page stay vague ("Audit"). Commas sees a keep catalog title only.
 //
 // GET  — widget when client key + PID exist; else their public affiliate URL.
+//        Also carries the SmartCredit policy-link addresses and the cancellation
+//        route, by env-var NAME only. Unset means the page prints the document
+//        name as plain text — it never guesses an address.
 // GET ?view=roadmap — existing repair brain on a stored sample file.
 // POST — mints a Commas checkout on Consulting Services Assessment (keep).
 //        Never POST /public-api/products/create. Never invent a catalog title.
@@ -35,6 +38,66 @@ export const SMART_CREDIT_AFFILIATE_URL = "https://smartcredit.com/cblp/?PID=290
 
 /** Spanish enrollment, same PID, same partner account. Partner Support, 2026-08-28. */
 export const SMART_CREDIT_AFFILIATE_URL_ES = "https://smartcredito.com/cblp/?PID=29056";
+
+/**
+ * ConsumerDirect's compliance review (developer.consumerdirect.io/docs/support-compliance-review)
+ * item 9 wants clickable links to SmartCredit's Service Agreement, Privacy Policy, Terms of Use
+ * and Consumer Rights, next to where the consumer pays.
+ *
+ * NOT KNOWN. Those four addresses are not published in their docs and appear nowhere in this
+ * repo. They are NOT invented here. Each is read from an env var by name; when the name is unset
+ * the page prints the document's name as plain text instead of a dead link, so the gap stays
+ * visible instead of being papered over. Ask ConsumerDirect for the four addresses, then
+ * `netlify env:set CONSUMER_DIRECT_SERVICE_AGREEMENT_URL "<url>" --context ...` and the links
+ * light up with no code change.
+ */
+export const SMART_CREDIT_LEGAL_ENV = {
+  serviceAgreement: "CONSUMER_DIRECT_SERVICE_AGREEMENT_URL",
+  privacyPolicy: "CONSUMER_DIRECT_PRIVACY_POLICY_URL",
+  termsOfUse: "CONSUMER_DIRECT_TERMS_OF_USE_URL",
+  consumerRights: "CONSUMER_DIRECT_CONSUMER_RIGHTS_URL"
+};
+
+/**
+ * Compliance item 12 — the official route a person uses to cancel SmartCredit. Also NOT KNOWN
+ * and NOT invented. Set CONSUMER_DIRECT_CANCEL_URL once ConsumerDirect gives it.
+ */
+export const SMART_CREDIT_CANCEL_ENV = "CONSUMER_DIRECT_CANCEL_URL";
+
+/** The four ready-made looks their widget ships with. Anything else is ignored. */
+export const WIDGET_THEMES = ["material", "bootstrap", "sc", "galaxy"];
+
+/**
+ * "sc" is ConsumerDirect's own SmartCredit look. Compliance item 2 wants their branding kept
+ * visibly separate from ours, and using their look is the conservative way to do that while
+ * nobody here has read the branding guidelines PDF. Overridable by name.
+ */
+export const DEFAULT_WIDGET_THEME = "sc";
+
+/** https only. A non-https or malformed address is treated as absent, never printed. */
+function httpsUrl(v) {
+  const s = String(v || "").trim();
+  if (!s) return null;
+  try {
+    const u = new URL(s);
+    return u.protocol === "https:" ? u.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The four SmartCredit policy addresses plus the cancellation route. null means "not given". */
+export function smartCreditLegalFromEnv(env = process.env) {
+  const out = {};
+  for (const [key, name] of Object.entries(SMART_CREDIT_LEGAL_ENV)) out[key] = httpsUrl(env[name]);
+  out.cancelUrl = httpsUrl(env[SMART_CREDIT_CANCEL_ENV]);
+  return out;
+}
+
+export function widgetThemeFromEnv(env = process.env) {
+  const want = String(env.CONSUMER_DIRECT_WIDGET_THEME || "").trim().toLowerCase();
+  return WIDGET_THEMES.includes(want) ? want : DEFAULT_WIDGET_THEME;
+}
 
 function readBody(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
@@ -76,6 +139,9 @@ export function smartCreditFromEnv(env = process.env) {
   const affiliateUrl = String(
     env.CONSUMER_DIRECT_AFFILIATE_URL || env.SMART_CREDIT_AFFILIATE_URL || SMART_CREDIT_AFFILIATE_URL
   ).trim();
+  // The compliance wording on the page is shown on BOTH paths — widget and plain link — so the
+  // policy addresses and the cancellation route travel with either shape.
+  const legal = smartCreditLegalFromEnv(env);
   if (clientKey && pid) {
     const stage = String(env.CONSUMER_DIRECT_ENV || env.SMART_CREDIT_ENV || "")
       .trim()
@@ -85,6 +151,8 @@ export function smartCreditFromEnv(env = process.env) {
       pid,
       affiliateUrl: affiliateUrl || null,
       productName: "smartcredit",
+      theme: widgetThemeFromEnv(env),
+      legal,
       memberUrl: stage
         ? "https://stage-sc.consumerdirect.app"
         : "https://www.smartcredit.com",
@@ -94,7 +162,7 @@ export function smartCreditFromEnv(env = process.env) {
     };
   }
   if (!affiliateUrl) return null;
-  return { affiliateUrl, pid: pid || "29056" };
+  return { affiliateUrl, pid: pid || "29056", legal };
 }
 
 export function parseOptimizeCheckoutBody(body) {

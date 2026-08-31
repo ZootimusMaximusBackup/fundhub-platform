@@ -15,7 +15,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:var(--fs-body);line-height:1.5;-webkit-font-smoothing:antialiased}
 /* This whole screen is owner/admin-only. Keep it out of view until shell.js
    confirms the current session may open it, so a direct visit cannot flash the
    wording panel before the shell routes a closer away. */
@@ -45,25 +45,25 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
 .topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
-.topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
-.topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+.topbar h1{font-weight:600;letter-spacing:-.01em}
+.topbar .crumb{font-family:var(--mono);color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
 .content{padding:22px 24px 60px;flex:1}
 .card{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .card+.card{margin-top:14px}
 .card-hd{padding:13px 16px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.card-hd h2{font-size:13.5px;font-weight:600}
+.card-hd h2{font-weight:600}
 .card-bd{padding:16px}
-.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
+.btn{border:1px solid var(--line);background:#fff;border-radius:7px;padding:8px 14px;font-weight:500;cursor:pointer;transition:background .12s,border-color .12s}
 .btn:hover{background:var(--soft);border-color:var(--gray2)}
 .btn.dark{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .btn.dark:hover{background:var(--ink2)}
-.btn.sm{padding:5px 10px;font-size:11.5px}
-.btn.mono{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.btn.sm{padding:5px 10px}
+.btn.mono{font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase}
 .btn:disabled{opacity:.42;cursor:not-allowed}
 .btn:disabled:hover{background:#fff;border-color:var(--line)}
 .btn.dark:disabled:hover{background:var(--ink)}
-.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:5px;font-family:var(--mono);font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent;white-space:nowrap}
 .b-ok{background:rgba(168,216,176,.24);border-color:var(--ok);color:#2C5138}
 .b-warn{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
 .b-alert{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
@@ -72,58 +72,78 @@ button,input,select,textarea{font:inherit;color:inherit}
 .b-gray{background:var(--soft);border-color:var(--line);color:var(--gray)}
 .field{display:flex;flex-direction:column;gap:5px}
 .field+.field{margin-top:11px}
-.field label{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
-.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;font-size:13px;width:100%}
-.field textarea{resize:vertical;line-height:1.65;font-size:12.5px;font-family:var(--mono)}
+.field label{font-family:var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--gray)}
+.field input,.field select,.field textarea{border:1px solid var(--line);border-radius:7px;background:#fff;padding:8px 10px;width:100%}
+.field textarea{resize:vertical;line-height:1.65;font-family:var(--mono)}
 .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--gray2);box-shadow:0 0 0 3px rgba(169,198,232,.28)}
-.field .hint{font-family:var(--mono);font-size:9.5px;color:var(--gray2);letter-spacing:.06em}
+.field .hint{font-family:var(--mono);color:var(--gray2);letter-spacing:.06em}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
 table{width:100%;border-collapse:collapse}
-th{text-align:left;font-family:var(--mono);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gray);padding:9px 12px;border-bottom:1px solid var(--line);background:var(--soft)}
-td{padding:10px 12px;border-bottom:1px solid var(--line);font-size:12.5px;vertical-align:top}
+th{text-align:left;font-family:var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--gray);padding:9px 12px;border-bottom:1px solid var(--line);background:var(--soft)}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
 tr:last-child td{border-bottom:0}
 tr.sel td{background:rgba(169,198,232,.13)}
 .rowlink{cursor:pointer}
 .rowlink:hover td{background:var(--soft)}
 .linkbox{display:flex;gap:8px;align-items:center;margin-top:10px}
-.linkbox input{flex:1;min-width:0;font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-radius:7px;padding:8px 10px;background:var(--soft)}
-.note{font-size:12px;color:var(--gray);line-height:1.6}
-.msg{margin-top:10px;font-size:12.5px;min-height:19px}
+.linkbox input{flex:1;min-width:0;font-family:var(--mono);border:1px solid var(--line);border-radius:7px;padding:8px 10px;background:var(--soft)}
+.note{color:var(--gray);line-height:1.6}
+.msg{margin-top:10px;min-height:19px}
 .mfrow{display:grid;grid-template-columns:1fr 1fr 78px 34px;gap:8px;align-items:center;margin-bottom:7px}
-.mfrow input[type=text]{border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px;width:100%}
+.mfrow input[type=text]{border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%}
 .srow{display:grid;grid-template-columns:120px 1fr 1fr 30px;gap:8px;align-items:center;margin-bottom:7px}
-.srow input,.srow select{border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px;width:100%}
+.srow input,.srow select{border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%}
 /* ── the PDF field editor ──────────────────────────────────────────────── */
 .pdfwrap{display:grid;grid-template-columns:minmax(0,1fr) 268px;gap:14px;align-items:start}
 .pdfpages{max-height:640px;overflow:auto;background:var(--soft);border:1px solid var(--line);
   border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:14px;align-items:center}
 .pg{position:relative;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.12);cursor:crosshair}
 .pg canvas{display:block}
-.pg .pn{position:absolute;top:-11px;left:0;font-family:var(--mono);font-size:9px;letter-spacing:.12em;
+.pg .pn{position:absolute;top:-11px;left:0;font-family:var(--mono);letter-spacing:.12em;
   text-transform:uppercase;color:var(--gray2)}
 .box{position:absolute;border:2px solid #22415F;background:rgba(169,198,232,.26);border-radius:3px;
-  cursor:move;font-size:10px;overflow:hidden;display:flex;align-items:center;padding:0 3px}
+  cursor:move;overflow:hidden;display:flex;align-items:center;padding:0 3px}
 .box.s1{border-color:#C98A3E;background:rgba(245,206,143,.30)}
 .box.s2{border-color:#2C5138;background:rgba(168,216,176,.30)}
 .box.sel{outline:2px solid var(--ink);outline-offset:1px}
 .box .h{position:absolute;right:-4px;bottom:-4px;width:10px;height:10px;background:#fff;
   border:2px solid var(--ink);border-radius:2px;cursor:nwse-resize}
-.box .bl{font-family:var(--mono);font-size:9px;letter-spacing:.04em;white-space:nowrap;
+.box .bl{font-family:var(--mono);letter-spacing:.04em;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis;pointer-events:none}
 .tools{background:#fff;border:1px solid var(--line);border-radius:8px;padding:12px;position:sticky;top:71px}
-.tools h3{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+.tools h3{font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;
   color:var(--gray);margin-bottom:8px}
 .tools .row{margin-bottom:9px}
-.tools label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.12em;
+.tools label{display:block;font-family:var(--mono);letter-spacing:.12em;
   text-transform:uppercase;color:var(--gray);margin-bottom:3px}
 .tools select,.tools input[type=text]{width:100%;border:1px solid var(--line);border-radius:6px;
-  padding:6px 8px;font-size:12px}
+  padding:6px 8px}
 .chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px}
-.chip2{border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;background:#fff}
+.chip2{border:1px solid var(--line);border-radius:6px;padding:4px 8px;cursor:pointer;background:#fff}
 .chip2.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.mfrow .req{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--gray)}
-.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em}
+.mfrow .req{display:flex;align-items:center;gap:6px;color:var(--gray)}
+.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);color:var(--gray2);letter-spacing:.09em}
+/* ── the one caption escape hatch (UI-STANDARDS §12.7) ──────────────────────
+   fundhub-brand.css:184-186 sets `font-size:inherit !important` on every
+   element inside .app, then hands sizes back to a fixed list of class names
+   (.badge, .note, .hint, .mono, label, th, .chip …). Every one of those is used
+   above and needs nothing here. These six are this screen's OWN names, and each
+   one is a caption by job:
+     .crumb / .foot  — the mono-caps eyebrow in the topbar and the meta strip in
+                       the footer. Same role as .eyebrow, one class name off.
+     .tools h3       — a section heading. §12.7: those are 13px caps-mono, and
+                       an h3 is not on the title whitelist, so it needs saying.
+     .chip2          — a chip. .chip is on the brand's caption list; this is the
+                       same control under a second name.
+     .pg .pn         — the page label, positioned at top:-11px. At body size it
+                       is taller than its own offset and rides over the page.
+     .box, .box .bl  — a field marker sized to a real PDF field rectangle, often
+                       under 20px tall. Body-size text does not fit inside it.
+   ONE rule. Never a second one — that is how a screen ends up with six sizes. */
+.app :is(.crumb,.foot,.tools h3,.chip2,.pg .pn,.box,.box .bl){
+  font-size:var(--fs-caption)!important;
+}
 @media(max-width:1180px){.layout{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}}
 </style>
 <script defer src="shell.js"></script>
@@ -367,7 +387,7 @@ window.dispatchEvent(new Event("pdfjs-ready"));
   function renderTplList() {
     $("tplList").innerHTML = templates.map(function (t) {
       return '<tr class="rowlink' + (editing && editing.id === t.id ? " sel" : "") +
-        '" data-tid="' + esc(t.id) + '"><td class="mono" style="font-size:11.5px">' +
+        '" data-tid="' + esc(t.id) + '"><td class="mono">' +
         esc(t.template_key) + "</td><td>" + esc(t.name) +
         (t.source_kind === "pdf"
           ? ' <span class="badge b-info" style="margin-left:6px">pdf · ' + (t.page_count || "?") + "p</span>"
@@ -724,7 +744,7 @@ window.dispatchEvent(new Event("pdfjs-ready"));
         SOURCES.map(function (s2) {
           return '<option value="' + s2.v + '"' + (s2.v === b.source ? " selected" : "") + ">" + esc(s2.label) + "</option>";
         }).join("") + "</select></div>" +
-      '<div class="row"><label style="display:flex;gap:7px;align-items:center;text-transform:none;letter-spacing:0;font-size:11.5px;font-family:var(--sans)">' +
+      '<div class="row"><label style="display:flex;gap:7px;align-items:center;text-transform:none;letter-spacing:0;font-family:var(--sans)">' +
         '<input type="checkbox" id="bpReq"' + (b.required ? " checked" : "") + "> Must be filled in</label></div>" +
       '<button class="btn sm" id="bpDel" type="button" style="width:100%">Remove this box</button>';
 

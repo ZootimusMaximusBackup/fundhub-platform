@@ -16,6 +16,7 @@ import crypto from "node:crypto";
 import { emit } from "../events/bus.mjs";
 import { recordOptOut } from "../lib/opt-out.mjs";
 import { createTask } from "../lib/create-task.mjs";
+import { fromCents } from "../commissions/money.mjs";
 
 // ---------------------------------------------------------------------------
 // 1. Signature verification (fail-closed)
@@ -95,13 +96,243 @@ const CLASSIFICATION_RULES = [
 
 const DOLLAR_PATTERN = /\$[\d,]+(?:\.\d{2})?/;
 
-function findKeyword(text, keywords) {
+/* ── THE BANK ALREADY TOLD US THE AMOUNT, AND WE THREW IT AWAY ─────────────
+   Added 2026-08-30.
+
+   DOLLAR_PATTERN above has always run on every inbound bank email. It only ever
+   answered yes/no — "does this email contain a dollar figure" — as a nudge to
+   classification confidence, and the figure it matched was dropped on the floor.
+   Meanwhile a funding advisor reads the same email and types the same number
+   into the Approved $ box by hand, and when they forget, the approval carries
+   no amount. Fundhub bills a percent of approvals that HAVE an amount
+   (docs/CLOSEOUT-FEE-BASIS.md), so a forgotten box is a bill that never goes
+   out. That is the leak these two functions close.
+
+   WHAT THIS IS NOT. It is not a decision, and nothing downstream may treat it
+   as one:
+
+     * It never sets applications.approved_amount. It travels as far as a
+       SUGGESTION on the screen, and a person clicks to accept it.
+     * It never picks. A bank email routinely states a credit limit, an APR fee,
+       an annual fee and a minimum payment in the same paragraph, and there is
+       no honest way to tell from the text alone which one is the approval. Every
+       distinct figure is carried and the screen says plainly that it cannot tell
+       which is which. Guessing here would put a $39 annual fee on an invoice.
+     * It never invents. No figure in the email means no suggestion — not zero.
+       Zero is a claim the bank approved nothing; unknown is not nothing
+       (CLAUDE.md §12).
+
+   AND IT DOES NOT TOUCH THE CLASSIFIER. DOLLAR_PATTERN, the keyword rules and
+   the negation pass are all exactly as they were. The scan below is a second,
+   separate read of the same text that runs AFTER the decision is made, and it
+   runs only for the two classifications that mean the bank said yes. A DENIED
+   email carries no amounts at all — a denial letter quoting the limit it is
+   refusing is the single most dangerous number in this mailbox. */
+
+/* Distinct from DOLLAR_PATTERN on purpose — that one is the classifier's and is
+   not to be edited for this. Global (every figure, not the first), and one or
+   two decimal places, because "$5,000.5" is written by real senders. */
+const DOLLAR_SCAN = /\$\s?(\d[\d,]*)(?:\.(\d{1,2}))?/g;
+
+/* How much of an email we will read for figures. The same 64 KiB ceiling
+   src/http/router.mjs puts on a stored webhook body, for the same reason: a
+   real bank email is a couple of KB, and an unbounded scan of a 6 MB request
+   is somebody else's denial-of-service. */
+const MAX_SCANNED_CHARS = 64 * 1024;
+
+/* How many distinct figures we will carry. Past a handful the answer is not
+   "here are your options", it is "this email is a statement, not an approval",
+   and the count below says so honestly. */
+const MAX_AMOUNT_CANDIDATES = 6;
+
+/* $1bn, the ceiling src/commissions/money.mjs and public/app/money-input.js
+   both use. Anything past it is a typo or a phone number with a dollar sign in
+   front of it, not an approval. */
+const MAX_SUGGESTED_CENTS = 100_000_000_000;
+
+/* One matched figure -> integer cents, or null when it is not an amount worth
+   offering. No float multiply: "450.10" * 100 is 45009.999999999996 in
+   JavaScript, and that is how a $450.10 approval becomes $450.09. The two
+   halves are read as whole numbers, the same rule public/app/money-input.js
+   applies to what a person types. */
+function dollarMatchToCents(intPart, fracPart) {
+  const digits = String(intPart || "").replace(/,/g, "");
+  if (!/^\d+$/.test(digits)) return null;
+  let frac = String(fracPart || "");
+  while (frac.length < 2) frac += "0";
+  const cents = Number(digits) * 100 + Number(frac);
+  if (!Number.isSafeInteger(cents)) return null;
+  // Zero is not an unknown and it is not an approval. It is dropped, never offered.
+  if (cents <= 0 || cents > MAX_SUGGESTED_CENTS) return null;
+  return cents;
+}
+
+/**
+ * Every distinct dollar figure stated in a bank email, in the order it is read
+ * — subject first, then body.
+ *
+ * @returns {{candidates: string[], found: number}}
+ *   `candidates` are fixed 2dp dollar strings ("5000.00"), ready for the
+ *   Approved $ box and for numeric(14,2), capped at MAX_AMOUNT_CANDIDATES.
+ *   `found` is how many DISTINCT figures the email actually stated, which can
+ *   be larger than candidates.length — the screen reports the true number
+ *   rather than the number that fitted.
+ */
+export function findDollarAmounts(subject, body) {
+  const seen = new Set();
+  const candidates = [];
+  for (const source of [subject, body]) {
+    const text = String(source || "").slice(0, MAX_SCANNED_CHARS);
+    if (!text) continue;
+    DOLLAR_SCAN.lastIndex = 0;
+    let m;
+    while ((m = DOLLAR_SCAN.exec(text)) !== null) {
+      const cents = dollarMatchToCents(m[1], m[2]);
+      if (cents === null) continue;
+      if (seen.has(cents)) continue;
+      seen.add(cents);
+      if (candidates.length < MAX_AMOUNT_CANDIDATES) candidates.push(fromCents(cents));
+    }
+  }
+  return { candidates, found: seen.size };
+}
+
+/* What the row on the screen shows instead of repeating the subject line.
+
+   CAPPED, and the cap is the point — src/http/router.mjs:110 records what an
+   uncapped stored body did to a shared production Postgres, and a bank email is
+   small enough that a cap costs nothing. 500 characters is a preview, which is
+   what the column is called and all the screen has room for; the whole email is
+   NOT stored, so the account detail in the back half of a forwarded statement
+   never lands in this table at all.
+
+   Whitespace is flattened because forwarded plain-text mail is hard-wrapped and
+   a preview full of line breaks reads as broken.
+
+   TRUNCATION IS MARKED, same reasoning as the webhook capture: a silently
+   shortened value is read as the whole thing.
+
+   NO TEXT AT ALL RETURNS null, not "". The column then holds NULL and the
+   screen falls through to the classification and the date, which is exactly how
+   public/app/client-control-panel.html was written to behave. */
+const MAX_PREVIEW_CHARS = 500;
+
+export function bodyPreviewOf(text) {
+  const flat = String(text ?? "").replace(/\s+/g, " ").trim();
+  if (!flat) return null;
+  if (flat.length <= MAX_PREVIEW_CHARS) return flat;
+  return `${flat.slice(0, MAX_PREVIEW_CHARS)} … [truncated]`;
+}
+
+/* The two classifications that mean the bank said yes to something. A
+   COUNTEROFFER is an approval for less, and the smaller figure in it is the one
+   that gets billed, so it needs the suggestion just as much as an APPROVED
+   does. Everything else — DENIED above all — carries no amounts. */
+const OFFERS_AN_AMOUNT = new Set(["APPROVED", "COUNTEROFFER"]);
+
+/* ── KEYWORD MATCHING — WORD BOUNDARIES, NOT RAW SUBSTRINGS ────────────────
+   FIXED 2026-08-29. This was `lower.includes(kw)`, and a plain substring test
+   reads words out of the middle of other words. Every one of these was live:
+
+     "not approved"          contained "approved"  → a denial read as APPROVED
+     "refunded"              contained "funded"    → a fee refund read as APPROVED
+     "unapproved"            contained "approved"  → APPROVED
+     "disapproved"           contained "approved"  → APPROVED
+
+   The first one is the expensive one and it is covered twice over — once here,
+   and again by the negation pass below — because a denial misread as an
+   approval moves the client's funding card into the approved stage
+   (src/workflows/f-11-bank-email-event-router.mjs).
+
+   A space inside a keyword matches ANY run of whitespace. Forwarded plain-text
+   bank mail hard-wraps, and "not\napproved" is the same phrase as
+   "not approved"; a literal single-space match would miss it and hand the
+   email straight back to the bug above. */
+function escapeRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const KEYWORD_REGEX_CACHE = new Map();
+function keywordRegex(kw) {
+  let re = KEYWORD_REGEX_CACHE.get(kw);
+  if (!re) {
+    re = new RegExp(`\\b${escapeRegex(kw).replace(/\s+/g, "\\s+")}\\b`, "i");
+    KEYWORD_REGEX_CACHE.set(kw, re);
+  }
+  return re;
+}
+
+/* Returns the span as well as the keyword. The span is what lets a longer,
+   more specific phrase from one rule cancel a shorter phrase from another rule
+   sitting inside it — see suppressOverlapped. */
+function findKeywordMatch(text, keywords) {
   if (!text) return null;
-  const lower = text.toLowerCase();
   for (const kw of keywords) {
-    if (lower.includes(kw)) return kw;
+    const m = keywordRegex(kw).exec(text);
+    if (m) return { keyword: kw, index: m.index, length: m[0].length };
   }
   return null;
+}
+
+/* ── WHAT THE BANK DID TO THE WORD "APPROVED" ──────────────────────────────
+   Two modifiers change the decision an email is reporting, and neither can be
+   settled by counting keywords — a denial and an approval share almost all of
+   their vocabulary. "Unfortunately, you were not approved for the requested
+   credit limit" contains the APPROVED keyword "credit limit" fair and square;
+   what makes it a denial is the word "not" in front of "approved".
+
+   So these two run BEFORE the keyword contest and remove the APPROVED matches
+   outright. The bank has stated its decision; no context word outranks it.
+
+     negated  ("not approved", "unable to approve", "cannot fund")  → DENIED
+     reduced  ("approved for a reduced amount")                     → COUNTEROFFER
+
+   The filler list between the modifier and the approval word is deliberately a
+   closed set of function words rather than `\w+`. A wider gap starts eating
+   ordinary sentences: "this does not affect your approved limit" is an approval,
+   and a two-word wildcard would read it as a denial. */
+const APPROVAL_WORD = "(?:approve|approved|approves|approving|approval|approvals|fund|funded|funding)";
+const NEGATOR = "(?:not|never|cannot|can['’]t|won['’]t|unable\\s+to|declined\\s+to|refused\\s+to|regret\\s+to)";
+const NEGATION_FILLER = "(?:be|been|being|yet|currently|able\\s+to|going\\s+to|likely\\s+to|in\\s+a\\s+position\\s+to)\\s+";
+const NEGATED_APPROVAL = new RegExp(`\\b${NEGATOR}\\s+(?:${NEGATION_FILLER})?${APPROVAL_WORD}\\b`, "i");
+
+/* "reduced" on its own is NOT enough — "you are approved, your APR has been
+   reduced" is an approval. It has to be a reduced AMOUNT. */
+const REDUCED_AMOUNT = /\b(?:reduced|lower|lowered|partial|smaller|decreased)\s+(?:\w+\s+){0,1}?(?:amount|limit|line|offer|sum|figure)\b|\bpartial\s+approval\b/i;
+const ANY_APPROVAL_WORD = new RegExp(`\\b${APPROVAL_WORD}\\b`, "i");
+
+function findModifiedApproval(subject, body) {
+  for (const source of ["subject", "body"]) {
+    const text = (source === "subject" ? subject : body) || "";
+    if (!text) continue;
+    const neg = NEGATED_APPROVAL.exec(text);
+    if (neg) {
+      return { event_type: "DENIED", source, keyword: neg[0].toLowerCase().replace(/\s+/g, " "), index: neg.index, length: neg[0].length };
+    }
+  }
+  for (const source of ["subject", "body"]) {
+    const text = (source === "subject" ? subject : body) || "";
+    if (!text || !ANY_APPROVAL_WORD.test(text)) continue;
+    const red = REDUCED_AMOUNT.exec(text);
+    if (red) {
+      return { event_type: "COUNTEROFFER", source, keyword: red[0].toLowerCase().replace(/\s+/g, " "), index: red.index, length: red[0].length };
+    }
+  }
+  return null;
+}
+
+/* A SHORTER PHRASE INSIDE A LONGER ONE IS NOT A SECOND SIGNAL — it is the same
+   words being read twice, and the more specific reading is the right one. This
+   is what makes "not approved" (DENIED) beat "approved" (APPROVED) regardless
+   of which rule is listed first, without reordering the rule list. */
+function suppressOverlapped(matches) {
+  return matches.filter((m) => !matches.some((n) =>
+    n !== m &&
+    n.source === m.source &&
+    n.length > m.length &&
+    n.index <= m.index &&
+    n.index + n.length >= m.index + m.length
+  ));
 }
 
 function isNoise(from, subject) {
@@ -116,46 +347,57 @@ function isNoise(from, subject) {
   return null;
 }
 
-// classifyBankEmail — pure, returns the classification string (event_type).
-export function classifyBankEmail(subject, body) {
-  const noiseMatch = isNoise(null, subject); // from not available to this pure fn
-  if (noiseMatch) return "NOISE";
-
-  const text = body || "";
-  const matches = [];
-
-  for (const rule of CLASSIFICATION_RULES) {
-    const subjectMatch = findKeyword(subject, rule.keywords);
-    const bodyMatch = findKeyword(text, rule.keywords);
-    if (subjectMatch || bodyMatch) {
-      matches.push({ event_type: rule.event_type });
-    }
-  }
-
-  return matches.length === 0 ? "NOISE" : matches[0].event_type;
-}
-
-// Full classifier (takes from as well, mirrors classifyEmail exactly).
+/* ONE IMPLEMENTATION, TWO ENTRY POINTS. classifyBankEmail and classifyFull used
+   to hold a byte-for-byte copy of this loop each, so the substring bug had to be
+   found and fixed twice and the two could silently drift apart. classifyFull is
+   now the only implementation; classifyBankEmail reads its event_type. The only
+   real difference was that classifyBankEmail has no From header to noise-check,
+   which is a null argument, not a second function. */
 function classifyFull({ subject, from, body }) {
   const noiseMatch = isNoise(from, subject);
   if (noiseMatch) return { event_type: "NOISE", confidence: "high", matched_rule: `noise_filter:${noiseMatch}` };
 
   const text = body || "";
-  const matches = [];
 
+  // Decided before the keyword contest, and it wins it — see findModifiedApproval.
+  const modified = findModifiedApproval(subject, text);
+
+  let matches = [];
   for (const rule of CLASSIFICATION_RULES) {
-    const subjectMatch = findKeyword(subject, rule.keywords);
-    const bodyMatch = findKeyword(text, rule.keywords);
-    if (subjectMatch || bodyMatch) {
-      const source = subjectMatch ? "subject" : "body";
-      const keyword = subjectMatch || bodyMatch;
-      let hasDollarAmount = false;
-      if (rule.dollarAmountBoost) {
-        hasDollarAmount = DOLLAR_PATTERN.test(subject || "") || DOLLAR_PATTERN.test(text);
-      }
-      matches.push({ event_type: rule.event_type, source, keyword, hasDollarAmount });
+    /* An approval word the bank negated or cut down is not an approval. Drop
+       the whole rule rather than the single keyword: the leftovers ("credit
+       limit", "approval") are the denial letter describing what it is denying. */
+    if (modified && rule.event_type === "APPROVED") continue;
+
+    let m = null;
+    if (modified && rule.event_type === modified.event_type) {
+      m = modified; // the decisive phrase, reported in place of the rule's own keyword
+    } else {
+      const subjectMatch = findKeywordMatch(subject, rule.keywords);
+      const bodyMatch = subjectMatch ? null : findKeywordMatch(text, rule.keywords);
+      const hit = subjectMatch || bodyMatch;
+      if (hit) m = { ...hit, source: subjectMatch ? "subject" : "body" };
     }
+    if (!m) continue;
+
+    let hasDollarAmount = false;
+    if (rule.dollarAmountBoost) {
+      hasDollarAmount = DOLLAR_PATTERN.test(subject || "") || DOLLAR_PATTERN.test(text);
+    }
+    matches.push({ event_type: rule.event_type, ...m, hasDollarAmount });
   }
+
+  // The decisive phrase may name a rule whose own keywords never fired —
+  // "approved for a lower credit limit" is a counteroffer with no counteroffer word in it.
+  if (modified && !matches.some((m) => m.event_type === modified.event_type)) {
+    matches.push({ event_type: modified.event_type, ...modified, hasDollarAmount: false });
+    // Back into rule order. Everything already in the list is in that order, so
+    // this only places the one row just added.
+    const rank = (t) => CLASSIFICATION_RULES.findIndex((r) => r.event_type === t);
+    matches.sort((a, b) => rank(a.event_type) - rank(b.event_type));
+  }
+
+  matches = suppressOverlapped(matches);
 
   if (matches.length === 0) return { event_type: "NOISE", confidence: "low", matched_rule: "no_keyword_match" };
 
@@ -164,6 +406,14 @@ function classifyFull({ subject, from, body }) {
   const dollarNote = best.hasDollarAmount ? "+dollar_amount" : "";
   return { event_type: best.event_type, confidence, matched_rule: `${best.source}:${best.keyword}${dollarNote}` };
 }
+
+// classifyBankEmail — pure, returns the classification string (event_type).
+export function classifyBankEmail(subject, body) {
+  return classifyFull({ subject, from: null, body }).event_type;
+}
+
+// Exported for the classifier tests only — the adapter itself calls classifyFull.
+export { classifyFull as _classifyFull };
 
 // ---------------------------------------------------------------------------
 // 3. Normalize raw Mailgun body into a flat event
@@ -648,15 +898,36 @@ export async function handleMailgunWebhook({ db, body, signingKey }) {
   const emitted = [];
   const clientId = await resolveClientFromRecipient(db, evt.recipient);
 
+  /* Read AFTER the classification, never before it, and never able to change
+     it — see the block above DOLLAR_SCAN. Amounts are gathered only when the
+     bank said yes to something; a denial carries none.
+
+     `amounts` stays null for every other classification, and null means the two
+     amount keys are left OFF the payload entirely rather than written as an
+     empty list. "We did not look" and "we looked and the email stated nothing"
+     are different facts and the row should not blur them. */
+  const preview = bodyPreviewOf(evt.text);
+  const amounts = OFFERS_AN_AMOUNT.has(classification)
+    ? findDollarAmounts(evt.subject, evt.text)
+    : null;
+
   for (const c of canonical) {
     const payload = {
       classification,
       from: evt.from,
       to: evt.recipient,
       subject: evt.subject,
+      // Capped, whitespace-flattened, and null when the email had no text.
+      // See bodyPreviewOf, and the note on message.inbound further down for
+      // why mail.response carries this at all now.
+      bodyPreview: preview,
       clientId,
       source: "mailgun"
     };
+    if (amounts) {
+      payload.amountCandidates = amounts.candidates;
+      payload.amountCandidatesFound = amounts.found;
+    }
     const idKey = evt.messageId ? `mailgun:${evt.messageId}:${c.name}` : undefined;
     const res = await emit(db, c.name, payload, { idempotencyKey: idKey, clientId: clientId || undefined });
     emitted.push({ name: c.name, id: res.id, deduped: res.deduped });
@@ -691,12 +962,20 @@ export async function handleMailgunWebhook({ db, body, signingKey }) {
      message in the thread. An email with no Message-Id gets no dedupe key,
      which the bus already handles the same way for mail.response.
 
-     THE BODY IS CARRIED, and only here. `mail.response` deliberately does not
-     carry one — onMailResponse stores `subject` as its own body_preview because
-     a forwarded bank statement's text is account detail nobody asked us to
-     keep. This payload is a person's own words written to us, which is exactly
-     what a conversation thread is, and a thread with the messages missing is
-     not a thread. */
+     THE WHOLE BODY IS CARRIED, and only here. This payload is a person's own
+     words written to us, which is exactly what a conversation thread is, and a
+     thread with the messages missing is not a thread.
+
+     `mail.response` carries a CAPPED PREVIEW instead — changed 2026-08-30, and
+     the note that used to sit here said it carried nothing at all. That was
+     true, and it is why onMailResponse wrote the subject line into
+     body_preview: every bank_inbox row showed the same sentence twice, and the
+     paragraph where the bank states the approved amount was gone forever. The
+     reasoning behind it still stands and is respected — a forwarded bank
+     statement's full text is account detail nobody asked us to keep, so the
+     full text is still not stored. What is stored is 500 characters
+     (bodyPreviewOf), which is a preview line for the screen, plus the dollar
+     figures the classifier was already finding and discarding. */
   /* WHO REPLIED — THE ADDRESS THEY WROTE TO ANSWERS FIRST.
 
      Every email we send now carries a Reply-To of `reply+<clientId>@<domain>`

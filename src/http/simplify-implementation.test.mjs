@@ -23,7 +23,16 @@ test("Bank Inbox reads one client inside the session org and never returns raw p
 
   assert.deepEqual(result.rows, []);
   assert.match(call.sql, /WHERE org_id = \$1::uuid[\s\S]*AND client_id = \$2::uuid/);
-  assert.doesNotMatch(call.sql, /\braw\b/);
+  /* THE RAW PAYLOAD STILL NEVER LEAVES THIS PROCESS.
+     This used to forbid the word "raw" anywhere in the statement. The rule it
+     was written to protect is that the `raw` COLUMN — the whole inbound bank
+     email — is never handed to a browser, and that rule is unchanged and
+     asserted below. What changed on 2026-08-30 is that two named keys are read
+     OUT of it: the dollar figures the bank's own email stated, which the
+     classifier used to find and throw away, and which a funding advisor
+     otherwise retypes by hand. Two keys are not the payload. */
+  assert.doesNotMatch(call.sql, /(^|[\s,])raw(\s*,|\s+AS\b)/i);
+  assert.match(call.sql, /raw->'amountCandidates'\s+AS amount_candidates/);
   assert.deepEqual(call.params, ["org-1", "client-1", 26, 0]);
 });
 
@@ -340,7 +349,14 @@ test("client portal summary ignores requested client ids and returns only sessio
   const bizRead = calls.find((call) => /FROM businesses/i.test(call.sql));
   const inquiryRead = calls.find((call) => /FROM inquiry_removal_cases/i.test(call.sql));
   assert.deepEqual(clientRead.params, [CLIENT, ORG]);
-  assert.deepEqual(documentRead.params, [ORG, CLIENT]);
+  /* The document read is now listClientLibrary() rather than a hand-written
+     SELECT, so its parameter list is longer. The property being pinned has not
+     changed and has not been relaxed: parameters 1 and 2 are the SESSION's org
+     and the SESSION's client, never the client_id the caller asked for. The
+     other three are the reader's non-filtering defaults — no kind filter, no id
+     pre-filter, expired rows still listed — which is what the old SELECT did,
+     so all five are pinned rather than only the two that used to exist. */
+  assert.deepEqual(documentRead.params, [ORG, CLIENT, null, null, true]);
   assert.deepEqual(crsRead.params, [CLIENT, ORG]);
   assert.deepEqual(bizRead.params, [CLIENT, ORG]);
   /* The inquiry-door flag is read on the SAME session-owned client, never the

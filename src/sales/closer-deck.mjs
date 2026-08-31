@@ -12,6 +12,8 @@ import { mergeCustomFields } from "../workflows/custom-fields.mjs";
 import { addTags } from "../workflows/tags.mjs";
 import { EMAIL_TEMPLATE_KEY } from "../workflows/ds-02-diy-letters.mjs";
 import { buildLetterPackForClient } from "../underwrite/letter-pack.mjs";
+import { persistDiyPackageFiles } from "../metro2/diy/persist.mjs";
+import { storeFromEnv } from "../documents/store.mjs";
 import { logCallOutcome } from "./call-outcomes.mjs";
 import { signSoftPullApproveUrl } from "../consent/approve-token.mjs";
 import { consentStatus } from "../consent/index.mjs";
@@ -706,7 +708,7 @@ export async function sendDeckPayLink(db, {
 }
 
 export async function generateDeckLetters(db, {
-  orgId, clientId, staffId, offerKey, edu = false, forceRepair = false, tier = null
+  orgId, clientId, staffId, offerKey, edu = false, forceRepair = false, tier = null, store = null
 }) {
   const offer = getOffer(offerKey);
   if (!offer) {
@@ -720,6 +722,25 @@ export async function generateDeckLetters(db, {
     );
   }
   const pack = await buildLetterPackForClient(db, { clientId, pack: "repair" });
+  // THE BYTES ARE THE DELIVERABLE. This action used to build the pack, count the
+  // files, email the client that their letters were ready, and never save a
+  // single PDF. Same registry and same helper the DS-02 workflow uses.
+  // A storage failure must not lose the call outcome, so it is recorded, not thrown.
+  let persisted = { stored: [], skipped: "not_attempted" };
+  if (pack.files?.length) {
+    try {
+      persisted = await persistDiyPackageFiles(db, store || storeFromEnv(), {
+        orgId,
+        clientId,
+        files: pack.files,
+        generatedBy: "closer-deck",
+        sourceEventId: `closer-deck-letters:${clientId}:${offerKey}`,
+        pack: "repair_letter_pack"
+      });
+    } catch (err) {
+      persisted = { stored: [], skipped: String(err && err.message || err).slice(0, 240) };
+    }
+  }
   const emailQueued = await sendTemplated(db, {
     orgId,
     clientId,
@@ -738,6 +759,8 @@ export async function generateDeckLetters(db, {
   return {
     delivered: !!(pack.files && pack.files.length),
     letterCount: pack.files?.length || 0,
+    documentsStored: persisted.stored.length,
+    persistSkipped: persisted.skipped,
     engineSkip: pack.engineSkip || null,
     email
   };

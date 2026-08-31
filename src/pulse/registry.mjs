@@ -78,6 +78,7 @@ const API_KEYS = [
   "dashboard/seed",
   "demo/mode",
   "demo/simulate",
+  "documents-download",
   "documents-upload",
   "finance/alerts",
   "finance/bank-accounts",
