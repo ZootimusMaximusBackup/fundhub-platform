@@ -646,14 +646,24 @@ export function caseIsReadyToSend(row) {
 
    Blocked is written by src/inquiry-ops/send.mjs when the identity packet is
    short: the send was REFUSED, nothing left the building, and the fix is a
-   person chasing documents. Escalated is a person putting a case aside FOR a
-   person. Neither is ready and neither is sent, so a screen that answers zero
-   and says "go home" is the same untruth this desk was rebuilt to remove.
+   person chasing documents. It is not ready and it is not sent, so a screen that
+   answers zero and says "go home" is the same untruth this desk was rebuilt to
+   remove. Blocked is counted however far the case got, because caseUiStatus
+   reads that status before it looks at any timestamp.
+
+   WHAT THIS DOES NOT COUNT, deliberately: Escalated, and the `st || "Unknown"`
+   fallback for a status nobody has taught this screen, are only counted while
+   NOTHING HAS GONE OUT YET. caseUiStatus checks call_fired_at, then call_due_at
+   / first_delivery_at / letter_provider_id / portal_confirmation, before it ever
+   falls through to the raw status — so an Escalated case whose bureau call
+   already fired reads "Awaiting Call", and one whose letter already landed reads
+   "Sent". Both leave this count at zero. That is the intended answer: an
+   Escalated case that HAS been sent is out of her hands, and
+   inquiry-remover-view.test.mjs pins it. Do not read this as "Escalated is
+   caught" — measured, an Escalated row with call_fired_at set returns 0 here.
 
    These four labels are the settled ones — counted by the headline, or out of
-   her hands. Anything else caseUiStatus can produce (Blocked, Escalated, and the
-   `st || "Unknown"` fallback for a status nobody has taught this screen) is work
-   with a person's name on it, so it is named rather than absorbed into a zero. */
+   her hands. */
 const SETTLED_CASE_LABELS = new Set(["Ready for Review", "Sent", "Awaiting Call", "Complete"]);
 
 export function casesNeedingAPerson(rows) {
