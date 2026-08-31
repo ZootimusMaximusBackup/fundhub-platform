@@ -639,6 +639,28 @@ export function caseIsReadyToSend(row) {
   return caseUiStatus(row).label === "Ready for Review";
 }
 
+/* THE CASES THE HEADLINE DOES NOT COUNT, COUNTED SEPARATELY.
+   "Ready to send" is the right number and it is honestly derived, but the
+   sentence under it used to be "nothing is waiting on you" whenever that number
+   was zero — including when every open case was Blocked or Escalated.
+
+   Blocked is written by src/inquiry-ops/send.mjs when the identity packet is
+   short: the send was REFUSED, nothing left the building, and the fix is a
+   person chasing documents. Escalated is a person putting a case aside FOR a
+   person. Neither is ready and neither is sent, so a screen that answers zero
+   and says "go home" is the same untruth this desk was rebuilt to remove.
+
+   These four labels are the settled ones — counted by the headline, or out of
+   her hands. Anything else caseUiStatus can produce (Blocked, Escalated, and the
+   `st || "Unknown"` fallback for a status nobody has taught this screen) is work
+   with a person's name on it, so it is named rather than absorbed into a zero. */
+const SETTLED_CASE_LABELS = new Set(["Ready for Review", "Sent", "Awaiting Call", "Complete"]);
+
+export function casesNeedingAPerson(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  return list.filter((row) => !SETTLED_CASE_LABELS.has(caseUiStatus(row).label));
+}
+
 /** Whole days since a timestamp, or null when there is no usable timestamp. */
 export function waitingDays(since, now) {
   if (!since) return null;
@@ -737,16 +759,28 @@ export function docsMissingWords(missing) {
    `total` is the reader's COUNT(*) over the whole caseload. When it is bigger
    than the page that was actually fetched, the line underneath says so, because
    a page count standing in for a caseload count is a headline that silently
-   under-reports the day it matters. A missing total is unknown, not zero. */
+   under-reports the day it matters. A missing total is unknown, not zero.
+
+   AND IT SAYS WHAT IT DID NOT COUNT. The number is "ready to send" and Blocked
+   and Escalated cases are not ready to send, so folding them in would be a lie
+   in the other direction. What was wrong was the sentence underneath: with three
+   blocked cases and nothing ready, this said "nothing is waiting on you" — a
+   zero standing in for work the screen had decided not to count. It names them
+   now, in both branches. */
 export function inquiryHeadline(rows, opts) {
   const o = opts || {};
   const list = Array.isArray(rows) ? rows : [];
   const ready = list.filter(caseIsReadyToSend);
+  const waiting = casesNeedingAPerson(list).length;
+  const waitingWords = waiting === 1
+    ? "1 case needs a person before it can be sent"
+    : waiting + " cases need a person before they can be sent";
   const total = Number(o.total);
   const capped = Number.isFinite(total) && total > list.length;
   let sub;
   if (!ready.length) {
-    sub = list.length ? "nothing is waiting on you" : "no active cases";
+    if (waiting) sub = waitingWords;
+    else sub = list.length ? "nothing is waiting on you" : "no active cases";
   } else {
     let oldest = null;
     for (const row of ready) {
@@ -756,6 +790,7 @@ export function inquiryHeadline(rows, opts) {
     sub = oldest === null
       ? "oldest waiting — no request date on file"
       : "oldest waiting " + waitingLabel(oldest);
+    if (waiting) sub += " · " + waitingWords;
   }
   if (capped) sub += " · counted over the first " + list.length + " of " + total;
   return { value: String(ready.length), label: "Ready to send", sub: sub };
@@ -879,6 +914,7 @@ export const VIEW = {
   bureauLabel: bureauLabel,
   countByBureau: countByBureau,
   caseIsReadyToSend: caseIsReadyToSend,
+  casesNeedingAPerson: casesNeedingAPerson,
   waitingDays: waitingDays,
   waitingLabel: waitingLabel,
   sortCasesOldestFirst: sortCasesOldestFirst,

@@ -1,13 +1,14 @@
 // /api/inquiries — the Inquiry Remover dashboard's write path.
 //
 //   GET   ?inquiry_id=<uuid>            → { ok, attempts: [...] }   (expand row history)
+//   GET   ?recent=letters&limit=n       → { ok, letters: [...] }    (SPECIALIST DESK ONLY)
 //   POST  { inquiry_id, action: "attempt",  kind?, outcome?, note? }
 //   POST  { inquiry_id, action: "confirm",  status? }
 //   POST  { inquiry_id, action: "status",   status }
 //         → { ok, inquiry }
 //
-// Auth: any staff session. The reads stay where they were — /api/read/inquiries
-// still serves the queue; this endpoint only changes things.
+// Auth: any staff session, EXCEPT ?recent=letters — see the role note below.
+// The queue read stays where it was: /api/read/inquiries still serves it.
 //
 // NOT NAMED /api/inquiry. That path already exists and proxies the external
 // Airtable runtime; this one writes the local inquiry_log table. Two different
@@ -29,15 +30,39 @@
 //
 // GET is untouched on purpose. It expands one row's attempt history and changes
 // nothing. Gating it would 403 the screen that renders the clock-in button.
-import { db } from "../src/db.mjs";
+//
+// *** ?recent=letters IS ROLE-GATED. THE REST OF THIS FILE IS NOT. ***
+//
+// requirePrincipal above names KINDS — staff / client / affiliate / partner —
+// and never looks at staff.role, so every employee passes it: setter, closer and
+// sales manager included. That is right for the two branches it was written for.
+// It is wrong for ?recent=letters, which returns named clients beside the bureau
+// their dispute letter went to, across the whole company. That is the same
+// material /api/read/inquiry-cases and /api/read/repair-cases refuse a setter, so
+// it answers to the same four roles they do — ROLE_SETS.SPECIALIST_DESK.
+//
+// The gate lives INSIDE that branch, not at the top of the handler, because
+// widening it to the whole file would 403 a closer expanding one row's call
+// history on a screen they are allowed to be on.
+import { db as sharedDb } from "../src/db.mjs";
 import { requirePrincipal } from "../src/http/middleware/requirePrincipal.mjs";
 import { requireActiveShift } from "../src/http/middleware/requireActiveShift.mjs";
 import { SUPER_ROLES } from "../src/http/middleware/requireRole.mjs";
-import { isUuid, CLIENT_DATA_ERRORS } from "../src/http/read-api.mjs";
+import { isUuid, CLIENT_DATA_ERRORS, ROLE_SETS, requireRole as requireRoleSet } from "../src/http/read-api.mjs";
 import { logAttempt, confirmRemoval, setStatus, setExpectedName, listAttempts, listRecentLetters, InquiryWriteError } from "../src/inquiries/work.mjs";
 import { emit } from "../src/events/bus.mjs";
 
-export default async function handler(req, res) {
+/* `deps.db` exists so a test can DRIVE the role gate below instead of asserting
+   on the shape of this source — the sibling read endpoints already take the same
+   third argument (api/read/inquiry-cases.mjs:10-11). Production passes nothing
+   and gets the shared handle, so `db === sharedDb` on every real request and
+   every call site below reads exactly as it did before.
+
+   The import is renamed rather than the local: `db` is the name the rest of this
+   file and its guard tests already use, and shadowing it here keeps the diff to
+   two lines. */
+export default async function handler(req, res, deps = {}) {
+  const db = deps.db ?? sharedDb;
   const principal = await requirePrincipal(req, res, ["staff"], { db });
   if (!principal) return;
   const staffId = principal.staffId;
@@ -49,11 +74,19 @@ export default async function handler(req, res) {
   try {
     if (req.method === "GET") {
       /* ?recent=letters — the Specialist desk's "Recent Letters Issued" block.
-         Same endpoint, same auth, same org binding as the per-row history below;
-         it reads the letter/portal rows of the same table across the queue
-         instead of down one inquiry. Read-only, so it sits with the GET branch
-         and outside the shift gate, for the reason written above. */
+         Same org binding as the per-row history below; it reads the letter and
+         portal rows of the same table across the whole queue instead of down one
+         inquiry. Read-only, so it sits with the GET branch and outside the shift
+         gate, for the reason written above.
+
+         ROLE-GATED, unlike the rest of this handler. It names clients and says
+         which bureau each one's dispute letter went to, so it is limited to the
+         four roles that work this desk. `principal` carries `.role` off the staff
+         row (src/http/middleware/requirePrincipal.mjs:40), which is the shape
+         requireRoleSet reads. The refusal is written before the query runs, so a
+         refused caller costs no read. */
       if (String((req.query || {}).recent || "") === "letters") {
+        if (!requireRoleSet(res, principal, ROLE_SETS.SPECIALIST_DESK)) return;
         const letters = await listRecentLetters(db, {
           orgId,
           limit: Number((req.query || {}).limit) || 8

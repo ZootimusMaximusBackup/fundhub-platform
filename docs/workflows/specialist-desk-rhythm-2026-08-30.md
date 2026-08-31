@@ -69,8 +69,32 @@ said "No letters issued yet" after the fortieth letter went out — true on day
 one, never true again.
 
 The trail existed the whole time: every send logs a letter or portal attempt.
-`GET /api/inquiries?recent=letters` reads it back. Same endpoint, same auth, same
-org binding as the per-row history — no new route.
+`GET /api/inquiries?recent=letters` reads it back. Same endpoint, same org
+binding as the per-row history — no new route.
+
+**Corrected 2026-08-31.** This paragraph used to say "same auth", and that was
+the hole. The two reads in §8 below were moved off the wide staff gate in the
+same change that added this third one and left it on the wide gate. So a setter
+opened the screen, the case table refused them, and this card underneath filled
+in with real client names and which bureau each one's dispute letter went to,
+company-wide. `curl` worked for them too. It was also the only new server
+capability in the change with no test.
+
+It is now on `ROLE_SETS.SPECIALIST_DESK`, the same set as §8, applied inside the
+`?recent=letters` branch only — the per-row history read and the POST write path
+stay on the staff gate, because a closer expanding one row on a screen they are
+allowed to be on must still work. Two tests exercise the gate rather than the
+markup, and both assert that the query never runs on a refusal:
+`src/http/inquiries-recent-letters.test.mjs` (seven roles, no database) and
+`src/http/inquiries-recent-letters.pg.test.mjs` (real sessions for real staff
+rows, reading the same letter row back as a specialist, so a 403 cannot pass by
+coinciding with an empty table).
+
+**Known gap.** The generated route tables still read `/api/inquiries | GET, POST
+| staff`. That is the route's entry gate and it is true. `scripts/journeys/
+extract.mjs` reports one gate per route and cannot say "one query parameter is
+narrower"; making it print SPECIALIST_DESK would be false in the other direction,
+since it would claim a closer cannot log a call.
 
 ### 4. Both headlines counted a page, not a caseload
 
@@ -137,6 +161,51 @@ what makes it readable at all.
 
 Nothing shows a zero standing in for unknown. A read that failed puts an em-dash
 in the slot and says the queue could not be read.
+
+**Corrected 2026-08-31 — the zero that meant "go home".** The number was honest.
+The sentence under it was not. Whenever nothing was Ready to Send, the screen
+said *"Nothing is waiting on you — every open case is already sent."* But the
+active set also admits **Blocked** and **Escalated**. Blocked is written by
+`src/inquiry-ops/send.mjs` when the identity packet is short: the send was
+**refused**, nothing left the building, and the fix is a person chasing
+documents.
+
+Measured by importing the branch's own module, three such cases produced:
+
+```
+per-row status: [ 'Blocked (docs)', 'Blocked (docs)', 'Escalated' ]
+HEADLINE:       { value: '0', label: 'Ready to send', sub: 'nothing is waiting on you' }
+quiet line:     "Nothing is waiting on you — every open case is already sent."
+```
+
+Three cases that all need a person, and the screen said she could go home —
+while its own new Docs column printed **chasing** on those very rows.
+
+The number is unchanged, on purpose: none of those cases *is* ready to send, and
+counting them would be the same untruth pointing the other way. What changed is
+that the screen now says what it did not count:
+
+```
+{ value: '0', label: 'Ready to send', sub: '3 cases need a person before they can be sent' }
+quiet line: "Nothing is ready to send — 3 cases need a person before they can be sent."
+```
+
+With something ready as well, both facts are said: *"oldest waiting 6 days · 1
+case needs a person before it can be sent."* When every open case really is in
+the mail, it still says *"nothing is waiting on you"* — that guard has its own
+test in `src/http/inquiry-remover-view.test.mjs` and its own browser test.
+
+A case in a status this screen has never been taught counts as needing a person
+too, rather than being absorbed into the settled pile.
+
+**And one more, found while proving that.** The "No letters issued yet" row
+never actually hid. `.letter-row{display:flex}` beats the browser's own
+`[hidden]{display:none}`, so setting `hidden` did nothing and that sentence sat
+directly above the letters it was denying. `.letter-row[hidden]{display:none}`
+fixes it — the same fix line 116 of the screen already applies to `.stat-tiles`.
+It is also now hidden until an answer arrives, so a refused or failed read no
+longer leaves a false "there are none" standing where the real answer was
+refused.
 
 ---
 

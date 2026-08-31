@@ -223,6 +223,11 @@
 
   .letters-list{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;}
   .letter-row{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1px solid var(--paper-dim);font-size:var(--fs-body);}
+  /* `display:flex` above beats the browser's own [hidden]{display:none}, exactly
+     as .stat-tiles does on line 116. Without this, `empty.hidden = true` sets
+     the attribute and changes nothing — so "No letters issued yet" sat above
+     the letters it was denying. Class-level display needs a class-level undo. */
+  .letter-row[hidden]{display:none;}
   .letter-row:last-child{border-bottom:none;}
   .letter-row .lt-name{font-weight:700;}
   .letter-row .lt-detail{color:var(--text-dim);font-size:var(--fs-caption);}
@@ -1252,6 +1257,28 @@ function caseIsReadyToSend(row) {
   return caseUiStatus(row).label === "Ready for Review";
 }
 
+/* THE CASES THE HEADLINE DOES NOT COUNT, COUNTED SEPARATELY.
+   "Ready to send" is the right number and it is honestly derived, but the
+   sentence under it used to be "nothing is waiting on you" whenever that number
+   was zero — including when every open case was Blocked or Escalated.
+
+   Blocked is written by src/inquiry-ops/send.mjs when the identity packet is
+   short: the send was REFUSED, nothing left the building, and the fix is a
+   person chasing documents. Escalated is a person putting a case aside FOR a
+   person. Neither is ready and neither is sent, so a screen that answers zero
+   and says "go home" is the same untruth this desk was rebuilt to remove.
+
+   These four labels are the settled ones — counted by the headline, or out of
+   her hands. Anything else caseUiStatus can produce (Blocked, Escalated, and the
+   `st || "Unknown"` fallback for a status nobody has taught this screen) is work
+   with a person's name on it, so it is named rather than absorbed into a zero. */
+const SETTLED_CASE_LABELS = new Set(["Ready for Review", "Sent", "Awaiting Call", "Complete"]);
+
+function casesNeedingAPerson(rows) {
+  const list = Array.isArray(rows) ? rows : [];
+  return list.filter((row) => !SETTLED_CASE_LABELS.has(caseUiStatus(row).label));
+}
+
 /** Whole days since a timestamp, or null when there is no usable timestamp. */
 function waitingDays(since, now) {
   if (!since) return null;
@@ -1350,16 +1377,28 @@ function docsMissingWords(missing) {
    `total` is the reader's COUNT(*) over the whole caseload. When it is bigger
    than the page that was actually fetched, the line underneath says so, because
    a page count standing in for a caseload count is a headline that silently
-   under-reports the day it matters. A missing total is unknown, not zero. */
+   under-reports the day it matters. A missing total is unknown, not zero.
+
+   AND IT SAYS WHAT IT DID NOT COUNT. The number is "ready to send" and Blocked
+   and Escalated cases are not ready to send, so folding them in would be a lie
+   in the other direction. What was wrong was the sentence underneath: with three
+   blocked cases and nothing ready, this said "nothing is waiting on you" — a
+   zero standing in for work the screen had decided not to count. It names them
+   now, in both branches. */
 function inquiryHeadline(rows, opts) {
   const o = opts || {};
   const list = Array.isArray(rows) ? rows : [];
   const ready = list.filter(caseIsReadyToSend);
+  const waiting = casesNeedingAPerson(list).length;
+  const waitingWords = waiting === 1
+    ? "1 case needs a person before it can be sent"
+    : waiting + " cases need a person before they can be sent";
   const total = Number(o.total);
   const capped = Number.isFinite(total) && total > list.length;
   let sub;
   if (!ready.length) {
-    sub = list.length ? "nothing is waiting on you" : "no active cases";
+    if (waiting) sub = waitingWords;
+    else sub = list.length ? "nothing is waiting on you" : "no active cases";
   } else {
     let oldest = null;
     for (const row of ready) {
@@ -1369,6 +1408,7 @@ function inquiryHeadline(rows, opts) {
     sub = oldest === null
       ? "oldest waiting — no request date on file"
       : "oldest waiting " + waitingLabel(oldest);
+    if (waiting) sub += " · " + waitingWords;
   }
   if (capped) sub += " · counted over the first " + list.length + " of " + total;
   return { value: String(ready.length), label: "Ready to send", sub: sub };
@@ -1492,6 +1532,7 @@ const VIEW = {
   bureauLabel: bureauLabel,
   countByBureau: countByBureau,
   caseIsReadyToSend: caseIsReadyToSend,
+  casesNeedingAPerson: casesNeedingAPerson,
   waitingDays: waitingDays,
   waitingLabel: waitingLabel,
   sortCasesOldestFirst: sortCasesOldestFirst,
@@ -2724,13 +2765,28 @@ window.FHDeskHead = (function () {
     var head = V.inquiryHeadline(allCases, { total: caseTotal });
     var next = V.nextInquiryAction(allCases);
     nextCaseId = next ? next.caseId : null;
+    /* THE QUIET LINE, WHEN THERE IS NO BUTTON TO PRESS.
+       nextInquiryAction only ever names a case that is ready to send, so with
+       three Blocked cases and nothing ready it returns null and this line is
+       what she reads. It used to say "every open case is already sent", which
+       was flatly untrue: Blocked means the send was refused and somebody has to
+       chase identity documents. It counts them now instead of sending her home. */
+    var waiting = V.casesNeedingAPerson(allCases).length;
+    var quiet;
+    if (!allCases.length) {
+      quiet = "No cases are open.";
+    } else if (waiting) {
+      quiet = "Nothing is ready to send — " + (waiting === 1
+        ? "1 case needs a person before it can be sent."
+        : waiting + " cases need a person before they can be sent.");
+    } else {
+      quiet = "Nothing is waiting on you — every open case is already sent.";
+    }
     window.FHDeskHead.put(
       "inquiries",
       head,
       next ? { text: next.text, onClick: function () { openCase(next.caseId); } } : null,
-      allCases.length
-        ? "Nothing is waiting on you — every open case is already sent."
-        : "No cases are open."
+      quiet
     );
   }
 
@@ -2799,7 +2855,10 @@ window.FHDeskHead = (function () {
    The trail existed the whole time: src/inquiry-ops/send.mjs logs a letter or
    portal attempt through logAttempt() every time a person presses Send. Nothing
    had ever read them back across the desk. GET /api/inquiries?recent=letters
-   does now — same endpoint, same auth, same org binding as the per-row history.
+   does now — same org binding as the per-row history, and limited to the four
+   roles that work this desk (api/inquiries.mjs). A setter or a closer gets a 403
+   here, which is the point: these rows name clients and say which bureau each
+   one's dispute letter went to.
 
    FHData.wire, not a hand-rolled fetch: it is the one thing in the app that
    tells "the read failed" apart from "the read worked and there is nothing", and
@@ -2808,6 +2867,12 @@ function loadRecentLetters() {
   var list = document.getElementById("lettersList");
   var empty = document.getElementById("lettersEmpty");
   if (!list || !empty || !window.FHData || !window.FHData.recentLetters) return;
+  /* "No letters issued yet" is an ANSWER, so it waits for one. It ships visible
+     in the markup, and paint() below only ever turns it back on for a read that
+     came back with zero rows — so leaving it up here would let it stand as the
+     answer while the read is still in flight, and keep standing if the read is
+     refused or fails. Hidden until something is known. */
+  empty.hidden = true;
   function esc(v) {
     return String(v == null ? "" : v)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

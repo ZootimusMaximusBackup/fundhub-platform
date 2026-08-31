@@ -546,7 +546,7 @@ test("VIEW exposes every export the screen calls, so a rename cannot half-land",
     "caseUiStatus", "caseCallState", "buildCaseSendRequest", "buildInquiryGenerateRequest",
     "bureauKey", "bureauLabel", "countByBureau", "repairStagePill", "buildRepairSendRequest",
     "buildRepairConfirmParseRequest",
-    "caseIsReadyToSend", "waitingDays", "waitingLabel", "sortCasesOldestFirst",
+    "caseIsReadyToSend", "casesNeedingAPerson", "waitingDays", "waitingLabel", "sortCasesOldestFirst",
     "nextInquiryAction", "docsPacketLabel", "docsMissingWords",
     "inquiryHeadline", "repairHeadline", "nextRepairAction"
   ]) {
@@ -895,6 +895,86 @@ test("inquiryHeadline never invents an age it does not have", () => {
     VIEW.inquiryHeadline([{ case_status: "Completed" }], { now: NOW }).sub,
     "nothing is waiting on you"
   );
+});
+
+/* ── the zero that was standing in for work ────────────────────────────────── */
+
+test("casesNeedingAPerson: Blocked and Escalated are work, not settled", () => {
+  // src/inquiry-ops/cases.mjs ACTIVE admits five statuses. Two of them are
+  // neither ready to send nor out of the building.
+  const rows = [
+    { id: "queued", case_status: "Queued" },
+    { id: "blocked", case_status: "Blocked" },
+    { id: "escalated", case_status: "Escalated" },
+    { id: "sent", case_status: "In Progress" },
+    { id: "calling", case_status: "Queued", call_fired_at: daysAgo(1) },
+    { id: "done", case_status: "Completed" }
+  ];
+  assert.deepEqual(VIEW.casesNeedingAPerson(rows).map((r) => r.id), ["blocked", "escalated"]);
+  assert.deepEqual(VIEW.casesNeedingAPerson([]), []);
+  assert.deepEqual(VIEW.casesNeedingAPerson(null), []);
+});
+
+test("casesNeedingAPerson: a status this screen has never been taught is work, not nothing", () => {
+  // caseUiStatus falls back to `st || "Unknown"`. A case in a state nobody has
+  // explained is exactly the one a person should look at, so it must not be
+  // quietly absorbed into "everything is sent".
+  assert.equal(VIEW.casesNeedingAPerson([{ id: "x", case_status: "Waiting On Legal" }]).length, 1);
+  assert.equal(VIEW.casesNeedingAPerson([{ id: "x" }]).length, 1);
+});
+
+test("casesNeedingAPerson: a Blocked case that already went out is not counted twice", () => {
+  // caseUiStatus reads Blocked FIRST, before the delivery columns, so a case
+  // that was blocked stays blocked here even with a letter id on it. That is the
+  // gate's own order and this follows it rather than inventing a second one.
+  assert.equal(VIEW.casesNeedingAPerson([{ case_status: "Blocked", letter_provider_id: "L1" }]).length, 1);
+  // An Escalated case that HAS been sent is out of her hands, and is not counted.
+  assert.equal(VIEW.casesNeedingAPerson([{ case_status: "Escalated", first_delivery_at: daysAgo(2) }]).length, 0);
+});
+
+test("inquiryHeadline does not let a zero stand in for three blocked cases", () => {
+  /* THE BUG. Blocked is written by src/inquiry-ops/send.mjs when the identity
+     packet is short: the send was REFUSED and somebody has to chase documents.
+     With three such cases and nothing ready, the sub-line said "nothing is
+     waiting on you" — the screen telling her she could go home while its own
+     Docs column printed "chasing" on the rows underneath. */
+  const rows = [
+    { id: "a", case_status: "Blocked", requested_at: daysAgo(10) },
+    { id: "b", case_status: "Blocked", requested_at: daysAgo(12) },
+    { id: "c", case_status: "Escalated", requested_at: daysAgo(20) }
+  ];
+  const h = VIEW.inquiryHeadline(rows, { now: NOW, total: 3 });
+  // The NUMBER is still honest: none of these is ready to send, and folding them
+  // in would be the same lie pointing the other way.
+  assert.equal(h.value, "0");
+  assert.equal(h.sub, "3 cases need a person before they can be sent");
+  assert.equal(h.sub.includes("nothing is waiting on you"), false);
+
+  // One reads as one.
+  assert.equal(
+    VIEW.inquiryHeadline([{ id: "a", case_status: "Blocked" }], { now: NOW }).sub,
+    "1 case needs a person before it can be sent"
+  );
+});
+
+test("inquiryHeadline names the uncounted cases even when something IS ready", () => {
+  const rows = [
+    { id: "a", case_status: "Queued", requested_at: daysAgo(6) },
+    { id: "b", case_status: "Blocked", requested_at: daysAgo(12) }
+  ];
+  const h = VIEW.inquiryHeadline(rows, { now: NOW, total: 2 });
+  assert.equal(h.value, "1");
+  assert.equal(h.sub, "oldest waiting 6 days · 1 case needs a person before it can be sent");
+});
+
+test("inquiryHeadline still says 'nothing is waiting on you' when that is true", () => {
+  // The guard against the fix over-firing: everything open really is in the mail.
+  const rows = [
+    { id: "a", case_status: "In Progress" },
+    { id: "b", case_status: "Queued", first_delivery_at: daysAgo(3) },
+    { id: "c", case_status: "Queued", call_fired_at: daysAgo(1) }
+  ];
+  assert.equal(VIEW.inquiryHeadline(rows, { now: NOW, total: 3 }).sub, "nothing is waiting on you");
 });
 
 test("repairHeadline pairs a number that never reaches zero with what it is out of", () => {
