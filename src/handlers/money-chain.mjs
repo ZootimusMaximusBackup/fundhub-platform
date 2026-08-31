@@ -43,6 +43,7 @@ import {
 import { grantFromTransaction } from "../entitlements/entitlements.mjs";
 import { createFundingCloseoutSafe } from "../funding/closeout.mjs";
 import { attachGateToRound } from "../inquiry-ops/gate.mjs";
+import { accrueForPaymentSafe } from "../partners/revenue.mjs";
 
 /** Semantic product bucket → products.code when name/alias resolve fails. */
 export const BUCKET_TO_CODE = Object.freeze({
@@ -419,6 +420,31 @@ export async function ensureSalePayment(db, event, {
   }
   const paidAt = p.paidAt || new Date().toISOString();
 
+  /* THE WHITE-LABEL PARTNER'S HALF — the one hook, and the reason it is here.
+     A sale_payments row is the single durable moment money is known to have
+     arrived, and every path that records money reaches this function. Hanging
+     the partner accrual off any of the six bus handlers instead would mean six
+     places to keep in step and a seventh that quietly forgets. Nothing new is
+     registered on the bus; this rides what register() already binds.
+
+     accrueForPaymentSafe never throws and is idempotent on both the transaction
+     and the event id, so a replay writes nothing and a failure cannot stop
+     fundhub from recording that the money came in. A payment for a client with
+     no partner_id — the direct book, which is most of them — returns
+     { accrued: false, reason: "no_partner" } and writes nothing.
+     See src/partners/revenue.mjs and docs/specs/W1-money-model.md §7. */
+  const settle = async (paymentRow, created) => {
+    if (!paymentRow) return { payment: null, created: false };
+    const partnerRevenue = await accrueForPaymentSafe(db, {
+      orgId,
+      saleId,
+      salePaymentId: paymentRow.id,
+      transactionId: paymentRow.transaction_id ?? transactionId,
+      sourceEventId: paymentRow.source_event_id ?? sourceEventId
+    });
+    return { payment: paymentRow, created, partnerRevenue };
+  };
+
   const ins = await db.query(
     `INSERT INTO sale_payments (
        org_id, sale_id, transaction_id, product_id, payment_link_id, sale_motion,
@@ -431,21 +457,21 @@ export async function ensureSalePayment(db, event, {
       kind, paid, paidAt, p.notes || `source:${event.name}`, sourceEventId
     ]
   );
-  if (ins.rows[0]) return { payment: ins.rows[0], created: true };
+  if (ins.rows[0]) return settle(ins.rows[0], true);
 
   if (transactionId) {
     const ex = await db.query(
       `SELECT * FROM sale_payments WHERE org_id = $1 AND transaction_id = $2 LIMIT 1`,
       [orgId, transactionId]
     );
-    if (ex.rows[0]) return { payment: ex.rows[0], created: false };
+    if (ex.rows[0]) return settle(ex.rows[0], false);
   }
   if (sourceEventId) {
     const ex = await db.query(
       `SELECT * FROM sale_payments WHERE org_id = $1 AND source_event_id = $2 LIMIT 1`,
       [orgId, sourceEventId]
     );
-    if (ex.rows[0]) return { payment: ex.rows[0], created: false };
+    if (ex.rows[0]) return settle(ex.rows[0], false);
   }
   return { payment: null, created: false };
 }
