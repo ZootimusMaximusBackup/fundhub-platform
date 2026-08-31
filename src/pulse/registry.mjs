@@ -122,6 +122,7 @@ const API_KEYS = [
   "partner-marketing/generate-logo",
   "partner-marketing/usage",
   "partner-pages",
+  "partners/approve",
   "payment-links",
   "pii",
   "pipeline-cards",

@@ -341,9 +341,18 @@ export function defaultContractValues({ offerKey = null, tier = null } = {}) {
     };
   }
   if (templateKey === "CREDIT-REPAIR-AGREEMENT") {
+    /* one_time_fee, NOT monthly_fee. REPAIR_DFY is $1,000 charged once (owner
+       decision 2026-08-31), and the blank this fills used to be called
+       monthly_fee inside a template sentence reading "per month while services
+       are active" — so the same $1,000 rendered as $1,000 a month for the
+       180-day term. db/migrations/273_repair_fee_charged_once.sql rewrites that
+       sentence and renames the blank; this is the other half of that rename.
+       src/contracts/offer-fee-language.test.mjs fails if the two drift apart
+       again. term_days stays: it is how long the work runs, not a billing
+       period, and the corrected copy says so. */
     return {
       ...base,
-      monthly_fee: price || "$1,000",
+      one_time_fee: price || "$1,000",
       term_days: "180",
       scope: "Done-for-you credit repair: forensic review, dispute rounds, creditor escalations, and live dashboard access."
     };

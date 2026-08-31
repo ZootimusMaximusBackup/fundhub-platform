@@ -187,6 +187,7 @@ flowchart LR
 | `repair.program.complete` | credit repair | — | 0 |
 | `repair.stalled` | credit repair | — | 0 |
 | `repair.cancelled` | credit repair | — | 0 |
+| `partner.approved` | partner lifecycle | — | 0 |
 | `diy.package.requested` | diy package | — | 0 |
 | `diy.package.generating` | diy package | — | 0 |
 | `diy.package.ready` | diy package | — | 0 |

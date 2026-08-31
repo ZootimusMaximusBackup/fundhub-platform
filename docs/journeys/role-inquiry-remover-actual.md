@@ -37,7 +37,7 @@ flowchart TD
     CAN --> A_staff[staff — 1 route]
     CAN --> A_top_level[Everything else — 25 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 68 routes]
+    WHO -->|Yes| CANT[Blocked — 69 routes]
     CANT --> B_auth[Signing in and out — 5 blocked]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_brand[brand — 1 blocked]
@@ -51,6 +51,7 @@ flowchart TD
     CANT --> B_journeys[journeys — 2 blocked]
     CANT --> B_ops[ops — 1 blocked]
     CANT --> B_partner_brand[partner-brand — 1 blocked]
+    CANT --> B_partners[partners — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
     CANT --> B_read[Reading data — 15 blocked]
@@ -62,7 +63,7 @@ flowchart TD
 
 ## What they can reach
 
-**133 of 202 routes.**
+**133 of 203 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -209,7 +210,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**68 of 202 routes.**
+**69 of 203 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -257,6 +258,7 @@ flowchart TD
 | `/api/partner-brand` | GET, PUT | employees: owner, admin<br>plus: partner |
 | `/api/partner-brand/verify-domain` | POST | owner, admin |
 | `/api/partner-pages` | GET, PATCH, POST | employees: owner, admin<br>plus: partner |
+| `/api/partners/approve` | POST | owner, admin |
 | `/api/payment-links` | GET, POST | owner, admin, sales_manager, closer |
 | `/api/privacy/erasure` | GET, POST | owner, admin |
 | `/api/products` | POST | owner, admin, sales_manager |

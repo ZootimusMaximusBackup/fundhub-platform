@@ -149,6 +149,7 @@ import chatPeers from "../../api/chat/peers.mjs";
 import demoSimulate from "../../api/demo/simulate.mjs";
 import demoMode from "../../api/demo/mode.mjs";
 import partnerPages from "../../api/partner-pages.mjs";
+import partnersApprove from "../../api/partners/approve.mjs";
 import partnerBrandVerifyDomain from "../../api/partner-brand/verify-domain.mjs";
 import partnerMarketingEnable from "../../api/partner-marketing/enable.mjs";
 import partnerMarketingUsage from "../../api/partner-marketing/usage.mjs";
@@ -574,6 +575,12 @@ export const ROUTES = {
   "demo/simulate": demoSimulate,
   "demo/mode": demoMode,
   "partner-pages": partnerPages,
+  /* Turns a white-label APPLICATION into a live partner: login, brand row,
+     published page, status active, welcome mail. approvePartnerApplication()
+     existed and was routed by nothing, so an applicant could only be approved
+     by hand-editing the database — and never got the welcome mail at all.
+     Owner/admin only; the handler gates with requireRole after requireAuth. */
+  "partners/approve": partnersApprove,
   "partner-brand/verify-domain": partnerBrandVerifyDomain,
   "partner-marketing/enable": partnerMarketingEnable,
   "partner-marketing/usage": partnerMarketingUsage,

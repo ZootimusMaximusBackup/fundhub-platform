@@ -113,6 +113,19 @@ export const CANONICAL_EVENTS = [
   "repair.program.complete",
   "repair.stalled",
   "repair.cancelled",
+  /* PARTNER LIFECYCLE. Emitted by api/partners/approve.mjs when a human turns a
+     white-label APPLICATION into a live partner — the moment a login, a brand
+     row, a published page and the welcome mail all come into being.
+
+     There is deliberately no `partner.applied` here. The only place that could
+     emit it is api/public/partner-apply.mjs, which this unit does not own; the
+     name is not reserved in advance because an event nobody emits reads as a
+     feature that exists. See docs/journeys/CHANGELOG.md 2026-08-31.
+
+     Keep the line below short — scripts/diagrams/generate.mjs uses the comment
+     line immediately above a group as that group's section name in the table. */
+  // partner lifecycle
+  "partner.approved",
   // diy package
   "diy.package.requested",
   "diy.package.generating",

@@ -37,6 +37,7 @@ flowchart TD
     CAN --> A_ops[ops — 1 route]
     CAN --> A_partner_brand[partner-brand — 1 route]
     CAN --> A_partner_marketing[partner-marketing — 5 routes]
+    CAN --> A_partners[partners — 1 route]
     CAN --> A_privacy[privacy — 1 route]
     CAN --> A_proxy[proxy — 2 routes]
     CAN --> A_public[public — 7 routes]
@@ -54,7 +55,7 @@ flowchart TD
 
 ## What they can reach
 
-**199 of 202 routes.**
+**200 of 203 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -171,6 +172,7 @@ flowchart TD
 | `/api/partner-marketing/generate-logo` | POST | staff, partner |
 | `/api/partner-marketing/usage` | GET | staff, partner |
 | `/api/partner-pages` | GET, PATCH, POST | employees: owner, admin<br>plus: partner |
+| `/api/partners/approve` | POST | owner, admin |
 | `/api/payment-links` | GET, POST | owner, admin, sales_manager, closer |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/pipeline-cards` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -267,7 +269,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**2 of 202 routes.**
+**2 of 203 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

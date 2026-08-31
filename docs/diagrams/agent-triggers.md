@@ -170,6 +170,7 @@ Declared in `canonical.mjs`, emitted or emittable, with no Inngest function list
 - `repair.program.complete`
 - `repair.stalled`
 - `repair.cancelled`
+- `partner.approved`
 - `diy.package.requested`
 - `diy.package.generating`
 - `diy.package.ready`

@@ -67,7 +67,7 @@ async function main() {
     },
     "CREDIT-REPAIR-AGREEMENT": {
       company_name: "Fundhub",
-      monthly_fee: "$1,000",
+      one_time_fee: "$1,000",
       term_days: "180",
       scope: "Prove send — full done-for-you credit repair (placeholder)."
     },
