@@ -644,3 +644,69 @@ test("the screen arms a pending state instead of painting a confirmation it has 
   assert.equal(/status-pill confirmed">Confirmed · Removed<\/span>';/.test(HTML_SRC), false,
     "a hardcoded confirmed pill is still being painted without the server");
 });
+
+/* ── the Work Queue's column map ─────────────────────────────────────────────
+ *
+ * Not a view-model test. It lives here because this is the file that already
+ * reads the screen, and because the thing it pins is the one the module's
+ * header calls the worst outcome available: an action that appears to have
+ * happened and did not.
+ *
+ * paintRow() used to write the attempt count into cells[3] and the status pill
+ * into cells[4] — Expected and Call State — indices left over from a
+ * five-column table. So "Mark confirmed" put "Removed" under Call State while
+ * the real Status column still read open, and the desk could not be trusted
+ * after a write. The count is derived from the header itself, so reordering the
+ * columns without moving the constants fails here rather than on somebody's
+ * credit report. The browser proof is e2e/specialist-desk.spec.mjs.
+ */
+
+const WORK_QUEUE_COLUMNS = [
+  "Client", "Bureau", "Actual", "Expected", "Call State", "Hold", "Attempts", "Status"
+];
+
+test("the Work Queue header still declares its eight columns in this order", () => {
+  const header = (HTML_SRC.match(/<table class="queue" id="workQueueTable">\s*<tr>([\s\S]*?)<\/tr>/) || [])[1];
+  assert.ok(header, "no Work Queue header row found");
+  const cols = [...header.matchAll(/<th>([^<]+)<\/th>/g)].map((m) => m[1].trim());
+  assert.deepEqual(cols, WORK_QUEUE_COLUMNS);
+});
+
+test("paintRow writes into the columns the header actually declares", () => {
+  const attempts = WORK_QUEUE_COLUMNS.indexOf("Attempts");
+  const status = WORK_QUEUE_COLUMNS.indexOf("Status");
+  assert.equal(attempts, 6);
+  assert.equal(status, 7);
+
+  assert.match(
+    HTML_SRC,
+    new RegExp(`var COL_ATTEMPTS = ${attempts}, COL_STATUS = ${status};`),
+    "the column constants no longer match the header the table renders"
+  );
+  assert.match(HTML_SRC, /attemptsCell = r\.cells\[COL_ATTEMPTS\]/);
+  assert.match(HTML_SRC, /statusCell   = r\.cells\[COL_STATUS\]/);
+
+  // The stale five-column indices, in either of the two places they lived.
+  assert.equal(/attemptsCell = r\.cells\[3\]/.test(HTML_SRC), false);
+  assert.equal(/statusCell   = r\.cells\[4\]/.test(HTML_SRC), false);
+  assert.equal(/status: r\.cells\[4\]\.textContent/.test(HTML_SRC), false);
+});
+
+test("the fallback row state reads the same two columns paintRow writes", () => {
+  // rowState() seeds from the DOM when there is no database row behind it. It
+  // read cells[3] and cells[4] too, so a row seeded that way disagreed with
+  // every row seeded from the server.
+  assert.match(HTML_SRC, /var txt = r\.cells\[COL_ATTEMPTS\]\.textContent\.trim\(\);/);
+  assert.match(HTML_SRC, /status: r\.cells\[COL_STATUS\]\.textContent\.trim\(\),/);
+});
+
+test("the comment above paintRow no longer points at a cell that was deleted", () => {
+  // It described a "2d 14h" stuck age living in the cell paintRow writes. That
+  // column and its sample rows are gone; the sentence outlived the markup and
+  // sent the next reader to the wrong two cells.
+  assert.equal(
+    /so expanding a sample row never rewrites the\s*\n\s*markup it came with \(the "2d 14h" stuck age lives in that cell\)/.test(HTML_SRC),
+    false,
+    "the stale stuck-age comment is back"
+  );
+});
