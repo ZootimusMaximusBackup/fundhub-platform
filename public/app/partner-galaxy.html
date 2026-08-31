@@ -39,18 +39,33 @@
 
   /* ---------- THE ONE CAPTION RULE (UI-STANDARDS §12.7) --------------------
      fundhub-brand.css sets `:is(.app,…) * {font-size:inherit !important}`, so
-     twenty-eight px sizes written in this file were painting nothing at all —
-     measured 2026-08-30, every one of them read back 16px in the browser. They
-     are gone. The names below are this screen's own, so the brand file's
-     caption list never reaches them, and they are all small labels: the topbar
-     status readouts, the legend strip, and the worker panel's eyebrows,
-     section headings, key/value rows, timeline and chips. !important is what
-     beats the brand's inherit. ONE rule, never two.
-     Deliberately NOT in this list: .clock (shell.js owns the clock size for
-     every screen at 12px !important — a rule here would beat it and make this
-     one screen's clock the odd one out) and .legend b (it inherits .legend). */
-  .app :is(.census,.live-pill,.legend,
-    .p-kicker,.p-role,.p-close,.p-pace,.p-now-k,.p-sec-t,
+     twenty-eight px sizes written in this file were painting nothing at all.
+     Measured 2026-08-30, signed in on the live app: 24 of them read back the
+     inherited 16px and the other four (.av, .brand .sub, footer.statusbar,
+     .gift-strip .note) read back 13px, because the brand file's caption list
+     already covers those names. Not one read back the size written next to it.
+     They are gone, and 645 element measurements across three widths say the
+     page is identical to before they went.
+     The names below are the worker panel's own — `p-` is this screen's prefix,
+     no shared stylesheet and no shell.js injection touches any of them — and
+     they are all small labels: the eyebrow, role line, close button, pace
+     badge, "Right now" label, section headings, key/value rows, timeline rows,
+     file chips and footnote. `!important` is what beats the brand's inherit.
+     ONE rule, never two.
+     DELIBERATELY OUT OF THIS LIST, and the reason matters more than the list:
+     a `.app :is(…)` selector scores (0,2,0), so it OUTRANKS a shared one-class
+     rule even when both are !important. Any name that shared chrome also owns
+     therefore has to stay out, or this screen silently overrides the whole app:
+       .clock     — shell.js sizes every clock in the app at 12px !important.
+       .live-pill — the house LIVE pill, carried by eight other screens.
+       .census    — topbar chrome, shared with galaxy.html.
+       .legend    — the reading key, shared with five other screens; it also
+                    sits in a 22px nowrap strip with overflow:hidden, so
+                    shrinking it UNCOVERS keys that were clipped. That is a
+                    change to what is on screen, not to type size, and it is
+                    not this pass's to make.
+       .legend b  — inherits .legend either way. */
+  .app :is(.p-kicker,.p-role,.p-close,.p-pace,.p-now-k,.p-sec-t,
     .p-row,.p-tl-i,.p-chip,.p-foot){
     font-size:var(--fs-caption)!important;
   }
