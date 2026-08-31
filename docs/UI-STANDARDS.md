@@ -162,6 +162,21 @@ Never ship a legend whose only key is colour, and never write "the red ones need
 
 They are named here rather than deleted because the shape of the stripe is still the right answer and somebody will want it back. **But do not cite dead CSS as the model.** An example that has never run cannot show you that it works, and the next person copies it believing it has been proven. Before this section points at a rule, open the screen and check the class is actually applied to something.
 
+**The class being applied is still not proof that anything paints.** The same commit that corrected the two examples above shipped a third dead rule eleven lines from `.card.held`, and its class *was* applied:
+
+```css
+.card.fh-spot{box-shadow:0 0 0 3px var(--spectrum);}   /* painted nothing */
+```
+
+`--spectrum` is a `linear-gradient` — `fundhub-brand.css` defines it, and `rampToSpectrum()` in `shell.js` rebuilds it from the six-stop brand ramp for every white-label tenant. **The colour component of `box-shadow` must be a `<color>`.** A gradient there makes the whole declaration invalid at computed-value time, so `box-shadow` fell back to its initial value, `none`. `background:var(--spectrum)` on the same screen (`.drop-line`) is correct, because a background *does* take a gradient — so the token looks proven right next to the rule it breaks.
+
+Worse than a missing nicety: `.card.fh-spot` is (0,2,0), which outranks the resting `:is(.app,.app-shell) :is(.card,…)` shadow at 12.2. Killing it took the card's own elevation with it, so the card the user had just been jumped to was **the only flat card on the board** — the feedback was inverted, not absent. Measured 2026-08-30: spotted card `none`, every neighbour `rgba(10,10,10,.04) 0 1px 2px, rgba(10,10,10,.06) 0 2px 8px`.
+
+Two rules follow, and they are cheap:
+
+- **A shadow, outline, border-colour or text-shadow takes a colour token. Never `--spectrum`.** Use `--ink` for a ring you need on every tenant — a ramp stop such as `--accent` is `ramp[5]`, which a one-hue tenant can wash out to the board behind it. Add the resting token back where you are overriding it: `box-shadow:var(--panel-shadow),0 0 0 3px var(--ink)`.
+- **Assert the computed style, never the class.** `toHaveClass(/fh-spot/)` passed green the entire time the rule was inert, which is why nobody caught it. `e2e/pipeline-waiting-on.spec.mjs` now reads `getComputedStyle().boxShadow` and compares it to an untouched card beside it, because "looks exactly like its neighbours" is the failure being tested for.
+
 ### 12.7 The type trap, and its one escape hatch
 
 **This is the rule that costs the most time when it is not known.**

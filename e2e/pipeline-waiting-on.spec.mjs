@@ -92,6 +92,50 @@ test.describe("pipeline — the headline answers what is waiting on us", () => {
     await expect(page.locator("#fh-card-older")).toHaveClass(/fh-spot/);
   });
 
+  test("the card it sends you to is RINGED — the class is not the point, the paint is", async ({ page }) => {
+    /* This test exists because the class assertion above passed green for a
+       highlight that painted nothing. The rule shipped as
+       `box-shadow:0 0 0 3px var(--spectrum)`, and --spectrum is a gradient, so
+       the whole declaration was invalid and fell back to `none` — which also
+       threw away the resting shadow the brand file gives every card. The card
+       you had just been sent to was the flattest one on the board.
+
+       So: measure what the browser actually computed, and measure it against a
+       neighbour, because "looks like every other card" is the failure. */
+    const old = new Date(Date.now() - 9 * DAY).toISOString();
+    await openScreen(page, "/app/pipeline.html", OWNER, board([
+      stage("new_lead", "New Lead", [
+        card({ id: "newer", name: "Newer Person", sms_needs_reply: true }),
+        card({ id: "older", name: "Older Person", sms_needs_reply: true, entered_at: old })
+      ])
+    ]));
+
+    const spot = page.locator("#fh-card-older");
+    const plain = page.locator("#fh-card-newer");
+    await expect(page.locator("#hlNextLink")).toContainText("Older Person", { timeout: 10_000 });
+
+    const before = await plain.evaluate((el) => getComputedStyle(el).boxShadow);
+    await page.locator("#hlNextLink").click();
+    await expect(spot).toHaveClass(/fh-spot/);
+
+    const ringed = await spot.evaluate((el) => getComputedStyle(el).boxShadow);
+
+    // It paints at all. A value the browser cannot parse computes to "none".
+    expect(ringed).not.toBe("none");
+    // It is a 3px ring, not just the shadow every card already has.
+    expect(ringed).toContain("0px 0px 0px 3px");
+    // It differs from an untouched card beside it, which is the whole job.
+    expect(ringed).not.toBe(before);
+    // The resting shadow is kept, not replaced — the card must not go flat.
+    expect(ringed.startsWith(before)).toBe(true);
+
+    // The pointer landing on the card must not wipe the ring: .card:hover is
+    // declared later at the same specificity and wins the tie unless the spot
+    // rule names :hover too.
+    await spot.hover();
+    expect(await spot.evaluate((el) => getComputedStyle(el).boxShadow)).toBe(ringed);
+  });
+
   test("nothing waiting says so in words — never a bare zero with no meaning", async ({ page }) => {
     await openScreen(page, "/app/pipeline.html", OWNER, board([
       stage("round_submitted", "Round Submitted", [card({ id: "a" })])

@@ -72,11 +72,49 @@ Before a rail answers, and after a rail fails to answer, every figure is a dash 
 
 **One thing to flag rather than assert:** the board still does one raw `applications` read that is not behind the funding-tier gate — the "Amount needed" chip, which shipped on 2026-08-29. I narrowed it to the funding rails and the current round rather than adding a second one. Whether that read should sit behind the gate is Chris's call.
 
+## 5a. Correction after adversarial review (2026-08-31) — the ring did not ring
+
+A reviewer measured this branch instead of reading it, and found that the one new thing §3 promises — *"clicking it scrolls to that card and rings it"* — **scrolled but did not ring.** The finding was right. It is fixed on this same branch.
+
+**What was broken, in plain language.** You click "Longest wait: Sam Turner". The board scrolls to Sam's card. Nothing marks it. On a rail with forty cards, Sam's card is one of a dozen on screen and there is no way to tell which one you were sent to.
+
+It was worse than nothing happening. Every card on this board carries a soft shadow that makes it sit up off the page. The broken rule **switched that shadow off** on the one card it was supposed to highlight. So for the two seconds after the jump, the card you had just been sent to was the only flat one on the board — the one card that looked *less* real than the rest. The feedback was backwards, not missing.
+
+**Why.** The rule asked for a ring painted in `--spectrum`. `--spectrum` is not a colour, it is the six-colour gradient the brand uses for stripes and bars. A shadow can only be painted in a single flat colour, so the browser threw the whole line away and used its default, which is "no shadow at all". The same `--spectrum` eleven lines further down is fine, because that one paints a *background*, and a background can be a gradient. The token looks proven sitting right next to the rule it breaks.
+
+**The fix is one line.** Keep the card's normal shadow, and add a 3px ink ring on top of it:
+
+`box-shadow:var(--panel-shadow),0 0 0 3px var(--ink)`
+
+Ink rather than the reviewer's suggested `--accent`: `--accent` is the sixth stop of the tenant's colour ramp, and a white-label company with one pale hue can leave it near-invisible against the board behind it — the exact §12.6 failure this branch spent a section on. Ink is the same validated colour the chosen headline counter already fills with, so the card you were sent to and the counter you pressed read as one act.
+
+`.card.fh-spot:hover` is named in the selector too. `.card:hover` is written later in the file at the same strength and wins the tie, so without it the ring vanished the moment the pointer crossed the card. Measured, not guessed: stripping `:hover` out of the selector in the live page dropped the ring to the ordinary hover shadow immediately.
+
+**Why nothing caught it, and what catches it now.** The only check was `toHaveClass(/fh-spot/)` — it proved a label was stuck on the card and said nothing about whether anything appeared. It passed green for the whole life of the dead rule. Both replacements were run against the old CSS first and **both fail on it** while the old class check still passes:
+
+- `e2e/pipeline-waiting-on.spec.mjs` — reads what the browser actually painted and compares it to an untouched card in the same column, because "looks exactly like its neighbours" is the failure being tested for. It also hovers the card, so the tie above cannot come back.
+- `src/http/pipeline-screen.test.mjs` — refuses any shadow, outline, border-colour or text-shadow on this screen that names `--spectrum`. This one runs on every `npm test`; Playwright is a separate command.
+
+**The uncomfortable part, recorded rather than smoothed over.** §4 of this document says this branch corrected UI-STANDARDS §12.6 because both of its examples were CSS that had never painted. This branch then shipped a third dead rule, eleven lines from one of them, in the same commit. §12.6 now carries that too, with the lesson that the previous correction missed: *the class being applied is still not proof that anything paints.*
+
 ## 6. How it was checked
 
+**Re-measured in full after the §5a correction (2026-08-31), on a fresh worktree at branch tip, not carried over from the run above.**
+
 - **Lint** — clean, 1611 files.
+- **`npx tsc --noEmit`** — exit 0. Worth knowing: `tsconfig.json` exists now (added 2026-08-27) and has `checkJs:false`, so this gate parses and resolves every `.mjs` but only *type-checks* files carrying `// @ts-check`. It is a real gate, not the vacuous one it used to be, but it is a narrow one.
+- **Unit phase** — **7329 tests, 7316 pass, 10 fail, 3 skipped.** Before the correction this branch measured 7326 / 7313 / 10 / 3, and `main` measured 7315 / 7302 / 10 / 3. **The same ten failures by name at every one of the three points.** The correction adds 3 unit tests; the branch adds 14 over `main`.
+- **The pipeline `font-size:10px` offender is not this branch's.** `src/ui/screen-standard.test.mjs` names `pipeline.html: font-size:10px` (`.c-msg-badge`). It is on `main` verbatim and predates all of this work. Left alone on purpose — dead type is `fix/my-numbers-dead-type`'s job, not this branch's (§8 scope discipline).
+- **Database phase** — `npm test` never reaches it: the runner exits after the unit phase when it is red, and it is red on `main`, so **every pg file skips silently while the summary still reads green.** Run by hand, flag *before* the file list at `--test-concurrency=1` exactly as `scripts/run-suite.mjs` does, against a scratch Postgres 16.14 (Homebrew, macOS) created for this work with all **219** migrations applied to it empty, and **dropped afterwards**: **1956 tests, 1927 pass, 28 fail, 1 skipped** — identical to the pre-correction run, which is what a CSS-and-tests change should produce. All 28 are partner-isolation / row-level-security tests, the class CLAUDE.md §12 says fails when the connection role owns the database. Every one of the 13 pipeline endpoint tests passed.
+- **Playwright, my screen** — `pipeline-waiting-on` + `pipeline-honest`: **18 pass, 0 fail**, including the new computed-style ring test.
+- **Playwright, everything that touches this screen** — `pipeline`, `pipeline-honest`, `pipeline-waiting-on`, `screens-smoke`, `verification-security`, `funded-amount`, `sales-dashboards`, `sidebar-roles`, `conveyor-ui-times`, `demo-mode`: **119 pass, 0 fail.** That includes "pipeline at 1280px has no console errors" and the same at 390px.
+- **The two new gates were proven to bite.** The old CSS was put back on disk and both failed; the fix was restored and both passed. The pre-existing `toHaveClass` check passed against the broken rule in the same run, which is exactly why it was not enough.
+- Never CI. Never production. `verify:e2e` never run. No environment variable set or unset. Scratch database dropped.
+
+### The original run, kept for comparison
+
 - **Unit phase** — 7326 tests, 7313 pass, 10 fail, 3 skipped. With this diff stashed in the same worktree: 7315 / 7302 / 10 fail / 3 skipped. **The same ten failures by name.** 26 tests added.
-- **Database phase** — `npm test` never reaches it, because the runner exits after the unit phase when it is red and it is red on `main`. Run by hand, one file at a time exactly as the runner would, against a scratch Postgres 16.14 created for this work with all 219 migrations applied to it empty, dropped afterwards: **1956 tests, 28 fail, 1 skipped**, against **1955 / 28 fail / 1 skipped** with the diff stashed. The identical 28, every one a partner-isolation test — the class CLAUDE.md §12 says fails when the connection role owns the database.
+- **Database phase** — run by hand, one file at a time exactly as the runner would, against a scratch Postgres 16.14 created for this work with all 219 migrations applied to it empty, dropped afterwards: **1956 tests, 28 fail, 1 skipped**, against **1955 / 28 fail / 1 skipped** with the diff stashed. The identical 28, every one a partner-isolation test.
 - **Playwright, the three pipeline specs** — 13 new browser tests in `e2e/pipeline-waiting-on.spec.mjs`, covering a 40-card board, a failed read, an empty rail, the click-to-jump, the filter, and 390px. Run with `screens-smoke` and `funded-amount`: **73 pass, 0 fail.**
 - **Playwright, the whole suite** — 339 tests, **284 pass, 29 fail**. Not one of the 29 is a pipeline spec. `pipeline-waiting-on`, `pipeline-honest`, `funded-amount`'s board tests, `screens-smoke`'s pipeline load, and `verification-security`'s "pipeline at 1280px / 390px has no console errors" all ran and all passed. Of the 29, nine are `live-*` specs that need a live backend and cannot pass under the no-backend config at all. The other twenty live in seven files (`agent-editor`, `calendar`, `controls-persist`, `crm-flows`, `integration-round`, `lenders-inquiry-ops`, `messaging-inbox`), and those seven files were run twice — once as committed, once with `main`'s `pipeline.html` and `pipeline.mjs` checked out over the top: **20 fail / 79 pass both times, the identical failure list, character for character.** They are pre-existing.
 
@@ -93,6 +131,8 @@ Marked up per CLAUDE.md §8 — red boxes, numbered, one caption per mark in a l
 - `01-before-1440.png` — the board as `main` has it
 - `02-after-1440.png` — the same forty cards, with the headline
 - `03-after-phone-390.png` — 390px
+- `spot-before.png` — **the §5a correction.** The jump has fired. Mark 1 is the card it sent you to and it has *no* shadow; mark 2 is an ordinary card beside it that still has one, so the jumped-to card is visibly the flattest thing in the column. The legend carries the computed value: `none`.
+- `spot-after.png` — the same click, same cards. Mark 1 now carries a black ink ring **and** keeps its shadow; mark 2 is unchanged, which is what makes the difference readable. The legend carries the computed value in full.
 
 That folder is gitignored (`.gitignore:29`), so the images sit on disk beside this file rather than in the commit. `_shoot.mjs` in the same folder regenerates all three: it swaps `pipeline.html` for the committed version, shoots, and puts it straight back.
 

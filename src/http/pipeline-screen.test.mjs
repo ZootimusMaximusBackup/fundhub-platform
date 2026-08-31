@@ -944,3 +944,68 @@ describe("public/app/pipeline.html — the phone layout", () => {
     }
   });
 });
+
+/* ── The jump highlight has to PAINT ────────────────────────────────────────
+ *
+ * e2e/pipeline-waiting-on.spec.mjs measures the computed ring in a real
+ * browser, which is the honest proof. This is the cheap backstop that runs on
+ * every `npm test` while Playwright is a separate command: a gradient sitting
+ * in a colour slot is invalid whatever the rest of the page does, so it can be
+ * caught by reading the file.
+ *
+ * The rule shipped as `box-shadow:0 0 0 3px var(--spectrum)`. --spectrum is a
+ * linear-gradient. box-shadow's colour component must be a <color>, so the
+ * declaration was invalid at computed-value time and fell back to `none` —
+ * taking the resting card shadow with it and leaving the card the user had
+ * just been sent to as the only flat one on the board.
+ */
+describe("public/app/pipeline.html — the jump highlight paints something", () => {
+
+  /* Every value this screen's own CSS assigns to `prop`. */
+  function declarations(prop) {
+    const out = [];
+    const re = new RegExp("(?:^|[;{])\\s*" + prop + "\\s*:([^;}]+)", "g");
+    let m;
+    while ((m = re.exec(SHIPPED)) !== null) out.push(m[1].trim());
+    return out;
+  }
+
+  test("no shadow, outline or border on this screen puts a gradient in a colour slot", () => {
+    // --spectrum is the only gradient token the brand file hands out. It is
+    // legal on `background` — .drop-line uses it correctly — and on none of
+    // these, every one of which takes a <color>.
+    for (const prop of ["box-shadow", "outline", "outline-color", "border-color", "text-shadow"]) {
+      for (const value of declarations(prop)) {
+        assert.ok(!/--spectrum/.test(value),
+          prop + " takes a colour, not a gradient: `" + prop + ":" + value +
+          "` is invalid at computed-value time and paints nothing at all");
+      }
+    }
+  });
+
+  test("the spot rule keeps the resting card shadow instead of replacing it", () => {
+    const m = SHIPPED.match(/\.card\.fh-spot[^{]*\{([^}]*)\}/);
+    assert.ok(m, "the .card.fh-spot rule is gone — if the highlight was removed, remove this test with it");
+    const body = m[1];
+    assert.match(body, /box-shadow:\s*var\(--panel-shadow\)/,
+      "without --panel-shadow first, .card.fh-spot (0,2,0) beats the brand file's resting card shadow " +
+      "and the card the jump lands on goes FLATTER than its neighbours");
+    assert.match(body, /0 0 0 3px var\(--ink\)/,
+      "the ring needs the validated ink hex — a ramp stop such as --accent can be washed out to the " +
+      "board colour by a one-hue tenant (UI-STANDARDS 12.6)");
+  });
+
+  test("the spot rule survives the pointer landing on the card", () => {
+    // .card:hover is declared later in the file at the same specificity (0,2,0)
+    // and wins the tie, so the spot rule has to name :hover itself. Measured
+    // 2026-08-30: stripping `:hover` from that selector in the live CSSOM drops
+    // the ring to `rgba(0,0,0,.07) 0 1px 3px` the moment the card is hovered.
+    const spot = SHIPPED.indexOf(".card.fh-spot");
+    const hover = SHIPPED.indexOf(".card:hover");
+    assert.ok(spot !== -1 && hover !== -1, "one of .card.fh-spot / .card:hover has gone");
+    if (hover > spot) {
+      assert.match(SHIPPED, /\.card\.fh-spot:hover/,
+        ".card:hover is declared after .card.fh-spot and outranks it on a tie, so the spot rule must name :hover");
+    }
+  });
+});

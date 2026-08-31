@@ -208,8 +208,34 @@
     text-overflow:ellipsis;white-space:nowrap;min-width:0;}
   .hl-note[hidden]{display:none;}
   /* Where the jump lands, so the eye can find the card it was sent to. A ring,
-     not a fill — it has to read on a card that is already tinted for hold. */
-  .card.fh-spot{box-shadow:0 0 0 3px var(--spectrum);}
+     not a fill — it has to read on a card that is already tinted for hold.
+
+     THE COLOUR SLOT OF A SHADOW TAKES A COLOUR AND NOTHING ELSE. This rule
+     shipped as `0 0 0 3px var(--spectrum)` and painted nothing: --spectrum is a
+     linear-gradient (fundhub-brand.css defines it, and rampToSpectrum() in
+     shell.js rebuilds it for every white-label tenant from the six-stop brand
+     ramp). A gradient in a <color> slot is invalid at
+     computed-value time, so the whole declaration fell back to `none` — and
+     because .card.fh-spot (0,2,0) outranks the brand file's resting
+     :is(.app,.app-shell) :is(.card,...) shadow, the card the user had just been
+     sent to became the ONLY card on the board with no shadow at all. Measured
+     2026-08-30: spotted card box-shadow "none", every neighbour
+     "rgba(10,10,10,.04) 0 1px 2px, rgba(10,10,10,.06) 0 2px 8px". The feedback
+     was inverted, not merely absent. --spectrum is fine on .drop-line below
+     because that one is a background, and a background does take a gradient.
+
+     Ink, not --accent: this screen already argues at .hl-count.on that a fill
+     survives any brand ramp and a tint does not, and --accent is ramp[5], which
+     a one-hue tenant can leave as pale as the board behind it. --ink is the
+     same validated hex the chosen counter fills with, so the card you were sent
+     to and the counter you pressed read as the same act. The resting shadow is
+     restored ahead of the ring rather than replaced, so the card still sits on
+     the board the way its neighbours do — the ring is what is added.
+
+     :hover is named because .card:hover (0,2,0) is declared LATER in this file
+     and would otherwise win the tie and drop the ring the moment the pointer
+     crossed the card it just scrolled to. */
+  .card.fh-spot,.card.fh-spot:hover{box-shadow:var(--panel-shadow),0 0 0 3px var(--ink);}
 
   /* Reference, below the action and never above it (§12 rule 3). */
   .hl-ref{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto;}
