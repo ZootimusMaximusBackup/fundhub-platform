@@ -7,13 +7,19 @@
 //   round_submitted → round.submitted
 //   approved        → round.approved
 //   action_required → (none)
-//   funded          → round.funded  (hard-requires funded_amount > 0)
+//   funded          → round.funded  (hard-requires funded_amount > 0, AND every
+//                     bank yes on the round either priced or explicitly excluded)
 //   closed          → round.closeout  (staff marks the engagement complete)
 //
 // Idempotency key includes roundNumber so round 2 can re-enter the same stages.
 
 import { emit } from "../events/bus.mjs";
-import { resolveSuccessFee, sumConfirmedApprovals } from "./success-fee.mjs";
+import {
+  resolveSuccessFee,
+  sumConfirmedApprovals,
+  listUnpricedApprovals,
+  unpricedApprovalNames
+} from "./success-fee.mjs";
 
 export const PIPELINE_KEY = "funding_card_stacking";
 export const PRODUCT = "card_stacking";
@@ -110,8 +116,37 @@ export async function resolveFundedAmount(db, {
 }
 
 /**
- * Guard: funded moves require funded_amount > 0.
- * Returns { ok:true, fundedAmount } or { ok:false, reason, message, suggestedFundedAmount }.
+ * Every bank yes on the round that is still worth nothing on the bill, phrased
+ * for a person. Empty list → nothing blocking.
+ */
+function missingAmountRefusal(names) {
+  const one = names.length === 1;
+  return (
+    `Cannot move to Funded — ${one ? "1 bank approval has" : `${names.length} bank approvals have`} ` +
+    `no dollar amount recorded: ${names.join(", ")}. ` +
+    "We bill a percent of the approvals that have an amount on them, so an approval " +
+    "left blank is money this client is never invoiced for. " +
+    "Open the client's Funding tab, type the amount in the Approved $ box beside " +
+    `${one ? "that bank" : "each bank"} and press Bank yes. ` +
+    `If the approval was withdrawn or the client never used it, mark it as not counting instead — ` +
+    "that is recorded against your name and lets this round close."
+  );
+}
+
+/**
+ * Guard: a funded move requires (a) no bank yes left without a dollar amount,
+ * and (b) funded_amount > 0.
+ *
+ * (a) came second in time but comes FIRST here, and it is not overridable by
+ * sending a funded amount. The success fee is a percent of approvals that carry
+ * a recorded amount (docs/CLOSEOUT-FEE-BASIS.md), so a round closing with a
+ * blank approval on it is revenue that is never invoiced — and once the round
+ * is closed nobody ever goes back for it. Staff can still close the round: they
+ * either fill the amount in, or say on the record that the approval does not
+ * count (setApprovalExclusion, src/applications/status.mjs).
+ *
+ * Returns { ok:true, fundedAmount } or
+ * { ok:false, reason, message, suggestedFundedAmount, missingApprovals }.
  */
 export async function guardFundedAmount(db, {
   orgId,
@@ -123,6 +158,8 @@ export async function guardFundedAmount(db, {
   const round = await roundFor(db, { orgId, clientId, roundNumber });
 
   // Already funded with a real amount — idempotent re-move may omit the body field.
+  // Nothing below runs: re-parking a card on a column it already sits on must
+  // not start refusing, or the board deadlocks on its own history.
   if (round && round.status === "funded" && Number(round.funded_amount) > 0) {
     return {
       ok: true,
@@ -130,6 +167,29 @@ export async function guardFundedAmount(db, {
       approvedAmount: round.approved_amount != null ? Number(round.approved_amount) : null,
       round,
       alreadyFunded: true
+    };
+  }
+
+  /* A round with NO approvals at all is untouched by this and always was —
+     listUnpricedApprovals comes back empty and we fall through to the funded
+     amount rule exactly as before. */
+  const unpriced = round?.id
+    ? await listUnpricedApprovals(db, { orgId, fundingRoundId: round.id })
+    : [];
+  if (unpriced.length) {
+    const names = unpricedApprovalNames(unpriced);
+    return {
+      ok: false,
+      reason: "approval_amounts_missing",
+      message: missingAmountRefusal(names),
+      missingApprovals: unpriced.map((row) => ({
+        applicationId: row.id,
+        lenderId: row.lender_id || null,
+        bank: String(row.bank || "").trim() || null
+      })),
+      missingApprovalBanks: names,
+      suggestedFundedAmount: null,
+      round
     };
   }
 

@@ -269,10 +269,28 @@ export async function onMailResponse(event, db) {
   );
   if (dup.rows[0]) return;
   const raw = { ...p, __event_id: event.id };
+  /* THE PREVIEW IS THE PREVIEW, NOT THE SUBJECT AGAIN.
+
+     This used to bind `p.subject` to BOTH the subject column and the
+     body_preview column, so every row on the Bank Inbox card showed the same
+     sentence twice and the actual text of the email was never stored anywhere.
+     That is what destroyed the paragraph where the bank states how much it
+     approved — see the note above DOLLAR_SCAN in src/adapters/mailgun.mjs.
+
+     It also silently disabled the fallback the screen was written to use.
+     public/app/client-control-panel.html paints
+     `body_preview || classification || received_at`, and a body_preview that is
+     always populated means the classification and the date can never show.
+
+     NULL when there is no preview, never "". The adapter sends null for an
+     email with no text at all, and an empty string here would defeat the
+     fallback exactly the way the subject copy did. */
+  const rawPreview = p.bodyPreview;
+  const preview = (typeof rawPreview === "string" && rawPreview.trim() !== "") ? rawPreview : null;
   await db.query(
     `INSERT INTO bank_inbox (org_id, client_id, classification, subject, body_preview, raw)
      VALUES ($1,$2,$3,$4,$5,$6)`,
-    [event.orgId, clientId, p.classification || null, p.subject || null, p.subject || null, JSON.stringify(raw)]
+    [event.orgId, clientId, p.classification || null, p.subject || null, preview, JSON.stringify(raw)]
   );
 }
 
