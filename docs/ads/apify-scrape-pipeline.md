@@ -1,8 +1,22 @@
 # The scrape + transcribe pipeline (Apify)
 
-Owner-directed 2026-08-31: use Apify to gather social data at scale — for buyer-persona
-research and for marketing intelligence. This is the spec; nothing runs until the
-account exists.
+**DECISION 2026-08-31: deferred — start with the free stack below.** Apify is a
+convenience, not a requirement. Most of what it sells is reachable free and official;
+the one real gap it closes (Instagram/TikTok comments at scale) is not yet proven to
+matter for this vertical. Revisit only if the free stack hits that wall.
+
+## The free stack that replaces it (for now)
+
+| Need | Free/official way | Notes |
+|---|---|---|
+| YouTube comments at scale | YouTube Data API (free key, minutes to create) | The single biggest unlock — full comment threads, official |
+| Ads running in the vertical + how long | Meta Ad Library (free, official) | Shows active ads WITH start dates — literally the Winner's Board's longevity column, no scraping, no ToS problem |
+| Reddit threads | Reddit's public JSON endpoints | Already partly working via agents |
+| Forums, Quora, Trustpilot, BBB | WebSearch + WebFetch agents | Proven: 159 sourced quotes in round 1 |
+| Best data of all | FundHub's own GHL calls, SMS, survey answers | First-party, no scraping, already being mapped |
+| Instagram / TikTok comments | **The real gap** — no practical official path | This is the only thing Apify uniquely buys |
+
+Original spec below, kept for the day the gap matters.
 
 ## The two jobs it does
 
