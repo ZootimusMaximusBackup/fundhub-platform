@@ -61,3 +61,12 @@ export {
   tagsIn, isoDate, clientContext, mergeContext, renderContract, missingTags,
   normaliseManualFields, missingRequired
 } from "./render.mjs";
+
+// The white-label partner license — the only supported way to open 042's
+// partner payout gate. See src/contracts/partner-license.mjs for why the stamp
+// has exactly one door.
+export {
+  PARTNER_LICENSE_TEMPLATE_KEY, PARTNER_LICENSE_SUBTYPE, PARTNER_ID_MERGE_KEY,
+  PARTNER_SHARE_PCT, PARTNER_ENTRY_REFUND_DAYS,
+  getPartnerLicenseTemplate, findSignedPartnerLicense, stampPartnerAgreement
+} from "./partner-license.mjs";

@@ -66,7 +66,24 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
   const disk = idsOnDisk();
   const expected = disk.size - Object.keys(DELIBERATELY_UNSERVED).length;
 
-  /* 66 since Blake referral watch (2026-08-28) texts Chris name + phone when
+  /* 68 since the partner production floor review (2026-08-31) — the only filter
+     on the partner base. The $10,000 entry fee is financeable down to a 405 FICO
+     (docs/specs/W0-decisions.md), so entry screens nobody and production is the
+     whole quality control: ten funding clients a month, on the ladder in
+     W1-money-model.md §6, checked on the 1st. Registering it CAN lower a
+     partner's revenue_share_pct from 50 to 20 — and cannot restate one cent
+     already earned, because partner_revenue.share_pct_applied is frozen on every
+     row (042). It also reaches nobody until a partner has an activated_at, which
+     db/migrations/282_partner_production_floor.sql deliberately leaves NULL for
+     every partner activated before it existed rather than guessing a date.
+     Was 67 since the subscription billing sweeper (2026-08-31) — the recurring
+     billing rail. Registering it charges nobody: the charge-function registry
+     in src/subscriptions/charger.mjs is empty because Commas exposes no
+     confirmed merchant-initiated charge endpoint, and SUBSCRIPTION_BILLING_ENABLED
+     is a second lock in front of the day one exists. It is registered anyway so
+     that the schedule is visible on the Automations screen rather than switched
+     off by absence — which is the exact drift this test was written to catch.
+     Was 66 since Blake referral watch (2026-08-28) texts Chris name + phone when
      Blake mails. Was 65 since the 2026-08-27 merge brought in two that were each
      added on their own branch and never counted here: daily-pulse (a 7:00 a.m.
      Denver audit-only sweep, acfa8bc9) and af-01-affiliate-drip (the existing
@@ -82,7 +99,7 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      The count stays pinned as well as derived: registering a function is how a
      job starts running, and Inngest executes functions in production today, so
      it should cost somebody a line in a test. */
-  assert.equal(functions.length, 66, `expected 66, got ${functions.length}`);
+  assert.equal(functions.length, 68, `expected 68, got ${functions.length}`);
   assert.equal(functions.length, expected,
     `${disk.size} workflows on disk, ${Object.keys(DELIBERATELY_UNSERVED).length} deliberately unserved, ` +
     `so ${expected} should be served — but ${functions.length} are`);

@@ -67,6 +67,9 @@ import readBankInbox from "../../api/read/bank-inbox.mjs";
 import readFundingRounds from "../../api/read/funding-rounds.mjs";
 import readAffiliates from "../../api/read/affiliates.mjs";
 import readPartners from "../../api/read/partners.mjs";
+import readPartnerProduction from "../../api/read/partner-production.mjs";
+import readPartnerHomeTiles from "../../api/read/partner-home-tiles.mjs";
+import readPartnerTraining from "../../api/read/partner-training.mjs";
 import readMessageTemplates from "../../api/read/message-templates.mjs";
 import readStaff from "../../api/read/staff.mjs";
 import staffTelemetry from "../../api/staff/telemetry.mjs";
@@ -149,6 +152,7 @@ import chatPeers from "../../api/chat/peers.mjs";
 import demoSimulate from "../../api/demo/simulate.mjs";
 import demoMode from "../../api/demo/mode.mjs";
 import partnerPages from "../../api/partner-pages.mjs";
+import partnersApprove from "../../api/partners/approve.mjs";
 import partnerBrandVerifyDomain from "../../api/partner-brand/verify-domain.mjs";
 import partnerMarketingEnable from "../../api/partner-marketing/enable.mjs";
 import partnerMarketingUsage from "../../api/partner-marketing/usage.mjs";
@@ -161,6 +165,14 @@ import publicSurveySubmit from "../../api/public/survey-submit.mjs";
 import publicEducationEnroll from "../../api/public/education-enroll.mjs";
 import publicOptimize from "../../api/public/optimize.mjs";
 import publicPartnerApply from "../../api/public/partner-apply.mjs";
+import publicFunnelCheckout from "../../api/public/funnel-checkout.mjs";
+import trialsEligibility from "../../api/trials/eligibility.mjs";
+import trialsProvision from "../../api/trials/provision.mjs";
+import trialsDashboard from "../../api/trials/dashboard.mjs";
+import trialsConvert from "../../api/trials/convert.mjs";
+import publicDeclineAutopsy from "../../api/public/decline-autopsy.mjs";
+import publicDeclineAutopsyUpload from "../../api/public/decline-autopsy-upload.mjs";
+import publicDeclineAutopsyReport from "../../api/public/decline-autopsy-report.mjs";
 import publicUnsubscribe from "../../api/public/unsubscribe.mjs";
 import publicAffiliateClick from "../../api/public/affiliate-click.mjs";
 import creativeGenerate from "../../api/creative/generate.mjs";
@@ -170,6 +182,7 @@ import creativeJobs from "../../api/creative/jobs.mjs";
 import creativeApprovals from "../../api/creative/approvals.mjs";
 import creativeActions from "../../api/creative/actions.mjs";
 import creativeRun from "../../api/creative/run.mjs";
+import adintelBoard from "../../api/adintel/board.mjs";
 import contentTiles from "../../api/content/tiles.mjs";
 import contentUpload from "../../api/content/upload.mjs";
 import contentWelcomeVideo from "../../api/content/welcome-video.mjs";
@@ -185,6 +198,8 @@ import financeCrsPull from "../../api/finance/crs-pull.mjs";
 import bankingRevoke from "../../api/banking/revoke.mjs";
 import privacyErasure from "../../api/privacy/erasure.mjs";
 import financeSubscriptions from "../../api/finance/subscriptions.mjs";
+import partnerAddOns from "../../api/partner-addons.mjs";
+import trainingProgress from "../../api/training-progress.mjs";
 import financeCards from "../../api/finance/cards.mjs";
 import financeLiabilities from "../../api/finance/liabilities.mjs";
 import financeBankAccounts from "../../api/finance/bank-accounts.mjs";
@@ -353,6 +368,23 @@ export const ROUTES = {
   "read/proxy-sessions": readProxySessions,
   "read/affiliates": readAffiliates,
   "read/partners": readPartners,
+  /* Where a partner stands against the production floor — the only filter on the
+     partner base (W0-decisions.md, W1-money-model.md §6). The monthly job writes
+     the verdicts; without this line nothing could read one back and the warning
+     §6 promises the partner would have no surface. */
+  "read/partner-production": readPartnerProduction,
+  /* T10-02 — the three Partner Home KPI tiles that have a real partner-scoped
+     source (Cash Collected Today, Funded Today, Cost / Funded Client). See the
+     audit comment in public/app/partner-galaxy.html for the three that still do
+     not and stay off the screen. */
+  "read/partner-home-tiles": readPartnerHomeTiles,
+  /* Where a partner is in the $10,000 curriculum — the thirteen modules of
+     W7-curriculum.md and the four gates that stand between them and selling
+     under FundHub's brand. Serves partner and staff; a partner is pinned to
+     their own record and gets a 403 with a reason if they are not entitled to
+     the training at all. COMPLIANCE REVIEW REQUIRED — it reports whether a
+     partner holds the two compliance certifications. */
+  "read/partner-training": readPartnerTraining,
   "read/message-templates": readMessageTemplates,
   "read/staff": readStaff,
   "staff/telemetry": staffTelemetry,
@@ -574,6 +606,12 @@ export const ROUTES = {
   "demo/simulate": demoSimulate,
   "demo/mode": demoMode,
   "partner-pages": partnerPages,
+  /* Turns a white-label APPLICATION into a live partner: login, brand row,
+     published page, status active, welcome mail. approvePartnerApplication()
+     existed and was routed by nothing, so an applicant could only be approved
+     by hand-editing the database — and never got the welcome mail at all.
+     Owner/admin only; the handler gates with requireRole after requireAuth. */
+  "partners/approve": partnersApprove,
   "partner-brand/verify-domain": partnerBrandVerifyDomain,
   "partner-marketing/enable": partnerMarketingEnable,
   "partner-marketing/usage": partnerMarketingUsage,
@@ -591,6 +629,36 @@ export const ROUTES = {
      checkout on the keep Assessment title. No auth — same class as survey-submit. */
   "public/optimize": publicOptimize,
   "public/partner-apply": publicPartnerApply,
+  /* The self-serve till for the /partner/ funnel pages. GET returns every
+     price those pages render (nothing is typed into the HTML); POST mints a
+     real Commas checkout for the Decline Autopsy, the Winner's Board and the
+     Live Trial. The $10,000 entry is REFUSED here on purpose — it is sold on a
+     review call, so its CTA stays the application above. No auth: same class
+     as public/survey-submit. COMPLIANCE REVIEW REQUIRED — fee timing. */
+  "public/funnel-checkout": publicFunnelCheckout,
+  /* The Live Trial. $297, seven days, docs/specs/W4-live-trial.md.
+     eligibility is PUBLIC and runs in front of the pay button — Meta will not
+     run a money-related ad from an unverified business, and finding that out
+     after taking the money means selling seven days that cannot be delivered.
+     provision and convert are staff-gated with requireRole; dashboard is
+     requirePrincipal(["partner","staff"]) and a partner only ever sees its own. */
+  "trials/eligibility": trialsEligibility,
+  "trials/provision": trialsProvision,
+  "trials/dashboard": trialsDashboard,
+  "trials/convert": trialsConvert,
+  /* The $27 Decline Autopsy. No auth — a stranger from an ad, same class as
+     survey-submit. THE KEYS ARE FLAT ON PURPOSE: the adapter routes
+     "documents/" and "webhooks/" by PREFIX, so a key shaped
+     "public/decline-autopsy/upload" invites exactly the sub-path confusion the
+     documents/ branch already caused once. Three flat keys, three handlers.
+       ...-upload accepts rows only after payment and refuses anything that
+       looks like a name, an SSN, an e-mail or a phone before a byte is stored.
+       ...-report is read with a signed, expiring link — the signature IS the
+       credential, because a $27 buyer has no session, and DELETE on it is the
+       buyer's own "delete my upload" button. */
+  "public/decline-autopsy": publicDeclineAutopsy,
+  "public/decline-autopsy-upload": publicDeclineAutopsyUpload,
+  "public/decline-autopsy-report": publicDeclineAutopsyReport,
   /* The door behind the unsubscribe link in every outbound email. No auth —
      same class as survey-submit: the signed token in the URL is the credential,
      and a person getting out of a mailing list must never be asked to sign in.
@@ -612,6 +680,12 @@ export const ROUTES = {
   "creative/approvals": creativeApprovals,
   "creative/actions": creativeActions,
   "creative/run": creativeRun,
+  /* The Winner's Board read endpoint (W2 Layers 1-2). Partner or staff; a
+     client or affiliate session is refused by requirePrincipal, and staff must
+     name a partner_id so the query still runs inside a scoped transaction.
+     Routed in the same commit as the handler, the migration and the screen —
+     this map is the file that has twice turned a finished feature into a 404. */
+  "adintel/board": adintelBoard,
   /* Content — welcome video upload + locked-tile save. ROLE_SETS.OPS
      (owner, admin). Same people the Content nav item is shown to. */
   "content/tiles": contentTiles,
@@ -714,6 +788,18 @@ export const ROUTES = {
   // src/adapters/ or src/lib/; src/banking/plaid.mjs is a named empty seam, so
   // bank accounts and cards are entered by hand. That is the product today.
   "finance/subscriptions": financeSubscriptions,
+  /* The white-label partner add-on menu — buy, cancel, and the manual
+     reconcile for a checkout whose webhook never came back. {owner, admin}
+     only: this is FundHub selling to a partner, not a closer selling to a
+     client, and "buy" starts a recurring charge against another business.
+     COMPLIANCE REVIEW REQUIRED — payment rails and fee timing. */
+  "partner-addons": partnerAddOns,
+  /* FundHub records a partner's training: one module attended or complete, or
+     one gate passed, failed or revoked. {owner, admin} only and there is no
+     partner write path anywhere — a partner who could mark their own compliance
+     module complete would be a partner with no compliance certification.
+     COMPLIANCE REVIEW REQUIRED. */
+  "training-progress": trainingProgress,
   "finance/cards": financeCards,
   "finance/liabilities": financeLiabilities,
   "finance/bank-accounts": financeBankAccounts,

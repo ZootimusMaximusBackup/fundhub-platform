@@ -36,7 +36,25 @@ import { isSyntheticRow } from "./synthetic.mjs";
    If you register a workflow, move this number in the same commit. */
 /* Bumped 65 -> 66 on 2026-08-28. src/workflows/blake-lead-watch.mjs (Blake
    referral mail → staff text) was registered; this pin moves with it. */
-const REGISTERED = 66;
+/* Bumped 66 -> 67 on 2026-08-31. src/workflows/subscription-billing-sweeper.mjs
+   (the recurring billing rail) was registered; this pin moves with it.
+
+   It is a cron with no event trigger, so no journey can ever reach it and it
+   will always appear in neverFired. That is the correct outcome for a scheduled
+   job — the same note meet-transcript-sweeper carries above — not a coverage
+   hole to paper over. It is exercised directly by
+   src/workflows/subscription-billing-sweeper.test.mjs and, against a real
+   Postgres, by src/subscriptions/billing-replay.pg.test.mjs. */
+/* Bumped 67 -> 68 on 2026-08-31. src/workflows/partner-production-floor.mjs (the
+   only filter on the partner base — ten funding clients a month, W0-decisions.md
+   and W1-money-model.md §6) was registered; this pin moves with it.
+
+   It is a cron with no event trigger, so no journey can ever reach it and it will
+   always appear in neverFired — the same note the two sweepers above carry, and
+   the correct outcome for a scheduled job rather than a coverage hole. It is
+   exercised directly by src/workflows/partner-production-floor.test.mjs and,
+   against a real Postgres, by src/partners/floors.pg.test.mjs. */
+const REGISTERED = 68;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);

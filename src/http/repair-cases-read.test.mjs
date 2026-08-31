@@ -225,3 +225,27 @@ describe("GET /api/read/repair-cases", () => {
     assert.ok(orgBinds.every((id) => id === ORG));
   });
 });
+
+describe("GET /api/read/repair-cases — whose desk this is", () => {
+  /* THE HOLE THIS CLOSES. Both Specialist-desk reads were on ROLE_SETS.STAFF, so
+     any employee — a setter included — could open the desk and read every
+     client's dispute file: which items, which bureau, which round, and what the
+     letters say. /api/pii already refuses a setter and a closer the same
+     client's identity, and ROLE_SETS.SPECIALIST_DESK is deliberately that same
+     four-role set. */
+  test("a setter, a closer and a sales manager are refused", async () => {
+    for (const role of ["setter", "closer", "sales_manager"]) {
+      const res = makeRes();
+      await handler(req(), res, { db: makeDb({ session: { role } }) });
+      assert.equal(res.statusCode, 403, role + " can still read the repair queue");
+    }
+  });
+
+  test("the four roles that work this desk are still let in", async () => {
+    for (const role of ["owner", "admin", "inquiry_specialist", "funding_advisor"]) {
+      const res = makeRes();
+      await handler(req(), res, { db: makeDb({ session: { role }, files: [baseFile] }) });
+      assert.equal(res.statusCode, 200, role + " works this desk and was refused");
+    }
+  });
+});

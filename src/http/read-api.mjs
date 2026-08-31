@@ -160,7 +160,23 @@ export const ROLE_SETS = {
      It is a different feature — the "which lenders fit this client" box on the
      closer dashboard — and Chris did not name it. Locking it here would break a
      closer's daily screen. Leave it alone unless Chris says otherwise. */
-  LENDERS: new Set(["owner", "admin", "funding_advisor"])
+  LENDERS: new Set(["owner", "admin", "funding_advisor"]),
+  /* The Specialist desk — inquiry-removal cases and the credit-repair queue.
+
+     These two reads were on STAFF, which meant a setter could open
+     public/app/inquiry-remover.html and read every client's dispute file: which
+     items are being disputed, which bureau, which round, and what the letters
+     say. That is the same class of material /api/pii already refuses a setter
+     and a closer, and this set is deliberately the same four roles that
+     endpoint's own IDENTITY_ROLES names, for the same reason — a dispute queue
+     and a social security number are read by the same two desks and nobody
+     else.
+
+     Narrower than the WRITE side on purpose: api/repair/enroll.mjs keeps
+     `closer` because a closer enrolls a client from their own screen and never
+     needs to read the queue back. Widen this only by naming a role that works
+     one of these two desks. */
+  SPECIALIST_DESK: new Set(["owner", "admin", "inquiry_specialist", "funding_advisor"])
 };
 
 export function allowsRole(roleSet, role) {

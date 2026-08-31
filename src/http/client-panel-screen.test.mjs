@@ -25,6 +25,10 @@ import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 import { sanitizeBlockerLabels } from "../fulfillment/next-action.mjs";
+/* The server's own definition of "a bank yes that is not worth anything yet",
+   read here so the screen's copy of it can be proved against the real thing
+   rather than against a second copy typed into this file. */
+import { unpricedApprovalConditions, confirmedApprovalConditions } from "../funding/success-fee.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PANEL = path.resolve(HERE, "../../public/app/client-control-panel.html");
@@ -459,14 +463,39 @@ describe("client-control-panel.html — money is whole dollars", () => {
 /* ────────────────────────────────────────────────────────────────────────────
    THE TILES THAT WERE ALREADY HERE KEEP THE RULE THEY ALREADY HAD
 
-   Prequal, Total Approved and the two income-per-year lines are not part of
-   the fulfillment work. The shared money() rule above was briefly wired to
-   them, which changed what they printed: a recorded zero became "$0" where it
-   had been a dash, and a negative became "$-500". tileMoney() is the rule
-   those three displays shipped with on main, restored byte for byte.
+   Prequal and the two income-per-year lines are not part of the fulfillment
+   work. The shared money() rule above was briefly wired to them, which changed
+   what they printed: a recorded zero became "$0" where it had been a dash, and
+   a negative became "$-500". tileMoney() is the rule those displays shipped
+   with on main, restored byte for byte.
 
    Whether a recorded zero on those tiles ought to read "$0" or a dash is
    Chris's call. Until he makes it they read exactly as they read on main.
+
+   ── ONE OF THEM IS NO LONGER FROZEN, AND THIS IS WHY ────────────────────────
+   The tile labelled "Total Approved" was in this list, and the assertion below
+   pinned `var approved = money(c.funded_amount)` byte for byte. That froze a
+   defect: the tile showed the FUNDED amount, and when that was missing it fell
+   back to `money(prequal)` — the analyzer's PRE-APPROVAL GUESS, the number in
+   the tile immediately to its left — under a label that said Approved. It never
+   once showed an approved amount.
+
+   The note above said these were frozen "until Chris makes the call". He has
+   made two that settle it:
+
+     * 2026-08-30, fee basis: the success fee is a percent of CONFIRMED
+       APPROVALS — approved applications carrying a recorded amount, minus any
+       recorded as not counting (src/funding/success-fee.mjs,
+       docs/CLOSEOUT-FEE-BASIS.md). A tile labelled Approved that shows the
+       funded amount now contradicts the invoice.
+     * 2026-08-30, this screen: "never leave a label that does not match its
+       number."
+
+   So the tile is re-pointed, not un-pinned. It is now labelled
+   "Approved · confirmed", it is painted from the application rows by the
+   funding block, and what is asserted below is that the two things that made it
+   a lie are gone: it must not read funded_amount, and it must not fall back to
+   the prequal guess. The other tiles are still frozen exactly as they were.
    ──────────────────────────────────────────────────────────────────────────── */
 
 describe("client-control-panel.html — the tiles that were already here are unchanged", () => {
@@ -511,11 +540,44 @@ describe("client-control-panel.html — the tiles that were already here are unc
     assert.match(code, /var roundMoney = FHCP\.money;/,
       "the shared whole-dollars rule is no longer wired to the new funding-round amount");
     assert.match(code, /setText\("ccp-prequal", money\(prequal\)\)/, "the Prequal tile is wired somewhere new");
-    assert.match(code, /var approved = money\(c\.funded_amount\)/, "the Total Approved tile is wired somewhere new");
     assert.match(code, /setText\("ccp-cp-round-amount", roundMoney\(amount\)\)/,
       "the funding-round amount is no longer on the shared rule");
     assert.ok(!/setText\("ccp-cp-round-amount", money\(/.test(code),
       "the funding-round amount fell back onto the old tile rule");
+  });
+
+  /* THE TILE THAT LIED. Both halves of the lie are asserted gone, and the honest
+     source is asserted present, because either half coming back on its own is
+     enough to put a wrong number under a label people trust. */
+  test("the Approved tile never shows the funded amount and never falls back to the guess", () => {
+    const code = PANEL_HTML.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    assert.ok(!/setText\("ccp-approved"/.test(code),
+      "the Approved tile is being set from the client record again; it is painted " +
+      "from the application rows, which is the only place an approved amount lives");
+    assert.ok(!/ccp-approved[\s\S]{0,400}?funded_amount/.test(code),
+      "the Approved tile is reading the funded amount again — that is what made it a lie");
+    assert.ok(!/ccp-approved[\s\S]{0,400}?prequal/.test(code),
+      "the Approved tile fell back to the analyzer's pre-approval guess again");
+    assert.match(code, /approvedTile\.textContent = !known \? "could not check"/,
+      "a failed read must say so on the tile, not leave a stale number or a zero");
+    assert.match(code, /summary\.confirmed > 0 \? CP\.money\(summary\.confirmed_dollars\)/,
+      "the tile must be the confirmed approvals total — the number the invoice uses");
+  });
+
+  test("the label on the Approved tile says what the number is", () => {
+    assert.match(PANEL_HTML, /<div class="rf-label">Approved · confirmed<\/div>/,
+      "the tile label and its number must match; 'Total Approved' over a funded amount is the defect");
+    assert.ok(!/<div class="rf-label">Total Approved<\/div>/.test(PANEL_HTML),
+      "the old label is back over a number that is not the funded amount");
+  });
+
+  /* The funded amount was the only real fact that tile carried. Removing it from
+     there must not delete it from the screen. */
+  test("the funded amount is still on the screen, under the word Funded", () => {
+    const code = PANEL_HTML.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    assert.match(code, /setText\("ccp-facts-funded"/, "the Funded line is gone");
+    assert.match(code, /var fundedMoney = c\.funded === true \? money\(c\.funded_amount\) : "—";/,
+      "the funded amount left the Approved tile and did not land anywhere else");
   });
 });
 
@@ -660,4 +722,269 @@ test("client-control-panel can save a company birth month/year", () => {
   assert.match(PANEL_HTML, /stamp_incorporated/);
   assert.match(PANEL_HTML, /type = "month"/);
   assert.match(PANEL_HTML, /Age \(months\)/);
+});
+
+/* ────────────────────────────────────────────────────────────────────────────
+   THE HEADLINE NUMBER, AND THE ONE DEFINITION UNDER IT
+
+   The top-left of this screen is now a count: how many bank answers on this
+   file say yes and still carry no dollar amount. A number that leads a screen
+   has to be provable, so these tests do two things.
+
+   FIRST, they prove the screen answers the same question the server does. Three
+   places used to define "a bank yes that is not worth anything yet" and they
+   already disagreed:
+
+     src/funding/success-fee.mjs   the biller   NULL or <= 0, not excluded
+     api/dashboard/pipeline.mjs    the board    NULL only, exclusion ignored
+     client-control-panel.html     the screen   NULL or blank, not excluded
+
+   The two SQL callers now share one string. A screen cannot import a module, so
+   its copy is still a copy — and this is what stops it drifting: the SQL string
+   is read here and the screen's function is run against the same rows.
+
+   SECOND, they prove the four states are all written in words. This slot is the
+   first thing anybody reads, so "we could not check" must never render as an
+   all-clear and a real zero must never render as a bare 0 in a box.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+describe("the headline count is one definition, shared with the server", () => {
+
+  /* Rows exactly as GET /api/applications sends them: approved_amount arrives
+     from a numeric(14,2) column, so it is a STRING or null, never a number. */
+  const app = (over) => Object.assign({
+    id: "a1", lender_id: null, status: "Approved", approved_amount: null,
+    approval_excluded_at: null
+  }, over);
+
+  test("the biller's SQL still carries all three clauses the screen copies", () => {
+    const sql = unpricedApprovalConditions("a");
+    assert.match(sql, /a\.status = 'Approved'/, "the status clause is gone");
+    assert.match(sql, /a\.approval_excluded_at IS NULL/,
+      "the exclusion clause is gone — an approval somebody recorded as not counting " +
+      "would be chased forever");
+    assert.match(sql, /\(a\.approved_amount IS NULL OR a\.approved_amount <= 0\)/,
+      "the amount clause narrowed; a zero cannot be invoiced and must still count as waiting");
+  });
+
+  test("the board asks the biller rather than writing its own copy", () => {
+    const board = fs.readFileSync(path.resolve(HERE, "../../api/dashboard/pipeline.mjs"), "utf8");
+    assert.match(board, /unpricedApprovalConditions/,
+      "api/dashboard/pipeline.mjs is writing its own approval condition again");
+    assert.ok(!/a\.approved_amount IS NULL\s*\n\s*\) AS approval_amount_missing/.test(board),
+      "the board is back on NULL-only, so a recorded zero is clean on the board and " +
+      "refused at the Funded move");
+  });
+
+  test("the screen's rule answers the same as the SQL, row for row", () => {
+    const P = loadPanel();
+    /* Each case is one row and what the SQL would say about it. If the screen
+       and the server ever disagree here, the count top-left is not the count the
+       invoice is built from. */
+    const cases = [
+      [app({}), true, "approved, nobody has said how much"],
+      [app({ approved_amount: "" }), true, "approved, a blank amount"],
+      [app({ approved_amount: "0.00" }), true, "a recorded zero cannot be invoiced"],
+      [app({ approved_amount: "-500.00" }), true, "a negative left by an old import"],
+      [app({ approved_amount: "not a number" }), true, "an amount nobody can read is not a price"],
+      [app({ approved_amount: "45000.00" }), false, "priced"],
+      [app({ approved_amount: "0.01" }), false, "a cent is still a recorded amount"],
+      [app({ approval_excluded_at: "2026-08-30T00:00:00Z" }), false, "recorded as not counting"],
+      [app({ approved_amount: "0.00", approval_excluded_at: "2026-08-30T00:00:00Z" }), false,
+        "excluded beats unpriced"],
+      [app({ status: "Denied" }), false, "a denial has no approved amount to chase"],
+      [app({ status: "Applied" }), false, "not an answer yet"],
+      [null, false, "nothing at all"]
+    ];
+    for (const [row, waiting, why] of cases) {
+      assert.equal(P.isWaitingOnAmount(row), waiting,
+        "the screen and the biller disagree about " + why + ": " + JSON.stringify(row));
+    }
+  });
+
+  test("confirmed is the exact mirror, and it is what the fee is a percent of", () => {
+    const P = loadPanel();
+    const sql = confirmedApprovalConditions();
+    assert.match(sql, /approved_amount IS NOT NULL/);
+    assert.match(sql, /approved_amount > 0/);
+    assert.match(sql, /approval_excluded_at IS NULL/);
+
+    assert.equal(P.isConfirmedApproval(app({ approved_amount: "45000.00" })), true);
+    assert.equal(P.isConfirmedApproval(app({ approved_amount: "0.00" })), false, "a zero is not confirmed");
+    assert.equal(P.isConfirmedApproval(app({ approved_amount: null })), false, "unknown is not confirmed");
+    assert.equal(P.isConfirmedApproval(app({ approved_amount: "45000.00", approval_excluded_at: "x" })), false,
+      "an approval we are not billing for is not billed at any size");
+    assert.equal(P.isConfirmedApproval(app({ status: "Denied", approved_amount: "45000.00" })), false);
+
+    // Every row is exactly one of the three: waiting, confirmed, or neither.
+    for (const row of [app({}), app({ approved_amount: "1.00" }), app({ status: "Denied" }),
+                       app({ approval_excluded_at: "x" })]) {
+      assert.ok(!(P.isWaitingOnAmount(row) && P.isConfirmedApproval(row)),
+        "a row cannot be both waiting and confirmed: " + JSON.stringify(row));
+    }
+  });
+
+  test("the count is per lender, newest first, and rows with no lender still count", () => {
+    const P = loadPanel();
+    /* listClientApplications orders updated_at DESC, so the FIRST row for a
+       lender is the current one — an older blank row behind a priced one must
+       not be chased. A row with no lender id is an imported approval with only
+       a bank name: it has no row on screen to chip, which is exactly why it has
+       to be in the number. */
+    const out = P.summariseApprovals([
+      app({ id: "1", lender_id: "L1", approved_amount: "45000.00" }),
+      app({ id: "2", lender_id: "L1", approved_amount: null }),
+      app({ id: "3", lender_id: "L2", approved_amount: null }),
+      app({ id: "4", lender_id: "L3", approved_amount: "2500.50" }),
+      app({ id: "5", lender_id: "L4", approved_amount: "1000.00", approval_excluded_at: "x" }),
+      app({ id: "6", approved_amount: null })
+    ]);
+    assert.equal(out.waiting, 2, "L2 and the lender-less row are waiting; the stale L1 row is not");
+    assert.equal(out.confirmed, 2, "L1 and L3");
+    assert.equal(out.confirmed_dollars, "47500.50", "the excluded $1,000 is not in the total");
+  });
+
+  test("the total is added in cents, so 450.10 never becomes 450.09", () => {
+    const P = loadPanel();
+    const rows = [];
+    for (let i = 0; i < 3; i++) rows.push(app({ id: "x" + i, lender_id: "L" + i, approved_amount: "450.10" }));
+    assert.equal(P.summariseApprovals(rows).confirmed_dollars, "1350.30",
+      "the total was added as floating point, which is how a payout report drifts");
+  });
+
+  test("nothing confirmed is null, never a zero total", () => {
+    const P = loadPanel();
+    const out = P.summariseApprovals([app({}), app({ status: "Denied" })]);
+    assert.equal(out.confirmed, 0);
+    assert.equal(out.confirmed_dollars, null,
+      "'$0 confirmed' reads as a fact about this file; it is the absence of one");
+  });
+
+  test("the summary never throws, whatever it is handed", () => {
+    const P = loadPanel();
+    for (const bad of [null, undefined, "rows", 7, {}, [null], [undefined], [7], [[]],
+                       [{ get status() { throw new Error("boom"); } }]]) {
+      const out = P.summariseApprovals(bad);
+      assert.equal(typeof out.waiting, "number");
+      assert.equal(typeof out.confirmed, "number");
+    }
+  });
+});
+
+describe("client-control-panel.html — the top-left is the number, said four ways", () => {
+
+  test("the count is at metric size and the reference tiles are not", () => {
+    /* fundhub-brand.css hands --fs-metric to `.big`, and used to hand it to
+       `.rf-value` as well — which is how eight reference facts came to shout at
+       32px directly above the one sentence saying what to do next. */
+    assert.match(PANEL_HTML, /<span class="big" id="ccp-waiting-count"/,
+      "the headline count is no longer on the brand's metric whitelist");
+    assert.ok(!/class="rf-value"/.test(PANEL_HTML),
+      "a reference tile is back at metric size, competing with the headline");
+    const brand = fs.readFileSync(path.resolve(HERE, "../../public/app/fundhub-brand.css"), "utf8");
+    assert.ok(/\.big\b/.test(brand) && /--fs-metric/.test(brand),
+      "`.big` is no longer a name the brand file paints at --fs-metric");
+  });
+
+  test("the four states are all written out, and none of them is a bare dash", () => {
+    for (const words of [
+      "Could not check what is waiting.",
+      "Nothing waiting on this file.",
+      "bank answers need a dollar amount",
+      "Pick a client to see what is waiting on you."
+    ]) {
+      assert.ok(PANEL_HTML.includes(words), "the headline lost the state: " + words);
+    }
+    assert.match(PANEL_HTML, /countEl\.hidden = !known \|\| waiting === 0;/,
+      "a zero must be said in words, not painted as a bare 0 in a box");
+  });
+
+  test("a failed read says so instead of showing an all-clear", () => {
+    const code = PANEL_HTML.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    assert.match(code, /FHData\.explain\(res, "the bank answers on this file"\)/,
+      "the house error copy is not being used for a failed applications read");
+    assert.ok(!/A read that did not arrive is not a file with nothing waiting/.test(PANEL_HTML),
+      "the silent all-clear is back: a failed read used to leave the previous sentence alone");
+    assert.match(code, /if \(!res \|\| !res\.ok\) \{\s*\n\s*paintHeadline\(null\);/,
+      "a failed read must reach paintHeadline(null), which is the 'could not check' state");
+  });
+
+  test("the caveat is printed on the screen, not left in a comment", () => {
+    /* The count can only ever cover answers we have RECEIVED. Nothing writes an
+       application row at the moment somebody applies — src/proxy/launch.mjs
+       writes a proxy_sessions row and nothing else — so the days-long gap
+       between applying and hearing back is genuinely blank in the database.
+       Calling these "applications waiting" would be a claim the data cannot
+       support. */
+    assert.ok(PANEL_HTML.includes("Applications still out with a bank are not recorded anywhere"),
+      "the screen is making a claim about applications that the data cannot support");
+    // HTML comments stripped first: the reason is written next to the markup,
+    // in the words it is warning against, and a comment is not copy.
+    const headline = PANEL_HTML
+      .slice(PANEL_HTML.indexOf('id="ccp-waiting"'), PANEL_HTML.indexOf('id="ccp-pick"'))
+      .replace(/<!--[\s\S]*?-->/g, "");
+    assert.ok(!/applications? (still )?waiting/i.test(headline),
+      "the headline calls them applications, and nothing records an application");
+  });
+
+  test("the reference tiles sit below the action, not above it", () => {
+    /* §12 rule 3. The tiles used to be in the header, between the headline and
+       the one sentence saying what to do next. */
+    const action = PANEL_HTML.indexOf('id="ccp-next-action"');
+    const tiles = PANEL_HTML.indexOf('id="ccp-facts-group"');
+    assert.ok(action !== -1 && tiles !== -1, "the action slot or the tile group is gone");
+    assert.ok(tiles > action, "the eight reference tiles are back above the next action");
+  });
+
+  test("the chase list is in the main column, not the 320px rail", () => {
+    /* Roughly nine in ten of this screen's keystrokes land in the lender rows,
+       and the rail is the column a narrow window pushes below everything else. */
+    const main = PANEL_HTML.indexOf('class="main-col"');
+    const rail = PANEL_HTML.indexOf('class="side-col"');
+    const list = PANEL_HTML.indexOf('id="fh-funding-apply"');
+    assert.ok(main !== -1 && rail !== -1 && list !== -1, "the screen's two columns changed shape");
+    assert.ok(list > main && list < rail,
+      "the lender list is back in the right rail, below the whole main column on a narrow window");
+  });
+});
+
+describe("client-control-panel.html — the round's three moves", () => {
+
+  test("they post to the endpoint the board already uses, with no new rule", () => {
+    const code = PANEL_HTML.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    assert.match(code, /FHData\.write\("\/api\/pipeline-cards", body\)/,
+      "the round buttons are writing somewhere other than the board's own endpoint");
+    for (const stage of ["round_submitted", "funded", "closed"]) {
+      assert.ok(code.includes('"' + stage + '"'), "the " + stage + " move is gone");
+    }
+    assert.match(code, /var CARD_STACKING = "funding_card_stacking";/,
+      "the rail these stages belong to is no longer named");
+  });
+
+  test("the funded amount is typed in a box on the page, never in a browser prompt", () => {
+    const code = PANEL_HTML.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    const wiring = code.slice(code.indexOf("function wireRoundMoves"), code.indexOf("if (!id) paintBusinesses"));
+    assert.ok(wiring.length > 200, "the round wiring is gone");
+    assert.ok(!/prompt\(/.test(wiring),
+      "a prompt cannot show the parser's refusal beside the box and vanishes on focus loss");
+    assert.match(wiring, /window\.FHMoneyInput\.parseAmount\(amount\.value\)/,
+      "the funded amount is not going through the shared parser");
+    assert.ok(!/funded_amount\s*:\s*0\b/.test(wiring), "blank is not zero");
+  });
+
+  test("a refusal is shown in the server's own words, and a created card is admitted", () => {
+    const code = PANEL_HTML.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    assert.match(code, /\(res && res\.error\) \|\| "The move was not saved\."/,
+      "the screen is rewriting the server's refusal; only the server knows which banks are blank");
+    assert.match(code, /res\.data && res\.data\.created === true/,
+      "a move that creates a card on a board this client was not on must say so");
+  });
+
+  test("the round card shows how long it has been open", () => {
+    assert.match(PANEL_HTML, /id="ccp-cp-round-opened"/, "the round has no date on it again");
+    assert.match(PANEL_HTML, /setText\("ccp-cp-round-opened", ageOf\(opened\)\)/,
+      "the opened line is not painted from the gated round");
+    assert.match(PANEL_HTML, /opened = round\.started_at;/,
+      "the date is coming from somewhere other than the gated answer");
+  });
 });

@@ -35,7 +35,18 @@ export const SESSIONLESS_ALLOWLIST = new Set([
   // Proxies an external service with a server-side secret; no local row by id.
   "inquiry.mjs",
   // Dev seed writes via the event bus; does not look up by foreign id.
-  "dashboard/seed.mjs"
+  "dashboard/seed.mjs",
+  /* The $27 Decline Autopsy upload. SESSIONLESS BY DESIGN: the credential is
+     the paid `autopsy_ref` plus the merchant attestation, because the buyer is
+     a stranger from an ad with no login and no client record. It IS org-scoped
+     — every call it makes into src/autopsy/store.mjs passes orgId and every
+     statement there carries `WHERE org_id = $1` — but the scope lives in the
+     store module, not in this file's text, so the static marker scan cannot see
+     it. The only reason it is discovered as id-shaped at all is the phrase
+     "client_id" in its own header comment explaining why it is NOT
+     api/documents-upload.mjs. There is no client id in this flow and there must
+     never be one: decline_autopsy_rows has no client_id column. */
+  "public/decline-autopsy-upload.mjs"
 ]);
 
 /** Markers that prove the handler binds tenancy to the session (or partner

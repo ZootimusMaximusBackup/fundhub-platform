@@ -30,17 +30,26 @@ export class RetentionError extends Error {
   }
 }
 
-/* The five classes, in the order a report should read them: most sensitive
+/* The six classes, in the order a report should read them: most sensitive
    first. These strings are the same closed set the CHECK constraint in
-   db/migrations/100_retention_policy.sql enforces. scripts/retention-purge.pg.test.mjs
+   db/migrations/100_retention_policy.sql enforces — widened to six by
+   db/migrations/275_decline_autopsy.sql. scripts/retention-purge.pg.test.mjs
    fails if this list and the constraint ever disagree, because a class that
-   exists in only one of the two places is a policy that governs nothing. */
+   exists in only one of the two places is a policy that governs nothing.
+
+   broker_upload_rows is REGISTERED BUT NEVER PURGED. Owner-set 2026-08-31
+   (docs/specs/W0-decisions.md): declined-deal rows a broker uploads are retained
+   in full and no purge schedule is configured. Its policy row carries
+   action = 'retain' with retain_days NULL, which loadPolicy() reports as ABSENT,
+   so the runner skips it and removes nothing. It is here so it is counted and
+   auditable, not so it is destroyed on a clock. */
 export const DATA_CLASSES = Object.freeze([
   "crs_raw_payloads",
   "pii_access_log",
   "soft_pull_ledger",
   "bank_transactions",
-  "mock_data"
+  "mock_data",
+  "broker_upload_rows"
 ]);
 
 /* A retention period is a whole number of days, at least one. Anything else is

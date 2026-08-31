@@ -8,10 +8,16 @@ export const ALLOWED_UNMONITORED = {
   "webhooks/[provider]": "Signed webhook POST only. A GET ping is not uptime and can look like a replay.",
   "documents/[id]": "Per-document GET needs a real id and a signed-in caller. Not a desk ping.",
   "contracts/sign": "Signed contract link. GET without id/exp/sig answers 404 on purpose. That is not downtime.",
+  "public/decline-autopsy-upload": "POST only — the paid autopsy_ref plus the merchant attestation are the credential. A GET answers 405 by design, and pinging it with a body would write somebody's declined-deal rows. The sales page at public/decline-autopsy is the monitored door for this offer.",
+  "public/decline-autopsy-report": "Signed, expiring report link. A GET without org/ref/exp/sig answers 404 on purpose — and it answers that identically for a forged signature, so the endpoint cannot be used to find out which references exist. That refusal is correct behaviour, not downtime.",
+  "trials/provision": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would create a partner row, an affiliate row and a login for a trial nobody bought. The eligibility gate and the live dashboard are the monitored doors for this offer.",
+  "trials/convert": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would stamp a partner agreement or pause a partner. Day 8 is a human decision, not an uptime probe.",
+  "training-progress": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would stamp a compliance certification against a partner nobody assessed. The monitored door for the training is read/partner-training, which is what a partner actually opens.",
   "sidebar.fragment.html": "Shared chrome fragment mounted into other pages. Not a live desk."
 };
 
 const API_KEYS = [
+  "adintel/board",
   "agent-call",
   "agents",
   "ai-bureau-config",
@@ -122,6 +128,10 @@ const API_KEYS = [
   "partner-marketing/generate-logo",
   "partner-marketing/usage",
   "partner-pages",
+  "partners/approve",
+  /* The white-label add-on menu. A door that asks a partner for money and puts
+     them on a monthly cycle, so an outage here is revenue not asked for. */
+  "partner-addons",
   "payment-links",
   "pii",
   "pipeline-cards",
@@ -131,7 +141,16 @@ const API_KEYS = [
   "proxy/end",
   "proxy/launch",
   "public/affiliate-click",
+  /* The Decline Autopsy sales page. A plain GET answers 200 with the price, the
+     row cap and the field list, so it is a real uptime door. Its two siblings
+     are not — see ALLOWED_UNMONITORED. */
+  "public/decline-autopsy",
   "public/education-enroll",
+  /* The self-serve till for the /partner/ funnel pages. A plain GET answers 200
+     with every price those five pages render and whether checkout is actually
+     configured, so it is a real uptime door: if this is down, three sales pages
+     show an em dash where the price goes and their buy buttons stay disabled. */
+  "public/funnel-checkout",
   "public/optimize",
   "public/partner-apply",
   "public/partner-page",
@@ -176,6 +195,11 @@ const API_KEYS = [
   "read/my-numbers",
   "read/ops-pulse",
   "read/partners",
+  "read/partner-home-tiles",
+  "read/partner-production",
+  /* The $10,000 curriculum a partner opens. An outage here is the training half
+     of the entry fee missing, and it is the only read behind the gate record. */
+  "read/partner-training",
   "read/portal-contracts",
   "read/portal-summary",
   "read/products",
@@ -207,7 +231,14 @@ const API_KEYS = [
   "soft-pull-approve",
   "staff/monitoring-consent",
   "staff/telemetry",
-  "tasks"
+  "tasks",
+  /* The Live Trial's two public-facing doors. `trials/eligibility` is the gate
+     that runs in front of the pay button — if it is down, nobody can buy the
+     trial and nobody is told why. `trials/dashboard` is the screen a person
+     paid $297 to watch for seven days; an outage there is the product missing.
+     Its two write siblings are not pingable — see ALLOWED_UNMONITORED. */
+  "trials/dashboard",
+  "trials/eligibility"
 ];
 
 const DESK_FILES = [
@@ -238,6 +269,7 @@ const DESK_FILES = [
   "my-numbers.html",
   "ops-admin.html",
   "partner-galaxy.html",
+  "partner-training.html",
   "payment-success.html",
   "pipeline.html",
   "present.html",

@@ -251,11 +251,20 @@ export function withCheckoutIdentifiers(successUrl, metadata) {
  * createCheckoutSession — POST /checkout-sessions → { payment_link }.
  * Never throws on HTTP/transport failure; callers decide how to surface it.
  */
+export const CHECKOUT_TYPES = Object.freeze([
+  "onetime_non_reusable",
+  "onetime_reusable",
+  "subscription"
+]);
+
 export async function createCheckoutSession({
   amountCents,
   productTitle,
   productDescription = null,
   type = "onetime_non_reusable",
+  frequencyDays = null,
+  freeTrialDays = null,
+  autoExpireAfterPeriods = null,
   metadata = null,
   successUrl = null,
   env = process.env,
@@ -276,11 +285,39 @@ export async function createCheckoutSession({
     return { ok: false, reason: "commas_unsafe_copy", field: "product.description" };
   }
 
+  if (!CHECKOUT_TYPES.includes(type)) {
+    return { ok: false, reason: `unknown checkout type: ${type}` };
+  }
+
   const body = {
     amount_cents: amountCents,
     product: { title },
     type
   };
+
+  /* SUBSCRIPTIONS ARE BILLED BY COMMAS, NOT BY US.
+     type "subscription" makes Commas charge the customer every
+     frequency_days and fire subscription.renewed on each success. They hold
+     the card, they own the retries and the dunning. Our job is to mint the
+     session and then believe the webhooks — see mapToCanonical in
+     src/adapters/commas.mjs, where subscription.renewed becomes a money-in
+     event.
+     frequency_days is REQUIRED by the API for this type, so a missing or
+     non-positive value is refused here rather than sent and rejected. */
+  if (type === "subscription") {
+    if (!Number.isInteger(frequencyDays) || frequencyDays <= 0) {
+      return { ok: false, reason: "frequency_days is required for a subscription" };
+    }
+    body.subscription = { frequency_days: frequencyDays };
+    // Commas rejects a trial combined with an initial fee; we send neither
+    // unless asked, so the two can never arrive together from here.
+    if (Number.isInteger(freeTrialDays) && freeTrialDays > 0) {
+      body.subscription.free_trial_days = freeTrialDays;
+    }
+    if (Number.isInteger(autoExpireAfterPeriods) && autoExpireAfterPeriods > 0) {
+      body.subscription.auto_expire_after_x_periods = autoExpireAfterPeriods;
+    }
+  }
   if (productDescription) body.product.description = String(productDescription);
   const success = successUrl
     || env.COMMAS_SUCCESS_URL

@@ -193,6 +193,10 @@
   .success .cred dt{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);margin-top:10px}
   .success .cred dt:first-child{margin-top:0}
   .success .cred dd{font-size:15px;color:var(--ink);word-break:break-all}
+  .success .next{display:none;margin-top:18px;text-align:left;background:var(--soft);border-radius:10px;padding:16px 18px}
+  .success .next ol{margin:0;padding-left:20px}
+  .success .next li{font-size:14.5px;color:var(--gray);line-height:1.55;margin-top:8px}
+  .success .next li:first-child{margin-top:0}
   .err{color:#9B1C1C;margin-top:12px;display:none;font-size:14px}
 
   /* boot veil */
@@ -363,7 +367,7 @@
         <p class="lede">Refer business owners as an affiliate, or run your own funding brand as a white-label partner. Either way, our team runs fulfillment — underwriting, funding operations, and compliance rails — end to end.</p>
         <div class="hero-cta">
           <a href="#apply" class="btn-inv">Apply to partner</a>
-          <a href="#tracks" class="ghost">SEE THE TRACKS →</a>
+          <a href="/partner/menu/" class="ghost">SEE EVERY WAY IN →</a>
         </div>
       </div>
       <div class="stack">
@@ -441,7 +445,7 @@
           <li>The same UnderwriteIQ engine, deliverables, and advisor workflow that runs fundhub.ai.</li>
           <li>Application, review call, and a signed partner agreement before launch.</li>
         </ul>
-        <a class="btn" href="#apply">Apply for white-label</a>
+        <a class="btn" href="/partner/">See the white-label offer</a>
       </div>
     </div>
   </div>
@@ -521,6 +525,12 @@
           <button type="submit" class="btn">Submit partner application</button>
           <p class="disclaim">By submitting, you confirm the information provided is accurate. Partner approval is at Fundhub's discretion, and no commission or revenue share is earned until a partner agreement is signed.</p>
         </form>
+        <!-- Two outcomes behind one form, and they are not the same screen.
+             An AFFILIATE really does get a login and a referral link on submit,
+             so the credentials list below is true for them. A WHITE-LABEL
+             application creates nothing to sign in to — the row sits at
+             'invited' until a person approves it — so that branch hides the
+             credentials list and shows what actually happens next instead. -->
         <div class="success" id="success">
           <div class="chk" id="success-chk">✓ YOU'RE IN</div>
           <h3 style="margin-top:12px" id="success-title">Your login is ready</h3>
@@ -530,7 +540,15 @@
             <dt>First password</dt><dd id="success-pass"></dd>
             <dt id="success-link-label">Your link</dt><dd><a id="success-link" href="#"></a></dd>
           </dl>
-          <p><a class="btn" id="success-login" href="/login.html" style="display:inline-block;margin-top:16px">Log in now</a></p>
+          <div class="next" id="success-next">
+            <ol>
+              <li>We read your application.</li>
+              <li>We email you at <strong id="success-next-email"></strong> to book a review call.</li>
+              <li>On the call we go through the partner agreement together.</li>
+              <li>Once it is signed we build your brand and hand you your login.</li>
+            </ol>
+          </div>
+          <p id="success-login-row"><a class="btn" id="success-login" href="/login.html" style="display:inline-block;margin-top:16px">Log in now</a></p>
         </div>
         <p class="err" id="apply-err"></p>
       </div>
@@ -661,7 +679,7 @@
     var b=this.querySelector('button[type=submit]');
     var err=document.getElementById('apply-err');
     if(err){err.style.display='none';err.textContent='';}
-    b.disabled=true;b.textContent='Creating your login…';
+    b.disabled=true;b.textContent='Sending your application…';
     var payload={
       name:name,
       email:email,
@@ -678,36 +696,49 @@
     }).then(function(r){return r.json().then(function(d){return {ok:r.ok,status:r.status,body:d};});})
     .then(function(res){
       var d=res.body||{};
-      if(d.error==='already_registered'){
-        document.getElementById('pform').style.display='none';
-        document.getElementById('success-chk').textContent="✓ ALREADY IN";
-        document.getElementById('success-title').textContent='You already have a login';
-        document.getElementById('success-lead').textContent='Use Log in with the email you just typed. We will not make a second account.';
-        document.getElementById('success-email').textContent=email;
-        document.getElementById('success-pass').textContent='(the password you already set)';
-        var a0=document.getElementById('success-link');
-        a0.href=d.login_url||'/login.html';
-        a0.textContent='Log in';
-        document.getElementById('success-link-label').textContent='Next';
-        document.getElementById('success').style.display='block';
-        document.getElementById('success').scrollIntoView({behavior:'smooth',block:'center'});
-        return;
-      }
+      /* THERE IS NO 'already_registered' BRANCH ANY MORE. This handler used to
+         carry one, because the endpoint used to answer 409 already_registered to
+         any address that had a Fundhub login — which refused the warm buyer this
+         funnel exists to promote, and told a stranger which addresses have an
+         account (W5 finding F2). api/public/partner-apply.mjs stopped returning
+         it, so the branch was unreachable, and what it printed was the very lie
+         the white-label panel below was rewritten to stop telling: "You already
+         have a login", plus a Log in button. An applicant has neither.
+         An affiliate whose address already has a login now comes back ok with
+         password null, and the affiliate branch below says so in a sentence. */
       if(!res.ok||!d.ok){
         b.disabled=false;b.textContent='Submit partner application';
-        var msg='Could not create the login. Try again.';
+        var msg='Could not send your application. Try again.';
         if(d.error==='name_email_required'||d.error==='name_email_phone_required') msg='We need this one to continue.';
         if(err){err.textContent=msg;err.style.display='block';}
         return;
       }
       document.getElementById('pform').style.display='none';
-      document.getElementById('success-email').textContent=d.email||email;
-      document.getElementById('success-pass').textContent=d.password||'';
-      var link=d.referral_url||d.site_url||'';
-      var a=document.getElementById('success-link');
-      a.href=link||'/login.html';
-      a.textContent=link||'Log in';
-      document.getElementById('success-link-label').textContent=d.kind==='partner'?'Your site':'Your referral link';
+      if(d.kind==='partner'){
+        /* WHITE-LABEL IS INVITE ONLY. The endpoint writes one partners row at
+           'invited' and stops: no account, no password, no published page. It
+           returns password, login_url, referral_url and site_url all null, and
+           this panel used to print them anyway — a blank "First password" and a
+           "Log in" button pointing at a login that does not exist. Say the true
+           thing instead. Nothing here promises a date, an outcome or a number. */
+        document.getElementById('success-chk').textContent='✓ APPLICATION RECEIVED';
+        document.getElementById('success-title').textContent='Your application is in';
+        document.getElementById('success-lead').textContent='Nothing is live yet, and there is no login to set up. A person reads every white-label application, and we come back to you to book the review call.';
+        document.getElementById('success-cred').style.display='none';
+        document.getElementById('success-login-row').style.display='none';
+        document.getElementById('success-next-email').textContent=d.email||email;
+        document.getElementById('success-next').style.display='block';
+      }else{
+        document.getElementById('success-email').textContent=d.email||email;
+        /* password is null when the address already had a login — one email,
+           one account. Blank there reads as "we lost it". */
+        document.getElementById('success-pass').textContent=d.password||'The password you already use — we did not make you a second login.';
+        var link=d.referral_url||'';
+        var a=document.getElementById('success-link');
+        a.href=link||'/login.html';
+        a.textContent=link||'Log in';
+        document.getElementById('success-link-label').textContent='Your referral link';
+      }
       document.getElementById('success').style.display='block';
       document.getElementById('success').scrollIntoView({behavior:'smooth',block:'center'});
     }).catch(function(){
