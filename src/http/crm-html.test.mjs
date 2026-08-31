@@ -392,22 +392,37 @@ test("the shell mounts a clock, in Arizona, on screens that have no clock of the
   // fight over one element every second.
   assert.match(shell, /if \(document\.querySelector\("\.clock, #clock"\)\) return;/,
     "the shell must leave a page's own clock alone");
-  // And it must not put an office clock on the client's own screen.
+  /* An office clock must not land on a screen a CUSTOMER reads. Two gates, and
+     both are needed: role catches a client signed in anywhere, and the screen
+     list catches a staff member opening a customer's page. The role test alone
+     was not enough — consent-capture is only ever opened by staff, so it got a
+     clock on the live site until this list existed. */
   assert.match(shell, /if \(role === "client"\) return;/,
-    "the client portal must not get a staff clock");
+    "a signed-in client must not get a staff clock");
+  assert.match(shell, /CUSTOMER_SCREENS\.indexOf\(PAGE\) !== -1\) return;/,
+    "customer screens must be excluded by page, not only by role");
+  for (const screen of ["client-portal.html", "consent-capture.html"]) {
+    assert.ok(shell.includes('"' + screen + '"'),
+      screen + " must be listed as a customer screen in shell.js");
+  }
 });
 
 test("a page's own media query can no longer hide the clock at laptop width", () => {
   const shell = fs.readFileSync(path.join(APP, "shell.js"), "utf8");
-  // The un-hide rule and the one width it still allows a clock to disappear at.
   assert.match(shell, /display:inline-block!important;/,
     "the shell must override the per-page display:none");
-  assert.match(shell, /@media \(max-width:900px\)/,
-    "the clock may only be hidden below 900px");
-  assert.ok(
-    !/max-width:1[0-9]{3}px\)\{\.clock/.test(shell),
-    "nothing may hide the clock at laptop width again"
-  );
+
+  /* One breakpoint, and it has to stay below laptop width. 1440 is the window
+     the owner actually uses and the one that was broken — a clock hidden there
+     is the bug this whole change exists to fix. 1100 is where the narrow top
+     bars have already wrapped and the clock made them wrap again; that was
+     measured, not eyeballed. */
+  const hideAt = /var CLOCK_HIDE_AT = (\d+);/.exec(shell);
+  assert.ok(hideAt, "shell.js must name the hide breakpoint as CLOCK_HIDE_AT");
+  const px = Number(hideAt[1]);
+  assert.ok(px < 1440,
+    `the clock is hidden below ${px}px, which would hide it on a laptop again`);
+  assert.ok(px >= 900, `hiding only below ${px}px puts it back on bars too narrow for it`);
 });
 
 test("every staff screen with a top bar ends up with a clock in it", () => {
