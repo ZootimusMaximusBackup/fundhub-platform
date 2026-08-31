@@ -96,9 +96,21 @@ Two consequences:
 1. **Creative sign-off** (`W4` D3) applies **when FundHub runs the marketing** — that is,
    when the partner has bought the marketing package. A partner running their own
    marketing is a different control question.
-2. **PRICING RESTRUCTURE PENDING.** The base is $10,000 with no monthly, but stacked
-   add-ons may carry monthly fees. That makes the commercial model a **menu**, not a
-   single price, and no spec currently describes it. This is the largest open item.
+2. **The commercial model is a menu, specced in `W6-pricing-menu.md`.** The base is
+   $10,000 with no monthly; marketing, marketing insights and other services are
+   stackable monthly add-ons.
+
+## Two laws of the pricing menu
+
+**The 50% never moves.** No add-on, package or service changes it, in either direction.
+Half is half; everything else is a menu.
+
+**Every partner connects their ad account — free and required.** It is a condition of
+using FundHub's fulfilment, not a product. FundHub gets telemetry from 100% of partners
+(collision protection, and Layer 3 of the creative spine fills from day one); what the
+Brain tells the partner stays a paid add-on.
+
+Full menu: `docs/specs/W6-pricing-menu.md`.
 
 ## Consumer data from the Decline Autopsy
 
@@ -120,7 +132,7 @@ partner-side flow, not as the Ascension funnel itself.
 
 | Item | Note |
 |---|---|
-| **Pricing restructure** | Base + add-on menu. Not specced anywhere. Largest open item |
+| ~~Pricing restructure~~ | **CLOSED — specced in `W6-pricing-menu.md`.** The three add-on prices themselves remain owner-settable |
 | **Exact refund window** | "Short" is recorded as 3 days pending confirmation |
 | **The $10,000 training curriculum** | Research in progress; modules to be agreed before the page describes the deliverable |
 | **What the $10,000 includes besides training** | The deliverable list must be real before it is published |
