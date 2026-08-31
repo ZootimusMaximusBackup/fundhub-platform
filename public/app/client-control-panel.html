@@ -292,6 +292,15 @@
   .approve{border:1px solid var(--line);border-radius:6px;background:var(--surface);padding:10px 11px;margin:0 0 10px;}
   .approve-what{font-size:var(--fs-caption);line-height:1.45;color:var(--text);margin:0 0 8px;}
   .approve-row{display:flex;gap:6px;align-items:stretch;}
+  /* Same trap as .link-btn, .amount-suggest and .round-amount below: an author
+     `display` beats the browser's own [hidden]{display:none}. renderHandoff()
+     sets `approveRow.hidden = !url` so the empty box and its Copy button go
+     away and the SENTENCE saying why takes their place — that is what the
+     comment beside that line asks for. Without this rule the row stayed on
+     screen: measured in Chromium, hidden=true and still display:flex, 641x40,
+     holding an empty field and a live-looking "Copy link" that does nothing
+     because its handler returns early on an empty url. */
+  .approve-row[hidden]{display:none;}
   .approve-url{
     /* No px size here: .approve-url is already in this screen's one escape
        hatch above, and a plain px value written inside .app is discarded by

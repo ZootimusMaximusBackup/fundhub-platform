@@ -347,16 +347,60 @@ test.describe("client control panel — a consent link that can be hidden", () =
     expect(box.width).toBeGreaterThan(0);
   });
 
-  test("NOTHING ELSE ON THE SCREEN LEAKS THROUGH [hidden]", async ({ page }) => {
-    /* The sweep that found the consent link. It stays, so the next author who
-       lays a hidden element out with flex or grid gets a red test instead of a
-       control that is permanently on screen. */
-    await open(page, applications([]));
-    const leaking = await page.evaluate(() =>
-      Array.from(document.querySelectorAll("[hidden]"))
-        .filter((el) => getComputedStyle(el).display !== "none")
-        .map((el) => el.id || el.className || el.tagName));
-    expect(leaking).toEqual([]);
+  /* THE SWEEP, IN MORE THAN ONE STATE — and that is the whole point.
+     The first version of this ran once, on the default read, and passed while
+     #ccp-approve-row leaked at 641x40 with a live-looking "Copy link" on it.
+     It could not see it: that row carries no `hidden` in the markup, so it only
+     ever gets one from renderHandoff(), in a state the single run never
+     reached. A sweep with no exemption list still has an implicit exemption for
+     every element it never puts in the hidden state. Each entry below is a real
+     answer /api/consent/capture gives — the no-link ones are what it returns
+     when the signing key is absent. */
+  const SWEEP_STATES = {
+    "the default read": applications([]),
+    "consent expired and no link could be signed": Object.assign({}, applications([]),
+      consent({ ok: true, status: { valid: false, reason: "expired" },
+                approval_link: { url: null, unavailable_reason: "missing the signing key" } })),
+    "no consent on file and no link could be signed": Object.assign({}, applications([]),
+      consent({ ok: true, status: { valid: false, reason: "none_on_file" } })),
+    "consent revoked": Object.assign({}, applications([]),
+      consent({ ok: true, status: { valid: false, reason: "revoked" } })),
+    "the consent read failed": Object.assign({}, applications([]),
+      consent({ ok: false, error: "boom" }, 500))
+  };
+
+  for (const [state, routes] of Object.entries(SWEEP_STATES)) {
+    test(`NOTHING ON THE SCREEN LEAKS THROUGH [hidden] — ${state}`, async ({ page }) => {
+      await open(page, routes);
+      const leaking = await page.evaluate(() =>
+        Array.from(document.querySelectorAll("[hidden]"))
+          .filter((el) => getComputedStyle(el).display !== "none")
+          .map((el) => el.id || el.className || el.tagName));
+      expect(leaking).toEqual([]);
+    });
+  }
+
+  test("the copy control goes away and the reason takes its place", async ({ page }) => {
+    /* Not the sweep's job. The sweep proves nothing is laid out; this proves
+       the screen still says WHY, so the row is replaced rather than deleted. */
+    await open(page, Object.assign({}, applications([]),
+      consent({ ok: true, status: { valid: false, reason: "expired" },
+                approval_link: { url: null, unavailable_reason: "No signing key on this environment." } })));
+    await expect(page.locator("#ccp-approve-nolink")).toHaveText("No signing key on this environment.");
+    await expect(page.locator("#ccp-approve-row")).toBeHidden();
+  });
+
+  test("with a real link the copy row is still a laid-out box", async ({ page }) => {
+    /* A rule that painted nothing would pass every sweep above and be wrong. */
+    await open(page, Object.assign({}, applications([]),
+      consent({ ok: true, status: { valid: false, reason: "expired" },
+                approval_link: { url: "https://approve.example/abc", expires_at: "2026-09-01T17:00:00Z" } })));
+    const row = page.locator("#ccp-approve-row");
+    await expect(row).toBeVisible();
+    const box = await row.boundingBox();
+    expect(box.width).toBeGreaterThan(0);
+    expect(box.height).toBeGreaterThan(0);
+    await expect(page.locator("#ccp-approve-url")).toHaveValue("https://approve.example/abc");
   });
 });
 
