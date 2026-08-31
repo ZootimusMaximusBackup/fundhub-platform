@@ -43,7 +43,8 @@ import {
 import { grantFromTransaction } from "../entitlements/entitlements.mjs";
 import { createFundingCloseoutSafe } from "../funding/closeout.mjs";
 import { attachGateToRound } from "../inquiry-ops/gate.mjs";
-import { accrueForPaymentSafe } from "../partners/revenue.mjs";
+import { accrueForPaymentSafe, voidForRefund } from "../partners/revenue.mjs";
+import { toCents } from "../commissions/money.mjs";
 import { convertSafe } from "../affiliates/economics.mjs";
 
 /** Semantic product bucket → products.code when name/alias resolve fails. */
@@ -1177,6 +1178,229 @@ export async function onRoundFundedMoney(event, db) {
   };
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   MONEY THAT LEFT AGAIN — refunds and chargebacks reach the partner ledger.
+
+   THE HOLE THIS CLOSES. src/partners/revenue.mjs has had voidForRefund() since
+   the accrual writer shipped: built, unit-tested, proved against real Postgres —
+   and called by absolutely nothing. So a refund issued today left the partner's
+   accrual sitting at status 'accrued', payable, as though the money were still
+   in the building. The next payout run would pay a half-share of cash that had
+   already gone back to the customer.
+
+   WHAT A REVERSAL IS, AND IS NOT.
+     * It is a VOID WITH A REASON. 042_partners.sql raises on DELETE and CHECKs
+       that gross and share are >= 0, so a reversal cannot be a negative row and
+       cannot be a deletion. The row stays, marked void, naming the refund.
+     * It is NOT A CLAWBACK. Owner-set (W0-decisions.md): the partner is never
+       chased for money already paid out. If the accrual was already settled
+       through a payout line, the void records the fact and the shortfall is
+       fundhub's. Nothing here recovers it, and nothing here should be extended
+       to.
+
+   WHY A CHARGEBACK REVERSES TOO, when src/handlers/commas-disputes.mjs says it
+   deliberately does not touch the money. That file's job is the RESPONSE
+   DEADLINE — it turns a dispute into an urgent task and says so. The money
+   question it left open is answered here, and the answer is: the processor pulls
+   the funds when the dispute opens, not when it is decided, so an accrual that
+   still reads 'accrued' is describing money that is not there. The two handlers
+   are registered independently and both run; neither replaces the other.
+
+   THE GAP THAT COMES WITH THAT, stated rather than hidden: A DISPUTE WE LATER
+   WIN DOES NOT UN-VOID ITSELF. There is no dispute.won event on the bus, so
+   nothing re-accrues when the money comes back. The voided row's void_reason
+   starts with "chargeback:" precisely so those rows can be listed and corrected
+   by hand. Closing it properly needs a won/lost outcome event, which is a
+   separate unit.
+
+   WHAT IS STILL NOT REVERSED, and is not this unit's to decide:
+     * STAFF COMMISSION (commission_ledger). Whether a closer's pay is reversed
+       on a refund is an open policy question —
+       src/commissions/commission-model-open-questions.md.
+     * THE AFFILIATE'S CUT (src/affiliates/economics.mjs). convert() has no
+       inverse yet.
+     * ENTITLEMENTS. A refunded course is still unlocked.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/** Greppable prefixes. One per case where money moved and the ledger did not. */
+export const REVERSAL_REFUSED = "[money-chain] reversal refused";
+export const REVERSAL_APPLIED = "[money-chain] reversal applied";
+
+/** void_reason prefixes. `chargeback:` is the one a won dispute is found by. */
+export const REVERSAL_PREFIX = Object.freeze({
+  "payment.refunded": "refund",
+  "payment.disputed": "chargeback"
+});
+
+/**
+ * The processor's reference for the payment BEING REVERSED.
+ *
+ * A refund and its original payment share one payment id in Commas' model, and
+ * normalizeCommasEvent puts that id on `providerRef` for every event it emits —
+ * so the same reference that created the transaction row is the one that finds
+ * it again. The two `original*` keys are checked first because that assumption
+ * is not confirmed against a live refund payload: if Commas turns out to send
+ * the REFUND's own id under `payment_id`, an adapter can put the original on
+ * `originalProviderRef` and this keeps working with no change here.
+ */
+export function reversalProviderRef(event) {
+  const p = event?.payload || {};
+  const ref = p.originalProviderRef || p.originalPaymentId || p.providerRef || p.paymentId;
+  return ref ? String(ref) : null;
+}
+
+/**
+ * How much went back, in integer cents, or null when the event does not say.
+ *
+ * Amounts arrive in major units. Some processors express a reversal as a
+ * negative, so the magnitude is what counts — a refund of -3000 and a refund of
+ * 3000 are the same $3,000 leaving.
+ */
+export function reversedCents(event) {
+  const raw = event?.payload?.amount;
+  if (raw === null || raw === undefined || raw === "") return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  const cents = toCents(Math.abs(n));
+  return cents > 0 ? cents : null;
+}
+
+/**
+ * Find the accrual keys of the ORIGINAL payment from the reversal's reference.
+ *
+ * partner_revenue rows are keyed on the original payment's transaction_id and
+ * source_event_id. The reversal event knows neither — it knows the processor's
+ * reference. transactions.provider_ref is the bridge (client-lifecycle.mjs
+ * writes that row on payment.received, ensureSalePayment reads it back the same
+ * way), and the sale_payments row hanging off that transaction carries the event
+ * id the accrual may have been keyed by instead.
+ *
+ * Both keys are returned and both are handed to voidForRefund, because an
+ * accrual written when the transaction row did not yet exist is keyed on the
+ * event id alone.
+ */
+export async function findOriginalPaymentKeys(db, orgId, providerRef) {
+  const empty = { transactionId: null, sourceEventId: null, payment: null };
+  if (!orgId || !providerRef) return empty;
+
+  const transactionId = await findTransactionId(db, orgId, providerRef);
+  if (!transactionId) return empty;
+
+  const { rows } = await db.query(
+    `SELECT id, sale_id, amount, source_event_id
+       FROM sale_payments
+      WHERE org_id = $1 AND transaction_id = $2
+      ORDER BY paid_at ASC
+      LIMIT 1`,
+    [orgId, transactionId]
+  );
+  return {
+    transactionId,
+    sourceEventId: asUuid(rows[0]?.source_event_id) || null,
+    payment: rows[0] || null
+  };
+}
+
+/**
+ * Drive one reversal into the partner ledger. Shared by both handlers because a
+ * refund and a chargeback differ only in the word written into void_reason and
+ * in what happens afterwards, which is a person's job either way.
+ */
+async function reversePartnerRevenue(event, db) {
+  const orgId = event?.orgId;
+  const prefix = REVERSAL_PREFIX[event?.name] || "reversal";
+  if (!orgId) return { reversed: false, reason: "no_org" };
+
+  const providerRef = reversalProviderRef(event);
+  const keys = await findOriginalPaymentKeys(db, orgId, providerRef);
+
+  if (!keys.transactionId && !keys.sourceEventId) {
+    /* No original payment on file, so there is nothing to point a void at. This
+       is the loud one: real money went back and the partner's book still says it
+       arrived. Refusing beats guessing — matching a reversal to an accrual by
+       amount would eventually reverse somebody else's deal. */
+    console.warn(
+      `${REVERSAL_REFUSED}: no_original_payment ` +
+      `(org=${orgId} event=${event.name} ref=${providerRef || "none"}). ` +
+      `Money was ${prefix === "chargeback" ? "charged back" : "refunded"} but no ` +
+      `original payment could be matched, so no partner accrual was voided. ` +
+      `Check the partner's balance by hand.`
+    );
+    return { reversed: false, reason: "no_original_payment", providerRef };
+  }
+
+  /* The reason is mandatory in the database (partner_revenue_void_ck) and is the
+     only trace of WHY a row went void, so it carries the word and the reference. */
+  const reason = `${prefix}:${providerRef || `event:${event.id}`}`;
+
+  /* HOW MUCH SURVIVED. The event says what went back; voidForRefund subtracts it
+     from the gross on the row it actually voided and re-accrues the remainder at
+     the ORIGINAL frozen rate. A reversal for the full amount leaves nothing, so
+     nothing is re-accrued.
+
+     AN UNREADABLE AMOUNT VOIDS IN FULL. There is no honest partial when the size
+     of the refund is unknown, and leaving the accrual standing would pay a half
+     share of money that has gone. Voiding all of it is the conservative answer
+     and it is said out loud, because a partner owed part of it has to be put
+     back by hand. */
+  const refundedCents = reversedCents(event);
+  if (refundedCents === null) {
+    console.warn(
+      `${REVERSAL_REFUSED}: unknown_reversal_amount ` +
+      `(org=${orgId} event=${event.name} ref=${providerRef || "none"}). ` +
+      `The accrual is being voided in full because the event carries no readable ` +
+      `amount. If only part of the payment went back, the partner's surviving ` +
+      `share must be restored by hand.`
+    );
+  }
+
+  const out = await voidForRefund(db, {
+    orgId,
+    transactionId: keys.transactionId,
+    sourceEventId: keys.sourceEventId,
+    reason,
+    refundedCents
+  });
+
+  if (out.voided > 0) {
+    console.warn(
+      `${REVERSAL_APPLIED}: ${prefix} (org=${orgId} ref=${providerRef || "none"} ` +
+      `voided=${out.voided} reaccrued=${out.reaccrued}). ` +
+      `NO CLAWBACK — anything already paid to the partner stays paid.`
+    );
+  }
+
+  return {
+    reversed: out.voided > 0,
+    reason: out.reason,
+    voided: out.voided,
+    reaccrued: out.reaccrued,
+    voidedIds: out.voidedIds || [],
+    reaccrualId: out.reaccrualId || null,
+    netCents: out.netCents ?? null,
+    providerRef,
+    transactionId: keys.transactionId,
+    salePaymentId: keys.payment?.id || null
+  };
+}
+
+/**
+ * payment.refunded — money we sent back. Void the partner's accrual for it, and
+ * re-accrue whatever the refund did not cover.
+ */
+export async function onPaymentRefundedMoney(event, db) {
+  return reversePartnerRevenue(event, db);
+}
+
+/**
+ * payment.disputed — money the processor pulled while a chargeback is decided.
+ * Same void, a different word in void_reason, and no automatic way back if the
+ * dispute is won. See the block comment above.
+ */
+export async function onPaymentDisputedMoney(event, db) {
+  return reversePartnerRevenue(event, db);
+}
+
 export function register() {
   on("diagnostic.paid", onDiagnosticPaidMoney);
   on("deposit.paid", onDepositPaidMoney);
@@ -1184,4 +1408,10 @@ export function register() {
   on("payment.received", onPaymentReceivedMoney);
   on("round.started", onRoundStartedMoney);
   on("round.funded", onRoundFundedMoney);
+  /* Money that left again. Registered here rather than in commas-disputes.mjs so
+     the partner ledger has exactly one owner module, and so a reversal that
+     fails cannot stop the urgent chargeback task that handler creates — the bus
+     catches per handler and dead-letters, and this one is registered first. */
+  on("payment.refunded", onPaymentRefundedMoney);
+  on("payment.disputed", onPaymentDisputedMoney);
 }

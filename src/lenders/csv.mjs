@@ -15,7 +15,11 @@ const INT = new Set(["priority_tier", "repayment_terms_months"]);
 const FLOAT = new Set(["minimum_time_in_business_years", "apr_range_pct"]);
 const BOOL = new Set(["active"]);
 
-function splitCsvLine(line) {
+/* EXPORTED, and it is the only quote-aware CSV splitter in this repo. A second
+   one would be the "two functions doing the same thing" bug CLAUDE.md §8 warns
+   about — src/autopsy/parse.mjs imports this rather than writing its own.
+   Behaviour is unchanged; only the visibility moved. */
+export function splitCsvLine(line) {
   const out = [];
   let cur = "";
   let inQ = false;

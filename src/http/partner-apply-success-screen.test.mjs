@@ -253,6 +253,48 @@ test("the form posts the applicant's own consent tick, untouched", async () => {
   assert.equal(submitted.body.phone, "6615550100");
 });
 
+/* ── The branch that outlived the response that fed it ───────────────────── */
+
+test("the page carries no dead 'already_registered' branch", () => {
+  // api/public/partner-apply.mjs stopped answering 409 already_registered — see
+  // src/http/partner-apply.test.mjs, which asserts the error is never returned.
+  // The panel it drove could therefore never appear, and what it said ("You
+  // already have a login", with a Log in button) is the exact claim the
+  // white-label rewrite exists to stop making.
+  // The branch, not the word — the page still explains in a comment why it went.
+  assert.ok(!/error\s*===?\s*['"]already_registered['"]/.test(HTML),
+    "an unreachable branch keyed on an error the endpoint no longer returns");
+  assert.ok(!/You already have a login/i.test(HTML),
+    "nothing on this page may tell an applicant they have a login");
+  assert.ok(!/ALREADY IN/i.test(HTML));
+});
+
+test("an already_registered answer can no longer produce a success panel", async () => {
+  // If some future endpoint revives the error, this must read as a failure the
+  // person can retry — never as a green 'you are in' screen.
+  const { nodes, button } = await submit({
+    response: { ok: false, error: "already_registered", login_url: "https://fundhub.ai/login.html" },
+    status: 409
+  });
+  assert.equal(nodes.success.style.display, "",
+    "a refusal must not be dressed up as a success");
+  assert.equal(nodes.pform.style.display, "", "the form must stay on screen");
+  assert.equal(button.disabled, false);
+  assert.equal(nodes["success-pass"].textContent, "");
+});
+
+test("an affiliate who already has a login is still served by the ordinary branch", async () => {
+  // This is the case the dead branch used to catch. It is now an ok response
+  // with a null password, and the affiliate branch answers it in a sentence.
+  const { nodes } = await submit({
+    form: { track: "affiliate" },
+    response: { ...AFFILIATE_RESPONSE, password: null }
+  });
+  assert.equal(nodes.success.style.display, "block");
+  assert.match(nodes["success-pass"].textContent, /already use/i);
+  assert.ok(!/ALREADY IN/i.test(nodes["success-chk"].textContent));
+});
+
 test("a failed submit says the application did not send, and lets them retry", async () => {
   const { nodes, button } = await submit({
     response: { ok: false, error: "server_down" },

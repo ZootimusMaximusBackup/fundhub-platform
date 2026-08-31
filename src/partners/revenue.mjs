@@ -40,6 +40,10 @@
 //    expressed as a negative row and money already earned cannot be made to
 //    disappear. NO CLAWBACK: owner-set, a reversal after payout is fundhub's
 //    loss, recorded and not recovered from the partner.
+//    WIRED 2026-08-31: voidForRefund() was built, tested, and called by nothing,
+//    so a refund left the partner's accrual standing as if the money were still
+//    here. src/handlers/money-chain.mjs now drives it from payment.refunded and
+//    payment.disputed. Nothing in this file chases the partner for the money.
 //
 // WHY resolveClient() IS NOT CALLED HERE. It is the right function for turning a
 // bus event into a client, and the money chain already calls it upstream — but it
@@ -51,6 +55,7 @@
 // COMPLIANCE REVIEW REQUIRED: fee/commission timing and payout basis.
 
 import { toCents, fromCents, applySplit, percentOf } from "../commissions/money.mjs";
+import { withTransaction } from "../db/with-transaction.mjs";
 
 /* THE ALLOW-LIST. products.code values that share revenue with a partner.
    Anything not named here — every course, every digital product, the $32 soft
@@ -444,24 +449,46 @@ export async function accrueRecruitBonus(db, {
  * partner has already been paid, the balance simply goes down and the shortfall
  * is fundhub's (owner-set, W0-decisions.md). Nothing here chases the partner.
  *
- * PARTIAL REFUND: pass netRemainingCents. The original row is voided in full and
- * a fresh accrual is written for what survived, at the share_pct_applied the
- * ORIGINAL froze — never the partner's current rate. That is what frozen rates
- * are for.
+ * PARTIAL REFUND, TWO WAYS TO SAY IT. Pass `netRemainingCents` when the caller
+ * already knows what survived, or `refundedCents` when it only knows what went
+ * back — the surviving net is then the voided row's own gross minus the refund,
+ * floored at zero. `refundedCents` is what a refund webhook actually carries, so
+ * it is the shape the money chain uses. If both are given, netRemainingCents
+ * wins: an explicit figure beats a derived one. Either way the original row is
+ * voided in full and a fresh accrual is written for what survived, at the
+ * share_pct_applied the ORIGINAL froze — never the partner's current rate. That
+ * is what frozen rates are for.
+ *
+ * ALL-OR-NOTHING, AND WHERE IT IS NOT. A partial refund is two writes — the void
+ * and the replacement — and half of that pair is a real loss: void without
+ * re-accrual silently takes the surviving money off the partner's book, and the
+ * replacement cannot be retried on its own because the voided row still occupies
+ * both unique keys. So the pair now runs inside withTransaction()
+ * (src/db/with-transaction.mjs): on a pool, or on the shared singleton, it is one
+ * BEGIN/COMMIT and a crash between the two statements rolls the void back rather
+ * than leaving it stranded.
+ *
+ * THE ONE HANDLE THAT STILL CANNOT HONOUR IT, stated plainly rather than papered
+ * over: withTransaction's third branch — a plain `{ query }` object that is
+ * neither a pool nor the singleton, i.e. a unit-test stub — runs the callback
+ * inline under autocommit. No production caller passes such a handle (the money
+ * chain passes the handle the bus was given, which is the pool or the singleton),
+ * so the exposure is confined to tests. If one ever did, the exposure would be:
+ * process dies between the two writes, the accrual is void, the surviving net is
+ * never re-accrued, the partner is short by half of what survived, and a retry
+ * reports "nothing_to_void" because the void already landed. The correction is
+ * manual, and the voided row's void_reason names the refund it came from.
  *
  * IDEMPOTENT BY CONSTRUCTION: the UPDATE only touches rows that are not already
- * void and re-accrues only what this very call voided, so a second call voids
- * nothing and writes nothing. The re-accrual carries no transaction or event id,
- * because the voided row still occupies both unique keys — which is also why the
- * re-accrual cannot be retried on its own if the process dies between the two
- * statements. Re-driving it then is a manual correction, and the voided row
- * names the refund it came from.
+ * void and re-accrues only what this very call voided, so a second delivery of
+ * the same refund voids nothing and writes nothing. The re-accrual deliberately
+ * carries no transaction or event id, because the voided row still holds both.
  *
  * @param {{query: Function}} db
  */
 export async function voidForRefund(db, {
   orgId = null, transactionId = null, sourceEventId = null,
-  reason = null, netRemainingCents = null, now = null
+  reason = null, netRemainingCents = null, refundedCents = null, now = null
 } = {}) {
   if (!db) throw new Error("voidForRefund: db is required");
   const why = String(reason || "").trim();
@@ -476,64 +503,85 @@ export async function voidForRefund(db, {
   const evId = asUuid(sourceEventId);
   if (!txId && !evId) return { voided: 0, reaccrued: 0, reason: "missing_context" };
 
-  const upd = await db.query(
-    `UPDATE partner_revenue
-        SET status = 'void', void_reason = $4, updated_at = now()
-      WHERE org_id = $1
-        AND status <> 'void'
-        AND (($2::uuid IS NOT NULL AND transaction_id = $2)
-          OR ($3::uuid IS NOT NULL AND source_event_id = $3))
-      RETURNING id, partner_id, client_id, gross_amount, share_pct_applied, currency`,
-    [orgId, txId, evId, why]
-  );
-  const voided = upd.rows;
-  if (!voided.length) return { voided: 0, reaccrued: 0, reason: "nothing_to_void" };
+  /* Both amounts are validated BEFORE anything is written. A bad figure used to
+     void the row first and throw second, which left the accrual reversed on the
+     strength of an argument the function had already rejected. */
+  const hasNet = netRemainingCents !== null && netRemainingCents !== undefined;
+  if (hasNet && (!Number.isInteger(netRemainingCents) || netRemainingCents < 0)) {
+    throw new RangeError(`voidForRefund: netRemainingCents must be whole cents >= 0: ${netRemainingCents}`);
+  }
+  const hasRefunded = refundedCents !== null && refundedCents !== undefined;
+  if (hasRefunded && (!Number.isInteger(refundedCents) || refundedCents < 0)) {
+    throw new RangeError(`voidForRefund: refundedCents must be whole cents >= 0: ${refundedCents}`);
+  }
 
-  const net = netRemainingCents;
-  if (net === null || net === undefined) {
-    return { voided: voided.length, reaccrued: 0, reason: null, voidedIds: voided.map((r) => r.id) };
-  }
-  if (!Number.isInteger(net) || net < 0) {
-    throw new RangeError(`voidForRefund: netRemainingCents must be whole cents >= 0: ${net}`);
-  }
-  if (net === 0) {
-    return { voided: voided.length, reaccrued: 0, reason: null, voidedIds: voided.map((r) => r.id) };
-  }
-  if (voided.length > 1) {
-    // One net figure cannot be split across several accruals without inventing a
-    // rule for how. Refuse rather than guess; the voids still stand.
-    console.warn(
-      `${ACCRUAL_REFUSED}: ambiguous_net (org=${orgId} voided=${voided.length}). ` +
-      `The refund voided more than one accrual, so the surviving net was not ` +
-      `re-accrued automatically.`
+  return withTransaction(db, async (tx) => {
+    const upd = await tx.query(
+      `UPDATE partner_revenue
+          SET status = 'void', void_reason = $4, updated_at = now()
+        WHERE org_id = $1
+          AND status <> 'void'
+          AND (($2::uuid IS NOT NULL AND transaction_id = $2)
+            OR ($3::uuid IS NOT NULL AND source_event_id = $3))
+        RETURNING id, partner_id, client_id, gross_amount, share_pct_applied, currency`,
+      [orgId, txId, evId, why]
     );
+    const voided = upd.rows;
+    if (!voided.length) return { voided: 0, reaccrued: 0, reason: "nothing_to_void" };
+
+    const voidedIds = voided.map((r) => r.id);
+    // Nothing to re-accrue was asked for: a full reversal, which is the common case.
+    if (!hasNet && !hasRefunded) {
+      return { voided: voided.length, reaccrued: 0, reason: null, voidedIds };
+    }
+    // An explicit net of zero says nothing survived, whichever rows were voided.
+    if (hasNet && netRemainingCents === 0) {
+      return { voided: voided.length, reaccrued: 0, reason: null, voidedIds };
+    }
+    if (voided.length > 1) {
+      // One net figure cannot be split across several accruals without inventing a
+      // rule for how. Refuse rather than guess; the voids still stand.
+      console.warn(
+        `${ACCRUAL_REFUSED}: ambiguous_net (org=${orgId} voided=${voided.length}). ` +
+        `The refund voided more than one accrual, so the surviving net was not ` +
+        `re-accrued automatically.`
+      );
+      return { voided: voided.length, reaccrued: 0, reason: "ambiguous_net", voidedIds };
+    }
+
+    const original = voided[0];
+    /* Derive the survivor from the row that was actually voided, not from
+       anything the caller believed the gross to be. gross_amount is a pg numeric
+       and arrives as a string. */
+    const net = hasNet
+      ? netRemainingCents
+      : Math.max(0, toCents(original.gross_amount) - refundedCents);
+    if (net === 0) {
+      return { voided: voided.length, reaccrued: 0, reason: null, voidedIds };
+    }
+
+    const frozenPct = Number(original.share_pct_applied);
+    const ins = await tx.query(SQL_INSERT_ACCRUAL, [
+      orgId,
+      original.partner_id,
+      original.client_id || null,
+      null,
+      null,
+      fromCents(net),
+      frozenPct,
+      fromCents(applySplit(net, frozenPct)),
+      original.currency || "USD",
+      now || new Date()
+    ]);
+
     return {
-      voided: voided.length, reaccrued: 0, reason: "ambiguous_net",
-      voidedIds: voided.map((r) => r.id)
+      voided: voided.length,
+      reaccrued: ins.rows[0] ? 1 : 0,
+      reason: null,
+      voidedIds: [original.id],
+      reaccrualId: ins.rows[0]?.id || null,
+      netCents: net,
+      sharePct: frozenPct
     };
-  }
-
-  const original = voided[0];
-  const frozenPct = Number(original.share_pct_applied);
-  const ins = await db.query(SQL_INSERT_ACCRUAL, [
-    orgId,
-    original.partner_id,
-    original.client_id || null,
-    null,
-    null,
-    fromCents(net),
-    frozenPct,
-    fromCents(applySplit(net, frozenPct)),
-    original.currency || "USD",
-    now || new Date()
-  ]);
-
-  return {
-    voided: voided.length,
-    reaccrued: ins.rows[0] ? 1 : 0,
-    reason: null,
-    voidedIds: [original.id],
-    reaccrualId: ins.rows[0]?.id || null,
-    sharePct: frozenPct
-  };
+  });
 }

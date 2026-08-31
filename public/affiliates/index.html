@@ -696,21 +696,16 @@
     }).then(function(r){return r.json().then(function(d){return {ok:r.ok,status:r.status,body:d};});})
     .then(function(res){
       var d=res.body||{};
-      if(d.error==='already_registered'){
-        document.getElementById('pform').style.display='none';
-        document.getElementById('success-chk').textContent="✓ ALREADY IN";
-        document.getElementById('success-title').textContent='You already have a login';
-        document.getElementById('success-lead').textContent='Use Log in with the email you just typed. We will not make a second account.';
-        document.getElementById('success-email').textContent=email;
-        document.getElementById('success-pass').textContent='(the password you already set)';
-        var a0=document.getElementById('success-link');
-        a0.href=d.login_url||'/login.html';
-        a0.textContent='Log in';
-        document.getElementById('success-link-label').textContent='Next';
-        document.getElementById('success').style.display='block';
-        document.getElementById('success').scrollIntoView({behavior:'smooth',block:'center'});
-        return;
-      }
+      /* THERE IS NO 'already_registered' BRANCH ANY MORE. This handler used to
+         carry one, because the endpoint used to answer 409 already_registered to
+         any address that had a Fundhub login — which refused the warm buyer this
+         funnel exists to promote, and told a stranger which addresses have an
+         account (W5 finding F2). api/public/partner-apply.mjs stopped returning
+         it, so the branch was unreachable, and what it printed was the very lie
+         the white-label panel below was rewritten to stop telling: "You already
+         have a login", plus a Log in button. An applicant has neither.
+         An affiliate whose address already has a login now comes back ok with
+         password null, and the affiliate branch below says so in a sentence. */
       if(!res.ok||!d.ok){
         b.disabled=false;b.textContent='Submit partner application';
         var msg='Could not send your application. Try again.';

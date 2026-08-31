@@ -15,6 +15,7 @@ import { contractChaser } from './contract-chaser.mjs';
 import { dailyPulse } from './daily-pulse.mjs';
 import { messageDispatchSweeper } from './message-dispatch-sweeper.mjs';
 import { meetTranscriptSweeper } from './meet-transcript-sweeper.mjs';
+import { subscriptionBillingSweeper } from './subscription-billing-sweeper.mjs';
 import { c00CrsSoftPullRequest } from './c-00-crs-soft-pull-request.mjs';
 import { c02InquiryCreated } from './c-02-inquiry-created.mjs';
 import { c02bInquiryRemovalRequested } from './c-02b-inquiry-removal-requested.mjs';
@@ -108,6 +109,26 @@ export const functions = [
      The file's own header carries the full reasoning for what moved. */
   messageDispatchSweeper,
   meetTranscriptSweeper,
+
+  /* THE RECURRING BILLING RAIL. Registered 2026-08-31. Until it, nothing in
+     this platform charged a card on a cycle: 075_subscriptions.sql recorded the
+     arrangement and said so in its own header, so a client or a partner could
+     sit `active` on a priced plan that never billed and nothing could tell the
+     difference between that and one that was paid up.
+
+     REGISTERING IT DOES NOT CHARGE ANYBODY, and that is the state of the
+     processor rather than a disclaimer. Commas' confirmed surface is
+     GET /payments/:id and POST /checkout-sessions — a read and a link a human
+     clicks. There is no merchant-initiated "charge the stored token" call, so
+     src/subscriptions/charger.mjs ships with an EMPTY charge registry and every
+     pass reports "N due, N skipped, no charger configured".
+
+     Two locks in front of the day one exists: a charger has to be registered,
+     AND SUBSCRIPTION_BILLING_ENABLED must be exactly "true". The same gate
+     message-dispatch-sweeper.mjs describes — it moves, it does not disappear.
+
+     COMPLIANCE REVIEW REQUIRED: payment rails and fee timing. */
+  subscriptionBillingSweeper,
   c00CrsSoftPullRequest,
   c02InquiryCreated,
   c02bInquiryRemovalRequested,

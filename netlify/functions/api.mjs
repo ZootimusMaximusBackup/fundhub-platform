@@ -162,6 +162,9 @@ import publicSurveySubmit from "../../api/public/survey-submit.mjs";
 import publicEducationEnroll from "../../api/public/education-enroll.mjs";
 import publicOptimize from "../../api/public/optimize.mjs";
 import publicPartnerApply from "../../api/public/partner-apply.mjs";
+import publicDeclineAutopsy from "../../api/public/decline-autopsy.mjs";
+import publicDeclineAutopsyUpload from "../../api/public/decline-autopsy-upload.mjs";
+import publicDeclineAutopsyReport from "../../api/public/decline-autopsy-report.mjs";
 import publicUnsubscribe from "../../api/public/unsubscribe.mjs";
 import publicAffiliateClick from "../../api/public/affiliate-click.mjs";
 import creativeGenerate from "../../api/creative/generate.mjs";
@@ -171,6 +174,7 @@ import creativeJobs from "../../api/creative/jobs.mjs";
 import creativeApprovals from "../../api/creative/approvals.mjs";
 import creativeActions from "../../api/creative/actions.mjs";
 import creativeRun from "../../api/creative/run.mjs";
+import adintelBoard from "../../api/adintel/board.mjs";
 import contentTiles from "../../api/content/tiles.mjs";
 import contentUpload from "../../api/content/upload.mjs";
 import contentWelcomeVideo from "../../api/content/welcome-video.mjs";
@@ -598,6 +602,19 @@ export const ROUTES = {
      checkout on the keep Assessment title. No auth — same class as survey-submit. */
   "public/optimize": publicOptimize,
   "public/partner-apply": publicPartnerApply,
+  /* The $27 Decline Autopsy. No auth — a stranger from an ad, same class as
+     survey-submit. THE KEYS ARE FLAT ON PURPOSE: the adapter routes
+     "documents/" and "webhooks/" by PREFIX, so a key shaped
+     "public/decline-autopsy/upload" invites exactly the sub-path confusion the
+     documents/ branch already caused once. Three flat keys, three handlers.
+       ...-upload accepts rows only after payment and refuses anything that
+       looks like a name, an SSN, an e-mail or a phone before a byte is stored.
+       ...-report is read with a signed, expiring link — the signature IS the
+       credential, because a $27 buyer has no session, and DELETE on it is the
+       buyer's own "delete my upload" button. */
+  "public/decline-autopsy": publicDeclineAutopsy,
+  "public/decline-autopsy-upload": publicDeclineAutopsyUpload,
+  "public/decline-autopsy-report": publicDeclineAutopsyReport,
   /* The door behind the unsubscribe link in every outbound email. No auth —
      same class as survey-submit: the signed token in the URL is the credential,
      and a person getting out of a mailing list must never be asked to sign in.
@@ -619,6 +636,12 @@ export const ROUTES = {
   "creative/approvals": creativeApprovals,
   "creative/actions": creativeActions,
   "creative/run": creativeRun,
+  /* The Winner's Board read endpoint (W2 Layers 1-2). Partner or staff; a
+     client or affiliate session is refused by requirePrincipal, and staff must
+     name a partner_id so the query still runs inside a scoped transaction.
+     Routed in the same commit as the handler, the migration and the screen —
+     this map is the file that has twice turned a finished feature into a 404. */
+  "adintel/board": adintelBoard,
   /* Content — welcome video upload + locked-tile save. ROLE_SETS.OPS
      (owner, admin). Same people the Content nav item is shown to. */
   "content/tiles": contentTiles,
