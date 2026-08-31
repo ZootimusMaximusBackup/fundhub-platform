@@ -148,6 +148,63 @@ export const OFFERS = Object.freeze({
     productCode: "funding-mastery",
     commasProductTitle: "Consulting Services Program",
     contractTemplateKey: "FUNDING-MASTERY-AGREEMENT"
+  }),
+
+  /* The three self-serve doors on the partner funnel, plus the entry fee.
+     These landed after the units that needed them: src/trials/constants.mjs and
+     api/public/funnel-checkout.mjs each carried their own copy so they could be
+     built before this catalogue caught up, and each holds a drift test that
+     fails if the number here disagrees. This is now the source; those tests are
+     what keep it the only one.
+
+     All four are E-PRODUCTS. Per W0-decisions.md the 50% partner share covers
+     funding and repair only, so none of these product codes may ever appear in
+     FUNDING_PRODUCT_CODES or REPAIR_PRODUCT_CODES. */
+
+  DECLINE_AUTOPSY: Object.freeze({
+    key: "DECLINE_AUTOPSY",
+    name: "Decline Autopsy",
+    priceCents: 2700,
+    financing: false,
+    letters: false,
+    paymentPurpose: "custom",
+    productCode: "decline-autopsy",
+    commasProductTitle: "Consulting Services Assessment"
+  }),
+
+  WINNERS_BOARD: Object.freeze({
+    key: "WINNERS_BOARD",
+    name: "Winner's Board",
+    priceCents: 4700,
+    financing: false,
+    letters: false,
+    paymentPurpose: "custom",
+    productCode: "winners-board",
+    commasProductTitle: "Consulting Services Insights"
+  }),
+
+  LIVE_TRIAL: Object.freeze({
+    key: "LIVE_TRIAL",
+    name: "Live Trial — seven days under your brand",
+    priceCents: 29700,
+    financing: false,
+    letters: false,
+    paymentPurpose: "custom",
+    productCode: "live-trial",
+    commasProductTitle: "Consulting Services Trial"
+  }),
+
+  /* Financeable, because price is a payment question and never a qualification
+     one — the review call decides who becomes a partner, not a lender. */
+  PARTNER_ENTRY: Object.freeze({
+    key: "PARTNER_ENTRY",
+    name: "White-label partner program",
+    priceCents: 1000000,
+    financing: true,
+    letters: false,
+    paymentPurpose: "custom",
+    productCode: "partner-entry",
+    commasProductTitle: "Consulting Services Program"
   })
 });
 
