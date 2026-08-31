@@ -130,6 +130,9 @@ export function computeAccrual({
 
   if (amount === null || amount === undefined || amount === "") return refuse("unknown_amount");
 
+  // NULL is UNKNOWN, and Number(null) is 0 — which would quietly reclassify a
+  // missing rate as "this partner earns nothing" and look like a correct answer.
+  if (sharePct === null || sharePct === undefined || sharePct === "") return refuse("unknown_share_pct");
   const pct = Number(sharePct);
   if (!Number.isFinite(pct)) return refuse("unknown_share_pct");
   if (pct > 100) return refuse("share_pct_out_of_range");
@@ -254,6 +257,21 @@ export async function accrueForPayment(db, {
   // against a different sale is how money lands on the wrong partner's book.
   if (saleId && String(row.sale_id) !== String(saleId)) {
     return { accrued: false, reason: "sale_context_conflict" };
+  }
+
+  /* The partners join is org-scoped. A client carrying a partner_id that the
+     join could not reach means the partner belongs to another org or no longer
+     exists — never a rate of zero. Loud, and its own reason code. */
+  if (row.partner_id && row.revenue_share_pct == null) {
+    console.warn(
+      `${ACCRUAL_REFUSED}: partner_not_found ` +
+      `(org=${orgId} payment=${salePaymentId} partner=${row.partner_id}). ` +
+      `The client names a partner this org cannot see; no revenue was accrued.`
+    );
+    return {
+      accrued: false, reason: "partner_not_found",
+      partnerId: row.partner_id, clientId: row.client_id || null
+    };
   }
 
   const decision = computeAccrual({

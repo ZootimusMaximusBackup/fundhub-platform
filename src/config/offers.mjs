@@ -43,7 +43,13 @@ const COMMAS_TITLE_BY_PRODUCT_CODE = Object.freeze({
   "repair-bundle": "Consulting Services Standard",
   "repair-trial": "Consulting Services Trial",
   "funding-mastery": "Consulting Services Program",
-  "inquiry-removal": "Consulting Services Records"
+  "inquiry-removal": "Consulting Services Records",
+  // The white-label partner add-ons (PARTNER_ADD_ONS below). Listed here as
+  // well as on the add-on so a resolve that only knows the product code still
+  // lands on the right vendor title.
+  "creative-intelligence": "Consulting Services Insights",
+  "dfy-marketing": "Consulting Services Retainer",
+  "lead-flow": "Consulting Services Introductions"
 });
 
 const COMMAS_TITLE_BY_PURPOSE = Object.freeze({
@@ -63,7 +69,7 @@ export function commasProductTitleFor({
 } = {}) {
   if (invoiceId) return COMMAS_INVOICE_PRODUCT_TITLE;
   if (commasProductTitle) return String(commasProductTitle).trim();
-  const offer = getOffer(offerKey);
+  const offer = getOffer(offerKey) || getPartnerAddOn(offerKey);
   if (offer?.commasProductTitle) return offer.commasProductTitle;
   const code = String(productCode || offer?.productCode || "").trim().toLowerCase();
   if (code && COMMAS_TITLE_BY_PRODUCT_CODE[code]) return COMMAS_TITLE_BY_PRODUCT_CODE[code];
@@ -140,11 +146,155 @@ export const OFFERS = Object.freeze({
     letters: false,
     paymentPurpose: "custom",
     productCode: "funding-mastery",
-    commasProductTitle: "Consulting Services Program"
+    commasProductTitle: "Consulting Services Program",
+    contractTemplateKey: "FUNDING-MASTERY-AGREEMENT"
   })
 });
 
 export const OFFER_KEYS = Object.freeze(Object.keys(OFFERS));
+
+// ───────────────────────────────────────────────────────────────────────────
+// THE WHITE-LABEL PARTNER ADD-ON MENU (docs/specs/W6-pricing-menu.md).
+// Owner-set 2026-08-31. COMPLIANCE REVIEW REQUIRED — recurring fee timing.
+//
+// A partner pays $10,000 once to join and nothing monthly. These three are the
+// menu on top of that: stack freely, cancel freely, none a prerequisite for
+// another. The 50/50 split never moves for any of them.
+//
+// WHY THESE ARE NOT IN `OFFERS`, AND WHY THAT IS NOT A STYLE CHOICE. `OFFERS`
+// is the CLIENT catalogue — line 1 of this file calls it the closer-deck
+// catalog, src/sales/closer-deck.mjs feeds every entry of it to the client
+// present page through offersForClient(), sendDeckPayLink() will build a
+// client pay link for any key in it, and api/pipeline-clients.mjs accepts any
+// productCode in it as a product to put a CLIENT on a board. Dropping three
+// partner-only add-ons in there would offer a client "Done-For-You Marketing,
+// $2,497/month" on the deck. Same shape, same Object.freeze, same integer
+// cents, same commasProductTitleFor resolution — separate map, because the
+// audience is different.
+//
+// THE SHAPE GAINS ONE FIELD THE Offer SHAPE HAS NO WAY TO SAY: `billing`.
+// Every existing Offer is a single charge on a pay link, so nothing in the
+// Offer typedef can express "every month" or "each time one is delivered".
+// `billing` says which, and `unitLabel` says what one unit is when the answer
+// is per_unit. priceCents stays what it is everywhere else — integer cents for
+// ONE billing unit. Nothing existing was bent to fit.
+//
+// `financing` IS DELIBERATELY ABSENT. Whether FundHub finances a monthly
+// add-on the way it finances the $10,000 entry is an owner decision nobody has
+// made. Absent means not recorded. It is not false.
+//
+// NONE OF THESE EVER PAYS A PARTNER. They are FundHub revenue: `partnerShare`
+// is false on all three, their products.code must never join the partner
+// accrual allow-list W1-money-model.md §7 specifies, and no partner_revenue
+// row may be written for one. src/config/partner-add-ons.test.mjs holds that.
+// ───────────────────────────────────────────────────────────────────────────
+
+/** @typedef {"CREATIVE_INTELLIGENCE"|"DFY_MARKETING"|"LEAD_FLOW"} PartnerAddOnKey */
+
+/**
+ * @typedef {object} PartnerAddOn
+ * @property {PartnerAddOnKey} key
+ * @property {string} name
+ * @property {number} priceCents  integer cents for ONE billing unit
+ * @property {"monthly"|"per_unit"} billing  how often priceCents is charged
+ * @property {string|null} unitLabel  what one unit is, when billing is per_unit
+ * @property {"partner"} audience  sold to a partner, never to a client
+ * @property {boolean} partnerShare  false: FundHub revenue, never a partner_revenue row
+ * @property {boolean} letters  DS-02 / letter pack may never fire for these
+ * @property {string} productCode  products.code (db/migrations/271), and the
+ *   `tier` written on the partner's `subscriptions` row
+ * @property {string} commasProductTitle  vendor checkout title only
+ * @property {string} summary  one plain line, for a menu screen
+ */
+
+/** @type {Readonly<Record<PartnerAddOnKey, PartnerAddOn>>} */
+export const PARTNER_ADD_ONS = Object.freeze({
+  CREATIVE_INTELLIGENCE: Object.freeze({
+    key: "CREATIVE_INTELLIGENCE",
+    name: "Creative Intelligence",
+    priceCents: 29700,
+    billing: "monthly",
+    unitLabel: null,
+    audience: "partner",
+    partnerShare: false,
+    letters: false,
+    productCode: "creative-intelligence",
+    commasProductTitle: "Consulting Services Insights",
+    summary:
+      "Hooks written for their offer, their own segment so partners never bid against each other, the Winner's Board, and their numbers read back to them."
+  }),
+  DFY_MARKETING: Object.freeze({
+    key: "DFY_MARKETING",
+    name: "Done-For-You Marketing",
+    priceCents: 249700,
+    billing: "monthly",
+    unitLabel: null,
+    audience: "partner",
+    partnerShare: false,
+    letters: false,
+    productCode: "dfy-marketing",
+    commasProductTitle: "Consulting Services Retainer",
+    // The partner's own ad spend is theirs and never lands on FundHub's books,
+    // so it is not a price here and must not be added to one.
+    summary:
+      "FundHub builds the creative, runs the campaigns and manages the ad account. The partner still pays for their own ads on top."
+  }),
+  LEAD_FLOW: Object.freeze({
+    key: "LEAD_FLOW",
+    name: "Lead Flow",
+    priceCents: 9900,
+    billing: "per_unit",
+    unitLabel: "booked call",
+    audience: "partner",
+    partnerShare: false,
+    letters: false,
+    productCode: "lead-flow",
+    commasProductTitle: "Consulting Services Introductions",
+    summary:
+      "Booked, screened calls with business owners handed straight to the partner."
+  })
+});
+
+export const PARTNER_ADD_ON_KEYS = Object.freeze(Object.keys(PARTNER_ADD_ONS));
+
+/** One add-on by key, or null. Deliberately separate from getOffer(): a client
+ *  offer and a partner add-on must never resolve through the same door. */
+export function getPartnerAddOn(key) {
+  if (!key) return null;
+  return PARTNER_ADD_ONS[String(key)] || null;
+}
+
+/** "$297/month" · "$99 per booked call". Composed, never a second copy of a
+ *  price. Returns null when the price is not a number rather than inventing a
+ *  free one. */
+export function partnerAddOnPriceLabel(addOn) {
+  const a = typeof addOn === "string" ? getPartnerAddOn(addOn) : addOn;
+  const price = formatCents(a && a.priceCents);
+  if (!price) return null;
+  if (a.billing === "per_unit") {
+    return a.unitLabel ? `${price} per ${a.unitLabel}` : `${price} per unit`;
+  }
+  if (a.billing === "monthly") return `${price}/month`;
+  return price;
+}
+
+/** The menu, as JSON a partner screen can render. No internals. */
+export function partnerAddOnsForMenu() {
+  return PARTNER_ADD_ON_KEYS.map((k) => {
+    const a = PARTNER_ADD_ONS[k];
+    return {
+      key: a.key,
+      name: a.name,
+      summary: a.summary,
+      priceCents: a.priceCents,
+      priceDisplay: formatCents(a.priceCents),
+      priceLabel: partnerAddOnPriceLabel(a),
+      billing: a.billing,
+      unitLabel: a.unitLabel,
+      productCode: a.productCode
+    };
+  });
+}
 
 export function getOffer(key) {
   if (!key) return null;
