@@ -164,8 +164,23 @@ test("pipeline cards mark sms/email needs_reply when that person wrote last", { 
    left out of the round's lender breakdown and no success fee is ever billed
    for it. So the card carries the fact.
 
-   NULL ONLY. A recorded 0 is a fact somebody typed and is not a missing
-   amount. This test fails if the flag ever widens to `COALESCE(...) = 0`. */
+   NULL IS UNKNOWN AND STILL SURVIVES — nothing here turns an unknown amount
+   into 0 (CLAUDE.md §12).
+
+   REVISED 2026-08-30. This used to say "NULL ONLY", and that was wrong in two
+   ways, both of which were live defects on the board:
+
+     * A recorded 0 is not a fact anybody could bill. guardFundedAmount refuses
+       the Funded move on NULL OR <= 0, so a legacy 0 was clean on the board and
+       blocked at the move — a wall with no warning in front of it.
+     * An approval somebody has recorded as NOT COUNTING (the "Doesn't count"
+       button, db/migrations/272_approval_excluded.sql, shipped the same day
+       this flag did) still said "Amount needed" on its card, forever.
+
+   The flag now reads the same string the biller reads —
+   unpricedApprovalConditions() in src/funding/success-fee.mjs — so the board,
+   the Funded guard and the invoice cannot drift apart again. Both cases are
+   asserted below. */
 test("a card flags an approval that has no dollar amount, and a recorded amount clears it",
   { skip: !HAS_DB }, async () => {
     const cardOn = async (key) => {
@@ -196,6 +211,42 @@ test("a card flags an approval that has no dollar amount, and a recorded amount 
     await db.query(`UPDATE applications SET approved_amount = 45000 WHERE id = $1`, [appId]);
     assert.equal((await cardOnBoard()).approval_amount_missing, false,
       "once the dollars are recorded the card stops asking");
+
+    // A RECORDED ZERO IS NOT A PRICED APPROVAL. It cannot be invoiced, and
+    // guardFundedAmount refuses the Funded move on it, so the board has to say
+    // so too or the refusal arrives with no warning in front of it.
+    await db.query(`UPDATE applications SET approved_amount = 0 WHERE id = $1`, [appId]);
+    assert.equal((await cardOnBoard()).approval_amount_missing, true,
+      "a zero cannot be billed, so the card must still ask for the amount");
+
+    // MARKED AS NOT COUNTING — the way out. The bank's yes is untouched; what
+    // is recorded is that we are not billing for it. The card must stop asking.
+    await db.query(
+      `UPDATE applications
+          SET approved_amount = NULL,
+              approval_excluded_at = now(),
+              approval_excluded_by = 'Dana Advisor',
+              approval_exclusion_reason = 'client never used it'
+        WHERE id = $1`,
+      [appId]
+    );
+    assert.equal((await cardOnBoard()).approval_amount_missing, false,
+      "an approval recorded as not counting must stop asking for an amount");
+    assert.equal(
+      (await db.query(`SELECT status FROM applications WHERE id = $1`, [appId])).rows[0].status,
+      "Approved",
+      "excluding an approval must not rewrite what the bank said");
+
+    // Undo it and the ask comes straight back.
+    await db.query(
+      `UPDATE applications
+          SET approval_excluded_at = NULL, approval_excluded_by = NULL,
+              approval_exclusion_reason = NULL
+        WHERE id = $1`,
+      [appId]
+    );
+    assert.equal((await cardOnBoard()).approval_amount_missing, true,
+      "reinstating an approval puts it back in the queue");
 
     // A DENIED bank with no amount is not a missing amount — a denial has none.
     await db.query(`UPDATE applications SET status = 'Denied', approved_amount = NULL WHERE id = $1`, [appId]);

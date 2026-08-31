@@ -207,6 +207,19 @@
   .hl-note{color:var(--text-dim);overflow:hidden;
     text-overflow:ellipsis;white-space:nowrap;min-width:0;}
   .hl-note[hidden]{display:none;}
+  /* WHEN THE LINK IS GONE, THE NOTE IS THE WHOLE MESSAGE, SO LET IT WRAP.
+     .hl-note is one clipped line by default because it normally sits beside
+     the jump link and must not push it off the row. But when a filter hides
+     that link the note carries the only thing left — which client is waiting
+     longest, and at what stage — and it is the first note on this screen built
+     from a client's own name. Measured at 1440px: "Christopher Stanbridge — 9d
+     in stage, Round Submitted" lost 39px and "Maria Gonzalez-Hernandez — 9d in
+     stage, Action Required" lost 61px, both cutting the stage off the end. The
+     640px cap on .hl-next already relaxes on phones (see the max-width:640px
+     block); this does the same thing on the one row where the link is absent,
+     at every width. */
+  .hl-next:has(> .hl-next-btn[hidden]) .hl-note{
+    white-space:normal;overflow:visible;text-overflow:clip;}
   /* Where the jump lands, so the eye can find the card it was sent to. A ring,
      not a fill — it has to read on a card that is already tinted for hold.
 

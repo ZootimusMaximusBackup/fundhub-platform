@@ -99,7 +99,18 @@ test("client-control-panel.html binds the live URL client and does not fake a pu
   assert.ok(!/JSON\.stringify\(\{[^}]*simulate/.test(html), "CCP must not send simulate on a staff pull");
   assert.ok(html.includes("/api/read/lender-matches"), "Generate Apps must refresh the live lender match list");
   assert.ok(html.includes("/api/applications"), "Bank yes/no must stamp a play on the existing applications door");
-  assert.ok(html.includes("/api/applications?client_id="), "Apply list must read saved plays back onto the row");
+  /* RE-POINTED 2026-08-30, same requirement. The apply list still reads the
+     saved plays and amounts back onto the rows; the URL moved from a raw fetch
+     in the page to FHData.applications() in the data layer. That was not
+     tidying: the count of approvals still waiting on a dollar amount now leads
+     this screen, and a raw fetch cannot tell "we looked and nothing is waiting"
+     from "we could not look" — both arrive as no rows. get() classifies the
+     failure so the headline can say "could not check" instead of showing an
+     all-clear it never established. */
+  assert.ok(html.includes("FHData.applications("),
+    "Apply list must read saved plays and amounts back onto the row");
+  assert.ok(fs.readFileSync(path.join(APP, "data.js"), "utf8").includes("/api/applications?client_id="),
+    "FHData.applications must still be the applications read for one client");
   assert.ok(html.includes("Play name (optional)"), "staff can type or pick a play");
   assert.ok(
     html.includes("Apply shows the client email, not a Fundhub address"),

@@ -291,8 +291,12 @@ export function buildView(payload) {
    answer. Named here, and shown in the banner, because an invented number sitting
    next to live ones is indistinguishable from a real one. Same treatment as the
    "Worked" stat on inquiry-remover. */
+/* "today's pipeline" and "the shift stats" were in this sentence until
+   2026-08-30. Both tiles were cut from the screen on 2026-08-17 and
+   src/http/closer-ui-honest.test.mjs now forbids their return, so naming them
+   read as a promise about something that is never coming back. */
 export const NOT_SOURCED =
-  "not sourced yet: today's pipeline, the shift stats, the Deal Math panel " +
+  "not sourced yet: the Deal Math panel " +
   "(net cash, monthly obligation, negative-amortization cliff) and the per-card minimums";
 
 /** bannerText — what the green banner says when real rows are on screen. */

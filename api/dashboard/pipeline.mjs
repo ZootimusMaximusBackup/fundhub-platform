@@ -17,6 +17,9 @@ import { requireSessionOrg } from "../../src/http/session-org.mjs";
 import { safeError } from "../../src/http/health.mjs";
 import { orgDemoModeEnabled } from "../../src/demo/exclude-demo.mjs";
 import { surveyFicoBand } from "../../src/survey/cf-question-map.mjs";
+// One definition of "a bank yes that is not worth anything yet" — see the
+// EXISTS below and the block comment on the export itself.
+import { unpricedApprovalConditions } from "../../src/funding/success-fee.mjs";
 
 // Stages first, so a stage with no cards still renders as an empty column
 // rather than vanishing from the board. Org always from the session.
@@ -86,32 +89,29 @@ const CARDS_SQL = `
        in, that approval is left out of the round's lender breakdown
        (src/funding/closeout.mjs filters COALESCE(approved_amount,0) > 0), so
        the client is never billed a success fee for it.
-       NULL means UNKNOWN here, and only NULL. A recorded 0 is a fact somebody
-       entered and is not flagged.
 
-       ── THREE THINGS THIS USED TO GET WRONG (fixed 2026-08-30) ─────────────
-       The board is now the source of the "waiting on us" headline at the top
-       of pipeline.html, so an over-broad flag is no longer only an untidy
-       chip — it inflates the one number the screen exists to answer. Each of
-       the three below made the count say MORE work than actually exists.
+       THE CONDITION IS NOT WRITTEN HERE ANY MORE. It is the same string the
+       biller uses (src/funding/success-fee.mjs), for two reasons that were both
+       live defects on 2026-08-30:
 
-       1. AN EXCLUDED APPROVAL IS NOT WAITING. Migration 272 added
-          approval_excluded_at: a recorded decision, with a name and a time on
-          it, that this approval does not count — withdrawn, or never used.
-          The Client Control Panel has always honoured it
-          (isWaitingOnAmount, client-control-panel.html) and this board did
-          not, so the two screens disagreed about the same client and the
-          board kept chasing a question somebody had already answered.
+         * EXCLUSION. The "Doesn't count" button and the columns behind it
+           (db/migrations/272_approval_excluded.sql) shipped the same day this
+           flag did, and this query never learned about them — so an approval
+           somebody had explicitly recorded as not counting, with their name and
+           a reason against it, kept saying "Amount needed" on its board card
+           forever. The button looked broken on the board the fulfillment team
+           actually watches.
+         * A NON-POSITIVE AMOUNT. This asked for NULL only, while
+           guardFundedAmount refuses the Funded move on NULL OR <= 0. A legacy
+           0 was therefore clean on the board and blocked at the move — a wall
+           with no warning in front of it. One definition, one answer.
 
-       2. THE ROUND, NOT THE WHOLE FILE. This matched every application the
-          client has ever had, so one blank amount left behind in round 1 kept
-          flagging through rounds 2 and 3 forever. Only the client's newest
-          round is the round anybody is working.
-
-       3. THE RAIL. One CARDS_SQL serves all eight rails, so the same client's
-          Sales card and Inquiry Removal card carried a funding chip that
-          nobody looking at those boards can act on. Applications live inside
-          funding rounds; the flag belongs on the funding rails only. */
+       NULL still means UNKNOWN and still survives (CLAUDE.md §12): nothing here
+       defaults an unknown amount to 0. */
+    /* THE RAIL. One CARDS_SQL serves all eight rails, so without this the same
+       client's Sales card and Inquiry Removal card carried a funding chip that
+       nobody looking at those boards can act on. Applications live inside
+       funding rounds; the flag belongs on the funding rails only. */
     (
       p.key IN ('funding_card_stacking', 'funding_altfin')
       AND EXISTS (
@@ -119,17 +119,7 @@ const CARDS_SQL = `
           FROM applications a
          WHERE a.client_id = c.id
            AND a.org_id = p.org_id
-           AND a.status = 'Approved'
-           AND a.approved_amount IS NULL
-           AND a.approval_excluded_at IS NULL
-           AND a.funding_round_id = (
-                 SELECT fr.id
-                   FROM funding_rounds fr
-                  WHERE fr.client_id = c.id
-                    AND fr.org_id = p.org_id
-                  ORDER BY fr.round_number DESC, fr.created_at DESC
-                  LIMIT 1
-               )
+           AND ${unpricedApprovalConditions("a")}
       )
     ) AS approval_amount_missing
   FROM cards cd

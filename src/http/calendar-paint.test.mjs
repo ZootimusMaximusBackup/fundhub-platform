@@ -91,10 +91,12 @@ const KNOWN_UNFIXED = {
     "T11 — the partner picker is already fixed (it re-books itself for later). Two " +
     "guarded reads remain during page parse: partnerParam() ~636 falls back to the " +
     "address bar, and wireAll() ~1914 silently skips its banner.",
-  "client-control-panel.html":
-    "unowned — the Funding Apply block ~1106 reads FHData.param during page parse. It " +
-    "falls back to reading the address bar directly and gets the same answer, so " +
-    "nothing is visibly wrong; listed so the count stays honest."
+  // client-control-panel.html was here and is FIXED (2026-08-30). Its Funding
+  // Apply block now waits for DOMContentLoaded like every other screen on the
+  // three accepted shapes above. It had to: the count of bank approvals still
+  // waiting on a dollar amount now leads that screen, and only FHData can tell
+  // a failed read from an empty file, so the block can no longer run before
+  // FHData exists. Its line is deleted rather than reworded, per the note above.
 };
 
 /* Screens that must be clean, named so a rename or a delete shows up as a
