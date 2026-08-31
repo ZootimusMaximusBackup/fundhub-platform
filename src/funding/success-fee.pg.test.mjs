@@ -27,6 +27,7 @@ import { handle as f07, EMAIL_TEMPLATE_KEY as F07_EMAIL, SMS_TEMPLATE_KEY as F07
   from "../workflows/f-07-funding-locked.mjs";
 import { fakeStep } from "../workflows/test-support.mjs";
 import { NO_CONFIRMED_APPROVALS, NO_AGREED_FEE_PERCENT } from "./success-fee.mjs";
+import { setApprovalExclusion } from "../applications/status.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
 const MARK = `fee_basis_${Date.now().toString(36)}`;
@@ -103,11 +104,12 @@ describe("success fee on confirmed approvals (pg)",
     )).rows[0];
   }
 
+  // Returns the new application's id, so a test can act on that exact approval.
   const addApproval = (clientId, roundId, bank, amount) => db.query(
     `INSERT INTO applications (org_id, funding_round_id, client_id, bank, status, approved_amount)
-     VALUES ($1, $2, $3, $4, 'Approved', $5)`,
+     VALUES ($1, $2, $3, $4, 'Approved', $5) RETURNING id`,
     [orgId, roundId, clientId, bank, amount]
-  );
+  ).then((r) => r.rows[0].id);
 
   const invoicesFor = (clientId) => db.query(
     `SELECT * FROM invoices WHERE client_id = $1`, [clientId]
@@ -238,8 +240,22 @@ describe("success fee on confirmed approvals (pg)",
     const round = await walkToApproved(clientId);
     // Two banks said yes. Nobody has been told the limits yet, which is a real
     // state (owner-set 2026-08-29). Nothing here is confirmed.
-    await addApproval(clientId, round.id, "Bank A", null);
-    await addApproval(clientId, round.id, "Bank B", null);
+    const a = await addApproval(clientId, round.id, "Bank A", null);
+    const b = await addApproval(clientId, round.id, "Bank B", null);
+
+    /* SINCE 2026-08-30 a blank approval holds the round open, so this state is
+       reached the only way it now can be: somebody records that neither
+       approval counts. That makes this the test for the ESCAPE'S WORST EDGE —
+       exclude everything and there is nothing left to bill. The answer must
+       still be no invoice and a named reason, never a $0 invoice. */
+    assert.equal((await move(clientId, "funded", { fundedAmount: 40000 })).moved, false,
+      "two blank approvals must hold the round open");
+    for (const appId of [a, b]) {
+      await setApprovalExclusion(db, {
+        orgId, applicationId: appId, excluded: true,
+        reason: "Never used", staff: { name: "Funding Advisor" }
+      });
+    }
 
     const funded = await move(clientId, "funded", { fundedAmount: 40000 });
     assert.equal(funded.moved, true, funded.message);

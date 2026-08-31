@@ -39,7 +39,7 @@ import { db, close } from "../db.mjs";
 import { resolveDefaultOrg } from "../auth/org.mjs";
 import { _resetOrgCache } from "../events/bus.mjs";
 import { clearHandlers } from "../events/registry.mjs";
-import { logBankDecision } from "./status.mjs";
+import { logBankDecision, setApprovalExclusion } from "./status.mjs";
 import { guardFundedAmount } from "../funding/card-stacking-rounds.mjs";
 import { moveCardToStage } from "../workflows/cards.mjs";
 import { createFundingCloseout } from "../funding/closeout.mjs";
@@ -172,10 +172,16 @@ describe("approval now, amount later (pg)", { skip: !HAS_DB ? "no DATABASE_URL" 
   });
 
   test("2. an approval with no amount still cannot be marked funded", async () => {
-    // The guard itself, asked directly.
+    /* THE REASON CODE CHANGED ON 2026-08-30, and it got more specific.
+       It used to be `funded_amount_required` — the round was refused because
+       nothing could suggest a funded amount. Now the blank approval is refused
+       in its own right, BEFORE the funded amount is even considered, because we
+       bill a percent of the approvals that carry an amount and a blank one is
+       never invoiced. Same answer to the same question — the card does not
+       reach Funded — but the refusal now names the bank to go and fill in. */
     const guard = await guardFundedAmount(db, { orgId, clientId });
     assert.equal(guard.ok, false, "the funded guard must still refuse");
-    assert.equal(guard.reason, "funded_amount_required");
+    assert.equal(guard.reason, "approval_amounts_missing");
     assert.equal(guard.suggestedFundedAmount, null,
       "an approval with no amount suggests nothing — it must not suggest 0");
 
@@ -187,7 +193,7 @@ describe("approval now, amount later (pg)", { skip: !HAS_DB ? "no DATABASE_URL" 
       stageKey: "funded"
     });
     assert.equal(move.moved, false, "the card must not reach Funded");
-    assert.equal(move.reason, "funded_amount_required");
+    assert.equal(move.reason, "approval_amounts_missing");
 
     const round = (await db.query(
       `SELECT status, funded_amount FROM funding_rounds WHERE client_id = $1`,
@@ -227,11 +233,32 @@ describe("approval now, amount later (pg)", { skip: !HAS_DB ? "no DATABASE_URL" 
   test("4. with the amount in, the round funds — and the closeout ignores an unpriced approval", async () => {
     // A SECOND bank that said yes and whose limit nobody has learned yet. It
     // must not drag the fee down, and it must not crash the closeout.
-    await logBankDecision(db, {
+    const unpriced = await logBankDecision(db, {
       orgId,
       clientId,
       lenderId: lenderB,
       status: "Approved",
+      staff: { name: "Funding Advisor" }
+    });
+
+    /* SINCE 2026-08-30 THAT SECOND APPROVAL BLOCKS THE ROUND. It would never be
+       invoiced — we bill a percent of the approvals that carry an amount — so
+       closing the round on top of it is money we silently never charge for.
+       The refusal names the bank. */
+    const blocked = await moveCardToStage(db, {
+      orgId, clientId, pipelineKey: "funding_card_stacking", stageKey: "funded"
+    });
+    assert.equal(blocked.moved, false, "an unpriced approval must hold the round open");
+    assert.equal(blocked.reason, "approval_amounts_missing");
+
+    /* The way out, and the only way out: somebody says on the record that this
+       approval does not count. The bank's yes is NOT changed — this is not a
+       denial — so everything below still reads it as an approval. */
+    await setApprovalExclusion(db, {
+      orgId,
+      applicationId: unpriced.id,
+      excluded: true,
+      reason: "Bank never told us the limit and the client did not use it",
       staff: { name: "Funding Advisor" }
     });
 
