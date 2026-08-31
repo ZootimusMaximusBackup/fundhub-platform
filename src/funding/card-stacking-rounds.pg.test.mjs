@@ -175,7 +175,10 @@ describe("card-stacking round emitter (pg)", { skip: !HAS_DB ? "no DATABASE_URL"
     )).rows[0];
     assert.ok(closeout, "closeout row");
     assert.equal(Number(closeout.total_fee), 3500, "10% of 35000");
-    assert.equal(Number(closeout.total_approved_amount), 35000, "fee basis = funded_amount");
+    // Fee basis = CONFIRMED APPROVALS (owner-set 2026-08-30). The two Approved
+    // applications above carry 20000 + 15000, which is also what the funded
+    // amount prefilled to — so the number is unchanged here and the basis is not.
+    assert.equal(Number(closeout.total_approved_amount), 35000, "fee basis = confirmed approvals");
 
     /* NO back-end ledger row, and that is the correct outcome.
 
