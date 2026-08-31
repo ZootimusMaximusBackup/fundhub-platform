@@ -2302,9 +2302,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
   /* One place that decides whether a saved application is still waiting.
      Approved, and no amount recorded. A recorded 0 is a fact, not an unknown,
-     and would not count here — but nothing in this screen can create one. */
+     and would not count here — but nothing in this screen can create one.
+
+     An EXCLUDED approval is not waiting either. Somebody has already answered
+     the question — this one does not count, it was withdrawn or never used —
+     so it is not chased, not counted in the sentence at the top, and not billed.
+     That is a recorded decision with a name and a time on it (migration 272),
+     not a dismissed warning. */
+  function isExcluded(app) {
+    return !!(app && app.approval_excluded_at);
+  }
   function isWaitingOnAmount(app) {
     if (!app || String(app.status || "") !== "Approved") return false;
+    if (isExcluded(app)) return false;
     var a = app.approved_amount;
     return a === null || a === undefined || String(a).trim() === "";
   }
@@ -2326,7 +2336,10 @@ document.addEventListener("DOMContentLoaded", function () {
     waitEl.textContent = (count === 1
       ? "1 bank approval is still waiting on its dollar amount."
       : count + " bank approvals are still waiting on their dollar amount.")
-      + " Type it in the Approved $ box and press Bank yes. Until then this round cannot be billed.";
+      + " Type it in the Approved $ box and press Bank yes."
+      + " Until then this round cannot be marked Funded, because an approval with no"
+      + " amount is never billed. If one was withdrawn or never used, press"
+      + " “Doesn’t count” on its row.";
     waitEl.hidden = false;
   }
 
@@ -2436,6 +2449,69 @@ document.addEventListener("DOMContentLoaded", function () {
           needChip.style.cssText = "font-size:var(--fs-caption);padding:2px 8px;border-radius:999px;"
             + "background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;white-space:nowrap;font-weight:600";
           playRow.appendChild(needChip);
+
+          /* ── THE WAY OUT ──────────────────────────────────────────────────
+             A round cannot be moved to Funded while any bank yes on it has no
+             dollar amount, because we bill a percent of the approvals that
+             carry an amount and a blank one is never invoiced
+             (guardFundedAmount, src/funding/card-stacking-rounds.mjs).
+
+             Some approvals are never going to have an amount: the bank said
+             yes and the client never used the card, or the approval was pulled.
+             Without this button one dead row would hold the round open for
+             good, and a revenue guard would become a support ticket.
+
+             IT IS NOT A "BANK NO". The bank's yes is left exactly as it is, so
+             the approval rate still counts it. This records the separate thing
+             — that WE are not billing for it — against the name of whoever
+             said so. A reason is required; cancelling changes nothing. */
+          var skip = document.createElement("button");
+          skip.type = "button";
+          skip.hidden = true;
+          if (m.id) skip.setAttribute("data-approval-skip-lender-id", m.id);
+          skip.style.cssText = "padding:4px 8px;font-size:var(--fs-caption)";
+          skip.addEventListener("click", function () {
+            var appId = skip.getAttribute("data-application-id");
+            if (!appId) return;
+            var undo = skip.getAttribute("data-excluded") === "1";
+            var payload = {
+              action: undo ? "reinstate_approval" : "exclude_approval",
+              application_id: appId
+            };
+            if (!undo) {
+              var why = window.prompt(
+                "This approval will stop counting toward the round, so it will not "
+                + "be billed.\n\nThe bank's yes is not changed.\n\n"
+                + "Why does it not count? (for example: client never used it, "
+                + "or the bank withdrew it)",
+                ""
+              );
+              if (why === null || !String(why).trim()) {
+                statusEl.textContent = "No reason given, so nothing was changed.";
+                return;
+              }
+              payload.reason = String(why).trim();
+            }
+            var hh = { accept: "application/json", "content-type": "application/json" };
+            if (t) hh.authorization = "Bearer " + t;
+            fetch("/api/applications", {
+              method: "POST",
+              headers: hh,
+              body: JSON.stringify(payload)
+            }).then(function (r) { return r.json(); }).then(function (res) {
+              if (res && res.ok) {
+                statusEl.textContent = undo
+                  ? "That approval counts again. It needs a dollar amount before the round can be funded."
+                  : "Marked as not counting. This round can be funded without it.";
+                return refreshSaved();
+              }
+              statusEl.textContent = (res && (res.message || res.error))
+                || "Could not change whether that approval counts.";
+            }).catch(function () {
+              statusEl.textContent = "Could not change whether that approval counts.";
+            });
+          });
+          playRow.appendChild(skip);
 
           function logBank(status) {
             var payload = {
@@ -2549,6 +2625,26 @@ document.addEventListener("DOMContentLoaded", function () {
                   // Never overwrite something a person is part-way through typing.
                   if (box && !box.value && saved) box.value = saved;
                   if (chip) chip.hidden = !isWaitingOnAmount(app);
+
+                  /* The "doesn't count" button shows only where it can help:
+                     on an approval still missing its amount, and on one already
+                     excluded so the decision can be undone. Never on a denial,
+                     and never on an approval that is already priced. */
+                  var skipBtn = listEl.querySelector('[data-approval-skip-lender-id="' + app.lender_id + '"]');
+                  if (skipBtn) {
+                    var off = isExcluded(app);
+                    var show = off || isWaitingOnAmount(app);
+                    skipBtn.hidden = !show;
+                    skipBtn.setAttribute("data-application-id", app.id || "");
+                    skipBtn.setAttribute("data-excluded", off ? "1" : "");
+                    skipBtn.textContent = off ? "Not counted — undo" : "Doesn't count";
+                    skipBtn.title = off
+                      ? ("Marked as not counting"
+                        + (app.approval_excluded_by ? (" by " + app.approval_excluded_by) : "")
+                        + (app.approval_exclusion_reason ? (" — " + app.approval_exclusion_reason) : "")
+                        + ". Press to make it count again.")
+                      : "The bank said yes but there is no amount. Press if it was withdrawn or never used.";
+                  }
                 }
                 /* Counted even with no lender on the row. An imported approval
                    that carries only a bank name has no row here to chip, and an
