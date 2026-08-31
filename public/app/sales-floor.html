@@ -26,7 +26,16 @@
   --ok:#A8D8B0; --warn:#F5CE8F; --alert:#F2A69B; --info:#A9C6E8; --accent:#C4B3E5;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+/* THIS 14px IS ALIVE — DO NOT DELETE IT. The brand's `font-size:inherit
+   !important` (fundhub-brand.css:184-186) is a DESCENDANT selector: it only
+   reaches things inside .app / .app-shell / .shell / .main / .fh-maxw. <body>
+   is none of those, and neither is the chrome the shell hangs straight off it —
+   shell.js:1644 appends the ⌘K search overlay to document.body, and
+   chat-widget.js:77/89 append the chat button and panel. Those inherit from
+   <body> and nothing else. Deleting this line was MEASURED at 1440x900 on
+   2026-08-30: the ⌕ glyph in the search bar went 14px -> 16px, its box
+   8.44x21 -> 9.64x24, and the search bar row 50px -> 53px tall. */
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
 
 .eyebrow{font-family:var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--gray)}
 .eyebrow::before{content:"";display:inline-block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;margin-right:9px;vertical-align:middle}
@@ -36,11 +45,14 @@ body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-heigh
 
 /* ---------- the ONE size escape hatch (UI-STANDARDS §12.7) ---------------
    fundhub-brand.css:184-186 puts `font-size:inherit !important` on every
-   element inside .app-shell, so a plain px size written in this file has
-   never once painted. 27 of them were sitting here doing nothing. The ones
-   whose class the brand file already sizes (.eyebrow .chip .note .sub .big
-   .vl) are simply gone, and the row, cell and button text that should be
-   body text is left at --fs-body, which is what it was already rendering
+   element INSIDE .app-shell, so a plain px size on an element in this
+   screen's own markup never painted. This file had 27 px sizes. 25 of them
+   were inside the shell and dead; the other TWO were not — `body` and the
+   `.row` the chat widget reuses both sit outside every wrapper, so they are
+   still written above with the measurement that proves it. Of the 25 dead
+   ones, the classes the brand file already sizes (.eyebrow .chip .note .sub
+   .big .vl) are simply gone, and the row, cell and button text that should
+   be body text is left at --fs-body, which is what it was already rendering
    at. What is left below is this screen's OWN class names that are
    captions: the mono caps label over each metric and each table column,
    the muted sub-line under a name or a number, and the panel section
@@ -103,7 +115,12 @@ header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-
 .panel{border:1px solid var(--line);border-radius:10px;padding:16px;background:var(--paper)}
 .panel h3{font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:13px}
 
-.row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+/* This 13px is dead for THIS screen's own rows — they are inside .app-shell —
+   but chat-widget.js:154/160/161/173 renders <div class="row"> inside
+   #fh-chat-foot, which hangs off <body>, and its own rule
+   (chat-widget.js:32) sets no size. So this is the only thing sizing the chat
+   composer's rows. MEASURED 13px -> 16px when it was deleted. Keep it. */
+.row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13px}
 .row:first-of-type{border-top:none}
 .row .l b{font-weight:500;display:block}
 .row .l em{font-style:normal;color:var(--gray)}
