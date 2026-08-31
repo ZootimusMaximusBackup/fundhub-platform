@@ -10,6 +10,7 @@ import { emit, replay, _resetOrgCache } from "../events/bus.mjs";
 import { clearHandlers } from "../events/registry.mjs";
 import { register as registerLifecycle } from "./client-lifecycle.mjs";
 import { register as registerComms } from "./comms.mjs";
+import { listBankInbox } from "../../api/read/bank-inbox.mjs";
 
 const HAS_DB = !!process.env.DATABASE_URL;
 const EMAIL = "comms_pg_test@example.com";
@@ -73,4 +74,65 @@ test("comms events persist to Postgres and replay is idempotent", { skip: !HAS_D
   assert.equal(await n(`SELECT count(*)::int n FROM messages WHERE provider_ref IN ('SM_pg1','call_pg1')`), 2, "no duplicate messages");
   assert.equal(await n(`SELECT count(*)::int n FROM bank_inbox WHERE raw->>'from'=$1`, [EMAIL]), 1, "no duplicate bank_inbox");
   assert.equal(await n(`SELECT count(*)::int n FROM tasks WHERE body='bk_pg1'`), 1, "no duplicate task");
+});
+
+/* THE BANK'S OWN FIGURE, ALL THE WAY TO THE SCREEN'S READ — on a real database.
+   The bank states the approved amount in its email. The classifier has always
+   found that figure and thrown it away, so a funding advisor retyped it by
+   hand and a forgotten box meant an approval that could never be billed. This
+   proves the figure survives the event bus, the bank_inbox row and the read the
+   client panel actually calls — and that the preview column no longer holds a
+   second copy of the subject line, which is what destroyed the evidence. */
+test("a bank approval email keeps its dollar figures and a real preview", { skip: !HAS_DB }, async () => {
+  await emit(db, "mail.response", {
+    from: EMAIL,
+    to: "monitor+x@fundhub.ai",
+    subject: "Your application decision",
+    classification: "APPROVED",
+    bodyPreview: "Congratulations! Your credit limit is $7,500. The annual fee is $95.",
+    amountCandidates: ["7500.00", "95.00"],
+    amountCandidatesFound: 2,
+    source: "mailgun"
+  }, { idempotencyKey: "cpg:mail-amounts" });
+
+  const row = (await db.query(
+    `SELECT * FROM bank_inbox WHERE raw->>'from'=$1 AND raw->>'__event_id' IS NOT NULL
+       AND subject='Your application decision'`, [EMAIL])).rows[0];
+  assert.ok(row, "the bank email was filed");
+  assert.notEqual(row.body_preview, row.subject, "the preview is not the subject a second time");
+  assert.ok(row.body_preview.indexOf("$7,500") !== -1, "the sentence stating the amount survived");
+
+  const read = await listBankInbox(db.query.bind(db), {
+    orgId: row.org_id, clientId: row.client_id, limit: 25, offset: 0
+  });
+  const item = read.rows.find((r) => r.id === row.id);
+  assert.ok(item, "the client panel's read returns it");
+  assert.deepEqual(item.amount_candidates, ["7500.00", "95.00"], "both figures are offered");
+  assert.equal(Number(item.amount_candidates_found), 2, "and the screen is told there were two");
+  assert.equal("raw" in item, false, "the whole email never leaves the process");
+});
+
+test("a bank DENIAL is filed with no amount to suggest", { skip: !HAS_DB }, async () => {
+  await emit(db, "mail.response", {
+    from: EMAIL,
+    subject: "Your application outcome",
+    classification: "DENIED",
+    bodyPreview: "Unfortunately, you were not approved for the requested $10,000.",
+    source: "mailgun"
+  }, { idempotencyKey: "cpg:mail-denied" });
+
+  const row = (await db.query(
+    `SELECT * FROM bank_inbox WHERE raw->>'from'=$1 AND subject='Your application outcome'`,
+    [EMAIL])).rows[0];
+  assert.ok(row);
+  assert.equal(row.classification, "DENIED");
+
+  const read = await listBankInbox(db.query.bind(db), {
+    orgId: row.org_id, clientId: row.client_id, limit: 25, offset: 0
+  });
+  const item = read.rows.find((r) => r.id === row.id);
+  // NULL, not an empty list and above all not a zero. The figure in a denial
+  // letter is the limit being refused — the most dangerous number in the inbox.
+  assert.equal(item.amount_candidates, null);
+  assert.equal(item.amount_candidates_found, null);
 });

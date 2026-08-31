@@ -68,6 +68,26 @@ function applicationsBackend(writes, saved) {
       if (method !== "POST") return json(route, { ok: false, error: "method_not_allowed" }, 405);
       const body = JSON.parse(route.request().postData() || "{}");
       writes.push(body);
+
+      /* "This approval does not count" — the way out of the Funded block. The
+         real handler stamps who and when and leaves status alone; this fake
+         does the same, because a stub that changed the status would hide the
+         one thing worth proving. */
+      if (body.action === "exclude_approval" || body.action === "reinstate_approval") {
+        const target = saved.find((a) => a.id === body.application_id);
+        if (!target) return json(route, { ok: false, error: "not_found" }, 404);
+        if (body.action === "exclude_approval") {
+          target.approval_excluded_at = "2026-08-30T12:00:00Z";
+          target.approval_excluded_by = "Owner Olivia";
+          target.approval_exclusion_reason = body.reason || null;
+        } else {
+          target.approval_excluded_at = null;
+          target.approval_excluded_by = null;
+          target.approval_exclusion_reason = null;
+        }
+        return json(route, { ok: true, application: target });
+      }
+
       let row = saved.find((a) => a.lender_id === body.lender_id);
       if (!row) {
         row = { id: "app-" + (saved.length + 1), lender_id: body.lender_id, status: null, approved_amount: null };
@@ -439,5 +459,135 @@ test.describe("pipeline board — a move onto Funded carries the money", () => {
     asked = await page.evaluate(() => !!window.__asked);
     expect(asked).toBe(false);
     expect(writes[0].funded_amount).toBeUndefined();
+  });
+});
+
+/* ══════════════════════════════════════════════════════════════════════════
+   "DOESN'T COUNT" — the way out of the Funded block
+
+   A round can no longer be marked Funded while a bank approval on it has no
+   dollar amount, because we bill a percent of the approvals that carry one and
+   a blank approval is never invoiced. Some approvals are never going to have an
+   amount — the client did not use the card, or the bank pulled it — so there
+   has to be a way to say so, on the record.
+
+   These prove the control appears exactly where it helps and nowhere else, that
+   it is a deliberate act (a reason is required, cancelling does nothing), and
+   that it is NOT a bank no: the request never carries a status at all.
+   ══════════════════════════════════════════════════════════════════════════ */
+test.describe("client control panel — an approval that does not count", () => {
+
+  async function open(page, writes, saved = []) {
+    return openScreen(page, `/app/client-control-panel.html?client_id=${CLIENT_ID}`, OWNER, {
+      "/api/read/lender-matches": MATCHES,
+      ...applicationsBackend(writes, saved)
+    });
+  }
+
+  const blankApproval = () => ([{
+    id: "app-1", lender_id: LENDER_ID, lender_name: "Mesa Community Bank",
+    status: "Approved", approved_amount: null
+  }]);
+
+  const skip = (page) => page.locator(`[data-approval-skip-lender-id="${LENDER_ID}"]`);
+
+  test("the button shows on an approval with no amount", async ({ page }) => {
+    await open(page, [], blankApproval());
+    await expect(skip(page)).toBeVisible({ timeout: 10_000 });
+    await expect(skip(page)).toHaveText("Doesn't count");
+  });
+
+  test("it does NOT show on an approval that already has its amount", async ({ page }) => {
+    await open(page, [], [{
+      id: "app-1", lender_id: LENDER_ID, lender_name: "Mesa Community Bank",
+      status: "Approved", approved_amount: "45000.00"
+    }]);
+    await expect(page.locator('input[data-amount-lender-id]').first())
+      .toHaveValue("45000.00", { timeout: 10_000 });
+    await expect(skip(page)).toBeHidden();
+  });
+
+  test("it does NOT show on a bank no", async ({ page }) => {
+    await open(page, [], [{
+      id: "app-1", lender_id: LENDER_ID, lender_name: "Mesa Community Bank",
+      status: "Denied", approved_amount: null
+    }]);
+    await expect(page.locator('input[data-amount-lender-id]').first()).toBeVisible({ timeout: 10_000 });
+    await expect(skip(page)).toBeHidden();
+  });
+
+  test("cancelling the reason changes nothing at all", async ({ page }) => {
+    const writes = [];
+    await open(page, writes, blankApproval());
+    await expect(skip(page)).toBeVisible({ timeout: 10_000 });
+    await page.evaluate(() => { window.prompt = () => null; });
+    await skip(page).click();
+    await page.waitForTimeout(300);
+    expect(writes).toHaveLength(0);
+  });
+
+  test("an empty reason changes nothing either — it has to be deliberate", async ({ page }) => {
+    const writes = [];
+    await open(page, writes, blankApproval());
+    await expect(skip(page)).toBeVisible({ timeout: 10_000 });
+    await page.evaluate(() => { window.prompt = () => "   "; });
+    await skip(page).click();
+    await page.waitForTimeout(300);
+    expect(writes).toHaveLength(0);
+  });
+
+  test("a reason sends the exclusion — and never a status, so it is not a bank no", async ({ page }) => {
+    const writes = [];
+    await open(page, writes, blankApproval());
+    await expect(skip(page)).toBeVisible({ timeout: 10_000 });
+    await page.evaluate(() => { window.prompt = () => "Client never used it"; });
+    await skip(page).click();
+    await expect.poll(() => writes.length, { timeout: 10_000 }).toBe(1);
+    expect(writes[0].action).toBe("exclude_approval");
+    expect(writes[0].application_id).toBe("app-1");
+    expect(writes[0].reason).toBe("Client never used it");
+    // THE POINT: a denial is a different thing and this must never look like one.
+    expect(writes[0].status).toBeUndefined();
+    expect(Object.prototype.hasOwnProperty.call(writes[0], "approved_amount")).toBe(false);
+  });
+
+  test("once excluded the row stops being chased, and the block stops counting it", async ({ page }) => {
+    const writes = [];
+    await open(page, writes, blankApproval());
+    await expect(page.locator("#fh-funding-amounts-waiting"))
+      .toContainText(/waiting on its dollar amount/i, { timeout: 10_000 });
+
+    await page.evaluate(() => { window.prompt = () => "Approval withdrawn"; });
+    await skip(page).click();
+    await expect.poll(() => writes.length, { timeout: 10_000 }).toBe(1);
+
+    await expect(skip(page)).toHaveText("Not counted — undo", { timeout: 10_000 });
+    await expect(page.locator(`[data-amount-needed-lender-id="${LENDER_ID}"]`)).toBeHidden();
+    await expect(page.locator("#fh-funding-amounts-waiting")).toBeHidden();
+  });
+
+  test("undo puts it back, and asks for no reason to do so", async ({ page }) => {
+    const writes = [];
+    await open(page, writes, [{
+      id: "app-1", lender_id: LENDER_ID, lender_name: "Mesa Community Bank",
+      status: "Approved", approved_amount: null,
+      approval_excluded_at: "2026-08-30T12:00:00Z",
+      approval_excluded_by: "Owner Olivia",
+      approval_exclusion_reason: "Approval withdrawn"
+    }]);
+    await expect(skip(page)).toHaveText("Not counted — undo", { timeout: 10_000 });
+    // Who did it and why is readable without opening anything.
+    await expect(skip(page)).toHaveAttribute("title", /Owner Olivia.*Approval withdrawn/);
+
+    await page.evaluate(() => { window.prompt = () => { window.__asked = true; return "x"; }; });
+    await skip(page).click();
+    await expect.poll(() => writes.length, { timeout: 10_000 }).toBe(1);
+    expect(writes[0].action).toBe("reinstate_approval");
+    expect(await page.evaluate(() => !!window.__asked)).toBe(false);
+
+    // It counts again, so it is chased again.
+    await expect(skip(page)).toHaveText("Doesn't count", { timeout: 10_000 });
+    await expect(page.locator("#fh-funding-amounts-waiting"))
+      .toContainText(/waiting on its dollar amount/i);
   });
 });

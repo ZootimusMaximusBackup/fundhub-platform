@@ -68,15 +68,44 @@ export const REFUSAL_TEXT = Object.freeze({
 
 /* Approved applications that carry a real recorded amount. An Approved row with
    a NULL amount is deliberately NOT here: it is an approval nobody has
-   confirmed a number for yet. */
+   confirmed a number for yet.
+
+   Nor is an EXCLUDED approval — one staff have recorded as not counting because
+   it was withdrawn, or the client never used it (migration 272). That is a
+   decision on the record, with a name and a time against it, and it holds even
+   when the row does carry an amount: an approval that is not ours to bill is
+   not ours to bill at any size. status stays 'Approved' throughout, so
+   approval-rate reporting still sees the bank's yes. */
 const SQL_CONFIRMED_APPROVALS = `
 SELECT id, approved_amount, lender_name, bank, status
   FROM applications
  WHERE funding_round_id = $1::uuid
    AND ($2::uuid IS NULL OR org_id = $2::uuid)
    AND status = 'Approved'
+   AND approval_excluded_at IS NULL
    AND approved_amount IS NOT NULL
    AND approved_amount > 0
+ ORDER BY created_at ASC`;
+
+/* The mirror image of the query above, and the reason it exists: every bank yes
+   on this round that is NOT yet worth anything on the bill.
+
+   Approved, not excluded, and no usable amount — NULL because nobody has told
+   us yet, or a non-positive number left behind by an older import. Each of
+   these is an approval the client would never be invoiced for, so a round must
+   not be marked Funded while one is still here (guardFundedAmount).
+
+   The bank NAME comes back so the refusal can say which ones to go and fill in.
+   A refusal a person cannot act on is just a locked door. */
+const SQL_UNPRICED_APPROVALS = `
+SELECT id, lender_id, approved_amount,
+       COALESCE(NULLIF(btrim(lender_name), ''), NULLIF(btrim(bank), '')) AS bank
+  FROM applications
+ WHERE funding_round_id = $1::uuid
+   AND ($2::uuid IS NULL OR org_id = $2::uuid)
+   AND status = 'Approved'
+   AND approval_excluded_at IS NULL
+   AND (approved_amount IS NULL OR approved_amount <= 0)
  ORDER BY created_at ASC`;
 
 /* The rate the client agreed to, frozen on the sale this round is linked to.
@@ -101,6 +130,34 @@ export async function listConfirmedApprovals(db, { orgId = null, fundingRoundId 
   if (!fundingRoundId) return [];
   const r = await db.query(SQL_CONFIRMED_APPROVALS, [fundingRoundId, orgId || null]);
   return r.rows || [];
+}
+
+/**
+ * Every bank yes on a round that still has no dollar amount against it, and
+ * that nobody has excluded. Oldest first. Each row carries `bank` so a caller
+ * can name it.
+ *
+ * Empty means every approval on this round is either priced or excluded — which
+ * is exactly the condition for letting the round be marked Funded.
+ */
+export async function listUnpricedApprovals(db, { orgId = null, fundingRoundId } = {}) {
+  if (!fundingRoundId) return [];
+  const r = await db.query(SQL_UNPRICED_APPROVALS, [fundingRoundId, orgId || null]);
+  return r.rows || [];
+}
+
+/**
+ * The bank names from listUnpricedApprovals, in order, with no blanks and no
+ * repeats. A row that never recorded a lender name reads as "Unnamed bank"
+ * rather than vanishing — an approval nobody can see is the one that rots.
+ */
+export function unpricedApprovalNames(rows) {
+  const names = [];
+  for (const row of rows || []) {
+    const name = String(row?.bank || "").trim() || "Unnamed bank";
+    if (!names.includes(name)) names.push(name);
+  }
+  return names;
 }
 
 /**

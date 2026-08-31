@@ -777,6 +777,17 @@
                dollars are in, this round cannot be billed a success fee and the
                approval quietly rots. Hidden until there is one to report. -->
           <div id="fh-funding-amounts-waiting" hidden style="margin-top:8px;font-size:var(--fs-body);line-height:1.45;font-weight:600;color:#92400E;background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:8px 10px"></div>
+          <!-- WHAT THE BANK'S OWN EMAIL SAID. The bank states the amount in the
+               email it sends this client, and until 2026-08-30 the system found
+               that figure, used it to nudge its guess about the email, and threw
+               it away. Now it is offered here and as one-click buttons beside
+               the Approved $ box on each lender row.
+               IT IS A SUGGESTION AND NOTHING MORE. Nothing on this screen fills
+               the amount in by itself, and when the email states more than one
+               figure this line says outright that we cannot tell which is the
+               approval — a credit limit, an annual fee and a minimum payment all
+               look identical to a pattern. Hidden until there is one. -->
+          <div id="fh-bank-amount-hint" hidden style="margin-top:8px;font-size:var(--fs-caption);line-height:1.45;color:#3F3F46;background:#F4F4F5;border:1px solid #E4E4E7;border-radius:8px;padding:8px 10px"></div>
           <div id="fh-funding-apply-list" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
           <p style="margin:10px 0 0;font-size:var(--fs-caption);line-height:1.45;color:var(--text-faint)">Apply opens the bank page when a URL is on file. Apply shows the client email, not a Fundhub address.</p>
         </div>
@@ -2277,6 +2288,7 @@ document.addEventListener("DOMContentLoaded", function () {
   var statusEl = document.getElementById("fh-funding-apply-status");
   var listEl = document.getElementById("fh-funding-apply-list");
   var waitEl = document.getElementById("fh-funding-amounts-waiting");
+  var hintEl = document.getElementById("fh-bank-amount-hint");
   if (!statusEl || !listEl) return;
 
   /* ── APPROVAL AND AMOUNT ARE TWO SEPARATE MOMENTS ────────────────────────
@@ -2302,9 +2314,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
   /* One place that decides whether a saved application is still waiting.
      Approved, and no amount recorded. A recorded 0 is a fact, not an unknown,
-     and would not count here — but nothing in this screen can create one. */
+     and would not count here — but nothing in this screen can create one.
+
+     An EXCLUDED approval is not waiting either. Somebody has already answered
+     the question — this one does not count, it was withdrawn or never used —
+     so it is not chased, not counted in the sentence at the top, and not billed.
+     That is a recorded decision with a name and a time on it (migration 272),
+     not a dismissed warning. */
+  function isExcluded(app) {
+    return !!(app && app.approval_excluded_at);
+  }
   function isWaitingOnAmount(app) {
     if (!app || String(app.status || "") !== "Approved") return false;
+    if (isExcluded(app)) return false;
     var a = app.approved_amount;
     return a === null || a === undefined || String(a).trim() === "";
   }
@@ -2326,8 +2348,170 @@ document.addEventListener("DOMContentLoaded", function () {
     waitEl.textContent = (count === 1
       ? "1 bank approval is still waiting on its dollar amount."
       : count + " bank approvals are still waiting on their dollar amount.")
-      + " Type it in the Approved $ box and press Bank yes. Until then this round cannot be billed.";
+      + " Type it in the Approved $ box and press Bank yes."
+      + " Until then this round cannot be marked Funded, because an approval with no"
+      + " amount is never billed. If one was withdrawn or never used, press"
+      + " “Doesn’t count” on its row.";
     waitEl.hidden = false;
+  }
+
+  /* ── WHAT THE BANK'S EMAIL ALREADY SAID ──────────────────────────────────
+     Added 2026-08-30. The bank emails this client its decision, that email
+     lands in the client's Fundhub inbox, and the classifier has always read a
+     dollar figure out of it — then dropped the figure and kept only a yes/no.
+     So a funding advisor retyped, from the same email, a number the system
+     already had. When they forgot, the approval carried no amount and the round
+     could not be billed (docs/CLOSEOUT-FEE-BASIS.md).
+
+     THREE RULES, AND THEY ARE THE WHOLE DESIGN:
+
+     1. IT IS A SUGGESTION. Clicking a button puts the figure in the Approved $
+        box. It does not save anything. Nothing here ever writes
+        approved_amount by itself — a wrong number saved quietly is worse than
+        an empty box, because an empty box is visibly waiting and a wrong number
+        looks finished.
+     2. WE DO NOT PICK. A bank email states a credit limit, an APR, an annual
+        fee and a minimum payment in one paragraph. When the email held more
+        than one figure, the sentence below SAYS SO and every figure is offered.
+        It never quietly nominates one as "the" amount.
+     3. NO FIGURE MEANS NO SUGGESTION. Never a zero. An email with nothing in it
+        paints nothing and the boxes stay exactly as they were.
+
+     A denial offers nothing at all — the server does not even scan a DENIED
+     email, because the number in a denial letter is the limit it is refusing,
+     which is the most dangerous figure in the mailbox. */
+  var bankAmounts = null;   // { amounts: ["5000.00"], found: 2, subject: "…", when: "…" }
+  var bankAmountsAsked = false;
+
+  /* "5000.00" -> "$5,000" / "$5,000.50". The saved box wants the raw string;
+     a person reading a button wants the money. Anything unreadable comes back
+     empty and is not offered — never guessed at. */
+  function moneyLabel(dollars) {
+    var s = String(dollars == null ? "" : dollars).trim();
+    var m = /^(\d+)(?:\.(\d{1,2}))?$/.exec(s);
+    if (!m) return "";
+    var whole = m[1].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    var cents = m[2] === undefined ? "00" : (m[2].length === 1 ? m[2] + "0" : m[2]);
+    return "$" + whole + (cents === "00" ? "" : "." + cents);
+  }
+
+  function shortSubject(text) {
+    var s = String(text == null ? "" : text).replace(/\s+/g, " ").trim();
+    if (!s) return "";
+    return s.length > 60 ? s.slice(0, 60) + "…" : s;
+  }
+
+  /* The newest bank email on this file that actually stated a figure. Newest
+     only, deliberately: stacking the figures from six different emails into one
+     row is noise, and the subject line is printed so a person can see WHICH
+     email is being quoted before they accept anything from it. */
+  function pickBankAmounts(items) {
+    for (var i = 0; i < (items || []).length; i++) {
+      var it = items[i] || {};
+      var list = it.amount_candidates;
+      if (!Array.isArray(list) || !list.length) continue;
+      var clean = [];
+      for (var j = 0; j < list.length; j++) {
+        if (moneyLabel(list[j])) clean.push(String(list[j]).trim());
+      }
+      if (!clean.length) continue;
+      var found = Number(it.amount_candidates_found);
+      return {
+        amounts: clean,
+        found: (isFinite(found) && found >= clean.length) ? found : clean.length,
+        subject: shortSubject(it.subject),
+        classification: String(it.classification || "")
+      };
+    }
+    return null;
+  }
+
+  function paintBankHint() {
+    if (!hintEl) return;
+    if (!bankAmounts) { hintEl.hidden = true; hintEl.textContent = ""; return; }
+    var from = bankAmounts.subject ? ' “' + bankAmounts.subject + '”' : "";
+    hintEl.textContent = bankAmounts.found === 1
+      ? ("The bank's email" + from + " says " + moneyLabel(bankAmounts.amounts[0])
+         + ". Tap it beside the right lender to fill the Approved $ box. Nothing is saved until you press Bank yes.")
+      : ("The bank's email" + from + " lists " + bankAmounts.found
+         + " dollar amounts and we cannot tell which one is the approval."
+         + " Tap the right one beside the right lender. Nothing is saved until you press Bank yes.");
+    hintEl.hidden = false;
+  }
+
+  /* One button per figure, sitting immediately after that row's Approved $ box.
+     Clicking fills THAT row's box and focuses it, so the next thing a person
+     does is read the number they just accepted. */
+  /* ONE ROW'S BUTTONS, and the box they belong to is a PARAMETER.
+     It has to be. This screen is written in `var`, and a handler that closed
+     over a `var box` from the surrounding loop would hold whichever row the
+     loop finished on — so every button on every row would have filled the last
+     lender's box. Passing it in gives each row its own. */
+  function fillSlot(slot, box) {
+    var lead = document.createElement("span");
+    /* Literal colours, like the "Amount needed" chip above and for the same
+       reason: a tenant's brand ramp overwrites the shared colour variables, so
+       anything painted from them goes the same blue as everything else. */
+    lead.style.cssText = "font-size:var(--fs-caption);color:#52525B";
+    lead.textContent = bankAmounts.found === 1 ? "Bank email:" : "Bank email lists:";
+    slot.appendChild(lead);
+    bankAmounts.amounts.forEach(function (dollars) {
+      var label = moneyLabel(dollars);
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "fh-bank-amount-suggestion";
+      b.textContent = label;
+      b.title = "Put " + label + " in the Approved $ box. It is not saved until you press Bank yes.";
+      b.setAttribute("aria-label", "Use " + label + " from the bank email");
+      /* Dashed on purpose: it reads as an offer, not as a saved value. */
+      b.style.cssText = "padding:2px 8px;font-size:var(--fs-caption);border-radius:999px;"
+        + "border:1px dashed #A1A1AA;background:transparent;color:#3F3F46;cursor:pointer";
+      b.addEventListener("click", function () {
+        box.value = dollars;
+        box.focus();
+      });
+      slot.appendChild(b);
+    });
+    slot.hidden = false;
+  }
+
+  function paintRowButtons() {
+    var slots = listEl.querySelectorAll("[data-amount-suggest-lender-id]");
+    for (var i = 0; i < slots.length; i++) {
+      var slot = slots[i];
+      slot.textContent = "";
+      slot.hidden = true;
+      if (!bankAmounts) continue;
+      var lenderId = slot.getAttribute("data-amount-suggest-lender-id");
+      var box = listEl.querySelector('input[data-amount-lender-id="' + lenderId + '"]');
+      if (box) fillSlot(slot, box);
+    }
+  }
+
+  /* Read once per screen load. A failure paints nothing rather than an excuse:
+     the Approved $ box works exactly as it did before, so a bank inbox that
+     cannot be read costs the suggestion, not the screen. */
+  function loadBankAmounts() {
+    if (bankAmountsAsked) { paintBankHint(); paintRowButtons(); return Promise.resolve(bankAmounts); }
+    bankAmountsAsked = true;
+    var t = "";
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) {}
+    var h = { accept: "application/json" };
+    if (t) h.authorization = "Bearer " + t;
+    return fetch("/api/read/bank-inbox?client_id=" + encodeURIComponent(clientId) + "&limit=50", { headers: h })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        bankAmounts = (d && d.ok) ? pickBankAmounts(d.items) : null;
+        paintBankHint();
+        paintRowButtons();
+        return bankAmounts;
+      })
+      .catch(function () {
+        bankAmounts = null;
+        paintBankHint();
+        paintRowButtons();
+        return null;
+      });
   }
 
   function loadMatches(readyCopy) {
@@ -2437,6 +2621,79 @@ document.addEventListener("DOMContentLoaded", function () {
             + "background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;white-space:nowrap;font-weight:600";
           playRow.appendChild(needChip);
 
+          /* ── THE WAY OUT ──────────────────────────────────────────────────
+             A round cannot be moved to Funded while any bank yes on it has no
+             dollar amount, because we bill a percent of the approvals that
+             carry an amount and a blank one is never invoiced
+             (guardFundedAmount, src/funding/card-stacking-rounds.mjs).
+
+             Some approvals are never going to have an amount: the bank said
+             yes and the client never used the card, or the approval was pulled.
+             Without this button one dead row would hold the round open for
+             good, and a revenue guard would become a support ticket.
+
+             IT IS NOT A "BANK NO". The bank's yes is left exactly as it is, so
+             the approval rate still counts it. This records the separate thing
+             — that WE are not billing for it — against the name of whoever
+             said so. A reason is required; cancelling changes nothing. */
+          var skip = document.createElement("button");
+          skip.type = "button";
+          skip.hidden = true;
+          if (m.id) skip.setAttribute("data-approval-skip-lender-id", m.id);
+          skip.style.cssText = "padding:4px 8px;font-size:var(--fs-caption)";
+          skip.addEventListener("click", function () {
+            var appId = skip.getAttribute("data-application-id");
+            if (!appId) return;
+            var undo = skip.getAttribute("data-excluded") === "1";
+            var payload = {
+              action: undo ? "reinstate_approval" : "exclude_approval",
+              application_id: appId
+            };
+            if (!undo) {
+              var why = window.prompt(
+                "This approval will stop counting toward the round, so it will not "
+                + "be billed.\n\nThe bank's yes is not changed.\n\n"
+                + "Why does it not count? (for example: client never used it, "
+                + "or the bank withdrew it)",
+                ""
+              );
+              if (why === null || !String(why).trim()) {
+                statusEl.textContent = "No reason given, so nothing was changed.";
+                return;
+              }
+              payload.reason = String(why).trim();
+            }
+            var hh = { accept: "application/json", "content-type": "application/json" };
+            if (t) hh.authorization = "Bearer " + t;
+            fetch("/api/applications", {
+              method: "POST",
+              headers: hh,
+              body: JSON.stringify(payload)
+            }).then(function (r) { return r.json(); }).then(function (res) {
+              if (res && res.ok) {
+                statusEl.textContent = undo
+                  ? "That approval counts again. It needs a dollar amount before the round can be funded."
+                  : "Marked as not counting. This round can be funded without it.";
+                return refreshSaved();
+              }
+              statusEl.textContent = (res && (res.message || res.error))
+                || "Could not change whether that approval counts.";
+            }).catch(function () {
+              statusEl.textContent = "Could not change whether that approval counts.";
+            });
+          });
+          playRow.appendChild(skip);
+          /* Where the bank's own figure is offered — immediately beside the box
+             it goes into, one click to accept. Filled in by paintRowButtons()
+             once the bank inbox has been read; empty and hidden when this
+             client has no bank email stating an amount, which is most rows most
+             of the time. See the block above bankAmounts. */
+          var suggest = document.createElement("span");
+          suggest.hidden = true;
+          suggest.style.cssText = "display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px";
+          if (m.id) suggest.setAttribute("data-amount-suggest-lender-id", m.id);
+          playRow.appendChild(suggest);
+
           function logBank(status) {
             var payload = {
               client_id: clientId,
@@ -2503,6 +2760,10 @@ document.addEventListener("DOMContentLoaded", function () {
           row.appendChild(playRow);
           listEl.appendChild(row);
         });
+        /* The rows exist now, so the bank email's figures have somewhere to
+           land. Deliberately NOT awaited: a slow or failed inbox read must not
+           hold up the lender list or the saved-amount repaint below. */
+        loadBankAmounts();
         if (!document.getElementById("fh-play-names")) {
           var dl = document.createElement("datalist");
           dl.id = "fh-play-names";
@@ -2549,6 +2810,26 @@ document.addEventListener("DOMContentLoaded", function () {
                   // Never overwrite something a person is part-way through typing.
                   if (box && !box.value && saved) box.value = saved;
                   if (chip) chip.hidden = !isWaitingOnAmount(app);
+
+                  /* The "doesn't count" button shows only where it can help:
+                     on an approval still missing its amount, and on one already
+                     excluded so the decision can be undone. Never on a denial,
+                     and never on an approval that is already priced. */
+                  var skipBtn = listEl.querySelector('[data-approval-skip-lender-id="' + app.lender_id + '"]');
+                  if (skipBtn) {
+                    var off = isExcluded(app);
+                    var show = off || isWaitingOnAmount(app);
+                    skipBtn.hidden = !show;
+                    skipBtn.setAttribute("data-application-id", app.id || "");
+                    skipBtn.setAttribute("data-excluded", off ? "1" : "");
+                    skipBtn.textContent = off ? "Not counted — undo" : "Doesn't count";
+                    skipBtn.title = off
+                      ? ("Marked as not counting"
+                        + (app.approval_excluded_by ? (" by " + app.approval_excluded_by) : "")
+                        + (app.approval_exclusion_reason ? (" — " + app.approval_exclusion_reason) : "")
+                        + ". Press to make it count again.")
+                      : "The bank said yes but there is no amount. Press if it was withdrawn or never used.";
+                  }
                 }
                 /* Counted even with no lender on the row. An imported approval
                    that carries only a bank name has no row here to chip, and an

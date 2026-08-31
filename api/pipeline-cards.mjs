@@ -116,6 +116,19 @@ export default async function handler(req, res) {
           suggested_funded_amount: result.suggestedFundedAmount ?? null
         });
       }
+      /* A bank yes with no dollar amount on it blocks the round, because that
+         approval would never be billed. This is a refusal, not a missing
+         stage — 400, with the banks named so the answer is actionable. */
+      if (result.reason === "approval_amounts_missing") {
+        return res.status(400).json({
+          ok: false,
+          error: "approval_amounts_missing",
+          message: result.message ||
+            "Cannot move to funded while a bank approval has no dollar amount.",
+          missing_approvals: result.missingApprovals ?? [],
+          missing_approval_banks: result.missingApprovalBanks ?? []
+        });
+      }
       return res.status(404).json({
         ok: false,
         error: result.reason || "stage_not_found",
