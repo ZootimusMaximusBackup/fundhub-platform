@@ -487,6 +487,11 @@
      a prompt cannot be corrected, cannot show the parser's refusal beside the
      box, and disappears the moment the window loses focus. */
   .round-amount{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:9px;}
+  /* An author `display` beats the browser's own `[hidden]{display:none}`, so a
+     box that starts hidden and is laid out with flex is visible from the moment
+     the page paints. Caught by e2e/ccp-headline.spec.mjs, which is the whole
+     reason a browser runs these screens. */
+  .round-amount[hidden]{display:none;}
   .round-amount input{
     width:150px;border:1px solid var(--line);border-radius:6px;padding:6px 8px;
     font-family:'JetBrains Mono',monospace;color:var(--text);background:var(--surface);
