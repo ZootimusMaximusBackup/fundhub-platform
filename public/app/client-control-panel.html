@@ -312,7 +312,29 @@
     background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:6px;
     padding:8px 11px;margin-bottom:6px;font-size:var(--fs-caption);font-weight:600;
   }
+  /* Same trap as .round-amount above, and this one was worse. #ccp-consent-link
+     is the only .link-btn that is ever hidden, and four separate branches of
+     checkConsent() set hidden = true on it — consent already valid, consent
+     REVOKED, the read came back unusable, the read threw. Every one of those
+     was dead: the author `display:flex` beat the browser's own
+     [hidden]{display:none}, so "Record consent for this client" sat on screen
+     in all five states, including the one the code's own comment forbids
+     ("Revoked means stop, so do not offer a shortcut to re-collect it").
+     Measured in Chromium, not reasoned about: computed display:flex and a real
+     box on a link the code had set hidden — 665x40 in the e2e harness, 825x40
+     at 1440px. Pinned by e2e/ccp-headline.spec.mjs. */
+  .link-btn[hidden]{display:none;}
   .link-btn .arrow{color:var(--text-faint);font-size:var(--fs-caption);}
+
+  /* The bank-figure slot beside each Approved $ box. Its layout used to be an
+     INLINE style set in JS, which no stylesheet rule can beat, so the slot kept
+     a laid-out box while hidden. paintRowButtons() empties it first, so nothing
+     was ever legible — but the row is a wrapping flex with gap:6px, and an
+     empty child still eats a gap. Measured: 5 laid-out children where 4 were
+     wanted. Moving the layout here lets [hidden] do its job. Screen-private
+     name; sets no font-size, so the brand file still owns the type. */
+  .amount-suggest{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px;}
+  .amount-suggest[hidden]{display:none;}
 
   /* ---------- "More" — the old Quick Launch stack -------------------------
      Two competing button stacks in one column meant neither read as primary.
@@ -3346,7 +3368,10 @@ document.addEventListener("DOMContentLoaded", function () {
              of the time. See the block above bankAmounts. */
           var suggest = document.createElement("span");
           suggest.hidden = true;
-          suggest.style.cssText = "display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px";
+          /* Layout lives in .amount-suggest, not here. An inline `display`
+             outranks every stylesheet rule, so a slot styled from JS could
+             never be hidden by the `hidden` attribute on the line above. */
+          suggest.className = "amount-suggest";
           if (m.id) suggest.setAttribute("data-amount-suggest-lender-id", m.id);
           playRow.appendChild(suggest);
 

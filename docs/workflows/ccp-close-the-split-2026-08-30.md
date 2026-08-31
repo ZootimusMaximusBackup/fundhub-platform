@@ -143,6 +143,53 @@ so the funded-amount box was visible from the moment the page painted. Nothing
 in the markup, the lint or the unit tests could see it. `e2e/ccp-headline.spec.mjs`
 failed on it, which is the whole reason a browser runs these screens.
 
+### The sweep for it stopped two elements short — CORRECTED 2026-08-31
+
+Having found that bug class and audited for it twice, this branch shipped with a
+**third instance that was worse than the first**, and triaged a fourth away.
+A verifier loaded the branch in Chromium and read the computed style; the
+correction below was measured the same way, not reasoned about.
+
+**`#ccp-consent-link` could never be hidden.** `.link-btn` is laid out with
+`display:flex`, and an author `display` beats the UA `[hidden]{display:none}`.
+Four branches of `checkConsent()` set `hidden = true` on that link and **all
+four were dead**, so "Record consent for this client ↗" — a 665x40 box — sat on
+screen in every state, carrying no information:
+
+| state | what the code intends | what the screen did |
+|---|---|---|
+| consent already valid | hide it, nothing to collect | shown |
+| consent **REVOKED** | hide it — the code's own comment says "Revoked means stop, so do not offer a shortcut to re-collect it" | shown |
+| the consent read failed | hide it — "not a reason to offer a link off the back of an answer we did not get" | shown |
+| the answer carried no status | hide it | shown |
+| consent **expired** | show it | shown (the only one that worked) |
+
+Fix: `.link-btn[hidden]{display:none;}`. One line, and four existing branches of
+consent logic start working. Measured after: all four hide, and expired still
+shows a real 665x40 box — so the rule is not one that paints nothing.
+
+**The suggestion span, previously refused below, is fixed too.** It was refused
+as harmless because it is empty when hidden, and that was true as far as it went.
+But its `display:inline-flex` was an **inline style set in JS**, which no
+stylesheet rule can beat — so unlike the other two this one could not be fixed by
+a guard at all, and the row it sits in is a wrapping flex with `gap:6px`. An empty
+child still eats a gap: measured **5 laid-out children where 4 were wanted**, on
+every lender row. Layout moved to `.amount-suggest` in the screen's own `<style>`,
+so `[hidden]` works. Behaviour when visible is unchanged; all 21 tests in
+`e2e/bank-amount-suggestion.spec.mjs` and `src/http/bank-amount-suggestion.test.mjs`
+still pass.
+
+**The guard is now a sweep, not three named elements.** `e2e/ccp-headline.spec.mjs`
+walks every `[hidden]` on the screen and fails if any has a computed `display`
+other than `none` — 21 elements with no lender rows, 23 with them. It has **no
+exemptions**, because writing an exemption in is how the first sweep stopped
+short. Proven to exercise the gate: with the two CSS guards removed, 5 of the 6
+new tests go red.
+
+Why the existing tests never caught either: Playwright's `toBeHidden()` passes on
+a zero-size element regardless of `display`, and `e2e/bank-amount-suggestion.spec.mjs`
+already asserted `toBeHidden()` on the suggestion slot — and passed.
+
 ---
 
 ## Not done, and why
@@ -167,7 +214,18 @@ failed on it, which is the whole reason a browser runs these screens.
   that column (migration 148). On a demo-enabled org the count could include
   seeded rows. Written down, not fixed — it is a server-side read used by more
   than this screen.
-* **One suggestion span still starts `hidden` with an inline
+* ~~**One suggestion span still starts `hidden` with an inline
   `display:inline-flex`**, which is the same class of bug as the funded-amount
   box. It is empty when hidden so nothing shows, and it belongs to the
-  bank-email work that merged earlier today. Left alone.
+  bank-email work that merged earlier today. Left alone.~~
+  **DONE 2026-08-31 — this refusal was wrong.** "Empty so nothing shows" was
+  true; "so it costs nothing" was not. See the corrected section above: the row
+  is a wrapping flex with `gap:6px` and the empty child ate one, measured. It is
+  also the one instance of the three that a CSS guard could never have fixed,
+  because the `display` was inline. Fixed by moving the layout into
+  `.amount-suggest`.
+
+  **What this refusal got wrong is worth keeping.** It triaged on *visible
+  output* ("nothing shows") when the bug class is about *layout participation*.
+  That is the same reasoning that let `#ccp-consent-link` through — the sweep
+  looked for elements that were legible, not for elements that were laid out.

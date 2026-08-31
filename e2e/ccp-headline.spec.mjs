@@ -290,6 +290,76 @@ test.describe("client control panel — the round's three moves", () => {
   });
 });
 
+/* ── THE CONSENT LINK ACTUALLY HIDES ────────────────────────────────────────
+   Same trap as the funded-amount box, one section up the page and worse.
+   .link-btn is laid out with `display:flex`, and an author `display` beats the
+   browser's own [hidden]{display:none}. #ccp-consent-link is the only .link-btn
+   the code ever hides, and FOUR branches of checkConsent() set hidden = true on
+   it. All four were dead: "Record consent for this client" was on screen in
+   every state, carrying no information, including the one state the code's own
+   comment forbids — consent revoked means stop, so do not offer a shortcut to
+   re-collect it.
+
+   These run the states rather than reading the CSS, so the guard cannot be
+   deleted without a red test. The last case is the point of the control: when
+   consent has genuinely run out, the link is still there. A rule that painted
+   nothing would pass the first four and fail that one. */
+const consent = (body, status = 200) => ({
+  "/api/consent/capture": (route) => route.fulfill({
+    status, contentType: "application/json", body: JSON.stringify(body)
+  })
+});
+
+test.describe("client control panel — a consent link that can be hidden", () => {
+
+  test("consent already valid — no link, because there is nothing to collect", async ({ page }) => {
+    await open(page, Object.assign({}, applications([]), consent({ ok: true, status: { valid: true } })));
+    await expect(page.locator("#ccp-consent-link")).toBeHidden();
+  });
+
+  test("REVOKED — the screen does not offer a shortcut to re-collect it", async ({ page }) => {
+    await open(page, Object.assign({}, applications([]),
+      consent({ ok: true, status: { valid: false, reason: "revoked" } })));
+    await expect(page.locator("#ccp-consent-state")).toContainText("took their permission back");
+    await expect(page.locator("#ccp-consent-link")).toBeHidden();
+  });
+
+  test("the consent read FAILED — unknown is not a reason to offer a link", async ({ page }) => {
+    await open(page, Object.assign({}, applications([]), consent({ ok: false, error: "boom" }, 500)));
+    await expect(page.locator("#ccp-consent-state")).toContainText("Could not check consent");
+    await expect(page.locator("#ccp-consent-link")).toBeHidden();
+  });
+
+  test("an answer with no status at all is treated the same way", async ({ page }) => {
+    await open(page, Object.assign({}, applications([]), consent({ ok: true, capture: {} })));
+    await expect(page.locator("#ccp-consent-link")).toBeHidden();
+  });
+
+  test("EXPIRED — the one state that needs the link still shows it", async ({ page }) => {
+    await open(page, Object.assign({}, applications([]),
+      consent({ ok: true, status: { valid: false, reason: "expired" } })));
+    await expect(page.locator("#ccp-consent-state")).toContainText("run out");
+    const link = page.locator("#ccp-consent-link");
+    await expect(link).toBeVisible();
+    // A guard that painted nothing would hide this one too. Prove it has a box.
+    const box = await link.boundingBox();
+    expect(box.height).toBeGreaterThan(0);
+    expect(box.width).toBeGreaterThan(0);
+  });
+
+  test("NOTHING ELSE ON THE SCREEN LEAKS THROUGH [hidden]", async ({ page }) => {
+    /* The sweep that found the consent link. It stays, so the next author who
+       lays a hidden element out with flex or grid gets a red test instead of a
+       control that is permanently on screen. */
+    await open(page, applications([]));
+    const leaking = await page.evaluate(() =>
+      Array.from(document.querySelectorAll("[hidden]"))
+        .filter((el) => getComputedStyle(el).display !== "none")
+        .map((el) => el.id || el.className || el.tagName));
+    expect(leaking).toEqual([]);
+  });
+});
+
 test.describe("client control panel — the chase list got the room", () => {
 
   test("the lender rows are in the main column, not the 320px rail", async ({ page }) => {
