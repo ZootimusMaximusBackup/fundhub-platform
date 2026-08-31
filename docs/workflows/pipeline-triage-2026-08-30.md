@@ -32,7 +32,7 @@ The count of "waiting on us" is built partly from an existing flag: *a bank said
 A new row between the rail switcher and the filter bar, hard left:
 
 - **WAITING ON US** as a small label, with the count under it at metric size.
-- **One line under that**, naming one card: *"Longest wait: Sam Turner — 10d in stage, New Lead."* Clicking it scrolls to that card and rings it.
+- **One line under that**, naming one card: *"Longest wait: Sam Turner — 10d in stage, New Lead."* Clicking it scrolls to that card and rings it. If a filter has taken that card off the board, the line stops being a link and stays as plain text — see §5b.
 - To the right, three counters carrying **words** — "on a bank", "on the client", "nothing recorded". Clicking any of them filters the board. The card count and the money move up beside them.
 
 ### "Us", not "me"
@@ -97,21 +97,39 @@ Ink rather than the reviewer's suggested `--accent`: `--accent` is the sixth sto
 
 **The uncomfortable part, recorded rather than smoothed over.** §4 of this document says this branch corrected UI-STANDARDS §12.6 because both of its examples were CSS that had never painted. This branch then shipped a third dead rule, eleven lines from one of them, in the same commit. §12.6 now carries that too, with the lesson that the previous correction missed: *the class being applied is still not proof that anything paints.*
 
+## 5b. Second correction (2026-08-31) — the jump was dead under a filter
+
+The same reviewer went one step further than the first finding and clicked the link **with the board filtered**. It did nothing at all. No scroll, no ring, no message. The finding was right and it is fixed on this same branch.
+
+**What was broken, in plain language.** You press "on a bank" at the top of the board. The board narrows to the bank cards. The underlined line right next to it still says "Longest wait: Sam Turner" — and Sam is not a bank card, so Sam's card is no longer on the board. You click it and the screen does not move. An underlined control that does nothing when pressed is worse than no control, and here two controls in the same row were silently killing each other.
+
+**Why.** Hiding a card sets `display:none`, which takes the card off the screen but leaves it in the page. So the link still *found* the card, the handler's "did I find it?" check still passed, and scrolling to something with no size on screen scrolls nowhere. The ring was then painted on a card nobody could see.
+
+**The fix.** The line drops to plain text the moment its card is off the board, and the note underneath says so by name: *"This filter hides the longest wait: Sam Turner — 9d in stage, New Lead."* Clear the filter and it is a working link again. This is UI-STANDARDS §5 as written — *if it doesn't do anything today, it does not render today* — and it is the rule the stylesheet comment on this very control already claimed to follow.
+
+The counters themselves are unchanged: they count the whole rail, not the filtered view, which is what a headline is for. Only the one control that points at a single card has to follow the board.
+
+**Proven, not claimed.** A new browser test presses the branch's own "on a bank" counter, then checks the link is gone, the note names the hidden card, and clearing the filter brings the working link back. It was run against the unfixed file first: **1 failed, 14 passed — and the one that failed was the new test.** With the fix: **15 passed.**
+
 ## 6. How it was checked
 
-**Re-measured in full after the §5a correction (2026-08-31), on a fresh worktree at branch tip, not carried over from the run above.**
+**Re-measured in full after the §5b correction (2026-08-31), on a fresh worktree with `origin/main` merged in, not carried over from the runs above. Both sides measured the same way, in the same worktree, on the same machine — `origin/main` by checking it out, never by stashing a diff.**
 
 - **Lint** — clean, 1611 files.
 - **`npx tsc --noEmit`** — exit 0. Worth knowing: `tsconfig.json` exists now (added 2026-08-27) and has `checkJs:false`, so this gate parses and resolves every `.mjs` but only *type-checks* files carrying `// @ts-check`. It is a real gate, not the vacuous one it used to be, but it is a narrow one.
-- **Unit phase** — **7329 tests, 7316 pass, 10 fail, 3 skipped.** Before the correction this branch measured 7326 / 7313 / 10 / 3, and `main` measured 7315 / 7302 / 10 / 3. **The same ten failures by name at every one of the three points.** The correction adds 3 unit tests; the branch adds 14 over `main`.
+- **Unit phase, both sides, corrected.** `origin/main` at `4e46f4fe`: **7300 tests, 7287 pass, 10 fail, 3 skipped** (583 suites). This branch with `origin/main` merged in: **7329 tests, 7316 pass, 10 fail, 3 skipped** (588 suites). **So the branch adds 29 unit tests, not 14**, and the failing sets are identical — I pulled the ten names out of both logs and diffed them, no difference.
+
+  **The 7315 / 7302 figure printed here before was wrong, and the way it was taken is why.** It was `main` measured by stashing this diff in a shared checkout rather than by checking `origin/main` out. That is the trap CLAUDE.md and the session memory both name: a shared tree can be *behind* `origin/main`, so a stash-based baseline is a measurement of something that is not `main`. Never take a baseline that way again — check the commit out.
 - **The pipeline `font-size:10px` offender is not this branch's.** `src/ui/screen-standard.test.mjs` names `pipeline.html: font-size:10px` (`.c-msg-badge`). It is on `main` verbatim and predates all of this work. Left alone on purpose — dead type is `fix/my-numbers-dead-type`'s job, not this branch's (§8 scope discipline).
-- **Database phase** — `npm test` never reaches it: the runner exits after the unit phase when it is red, and it is red on `main`, so **every pg file skips silently while the summary still reads green.** Run by hand, flag *before* the file list at `--test-concurrency=1` exactly as `scripts/run-suite.mjs` does, against a scratch Postgres 16.14 (Homebrew, macOS) created for this work with all **219** migrations applied to it empty, and **dropped afterwards**: **1956 tests, 1927 pass, 28 fail, 1 skipped** — identical to the pre-correction run, which is what a CSS-and-tests change should produce. All 28 are partner-isolation / row-level-security tests, the class CLAUDE.md §12 says fails when the connection role owns the database. Every one of the 13 pipeline endpoint tests passed.
-- **Playwright, my screen** — `pipeline-waiting-on` + `pipeline-honest`: **18 pass, 0 fail**, including the new computed-style ring test.
-- **Playwright, everything that touches this screen** — `pipeline`, `pipeline-honest`, `pipeline-waiting-on`, `screens-smoke`, `verification-security`, `funded-amount`, `sales-dashboards`, `sidebar-roles`, `conveyor-ui-times`, `demo-mode`: **119 pass, 0 fail.** That includes "pipeline at 1280px has no console errors" and the same at 390px.
-- **The two new gates were proven to bite.** The old CSS was put back on disk and both failed; the fix was restored and both passed. The pre-existing `toHaveClass` check passed against the broken rule in the same run, which is exactly why it was not enough.
+- **Database phase** — `npm test` never reaches it: the runner exits after the unit phase when it is red, and it is red on `main`, so **every pg file skips silently while the summary still reads green.** Run by hand, flag *before* the file list at `--test-concurrency=1` exactly as `scripts/run-suite.mjs` does, against a scratch Postgres 16.14 (Homebrew, macOS) created for this work with all **219** migrations applied to it empty, and **dropped afterwards**. Measured on **both sides this time**, each on its own scratch database built from empty: this branch **1956 tests, 1927 pass, 28 fail, 1 skipped**; `origin/main` at `4e46f4fe` **1955 / 1926 / 28 fail / 1 skipped**. Same 28 failures by name on both — diffed, no difference — every one of them a cross-partner leak in the row-level-security suites, the class CLAUDE.md §12 says fails when the connection role owns the database. Nothing in `pipeline` fails: every one of the 13 pipeline endpoint tests passed. **Both scratch databases dropped**, and `psql -l` confirmed neither remains.
+- **Playwright, my screen** — `e2e/pipeline-waiting-on.spec.mjs`: **15 pass, 0 fail**, including the computed-style ring test and the new filtered-jump test.
+- **Playwright, everything that touches this screen** — `pipeline`, `pipeline-honest`, `pipeline-waiting-on`, `screens-smoke`, `verification-security`, `funded-amount`, `sales-dashboards`, `sidebar-roles`, `conveyor-ui-times`, `demo-mode`: **120 pass, 0 fail.** That includes "pipeline at 1280px has no console errors" and the same at 390px.
+- **The new gates were proven to bite.** For §5a: the old CSS was put back on disk and both new checks failed; the fix was restored and both passed. The pre-existing `toHaveClass` check passed against the broken rule in the same run, which is exactly why it was not enough. For §5b: the unfixed `pipeline.html` was checked out over the top and the spec ran **1 failed / 14 passed** — the one failure being the new filtered-jump test, nothing else. Fix restored: **15 passed**.
 - Never CI. Never production. `verify:e2e` never run. No environment variable set or unset. Scratch database dropped.
 
 ### The original run, kept for comparison
+
+> **Its `main` baseline is wrong — do not quote the numbers below.** It was taken by stashing the diff in a shared checkout instead of checking `origin/main` out. The corrected figures are in the list above.
 
 - **Unit phase** — 7326 tests, 7313 pass, 10 fail, 3 skipped. With this diff stashed in the same worktree: 7315 / 7302 / 10 fail / 3 skipped. **The same ten failures by name.** 26 tests added.
 - **Database phase** — run by hand, one file at a time exactly as the runner would, against a scratch Postgres 16.14 created for this work with all 219 migrations applied to it empty, dropped afterwards: **1956 tests, 28 fail, 1 skipped**, against **1955 / 28 fail / 1 skipped** with the diff stashed. The identical 28, every one a partner-isolation test.
