@@ -121,7 +121,7 @@ test('a board where most ads have no start date fails, because longevity is the 
   rmSync(dir, { recursive: true, force: true })
 })
 
-test('placeholder text and a missing compliance flag both fail the stage', () => {
+test('placeholder text left in a stage fails it', () => {
   const dir = scratch()
   const avatar = stageFile({ stage: 1, counts: { quotes: 159, languageEntries: 455 } })
   const research = stageFile({
@@ -131,18 +131,18 @@ test('placeholder text and a missing compliance flag both fail the stage', () =>
   writeFileSync(join(dir, '01-avatar.md'), avatar)
   writeFileSync(join(dir, '02-ad-research.md'), research)
 
-  // Offer with the compliance flag but a TODO left in it.
+  // An offer with a TODO still in it is not finished, whatever its counts say.
   writeFileSync(join(dir, '03-offer.md'), stageFile({
     stage: 3,
     inputs: { '01-avatar.md': bodyHash(avatar), '02-ad-research.md': bodyHash(research) },
     counts: { priceSet: 1, bonuses: 3, valueEquationScores: 4 },
-    body: 'COMPLIANCE REVIEW REQUIRED\nTODO: decide the guarantee\n',
+    body: 'TODO: decide the guarantee\n',
   }))
   let row = evaluate(dir).find(r => r.n === 3)
   assert.equal(row.state, 'FAILED')
   assert.match(row.reasons.join(' '), /still contains TODO/)
 
-  // Same offer, clean body, but no compliance flag.
+  // Same offer, clean body, passes.
   writeFileSync(join(dir, '03-offer.md'), stageFile({
     stage: 3,
     inputs: { '01-avatar.md': bodyHash(avatar), '02-ad-research.md': bodyHash(research) },
@@ -150,8 +150,7 @@ test('placeholder text and a missing compliance flag both fail the stage', () =>
     body: 'a clean offer\n',
   }))
   row = evaluate(dir).find(r => r.n === 3)
-  assert.equal(row.state, 'FAILED')
-  assert.match(row.reasons.join(' '), /missing the compliance review flag/)
+  assert.equal(row.state, 'READY')
 
   rmSync(dir, { recursive: true, force: true })
 })

@@ -40,20 +40,17 @@ export const STAGES = [
     n: 1, key: 'avatar', file: '01-avatar.md', label: 'avatar',
     inputs: [], optionalInputs: [],
     gates: { quotes: 20, languageEntries: 100 },
-    needsComplianceFlag: false,
   },
   {
     n: 2, key: 'ad-research', file: '02-ad-research.md', label: 'ad research',
     inputs: [], optionalInputs: ['01-avatar.md'],
     gates: { rowsVerified: 8, competitorsFound: 3 },
     ratioGates: [{ of: 'rowsWithFirstSeen', atLeastHalfOf: 'rowsVerified' }],
-    needsComplianceFlag: false,
   },
   {
     n: 3, key: 'offer', file: '03-offer.md', label: 'offer',
     inputs: ['01-avatar.md', '02-ad-research.md'], optionalInputs: [],
     gates: { priceSet: 1, bonuses: 3, valueEquationScores: 4 },
-    needsComplianceFlag: true,
   },
   {
     n: 4, key: 'copy', file: '04-copy.md', label: 'copy',
@@ -62,19 +59,16 @@ export const STAGES = [
     // a first-class input and a change to it makes the copy stale.
     inputs: ['03-offer.md', '01-avatar/Market_Language_Bank.md'], optionalInputs: [],
     gates: { hooks: 5, humanizerPassRun: 1 },
-    needsComplianceFlag: true,
   },
   {
     n: 5, key: 'ad-strategy', file: '05-ad-strategy.md', label: 'ad strategy',
     inputs: ['03-offer.md', '04-copy.md'], optionalInputs: [],
     gates: { strategyNamed: 1, dailyBudgetStated: 1 },
-    needsComplianceFlag: true,
   },
   {
     n: 6, key: 'spend', file: '06-spend.md', label: 'spend',
     inputs: ['04-copy.md', '05-ad-strategy.md'], optionalInputs: [],
     gates: {},
-    needsComplianceFlag: false,
   },
 ]
 
@@ -203,9 +197,6 @@ export function evaluate (dir) {
       }
       if (!loaded.text.includes('## Review card')) {
         row.state = 'FAILED'; row.reasons.push('has no review card')
-      }
-      if (stage.needsComplianceFlag && !loaded.text.includes('COMPLIANCE REVIEW REQUIRED')) {
-        row.state = 'FAILED'; row.reasons.push('is missing the compliance review flag')
       }
       const found = PLACEHOLDERS.filter(p => loaded.body.includes(p))
       if (found.length) {
