@@ -127,10 +127,13 @@ test.describe("Winner's Board — live screen", () => {
 
     await expect(page.locator(".card.blocked .chip.unknown"))
       .toContainText("variants — not known");
+    // The winner is not on TikTok, so that signal is genuinely unknown and must
+    // render as unknown rather than as the bottom of the scale.
     await expect(page.locator(".card").first().locator(".chip.unknown"))
-      .toContainText("tiktok", { ignoreCase: true }).catch(() => {});
+      .toHaveCount(0);
     const body = await page.locator("body").innerText();
     expect(body).not.toContain("variants 0");
+    expect(body).not.toContain("tiktok 0");
   });
 
   test("the stated limitation is on the page, from the API", async ({ page }) => {

@@ -126,6 +126,9 @@ const API_KEYS = [
   "partner-marketing/usage",
   "partner-pages",
   "partners/approve",
+  /* The white-label add-on menu. A door that asks a partner for money and puts
+     them on a monthly cycle, so an outage here is revenue not asked for. */
+  "partner-addons",
   "payment-links",
   "pii",
   "pipeline-cards",

@@ -67,6 +67,10 @@
   .tab[aria-selected="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
 
   .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 18px}
+  /* display:flex beats the browser's default [hidden]{display:none}, so an
+     element toggled with .hidden = true stays on screen. Stated once, for
+     everything on the page, rather than per-element. */
+  [hidden]{display:none !important}
   .filters label{font-size:13px;color:var(--gray)}
   select{font:inherit;font-size:14px;padding:6px 9px;border:1px solid var(--line);
          border-radius:8px;background:var(--card);color:var(--ink)}

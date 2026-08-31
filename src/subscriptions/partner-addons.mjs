@@ -213,7 +213,12 @@ export async function buyAddOn(db, {
     createdByRole,
     productCode: addOn.productCode,
     commasProductTitle: addOn.commasProductTitle,
-    checkoutBaseUrl,
+    /* The query-link fallback, for when the checkout-session API key is not
+       set. createPaymentLink reads this as an explicit ARGUMENT and never off
+       env, so a caller that passes only `env` would otherwise get a 503 with
+       COMMAS_CHECKOUT_BASE_URL sitting right there — the same "the key that
+       works was set and unread" bug api/payment-links.mjs records. */
+    checkoutBaseUrl: checkoutBaseUrl || env?.COMMAS_CHECKOUT_BASE_URL || null,
     env,
     fetchImpl
   });

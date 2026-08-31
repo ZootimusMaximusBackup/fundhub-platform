@@ -8,6 +8,7 @@ import { register as registerComms } from "./handlers/comms.mjs";
 import { register as registerPaymentLinks } from "./handlers/payment-links.mjs";
 import { register as registerPartnerAddOns } from "./handlers/partner-addons.mjs";
 import { register as registerMoneyChain } from "./handlers/money-chain.mjs";
+import { register as registerPartnerRecruit } from "./partners/recruit.mjs";
 import { register as registerPurchaseRouting } from "./handlers/purchase-routing.mjs";
 import { register as registerStaffCompAlerts } from "./handlers/staff-comp-alerts.mjs";
 import { register as registerCustomerInsights } from "./handlers/customer-insights.mjs";
@@ -32,6 +33,12 @@ export function registerAll() {
      registration order. It ignores every client payment. */
   registerPartnerAddOns();
   registerMoneyChain();
+  /* The recruit bonus. STRICTLY AFTER registerMoneyChain: that handler writes
+     the transactions row this one resolves as its idempotency key, and handler
+     order on the bus is registration order. Registered earlier, the $2,000 is
+     refused for want of a key rather than paid. It ignores every payment that
+     is not a partner's $10,000 entry fee. */
+  registerPartnerRecruit();
   /* Payment -> fulfilment board. Strictly after money-chain: handler order is
      registration order, and this reads the sale money-chain has just written to
      decide which board the client belongs on. */

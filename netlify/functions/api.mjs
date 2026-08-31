@@ -162,6 +162,10 @@ import publicSurveySubmit from "../../api/public/survey-submit.mjs";
 import publicEducationEnroll from "../../api/public/education-enroll.mjs";
 import publicOptimize from "../../api/public/optimize.mjs";
 import publicPartnerApply from "../../api/public/partner-apply.mjs";
+import trialsEligibility from "../../api/trials/eligibility.mjs";
+import trialsProvision from "../../api/trials/provision.mjs";
+import trialsDashboard from "../../api/trials/dashboard.mjs";
+import trialsConvert from "../../api/trials/convert.mjs";
 import publicDeclineAutopsy from "../../api/public/decline-autopsy.mjs";
 import publicDeclineAutopsyUpload from "../../api/public/decline-autopsy-upload.mjs";
 import publicDeclineAutopsyReport from "../../api/public/decline-autopsy-report.mjs";
@@ -190,6 +194,7 @@ import financeCrsPull from "../../api/finance/crs-pull.mjs";
 import bankingRevoke from "../../api/banking/revoke.mjs";
 import privacyErasure from "../../api/privacy/erasure.mjs";
 import financeSubscriptions from "../../api/finance/subscriptions.mjs";
+import partnerAddOns from "../../api/partner-addons.mjs";
 import financeCards from "../../api/finance/cards.mjs";
 import financeLiabilities from "../../api/finance/liabilities.mjs";
 import financeBankAccounts from "../../api/finance/bank-accounts.mjs";
@@ -602,6 +607,16 @@ export const ROUTES = {
      checkout on the keep Assessment title. No auth — same class as survey-submit. */
   "public/optimize": publicOptimize,
   "public/partner-apply": publicPartnerApply,
+  /* The Live Trial. $297, seven days, docs/specs/W4-live-trial.md.
+     eligibility is PUBLIC and runs in front of the pay button — Meta will not
+     run a money-related ad from an unverified business, and finding that out
+     after taking the money means selling seven days that cannot be delivered.
+     provision and convert are staff-gated with requireRole; dashboard is
+     requirePrincipal(["partner","staff"]) and a partner only ever sees its own. */
+  "trials/eligibility": trialsEligibility,
+  "trials/provision": trialsProvision,
+  "trials/dashboard": trialsDashboard,
+  "trials/convert": trialsConvert,
   /* The $27 Decline Autopsy. No auth — a stranger from an ad, same class as
      survey-submit. THE KEYS ARE FLAT ON PURPOSE: the adapter routes
      "documents/" and "webhooks/" by PREFIX, so a key shaped
@@ -744,6 +759,12 @@ export const ROUTES = {
   // src/adapters/ or src/lib/; src/banking/plaid.mjs is a named empty seam, so
   // bank accounts and cards are entered by hand. That is the product today.
   "finance/subscriptions": financeSubscriptions,
+  /* The white-label partner add-on menu — buy, cancel, and the manual
+     reconcile for a checkout whose webhook never came back. {owner, admin}
+     only: this is FundHub selling to a partner, not a closer selling to a
+     client, and "buy" starts a recurring charge against another business.
+     COMPLIANCE REVIEW REQUIRED — payment rails and fee timing. */
+  "partner-addons": partnerAddOns,
   "finance/cards": financeCards,
   "finance/liabilities": financeLiabilities,
   "finance/bank-accounts": financeBankAccounts,
