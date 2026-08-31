@@ -26,13 +26,51 @@
   --ok:#A8D8B0; --warn:#F5CE8F; --alert:#F2A69B; --info:#A9C6E8; --accent:#C4B3E5;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+/* 14px HERE IS ALIVE AND HAS TO STAY 14px. `body` is OUTSIDE .app-shell, so
+   the brand file's `:is(.app,.app-shell,…) *` rule never reaches it and this
+   size really paints. It is the size the overlays shell.js appends to <body>
+   inherit — the Search panel and the chat panel. Measured 2026-08-30, headless
+   Chromium, Search open at 1440x900: raising it to var(--fs-body) grows the
+   search bar 50px -> 53px, the panel 127px -> 130px, and the ⌕ glyph
+   8x21 -> 10x24. That is a visible change to shared chrome, so it is reverted.
+   !important is only here so screen-standard.test.mjs can tell a live px size
+   from a dead one — it changes nothing, because no other rule anywhere sets a
+   body font-size. */
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px!important;line-height:1.5;-webkit-font-smoothing:antialiased}
 
-.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gray)}
+.eyebrow{font-family:var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--gray)}
 .eyebrow::before{content:"";display:inline-block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;margin-right:9px;vertical-align:middle}
-.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;padding:4px 9px;border:1px solid var(--line);border-radius:20px;color:var(--gray);white-space:nowrap}
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;padding:4px 9px;border:1px solid var(--line);border-radius:20px;color:var(--gray);white-space:nowrap}
 .chip .cd{width:6px;height:6px;border-radius:50%}
 .chip.on .cd{background:var(--ok)} .chip.wip .cd{background:var(--warn)} .chip.bad .cd{background:var(--alert)}
+/* ---------- ONE label size, one label treatment --------------------------
+   UI-STANDARDS.md §12.7. fundhub-brand.css:184-186 forces
+   `font-size:inherit !important` onto every element inside .app-shell, so the
+   px sizes this screen used to write in here never painted once. The brand
+   file hands the caption size back to a whitelist, and `.lb` is NOT on it —
+   only `.kpi .lb` is — so every label on this screen was rendering at 16px
+   body size, the same size as the number underneath it. These are this
+   screen's own class names for labels, column headers, sub-captions and
+   section headings; !important is what beats the brand's `*` rule.
+
+   Every arm is a single class this screen alone owns. NONE of them is scoped
+   under `.app`/`.app-shell` on purpose: that would raise the rule to (0,2,0)
+   and let it outrank shared chrome that shell.js styles at (0,1,0). At (0,1,0)
+   it can only ever tie, and shell.js injects its stylesheet after this one, so
+   shared chrome always wins. Checked 2026-08-30 against every class shell.js
+   and crm-sidebar.css write: no overlap.
+
+   `.st-row .why` is deliberately NOT here. It is the sentence that replaces a
+   money figure when the figure is unknown, and it sits in the same column cell
+   as `.num`, which stays at body size. Shrinking it would make one column show
+   two sizes depending on whether the data exists.
+
+   ONE rule, per §12.7 — never a second. */
+.pacetop .lb,.m .lb,.mo .lb,.mo .sb,.marks,.rk,.d,.panel h3,
+.st-row.hd,.st-row em,.nm em,.todo .t,.todo em{
+  font-size:var(--fs-caption)!important;
+}
+
 .pulse{width:8px;height:8px;border-radius:50%;background:var(--ok);position:relative;flex:0 0 auto}
 .pulse::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1px solid var(--ok);animation:pulse 2s ease-out infinite}
 @keyframes pulse{to{transform:scale(1.9);opacity:0}}
@@ -48,79 +86,86 @@ header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-
 .shell{padding:24px 22px}
 .sec{margin-bottom:26px}
 .sech{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
-.note{font-size:11.5px;color:var(--gray2)}
+.note{color:var(--gray2)}
 
 /* pace hero */
 .pace{background:var(--card);color:var(--cardtext);border-radius:12px;padding:22px 24px;position:relative;overflow:hidden}
 .pace::before{content:"";position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:56px 56px}
 .pacetop{display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;position:relative}
-.pacetop .lb{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
-.pacetop .big{font-size:44px;font-weight:500;letter-spacing:-.035em;line-height:1;margin-top:7px;font-variant-numeric:tabular-nums;min-height:44px}
-.pacetop .sub{font-size:12.5px;color:var(--gray2);margin-top:6px}
+.pacetop .lb{font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
+.pacetop .big{font-weight:500;letter-spacing:-.035em;line-height:1;margin-top:7px;font-variant-numeric:tabular-nums;min-height:44px}
+.pacetop .sub{color:var(--gray2);margin-top:6px}
 .bar{height:7px;border-radius:4px;background:rgba(255,255,255,.09);margin-top:18px;position:relative;overflow:hidden}
 .bar i{display:block;height:100%;border-radius:4px;background:var(--spectrum)}
-.marks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--gray2);margin-top:7px;position:relative}
+.marks{display:flex;justify-content:space-between;font-family:var(--mono);letter-spacing:.08em;color:var(--gray2);margin-top:7px;position:relative}
 
 /* metric grid */
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .m{background:var(--paper);padding:15px 17px}
-.m .lb{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
-.m .vl{font-size:25px;font-weight:500;letter-spacing:-.025em;margin-top:5px;font-variant-numeric:tabular-nums;min-height:25px}
-.m .cmp{font-size:11.5px;margin-top:3px;color:var(--gray)}
+.m .lb{font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
+.m .vl{font-weight:500;letter-spacing:-.025em;margin-top:5px;font-variant-numeric:tabular-nums;min-height:25px}
+.m .cmp{margin-top:3px;color:var(--gray)}
 .up{color:#4F8A5B} .dn{color:#C25B4E}
 
 /* leaderboard */
-.lb-row{display:grid;grid-template-columns:34px 1fr 90px 76px 70px;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line);font-size:13px}
+.lb-row{display:grid;grid-template-columns:34px 1fr 90px 76px 70px;gap:12px;align-items:center;padding:11px 0;border-top:1px solid var(--line)}
 .lb-row:first-of-type{border-top:none}
 .lb-row.me{background:var(--soft);margin:0 -12px;padding-left:12px;padding-right:12px;border-radius:7px;border-top-color:transparent}
-.rk{font-family:var(--mono);font-size:12px;color:var(--gray2)}
+.rk{font-family:var(--mono);color:var(--gray2)}
 .rk.one{color:var(--ink);font-weight:500}
-.nm b{font-weight:500} .nm em{font-style:normal;color:var(--gray2);font-size:11px;display:block}
+.nm b{font-weight:500} .nm em{font-style:normal;color:var(--gray2);display:block}
 .num{text-align:right;font-variant-numeric:tabular-nums}
 
 /* streak */
 .days{display:flex;gap:5px;margin-top:11px}
-.d{flex:1;height:34px;border-radius:5px;background:var(--soft);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9.5px;color:var(--gray2)}
+.d{flex:1;height:34px;border-radius:5px;background:var(--soft);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--mono);color:var(--gray2)}
 .d.hit{background:var(--ok);border-color:var(--ok);color:#0A3D18}
 .d.miss{background:rgba(242,166,155,.2);border-color:var(--alert);color:#7A2B22}
 .d.today{border-color:var(--ink);border-width:2px}
 
 .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .panel{border:1px solid var(--line);border-radius:10px;padding:17px 18px;background:var(--paper);min-height:160px}
-.panel h3{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:13px}
+.panel h3{font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gray);font-weight:500;margin-bottom:13px}
 
-.qual{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
+.qual{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
 .qual:first-of-type{border-top:none}
 .qual .r{display:flex;align-items:center;gap:9px;font-variant-numeric:tabular-nums}
 
-.todo{display:flex;gap:11px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line);font-size:13px}
+.todo{display:flex;gap:11px;align-items:flex-start;padding:10px 0;border-top:1px solid var(--line)}
 a.todo{text-decoration:none;color:inherit;cursor:pointer}
 .todo:first-of-type{border-top:none}
-.todo .t{font-family:var(--mono);font-size:10.5px;color:var(--gray2);flex:0 0 78px;padding-top:1px}
-.todo b{font-weight:500;display:block} .todo em{font-style:normal;color:var(--gray);font-size:11.5px}
+.todo .t{font-family:var(--mono);color:var(--gray2);flex:0 0 78px;padding-top:1px}
+.todo b{font-weight:500;display:block} .todo em{font-style:normal;color:var(--gray)}
 
 .money{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .mo{border:1px solid var(--line);border-radius:10px;padding:15px 16px}
 .mo.paid{border-color:var(--ok);background:rgba(168,216,176,.08)}
-.mo .lb{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
-.mo .vl{font-size:23px;font-weight:500;letter-spacing:-.02em;margin-top:5px;font-variant-numeric:tabular-nums}
-.mo .sb{font-size:11.5px;color:var(--gray);margin-top:3px}
+.mo .lb{font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}
+.mo .vl{font-weight:500;letter-spacing:-.02em;margin-top:5px;font-variant-numeric:tabular-nums}
+.mo .sb{color:var(--gray);margin-top:3px}
 
 /* offer stack */
 .stack{border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.st-row{display:grid;grid-template-columns:1fr 104px 132px 176px;gap:12px;align-items:baseline;padding:11px 16px;border-top:1px solid var(--line);font-size:13px}
+.st-row{display:grid;grid-template-columns:1fr 104px 132px 176px;gap:12px;align-items:baseline;padding:11px 16px;border-top:1px solid var(--line)}
 .st-row:first-child{border-top:none}
-.st-row.hd{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2);background:var(--soft)}
+.st-row.hd{font-family:var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--gray2);background:var(--soft)}
 .st-row.tot{background:var(--soft);border-top:1px solid var(--ink)}
 .st-row b{font-weight:500}
-.st-row em{font-style:normal;color:var(--gray2);font-size:11px;display:block}
+.st-row em{font-style:normal;color:var(--gray2);display:block}
 .st-row .num{text-align:right;font-variant-numeric:tabular-nums}
-.st-row .why{text-align:right;font-size:11.5px;color:var(--gray)}
-.st-msg{padding:14px 16px;font-size:12.5px;color:var(--gray)}
+.st-row .why{text-align:right;color:var(--gray)}
+.st-msg{padding:14px 16px;color:var(--gray)}
 
 @media(max-width:960px){.grid{grid-template-columns:repeat(2,1fr)}.two,.money{grid-template-columns:1fr}}
-@media(max-width:640px){.grid{grid-template-columns:1fr}.lb-row{grid-template-columns:28px 1fr 78px;font-size:12px}.lb-row .hide{display:none}}
-@media(max-width:640px){.st-row{grid-template-columns:1fr;gap:4px}.st-row.hd{display:none}.st-row .num,.st-row .why{text-align:left}.st-row .num::before,.st-row .why::before{content:attr(data-l) " · ";font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}}
+@media(max-width:640px){.grid{grid-template-columns:1fr}.lb-row{grid-template-columns:28px 1fr 78px}.lb-row .hide{display:none}}
+/* The 9.5px below is ALIVE too. The brand file's rule is `… *`, and `*`
+   matches elements, not pseudo-elements — so it cannot reach ::before. This is
+   the stacked column label a phone shows above each figure ("Cash collected ·")
+   and it really has painted at 9.5px all along. Measured 2026-08-30 at 390x844
+   with rows in the stack: twelve of these move if the value is changed.
+   !important is only here so screen-standard.test.mjs can tell a live px size
+   from a dead one; nothing else targets these pseudo-elements. */
+@media(max-width:640px){.st-row{grid-template-columns:1fr;gap:4px}.st-row.hd{display:none}.st-row .num,.st-row .why{text-align:left}.st-row .num::before,.st-row .why::before{content:attr(data-l) " · ";font-family:var(--mono);font-size:9.5px!important;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2)}}
 
 
 </style>
@@ -218,7 +263,7 @@ a.todo{text-decoration:none;color:inherit;cursor:pointer}
         </div>
         <div style="text-align:right">
           <div class="lb">Rank</div>
-          <div class="big">—<span style="font-size:20px;color:var(--gray2)">/—</span></div>
+          <div class="big">—<span style="color:var(--gray2)">/—</span></div>
           <div class="sub">—</div>
         </div>
       </div>
