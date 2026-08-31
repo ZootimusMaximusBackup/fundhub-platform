@@ -14,6 +14,7 @@ migrations applied, nothing built.** Branch `claude/white-label-models-offer-pag
 | W4 | Live Trial | `docs/specs/W4-live-trial.md` | done |
 | W5 | Offer page + funnel | `docs/specs/W5-offer-page-funnel.md` | done |
 | W6 | Pricing menu | `docs/specs/W6-pricing-menu.md` | done |
+| W7 | Training curriculum | `docs/specs/W7-curriculum.md` | done |
 
 ## The offer, as locked by the owner
 
@@ -118,6 +119,44 @@ that disagrees with it.
 | **What the $10,000 includes besides training** | The deliverable list has to be real before it is published |
 | **The Ascension funnel** | Does not exist and is not in the repo. To be built in its own batch now the offers are settled |
 | **Exact refund window** | "Short" is recorded as 3 days |
+
+## Blockers found by the curriculum research
+
+Not training problems. These stop the channel launching, and one is live on the core
+product right now.
+
+1. **THE REPAIR CONTRACT CONTRADICTS THE PRICE — LIVE TODAY, NOT WHITE-LABEL.**
+   `src/config/offers.mjs` prices `REPAIR_DFY` at $1,000 once (`priceCents: 100000`) and
+   fills the contract's `monthly_fee` field with that same price (line 196), while the
+   seeded `CREDIT-REPAIR-AGREEMENT` body reads *"You pay {{field.monthly_fee}} per month
+   while services are active"* with `term_days: 180`
+   (`db/migrations/169_contract_template_placeholders.sql:78`). **Every repair client has
+   signed an agreement for $1,000/month for six months — $6,000 — against a $1,000
+   product.** Owner decision required; not touched.
+2. **Day one does not work.** The end-to-end white-label walk on 2026-08-27 failed: no
+   pipeline card created, CRM search cannot find partners, Partner Home told a real
+   signed-in partner "No partners on file", and zero welcome email and zero SMS were
+   delivered.
+3. **The money spine was not launch-ready** as of 2026-08-21 — deposits failing to save
+   with a Postgres 23502, no real card ever charged or refunded, credit pulls sandbox
+   only. Re-verify before teaching any payment step as current.
+4. **There is nowhere for the $10,000 training to live.** `src/education/enrollments.mjs`
+   handles enrollment requests only; its own header states there is no lessons table, no
+   player and no entitlement check anywhere in `db/`.
+5. **No partner agreement template exists.** The payout gate depends on
+   `agreement_signed_at` being stamped, but no PARTNER-LICENSE row is seeded anywhere.
+   The document that makes someone a partner is not in the system.
+6. **"10 clients a month" has no definition.** Nothing says whether a $32 soft pull, a
+   $200 trial and a $3,000 deposit each count as one client — and the floor cannot be
+   computed at all today, because the only `INSERT INTO partner_revenue` in the repo is a
+   test fixture.
+7. **No state operating map.** Georgia makes operating a credit repair organisation for a
+   fee a misdemeanour; Texas, Florida and Georgia require registration and bonds. Nothing
+   lists where a partner may sell.
+8. **The program's own legal characterisation is unaddressed.** W5 bans franchise and
+   business-opportunity *words* in copy, but nothing addresses whether a brand licence
+   plus a mandated method plus a $10,000 fee plus a production minimum plus parent-run
+   fulfilment is itself one.
 
 ## Compliance
 

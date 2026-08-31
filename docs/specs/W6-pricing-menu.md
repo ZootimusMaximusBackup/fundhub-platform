@@ -62,7 +62,7 @@ coverage of the data, while the intelligence stays sellable.
 | The white-label program | Their brand across the system |
 | Training | Curriculum per the curriculum spec |
 | Fulfilment | FundHub's team does the client work |
-| Their portal | Brand Studio, CRM, partner screens |
+| Their portal | Brand Studio, Social Studio, Creative Factory, Partner Home — **four screens.** NOT the CRM: partners are blocked from it entirely and cannot see or move a client file, pipeline card, contract or payment link. An earlier draft of this row said "CRM" and was wrong |
 | The split | 50%, funding and repair, front and back |
 | Ad-account connection | Required. Free. Telemetry only |
 
