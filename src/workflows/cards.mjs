@@ -5,7 +5,9 @@
 //
 // Card Stacking (funding_card_stacking): after a successful move, emits the
 // matching round.* event so money-chain + funding workflows fire. Funded moves
-// are refused when funded_amount is missing/zero/negative (CLOSEOUT-FEE-BASIS).
+// are refused when funded_amount is missing/zero/negative, and also when any
+// bank yes on the round still has no dollar amount against it — that approval
+// would never be billed (CLOSEOUT-FEE-BASIS).
 
 import {
   PIPELINE_KEY as CARD_STACKING_PIPELINE,
@@ -77,7 +79,10 @@ export async function moveCardToStage(db, {
         moved: false,
         reason: guard.reason,
         message: guard.message,
-        suggestedFundedAmount: guard.suggestedFundedAmount ?? null
+        suggestedFundedAmount: guard.suggestedFundedAmount ?? null,
+        // Which banks are still blank, so the screen can name them.
+        missingApprovals: guard.missingApprovals ?? null,
+        missingApprovalBanks: guard.missingApprovalBanks ?? null
       };
     }
     resolvedFunded = guard.fundedAmount;

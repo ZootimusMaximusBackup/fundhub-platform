@@ -16,6 +16,7 @@ import crypto from "node:crypto";
 import { emit } from "../events/bus.mjs";
 import { recordOptOut } from "../lib/opt-out.mjs";
 import { createTask } from "../lib/create-task.mjs";
+import { fromCents } from "../commissions/money.mjs";
 
 // ---------------------------------------------------------------------------
 // 1. Signature verification (fail-closed)
@@ -94,6 +95,140 @@ const CLASSIFICATION_RULES = [
 ];
 
 const DOLLAR_PATTERN = /\$[\d,]+(?:\.\d{2})?/;
+
+/* ── THE BANK ALREADY TOLD US THE AMOUNT, AND WE THREW IT AWAY ─────────────
+   Added 2026-08-30.
+
+   DOLLAR_PATTERN above has always run on every inbound bank email. It only ever
+   answered yes/no — "does this email contain a dollar figure" — as a nudge to
+   classification confidence, and the figure it matched was dropped on the floor.
+   Meanwhile a funding advisor reads the same email and types the same number
+   into the Approved $ box by hand, and when they forget, the approval carries
+   no amount. Fundhub bills a percent of approvals that HAVE an amount
+   (docs/CLOSEOUT-FEE-BASIS.md), so a forgotten box is a bill that never goes
+   out. That is the leak these two functions close.
+
+   WHAT THIS IS NOT. It is not a decision, and nothing downstream may treat it
+   as one:
+
+     * It never sets applications.approved_amount. It travels as far as a
+       SUGGESTION on the screen, and a person clicks to accept it.
+     * It never picks. A bank email routinely states a credit limit, an APR fee,
+       an annual fee and a minimum payment in the same paragraph, and there is
+       no honest way to tell from the text alone which one is the approval. Every
+       distinct figure is carried and the screen says plainly that it cannot tell
+       which is which. Guessing here would put a $39 annual fee on an invoice.
+     * It never invents. No figure in the email means no suggestion — not zero.
+       Zero is a claim the bank approved nothing; unknown is not nothing
+       (CLAUDE.md §12).
+
+   AND IT DOES NOT TOUCH THE CLASSIFIER. DOLLAR_PATTERN, the keyword rules and
+   the negation pass are all exactly as they were. The scan below is a second,
+   separate read of the same text that runs AFTER the decision is made, and it
+   runs only for the two classifications that mean the bank said yes. A DENIED
+   email carries no amounts at all — a denial letter quoting the limit it is
+   refusing is the single most dangerous number in this mailbox. */
+
+/* Distinct from DOLLAR_PATTERN on purpose — that one is the classifier's and is
+   not to be edited for this. Global (every figure, not the first), and one or
+   two decimal places, because "$5,000.5" is written by real senders. */
+const DOLLAR_SCAN = /\$\s?(\d[\d,]*)(?:\.(\d{1,2}))?/g;
+
+/* How much of an email we will read for figures. The same 64 KiB ceiling
+   src/http/router.mjs puts on a stored webhook body, for the same reason: a
+   real bank email is a couple of KB, and an unbounded scan of a 6 MB request
+   is somebody else's denial-of-service. */
+const MAX_SCANNED_CHARS = 64 * 1024;
+
+/* How many distinct figures we will carry. Past a handful the answer is not
+   "here are your options", it is "this email is a statement, not an approval",
+   and the count below says so honestly. */
+const MAX_AMOUNT_CANDIDATES = 6;
+
+/* $1bn, the ceiling src/commissions/money.mjs and public/app/money-input.js
+   both use. Anything past it is a typo or a phone number with a dollar sign in
+   front of it, not an approval. */
+const MAX_SUGGESTED_CENTS = 100_000_000_000;
+
+/* One matched figure -> integer cents, or null when it is not an amount worth
+   offering. No float multiply: "450.10" * 100 is 45009.999999999996 in
+   JavaScript, and that is how a $450.10 approval becomes $450.09. The two
+   halves are read as whole numbers, the same rule public/app/money-input.js
+   applies to what a person types. */
+function dollarMatchToCents(intPart, fracPart) {
+  const digits = String(intPart || "").replace(/,/g, "");
+  if (!/^\d+$/.test(digits)) return null;
+  let frac = String(fracPart || "");
+  while (frac.length < 2) frac += "0";
+  const cents = Number(digits) * 100 + Number(frac);
+  if (!Number.isSafeInteger(cents)) return null;
+  // Zero is not an unknown and it is not an approval. It is dropped, never offered.
+  if (cents <= 0 || cents > MAX_SUGGESTED_CENTS) return null;
+  return cents;
+}
+
+/**
+ * Every distinct dollar figure stated in a bank email, in the order it is read
+ * — subject first, then body.
+ *
+ * @returns {{candidates: string[], found: number}}
+ *   `candidates` are fixed 2dp dollar strings ("5000.00"), ready for the
+ *   Approved $ box and for numeric(14,2), capped at MAX_AMOUNT_CANDIDATES.
+ *   `found` is how many DISTINCT figures the email actually stated, which can
+ *   be larger than candidates.length — the screen reports the true number
+ *   rather than the number that fitted.
+ */
+export function findDollarAmounts(subject, body) {
+  const seen = new Set();
+  const candidates = [];
+  for (const source of [subject, body]) {
+    const text = String(source || "").slice(0, MAX_SCANNED_CHARS);
+    if (!text) continue;
+    DOLLAR_SCAN.lastIndex = 0;
+    let m;
+    while ((m = DOLLAR_SCAN.exec(text)) !== null) {
+      const cents = dollarMatchToCents(m[1], m[2]);
+      if (cents === null) continue;
+      if (seen.has(cents)) continue;
+      seen.add(cents);
+      if (candidates.length < MAX_AMOUNT_CANDIDATES) candidates.push(fromCents(cents));
+    }
+  }
+  return { candidates, found: seen.size };
+}
+
+/* What the row on the screen shows instead of repeating the subject line.
+
+   CAPPED, and the cap is the point — src/http/router.mjs:110 records what an
+   uncapped stored body did to a shared production Postgres, and a bank email is
+   small enough that a cap costs nothing. 500 characters is a preview, which is
+   what the column is called and all the screen has room for; the whole email is
+   NOT stored, so the account detail in the back half of a forwarded statement
+   never lands in this table at all.
+
+   Whitespace is flattened because forwarded plain-text mail is hard-wrapped and
+   a preview full of line breaks reads as broken.
+
+   TRUNCATION IS MARKED, same reasoning as the webhook capture: a silently
+   shortened value is read as the whole thing.
+
+   NO TEXT AT ALL RETURNS null, not "". The column then holds NULL and the
+   screen falls through to the classification and the date, which is exactly how
+   public/app/client-control-panel.html was written to behave. */
+const MAX_PREVIEW_CHARS = 500;
+
+export function bodyPreviewOf(text) {
+  const flat = String(text ?? "").replace(/\s+/g, " ").trim();
+  if (!flat) return null;
+  if (flat.length <= MAX_PREVIEW_CHARS) return flat;
+  return `${flat.slice(0, MAX_PREVIEW_CHARS)} … [truncated]`;
+}
+
+/* The two classifications that mean the bank said yes to something. A
+   COUNTEROFFER is an approval for less, and the smaller figure in it is the one
+   that gets billed, so it needs the suggestion just as much as an APPROVED
+   does. Everything else — DENIED above all — carries no amounts. */
+const OFFERS_AN_AMOUNT = new Set(["APPROVED", "COUNTEROFFER"]);
 
 /* ── KEYWORD MATCHING — WORD BOUNDARIES, NOT RAW SUBSTRINGS ────────────────
    FIXED 2026-08-29. This was `lower.includes(kw)`, and a plain substring test
@@ -763,15 +898,36 @@ export async function handleMailgunWebhook({ db, body, signingKey }) {
   const emitted = [];
   const clientId = await resolveClientFromRecipient(db, evt.recipient);
 
+  /* Read AFTER the classification, never before it, and never able to change
+     it — see the block above DOLLAR_SCAN. Amounts are gathered only when the
+     bank said yes to something; a denial carries none.
+
+     `amounts` stays null for every other classification, and null means the two
+     amount keys are left OFF the payload entirely rather than written as an
+     empty list. "We did not look" and "we looked and the email stated nothing"
+     are different facts and the row should not blur them. */
+  const preview = bodyPreviewOf(evt.text);
+  const amounts = OFFERS_AN_AMOUNT.has(classification)
+    ? findDollarAmounts(evt.subject, evt.text)
+    : null;
+
   for (const c of canonical) {
     const payload = {
       classification,
       from: evt.from,
       to: evt.recipient,
       subject: evt.subject,
+      // Capped, whitespace-flattened, and null when the email had no text.
+      // See bodyPreviewOf, and the note on message.inbound further down for
+      // why mail.response carries this at all now.
+      bodyPreview: preview,
       clientId,
       source: "mailgun"
     };
+    if (amounts) {
+      payload.amountCandidates = amounts.candidates;
+      payload.amountCandidatesFound = amounts.found;
+    }
     const idKey = evt.messageId ? `mailgun:${evt.messageId}:${c.name}` : undefined;
     const res = await emit(db, c.name, payload, { idempotencyKey: idKey, clientId: clientId || undefined });
     emitted.push({ name: c.name, id: res.id, deduped: res.deduped });
@@ -806,12 +962,20 @@ export async function handleMailgunWebhook({ db, body, signingKey }) {
      message in the thread. An email with no Message-Id gets no dedupe key,
      which the bus already handles the same way for mail.response.
 
-     THE BODY IS CARRIED, and only here. `mail.response` deliberately does not
-     carry one — onMailResponse stores `subject` as its own body_preview because
-     a forwarded bank statement's text is account detail nobody asked us to
-     keep. This payload is a person's own words written to us, which is exactly
-     what a conversation thread is, and a thread with the messages missing is
-     not a thread. */
+     THE WHOLE BODY IS CARRIED, and only here. This payload is a person's own
+     words written to us, which is exactly what a conversation thread is, and a
+     thread with the messages missing is not a thread.
+
+     `mail.response` carries a CAPPED PREVIEW instead — changed 2026-08-30, and
+     the note that used to sit here said it carried nothing at all. That was
+     true, and it is why onMailResponse wrote the subject line into
+     body_preview: every bank_inbox row showed the same sentence twice, and the
+     paragraph where the bank states the approved amount was gone forever. The
+     reasoning behind it still stands and is respected — a forwarded bank
+     statement's full text is account detail nobody asked us to keep, so the
+     full text is still not stored. What is stored is 500 characters
+     (bodyPreviewOf), which is a preview line for the screen, plus the dollar
+     figures the classifier was already finding and discarding. */
   /* WHO REPLIED — THE ADDRESS THEY WROTE TO ANSWERS FIRST.
 
      Every email we send now carries a Reply-To of `reply+<clientId>@<domain>`

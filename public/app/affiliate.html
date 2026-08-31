@@ -317,12 +317,24 @@ table.grid tbody tr:hover{background:var(--soft)}
             <div class="spacer"></div>
             <div class="eyebrow">REFERRED LEADS</div>
           </div>
+          <!-- THE "BUSINESS" COLUMN — where its value may come from, and where it may not.
+               The `clients` table has NO business-name column (checked: db/schema/001_init.sql
+               plus every later ALTER — first_name, last_name, email, phone, client_code, and
+               nothing else). The one business name in the schema is
+               `client_custom_fields.business_name`. That column, and only that column, may
+               fill this cell. Where it is empty the honest fill is `clients.client_code`.
+               A client's first and last name is NOT a business name and must never be
+               substituted for one here: the affiliate contract in the Terms tab below grants
+               the affiliate a business name, a referral date, a status and their own
+               commission. Contact details are outside the Affiliate role, so putting a
+               person's name in this column would hand an outside partner data the contract
+               says they do not get. Nothing fills this table yet. -->
           <div style="overflow-x:auto"><table class="grid">
             <thead><tr><th>Referred</th><th>Business</th><th>Status</th><th>First paid product</th><th>Basis</th><th style="text-align:right">Commission</th><th>Payout</th></tr></thead>
             <tbody id="leadBody"></tbody>
             <tfoot><tr>
-              <td colspan="5" style="border-top:2px solid var(--line);font-weight:600">Total shown</td>
-              <td class="money" id="leadTotal" style="border-top:2px solid var(--line);text-align:right;font-weight:600">$0</td>
+              <td colspan="5" id="leadTotalLabel" style="border-top:2px solid var(--line);font-weight:600">Total shown</td>
+              <td class="money" id="leadTotal" style="border-top:2px solid var(--line);text-align:right;font-weight:600">—</td>
               <td style="border-top:2px solid var(--line)"></td></tr></tfoot>
           </table></div>
           <div style="padding:12px 16px;border-top:1px solid var(--line);background:var(--soft);font-size:var(--fs-body);color:var(--gray);line-height:1.55">
@@ -382,13 +394,83 @@ document.querySelectorAll('.tab').forEach(function(t){
   });
 });
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
-function money(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
 
 var LEADS=[];
 var ST_CLS={'Clicked':'b-gray','Signed up':'b-info','Assessment paid':'b-butter','Deposit paid':'b-warn','Funded':'b-ok','Lost':'b-alert'};
 var PAY_CLS={'Accrued':'b-warn','Paid':'b-ok','—':'b-gray'};
-var RATE=0.12;
-function commission(l){return l.basis*RATE}
+
+/* FH-AFFILIATE-COMMISSION-BEGIN */
+/* COMMISSION IS READ FROM THE ROW. IT IS NEVER WORKED OUT IN THE BROWSER.
+
+   This screen used to carry `var RATE=0.12` and multiply the basis by it. The
+   real Tier 1 rate is 20%, owner-set 2026-08-24 and shipped in
+   db/migrations/261_affiliate_tier1_20pct_20260824.sql. Nothing fetches LEADS
+   yet, so nobody saw it — but the moment this table had a row in it every
+   affiliate would have been shown a commission 40% short of what they are owed.
+
+   A single constant in a web page cannot express the rate in the first place.
+   The rate lives in affiliate_commission_rules, one row per rule, and it moves
+   by tier (direct 20%, downline 5%), by product (funding pays on the deposit
+   collected, repair on the enrolment fee) and by date (a rule is effective-dated
+   and the version open on the day of the outcome governs the payout).
+
+   convert() in src/affiliates/economics.mjs already does the sum once, writes
+   the answer to affiliate_referrals.commission_due, and freezes the exact rule
+   and rate that produced it in rule_snapshot. Doing it again here would let this
+   screen and the ledger print two different numbers with nothing to say which
+   one is true, and would make that snapshot mean nothing.
+
+   commission_due is NULL when a referral converted while no rule was in force.
+   NULL is UNKNOWN and it has to survive all the way to the screen as the dash.
+   Never $0 — that reads as "you earned nothing", which this page cannot know —
+   and never a figure this file invented. A real 0 that the ledger actually
+   recorded is a measurement and prints as $0.00.
+
+   Nothing in this block multiplies. Keep it that way. */
+
+function money(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+
+/* commissionDue — the row's own figure, or null for unknown. A missing field,
+   an empty string and a value that is not a number are all unknown. None of
+   them become 0. */
+function commissionDue(l){
+  var v=l?l.commission_due:null;
+  if(v===null||v===undefined||v==='') return null;
+  var n=Number(v);
+  return isFinite(n)?n:null;
+}
+
+/* commissionText — what the Commission cell prints for one row. */
+function commissionText(l){
+  var c=commissionDue(l);
+  return c===null?'—':money(c);
+}
+
+/* commissionTotals — adds up the commissions that are KNOWN and says how many
+   it could not add. A row with no rate set is left out of the sum rather than
+   counted as zero, because counting it as zero would make the total read as
+   the whole story when it is not. */
+function commissionTotals(rows){
+  var sum=0,counted=0,unknown=0;
+  (rows||[]).forEach(function(l){
+    var c=commissionDue(l);
+    if(c===null){unknown++;return}
+    sum=sum+c;counted++;
+  });
+  return {
+    counted:counted,
+    unknown:unknown,
+    text:counted?money(sum):'—',
+    label:'Total shown'+(unknown
+      ?' · '+unknown+(unknown===1?' row with no rate set is not counted':' rows with no rate set are not counted')
+      :'')
+  };
+}
+
+if(typeof window!=='undefined'){
+  window.FHAffiliateCommission={due:commissionDue,text:commissionText,totals:commissionTotals};
+}
+/* FH-AFFILIATE-COMMISSION-END */
 
 /* Every run reconciles to the lead rows above: your agreement rate on each qualifying basis,
    grouped by the fortnight the payment landed in. */
@@ -403,16 +485,18 @@ function renderLeads(){
     return true;
   });
   document.getElementById('leadBody').innerHTML=list.map(function(l){
-    var c=commission(l);
     return '<tr><td class="mono" style="font-size:var(--fs-body)">'+l.d+'</td>'+
       '<td style="font-weight:500">'+esc(l.biz)+'</td>'+
       '<td><span class="badge '+ST_CLS[l.st]+'">'+l.st+'</span></td>'+
       '<td style="font-size:var(--fs-body);color:'+(l.prod?'inherit':'var(--gray2)')+'">'+esc(l.prod||'— none yet')+'</td>'+
       '<td class="money">'+(l.basis?money(l.basis):'—')+'</td>'+
-      '<td class="money" style="text-align:right">'+(c?money(c):'—')+'</td>'+
+      '<td class="money" style="text-align:right">'+commissionText(l)+'</td>'+
       '<td><span class="badge '+PAY_CLS[l.pay]+'">'+l.pay+'</span></td></tr>';
   }).join('')||'<tr><td colspan="7" class="empty">'+(LEADS.length?'No referrals match that filter.':'No referrals on file')+'</td></tr>';
-  document.getElementById('leadTotal').textContent=list.length?money(list.reduce(function(a,l){return a+commission(l)},0)):'—';
+  var tot=commissionTotals(list);
+  document.getElementById('leadTotal').textContent=tot.text;
+  var totLabel=document.getElementById('leadTotalLabel');
+  if(totLabel) totLabel.textContent=tot.label;
 }
 
 function renderPayouts(){

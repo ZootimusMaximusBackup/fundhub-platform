@@ -7,12 +7,19 @@
 //   round_submitted → round.submitted
 //   approved        → round.approved
 //   action_required → (none)
-//   funded          → round.funded  (hard-requires funded_amount > 0)
+//   funded          → round.funded  (hard-requires funded_amount > 0, AND every
+//                     bank yes on the round either priced or explicitly excluded)
 //   closed          → round.closeout  (staff marks the engagement complete)
 //
 // Idempotency key includes roundNumber so round 2 can re-enter the same stages.
 
 import { emit } from "../events/bus.mjs";
+import {
+  resolveSuccessFee,
+  sumConfirmedApprovals,
+  listUnpricedApprovals,
+  unpricedApprovalNames
+} from "./success-fee.mjs";
 
 export const PIPELINE_KEY = "funding_card_stacking";
 export const PRODUCT = "card_stacking";
@@ -35,20 +42,13 @@ export function eventForStage(stageKey) {
 }
 
 /**
- * Sum of Approved applications' approved_amount for a funding round.
- * Prefill only — fee basis stays funding_rounds.funded_amount (CLOSEOUT-FEE-BASIS).
+ * Sum of confirmed approvals on a funding round — Approved applications that
+ * carry a real recorded amount. Used here to PREFILL the funded amount when
+ * staff omit it; the same number is also the fee basis under the 2026-08-30
+ * decision (docs/CLOSEOUT-FEE-BASIS.md). One definition, in success-fee.mjs.
  */
 export async function sumApprovedApplications(db, fundingRoundId) {
-  if (!fundingRoundId) return null;
-  const r = await db.query(
-    `SELECT COALESCE(SUM(approved_amount), 0)::numeric AS total
-       FROM applications
-      WHERE funding_round_id = $1
-        AND status = 'Approved'`,
-    [fundingRoundId]
-  );
-  const n = Number(r.rows[0]?.total);
-  return Number.isFinite(n) && n > 0 ? n : null;
+  return sumConfirmedApprovals(db, { fundingRoundId });
 }
 
 export async function latestRoundForClient(db, { orgId, clientId }) {
@@ -60,6 +60,20 @@ export async function latestRoundForClient(db, { orgId, clientId }) {
     [orgId, clientId]
   );
   return r.rows[0] || null;
+}
+
+/** One client's round by number, falling back to their latest round. */
+export async function roundFor(db, { orgId, clientId, roundNumber } = {}) {
+  if (roundNumber != null) {
+    const r = await db.query(
+      `SELECT * FROM funding_rounds
+        WHERE org_id = $1 AND client_id = $2 AND round_number = $3
+        LIMIT 1`,
+      [orgId, clientId, Number(roundNumber)]
+    );
+    if (r.rows[0]) return r.rows[0];
+  }
+  return latestRoundForClient(db, { orgId, clientId });
 }
 
 export async function nextRoundNumber(db, { orgId, clientId }) {
@@ -102,8 +116,37 @@ export async function resolveFundedAmount(db, {
 }
 
 /**
- * Guard: funded moves require funded_amount > 0.
- * Returns { ok:true, fundedAmount } or { ok:false, reason, message, suggestedFundedAmount }.
+ * Every bank yes on the round that is still worth nothing on the bill, phrased
+ * for a person. Empty list → nothing blocking.
+ */
+function missingAmountRefusal(names) {
+  const one = names.length === 1;
+  return (
+    `Cannot move to Funded — ${one ? "1 bank approval has" : `${names.length} bank approvals have`} ` +
+    `no dollar amount recorded: ${names.join(", ")}. ` +
+    "We bill a percent of the approvals that have an amount on them, so an approval " +
+    "left blank is money this client is never invoiced for. " +
+    "Open the client's Funding tab, type the amount in the Approved $ box beside " +
+    `${one ? "that bank" : "each bank"} and press Bank yes. ` +
+    `If the approval was withdrawn or the client never used it, mark it as not counting instead — ` +
+    "that is recorded against your name and lets this round close."
+  );
+}
+
+/**
+ * Guard: a funded move requires (a) no bank yes left without a dollar amount,
+ * and (b) funded_amount > 0.
+ *
+ * (a) came second in time but comes FIRST here, and it is not overridable by
+ * sending a funded amount. The success fee is a percent of approvals that carry
+ * a recorded amount (docs/CLOSEOUT-FEE-BASIS.md), so a round closing with a
+ * blank approval on it is revenue that is never invoiced — and once the round
+ * is closed nobody ever goes back for it. Staff can still close the round: they
+ * either fill the amount in, or say on the record that the approval does not
+ * count (setApprovalExclusion, src/applications/status.mjs).
+ *
+ * Returns { ok:true, fundedAmount } or
+ * { ok:false, reason, message, suggestedFundedAmount, missingApprovals }.
  */
 export async function guardFundedAmount(db, {
   orgId,
@@ -112,20 +155,11 @@ export async function guardFundedAmount(db, {
   approvedAmount,
   roundNumber
 } = {}) {
-  let round = null;
-  if (roundNumber != null) {
-    round = (await db.query(
-      `SELECT * FROM funding_rounds
-        WHERE org_id = $1 AND client_id = $2 AND round_number = $3
-        LIMIT 1`,
-      [orgId, clientId, Number(roundNumber)]
-    )).rows[0] || null;
-  }
-  if (!round) {
-    round = await latestRoundForClient(db, { orgId, clientId });
-  }
+  const round = await roundFor(db, { orgId, clientId, roundNumber });
 
   // Already funded with a real amount — idempotent re-move may omit the body field.
+  // Nothing below runs: re-parking a card on a column it already sits on must
+  // not start refusing, or the board deadlocks on its own history.
   if (round && round.status === "funded" && Number(round.funded_amount) > 0) {
     return {
       ok: true,
@@ -133,6 +167,29 @@ export async function guardFundedAmount(db, {
       approvedAmount: round.approved_amount != null ? Number(round.approved_amount) : null,
       round,
       alreadyFunded: true
+    };
+  }
+
+  /* A round with NO approvals at all is untouched by this and always was —
+     listUnpricedApprovals comes back empty and we fall through to the funded
+     amount rule exactly as before. */
+  const unpriced = round?.id
+    ? await listUnpricedApprovals(db, { orgId, fundingRoundId: round.id })
+    : [];
+  if (unpriced.length) {
+    const names = unpricedApprovalNames(unpriced);
+    return {
+      ok: false,
+      reason: "approval_amounts_missing",
+      message: missingAmountRefusal(names),
+      missingApprovals: unpriced.map((row) => ({
+        applicationId: row.id,
+        lenderId: row.lender_id || null,
+        bank: String(row.bank || "").trim() || null
+      })),
+      missingApprovalBanks: names,
+      suggestedFundedAmount: null,
+      round
     };
   }
 
@@ -161,9 +218,12 @@ export async function guardFundedAmount(db, {
   return {
     ok: true,
     fundedAmount: resolved,
+    // No fallback to the funded amount. Calling money that funded an "approved
+    // amount" is how the funded figure used to end up billed as an approval.
+    // Nothing confirmed is null, and null means unknown (CLAUDE.md §12).
     approvedAmount: approvedAmount != null && Number(approvedAmount) > 0
       ? Number(approvedAmount)
-      : (suggested != null ? suggested : resolved),
+      : suggested,
     round,
     alreadyFunded: false
   };
@@ -173,7 +233,10 @@ function buildPayload({
   stageKey,
   roundNumber,
   approvedAmount,
-  fundedAmount
+  fundedAmount,
+  feePercent = null,
+  saleId = null,
+  fundingRoundId = null
 }) {
   return {
     applicationId: null,
@@ -186,7 +249,13 @@ function buildPayload({
     source: "card_stacking",
     product: PRODUCT,
     roundNumber,
-    engagementComplete: stageKey === "closed"
+    engagementComplete: stageKey === "closed",
+    // Only round.funded carries these three, and only they make an invoice
+    // possible. Without feePercent, F-07 made a task instead of a bill for
+    // every funded round this system has ever had. In PERCENT UNITS: 10 = 10%.
+    feePercent,
+    saleId,
+    fundingRoundId
   };
 }
 
@@ -228,11 +297,39 @@ export async function emitCardStackingRoundTransition(db, {
     rn = latest ? Number(latest.round_number) : 1;
   }
 
+  /* round.funded is the billing event, so it carries the billing facts, read
+     from the database at the moment of funding and frozen on the event:
+
+       approvedAmount  the CONFIRMED approvals total — the fee basis
+       feePercent      the rate agreed on this client's sale, in percent units
+       saleId          } together these two are F-07's idempotency key, which
+       fundingRoundId  } is what stops a replay billing the client twice
+
+     Every one of these was missing before, which is why no funded round has
+     ever produced an invoice. approvedAmount here is deliberately NOT the
+     caller's typed roll-up: only a bank yes with a recorded amount is a
+     confirmed approval, and nothing confirmed means null, never the funded
+     amount and never zero. */
+  const billing = eventName === "round.funded";
+  let fee = { confirmedApprovedAmount: null, feePercent: null, saleId: null, fundingRoundId: null };
+  if (billing) {
+    const row = await roundFor(db, { orgId, clientId, roundNumber: rn });
+    if (row) {
+      const resolved = await resolveSuccessFee(db, { orgId, fundingRoundId: row.id });
+      fee = { ...resolved, fundingRoundId: row.id };
+    }
+    // No round row leaves every billing field null. F-07 then refuses with a
+    // named reason, which is the right answer — not a bill built on a guess.
+  }
+
   const payload = buildPayload({
     stageKey,
     roundNumber: rn,
-    approvedAmount,
-    fundedAmount
+    approvedAmount: billing ? fee.confirmedApprovedAmount : approvedAmount,
+    fundedAmount,
+    feePercent: fee.feePercent,
+    saleId: fee.saleId,
+    fundingRoundId: fee.fundingRoundId
   });
 
   const idempotencyKey = `card_stacking:${clientId}:${rn}:${stageKey}:${eventName}`;
