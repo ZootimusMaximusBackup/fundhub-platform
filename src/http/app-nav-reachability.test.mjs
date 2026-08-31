@@ -200,6 +200,25 @@ describe("app shell — the lists this test reads", () => {
         `${s} is runtime-hidden but missing from the first-paint CSS — its menu row can flash before shell.js runs`
       );
     }
+    /* And the other direction, which is the one that actually bit. The loop
+       above proves every runtime-hidden row is also hidden at first paint. It
+       says nothing about a row hidden in CSS that is NO LONGER in NAV_HIDDEN —
+       so on 2026-08-27 company-brain.html came off NAV_HIDDEN, this file was
+       updated, the suite went green, and the row stayed invisible on the live
+       site because crm-sidebar.css was still hiding it. Two lists, one of them
+       unwatched. Both directions are checked now. */
+    const hideBlock = SIDEBAR_CSS.match(/\.navitem:is\(([\s\S]*?)\)\s*\{/);
+    assert.ok(hideBlock, "crm-sidebar.css lost its .navitem:is(...) first-paint hide block");
+    const cssHidden = [...hideBlock[1].matchAll(/\[href=["']([a-z0-9-]+\.html)["']\]/g)].map((m) => m[1]);
+    assert.ok(cssHidden.length > 0, "the first-paint hide block parsed as empty");
+    for (const s of new Set(cssHidden)) {
+      assert.ok(
+        NAV_HIDDEN.includes(s),
+        `crm-sidebar.css still hides ${s} but shell.js NAV_HIDDEN does not list it — ` +
+        `the row is invisible with nothing in the runtime saying so. Remove it from the CSS too.`
+      );
+    }
+
     for (const s of KEEP_ON_MENU) {
       assert.ok(!NAV_HIDDEN.includes(s), `${s} must stay on the menu`);
       assert.ok(ALL.includes(s), `${s} must stay a reachable screen`);

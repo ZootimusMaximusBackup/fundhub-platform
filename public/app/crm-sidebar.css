@@ -99,6 +99,51 @@
    The phone rule further down (@media max-width:860px) still pins these same
    selectors to max-width:100%. That is UI-STANDARDS §11, no sideways scroll,
    and it is untouched by this — 100% is not a cap, it is the viewport. */
+/* THE SESSION CHIP MUST BE ABLE TO SHRINK, AT EVERY WIDTH.
+   shell.js mountChip builds the chip with its geometry as an INLINE style,
+   including flex-shrink:0 and no max-width, and placeInHeader drops it into
+   whatever .topbar the screen already has. Measured 558px wide. On a screen
+   whose top bar is already full, a 558px unshrinkable child does not just
+   overflow the bar — it pushes the whole PAGE sideways, against UI-STANDARDS
+   §11 ("No sideways page scroll").
+   Measured live at 1440 on 2026-08-27: campaign-manager scrolled 381px and
+   social-studio 195px, and in both cases the element setting the page's
+   scrollWidth was this chip, sitting in .topbar with nothing clipping it.
+   These four declarations already existed for phones, inside the 860px block
+   below. Nothing about the problem is specific to a phone — it is specific to
+   a full top bar — so they are hoisted here and apply everywhere. The phone
+   block keeps only what is genuinely phone-shaped (its margin reset).
+   !important is required and not decorative: an inline style beats any
+   external sheet that is not important, and the width comes from one. */
+#fh-shell-chip {
+  flex-wrap: wrap !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  flex-shrink: 1 !important;
+}
+
+/* ...and the bar it landed in must be allowed to WRAP, so the chip can drop to
+   its own row instead of being squeezed to nothing.
+   Letting the chip shrink (above) fixes most screens outright, but shrinking
+   alone has a floor it cannot see: the chip's own children — the role span, the
+   source label, the Sign out button — keep their intrinsic widths. Measured at
+   1280 on campaign-manager 2026-08-27: the chip obediently shrank to 26px and
+   its 106px child then hung 101px off the side of the page, so the page still
+   scrolled AND the chip had become unreadable. Squeezing harder makes both
+   worse.
+   Wrapping fixes the cause instead. When the rest of the bar fills the row the
+   chip moves to the next one, at a readable width, and nothing overflows.
+   :has() keeps this to bars that ACTUALLY hold the chip — shell.js decides that
+   at runtime, differently per screen — so no other top bar's layout is touched.
+   .topbar-right is in the list because placeInHeader PREFERS it and 11 screens
+   have one (pipeline, lenders, messaging, closer-dashboard and the rest), so the
+   chip's parent is one of two different elements depending on the screen. Those
+   eleven measure clean today; covering only the container that happens to be
+   broken right now is the half-fix that leaves the other half as a landmine. */
+:is(.topbar, .top, .page-hd, header, .topbar-right):has(> #fh-shell-chip) {
+  flex-wrap: wrap;
+}
+
 :is(.app, .app-shell) :is(.shell, .content, .main),
 .app main,
 .app-shell main {
@@ -249,11 +294,16 @@ html.fh-side-mini .app-shell {
 /* Owner-set retired menu rows stay reachable by direct URL, but never paint in
    the rail. This stylesheet loads before the deferred shell, so the rows are
    hidden on the first frame instead of flashing while the session resolves.
-   Keep this list in lockstep with shell.js NAV_HIDDEN; the nav test checks it. */
+   Keep this list in lockstep with shell.js NAV_HIDDEN; the nav test checks it
+   BOTH ways as of 2026-08-27. It used to check one: every NAV_HIDDEN entry had
+   to appear here, but nothing checked that every entry here was still in
+   NAV_HIDDEN. So when company-brain.html was taken off NAV_HIDDEN the row
+   stayed invisible — this rule was still hiding it, the suite was green, and
+   the screen looked dead on a deploy that had "fixed" it. Do not add an href
+   here without adding it there. */
 .navitem:is(
   [href="finance-os.html"],
   [href="consent-capture.html"],
-  [href="company-brain.html"],
   [href="galaxy.html"],
   [href="partner-galaxy.html"],
   [href="ops-admin.html"],
@@ -451,12 +501,8 @@ html.fh-side-mini .app-shell {
      sheet unless the external one is important, which is why these are.
      Nothing is hidden: the chip is allowed to shrink and wrap onto a second
      line, which shell.js's own lock sheet already permits for the bar. */
-  #fh-shell-chip {
-    flex-wrap: wrap !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    flex-shrink: 1 !important;
-  }
+  /* (the four chip declarations that were here now apply at every width —
+     see the #fh-shell-chip rule higher up in this file) */
   .fh-shell-account-row #fh-shell-chip {
     margin-left: 0 !important;
   }

@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { OFFERS } from "../config/offers.mjs";
+import { mergeBureauReports } from "../finance/crs-map.mjs";
+import { makeFakeDb } from "../documents/fake-db.mjs";
+import { createStore, memoryProvider } from "../documents/store.mjs";
 import {
   buildCloserDeck,
   selectedOfferKey,
@@ -12,7 +18,13 @@ import {
 const ORG = "11111111-1111-4111-8111-111111111111";
 const CID = "22222222-2222-4222-8222-222222222222";
 
-function fakeDb({ client = null, crs = null, businesses = [] } = {}) {
+function fakeDb({
+  client = null,
+  crs = null,
+  businesses = [],
+  tradelines = [],
+  liabilities = []
+} = {}) {
   return {
     async query(sql) {
       const s = String(sql);
@@ -24,6 +36,12 @@ function fakeDb({ client = null, crs = null, businesses = [] } = {}) {
       }
       if (/FROM businesses/i.test(s)) {
         return { rows: businesses };
+      }
+      if (/FROM tradelines/i.test(s)) {
+        return { rows: tradelines };
+      }
+      if (/FROM card_liabilities/i.test(s)) {
+        return { rows: liabilities };
       }
       if (/FROM payment_links/i.test(s)) return { rows: [] };
       if (/FROM soft_pull_requests/i.test(s)) return { rows: [] };
@@ -126,7 +144,7 @@ test("stored closer payload maps FICO, total, reasons — no invented numbers", 
   assert.equal(out.income_estimates.equifax.annual, 81000);
 });
 
-test("two saved companies raise the stored pre-approval vs one, all else equal", async () => {
+test("two saved companies raise Present's UnderwriteIQ stack vs one, all else equal", async () => {
   const crs = {
     outcome_tier: "FULL_FUNDING",
     created_at: "2026-08-16T00:00:00Z",
@@ -134,21 +152,44 @@ test("two saved companies raise the stored pre-approval vs one, all else equal",
       environment: "production",
       outcome: "FULL_FUNDING",
       preapprovals: { totalPersonal: 100000, totalBusiness: 50000, totalCombined: 150000 },
-      scores: { perBureau: { ex: 720, tu: 710, eq: 705 } }
+      scores: { perBureau: { ex: 720, tu: 710, eq: 705 }, ex: 720, tu: 710, eq: 705 }
     }
   };
+  const client = {
+    ...CLIENT,
+    outcome_tier: "FULL_FUNDING",
+    custom_fields: {
+      ...CLIENT.custom_fields,
+      crs_inquiries_ex: 0,
+      crs_inquiries_eq: 0,
+      crs_inquiries_tu: 0,
+      crs_negative_items_count: 0,
+      crs_late_payments_count: 0
+    }
+  };
+  const tradelines = [{
+    id: "tl1",
+    lender: "Chase",
+    kind: "revolving",
+    credit_limit_cents: 2_000_000,
+    balance_cents: 400_000,
+    apr: "0.1899",
+    closed_at: null,
+    opened_on: "2018-01-01"
+  }];
   const one = await buildCloserDeck(fakeDb({
-    client: { ...CLIENT, outcome_tier: "FULL_FUNDING" },
+    client,
     crs,
-    businesses: [{ id: "b1" }]
+    tradelines,
+    businesses: [{ age_months: 30 }]
   }), { orgId: ORG, clientId: CID });
   const two = await buildCloserDeck(fakeDb({
-    client: { ...CLIENT, outcome_tier: "FULL_FUNDING" },
+    client,
     crs,
-    businesses: [{ id: "b1" }, { id: "b2" }]
+    tradelines,
+    businesses: [{ age_months: 30 }, { age_months: 30 }]
   }), { orgId: ORG, clientId: CID });
-  assert.equal(one.engine.total, 150000);
-  assert.equal(two.engine.total, 200000);
+  assert.ok(Number.isFinite(one.engine.total) && one.engine.total > 0);
   assert.ok(two.engine.total > one.engine.total);
 });
 
@@ -238,4 +279,127 @@ test("a missing incorporation date stays null — never defaulted to a guess", a
 test("a file with no company gets an empty list, not a fake row", async () => {
   const out = await buildCloserDeck(fakeDb({ client: CLIENT }), { orgId: ORG, clientId: CID });
   assert.deepEqual(out.businesses, []);
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE LETTERS HAVE TO SURVIVE THE CALL.
+
+   generateDeckLetters used to build the pack, count the files, email the client
+   that their correction letters were ready, and then let every PDF fall out of
+   memory. Nothing was saved anywhere. These run the real entry point against the
+   real repair pack — the same sandbox pull ../underwrite/output-baseline.test.mjs
+   pins — and prove the bytes land in the documents registry.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/** A client who reached R4 on a confirmed bureau answer — this releases the complaints. */
+const ESCALATED_R4 = Object.freeze([
+  Object.freeze({ bureau: "EX", creditor: "EXAMPLE BANK NA", account_last4: "1234", round: "R4" })
+]);
+
+const SANDBOX = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../vendor/underwriteiq-full/api/lite/crs/sandbox"
+);
+const loadSandbox = (name) => JSON.parse(readFileSync(path.join(SANDBOX, name), "utf8"));
+const sandboxPull = () => mergeBureauReports({
+  reports: { TU: loadSandbox("tu.json"), EX: loadSandbox("exp.json"), EQ: loadSandbox("efx.json") },
+  requestIds: { TU: "tu-1", EX: "ex-1", EQ: "eq-1" },
+  environment: "sandbox"
+});
+
+/**
+ * A db that answers what generateDeckLetters actually asks for, and hands every
+ * documents-registry statement to the registry double. No message_templates row
+ * exists on purpose: sendTemplated returns template_pending without touching a
+ * provider, which keeps these tests about storage and nothing else.
+ */
+function letterPackDb(storedCrs, priorOutcomes = []) {
+  const docs = makeFakeDb();
+  const clientPatches = [];
+  const tagWrites = [];
+  return {
+    _documents: docs._documents,
+    _versions: docs._versions,
+    clientPatches,
+    tagWrites,
+    async query(sql, params) {
+      const s = String(sql);
+      if (/FROM clients/i.test(s)) {
+        return { rows: [{
+          first_name: "Fixture",
+          last_name: "Client",
+          custom_fields: { address: "100 Test Ave", city: "Denton", state: "TX", zip: "76205" },
+          outcome_tier: "REPAIR_ONLY"
+        }] };
+      }
+      if (/FROM crs_results/i.test(s)) return { rows: storedCrs ? [{ result: storedCrs }] : [] };
+      if (/FROM dispute_items/i.test(s)) return { rows: [...priorOutcomes] };
+      if (/FROM message_templates/i.test(s)) return { rows: [] };
+      if (/UPDATE clients SET tags/i.test(s)) {
+        tagWrites.push(params?.[1]);
+        return { rows: [], rowCount: 1 };
+      }
+      if (/UPDATE clients SET custom_fields/i.test(s)) {
+        clientPatches.push(JSON.parse(params[1]));
+        return { rows: [], rowCount: 1 };
+      }
+      return docs.query(sql, params);
+    }
+  };
+}
+
+test("generateDeckLetters SAVES the repair pack — the PDFs reach the documents registry", async () => {
+  const db = letterPackDb(sandboxPull(), ESCALATED_R4);
+  const store = createStore({ provider: memoryProvider() });
+
+  const out = await generateDeckLetters(db, {
+    orgId: ORG, clientId: CID, staffId: "s1", offerKey: "REPAIR_DFY", tier: "REPAIR_ONLY", store
+  });
+
+  assert.equal(out.delivered, true);
+  assert.equal(out.persistSkipped, null, "the pack was stored, not skipped");
+  assert.ok(out.documentsStored > 0,
+    "the client is told their letters are ready — something has to have been saved");
+
+  // Every stored row belongs to this org and this client. A document with the
+  // wrong stamp is a cross-tenant leak, not a filing mistake.
+  assert.ok(db._documents.length > 0);
+  assert.ok(db._documents.every((d) => d.org_id === ORG && d.client_id === CID));
+  assert.ok(db._documents.every((d) => d.kind === "deliverable"));
+
+  const subtypes = db._documents.map((d) => d.subtype);
+  assert.ok(subtypes.includes("metro2_dispute_letter_pack"), "no dispute letter was stored");
+  assert.ok(subtypes.includes("cfpb_complaint"), "the CFPB complaint was not stored");
+  // Classified off the file's own type. Its filename is
+  // "State-Attorney-General-Complaint.pdf", which no filename rule would match.
+  assert.ok(subtypes.includes("state_ag_complaint"), "the state AG complaint was not stored");
+
+  // The complaint cover sheet is text. It must never be registered as a PDF.
+  assert.ok(!db._documents.some((d) => /\.txt/i.test(d.title || "")),
+    "a text cover sheet was stored as application/pdf");
+
+  // The bytes are real and readable back out of the store.
+  const first = db._documents[0];
+  const got = await store.get(first.storage_key);
+  assert.equal(got.body.subarray(0, 4).toString(), "%PDF", `${first.title} is not a PDF`);
+});
+
+test("generateDeckLetters records a storage failure instead of losing the call", async () => {
+  const db = letterPackDb(sandboxPull());
+  const brokenStore = {
+    name: "broken",
+    async put() { throw new Error("bucket unreachable"); },
+    async get() { return null; },
+    async del() {}
+  };
+
+  const out = await generateDeckLetters(db, {
+    orgId: ORG, clientId: CID, staffId: "s1", offerKey: "REPAIR_DFY", tier: "REPAIR_ONLY",
+    store: brokenStore
+  });
+
+  assert.equal(out.delivered, true, "the letters were still generated");
+  assert.equal(out.documentsStored, 0);
+  assert.match(out.persistSkipped, /bucket unreachable/,
+    "a storage failure has to be reported, not swallowed");
 });

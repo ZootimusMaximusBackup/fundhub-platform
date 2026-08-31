@@ -77,7 +77,25 @@ const CARDS_SQL = `
          AND conv.org_id = p.org_id
          AND conv.channel = 'email'
          AND last.direction = 'inbound'
-    ) AS email_needs_reply
+    ) AS email_needs_reply,
+    /* A BANK SAID YES AND NOBODY HAS RECORDED HOW MUCH.
+       An approved amount is optional at the moment a bank comes back
+       (owner-set 2026-08-29) — the fulfillment team often has to ask the
+       client or wait for the bank's approval email before they know the limit.
+       That is allowed, but it cannot be allowed to rot: until the dollars are
+       in, that approval is left out of the round's lender breakdown
+       (src/funding/closeout.mjs filters COALESCE(approved_amount,0) > 0), so
+       the client is never billed a success fee for it.
+       NULL means UNKNOWN here, and only NULL. A recorded 0 is a fact somebody
+       entered and is not flagged. */
+    EXISTS (
+      SELECT 1
+        FROM applications a
+       WHERE a.client_id = c.id
+         AND a.org_id = p.org_id
+         AND a.status = 'Approved'
+         AND a.approved_amount IS NULL
+    ) AS approval_amount_missing
   FROM cards cd
   JOIN pipelines p ON p.id = cd.pipeline_id
   LEFT JOIN clients c ON c.id = cd.client_id AND c.org_id = p.org_id
@@ -132,6 +150,8 @@ export default async function handler(req, res) {
         phone: r.phone || null,
         sms_needs_reply: !!r.sms_needs_reply,
         email_needs_reply: !!r.email_needs_reply,
+        // One approval on this client's file said yes with no dollar amount.
+        approval_amount_missing: !!r.approval_amount_missing,
         owner: r.owner ?? null,
         entered_at: r.entered_at,
         outcome_tier: r.outcome_tier ?? null,

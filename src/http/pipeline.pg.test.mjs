@@ -156,6 +156,55 @@ test("pipeline cards mark sms/email needs_reply when that person wrote last", { 
   assert.equal(card.email_needs_reply, false);
 });
 
+/* A BANK SAID YES AND NOBODY HAS SAID HOW MUCH — surfaced on the board.
+   Recording an approval with no dollar amount is allowed (owner-set
+   2026-08-29): when a bank comes back the fulfillment team often has to ask the
+   client or wait for the bank's approval email before they know the limit. It
+   is allowed, but it must not rot — until the dollars are in, that approval is
+   left out of the round's lender breakdown and no success fee is ever billed
+   for it. So the card carries the fact.
+
+   NULL ONLY. A recorded 0 is a fact somebody typed and is not a missing
+   amount. This test fails if the flag ever widens to `COALESCE(...) = 0`. */
+test("a card flags an approval that has no dollar amount, and a recorded amount clears it",
+  { skip: !HAS_DB }, async () => {
+    const cardOnBoard = async () => {
+      const res = makeRes();
+      await pipeline(asStaff(token, { key: "sales" }), res);
+      assert.equal(res.statusCode, 200);
+      return res.body.stages.find((s) => s.count === 1).cards[0];
+    };
+
+    assert.equal((await cardOnBoard()).approval_amount_missing, false,
+      "a file with no approvals at all has nothing waiting");
+
+    const roundId = (await db.query(
+      `INSERT INTO funding_rounds (org_id, client_id, round_number, status, product)
+       VALUES ($1, $2, 1, 'open', 'card_stacking') RETURNING id`,
+      [orgId, clientId])).rows[0].id;
+
+    // Approved, amount unknown.
+    const appId = (await db.query(
+      `INSERT INTO applications (org_id, funding_round_id, client_id, bank, status)
+       VALUES ($1, $2, $3, 'Mesa Community Bank', 'Approved') RETURNING id`,
+      [orgId, roundId, clientId])).rows[0].id;
+    assert.equal((await cardOnBoard()).approval_amount_missing, true,
+      "the card must say the amount is missing");
+
+    // The amount arrives later. The flag clears.
+    await db.query(`UPDATE applications SET approved_amount = 45000 WHERE id = $1`, [appId]);
+    assert.equal((await cardOnBoard()).approval_amount_missing, false,
+      "once the dollars are recorded the card stops asking");
+
+    // A DENIED bank with no amount is not a missing amount — a denial has none.
+    await db.query(`UPDATE applications SET status = 'Denied', approved_amount = NULL WHERE id = $1`, [appId]);
+    assert.equal((await cardOnBoard()).approval_amount_missing, false,
+      "a denial carries no approved amount and must not be flagged");
+
+    await db.query(`DELETE FROM applications WHERE id = $1`, [appId]);
+    await db.query(`DELETE FROM funding_rounds WHERE id = $1`, [roundId]);
+  });
+
 test("an unknown pipeline key is a 404, not a silent empty board", { skip: !HAS_DB }, async () => {
   const res = makeRes();
   await pipeline(asStaff(token, { key: "not_a_real_pipeline" }), res);

@@ -89,6 +89,28 @@ export function signDocumentUrl({
 }
 
 /**
+ * baseUrlFromRequest — best-effort absolute origin for a link about to be minted.
+ *
+ * signDocumentUrl() returns a relative path by default, which is a correct and
+ * working link for a browser that is already on the site. It is NOT enough for a
+ * link that leaves the page — an email body, a copied URL — so any caller that
+ * has a request in hand passes the origin through `baseUrl`.
+ *
+ * Lives here rather than beside one handler because two endpoints now mint links
+ * from a request (api/documents-upload.mjs, api/documents-download.mjs) and two
+ * copies of a rule about which header to trust is one copy too many. Returns
+ * null when the request carries nothing usable, which falls back to the relative
+ * path rather than guessing a hostname.
+ */
+export function baseUrlFromRequest(req) {
+  const h = (req && req.headers) || {};
+  const host = h.host || h["x-forwarded-host"];
+  if (!host) return null;
+  const proto = String(h["x-forwarded-proto"] || "https").split(",")[0].trim();
+  return `${proto}://${host}`;
+}
+
+/**
  * verifyDocumentUrl — what the HTTP route calls before resolving anything.
  *
  * Returns { valid, reason, documentId, versionId, expiresAt }. Never throws on

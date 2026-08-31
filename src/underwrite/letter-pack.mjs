@@ -10,6 +10,15 @@ import { runTierEngineFromCrsResult } from "../finance/crs-tier.mjs";
 import { hasFundingAnalysisPdfs, FUNDING_ANALYSIS_FILENAMES } from "./letter-pack-filter.mjs";
 import { buildBlackReportClient, hasBlackReportSource, mergeStoredUnderwrite } from "./black-report-client.mjs";
 import { printBlackReports } from "./black-report-pdf.mjs";
+import { violationsByBureauFromMergedCrs } from "../metro2/diy/from-crs.mjs";
+import { maybeComplaintFiles, COMPLAINT_FOLDER } from "../metro2/diy/package.mjs";
+import { LETTER_TYPES } from "../metro2/letters/catalog.mjs";
+import {
+  loadPriorOutcomes,
+  stampPriorOutcomes,
+  reachedEscalation,
+  highestEscalationRound
+} from "./prior-outcome.mjs";
 
 const { generateLetters, generateDisputeLetters } = letterGenMod;
 const { generateAllSummaryDocuments } = summaryMod;
@@ -62,7 +71,9 @@ const NICE_NAME = {
   ...FUNDING_ANALYSIS_FILENAMES,
   funding_summary: "Capital-Readiness-Summary.pdf",
   repair_plan_summary: "Optimization-Plan-Summary.pdf",
-  business_prep_summary: "Business-Readiness-Guide.pdf"
+  business_prep_summary: "Business-Readiness-Guide.pdf",
+  [LETTER_TYPES.CFPB_COMPLAINT]: "CFPB-Complaint.pdf",
+  [LETTER_TYPES.STATE_AG_COMPLAINT]: "State-Attorney-General-Complaint.pdf"
 };
 
 export function personalFromClient(row) {
@@ -193,16 +204,175 @@ async function uiqDeliverablePdfs(crsResult, personal, pack, _generate = generat
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// THE ESCALATION LADDER
+//
+// COMPLIANCE REVIEW REQUIRED — dispute logic and credit-repair messaging.
+//
+// Owner-set 2026-08-28: the repair pack carries the escalation ladder, not just
+// the three bureau letters. Until now `pack === "repair"` produced Metro 2 bureau
+// letters only, while the Round 3 letter text already told the bureau a CFPB
+// complaint was being filed and nothing ever wrote one.
+//
+// Nothing is authored here and nothing is re-implemented here. The complaint
+// pair, its wording, its sworn declaration and the cover sheet that must travel
+// with it all come from the one builder the $1,000 DIY package uses:
+//   src/metro2/diy/package.mjs  maybeComplaintFiles
+// This file only decides WHETHER the pack has earned them, and renames the
+// resulting files into the pack's own naming convention.
+//
+// THE TWO RULES THAT MATTER — read before touching this:
+//
+//   1. A complaint may never ship unless the client has ACTUALLY REACHED the
+//      escalation rounds, R4 or later, on a recorded and human-confirmed answer.
+//   2. A complaint may never ship without dispute letters in the SAME pack.
+//
+// Both complaints say, in the client's own voice and signed under penalty of
+// perjury, "I disputed inaccurate information with the consumer reporting
+// agencies." If that is not true, the client is being asked to swear to it
+// anyway. Filing a federal complaint before the bureau rounds are done is also
+// out of order — the CFPB and the state AG both expect them first, and the cover
+// sheet that ships with these two PDFs says so in capitals.
+//
+// RULE 1 IS NEW, AND IT REPLACES A GATE THAT WAS WRONG (2026-08-28).
+//
+// Until now the only test was rule 2 — did this pack write any dispute letter at
+// all. That is a proxy, and a weak one: a pack writes a Round 1 letter for a
+// client on their very first day, so the complaints were released to a client
+// who had disputed nothing yet and heard back from nobody. The sworn sentence
+// was false and the complaints were out of order, which is the same defect
+// already fixed on main in the Round 3 letter text.
+//
+// The round the client is actually on became knowable when the recorded bureau
+// answer was wired to this pack (./prior-outcome.mjs). Rule 1 uses it. An item
+// only sits at R4 because R1, R2 and R3 were each answered "verified" and a
+// human confirmed each one (../metro2/inbound/confirm.mjs →
+// ../metro2/rounds/state.mjs applyItemOutcome). Nothing else can put it there —
+// not a default, not a guess, not an empty result set. See the header of
+// ./prior-outcome.mjs `reachedEscalation`.
+//
+// RULE 2 IS KEPT, not replaced. It is now the pack-health check it always really
+// was: if the engine produced no bureau letter this run, something is wrong with
+// the pack and it ships nothing at all. It is reported first for that reason —
+// "no_dispute_letters" means the pack broke, "not_escalated" means the client is
+// simply not there yet, which is the normal state for almost every client.
+//
+// Neither rule reads the stored credit pull to decide. The pull says what the
+// client COULD dispute, never what was disputed or what came back.
+//
+// The other rules held here, deliberately:
+//  * No violations found → no complaint. A complaint with no named account is a
+//    claim about nothing, so an empty findings map yields zero files.
+//  * Undated. `datedComplaints: false` renders "Date: ____________" and the
+//    hand-signed perjury declaration. A dated complaint requires the client's
+//    dispute authorization, which this path does not carry.
+//  * The timeline is the blank R1/R2/R3 plan, so every date reads
+//    "[DATE — not mailed yet]". No mail date is ever invented.
+//  * A failure here must not lose the bureau letters, so it is caught and
+//    surfaced as `complaintSkip` rather than thrown.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * A Metro 2 dispute round letter to a bureau — the thing a complaint escalates
+ * FROM. Personal-info and inquiry-removal letters are not it.
+ */
+function isDisputeLetter(letter) {
+  return letter?.type === "dispute" || /round\d/.test(letter?.filename || "");
+}
+
+/** Complaint identity from the same `personal` record the bureau letters use. */
+export function complaintIdentityFromPersonal(personal) {
+  const who = personal && typeof personal === "object" ? personal : {};
+  const cityLine = [who.city, [who.state, who.zip].filter(Boolean).join(" ")]
+    .filter(Boolean).join(", ");
+  const lines = String(who.address || "").split("\n").map((l) => l.trim()).filter(Boolean);
+  // personalFromClient joins street + cityLine with a newline. Drop the city line
+  // so a client with no street on file gets a blank street, never their own city
+  // printed as an address.
+  const street = lines.find((l) => l !== cityLine) || "";
+  const name = String(who.name || "").trim();
+  return {
+    fullName: name && name !== "Client" ? name : "",
+    addressLine1: street,
+    city: String(who.city || "").trim(),
+    state: String(who.state || "").trim(),
+    zip: String(who.zip || "").trim()
+  };
+}
+
+/**
+ * @param {object}   args
+ * @param {object?}  args.storedCrs      the stored credit pull, for the findings
+ * @param {object}   args.personal       the client record the letters were addressed from
+ * @param {string}   args.pack           "repair" or "funding"
+ * @param {object[]} args.disputeLetters the dispute letters THIS pack produced.
+ *   Not optional and never defaulted: an empty list means no complaint. See
+ *   RULE 2 above.
+ * @param {object[]} args.priorOutcomes the recorded, human-confirmed bureau
+ *   answers on file for this client (./prior-outcome.mjs loadPriorOutcomes).
+ *   Not optional and never defaulted: an empty list means the client is on
+ *   Round 1 and gets no complaint. See RULE 1 above.
+ */
+export async function buildEscalationComplaints({
+  storedCrs,
+  personal,
+  pack,
+  disputeLetters,
+  priorOutcomes
+} = {}) {
+  if (pack !== "repair") return { files: [], skip: "not_repair" };
+  if (!(disputeLetters || []).some(isDisputeLetter)) {
+    return { files: [], skip: "no_dispute_letters" };
+  }
+  // RULE 1. The client must have reached R4+ on a confirmed bureau answer. No
+  // recorded answer means Round 1, and Round 1 has not earned a sworn complaint.
+  if (!reachedEscalation(priorOutcomes)) {
+    return { files: [], skip: "not_escalated" };
+  }
+  if (!storedCrs) return { files: [], skip: "no_stored_crs" };
+  try {
+    const built = await maybeComplaintFiles({
+      identity: complaintIdentityFromPersonal(personal),
+      violationsByBureau: violationsByBureauFromMergedCrs(storedCrs),
+      // Undated. The client writes the date and hand-signs the declaration.
+      datedComplaints: false
+    });
+    if (!built.ok) return { files: [], skip: built.reason || "complaint_refused" };
+    if (!built.files.length) return { files: [], skip: "no_violations" };
+    // Same folder, same cover sheet, same order as the DIY package. Only the two
+    // PDF names change, onto this pack's naming convention.
+    const files = built.files.map((f) => {
+      const nice = NICE_NAME[f.type];
+      return {
+        filename: nice ? `${COMPLAINT_FOLDER}/${nice}` : f.path,
+        contentType: f.pdf ? "application/pdf" : "text/plain",
+        content: f.pdf || Buffer.from(String(f.text ?? ""), "utf8"),
+        ...(f.type ? { type: f.type } : {})
+      };
+    });
+    return { files, skip: null };
+  } catch (err) {
+    return { files: [], skip: String(err && err.message || err).slice(0, 240) };
+  }
+}
+
 export async function buildLetterPack({
   crsResult,
   personal,
   pack = "funding",
   generateDeliverablesFn = generateDeliverables,
-  storedCrs = null
+  storedCrs = null,
+  // Confirmed bureau answers already on file. Empty means every account is
+  // still on Round 1 — which is exactly the behaviour of this function before
+  // the wire existed. See ./prior-outcome.mjs for why nothing may default here.
+  priorOutcomes = []
 } = {}) {
   const who = personal || { name: "Client", address: "" };
   const path = pack === "repair" ? "repair" : "fundable";
   const bureaus = bureausFromEngine(crsResult);
+  // The one place a round advances. An account moves off Round 1 only because a
+  // human confirmed the bureau's answer and the round machine recorded it.
+  const rounds = stampPriorOutcomes(bureaus, priorOutcomes);
   const letters = await generateLetters({
     path,
     bureaus,
@@ -211,7 +381,7 @@ export async function buildLetterPack({
   });
   // generateLetters only emits bureau Metro 2 letters when path === "repair".
   // Gold funding packs still include those letters (LETTER_SPEC + owner roster).
-  if (pack !== "repair" && !letters.some((l) => l?.type === "dispute" || /round\d/.test(l?.filename || ""))) {
+  if (pack !== "repair" && !letters.some(isDisputeLetter)) {
     letters.push(...(await generateDisputeLetters({ bureaus, personal: who })));
   }
   let summaries = [];
@@ -238,11 +408,29 @@ export async function buildLetterPack({
     }
   }
   const uiq = await uiqDeliverablePdfs(crsResult, who, pack, generateDeliverablesFn, storedCrs);
-  const files = [...uiq.files, ...asFiles(summaries), ...asFiles(letters)];
+  const letterFiles = asFiles(letters);
+  // The documents this pack produced on its own merits. Escalation is NOT in here.
+  const earned = [...uiq.files, ...asFiles(summaries), ...letterFiles];
+  // Escalation last: the client works the bureau rounds first, then files these,
+  // and only if this pack actually wrote the bureau rounds.
+  const escalation = await buildEscalationComplaints({
+    storedCrs,
+    personal: who,
+    pack,
+    disputeLetters: letterFiles,
+    // The same recorded answers that moved the rounds above. A client who never
+    // reached R4 gets no sworn complaint. See RULE 1 in the block above.
+    priorOutcomes
+  });
+  const files = [...earned, ...escalation.files];
   let reason = null;
   // An empty pack with no engine result is a different state from an empty pack
   // the engine produced. See the PACK_REASON block at the top of this file.
-  if (!files.length) {
+  //
+  // Counted against `earned`, never against `files`. A complaint must never make
+  // a failed pack look like it produced something — that is exactly how the
+  // engine error below got swallowed once already.
+  if (!earned.length) {
     reason = crsResult ? PACK_REASON.EMPTY_PACK : PACK_REASON.NO_ENGINE_RESULT;
   } else if (pack !== "repair" && !hasFundingAnalysisPdfs(files)) {
     reason = PACK_REASON.MISSING_FUNDING_ANALYSIS;
@@ -252,7 +440,16 @@ export async function buildLetterPack({
     reason,
     deliverableCount: uiq.files.length,
     deliverableSkip: uiq.skip,
-    summarySkip
+    summarySkip,
+    complaintCount: escalation.files.length,
+    complaintSkip: escalation.skip,
+    // How many accounts were moved off Round 1 by a recorded bureau answer, and
+    // how many recorded answers named an account this pull does not contain.
+    roundsAdvanced: rounds.stamped,
+    roundsUnmatched: rounds.unmatched,
+    // The furthest escalation round on record, or null when the client has not
+    // reached one. This is what released the complaints, or what withheld them.
+    escalationRound: highestEscalationRound(priorOutcomes)
   };
 }
 
@@ -332,13 +529,24 @@ export async function buildLetterPackForClient(
     engineFault = String(err && err.message || err).slice(0, 240);
     engineSkip = engineFault;
   }
+  // The confirmed bureau answers this client already has on file. Read-only, and
+  // a failure is reported rather than thrown: the worst a hiccup here may cost
+  // is an escalation, never the client's Round 1 letters.
+  const prior = await loadPriorOutcomes(db, { clientId });
   try {
-    const packOut = await buildLetterPack({ crsResult: engine, personal, pack, storedCrs });
+    const packOut = await buildLetterPack({
+      crsResult: engine,
+      personal,
+      pack,
+      storedCrs,
+      priorOutcomes: prior.outcomes
+    });
     return {
       ...packOut,
       reason: sharpenEmptyReason(packOut.reason, { engineSkip, engineFault }),
       engineSkip,
-      engineOutcome: engine?.outcome ?? null
+      engineOutcome: engine?.outcome ?? null,
+      priorOutcomeSkip: prior.skip
     };
   } catch (err) {
     return {

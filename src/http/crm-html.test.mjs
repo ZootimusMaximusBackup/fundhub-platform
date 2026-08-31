@@ -336,15 +336,39 @@ test("honest-ui leftovers screens stay empty without inventing dollars", () => {
 
 const APP_PAGES = fs.readdirSync(APP).filter((f) => f.endsWith(".html"));
 
-test("no app screen still formats time in Eastern", () => {
+test("every clock and timestamp on a staff screen is Arizona — no exceptions", () => {
+  /* This started as "no America/New_York" and that was too narrow. Sweeping
+     only for Eastern left four timestamps behind on screens nobody thought to
+     check: pipeline's fmtWhen and two on inquiry-remover were America/
+     Los_Angeles, and messaging's shortWhen was UTC.
+
+     Pacific is the same clock as Arizona all summer, so those three would have
+     looked correct until November and then quietly run an hour behind every
+     other clock on the same page. UTC was worse and was wrong already — a
+     message sent at 6pm Arizona is tomorrow in UTC, so the one line whose job
+     is saying WHICH DAY a message arrived was a day late every evening.
+
+     So the rule is now positive rather than a blocklist: name any zone other
+     than Phoenix on a staff screen and this fails. A blocklist only ever stops
+     the zone somebody already thought of. If a screen ever genuinely needs to
+     show a customer's own local time, add it to ALLOWED with a comment saying
+     whose clock it is and why. */
+  const ALLOWED = new Set(["America/Phoenix"]);
+
   for (const file of [...APP_PAGES, "shell.js", "data.js"]) {
     const full = path.join(APP, file);
     if (!fs.existsSync(full)) continue;
     const src = fs.readFileSync(full, "utf8");
-    assert.ok(
-      !/America\/New_York/.test(src),
-      file + " still formats a time in America/New_York"
-    );
+
+    // Named zones ("America/Denver") and the bare ones Intl also accepts ("UTC").
+    const named = [...src.matchAll(/timeZone:\s*["']([^"']+)["']/g)].map((m) => m[1]);
+    for (const zone of named) {
+      assert.ok(
+        ALLOWED.has(zone),
+        `${file} formats a time in ${zone}. Staff screens are Arizona ` +
+        `(America/Phoenix) — see docs/workflows/arizona-time-2026-08-28.md.`
+      );
+    }
   }
 });
 

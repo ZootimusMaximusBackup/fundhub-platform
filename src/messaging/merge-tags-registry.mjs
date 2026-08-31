@@ -56,7 +56,13 @@ export const RESOLVABLE_TAGS = Object.freeze([
   "contact.full_name",
   "contact.email",
   "contact.phone",
-  "portal_login_url"
+  "portal_login_url",
+  /* portal_url — the client portal itself, /app/client-portal.html?email=…,
+     added 2026-08-29 with the owner's "just send it to the portal" call. It is
+     a SECOND destination, not a rename: portal_login_url is the sign-in form and
+     is still what db/seed/009 and db/migrations/253 use. Both are filled by
+     clientContext() in src/workflows/messaging.mjs, so both are resolvable. */
+  "portal_url"
 ]);
 
 /* Roots that are known-used and known-unresolved. Warned, never blocked — the
@@ -185,7 +191,8 @@ export const AVAILABLE_TAGS = Object.freeze([
   { tag: "contact.full_name", label: "Full name (same as above)", example: "Marcus Webb" },
   { tag: "contact.email", label: "Email address", example: "marcus@example.com" },
   { tag: "contact.phone", label: "Phone number", example: "+15551234567" },
-  { tag: "portal_login_url", label: "Portal sign-in URL (email prefilled)", example: "https://fundhub.ai/portal-login.html?email=marcus%40example.com" }
+  { tag: "portal_login_url", label: "Portal sign-in URL (email prefilled)", example: "https://fundhub.ai/portal-login.html?email=marcus%40example.com" },
+  { tag: "portal_url", label: "Client portal (signed-out visitors are sent to sign in)", example: "https://fundhub.ai/app/client-portal.html?email=marcus%40example.com" }
 ]);
 
 /* SAMPLE_CONTEXT — what Preview fills the tags with. Deliberately obvious fake

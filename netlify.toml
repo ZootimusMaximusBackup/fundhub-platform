@@ -175,11 +175,12 @@
   to = "/climate/"
   status = 301
 
-# Temporary public short link → partner referral (Credit Comeback Club / xyl.in).
+# Hidden referral page. Pretty URL /optimize serves optimize.html on its own.
+# /optimize.com needs this rewrite because the ".com" is part of the path.
 [[redirects]]
-  from = "/go"
-  to = "https://xyl.in/e5hosp5"
-  status = 302
+  from = "/optimize.com"
+  to = "/optimize.html"
+  status = 200
 
 [[redirects]]
   from = "/api/*"

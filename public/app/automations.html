@@ -411,7 +411,9 @@
     if(h < 24) return h + 'h ago';
     var dt = new Date(iso);
     if(!isFinite(dt.getTime())) return null;
-    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+    /* Arizona, not UTC — same reason as messaging.html's shortWhen. After 5pm
+       here it is already tomorrow in UTC, so this dated a run a day late. */
+    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/Phoenix' });
   }
 
   /* Four states, and they are four different facts. None of them says a job

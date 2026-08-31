@@ -255,6 +255,27 @@ window.FHData = (function () {
     commissionRules: function () { return get("/api/commission-rules"); },
     invoices:        function (p) { return this.read("invoices", p); },
     documents:       function (p) { return this.read("documents", p); },
+
+    /* GET /api/documents-download?id= → data.document.download.{url,expiresAt}
+       A FRESH link to a file that is already saved.
+
+       Not under /api/read/, so it does not go through read() above.
+
+       WHY IT IS A SEPARATE CALL AND NOT A FIELD ON documents(). A signed link is
+       a bearer credential with a clock on it: anyone holding the URL can fetch
+       the bytes until it expires, sign-in or no sign-in. Attaching one to every
+       row of a 200-row list would mint 200 live credentials to answer a question
+       nobody asked, and drop all of them into any log or cache that keeps a copy
+       of that response. This mints exactly one, when somebody clicks.
+
+       The link is short-lived on purpose (fifteen minutes, fixed server-side —
+       the query string cannot ask for longer). Open it, do not store it: a link
+       held in a variable across a long session will stop working, and the fix is
+       to call this again rather than to ask for a longer life. */
+    documentDownload: function (id) {
+      return get("/api/documents-download?id=" + encodeURIComponent(id || ""));
+    },
+
     fundingRounds:   function (p) { return this.read("funding-rounds", p); },
     affiliates:      function (p) { return this.read("affiliates", p); },
     partners:        function (p) { return this.read("partners", p); },
@@ -481,15 +502,30 @@ window.FHData = (function () {
        Duplicated by hand in the first two wired screens; hoisted here so the
        remaining nineteen cannot drift from it.
 
-         real   mint  — these are database rows
-         sample peach — built-in sample markup, backend not queried (demo)
-         error  rose  — backend could not answer; keep dashes, do not invent people
+         real   — these are database rows
+         sample — built-in sample markup, backend not queried (demo)
+         error  — backend could not answer; keep dashes, do not invent people
+
+       NO COLOURED BAR, ANY TONE. Owner call 2026-08-28: "I want all the color
+       bars gone from entire crm, look amatuer dont you think?" This painted a
+       full-width mint, peach or rose strip across the bottom edge of every
+       screen that reads anything. What each tone does now:
+
+         sample — renders nothing. Suppressed 2026-08-27, a day before the
+                  rest; kept suppressed.
+         real   — renders nothing. "live documents", "live file · 6 payments"
+                  is a developer's receipt, not something staff act on, and it
+                  was the green bar. The LIVE pill in the top bar already says
+                  the screen is on real data.
+         error  — STILL SAYS SO. A read that failed leaves dashes on screen and
+                  something has to explain them. It renders in the app's own
+                  dark chrome, the same ink as the top bar, with the sentence
+                  in coral. A coloured word is not a coloured bar.
 
        RULE: a live screen never keeps sample people. Empty stays empty.
        --------------------------------------------------------------------- */
     _parts: {},
     banner: function (tone, text, key) {
-      var TONE = { real: "#A8D8B0", sample: "#F5CE8F", error: "#F2A69B" };
       var el = document.getElementById("fh-data-banner");
       if (!el) {
         el = document.createElement("div");
@@ -507,15 +543,12 @@ window.FHData = (function () {
       this._parts[key || text] = { tone: tone, text: text };
       var parts = Object.keys(this._parts).map(function (k) { return this._parts[k]; }, this);
 
-      /* The peach "sample" tone does not render, owner-set 2026-08-27. Every
-         screen carried a yellow strip along its bottom edge and the owner wants
-         them gone CRM-wide. Sample parts are dropped from the strip entirely
-         rather than recoloured, so a screen whose only report is "sample" shows
-         no strip at all and reserves no space for one.
-         MINT AND ROSE STILL RENDER. A failed read must still say it failed —
-         that is the rose tone, and silencing it would put dashes on screen with
-         nothing saying why. Only the peach middle case is suppressed. */
-      parts = parts.filter(function (p) { return p.tone !== "sample"; });
+      /* Only a failed read reaches the strip now — "sample" was dropped on
+         2026-08-27 and "real" on 2026-08-28, both owner calls; see the block
+         comment above. A screen where everything loaded shows no strip at all
+         and reserves no space for one, which is the ordinary case: nothing
+         along the bottom edge. */
+      parts = parts.filter(function (p) { return p.tone === "error"; });
       if (!parts.length) {
         el.style.display = "none";
         el.textContent = "";
@@ -524,15 +557,17 @@ window.FHData = (function () {
       }
       el.style.display = "";
 
-      var RANK = { error: 0, sample: 1, real: 2 };
-      var worst = parts.reduce(function (a, p) {
-        return RANK[p.tone] < RANK[a] ? p.tone : a; }, "real");
-      tone = worst;
+      /* Everything left is an error, so there is no worst tone to work out any
+         more. More than one read can fail at once and each still gets said. */
       text = parts.map(function (p) { return p.text; }).join("  ·  ");
 
+      /* App chrome, not a colour block: the same ink as the top bar, with the
+         sentence in coral. --alert is the brand's coral and shell.js paintBrand
+         repaints it per company, so a white-label tenant gets its own alert
+         colour here instead of a hardcoded one. */
       el.style.cssText =
         "position:fixed;left:0;right:0;bottom:0;z-index:2147482000;padding:7px 14px;" +
-        "background:" + (TONE[tone] || TONE.error) + ";color:#0A0A0A;" +
+        "background:#0A0A0A;color:var(--alert,#F2A69B);border-top:1px solid #26262B;" +
         "font:600 11px/1.4 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.05em;text-align:center";
       el.textContent = text;
       document.documentElement.style.setProperty("--fh-statusbar", (el.offsetHeight || 32) + "px");

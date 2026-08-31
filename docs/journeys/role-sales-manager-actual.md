@@ -31,12 +31,12 @@ flowchart TD
     CAN --> A_gifts[gifts — 1 route]
     CAN --> A_journeys[journeys — 1 route]
     CAN --> A_partner_marketing[partner-marketing — 5 routes]
-    CAN --> A_public[public — 6 routes]
+    CAN --> A_public[public — 7 routes]
     CAN --> A_read[Reading data — 46 routes]
     CAN --> A_repair[repair — 2 routes]
     CAN --> A_social[social — 6 routes]
     CAN --> A_staff[staff — 2 routes]
-    CAN --> A_top_level[Everything else — 28 routes]
+    CAN --> A_top_level[Everything else — 29 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 50 routes]
     CANT --> B_auth[Signing in and out — 5 blocked]
@@ -64,7 +64,7 @@ flowchart TD
 
 ## What they can reach
 
-**149 of 200 routes.**
+**151 of 202 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -121,6 +121,7 @@ flowchart TD
 | `/api/dashboard/pipeline` | — | staff |
 | `/api/dashboard/pipeline-counts` | — | staff |
 | `/api/dashboard/seed` | — | staff |
+| `/api/documents-download` | GET | staff, client |
 | `/api/documents-upload` | POST | staff, client |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
 | `/api/finance/alerts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -154,6 +155,7 @@ flowchart TD
 | `/api/products` | POST | owner, admin, sales_manager |
 | `/api/public/affiliate-click` | POST | anyone |
 | `/api/public/education-enroll` | POST | **not a sign-in** — provider signature |
+| `/api/public/optimize` | GET, POST | **not a sign-in** — provider signature |
 | `/api/public/partner-apply` | POST | anyone |
 | `/api/public/partner-page` | GET | anyone |
 | `/api/public/survey-submit` | POST | **not a sign-in** — provider signature |
@@ -223,11 +225,11 @@ flowchart TD
 - **1 route is open to any signed-in employee, whatever their role.** That is not a gate on this journey specifically — anyone who can sign in reaches it: `/api/staff/avatar`.
 - **7 routes also accept a shared secret instead of a sign-in** (`DASHBOARD_SECRET`), so a caller holding that value reaches them without being anybody in particular: `/api/dashboard/client`, `/api/dashboard/client-archive`, `/api/dashboard/clients`, `/api/dashboard/kpis`, `/api/dashboard/pipeline`, `/api/dashboard/pipeline-counts`, `/api/dashboard/seed`.
 - **15 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/contracts/sign`, `/api/health`, `/api/public/affiliate-click`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/unsubscribe`. These are the sign-in routes and the health check.
-- **5 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/education-enroll` (provider signature), `/api/public/survey-submit` (provider signature), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
+- **6 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/education-enroll` (provider signature), `/api/public/optimize` (provider signature), `/api/public/survey-submit` (provider signature), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**50 of 200 routes.**
+**50 of 202 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

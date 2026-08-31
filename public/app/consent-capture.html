@@ -17,6 +17,13 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--butter:#F2E39B}
 html,body{height:100%}
+/* NOT dead type, and not converted for that reason. `body` is outside the five
+   shell wrappers, so fundhub-brand.css:184 `:is(.app,...) * {font-size:inherit
+   !important}` never touches it. shell.js:1644 appends the global search dialog
+   to document.body, and the magnifier glyph in it (shell.js:1638) is the one
+   child of that panel with no font of its own — it inherits straight from here.
+   Moving this to --fs-body grew that glyph 13px -> 16px and pushed the search
+   bar 3px taller. Left at 13px so the screen stays identical. */
 body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 a{color:inherit;text-decoration:none}
@@ -41,11 +48,11 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
 .topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
-.topbar h1{font-size:14.5px;font-weight:600;letter-spacing:-.01em}
-.topbar .crumb{font-family:var(--mono);font-size:11px;color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+.topbar h1{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
+.topbar .crumb{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
 .spacer{flex:1}
 .content{padding:22px 24px 40px;flex:1}
-.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:10.5px;color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
+.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
 
 /* ══ SCREEN ══════════════════════════════════════════════════════════════ */
 :root{ --surface:#FFFFFF; --text:var(--ink2); --text-dim:var(--gray); --text-faint:var(--gray2);
@@ -60,17 +67,17 @@ button,input,select,textarea{font:inherit;color:inherit}
    does nothing on a URL somebody was sent — which is exactly how this screen
    gets opened. */
 .cc-back{ display:inline-flex; align-items:center; gap:7px; margin-bottom:16px;
-          font:600 12px/1 'Inter',system-ui,sans-serif; color:var(--text-dim);
+          font:600 var(--fs-caption)/1 'Inter',system-ui,sans-serif; color:var(--text-dim);
           border:1px solid var(--soft); border-radius:6px; padding:8px 12px; }
 .cc-back:hover{ color:var(--text); border-color:var(--gray2); }
 
 .cc-head{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap; }
-.cc-title{ font:800 22px/1.2 'Inter',system-ui,sans-serif; color:var(--text); letter-spacing:-.01em; }
-.cc-sub{ font:400 13px/1.55 'Inter',system-ui,sans-serif; color:var(--text-dim); margin:6px 0 20px; max-width:66ch; }
+.cc-title{ font:800 var(--fs-title)/1.2 'Inter',system-ui,sans-serif; color:var(--text); letter-spacing:-.01em; }
+.cc-sub{ font:400 var(--fs-caption)/1.55 'Inter',system-ui,sans-serif; color:var(--text-dim); margin:6px 0 20px; max-width:66ch; }
 
 .cc-card{ border:1px solid var(--soft); border-radius:8px; background:var(--surface); padding:18px; margin-bottom:16px; }
-.cc-card h2{ font:700 14px/1.3 'Inter',system-ui,sans-serif; color:var(--text); margin-bottom:4px; }
-.cc-card p.hint{ font:400 12px/1.55 'Inter',system-ui,sans-serif; color:var(--text-dim); margin-bottom:12px; max-width:64ch; }
+.cc-card h2{ font:700 var(--fs-title)/1.3 'Inter',system-ui,sans-serif; color:var(--text); margin-bottom:4px; }
+.cc-card p.hint{ font:400 var(--fs-caption)/1.55 'Inter',system-ui,sans-serif; color:var(--text-dim); margin-bottom:12px; max-width:64ch; }
 
 /* STATUS. Three states, and each one says what to do next rather than only
    what is true. "Revoked" and "none on file" lead to different actions. */
@@ -78,8 +85,8 @@ button,input,select,textarea{font:inherit;color:inherit}
             border:1px solid transparent; }
 .cc-status .dot{ width:9px; height:9px; border-radius:50%; flex:0 0 9px; margin-top:5px; background:currentColor; }
 .cc-status .txt{ min-width:0; }
-.cc-status .lede{ font:700 13px/1.35 'Inter',system-ui,sans-serif; }
-.cc-status .detail{ font:400 12px/1.5 'Inter',system-ui,sans-serif; margin-top:3px; opacity:.9; }
+.cc-status .lede{ font:700 var(--fs-caption)/1.35 'Inter',system-ui,sans-serif; }
+.cc-status .detail{ font:400 var(--fs-caption)/1.5 'Inter',system-ui,sans-serif; margin-top:3px; opacity:.9; }
 .cc-status.is-valid{ color:var(--green); background:var(--green-bg); border-color:rgba(44,81,56,.22); }
 .cc-status.is-blocked{ color:var(--red); background:var(--red-bg); border-color:rgba(110,42,34,.22); }
 .cc-status.is-unknown{ color:var(--amber); background:var(--amber-bg); border-color:rgba(107,74,18,.22); }
@@ -88,17 +95,17 @@ button,input,select,textarea{font:inherit;color:inherit}
    file — a screen holding its own paragraph is a second source of truth for
    the one string that has to be exact. Pre-wrap because the disclosure's line
    breaks are part of it. */
-.cc-disclosure{ white-space:pre-wrap; font:400 13px/1.65 'Inter',system-ui,sans-serif; color:var(--text);
+.cc-disclosure{ white-space:pre-wrap; font:400 var(--fs-caption)/1.65 'Inter',system-ui,sans-serif; color:var(--text);
                 background:var(--paper); border:1px solid var(--soft); border-radius:6px;
                 padding:16px; max-height:260px; overflow-y:auto; }
-.cc-version{ font:600 10px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.09em; text-transform:uppercase;
+.cc-version{ font:600 var(--fs-caption)/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.09em; text-transform:uppercase;
              color:var(--text-faint); border:1px solid currentColor; border-radius:3px; padding:4px 7px; }
 
 .cc-field{ margin-top:14px; }
-.cc-field label{ display:block; font:600 12px/1.4 'Inter',system-ui,sans-serif; color:var(--text); margin-bottom:5px; }
+.cc-field label{ display:block; font:600 var(--fs-caption)/1.4 'Inter',system-ui,sans-serif; color:var(--text); margin-bottom:5px; }
 .cc-field .sub{ font-weight:400; color:var(--text-dim); }
 .cc-input{ width:100%; border:1px solid var(--soft); border-radius:6px; padding:9px 11px; background:var(--surface);
-           font:400 13px/1.4 'Inter',system-ui,sans-serif; }
+           font:400 var(--fs-caption)/1.4 'Inter',system-ui,sans-serif; }
 .cc-input:focus{ outline:2px solid var(--info); outline-offset:-1px; }
 
 .cc-methods{ display:flex; gap:8px; flex-wrap:wrap; }
@@ -106,34 +113,34 @@ button,input,select,textarea{font:inherit;color:inherit}
             background:var(--surface); text-align:left; }
 .cc-method:hover{ border-color:var(--gray2); }
 .cc-method.on{ border-color:var(--ink2); box-shadow:inset 0 0 0 1px var(--ink2); }
-.cc-method .m-name{ font:700 12.5px/1.3 'Inter',system-ui,sans-serif; color:var(--text); display:block; }
-.cc-method .m-why{ font:400 11px/1.45 'Inter',system-ui,sans-serif; color:var(--text-dim); display:block; margin-top:3px; }
+.cc-method .m-name{ font:700 var(--fs-caption)/1.3 'Inter',system-ui,sans-serif; color:var(--text); display:block; }
+.cc-method .m-why{ font:400 var(--fs-caption)/1.45 'Inter',system-ui,sans-serif; color:var(--text-dim); display:block; margin-top:3px; }
 
 .cc-actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:16px; }
 .btn{ border:1px solid var(--ink2); background:var(--ink2); color:var(--paper); border-radius:7px;
-      padding:10px 16px; font:600 12.5px/1 'Inter',system-ui,sans-serif; cursor:pointer; }
+      padding:10px 16px; font:600 var(--fs-caption)/1 'Inter',system-ui,sans-serif; cursor:pointer; }
 .btn:hover{ opacity:.9; }
 .btn[disabled]{ opacity:.45; cursor:not-allowed; }
 .btn.ghost{ background:transparent; color:var(--text); border-color:var(--soft); }
 .btn.danger{ background:transparent; color:var(--red); border-color:rgba(110,42,34,.4); }
 
-.cc-msg{ margin-top:12px; font:600 12px/1.5 'Inter',system-ui,sans-serif; border-radius:6px; padding:10px 12px; display:none; }
+.cc-msg{ margin-top:12px; font:600 var(--fs-caption)/1.5 'Inter',system-ui,sans-serif; border-radius:6px; padding:10px 12px; display:none; }
 .cc-msg.show{ display:block; }
 .cc-msg.ok{ color:var(--green); background:var(--green-bg); }
 .cc-msg.err{ color:var(--red); background:var(--red-bg); }
 
 table.cc-hist{ width:100%; border-collapse:collapse; }
-.cc-hist th{ text-align:left; font:600 10px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.09em;
+.cc-hist th{ text-align:left; font:600 var(--fs-caption)/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.09em;
              text-transform:uppercase; color:var(--text-faint); padding:0 10px 8px 0; }
 .cc-hist td{ padding:10px 10px 10px 0; border-top:1px solid var(--soft); vertical-align:top;
-             font:400 12px/1.45 'Inter',system-ui,sans-serif; color:var(--text); }
-.cc-hist .pill{ font:600 10px/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.06em; text-transform:uppercase;
+             font:400 var(--fs-caption)/1.45 'Inter',system-ui,sans-serif; color:var(--text); }
+.cc-hist .pill{ font:600 var(--fs-caption)/1 'JetBrains Mono',ui-monospace,monospace; letter-spacing:.06em; text-transform:uppercase;
                 border-radius:3px; padding:4px 6px; white-space:nowrap; }
 .cc-hist .pill.live{ color:var(--green); background:var(--green-bg); }
 .cc-hist .pill.dead{ color:var(--red); background:var(--red-bg); }
-.cc-empty{ font:400 12.5px/1.5 'Inter',system-ui,sans-serif; color:var(--text-dim); }
-.cc-note{ margin-top:18px; font:400 12px/1.6 'Inter',system-ui,sans-serif; color:var(--text-dim); max-width:70ch; }
-.cc-note code{ font:500 11px/1 'JetBrains Mono',ui-monospace,monospace; }
+.cc-empty{ font:400 var(--fs-caption)/1.5 'Inter',system-ui,sans-serif; color:var(--text-dim); }
+.cc-note{ margin-top:18px; font:400 var(--fs-caption)/1.6 'Inter',system-ui,sans-serif; color:var(--text-dim); max-width:70ch; }
+.cc-note code{ font:500 var(--fs-caption)/1 'JetBrains Mono',ui-monospace,monospace; }
 
 /* Sign pad. Shown only when capture_method is signature. The drawing is a
    client-side gate (must put ink in the box). The POST still sends name +

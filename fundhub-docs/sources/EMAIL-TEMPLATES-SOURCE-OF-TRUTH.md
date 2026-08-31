@@ -7380,13 +7380,15 @@ Your correction letters are ready
 
 Hey {{contact.first_name}},
 
-As promised — your correction letters are attached and ready to send.
+Your correction letters are ready. Log into your client portal to view and download them.
+
+{{portal_url}}
 
 These aren't templates. They were generated off your actual report: the specific items we identified, addressed to the specific bureaus reporting them, in the order that makes sense to work them.
 
 How to use them:
 
-Print and sign each one. Include a copy of your government-issued ID and one proof of current address — a utility bill or bank statement works.
+Download each one from your portal, then print and sign it. Include a copy of your government-issued ID and one proof of current address — a utility bill or bank statement works.
 
 Send them certified mail with return receipt. That gives you a timestamp, which matters if a bureau misses the response window.
 

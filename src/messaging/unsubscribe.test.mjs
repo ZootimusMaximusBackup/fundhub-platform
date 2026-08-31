@@ -157,7 +157,7 @@ test("a plain-text body becomes a branded HTML email with Josh footer + quiet Un
     new RegExp(`${EMAIL_SIGNATURE_PATH.replace(/\./g, "\\.")}[\\s\\S]*?${EMAIL_SIGNER_NAME}`),
     "signature leads the personal block"
   );
-  assert.ok(!out.includes(EMAIL_LOGO_PATH), "no floating fundhub. PNG — brand lives in title/tagline");
+  assert.ok(out.includes(EMAIL_LOGO_PATH), "Fundhub logo sits in the footer");
   assert.ok(!/\nUnsubscribe: https:\/\//.test(out), "no raw URL dump under the copy");
 });
 

@@ -214,6 +214,14 @@
      of the last column at 3440, measured 2026-08-27. */
   .col{flex:1 1 238px;min-width:238px;background:var(--paper-dim);border:1px solid var(--line);border-radius:8px;
     display:flex;flex-direction:column;height:100%;max-height:100%;}
+/* At 2560 — the owner's monitor at 100% zoom — ten columns at the 238px
+     minimum need 2498px and only 2332px exists, so the board scrolled 166px
+     there. Below 2560 that is unavoidable and squeezing the cards would buy
+     nothing (the board scrolls either way), so the designed 238px stands.
+     From 2560 up, allowing 216px lets all ten fit, and flex-grow then pushes
+     them back out to fill whatever is actually there — 220px at 2560, 308px at
+     3440. Measured 2026-08-27. */
+  @media (min-width:2560px){ .col{min-width:216px;} }
   .col.drop-target{background:var(--info-bg);border-color:var(--info);box-shadow:0 0 0 2px color-mix(in srgb,var(--info) 40%,transparent);}
 
   .col-head{padding:7px 10px 8px;border-bottom:1px solid var(--line);flex-shrink:0;}
@@ -252,6 +260,13 @@
   .c-amt .unit{font-size:var(--fs-caption);font-weight:400;color:var(--text-faint);}
   .c-age{font-family:var(--mono);font-size:var(--fs-caption);color:var(--text-faint);margin-top:2px;}
   .c-age.old{color:var(--ink2);font-weight:700;}
+  /* "A bank said yes, nobody has said how much." Literal amber, not a brand
+     variable: paintBrand in shell.js overwrites --alert / --warn / --info from
+     the company colour ramp, which turns every warning on a tenant board the
+     same blue as everything else. */
+  .c-needs-amount{display:inline-block;margin-top:4px;padding:2px 8px;border-radius:999px;
+    background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;
+    font-size:var(--fs-caption);font-weight:700;letter-spacing:.01em;}
   .c-msg{display:flex;align-items:center;gap:6px;margin-top:3px;min-width:0;}
   .c-msg-link{font-size:var(--fs-caption);color:var(--text-dim);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
   .c-msg-link:hover{color:var(--text);text-decoration:underline;}
@@ -794,6 +809,49 @@ function restore(){
   });
 }
 
+/* ---- the Funded column is the one move that must carry money ----------------
+   src/workflows/cards.mjs refuses a move onto Funded that has no dollars on it,
+   because funding_rounds.funded_amount is what the success fee is billed from
+   (docs/CLOSEOUT-FEE-BASIS.md). Until this box existed nobody could answer that
+   question, so every drag to Funded bounced and no client was ever billed.
+
+   Blank, Cancel, or a word all ABANDON the move. None of them sends a zero — a
+   zero would be a claim that nothing funded, and "I don't know yet" is not
+   nothing. FHMoneyInput.parseAmount is the shared rule (public/app/money-input.js);
+   it hands back a fixed 2dp DOLLAR string, which is the unit
+   funding_rounds.funded_amount stores. */
+var CARD_STACKING_KEY = 'funding_card_stacking';
+var FUNDED_ASK_TRIES = 3;
+var NO_AMOUNT = 'no funded amount was entered, so nothing was saved.';
+
+function askFundedAmount(card){
+  if(!window.FHMoneyInput || !window.FHMoneyInput.parseAmount){
+    // Fail closed. Never guess an amount just because the helper is missing.
+    return { ok:false, message:'the amount box could not load, so nothing was saved.' };
+  }
+  /* Deliberately NOT prefilled from the card. The number on the card is the
+     column's estimate ("est."), and offering it here invites someone to press
+     OK and record an estimate as the amount that actually funded. A wrong
+     number that looks right is worse than making them type it. */
+  var prefill = '';
+  for(var i=0;i<FUNDED_ASK_TRIES;i++){
+    var raw = window.prompt(
+      'How much actually FUNDED for ' + nameOf(card) + '?\n\n' +
+      'This is the money that reached the account, not the approved amount.\n' +
+      'Dollars, like 45000 or 45,000.50.\n\n' +
+      'Leave it empty to cancel. Empty is not zero.',
+      prefill
+    );
+    if(raw === null) return { ok:false, message:NO_AMOUNT };
+    var parsed = window.FHMoneyInput.parseAmount(raw);
+    if(parsed.ok) return parsed;
+    if(parsed.reason === 'blank') return { ok:false, message:NO_AMOUNT };
+    alert(parsed.message);
+    prefill = raw;
+  }
+  return { ok:false, message:NO_AMOUNT };
+}
+
 function persistCardMove(card, pipelineKey, stageKey, onFail, onOk){
   if(typeof FHData === 'undefined' || !FHData.write){
     if(onFail) onFail('data layer not loaded');
@@ -809,13 +867,27 @@ function persistCardMove(card, pipelineKey, stageKey, onFail, onOk){
     if(onFail) onFail('missing stage');
     return;
   }
-  card.classList.add('saving');
-  FHData.write('/api/pipeline-cards', {
+  // The rail this card is leaving. A cross-rail MOVE hands the client over —
+  // the old rail must not keep an open card for the same person.
+  var fromKey = (window.FHPipelineBoard && window.FHPipelineBoard.currentKey) || null;
+  var body = {
     action: 'move',
     client_id: clientId,
     pipeline_key: pipelineKey,
-    stage_key: stageKey
-  }).then(function(res){
+    stage_key: stageKey,
+    from_pipeline_key: (fromKey && fromKey !== pipelineKey) ? fromKey : null
+  };
+  // Ask BEFORE the card shows as saving, so a cancelled box leaves no trace.
+  if(pipelineKey === CARD_STACKING_KEY && stageKey === 'funded'){
+    var asked = askFundedAmount(card);
+    if(!asked.ok){
+      if(onFail) onFail(asked.message);
+      return;
+    }
+    body.funded_amount = asked.dollars;
+  }
+  card.classList.add('saving');
+  FHData.write('/api/pipeline-cards', body).then(function(res){
     card.classList.remove('saving');
     if(!res || !res.ok){
       var msg = (res && res.error) || 'move failed';
@@ -826,6 +898,7 @@ function persistCardMove(card, pipelineKey, stageKey, onFail, onOk){
     // Bust the board cache so the next rail click refetches.
     if(window.FHPipelineBoard && typeof window.FHPipelineBoard.invalidate === 'function'){
       window.FHPipelineBoard.invalidate(pipelineKey);
+      if(fromKey && fromKey !== pipelineKey) window.FHPipelineBoard.invalidate(fromKey);
     }
     if(typeof onOk === 'function') onOk();
   });
@@ -1228,6 +1301,7 @@ restore();
      ═══════════════════════════════════════════════════════════════════════ -->
 <script defer src="data.js"></script>
 <script src="proxy-apply.js"></script>
+<script src="money-input.js"></script>
 <script>
 (function () {
   "use strict";
@@ -1326,6 +1400,27 @@ restore();
       amt.appendChild(unit);
     }
     card.appendChild(amt);
+
+    /* AN APPROVAL WITH NO DOLLAR AMOUNT, SAID OUT LOUD ON THE BOARD THE
+       FULFILLMENT TEAM ALREADY WATCHES.
+
+       A bank can say yes before anyone knows the limit — the team has to ask
+       the client or wait for the bank's approval email — and recording that
+       approval with no amount is allowed on purpose (owner-set 2026-08-29).
+       What is NOT allowed is nobody ever noticing. Until the dollars are in,
+       that approval is left out of the round's lender breakdown, so no success
+       fee is ever billed for it. Per-client this is chipped on the lender row
+       in the Client Control Panel; this is the same fact across every client,
+       on the card that is stuck.
+
+       ONLY an explicit true paints it. A reply that never carried the key is
+       not evidence of a clean file, and a card must never claim all-clear on
+       something nobody measured — so `undefined` shows nothing at all rather
+       than a green "fine". */
+    if (c.approval_amount_missing === true) {
+      card.appendChild(div("c-needs-amount", "Amount needed"));
+    }
+
     card.appendChild(div("c-age", age(c.entered_at)));
 
     var foot = div("c-foot");
@@ -1388,7 +1483,7 @@ restore();
     var d = new Date(iso);
     if (isNaN(d.getTime())) return null;
     return d.toLocaleString("en-US", {
-      timeZone: "America/Los_Angeles",
+      timeZone: "America/Phoenix",
       month: "short",
       day: "numeric",
       year: "numeric",
@@ -1720,7 +1815,7 @@ restore();
           });
           applyBoard(cache[activePipelineKey], rail || "R-01", "board", activePipelineKey);
         }
-        banner("real", "Archived " + (c.name || "contact") + " · removed from pipeline");
+        banner("note", "Archived " + (c.name || "contact") + " · removed from pipeline");
       })
       .catch(function () {
         banner("error", "Archive failed — network");
@@ -1761,18 +1856,35 @@ restore();
   // repeatedly used to stack a fresh fixed banner at the bottom of the page
   // on every click, once loads stopped happening exactly once at page load.
   var bannerEl = null;
+  /* NO COLOURED BAR — owner call 2026-08-28, they go from the whole CRM. This
+     was a mint, peach or rose strip across the bottom of the board. What each
+     tone does now:
+
+       real   — renders nothing. "live pipeline" is a developer's receipt and
+                it was the green bar; the board being full says it better.
+       sample — renders nothing. Every caller of this tone also calls
+                showNote(), which puts the same sentence on the board itself
+                where the reader is already looking.
+       note   — renders, in app ink with ordinary text. This is the tone for
+                something the person just DID and needs told about — an archive
+                that worked, a rail that is genuinely empty. Without it,
+                removing the green bar would have silently swallowed the only
+                confirmation an archive ever gave.
+       error  — renders, in app ink with the sentence in the brand's alert
+                colour, which shell.js repaints per company. */
   function banner(tone, text) {
-    var TONE = { real: "#A8D8B0", sample: "#F5CE8F", error: "#F2A69B" };
+    if (tone === "real" || tone === "sample") return;
     if (!bannerEl) {
       bannerEl = document.createElement("div");
       bannerEl.setAttribute("role", "status");
       bannerEl.style.cssText =
         "position:fixed;left:0;right:0;bottom:0;z-index:2147482000;padding:7px 14px;" +
-        "color:#0A0A0A;font:600 11px/1.4 'JetBrains Mono',ui-monospace,monospace;" +
+        "background:#0A0A0A;border-top:1px solid #26262B;" +
+        "font:600 11px/1.4 'JetBrains Mono',ui-monospace,monospace;" +
         "letter-spacing:.05em;text-align:center";
       document.body.appendChild(bannerEl);
     }
-    bannerEl.style.background = TONE[tone] || TONE.error;
+    bannerEl.style.color = tone === "error" ? "var(--alert,#F2A69B)" : "#E4E4E7";
     bannerEl.textContent = text;
   }
 
@@ -1861,11 +1973,9 @@ restore();
       try { window.rebuildOwnerOptions(); } catch (e) {}
     }
     if (r.shown === 0) {
-      banner("real",
+      banner("note",
         label.toLowerCase() +
         " · no cards on this rail yet — stages are ready, nobody has been placed here");
-    } else {
-      banner("real", label.toLowerCase() + " pipeline");
     }
   }
 

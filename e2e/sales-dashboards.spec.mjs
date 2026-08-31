@@ -182,7 +182,11 @@ test("Closer Dashboard without client_id shows empty when no current call", asyn
   await expect(page.locator("#ccp-who-name")).toHaveText("No call right now");
   await expect(page.locator("body")).toContainText("No booked call right now");
   await expect(page.locator(".logbar")).toBeHidden();
-  await expect(page.locator("#fh-present")).toBeHidden();
+  // Present stays on the screen with no call (owner-set 2026-08-27). This
+  // assertion used to be toBeHidden(); it was flipped when the rule changed,
+  // not deleted, so the new behaviour stays pinned. The disposition logbar
+  // above it is still hidden — that one really does need a call to log.
+  await expect(page.locator("#fh-present")).toBeVisible();
 });
 
 test("Closer Dashboard without client_id loads the current call from closer-now", async ({ page }) => {

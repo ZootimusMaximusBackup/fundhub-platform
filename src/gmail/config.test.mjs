@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { gmailConfigFromEnv } from "./config.mjs";
-import { createGmailClient } from "./client.mjs";
+import { createGmailClient, plainTextFromMessage } from "./client.mjs";
 import { fetchOAuthAccessToken } from "../company-brain/auth.mjs";
 
 function mockFetch(routes) {
@@ -174,6 +174,65 @@ test("listMessages without q still defaults to INBOX", async () => {
   });
   await client.listMessages({ maxResults: 3 });
   assert.ok(listedUrl.includes("labelIds=INBOX"), `expected INBOX default in ${listedUrl}`);
+});
+
+test("plainTextFromMessage prefers text/plain and keeps newlines", () => {
+  const text = "**CLIENT INFO**\nPat Rivera\n202-555-0133\n";
+  const message = {
+    payload: {
+      mimeType: "multipart/alternative",
+      parts: [
+        {
+          mimeType: "text/plain",
+          body: { data: Buffer.from(text, "utf8").toString("base64") }
+        },
+        {
+          mimeType: "text/html",
+          body: { data: Buffer.from("<p>ignore html</p>", "utf8").toString("base64") }
+        }
+      ]
+    }
+  };
+  assert.equal(plainTextFromMessage(message), text);
+});
+
+test("getOrCreateLabel reuses an existing label then addLabels posts modify", async () => {
+  const calls = [];
+  const fetchImpl = mockFetch([
+    {
+      match: (u) => u.includes("oauth2.googleapis.com/token"),
+      body: { access_token: "gmail-tok", expires_in: 3600 }
+    },
+    {
+      match: (u) => u.includes("/gmail/v1/users/me/labels") && !u.includes("/modify"),
+      body: (u, init) => {
+        calls.push({ u, method: init.method || "GET" });
+        if (String(init.method || "GET") === "GET") {
+          return { labels: [{ id: "lbl1", name: "fundhub-blake-lead" }] };
+        }
+        return { id: "lbl-new", name: "other" };
+      }
+    },
+    {
+      match: (u) => u.includes("/messages/m1/modify"),
+      body: (u, init) => {
+        calls.push({ u, method: init.method || "GET", body: init.body });
+        return { id: "m1" };
+      }
+    }
+  ]);
+  const client = createGmailClient({
+    oauthCredentials: {
+      refreshToken: "rt-1",
+      clientId: "cid-1",
+      clientSecret: "sec-1"
+    },
+    fetchImpl
+  });
+  const id = await client.getOrCreateLabel("fundhub-blake-lead");
+  assert.equal(id, "lbl1");
+  await client.addLabels("m1", [id]);
+  assert.ok(calls.some((c) => String(c.u).includes("/messages/m1/modify")));
 });
 
 test("fetchOAuthAccessToken still works for gmail refresh", async () => {

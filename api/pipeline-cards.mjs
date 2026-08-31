@@ -89,6 +89,13 @@ export default async function handler(req, res) {
       return Number.isFinite(n) ? n : null;
     };
 
+    // Cross-rail MOVE is a hand-off, not a copy. Without this the client kept
+    // the old rail's card (Sales / Survey Complete) while also showing on the
+    // destination rail, so one person sat open on two boards.
+    const fromPipelineKey = String(
+      body.from_pipeline_key || body.fromPipelineKey || ""
+    ).trim();
+
     const result = await moveCardToStage(db, {
       orgId,
       clientId: String(body.client_id).trim(),
@@ -109,6 +116,19 @@ export default async function handler(req, res) {
           suggested_funded_amount: result.suggestedFundedAmount ?? null
         });
       }
+      /* A bank yes with no dollar amount on it blocks the round, because that
+         approval would never be billed. This is a refusal, not a missing
+         stage — 400, with the banks named so the answer is actionable. */
+      if (result.reason === "approval_amounts_missing") {
+        return res.status(400).json({
+          ok: false,
+          error: "approval_amounts_missing",
+          message: result.message ||
+            "Cannot move to funded while a bank approval has no dollar amount.",
+          missing_approvals: result.missingApprovals ?? [],
+          missing_approval_banks: result.missingApprovalBanks ?? []
+        });
+      }
       return res.status(404).json({
         ok: false,
         error: result.reason || "stage_not_found",
@@ -116,9 +136,25 @@ export default async function handler(req, res) {
       });
     }
 
+    let clearedFrom = false;
+    if (fromPipelineKey && fromPipelineKey !== pipelineKey) {
+      const cleared = await db.query(
+        `DELETE FROM cards
+           WHERE client_id = $1::uuid
+             AND org_id = $2::uuid
+             AND pipeline_id = (
+               SELECT id FROM pipelines
+                WHERE key = $3 AND org_id = $2::uuid LIMIT 1
+             )`,
+        [String(body.client_id).trim(), orgId, fromPipelineKey]
+      );
+      clearedFrom = (cleared.rowCount || 0) > 0;
+    }
+
     return res.status(200).json({
       ok: true,
       action: "move",
+      cleared_from_pipeline: clearedFrom,
       client_id: String(body.client_id).trim(),
       pipeline_key: pipelineKey,
       stage_key: stageKey,

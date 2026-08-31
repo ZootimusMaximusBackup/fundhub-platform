@@ -12,6 +12,8 @@ import { mergeCustomFields } from "../workflows/custom-fields.mjs";
 import { addTags } from "../workflows/tags.mjs";
 import { EMAIL_TEMPLATE_KEY } from "../workflows/ds-02-diy-letters.mjs";
 import { buildLetterPackForClient } from "../underwrite/letter-pack.mjs";
+import { persistDiyPackageFiles } from "../metro2/diy/persist.mjs";
+import { storeFromEnv } from "../documents/store.mjs";
 import { logCallOutcome } from "./call-outcomes.mjs";
 import { signSoftPullApproveUrl } from "../consent/approve-token.mjs";
 import { consentStatus } from "../consent/index.mjs";
@@ -19,7 +21,9 @@ import { composeAndSend } from "../messaging/compose.mjs";
 import { dispatchMessage } from "../messaging/dispatch.mjs";
 import { secretFromEnv } from "../documents/signed-url.mjs";
 import { incomeEstimates } from "../http/client-detail.mjs";
-import { stackedCombinedFromStored } from "../underwrite/business-funding.mjs";
+import { toBureaus } from "../underwrite/adapter.mjs";
+import { computeUnderwrite } from "../underwrite/engine.mjs";
+import { applyStackedBusinessFunding } from "../underwrite/business-funding.mjs";
 
 function jsonSafeLink(link, extra = {}) {
   if (!link) return null;
@@ -153,7 +157,7 @@ function negCountFrom(result) {
   return null;
 }
 
-function engineFromRow(crs, clientTier, businessCount = 0) {
+function engineFromRow(crs, clientTier) {
   if (!crs?.result || typeof crs.result !== "object") {
     return {
       available: false,
@@ -177,15 +181,10 @@ function engineFromRow(crs, clientTier, businessCount = 0) {
   const tier = deckTier(outcome);
   const fico = ficoFrom(result);
   const total = numOrNull(
-    stackedCombinedFromStored({
-      totalPersonal: result.preapprovals?.totalPersonal,
-      totalBusiness: result.preapprovals?.totalBusiness,
-      totalCombined: result.preapprovals?.totalCombined
-        ?? result.totalCombined
-        ?? result.fundingEstimate
-        ?? result.projectedPreapproval?.currentTotal,
-      businessCount
-    })
+    result.preapprovals?.totalCombined
+    ?? result.totalCombined
+    ?? result.fundingEstimate
+    ?? result.projectedPreapproval?.currentTotal
   );
   const afterFix = numOrNull(
     result.projectedPreapproval?.totalCombined
@@ -255,7 +254,7 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
   const client = clientRes.rows[0];
   if (!client) return null;
 
-  const [crsRes, bizRes] = await Promise.all([
+  const [crsRes, bizRes, tradelinesRes, liabilitiesRes] = await Promise.all([
     db.query(
       `SELECT result, outcome_tier, created_at
          FROM crs_results
@@ -264,14 +263,44 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
       [clientId, orgId]
     ),
     db.query(
-      `SELECT id FROM businesses
-        WHERE client_id = $1 AND org_id = $2`,
+      `SELECT age_months FROM businesses
+        WHERE client_id = $1 AND org_id = $2
+        ORDER BY created_at ASC`,
+      [clientId, orgId]
+    ),
+    db.query(
+      `SELECT * FROM tradelines
+        WHERE client_id = $1 AND org_id = $2
+        ORDER BY apr ASC NULLS LAST, lender ASC`,
+      [clientId, orgId]
+    ),
+    db.query(
+      `SELECT * FROM card_liabilities
+        WHERE client_id = $1 AND org_id = $2
+        ORDER BY as_of DESC`,
       [clientId, orgId]
     )
   ]);
 
   const name = [client.first_name, client.last_name].filter(Boolean).join(" ").trim() || "Client";
-  const engine = engineFromRow(crsRes.rows[0], client.outcome_tier, bizRes.rows.length);
+  const engine = engineFromRow(crsRes.rows[0], client.outcome_tier);
+  /* COMPLIANCE REVIEW REQUIRED — Present money is the UnderwriteIQ stack, not
+     the stored CRS canned total. Same three calls as api/read/underwrite.mjs. */
+  if (engine.available) {
+    const adapter = toBureaus({
+      tradelines: tradelinesRes.rows,
+      liabilities: liabilitiesRes.rows,
+      crsResults: crsRes.rows,
+      customFields: client.custom_fields || {},
+      businesses: bizRes.rows
+    });
+    const underwrite = applyStackedBusinessFunding(
+      computeUnderwrite(adapter.bureaus, adapter.businessAgeMonths),
+      adapter.businessAges
+    );
+    const stacked = numOrNull(underwrite?.totals?.total_combined_funding);
+    if (stacked != null) engine.total = stacked;
+  }
   if (engine.total == null) {
     const prequal = numOrNull(cf(client, "analyzer_prequal_amount") || cf(client, "total_funding_estimate"));
     if (prequal != null && engine.available) engine.total = prequal;
@@ -679,7 +708,7 @@ export async function sendDeckPayLink(db, {
 }
 
 export async function generateDeckLetters(db, {
-  orgId, clientId, staffId, offerKey, edu = false, forceRepair = false, tier = null
+  orgId, clientId, staffId, offerKey, edu = false, forceRepair = false, tier = null, store = null
 }) {
   const offer = getOffer(offerKey);
   if (!offer) {
@@ -693,6 +722,25 @@ export async function generateDeckLetters(db, {
     );
   }
   const pack = await buildLetterPackForClient(db, { clientId, pack: "repair" });
+  // THE BYTES ARE THE DELIVERABLE. This action used to build the pack, count the
+  // files, email the client that their letters were ready, and never save a
+  // single PDF. Same registry and same helper the DS-02 workflow uses.
+  // A storage failure must not lose the call outcome, so it is recorded, not thrown.
+  let persisted = { stored: [], skipped: "not_attempted" };
+  if (pack.files?.length) {
+    try {
+      persisted = await persistDiyPackageFiles(db, store || storeFromEnv(), {
+        orgId,
+        clientId,
+        files: pack.files,
+        generatedBy: "closer-deck",
+        sourceEventId: `closer-deck-letters:${clientId}:${offerKey}`,
+        pack: "repair_letter_pack"
+      });
+    } catch (err) {
+      persisted = { stored: [], skipped: String(err && err.message || err).slice(0, 240) };
+    }
+  }
   const emailQueued = await sendTemplated(db, {
     orgId,
     clientId,
@@ -711,6 +759,8 @@ export async function generateDeckLetters(db, {
   return {
     delivered: !!(pack.files && pack.files.length),
     letterCount: pack.files?.length || 0,
+    documentsStored: persisted.stored.length,
+    persistSkipped: persisted.skipped,
     engineSkip: pack.engineSkip || null,
     email
   };
