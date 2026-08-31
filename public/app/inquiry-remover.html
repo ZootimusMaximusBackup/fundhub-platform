@@ -1430,6 +1430,27 @@ window.__fhInitQueue = function(){
       note   = document.getElementById('filter-note'),
       filter = null;
 
+  /* ── WHICH CELL IS WHICH ───────────────────────────────────────────────
+     The Work Queue header declares eight columns, in this order:
+
+       0 Client · 1 Bureau · 2 Actual · 3 Expected
+       4 Call State · 5 Hold · 6 Attempts · 7 Status
+
+     and the wiring block above appends exactly those eight, in that order.
+     These two constants were 3 and 4, left over from a five-column table
+     that no longer exists — so every write put the attempt count in the
+     EXPECTED column and the status pill in CALL STATE, while the real
+     Attempts and Status columns never moved at all. Press "Mark confirmed"
+     and the row read "Removed" under Call State with Status still open:
+     precisely the credit-report action that appears to have happened and
+     did not, which the header of the next block says is the worst thing
+     this page can do to somebody.
+
+     Named rather than inlined so the two places that index a row cannot
+     drift apart again, and pinned against the header itself by
+     src/http/inquiry-remover-view.test.mjs. */
+  var COL_ATTEMPTS = 6, COL_STATUS = 7;
+
   function esc(v){
     return String(v == null ? '' : v)
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1547,9 +1568,9 @@ window.__fhInitQueue = function(){
     if (r._state) return r._state;
     var raw = r._row;
     if (!raw){
-      var txt = r.cells[3].textContent.trim();
+      var txt = r.cells[COL_ATTEMPTS].textContent.trim();
       raw = {
-        status: r.cells[4].textContent.trim(),
+        status: r.cells[COL_STATUS].textContent.trim(),
         call_attempts: /^\d+$/.test(txt) ? Number(txt) : null,
         confirmed_at: r.dataset.done === '1' ? true : null
       };
@@ -1561,8 +1582,8 @@ window.__fhInitQueue = function(){
   function expand(r){
     var locked = r.dataset.locked,
         bureau = r.dataset.bureau,
-        attemptsCell = r.cells[3],
-        statusCell   = r.cells[4],
+        attemptsCell = r.cells[COL_ATTEMPTS],
+        statusCell   = r.cells[COL_STATUS],
         inquiryId    = r.dataset.id || null,
         clientId     = r.dataset.clientId || null,
         /* "live" means this row exists in the database. Sample markup has no
@@ -1673,8 +1694,13 @@ window.__fhInitQueue = function(){
 
     /* ── rendering ─────────────────────────────────────────────────────────
        syncButtons runs on every state change. paintRow runs ONLY after a write
-       has been armed or answered, so expanding a sample row never rewrites the
-       markup it came with (the "2d 14h" stuck age lives in that cell). */
+       has been armed or answered, so opening a row and closing it again leaves
+       the Attempts and Status cells exactly as the wiring block painted them.
+
+       (This used to say the cell held a "2d 14h" stuck age. It does not: that
+       column, and the sample rows that carried it, were deleted when the table
+       went to eight columns. The sentence outlived the markup and pointed the
+       next reader at the wrong two cells.) */
     function syncButtons(){
       var s = r._state, busy = s.phase === 'pending', off = busy || !live || !!locked;
       kind.disabled = call.disabled = off;
@@ -2271,9 +2297,25 @@ function initials(name) {
   if (!p.length) return "—";
   return p.slice(0, 2).map(function (w) { return w.charAt(0).toUpperCase(); }).join("");
 }
+/* viewerRole — this session's staff role, folded the way shell.js normRole()
+   folds it (staff.role is free text, so "Owner" and "owner " are one role).
+
+   It is used for ONE thing: deciding whether a control renders at all.
+   docs/UI-STANDARDS.md §5 — "no controls the role lacks permission for". The
+   server gate is still the authority and still refuses; this only stops the
+   page offering a button whose answer is already known to be no.
+
+   Seeded from shell.js's fh_role cache so the very first paint is already
+   gated, then corrected by /api/auth/session below. Unknown role renders
+   nothing extra, which is the safe direction. */
+var viewerRole = "";
+try { viewerRole = String(localStorage.getItem("fh_role") || "").trim().toLowerCase(); }
+catch (e) { viewerRole = ""; }
+
 function paintStaff(staff) {
   var name = (staff && staff.name) || "";
   var rawRole = staff && staff.role ? String(staff.role) : "";
+  viewerRole = rawRole.trim().toLowerCase();
   var role = rawRole.replace(/_/g, " ");
   if (rawRole === "inquiry_specialist") role = "Specialist";
   var av = document.getElementById("whoAv");
@@ -2421,36 +2463,316 @@ fetch("/api/auth/session", {
   });
 })();
 
-function loadRepairDesk() {
-  var V = window.FHInquiryView;
-  var L = window.FHRepairLens;
-  var pane = document.getElementById("pane-repair");
-  var body = document.getElementById("repairBody");
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE REPAIR DESK.
+
+   Everything down to `window.loadRepairDesk` lives in one scope on purpose,
+   split into two halves that are NOT the same thing:
+
+     · The CHROME — the letter drawer, the PULL modal, the Escape key and the
+       five filter tiles. Built once by the page, so bound once, out here.
+     · The RELOAD — loadRepairDesk(), which refetches the queue and repaints
+       the rows. It runs again after every Send, Stage, Enroll and drawer Send.
+
+   They used to be one function, and that was the bug. Each reload re-ran the
+   binding block against the SAME elements, so a second listener piled on top
+   of the first and neither was ever removed. Two handlers on one tile ran the
+   toggle twice: the first set aria-pressed="true", the second read that fresh
+   value and turned the filter straight back off. Net effect, nothing moved —
+   and the tiles are the only way this desk has to sort itself, so one Send
+   disabled sorting for the rest of the page's life. The document-level Escape
+   listener was the worst of them: nothing on the page ever removed it, so it
+   accumulated one copy per reload until the tab was closed.
+
+   Rule for the next person: anything that binds a listener to an element the
+   page already had belongs up here. Only things that touch the rows this load
+   just created belong inside loadRepairDesk().
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function repairDesk() {
+
+var V = window.FHInquiryView;
+var L = window.FHRepairLens;
+var filterTiles = document.querySelectorAll("#repair-stats .stat-tile[data-filter]");
+
+/* State that has to outlive a reload. Declared out here for the same reason
+   the listeners are: a fresh copy per load is exactly what broke the tiles. */
+var activeFilter = null;
+var pullClientId = null;
+var letterSendCtx = null;
+
+var tok = "";
+try { tok = localStorage.getItem("fh_token") || ""; } catch (e) {}
+
+/* ── who may press what ────────────────────────────────────────────────────
+   Mirrors of the two server gates, so a control whose answer is already known
+   to be "no" never renders. docs/UI-STANDARDS.md §5: "Every visible control
+   works. No buttons wired to nothing, no controls the role lacks permission
+   for." A button that renders and refuses is the thing that rule forbids.
+
+     CRS_PULL_ROLES  — api/finance/crs-pull.mjs
+     ERASURE_ROLES   — api/privacy/erasure.mjs
+
+   inquiry_specialist is on NEITHER list, and is not being added to either.
+   A soft pull is a real paid order to all three bureaus through UnderwriteIQ,
+   and an erasure cannot be undone. This desk's job is to dispute what is
+   already on a report, not to order one; the report reaches it from the closer
+   and funding-advisor side, who do hold that permission.
+   docs/journeys/role-inquiry-remover-intended.md lists Finance and privacy
+   among the routes this role stays blocked from, and CLAUDE.md §4 forbids
+   adding a step the intended journey does not have.
+
+   Owner and admin open this desk too. For them both buttons still render and
+   still work — this hides a control from the roles the server refuses, and
+   from nobody else.
+
+   src/http/repair-desk-screen.test.mjs reads both handlers and fails if either
+   server list moves without this one moving with it. */
+var CRS_PULL_ROLES = ["owner", "admin", "closer", "funding_advisor"];
+var ERASURE_ROLES = ["owner", "admin"];
+function mayPullCredit() { return CRS_PULL_ROLES.indexOf(viewerRole) !== -1; }
+function mayErase() { return ERASURE_ROLES.indexOf(viewerRole) !== -1; }
+
+function headers(json) {
+  var h = { accept: "application/json" };
+  if (tok) h.authorization = "Bearer " + tok;
+  if (json) h["content-type"] = "application/json";
+  return h;
+}
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function repairBody() { return document.getElementById("repairBody"); }
+function showErr(msg) {
   var err = document.getElementById("repairErr");
+  if (!err) return;
+  err.hidden = false;
+  err.textContent = msg;
+}
+function clearErr() {
+  var err = document.getElementById("repairErr");
+  if (err) { err.hidden = true; err.textContent = ""; }
+}
+
+function closeLetterDrawer() {
+  var d = document.getElementById("repairLetterDrawer");
+  if (!d) return;
+  d.classList.remove("open");
+  d.setAttribute("aria-hidden", "true");
+  letterSendCtx = null;
+}
+function openLetterDrawer(letter, file, signerName, signedAt) {
+  var d = document.getElementById("repairLetterDrawer");
+  if (!d) return;
+  var title = document.getElementById("repairLetterTitle");
+  var meta = document.getElementById("repairLetterMeta");
+  var bodyEl = document.getElementById("repairLetterBody");
+  var sendOne = document.getElementById("repairLetterSendOne");
+  var name = (V && V.bureauLabel) ? V.bureauLabel(letter.bureau) : (letter.bureau || "Letter");
+  if (title) title.textContent = name + " · " + (letter.round || "");
+  if (meta) {
+    meta.textContent = "target: " + (letter.target || "bureau") +
+      " · rules " + ((letter.rule_ids || []).join(" · ") || "—") +
+      " · status " + (letter.status || "—");
+  }
+  var html = letter.html || "";
+  if (signerName && bodyEl) {
+    var sigDate = signedAt
+      ? new Date(signedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Phoenix" })
+      : "";
+    html += "\n\n<span class=\"sig\">" + esc(signerName) + "</span>\n" +
+      esc(signerName) + "\n<span class=\"sigmeta\">Signed electronically" +
+      (sigDate ? " · " + esc(sigDate) : "") + " · from the signed repair agreement</span>";
+  }
+  if (bodyEl) bodyEl.innerHTML = html;
+  letterSendCtx = { clientId: file && file.client_id, letter: letter };
+  if (sendOne) {
+    sendOne.disabled = !(letter && letter.can_send && letter.html);
+    /* onclick, not addEventListener: the drawer element is reused for every
+       letter, so assignment REPLACES the previous letter's handler instead of
+       stacking a second one on the same button. */
+    sendOne.onclick = function () {
+      if (!letterSendCtx || !V) return;
+      var req;
+      try {
+        req = V.buildRepairSendRequest({
+          clientId: letterSendCtx.clientId,
+          mail: true,
+          letters: [letterSendCtx.letter]
+        });
+      } catch (e) {
+        showErr(e.message || "Could not send");
+        return;
+      }
+      sendOne.disabled = true;
+      sendOne.textContent = "Sending…";
+      fetch(req.path, { method: req.method, headers: headers(true), body: JSON.stringify(req.body) })
+        .then(function (r) { return r.json(); })
+        .then(function (out) {
+          sendOne.textContent = "Send this one";
+          sendOne.disabled = false;
+          if (out && out.ok) {
+            closeLetterDrawer();
+            loadRepairDesk();
+          } else {
+            showErr((out && (out.error || out.message)) || "Send failed");
+          }
+        })
+        .catch(function () {
+          sendOne.textContent = "Send this one";
+          sendOne.disabled = false;
+          showErr("Send failed");
+        });
+    };
+  }
+  d.classList.add("open");
+  d.setAttribute("aria-hidden", "false");
+}
+
+function pullCheck() {
+  var go = document.getElementById("repairPullGo");
+  var input = document.getElementById("repairPullInput");
+  if (go && input) go.disabled = input.value.trim() !== "PULL";
+}
+function closePull() {
+  var m = document.getElementById("repairPullModal");
+  if (!m) return;
+  m.classList.remove("open");
+  m.setAttribute("aria-hidden", "true");
+  pullClientId = null;
+}
+function openPull(clientId) {
+  pullClientId = clientId;
+  var m = document.getElementById("repairPullModal");
+  var input = document.getElementById("repairPullInput");
+  if (!m) return;
+  if (input) input.value = "";
+  pullCheck();
+  m.classList.add("open");
+  m.setAttribute("aria-hidden", "false");
+  if (input) input.focus();
+}
+
+/* ── the soft pull ─────────────────────────────────────────────────────────
+   Three bureaus, one at a time, and EVERY answer is now read.
+
+   This used to be `.then(function () { next(); }).catch(function () { next(); })`
+   — three POSTs whose replies were thrown on the floor, a modal that closed
+   itself, and a desk that reported success by saying nothing at all. A staff
+   member with no permission to pull typed PULL, pressed Pull, watched the box
+   close, and three refusals vanished into an empty catch.
+
+   FHData.write classifies the answer exactly the way every other screen's does
+   (401/403, 404, 400/409, 503, 500, no reply at all) and FHData.explain says it
+   in the house wording, so this screen invents no error copy of its own. The
+   same sentence is mirrored into the desk's own error line, because
+   explain()'s "sample"-tone cases — a demo session, a rejected request — paint
+   nothing on the bottom strip, and silence is what this whole change is about.
+
+   It stops on the FIRST failure. Three identical refusals is noise, and the
+   second and third bureau are billable questions not worth asking once the
+   first has been answered no. */
+var PULL_WHAT = "the credit pull";
+function runSoftPull() {
+  if (!pullClientId) return;
+  if (!window.FHData) { showErr("The credit pull could not start."); return; }
+  var clientId = pullClientId;
+  var go = document.getElementById("repairPullGo");
+  var bureaus = ["EX", "EQ", "TU"];
+  var i = 0;
+
+  if (go) { go.disabled = true; go.textContent = "Pulling…"; }
+  function release() { if (go) { go.textContent = "Pull"; go.disabled = false; } }
+
+  function next() {
+    if (i >= bureaus.length) {
+      release();
+      closePull();
+      clearErr();
+      return;
+    }
+    var bureau = bureaus[i++];
+    FHData.write("/api/finance/crs-pull", { client_id: clientId, bureau: bureau })
+      .then(function (res) {
+        if (res && res.ok) { next(); return; }
+        release();
+        closePull();
+        FHData.explain(res, PULL_WHAT);
+        /* The wording explain() just chose, reused rather than rewritten. */
+        var said = FHData._parts && FHData._parts[PULL_WHAT] && FHData._parts[PULL_WHAT].text;
+        if (said) showErr(said);
+      });
+  }
+  next();
+}
+
+function applyFilter(filterKey) {
+  activeFilter = filterKey;
+  filterTiles.forEach(function (t) {
+    t.setAttribute("aria-pressed", t.getAttribute("data-filter") === filterKey ? "true" : "false");
+  });
+  var body = repairBody();
+  if (!body) return;
+  body.querySelectorAll("tr.repair-row").forEach(function (tr) {
+    if (!filterKey) {
+      tr.classList.remove("filtered-out");
+      return;
+    }
+    var sets = (tr.getAttribute("data-set") || "").split(/\s+/);
+    tr.classList.toggle("filtered-out", sets.indexOf(filterKey) === -1);
+  });
+  var open = body.querySelector("tr.repair-expand");
+  if (open) open.remove();
+  body.querySelectorAll("tr.repair-row.active-row").forEach(function (r) {
+    r.classList.remove("active-row");
+    r.setAttribute("aria-expanded", "false");
+  });
+}
+
+/* ── REPAIR-BIND-ONCE ──────────────────────────────────────────────────────
+   Runs exactly once, at page load, against elements the page shipped with.
+   Nothing below this line may be moved back inside loadRepairDesk(). */
+document.querySelectorAll("[data-repair-close-letter]").forEach(function (el) {
+  el.addEventListener("click", closeLetterDrawer);
+});
+document.querySelectorAll("[data-repair-close-pull]").forEach(function (el) {
+  el.addEventListener("click", closePull);
+});
+var pullInput = document.getElementById("repairPullInput");
+if (pullInput) pullInput.addEventListener("input", pullCheck);
+var pullGo = document.getElementById("repairPullGo");
+if (pullGo) pullGo.addEventListener("click", runSoftPull);
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape") { closeLetterDrawer(); closePull(); }
+});
+
+filterTiles.forEach(function (t) {
+  function fire() {
+    var key = t.getAttribute("data-filter");
+    var on = t.getAttribute("aria-pressed") === "true";
+    applyFilter(on ? null : key);
+  }
+  t.addEventListener("click", fire);
+  t.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fire(); }
+  });
+});
+
+/* ── the reload ────────────────────────────────────────────────────────────
+   Refetch and repaint. Called on first open of the Repair tab, by Retry, and
+   after every Send, Stage, Enroll and drawer Send. Binds listeners ONLY to
+   rows it has just created. */
+function loadRepairDesk() {
+  var pane = document.getElementById("pane-repair");
+  var body = repairBody();
   var stateBlock = document.getElementById("repairStateBlock");
   var need = document.getElementById("repairNeedMe");
   var ready = document.getElementById("repairReady");
   var waiting = document.getElementById("repairWaiting");
   var stalled = document.getElementById("repairStalled");
   var trial = document.getElementById("repairTrial");
-  var filterTiles = document.querySelectorAll("#repair-stats .stat-tile[data-filter]");
-  var activeFilter = null;
   var loadedFiles = [];
-  var pullClientId = null;
-  var letterSendCtx = null;
-  var tok = "";
-  try { tok = localStorage.getItem("fh_token") || ""; } catch (e) {}
 
-  function headers(json) {
-    var h = { accept: "application/json" };
-    if (tok) h.authorization = "Bearer " + tok;
-    if (json) h["content-type"] = "application/json";
-    return h;
-  }
-  function esc(s) {
-    return String(s == null ? "" : s)
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
   function setPaneState(name) {
     if (!pane) return;
     pane.classList.remove("state-loading", "state-empty", "state-error", "state-loaded");
@@ -2469,14 +2791,6 @@ function loadRepairDesk() {
     if (stalled) stalled.textContent = n(d.stalled);
     if (trial) trial.textContent = n(d.trial_ending);
   }
-  function showErr(msg) {
-    if (!err) return;
-    err.hidden = false;
-    err.textContent = msg;
-  }
-  function clearErr() {
-    if (err) { err.hidden = true; err.textContent = ""; }
-  }
   function showStateMessage(html) {
     if (!stateBlock) return;
     stateBlock.hidden = false;
@@ -2487,172 +2801,6 @@ function loadRepairDesk() {
     stateBlock.hidden = true;
     stateBlock.innerHTML = "";
   }
-
-  function closeLetterDrawer() {
-    var d = document.getElementById("repairLetterDrawer");
-    if (!d) return;
-    d.classList.remove("open");
-    d.setAttribute("aria-hidden", "true");
-    letterSendCtx = null;
-  }
-  function openLetterDrawer(letter, file, signerName, signedAt) {
-    var d = document.getElementById("repairLetterDrawer");
-    if (!d) return;
-    var title = document.getElementById("repairLetterTitle");
-    var meta = document.getElementById("repairLetterMeta");
-    var bodyEl = document.getElementById("repairLetterBody");
-    var sendOne = document.getElementById("repairLetterSendOne");
-    var name = (V && V.bureauLabel) ? V.bureauLabel(letter.bureau) : (letter.bureau || "Letter");
-    if (title) title.textContent = name + " · " + (letter.round || "");
-    if (meta) {
-      meta.textContent = "target: " + (letter.target || "bureau") +
-        " · rules " + ((letter.rule_ids || []).join(" · ") || "—") +
-        " · status " + (letter.status || "—");
-    }
-    var html = letter.html || "";
-    if (signerName && bodyEl) {
-      var sigDate = signedAt
-        ? new Date(signedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Phoenix" })
-        : "";
-      html += "\n\n<span class=\"sig\">" + esc(signerName) + "</span>\n" +
-        esc(signerName) + "\n<span class=\"sigmeta\">Signed electronically" +
-        (sigDate ? " · " + esc(sigDate) : "") + " · from the signed repair agreement</span>";
-    }
-    if (bodyEl) bodyEl.innerHTML = html;
-    letterSendCtx = { clientId: file && file.client_id, letter: letter };
-    if (sendOne) {
-      sendOne.disabled = !(letter && letter.can_send && letter.html);
-      sendOne.onclick = function () {
-        if (!letterSendCtx || !V) return;
-        var req;
-        try {
-          req = V.buildRepairSendRequest({
-            clientId: letterSendCtx.clientId,
-            mail: true,
-            letters: [letterSendCtx.letter]
-          });
-        } catch (e) {
-          showErr(e.message || "Could not send");
-          return;
-        }
-        sendOne.disabled = true;
-        sendOne.textContent = "Sending…";
-        fetch(req.path, { method: req.method, headers: headers(true), body: JSON.stringify(req.body) })
-          .then(function (r) { return r.json(); })
-          .then(function (out) {
-            sendOne.textContent = "Send this one";
-            sendOne.disabled = false;
-            if (out && out.ok) {
-              closeLetterDrawer();
-              loadRepairDesk();
-            } else {
-              showErr((out && (out.error || out.message)) || "Send failed");
-            }
-          })
-          .catch(function () {
-            sendOne.textContent = "Send this one";
-            sendOne.disabled = false;
-            showErr("Send failed");
-          });
-      };
-    }
-    d.classList.add("open");
-    d.setAttribute("aria-hidden", "false");
-  }
-
-  function pullCheck() {
-    var go = document.getElementById("repairPullGo");
-    var input = document.getElementById("repairPullInput");
-    if (go && input) go.disabled = input.value.trim() !== "PULL";
-  }
-  function closePull() {
-    var m = document.getElementById("repairPullModal");
-    if (!m) return;
-    m.classList.remove("open");
-    m.setAttribute("aria-hidden", "true");
-    pullClientId = null;
-  }
-  function openPull(clientId) {
-    pullClientId = clientId;
-    var m = document.getElementById("repairPullModal");
-    var input = document.getElementById("repairPullInput");
-    if (!m) return;
-    if (input) input.value = "";
-    pullCheck();
-    m.classList.add("open");
-    m.setAttribute("aria-hidden", "false");
-    if (input) input.focus();
-  }
-  function runSoftPull() {
-    if (!pullClientId) return;
-    var clientId = pullClientId;
-    var go = document.getElementById("repairPullGo");
-    if (go) { go.disabled = true; go.textContent = "Pulling…"; }
-    var bureaus = ["EX", "EQ", "TU"];
-    var i = 0;
-    function next() {
-      if (i >= bureaus.length) {
-        if (go) { go.textContent = "Pull"; go.disabled = false; }
-        closePull();
-        return;
-      }
-      var bureau = bureaus[i++];
-      fetch("/api/finance/crs-pull", {
-        method: "POST",
-        headers: headers(true),
-        body: JSON.stringify({ client_id: clientId, bureau: bureau })
-      }).then(function () { next(); }).catch(function () { next(); });
-    }
-    next();
-  }
-
-  document.querySelectorAll("[data-repair-close-letter]").forEach(function (el) {
-    el.addEventListener("click", closeLetterDrawer);
-  });
-  document.querySelectorAll("[data-repair-close-pull]").forEach(function (el) {
-    el.addEventListener("click", closePull);
-  });
-  var pullInput = document.getElementById("repairPullInput");
-  if (pullInput) pullInput.addEventListener("input", pullCheck);
-  var pullGo = document.getElementById("repairPullGo");
-  if (pullGo) pullGo.addEventListener("click", runSoftPull);
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") { closeLetterDrawer(); closePull(); }
-  });
-
-  function applyFilter(filterKey) {
-    activeFilter = filterKey;
-    filterTiles.forEach(function (t) {
-      t.setAttribute("aria-pressed", t.getAttribute("data-filter") === filterKey ? "true" : "false");
-    });
-    if (!body) return;
-    body.querySelectorAll("tr.repair-row").forEach(function (tr) {
-      if (!filterKey) {
-        tr.classList.remove("filtered-out");
-        return;
-      }
-      var sets = (tr.getAttribute("data-set") || "").split(/\s+/);
-      tr.classList.toggle("filtered-out", sets.indexOf(filterKey) === -1);
-    });
-    var open = body.querySelector("tr.repair-expand");
-    if (open) open.remove();
-    body.querySelectorAll("tr.repair-row.active-row").forEach(function (r) {
-      r.classList.remove("active-row");
-      r.setAttribute("aria-expanded", "false");
-    });
-  }
-
-  filterTiles.forEach(function (t) {
-    function fire() {
-      var key = t.getAttribute("data-filter");
-      var on = t.getAttribute("aria-pressed") === "true";
-      applyFilter(on ? null : key);
-    }
-    t.addEventListener("click", fire);
-    t.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fire(); }
-    });
-  });
 
   clearErr();
   setPaneState("loading");
@@ -2866,8 +3014,11 @@ function loadRepairDesk() {
           '</div><div class="case-actions" style="margin-top:14px">' +
           '<button type="button" class="primary" data-act="repair-send"' + (sendable.length ? "" : " disabled") + ">Send</button>" +
           '<button type="button" data-act="repair-stage">Stage</button>' +
-          '<button type="button" data-act="repair-pull">Soft pull</button>' +
-          '<button type="button" data-act="repair-clean">Clean personal info</button>' +
+          /* Soft pull and Clean personal info render only for the roles their
+             endpoints accept — see CRS_PULL_ROLES and ERASURE_ROLES at the top
+             of this block for why the Specialist is not one of them. */
+          (mayPullCredit() ? '<button type="button" data-act="repair-pull">Soft pull</button>' : "") +
+          (mayErase() ? '<button type="button" data-act="repair-clean">Clean personal info</button>' : "") +
           '<button type="button" data-act="repair-enroll">Enroll</button>' +
           '<p class="lt-detail" data-send-msg></p></div></td>';
 
@@ -3003,6 +3154,13 @@ function loadRepairDesk() {
       });
   }
 }
+
+/* deskToggle above is a separate IIFE and calls this by name when the Repair
+   tab is opened for the first time, so it has to be reachable from outside
+   this one. Everything else stays in here. */
+window.loadRepairDesk = loadRepairDesk;
+
+})();
 
 </script>
 </body>

@@ -122,8 +122,20 @@ export async function computeKpis(db, { orgId, period = "7d" } = {}) {
     costPerFunded = Math.round(spendCents / fundedN);
   }
 
-  // Pipeline movement = cards that changed stage today (entered_at in window for days=1,
-  // or in the period). Use cards.entered_at as the best available signal.
+  // Pipeline movement = cards that entered their current stage inside the window.
+  //
+  // This asked the right question against a column that could not answer it.
+  // cards.entered_at was stamped once at insert and never updated, so until
+  // migration 271 this counted cards CREATED in the window, not cards MOVED —
+  // a board where nothing moved all week still reported movement, and a week of
+  // heavy stage changes on old cards reported none. 271 adds a trigger that
+  // stamps entered_at whenever stage_id actually changes, so the column now
+  // means what this query always assumed. The SQL is unchanged and correct.
+  //
+  // A newly created card counts, and should: it entered its first stage in the
+  // window. Cards that existed before 271 shipped carry their creation time
+  // until their next real move; there was no stage-change history to backfill
+  // from.
   const moved = await db.query(
     `SELECT count(*)::int AS n
        FROM cards cd
