@@ -435,3 +435,75 @@ quietly.
 
 No route added, no endpoint added, no migration, no env var touched, no new
 surface, `--fh-maxw` untouched, no user-visible empty-state wording changed.
+
+---
+
+## Surgical pass — 2026-08-31, two named defects only
+
+Scope was two defects and nothing else. Diff is two files.
+
+**1. `next_call` could name a call that had already happened.** `nextCallAfter()`
+bounded on "later than this call" and nothing else, while `upcomingCalls()` five
+lines above bounds everybody who is not the open client on `due_at >= now()`. This
+client's tasks are kept from `date_trunc('day', now())` onward, so opening a client
+whose call was at 9:00 AM makes "this call" a past time, and "the first row after
+it" can be a 10:00 AM that came and went un-dispositioned. Headline said "next
+10:00 AM"; the Up next rail beside it said 4:00 PM. Fix is one line —
+`AND nt.due_at >= now()`, the bound the neighbouring query already carries.
+Proved both ways: with the line removed, new test F fails and **only** F fails.
+
+**2. Two of the six new database tests only passed between midnight and 9 AM.**
+They seeded rows at `date_trunc('day', now()) + N hours` and asserted on counts
+from a query that filters by `now()`. One scratch database, same code, only the
+database's time zone moved to stand in for the hour:
+
+| simulated local hour | old file | new file |
+|---|---|---|
+| 02:08 | 6/6 | 8/8 |
+| 06:10 | — | 8/8 |
+| 07:10 | — | 8/8 |
+| 10:08 | **5/6** (test C: LIMIT 5, actual 4) | 8/8 |
+| 17:09 | **2/6** | 8/8 |
+| 23:10 | **2/6** | 8/8 |
+
+Fixtures now hang off `date_trunc('second', now())` and the file runs inside one
+transaction, where Postgres `now()` is the transaction start time and cannot move.
+Whole seconds because a timestamptz is microsecond and a JS `Date` is millisecond,
+so a `due_at` round-tripped through the runner comes back slightly *earlier* than
+the stored row — enough for `due_at > $3` to match the row it came from. A ninth
+assertion pins that the clock does not move mid-run.
+
+### Found, not fixed — deliberately out of scope
+
+* That microsecond round-trip is real in production too: `after` reaches
+  `nextCallAfter()` as a JS `Date`, so a booking whose `due_at` carries
+  microseconds could still name itself as its own next call.
+* `nextCallAfter` selects `nt.title` and never returns it.
+* Strict `>` still answers "nothing after this" for two bookings on the same minute.
+
+### Measured
+
+Worktree `wf_7844ac4f-935-1`, branch with `origin/main` merged first. Lint clean,
+1613 files. `npm test` never reaches the database phase — `scripts/run-suite.mjs`
+exits after the unit phase when it is red, and it is red on main — so the phases
+were run separately.
+
+* Unit phase: 7318 tests / 7305 pass / 10 fail / 3 skipped. Same ten by name with
+  these two files reverted.
+* Database phase, concurrency 1, flag before the file list, scratch Postgres 16.14
+  built from zero (219 migrations) and dropped after: 138 files, **1963 tests /
+  1934 pass / 28 fail / 1 skipped**. Same phase, same freshly rebuilt database,
+  these two files reverted: **1961 / 1931 / 29 / 1** — the one-line difference is
+  test C, failing at the hour the baseline ran. Every remaining failure is a
+  partner-isolation / row-level-security test; none reads this screen.
+* `npx playwright test e2e/closer-call-rhythm.spec.mjs`: 16 tests, 16 pass.
+
+## Manifest — surgical pass
+
+| file | what |
+|---|---|
+| `src/sales/cockpit.mjs` | one SQL line in `nextCallAfter()`: `AND nt.due_at >= now()`; comment says why two bounds |
+| `src/sales/cockpit-next-call.pg.test.mjs` | fixtures anchored to `date_trunc('second', now())` instead of midnight; +2 tests (clock-does-not-move, F) = 8 |
+
+No route, endpoint, migration, env var, page, screen, tab or menu row. No wording
+changed. Never CI, never production, `verify:e2e` never run.

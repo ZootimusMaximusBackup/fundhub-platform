@@ -470,7 +470,15 @@ export async function upcomingCalls(db, { orgId, staffId, includeClientId }) {
 
    C is why this is a query and not a loop: the honest answer is not in the array
    at any ordering. One row, ordered by time, no client weighting, no truncation.
-   Returns null only when there genuinely is no later call. */
+   Returns null only when there genuinely is no later call.
+
+   TWO time bounds, not one. `after` alone is not enough: this client's tasks are
+   kept from date_trunc('day', now()) onward, so opening a client whose call was
+   at 9:00 AM makes `after` a time in the PAST, and "the first row after 9:00 AM"
+   can be a 10:00 AM that came and went and was never dispositioned. up_next has
+   dropped that 10:00 AM already (it filters everybody else by due_at >= now()),
+   so the headline named a finished call while the rail beside it named the real
+   one. Both halves of the screen answer from the same clock or neither does. */
 export async function nextCallAfter(db, { orgId, staffId, after }) {
   if (!after) return null;
   const r = await db.query(
@@ -485,6 +493,7 @@ export async function nextCallAfter(db, { orgId, staffId, after }) {
         AND nt.due_at IS NOT NULL
         AND o.id IS NULL
         AND nt.due_at > $3
+        AND nt.due_at >= now()
       ORDER BY nt.due_at ASC
       LIMIT 1`,
     [orgId, staffId, after]
