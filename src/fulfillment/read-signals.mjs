@@ -259,8 +259,13 @@ const OPEN_TASKS_SQL = `
      AND COALESCE(is_demo, false) = false
    ORDER BY created_at DESC`;
 
+/* created_at rides along so the screen can say HOW LONG this round has been
+   open. Without it, a round waiting since June and one opened this morning read
+   identically — see summariseRound() in next-action.mjs, which is the only
+   thing that reads it. It is a timestamp on a row we already select; no extra
+   query, no extra join. */
 const ROUNDS_SQL = `
-  SELECT client_id, id, round_number, status, hold_reason, approved_amount
+  SELECT client_id, id, round_number, status, hold_reason, approved_amount, created_at
     FROM funding_rounds
    WHERE org_id = $1::uuid
      AND client_id = ANY($2::uuid[])

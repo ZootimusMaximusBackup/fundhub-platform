@@ -100,23 +100,55 @@
   .app :is(.rf-label,.kv-label,.blocker-age-label,.blocker-detail,.blocker-action,
     .na-saved,.cp-note,.cp-count,.blocker-flag,.record-key,.record-pick label,
     .fact-row,.approve-what,.approve-exp,.approve-url,.approve-nolink,
-    .dz-hint,.link-btn,.more>summary,.group-title .chev,.need-meta,.sb-source){
+    .dz-hint,.link-btn,.more>summary,.group-title .chev,.need-meta,.sb-source,
+    .headline-caveat,.round-note){
     font-size:var(--fs-caption)!important;
   }
 
   /* ---------- record header ----------------------------------------------
-     Two rows, not one. On one row the nine tiles pushed the picker around and
-     orphaned the last tile onto a second line of its own, which read as a
-     broken layout. Row one is who this file is and how you change it; row two
-     is the tiles, on an even grid that never orphans. */
+     THE TOP-LEFT IS THE NUMBER THE ADVISOR CAME FOR (UI-STANDARDS §12, rule 1).
+
+     It used to be the client's name at title size, and under it a row of EIGHT
+     tiles every one of which the brand file paints at --fs-metric. Nine things
+     at metric size is nine things at no size, and the one fact this job
+     actually chases — a bank said yes and nobody knows for how much — was a
+     small amber sentence in the 320px rail.
+
+     WHY THAT COUNT AND NOT THE MONEY. The loop is: apply to many banks, wait
+     days, phone the client, record yes/no, chase the dollars, mark the round
+     funded. The only step in that loop that is countable, that rots when nobody
+     looks, and that gates the fee (docs/CLOSEOUT-FEE-BASIS.md) is "a bank said
+     yes and we still do not know how much". The advisor already knows roughly
+     what the file is worth; what they do not know is what is outstanding.
+
+     The name is still here and still first — it is identity, not the headline,
+     and the person already knows which file they opened. The eight tiles are
+     reference and now live below the action, in the main column. */
   .record-head{
     background:var(--surface);border-bottom:1px solid var(--line);
     padding:13px 18px 15px;flex-shrink:0;
     display:flex;flex-direction:column;gap:12px;
   }
-  .record-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .record-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+  .record-lead{min-width:0;flex:1 1 320px;}
   .record-id{display:flex;align-items:baseline;gap:10px;min-width:0;flex-wrap:wrap;}
-  .record-name{font-size:var(--fs-title);font-weight:700;letter-spacing:-.01em;color:var(--text);}
+  .record-name{font-weight:700;letter-spacing:-.01em;color:var(--text);}
+
+  /* The one metric. `.big` is on the brand file's --fs-metric whitelist
+     (fundhub-brand.css:191-193), so the size comes from the token and this file
+     writes no px — a px size here would be thrown away, see §12.7. */
+  .headline{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-top:6px;}
+  .headline .big{font-family:'JetBrains Mono',monospace;font-weight:700;line-height:1.05;color:var(--text);}
+  /* A count that is not zero is work waiting on a person, so it carries the
+     same amber the "Amount needed" chip and the board card use — literal, not
+     from the brand ramp, because paintBrand() overwrites --warn from the
+     tenant's own colours and a single-hue brand would paint it the same as
+     everything else (§12.6). The WORD beside it is what actually carries the
+     meaning; the colour only agrees with it. */
+  .headline.is-waiting .big{color:#92400E;}
+  .headline-what{font-weight:600;color:var(--text);min-width:0;}
+  .headline-cmp{margin:4px 0 0;color:var(--text-dim);}
+  .headline-caveat{margin:3px 0 0;color:var(--text-faint);max-width:78ch;}
   .record-key{font-family:'JetBrains Mono',monospace;font-size:var(--fs-caption);color:var(--text-faint);}
   .record-pick{display:flex;align-items:center;gap:8px;}
   .record-pick label{font-size:var(--fs-caption);color:var(--text-dim);font-weight:600;}
@@ -128,14 +160,17 @@
   .record-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(122px,1fr));gap:8px;}
   .rf-tile{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:7px 11px 8px;min-width:0;}
   .rf-label{font-size:var(--fs-caption);color:var(--text-dim);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  /* fundhub-brand.css:171 forces .rf-value to --fs-metric, so these are the
-     screen's big numbers whether or not this file says so. Left at the brand
-     size on purpose; what is added is only the guard that stops a long value
-     ("not measured", "Sale closed") running out of its tile. */
-  .rf-value{font-family:'JetBrains Mono',monospace;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);line-height:1.15;overflow-wrap:anywhere;}
+  /* THE CLASS NAME CHANGED ON PURPOSE, and it is the whole point of this pass.
+     These were `.rf-value`, which fundhub-brand.css:191-193 paints at
+     --fs-metric — so all eight of them shouted at 32px directly above the one
+     sentence saying what to do next. They are REFERENCE (§12 rule 3): they sit
+     below the action now, and they read at body size, which is what a name not
+     on the brand's metric whitelist inherits. No px size is written here,
+     because a px size written here would be thrown away (§12.7). */
+  .rf-num{font-family:'JetBrains Mono',monospace;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);line-height:1.25;overflow-wrap:anywhere;}
   /* Nothing picked yet: the row is still true, it is just not about anything
      yet, so it steps back instead of shouting nine dashes at the reader. */
-  .record-head.is-empty .record-fields{opacity:.45;}
+  .facts-group.is-empty .record-fields{opacity:.45;}
   /* same reason, same treatment: with no file open the funding round is five
      dashes in a row, which reads as five broken values rather than one screen
      waiting to be pointed at a client. */
@@ -258,7 +293,10 @@
   .approve-what{font-size:var(--fs-caption);line-height:1.45;color:var(--text);margin:0 0 8px;}
   .approve-row{display:flex;gap:6px;align-items:stretch;}
   .approve-url{
-    flex:1 1 auto;min-width:0;font-family:'JetBrains Mono',monospace;font-size:11px;
+    /* No px size here: .approve-url is already in this screen's one escape
+       hatch above, and a plain px value written inside .app is discarded by
+       fundhub-brand.css:184-186 before it ever paints (UI-STANDARDS §12.7). */
+    flex:1 1 auto;min-width:0;font-family:'JetBrains Mono',monospace;
     border:1px solid var(--line);border-radius:5px;background:var(--paper);color:var(--text-dim);padding:6px 8px;
   }
   .approve-copy{
@@ -432,6 +470,33 @@
   .mirror{display:none;}
   .cp-count{font-family:'JetBrains Mono',monospace;font-weight:800;letter-spacing:0;color:var(--text-faint);}
   .cp-empty{font-size:var(--fs-body);color:var(--text-dim);margin:0;}
+
+  /* ---------- the round's three moves, on the screen the amounts are typed on
+     Every stage move used to happen on the Pipeline board and every dollar
+     amount used to be typed here, so finishing one round meant bouncing between
+     two screens four or more times. These are the SAME endpoint the board's
+     drag already posts to (POST /api/pipeline-cards) with the same server-side
+     guard doing the refusing — no new endpoint, no new screen, no second rule
+     about when a round may move.
+     Buttons reuse .action-btn rather than inventing a fourth button style; the
+     wrapper only stops them being full width, exactly as .pull-row does. */
+  .round-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:13px;}
+  .round-actions .action-btn{width:auto;margin-bottom:0;justify-content:center;}
+  .round-actions .action-btn[disabled]{opacity:.5;cursor:not-allowed;}
+  /* The funded amount is typed in a box on the page, never in a browser prompt:
+     a prompt cannot be corrected, cannot show the parser's refusal beside the
+     box, and disappears the moment the window loses focus. */
+  .round-amount{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:9px;}
+  .round-amount input{
+    width:150px;border:1px solid var(--line);border-radius:6px;padding:6px 8px;
+    font-family:'JetBrains Mono',monospace;color:var(--text);background:var(--surface);
+  }
+  .round-amount input:focus-visible{outline:2px solid var(--blue-line);outline-offset:2px;}
+  .round-note{margin:8px 0 0;line-height:1.45;color:var(--text-dim);}
+  /* A refusal is never colour alone — it opens with the word "Could not" or
+     names the banks it is waiting on (§12.6). */
+  .round-note.is-bad{color:var(--red);font-weight:600;}
+  .round-note.is-done{color:var(--green);font-weight:600;}
   /* a high blocker keeps the same card, in the red the panel above it uses */
   .blocker-card.is-high{border-left-color:var(--red-line);}
   .blocker-flag{font-size:var(--fs-caption);line-height:1.45;color:var(--amber);margin-top:5px;}
@@ -542,9 +607,33 @@
 
   <div class="record-head is-empty" id="ccp-record-head">
     <div class="record-top">
-      <div class="record-id">
-        <div class="record-name" id="ccp-name">Loading…</div>
-        <div class="record-key" id="ccp-key">No client open — pick one below.</div>
+      <div class="record-lead">
+        <div class="record-id">
+          <div class="record-name" id="ccp-name">Loading…</div>
+          <div class="record-key" id="ccp-key">No client open — pick one below.</div>
+        </div>
+        <!-- THE ONE NUMBER THIS JOB CHASES.
+             How many bank answers on this file say yes and still carry no
+             dollar amount, minus any somebody has recorded as not counting.
+             Painted by the funding block at the foot of this file, which is the
+             one place that reads GET /api/applications — see paintHeadline().
+
+             FOUR STATES, ALL WRITTEN: a count, "nothing waiting" in words, "we
+             could not check" in words, and "pick a client". A zero here is a
+             true zero (there are no such rows), never a zero standing in for
+             unknown, and it is said in words rather than shown as a bare 0. -->
+        <div class="headline" id="ccp-waiting">
+          <span class="big" id="ccp-waiting-count" hidden></span>
+          <span class="headline-what" id="ccp-waiting-what">Pick a client to see what is waiting on you.</span>
+        </div>
+        <p class="headline-cmp" id="ccp-waiting-compare"></p>
+        <!-- THE CAVEAT IS PRINTED, NOT HIDDEN. Nothing in this system records an
+             application at the moment somebody applies — src/proxy/launch.mjs
+             writes a proxy_sessions row and nothing else, and the applications
+             row is only minted when the ANSWER is logged, days later. So this
+             count can only ever cover answers we have RECEIVED. Saying
+             "applications waiting" would be a claim the data cannot support. -->
+        <p class="headline-caveat">Counts bank answers we have been told about. Applications still out with a bank are not recorded anywhere, so they cannot be counted here.</p>
       </div>
       <div class="record-pick">
         <label for="ccp-pick">Client</label>
@@ -552,22 +641,6 @@
           <option value="">Choose a client</option>
         </select>
       </div>
-    </div>
-    <div class="record-fields">
-      <div class="rf-tile"><div class="rf-label">Main Status</div><div><span class="status-badge-lg" id="ccp-status">—</span></div></div>
-      <div class="rf-tile"><div class="rf-label">Prequal</div><div class="rf-value" id="ccp-prequal">—</div></div>
-      <div class="rf-tile"><div class="rf-label">Total Approved</div><div class="rf-value" id="ccp-approved">—</div></div>
-      <div class="rf-tile"><div class="rf-label">Open Inquiries</div><div class="rf-value" id="ccp-inquiries">—</div></div>
-      <div class="rf-tile"><div class="rf-label">Inquiry Removal</div><div class="rf-value" data-ir-case id="ccp-ir">—</div></div>
-      <div class="rf-tile"><div class="rf-label">Scores</div>
-        <div class="rf-value mono" id="ccp-scores">—</div></div>
-      <!-- Card Use is the utilisation figure the client endpoint has always
-           returned and this screen never showed (src/http/client-detail.mjs:310,
-           spelt the British way there). It reads "not measured" whenever the
-           stored report carried no figure — which for a real bureau pull is the
-           ordinary case today, not an error. Never 0%: see cardUse() below. -->
-      <div class="rf-tile"><div class="rf-label">Card Use</div><div class="rf-value mono" id="ccp-card-use">—</div></div>
-      <div class="rf-tile"><div class="rf-label">Funding Round</div><div class="rf-value" id="ccp-round">—</div></div>
     </div>
   </div>
 
@@ -633,7 +706,72 @@
                  same rule — src/http/client-panel-screen.test.mjs proves it. -->
             <div class="kv"><div class="kv-label">Approved</div><div class="kv-value mono" id="ccp-cp-round-amount">—</div></div>
             <div class="kv"><div class="kv-label">On hold because</div><div class="kv-value" id="ccp-cp-round-hold">—</div></div>
+            <!-- HOW LONG THIS HAS BEEN OPEN. Every other value in this block is
+                 a state; none of them is a clock, so a round waiting since June
+                 read exactly like one opened this morning. The date comes from
+                 the same gated answer as the rest of the block. -->
+            <div class="kv"><div class="kv-label">Opened</div><div class="kv-value" id="ccp-cp-round-opened">—</div></div>
           </div>
+
+          <!-- THE THREE MOVES, ON THE SCREEN WHERE THE AMOUNTS ARE TYPED.
+               Same endpoint as the board's drag (POST /api/pipeline-cards),
+               same server-side guard doing the refusing. Nothing new decides
+               whether a round may move; this is only a second door onto the
+               decision the board already asks for. -->
+          <div class="round-actions">
+            <button type="button" class="action-btn" id="ccp-round-submit" disabled>Mark round submitted</button>
+            <button type="button" class="action-btn" id="ccp-round-fund" disabled>Mark funded…</button>
+            <button type="button" class="action-btn" id="ccp-round-close" disabled>Close round</button>
+          </div>
+          <div class="round-amount" id="ccp-round-amount-box" hidden>
+            <label for="ccp-round-funded">Money that reached the account</label>
+            <input type="text" id="ccp-round-funded" inputmode="decimal" placeholder="45000">
+            <button type="button" class="action-btn" id="ccp-round-fund-go">Save funded</button>
+            <button type="button" class="action-btn" id="ccp-round-fund-cancel">Cancel</button>
+          </div>
+          <p class="round-note" id="ccp-round-note">Open a client file to move its round.</p>
+        </div>
+      </div>
+
+      <!-- ── THE CHASE LIST ────────────────────────────────────────────────
+           Moved out of the 320px right rail on 2026-08-30. This is the work:
+           apply to each bank, then come back over the following days and record
+           what each one said and for how much. Every keystroke on this screen
+           except a note lands in here, and it was in the column a narrow window
+           pushes below everything else.
+
+           Nothing about it changed except where it sits and how much room it
+           gets. Same ids, same handlers, same wording — the bank-email
+           suggestion buttons and the "Doesn't count" button both merged into
+           this block earlier today and both are untouched. -->
+      <div class="group">
+        <div class="group-title card-title">Funding · Apply door</div>
+        <div id="fh-funding-apply">
+          <div id="fh-funding-apply-status" style="font-size:var(--fs-body);line-height:1.45;color:var(--text-dim)">Lenders that fit a client's file appear here. Pick a client on Pipeline to open one.</div>
+          <!-- A bank said yes and nobody has recorded how much yet. That is a
+               real, allowed state — but it has to be VISIBLE, because until the
+               dollars are in, this round cannot be billed a success fee and the
+               approval quietly rots. Hidden until there is one to report.
+               The COUNT also leads the screen now (see the header). This block
+               is the instruction that goes with it — what to type, and where —
+               and it sits with the rows it is about. -->
+          <div id="fh-funding-amounts-waiting" hidden style="margin-top:8px;font-size:var(--fs-body);line-height:1.45;font-weight:600;color:#92400E;background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:8px 10px"></div>
+          <!-- WHAT THE BANK'S OWN EMAIL SAID. The bank states the amount in the
+               email it sends this client, and until 2026-08-30 the system found
+               that figure, used it to nudge its guess about the email, and threw
+               it away. Now it is offered here and as one-click buttons beside
+               the Approved $ box on each lender row.
+               IT IS A SUGGESTION AND NOTHING MORE. Nothing on this screen fills
+               the amount in by itself, and when the email states more than one
+               figure this line says outright that we cannot tell which is the
+               approval — a credit limit, an annual fee and a minimum payment all
+               look identical to a pattern. Hidden until there is one. -->
+          <div id="fh-bank-amount-hint" hidden style="margin-top:8px;font-size:var(--fs-caption);line-height:1.45;color:#3F3F46;background:#F4F4F5;border:1px solid #E4E4E7;border-radius:8px;padding:8px 10px"></div>
+          <div id="fh-funding-apply-list" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
+          <!-- Said out loud rather than left to be discovered: the list is
+               capped, and a wave of applications goes past the cap. -->
+          <p id="fh-funding-apply-more" hidden style="margin:8px 0 0;font-size:var(--fs-caption);line-height:1.45;color:var(--text-dim)"></p>
+          <p style="margin:10px 0 0;font-size:var(--fs-caption);line-height:1.45;color:var(--text-faint)">Apply opens the bank page when a URL is on file. Apply shows the client email, not a Fundhub address.</p>
         </div>
       </div>
 
@@ -671,6 +809,45 @@
         <button type="button" class="action-btn" id="ccp-generate-apps" style="cursor:pointer;">Generate Apps <span class="arrow">→</span></button>
         <button type="button" class="action-btn" id="ccp-issue-ir" style="cursor:pointer;">Issue Inquiry Removal <span class="arrow">→</span></button>
         <p id="ccp-issue-ir-status" style="font-size:var(--fs-body);color:var(--text-dim);margin:8px 0 0;"></p>
+      </div>
+
+      <!-- ── REFERENCE, AND BELOW THE ACTION ON PURPOSE (§12 rule 3) ────────
+           These eight used to sit in the header, and fundhub-brand.css paints
+           `.rf-value` at --fs-metric, so eight facts nobody is being asked to
+           act on shouted at 32px directly above the one sentence saying what to
+           do next. They are the same eight facts, the same ids, at reading
+           size, under the work they support. -->
+      <div class="group facts-group is-empty" id="ccp-facts-group">
+        <div class="group-title card-title">Client facts</div>
+        <div class="record-fields">
+          <div class="rf-tile"><div class="rf-label">Main Status</div><div><span class="status-badge-lg" id="ccp-status">—</span></div></div>
+          <div class="rf-tile"><div class="rf-label">Prequal</div><div class="rf-num" id="ccp-prequal">—</div></div>
+          <!-- WAS "Total Approved", AND WAS NEITHER. It printed the FUNDED
+               amount, and when that was missing it printed the analyzer's
+               PRE-APPROVAL GUESS — the number in the tile immediately to its
+               left — under a label saying Approved. It never once showed an
+               approved amount.
+               It now shows what the invoice is worked out from: bank yeses that
+               carry a recorded dollar amount and that nobody has marked as not
+               counting, which is the definition in
+               src/funding/success-fee.mjs (owner-set 2026-08-30,
+               docs/CLOSEOUT-FEE-BASIS.md). The label says "confirmed" because
+               that is the only claim the number can support. Painted by the
+               funding block at the foot of this file, from the same read as the
+               headline — never from funded_amount, and never from the guess. -->
+          <div class="rf-tile"><div class="rf-label">Approved · confirmed</div><div class="rf-num" id="ccp-approved">—</div></div>
+          <div class="rf-tile"><div class="rf-label">Open Inquiries</div><div class="rf-num" id="ccp-inquiries">—</div></div>
+          <div class="rf-tile"><div class="rf-label">Inquiry Removal</div><div class="rf-num" data-ir-case id="ccp-ir">—</div></div>
+          <div class="rf-tile"><div class="rf-label">Scores</div>
+            <div class="rf-num" id="ccp-scores">—</div></div>
+          <!-- Card Use is the utilisation figure the client endpoint has always
+               returned and this screen never showed (src/http/client-detail.mjs:310,
+               spelt the British way there). It reads "not measured" whenever the
+               stored report carried no figure — which for a real bureau pull is the
+               ordinary case today, not an error. Never 0%: see cardUse() below. -->
+          <div class="rf-tile"><div class="rf-label">Card Use</div><div class="rf-num" id="ccp-card-use">—</div></div>
+          <div class="rf-tile"><div class="rf-label">Funding Round</div><div class="rf-num" id="ccp-round">—</div></div>
+        </div>
       </div>
 
       <div class="group">
@@ -764,35 +941,18 @@
 
     <div class="side-col">
 
-      <!-- The rail's two sections sit in the same card as everything else on
+      <!-- The rail's sections sit in the same card as everything else on
            the screen now. They were bare titles with content floating on the
            page next to bordered cards in the column beside them, which is why
-           the two halves of the screen did not look like one screen. -->
-      <div class="group">
-        <div class="group-title card-title">Funding · Apply door</div>
-        <div id="fh-funding-apply">
-          <div id="fh-funding-apply-status" style="font-size:var(--fs-body);line-height:1.45;color:var(--text-dim)">Lenders that fit a client's file appear here. Pick a client on Pipeline to open one.</div>
-          <!-- A bank said yes and nobody has recorded how much yet. That is a
-               real, allowed state — but it has to be VISIBLE, because until the
-               dollars are in, this round cannot be billed a success fee and the
-               approval quietly rots. Hidden until there is one to report. -->
-          <div id="fh-funding-amounts-waiting" hidden style="margin-top:8px;font-size:var(--fs-body);line-height:1.45;font-weight:600;color:#92400E;background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:8px 10px"></div>
-          <!-- WHAT THE BANK'S OWN EMAIL SAID. The bank states the amount in the
-               email it sends this client, and until 2026-08-30 the system found
-               that figure, used it to nudge its guess about the email, and threw
-               it away. Now it is offered here and as one-click buttons beside
-               the Approved $ box on each lender row.
-               IT IS A SUGGESTION AND NOTHING MORE. Nothing on this screen fills
-               the amount in by itself, and when the email states more than one
-               figure this line says outright that we cannot tell which is the
-               approval — a credit limit, an annual fee and a minimum payment all
-               look identical to a pattern. Hidden until there is one. -->
-          <div id="fh-bank-amount-hint" hidden style="margin-top:8px;font-size:var(--fs-caption);line-height:1.45;color:#3F3F46;background:#F4F4F5;border:1px solid #E4E4E7;border-radius:8px;padding:8px 10px"></div>
-          <div id="fh-funding-apply-list" style="margin-top:10px;display:flex;flex-direction:column;gap:6px"></div>
-          <p style="margin:10px 0 0;font-size:var(--fs-caption);line-height:1.45;color:var(--text-faint)">Apply opens the bank page when a URL is on file. Apply shows the client email, not a Fundhub address.</p>
-        </div>
-      </div>
+           the two halves of the screen did not look like one screen.
 
+           THE LENDER LIST IS NO LONGER IN HERE. It is where roughly nine in ten
+           of this screen's keystrokes land — a play name, a dollar amount, bank
+           yes, bank no — and it was in a 320px rail that a narrow window drops
+           below the entire main column. It is the work, so it sits in the main
+           column directly under the next action. What is left in this rail is
+           links out and a collapsed facts list: things you leave the screen
+           for, not things you do on it. -->
       <div class="group">
         <div class="group-title card-title">Quick launch</div>
         <p id="ccp-actions-note" style="font-size:var(--fs-caption);line-height:1.45;color:var(--text-dim);margin:0 0 10px;">These open the live file. Bureau pulls stay on the closer deck.</p>
@@ -946,6 +1106,119 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
     return "$" + Math.round(v).toLocaleString("en-US");
   }
 
+  /* ── ONE FACT, ONE DEFINITION ────────────────────────────────────────────
+     "Is this bank yes worth anything yet?" was answered in three places in
+     three slightly different ways, and they already disagreed:
+
+       src/funding/success-fee.mjs   the biller   NULL or <= 0, not excluded
+       api/dashboard/pipeline.mjs    the board    NULL only, exclusion ignored
+       this file                     the screen   NULL or blank, not excluded
+
+     The two SQL callers now share one string —
+     unpricedApprovalConditions() in src/funding/success-fee.mjs. A screen
+     cannot import a module, so this is still a copy; what stops it drifting is
+     src/http/client-panel-screen.test.mjs, which reads that string and proves
+     these two functions answer the same way on the same rows.
+
+     They live up here, out of the DOM, for the same reason everything else in
+     this block does: the number they produce leads the screen, and a number
+     that leads a screen has to be provable with no browser.
+
+     NULL IS UNKNOWN AND SURVIVES (CLAUDE.md §12). Nothing here turns an unknown
+     amount into 0, and nothing here treats a 0 as an amount: a zero cannot be
+     invoiced, so it is still waiting. */
+
+  /* Somebody has recorded that this approval does not count — withdrawn, or the
+     client never used it (db/migrations/272_approval_excluded.sql). A decision
+     with a name and a time on it, not a dismissed warning. */
+  function isExcluded(app) {
+    return !!(app && app.approval_excluded_at);
+  }
+
+  /* A bank yes that cannot be billed yet: approved, not excluded, and no usable
+     dollar amount. Unknown, blank, unreadable and non-positive all count as
+     waiting — every one of them is a row the client would never be invoiced
+     for, and guardFundedAmount refuses the Funded move on the same set. */
+  function isWaitingOnAmount(app) {
+    if (!app || String(app.status || "") !== "Approved") return false;
+    if (isExcluded(app)) return false;
+    var a = app.approved_amount;
+    if (a === null || a === undefined || String(a).trim() === "") return true;
+    var n = Number(String(a).trim());
+    if (!isFinite(n)) return true;
+    return n <= 0;
+  }
+
+  /* The mirror: a bank yes we HAVE confirmed a number for. This is the set the
+     success fee is a percent of (owner-set 2026-08-30,
+     docs/CLOSEOUT-FEE-BASIS.md), so it is the only honest thing to put under a
+     label that says "Approved". */
+  function isConfirmedApproval(app) {
+    if (!app || String(app.status || "") !== "Approved") return false;
+    if (isExcluded(app)) return false;
+    return approvalCents(app.approved_amount) > 0;
+  }
+
+  /* Dollars as the numeric(14,2) column holds them -> integer cents, or 0 for
+     anything unreadable. Cents, not floats: 450.10 * 100 is
+     45009.999999999996 in JavaScript, which is how a $450.10 approval becomes
+     $450.09 in a total. The two halves of the string are read as whole numbers
+     instead, exactly as public/app/money-input.js does — written out here
+     rather than imported because this block is deliberately dependency-free so
+     a test can run it with no browser and no other file. */
+  function approvalCents(v) {
+    if (v === null || v === undefined) return 0;
+    var m = /^(\d+)(?:\.(\d{1,2}))?$/.exec(String(v).trim());
+    if (!m) return 0;
+    var frac = m[2] === undefined ? "00" : (m[2].length === 1 ? m[2] + "0" : m[2]);
+    var cents = Number(m[1]) * 100 + Number(frac);
+    return isFinite(cents) ? cents : 0;
+  }
+
+  /**
+   * What this client's applications add up to.
+   *
+   * NEWEST ROW PER LENDER WINS, and rows with no lender at all are each counted
+   * on their own. listClientApplications orders by updated_at DESC, so the
+   * first row seen for a lender is the current one; an imported approval that
+   * carries only a bank name has no lender id and no row on screen to chip, and
+   * an approval nobody can see is exactly the one that rots. This is the rule
+   * the screen already applied when it painted the rows — it is written down
+   * here so the headline count and the row chips can never disagree.
+   *
+   * Returns { waiting, confirmed, confirmed_dollars }. confirmed_dollars is a
+   * fixed 2dp string, or null when nothing is confirmed — never "0.00", because
+   * "we have confirmed nothing" and "we have confirmed nothing at all" are the
+   * same sentence and neither of them is a dollar total.
+   */
+  function summariseApprovals(rows) {
+    var out = { waiting: 0, confirmed: 0, confirmed_dollars: null };
+    var list = [];
+    try { if (Array.isArray(rows)) list = rows; } catch (e) { list = []; }
+    var seen = {};
+    var cents = 0;
+    for (var i = 0; i < list.length; i++) {
+      var app = list[i];
+      if (!app || typeof app !== "object") continue;
+      try {
+        if (app.lender_id) {
+          if (seen[app.lender_id]) continue;
+          seen[app.lender_id] = true;
+        }
+        if (isWaitingOnAmount(app)) out.waiting += 1;
+        if (isConfirmedApproval(app)) {
+          out.confirmed += 1;
+          cents += approvalCents(app.approved_amount);
+        }
+      } catch (e) { /* one unreadable row must not lose the rest of the count */ }
+    }
+    if (out.confirmed > 0) {
+      out.confirmed_dollars = String(Math.floor(cents / 100)) + "." +
+        (cents % 100 < 10 ? "0" : "") + String(cents % 100);
+    }
+    return out;
+  }
+
   /* ── NEXT ACTION: COMPLIANCE GATE A LIVES ON THIS LINE ───────────────────
      The big line may ONLY ever show a step the system worked out. It may
      never show custom_fields.employee_next_action.
@@ -1029,6 +1302,10 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
     SAVED_PREFIX: SAVED_PREFIX,
     money: money,
     tileMoney: tileMoney,
+    isExcluded: isExcluded,
+    isWaitingOnAmount: isWaitingOnAmount,
+    isConfirmedApproval: isConfirmedApproval,
+    summariseApprovals: summariseApprovals,
     nextAction: nextAction,
     displayStatus: displayStatus,
     displayHold: displayHold
@@ -1077,6 +1354,23 @@ document.addEventListener("DOMContentLoaded", function () {
       timeZone: "America/Phoenix", timeZoneName: "short"
     });
   }
+  /* A date, and how long ago it was, in one line: "Jun 12, 2026 · 79 days".
+     Never invents a date. No timestamp is a dash, and an unreadable one is a
+     dash too — "today" would be the worst possible guess here, because the
+     whole point of the line is to show that something has been sitting. */
+  function ageOf(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    var on = d.toLocaleDateString("en-US", {
+      month: "short", day: "numeric", year: "numeric", timeZone: "America/Phoenix"
+    });
+    var days = Math.floor((Date.now() - d.getTime()) / 86400000);
+    if (!isFinite(days) || days < 0) return on;
+    if (days === 0) return on + " · today";
+    return on + " · " + days + (days === 1 ? " day" : " days");
+  }
+
   function scoreLine(tm) {
     tm = tm || {};
     function one(k, v) { return k + " " + (v == null || v === "" ? "—" : String(v)); }
@@ -1331,12 +1625,13 @@ document.addEventListener("DOMContentLoaded", function () {
           The round number, status and hold reason a client does have are still
           on this page in the tiles that always showed them. */
     var round = fx ? fx.funding_round : null;
-    var num = null, status = null, hold = null, amount = null, finalized = null;
+    var num = null, status = null, hold = null, amount = null, finalized = null, opened = null;
     if (round) {
       num = round.number;
       status = round.status;
       hold = round.hold_reason;
       amount = round.approved_amount;
+      opened = round.started_at;
       finalized = round.finalized === true ? true : round.finalized === false ? false : null;
     }
     setText("ccp-cp-round-number", num == null || num === "" ? "" : "Round " + num);
@@ -1344,6 +1639,11 @@ document.addEventListener("DOMContentLoaded", function () {
     setText("ccp-cp-round-hold", hold);
     setText("ccp-cp-round-amount", roundMoney(amount));
     setText("ccp-cp-round-final", finalized === true ? "Yes" : finalized === false ? "No" : "");
+    /* HOW LONG IT HAS BEEN OPEN. Everything else in this block is a state, and
+       none of them is a clock: an approval waiting on a figure since June read
+       exactly like one from this morning. A round with no date on it stays a
+       dash — ageOf() never guesses "today" from a missing timestamp. */
+    setText("ccp-cp-round-opened", ageOf(opened));
   }
 
   function paintControlPanel(fx, d, cf) {
@@ -1524,8 +1824,23 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var prequal = cf.analyzer_prequal_amount || cf.total_funding_estimate;
     setText("ccp-prequal", money(prequal));
-    var approved = money(c.funded_amount);
-    setText("ccp-approved", approved === "—" ? money(prequal) : approved);
+    /* THE APPROVED TILE IS NOT PAINTED FROM HERE ANY MORE, and that is the fix.
+       It used to be:
+
+         var approved = money(c.funded_amount);
+         setText("ccp-approved", approved === "—" ? money(prequal) : approved);
+
+       — the FUNDED amount under a label that said Approved, falling back to the
+       analyzer's PRE-APPROVAL GUESS, which is the number in the tile
+       immediately to its left. It never showed an approved amount at all, and
+       since the 2026-08-30 fee decision (the success fee is a percent of
+       CONFIRMED approvals — src/funding/success-fee.mjs,
+       docs/CLOSEOUT-FEE-BASIS.md) it also contradicted the invoice.
+
+       It is now painted from the application rows, by the funding block at the
+       foot of this file, which is the one place that reads them. Same read as
+       the headline count, so the two can never disagree. The funded amount is
+       not lost: it is on the Funded line in System Facts below. */
 
     var irc = d.inquiry_removal_case;
     setText("ccp-inquiries", irc && irc.open_inquiry_count != null ? String(irc.open_inquiry_count) : "");
@@ -1551,7 +1866,15 @@ document.addEventListener("DOMContentLoaded", function () {
       : "";
     setText("ccp-round", roundText);
     setText("ccp-facts-round", roundText);
-    setText("ccp-facts-funded", c.funded === true ? "Yes" : c.funded === false ? "No" : "");
+    /* The funded amount lived on the tile that said "Total Approved" and was
+       the reason that tile was a lie. It is a real fact, so it stays on the
+       screen — here, under the word Funded, where it is what it says it is.
+       tileMoney leaves an unknown or a zero as a dash, so "Yes" on its own
+       still means funded with no amount recorded. */
+    var fundedMoney = c.funded === true ? money(c.funded_amount) : "—";
+    setText("ccp-facts-funded",
+      c.funded === true ? ("Yes" + (fundedMoney === "—" ? "" : " · " + fundedMoney))
+        : c.funded === false ? "No" : "");
     setText("ccp-last-pull", when(tm.asOf || (d.crs_results && d.crs_results[0] && d.crs_results[0].created_at)));
 
     /* The worked-out step drives this slot, and only ever the worked-out step,
@@ -1584,6 +1907,10 @@ document.addEventListener("DOMContentLoaded", function () {
        .na-group.is-blocked. */
     var head = $("ccp-record-head");
     if (head) head.classList.remove("is-empty");
+    // The tile row moved out of the header and into the main column, so the
+    // "nothing picked yet" fade moved with it.
+    var facts = $("ccp-facts-group");
+    if (facts) facts.classList.remove("is-empty");
     /* Counted off the cards the two paints above actually drew, not off the
        payload: the panel goes coral when the reader can see a blocker in it
        and stays neutral otherwise. Reading the array a third time here would
@@ -2137,6 +2464,134 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   })();
 
+  /* ── THE ROUND'S THREE MOVES ───────────────────────────────────────────────
+     Every stage move used to happen on the Pipeline board and every dollar
+     amount used to be typed on this screen, so finishing one round meant
+     bouncing between two screens four or more times — twenty to forty times a
+     day across a book.
+
+     NOTHING NEW DECIDES ANYTHING. These post to POST /api/pipeline-cards, the
+     endpoint the board's own drag already posts to, with the same
+     moveCardToStage() and the same guards deciding whether the move is allowed.
+     The refusals a person will actually meet are the interesting part and each
+     one is said in plain words below:
+
+       approval_amounts_missing  a bank yes on this round has no dollar amount,
+                                 so it could never be invoiced. The server names
+                                 the banks; we print them. This is the same fact
+                                 the count at the top of the screen is about.
+       funded_amount_required    Funded needs money that actually landed.
+       funding_gate_closed       a document or a new negative is holding funding.
+       shift_required            whoever is signed in has not clocked on.
+
+     A MOVE CAN CREATE A CARD. moveCardToStage inserts one when this client has
+     no card on the card-stacking rail, and the reply says so — so we say so
+     too, rather than letting a person find out later that the board grew a row.
+
+     The funded amount is typed into a box on the page. window.prompt cannot
+     show the parser's refusal beside the box, cannot be corrected, and vanishes
+     if the window loses focus. */
+  (function wireRoundMoves() {
+    var CARD_STACKING = "funding_card_stacking";
+    var submit = $("ccp-round-submit");
+    var fund = $("ccp-round-fund");
+    var close = $("ccp-round-close");
+    var box = $("ccp-round-amount-box");
+    var amount = $("ccp-round-funded");
+    var go = $("ccp-round-fund-go");
+    var cancel = $("ccp-round-fund-cancel");
+    var note = $("ccp-round-note");
+    if (!submit || !fund || !close || !box || !amount || !go || !cancel || !note) return;
+
+    function say(text, state) {
+      note.className = "round-note" + (state ? " " + state : "");
+      note.textContent = text;
+    }
+    function busy(on) {
+      submit.disabled = on || !id;
+      fund.disabled = on || !id;
+      close.disabled = on || !id;
+      go.disabled = on;
+    }
+
+    if (!id) {
+      say("Open a client file to move its round.");
+      return;
+    }
+    say("Moving a round here does the same thing as dragging its card on Pipeline.");
+    busy(false);
+
+    function afterMove(res, what) {
+      if (!res || !res.ok) {
+        // FHData.write already turned the server's own message into a sentence
+        // (userFacing in data.js). Never rewrite it here — the server is the
+        // only thing that knows WHICH banks are blank.
+        say("Could not " + what + ". " + ((res && res.error) || "The move was not saved."), "is-bad");
+        busy(false);
+        return;
+      }
+      var made = res.data && res.data.created === true;
+      say("Saved — " + what + "."
+        + (made ? " This client had no card on the Card Stacking board, so one was made." : ""),
+        "is-done");
+      box.hidden = true;
+      amount.value = "";
+      // Repaint from the record rather than from what we hoped happened.
+      FHData.client(id).then(function (again) {
+        busy(false);
+        if (again && again.ok) render(again.data);
+      });
+      if (typeof window.fhRefreshFundingApply === "function") window.fhRefreshFundingApply();
+    }
+
+    function move(stageKey, what, extra) {
+      if (!window.FHData || typeof FHData.write !== "function") {
+        say("Could not " + what + ". The data layer has not loaded.", "is-bad");
+        return;
+      }
+      var body = {
+        action: "move",
+        client_id: id,
+        pipeline_key: CARD_STACKING,
+        stage_key: stageKey
+      };
+      if (extra) { for (var k in extra) { if (Object.prototype.hasOwnProperty.call(extra, k)) body[k] = extra[k]; } }
+      busy(true);
+      say("Saving…");
+      FHData.write("/api/pipeline-cards", body).then(function (res) { afterMove(res, what); });
+    }
+
+    submit.addEventListener("click", function () { move("round_submitted", "mark the round submitted"); });
+    close.addEventListener("click", function () { move("closed", "close the round"); });
+
+    fund.addEventListener("click", function () {
+      box.hidden = false;
+      say("Type the money that actually reached the account. This is not the approved amount, and empty is not zero.");
+      amount.focus();
+    });
+    cancel.addEventListener("click", function () {
+      box.hidden = true;
+      amount.value = "";
+      say("Nothing was changed.");
+    });
+    go.addEventListener("click", function () {
+      /* BLANK IS NOT ZERO, and a typo is not an unknown. The shared parser
+         refuses both and says which — public/app/money-input.js, the same rule
+         the board's Funded drag uses. */
+      if (!window.FHMoneyInput || !window.FHMoneyInput.parseAmount) {
+        say("The amount box could not load. Nothing was saved.", "is-bad");
+        return;
+      }
+      var parsed = window.FHMoneyInput.parseAmount(amount.value);
+      if (!parsed.ok) {
+        say(parsed.message, "is-bad");
+        amount.focus();
+        return;
+      }
+      move("funded", "mark the round funded", { funded_amount: parsed.dollars });
+    });
+  })();
+
   if (!id) paintBusinesses("empty");
   FHData.client(id).then(function (res) {
     if (res.ok) { render(res.data); return; }
@@ -2277,8 +2732,18 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script>
 <script>
-/* Funding Apply — load matching lenders and wire the residential proxy door. */
-(function () {
+/* Funding Apply — load matching lenders and wire the residential proxy door.
+
+   IT WAITS FOR THE PAGE NOW. data.js carries `defer`, so while this file is
+   being parsed FHData does not exist yet — this block used to read the address
+   bar directly as a fallback and get the same answer, which is why nothing
+   looked wrong, and it is why this screen was on the known-unfixed list in
+   src/http/calendar-paint.test.mjs. It matters now: the count this block paints
+   leads the screen, and it has to be able to tell a failed read from an empty
+   file. Only FHData can tell those apart (see FHData.applications), so the
+   block waits for DOMContentLoaded — which every deferred script runs before —
+   exactly as the main block above it already does. */
+document.addEventListener("DOMContentLoaded", function () {
   "use strict";
   var clientId = (typeof FHData !== "undefined" && FHData.param)
     ? (FHData.param("id") || FHData.param("client_id") || FHData.param("client") || FHData.param("contact") || "")
@@ -2289,7 +2754,22 @@ document.addEventListener("DOMContentLoaded", function () {
   var listEl = document.getElementById("fh-funding-apply-list");
   var waitEl = document.getElementById("fh-funding-amounts-waiting");
   var hintEl = document.getElementById("fh-bank-amount-hint");
+  var moreEl = document.getElementById("fh-funding-apply-more");
   if (!statusEl || !listEl) return;
+
+  /* The token and headers every read and write in this block uses. Hoisted out
+     of loadMatches on 2026-08-30 because the applications read no longer hangs
+     off the lender-match read — see refreshSaved below. */
+  var t = "";
+  try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+  var headers = { accept: "application/json" };
+  if (t) headers.authorization = "Bearer " + t;
+
+  /* HOW MANY LENDER ROWS ARE DRAWN. It was 12, silently: a funding advisor
+     applying in waves has more banks than that on a file and rows 13 and up
+     simply were not there. 25 is the house page size, and whatever is over it
+     is now SAID rather than dropped in silence — see paintMore(). */
+  var ROW_CAP = 25;
 
   /* ── APPROVAL AND AMOUNT ARE TWO SEPARATE MOMENTS ────────────────────────
      Owner-set 2026-08-29. When a bank comes back, the fulfillment team often
@@ -2312,24 +2792,20 @@ document.addEventListener("DOMContentLoaded", function () {
      cannot reach Funded without a dollar amount. Two moments, two rules. */
   var AMOUNT_WAITING_CHIP = "Amount needed";
 
-  /* One place that decides whether a saved application is still waiting.
-     Approved, and no amount recorded. A recorded 0 is a fact, not an unknown,
-     and would not count here — but nothing in this screen can create one.
-
-     An EXCLUDED approval is not waiting either. Somebody has already answered
-     the question — this one does not count, it was withdrawn or never used —
-     so it is not chased, not counted in the sentence at the top, and not billed.
-     That is a recorded decision with a name and a time on it (migration 272),
-     not a dismissed warning. */
-  function isExcluded(app) {
-    return !!(app && app.approval_excluded_at);
-  }
-  function isWaitingOnAmount(app) {
-    if (!app || String(app.status || "") !== "Approved") return false;
-    if (isExcluded(app)) return false;
-    var a = app.approved_amount;
-    return a === null || a === undefined || String(a).trim() === "";
-  }
+  /* THE DEFINITION LIVES IN ONE PLACE AND THIS IS NOT IT.
+     "Approved, nobody has recorded a usable dollar amount, and nobody has
+     marked it as not counting" is the same question the biller asks
+     (unpricedApprovalConditions, src/funding/success-fee.mjs) and the board
+     asks (api/dashboard/pipeline.mjs). It used to be written out a third time
+     right here, slightly differently — this copy did not treat a recorded zero
+     as unpriced, so the screen called an approval finished that the Funded move
+     then refused.
+     It now comes from the FH-CCP block at the top of this file, which is pure,
+     has no DOM, and is proved against the SQL string by
+     src/http/client-panel-screen.test.mjs. */
+  var CP = window.FHClientPanel;
+  var isExcluded = CP.isExcluded;
+  var isWaitingOnAmount = CP.isWaitingOnAmount;
 
   /* The saved dollars, as a person should see them in the box they type into.
      Anything unreadable comes back empty rather than guessed. */
@@ -2353,6 +2829,87 @@ document.addEventListener("DOMContentLoaded", function () {
       + " amount is never billed. If one was withdrawn or never used, press"
       + " “Doesn’t count” on its row.";
     waitEl.hidden = false;
+  }
+
+  /* ── THE HEADLINE ─────────────────────────────────────────────────────────
+     The one number the advisor came for, top-left, at metric size
+     (UI-STANDARDS §12 rule 1), plus the confirmed dollars beside it as the
+     comparison §7 asks for.
+
+     FOUR STATES AND ALL FOUR ARE WRITTEN, because this slot is the first thing
+     read and a wrong impression here is the expensive one:
+
+       a count      "3" + "bank answers need a dollar amount"
+       nothing      "Nothing waiting on this file." — in WORDS. A bare 0 in a
+                    box is how a zero standing in for unknown gets believed, and
+                    this zero is real: there are no such rows.
+       could not    "Could not check what is waiting." The read failed, so the
+                    honest answer is that we do not know. This screen used to
+                    leave the previous sentence exactly as it was on a failed
+                    read, which made a network hiccup look like an all-clear.
+       no client    "Pick a client to see what is waiting on you." (the markup's
+                    own starting text, left alone when there is no client id)
+
+     THE APPROVED TILE IS PAINTED FROM THE SAME ANSWER, deliberately: one read,
+     so the tile and the headline cannot say different things. */
+  var headEl = document.getElementById("ccp-waiting");
+  var countEl = document.getElementById("ccp-waiting-count");
+  var whatEl = document.getElementById("ccp-waiting-what");
+  var cmpEl = document.getElementById("ccp-waiting-compare");
+  var approvedTile = document.getElementById("ccp-approved");
+
+  function paintHeadline(summary) {
+    if (!whatEl) return;
+    var known = !!summary;
+    var waiting = known ? summary.waiting : null;
+
+    if (countEl) {
+      countEl.hidden = !known || waiting === 0;
+      countEl.textContent = known && waiting > 0 ? String(waiting) : "";
+    }
+    if (headEl) headEl.classList.toggle("is-waiting", known && waiting > 0);
+
+    if (!known) {
+      whatEl.textContent = "Could not check what is waiting.";
+    } else if (waiting === 0) {
+      whatEl.textContent = "Nothing waiting on this file.";
+    } else {
+      whatEl.textContent = waiting === 1
+        ? "bank answer needs a dollar amount"
+        : "bank answers need a dollar amount";
+    }
+
+    if (cmpEl) {
+      if (!known) {
+        cmpEl.textContent = "The confirmed total could not be read either.";
+      } else if (summary.confirmed > 0) {
+        cmpEl.textContent = CP.money(summary.confirmed_dollars) + " confirmed across "
+          + summary.confirmed + (summary.confirmed === 1 ? " bank yes" : " bank yeses") + ".";
+      } else {
+        cmpEl.textContent = "No bank yes on this file carries a dollar amount yet.";
+      }
+    }
+
+    /* The tile that used to say "Total Approved" and show the FUNDED amount,
+       or failing that a pre-approval GUESS. Unknown is a dash in words, never a
+       zero and never the guess. */
+    if (approvedTile) {
+      approvedTile.textContent = !known ? "could not check"
+        : summary.confirmed > 0 ? CP.money(summary.confirmed_dollars)
+        : "not recorded";
+    }
+  }
+
+  /* Said out loud rather than left to be discovered: the row list is capped. */
+  function paintMore(total, shown) {
+    if (!moreEl) return;
+    var hidden = total - shown;
+    if (!(hidden > 0)) { moreEl.hidden = true; moreEl.textContent = ""; return; }
+    moreEl.textContent = hidden + (hidden === 1 ? " more lender fits" : " more lenders fit")
+      + " this file and " + (hidden === 1 ? "is" : "are") + " not shown. The count at the top"
+      + " of the screen still covers every bank answer on the file, including banks"
+      + " with no row here.";
+    moreEl.hidden = false;
   }
 
   /* ── WHAT THE BANK'S EMAIL ALREADY SAID ──────────────────────────────────
@@ -2514,16 +3071,107 @@ document.addEventListener("DOMContentLoaded", function () {
       });
   }
 
+  /* ── WHAT IS ALREADY SAVED ON THIS FILE ───────────────────────────────────
+     Three jobs, one read of GET /api/applications:
+
+       * the play name and the approved amount go back into the boxes they were
+         typed into, so the amount box is where somebody returns to add a dollar
+         figure they did not have the first time;
+       * every approval still waiting on an amount is chipped on its row and
+         named in the amber block above the rows;
+       * the headline count and the confirmed total at the top of the screen.
+
+     IT NO LONGER HANGS OFF THE LENDER-MATCH READ. This function used to be
+     declared INSIDE the lender-matches .then, so if that read failed — or if
+     this client matched no lenders at all — the approvals on the file were
+     never counted and the screen said nothing about them. It is the whole
+     file's answer, so it is asked for on its own.
+
+     A FAILED READ SAYS SO. It used to `return null` and deliberately leave the
+     previous sentence exactly as it was, which is indistinguishable on screen
+     from a file with nothing waiting — a silent all-clear. Now the headline
+     says "could not check" and FHData.explain puts the house wording for
+     whatever actually went wrong in the status strip. Never our own sentence
+     for a failure the data layer already has words for. */
+  function refreshSaved() {
+    /* No client picked is NOT "we could not check" — nobody asked us to check
+       anything yet. The markup's own opening line already says so, and it is
+       left exactly as it is. */
+    if (!clientId) return Promise.resolve(null);
+    if (!window.FHData || typeof FHData.applications !== "function") {
+      paintHeadline(null);
+      return Promise.resolve(null);
+    }
+    return FHData.applications(clientId).then(function (res) {
+      if (!res || !res.ok) {
+        paintHeadline(null);
+        paintWaiting(0);
+        try { FHData.explain(res, "the bank answers on this file"); } catch (e) { /* strip only */ }
+        return null;
+      }
+      var pack = res.data || {};
+      var seen = {};
+      ((pack && pack.decisions) || []).forEach(function (dec) {
+        if (!dec.lender_id || !dec.play_name || seen[dec.lender_id]) return;
+        seen[dec.lender_id] = true;
+        var inp = listEl.querySelector('input[data-lender-id="' + dec.lender_id + '"]');
+        if (inp && !inp.value) inp.value = dec.play_name;
+      });
+
+      /* Newest application per lender wins — listClientApplications orders by
+         updated_at DESC, so the first row seen for a lender is the current one.
+         summariseApprovals() in the FH-CCP block applies exactly this rule to
+         the counting half, so the rows and the headline cannot disagree. */
+      var done = {};
+      ((pack && pack.applications) || []).forEach(function (app) {
+        if (!app || !app.lender_id || done[app.lender_id]) return;
+        done[app.lender_id] = true;
+        var box = listEl.querySelector('input[data-amount-lender-id="' + app.lender_id + '"]');
+        var chip = listEl.querySelector('[data-amount-needed-lender-id="' + app.lender_id + '"]');
+        var saved = amountForBox(app);
+        // Never overwrite something a person is part-way through typing.
+        if (box && !box.value && saved) box.value = saved;
+        if (chip) chip.hidden = !isWaitingOnAmount(app);
+
+        /* The "doesn't count" button shows only where it can help: on an
+           approval still missing its amount, and on one already excluded so the
+           decision can be undone. Never on a denial, and never on an approval
+           that is already priced. */
+        var skipBtn = listEl.querySelector('[data-approval-skip-lender-id="' + app.lender_id + '"]');
+        if (skipBtn) {
+          var off = isExcluded(app);
+          var show = off || isWaitingOnAmount(app);
+          skipBtn.hidden = !show;
+          skipBtn.setAttribute("data-application-id", app.id || "");
+          skipBtn.setAttribute("data-excluded", off ? "1" : "");
+          skipBtn.textContent = off ? "Not counted — undo" : "Doesn't count";
+          skipBtn.title = off
+            ? ("Marked as not counting"
+              + (app.approval_excluded_by ? (" by " + app.approval_excluded_by) : "")
+              + (app.approval_exclusion_reason ? (" — " + app.approval_exclusion_reason) : "")
+              + ". Press to make it count again.")
+            : "The bank said yes but there is no amount. Press if it was withdrawn or never used.";
+        }
+      });
+
+      /* Counted across the WHOLE file, not just the lenders showing — an
+         approval from a bank that has dropped off the match list, or one
+         imported with only a bank name and no lender row at all, is exactly the
+         one that would otherwise rot unnoticed. So the count can legitimately
+         be larger than the number of rows on screen, and paintMore() says so. */
+      var summary = CP.summariseApprovals((pack && pack.applications) || []);
+      paintWaiting(summary.waiting);
+      paintHeadline(summary);
+      return summary.waiting;
+    });
+  }
+
   function loadMatches(readyCopy) {
     if (!clientId) {
       statusEl.textContent = "Pick a client first.";
       return Promise.resolve("Pick a client first.");
     }
     statusEl.textContent = "Loading matching lenders…";
-    var t = "";
-    try { t = localStorage.getItem("fh_token") || ""; } catch (e) {}
-    var headers = { accept: "application/json" };
-    if (t) headers.authorization = "Bearer " + t;
     return fetch("/api/read/lender-matches?client_id=" + encodeURIComponent(clientId), { headers: headers })
       .then(function (r) { return r.json(); })
       .then(function (d) {
@@ -2538,6 +3186,7 @@ document.addEventListener("DOMContentLoaded", function () {
             : "No lenders fit this client's state / inquiry profile.";
           statusEl.textContent = empty;
           listEl.innerHTML = "";
+          paintMore(0, 0);
           /* No lender rows to chip, but approvals on this file can still be
              waiting on a dollar amount — and one nobody can see is the one that
              rots. The count sentence is painted either way. */
@@ -2545,7 +3194,9 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         statusEl.textContent = readyCopy || (n + " fit. Click Apply to verify exit IP, then open the bank URL.");
         listEl.innerHTML = "";
-        (d.matches || []).slice(0, 12).forEach(function (m) {
+        var all = d.matches || [];
+        paintMore(all.length, Math.min(all.length, ROW_CAP));
+        all.slice(0, ROW_CAP).forEach(function (m) {
           var row = document.createElement("div");
           row.style.cssText = "display:flex;flex-direction:column;gap:6px;padding:8px 0;border-bottom:1px solid var(--line,#E4E4E7)";
           var top = document.createElement("div");
@@ -2774,80 +3425,6 @@ document.addEventListener("DOMContentLoaded", function () {
           });
           document.body.appendChild(dl);
         }
-        /* WHAT IS ALREADY SAVED ON THIS FILE, painted back onto the rows.
-           Two jobs, one read:
-             * the play name and the approved amount go back into the boxes they
-               were typed into, so the amount box is where somebody returns to
-               add a dollar figure they did not have the first time;
-             * every approval still waiting on an amount is chipped on its row
-               and counted in the sentence at the top of this block.
-           Runs on load AND after every save, so the count can never be stale. */
-        function refreshSaved() {
-          return fetch("/api/applications?client_id=" + encodeURIComponent(clientId), { headers: headers })
-            .then(function (r) { return r.json(); })
-            .then(function (pack) {
-              var seen = {};
-              ((pack && pack.decisions) || []).forEach(function (dec) {
-                if (!dec.lender_id || !dec.play_name || seen[dec.lender_id]) return;
-                seen[dec.lender_id] = true;
-                var inp = listEl.querySelector('input[data-lender-id="' + dec.lender_id + '"]');
-                if (inp && !inp.value) inp.value = dec.play_name;
-              });
-
-              /* Newest application per lender wins — listClientApplications
-                 orders by updated_at DESC, so the first row seen for a lender is
-                 the current one. */
-              var waiting = 0;
-              var done = {};
-              ((pack && pack.applications) || []).forEach(function (app) {
-                if (!app) return;
-                if (app.lender_id) {
-                  if (done[app.lender_id]) return;
-                  done[app.lender_id] = true;
-                  var box = listEl.querySelector('input[data-amount-lender-id="' + app.lender_id + '"]');
-                  var chip = listEl.querySelector('[data-amount-needed-lender-id="' + app.lender_id + '"]');
-                  var saved = amountForBox(app);
-                  // Never overwrite something a person is part-way through typing.
-                  if (box && !box.value && saved) box.value = saved;
-                  if (chip) chip.hidden = !isWaitingOnAmount(app);
-
-                  /* The "doesn't count" button shows only where it can help:
-                     on an approval still missing its amount, and on one already
-                     excluded so the decision can be undone. Never on a denial,
-                     and never on an approval that is already priced. */
-                  var skipBtn = listEl.querySelector('[data-approval-skip-lender-id="' + app.lender_id + '"]');
-                  if (skipBtn) {
-                    var off = isExcluded(app);
-                    var show = off || isWaitingOnAmount(app);
-                    skipBtn.hidden = !show;
-                    skipBtn.setAttribute("data-application-id", app.id || "");
-                    skipBtn.setAttribute("data-excluded", off ? "1" : "");
-                    skipBtn.textContent = off ? "Not counted — undo" : "Doesn't count";
-                    skipBtn.title = off
-                      ? ("Marked as not counting"
-                        + (app.approval_excluded_by ? (" by " + app.approval_excluded_by) : "")
-                        + (app.approval_exclusion_reason ? (" — " + app.approval_exclusion_reason) : "")
-                        + ". Press to make it count again.")
-                      : "The bank said yes but there is no amount. Press if it was withdrawn or never used.";
-                  }
-                }
-                /* Counted even with no lender on the row. An imported approval
-                   that carries only a bank name has no row here to chip, and an
-                   approval nobody can see is exactly the one that rots. */
-                if (isWaitingOnAmount(app)) waiting += 1;
-              });
-              /* Counted across the whole file, not just the lenders showing —
-                 an approval from a bank that has dropped off the match list is
-                 exactly the one that would otherwise rot unnoticed. */
-              paintWaiting(waiting);
-              return waiting;
-            })
-            .catch(function () {
-              // A read that did not arrive is not a file with nothing waiting.
-              // Leave the sentence exactly as it was rather than clearing it.
-              return null;
-            });
-        }
         return refreshSaved().then(function () {
           return readyCopy || (n + " lenders ready.");
         });
@@ -2859,7 +3436,12 @@ document.addEventListener("DOMContentLoaded", function () {
   }
   window.fhRefreshFundingApply = loadMatches;
   loadMatches();
-})();
+  /* Asked for on its own, and not awaited behind the lender list. The headline
+     is about every bank answer on the file; the lender list is about which
+     banks currently fit it. A file can have approvals waiting and match no
+     lenders at all, and that is exactly the file that rots. */
+  refreshSaved();
+});
 </script>
 </body>
 </html>

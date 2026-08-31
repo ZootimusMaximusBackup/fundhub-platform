@@ -276,6 +276,26 @@ window.FHData = (function () {
       return get("/api/documents-download?id=" + encodeURIComponent(id || ""));
     },
 
+    /* GET /api/applications?client_id= → data.applications[] and data.decisions[]
+       — every bank this client has applied to, what the bank said, and how much
+       it approved.
+
+       Not under /api/read/, so it does not go through read() above; it is the
+       same handler the client control panel POSTs a bank yes/no to.
+
+       WHY A SCREEN NEEDS THIS THROUGH THE DATA LAYER AND NOT A RAW fetch. The
+       count of approvals still waiting on a dollar amount now LEADS the client
+       control panel, and a headline number has to be able to tell "we looked
+       and nothing is waiting" from "we could not look". A raw fetch cannot: a
+       failed read and an empty file both arrive as no rows. get() classifies
+       the failure (source: unauthorized / nodb / server / offline …) so the
+       screen can say "could not check" out loud, in the house wording, instead
+       of quietly showing an all-clear it never established. */
+    applications: function (clientId) {
+      if (!clientId) return Promise.resolve(fail("nodata", "no client id in the URL"));
+      return get("/api/applications?client_id=" + encodeURIComponent(clientId));
+    },
+
     fundingRounds:   function (p) { return this.read("funding-rounds", p); },
     affiliates:      function (p) { return this.read("affiliates", p); },
     partners:        function (p) { return this.read("partners", p); },
