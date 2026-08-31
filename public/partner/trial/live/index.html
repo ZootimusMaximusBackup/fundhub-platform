@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"/>
+<link rel="stylesheet" href="/app/fundhub-brand.css"/>
 <!--
   THE LIVE TRIAL DASHBOARD. Not the sales page — that is /partner/trial/ and it
   belongs to a different unit. This is the screen somebody opens after they have
@@ -45,14 +46,30 @@
   lender bands, payout percentages or fulfilment playbooks.
 -->
 <style>
+  /* ── BRAND. Every colour below is an ALIAS onto a token in
+     public/app/fundhub-brand.css — the same pattern public/app/pipeline.html
+     uses. Nothing here invents a hue.
+
+     It did before. This screen shipped with its own :root carrying #188bf6,
+     #DC2626, #D97706 and #16A34A — saturated web defaults that are nowhere in
+     the brand, next to a palette that is deliberately soft and desaturated.
+     That is why it read as off-brand: not the layout, the colour.
+
+     Status tints are mixed DOWN from the spectrum stops rather than picked, so
+     a badge can never introduce a colour the gradient does not already contain.
+     ── */
   :root{
-    --paper:#FCFCFC; --ink:#0A0A0A; --ink2:#27272A;
-    --line:#E4E4E7; --gray:#6B7280; --gray2:#9CA3AF;
-    --blue:#188bf6; --card:#FFFFFF;
-    --good:#16A34A; --warn:#D97706; --bad:#DC2626;
-    --sans:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:var(--fh-sans,'Inter',system-ui,-apple-system,sans-serif);
+    --mono:var(--fh-mono,'JetBrains Mono',ui-monospace,SFMono-Regular,monospace);
+    --card:#FFFFFF;                 /* surface. The brand --card is the DARK card. */
+    --ink2:var(--gray, #52525B);
+    --good:#4F7F5B; --warn:#9A6B1F; --bad:#B45647;
+    --good-bg:color-mix(in srgb,var(--ok,#A8D8B0) 30%,#fff);
+    --warn-bg:color-mix(in srgb,var(--warn,#F5CE8F) 30%,#fff);
+    --bad-bg:color-mix(in srgb,var(--alert,#F2A69B) 30%,#fff);
+    --blue:#3E6E9E;
   }
+  .num,[class*=metric],[class*=stat],td,th{font-variant-numeric:tabular-nums}
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}
@@ -74,31 +91,43 @@
 
   .limit{border:1px dashed var(--line);border-radius:11px;padding:12px 15px;margin:0 0 22px;color:var(--gray);font-size:13.5px}
 
-  .tiles{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));margin:0 0 22px}
-  .tile{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:15px 16px}
-  .tile .k{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--gray);margin:0 0 7px}
-  .tile .v{font-family:var(--mono);font-size:26px;font-weight:500;letter-spacing:-.02em;margin:0}
-  .tile .v.unknown{font-size:15px;color:var(--gray2);font-family:var(--sans);padding-top:9px}
-  .tile .n{font-size:12.5px;color:var(--gray);margin:6px 0 0}
-  .tile.hero{border-color:#BFDBFE;background:#F5FAFF}
+  /* ── LAYOUT, to docs/UI-STANDARDS.md.
+     §2 spacing is 8/16/24/32/48 and nothing else — this screen shipped with
+     12, 15, 22, 6, 11, 9 and 13.5px, which is what eyeballing looks like.
+     §3 four type sizes, not eleven: hero 40, title 20, body 15, label 12.
+     §3 the number is 3.3x its label. It was 2.2x and read as body text.
+     §7 no border around everything — a tile is separated by GROUND, not by a
+     box. Only the live tile gets a line, so "live" means something.
+     ── */
 
-  h2{font-size:17px;letter-spacing:-.01em;margin:26px 0 10px}
+  .tiles{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(184px,1fr));margin:0 0 32px}
+  .tile{border-radius:12px;background:var(--soft);padding:16px 16px 16px}
+  .tile .k{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--gray);margin:0 0 8px}
+  .tile .v{font-family:var(--mono);font-size:40px;font-weight:500;letter-spacing:-.03em;line-height:1;margin:0}
+  /* An unknown is a SENTENCE, not a number. It must never look like a value. */
+  .tile .v.unknown{font-size:15px;color:var(--gray2);font-family:var(--sans);line-height:1.55;padding-top:16px}
+  /* §7 every metric carries a comparison. Muted, under the value, never beside. */
+  .tile .n{font-size:12px;color:var(--gray);margin:8px 0 0}
+  .tile.hero{background:color-mix(in srgb,var(--info) 18%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--info) 45%,#fff)}
 
-  table{width:100%;border-collapse:collapse;font-size:14px}
-  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card)}
-  th,td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line);white-space:nowrap}
+  /* §3 three sizes above body. h2 is the only section voice. */
+  h2{font-size:20px;letter-spacing:-.015em;margin:32px 0 16px;font-weight:600}
+
+  table{width:100%;border-collapse:collapse;font-size:15px}
+  .scroll{overflow-x:auto;border-radius:12px;background:var(--soft)}
+  th,td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--line);white-space:nowrap}
   th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--gray);font-weight:600}
   tr:last-child td{border-bottom:none}
-  td.mono{font-family:var(--mono);font-size:13px}
+  td.mono{font-family:var(--mono);font-size:15px}
 
-  .plan{display:grid;gap:9px;margin:0 0 10px;padding:0;list-style:none}
-  .plan li{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:11px 14px;display:flex;gap:12px;align-items:flex-start}
-  .plan li.now{border-color:#BFDBFE;background:#F5FAFF}
+  .plan{display:grid;gap:8px;margin:0 0 16px;padding:0;list-style:none}
+  .plan li{border-radius:10px;background:var(--soft);padding:16px;display:flex;gap:16px;align-items:flex-start}
+  .plan li.now{background:color-mix(in srgb,var(--info) 18%,#fff);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--info) 45%,#fff)}
   .plan li.done{opacity:.55}
-  .day{font-family:var(--mono);font-size:12px;color:var(--gray);min-width:46px;padding-top:2px}
-  .plan h3{margin:0 0 2px;font-size:14.5px;font-weight:600}
-  .plan p{margin:0;font-size:13.5px;color:var(--gray)}
-  .who{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--gray2);margin-left:auto;padding-top:3px}
+  .day{font-family:var(--mono);font-size:12px;color:var(--gray);min-width:48px;padding-top:2px}
+  .plan h3{margin:0 0 2px;font-size:15px;font-weight:600}
+  .plan p{margin:0;font-size:15px;color:var(--gray)}
+  .who{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--gray2);margin-left:auto;padding-top:3px}
 
   .state{border:1px dashed var(--line);border-radius:12px;padding:30px;text-align:center;color:var(--gray)}
   .state h2{font-size:17px;color:var(--ink);margin:0 0 6px}
