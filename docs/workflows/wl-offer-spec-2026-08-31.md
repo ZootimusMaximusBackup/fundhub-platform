@@ -115,7 +115,7 @@ that disagrees with it.
 |---|---|
 | ~~Add-on prices~~ | **CLOSED — $297/mo, $2,497/mo, $99 per booked call.** Researched, set and shipped in `src/config/offers.mjs` |
 | ~~Partner subscriptions don't fit the schema~~ | **CLOSED — migration 271 shipped.** A partner can hold a subscription, and it closed a double-billing hole the old rule left open |
-| **The training curriculum** | Research running. Modules must be agreed before any page describes the deliverable |
+| ~~The training curriculum~~ | **CLOSED — W7 shipped.** Thirteen modules and four gates in `db/migrations/284_training_delivery.sql` and `src/training/`, screen at `public/app/partner-training.html`. The teaching content itself is a human authoring job and is deliberately not written |
 | **What the $10,000 includes besides training** | The deliverable list has to be real before it is published |
 | **The Ascension funnel** | Does not exist and is not in the repo. To be built in its own batch now the offers are settled |
 | **Exact refund window** | "Short" is recorded as 3 days |
@@ -152,9 +152,15 @@ product right now.
    written (a human authoring job); there is no per-product proof the $10,000 was paid,
    so entitlement reads the signed partner licence instead; and the partner nav is now
    five screens rather than four, which W7's module M10 still teaches by name.
-5. **No partner agreement template exists.** The payout gate depends on
-   `agreement_signed_at` being stamped, but no PARTNER-LICENSE row is seeded anywhere.
-   The document that makes someone a partner is not in the system.
+5. ~~**No partner agreement template exists.**~~ **CLOSED 2026-08-31.**
+   `db/migrations/283_partner_license_template.sql` seeds the PARTNER-LICENSE wording, and
+   `src/contracts/partner-license.mjs` is the only supported way to stamp
+   `agreement_signed_at` — it reads the date off the signed document, is write-once, and
+   refuses when no licence is signed.
+   **And it closed a hole while it was at it:** `src/trials/conversion.mjs` had been
+   writing that column straight from the request body, so any caller who could reach the
+   day-8 conversion endpoint could make a partner payable with no signature anywhere in
+   the system. It now goes through the same guard.
 6. **"10 clients a month" has no definition.** Nothing says whether a $32 soft pull, a
    $200 trial and a $3,000 deposit each count as one client — and the floor cannot be
    computed at all today, because the only `INSERT INTO partner_revenue` in the repo is a
