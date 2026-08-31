@@ -42,11 +42,11 @@ flowchart TD
     CAN --> A_privacy[privacy — 1 route]
     CAN --> A_proxy[proxy — 2 routes]
     CAN --> A_public[public — 11 routes]
-    CAN --> A_read[Reading data — 53 routes]
+    CAN --> A_read[Reading data — 55 routes]
     CAN --> A_repair[repair — 5 routes]
     CAN --> A_social[social — 7 routes]
     CAN --> A_staff[staff — 3 routes]
-    CAN --> A_top_level[Everything else — 39 routes]
+    CAN --> A_top_level[Everything else — 40 routes]
     CAN --> A_trials[trials — 4 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 2 routes]
@@ -57,7 +57,7 @@ flowchart TD
 
 ## What they can reach
 
-**211 of 214 routes.**
+**214 of 217 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -233,7 +233,9 @@ flowchart TD
 | `/api/read/money-map` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/my-numbers` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/ops-pulse` | GET | owner, admin |
+| `/api/read/partner-home-tiles` | GET | partner, staff |
 | `/api/read/partner-production` | GET | partner, staff |
+| `/api/read/partner-training` | GET | partner, staff |
 | `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
 | `/api/read/portal-contracts` | GET | staff, client |
 | `/api/read/portal-summary` | GET | staff, client |
@@ -267,6 +269,7 @@ flowchart TD
 | `/api/staff/monitoring-consent` | POST | owner |
 | `/api/staff/telemetry` | GET | owner, admin, sales_manager |
 | `/api/tasks` | GET, PATCH | staff |
+| `/api/training-progress` | POST | owner, admin |
 | `/api/trials/convert` | POST | owner, admin |
 | `/api/trials/dashboard` | GET | partner, staff |
 | `/api/trials/eligibility` | POST | anyone |
@@ -282,7 +285,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**2 of 214 routes.**
+**2 of 217 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

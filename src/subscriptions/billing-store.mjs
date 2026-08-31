@@ -37,7 +37,7 @@
 import { assertPriceCents } from "./index.mjs";
 import {
   MAX_ATTEMPTS, planCharge, notBillableReason,
-  PROCESSOR_BILLED_PROVIDERS, isProcessorBilledProvider
+  PROCESSOR_BILLED_PROVIDER, PROCESSOR_BILLED_PROVIDERS, isProcessorBilledProvider
 } from "./billing.mjs";
 
 const SUB_COLUMNS = `
@@ -419,7 +419,7 @@ export async function recordProcessorCharge(db, {
          (org_id, subscription_id, idempotency_key, period_start, period_end,
           amount_cents, currency, status, attempt, provider, provider_ref, charged_at)
        SELECT s.org_id, s.id, $3, $4::timestamptz, $5::timestamptz,
-              $6, COALESCE($7, 'USD'), 'succeeded', 1, COALESCE($8, 'commas_subscription'),
+              $6, COALESCE($7, 'USD'), 'succeeded', 1, COALESCE($8, $11::text),
               $10, COALESCE($9::timestamptz, now())
          FROM sub s
         WHERE NOT EXISTS (SELECT 1 FROM already)
@@ -449,8 +449,12 @@ export async function recordProcessorCharge(db, {
             0::bigint AS advanced_rows
        FROM conflicted c
       WHERE NOT EXISTS (SELECT 1 FROM ins) AND NOT EXISTS (SELECT 1 FROM already)`,
+    /* $11 is the default provider, passed rather than written into the SQL as a
+       literal: a second copy of the marker string is a second thing to keep in
+       step with billing.mjs, and the day they disagree the row lands on the
+       wrong rail. */
     [orgId, subscriptionId, key, periodStart, periodEnd, cents,
-      currency, provider, chargedAt, ref]
+      currency, provider, chargedAt, ref, PROCESSOR_BILLED_PROVIDER]
   );
 
   const row = res.rows[0] ?? null;
@@ -595,6 +599,20 @@ export async function scheduleBilling(db, { orgId, subscriptionId, interval, fir
   );
   const sub = found.rows[0];
   if (!sub) throw new TypeError("scheduleBilling: no such subscription");
+
+  /* THE OTHER SHAPE OF DOUBLE BILLING IS ALREADY IMPOSSIBLE, AND THAT IS WHY
+     THERE IS NO CHECK FOR IT HERE.
+     The worry is a SECOND, ordinary row for the same customer and the same
+     add-on, opened by a caller that did not know Commas was already billing a
+     mirror — one arrangement, two cycles, arriving under two subscription ids.
+     075's `subscriptions_no_overlap` (org, client, period) and 271's
+     `subscriptions_partner_no_overlap` (org, partner, lower(btrim(tier)),
+     period) both refuse it at INSERT time: two rows with effective_to NULL
+     always overlap, and neither constraint carries a status predicate. A
+     JavaScript check here could only re-state what the database already
+     guarantees, and it would be unreachable code standing in front of the real
+     guard. src/subscriptions/commas-billed-skip.pg.test.mjs proves the refusal
+     against real Postgres instead. */
 
   // Check billability as it WILL be, so "not_scheduled"/"not_due" — the two
   // states this call is about to create — are not reported as refusals.

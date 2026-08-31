@@ -27,12 +27,12 @@ flowchart TD
     CAN --> A_gifts[gifts — 1 route]
     CAN --> A_partner_marketing[partner-marketing — 5 routes]
     CAN --> A_public[public — 11 routes]
-    CAN --> A_read[Reading data — 3 routes]
+    CAN --> A_read[Reading data — 5 routes]
     CAN --> A_social[social — 6 routes]
     CAN --> A_top_level[Everything else — 6 routes]
     CAN --> A_trials[trials — 2 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 150 routes]
+    WHO -->|Yes| CANT[Blocked — 151 routes]
     CANT --> B_auth[Signing in and out — 5 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_chat[chat — 4 blocked]
@@ -53,14 +53,14 @@ flowchart TD
     CANT --> B_repair[repair — 5 blocked]
     CANT --> B_social[social — 1 blocked]
     CANT --> B_staff[staff — 3 blocked]
-    CANT --> B_top_level[Everything else — 33 blocked]
+    CANT --> B_top_level[Everything else — 34 blocked]
     CANT --> B_trials[trials — 2 blocked]
     WHO -->|Yes| UNV[UNVERIFIED — 1 route whose gate could not be traced]
 ```
 
 ## What they can reach
 
-**63 of 214 routes.**
+**65 of 217 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -116,7 +116,9 @@ flowchart TD
 | `/api/public/survey-submit` | POST | **not a sign-in** — provider signature |
 | `/api/public/unsubscribe` | — | anyone |
 | `/api/read/company-brain-affiliate` | POST | employees: affiliate, partner<br>plus: affiliate, partner |
+| `/api/read/partner-home-tiles` | GET | partner, staff |
 | `/api/read/partner-production` | GET | partner, staff |
+| `/api/read/partner-training` | GET | partner, staff |
 | `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
 | `/api/social/channels` | GET | partner, staff |
 | `/api/social/generate` | POST | partner, staff |
@@ -135,7 +137,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**150 of 214 routes.**
+**151 of 217 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -287,6 +289,7 @@ flowchart TD
 | `/api/staff/monitoring-consent` | POST | owner |
 | `/api/staff/telemetry` | GET | owner, admin, sales_manager |
 | `/api/tasks` | GET, PATCH | staff |
+| `/api/training-progress` | POST | owner, admin |
 | `/api/trials/convert` | POST | owner, admin |
 | `/api/trials/provision` | POST | owner, admin |
 

@@ -140,9 +140,18 @@ product right now.
 3. **The money spine was not launch-ready** as of 2026-08-21 — deposits failing to save
    with a Postgres 23502, no real card ever charged or refunded, credit pulls sandbox
    only. Re-verify before teaching any payment step as current.
-4. **There is nowhere for the $10,000 training to live.** `src/education/enrollments.mjs`
-   handles enrollment requests only; its own header states there is no lessons table, no
-   player and no entitlement check anywhere in `db/`.
+4. ~~**There is nowhere for the $10,000 training to live.**~~ **CLOSED 2026-08-31.**
+   `db/migrations/284_training_delivery.sql` and `src/training/` hold W7's thirteen
+   modules, the four gates, one partner's progress, and an entitlement check;
+   `public/app/partner-training.html` is the screen and `GET /api/read/partner-training`
+   feeds it. `src/education/enrollments.mjs`'s header was corrected rather than left
+   claiming otherwise — it is still enrollment requests only, and it is a different
+   product from the partner curriculum.
+   **What is still open, named rather than hidden:** nothing calls `hasPassedGate()` yet,
+   so no gate BLOCKS anything outside the training record itself; no module content is
+   written (a human authoring job); there is no per-product proof the $10,000 was paid,
+   so entitlement reads the signed partner licence instead; and the partner nav is now
+   five screens rather than four, which W7's module M10 still teaches by name.
 5. **No partner agreement template exists.** The payout gate depends on
    `agreement_signed_at` being stamped, but no PARTNER-LICENSE row is seeded anywhere.
    The document that makes someone a partner is not in the system.

@@ -33,14 +33,14 @@ flowchart TD
     CAN --> A_gifts[gifts — 1 route]
     CAN --> A_partner_marketing[partner-marketing — 5 routes]
     CAN --> A_public[public — 11 routes]
-    CAN --> A_read[Reading data — 40 routes]
+    CAN --> A_read[Reading data — 42 routes]
     CAN --> A_repair[repair — 5 routes]
     CAN --> A_social[social — 6 routes]
     CAN --> A_staff[staff — 1 route]
     CAN --> A_top_level[Everything else — 25 routes]
     CAN --> A_trials[trials — 2 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 68 routes]
+    WHO -->|Yes| CANT[Blocked — 69 routes]
     CANT --> B_auth[Signing in and out — 5 blocked]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_brand[brand — 1 blocked]
@@ -59,14 +59,14 @@ flowchart TD
     CANT --> B_read[Reading data — 14 blocked]
     CANT --> B_social[social — 1 blocked]
     CANT --> B_staff[staff — 2 blocked]
-    CANT --> B_top_level[Everything else — 14 blocked]
+    CANT --> B_top_level[Everything else — 15 blocked]
     CANT --> B_trials[trials — 2 blocked]
     WHO -->|Yes| UNV[UNVERIFIED — 1 route whose gate could not be traced]
 ```
 
 ## What they can reach
 
-**145 of 214 routes.**
+**147 of 217 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -187,7 +187,9 @@ flowchart TD
 | `/api/read/messages` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/money-map` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/my-numbers` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/partner-home-tiles` | GET | partner, staff |
 | `/api/read/partner-production` | GET | partner, staff |
+| `/api/read/partner-training` | GET | partner, staff |
 | `/api/read/portal-contracts` | GET | staff, client |
 | `/api/read/portal-summary` | GET | staff, client |
 | `/api/read/products` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -225,7 +227,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**68 of 214 routes.**
+**69 of 217 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -295,6 +297,7 @@ flowchart TD
 | `/api/social/posts` | GET, POST | employees: owner, admin<br>plus: partner |
 | `/api/staff/monitoring-consent` | POST | owner |
 | `/api/staff/telemetry` | GET | owner, admin, sales_manager |
+| `/api/training-progress` | POST | owner, admin |
 | `/api/trials/convert` | POST | owner, admin |
 | `/api/trials/provision` | POST | owner, admin |
 

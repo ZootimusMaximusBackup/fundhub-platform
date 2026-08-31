@@ -59,7 +59,7 @@ flowchart LR
   ext_twilio --> adp_twilio
   adp_bland -- "call.completed" --> BUS
   adp_clickfunnels -- "entry.captured<br/>survey.submitted<br/>booking.created<br/>booking.rescheduled<br/>booking.cancelled" --> BUS
-  adp_commas -- "diagnostic.paid<br/>deposit.paid<br/>sale.closed<br/>payment.received<br/>payment.failed<br/>payment.expired<br/>payment.canceled<br/>payment.refunded<br/>payment.disputed" --> BUS
+  adp_commas -- "diagnostic.paid<br/>deposit.paid<br/>sale.closed<br/>payment.received<br/>payment.failed<br/>payment.expired<br/>payment.canceled<br/>payment.refunded<br/>payment.disputed<br/>subscription.started<br/>subscription.renewed<br/>subscription.past_due<br/>subscription.canceled<br/>subscription.completed" --> BUS
   adp_crs -- "analysis.completed<br/>decision.rendered" --> BUS
   adp_hubstaff -- "—" --> BUS
   adp_inquiry_removal -- "inquiry.removed" --> BUS
@@ -193,6 +193,11 @@ flowchart LR
 | `diy.package.ready` | diy package | — | 0 |
 | `diy.package.delivered` | diy package | — | 0 |
 | `diy.package.downloaded` | diy package | — | 0 |
+| `subscription.started` | processor-billed subscriptions | `onSubscriptionStarted` | 0 |
+| `subscription.renewed` | processor-billed subscriptions | `onSubscriptionRenewed` | 0 |
+| `subscription.past_due` | processor-billed subscriptions | `onSubscriptionPastDue` | 0 |
+| `subscription.canceled` | processor-billed subscriptions | `onSubscriptionEnded` | 0 |
+| `subscription.completed` | processor-billed subscriptions | `onSubscriptionEnded` | 0 |
 
 An event with no handler and no function is declared but inert — it can be emitted and stored,
 and nothing happens. That is a real state in this repo, not an omission in the diagram.

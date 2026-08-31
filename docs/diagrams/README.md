@@ -27,11 +27,11 @@ the diagrams are regenerated. That is the whole point: they cannot drift quietly
 
 | source | supplies |
 |---|---|
-| `src/events/canonical.mjs` | the 72 canonical event names and their grouping |
+| `src/events/canonical.mjs` | the 77 canonical event names and their grouping |
 | `src/workflows/index.mjs` | 68 registered Inngest functions and their triggers |
 | `db/seed/002_pipelines.sql` | 6 rails and their stages |
 | `src/adapters/*.mjs` | 12 adapters, their auth scheme and emitted events |
-| `src/handlers/*.mjs` | 43 synchronous bus handler registrations |
+| `src/handlers/*.mjs` | 48 synchronous bus handler registrations |
 
 Facts available as JS values are **imported** rather than text-matched, so a rename surfaces as a
 changed diagram instead of a silently empty section.

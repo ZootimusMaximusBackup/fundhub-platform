@@ -394,7 +394,20 @@ const STAMP_SITES = Object.freeze({
     "into it with no signed document behind it. Owner or admin only (requireRole), which " +
     "is a real control and is not the same control as a signature.",
   "src/demo/platform-seed.mjs":
-    "Demo fixture only. Every row it writes carries is_demo = true (148_demo_mode.sql)."
+    "Demo fixture only. Every row it writes carries is_demo = true (148_demo_mode.sql).",
+  /* THESE TWO READ THE COLUMN, THEY DO NOT WRITE IT. The sweep above cannot tell
+     a SELECT from an UPDATE — it matches the column name anywhere outside a
+     comment — so a read-only user has to be listed or the guard goes red on it.
+     Both are named here with what they actually do, rather than being made to
+     dodge the sweep by aliasing the column, which would hide a real write the
+     next time somebody edited them. */
+  "src/training/entitlement.mjs":
+    "READS ONLY. `SELECT id, status, agreement_signed_at FROM partners` — a signed " +
+    "partner licence is what opens the $10,000 training (docs/specs/W7-curriculum.md). " +
+    "It contains no INSERT and no UPDATE of any kind.",
+  "api/read/partner-training.mjs":
+    "READS ONLY. Selects the same column to report it on the training screen. GET only; " +
+    "the handler answers 405 to anything else."
 });
 
 /** `//` line comments and `/* *\/` blocks removed, so a mention in prose is not

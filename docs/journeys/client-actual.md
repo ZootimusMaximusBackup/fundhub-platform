@@ -29,7 +29,7 @@ flowchart TD
     CAN --> A_top_level[Everything else — 6 routes]
     CAN --> A_trials[trials — 1 route]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 177 routes]
+    WHO -->|Yes| CANT[Blocked — 180 routes]
     CANT --> B_adintel[adintel — 1 blocked]
     CANT --> B_auth[Signing in and out — 5 blocked]
     CANT --> B_banking[banking — 3 blocked]
@@ -51,18 +51,18 @@ flowchart TD
     CANT --> B_partners[partners — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
-    CANT --> B_read[Reading data — 51 blocked]
+    CANT --> B_read[Reading data — 53 blocked]
     CANT --> B_repair[repair — 5 blocked]
     CANT --> B_social[social — 7 blocked]
     CANT --> B_staff[staff — 3 blocked]
-    CANT --> B_top_level[Everything else — 33 blocked]
+    CANT --> B_top_level[Everything else — 34 blocked]
     CANT --> B_trials[trials — 3 blocked]
     WHO -->|Yes| UNV[UNVERIFIED — 1 route whose gate could not be traced]
 ```
 
 ## What they can reach
 
-**36 of 214 routes.**
+**36 of 217 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -110,7 +110,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**177 of 214 routes.**
+**180 of 217 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -256,7 +256,9 @@ flowchart TD
 | `/api/read/money-map` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/my-numbers` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/ops-pulse` | GET | owner, admin |
+| `/api/read/partner-home-tiles` | GET | partner, staff |
 | `/api/read/partner-production` | GET | partner, staff |
+| `/api/read/partner-training` | GET | partner, staff |
 | `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
 | `/api/read/products` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/proxy-sessions` | GET | owner, funding_advisor |
@@ -288,6 +290,7 @@ flowchart TD
 | `/api/staff/monitoring-consent` | POST | owner |
 | `/api/staff/telemetry` | GET | owner, admin, sales_manager |
 | `/api/tasks` | GET, PATCH | staff |
+| `/api/training-progress` | POST | owner, admin |
 | `/api/trials/convert` | POST | owner, admin |
 | `/api/trials/dashboard` | GET | partner, staff |
 | `/api/trials/provision` | POST | owner, admin |

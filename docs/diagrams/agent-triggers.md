@@ -176,6 +176,11 @@ Declared in `canonical.mjs`, emitted or emittable, with no Inngest function list
 - `diy.package.ready`
 - `diy.package.delivered`
 - `diy.package.downloaded`
+- `subscription.started`
+- `subscription.renewed`
+- `subscription.past_due`
+- `subscription.canceled`
+- `subscription.completed`
 
 Some are handled synchronously by a bus handler instead (see [event-flow](./event-flow.md)); the
 commission and billing events are proposed-but-unbuilt. Either way, nothing durable reacts to them.

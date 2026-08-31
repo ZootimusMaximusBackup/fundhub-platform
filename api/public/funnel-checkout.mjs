@@ -43,9 +43,17 @@
 //             second door onto the same product with a different record.
 //
 //   trial   — mint through createCheckoutSession(), which is the SAME function
-//   board     src/payment-links/index.mjs calls when the checkout API key is
+//             src/payment-links/index.mjs calls when the checkout API key is
 //             set, with buildCommasCheckoutUrl() as the same fallback it uses
 //             when only COMMAS_CHECKOUT_BASE_URL is configured.
+//
+//   board   — the same function, with type "subscription" and a 30-day cadence,
+//             because $47/MONTH means Commas holds the card and charges it
+//             again. NO FALLBACK: buildCommasCheckoutUrl() puts an amount on a
+//             query string and cannot say "and again in 30 days", so a board
+//             sold through it would take one payment against a page promising a
+//             subscription. The board is refused (503) when only that door is
+//             configured. See SUBSCRIPTION_CHECKOUT_ERROR.
 //
 // WHY NOT createPaymentLink() DIRECTLY FOR THOSE TWO. It refuses a link that
 // names nobody — `if (!clientId && !partnerId) throw` — and 277's CHECK

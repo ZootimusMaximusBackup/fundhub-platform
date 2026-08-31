@@ -12,11 +12,33 @@ import assert from "node:assert";
 
 import { convertTrial, declineTrial, ACCRUAL_BLOCKED_REASON } from "./conversion.mjs";
 import { TRIAL_STATUS, VOID_REASON_CONVERTED } from "./constants.mjs";
+import { PARTNER_LICENSE_TEMPLATE_KEY } from "../contracts/partner-license.mjs";
 
 const ORG = "11111111-1111-1111-1111-111111111111";
 const PARTNER = "22222222-2222-2222-2222-222222222222";
 const AFFILIATE = "33333333-3333-3333-3333-333333333333";
 const TRIAL = "44444444-4444-4444-4444-444444444444";
+
+/* TWO DIFFERENT DATES, ON PURPOSE.
+   LICENSE_SIGNED_AT is the moment written on the signed partner license.
+   CALLER_CLAIMS is what the day-8 caller sends in the request body.
+   The payout gate must be stamped from the FIRST and never the second, so
+   every test below hands in the second and asserts the first came back. */
+const LICENSE_SIGNED_AT = new Date("2026-09-05T09:30:00Z");
+const CALLER_CLAIMS = new Date("2026-09-08T17:00:00Z");
+
+function signedLicenseRow(over = {}) {
+  return {
+    id: "contract-license-1",
+    org_id: ORG,
+    template_key: PARTNER_LICENSE_TEMPLATE_KEY,
+    status: "signed",
+    signed_at: LICENSE_SIGNED_AT,
+    merge_values: { partner_id: PARTNER },
+    is_demo: false,
+    ...over
+  };
+}
 
 function trialRow(over = {}) {
   return {
@@ -41,33 +63,64 @@ function trialRow(over = {}) {
    touches, and every statement it sees is recorded so the test can assert on
    what was actually run — a gate that answers correctly and writes anyway is
    the failure a return-value-only test cannot see. */
-function fakeDb({ trial = trialRow(), referrals = [], voidable = true } = {}) {
+function fakeDb({
+  trial = trialRow(), referrals = [], voidable = true,
+  license = signedLicenseRow(), licenseTemplateExists = true, alreadySignedAt = null
+} = {}) {
   const seen = [];
+  /* The gate column is STATE here, not a constant, because stampPartnerAgreement
+     writes it once and then reads it back. A fake that echoed the parameter
+     would pass whether or not the write-once rule held. */
+  let signedAt = alreadySignedAt;
   return {
     seen,
+    get agreementSignedAt() { return signedAt; },
     query: async (sql, params = []) => {
-      seen.push({ sql: sql.replace(/\s+/g, " ").trim(), params });
+      const flat = sql.replace(/\s+/g, " ").trim();
+      seen.push({ sql: flat, params });
 
-      if (/FROM live_trials/i.test(sql)) return { rows: trial ? [trial] : [] };
-      if (/UPDATE partners/i.test(sql)) {
-        return { rows: [{ id: PARTNER, status: /'active'/.test(sql) ? "active" : "paused",
-                          agreement_signed_at: params[2] || null, revenue_share_pct: 50 }] };
+      if (/FROM live_trials/i.test(flat)) return { rows: trial ? [trial] : [] };
+
+      /* stampPartnerAgreement's three reads and its one write, matched BEFORE
+         the generic partners branch below because two of them also say
+         "partners" and the generic branch would swallow them. */
+      if (/FROM contract_templates/i.test(flat)) {
+        return { rows: licenseTemplateExists
+          ? [{ id: "tpl-license", template_key: PARTNER_LICENSE_TEMPLATE_KEY, active: true }] : [] };
       }
-      if (/FROM affiliate_referrals/i.test(sql)) return { rows: referrals };
-      if (/UPDATE affiliate_referrals/i.test(sql)) {
+      if (/FROM contracts/i.test(flat)) return { rows: license ? [license] : [] };
+      if (/UPDATE partners.*agreement_signed_at = \$3::timestamptz/i.test(flat)) {
+        // Write-once: a second caller updates no row and reads the winner's date.
+        if (signedAt) return { rows: [] };
+        signedAt = params[2];
+        return { rows: [{ id: PARTNER, agreement_signed_at: signedAt }] };
+      }
+      if (/SELECT id, agreement_signed_at FROM partners/i.test(flat)) {
+        return { rows: [{ id: PARTNER, agreement_signed_at: signedAt }] };
+      }
+      if (/SELECT agreement_signed_at FROM partners/i.test(flat)) {
+        return { rows: [{ agreement_signed_at: signedAt }] };
+      }
+
+      if (/UPDATE partners/i.test(flat)) {
+        return { rows: [{ id: PARTNER, status: /'active'/.test(flat) ? "active" : "paused",
+                          agreement_signed_at: signedAt, revenue_share_pct: 50 }] };
+      }
+      if (/FROM affiliate_referrals/i.test(flat)) return { rows: referrals };
+      if (/UPDATE affiliate_referrals/i.test(flat)) {
         return { rows: voidable ? [{ id: params[0], status: "void" }] : [] };
       }
-      if (/UPDATE live_trials/i.test(sql)) return { rows: [trialRow({ status: params[2] })] };
-      if (/INSERT INTO live_trial_events/i.test(sql)) {
+      if (/UPDATE live_trials/i.test(flat)) return { rows: [trialRow({ status: params[2] })] };
+      if (/INSERT INTO live_trial_events/i.test(flat)) {
         return { rows: [{ id: "evt", kind: params[2], occurred_at: new Date() }] };
       }
-      if (/UPDATE partner_pages/i.test(sql)) return { rows: [{ id: "page-1" }] };
-      if (/FROM affiliates/i.test(sql)) {
+      if (/UPDATE partner_pages/i.test(flat)) return { rows: [{ id: "page-1" }] };
+      if (/FROM affiliates/i.test(flat)) {
         return { rows: [{ id: AFFILIATE, name: "Buyer", tracking_id: "AFF-000123" }] };
       }
       // queueAffiliateTemplate's template lookup. No template row means the
       // welcome is not queued, and the decline still stands.
-      if (/FROM message_templates/i.test(sql)) return { rows: [] };
+      if (/FROM message_templates/i.test(flat)) return { rows: [] };
       return { rows: [] };
     }
   };
@@ -86,16 +139,74 @@ describe("convertTrial", () => {
     assert.equal(db.seen.length, 0);
   });
 
-  test("flips the partner to active and stamps the signature", async () => {
-    const signed = new Date("2026-09-08T17:00:00Z");
+  test("flips the partner to active, and stamps the gate off the DOCUMENT", async () => {
     const db = fakeDb();
-    const out = await convertTrial(db, { orgId: ORG, partnerId: PARTNER, agreementSignedAt: signed });
+    const out = await convertTrial(db, {
+      orgId: ORG, partnerId: PARTNER, agreementSignedAt: CALLER_CLAIMS
+    });
     assert.equal(out.ok, true);
     assert.equal(out.partner_status, "active");
-    const update = db.seen.find((s) => /UPDATE partners/i.test(s.sql));
-    assert.match(update.sql, /status = 'active'/);
-    assert.match(update.sql, /agreement_signed_at = COALESCE\(agreement_signed_at, \$3\)/);
-    assert.equal(update.params[2], signed);
+
+    /* THE DATE COMES OFF THE SIGNED LICENSE, NOT OUT OF THE REQUEST.
+       The caller sent CALLER_CLAIMS. The license says LICENSE_SIGNED_AT. The
+       column holds the license's date, so a caller cannot decide when somebody
+       became payable — which is the whole reason this route is not allowed to
+       write that column itself. */
+    assert.deepEqual(db.agreementSignedAt, LICENSE_SIGNED_AT);
+    assert.deepEqual(out.agreement_signed_at, LICENSE_SIGNED_AT);
+    assert.notDeepEqual(out.agreement_signed_at, CALLER_CLAIMS);
+
+    /* And the activation UPDATE touches status only. If it ever writes the gate
+       column again, this fails. */
+    const activate = db.seen.find((s) => /UPDATE partners/i.test(s.sql) && /'active'/.test(s.sql));
+    assert.match(activate.sql, /status = 'active'/);
+    assert.equal(/agreement_signed_at\s*=/.test(activate.sql), false);
+    assert.equal(activate.params.includes(CALLER_CLAIMS), false);
+  });
+
+  /* THE HOLE THIS CLOSED, KEPT AS A TEST SO IT CANNOT REOPEN.
+     The route used to write agreement_signed_at = COALESCE(agreement_signed_at, $3)
+     straight from the request body. A caller who could reach the endpoint could
+     make a partner payable with no signature anywhere in the system, because
+     042_partners.sql holds every payout on that one column. */
+  test("a timestamp in the request buys nothing when no license is signed", async () => {
+    const db = fakeDb({ license: null });
+    const out = await convertTrial(db, {
+      orgId: ORG, partnerId: PARTNER, agreementSignedAt: CALLER_CLAIMS
+    });
+    assert.equal(out.ok, false);
+    assert.equal(out.status, 409);
+    assert.equal(out.error, "partner_license_not_signed");
+    assert.equal(db.agreementSignedAt, null);
+    // Not activated either — half a conversion is not a safer conversion.
+    assert.equal(db.seen.some((s) => /'active'/.test(s.sql)), false);
+  });
+
+  /* An org that was never seeded with the license wording is a DIFFERENT
+     problem from a partner who has not signed one, and it needs a different
+     person to fix it. The answer says which. */
+  test("an org with no license wording says so, rather than blaming the partner", async () => {
+    const db = fakeDb({ license: null, licenseTemplateExists: false });
+    const out = await convertTrial(db, {
+      orgId: ORG, partnerId: PARTNER, agreementSignedAt: CALLER_CLAIMS
+    });
+    assert.equal(out.ok, false);
+    assert.equal(out.status, 409);
+    assert.equal(out.error, "partner_license_template_missing");
+    assert.equal(db.agreementSignedAt, null);
+  });
+
+  /* Write-once. A partner who was already payable does not become payable
+     again on a different date because day 8 ran twice. */
+  test("an already-stamped partner keeps the date they already had", async () => {
+    const earlier = new Date("2026-08-01T00:00:00Z");
+    const db = fakeDb({ alreadySignedAt: earlier });
+    const out = await convertTrial(db, {
+      orgId: ORG, partnerId: PARTNER, agreementSignedAt: CALLER_CLAIMS
+    });
+    assert.equal(out.ok, true);
+    assert.deepEqual(db.agreementSignedAt, earlier);
+    assert.deepEqual(out.agreement_signed_at, earlier);
   });
 
   test("voids every trial referral with a reason — never a delete", async () => {

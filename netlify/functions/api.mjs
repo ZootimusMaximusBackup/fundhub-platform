@@ -68,6 +68,8 @@ import readFundingRounds from "../../api/read/funding-rounds.mjs";
 import readAffiliates from "../../api/read/affiliates.mjs";
 import readPartners from "../../api/read/partners.mjs";
 import readPartnerProduction from "../../api/read/partner-production.mjs";
+import readPartnerHomeTiles from "../../api/read/partner-home-tiles.mjs";
+import readPartnerTraining from "../../api/read/partner-training.mjs";
 import readMessageTemplates from "../../api/read/message-templates.mjs";
 import readStaff from "../../api/read/staff.mjs";
 import staffTelemetry from "../../api/staff/telemetry.mjs";
@@ -197,6 +199,7 @@ import bankingRevoke from "../../api/banking/revoke.mjs";
 import privacyErasure from "../../api/privacy/erasure.mjs";
 import financeSubscriptions from "../../api/finance/subscriptions.mjs";
 import partnerAddOns from "../../api/partner-addons.mjs";
+import trainingProgress from "../../api/training-progress.mjs";
 import financeCards from "../../api/finance/cards.mjs";
 import financeLiabilities from "../../api/finance/liabilities.mjs";
 import financeBankAccounts from "../../api/finance/bank-accounts.mjs";
@@ -370,6 +373,18 @@ export const ROUTES = {
      the verdicts; without this line nothing could read one back and the warning
      §6 promises the partner would have no surface. */
   "read/partner-production": readPartnerProduction,
+  /* T10-02 — the three Partner Home KPI tiles that have a real partner-scoped
+     source (Cash Collected Today, Funded Today, Cost / Funded Client). See the
+     audit comment in public/app/partner-galaxy.html for the three that still do
+     not and stay off the screen. */
+  "read/partner-home-tiles": readPartnerHomeTiles,
+  /* Where a partner is in the $10,000 curriculum — the thirteen modules of
+     W7-curriculum.md and the four gates that stand between them and selling
+     under FundHub's brand. Serves partner and staff; a partner is pinned to
+     their own record and gets a 403 with a reason if they are not entitled to
+     the training at all. COMPLIANCE REVIEW REQUIRED — it reports whether a
+     partner holds the two compliance certifications. */
+  "read/partner-training": readPartnerTraining,
   "read/message-templates": readMessageTemplates,
   "read/staff": readStaff,
   "staff/telemetry": staffTelemetry,
@@ -779,6 +794,12 @@ export const ROUTES = {
      client, and "buy" starts a recurring charge against another business.
      COMPLIANCE REVIEW REQUIRED — payment rails and fee timing. */
   "partner-addons": partnerAddOns,
+  /* FundHub records a partner's training: one module attended or complete, or
+     one gate passed, failed or revoked. {owner, admin} only and there is no
+     partner write path anywhere — a partner who could mark their own compliance
+     module complete would be a partner with no compliance certification.
+     COMPLIANCE REVIEW REQUIRED. */
+  "training-progress": trainingProgress,
   "finance/cards": financeCards,
   "finance/liabilities": financeLiabilities,
   "finance/bank-accounts": financeBankAccounts,

@@ -47,6 +47,7 @@ import { listTrialReferrals, CONVERSION_VOID_REASON } from "./attribution.mjs";
 import { revokeTrialFunnel } from "./provision.mjs";
 import { getTrialByPartner, setTrialStatus, recordTrialEvent } from "./store.mjs";
 import { TRIAL_STATUS, PARTNER_ENTRY_PRICE_CENTS } from "./constants.mjs";
+import { stampPartnerAgreement } from "../contracts/partner-license.mjs";
 
 /** Why nobody is paid yet, whichever way day 8 goes. Carried in the response so
     a screen cannot render "you will be paid" over a rail that does not exist. */
@@ -80,17 +81,43 @@ export async function convertTrial(db, {
     return { ok: false, status: 409, error: "trial_already_declined" };
   }
 
+  /* THE SIGNATURE IS PROVED, NOT ASSERTED.
+     This used to write agreement_signed_at straight from the timestamp in the
+     request body — COALESCE(agreement_signed_at, $3). The caller was required
+     to send one, but nothing checked a signed licence existed behind it, so
+     any caller who could reach this endpoint could make a partner payable
+     without a signature anywhere in the system. 042_partners.sql's trigger
+     holds every payout on that one column; a route that can set it from a
+     typed-in value is the whole gate.
+
+     stampPartnerAgreement() finds the real signed PARTNER-LICENSE, takes the
+     date OFF THE DOCUMENT rather than off the request or the clock, is
+     write-once and race-safe, and throws when no licence is signed. The body's
+     agreementSignedAt is now only a caller's assertion that they believe it is
+     signed — the check above still rejects its absence early, but it never
+     reaches the column. */
+  let stamped;
+  try {
+    stamped = await stampPartnerAgreement(database, { orgId, partnerId });
+  } catch (err) {
+    const code = err && err.code;
+    if (code === "partner_not_found") return { ok: false, status: 404, error: "partner_not_found" };
+    if (code === "partner_license_not_signed" || code === "partner_license_template_missing") {
+      return { ok: false, status: 409, error: code, message: err.message };
+    }
+    throw err;
+  }
+
   const partnerUpdate = await database.query(
     `UPDATE partners
-        SET status = 'active',
-            agreement_signed_at = COALESCE(agreement_signed_at, $3),
-            updated_at = now()
+        SET status = 'active', updated_at = now()
       WHERE org_id = $1 AND id = $2
       RETURNING id, status, agreement_signed_at, revenue_share_pct`,
-    [orgId, partnerId, agreementSignedAt]
+    [orgId, partnerId]
   );
   const partner = partnerUpdate.rows[0];
   if (!partner) return { ok: false, status: 404, error: "partner_not_found" };
+  void stamped;
 
   /* UNWIND THE AFFILIATE CLAIM. These leads are the partner's now and pay 50%,
      front and back. Leaving the 20% referrals attributed would double-count

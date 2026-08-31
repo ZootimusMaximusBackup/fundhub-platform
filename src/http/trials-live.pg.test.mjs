@@ -30,6 +30,9 @@ import { db, close } from "../db.mjs";
 import { resolveDefaultOrg } from "../auth/org.mjs";
 import { createSession } from "../auth/session.mjs";
 import { createAccount, createAccountSession } from "../auth/account-session.mjs";
+import {
+  getPartnerLicenseTemplate, PARTNER_ID_MERGE_KEY
+} from "../contracts/partner-license.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
 
@@ -52,6 +55,7 @@ describe("Live Trial endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : false },
   let dashboard, convert, eligibility;
   let org, ownerId;
   let partnerA, partnerB, trialA, trialB;
+  let licenseClientId, licenseContractId, licenseSignedAt;
   let tokPartnerA, tokOwner, tokCloser;
 
   const call = async (handler, { method = "GET", body = null, query = {}, tok = null }) => {
@@ -118,12 +122,76 @@ describe("Live Trial endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : false },
     )).rows[0].id;
     trialA = await mkTrial(partnerA);
     trialB = await mkTrial(partnerB);
+
+    /* A REAL SIGNED PARTNER LICENSE FOR partnerA, because converting stamps the
+       payout gate FROM THE DOCUMENT and refuses when there is not one. The
+       endpoint used to write partners.agreement_signed_at straight from this
+       request body, which meant anybody who could reach it could make a partner
+       payable with no signature anywhere in the system; it now goes through
+       stampPartnerAgreement(). partnerB deliberately gets NO license, so the
+       refusal below is tested against a partner in the state most partners are
+       actually in.
+
+       The e-sign pipeline itself (send → link → sign → flatten) is covered by
+       src/contracts/lifecycle.pg.test.mjs; what is needed here is a row in the
+       shape that pipeline leaves behind. draft → signed in one INSERT is the
+       same shortcut src/contracts/partner-license.pg.test.mjs takes, for the
+       same reason: trg_contracts_frozen only bites once status has left 'draft'. */
+    const template = await getPartnerLicenseTemplate(db, { orgId: org, activeOnly: false });
+    assert.ok(template,
+      "no PARTNER-LICENSE template in this database. db/migrations/283_partner_license_template.sql " +
+      "seeds it; without it no partner can ever be paid.");
+
+    licenseClientId = (await db.query(
+      `INSERT INTO clients (org_id, first_name, last_name, email)
+       VALUES ($1, 'Livetrial', 'Principal', $2) RETURNING id`,
+      [org, `${MARK}.licensee@example.com`]
+    )).rows[0].id;
+
+    licenseSignedAt = new Date(Date.now() - 3 * 86400000);
+    licenseContractId = (await db.query(
+      `INSERT INTO contracts
+         (org_id, client_id, template_id, template_key, title, kind, subtype,
+          merge_values, rendered_body, body_sha, signature_statement, signature_required,
+          status, sent_at, sent_by, signed_at, signer_name, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9,$10,$11,true,
+               'signed', $12, $13, $12, $14, $13)
+       RETURNING id`,
+      [org, licenseClientId, template.id, template.template_key, template.name,
+       template.kind, template.subtype,
+       JSON.stringify({ company_name: "Fundhub", partner_brand: `${MARK} brand`,
+                        [PARTNER_ID_MERGE_KEY]: partnerA }),
+       // A body is required by contracts_sent_has_artifact_ck; the exact words
+       // are proved against the seeded template in partner-license-terms.test.mjs.
+       `${MARK} signed license body`,
+       "sha256:" + "0".repeat(64),
+       template.signature_statement,
+       licenseSignedAt, ownerId, `${MARK} principal`]
+    )).rows[0].id;
   });
 
   async function purge() {
-    await db.query(`DELETE FROM live_trial_events WHERE live_trial_id IN
-      (SELECT id FROM live_trials WHERE partner_id IN
-        (SELECT id FROM partners WHERE slug LIKE $1))`, [MARK_LIKE]);
+    /* live_trial_events is append-only by trigger (280_live_trials.sql), and the
+       test at the bottom of this file asserts that refusal — so the purge cannot
+       just DELETE. A fixture is the one place allowed to turn the trigger off,
+       and it turns it straight back on, exactly as src/training/training.pg.test.mjs
+       does with trg_ptg_no_delete.
+
+       This purge is why the file previously reported a hookFailed on its own
+       after(): the conversion test records a 'converted' event, so by cleanup
+       time there was always a row the trigger refused to delete. It went
+       unnoticed because scripts/run-suite.mjs exits before the pg batch when any
+       unit test fails, and unit tests have been failing on main. */
+    await db.query(`ALTER TABLE live_trial_events DISABLE TRIGGER live_trial_events_no_delete`);
+    try {
+      await db.query(`DELETE FROM live_trial_events WHERE live_trial_id IN
+        (SELECT id FROM live_trials WHERE partner_id IN
+          (SELECT id FROM partners WHERE slug LIKE $1))`, [MARK_LIKE]);
+    } finally {
+      // Re-enabled even if the delete throws. Leaving the guard off would make
+      // every later suite in the same database pass a check that is not running.
+      await db.query(`ALTER TABLE live_trial_events ENABLE TRIGGER live_trial_events_no_delete`);
+    }
     await db.query(`DELETE FROM live_trials WHERE partner_id IN
       (SELECT id FROM partners WHERE slug LIKE $1)`, [MARK_LIKE]);
     await db.query(`DELETE FROM partner_pages WHERE partner_id IN
@@ -133,6 +201,18 @@ describe("Live Trial endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : false },
     await db.query(`DELETE FROM accounts WHERE email LIKE $1`, [MARK_LIKE]);
     await db.query(`DELETE FROM sessions WHERE staff_id IN
       (SELECT id FROM staff WHERE email LIKE $1)`, [MARK_LIKE]);
+    /* The signed license, and the client row it hangs off, go BEFORE staff:
+       contracts.created_by and .sent_by both reference staff, and the client is
+       only removable once its contract is gone. contracts is no-delete too
+       ("contracts are never deleted — void it instead"), so the same
+       disable-and-restore applies. */
+    await db.query(`ALTER TABLE contracts DISABLE TRIGGER trg_contracts_no_delete`);
+    try {
+      await db.query(`DELETE FROM contracts WHERE rendered_body LIKE $1`, [MARK_LIKE]);
+    } finally {
+      await db.query(`ALTER TABLE contracts ENABLE TRIGGER trg_contracts_no_delete`);
+    }
+    await db.query(`DELETE FROM clients WHERE email LIKE $1`, [MARK_LIKE]);
     await db.query(`DELETE FROM staff WHERE email LIKE $1`, [MARK_LIKE]);
     await db.query(`DELETE FROM partners WHERE slug LIKE $1`, [MARK_LIKE]);
   }
@@ -249,6 +329,22 @@ describe("Live Trial endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : false },
     assert.equal(row.agreement_signed_at, null);
   });
 
+  /* THE SAME GATE, AGAINST THE OTHER MISSING LINK. partnerB has a trial, a
+     caller with the right role, and a timestamp in the body — and no signed
+     license. The route used to accept exactly this and make them payable. */
+  test("a timestamp in the body cannot open the gate without a signed license", async () => {
+    const r = await call(convert, {
+      method: "POST", tok: tokOwner,
+      body: { partner_id: partnerB, decision: "convert",
+              agreement_signed_at: new Date().toISOString() }
+    });
+    assert.equal(r.code, 409, JSON.stringify(r.body));
+    assert.equal(r.body.error, "partner_license_not_signed");
+    const row = await partnerRow(partnerB);
+    assert.equal(row.agreement_signed_at, null, "the payout gate was opened with no signature");
+    assert.equal(row.status, "invited", "the partner was activated by a refused conversion");
+  });
+
   test("declining pauses the partner, keeps the trial record, and keeps the leads", async () => {
     const r = await call(convert, {
       method: "POST", tok: tokOwner,
@@ -263,19 +359,45 @@ describe("Live Trial endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : false },
     assert.equal(r.body.payable, false);
   });
 
-  test("converting stamps the signature and flips the partner to active", async () => {
-    const signed = new Date();
+  test("converting stamps the signature from the document and flips the partner to active", async () => {
+    // Deliberately NOT the date on the license. The column must not take it.
+    const claimed = new Date();
     const r = await call(convert, {
       method: "POST", tok: tokOwner,
-      body: { partner_id: partnerA, decision: "convert", agreement_signed_at: signed.toISOString() }
+      body: { partner_id: partnerA, decision: "convert", agreement_signed_at: claimed.toISOString() }
     });
     assert.equal(r.code, 200, JSON.stringify(r.body));
     const row = await partnerRow(partnerA);
     assert.equal(row.status, "active");
     assert.ok(row.agreement_signed_at, "agreement_signed_at was not stamped");
+
+    /* THE DATE IS THE LICENSE'S, TO THE MILLISECOND. Asserting merely that the
+       column is non-null would pass just as well if the request body were
+       written back into it, which is the defect this replaced. */
+    assert.equal(
+      new Date(row.agreement_signed_at).getTime(), licenseSignedAt.getTime(),
+      "the payout gate was stamped from the request, not from the signed license");
+    assert.notEqual(new Date(row.agreement_signed_at).getTime(), claimed.getTime());
+
     const trial = await trialRow(trialA);
     assert.equal(trial.status, "converted");
     assert.ok(trial.converted_at);
+  });
+
+  /* Write-once, proved on the engine: day 8 running twice does not move the
+     moment a partner became payable. */
+  test("converting again does not move the stamped date", async () => {
+    const before = await partnerRow(partnerA);
+    const r = await call(convert, {
+      method: "POST", tok: tokOwner,
+      body: { partner_id: partnerA, decision: "convert",
+              agreement_signed_at: new Date().toISOString() }
+    });
+    assert.equal(r.code, 200, JSON.stringify(r.body));
+    assert.equal(r.body.already, true);
+    const after = await partnerRow(partnerA);
+    assert.equal(new Date(after.agreement_signed_at).getTime(),
+                 new Date(before.agreement_signed_at).getTime());
   });
 
   test("a converted trial cannot then be declined", async () => {

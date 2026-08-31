@@ -230,6 +230,36 @@ describe("and it can never join the rail in the first place", () => {
     assert.equal(db.sql.filter((q) => /^UPDATE subscriptions/i.test(q.text)).length, 0,
       "nothing was written");
   });
+
+  test("an ordinary row still schedules — the refusal is narrow, not a freeze", async () => {
+    const db = fakeDb({
+      one: [row({ provider: "commas", next_charge_at: null, billing_interval: null })],
+      updated: [row({ provider: "commas", next_charge_at: NOW.toISOString(), billing_interval: "monthly" })]
+    });
+    const out = await scheduleBilling(db, {
+      orgId: ORG, subscriptionId: SUB, interval: "monthly", firstChargeAt: NOW
+    });
+    assert.ok(out);
+  });
+
+  test("the SECOND-ROW shape is left to the database, not re-checked here", async () => {
+    /* A second, ordinary row for the same customer and add-on would be the
+       other way to bill one arrangement twice. 075's and 271's exclusion
+       constraints refuse it at INSERT time — two rows with effective_to NULL
+       always overlap — so scheduleBilling adds no JavaScript check. One that
+       could never fire would stand in front of the real guard and read as
+       though it were doing the work. Proved against real Postgres in
+       commas-billed-skip.pg.test.mjs. */
+    const db = fakeDb({
+      one: [row({ provider: "commas", next_charge_at: null, billing_interval: null })],
+      updated: [row({ provider: "commas", next_charge_at: NOW.toISOString(), billing_interval: "monthly" })]
+    });
+    await scheduleBilling(db, {
+      orgId: ORG, subscriptionId: SUB, interval: "monthly", firstChargeAt: NOW
+    });
+    assert.equal(db.sql.some((q) => /IS NOT DISTINCT FROM/i.test(q.text)), false,
+      "no unreachable sibling lookup");
+  });
 });
 
 /* ═══════════════════════════════════════════════════════════════════════════

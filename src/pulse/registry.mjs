@@ -12,6 +12,7 @@ export const ALLOWED_UNMONITORED = {
   "public/decline-autopsy-report": "Signed, expiring report link. A GET without org/ref/exp/sig answers 404 on purpose — and it answers that identically for a forged signature, so the endpoint cannot be used to find out which references exist. That refusal is correct behaviour, not downtime.",
   "trials/provision": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would create a partner row, an affiliate row and a login for a trial nobody bought. The eligibility gate and the live dashboard are the monitored doors for this offer.",
   "trials/convert": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would stamp a partner agreement or pause a partner. Day 8 is a human decision, not an uptime probe.",
+  "training-progress": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would stamp a compliance certification against a partner nobody assessed. The monitored door for the training is read/partner-training, which is what a partner actually opens.",
   "sidebar.fragment.html": "Shared chrome fragment mounted into other pages. Not a live desk."
 };
 
@@ -194,7 +195,11 @@ const API_KEYS = [
   "read/my-numbers",
   "read/ops-pulse",
   "read/partners",
+  "read/partner-home-tiles",
   "read/partner-production",
+  /* The $10,000 curriculum a partner opens. An outage here is the training half
+     of the entry fee missing, and it is the only read behind the gate record. */
+  "read/partner-training",
   "read/portal-contracts",
   "read/portal-summary",
   "read/products",
@@ -264,6 +269,7 @@ const DESK_FILES = [
   "my-numbers.html",
   "ops-admin.html",
   "partner-galaxy.html",
+  "partner-training.html",
   "payment-success.html",
   "pipeline.html",
   "present.html",
