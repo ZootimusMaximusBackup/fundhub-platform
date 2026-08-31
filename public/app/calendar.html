@@ -49,8 +49,21 @@
           status pills and secondary meta. They are captions, and this is the
           ONE rule that says so. Row content — .evt-client, .evt-time, .ws-dnum,
           .then-name, .cov-name, .un-client, .un-bullet — is deliberately absent:
-          it stays at body size so the caption sits UNDER something. */
-  .app :is(.clock,.live-pill,.stat .l,.errbar .acts span,
+          it stays at body size so the caption sits UNDER something.
+     SHARED CHROME IS NOT OURS TO SIZE, and this rule is strong enough to take
+     it by accident. `.app :is(...)` is specificity (0,3,1) — the `.errbar .acts
+     span` argument sets it — so it beats an `!important` rule written as a bare
+     class, even one the shell injects at runtime. `.clock` and `.live-pill`
+     were in this list and are now out:
+       .clock     — shell.js:1863-1875 injects #fh-shell-clock-css to give every
+                    clock on every screen 12px. Its selector is `.clock`, (0,1,0).
+                    Ours won, and the calendar became the only staff screen whose
+                    top-bar clock was 13px and 17px wider than everywhere else.
+       .live-pill — the LIVE indicator is top-bar chrome on eight screens and no
+                    screen sizes it, so it is 16px everywhere. Sizing it here
+                    alone would make the calendar the odd one out the same way.
+     Anything the shell owns or injects stays off this list. */
+  .app :is(.stat .l,.errbar .acts span,
     .ws-dname,.ws-count,.ws-chip,.ws-more,.ws-empty,
     .hour-label,.evt-meta,.evt-outcome,.who-name,.evt-fix span,.nowline .lbl,.open-slot,
     .un-minlbl,.un-when,.un-meta,.un-sec,.un-check,.un-doc,.un-alt,
