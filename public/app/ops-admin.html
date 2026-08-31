@@ -124,7 +124,12 @@
     border:1px solid var(--line);border-radius:5px;padding:3px 9px;white-space:nowrap;}
   .aff .af-link:hover{border-color:var(--blue-line);background:var(--blue-bg);}
   .aff-body{border-top:1px solid var(--line);padding:11px 13px 13px;}
-  .aff-body .card{margin-bottom:0;border:0;padding:0;}
+  /* .card carries the app-wide resting shadow (fundhub-brand.css). Dropping
+     only the border left a soft shadow around nothing — the border is what the
+     shadow is a shadow OF. This box holds boxes, so it takes neither: both go
+     in the same rule, which turns it into the plain block it was always meant
+     to be (UI-STANDARDS.md §12.1/§12.5). */
+  .aff-body .card{margin-bottom:0;border:0;box-shadow:none;padding:0;}
 
   .two-col{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;align-items:start;}
 

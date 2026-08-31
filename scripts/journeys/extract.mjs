@@ -333,6 +333,33 @@ export function gateFor(file, { sets, wrappers }) {
     return { kind: "verified-other", roles: null, principals: null, verifiedBy: "signed link",
       note: "no sign-in needed, and NOT open — the link itself is signed and expires, checked in constant time (src/documents/signed-url.mjs)" };
   }
+
+  /* THE OTHER SIGNED LINK. A handler that calls a verify…Token() helper and
+     reads both a signature and an expiry is gated the same way as the document
+     links above — the link IS the credential — but it does not import
+     src/documents/signed-url.mjs, so the branch above never saw it.
+     api/soft-pull-approve.mjs is the one this was written for: the client
+     approves a soft pull from an emailed link, with no account anywhere.
+
+     Reported as unverified until now, which was the wrong answer in the
+     dangerous direction: "we could not tell" reads to someone skimming the
+     journey as "nobody has checked this", when in fact the link is signed and
+     expires and fails closed on a missing field.
+
+     Both halves are named, because this endpoint has two doors and a journey
+     that mentions one is a journey that misleads. */
+  const signedToken = /verify\w*Token\s*\(/.test(src) && /\bsig\b/.test(src) && /\bexp\b/.test(src);
+  if (signedToken) {
+    const staffBranch = /require(Auth|Role|Principal)/.test(src);
+    return {
+      kind: "verified-other", roles: null, principals: null, verifiedBy: "signed link",
+      note: "no sign-in needed, and NOT open — the link carries a signature and an expiry, " +
+            "and the check fails closed when either is missing" +
+            (staffBranch
+              ? ". A SECOND DOOR on the same path is staff-only, behind the ordinary session gate"
+              : "")
+    };
+  }
   if (/rawBody|signature/i.test(src) && /adapter|provider/i.test(src)) {
     return { kind: "verified-other", roles: null, principals: null, verifiedBy: "provider signature",
       note: "no sign-in — the sender is checked by verifying the provider's signature over the raw bytes, in the adapter" };

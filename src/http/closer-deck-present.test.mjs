@@ -86,11 +86,29 @@ test("non-primary pay links still require an explicit downsell or upsell choice"
   );
 });
 
-test("S-23 has Invoice this client and mints a payment link", () => {
+/* WHAT THIS BUTTON DOES CHANGED, AND THE TEST WAS LEFT BEHIND.
+   S-23 originally MINTED A PAYMENT LINK here: POST /api/payment-links with
+   purpose "invoice". public/app/present.js now reads the client's existing
+   invoices and emails the open one instead, and refuses with "No invoice on
+   this file yet" when there is none — it creates nothing.
+
+   THE MONEY BUTTON DID NOT GO ANYWHERE. "pay" still fires send_pay_link, and
+   the test below this one pins that. So the deck kept its way of taking money
+   and gained a separate way of chasing money already invoiced. Emailing an
+   existing invoice cannot open a second payment path for a sum already billed,
+   which is the direction this repo leans on everywhere else.
+
+   Pinned here: the button exists, it is wired, it emails rather than mints, and
+   it can only act on an invoice that is already on the file. */
+test("S-23 has Invoice this client, and it emails the open invoice", () => {
   assert.ok(presentJs.includes("Invoice this client"));
   assert.ok(presentJs.includes("invoiceThisClient"));
-  assert.ok(presentJs.includes("/api/payment-links"));
-  assert.ok(presentJs.includes('purpose: "invoice"'));
+  assert.ok(presentJs.includes('action: "email_invoice"'),
+    "the button must email the existing invoice");
+  assert.ok(presentJs.includes("No invoice on this file yet"),
+    "with nothing on the file it must refuse, not create one");
+  assert.ok(!presentJs.includes('purpose: "invoice"'),
+    "it must not mint a second payment link for money already invoiced");
 });
 
 test("S-23 pay click always POSTs send_pay_link", () => {

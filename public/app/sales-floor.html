@@ -35,7 +35,7 @@
    <body> and nothing else. Deleting this line was MEASURED at 1440x900 on
    2026-08-30: the ⌕ glyph in the search bar went 14px -> 16px, its box
    8.44x21 -> 9.64x24, and the search bar row 50px -> 53px tall. */
-body{font-family:var(--sans);background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{font-family:var(--sans);background:var(--paper);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
 
 .eyebrow{font-family:var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--gray)}
 .eyebrow::before{content:"";display:inline-block;width:16px;height:2px;background:var(--spectrum);border-radius:1px;margin-right:9px;vertical-align:middle}
@@ -120,7 +120,7 @@ header{border-bottom:1px solid var(--line);padding:14px 22px;display:flex;align-
    #fh-chat-foot, which hangs off <body>, and its own rule
    (chat-widget.js:32) sets no size. So this is the only thing sizing the chat
    composer's rows. MEASURED 13px -> 16px when it was deleted. Keep it. */
-.row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13px}
+.row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
 .row:first-of-type{border-top:none}
 .row .l b{font-weight:500;display:block}
 .row .l em{font-style:normal;color:var(--gray)}

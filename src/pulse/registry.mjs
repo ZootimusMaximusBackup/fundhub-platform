@@ -12,6 +12,7 @@ export const ALLOWED_UNMONITORED = {
   "public/decline-autopsy-report": "Signed, expiring report link. A GET without org/ref/exp/sig answers 404 on purpose — and it answers that identically for a forged signature, so the endpoint cannot be used to find out which references exist. That refusal is correct behaviour, not downtime.",
   "trials/provision": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would create a partner row, an affiliate row and a login for a trial nobody bought. The eligibility gate and the live dashboard are the monitored doors for this offer.",
   "trials/convert": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would stamp a partner agreement or pause a partner. Day 8 is a human decision, not an uptime probe.",
+  "campaigns/meta-agency": "POST only. A GET answers 405 by design, and pinging it with a body would store a Meta Business id against a partner and fire a real agency-access request at Meta on their behalf. The monitored door for this surface is campaigns/connections, which reports whether the access actually landed.",
   "training-progress": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would stamp a compliance certification against a partner nobody assessed. The monitored door for the training is read/partner-training, which is what a partner actually opens.",
   "sidebar.fragment.html": "Shared chrome fragment mounted into other pages. Not a live desk."
 };
@@ -39,6 +40,10 @@ const API_KEYS = [
   "bookings",
   "brand/review",
   "call-outcomes",
+  /* An employee's own profile photo. GET is a real door — handleDownload
+     serves it — so this is monitored rather than excused. Self-scoped: both
+     halves act on req.staff.id and nothing else. */
+  "staff/avatar",
   "campaigns/action-log",
   "campaigns/connections",
   "campaigns/detail",

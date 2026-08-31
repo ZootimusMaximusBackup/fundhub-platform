@@ -380,11 +380,20 @@ describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
 
   // ══════════ idempotency ══════════
 
+  /* THIS TEST USES THE HOUSE RATE, IT DOES NOT INVENT ONE.
+     It used to insert its own 10% rule with product_id NULL and assert 100.
+     findRule ranks a product-specific rule above a generic one, so the seeded
+     direct-repair rule (260/261/272) won every time and the test read back the
+     real 20% of $1,000 — then reported it as "a replay doubled the commission".
+     Nothing was doubling. Adding a competing rule is not the fix either:
+     affiliate_commission_rules_no_overlap refuses a second live rule for the
+     same scope, which is the "one live rate at a time" discipline working.
+
+     So the expected figure is READ FROM THE RULE THAT WILL ACTUALLY APPLY. The
+     proposition under test is idempotency — convert twice, accrue once — and
+     that holds whatever the house rate is. Restating 20 here would just be a
+     second copy of a number that lives in a row. */
   test("converting the same sale twice accrues once", async () => {
-    await db.query(
-      `INSERT INTO affiliate_commission_rules
-         (org_id, name, tier, calc_method, percent, amount_basis, scope_rule)
-       VALUES ($1,'r','direct','percent',10,'sale_price','first_paid_product')`, [org]);
     await attribute(db, { orgId: org, affiliateId: affA, clientId: client1 });
     const sale = await mkSale(client1, repairProduct, 1000);
 
@@ -394,9 +403,16 @@ describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
     assert.equal(again.converted, false);
     assert.equal(again.results[0].reason, "already_converted");
 
+    const applied = await findRule(db, {
+      orgId: org, tier: "direct", productCode: REPAIR_PRODUCT_CODES[0]
+    });
+    assert.ok(applied, "no direct repair rule is seeded — the money side is unrated");
+    const once = commissionFor(applied, 1000);
+
     const row = (await db.query(
       `SELECT commission_due FROM affiliate_referrals WHERE client_id = $1`, [client1])).rows[0];
-    assert.equal(Number(row.commission_due), 100, "a replay doubled the commission");
+    assert.equal(Number(row.commission_due), once.amount,
+      "a replay doubled the commission");
   });
 
   // ══════════ RULE 3: tier 2 ══════════
@@ -481,20 +497,25 @@ describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
     assert.equal(row.status, "attributed");
   });
 
+  /* Same as the replay test: the seeded downline override is the rule that
+     applies, so the expected figure is read off it rather than invented. What
+     is under test is that the override PAYS ONCE THE RECRUITER IS TIER 2 — not
+     what the house rate happens to be this month. */
   test("a downline override DOES pay once the recruiter is tier 2", async () => {
-    await db.query(
-      `INSERT INTO affiliate_commission_rules
-         (org_id, name, calc_method, percent, amount_basis, scope_rule)
-       VALUES ($1,'any','percent',10,'sale_price','first_paid_product')`, [org]);
     await maybeUnlockTier2(db, { orgId: org, affiliateId: recruiter });
     await attribute(db, { orgId: org, affiliateId: affA, clientId: client1, tier: "direct" });
     await attribute(db, { orgId: org, affiliateId: recruiter, clientId: client1, tier: "downline" });
     const sale = await mkSale(client1, repairProduct, 1000);
     const r = await convert(db, { orgId: org, clientId: client1, saleId: sale });
 
+    const applied = await findRule(db, {
+      orgId: org, tier: "downline", productCode: REPAIR_PRODUCT_CODES[0]
+    });
+    assert.ok(applied, "no downline repair rule is seeded — the override cannot pay");
+
     const downline = r.results.find((x) => x.tier === "downline");
     assert.equal(downline.converted, true);
-    assert.equal(Number(downline.commissionDue), 100);
+    assert.equal(Number(downline.commissionDue), commissionFor(applied, 1000).amount);
   });
 
   // ══════════ void ══════════

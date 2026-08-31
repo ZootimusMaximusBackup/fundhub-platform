@@ -120,7 +120,13 @@
     display:flex;align-items:center;justify-content:space-between;
     padding:0 16px;min-height:44px;height:auto;flex-shrink:0;flex-wrap:wrap;gap:6px;
     border-bottom:1px solid var(--cardline);
-    position:relative;z-index:5;overflow:hidden;
+    /* NO overflow:hidden HERE. This bar is allowed to wrap (flex-wrap:wrap),
+       and a clip on a wrapping bar deletes the row it just wrapped onto — the
+       controls move down and then vanish, with no scrollbar and no sign
+       anything is missing. UI-STANDARDS.md §12: when wrapping is on, the
+       height is released and the clip comes off. The ghost mark that the clip
+       used to contain is clipped on its own element instead. */
+    position:relative;z-index:5;
   }
   /* ---------- worker avatars: filled = a person, outlined = an agent ---------- */
   .av{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;

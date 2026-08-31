@@ -473,6 +473,15 @@ export function toBureaus({ tradelines = [], liabilities = [], crsResults = [], 
     bureaus,
     businessAgeMonths,
     businessAges,
+    /* COMPUTED ABOVE AND, UNTIL NOW, THROWN AWAY. Both were worked out from
+       `businesses` and then never put on the returned object, so every caller
+       reading out.hasLLC got `undefined` and out.llcAgeMonths got `undefined`
+       rather than null. The header of this file has always said it sets them.
+       `undefined` is the worst of the three answers here: it is falsy, so
+       "no LLC" kept working by accident, while llcAgeMonths broke the rule
+       that NULL MEANS UNKNOWN AND MUST SURVIVE. */
+    hasLLC,
+    llcAgeMonths,
     missing,
     available,
     utilization,
