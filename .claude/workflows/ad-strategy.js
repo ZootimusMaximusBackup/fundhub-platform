@@ -159,7 +159,9 @@ Two things that will make this plan wrong if you ignore them:
    actually spends. If a step only works at ten times the real budget, do not write it - say
    the budget does not reach it.
 2. A strategy that needs more creative than the ${CREATIVE_COUNT} pieces that exist is fiction.
-   Check the requirement before you choose.
+   Check the requirement before you choose. And count REASONS, not pieces - Meta's Andromeda
+   algorithm wants 15 to 20 genuinely different arguments, each with its own hook, body and
+   close. Length variants of one argument do not count toward that floor.
 
 Give the targeting as an actual payload object, the way it would be sent to Meta, because it is
 about to be run through a checker.
@@ -225,8 +227,25 @@ THE PLANS:
 ${JSON.stringify(plans).slice(0, 12000)}`,
     { label: 'check-budget', phase: 'Check', schema: ISSUES, effort: 'high' }),
 
-  () => agent(`CREATIVE SUPPLY. ${CREATIVE_COUNT} distinct creative pieces exist. Does each plan
-need more than that?
+  () => agent(`CREATIVE SUPPLY, AND THE ANDROMEDA FLOOR. ${CREATIVE_COUNT} creative pieces exist.
+
+Two separate questions, and the second one is the one people get wrong.
+
+1. Does each plan need more pieces than exist?
+
+2. How many DISTINCT REASONS do those pieces actually cover? Meta's Andromeda algorithm
+   (fully rolled out ~July 2025) rewards messaging range, not piece count. Fifteen ads built
+   on one argument are one ad as far as the auction is concerned - the source SOP names those
+   subtle variances as the thing currently punishing advertisers, and the floor for a stable
+   account is 15 to 20 genuinely different reasons, each filmed end to end with its own hook,
+   body and close.
+
+   So: count the reasons, not the files. Short, mid and long cuts of one argument are ONE
+   reason. If the set is short of 15 distinct reasons, say so plainly - a plan that runs a
+   collapsed set at scale gets expensive fast, and no amount of budget fixes it.
+
+Also check FORMAT, not just count: a plan whose audience-building depends on video views
+cannot run on written scripts.
 
 This is the cross-check that makes chaining the copy and strategy stages worth anything: if a
 plan needs forty pieces a week and twelve exist, the plan is fiction and should say so instead
@@ -236,7 +255,7 @@ For each plan report what it needs, what exists, and the shortfall.
 
 THE PLANS:
 ${JSON.stringify(plans).slice(0, 12000)}`,
-    { label: 'check-creative', phase: 'Check', schema: ISSUES, effort: 'high' }),
+    { label: 'check-creative-and-andromeda', phase: 'Check', schema: ISSUES, effort: 'high' }),
 ])).filter(Boolean)
 
 const issues = checks.flatMap(c => c.issues || [])

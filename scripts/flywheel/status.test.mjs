@@ -62,7 +62,7 @@ test('changing an upstream stage marks the ones built on it stale, and blocks th
   const offer = stageFile({
     stage: 3,
     inputs: { '01-avatar.md': bodyHash(avatar), '02-ad-research.md': bodyHash(research) },
-    counts: { priceSet: 1, bonuses: 3, valueEquationScores: 4 },
+    counts: { priceSet: 1, bonuses: 3, valueEquationScores: 4, guarantees: 3 },
     body: 'COMPLIANCE REVIEW REQUIRED\n',
   })
   writeFileSync(join(dir, '03-offer.md'), offer)
@@ -135,7 +135,7 @@ test('placeholder text left in a stage fails it', () => {
   writeFileSync(join(dir, '03-offer.md'), stageFile({
     stage: 3,
     inputs: { '01-avatar.md': bodyHash(avatar), '02-ad-research.md': bodyHash(research) },
-    counts: { priceSet: 1, bonuses: 3, valueEquationScores: 4 },
+    counts: { priceSet: 1, bonuses: 3, valueEquationScores: 4, guarantees: 3 },
     body: 'TODO: decide the guarantee\n',
   }))
   let row = evaluate(dir).find(r => r.n === 3)
@@ -146,7 +146,7 @@ test('placeholder text left in a stage fails it', () => {
   writeFileSync(join(dir, '03-offer.md'), stageFile({
     stage: 3,
     inputs: { '01-avatar.md': bodyHash(avatar), '02-ad-research.md': bodyHash(research) },
-    counts: { priceSet: 1, bonuses: 3, valueEquationScores: 4 },
+    counts: { priceSet: 1, bonuses: 3, valueEquationScores: 4, guarantees: 3 },
     body: 'a clean offer\n',
   }))
   row = evaluate(dir).find(r => r.n === 3)
@@ -164,5 +164,44 @@ test('stage 2 may run without the avatar, but stage 3 may not', () => {
   const rows = evaluate(dir)
   assert.equal(rows.find(r => r.n === 2).state, 'READY', 'the avatar is optional for ad research')
   assert.equal(rows.find(r => r.n === 1).state, 'MISSING')
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('an offer with one guarantee fails — a stack is the point', () => {
+  const dir = scratch()
+  const avatar = stageFile({ stage: 1, counts: { quotes: 159, languageEntries: 455 } })
+  const research = stageFile({
+    stage: 2, inputs: { '01-avatar.md': bodyHash(avatar) },
+    counts: { rowsVerified: 14, rowsWithFirstSeen: 10, competitorsFound: 5 },
+  })
+  writeFileSync(join(dir, '01-avatar.md'), avatar)
+  writeFileSync(join(dir, '02-ad-research.md'), research)
+  writeFileSync(join(dir, '03-offer.md'), stageFile({
+    stage: 3,
+    inputs: { '01-avatar.md': bodyHash(avatar), '02-ad-research.md': bodyHash(research) },
+    counts: { priceSet: 1, bonuses: 3, valueEquationScores: 4, guarantees: 1 },
+  }))
+  const row = evaluate(dir).find(r => r.n === 3)
+  assert.equal(row.state, 'FAILED')
+  assert.match(row.reasons.join(' '), /only 1 guarantee/)
+  rmSync(dir, { recursive: true, force: true })
+})
+
+test('copy that collapses to a few reasons fails the Andromeda floor', () => {
+  // One argument restated many ways is still one argument, and Meta prices it
+  // that way. Plenty of hooks is not the same as plenty of reasons.
+  const dir = scratch()
+  const offer = stageFile({ stage: 3, counts: { priceSet: 1, bonuses: 3, valueEquationScores: 4, guarantees: 3 } })
+  const bank = '# language bank\n'
+  writeFileSync(join(dir, '03-offer.md'), offer)
+  writeFileSync(join(dir, '01-avatar', 'Market_Language_Bank.md'), bank)
+  writeFileSync(join(dir, '04-copy.md'), stageFile({
+    stage: 4,
+    inputs: { '03-offer.md': bodyHash(offer), '01-avatar/Market_Language_Bank.md': bodyHash(bank) },
+    counts: { hooks: 31, humanizerPassRun: 1, distinctReasons: 4 },
+  }))
+  const row = evaluate(dir).find(r => r.n === 4)
+  assert.equal(row.state, 'FAILED')
+  assert.match(row.reasons.join(' '), /4 distinct reasons, below Meta's Andromeda floor of 15/)
   rmSync(dir, { recursive: true, force: true })
 })

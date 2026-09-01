@@ -90,6 +90,11 @@ Read SKILL.md and the reference files that matter for BUILDING and PRICING an of
 value-equation.md, pricing.md, proof-and-guarantees.md, bonuses-scarcity-urgency-naming.md,
 money-models.md.
 
+Pay particular attention to the GUARANTEE SHAPES in proof-and-guarantees.md and return every one
+of them with its rules. That file also records, at the bottom, that the guarantee chapter of the
+source book was never extracted - so return what IS there and say plainly what is missing, rather
+than filling the gap from your own memory of Hormozi's work.
+
 Return the operative rules only - the frameworks, the steps, the thresholds, the numbers. Not
 the prose. Another agent will design against what you return, so anything you leave out does
 not exist as far as this workflow is concerned.
@@ -137,7 +142,17 @@ const CANDIDATE_SCHEMA = {
     price: { type: 'string' },
     paymentTerms: { type: 'string' },
     whatTheyGet: { type: 'array', items: { type: 'string' } },
-    guarantee: { type: 'string' },
+    guarantees: { type: 'array', description: 'TWO OR THREE. Not one.', items: {
+      type: 'object', additionalProperties: false,
+      required: ['name', 'promise', 'shape', 'whatItCostsUsIfItFires'],
+      properties: {
+        name: { type: 'string' },
+        promise: { type: 'string', description: 'the guarantee in the buyer\'s words, with its time window' },
+        shape: { type: 'string', enum: ['result-tied-with-make-good', 'conditional-satisfaction', 'win-your-money-back', 'trial-with-penalty', 'priced-add-on', 'paid-tier', 'tied-to-continued-purchase'] },
+        conditions: { type: 'string', description: 'what the buyer must do to claim it, or "none"' },
+        whatItCostsUsIfItFires: { type: 'string' },
+        needsOwnerDecision: { type: 'string', description: 'any number a human must set, or "none"' },
+      } } },
     bonuses: { type: 'array', items: { type: 'string' } },
     valueEquation: { type: 'object', additionalProperties: false,
       required: ['dreamOutcome', 'perceivedLikelihood', 'timeDelay', 'effortSacrifice'],
@@ -170,6 +185,23 @@ THE DOCTRINE you are designing against:
 ${DOCTRINE}
 ${OWNER_NOTES ? `\nCORRECTIONS CHRIS HAS ALREADY MADE - these override everything above:\n${OWNER_NOTES}` : ''}
 
+BUILD TWO OR THREE GUARANTEES, NOT ONE. This is not optional and an offer with a single vague
+guarantee will be scored down hard. The guarantee is how the second driver of the value equation
+- perceived likelihood - actually moves, and it is a transfer of risk, not a marketing line.
+
+Rules for the stack:
+- Prefer TIME-BASED guarantees. A window we control is predictable, and this business moves
+  people through a known sequence, so a clock is a promise we can keep on purpose.
+- Prefer make-goods paid in LABOUR or in work we already staff, never in cash out the door.
+- At least one should be CONDITIONAL - the buyer must do something to claim it, and the
+  conditions should be the exact behaviours that make them succeed. That is what keeps it cheap.
+- Two of them should be able to ROTATE as the lead guarantee. One may be structural.
+- Never guarantee a result the buyer controls, and never guarantee anything the proof does not
+  support. If a window or a threshold has no number on file, say it needs an owner decision
+  rather than inventing one.
+- Do not call something a guarantee that is not one. A bonus that makes the result likely is a
+  bonus.
+
 Score your own offer 1-10 on each of the four value-equation drivers. Be honest; a judge panel
 is about to score it too and inflated self-scores just make you look wrong.
 
@@ -196,8 +228,11 @@ const BLIND = JSON.stringify(shuffled.map(c => {
 })).slice(0, 24000)
 
 const JUDGES = [
-  { id: 'buyer', job: `You ARE the buyer described in the avatar. Not a marketer looking at them - them. Would you actually hand over this money? What is your first objection? Which one makes you feel stupid for not taking it, and which one smells like every other pitch you have already been burned by?` },
-  { id: 'operator', job: `You run delivery. Can FundHub actually deliver this, every time, at this margin, with the team it has? Kill anything beautiful and unbuildable. Read the avatar and the grounded facts for what delivery actually involves.` },
+  { id: 'buyer', job: `You ARE the buyer described in the avatar. Judge the GUARANTEES hardest of
+all - a single vague guarantee, or one with no time window, should sink an offer's
+perceivedLikelihood score no matter how good the rest reads. Not a marketer looking at them - them. Would you actually hand over this money? What is your first objection? Which one makes you feel stupid for not taking it, and which one smells like every other pitch you have already been burned by?` },
+  { id: 'operator', job: `You run delivery. Price every guarantee: what does it actually cost us
+in labour or cash each time one fires, and could a bad month fire several at once? Can FundHub actually deliver this, every time, at this margin, with the team it has? Kill anything beautiful and unbuildable. Read the avatar and the grounded facts for what delivery actually involves.` },
   { id: 'accountant', job: `Money only. For each offer: gross profit in the first 30 days against the real cost to get a customer. Does it clear 2x? Over a lifetime, does it clear 3:1 against acquisition cost? If the close rate would be above half, the price is too low - say so. Run the arithmetic with node through Bash, do not do it in your head.` },
   { id: 'competitor', job: `You are a competitor who wants to take this market. For each offer, try to beat it - cheaper, faster, or with less risk to the buyer. If you can beat it easily, it is a commodity and you should say so. This is the seat that finds the problem a rubric cannot.` },
 ]
@@ -422,6 +457,7 @@ return {
   counts: {
     priceSet: chosen.price ? 1 : 0,
     bonuses: (chosen.bonuses || []).length,
+    guarantees: (chosen.guarantees || []).length,
     valueEquationScores: chosen.valueEquation ? Object.keys(chosen.valueEquation).length : 0,
   },
   document,

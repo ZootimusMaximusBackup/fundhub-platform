@@ -3,10 +3,10 @@ export const meta = {
   description: 'Write the ads and emails, then strip the AI tells mechanically. The humanizer pass is a regex in this script, not an instruction an agent can believe it followed. Stage 4 of the flywheel.',
   whenToUse: 'After the offer. Pass {campaign, today, offerSummary, avatarSummary, languageBank?, burnedOutAngles?, ownerNotes?} as args.',
   phases: [
-    { title: 'Angles', detail: 'decide the spread once, deliberately, so the writers do not converge' },
-    { title: 'Write', detail: 'one agent per angle, three lengths each' },
+    { title: 'Angles', detail: 'the dog food exercise - 15 to 20 separate reasons someone buys' },
+    { title: 'Write', detail: 'one complete ad per reason, hook body and close all aligned' },
     { title: 'Humanize', detail: 'scan, attack, rewrite, re-scan. Loop until clean or dropped.' },
-    { title: 'Verify', detail: 'promise-vs-terms, voice, and sameness across the whole set' },
+    { title: 'Verify', detail: 'the Andromeda gate, then promise-vs-terms, voice and sameness' },
   ],
 }
 
@@ -90,13 +90,70 @@ function keepsSpecifics (text, tokens) {
   return tokens.some(t => text.toLowerCase().includes(String(t).toLowerCase()))
 }
 
+/**
+ * Andromeda check, run by the script so no agent can wave it through.
+ *
+ * Meta's Andromeda algorithm rewards genuinely different MESSAGING, not volume.
+ * The failure mode named in the source SOP is one argument said many subtly
+ * different ways - "those subtle variances are what is currently fucking
+ * people." A shared closing line across every ad is that failure in its purest
+ * form, and the first run of this workflow produced exactly it: 20 of 21 CTAs
+ * were the same sentence with the verbs swapped.
+ *
+ * Returns the CTAs that collapse into each other. Compared on content words
+ * only, so swapping "book"/"get on"/"grab" does not read as difference.
+ */
+function ctaCollisions (pieces) {
+  const STOP = new Set(['the', 'a', 'an', 'and', 'or', 'to', 'of', 'in', 'on', 'at', 'it', 'is',
+    'we', 'you', 'your', 'our', 'us', 'that', 'this', 'with', 'for', 'before', 'after', 'will',
+    'can', 'do', 'does', 'get', 'got', 'book', 'grab', 'take', 'see', 'watch', 'read', 'make'])
+  const key = t => new Set(String(t || '').toLowerCase().replace(/[^a-z\s]/g, ' ')
+    .split(/\s+/).filter(w => w.length > 2 && !STOP.has(w)))
+  const overlap = (a, b) => {
+    if (!a.size || !b.size) return 0
+    let hit = 0
+    for (const w of a) if (b.has(w)) hit += 1
+    return hit / Math.min(a.size, b.size)
+  }
+  const keyed = pieces.filter(p => p.cta).map(p => ({ pieceId: p.pieceId, reasonId: p.reasonId, k: key(p.cta) }))
+  const collided = new Set()
+  for (let i = 0; i < keyed.length; i++) {
+    for (let j = i + 1; j < keyed.length; j++) {
+      // Two ads built on the same reason may legitimately close alike.
+      if (keyed[i].reasonId && keyed[i].reasonId === keyed[j].reasonId) continue
+      if (overlap(keyed[i].k, keyed[j].k) >= 0.7) { collided.add(keyed[i].pieceId); collided.add(keyed[j].pieceId) }
+    }
+  }
+  return [...collided]
+}
+
 // ---------------------------------------------------------------------------
 
 phase('Angles')
 log(`copy for ${CAMPAIGN} as of ${TODAY}`)
 
-const angleSpread = await agent(`Decide the angle spread BEFORE any copy is written. Deciding
+const angleSpread = await agent(`Decide the messaging spread BEFORE any copy is written. Deciding
 divergence once, deliberately, is what stops twelve writers producing three ideas in twelve hats.
+
+READ THIS FIRST - it decides the whole shape of your answer.
+
+Meta's Andromeda algorithm (fully rolled out ~July 2025) rewards genuinely different MESSAGING,
+not creative volume. One argument said many subtly different ways is still ONE argument, and the
+source SOP is blunt that those subtle variances are what is currently punishing advertisers. An
+account holding steady cost through the rollout did it with FIFTEEN completely unique creatives,
+each built around a different reason someone would care.
+
+So you are NOT producing angles to be dressed three ways. You are running the dog food exercise:
+write down every SEPARATE REASON a person would buy this, and each reason becomes one complete
+ad, filmed end to end, with its hook, body and call to action all built for that one reason.
+
+Two things that do NOT count as different reasons, and will be rejected:
+- the same argument restated (a short, mid and long version of one idea is ONE reason)
+- the same argument aimed at a different feeling (fear-of-X and desire-for-not-X are ONE reason)
+
+Aim for 15 to 20 distinct reasons. If the offer genuinely only supports fewer, say so and return
+what is real rather than padding the list - a padded list is the exact failure this is designed
+to prevent.
 
 THE OFFER being sold:
 ${OFFER.slice(0, 7000)}
@@ -108,30 +165,39 @@ ${LANGUAGE_BANK ? `THE MARKET'S OWN WORDS - copy is written from these phrases, 
 ${BURNED.length ? `ANGLES THAT ARE WORN OUT. These are FORBIDDEN. Do not assign any of them:\n${BURNED.map(b => '- ' + (b.angle || b)).join('\n')}\n` : ''}
 ${OWNER_NOTES ? `CORRECTIONS CHRIS HAS ALREADY MADE - these override everything:\n${OWNER_NOTES}\n` : ''}
 
-Produce 12 angle assignments. For each:
-- angleId: short kebab-case, reused down the chain
+For each reason:
+- angleId: short kebab-case, reused down the whole chain
+- theReason: the reason itself, in the buyer's terms - why THIS person would want this
 - audience: "in-market" (already believes this category works, just picking who) or
   "needs-convinced" (believes the outcome is possible, unsure this is the way)
 - hookType: one of you-already-know, youre-doing-this-but, circumstance, straight-pain,
   aspirational, urgent
-- theSpecificPain: the exact avatar pain or market gap this angle attacks, not a general theme
-- whyItIsDifferent: one line on how this differs from the other eleven
+- theSpecificPain: the exact avatar pain or market gap this reason attacks, not a general theme
+- whyItIsDifferent: one line naming what this reason has that none of the others do
+- ownClosingIdea: how an ad on THIS reason should close. Every reason needs its own ending -
+  a shared closing line across the whole set is the single clearest Andromeda failure and the
+  script rejects it mechanically.
 
 Lean in-market: they convert cheapest and the offer is already built for them. Mixing the two
 messages in one piece is the most common way copy underperforms.`,
-  { label: 'angle-spread', phase: 'Angles', effort: 'high',
+  { label: 'reason-spread', phase: 'Angles', effort: 'high',
     schema: { type: 'object', additionalProperties: false, required: ['angles'],
-      properties: { angles: { type: 'array', items: {
-        type: 'object', additionalProperties: false,
-        required: ['angleId', 'audience', 'hookType', 'theSpecificPain'],
-        properties: {
-          angleId: { type: 'string' }, audience: { type: 'string', enum: ['in-market', 'needs-convinced'] },
-          hookType: { type: 'string' }, theSpecificPain: { type: 'string' }, whyItIsDifferent: { type: 'string' },
-        } } } } } })
+      properties: {
+        angles: { type: 'array', items: {
+          type: 'object', additionalProperties: false,
+          required: ['angleId', 'theReason', 'audience', 'hookType', 'theSpecificPain', 'ownClosingIdea'],
+          properties: {
+            angleId: { type: 'string' }, theReason: { type: 'string' },
+            audience: { type: 'string', enum: ['in-market', 'needs-convinced'] },
+            hookType: { type: 'string' }, theSpecificPain: { type: 'string' },
+            whyItIsDifferent: { type: 'string' }, ownClosingIdea: { type: 'string' },
+          } } },
+        fewerThanAskedBecause: { type: 'string' },
+      } } })
 
-const angles = ((angleSpread && angleSpread.angles) || []).slice(0, 12)
-if (angles.length < 4) return { error: `Only ${angles.length} angles came back. Too few to write a diverse set from.`, angleSpread }
-log(`${angles.length} angles assigned`)
+const angles = ((angleSpread && angleSpread.angles) || []).slice(0, 20)
+if (angles.length < 4) return { error: `Only ${angles.length} reasons came back. Too few to write a diverse set from.`, angleSpread }
+log(`${angles.length} distinct reasons assigned${angles.length < 15 ? ` - BELOW the Andromeda floor of 15${angleSpread.fewerThanAskedBecause ? `: ${angleSpread.fewerThanAskedBecause}` : ''}` : ''}`)
 
 phase('Write')
 
@@ -160,12 +226,23 @@ const written = []
 for (let i = 0; i < angles.length; i += 5) {
   const chunk = angles.slice(i, i + 5)
   const batch = await parallel(chunk.map((a, j) => () => agent(
-    `Write direct-response copy for ONE angle. Three lengths, all on your assigned angle.
+    `Write ONE complete ad, built end to end around ONE reason someone buys.
 
-YOUR ANGLE (${a.angleId}): ${a.theSpecificPain}
+This is not a hook to be pasted onto a shared body. Under Meta's Andromeda algorithm, hook,
+body and close must all be aligned to your single assigned reason - filming one body and
+swapping hooks onto it is the approach that stopped working. Your ad has to be able to stand
+completely alone, and it must NOT end the way another ad on a different reason would end.
+
+YOUR REASON (${a.angleId}): ${a.theReason || a.theSpecificPain}
+  the pain it attacks: ${a.theSpecificPain}
   audience: ${a.audience}
   hook type: ${a.hookType}
-  ${a.whyItIsDifferent ? `what makes it different: ${a.whyItIsDifferent}` : ''}
+  ${a.whyItIsDifferent ? `what only this reason has: ${a.whyItIsDifferent}` : ''}
+  ${a.ownClosingIdea ? `how this one should close: ${a.ownClosingIdea}` : ''}
+
+Write the three lengths as three cuts of THIS one ad - a short, a mid and a long telling of the
+same single reason. They are lengths, not different arguments, and they are not diversification.
+Diversification came from the assignment you were given.
 
 THE OFFER:
 ${OFFER.slice(0, 7000)}
@@ -183,6 +260,11 @@ Structure every piece Hook then Reasons then one CTA:
 
 Line breaks between sentences. One CTA, never a menu. Tie the CTA to the payoff, not the click.
 
+YOUR CLOSING LINE MUST BE YOURS. Other agents are writing ads on other reasons right now, and
+a generic close - "book the call and we will show you X before you pay" - is what every one of
+them would write. The script compares closing lines across the whole set and drops the ones that
+collapse into each other. Close on the thing YOUR reason earned, not on the offer's mechanism.
+
 Also give 3 email subject lines for this angle.
 
 Write like a confident founder talking to another founder. No filler. Every sentence earns the
@@ -196,13 +278,13 @@ ${NO_NEW_FACTS}`,
     for (const p of (r.pieces || [])) {
       written.push({
         pieceId: `${a.angleId}-${p.length}`.toUpperCase().replace(/[^A-Z0-9-]/g, ''),
-        angleId: a.angleId, audience: a.audience, hookType: a.hookType,
+        angleId: a.angleId, reasonId: a.angleId, audience: a.audience, hookType: a.hookType,
         length: p.length, hook: p.hook, body: p.body, cta: p.cta,
       })
     }
     ;(r.emailSubjects || []).forEach((s, n) => written.push({
       pieceId: `${a.angleId}-EMAIL${n + 1}`.toUpperCase().replace(/[^A-Z0-9-]/g, ''),
-      angleId: a.angleId, audience: a.audience, hookType: a.hookType,
+      angleId: a.angleId, reasonId: a.angleId, audience: a.audience, hookType: a.hookType,
       length: 'subject', hook: s, body: '', cta: '',
     }))
   })
@@ -294,6 +376,28 @@ fewer of them - do not answer in clipped fragments to save words.`,
 
 phase('Verify')
 
+// The Andromeda gate. Run by the script BEFORE the review lenses, because a set
+// whose ads all close the same way is not a set of ads - it is one ad wearing
+// several hats, and Meta now prices it that way. Colliding closes are dropped,
+// not flagged, for the same reason a piece that fails banScan three times is
+// dropped: shipping it with a warning attached still ships it.
+const collided = ctaCollisions(cleaned.filter(p => p.length !== 'subject'))
+if (collided.length) {
+  const drop = new Set(collided)
+  for (let i = cleaned.length - 1; i >= 0; i--) {
+    if (drop.has(cleaned[i].pieceId)) {
+      dropped.push({ ...cleaned[i], violations: ['andromeda: closing line collides with another reason'], reason: 'its close was interchangeable with an ad on a different reason' })
+      cleaned.splice(i, 1)
+    }
+  }
+  log(`ANDROMEDA: dropped ${collided.length} pieces whose closes collided across different reasons`)
+}
+
+const distinctReasons = new Set(cleaned.map(p => p.angleId)).size
+if (distinctReasons < 15) {
+  log(`ANDROMEDA: ${distinctReasons} distinct reasons survived, below the floor of 15. Meta rewards messaging range, and this set is short of it.`)
+}
+
 const SET = JSON.stringify(cleaned.map(p => ({ pieceId: p.pieceId, angleId: p.angleId, hook: p.hook, body: p.body, cta: p.cta }))).slice(0, 26000)
 
 const lenses = (await parallel([
@@ -378,7 +482,10 @@ return {
     hooks: cleaned.filter(p => p.length !== 'subject').length,
     humanizerPassRun: 1,
     droppedForTells: dropped.length,
-    anglesUsed: new Set(cleaned.map(p => p.angleId)).size,
+    anglesUsed: distinctReasons,
+    distinctReasons,
+    droppedForCtaCollision: collided.length,
+    meetsAndromedaFloor: distinctReasons >= 15 ? 1 : 0,
   },
   document,
 }

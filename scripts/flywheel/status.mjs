@@ -50,7 +50,7 @@ export const STAGES = [
   {
     n: 3, key: 'offer', file: '03-offer.md', label: 'offer',
     inputs: ['01-avatar.md', '02-ad-research.md'], optionalInputs: [],
-    gates: { priceSet: 1, bonuses: 3, valueEquationScores: 4 },
+    gates: { priceSet: 1, bonuses: 3, valueEquationScores: 4, guarantees: 2 },
   },
   {
     n: 4, key: 'copy', file: '04-copy.md', label: 'copy',
@@ -58,7 +58,9 @@ export const STAGES = [
     // written from the market's own recurring phrases, so the language bank is
     // a first-class input and a change to it makes the copy stale.
     inputs: ['03-offer.md', '01-avatar/Market_Language_Bank.md'], optionalInputs: [],
-    gates: { hooks: 5, humanizerPassRun: 1 },
+    // 15 distinct REASONS is Meta's Andromeda floor - one argument restated many
+    // ways is still one argument, and the algorithm prices it as such.
+    gates: { hooks: 5, humanizerPassRun: 1, distinctReasons: 15 },
   },
   {
     n: 5, key: 'ad-strategy', file: '05-ad-strategy.md', label: 'ad strategy',
@@ -184,7 +186,14 @@ export function evaluate (dir) {
         if (typeof got !== 'number') {
           row.state = 'FAILED'; row.reasons.push(`did not report ${key}`)
         } else if (got < min) {
-          row.state = 'FAILED'; row.reasons.push(`${key} is ${got}, needs at least ${min}`)
+          row.state = 'FAILED'
+          if (key === 'guarantees') {
+            row.reasons.push(`only ${got} guarantee${got === 1 ? '' : 's'} — an offer needs a stack of at least ${min}`)
+          } else if (key === 'distinctReasons') {
+            row.reasons.push(`${got} distinct reasons, below Meta's Andromeda floor of ${min}`)
+          } else {
+            row.reasons.push(`${key} is ${got}, needs at least ${min}`)
+          }
         }
       }
       for (const rg of stage.ratioGates || []) {
