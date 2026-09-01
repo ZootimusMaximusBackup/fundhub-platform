@@ -1,11 +1,58 @@
-// GET/PUT /api/org-brand — this company's brand tokens for the internal CRM.
+// GET/PUT /api/org-brand — the brand tokens the internal CRM paints with.
 //
-//   GET  → the effective brand for the caller's org (falls back to Fundhub defaults)
-//   PUT  { …tokens }  → upsert for the caller's org
+//   GET  → the effective brand for THE CALLER (see "who gets whose brand")
+//   PUT  { …tokens }  → upsert the ORG row, owner/admin staff only
 //
-// TWO LANES — see docs/BRAND-THEMING-SPEC.md. This endpoint is the CRM lane.
-// Partner funnel tokens stay on /api/partner-brand. A partner save must never
-// rewrite this row, and shell.js applies THIS endpoint to every CRM screen.
+// ── WHO GETS WHOSE BRAND (owner-set 2026-08-31) ───────────────────────────
+//
+// A PARTNER principal gets their OWN partner_brand row. Everybody else — staff,
+// affiliate, client — gets the org row, exactly as before.
+//
+// THIS REVERSES A WRITTEN DECISION, so the old one is stated rather than
+// deleted. From 2026-08-02 until 2026-08-31 docs/BRAND-THEMING-SPEC.md and
+// db/migrations/128_org_brand.sql said: "partners theme only their funnels; the
+// internal CRM has its own theme." The reasoning was sound for the shape the
+// product had then — every partner sits in the SHARED default org, so an
+// org-keyed lookup returns one answer for all of them, and letting a partner
+// edit that one answer would have recolored Fundhub staff screens. The owner
+// reversed the OUTCOME, not that reasoning: a white-label partner signing in and
+// seeing Fundhub's colours, type and wordmark on every screen is the thing
+// white-label is sold to prevent.
+//
+// Resolving from the PRINCIPAL rather than the org is what makes both true at
+// once. The org row is untouched, so a partner still cannot repaint a Fundhub
+// staff screen; the partner row is theirs alone, so partner A can never receive
+// partner B's brand.
+//
+// Two other routes were considered and rejected, recorded so nobody re-opens
+// them: giving each partner their own org (every fulfilment read binds
+// org_id = staff.org_id, so Fundhub staff would stop seeing partner clients),
+// and rewriting v_org_brand_effective (org-keyed, so one answer for every
+// partner in the shared default org).
+//
+// THE WORDMARK WAITS FOR APPROVAL, the colours and type do not. partner_brand
+// carries approval_status (draft / review / approved) and
+// v_partner_brand_effective ignores it entirely — it returns the tokens whatever
+// the state — so the gate is applied HERE, on one field. Colours and a font on a
+// partner's own screens harm nobody and are undone by an edit. A wordmark is an
+// image, and an image can carry somebody else's registered trademark; painting
+// an unreviewed one into Fundhub-hosted chrome is the one part of this that is
+// not the partner's own risk to take. Unapproved wordmark → the Fundhub default
+// stays, which is exactly what a partner saw before this change.
+//
+// FAILS CLOSED TO THE ORG BRAND. No partner id on the session, no partner row,
+// no partner_brand row, or a partner whose org does not match the session's:
+// every one of those falls through to the org read. There is no half-painted
+// state and no crash path.
+//
+// NO PREVIEW PARAMETER. The partner id is bound from the SESSION and nowhere
+// else — no ?partner_id=. Staff who need to see a partner's tokens have
+// /api/partner-brand, which already gates that read. A query parameter here
+// would be a second, weaker way to reach the same rows.
+//
+// TWO LANES STILL — see docs/BRAND-THEMING-SPEC.md. Partner FUNNEL tokens are
+// still written on /api/partner-brand; this endpoint never writes partner_brand
+// and a partner still cannot PUT here.
 //
 // ENTRY GATE IS requirePrincipal FOR BOTH METHODS. shell.js calls GET on every
 // signed-in app screen (closer, partner, client portal, …), so the read must
@@ -15,7 +62,8 @@
 // principal kinds that can REACH the route (the GET arm) rather than collapsing
 // the whole file to the write set.
 //
-// Scoped to the caller's own org_id only — there is no org_id query param.
+// The WRITE is scoped to the caller's own org_id only — there is no org_id
+// query param, and a partner never reaches it.
 
 import { db } from "../src/db.mjs";
 import { requirePrincipal } from "../src/http/middleware/requirePrincipal.mjs";
@@ -76,6 +124,62 @@ async function readEffective(orgId) {
   return rows[0] || null;
 }
 
+/* readPartnerEffective — a partner principal's own brand, in the SAME SHAPE the
+   org lane answers in, or null to mean "use the org row".
+
+   WHY has_brand_row AND NOT JUST THE VIEW. v_partner_brand_effective LEFT JOINs
+   partner_brand and COALESCEs ink/paper to Fundhub's hardcoded values, so a
+   partner with no row at all still comes back looking like a full answer. That
+   is the right behaviour for /api/partner-brand (a Brand Studio form needs
+   something in every box) and the wrong one here: the fallback for the CRM is
+   the ORG row, not a hardcoded pair of hex values. EXISTS is how the two cases
+   are told apart, in the same round trip.
+
+   ORG IS BOUND AS WELL AS PARTNER. The partner id comes from the session and the
+   org id comes from the same session; requiring them to agree means an account
+   pointing at a partner in another org reads nothing and falls back, rather than
+   reaching across the tenancy line.
+
+   NULL / EMPTY FIELDS ARE LEFT ALONE ON PURPOSE. A NULL face or an empty ramp
+   reaches shell.js, which skips it, and the static fundhub-brand.css value
+   stands. That is the documented fallback, not a half-painted screen. */
+const PARTNER_BRAND_SQL = `
+  SELECT e.org_id,
+         e.slug,
+         e.entity_name,
+         e.wordmark_url,
+         e.ink,
+         e.paper,
+         e.ramp,
+         e.display_face,
+         e.mono_face,
+         e.approval_status,
+         EXISTS (SELECT 1 FROM partner_brand b WHERE b.partner_id = e.partner_id)
+           AS has_brand_row
+    FROM v_partner_brand_effective e
+   WHERE e.partner_id = $1 AND e.org_id = $2`;
+
+async function readPartnerEffective(partnerId, orgId) {
+  if (!partnerId || !orgId) return null;
+  const { rows } = await db.query(PARTNER_BRAND_SQL, [partnerId, orgId]);
+  const p = rows[0];
+  if (!p || p.has_brand_row !== true) return null;
+  return {
+    org_id: p.org_id,
+    // The PARTNER's slug. This row describes the partner's brand, so the
+    // identifier on it names the partner. shell.js does not read it.
+    slug: p.slug,
+    entity_name: p.entity_name,
+    // The one approval-gated field — see the header.
+    wordmark_url: p.approval_status === "approved" ? p.wordmark_url : null,
+    ink: p.ink,
+    paper: p.paper,
+    ramp: p.ramp,
+    display_face: p.display_face,
+    mono_face: p.mono_face
+  };
+}
+
 export default async function handler(req, res) {
   const principal = await requirePrincipal(
     req, res, ["staff", "partner", "affiliate", "client"], { db });
@@ -88,7 +192,14 @@ export default async function handler(req, res) {
 
   if (req.method === "GET") {
     try {
-      const brand = await readEffective(orgId);
+      /* The one branch this whole file is about. A partner gets their own row;
+         null from it means "no partner brand to paint", and the org read below
+         is the fallback for every other principal AND for that case. */
+      const brand =
+        (principal.kind === "partner"
+          ? await readPartnerEffective(principal.partnerId, orgId)
+          : null)
+        || await readEffective(orgId);
       if (!brand) return res.status(404).json({ ok: false, error: "not_found" });
       return res.status(200).json({ ok: true, brand: redact(brand) });
     } catch (err) {

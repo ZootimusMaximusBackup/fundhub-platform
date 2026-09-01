@@ -1,5 +1,29 @@
 -- 128_org_brand.sql — the company's own brand tokens for the internal CRM.
 --
+-- ┌─ SUPERSEDED IN PART, 2026-08-31 ────────────────────────────────────────┐
+-- │ The paragraph below says "partners theme only their funnels; the        │
+-- │ internal CRM has its own theme". THAT WAS THE DECISION UNTIL            │
+-- │ 2026-08-31 AND IT IS NO LONGER TRUE. The owner reversed it: a           │
+-- │ white-label partner signing in and seeing Fundhub's colours, type and   │
+-- │ wordmark on every screen is the thing white-label is sold to prevent,   │
+-- │ so a partner now sees their own brand on the CRM too.                   │
+-- │                                                                        │
+-- │ THIS TABLE AND THIS VIEW DID NOT CHANGE, and no SQL below was edited.   │
+-- │ The reversal is in api/org-brand.mjs, which resolves the brand from the │
+-- │ PRINCIPAL: a partner principal reads their own partner_brand row        │
+-- │ through v_partner_brand_effective, and staff, affiliates and clients    │
+-- │ read the org row from v_org_brand_effective exactly as before. So the   │
+-- │ last sentence of that paragraph still holds — a partner editing Brand   │
+-- │ Studio still cannot recolor a Fundhub staff screen, because a partner   │
+-- │ still cannot write this table.                                          │
+-- │                                                                        │
+-- │ Only the comment moved. Editing an APPLIED migration's SQL is a silent  │
+-- │ no-op (CLAUDE.md §12) — a comment is not, because a comment's only      │
+-- │ reader is a person opening this file, and leaving a retired rule stated │
+-- │ as current here is how the next reader gets it wrong. The current rule  │
+-- │ is in docs/BRAND-THEMING-SPEC.md.                                       │
+-- └────────────────────────────────────────────────────────────────────────┘
+--
 -- WHY THIS TABLE EXISTS. partner_brand (043) is for white-label partner funnels.
 -- Docs/BRAND-THEMING-SPEC.md records the owner decision: partners theme only
 -- their funnels; the internal CRM has its own theme. A partner editing Brand
