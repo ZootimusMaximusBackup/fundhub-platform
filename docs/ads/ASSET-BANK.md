@@ -31,7 +31,24 @@ or shipped. If a fact is missing, that absence is the finding — leave the gap,
 | White-label partner program | $10,000 | **NOT LED WITH — next month, 2 concepts max** |
 
 The $3,000 is a **deposit on the system**, not a fee for labour, and it **counts toward** the 10% —
-it is not extra on top. Only the two courses and repair finance. Funding does not.
+it is not extra on top. **Funding is cash. It does not finance.** That part is not in dispute.
+
+### ⚠️ UNRESOLVED — what actually finances
+
+The code and the closer pack disagree, and no ad should state repair financing terms until Chris
+settles it.
+
+| | Repair $1,000 | Repair trial $200 | UWIQ pack | Funding Mastery |
+|---|---|---|---|---|
+| **`src/config/offers.mjs`** (live) | `financing: true` | `financing: true` | `financing: true` | `financing: true` |
+| **Closer pack, objection #17** | **cash only** | **cash only** | finances | finances |
+
+They agree on the two courses and they agree funding is cash. They contradict each other on repair
+and the trial.
+
+**Until Chris answers:** ads may say the two courses finance. Ads may say funding is cash. Ads must
+**not** state whether repair or the $200 trial can go on payments. Pull the current answer from
+`src/config/offers.mjs` on the day, not from any write-up including this one.
 
 ### The Sorting Hat — four doors off one call
 
