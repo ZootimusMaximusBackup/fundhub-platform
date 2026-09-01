@@ -1,7 +1,7 @@
 ---
 stage: 2
 version: 1
-status: draft
+status: approved
 inputs:
   01-avatar.md: d9a21ad8
 counts:
