@@ -109,6 +109,79 @@ label. It is good work aimed at the wrong date, so it moves down this list.
 Being built now, launches later. The flywheel produced a complete package for it
 and that work stands; it just is not this week's deadline.
 
+## The one that decides whether white label works at all
+
+- [ ] **Nothing ever attributes a lead to a partner.** `clients.partner_id` is
+      the column that links a client to the partner who brought them. It is set
+      on **0 of 29** clients. Every production writer of `clients` was traced —
+      `src/auth/seed-role-accounts.mjs:84`, `src/contracts/upload.mjs:182`,
+      `src/journeys/runner/synthetic.mjs:82`, and the event-bus creator
+      `src/handlers/client-lifecycle.mjs:184` — and **not one sets it**. The
+      public funnel intake `api/public/survey-submit.mjs` does not contain the
+      word "partner". The only writer that has ever set it is the demo seeder.
+
+      So a white-label partner sees no leads because **no lead can reach them**.
+      Every dashboard complaint below is downstream of this. Fixing the screens
+      without fixing this produces a prettier empty page.
+
+## Dashboard findings — traced 2026-09-01, read-only
+
+The back end is in better shape than the screens. Every endpoint checked is
+routed, correctly gated with `requirePrincipal`, and scoped server-side. The
+accrual writer (`src/partners/revenue.mjs`) is genuinely good: rate frozen at
+accrual, no clawback possible, refunds expressed as voids, front and back end
+allow-listed to the three right product codes.
+
+- [ ] **The partner home's centrepiece is permanently empty.**
+      `partner-galaxy.html:523-532` hardcodes `CLIENTS`/`NODES`/`ROUTES`/`STANDING`
+      as empty arrays with no assignment anywhere. The canvas is the largest
+      element on the page (`.sky-wrap{flex:1}`, line 188) and ships with a legend
+      explaining how to read it and instructions to click things in it. This is
+      why it "looks poor" — not thin content, a dressed-up blank.
+
+- [ ] **`partner-training.html` works and nothing links to it.** It renders the
+      13 seeded `training_modules` and 4 `training_gates` correctly.
+      `grep -rn "partner-training" public/` returns only `shell.js` constants and
+      a CSS comment; `partner-galaxy.html` says "training" zero times. Built,
+      seeded, unreachable.
+
+- [ ] **Two more endpoints built, routed, and called by nobody:**
+      `/api/read/partner-production` and `/api/trials/dashboard`.
+
+- [ ] **The accrued balance is fetched and thrown away.**
+      `partner-galaxy.html:1755` asks for it; `data.js:579` drops it.
+
+- [ ] **The affiliate's two most useful tables have no data path.**
+      `affiliate.html` declares `var LEADS=[]` (line 398) and `var PAYOUTS=[]`
+      (line 477) and never assigns either, so they permanently print "No
+      referrals on file" and "not connected to your payout history yet." No
+      endpoint anywhere returns `affiliate_referrals` or `affiliate_payouts`
+      rows — the file's own comment at 526-529 says so. Not broken; never built.
+
+- [ ] **Two tiles are hardcoded strings.** RATE is the literal "Per agreement"
+      and COOKIE is "60d" (`affiliate.html:212-213`), while the real rates —
+      direct 20%, downline 5% — sit in `affiliate_commission_rules`.
+
+- [ ] **The payout hold is invisible.** `affiliates.partner_license_signed_at`
+      gates every release (`033_affiliates.sql:88-95`) and the endpoint reduces
+      it to a bare `license_signed` boolean with no explanation and no route to
+      the document.
+
+- [ ] **Nobody can log in as the one affiliate with real numbers.** AFF-000063
+      has the only referral and the only payout in the database and has no
+      `accounts` row. `affiliate@fundhub.ai` — the account that does work — has
+      3 clicks and nothing else. Testing this felt useless because it was.
+
+- [ ] **11 of 13 partners have `agreement_signed_at` NULL**, so the training
+      page returns 403 `not_entitled` for them, including the test-role partner
+      an auditor would sign in as.
+
+- [ ] **Two stale comments that mislead a reader**, both about the leads path:
+      `affiliate.html:817-825` says nothing records clicks (false — 9 rows exist
+      and `public/start.html:52,56` POST them), and `api/read/affiliates.mjs:24-27`
+      says af-02 has never written a referral row (false — it is registered and
+      wired at `src/workflows/index.mjs:5,74`).
+
 - [ ] **Refine the white-label offers.** Chris likes them and wants a pass — each
       one answers a different market pain.
 - [ ] **The Locked Book offer** — `docs/flywheel/partner/03-offer.md`. $10,000
