@@ -17,6 +17,7 @@ import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { requireRole, isUuid } from "../../src/http/read-api.mjs";
 import { analyzeAndGenerate, ROUNDS } from "../../src/repair/analyze.mjs";
+import { nextRound } from "../../src/metro2/rounds/state.mjs";
 import { dbDown } from "../../src/http/db-down.mjs";
 
 /* Matches the enroll + Present fire path: owner, admin, closer, Specialist.
@@ -71,8 +72,8 @@ export default async function handler(req, res, deps = {}) {
     return res.status(400).json({ ok: false, error: "client_id_required" });
   }
 
-  const round = body.round || body.round_key || "R1";
-  if (!ROUNDS.includes(round)) {
+  const askedRound = body.round || body.round_key || null;
+  if (askedRound && !ROUNDS.includes(askedRound)) {
     return res.status(400).json({ ok: false, error: "invalid_round", allowed: [...ROUNDS] });
   }
 
@@ -83,6 +84,43 @@ export default async function handler(req, res, deps = {}) {
     );
     if (!owned.rows.length) {
       return res.status(404).json({ ok: false, error: "not_found" });
+    }
+
+    // The round used to default to R1 whenever a caller left it out, and both
+    // screens leave it out — so a client could be staged for Round 1 forever and
+    // Round 2 was unreachable from anywhere in the product.
+    //
+    // Resolve it from what the client has actually been through instead. An
+    // explicit round in the body still wins, so nothing that already names one
+    // changes behaviour.
+    let round = askedRound;
+    if (!round) {
+      const seen = await database.query(
+        `SELECT round FROM dispute_cases
+          WHERE client_id = $1::uuid AND org_id = $2::uuid
+            AND status <> 'cancelled'`,
+        [clientId, orgId]
+      ).catch(() => null);
+
+      const rounds = (seen?.rows || [])
+        .map((r) => String(r.round || ""))
+        .filter((r) => ROUNDS.includes(r));
+
+      if (!rounds.length) {
+        round = "R1";
+      } else {
+        // Highest round this client has reached, then the one after it.
+        const highest = rounds.reduce((a, b) => (ROUNDS.indexOf(b) > ROUNDS.indexOf(a) ? b : a));
+        const advanced = nextRound(highest);
+        if (!advanced) {
+          return res.status(409).json({
+            ok: false,
+            error: "rounds_exhausted",
+            reason: `This client has already reached ${highest}. There is no round after it.`
+          });
+        }
+        round = advanced;
+      }
     }
 
     const result = await analyzeAndGenerate(database, {

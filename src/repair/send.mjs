@@ -196,6 +196,32 @@ export async function sendRepairLetters(db, {
         [letterId, String(providerId), orgId, clientId]
       ).catch(() => {});
     }
+
+    // Start the bureau's 30-day clock. Nothing wrote response_due_at before this
+    // — createCase defaulted it to null and no other statement in the repo ever
+    // set it — so the awaiting_response SLA and the overdue next-action have
+    // never once been able to fire.
+    //
+    // Here is the only honest moment to stamp it: the mailer has taken the
+    // letter. Not at generation, when it might never go out.
+    //
+    // `response_due_at IS NULL` is load-bearing. Re-sending on a case that is
+    // already running must not push the deadline out, and this must never touch
+    // the cases already sitting in the table — stamping those would light up
+    // every historic file at once the first time the sweeper looked.
+    const caseIdForClock = letter.caseId || letter.case_id || null;
+    if (caseIdForClock && db?.query) {
+      await db.query(
+        `UPDATE dispute_cases
+            SET response_due_at = now() + interval '30 days',
+                status = 'awaiting_response',
+                updated_at = now()
+          WHERE id = $1::uuid
+            AND org_id = $2::uuid
+            AND response_due_at IS NULL`,
+        [caseIdForClock, orgId]
+      ).catch(() => {});
+    }
     // A complaint that had no row yet gets one now — AFTER the provider took it,
     // never before. This row is what Round 6 reads to decide whether it may say a
     // complaint was filed, so it must mean "mailed" and nothing weaker.

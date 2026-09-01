@@ -26,6 +26,7 @@ import {
   parseMailDeliveryEvent
 } from "../messaging/providers/mail-letter.mjs";
 import { onMailDelivered } from "../inquiry-ops/call-scheduler.mjs";
+import { onRepairEvent } from "../repair/handlers.mjs";
 
 /* PROVIDER TABLES ARE NULL-PROTOTYPE. Read this before turning either of the
    two below back into a plain `{}` literal.
@@ -375,6 +376,40 @@ async function dispatchWebhook({ db, provider, rawBody, headers = {}, url, env =
       providerId: parsed.letterId,
       deliveredAt: parsed.deliveredAt
     });
+
+    // Two products mail through the same PostGrid account, and only one of them
+    // was ever read here. onMailDelivered looks in inquiry_removal_cases; a
+    // credit-repair letter's provider id lives in dispute_letters, so every
+    // repair delivery came back case_not_found and repair.letters.delivered was
+    // emitted by nothing in the repo. The case never moved to awaiting_response.
+    //
+    // The lookup runs only AFTER the inquiry miss, so the inquiry product's call
+    // clock is untouched by this.
+    if (result?.ok === false && result?.reason === "case_not_found" && db?.query) {
+      const found = await db.query(
+        `SELECT l.id AS letter_id, l.case_id, l.org_id, l.client_id
+           FROM dispute_letters l
+          WHERE l.postgrid_letter_id = $1
+          LIMIT 1`,
+        [String(parsed.letterId)]
+      ).catch(() => null);
+      const row = found?.rows?.[0];
+      if (row) {
+        const repair = await onRepairEvent(db, {
+          name: "repair.letters.delivered",
+          orgId: row.org_id,
+          clientId: row.client_id,
+          payload: {
+            caseId: row.case_id,
+            letterId: row.letter_id,
+            providerId: String(parsed.letterId),
+            deliveredAt: parsed.deliveredAt
+          }
+        }).catch((err) => ({ ok: false, reason: String(err?.message || err) }));
+        return { status: 200, body: { ok: true, product: "repair", ...repair } };
+      }
+    }
+
     return { status: 200, body: { ok: true, ...result } };
   }
 
