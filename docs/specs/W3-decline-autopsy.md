@@ -4,7 +4,50 @@
 somebody else's customers, it touches credit-pull type (by forbidding one), and
 it touches fee timing.
 
-**Status:** specification only. No code exists. Nothing here has been built.
+**Status: SHELVED — OWNER DECISION 2026-08-31. DO NOT BUILD.**
+
+Chris put this offer under construction. The idea is good and is being kept; it is
+the delivery that needs rethinking, and he did not want it half-built in the
+meantime. **No thread should implement any part of this spec until he lifts the
+shelf.** There is nothing to disable and no demo flag to set — no code was ever
+written, so shelving means leaving it unbuilt.
+
+Where it stands in the funnel: W5 lists Decline Autopsy as one of three front
+doors into the white-label offer. **That door does not exist.** Anyone building the
+W5 offer page ships it with two doors, not three.
+
+### What has to be solved before it is unshelved
+
+Worked out with Chris on 2026-08-31. The product logic is sound; the delivery is
+not.
+
+1. **The phone kills the current design.** Most traffic arrives on a phone. Nobody
+   types twenty rows, and nobody uploads twenty credit reports, on a phone.
+   "Save this link and upload later" means it never happens.
+
+2. **Sell one deal, not the drawer.** The refinement Chris landed on: ask for his
+   single biggest decline — "the one that got away". Six dropdowns, about ninety
+   seconds, finished in the moment while the ad is still warm. The twenty-row
+   upload becomes step two, on a computer, after he has already seen it work once.
+
+3. **Credit-report upload is the wrong direction for this step.** It was
+   considered and rejected: it is *more* friction, not less, and it destroys the
+   thing that makes this offer legally clean — that names never cross the
+   boundary (§5.1). Real reports mean holding third-party consumer credit files
+   nobody consented to give FundHub. That belongs in an affiliate portal where a
+   relationship and a consent form exist, not on a cold landing page.
+
+4. **The price is not the problem; the effort-to-price ratio is.** $27 stays paid —
+   owner rule: nothing is given away free until the market saturates, and only then
+   does the price come down. But twenty rows of work at a curiosity price does not
+   balance. One deal at $27 plausibly does.
+
+Everything below this line is the original specification, unchanged, and remains
+accurate about the engine and the data boundary. It is the front end that changes.
+
+---
+
+**Original status:** specification only. No code exists. Nothing here has been built.
 
 ---
 
