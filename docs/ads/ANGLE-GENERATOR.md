@@ -143,12 +143,25 @@ BODY    10–60s   Validate → Reveal mechanism → Connect to desire → Proof
 CTA     last 10–30s   Two-minute application. Book the call.
 CLOSE                  No hard inquiry. No obligation. Nothing moves until you say so.
 
-LENGTH  SHORT ~30s | LONG ~60–90s
+RUNTIME 60–90s | 90–120s | 2min+
 SHOOT   Outfit + location note
 TAG     origin_angle value for CRM message match
 ```
 
-**Half short, half long.** Meta wants both.
+**Minimum 60 seconds. No exceptions.** (owner-set 2026-09-01)
+
+Every ad matches the four that are running — full direct-response length, not a 30-second cut. The
+controls run a minute and up and they book calls at $32–36, so the length is doing work: there is
+time to name the cost, reveal the mechanism, and land the proof before the ask.
+
+A short hook is fine. A short *ad* is not. If a concept only has 30 seconds of substance in it, it
+isn't finished — go back and give it the mechanism in full.
+
+| Runtime | Use it for |
+|---|---|
+| **60–90s** | The default. Most concepts live here. |
+| **90–120s** | Concepts carrying the full Conveyor Belt walkthrough, or a case study. |
+| **2min+** | Founder-story and VSL-style. A few, not many. |
 
 **`origin_angle` matters.** The setter and closer scripts mirror the angle the lead came in on. A
 lead from the broker-burn ad gets opened differently than one from the speed ad. The CRM carries the
