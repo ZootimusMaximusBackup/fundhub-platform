@@ -160,6 +160,19 @@
   to = "/app/"
   status = 301
 
+# Decline Autopsy — SHELVED BY THE OWNER 2026-08-31.
+# The sales page and its three handlers are built and correct; the delivery is
+# being reworked, and it must not go live in the meantime. Its API routes are
+# commented out in netlify/functions/api.mjs, so the page would load and then
+# fail on its first read — a dead form is worse than no page. This sends anyone
+# holding the link to the price menu instead.
+# TO REOPEN: delete this rule, restore the three routes, restore the menu link.
+[[redirects]]
+  from = "/partner/autopsy/*"
+  to = "/partner/menu/"
+  status = 302
+  force = true
+
 # Published partner funnel pages (Brand Studio → partner_pages status=published).
 [[redirects]]
   from = "/sites/*"

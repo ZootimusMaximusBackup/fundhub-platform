@@ -68,7 +68,18 @@ const SPECIAL_CASES = {
    The handler now calls requireRole() for real and the route is in ROUTES. An
    empty allowlist means every file under api/ is reachable by design; the tests
    below still run, they just have nothing to forgive. */
-const ALLOWED_UNROUTED = {};
+const ALLOWED_UNROUTED = {
+  /* DEFERRED — the $27 Decline Autopsy was built, then shelved by the owner on
+     2026-08-31 before it ever deployed. Not a bug and not debt: the code is
+     finished and correct, the delivery is what is being reworked (the current
+     design asks for twenty rows or twenty credit reports, and the traffic is
+     mobile). The routes are commented out in netlify/functions/api.mjs with the
+     restore instructions beside them. Unshelving is: put the three route lines
+     back, delete these three entries. */
+  "public/decline-autopsy": "DEFERRED — offer shelved by owner 2026-08-31, see docs/specs/W3-decline-autopsy.md",
+  "public/decline-autopsy-upload": "DEFERRED — offer shelved by owner 2026-08-31, see docs/specs/W3-decline-autopsy.md",
+  "public/decline-autopsy-report": "DEFERRED — offer shelved by owner 2026-08-31, see docs/specs/W3-decline-autopsy.md"
+};
 
 /* walk — every .mjs under api/, as a route key: path relative to api/, minus the
    extension, forward-slashed. api/read/products.mjs → "read/products", which is

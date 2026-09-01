@@ -656,9 +656,16 @@ export const ROUTES = {
        ...-report is read with a signed, expiring link — the signature IS the
        credential, because a $27 buyer has no session, and DELETE on it is the
        buyer's own "delete my upload" button. */
+  /* DECLINE AUTOPSY — SHELVED BY THE OWNER 2026-08-31. Routes deliberately
+     removed so the offer cannot go live on the next deploy. The handlers,
+     src/autopsy/, migration 275 and the sales page are all intact and are NOT
+     to be deleted — the offer is coming back once its delivery is reworked
+     (see the notice at the top of docs/specs/W3-decline-autopsy.md).
+     TO UNSHELVE: restore these three lines and remove the three entries from
+     ALLOWED_UNROUTED in src/http/routes.test.mjs.
   "public/decline-autopsy": publicDeclineAutopsy,
   "public/decline-autopsy-upload": publicDeclineAutopsyUpload,
-  "public/decline-autopsy-report": publicDeclineAutopsyReport,
+  "public/decline-autopsy-report": publicDeclineAutopsyReport, */
   /* The door behind the unsubscribe link in every outbound email. No auth —
      same class as survey-submit: the signed token in the URL is the credential,
      and a person getting out of a mailing list must never be asked to sign in.
