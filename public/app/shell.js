@@ -2273,15 +2273,28 @@
   /* applyBrand — this company's CRM tokens over the CSS custom properties, at
      boot. See docs/BRAND-THEMING-SPEC.md.
 
-     CRM chrome comes from /api/org-brand, never from partner_brand. A partner
-     editing their funnel tokens must not recolor Fundhub staff screens.
+     CRM chrome comes from /api/org-brand, and WHOSE brand that endpoint answers
+     with now depends on who is asking. A partner gets their own partner_brand
+     row; staff, affiliates and clients get the org row.
+
+     SUPERSEDED, KEPT SO NOBODY RE-READS THE OLD RULE AS CURRENT. Until
+     2026-08-31 this comment said "CRM chrome comes from /api/org-brand, never
+     from partner_brand. A partner editing their funnel tokens must not recolor
+     Fundhub staff screens." The second half is still true and still enforced —
+     a partner writes partner_brand only, and the org row they cannot touch is
+     what Fundhub staff paint from. What the owner reversed is the first half: a
+     white-label partner used to sign in and see Fundhub's colours, type and
+     wordmark on every CRM screen, which is the thing white-label exists to
+     prevent. The branch lives in api/org-brand.mjs, not here. See
+     docs/BRAND-THEMING-SPEC.md.
 
      FALLS BACK TO FUNDHUB. No session, no row, or a failed request leave the
      stylesheet untouched — the default brand is what the page already has, so
      doing nothing IS the fallback.
 
-     Applies ink, paper, spectrum (from the six-stop ramp), status stops that
-     match the Fundhub ramp order, Google Font faces, and the wordmark. */
+     Applies ink, paper, spectrum and accent (from the six-stop ramp), Google
+     Font faces, and the wordmark. NOT the four status colours — see paintBrand
+     for why they are now left alone. */
   function rampToSpectrum(ramp) {
     return "linear-gradient(90deg," + ramp.map(function (c, i) {
       return c + " " + Math.round(i * 100 / (ramp.length - 1)) + "%";
@@ -2326,12 +2339,31 @@
     if (Array.isArray(b.ramp) && b.ramp.length === 6 &&
         b.ramp.every(function (s) { return HEX.test(String(s)); })) {
       root.style.setProperty("--spectrum", rampToSpectrum(b.ramp));
-      // Status stops follow the Fundhub pastel order (spec).
-      root.style.setProperty("--alert", b.ramp[0]);
-      root.style.setProperty("--warn", b.ramp[1]);
-      root.style.setProperty("--ok", b.ramp[3]);
-      root.style.setProperty("--info", b.ramp[4]);
+      // --accent is decoration, so it follows the brand.
       root.style.setProperty("--accent", b.ramp[5]);
+      /* --alert / --warn / --ok / --info ARE DELIBERATELY NOT SET HERE.
+         (owner-set 2026-08-31, replacing "status stops follow the Fundhub
+         pastel order".)
+
+         Those four are read in 374 places across 43 files under public/
+         (measured 2026-08-31), and every one of them is a STATE SIGNAL in a
+         regulated consumer-finance product: blocked, behind, healthy.
+
+         Nothing constrains a brand ramp to semantically sane stops, and a real
+         brand guideline is very often a single-hue gradient — which painted
+         stops 0, 1, 3 and 4 as four shades of one colour and made "stop, this
+         is blocked" look like "all good". It already did: a test tenant's
+         screens went entirely blue.
+
+         While only Fundhub's own sensibly-chosen ramp reached the CRM, that was
+         theoretical. Partners paint the CRM now, so it is not, and it would land
+         on the partner's own staff — who have nobody to walk around it.
+
+         A brand is carried by ground, ink, logo and type. Nobody experiences a
+         brand through the colour of a warning badge. So these four stay
+         semantic, at their fundhub-brand.css values, for everybody.
+
+         src/ui/status-tokens-are-semantic.test.mjs fails if they come back. */
     }
     var FACE = /^[A-Za-z0-9 \-]{1,60}$/;
     if (FACE.test(String(b.display_face || ""))) {
