@@ -256,29 +256,45 @@ it is how the winning offer gets the good organs from the losing ones.`,
 const DIMS = ['dreamOutcome', 'perceivedLikelihood', 'timeDelay', 'effortSacrifice', 'incomparability', 'proofBacking', 'thirtyDayCash', 'deliverability']
 const WEIGHT = { perceivedLikelihood: 2, proofBacking: 1.5, incomparability: 1.5, thirtyDayCash: 1.5, deliverability: 1.25, dreamOutcome: 1, timeDelay: 1, effortSacrifice: 1 }
 
+// A candidate no judge scored must NOT aggregate to zero and quietly lose - that
+// makes an unjudged offer look like a rejected one. It is excluded from the
+// ranking and reported, because a panel that only scored two of six did not do
+// the job it was built to do and the run should say so.
 const aggregate = shuffled.map(c => {
   const rows = panels.flatMap(p => (p.scores || []).filter(s => s.blindId === c.blindId))
   const per = {}
   let weighted = 0, wsum = 0
   for (const d of DIMS) {
     const vals = rows.map(r => Number(r.dims && r.dims[d])).filter(n => Number.isFinite(n))
-    const mean = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0
-    const spread = vals.length ? Math.max(...vals) - Math.min(...vals) : 0
-    per[d] = { mean: Math.round(mean * 10) / 10, spread }
+    // Skip a dimension nobody scored rather than averaging in a zero.
+    if (!vals.length) { per[d] = { mean: null, spread: 0 }; continue }
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length
+    per[d] = { mean: Math.round(mean * 10) / 10, spread: Math.max(...vals) - Math.min(...vals) }
     weighted += mean * WEIGHT[d]; wsum += WEIGHT[d]
   }
   return {
     blindId: c.blindId, archetype: c.archetype, name: c.name,
-    weighted: Math.round((weighted / (wsum || 1)) * 100) / 100,
+    judgeCount: rows.length,
+    weighted: wsum ? Math.round((weighted / wsum) * 100) / 100 : null,
     dims: per,
-    maxSpread: Math.max(...DIMS.map(d => per[d].spread)),
+    maxSpread: Math.max(0, ...DIMS.map(d => per[d].spread)),
     killShots: rows.map(r => r.killShot).filter(Boolean),
     bestParts: rows.map(r => r.bestPart).filter(Boolean),
   }
-}).sort((a, b) => b.weighted - a.weighted)
+})
 
-const winner = aggregate[0]
-const runnerUp = aggregate[1]
+const unjudged = aggregate.filter(a => a.weighted === null)
+const judged = aggregate.filter(a => a.weighted !== null).sort((a, b) => b.weighted - a.weighted)
+
+if (unjudged.length) {
+  log(`WARNING: ${unjudged.length} of ${aggregate.length} candidates were never scored by any judge (${unjudged.map(u => u.archetype).join(', ')}) - the winner was chosen from ${judged.length}, not ${aggregate.length}`)
+}
+if (!judged.length) {
+  return { error: 'No candidate was scored by any judge. Nothing can be chosen.', ground, candidates: shuffled, aggregate }
+}
+
+const winner = judged[0]
+const runnerUp = judged[1]
 const close = runnerUp && (winner.weighted - runnerUp.weighted) / (winner.weighted || 1) < 0.05
 log(`winner: ${winner.archetype} at ${winner.weighted}${close ? ` (within 5% of ${runnerUp.archetype})` : ''} | widest disagreement: ${winner.maxSpread}`)
 
@@ -293,10 +309,10 @@ WHAT THE JUDGES SAID TO KILL ABOUT IT:
 ${winner.killShots.map(k => '- ' + k).join('\n')}
 
 THE BEST PARTS OF THE OFFERS THAT LOST - graft the ones that fit, name what you took:
-${aggregate.slice(1).map(a => `${a.archetype}: ${a.bestParts.join(' | ')}`).join('\n').slice(0, 6000)}
+${judged.slice(1).map(a => `${a.archetype}: ${a.bestParts.join(' | ')}`).join('\n').slice(0, 6000)}
 
 SCORES, including where the judges disagreed most:
-${JSON.stringify(aggregate.map(a => ({ archetype: a.archetype, weighted: a.weighted, maxSpread: a.maxSpread }))).slice(0, 2000)}
+${JSON.stringify(judged.map(a => ({ archetype: a.archetype, weighted: a.weighted, maxSpread: a.maxSpread, judges: a.judgeCount }))).slice(0, 2000)}${unjudged.length ? `\n\nNOTE: ${unjudged.length} candidate(s) were never scored by any judge (${unjudged.map(u => u.archetype).join(', ')}). The winner was chosen from ${judged.length} of ${aggregate.length}. Say so in the write-up - do not present this as a full six-way comparison.` : ''}
 ${winner.maxSpread >= 4 ? `\nNOTE: the judges disagreed by ${winner.maxSpread} points on at least one dimension for the winning offer. That is a specific problem, not noise. Name it in the write-up rather than averaging it away.` : ''}
 
 THE REAL NUMBERS:
@@ -399,7 +415,7 @@ const chosen = shuffled.find(c => c.blindId === winner.blindId) || {}
 
 return {
   campaign: CAMPAIGN, asOf: TODAY,
-  ground, candidates: shuffled, aggregate,
+  ground, candidates: shuffled, aggregate: judged, unjudged: unjudged.map(u => u.archetype),
   winner: { archetype: winner.archetype, weighted: winner.weighted, maxSpread: winner.maxSpread },
   runoffAdvised: !!close,
   issuesFixed: issues.length,
