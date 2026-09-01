@@ -10,7 +10,7 @@ migrations applied, nothing built.** Branch `claude/white-label-models-offer-pag
 | **W0** | **Owner decisions — READ FIRST, supersedes the rest** | `docs/specs/W0-decisions.md` | **done** |
 | W1 | Money model | `docs/specs/W1-money-model.md` | done |
 | W2 | Creative intelligence spine | `docs/specs/W2-creative-intelligence.md` | done |
-| W3 | Decline Autopsy | `docs/specs/W3-decline-autopsy.md` | done |
+| W3 | Decline Autopsy | `docs/specs/W3-decline-autopsy.md` | **SHELVED by owner 2026-08-31 — do not build** |
 | W4 | Live Trial | `docs/specs/W4-live-trial.md` | done |
 | W5 | Offer page + funnel | `docs/specs/W5-offer-page-funnel.md` | done |
 | W6 | Pricing menu | `docs/specs/W6-pricing-menu.md` | done |

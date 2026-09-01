@@ -8,6 +8,13 @@
 > owner decision.
 
 **Status:** specification only. No code, no migrations, no page written, nothing applied.
+
+> **ONE OF THE THREE FRONT DOORS IS SHELVED (owner, 2026-08-31).** Decline Autopsy
+> (W3) is under construction and must not be built — see the notice at the top of
+> `docs/specs/W3-decline-autopsy.md`. **Build this page with two front doors, not
+> three:** Winner's Board and Live Trial. Leave the funnel states that reference the
+> autopsy in place, unreachable, rather than deleting them — the offer is coming
+> back once its delivery is reworked.
 **Written:** 2026-08-31 · branch `claude/white-label-models-offer-page-31vn4q`
 **Depends on:** `/home/user/fundhub-platform/docs/specs/W1-money-model.md` (landed). Every
 number in this document comes from W1 or from a file named here. None are invented.
