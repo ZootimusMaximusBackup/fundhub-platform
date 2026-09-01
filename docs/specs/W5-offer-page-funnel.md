@@ -324,7 +324,7 @@ Copy **direction**, not finished copy. Twelve sections. Order matters.
 | **5** | The problem | `.blk` `.sec-head` | Name the thing they are stuck on | Direction: they can generate demand, they cannot fulfil it. Underwriting, funding operations, disputes, documents, compliance — that is a company, not a task. **Do not name or attack a competitor.** |
 | **6** | What you get | `.blk.dark` `.eng` (three) + `.ag` (four) | The machine, concretely | Reuse the existing four agent cards — attribution, live pipeline, payout ledger, creative kit — and add the white-label-only ones: your brand on the front, your own portal showing only your clients, branded apply pages at your own domain. All verifiable in the product today. |
 | **7** | Who does the work | `.blk` `.steps` (three) | The fulfilment promise, and who performs it | **The locked disclosure lives here in plain words: fulfilment is performed by FundHub.** Say it once, clearly, in a sentence a consumer could read. It is not fine print. |
-| **8** | The economics | `.blk` `.opts` or `.cmp` | The split, as a rule | 50% of the money collected on your book, front end and back end, including the success fee. Your own referrers are paid out of your half — FundHub's half never moves. **Words only. No dollar figures of partner income. No calculator.** See §12. |
+| **8** | The economics | `.blk` `.opts` or `.cmp` | The split, as a rule | 50% of the money collected on your book, front end and back end, including the success fee. Your own referrers are paid out of your half — FundHub's half never moves. A calculator and dollar figures of partner income are permitted here (owner reversal, 2026-08-31). See §12. |
 | **9** | **The entry, and how it is paid** | `.blk` | The sharpest edge in the whole offer | Its own section, not a footnote. §7 specifies it completely. |
 | **10** | How to start | `.blk` `.steps` (four) | The four steps | Apply → review call → live trial → launch. Each step says what happens and roughly how long. Honest, dated, no urgency theatre. |
 | **11** | Compare | `.cmp` | Affiliate vs white-label, and a route out | Reuse the existing compare table wholesale — it is already correct. Add a closing line and link: *not ready for this? the affiliate program is open.* → `/affiliates/`. **This is the S16 downsell, on the page, before the form.** |
@@ -618,10 +618,16 @@ plus entry net **220,000¢**, plus deal **600,000¢** = **857,100¢ ($8,571.00)*
 
 ### Never, anywhere public
 
-No modelled partner earnings. No income examples. No "partners earn $X". No calculator, no
-slider, no ROI projection. No "typical results". No dashboard screenshot with real dollar
-figures. No partner count, no logo wall, no testimonial implying income. No lender band
-table, no remittance percentages, no minimum FICO. No fund rate — it is unknown (§14).
+**OWNER REVERSAL, 2026-08-31.** This section previously banned a calculator, a slider, an
+ROI projection, modelled partner earnings and any "partners earn $X" figure. Chris removed
+that ban. It is not re-raised here and it is not to be re-added by a later pass. What an
+earnings figure says, how it is framed, and what assumptions sit beside it are the owner's
+call, and the page may carry a calculator.
+
+Still off the page, unchanged and not part of the reversal: no dashboard screenshot with
+real client dollar figures, no partner count, no logo wall, no testimonial implying income,
+no lender band table, no remittance percentages, no minimum FICO, no fund rate — that last
+one because it is genuinely unknown (§14), not because it is forbidden.
 
 Biz-opp earnings claims are the single most enforced area in this category, and FundHub's own
 projection files record **zero measured paid closes**. There is no number to stand behind.
@@ -638,9 +644,9 @@ projection files record **zero measured paid closes**. There is no number to sta
 4. **The split as a rule, in words, with no dollar figure attached.** *"Half of the money
    collected on your book, front end and back end."* The worked arithmetic in §11 belongs in
    the partner agreement and the review call, where it is a disclosed term between two
-   parties, not an advertisement. **Recommendation: no dollar figure of partner income on the
-   public page at all** — the moment a number appears, someone multiplies it, and the page
-   has made a claim it cannot support.
+   parties, not an advertisement. The worked arithmetic is now
+   permitted on the public page (owner reversal, 2026-08-31); the note that follows records
+   what the numbers rest on, so whoever writes the copy knows what is behind them.
 5. **Screenshots of the actual software** — portal, ledger, pipeline — with every dollar
    figure blurred or replaced by an em-dash. The system is the proof. Per CLAUDE.md §8
    (owner-set 2026-08-19), any screenshot shown to Chris for a decision is marked up with red
