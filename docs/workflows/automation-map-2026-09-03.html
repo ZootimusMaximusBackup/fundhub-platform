@@ -1,0 +1,469 @@
+<title>FundHub Automation Map</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --paper:#FAF8F4; --ink:#14110F; --ink2:#3D3832; --mute:#6F675E; --rule:#E3DED6; --soft:#F1EDE6;
+    --accent:#D9541E; --accent-ink:#FFFFFF; --ok:#2E7D4F; --warn:#B7791F; --stop:#B3261E; --chip:#FBE9DF;
+    --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:'Source Sans 3',system-ui,-apple-system,'Segoe UI',sans-serif; --serif:'Fraunces',Georgia,'Times New Roman',serif;
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+    --paper:#16140F; --ink:#F1ECE4; --ink2:#D8D1C6; --mute:#9E958A; --rule:#2C2822; --soft:#1F1C16;
+    --accent:#F07F3C; --accent-ink:#16140F; --ok:#5DBB86; --warn:#D9A441; --stop:#E5665B; --chip:#3A2418; } }
+  :root[data-theme="dark"]{
+    --paper:#16140F; --ink:#F1ECE4; --ink2:#D8D1C6; --mute:#9E958A; --rule:#2C2822; --soft:#1F1C16;
+    --accent:#F07F3C; --accent-ink:#16140F; --ok:#5DBB86; --warn:#D9A441; --stop:#E5665B; --chip:#3A2418; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.55 var(--sans)}
+  .wrap{max-width:1240px;margin:0 auto;padding:28px 24px 96px}
+  h1{font:500 38px/1.05 var(--serif);margin:0 0 6px;text-wrap:balance}
+  h2{font:500 26px/1.15 var(--serif);margin:0 0 8px;text-wrap:balance}
+  h3{font:600 12px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin:26px 0 10px}
+  p{max-width:70ch;margin:0 0 10px;color:var(--ink2)}
+  .lede{font-size:17px;color:var(--ink);max-width:72ch}
+  .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:22px 0 18px;border-bottom:1px solid var(--rule);padding-bottom:12px}
+  .tab{font:600 14px/1 var(--sans);padding:9px 13px;border:1px solid var(--rule);border-radius:999px;background:none;color:var(--ink2);cursor:pointer}
+  .tab:hover,.tab:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+  .tab[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  section.off{position:absolute;left:-300vw;top:0;width:1180px;visibility:hidden;pointer-events:none}
+  .wrap{position:relative}
+  .diagram{background:var(--soft);border:1px solid var(--rule);border-radius:6px;padding:12px 14px;overflow-x:auto;margin:10px 0 18px}
+  .diagram .mermaid{margin:0}
+  /* The engine shrinks a wide chart to fit; a shrunk chart is unreadable. Natural size, scroll sideways inside the box. */
+  .diagram svg{max-width:none !important;width:auto !important;height:auto}
+  .diagram{padding-bottom:16px}
+  .scrollhint{font-size:12.5px;color:var(--mute);margin:-12px 0 16px}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--mute);margin:0 0 14px}
+  .legend span b{color:var(--ink2);font-weight:600}
+  table{border-collapse:collapse;width:100%;font-size:14px;margin:6px 0 14px}
+  th{font:600 11px/1.2 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--mute);text-align:left;padding:8px 10px;border-bottom:2px solid var(--rule)}
+  td{padding:9px 10px;border-bottom:1px solid var(--rule);vertical-align:top;color:var(--ink2)}
+  td.k{font-family:var(--mono);font-size:12.5px;color:var(--ink);white-space:nowrap}
+  .tbl{overflow-x:auto}
+  code{font-family:var(--mono);font-size:12.5px;background:var(--soft);padding:1px 5px;border-radius:3px;color:var(--ink)}
+  .gap{border-left:3px solid var(--warn);padding:6px 0 6px 14px;margin:12px 0;max-width:76ch;font-size:14.5px}
+  .gap b{color:var(--warn)}
+  .stopbox{border-left:3px solid var(--stop);padding:6px 0 6px 14px;margin:12px 0;max-width:76ch;font-size:14.5px}
+  .stopbox b{color:var(--stop)}
+  .note{font-size:13.5px;color:var(--mute);max-width:76ch}
+  .pill{display:inline-block;font:600 11px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:999px;border:1px solid var(--rule);color:var(--mute);margin-left:6px;vertical-align:middle}
+  .pill.retired{border-color:var(--stop);color:var(--stop)}
+  .pill.gapp{border-color:var(--warn);color:var(--warn)}
+</style>
+
+<div class="wrap">
+<h1>FundHub Automation Map</h1>
+<p class="lede">What the system is supposed to do on its own at every point of the customer journey, read out of the code on 2026-09-03. Every box names the file that does it, the event that fires it, the exact email or text it sends, and how long it waits. This is the answer key for the walkthrough.</p>
+<p class="note">Source of truth: <code>src/workflows/index.mjs</code> (68 registered automations) plus the sync handlers in <code>src/handlers/</code>. "Registered" means the code will run it. Whether it actually fires on the live site is what the walk measures. Three things are marked retired or placeholder because the code says so.</p>
+
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" data-tab="front" aria-selected="true">1 · Front door</button>
+  <button class="tab" role="tab" data-tab="qual">2 · Qualification</button>
+  <button class="tab" role="tab" data-tab="funding">3 · Funding DFY</button>
+  <button class="tab" role="tab" data-tab="repair">4 · Repair DFY + Trial</button>
+  <button class="tab" role="tab" data-tab="edu">5 · Blueprint + Academy</button>
+  <button class="tab" role="tab" data-tab="wl">6 · White-label</button>
+  <button class="tab" role="tab" data-tab="clocks">7 · Clocks</button>
+  <button class="tab" role="tab" data-tab="all">All 68</button>
+</div>
+
+<div class="legend"><span><b>Rounded</b> = the customer or staff does it</span><span><b>Box</b> = automation (file name)</span><span><b>Hexagon</b> = message sent, by template key</span><span><b>Diamond</b> = gate or decision</span><span><b>Double box</b> = known gap</span><span><b>Dotted arrow</b> = happens after a wait</span></div>
+
+<!-- ───────────────────────── 1 FRONT DOOR ───────────────────────── -->
+<section id="tab-front" role="tabpanel">
+<h2>1 · Front door — every offer starts here</h2>
+<p>Ad click to sales call. Identical for all six paths; the offer only splits after the call.</p>
+<div class="diagram"><pre class="mermaid">
+%%{init: {'flowchart': {'wrappingWidth': 230, 'useMaxWidth': false, 'nodeSpacing': 28, 'rankSpacing': 36}}}%%
+flowchart TD
+    AD(["`Person taps the ad · URL carries utm_source/medium/campaign/content/term`"]) --> WATCH(["`/watch VSL → Get Started`"])
+    WATCH --> APPLY(["`/apply survey · contact first, 8 questions, branches at Do you have a business`"])
+    APPLY -->|"`ClickFunnels webhook → entry.captured (+ survey.submitted when answers exist)`"| E1
+
+    subgraph E1["`entry.captured`"]
+
+      direction TB
+      H1["`handlers/client-lifecycle · creates the client, stores UTMs + ad row, tag lead:new, Sales card → new_lead`"]
+      W00["`s-00-welcome`"] --> M00{{"`EMAIL-S00-WELCOME + SMS-S00-WELCOME`"}}
+      W01["`s-01-new-lead-intake · same card/tag, idempotent`"]
+      W02["`s-02-incomplete-survey-nudge`"] -.->|"`20 min, only if survey never arrived`"| M02{{"`EMAIL-S02-FINISH-APPLICATION`"}}
+      WAT["`at-01-first-touch-capture · first-touch attribution`"]
+      WAF["`af-02-referral-ownership-capture · a1/a2 affiliate ownership`"]
+    end
+
+    E1 -->|"`survey.submitted with cf_svy_available_capital`"| S1
+    subgraph S1["`survey.submitted`"]
+      direction TB
+      H2["`handlers/client-lifecycle · answers → custom fields, card → survey_complete`"]
+      WNB["`s-nobook-chase · if no booking`"] -.->|"`2h · 24h · 72h`"| MNB{{"`SMS-NOBOOK-01/02/03 + EMAIL-NOBOOK-01/02/03`"}}
+    end
+
+    S1 --> BOOK(["`/funding-book-call · picks a slot`"])
+    BOOK -->|"`booking.created`"| B1
+    subgraph B1["`booking.created`"]
+      direction TB
+      H3["`handlers/comms · task Strategy session booked for closer, bookings row, tag call:booked, card → booked`"]
+      W04["`s-04-call-booked · card → booked`"]
+      W04B["`s-04b-booking-reminders`"] --> M04{{"`SMS-S04-01-CONFIRM + EMAIL-S04-01-CONFIRM (carries portal access)`"}}
+      W04B -.->|"`T-24h · T-2h`"| M04R{{"`SMS-S04-02-REMIND-24H · SMS-S04-03-REMIND-2H`"}}
+      W04C["`s-04c-staff-booked-alert · tells staff`"]
+      WBS["`bs-01-precall-launcher`"] --> MBS{{"`SMS-BS01-01-BOOKED · SMS-BS01-02-PRECALL · SMS-BS01-03-DAYOF`"}}
+      WJ["`ai-set-01-josh-setter · AI CALL via Bland, waits out quiet hours`"] --> CALLJ(["`Phone rings: Josh confirms the session`"])
+      W3W["`ai-set-04-3way-handoff`"] -.->|"`T-15 min`"| M3W{{"`SMS-AISET04-HANDOFF + task for closer`"}}
+      WDPC2["`dpc-02-call-outcome-enforcement`"] -.->|"`5 min after slot ends, no outcome logged`"| NOSHOW["`emits booking.noshow · card → showed or lost`"]
+      WDPC5["`dpc-05-no-progress-escalation`"] -.->|"`72h no progress`"| M5{{"`EMAIL/SMS-DPC05-NO-PROGRESS-72H + task funding_advisor`"}}
+      WPI[["`s-portal-invite · RETIRED, returns owned_by_s04b`"]]
+    end
+
+    NOSHOW -->|"`booking.noshow`"| NS["`s-05a-no-show-recovery`"] --> MNS{{"`EMAIL/SMS-S05A-NOSHOW-RECOVERY, then -02, -03, -04 over days + task for closer`"}}
+    B1 --> CALL(["`Closer opens Closer Dashboard → Present → logs disposition`"])
+    CALL -->|"`call.completed (disposition, offerKey)`"| C1
+    subgraph C1["`call.completed`"]
+      direction TB
+      WOB["`s-offer-bucket`"] --> MOB{{"`ONE of EMAIL-OFFER-SOFT-PULL / -FUNDING-DFY / -REPAIR-DFY / -REPAIR-TRIAL / -UWIQ-DELIVERABLES / -FUNDING-MASTERY / -NONE`"}}
+      WNA["`ai-set-03-no-answer-cadence`"] -.->|"`30 min · 2h`"| MNA{{"`SMS-AISET03-MSG1/2/3`"}}
+      W08["`s-08-post-call-funding-declined · task for closer, tag offer:funding-didnt-buy`"]
+      WDS1[["`ds-01-repair-referral · gated on a PLACEHOLDER link, treat as not live`"]]
+    end
+    INB(["`Client replies by text`"]) -->|"`message.inbound`"| WDPC3["`dpc-03-inbound-reply-router · reschedule → SMS-DPC04-RESCHEDULE-REBOOKING, buy → card closed_won/downsell`"]
+    INB --> AGENT["`agents/runtime · AI reply agent answers inbound texts`"]
+</pre></div>
+<p class="scrollhint">Wide chart: scroll sideways inside the box.</p>
+<div class="gap"><b>Watch for:</b> the confirm email is the only portal invite now (s-portal-invite is retired). The Josh call and the no-answer texts are the two AI touches on this tab; a 0.13-second Bland call is a failure, not a call.</div>
+</section>
+
+<!-- ───────────────────────── 2 QUALIFICATION ───────────────────────── -->
+<section id="tab-qual" role="tabpanel" class="off">
+<h2>2 · Qualification — the credit pull decides the road</h2>
+<p>The $32 soft pull, the tier engine, and what each outcome fires. This is where "which offer" gets decided by data, before the closer sells.</p>
+<div class="diagram"><pre class="mermaid">
+%%{init: {'flowchart': {'wrappingWidth': 230, 'useMaxWidth': false, 'nodeSpacing': 28, 'rankSpacing': 36}}}%%
+flowchart TD
+    SP(["`Closer: Present → Send soft pull ($32 + approval form)`"]) --> LINK{{"`Consent link emailed to the client (signed, expiring)`"}}
+    LINK --> FORM(["`Client types name, SSN, DOB, address → pays $32`"])
+    FORM -->|"`Commas webhook → payment.received + diagnostic.paid`"| D1
+    subgraph D1["`diagnostic.paid`"]
+      direction TB
+      HD["`handlers/diagnostic-soft-pull + money-chain · record the sale, grant credit-analysis-report`"]
+      C00["`c-00-crs-soft-pull-request · consent gate → CRS pull · hold Awaiting CRS`"]
+    end
+    C00 --> PULL{"`Bureau pull OK?`"}
+    PULL -->|"`No: consent missing or vendor error`"| FAIL[["`Refused, logged. No tier. Card does not move`"]]
+    PULL -->|"`Yes → analysis.completed then decision.rendered`"| A1
+    subgraph A1["`analysis.completed`"]
+      direction TB
+      U02["`u-02-analyzer-complete-delivery`"] --> MU02{{"`EMAIL-U02-ANALYZER-FUNDING-DELIVERY or -REPAIR-DELIVERY + task funding_advisor`"}}
+      C06["`c-06-crs-results-router · tags path:funding / path:repair / hold:declined`"] --> MC06{{"`EMAIL-C06-DECLINE + SMS-C06-DECLINE when declined`"}}
+      C02["`c-02-inquiry-created · new inquiries → hold New Inquiries, task inquiry_specialist`"]
+      U03["`u-03-crs-snapshot-sync · negatives snapshot, tag crs:snapshot`"]
+      U04["`u-04-promote-crs-primary`"]
+      U05["`u-05-data-health-monitor · tag analyzer:data-incomplete + task`"]
+      DPC1["`dpc-01-analyzer-lock`"]
+    end
+    A1 -->|"`decision.rendered`"| DEC["`handlers/client-lifecycle · stamps outcome_tier + funding estimate, card → decision_rendered`"]
+    DEC --> TIER{"`Outcome tier (vendor engine)`"}
+    TIER -->|"`PREMIUM_STACK · FULL_FUNDING · FUNDING_PLUS_REPAIR`"| RF(["`Funding road → tab 3`"])
+    TIER -->|"`REPAIR_ONLY`"| RR(["`Repair road → tab 4`"])
+    TIER -->|"`MANUAL_REVIEW · FRAUD_HOLD`"| RM(["`Human review. No automation sells here`"])
+    RF --> EDU(["`Education is a closer choice on any tier → tab 5`"])
+    RR --> EDU
+</pre></div>
+<div class="tbl"><table>
+<tr><th>Tier</th><th>What the engine saw</th><th>Road the code takes</th></tr>
+<tr><td class="k">PREMIUM_STACK</td><td>High scores, deep clean file</td><td>Funding (isFundingPath = true)</td></tr>
+<tr><td class="k">FULL_FUNDING</td><td>Clean file, seasoned lines, utilization fine</td><td>Funding</td></tr>
+<tr><td class="k">FUNDING_PLUS_REPAIR</td><td>Some bureaus clean, some dirty</td><td>Funding, with dispute letters for the dirty bureaus</td></tr>
+<tr><td class="k">REPAIR_ONLY</td><td>Active derogatories, charge-offs, collections</td><td>Repair (isRepairOnlyPath = true)</td></tr>
+<tr><td class="k">MANUAL_REVIEW</td><td>Thin file, low confidence, single bureau</td><td>No automatic road</td></tr>
+<tr><td class="k">FRAUD_HOLD</td><td>Identity mismatch across bureaus</td><td>Stops. Hold Fraud Alert</td></tr>
+</table></div>
+<div class="stopbox"><b>Live warning:</b> the Pull TU/EX/EQ buttons on the Client Control Panel and a paid $32 link both fire a real bureau pull on the live site. In the walkthrough the credit file is pushed in by Claude instead, and the same analysis.completed → decision.rendered chain runs.</div>
+</section>
+
+<!-- ───────────────────────── 3 FUNDING ───────────────────────── -->
+<section id="tab-funding" role="tabpanel" class="off">
+<h2>3 · Funding, done-for-you — $3,000 deposit + 10% success fee</h2>
+<p>From the deposit to the success-fee invoice and the collections chase. This is the longest chain in the system.</p>
+<div class="diagram"><pre class="mermaid">
+%%{init: {'flowchart': {'wrappingWidth': 230, 'useMaxWidth': false, 'nodeSpacing': 28, 'rankSpacing': 36}}}%%
+flowchart TD
+    PAY(["`Closer: Deposit disposition → contract FUNDING-AGREEMENT → pay link $3,000`"]) --> CS["`handlers/contract-signed · contract.signed`"]
+    PAY -->|"`Commas webhook → payment.received + deposit.paid + sale.closed`"| P1
+    subgraph P1["`deposit.paid / sale.closed`"]
+      direction TB
+      HM["`handlers/money-chain · transaction, commission ledger, grants funding-snapshot entitlement`"]
+      HPR["`handlers/purchase-routing · card → funding_card_stacking / apply_now, tag client:funding`"]
+      S06["`s-06-post-call-funding-purchased`"] --> T06["`Task: Funding intake — pull CRS · funding_advisor · due 24h`"]
+      SDC["`s-doc-collection · hold Collect Documents, tag docs:missing`"] --> MDC{{"`EMAIL-DOC-01-REQUEST + SMS-DOC-01-REQUEST`"}}
+      C02B["`c-02b-inquiry-removal-requested · run_inquiry_removal, tag inquiry-removal-queued`"]
+      HIG["`handlers/inquiry-gate · drafts one inquiry case per bureau (nothing sends)`"]
+    end
+    P1 -->|"`card at apply_now → round.started`"| R1
+    subgraph R1["`round.started`"]
+      direction TB
+      F01["`f-01-funding-intake · lifecycle Funding Client, next action Collect Documents, pod task`"]
+      F02["`f-02-portal-id-missing`"] -.->|"`3h, then 2 days`"| MF02{{"`EMAIL/SMS-F02-ID-PORTAL-NEEDED, then -FOLLOWUP`"}}
+      F10["`f-10-client-funding-inbox-provisioner`"] --> MF10{{"`EMAIL-F10-INBOX-SETUP + SMS-F10-INBOX-SETUP`"}}
+      C05["`c-05-pre-funding-review · hold Awaiting CRS if no report, task funding_advisor`"]
+      RSN["`round-started-client-notify`"] --> MRS{{"`SMS-ROUND-STARTED-NOTIFY`"}}
+      BC1["`bc-01-customer-responsiveness`"] -.->|"`24h · 48h`"| BC1X["`escalates if client silent`"]
+      BC2["`bc-02-customer-friction`"]
+    end
+    R1 --> APPS(["`Advisor: Generate Apps → 30–50 matched lenders → applications sent`"])
+    APPS -->|"`docs.received`"| F06A["`f-06-funding-conditions-missing-docs · clears hold Missing Documents`"]
+    APPS -->|"`card → round_submitted → round.submitted`"| F03["`f-03-round-submitted`"] --> MF03{{"`EMAIL/SMS-F03-ROUND-SUBMITTED`"}}
+    BANK(["`Bank emails land in the Bank Inbox`"]) -->|"`mail.response`"| MR
+    subgraph MR["`mail.response`"]
+      direction TB
+      F11["`f-11-bank-email-event-router · approval → card approved + task`"]
+      F06B["`f-06 · conditions / missing docs`"] --> MF06{{"`EMAIL/SMS-F06-MISSING-DOCS`"}}
+      F09["`f-09-funding-declined-no-path · task funding_advisor`"]
+    end
+    MR -->|"`round.approved`"| RA
+    subgraph RA["`round.approved`"]
+      direction TB
+      F04["`f-04-round-approvals`"] --> MF04{{"`EMAIL/SMS-F04-ROUND-APPROVALS`"}}
+      F05["`f-05-inquiry-cleanup-gate · new inquiries between rounds`"]
+      SYS1["`sys-01-client-value-calculator`"]
+    end
+    RA --> FUNDED(["`Advisor: card → funded, amount entered`"])
+    FUNDED -->|"`round.funded (frozen: approvals total, fee %, sale, round)`"| RF
+    subgraph RF["`round.funded`"]
+      direction TB
+      F07["`f-07-funding-locked · success-fee invoice = approvals × fee %; no rate or no approvals = task, never a $0 invoice`"] --> MF07{{"`EMAIL-F07-FUNDING-LOCKED + SMS-F07-FUNDING-LOCKED`"}}
+      F08["`f-08-post-funding-monitoring · task funding_advisor`"]
+      N06["`n-06-renewal-second-wave`"] -.->|"`180 days`"| MN06{{"`EMAIL/SMS-N06-RENEWAL + task`"}}
+      LTV["`sys-01-ltv-calculator`"]
+      HMF["`handlers/money-chain · success-fee commission, clients.funded`"]
+    end
+    RF -->|"`invoice.sent`"| AR["`ar-collections`"] --> MAR1{{"`EMAIL/SMS-AR-01-FIRST-NOTICE`"}}
+    AR -.->|"`7 days`"| MAR2{{"`EMAIL/SMS-AR-02-REMINDER`"}}
+    AR -.->|"`7 more days`"| MAR3{{"`EMAIL/SMS-AR-03-FINAL-NOTICE · tag ar:collections-handoff`"}}
+    RF -->|"`round.closeout (next round or done)`"| N04["`n-04-post-funding-nurture`"] --> MN04{{"`EMAIL/SMS-N04-POST-FUNDING`"}}
+    RF -->|"`round.closeout`"| HIG2["`handlers/inquiry-gate · between-round inquiry cleanup`"]
+    INQ["`inquiry-call-sweeper · every 15 min · AI CALLS the bureaus for due inquiry cases`"] -.-> HIG
+</pre></div>
+<div class="gap"><b>Holds that stop a card from moving:</b> Awaiting CRS · Missing Documents · Collect Documents · New Inquiries · Fraud Alert · snapshot-negatives pause. A held card can only go to closed, action_required, or apply_now.</div>
+<div class="gap"><b>Known before the walk:</b> the Owner KPI "funded" tile counts <code>clients.funded</code>, which can read 0 while rounds are funded. ghl-doc-document-check on docs.received is a retired draft.</div>
+</section>
+
+<!-- ───────────────────────── 4 REPAIR ───────────────────────── -->
+<section id="tab-repair" role="tabpanel" class="off">
+<h2>4 · Credit repair — done-for-you $1,000 (6 rounds) and the $200 trial (2 rounds)</h2>
+<p>Same chain for both; the trial stops after round 2 and upsells into the full program, balance $800.</p>
+<div class="diagram"><pre class="mermaid">
+%%{init: {'flowchart': {'wrappingWidth': 230, 'useMaxWidth': false, 'nodeSpacing': 28, 'rankSpacing': 36}}}%%
+flowchart TD
+    PAY(["`Closer: contract CREDIT-REPAIR-AGREEMENT or REPAIR-TRIAL-AGREEMENT → pay link`"]) -->|"`payment.received`"| P1
+    subgraph P1["`payment.received (repair product)`"]
+      direction TB
+      HM["`handlers/money-chain · transaction, grants metro2-letter-pack`"]
+      HPR["`handlers/purchase-routing · card → optimization / intake`"]
+      DS2[["`ds-02-diy-letters · only for the DIY consulting package name, never on the funding road`"]]
+    end
+    P1 --> ENR[["`GAP: nothing enrolls automatically. Staff must POST /api/repair/enroll (Specialist desk)`"]]
+    ENR -->|"`repair.enrolled`"| RE["`repair/handlers · program full=6 rounds or trial=2 rounds, card → enrolled`"] --> MRW{{"`EMAIL-REPAIR-WELCOME`"}}
+    RE -->|"`repair.docs.needed`"| DOCS(["`Client uploads ID / proof via portal or MMS`"])
+    DOCS -->|"`docs.received`"| RBR["`repair-bureau-response + handlers/inbound-mms-docs + inquiry-docs`"]
+    DOCS -->|"`repair.docs.complete → repair.analysis.complete`"| ANA["`repair/handlers · disputes chosen from the credit file (0 letters if no CRS)`"]
+    ANA -->|"`repair.letters.ready`"| STAGE(["`Specialist: Stage → Generate letters → review PDFs`"])
+    STAGE -->|"`Specialist clicks Send with mail: true → PostGrid paper mail`"| SENT
+    subgraph SENT["`repair.letters.sent → repair.letters.delivered`"]
+      direction TB
+      MLS{{"`EMAIL-REPAIR-LETTERS-SENT`"}}
+    end
+    SENT -->|"`bureau reply arrives (upload / photo)`"| RESP{"`repair.response.received → parsed?`"}
+    RESP -->|"`repair.response.parsed`"| MRR{{"`EMAIL-REPAIR-RESPONSE-RESULTS`"}}
+    RESP -->|"`repair.parse.low_confidence / repair.response.retake`"| MRT{{"`EMAIL-REPAIR-RETAKE-PHOTO`"}}
+    MRR -->|"`repair.round.complete`"| ADV{{"`EMAIL-REPAIR-ROUND-ADVANCED`"}}
+    ADV --> NEXT{"`More rounds?`"}
+    NEXT -->|"`Yes`"| ANA
+    NEXT -->|"`Trial, round 2 done`"| UP{{"`EMAIL-REPAIR-TRIAL-COMPLETE-UPSELL · chip Trial done — sales · status upsell_pending`"}}
+    NEXT -->|"`Full, round 6 done → repair.program.complete`"| DONE(["`Card → program_complete`"])
+    UP --> FULL(["`Buys full: resumes at round 3, balance $800`"]) --> ANA
+    RESP -->|"`repair.round.escalated / repair.stalled`"| ESC["`repair/handlers · card → stalled, staff attention`"]
+</pre></div>
+<div class="gap"><b>Known before the walk:</b> no enroll-on-payment (the endpoint exists, nothing calls it after a sale). The disposition for a repair sale logs as <em>downsell</em>, only FUNDING_DFY logs <em>deposit</em>. ds-01 repair referral texts are behind a placeholder link. Phone-inquiry launch is on hold.</div>
+<div class="stopbox"><b>Live warning:</b> Send with mail is real paper through PostGrid. Stop at "letters reviewed" during the walk.</div>
+</section>
+
+<!-- ───────────────────────── 5 EDUCATION ───────────────────────── -->
+<section id="tab-edu" role="tabpanel" class="off">
+<h2>5 · Capital Blueprint ($1,000) and Capital Academy ($5,000) — portal products</h2>
+<p>Short chains. The product is access. What fires is the payment record, the entitlement, the offer email, and the portal magic link.</p>
+<div class="diagram"><pre class="mermaid">
+%%{init: {'flowchart': {'wrappingWidth': 230, 'useMaxWidth': false, 'nodeSpacing': 28, 'rankSpacing': 36}}}%%
+flowchart TD
+    CALL(["`Closer: Present → picks Blueprint or Academy → pay link (Academy also sends contract FUNDING-MASTERY-AGREEMENT)`"])
+    CALL -->|"`call.completed`"| OB["`s-offer-bucket`"] --> MOB{{"`EMAIL-OFFER-UWIQ-DELIVERABLES now · EMAIL-OFFER-FUNDING-MASTERY only after the link is PAID`"}}
+    CALL -->|"`payment.received`"| P1
+    subgraph P1["`payment.received`"]
+      direction TB
+      HM["`handlers/money-chain · transaction, commission, grantFromTransaction`"]
+      ENT{"`product_entitlements row for this product?`"}
+    end
+    ENT -->|"`funding-mastery → funding-mastery-course`"| ACAD(["`Portal: Capital Academy tile unlocked → module accordion`"])
+    ENT -->|"`consulting-package → metro2-letter-pack only`"| BP[["`GAP: Blueprint tile gates on credit-optimization-roadmap, which nothing grants. Tile stays LOCKED after purchase`"]]
+    P1 --> ML{{"`EMAIL-PORTAL-MAGIC-LINK (portal-login.html?t=token)`"}}
+    ML --> PORTAL(["`Client signs in: tiles paint from live entitlements`"])
+    ACAD --> VID[["`Every module video: 'Video will show here when it is ready'`"]]
+    BP2[["`GAP: Blueprint has no contract template`"]]
+</pre></div>
+<div class="gap"><b>Fix already queued:</b> one migration adding the Blueprint entitlement rows (roadmap + bank-lender-match-list), and a contract template for Blueprint. Both were found in the code before the walk.</div>
+</section>
+
+<!-- ───────────────────────── 6 WHITE-LABEL ───────────────────────── -->
+<section id="tab-wl" role="tabpanel" class="off">
+<h2>6 · White-label partner — $10,000 entry, Live Trial $297</h2>
+<p>Invite-only. Nothing sells itself here; the owner approves, then the partner's own site feeds FundHub's CRM.</p>
+<div class="diagram"><pre class="mermaid">
+%%{init: {'flowchart': {'wrappingWidth': 230, 'useMaxWidth': false, 'nodeSpacing': 28, 'rankSpacing': 36}}}%%
+flowchart TD
+    APPLY(["`fundhub.ai/affiliates → partner form, track White label`"]) --> INV["`api/public/partner-apply · partners row status INVITED · card on partner rail at invited · NO login, NO brand, NO page`"]
+    INV --> CALLW(["`Review call with the owner`"])
+    CALLW --> APPR(["`Owner: POST /api/partners/approve`"])
+    APPR --> ACT["`approvePartnerApplication · login minted · partner_brand row · page published /sites/id/apply · status ACTIVE · card moves`"]
+    ACT --> MPW{{"`EMAIL-PARTNER-WELCOME (queuePartnerWelcome)`"}}
+    ACT --> GAPAG[["`GAP: approval does not stamp agreement_signed_at → every payout stays blocked until it is set`"]]
+    ACT --> LOGIN(["`Partner signs in → partner-galaxy: PARTNER VIEW — your book only · 3 tiles`"])
+    ACT --> SITE(["`/sites/partnerId/apply in the partner's colours (custom domain not live)`"])
+    SITE --> CLIENT(["`A person applies on the partner site`"])
+    CLIENT -->|"`entry.captured with partner attribution`"| FRONT(["`Same front door as tab 1 · client in the partner's book AND FundHub's CRM`"])
+    FRONT -->|"`payment.received on that client`"| REV["`partner_revenue share (50% front + back end) · handlers/money-chain`"]
+    REV -->|"`payment.received on a recruited partner's entry fee`"| REC["`partners/recruit · $2,000 recruit bonus, once`"]
+    PPF["`partner-production-floor · cron 1st of month 14:00 · production floor review`"]
+    TRIAL(["`Live Trial $297 · POST /api/trials/provision or public funnel-checkout item trial`"]) --> TRW["`live_trials row, clock NOT started · one per partner`"]
+    TRW --> TCLK["`trials/clock · 7 days`"] --> TCONV{"`convert?`"} -->|"`yes`"| ACT
+    TCONV -->|"`day 8, no`"| KEEP["`prospect keeps the leads · FundHub fulfils · paid at affiliate 20%`"]
+    ADDONS[["`Partner add-ons (Creative Intelligence $297/mo, DFY Marketing $2,497/mo, Lead Flow $99/call): subscription-billing-sweeper runs hourly but CHARGES NOBODY until SUBSCRIPTION_BILLING_ENABLED=true`"]]
+    AFF["`af-01-affiliate-drip · every 15 min · affiliate nurture sweep`"]
+</pre></div>
+<div class="gap"><b>Known before the walk:</b> the approve endpoint is live but no screen button was verified; the code comment calling it "not routed" is stale. Marketing-suite features are off unless the owner flips them. clients.partner_id is set on new partner-site clients only, 0 of 29 existing.</div>
+</section>
+
+<!-- ───────────────────────── 7 CLOCKS ───────────────────────── -->
+<section id="tab-clocks" role="tabpanel" class="off">
+<h2>7 · Clocks — things that run on a timer, not on an event</h2>
+<p>If one of these is down, messages queue and never leave, calls never dial, invoices never chase. Check these first when "nothing fired."</p>
+<div class="tbl"><table>
+<tr><th>Job</th><th>Schedule</th><th>What it does</th></tr>
+<tr><td class="k">message-dispatch-sweeper</td><td>every 5 min</td><td>Hands every queued email/SMS row to the provider. <b>Every message on this map goes through here.</b> Down = nothing sends.</td></tr>
+<tr><td class="k">commas-inbox-sweeper (Netlify)</td><td>every 1 min</td><td>Drains payment webhooks into events. Down = payments never become deposit.paid.</td></tr>
+<tr><td class="k">inquiry-call-sweeper</td><td>every 15 min</td><td>Places real AI bureau calls for inquiry cases whose call_due_at has passed.</td></tr>
+<tr><td class="k">af-01-affiliate-drip</td><td>every 15 min</td><td>Affiliate nurture sweep.</td></tr>
+<tr><td class="k">meet-transcript-sweeper</td><td>every 10 min</td><td>Pulls call transcripts.</td></tr>
+<tr><td class="k">blake-lead-watch</td><td>every 5 min</td><td>Watches for Blake inbound leads.</td></tr>
+<tr><td class="k">subscription-billing-sweeper</td><td>hourly at :17</td><td>Partner add-on billing rail. Charges nobody until SUBSCRIPTION_BILLING_ENABLED=true.</td></tr>
+<tr><td class="k">contract-chaser</td><td>daily 10:00</td><td>Chases unsigned contracts.</td></tr>
+<tr><td class="k">daily-pulse</td><td>daily 7:00 Denver</td><td>Owner pulse.</td></tr>
+<tr><td class="k">partner-production-floor</td><td>1st of month 14:00</td><td>Partner production floor review.</td></tr>
+<tr><td class="k">staff-message-sweeper · social-publish-sweeper · creative-job-runner · hubstaff-poll-sweeper (Netlify)</td><td>5 / 5 / 2 / 10 min</td><td>Staff messages, social posts, creative jobs, time tracking.</td></tr>
+</table></div>
+<div class="gap"><b>Fences that silence everything:</b> MESSAGING_DRY_RUN and ADAPTERS_DRY_RUN (checked 2026-09-03: both 0 = sending allowed) · the company switch messaging_settings.outbound_enabled (true) · the compliance gate (opt-out, quiet hours, restricted words; +sim- addresses skip quiet hours only).</div>
+</section>
+
+<!-- ───────────────────────── ALL ───────────────────────── -->
+<section id="tab-all" role="tabpanel" class="off">
+<h2>All 68 registered automations</h2>
+<p class="note">Read from <code>src/workflows/index.mjs</code> and each file. "Trigger" is the event or cron. Empty cells mean the file sends no message / makes no task / moves no card. Status: registered unless the code itself says retired or placeholder; "fires on live" is what the walk proves.</p>
+<div class="tbl"><table>
+<tr><th>File</th><th>Trigger</th><th>Sends</th><th>Creates / moves</th><th>Waits</th><th>Note</th></tr>
+<tr><td class="k">af-01-affiliate-drip</td><td>cron */15</td><td></td><td></td><td></td><td></td></tr>
+<tr><td class="k">af-02-referral-ownership-capture</td><td>entry.captured · diagnostic.paid · analysis.completed</td><td></td><td>affiliate ownership a1/a2</td><td></td><td></td></tr>
+<tr><td class="k">ai-set-01-josh-setter</td><td>booking.created</td><td><b>AI CALL (Bland)</b></td><td></td><td>quiet hours</td><td>cancels on booking.cancelled</td></tr>
+<tr><td class="k">ai-set-03-no-answer-cadence</td><td>call.completed</td><td>SMS-AISET03-MSG1/2/3</td><td></td><td>30m · 2h</td><td></td></tr>
+<tr><td class="k">ai-set-04-3way-handoff</td><td>booking.created</td><td>SMS-AISET04-HANDOFF</td><td>task closer</td><td>T-15 min</td><td></td></tr>
+<tr><td class="k">ar-collections</td><td>invoice.sent · payment.received</td><td>EMAIL/SMS-AR-01, -02, -03</td><td>tag ar:collections-handoff</td><td>7d · 7d</td><td>cancels on invoice.paid</td></tr>
+<tr><td class="k">at-01-first-touch-capture</td><td>entry.captured</td><td></td><td>first-touch fields</td><td></td><td></td></tr>
+<tr><td class="k">bc-01-customer-responsiveness</td><td>round.started</td><td></td><td>hold Awaiting CRS</td><td>24h · 48h</td><td></td></tr>
+<tr><td class="k">bc-02-customer-friction</td><td>round.started</td><td></td><td></td><td></td><td></td></tr>
+<tr><td class="k">blake-lead-watch</td><td>cron */5</td><td></td><td></td><td></td><td></td></tr>
+<tr><td class="k">bs-01-precall-launcher</td><td>booking.created</td><td>SMS-BS01-01-BOOKED · -02-PRECALL · -03-DAYOF</td><td>tags bs:precall, call:booked</td><td>timed to the slot</td><td></td></tr>
+<tr><td class="k">c-00-crs-soft-pull-request</td><td>diagnostic.paid</td><td></td><td>CRS pull · hold Awaiting CRS</td><td></td><td>consent gate; real bureau pull on live</td></tr>
+<tr><td class="k">c-02-inquiry-created</td><td>analysis.completed</td><td></td><td>task inquiry_specialist · hold New Inquiries</td><td></td><td></td></tr>
+<tr><td class="k">c-02b-inquiry-removal-requested</td><td>deposit.paid</td><td></td><td>tag inquiry-removal-queued</td><td></td><td></td></tr>
+<tr><td class="k">c-03-inquiry-removed-resume-or-hold</td><td>inquiry.removed</td><td></td><td>task inquiry_specialist · hold Fraud Alert</td><td></td><td></td></tr>
+<tr><td class="k">c-05-pre-funding-review</td><td>round.started</td><td></td><td>task funding_advisor · hold Awaiting CRS</td><td></td><td></td></tr>
+<tr><td class="k">c-06-crs-results-router</td><td>analysis.completed</td><td>EMAIL/SMS-C06-DECLINE</td><td>task funding_advisor · tags path:funding/repair</td><td></td><td></td></tr>
+<tr><td class="k">contract-chaser</td><td>cron daily 10:00</td><td></td><td></td><td></td><td></td></tr>
+<tr><td class="k">daily-pulse</td><td>cron daily 7:00 Denver</td><td></td><td></td><td></td><td></td></tr>
+<tr><td class="k">dpc-01-analyzer-lock</td><td>analysis.completed</td><td></td><td></td><td></td><td></td></tr>
+<tr><td class="k">dpc-02-call-outcome-enforcement</td><td>booking.created</td><td></td><td>card sales → showed / lost · emits booking.noshow</td><td>5 min after slot end</td><td></td></tr>
+<tr><td class="k">dpc-03-inbound-reply-router</td><td>message.inbound</td><td>SMS-DPC04-RESCHEDULE-REBOOKING</td><td>task funding_advisor · card closed_won / downsell</td><td></td><td></td></tr>
+<tr><td class="k">dpc-05-no-progress-escalation</td><td>booking.created</td><td>EMAIL/SMS-DPC05-NO-PROGRESS-72H</td><td>task funding_advisor</td><td>72h</td><td></td></tr>
+<tr><td class="k">ds-01-repair-referral</td><td>call.completed</td><td>SMS/EMAIL-DS01-REPAIR-REFERRAL</td><td>tag client:repair-referral</td><td></td><td><span class="pill gapp">placeholder link</span></td></tr>
+<tr><td class="k">ds-02-diy-letters</td><td>payment.received</td><td>EMAIL-DS02-DIY-LETTERS-READY</td><td>task admin · letter pack built in-repo</td><td></td><td>DIY package name only</td></tr>
+<tr><td class="k">f-01-funding-intake</td><td>round.started</td><td></td><td>task funding_advisor · tag client:funding</td><td></td><td></td></tr>
+<tr><td class="k">f-02-portal-id-missing</td><td>round.started</td><td>EMAIL/SMS-F02-ID-PORTAL-NEEDED, -FOLLOWUP</td><td>tag docs:missing</td><td>3h · 2d</td><td></td></tr>
+<tr><td class="k">f-03-round-submitted</td><td>round.submitted</td><td>EMAIL/SMS-F03-ROUND-SUBMITTED</td><td></td><td></td><td></td></tr>
+<tr><td class="k">f-04-round-approvals</td><td>round.approved</td><td>EMAIL/SMS-F04-ROUND-APPROVALS</td><td></td><td></td><td></td></tr>
+<tr><td class="k">f-05-inquiry-cleanup-gate</td><td>round.approved</td><td></td><td></td><td></td><td></td></tr>
+<tr><td class="k">f-06-funding-conditions-missing-docs</td><td>mail.response · docs.received</td><td>EMAIL/SMS-F06-MISSING-DOCS</td><td>hold Missing Documents (set / cleared)</td><td></td><td></td></tr>
+<tr><td class="k">f-07-funding-locked</td><td>round.funded</td><td>EMAIL/SMS-F07-FUNDING-LOCKED</td><td>success-fee invoice · task if no rate</td><td></td><td></td></tr>
+<tr><td class="k">f-08-post-funding-monitoring</td><td>round.funded</td><td></td><td>task funding_advisor</td><td></td><td></td></tr>
+<tr><td class="k">f-09-funding-declined-no-path</td><td>mail.response</td><td></td><td>task funding_advisor</td><td></td><td></td></tr>
+<tr><td class="k">f-10-client-funding-inbox-provisioner</td><td>round.started</td><td>EMAIL/SMS-F10-INBOX-SETUP</td><td>task funding_advisor</td><td></td><td></td></tr>
+<tr><td class="k">f-11-bank-email-event-router</td><td>mail.response</td><td></td><td>card funding → approved · task</td><td></td><td></td></tr>
+<tr><td class="k">ghl-doc-document-check</td><td>docs.received</td><td></td><td></td><td></td><td><span class="pill retired">retired draft</span></td></tr>
+<tr><td class="k">inquiry-call-sweeper</td><td>cron */15</td><td><b>AI CALLS (Bland)</b></td><td></td><td>call_due_at</td><td>real calls</td></tr>
+<tr><td class="k">meet-transcript-sweeper</td><td>cron */10</td><td></td><td></td><td></td><td></td></tr>
+<tr><td class="k">message-dispatch-sweeper</td><td>cron */5</td><td>every queued message</td><td></td><td></td><td>the one everything depends on</td></tr>
+<tr><td class="k">n-01-cold-nurture · n-02-warm · n-03-hot</td><td>NOT FOUND in registry scan</td><td>EMAIL/SMS-N01, N02, N03</td><td></td><td></td><td>ported from GHL; trigger to confirm</td></tr>
+<tr><td class="k">n-04-post-funding-nurture</td><td>round.closeout</td><td>EMAIL/SMS-N04-POST-FUNDING</td><td></td><td></td><td></td></tr>
+<tr><td class="k">n-06-renewal-second-wave</td><td>round.funded</td><td>EMAIL/SMS-N06-RENEWAL</td><td>task funding_advisor</td><td>180 days</td><td></td></tr>
+<tr><td class="k">partner-production-floor</td><td>cron monthly</td><td></td><td></td><td></td><td></td></tr>
+<tr><td class="k">repair-bureau-response</td><td>docs.received</td><td></td><td>repair response intake</td><td></td><td></td></tr>
+<tr><td class="k">round-started-client-notify</td><td>round.started</td><td>SMS-ROUND-STARTED-NOTIFY</td><td></td><td></td><td></td></tr>
+<tr><td class="k">s-00-welcome</td><td>entry.captured</td><td>EMAIL-S00-WELCOME · SMS-S00-WELCOME</td><td></td><td></td><td>once, locked by s00_welcome_sent_at</td></tr>
+<tr><td class="k">s-01-new-lead-intake</td><td>entry.captured</td><td></td><td>card sales → new_lead · tag lead:new</td><td></td><td></td></tr>
+<tr><td class="k">s-02-incomplete-survey-nudge</td><td>entry.captured</td><td>EMAIL-S02-FINISH-APPLICATION</td><td></td><td>20 min</td><td>only if no survey</td></tr>
+<tr><td class="k">s-04-call-booked</td><td>booking.created</td><td></td><td>card sales → booked · tag call:booked</td><td></td><td></td></tr>
+<tr><td class="k">s-04b-booking-reminders</td><td>booking.created</td><td>SMS/EMAIL-S04-01-CONFIRM · SMS-S04-02-REMIND-24H · SMS-S04-03-REMIND-2H</td><td></td><td>T-24h · T-2h</td><td>cancels on reschedule; carries portal access</td></tr>
+<tr><td class="k">s-04c-staff-booked-alert</td><td>booking.created</td><td>staff alert</td><td></td><td></td><td></td></tr>
+<tr><td class="k">s-05a-no-show-recovery</td><td>booking.noshow</td><td>EMAIL/SMS-S05A-NOSHOW-RECOVERY, -02, -03, -04</td><td>task closer</td><td>24h · 48h · …</td><td></td></tr>
+<tr><td class="k">s-06-post-call-funding-purchased</td><td>deposit.paid</td><td></td><td>task Funding intake — pull CRS (funding_advisor, 24h)</td><td></td><td></td></tr>
+<tr><td class="k">s-08-post-call-funding-declined</td><td>call.completed</td><td></td><td>task closer · tag offer:funding-didnt-buy</td><td></td><td></td></tr>
+<tr><td class="k">s-doc-collection</td><td>deposit.paid</td><td>EMAIL/SMS-DOC-01-REQUEST</td><td>hold Collect Documents · tag docs:missing</td><td></td><td></td></tr>
+<tr><td class="k">s-nobook-chase</td><td>survey.submitted</td><td>SMS/EMAIL-NOBOOK-01, -02, -03</td><td></td><td>2h · 24h · 72h</td><td>stops when booked</td></tr>
+<tr><td class="k">s-offer-bucket</td><td>call.completed</td><td>one EMAIL-OFFER-* by offerKey</td><td>lock offer_bucket_email_sent_at</td><td></td><td>Academy only after paid</td></tr>
+<tr><td class="k">s-portal-invite</td><td>booking.created</td><td></td><td></td><td></td><td><span class="pill retired">retired</span> owned by s-04b</td></tr>
+<tr><td class="k">subscription-billing-sweeper</td><td>cron hourly</td><td></td><td></td><td></td><td>charges nobody until enabled</td></tr>
+<tr><td class="k">sys-01-client-value-calculator</td><td>round.approved</td><td></td><td>client value fields</td><td></td><td></td></tr>
+<tr><td class="k">sys-01-ltv-calculator</td><td>round.funded</td><td></td><td>LTV fields</td><td></td><td></td></tr>
+<tr><td class="k">u-02-analyzer-complete-delivery</td><td>analysis.completed</td><td>EMAIL-U02-ANALYZER-FUNDING-DELIVERY / -REPAIR-DELIVERY</td><td>task funding_advisor · tags path:*</td><td></td><td></td></tr>
+<tr><td class="k">u-03-crs-snapshot-sync</td><td>analysis.completed</td><td></td><td>tag crs:snapshot</td><td></td><td></td></tr>
+<tr><td class="k">u-04-promote-crs-primary</td><td>analysis.completed</td><td></td><td></td><td></td><td></td></tr>
+<tr><td class="k">u-05-data-health-monitor</td><td>analysis.completed</td><td></td><td>task funding_advisor · tag analyzer:data-incomplete</td><td></td><td></td></tr>
+</table></div>
+<h3>Sync handlers (run the instant the event fires, before any workflow)</h3>
+<div class="tbl"><table>
+<tr><th>Module</th><th>Listens to</th></tr>
+<tr><td class="k">handlers/client-lifecycle</td><td>entry.captured · survey.submitted · payment.received · payment.failed · diagnostic.paid · deposit.paid · decision.rendered · analysis.completed</td></tr>
+<tr><td class="k">handlers/comms</td><td>booking.created · booking.rescheduled · booking.cancelled · booking.noshow · call.completed · mail.response · message.inbound</td></tr>
+<tr><td class="k">handlers/money-chain</td><td>payment.received · diagnostic.paid · deposit.paid · sale.closed · round.started · round.funded · payment.refunded · payment.disputed</td></tr>
+<tr><td class="k">handlers/purchase-routing</td><td>deposit.paid · sale.closed · payment.received (not diagnostic.paid)</td></tr>
+<tr><td class="k">handlers/payment-links · diagnostic-soft-pull · contract-signed · contract-consent · inquiry-gate · inquiry-docs · inbound-mms-docs · commas-disputes · commas-subscriptions · staff-comp-alerts · customer-insights · partner-addons</td><td>payment.received · diagnostic.paid · contract.signed · deposit.paid + round.closeout · docs.received · message.inbound · payment.disputed · subscription.* · commission.paid</td></tr>
+<tr><td class="k">partners/recruit</td><td>payment.received (partner entry fee → $2,000 recruit bonus)</td></tr>
+<tr><td class="k">agents/runtime</td><td>message.inbound (AI reply agents)</td></tr>
+<tr><td class="k">repair/register</td><td>repair.enrolled → docs.needed → docs.complete → analysis.complete/empty → letters.ready → letters.sent → letters.delivered → response.received → response.parsed / parse.low_confidence → round.complete / round.escalated → program.complete, plus response.retake, stalled, cancelled</td></tr>
+</table></div>
+</section>
+</div>
+
+<script>
+(function () {
+  var KEY = "fh-automation-map-tab";
+  var tabs = document.querySelectorAll(".tab");
+  var panels = document.querySelectorAll("section[role=tabpanel]");
+  function show(name) {
+    tabs.forEach(function (t) { t.setAttribute("aria-selected", t.getAttribute("data-tab") === name ? "true" : "false"); });
+    panels.forEach(function (p) { p.classList.toggle("off", p.id !== "tab-" + name); });
+    try { localStorage.setItem(KEY, name); } catch (e) {}
+  }
+  tabs.forEach(function (t) { t.addEventListener("click", function () { show(t.getAttribute("data-tab")); }); });
+  var start = "front";
+  try { start = localStorage.getItem(KEY) || "front"; } catch (e) {}
+  if (!document.getElementById("tab-" + start)) start = "front";
+  show(start);
+})();
+</script>
