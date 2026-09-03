@@ -1,6 +1,7 @@
 # Manual walkthrough SOP — every product path, by hand, on the live site
 
 **Date:** 2026-09-03. **Who:** Chris types, Claude watches the data and fixes what breaks.
+**Visual version (same content, tickable):** https://claude.ai/code/artifact/27bace9d-10a4-468f-b5d7-931578044d68 — source saved beside this file as `manual-walkthrough-runbook.html`.
 **Where:** live fundhub.ai and apply.fundhub.ai. **Board:** `docs/workflows/manual-walkthrough-2026-09-03.md`.
 
 How to read this page: every path is one picture, then one checklist. Each checklist line is
