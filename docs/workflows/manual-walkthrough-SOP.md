@@ -32,6 +32,7 @@ Two guards built into the tools: the payment tool refuses the $32 soft-pull link
 - **Phone:** your own cell on every client. Texts and calls will really come to it.
 - **One email = one client.** The same contact cannot run the funnel twice.
 - **Ad URL first.** Every client starts by clicking its ad link in the sheet, so the closer screen shows gate / entry / primary / secondary.
+- **Private window, every client.** ClickFunnels remembers a finished survey in the browser and skips straight to "You're qualified. Pick a time below." Open each ad link in a NEW private window (Chrome: Cmd+Shift+N); close it when that client is done.
 - **Do not click:** Pull TU/EX/EQ on the Client Control Panel (real bureau pull); Send with mail on the repair desk (real paper mail); anything that deletes.
 - **Write findings, don't fix.** One line each, at the bottom of this page.
 
@@ -133,7 +134,7 @@ flowchart TD
 
 | Step | You do | You should see |
 |---|---|---|
-| 1.1 | Click ad link #1. Get Started. Fill all 9 screens. Book a slot. | Thank-you page with add-to-calendar. Welcome email + text on your phone within a minute. |
+| 1.1 | Open a **new private window**. Paste ad link #1. Get Started. Fill all 9 screens. Book a slot. | Thank-you page with add-to-calendar. Welcome email + text on your phone within a minute. |
 | 1.2 | Open `fundhub.ai/app/pipeline.html` | Sim One-Funding in the **Booked** column. Ad attribution card exists. |
 | 1.3 | Click the card → Client Control Panel | Survey answers on the file. Stage Booked. |
 | 1.4 | Open `fundhub.ai/app/closer-dashboard.html?client_id=<id>` (id from the URL of 1.3) | Name at top. Under it: **Gate 600+ · Entry Direct · Primary Funding, done-for-you · Secondary None**. |
