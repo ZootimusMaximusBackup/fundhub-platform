@@ -113,6 +113,9 @@ const NO_ORG_COLUMN = new Map([
   /* Owner SLO map — handler writes no SQL. listConnections() in
      src/slo/connections.mjs binds org_id = $1::uuid and returns [] without an org. */
   ["slo-connections.mjs", "scoped in src/slo/connections.mjs listConnections(), which binds org_id = $1::uuid and returns [] without an org"],
+  /* Ad books — the roll-up SQL lives in src/ads/store.mjs adAttributionRollup(),
+     which binds a.org_id = $1 from the session and returns [] without an org. */
+  ["ad-books.mjs", "scoped in src/ads/store.mjs adAttributionRollup(), which binds a.org_id = $1 and returns [] without an org"],
 ]);
 
 /* An allow-listed endpoint must still prove it hands the SESSION's org to

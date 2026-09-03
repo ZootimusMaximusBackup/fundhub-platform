@@ -195,6 +195,42 @@
     el.textContent = bits.join(" · ") + (nextAt ? "  ·  next " + nextAt : "  ·  nothing after this");
   }
 
+  /* The four ad lines: gate / entry / primary / secondary. One read of
+     /api/read/ad-attribution after the cockpit paints. Hidden until it
+     answers, and left hidden when it cannot, so the closer never reads a
+     guess. The wording is the owner's rule, said once here:
+     Direct = sell what they were promised. Sorting = lead with the primary
+     if there is one; every road is open. */
+  var OFFER_WORDS = {
+    funding_dfy: "Funding, done-for-you",
+    credit_optimization: "Credit optimization",
+    capital_blueprint: "Capital Blueprint",
+    capital_academy: "Capital Academy",
+    white_label: "White-label partner",
+    none: "None"
+  };
+  function offerWord(k) { return OFFER_WORDS[k] || k; }
+  function paintAd(cid) {
+    var box = document.getElementById("ccp-ad");
+    if (!box || !cid || !window.FHData) return;
+    window.FHData.read("ad-attribution", { client_id: cid }).then(function (r) {
+      var v = r && r.ok && r.data && r.data.resolved;
+      if (!v) { box.hidden = true; return; }
+      var known = r.data.registry && r.data.registry.known;
+      var adId = r.data.attribution && r.data.attribution.ad_id;
+      text(document.getElementById("ccp-ad-gate"), v.gate === "none" ? "No FICO gate" : v.gate + "+");
+      text(document.getElementById("ccp-ad-entry"), v.entry === "direct"
+        ? "Direct \u00b7 sell what they were promised"
+        : "Sorting \u00b7 every road is open" + (adId && !known ? " (ad " + adId + " not in the registry)" : (adId ? "" : " (no ad on file)")));
+      text(document.getElementById("ccp-ad-primary"), offerWord(v.primary_offer) +
+        (v.entry === "sorting" && v.primary_offer !== "none" ? " \u00b7 lead with it" : ""));
+      var sec = v.secondary_offers === "all" ? "All" :
+        (v.secondary_offers && v.secondary_offers.length ? v.secondary_offers.map(offerWord).join(", ") : "None");
+      text(document.getElementById("ccp-ad-secondary"), sec);
+      box.hidden = false;
+    });
+  }
+
   function paint(data) {
     state.data = data;
     var staff = data.staff || {};
@@ -840,6 +876,7 @@
     }
     paint(r.data);
     showLiveControls();
+    paintAd(clientId);
 
     var join = document.getElementById("fh-join");
     var hasJoinUrl = false;

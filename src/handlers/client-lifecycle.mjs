@@ -14,6 +14,7 @@
 import { on } from "../events/registry.mjs";
 import { logStaffEvent } from "../shifts/telemetry.mjs";
 import { resolveShiftId } from "../shifts/attribution.mjs";
+import { upsertClientAdAttribution } from "../ads/store.mjs";
 import { ensureGhlContactId, config as ghlConfig } from "../messaging/ghl-contacts.mjs";
 import { adaptersBlocked } from "../lib/dry-run.mjs";
 import { upsertSurveyCarbonCopy } from "./client-custom-fields.mjs";
@@ -264,6 +265,16 @@ export async function onEntryCaptured(event, db) {
     lifecycle_status: "New Lead",
     ...attributionFields(event.payload)
   });
+  // The typed attribution row (286): lane / ad_id / variant derived in the
+  // database from the raw UTMs. Non-fatal on purpose — a lead is never lost
+  // because its ad tag was odd; the jsonb copy above already has the raw values.
+  try {
+    await upsertClientAdAttribution(db, {
+      orgId: event.orgId, clientId, attribution: event.payload && event.payload.attribution
+    });
+  } catch (err) {
+    console.warn(`[client-lifecycle] ad attribution row not written for ${clientId}: ${String(err?.message || err)}`);
+  }
   await addTags(db, clientId, ["lead:new"]);
   // advance only — later CF contact.updated must not yank a booked card back.
   await advanceCardToStage(db, {

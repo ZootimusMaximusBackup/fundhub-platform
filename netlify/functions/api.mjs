@@ -108,6 +108,8 @@ import readCloserCall from "../../api/read/closer-call.mjs";
 import readCloserNow from "../../api/read/closer-now.mjs";
 import readDealMath from "../../api/read/deal-math.mjs";
 import readCloserDeck from "../../api/read/closer-deck.mjs";
+import readAdAttribution from "../../api/read/ad-attribution.mjs";
+import readAdBooks from "../../api/read/ad-books.mjs";
 import closerDeckWrite from "../../api/closer-deck.mjs";
 import readMyNumbers from "../../api/read/my-numbers.mjs";
 import readSalesFloor from "../../api/read/sales-floor.mjs";
@@ -527,6 +529,14 @@ export const ROUTES = {
   "read/closer-now": readCloserNow,
   "read/deal-math": readDealMath,
   "read/closer-deck": readCloserDeck,
+  /* Ad attribution (286). "read/ad-attribution" is the one client's ad and
+     the registry tags the closer reads on the call screen; "read/ad-books" is
+     booked calls grouped by lane, ad, variant or registry tag. Both
+     ROLE_SETS.STAFF, org from the session. Routed in the same commit as the
+     handlers — an attribution panel whose endpoint 404s is exactly the failure
+     this map exists to stop. */
+  "read/ad-attribution": readAdAttribution,
+  "read/ad-books": readAdBooks,
   "closer-deck": closerDeckWrite,
   "read/my-numbers": readMyNumbers,
   "read/sales-floor": readSalesFloor,

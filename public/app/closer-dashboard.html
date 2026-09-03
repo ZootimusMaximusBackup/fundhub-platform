@@ -433,6 +433,11 @@
     .call-cockpit .who{margin-bottom:32px;}
     .sec{margin-bottom:32px;}
   }
+    /* Ad lines under the client name. .caption gives the size (UI-STANDARDS 12.7);
+       the label is a word, never a colour (12.6). */
+    .who .ad-lines{margin-top:8px;display:grid;gap:2px;color:var(--ink)}
+    .who .ad-lines[hidden]{display:none} /* display:grid above would otherwise beat the hidden attribute */
+    .who .ad-lines .ad-k{display:inline-block;min-width:104px;color:var(--gray);text-transform:uppercase;letter-spacing:.04em}
 </style>
 <script defer src="shell.js"></script>
 <script src="demo-client-bootstrap.js"></script>
@@ -553,6 +558,16 @@
                 <span class="call-when" id="ccp-call-when" hidden>—</span>
               </div>
               <div class="meta" id="ccp-who-meta">Finding the next booked call…</div>
+              <!-- The four ad lines. Filled from /api/read/ad-attribution (286 +
+                   docs/ads/registry.json); hidden until it answers so nothing
+                   here is ever a guess. Direct = sell what they were promised.
+                   Sorting = lead with the primary if there is one, every road open. -->
+              <div class="ad-lines caption" id="ccp-ad" hidden>
+                <div><span class="ad-k">Gate</span><span id="ccp-ad-gate">—</span></div>
+                <div><span class="ad-k">Entry</span><span id="ccp-ad-entry">—</span></div>
+                <div><span class="ad-k">Primary</span><span id="ccp-ad-primary">—</span></div>
+                <div><span class="ad-k">Secondary</span><span id="ccp-ad-secondary">—</span></div>
+              </div>
               <p class="hero-next">Every field below fills from the live file when a call opens. Booked calls land here on their own &mdash; Up next lists what is coming.</p>
             </div>
             <div class="call-actions">
