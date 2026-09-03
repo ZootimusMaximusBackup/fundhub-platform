@@ -161,6 +161,8 @@ const API_KEYS = [
   "public/partner-page",
   "public/survey-submit",
   "public/unsubscribe",
+  "read/ad-attribution",
+  "read/ad-books",
   "read/affiliates",
   "read/agent-context",
   "read/agent-shadow-log",

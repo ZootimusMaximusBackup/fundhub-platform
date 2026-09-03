@@ -1,0 +1,84 @@
+<!--
+  06-utm-hidden-fields.html — paste into a Custom HTML/JS element on the
+  APPLICATION page (the one with the form), anywhere inside the page. One
+  fragment, no styling, no visible output.
+
+  What it does. Reads the five UTMs off the page URL the person arrived on
+  (utm_source, utm_medium, utm_campaign, utm_content, utm_term), keeps them in
+  sessionStorage so they survive the click from the VSL page to the form, and
+  copies them into hidden inputs on every ClickFunnels form on the page. CF
+  then posts them in the webhook as contact.custom_attributes.utm_* and the
+  CRM stores them (db/migrations/286_client_ad_attribution.sql).
+
+  The wire format (owner-set 2026-09-03):
+    utm_source   = fb
+    utm_medium   = paid
+    utm_campaign = lane        funding600 | premium | sorting | uwiq | wl
+    utm_content  = ad id       number-slug: 16-phase, 26-underwriter, 42-ringlights
+    utm_term     = variant     sun | nosun | sedona
+
+  Example ad URL:
+    https://apply.fundhub.ai/apply?utm_source=fb&utm_medium=paid&utm_campaign=funding600&utm_content=42-ringlights&utm_term=sun
+
+  Never keeps fbclid or any click id. First touch wins: a value already saved
+  in sessionStorage is not overwritten by a later page view without UTMs.
+
+  In ClickFunnels, hidden inputs are matched to a contact custom attribute by
+  their `name`. Create these five custom attributes once in the workspace
+  (Contacts → Settings → Custom attributes) with exactly these names:
+    utm_source, utm_medium, utm_campaign, utm_content, utm_term
+  and two more, optional but useful: landing_path, referrer_domain.
+-->
+<script>
+(function () {
+  var KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"];
+  var EXTRA = ["landing_path", "referrer_domain"];
+  var STORE = "fh_attribution";
+
+  function read() {
+    try { return JSON.parse(sessionStorage.getItem(STORE) || "{}") || {}; } catch (e) { return {}; }
+  }
+  function save(o) {
+    try { sessionStorage.setItem(STORE, JSON.stringify(o)); } catch (e) {}
+  }
+
+  // 1. Capture from the URL, once, first touch wins.
+  var saved = read();
+  var qs = new URLSearchParams(location.search);
+  var seen = false;
+  KEYS.forEach(function (k) {
+    var v = (qs.get(k) || "").trim();
+    if (v && !saved[k]) { saved[k] = v.slice(0, 200); seen = true; }
+  });
+  if (seen || !saved.landing_path) {
+    if (!saved.landing_path) saved.landing_path = location.pathname;
+    if (!saved.referrer_domain && document.referrer) {
+      try { saved.referrer_domain = new URL(document.referrer).hostname; } catch (e) {}
+    }
+  }
+  save(saved);
+
+  // 2. Stamp hidden inputs on every form. Re-run when CF re-renders the form.
+  function ensure(form, name, value) {
+    var el = form.querySelector('input[name="' + name + '"]');
+    if (!el) {
+      el = document.createElement("input");
+      el.type = "hidden";
+      el.name = name;
+      form.appendChild(el);
+    }
+    if (value && !el.value) el.value = value;
+  }
+  function stamp() {
+    var data = read();
+    var forms = document.querySelectorAll("form");
+    for (var i = 0; i < forms.length; i++) {
+      KEYS.concat(EXTRA).forEach(function (k) { ensure(forms[i], k, data[k] || ""); });
+    }
+  }
+  stamp();
+  if (document.readyState !== "complete") window.addEventListener("load", stamp);
+  var tries = 0;
+  var t = setInterval(function () { stamp(); if (++tries > 20) clearInterval(t); }, 500);
+})();
+</script>

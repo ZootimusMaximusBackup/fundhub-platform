@@ -127,7 +127,7 @@ export const OFFERS = Object.freeze({
   }),
   UWIQ_DELIVERABLES: Object.freeze({
     key: "UWIQ_DELIVERABLES",
-    name: "UnderwriteIQ Deliverables Package",
+    name: "Capital Blueprint",
     priceCents: 100000,
     priceMinCents: 100000,
     priceMaxCents: 500000,
@@ -140,7 +140,7 @@ export const OFFERS = Object.freeze({
   }),
   FUNDING_MASTERY: Object.freeze({
     key: "FUNDING_MASTERY",
-    name: "Funding Mastery course (A to Z)",
+    name: "Capital Academy",
     priceCents: 500000,
     financing: true,
     letters: false,

@@ -104,22 +104,44 @@ function landingPathOf(url) {
   }
 }
 
-/* Facebook / UTM from CF first_visit. Never keep click ids (fbclid). */
+/* Facebook / UTM attribution. Never keep click ids (fbclid).
+
+   THREE PLACES, IN ORDER OF TRUST, FIELD BY FIELD:
+     1. an explicit `attribution` object on the payload (what the application
+        form's hidden fields post — clickfunnels-fragments/06-utm-hidden-fields.html)
+     2. the same keys as hidden fields on the contact (custom_attributes /
+        custom_fields), which is where ClickFunnels puts a form's hidden inputs
+     3. CF's own visits.first_visit, the pre-existing source
+   The hidden fields win because they carry the UTMs of the ad URL the person
+   actually arrived on; first_visit can be an older visit from a different ad. */
+function firstObject(...cands) {
+  for (const c of cands) if (c && typeof c === "object" && !Array.isArray(c)) return c;
+  return null;
+}
 function pickVisitAttribution(d, b, contact) {
   const visit =
     (d && d.visits && d.visits.first_visit) ||
     (b && b.visits && b.visits.first_visit) ||
     (contact && contact.visits && contact.visits.first_visit) ||
     {};
-  const landing = visit.landing_page || visit.url || null;
+  const explicit = firstObject(b && b.attribution, d && d.attribution, contact && contact.attribution) || {};
+  const hidden = firstObject(
+    contact && contact.custom_attributes, d && d.custom_attributes,
+    contact && contact.custom_fields, d && d.custom_fields
+  ) || {};
+  const pick = (k) => decodeUtm(explicit[k]) ?? decodeUtm(hidden[k]) ?? decodeUtm(visit[k]);
+  const landing =
+    explicit.landing_path || landingPathOf(explicit.landing_page) ||
+    hidden.landing_path || landingPathOf(hidden.landing_page) ||
+    landingPathOf(visit.landing_page || visit.url);
   const out = {
-    utm_source: decodeUtm(visit.utm_source),
-    utm_medium: decodeUtm(visit.utm_medium),
-    utm_campaign: decodeUtm(visit.utm_campaign),
-    utm_content: decodeUtm(visit.utm_content),
-    utm_term: decodeUtm(visit.utm_term),
-    landing_path: landingPathOf(landing),
-    referrer_domain: visit.referring_domain || null
+    utm_source: pick("utm_source"),
+    utm_medium: pick("utm_medium"),
+    utm_campaign: pick("utm_campaign"),
+    utm_content: pick("utm_content"),
+    utm_term: pick("utm_term"),
+    landing_path: landing || null,
+    referrer_domain: explicit.referrer_domain || hidden.referrer_domain || visit.referring_domain || null
   };
   return Object.values(out).some(Boolean) ? out : null;
 }
