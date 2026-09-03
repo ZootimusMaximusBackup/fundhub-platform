@@ -98,6 +98,22 @@ If something is genuinely unsafe or broken, say it once, plainly, and then drop 
 
 Touching anything under `public/app/`? `docs/UI-STANDARDS.md` is law. Read it first.
 
+### 3a. Build order — back end first (owner rule, 2026-09-03)
+
+For anything new, this order, no exceptions:
+
+1. **Workflow first.** Before any schema, ask Chris one question at a time until you are 95% confident you understand the workflow — how it works today, what data and entities it creates, what state a record moves through. Then propose the schema. Do not propose a schema before the questions.
+2. **Schema → migration.** Constraints, enums, and guards live in the database, not in the UI.
+3. **Read endpoint → test that proves it.** Green tests must run against a real `DATABASE_URL`; a skipped `.pg.test.mjs` is not green.
+4. **Diagram it.** One page: the states a record moves through and the event that fires each transition. Save to `docs/journeys/<feature>-flow.md`. The front end is a window onto this diagram.
+5. **Front end last.** Treat it as throwaway. If the data is right it can be rebuilt in an hour. Never let a screen drive the data model.
+
+Rule of thumb from Chris: "work backwards" — back end proven, then visualize how it should function, then build the screen.
+
+### 3b. Everything goes in the repository (owner rule, 2026-09-03)
+
+Every deliverable, decision, list, script, and rule produced in a Claude session gets written to this repository in the same session — not left in chat, not left in an artifact. If a push is not possible from the environment, commit locally and hand Chris the file with the path it belongs at. Copy and ad scripts go under `docs/ads/`, task lists in `TODO.md`, flows in `docs/journeys/`, rules here.
+
 ## 4. Journey documentation
 
 Every flow in this system is documented as a Mermaid flowchart. This is how a non-coder sees what the system actually does. Keeping it accurate is part of the work, not a nice-to-have.

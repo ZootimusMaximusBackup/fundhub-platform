@@ -1,5 +1,40 @@
 # TODO
 
+## Chris — launch list, 2026-09-03 (launch Mon 9/7; financing approves Fri 9/4)
+
+### Today 9/3
+- [x] Six Sedona ads to Paul (16, 6, 26, 51, 42, 45)
+- [x] CRS soft pull live
+- [x] Ad attribution + registry (Claude Code, PR #330/#331)
+- [ ] Manual walkthrough 1–5pm: one client, ad → call → payment → fulfillment
+- [ ] Mail forward at usps.com
+- [ ] Calls after 5: credit optimization leads, Brandon Elliot (set Build Clock + First File numbers first; lead with 50% split, no clawback), Smart Start, storage unit
+- [ ] Apply: Meta Marketing API, Google Ads API, Partner API
+- [ ] If time: tweak 14 ads for Monday, VSL, Capital Blueprint + Capital Academy filming
+
+### Before Fri 9/4
+- [ ] Film VSL, send to Paul
+- [ ] SLO live: VSL in, SIM MODE off
+- [x] Merge #326, #327, #321 (all three on main as of 2026-09-03; #321 landed via #333)
+- [ ] Payouts + waterfall walked end to end
+- [ ] Quizzes working
+- [ ] Closer on the script
+
+### Sat–Sun
+- [ ] Lender list optimized and fixed
+- [ ] Filter 83 ads → top 30 = source of truth
+- [ ] Cut ad 41 (built on a guarantee we don't offer)
+
+### Mon 9/7
+- [ ] Launch primary offer
+- [ ] Film 14 in Sedona
+
+### White label — not Monday
+- [ ] Sell as-is: your brand, your ads, we fulfill; marketing = paid add-on. Drop Meta ad-library dependency.
+- [ ] Set Build Clock days + First File count
+- [ ] clients.partner_id attribution (0 of 29)
+- [ ] Non-circumvention clause, migration
+
 **Friday 2026-09-04 launches the FUNDING offer and the e-products.**
 Today is Monday 2026-08-31. Tomorrow is the shoot.
 
