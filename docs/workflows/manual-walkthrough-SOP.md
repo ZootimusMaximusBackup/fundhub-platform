@@ -73,6 +73,21 @@ Your phone on all seven. Your own name, SSN, DOB and address on the **consent fo
 | 6 | Sim / Six-Partner | `stanbridgejchris+sim-06@gmail.com` | `https://fundhub.ai/affiliates/` (partner form, track white label) | White-label partner |
 | 7 | Sim / Seven-Underpartner | `stanbridgejchris+sim-07@gmail.com` | the partner's own site, `/sites/<partnerId>/apply` (comes from #6) | A client under the partner |
 
+**Addresses you'll use** (PASTE-CLIENT-ID = the long id in the address bar after you click the client's card on the Pipeline board):
+
+| Screen | Address |
+|---|---|
+| Pipeline board (where the new lead shows first) | `https://fundhub.ai/app/pipeline.html` |
+| Client Control Panel (click the card, or paste with the id) | `https://fundhub.ai/app/client-control-panel.html?id=PASTE-CLIENT-ID` |
+| Closer Dashboard (the four ad lines) | `https://fundhub.ai/app/closer-dashboard.html?client_id=PASTE-CLIENT-ID` |
+| Present deck (soft pull, contract, pay link, disposition) | `https://fundhub.ai/app/present.html?contact=PASTE-CLIENT-ID` |
+| Calendar (advisor tasks) | `https://fundhub.ai/app/calendar.html` |
+| Specialist desk (repair letters) | `https://fundhub.ai/app/inquiry-remover.html` |
+| Finance OS (invoices, pay links) | `https://fundhub.ai/app/finance-os.html` |
+| Client portal (open from the magic-link email) | `https://fundhub.ai/app/client-portal.html` |
+| Partner application form | `https://fundhub.ai/affiliates/` |
+| Partner home (after approval) | `https://fundhub.ai/app/partner-galaxy.html` |
+
 **Survey answers on /apply** (nine screens; screen 6 branches):
 
 | Screen | Question | #1 Funding | #2 Repair | #3 Trial | #4 Blueprint | #5 Academy |
