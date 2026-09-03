@@ -40,7 +40,8 @@
     "notion:verify": "node scripts/notion-legacy-verify.mjs",
     "notion:all": "node scripts/notion-legacy-all.mjs",
     "lenders:audit": "node scripts/lenders-audit/run.mjs",
-    "lenders:audit:apply": "node scripts/lenders-audit/apply-manifest.mjs"
+    "lenders:audit:apply": "node scripts/lenders-audit/apply-manifest.mjs",
+    "flywheel:status": "node scripts/flywheel/status.mjs"
   },
   "dependencies": {
     "@netlify/blobs": "^10.7.11",

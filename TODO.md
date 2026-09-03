@@ -85,7 +85,7 @@ label. It is good work aimed at the wrong date, so it moves down this list.
       never fired in the product's life, so new sends will start creating breach
       tasks.
 - [ ] **[#327](https://github.com/ZootimusMaximusBackup/fundhub-platform/pull/327)** — this file.
-- [ ] **[#321](https://github.com/ZootimusMaximusBackup/fundhub-platform/pull/321)** — the marketing flywheel. Tooling and docs, no product code.
+- [x] **[#321](https://github.com/ZootimusMaximusBackup/fundhub-platform/pull/321)** — the marketing flywheel. Tooling and docs, no product code.
       Not urgent for Friday but harmless to land.
 
 ---
