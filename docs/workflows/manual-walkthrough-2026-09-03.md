@@ -1157,3 +1157,28 @@ rounds. Any difference in content between the two is a bug.
 to Sim Five-Academy itself (no button clicking by Chris), and hands Chris a copy
 of the simulated credit report. Chris audits the letters against the report by
 hand and validates the logic. Notes only, no fixes.
+
+**F38 · PASS — the bureau-response upload IS built.** public/app/client-portal.html
+has an upload door "Upload your bureau response" (`door-bureau`, kind
+`bureau_response`, line 592), hidden until the repair entitlement paints
+(`doorLanes.bureau_response`, line 1295-1304). Correct behaviour: Sim
+Five-Academy (no repair) does not see it. Not a finding.
+
+**Owner-described repair round logic (Chris, 2026-09-03) — record for W8.**
+When a client uploads the letters the bureaus send back, a simple parser reads
+them and that augments the next round. But regardless of any upload, before
+every round the credit is PULLED AGAIN and diffed: anything already removed
+(personal items, inquiries, all of it) is dropped, so letters only go out for
+items still on the file. "We are one hundred percent not adding — we are
+removing items that have been removed." Rounds = re-pull → diff → letters for
+what remains. Parser is a nice-to-have on top; the re-pull is the rule.
+
+**F40 · The no-booking chase text makes no sense (owner).** Copy of
+SMS-NOBOOK-01 as delivered: "Hey Sim, it's Fundhub. Your file is ready — grab a
+time so we can walk you through what it supports: https://apply.fundhub.ai/funding-book-call
+Reply STOP to opt out." Chris: "what does that even mean? I don't know what the
+point of that message is. It's fucking horrible. I don't know where that is in
+the customer journey." It is the S-NOBOOK fall-off chase
+(src/workflows/s-nobook-chase.mjs): survey done, never booked, 2 hours later.
+"Your file is ready" is false at that point — no file exists before the call.
+Rewrite needed. Owner: note only, change nothing yet.
