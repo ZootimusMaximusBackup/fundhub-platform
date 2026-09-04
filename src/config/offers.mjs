@@ -128,7 +128,26 @@ export const OFFERS = Object.freeze({
   UWIQ_DELIVERABLES: Object.freeze({
     key: "UWIQ_DELIVERABLES",
     name: "Capital Blueprint",
-    priceCents: 100000,
+    /* $5,000, OWNER-SET 2026-09-03. It was 100000 ($1,000) and that was the
+       number that was wrong, not the contract. Chris's executed Capital
+       Blueprint service agreement states its own tuition twice — sections 1.3
+       and 5.1, "five thousand United States dollars ($5,000)" — and it was
+       seeded verbatim in db/migrations/288_real_contract_text.sql. A contract
+       that quotes one figure while the pay link charges another is the defect;
+       asked which was right, Chris said the contract. So the catalogue moves.
+
+       KNOWN CONSEQUENCE, not an oversight: FUNDING_MASTERY (Capital Academy) is
+       also 500000, so the education ladder now has two rungs at the same price
+       and "step down on a no" has nothing to step down to. The deck's ladder
+       hint reads that state rather than asserting a drop — see the S-19 block in
+       public/app/present.js. Whether Blueprint stays a rung of that ladder is a
+       sales question, not a code one, and it is written up in
+       docs/workflows/fix-batch-2026-09-03-remaining.md.
+
+       priceMinCents stays $1,000 deliberately. It is the floor a closer may
+       discount to on a custom-priced offer, not the list price, and moving a
+       floor is a second decision nobody has made. */
+    priceCents: 500000,
     priceMinCents: 100000,
     priceMaxCents: 500000,
     financing: true,

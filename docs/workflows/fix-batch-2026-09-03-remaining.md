@@ -51,18 +51,36 @@ pages 1-4, Blueprint on 5-8 and White Label on 9-19, checked page by page):
 Both still carry `THIS IS NOT THE REAL AGREEMENT TEXT. DO NOT SEND THIS.`, and
 the migration raises a notice naming them on every production deploy.
 
-#### The Blueprint price conflict — Chris decides, nobody else
+#### The Blueprint price conflict — RESOLVED, owner-set 2026-09-03
 
-The Capital Blueprint agreement states its own price **twice**, in sections 1.3
-and 5.1, as **five thousand dollars**. The product charges **one thousand**
-(`src/config/offers.mjs`, `UWIQ_DELIVERABLES`), and this whole batch treated it
-as the $1,000 rung.
+**Capital Blueprint is $5,000.** Chris ruled: the contract was right, the price
+list was wrong. The catalogue moved to match the document, not the other way
+round — no word of the agreement was changed.
 
-The text was seeded exactly as written. Changing a dollar amount inside an
-executed consumer agreement is not a formatting fix and is not an agent's call.
-**Until Chris rules, a Blueprint contract quotes a figure the catalogue does not
-charge.** Either the document is right and the price list is wrong, or the
-reverse.
+Changed: `src/config/offers.mjs` `UWIQ_DELIVERABLES.priceCents` 100000 → 500000,
+and `db/migrations/289_capital_blueprint_price.sql` moves the second copy of that
+number, `products.default_price` for `consulting-package`, from $1,000 to $5,000.
+That column is only read when a payment arrives carrying no amount of its own,
+which is exactly why it sat wrong unnoticed — and leaving it would have gone on
+recording Blueprint sales at a fifth of their price on the one path that reads it.
+
+`priceMinCents` stays $1,000. That is the floor a closer may discount to on a
+custom-priced offer, not the list price, and moving a floor is a separate decision.
+
+#### KNOWN CONSEQUENCE — the education ladder now has two rungs at one price
+
+Capital Academy is also $5,000. So on the deck's education ladder, Blueprint and
+Academy now cost the same and "step down on a no" has nothing to step down to.
+
+The deck no longer lies about it: the ladder hint reads both prices and, when they
+match, says *"Both courses are $5,000. Lead with Funding Mastery; this is a choice
+of course, not a step down on price."* rather than the old *"Lead with the $5,000.
+Only offer the $5,000 if it's a no."*
+
+**Whether Blueprint should still be a rung on that ladder is a sales question, not
+a code one.** Nobody has answered it. Options, none chosen: keep both at $5,000 as
+a choice of course; make Blueprint a bridge into Academy rather than an
+alternative to it; or price the ladder deliberately.
 
 **Two smaller contract gaps, deliberately left:**
 

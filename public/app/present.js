@@ -846,7 +846,23 @@
           html += ckBtn("Trial: first round done-for-you  " + price("REPAIR_TRIAL"), "rung:1", state.rung === 1);
           html += ckBtn("DIY deliverables + course  " + price("UWIQ_DELIVERABLES"), "rung:2", state.rung === 2);
         }
-        html += '</div><div style="font-size:10.5px;color:var(--gray2);margin-top:6px">' + (state.edu ? "Lead with the " + price("FUNDING_MASTERY") + ". Only offer the " + price("UWIQ_DELIVERABLES") + " if it's a no." : "Top down. Only step down on a no.") + "</div>";
+        /* The education hint READS the two prices instead of asserting a drop
+           between them. Capital Blueprint moved to $5,000 on 2026-09-03 (owner-set,
+           its own contract states that tuition), which is what Capital Academy
+           already costs — so the old wording rendered "Lead with the $5,000. Only
+           offer the $5,000 if it's a no." A closer cannot step down to the same
+           number, and printing it as though he can is how a screen starts lying. */
+        var eduHint;
+        if (state.edu) {
+          var topPrice = price("FUNDING_MASTERY");
+          var altPrice = price("UWIQ_DELIVERABLES");
+          eduHint = topPrice === altPrice
+            ? "Both courses are " + topPrice + ". Lead with Funding Mastery; this is a choice of course, not a step down on price."
+            : "Lead with the " + topPrice + ". Only offer the " + altPrice + " if it's a no.";
+        } else {
+          eduHint = "Top down. Only step down on a no.";
+        }
+        html += '</div><div style="font-size:10.5px;color:var(--gray2);margin-top:6px">' + eduHint + "</div>";
         if (!state.edu) html += '<div style="margin-top:7px">' + ckBtn("UnderwriteIQ package → repair + funding", "bridge") + '<div style="font-size:10px;color:var(--gray2);margin-top:4px">Bridges them to the combined package. Jumps to the funding pitch.</div></div>';
         html += "</div>";
       }
