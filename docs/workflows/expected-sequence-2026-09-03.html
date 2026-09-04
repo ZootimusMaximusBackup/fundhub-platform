@@ -1,0 +1,243 @@
+<title>FundHub Expected Sequence</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --paper:#FAF8F4; --ink:#14110F; --ink2:#3D3832; --mute:#6F675E; --rule:#E3DED6; --soft:#F1EDE6;
+    --accent:#D9541E; --accent-ink:#FFFFFF; --ok:#2E7D4F; --warn:#B7791F; --stop:#B3261E; --chip:#FBE9DF;
+    --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:'Source Sans 3',system-ui,-apple-system,'Segoe UI',sans-serif; --serif:'Fraunces',Georgia,'Times New Roman',serif;
+  }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+    --paper:#16140F; --ink:#F1ECE4; --ink2:#D8D1C6; --mute:#9E958A; --rule:#2C2822; --soft:#1F1C16;
+    --accent:#F07F3C; --accent-ink:#16140F; --ok:#5DBB86; --warn:#D9A441; --stop:#E5665B; --chip:#3A2418; } }
+  :root[data-theme="dark"]{
+    --paper:#16140F; --ink:#F1ECE4; --ink2:#D8D1C6; --mute:#9E958A; --rule:#2C2822; --soft:#1F1C16;
+    --accent:#F07F3C; --accent-ink:#16140F; --ok:#5DBB86; --warn:#D9A441; --stop:#E5665B; --chip:#3A2418; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 var(--sans)}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 24px 96px}
+  h1{font:500 38px/1.05 var(--serif);margin:0 0 6px;text-wrap:balance}
+  h2{font:500 26px/1.15 var(--serif);margin:0 0 6px;text-wrap:balance}
+  h3{font:500 20px/1.2 var(--serif);margin:30px 0 8px;color:var(--ink)}
+  p{max-width:72ch;margin:0 0 10px;color:var(--ink2)}
+  .lede{font-size:17px;color:var(--ink);max-width:74ch}
+  .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:20px 0 18px;border-bottom:1px solid var(--rule);padding-bottom:12px}
+  .tab{font:600 14px/1 var(--sans);padding:9px 13px;border:1px solid var(--rule);border-radius:999px;background:none;color:var(--ink2);cursor:pointer}
+  .tab:hover,.tab:focus-visible{border-color:var(--accent);color:var(--accent);outline:none}
+  .tab[aria-selected="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  section[hidden]{display:none}
+  .tbl{overflow-x:auto}
+  table{border-collapse:collapse;width:100%;font-size:14.5px;margin:6px 0 10px}
+  th{font:600 11px/1.2 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--mute);text-align:left;padding:8px 10px;border-bottom:2px solid var(--rule);white-space:nowrap}
+  td{padding:10px;border-bottom:1px solid var(--rule);vertical-align:top;color:var(--ink2)}
+  td.when{white-space:nowrap;color:var(--ink);font-weight:600;width:150px}
+  td.what{min-width:340px}
+  td.staff{color:var(--mute);min-width:200px}
+  .ch{display:inline-block;font:600 11px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:4px;margin-right:6px;vertical-align:middle;color:var(--paper);background:var(--ink)}
+  .ch.sms{background:var(--ok)} .ch.email{background:#3E5C8A} .ch.call{background:var(--accent)} .ch.none{background:var(--mute)}
+  .q{display:block;color:var(--ink);margin:3px 0 2px}
+  .q i{color:var(--ink2)}
+  .key{font-family:var(--mono);font-size:11.5px;color:var(--mute)}
+  .cond{display:block;color:var(--warn);font-size:13.5px;margin-top:3px}
+  .gap{display:inline-block;font:600 11px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border:1px solid var(--warn);color:var(--warn);border-radius:999px;margin-left:4px;vertical-align:middle}
+  .stopp{display:inline-block;font:600 11px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border:1px solid var(--stop);color:var(--stop);border-radius:999px;margin-left:4px;vertical-align:middle}
+  .box{border-left:3px solid var(--accent);padding:6px 0 6px 14px;margin:14px 0;max-width:80ch;font-size:14.5px}
+  .box.warnb{border-left-color:var(--warn)} .box.stopb{border-left-color:var(--stop)}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px;color:var(--mute);margin:0 0 6px}
+  code{font-family:var(--mono);font-size:12.5px;background:var(--soft);padding:1px 5px;border-radius:3px;color:var(--ink)}
+</style>
+
+<div class="wrap">
+<h1>FundHub Expected Sequence</h1>
+<p class="lede">What should reach the person, and when, at every step of every path. Read top to bottom next to your phone. Every line is from the live code and the live message table on 2026-09-03; the wording shown is the real subject line or the first words of the text.</p>
+<p>Timing rule for everything: a message is queued the instant its trigger fires and leaves on the next dispatcher run, which is <b>every 5 minutes</b>. So "immediately" means within 5 minutes. Texts obey quiet hours (8pm–8am Arizona) unless the address is a <code>+sim-</code> test address, which skips the wait.</p>
+<div class="legend"><span><span class="ch sms">SMS</span>text on your phone</span><span><span class="ch email">Email</span>in your inbox</span><span><span class="ch call">Call</span>an AI phone call</span><span><span class="ch none">Nothing</span>no message, staff-side only</span><span><span class="gap">gap</span>known to be broken or empty before the walk</span></div>
+
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" data-tab="front" aria-selected="true">1 · Opt-in to the call (all paths)</button>
+  <button class="tab" role="tab" data-tab="credit">2 · Credit pull &amp; decision</button>
+  <button class="tab" role="tab" data-tab="funding">3 · Funding DFY</button>
+  <button class="tab" role="tab" data-tab="repair">4 · Repair DFY + Trial</button>
+  <button class="tab" role="tab" data-tab="edu">5 · Blueprint + Academy</button>
+  <button class="tab" role="tab" data-tab="wl">6 · White-label</button>
+</div>
+
+<!-- ─────────────── 1 FRONT ─────────────── -->
+<section id="tab-front" role="tabpanel">
+<h2>1 · From the ad to the sales call</h2>
+<p>Same for every client. The path only splits after the closer logs the call.</p>
+
+<h3>The moment they submit the application form</h3>
+<div class="tbl"><table>
+<tr><th>When</th><th>What the person gets</th><th>Condition</th><th>What staff sees</th></tr>
+<tr><td class="when">Immediately</td><td class="what"><span class="ch email">Email</span><span class="q">"You're in — here's what happens next"</span><span class="key">EMAIL-S00-WELCOME</span><br><span class="ch sms">SMS</span><span class="q">"Hey {first}, it's Fundhub. Got your info. Next step is a quick call…"</span><span class="key">SMS-S00-WELCOME</span></td><td>Once per client, ever.</td><td class="staff">Client created with the ad's UTMs. Sales board card in <b>New lead</b>. Tag lead:new.</td></tr>
+<tr><td class="when">+20 minutes</td><td class="what"><span class="ch email">Email</span><span class="q">"You were halfway through — finish what you started"</span><span class="key">EMAIL-S02-FINISH-APPLICATION</span></td><td><span class="cond">Only if the survey answers never arrived. If they finished the 9 screens, this does not send.</span></td><td class="staff"></td></tr>
+<tr><td class="when">When the survey completes</td><td class="what"><span class="ch none">Nothing</span></td><td>Needs the last question (Available capital).</td><td class="staff">Answers on the file. Card → <b>Survey complete</b>.</td></tr>
+</table></div>
+
+<h3>If they finish the survey but do not book</h3>
+<div class="tbl"><table>
+<tr><th>When</th><th>What the person gets</th><th>Condition</th><th>What staff sees</th></tr>
+<tr><td class="when">+2 hours</td><td class="what"><span class="ch sms">SMS</span><span class="q">"Your file is ready — grab a time so we can walk you through what it supports"</span><span class="key">SMS-NOBOOK-01</span><br><span class="ch email">Email</span><span class="q">"Your file is ready — the call isn't booked yet"</span><span class="key">EMAIL-NOBOOK-01</span></td><td rowspan="3"><span class="cond">Each step is skipped the moment a booking exists.</span></td><td class="staff"></td></tr>
+<tr><td class="when">+24 hours</td><td class="what"><span class="ch sms">SMS</span><span class="q">"Still worth a look — same file, wrong order of apps is usually the ceiling"</span><span class="key">SMS-NOBOOK-02</span><br><span class="ch email">Email</span><span class="q">"The order matters more than the score"</span><span class="key">EMAIL-NOBOOK-02</span></td><td class="staff"></td></tr>
+<tr><td class="when">+72 hours</td><td class="what"><span class="ch sms">SMS</span><span class="q">"Last nudge from Fundhub… Want help mapping your cleanest path?"</span><span class="key">SMS-NOBOOK-03</span><br><span class="ch email">Email</span><span class="q">"Closing this out unless you want the call"</span><span class="key">EMAIL-NOBOOK-03</span></td><td class="staff"></td></tr>
+</table></div>
+
+<h3>The moment they book a call</h3>
+<div class="tbl"><table>
+<tr><th>When</th><th>What the person gets</th><th>Condition</th><th>What staff sees</th></tr>
+<tr><td class="when">Immediately</td><td class="what"><span class="ch sms">SMS</span><span class="q">"You're booked for {time}. Reply CONFIRM so we know you're…"</span><span class="key">SMS-S04-01-CONFIRM</span><br><span class="ch email">Email</span><span class="q">"You're booked — {time}" · <i>this email carries the client-portal sign-in link (good for 365 days)</i></span><span class="key">EMAIL-S04-01-CONFIRM</span><br><span class="ch sms">SMS</span><span class="q">"You're booked — we'll text you again before the call. Need to move it? Just re…"</span><span class="key">SMS-BS01-01-BOOKED</span></td><td>Two "you're booked" texts arrive: one from the reminder sequence, one from the pre-call sequence. That is how it is coded.</td><td class="staff">Task <b>Strategy session booked</b> for the closer, due at the slot. Card → <b>Booked</b>. Tag call:booked. Staff get a booked-call text if that alert is switched on (SMS-S04C-STAFF-BOOKED).</td></tr>
+<tr><td class="when">Immediately, or 8am if booked overnight</td><td class="what"><span class="ch call">Call</span><span class="q">Josh (AI setter) calls to confirm the strategy session.</span><span class="key">ai-set-01-josh-setter → Bland</span></td><td><span class="cond">Waits out 8pm–8am Arizona. A +sim- address does NOT wait, so expect the call within minutes even at night. A 0.13-second call record is a failure, not a call. Cancelled if the booking is cancelled.</span></td><td class="staff">Call record with duration and recording.</td></tr>
+<tr><td class="when">48 hours before the call</td><td class="what"><span class="ch sms">SMS</span><span class="q">"Quick check-in before your call — reply if you have questions or need to resch…"</span><span class="key">SMS-BS01-02-PRECALL</span></td><td><span class="cond">Stops if the call has already been held. If you booked less than 48h out, it is skipped as "already past".</span></td><td class="staff"></td></tr>
+<tr><td class="when">Over the ~71h before the call</td><td class="what"><span class="ch email">Email</span><span class="q">The 18-email pre-call drip (3 days × 6 slots, funding or repair version)</span><span class="key">EMAIL-BS01-…</span> <span class="gap">gap</span></td><td><span class="cond">Zero EMAIL-BS01 templates exist on the live site. Every slot resolves to "no template" and sends nothing. Expect no pre-call emails.</span></td><td class="staff"></td></tr>
+<tr><td class="when">24 hours before</td><td class="what"><span class="ch sms">SMS</span><span class="q">"Fundhub reminder: your call is tomorrow at {time}. Reply CONFIRM…"</span><span class="key">SMS-S04-02-REMIND-24H</span></td><td>Cancelled and restarted if they reschedule.</td><td class="staff"></td></tr>
+<tr><td class="when">2 hours before</td><td class="what"><span class="ch sms">SMS</span><span class="q">"Fundhub reminder: your call starts at {time}. Reply CONFIRM…"</span><span class="key">SMS-S04-03-REMIND-2H</span></td><td></td><td class="staff"></td></tr>
+<tr><td class="when">Day of the call</td><td class="what"><span class="ch sms">SMS</span><span class="q">"Your call is coming up soon. Reply if you need anything before we start."</span><span class="key">SMS-BS01-03-DAYOF</span></td><td>Stops if the call was already held.</td><td class="staff"></td></tr>
+<tr><td class="when">15 minutes before</td><td class="what"><span class="ch sms">SMS</span><span class="q">"It's Josh from Fundhub. Your call starts in 15 minutes. I've intro'd your advisor…"</span><span class="key">SMS-AISET04-HANDOFF</span></td><td></td><td class="staff">Task for the closer at the same moment.</td></tr>
+<tr><td class="when">5 minutes after the slot ends</td><td class="what"><span class="ch none">Nothing</span> yet</td><td><span class="cond">Only if the closer logged no outcome: the system declares a no-show.</span></td><td class="staff">Card → <b>Lost</b> (no-show) or <b>Showed</b>. Tag call:no_show. Fires the no-show sequence below.</td></tr>
+<tr><td class="when">72 hours after booking</td><td class="what"><span class="ch sms">SMS</span><span class="q">"Fundhub checking in — we haven't heard back. Reply here or book…"</span><span class="key">SMS-DPC05-NO-PROGRESS-72H</span></td><td><span class="cond">Only if nothing has progressed on the file in 72h.</span></td><td class="staff">Internal email "72-hour no-progress escalation" + task for funding advisor.</td></tr>
+</table></div>
+
+<h3>If they no-show</h3>
+<div class="tbl"><table>
+<tr><th>When</th><th>What the person gets</th><th>Condition</th><th>What staff sees</th></tr>
+<tr><td class="when">Immediately</td><td class="what"><span class="ch sms">SMS</span><span class="q">"Looks like we missed each other. No problem — grab a new time…"</span><span class="key">SMS-S05A-NOSHOW-RECOVERY</span><br><span class="ch email">Email</span><span class="q">"We missed you — your analysis is still here"</span><span class="key">EMAIL-S05A-NOSHOW-RECOVERY</span></td><td rowspan="4"><span class="cond">Stops when they rebook or a call outcome is logged.</span></td><td class="staff">Task for the closer.</td></tr>
+<tr><td class="when">+24 hours</td><td class="what"><span class="ch sms">SMS</span><span class="q">"We held your spot and your analysis is still sitting here…"</span><span class="key">SMS-S05A-NOSHOW-02</span><br><span class="ch email">Email</span><span class="q">"Still holding your analysis"</span><span class="key">EMAIL-S05A-NOSHOW-02</span></td><td class="staff"></td></tr>
+<tr><td class="when">+48 hours more</td><td class="what"><span class="ch sms">SMS</span><span class="q">"Do you still want to go through your funding analysis, or should we shelve it?"</span><span class="key">SMS-S05A-NOSHOW-03</span><br><span class="ch email">Email</span><span class="q">"Do you still want this?"</span><span class="key">EMAIL-S05A-NOSHOW-03</span></td><td class="staff"></td></tr>
+<tr><td class="when">+96 hours more</td><td class="what"><span class="ch sms">SMS</span><span class="q">"Closing your file for now. Your analysis stays saved…"</span><span class="key">SMS-S05A-NOSHOW-04</span><br><span class="ch email">Email</span><span class="q">"Closing your file for now"</span><span class="key">EMAIL-S05A-NOSHOW-04</span></td><td class="staff"></td></tr>
+</table></div>
+
+<h3>The moment the closer logs the call outcome</h3>
+<div class="tbl"><table>
+<tr><th>When</th><th>What the person gets</th><th>Condition</th><th>What staff sees</th></tr>
+<tr><td class="when">Immediately</td><td class="what"><span class="ch email">Email</span><span class="q">ONE offer email, by the offer the closer picked:</span>
+<span class="q">Soft pull → "Your UnderwriteIQ assessment is running" <span class="key">EMAIL-OFFER-SOFT-PULL</span></span>
+<span class="q">Funding DFY → "You're set up — here's what we need from you" <span class="key">EMAIL-OFFER-FUNDING-DFY</span></span>
+<span class="q">Repair DFY → "Your repair file is open" <span class="key">EMAIL-OFFER-REPAIR-DFY</span></span>
+<span class="q">Repair trial → "Your first repair round is starting" <span class="key">EMAIL-OFFER-REPAIR-TRIAL</span></span>
+<span class="q">Capital Blueprint → "Your deliverables package is being built" <span class="key">EMAIL-OFFER-UWIQ-DELIVERABLES</span></span>
+<span class="q">Capital Academy → "Funding Mastery — you're enrolled" <span class="key">EMAIL-OFFER-FUNDING-MASTERY</span> <i>only after the pay link is PAID</i></span>
+<span class="q">Not a fit, no offer → "Where things stand" <span class="key">EMAIL-OFFER-NONE</span></span></td><td>Once per client. The offer comes from what the closer picked in Present, not from the outcome button.</td><td class="staff">Call outcome row. Task marked done. If "funding didn't buy": task for the closer, tag offer:funding-didnt-buy.</td></tr>
+<tr><td class="when">+30 min, +2h</td><td class="what"><span class="ch sms">SMS</span><span class="q">"It's Josh from Fundhub — just tried you. Still good for your call? Reply YES…"</span><span class="key">SMS-AISET03-MSG1</span> then MSG2, MSG3</td><td><span class="cond">The no-answer cadence. Fires on the call outcome; whether it stops on a real outcome is what the walk checks.</span></td><td class="staff"></td></tr>
+<tr><td class="when">Immediately</td><td class="what"><span class="ch sms">SMS</span> + <span class="ch email">Email</span><span class="q">"Based on your review, profile optimization is the next step…" / "The step that unlocks your funding"</span><span class="key">DS01-REPAIR-REFERRAL</span> <span class="gap">gap</span></td><td><span class="cond">Only when the closer ticked "repair referral". Behind a placeholder link in the code; treat as not live.</span></td><td class="staff"></td></tr>
+<tr><td class="when">When they text back</td><td class="what"><span class="ch sms">SMS</span><span class="q">If the reply looks like a reschedule: "Here's your link to pick a new time"</span><span class="key">SMS-DPC04-RESCHEDULE-REBOOKING</span><br><span class="ch sms">SMS</span><span class="q">Otherwise the AI reply agent answers the text.</span></td><td></td><td class="staff">If the reply looks like a buy: card → Closed won / Downsell.</td></tr>
+</table></div>
+</section>
+
+<!-- ─────────────── 2 CREDIT ─────────────── -->
+<section id="tab-credit" role="tabpanel" hidden>
+<h2>2 · The credit pull and the decision</h2>
+<p>How the person gets the $32 assessment, what a real pull does, and what the result fires. In the walkthrough the credit file is pushed in by Claude instead of pulled; everything from "result arrives" down runs exactly the same.</p>
+<div class="tbl"><table>
+<tr><th>When</th><th>What the person gets</th><th>Condition</th><th>What staff sees</th></tr>
+<tr><td class="when">Closer clicks Send soft pull</td><td class="what"><span class="ch email">Email</span><span class="q">"Your soft-pull assessment" — "Next step on our call: your UnderwriteIQ soft-pull assessment (base $32)" with the consent link</span><span class="key">written in the closer deck, not a template</span></td><td>Consent form first, then pay.</td><td class="staff">Signed link minted; expires.</td></tr>
+<tr><td class="when">They submit the consent form</td><td class="what"><span class="ch none">Nothing</span> by message. A $32 checkout is created (+$10 per business).</td><td>Full legal name, SSN, DOB, address required.</td><td class="staff">Consent row, encrypted identity, portal account provisioned.</td></tr>
+<tr><td class="when">They pay the $32</td><td class="what"><span class="ch none">Nothing</span> to the person yet.</td><td><span class="cond">On live this fires a REAL bureau pull. In the walk, do not pay; Claude pushes the file.</span></td><td class="staff">Sale recorded. Hold <b>Awaiting CRS</b>. Entitlement credit-analysis-report.</td></tr>
+<tr><td class="when">Result arrives (within ~2 min of a pull, ~1 min of a push)</td><td class="what"><span class="ch email">Email</span><span class="q">Funding road: "Your Fundhub file is complete — audit, letters, roadmap…" <span class="key">EMAIL-U02-ANALYZER-FUNDING-DELIVERY</span></span><span class="q">Repair road: "Your Repair Letter Pack is ready ✅" <span class="key">EMAIL-U02-ANALYZER-REPAIR-DELIVERY</span></span></td><td>Which one depends on the tier (below).</td><td class="staff">Scores, tier and funding estimate on the Client Control Panel. Card → <b>Decision rendered</b>. Task for the funding advisor. Tags path:funding or path:repair. New inquiries → hold <b>New Inquiries</b> + task for the inquiry specialist.</td></tr>
+<tr><td class="when">Same moment, if declined</td><td class="what"><span class="ch email">Email</span><span class="q">"Your Fundhub review — what we found"</span><span class="key">EMAIL-C06-DECLINE</span><br><span class="ch sms">SMS</span><span class="q">"We reviewed your file and this path isn't a fit right now."</span><span class="key">SMS-C06-DECLINE</span></td><td>Only on a decline result.</td><td class="staff">Tag hold:declined.</td></tr>
+</table></div>
+
+<h3>What the tier means</h3>
+<div class="tbl"><table>
+<tr><th>Tier the engine returns</th><th>What it saw</th><th>Road</th></tr>
+<tr><td>PREMIUM_STACK · FULL_FUNDING</td><td>Clean file, seasoned accounts, utilization fine</td><td>Funding (tab 3)</td></tr>
+<tr><td>FUNDING_PLUS_REPAIR</td><td>Some bureaus clean, some dirty</td><td>Funding, with dispute letters for the dirty bureaus</td></tr>
+<tr><td>REPAIR_ONLY</td><td>Collections, charge-offs, active lates</td><td>Repair (tab 4)</td></tr>
+<tr><td>MANUAL_REVIEW</td><td>Thin file, low confidence, single bureau</td><td>No automatic road. A human decides.</td></tr>
+<tr><td>FRAUD_HOLD</td><td>Identity mismatch across bureaus</td><td>Stops. Hold Fraud Alert.</td></tr>
+</table></div>
+<p>The closer can still sell Blueprint or Academy on any tier; those are education, not a road the engine picks.</p>
+</section>
+
+<!-- ─────────────── 3 FUNDING ─────────────── -->
+<section id="tab-funding" role="tabpanel" hidden>
+<h2>3 · Funding, done-for-you</h2>
+<p>$3,000 deposit + 10% success fee. Starts when the closer sends the contract and pay link; ends at the success-fee invoice and the collections chase.</p>
+<div class="tbl"><table>
+<tr><th>When</th><th>What the person gets</th><th>Condition</th><th>What staff sees</th></tr>
+<tr><td class="when">Closer sends contract</td><td class="what"><span class="ch email">Email</span><span class="q">The Funding agreement to sign</span><span class="key">contracts tool, template FUNDING-AGREEMENT</span></td><td></td><td class="staff">Contract draft → sent. Signed later fires contract.signed.</td></tr>
+<tr><td class="when">Closer sends pay link</td><td class="what"><span class="ch email">Email</span> + <span class="ch sms">SMS</span><span class="q">The $3,000 checkout link</span><span class="key">written in the closer deck, not a template</span></td><td></td><td class="staff">payment_links row, status sent.</td></tr>
+<tr><td class="when">Deposit paid (or pushed)</td><td class="what"><span class="ch email">Email</span><span class="q">"Documents needed before we can start"</span><span class="key">EMAIL-DOC-01-REQUEST</span><br><span class="ch sms">SMS</span><span class="q">"Before we can start, we need a few documents from you. Upload them here…"</span><span class="key">SMS-DOC-01-REQUEST</span></td><td>Within a minute of the receipt landing (the payment sweeper runs every minute), then the 5-minute dispatcher.</td><td class="staff">Card → <b>Funding board / Apply now</b>. Task <b>Funding intake — pull CRS</b> for the advisor, due 24h. Hold <b>Collect Documents</b>. Inquiry cases drafted per bureau. Entitlement funding-snapshot. Commission ledger row.</td></tr>
+<tr><td class="when">Advisor moves card to Apply now (round starts)</td><td class="what"><span class="ch sms">SMS</span><span class="q">"Your funding round is underway. We'll keep you posted."</span><span class="key">SMS-ROUND-STARTED-NOTIFY</span><br><span class="ch email">Email</span><span class="q">"Your funding inbox is ready" (a dedicated inbox address for bank replies)</span><span class="key">EMAIL-F10-INBOX-SETUP</span><br><span class="ch sms">SMS</span><span class="q">"Your funding inbox is ready. Check your email for setup."</span><span class="key">SMS-F10-INBOX-SETUP</span></td><td></td><td class="staff">Lifecycle Funding Client. Next action Collect Documents. Tasks for the advisor. If no credit report: hold <b>Awaiting CRS</b> + task.</td></tr>
+<tr><td class="when">+3 hours, then +2 days</td><td class="what"><span class="ch email">Email</span><span class="q">"One quick step before we can begin" then "You're stalling your own funding"</span><span class="key">EMAIL-F02-ID-PORTAL-NEEDED, -FOLLOWUP</span><br><span class="ch sms">SMS</span><span class="q">"Fundhub needs your ID upload to keep onboarding moving."</span><span class="key">SMS-F02-ID-PORTAL-NEEDED</span></td><td><span class="cond">Only while the ID upload / portal step is missing.</span></td><td class="staff">Tag docs:missing.</td></tr>
+<tr><td class="when">+24h and +48h after round start</td><td class="what"><span class="ch none">Nothing</span> to the person</td><td><span class="cond">If the client has gone silent.</span></td><td class="staff">Responsiveness escalation on the file.</td></tr>
+<tr><td class="when">A document arrives</td><td class="what"><span class="ch none">Nothing</span></td><td></td><td class="staff">Hold Missing Documents clears.</td></tr>
+<tr><td class="when">Advisor submits the round</td><td class="what"><span class="ch email">Email</span><span class="q">"Funding Round {n} has been submitted"</span><span class="key">EMAIL-F03-ROUND-SUBMITTED</span><br><span class="ch sms">SMS</span><span class="q">"Your round was submitted. We'll update you as lenders respond."</span><span class="key">SMS-F03-ROUND-SUBMITTED</span></td><td></td><td class="staff">Card → Round submitted.</td></tr>
+<tr><td class="when">A bank email lands in the Bank Inbox</td><td class="what"><span class="ch email">Email</span> + <span class="ch sms">SMS</span><span class="q">If it asks for documents: "Funding is now locked — here's what happens next" / "lenders need a few documents…"</span><span class="key">EMAIL/SMS-F06-MISSING-DOCS</span></td><td><span class="cond">The F06 email subject reads "Funding is now locked" on a missing-docs event. Judge that wording.</span></td><td class="staff">Approval → card <b>Approved</b> + task. Decline → task "declined, no path". Missing docs → hold Missing Documents.</td></tr>
+<tr><td class="when">Approval recorded</td><td class="what"><span class="ch email">Email</span><span class="q">"Approvals are in for Funding Round {n}"</span><span class="key">EMAIL-F04-ROUND-APPROVALS</span><br><span class="ch sms">SMS</span><span class="q">"You have an approval update. Check your email for details."</span><span class="key">SMS-F04-ROUND-APPROVALS</span></td><td></td><td class="staff">Inquiry cleanup gate between rounds. Client value fields updated.</td></tr>
+<tr><td class="when">Card → Funded</td><td class="what"><span class="ch email">Email</span><span class="q">"FR22 – Total Funding Locked" / "Your total funding is locked 🔓 … After 10 rounds of strategic submissions…"</span><span class="key">EMAIL-F07-FUNDING-LOCKED</span><br><span class="ch sms">SMS</span><span class="q">"Funding is locked. Next steps are in your email."</span><span class="key">SMS-F07-FUNDING-LOCKED</span></td><td><span class="cond">The email says "after 10 rounds" regardless of how many rounds ran. Judge that wording.</span></td><td class="staff"><b>Success-fee invoice</b> = confirmed approvals × agreed fee %. No agreed rate or no approvals = a task, never a $0 invoice. Post-funding monitoring task. Success-fee commission.</td></tr>
+<tr><td class="when">Invoice sent</td><td class="what"><span class="ch email">Email</span> + <span class="ch sms">SMS</span><span class="q">"Invoice {n} — Round {n}…" / "Round {n} is complete and invoice {n}…"</span><span class="key">EMAIL/SMS-AR-01-FIRST-NOTICE</span></td><td rowspan="3"><span class="cond">Stops the moment the invoice is paid.</span></td><td class="staff"></td></tr>
+<tr><td class="when">+7 days</td><td class="what"><span class="ch email">Email</span> + <span class="ch sms">SMS</span><span class="q">"Invoice {n} is still open"</span><span class="key">EMAIL/SMS-AR-02-REMINDER</span></td><td class="staff"></td></tr>
+<tr><td class="when">+7 more days</td><td class="what"><span class="ch email">Email</span> + <span class="ch sms">SMS</span><span class="q">"Final notice — invoice {n}"</span><span class="key">EMAIL/SMS-AR-03-FINAL-NOTICE</span></td><td class="staff">Tag ar:collections-handoff.</td></tr>
+<tr><td class="when">Round closes out</td><td class="what"><span class="ch email">Email</span><span class="q">"What comes after funding"</span><span class="key">EMAIL-N04-POST-FUNDING</span><br><span class="ch sms">SMS</span><span class="q">"Checking in now that your capital's in place — how's the deployment going?"</span><span class="key">SMS-N04-POST-FUNDING</span></td><td></td><td class="staff">Between-round inquiry cleanup drafted.</td></tr>
+<tr><td class="when">+180 days after funded</td><td class="what"><span class="ch email">Email</span><span class="q">"When 'second-wave' funding makes sense"</span><span class="key">EMAIL-N06-RENEWAL</span><br><span class="ch sms">SMS</span><span class="q">"Your profile has had time to season since your last round…"</span><span class="key">SMS-N06-RENEWAL</span></td><td></td><td class="staff">Task for the advisor.</td></tr>
+<tr><td class="when">If a new negative appears mid-funding</td><td class="what"><span class="ch email">Email</span> + <span class="ch sms">SMS</span><span class="q">"Funding paused — action needed" / "we've briefly paused your file for a quick review"</span><span class="key">EMAIL/SMS-AX07-FUNDING-PAUSED</span></td><td>From the credit snapshot monitor.</td><td class="staff">Card paused, tag.</td></tr>
+</table></div>
+<div class="box warnb"><b>Known before the walk:</b> the Owner "funded" tile counts a client flag, not rounds; it can read 0 with a funded round. Bureau inquiry calls are dialed by the sweeper every 15 minutes once a case's due time passes; those are real calls.</div>
+</section>
+
+<!-- ─────────────── 4 REPAIR ─────────────── -->
+<section id="tab-repair" role="tabpanel" hidden>
+<h2>4 · Credit repair — done-for-you ($1,000, 6 rounds) and the trial ($200, 2 rounds)</h2>
+<div class="tbl"><table>
+<tr><th>When</th><th>What the person gets</th><th>Condition</th><th>What staff sees</th></tr>
+<tr><td class="when">Closer sends contract + pay link</td><td class="what"><span class="ch email">Email</span><span class="q">Credit-repair agreement (or Repair-trial agreement)</span><span class="key">CREDIT-REPAIR-AGREEMENT / REPAIR-TRIAL-AGREEMENT</span><br><span class="ch email">Email</span> + <span class="ch sms">SMS</span><span class="q">The checkout link ($1,000 or $200)</span></td><td>The disposition logs as <i>downsell</i> for any offer except Funding DFY. That is how it is coded.</td><td class="staff"></td></tr>
+<tr><td class="when">Paid (or pushed)</td><td class="what"><span class="ch none">Nothing</span> to the person</td><td><span class="gap">gap</span> <span class="cond">Nothing enrolls them in the program. Staff must click Enroll (Specialist desk) or the chain below never starts.</span></td><td class="staff">Card → <b>Optimization board / Intake</b>. Entitlement metro2-letter-pack (portal tile unlocks). Sale + commission recorded.</td></tr>
+<tr><td class="when">Staff enrolls them</td><td class="what"><span class="ch email">Email</span><span class="q">"Welcome — here is what happens next in your repair program" (1. We prepare dispute letters…)</span><span class="key">EMAIL-REPAIR-WELCOME</span></td><td>Program full = 6 rounds, trial = 2.</td><td class="staff">Card → Enrolled. Then Docs needed.</td></tr>
+<tr><td class="when">They upload ID / proof</td><td class="what"><span class="ch none">Nothing</span></td><td></td><td class="staff">Docs complete → analysis runs from the credit file. 0 letters if there is no credit file, and that is correct.</td></tr>
+<tr><td class="when">Letters generated</td><td class="what"><span class="ch none">Nothing</span> yet</td><td></td><td class="staff">Letters ready for review on the Specialist desk. <span class="stopp">stop here in the walk</span> — Send with mail is real paper.</td></tr>
+<tr><td class="when">Staff clicks Send with mail</td><td class="what"><span class="ch email">Email</span><span class="q">"Your dispute letters are on the way" (this round covers: …)</span><span class="key">EMAIL-REPAIR-LETTERS-SENT</span></td><td>PostGrid paper mail goes out.</td><td class="staff">Letters sent → delivered.</td></tr>
+<tr><td class="when">Bureau reply uploaded and read</td><td class="what"><span class="ch email">Email</span><span class="q">"We reviewed your bureau response" (what the letter says for each account)</span><span class="key">EMAIL-REPAIR-RESPONSE-RESULTS</span></td><td></td><td class="staff"></td></tr>
+<tr><td class="when">Reply photo unreadable</td><td class="what"><span class="ch email">Email</span><span class="q">"Please retake your bureau letter photo"</span><span class="key">EMAIL-REPAIR-RETAKE-PHOTO</span></td><td></td><td class="staff"></td></tr>
+<tr><td class="when">Round complete, next round out</td><td class="what"><span class="ch email">Email</span><span class="q">"Round {n} is out" (these accounts are moving forward because…)</span><span class="key">EMAIL-REPAIR-ROUND-ADVANCED</span></td><td>Rounds 2–6 (full) or round 2 (trial).</td><td class="staff"></td></tr>
+<tr><td class="when">Trial: round 2 done</td><td class="what"><span class="ch email">Email</span><span class="q">"Your trial rounds are complete — next steps" (recap + the full program)</span><span class="key">EMAIL-REPAIR-TRIAL-COMPLETE-UPSELL</span></td><td>Full program resumes at round 3, balance $800.</td><td class="staff">Chip <b>Trial done — sales</b>. Status upsell_pending.</td></tr>
+<tr><td class="when">Full: round 6 done</td><td class="what"><span class="ch none">Nothing</span></td><td></td><td class="staff">Card → Program complete.</td></tr>
+<tr><td class="when">Stalled / escalated</td><td class="what"><span class="ch none">Nothing</span></td><td></td><td class="staff">Card → Stalled; staff attention.</td></tr>
+</table></div>
+<div class="box warnb"><b>Also on this road:</b> the $1,000 DIY consulting package (a different product) triggers "Your correction letters are ready" <span class="key">EMAIL-DS02-DIY-LETTERS-READY</span> and an admin task, and never fires on the funding road.</div>
+</section>
+
+<!-- ─────────────── 5 EDU ─────────────── -->
+<section id="tab-edu" role="tabpanel" hidden>
+<h2>5 · Capital Blueprint ($1,000) and Capital Academy ($5,000)</h2>
+<div class="tbl"><table>
+<tr><th>When</th><th>What the person gets</th><th>Condition</th><th>What staff sees</th></tr>
+<tr><td class="when">Closer logs the call (Blueprint)</td><td class="what"><span class="ch email">Email</span><span class="q">"Your deliverables package is being built"</span><span class="key">EMAIL-OFFER-UWIQ-DELIVERABLES</span></td><td>Before payment.</td><td class="staff"></td></tr>
+<tr><td class="when">Closer sends pay link (Blueprint)</td><td class="what"><span class="ch email">Email</span> + <span class="ch sms">SMS</span><span class="q">The $1,000 checkout link</span></td><td><span class="gap">gap</span> <span class="cond">No contract goes out; Blueprint has no contract template.</span></td><td class="staff"></td></tr>
+<tr><td class="when">Blueprint paid (or pushed)</td><td class="what"><span class="ch none">Nothing</span></td><td><span class="gap">gap</span> <span class="cond">The product grants the letter pack, not the Blueprint course. The Blueprint tile stays LOCKED in the portal. One migration fixes it.</span></td><td class="staff">Sale + commission recorded.</td></tr>
+<tr><td class="when">Closer sends contract + pay link (Academy)</td><td class="what"><span class="ch email">Email</span><span class="q">Funding-mastery agreement</span><span class="key">FUNDING-MASTERY-AGREEMENT</span><br><span class="ch email">Email</span> + <span class="ch sms">SMS</span><span class="q">The $5,000 checkout link</span></td><td></td><td class="staff"></td></tr>
+<tr><td class="when">Academy paid (or pushed)</td><td class="what"><span class="ch email">Email</span><span class="q">"Funding Mastery — you're enrolled"</span><span class="key">EMAIL-OFFER-FUNDING-MASTERY</span></td><td>This one waits for payment; it is the only offer email that does.</td><td class="staff">Entitlement funding-mastery-course → Academy tile unlocked.</td></tr>
+<tr><td class="when">They open the portal</td><td class="what"><span class="ch email">Email</span><span class="q">"Your Fundhub sign-in link"</span><span class="key">EMAIL-PORTAL-MAGIC-LINK</span></td><td><span class="cond">Sent only when they ask for a link on the portal sign-in page. It is NOT sent automatically after a purchase. The booking-confirmation email already carried a sign-in link.</span></td><td class="staff"></td></tr>
+<tr><td class="when">Inside the portal</td><td class="what"><span class="ch none">Nothing</span></td><td>Academy: module list, every video says "Video will show here when it is ready". Blueprint: locked until the fix.</td><td class="staff"></td></tr>
+</table></div>
+</section>
+
+<!-- ─────────────── 6 WL ─────────────── -->
+<section id="tab-wl" role="tabpanel" hidden>
+<h2>6 · White-label partner ($10,000 entry) and a client under them</h2>
+<div class="tbl"><table>
+<tr><th>When</th><th>What the person gets</th><th>Condition</th><th>What staff sees</th></tr>
+<tr><td class="when">They submit the partner form</td><td class="what"><span class="ch none">Nothing</span></td><td>Invite-only by design. No login, no page, no message.</td><td class="staff">Partner row status <b>Invited</b>. Card on the partner rail at Invited.</td></tr>
+<tr><td class="when">Owner approves</td><td class="what"><span class="ch email">Email</span><span class="q">"You are in — {brand}" (sign in here…)</span><span class="key">EMAIL-PARTNER-WELCOME</span><br><span class="ch sms">SMS</span><span class="q">"Fundhub: you are in. Go to {login} and use 'Forgot your password?' to set your pas…"</span><span class="key">SMS-PARTNER-WELCOME</span></td><td><span class="gap">gap</span> <span class="cond">Approval does not stamp the agreement date, so every payout stays blocked until it is set by hand.</span></td><td class="staff">Login minted. Brand row. Page live at /sites/{id}/apply. Status Active.</td></tr>
+<tr><td class="when">Partner signs in</td><td class="what"><span class="ch none">Nothing</span></td><td></td><td class="staff">Banner "PARTNER VIEW — your book only". Three tiles: Cash today, Funded today, Cost per funded.</td></tr>
+<tr><td class="when">Someone applies on the partner's site</td><td class="what">Everything in tab 1, unchanged.</td><td>Same front door, partner attribution attached.</td><td class="staff">Client in the partner's book AND on FundHub's pipeline. clients.partner_id set.</td></tr>
+<tr><td class="when">That client pays anything</td><td class="what"><span class="ch none">Nothing</span> extra</td><td></td><td class="staff">Partner revenue share (50% front and back end) recorded.</td></tr>
+<tr><td class="when">A recruited partner pays the entry fee</td><td class="what"><span class="ch none">Nothing</span></td><td>Once.</td><td class="staff">$2,000 recruit bonus to the recruiter.</td></tr>
+<tr><td class="when">Live Trial $297</td><td class="what"><span class="ch none">Nothing</span> by message from the workflows</td><td>Row created with the clock not started; 7-day clock; convert or day-8 handback.</td><td class="staff">live_trials row, one per partner.</td></tr>
+<tr><td class="when">1st of the month, 14:00</td><td class="what"><span class="ch none">Nothing</span></td><td></td><td class="staff">Production floor review runs.</td></tr>
+</table></div>
+<div class="box warnb"><b>Also known:</b> partner add-ons ($297/mo, $2,497/mo, $99/call) have a billing sweeper that runs hourly and charges nobody until <code>SUBSCRIPTION_BILLING_ENABLED=true</code>. Custom domains are not live. The marketing suite is off unless the owner flips it.</div>
+</section>
+
+<div class="box stopb"><b>Three things that silence everything:</b> the master fences MESSAGING_DRY_RUN / ADAPTERS_DRY_RUN (checked 2026-09-03: both off, sending allowed) · the company switch messaging_settings.outbound_enabled (true) · the compliance gate (opt-out words, quiet hours, restricted words). If none of the above is on and a message still did not arrive, look at the message row: queued means the 5-minute dispatcher never took it; failed means the provider refused it.</div>
+</div>
+
+<script>
+(function () {
+  var KEY = "fh-expected-seq-tab";
+  var tabs = document.querySelectorAll(".tab"); var panels = document.querySelectorAll("section[role=tabpanel]");
+  function show(name) { tabs.forEach(function (t) { t.setAttribute("aria-selected", t.getAttribute("data-tab") === name ? "true" : "false"); }); panels.forEach(function (p) { p.hidden = p.id !== "tab-" + name; }); try { localStorage.setItem(KEY, name); } catch (e) {} }
+  tabs.forEach(function (t) { t.addEventListener("click", function () { show(t.getAttribute("data-tab")); }); });
+  var start = "front"; try { start = localStorage.getItem(KEY) || "front"; } catch (e) {} if (!document.getElementById("tab-" + start)) start = "front"; show(start);
+})();
+</script>

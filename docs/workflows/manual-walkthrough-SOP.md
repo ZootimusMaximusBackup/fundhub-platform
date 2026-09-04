@@ -214,7 +214,7 @@ flowchart TD
 |---|---|---|
 | 4.1 | Ad link #4, survey, book | Closer screen: **No gate · Sorting · Capital Blueprint, lead with it · All**. |
 | 4.2 | Present → Capital Blueprint → send pay link ($1,000) | Pay link email. **No contract** is sent; there is no template. Finding. |
-| 4.3 | "push payment #4" | Portal magic link email. |
+| 4.3 | "push payment #4" | No new email. Sign in with the link from the booking-confirmation email, or ask for one on the portal sign-in page. |
 | 4.4 | Open the portal as Sim Four | **Expected today: Capital Blueprint tile LOCKED.** The product grants the letter pack, not the roadmap. Claude fixes this with one migration after the walk. |
 | 4.5 | After the fix, reopen | Tile unlocked. 5-part "How to use this" course opens. Videos are placeholders ("Video will show here"). |
 
@@ -237,7 +237,7 @@ flowchart TD
 |---|---|---|
 | 5.1 | Ad link #5, survey, book | Closer screen: **Gate 720+ · Direct, sell what they were promised · Funding, done-for-you · None**. (Ad 82 is a premium ad; the closer sells funding and Academy is the education road.) |
 | 5.2 | Present → Capital Academy → contract → pay link ($5,000) | Contract FUNDING-MASTERY-AGREEMENT. Pay link. |
-| 5.3 | "push payment #5" | Offer-bucket email for Academy arrives **only now** (it is gated on paid). Portal magic link. |
+| 5.3 | "push payment #5" | Offer-bucket email for Academy arrives **only now** (it is gated on paid). Sign in via the booking-confirmation link or the sign-in page. |
 | 5.4 | Open the portal | **Capital Academy tile unlocked.** Modules listed. Every video says "Video will show here when it is ready". That is the deliverable gap to judge. |
 
 ---
