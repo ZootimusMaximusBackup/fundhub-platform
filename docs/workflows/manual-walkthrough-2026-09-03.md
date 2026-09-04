@@ -252,3 +252,32 @@ Two separate defects, both now owner-decided:
 
 Note the wording is a lie either way: "match this file" when there is no file.
 This is a number a closer could repeat to a client on a live call.
+
+**F11 · CLIENT-FACING BUG. The Present deck shows raw database IDs instead of
+the client's survey answers. Severity: HIGH — the client sees this.**
+Present deck screen S-03 "YOUR ANSWERS" / "This is what you told us. Anything
+change?" on Sim Five-Academy. This is the CLIENT half of the split screen.
+
+| Row | Shown | Should show |
+|---|---|---|
+| Funding target | 207883 | $200k - $400k |
+| Planned use | 207888 | Growth (marketing, inventory, hiring) |
+| Business | 207918 | Yes, 5+ years |
+| Monthly revenue | 208124 | $1M+ (annual) |
+| Capital on hand | 207975 | $100k+ |
+| What changes with the money | 207897 | Grow faster |
+
+Six consecutive ~207.9k values: these are answer-option row ids. The screen
+renders the option's ID instead of resolving it to its label.
+
+Three rows correctly show "—" (Annual income they said, Income Insight
+Experian, IncomeView Equifax) because no credit pull exists yet. Those are
+right.
+
+Related to F8 (same survey data mis-handled on the Client Control Panel), but
+worse: F8 is an internal screen, this one is shown to the customer on a live
+sales call. A closer opening the deck with a real client on Zoom shows them
+six meaningless numbers on a slide that says "this is what you told us".
+
+Fix: resolve the option id to its display label before render. Check whether
+the same unresolved id leaks into any other client-facing surface.
