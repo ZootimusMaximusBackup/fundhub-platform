@@ -558,7 +558,11 @@ function notAFactor(c, r) {
   const rows = c.not_a_factor || [];
   if (!rows.length) return;
   r.heading("What Does Not Affect Your Funding");
-  r.para("You do not need to lose sleep over these. They are cleanup and upkeep only.");
+  /* "Cleanup and upkeep ONLY" was too strong once the engine's authorized-user
+     findings started landing here: AU_HIGH_UTIL's own next line is "ask the main
+     cardholder to pay it down". Some of these do have a step attached. What is
+     true of all of them is that none is what the funding decision turns on. */
+  r.para("None of these is what your funding decision turns on. They are cleanup and upkeep - the note under each one says what, if anything, to do about it.");
   for (const row of rows) r.item(null, row.title, row.lines);
 }
 
@@ -648,11 +652,30 @@ function analysis(c, r) {
   r.heading("Authorized User (AU) Accounts");
   const au = c.au_account || {};
   if (au.creditor) {
+    /* The engine's own authorized-user findings for this file. They are the same
+       sentences printed under "What Does Not Affect Your Funding", and they are
+       what decides the impact cell. This section used to assert NEUTRAL and "It
+       is not hurting you either" for every AU account, which contradicts the
+       engine on the two it flags: AU_HIGH_UTIL says the balance "still counts
+       against your credit utilization", AU_NEGATIVE_MARKS says the late payments
+       "still count against you". One pack cannot say both. */
+    const auFindings = (c.not_a_factor || [])
+      .filter((f) => String(f.code || "").toUpperCase().startsWith("AU_"));
+    const flagged = auFindings.some((f) => {
+      const code = String(f.code || "").toUpperCase();
+      return code === "AU_HIGH_UTIL" || code === "AU_NEGATIVE_MARKS";
+    });
     r.table(
       ["creditor", "bureau", "limit", "balance", "utilization", "age", "impact"],
-      [[au.creditor, au.bureau, usd(au.limit), usd(au.balance), au.util || "", au.age || "", "NEUTRAL"]]
+      [[au.creditor, au.bureau, usd(au.limit), usd(au.balance), au.util || "", au.age || "",
+        flagged ? "REVIEW" : "NEUTRAL"]]
     );
-    r.para("An authorized user account cannot help you get funded - lenders do not count them when they make a funding decision. It is not hurting you either. Leave it alone.");
+    r.para("An authorized user account is not your debt. Lenders do not count it as one of your own tradelines when they make a funding decision, but it does sit on your credit report.");
+    if (auFindings.length) {
+      auFindings.forEach((f) => (f.lines || []).forEach((line) => r.para(line)));
+    } else {
+      r.para("Nothing on this one needs your attention. Leave it alone.");
+    }
   } else {
     r.para("No authorized user accounts on this file.");
   }
@@ -884,10 +907,18 @@ function roadmap(c, r) {
   r.table(
     ["account", "balance", "limit", "pay down to", "amount to pay"],
     cards.map((row) => {
-      const target = Number(String(row[5] || "").replace(/[^0-9]/g, ""));
+      /* row[5] is utilTarget(limit) — "$X or less", and the EMPTY STRING when the
+         card has no credit limit (a charge card, or no preset spending limit).
+         Number("") is 0 and 0 is finite, so this used to tell the holder of a
+         no-limit card to pay off the entire balance. No limit means the 10%
+         target is unknown, and unknown stays unknown: both cells print "-". */
+      const digits = String(row[5] || "").replace(/[^0-9]/g, "");
+      const target = digits === "" ? null : Number(digits);
       const bal = Number(row[2]);
-      const owe = Number.isFinite(target) && Number.isFinite(bal) && bal > target ? usd(bal - target) : "-";
-      return [row[0], usd(row[2]), usd(row[3]), row[5] || "under 10%", owe];
+      const owe = target != null && Number.isFinite(target) && Number.isFinite(bal) && bal > target
+        ? usd(bal - target)
+        : "-";
+      return [row[0], usd(row[2]), usd(row[3]), row[5] || "-", owe];
     })
   );
   if (c.util_target_balance != null) {

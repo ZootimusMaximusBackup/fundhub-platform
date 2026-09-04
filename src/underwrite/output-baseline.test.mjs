@@ -189,7 +189,15 @@ const BUREAUS_NONE = Object.freeze({});
    bureau now appear once instead of once per bureau.
 
    The four printed documents moved for the same reason: they carry those
-   sections now. Page counts went 4/3/6/3 to 4/4/8/5. */
+   sections now. Page counts went 4/3/6/3 to 4/4/8/5.
+
+   MOVED AGAIN 2026-09-04, W10 ROUND 2 REPAIR — generatorScript only, and the
+   change is five comment lines plus `*_extra` on the three `for ... in
+   c["lenders"]` unpacks in fundhub_gen.py. lenderRow() now returns eleven
+   columns, not nine, and the Python read them positionally into exactly nine
+   names, so this printer raised ValueError and black-report-pdf.mjs silently
+   fell through to the Node printer. Nothing about the LAYOUT moved; the other
+   six pins are unchanged, which is the evidence. */
 const BASELINE = Object.freeze({
   engineMaxed:            "0581c1b9b5f713dc7958b5e3e1e961b0be245beac174814d9a04068e1a692d0a",
   engineMaxedSuggestions: "d06e816746ef7dddb015f77ebf605b9a7f30f15df1d233b8e47702f4577f2d19",
@@ -197,7 +205,7 @@ const BASELINE = Object.freeze({
   engineNoBureaus:        "79f0c7c1d8eb1853e314681051005eeafd3b07550da2855ab9eb6bbffe8a8260",
   blackReportClient:      "d4ead7287903034f5100f0b80ff5e85925e514a34611164beb727bef969599a8",
   emptyBlackReportClient: "21826d2ea2496e6674a8bb909de81d2aef49a277c3470c1f854094950fb2ca79",
-  generatorScript:        "9d0babe55544aa695cca8505a6a2d0af1370f50d01817c0f8e51af35ba62259d"
+  generatorScript:        "b48fe4945278033174daf5e67efa321530fa5fd98a02c19f7f7617673aa4d982"
 });
 
 /** The four PDFs the in-process printer produces, and the words inside each. */

@@ -376,8 +376,15 @@ function displayUtilTotals(revolvingRows) {
     if (row[6] === "CLOSED") continue;
     const b = finiteNumber(row[2]);
     const l = finiteNumber(row[3]);
+    /* A card with no credit limit — a charge card, or no preset spending limit —
+       has no 10% target, so it cannot contribute to a "pay down to 10% of your
+       limits" figure. Counting its BALANCE while its limit is unknown would put a
+       dollar in the numerator with nothing under it and overstate the paydown.
+       The row still prints; it is only these two totals it stays out of. */
+    if (l == null || l <= 0) continue;
     if (b != null) balance += b;
-    if (l != null && l > 0) { limit += l; sawLimit = true; }
+    limit += l;
+    sawLimit = true;
   }
   return sawLimit ? { balance, limit } : null;
 }
@@ -643,6 +650,30 @@ function lenderRow(lender, bucket) {
 }
 
 /**
+ * A gate the lender states that this system has never checked.
+ *
+ * "N lenders are open to you today" has to be true of every lender under it.
+ * The vendor matcher (vendor/underwriteiq-full/api/lite/crs/lender-matrix.js:161-207)
+ * tests three things — entity, months in business, score — and NEVER reads
+ * `minRevenue`, even though four of its lenders state one: OnDeck $100,000,
+ * Bluevine $120,000, Kabbage $50,000, Credibly $180,000 a year. Nothing in this
+ * product captures a client's business revenue, so that floor cannot be met, only
+ * unmet or unknown. Unknown is not met.
+ *
+ * So a revenue floor moves the lender to the "after optimization" list with the
+ * floor named as what is still needed. It is never a denial and never a zero —
+ * the lender still appears, with its real requirement printed instead of an
+ * availability we cannot stand behind.
+ *
+ * @returns {string|null} what is still needed, or null when every stated gate is met
+ */
+function unverifiedGate(lender) {
+  const minRevenue = finiteNumber(lender?.minRevenue);
+  if (minRevenue == null || minRevenue <= 0) return null;
+  return `$${minRevenue.toLocaleString("en-US")}/year in business revenue required (not on file)`;
+}
+
+/**
  * F45. The vendor matcher returns two buckets and this used to flatten them,
  * which is why the printed shortlist put all fifteen lenders under "after
  * optimization" and left "available right now" empty on every document.
@@ -660,8 +691,9 @@ function mapLenders(crsResult, business) {
   const now = [];
   const after = [];
   for (const lender of matched.availableNow || []) {
-    const row = lenderRow(lender, "now");
-    if (row) now.push(row);
+    const unmet = unverifiedGate(lender);
+    const row = lenderRow(unmet ? { ...lender, whatNeeded: unmet } : lender, unmet ? "after" : "now");
+    if (row) (unmet ? after : now).push(row);
   }
   for (const lender of matched.afterOptimization || []) {
     const row = lenderRow(lender, "after");
@@ -713,27 +745,49 @@ function scoreLadder(afterRows, median) {
 
 const SEVERITY_ORDER = Object.freeze({ critical: 0, high: 1, medium: 2, low: 3, info: 4 });
 
+/* EVERY CODE IN THE THREE SETS BELOW WAS READ OUT OF THE ENGINE, NOT GUESSED.
+   The first cut of this file listed eight code names that the engine has never
+   emitted (UTIL_HIGH, UTIL_CRITICAL, UTIL_OVERALL, UTIL_OVERALL_OVER_10,
+   AU_ACCOUNT, AU_DOMINANCE, AU_NOT_RESPONSIBLE, INQUIRY_DUPLICATES) and missed
+   the ones it does, so the corrections below silently did not fire. The full
+   list is one command:
+
+     grep -oE 'makeFinding\("[A-Z_0-9]+", "[a-z_]+"' \
+       vendor/underwriteiq-full/api/lite/crs/optimization-findings.js | sort -u
+
+   Anything added here must appear in that output. */
+
 /* Findings about HOW to play the file rather than what is wrong with it. The
    reference set puts these in "Your Next Step", not in the ranked problem list —
-   "do not open new accounts before funding" is advice, not a cost. */
-const STRATEGIC_CODES = Object.freeze(new Set(["FUNDING_FIRST", "APPLY_NOW", "FUNDING_WINDOW"]));
+   "do not open new accounts before funding" is advice, not a cost.
+   Engine category "strategic": FUNDING_FIRST, PREMIUM_MAINTENANCE, REQUEST_CLI,
+   STRONG_ANCHOR — all four are caught by the category test, so this set only
+   exists for a code the engine may later file under another category. */
+const STRATEGIC_CODES = Object.freeze(new Set(["FUNDING_FIRST"]));
 
-/* The engine's OVERALL utilisation finding names a dollar target worked out from
-   the tri-merge total, which counts an account once per bureau (F43). Its
-   percentage is right — both sides of the fraction triple together — but its
-   target balance is three times too high on a file that reports to all three.
-   The number is corrected here, against the de-duplicated limit this file
-   already computes, and only the number: the sentence around it is the engine's
-   own approved wording. */
-const OVERALL_UTIL_CODES = Object.freeze(new Set([
-  "UTIL_MODERATE", "UTIL_HIGH", "UTIL_CRITICAL", "UTIL_OVERALL", "UTIL_OVERALL_OVER_10"
-]));
+/* The engine's OVERALL utilisation findings name dollar figures worked out from
+   the tri-merge totals, which count an account once per bureau (F43). Their
+   percentage is right — both sides of the fraction triple together — but the
+   dollars are three times too high on a file that reports to all three.
+   optimization-findings.js:144 emits UTIL_OVERALL_HIGH above 30% and :165
+   UTIL_MODERATE between 10% and 30%. Both are corrected here, against the
+   de-duplicated totals this file already computes, and only the numbers: the
+   sentences around them are the engine's own approved wording. */
+const OVERALL_UTIL_CODES = Object.freeze(new Set(["UTIL_MODERATE", "UTIL_OVERALL_HIGH"]));
 
-/** Findings the engine says do NOT affect a funding decision. */
-const NOT_A_FACTOR_CATEGORIES = Object.freeze(new Set(["inquiries", "au", "authorized_user"]));
+/** Findings the engine says do NOT affect a funding decision.
+ *  The engine files its three authorized-user findings under "utilization"
+ *  (AU_HIGH_UTIL) and "tradeline_quality" (AU_GOOD_KEEP, AU_NEGATIVE_MARKS), so
+ *  the category test never caught them and all three were being ranked in "What
+ *  Is Costing You Money" — next to a new section of the Credit Analysis Report
+ *  telling the same client the same account is not his problem. All three of the
+ *  engine's own sentences open "You are not responsible for this debt", which is
+ *  the not-a-factor rule, so they are routed by CODE here. */
+const NOT_A_FACTOR_CATEGORIES = Object.freeze(new Set(["inquiries"]));
 const NOT_A_FACTOR_CODES = Object.freeze(new Set([
-  "INQUIRY_CLEANUP", "INQUIRY_HIGH", "INQUIRY_DUPLICATES", "AU_ACCOUNT", "AU_DOMINANCE",
-  "AU_NOT_RESPONSIBLE", "DONT_CLOSE_OLDEST", "STRONG_ANCHOR"
+  "INQUIRY_DUPLICATE", "INQUIRY_REMOVAL",
+  "AU_HIGH_UTIL", "AU_GOOD_KEEP", "AU_NEGATIVE_MARKS",
+  "DONT_CLOSE_OLDEST", "STRONG_ANCHOR"
 ]));
 
 function findingsOf(crsResult) {
@@ -782,15 +836,54 @@ function bySeverity(a, b) {
    defect; the company on file is the answer to it. */
 const NO_ENTITY_CODES = Object.freeze(new Set(["NO_BUSINESS_ENTITY", "BUSINESS_ENTITY_MISSING"]));
 
-function correctedLines(f, targetBalance) {
-  const lines = findingLines(f);
-  if (targetBalance == null) return lines;
-  if (!OVERALL_UTIL_CODES.has(String(f.code || "").toUpperCase())) return lines;
-  const money = formatUsdPlain(targetBalance);
-  return lines.map((line) => line.replace(/\$[\d,]+/g, money));
+/**
+ * The tri-merge dollar figures inside an overall-utilisation finding, mapped to
+ * their de-duplicated counterparts.
+ *
+ * A blanket `line.replace(/\$[\d,]+/g, target)` is wrong here and was the first
+ * cut. UTIL_OVERALL_HIGH's problem sentence carries TWO figures — the balance
+ * and the limit — and its next-step sentence carries a third, the 10% target.
+ * Rewriting all three to the target produces "you are using 45% of your
+ * available credit. That is $1,000 in balances against $1,000 in limits."
+ *
+ * So each figure is swapped for its own counterpart, matched BY VALUE rather
+ * than by position or by wording. The engine's own totals are the keys, this
+ * file's de-duplicated totals are the values, and a dollar amount that is
+ * neither is left exactly as the engine wrote it.
+ */
+function utilMoneyMap(engineUtil, display) {
+  const map = new Map();
+  if (!engineUtil || !display) return map;
+  const pairs = [
+    [finiteNumber(engineUtil.totalBalance), display.balance],
+    [finiteNumber(engineUtil.totalLimit), display.limit],
+    [
+      finiteNumber(engineUtil.totalLimit) == null
+        ? null
+        : Math.round(finiteNumber(engineUtil.totalLimit) * 0.1),
+      display.target
+    ]
+  ];
+  for (const [from, to] of pairs) {
+    if (from == null || to == null) continue;
+    if (from === to) continue;
+    map.set(from, to);
+  }
+  return map;
 }
 
-function mapCostingYou(findings, business, targetBalance) {
+function correctedLines(f, moneyMap) {
+  const lines = findingLines(f);
+  if (!moneyMap || moneyMap.size === 0) return lines;
+  if (!OVERALL_UTIL_CODES.has(String(f.code || "").toUpperCase())) return lines;
+  return lines.map((line) => line.replace(/\$[\d,]+/g, (token) => {
+    const n = Number(token.replace(/[^0-9]/g, ""));
+    if (!Number.isFinite(n) || !moneyMap.has(n)) return token;
+    return formatUsdPlain(moneyMap.get(n));
+  }));
+}
+
+function mapCostingYou(findings, business, moneyMap) {
   const hasEntity = business?.hasEntity === true;
   const rows = findings
     .filter((f) => !isNotAFactor(f) && !isStrategic(f))
@@ -801,7 +894,7 @@ function mapCostingYou(findings, business, targetBalance) {
     code: f.code || "",
     severity: String(f.severity || "").toLowerCase(),
     title: String(f.targetState || f.plainEnglishProblem || "").trim(),
-    lines: correctedLines(f, targetBalance)
+    lines: correctedLines(f, moneyMap)
   }));
 }
 
@@ -987,7 +1080,12 @@ export function buildBlackReportClient({
     client.lenders_after = lenders.after;
     client.score_ladder = scoreLadder(lenders.after, crsResult.consumerSignals?.scores?.median);
     const findings = findingsOf(crsResult);
-    client.costing_you = mapCostingYou(findings, client.business, client.util_target_balance);
+    const utilMoney = utilMoneyMap(util, {
+      balance: client.util_total_balance,
+      limit: client.util_total_limit,
+      target: client.util_target_balance
+    });
+    client.costing_you = mapCostingYou(findings, client.business, utilMoney);
     client.not_a_factor = mapNotAFactor(findings);
     client.strategy = mapStrategic(findings);
   }

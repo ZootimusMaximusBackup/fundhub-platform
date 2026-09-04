@@ -1,9 +1,62 @@
-Sim Five-Academy (simulated) — the five documents the DATABASE held after one
-analysis.completed event, with INNGEST_EVENT_KEY unset. Local Postgres 16,
-scratch database, all 238 migrations. Bytes read back out of the document store.
+REGENERATED 2026-09-04 after the ROUND 2 repair pass. Every file here came out of
+the code as it now stands. Sizes are bytes.
 
-   12364  bank_lender_match_list       Bank-and-Lender-Match-List.pdf
-    1599  capital_readiness_summary    Capital-Readiness-Summary.pdf
-    8954  credit_analysis_report       Credit-Analysis-Report.pdf
-    9536  credit_optimization_roadmap  Credit-Optimization-Roadmap.pdf
-   11125  funding_snapshot             Funding-Snapshot.pdf
+Printed by the NODE printer (src/underwrite/black-report-node.mjs), which is what
+Netlify runs: WeasyPrint is not installed there, so black-report-pdf.mjs falls
+through to Node on production. A laptop with WeasyPrint installed prints the same
+five documents through scripts/black-reports/fundhub_gen.py instead and the bytes
+differ; that path is proved separately in docs/workflows/w10-proof-2026-09-03.md.
+
+
+TOP LEVEL — Sim Five-Academy (simulated), no `businesses` row.
+This is the client the 2026-09-03 walkthrough measured. Local Postgres 16,
+scratch database fundhub_w10r, all 238 migrations, one
+`scripts/sim/push-credit.mjs --profile academy` run with INNGEST_EVENT_KEY unset.
+All five documents reached the document store on that run.
+
+   12363  bank_lender_match_list       Bank-and-Lender-Match-List.pdf     6 pages
+    1599  capital_readiness_summary    Capital-Readiness-Summary.pdf      1 page
+    8954  credit_analysis_report       Credit-Analysis-Report.pdf         5 pages
+    9534  credit_optimization_roadmap  Credit-Optimization-Roadmap.pdf    5 pages
+   11165  funding_snapshot             Funding-Snapshot.pdf               5 pages
+
+READ THIS BEFORE QUOTING THE PACK ON F44. This client still reads "No business
+entity on file… Forming an LLC is fast", and that is correct under the owner's
+F15 rule. His 72 months live in `clients.custom_fields.business_age_months`, not
+in a `businesses` row, and a number in a custom field is not a company. The LLC
+advice stops for a client who HAS a company row — see with-company/ below.
+
+Against the committed 2026-09-04 pack it replaces, the only text that moved is
+the one-line introduction to "What Does Not Affect Your Funding", which grew to
+two lines and pushed one lender row onto the next page. Page counts, every
+number, and every other sentence are identical.
+
+
+with-company/ — the same file, same profile, with one `businesses` row
+(Sim Five Holdings LLC, 72 months) on the client. What F44 actually fixes.
+
+  · Funding Snapshot: "Sim Five Holdings LLC is on file at 72 months old…"
+    instead of "Forming an LLC is fast".
+  · Bank and Lender Match List: 11 lenders open today, not 6 — and not 15.
+    OnDeck, Bluevine, Kabbage and Credibly are held back in the shortlist,
+    each printing "$N/year in business revenue required (not on file)",
+    because the vendor matcher never checks a revenue floor and this product
+    has never captured a client's revenue. Unknown is not met.
+  · Roadmap: "grow the business side" instead of "form your business entity".
+
+
+hard-cases/ — a hand-built file, not from the database, that fires the three
+things the sim profile cannot. One card at $4,500 of $10,000 reported by all
+three bureaus (45% utilization), one AMEX PLATINUM with no preset spending
+limit, one authorized-user card at 80%.
+
+  · Funding Snapshot: "That is $4,500 in balances against $10,000 in limits"
+    and "down to about $1,000" — the engine's tri-merge $13,500 / $30,000 /
+    $3,000 corrected field by field, not all three flattened to the target.
+  · Roadmap paydown table: the no-limit card reads
+    "AMEX PLATINUM (NPSL)  $5,200  -  -  -". Unknown stays unknown; it is not
+    a $5,200 bill.
+  · Credit Analysis Report: the authorized-user account reads REVIEW with the
+    engine's own sentences under it, and the same finding is ranked under
+    "What Does Not Affect Your Funding" in the snapshot — not under "What Is
+    Costing You Money".

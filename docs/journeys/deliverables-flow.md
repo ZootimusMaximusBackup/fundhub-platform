@@ -64,6 +64,30 @@ flowchart TD
 
 The fifth was built and then dropped by the saver until 2026-09-04 (F46).
 
+## Two rules that decide what these documents SAY
+
+```mermaid
+flowchart TD
+    LEND[Vendor lender matcher<br/>availableNow / afterOptimization] --> GATE{Does the lender state a<br/>gate nothing has checked?}
+    GATE -->|revenue floor,<br/>and no revenue is on file| AFTER["Shortlist, with the floor<br/>printed as what is still needed"]
+    GATE -->|entity, months in business,<br/>score — all three checked| NOW["Open to you today"]
+
+    BIZ[Does this client have a company?] --> ROW{"A row in `businesses`?"}
+    ROW -->|yes| HAS["Named, aged, no LLC advice.<br/>Business lenders are matched."]
+    ROW -->|"no — only<br/>custom_fields.business_age_months"| NONE["No entity on file.<br/>Form an LLC advice stands."]
+```
+
+* **"Open to you today" means every gate the lender states is met.** The vendor
+  matcher checks entity, months in business and score, and never reads
+  `minRevenue`, though four of its lenders state one. Nothing in this product
+  captures a client's business revenue, so those four are held in the shortlist
+  with the floor named. Unknown is not met, and unknown is never printed as zero.
+* **A company is a `businesses` row.** That is the owner's F15 rule, reused here
+  rather than restated. A client whose only company fact is
+  `clients.custom_fields.business_age_months` — the sim academy profile is one —
+  has no entity as far as these documents are concerned and is still advised to
+  form one.
+
 ## The other door: the presenter's deck
 
 ```mermaid
