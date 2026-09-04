@@ -1182,3 +1182,89 @@ the customer journey." It is the S-NOBOOK fall-off chase
 (src/workflows/s-nobook-chase.mjs): survey done, never booked, 2 hours later.
 "Your file is ready" is false at that point — no file exists before the call.
 Rewrite needed. Owner: note only, change nothing yet.
+
+**F39 · RUNAWAY NO-BOOKING CHASE — hits REAL clients. Severity: MAXIMUM.**
+Observed on Chris's phone 7:54-7:59 PM: the same text, over and over, from
+FUNDHUB LLC — "Hey Sim, it's Fundhub. Your file is ready — grab a time…"
+Thread count 188.
+
+Measured in `messages`, last 24h, template SMS-NOBOOK-01 to Chris's number:
+**30 sends to 2 clients** — Sim One-Funding ×16 (19:48-19:52), Sim Two-Repair
+×12 (19:54-19:58), up to three in the same second. At 19:59 there were **12
+more queued** and 14 had gone out in the previous five minutes. Both clients
+booked hours earlier and sit in the Booked column.
+
+ROOT CAUSE, two parts, both proven from the `events` table:
+
+1. **Funnel events are never attached to a client.** Every `booking.created`
+   (6 tonight), every `survey.submitted` (82) and every `entry.captured` (95)
+   has `client_id = NULL`. The chase workflow's exit check
+   (`hasBooked`, src/workflows/s-nobook-chase.mjs:20-26) looks for
+   `booking.created WHERE client_id = <client>` — which can never match. So the
+   chase can never learn that the client booked.
+2. **ClickFunnels sends ~16 survey events per survey** (82 for 5 surveys — one
+   per screen plus retries). The chase triggers on `survey.submitted`, so each
+   client gets ~16 independent chase runs. Sim One received exactly 16 texts.
+
+WHAT HAPPENS NEXT WITHOUT INTERVENTION: the 12 queued texts go out on the next
+sweeper tick; the **24-hour wave fires tomorrow ~5:48 PM for all five sims
+(~80 texts)**; the 72-hour wave after that. And this is not sim-specific — any
+real client who completes the survey gets the same, booked or not.
+
+Related and correct: SMS-S05A-NOSHOW-RECOVERY fired once to Sim One at 19:38
+because `booking.noshow` was recorded — he genuinely did not join the 7:00 PM
+Meet. That one is working as designed.
+
+Owner: notes only, change nothing yet. Recorded that the tomorrow wave is
+coming and that stopping it means cancelling the pending chase runs. Owner's
+call.
+
+**F41 · "Send deliverables package now" delivers NOTHING and reports success.**
+From the UWIQ ground-truth spec (docs/workflows/expected-deliverables-uwiq-2026-09-03.md):
+the deck button calls `generate_letters`, which builds the REPAIR pack. For a
+clean file that is 0 files. It still emails the client "Your correction letters
+are ready", the presenter still sees "Deliverables sent to client", and the
+client record gets `diy_status = "Delivery Failed — Retry"`. Not gated on
+payment or entitlement — only on staff role and offer.
+So the button is the wrong tool for a funding/academy client AND it lies on
+both screens when it produces nothing.
+
+**F42 · The REAL deliverables package was never produced for Sim Five.**
+The funding pack (Credit Analysis Report, Funding Snapshot, Bank and Lender
+Match List, Credit Optimization Roadmap, + Capital Readiness Summary) is built
+only by workflow C-06 when the credit file lands. Live check: Sim Five's
+`documents` table holds exactly two rows, both the contract. Zero deliverable
+events. `analysis.completed` and `decision.rendered` were emitted at 18:29.
+So C-06 did not run, or ran and failed silently. Either way the client has
+none of the five documents he was told his "file is ready" for.
+
+**F43 · Every account is counted three times in the PDFs.** Because the sim
+puts all four lines on all three bureau reports and nothing de-duplicates,
+the documents show 9 card rows and 3 Toyota rows, with tripled totals
+($23,550 / $135,000 / paydown target $13,500 instead of $7,850 / $45,000 /
+$4,500). Pre-approval and the 17% are unaffected. Partly sim data (see the
+repair spec), but the printers should de-duplicate regardless.
+
+**F44 · Business age never reaches the engine.** 72 months is written on the
+client and the docs still say "no business entity", business capital $0, and
+advise the client to "form an LLC". Same defect as the earlier funding finding,
+now visible in customer-facing PDFs.
+
+**F45 · Lender list buckets are wrong.** All 15 matched lenders land under
+"After optimization", nobody under "Available right now", and "Business
+entity required" never shows.
+
+**F46 · Capital Readiness Summary is built and then dropped.** It is the only
+document that prints "Approved for Funding" in words, and the saver discards
+it. Only four of five reach the portal.
+
+**Noted discrepancy, not resolved:** the funding spec (src lender matcher) found
+NO personal lenders in the book; the UWIQ spec (vendor lender-matrix) found 6
+personal lenders "available now". Two different matchers, two different
+answers. Add to W8.
+
+**Expected values for the audit (from the spec):** tier FULL_FUNDING /
+"Approved for Funding"; pre-approval **$199,350** (engine recompute matches the
+stored figure); projected $221,500; gap $22,150; scores 762/770/758, median 762;
+utilization 17%; nothing to dispute; three card paydowns (Chase → $1,200,
+Amex → $2,500, Capital One → $800).
