@@ -1401,3 +1401,19 @@ Why Chris saw no letters: Sim Five is a clean academy file — no derogatories,
 no repair path — so nothing fires, correctly. The repair engine's own defect
 (fires on Metro 2 reporting defects only, not on derogatories; owner-set to
 change) is already recorded and assigned to W8.
+
+**OWNER-SET (2026-09-03, late): THE DESIGNED DELIVERABLES MUST BE PRODUCIBLE BY
+THE LIVE SITE.** Chris: "I demand that it can be produced by the site." So F50
+is not a choice between two options any more — the requirement is that
+fundhub.ai itself generates the WeasyPrint-quality documents (the Jordan Sample
+reference set) for every client whose file lands. How (WeasyPrint on Netlify, a
+render service, or the Node printer brought up to the template) is the
+implementer's call; the outcome is not. Add to the fix batch as its own
+workflow, alongside F42 (C-06 never produces anything).
+
+**OWNER-SET: THE SMS SET GETS FIXED.** Chris: "The SMS's are horrible and
+confusing, we will fix those." The SMS review table above (F39, F40, F47, F48,
+F49 plus the copy note) is the scope. Rewrite for clarity and stage-awareness,
+fix the timing bugs, fill the empty variable, and kill the runaway chase at its
+root (events with no client_id + ClickFunnels multi-fire). Add to the fix batch
+as its own workflow.
