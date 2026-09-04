@@ -295,3 +295,9 @@ Also live: message dispatcher on cron, `public/funnel-checkout` routed,
 
 `npm run flywheel:status partner`. All of it is white label, and all of it is on
 branch `feat/flywheel-runner` until #321 merges.
+
+## Chris — owed to the 2026-09-03 fix batch
+- [ ] Real contract text for each agreement (Funding Mastery, FUNDING-AGREEMENT, CREDIT-REPAIR-AGREEMENT; decide whether Capital Blueprint needs one). It may already be in the repo — W3 will search and tell you. See docs/workflows/fix-batch-2026-09-03.md W3.
+- [ ] Tell W7 the exact AI setter symptom (call not placed / silent / hangs up / ignores prompt).
+- [ ] Tell W4 whether the dispute-letter consent belongs on every client's portal or only repair clients (F35).
+- [ ] Turn off the Gmail "FS Auto" filter before the re-walk (F17).
