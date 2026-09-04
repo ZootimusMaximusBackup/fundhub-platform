@@ -936,3 +936,25 @@ Chris supplies it. Agents seed what he provides.
 The one line that must survive into the Academy contract verbatim in substance:
 no promise of funding, approval amount, credit score change, or any particular
 result; it is an education program.
+
+**F31 · A NEW PAYING CLIENT HAS NO WAY INTO THE PORTAL. Severity: HIGH.**
+`fundhub.ai/app/client-portal.html` presents a plain **email + password** sign
+in with "Need help? support@fundhub.ai", "Forgot your password?" and
+"Back to fundhub.ai". There is no "email me a sign-in link" option on the page
+at all.
+
+A client who has just booked, been sold and signed has never set a password.
+Nothing in the whole walk asked them to create one. So their only route in is
+the password-reset flow, which is not a welcome experience for someone who paid
+$5,000 sixty seconds ago.
+
+This also finally corrects the runbook and SOP text. Earlier today those files
+said the portal magic link is "request-only, ask for one on the portal sign-in
+page" (commits 47ea5000 and 1160b73d). **That is wrong too** — the sign-in page
+offers no such request. Both files need correcting again, and this time from
+the live screen rather than from the template table.
+
+The whole portal entry story is now the open question: is there a magic-link
+route at all, does the booking or purchase flow ever set a password, or is
+password-reset genuinely the intended door? Trace it in code before writing
+anything else into the SOP.
