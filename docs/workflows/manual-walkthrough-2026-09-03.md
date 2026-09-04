@@ -559,3 +559,24 @@ walk.
 LESSON FOR THIS WALK: do not read Gmail thread counts as evidence of duplicate
 delivery while every sim shares one mailbox. Verify send counts against the
 `messages` table instead, not against the inbox.
+
+**E-book pay link · WORKS.** fanbasis.com checkout opens correctly, shows
+Fundhub, **$5.00**, card / Google Pay / Cash App Pay / US bank account, and
+"Powered by Commas". So fanbasis.com is Commas' checkout host — my earlier note
+questioning "fanbasis not Commas" is WITHDRAWN. The rail is Commas, as
+push-payment.mjs assumes. Statement descriptor reads COMMAS.
+
+**F20 · The checkout calls the product "Consulting Services Package".**
+The e-book pay page shows `Consulting Services Package · $5.00`, not the
+e-book. Every Fundhub product may be sharing one generic Commas product label.
+The customer sees this at the moment of payment and again on their receipt.
+Check whether the $32 soft pull, the $1,000 and $3,000 and $5,000 offers all
+show the same generic name. If they do, receipts and disputes will be hard to
+tell apart, and "Consulting Services Package" is a poor descriptor for a
+$5 e-book.
+
+**Note for later, not re-raised:** the thread does show a second 6:34 PM
+message to the SAME address (+sim-05), which the shared-mailbox explanation
+does not cover. Owner has ruled duplicates are not happening; recording the
+observation only so it can be settled from the `messages` table rather than
+from Gmail. No action now.
