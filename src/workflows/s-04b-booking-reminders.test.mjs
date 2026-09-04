@@ -8,6 +8,28 @@ const portalStub = async () => ({
   ok: true, outcome: "issued", token: "booking-portal-tok", sent: false
 });
 
+/* A booking is in the future or it is not a booking. These fixtures used to be
+   a hard-coded August date that quietly slid into the past, which made "the
+   reminders fired" prove nothing about a real appointment. */
+const inHours = (h) => new Date(Date.now() + h * 60 * 60 * 1000).toISOString();
+
+/* A step shim with a clock attached. The real Inngest sleeps until the moment
+   it is given and the code then reads the wall clock to check it really is that
+   moment; fakeStep returns instantly, so without this the check would always
+   see "far too early" and refuse every reminder. The clock moves to whatever
+   sleepUntil was asked for, which is exactly what a durable sleep does. */
+function clockStep() {
+  let t = Date.now();
+  return {
+    now: () => t,
+    step: {
+      run: (_id, fn) => fn(),
+      sleep: async () => {},
+      sleepUntil: async (_id, when) => { t = Math.max(t, new Date(when).getTime()); }
+    }
+  };
+}
+
 const sms = () => [
   { org_id: "org-1", template_key: SMS_CONFIRM, channel: "sms", body: "confirm {{appointment.start_time}}", compliance_passed: true },
   { org_id: "org-1", template_key: SMS_REMIND_24H, channel: "sms", body: "24h {{appointment.start_time}}", compliance_passed: true },
@@ -20,9 +42,10 @@ test("s-04b: confirm + both reminders when startTime present", async () => {
     clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+15551234567", custom_fields: {} }],
     templates: sms()
   });
+  const clock = clockStep();
   const res = await handle({
-    event: ev("booking.created", { startTime: "2026-08-20T18:00:00Z" }, { clientId: "cl-1" }),
-    db, step: fakeStep(), requestMagicLinkImpl: portalStub
+    event: ev("booking.created", { startTime: inHours(72) }, { clientId: "cl-1" }),
+    db, step: clock.step, now: clock.now, requestMagicLinkImpl: portalStub
   });
   assert.equal(db.messages.length, 4);
   assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_CONFIRM, EMAIL_CONFIRM, SMS_REMIND_24H, SMS_REMIND_2H]);
@@ -65,9 +88,10 @@ test("s-04b: stops before 24h reminder if call already held", async () => {
     templates: sms(),
     events: [{ client_id: "cl-1", name: "call.completed" }]
   });
+  const clock = clockStep();
   const res = await handle({
-    event: ev("booking.created", { startTime: "2026-08-20T18:00:00Z" }, { clientId: "cl-1" }),
-    db, step: fakeStep(), requestMagicLinkImpl: portalStub
+    event: ev("booking.created", { startTime: inHours(72) }, { clientId: "cl-1" }),
+    db, step: clock.step, now: clock.now, requestMagicLinkImpl: portalStub
   });
   assert.equal(res.stoppedBecause, "call_held");
   assert.equal(db.messages.length, 2);
@@ -190,3 +214,188 @@ test("cancel-cancels-runs: booking.cancelled stops this booking's in-flight jobs
   }
 });
 
+
+/* ── F47: a reminder means what it says ───────────────────────────────────────
+ *
+ * Measured 2026-09-03: four customers received "your call is tomorrow at ..."
+ * between nought and five minutes after they booked. One of them had booked a
+ * call three days out. The "two hours before" text went out sixty-eight minutes
+ * before the call. These tests are the shapes the walk-through named.
+ */
+test("F47: a call three days out gets its reminders at T-24h and T-2h, not at booking", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+15551234567", custom_fields: {} }],
+    templates: sms()
+  });
+  const start = new Date(Date.now() + 72 * 60 * 60 * 1000);
+  const slept = [];
+  let t = Date.now();
+  const step = {
+    run: (_id, fn) => fn(),
+    sleep: async () => {},
+    sleepUntil: async (id, when) => {
+      slept.push([id, new Date(when).getTime()]);
+      t = Math.max(t, new Date(when).getTime());
+    }
+  };
+  const res = await handle({
+    event: ev("booking.created", { startTime: start.toISOString() }, { clientId: "cl-1" }),
+    db, step, now: () => t, requestMagicLinkImpl: portalStub
+  });
+
+  // Nothing but the confirmation may exist at booking time.
+  assert.deepEqual(db.messages.slice(0, 2).map((m) => m.template_key), [SMS_CONFIRM, EMAIL_CONFIRM]);
+
+  // And the two reminders waited for the right moments — to the minute.
+  assert.equal(slept.length, 2);
+  assert.equal(slept[0][1], start.getTime() - 24 * 60 * 60 * 1000);
+  assert.equal(slept[1][1], start.getTime() - 2 * 60 * 60 * 1000);
+  assert.ok(res.remind24 && res.remind2);
+  assert.equal(db.messages.length, 4);
+});
+
+test("F47: a call six hours out gets NO 'tomorrow' text at all", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+15551234567", custom_fields: {} }],
+    templates: sms()
+  });
+  const clock = clockStep();
+  const res = await handle({
+    event: ev("booking.created", { startTime: inHours(6) }, { clientId: "cl-1" }),
+    db, step: clock.step, now: clock.now, requestMagicLinkImpl: portalStub
+  });
+  assert.equal(res.skipped24h, "booked_inside_24h");
+  assert.equal(res.remind24, undefined);
+  assert.ok(!db.messages.some((m) => m.template_key === SMS_REMIND_24H));
+  // The two-hour reminder is still real for this booking, and still waits.
+  assert.ok(db.messages.some((m) => m.template_key === SMS_REMIND_2H));
+  assert.equal(db.messages.length, 3);
+});
+
+test("F47: a call ninety minutes out gets neither reminder", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+15551234567", custom_fields: {} }],
+    templates: sms()
+  });
+  const clock = clockStep();
+  const res = await handle({
+    event: ev("booking.created", { startTime: inHours(1.5) }, { clientId: "cl-1" }),
+    db, step: clock.step, now: clock.now, requestMagicLinkImpl: portalStub
+  });
+  assert.equal(res.skipped24h, "booked_inside_24h");
+  assert.equal(res.skipped2h, "booked_inside_2h");
+  assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_CONFIRM, EMAIL_CONFIRM]);
+});
+
+test("F47: a start time nothing can read sends the confirmation and no reminders", async () => {
+  for (const bad of ["not a date", "", "  "]) {
+    const db = pgFake({
+      clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
+      templates: sms()
+    });
+    const clock = clockStep();
+    const res = await handle({
+      event: ev("booking.created", { startTime: bad }, { clientId: "cl-1" }),
+      db, step: clock.step, now: clock.now, requestMagicLinkImpl: portalStub
+    });
+    // "" is no start time at all; the others are values that cannot be placed
+    // on a clock. Either way: no reminder about a moment we cannot find.
+    assert.ok(
+      ["no_start_time", "unreadable_start_time"].includes(res.skippedReminders),
+      String(res.skippedReminders)
+    );
+    assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_CONFIRM, EMAIL_CONFIRM]);
+  }
+});
+
+test("F47: a booking for a time that has already gone sends no reminders", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
+    templates: sms()
+  });
+  const clock = clockStep();
+  const res = await handle({
+    event: ev("booking.created", { startTime: inHours(-4) }, { clientId: "cl-1" }),
+    db, step: clock.step, now: clock.now, requestMagicLinkImpl: portalStub
+  });
+  assert.equal(res.skippedReminders, "appointment_already_started");
+  assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_CONFIRM, EMAIL_CONFIRM]);
+});
+
+test("F47: waking early — a retry or a replay — does not fire the reminder anyway", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
+    templates: sms()
+  });
+  // A sleep that resolves without the clock having moved: exactly the shape of
+  // an Invalid Date sleepUntil, and of a step replayed out of order.
+  const frozen = Date.now();
+  const res = await handle({
+    event: ev("booking.created", { startTime: inHours(72) }, { clientId: "cl-1" }),
+    db,
+    step: { run: (_id, fn) => fn(), sleep: async () => {}, sleepUntil: async () => {} },
+    now: () => frozen,
+    requestMagicLinkImpl: portalStub
+  });
+  assert.equal(res.skipped24h, "woke_before_the_reminder_was_due");
+  assert.equal(res.skipped2h, "woke_before_the_reminder_was_due");
+  assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_CONFIRM, EMAIL_CONFIRM]);
+});
+
+/* ── F1: the confirmation does not wait for the five-minute sweep ─────────── */
+test("F1: the booking text and email are handed to the dispatcher at once, and nothing else is", async () => {
+  const inner = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+15551234567", custom_fields: {} }],
+    templates: sms()
+  });
+  /* pgFake's messages insert returns no id; give it one, because the id is what
+     "send this exact row now" is addressed to. */
+  let seq = 0;
+  const db = {
+    ...inner,
+    async query(sql, params) {
+      const before = inner.messages.length;
+      const r = await inner.query(sql, params);
+      if (/INSERT INTO messages/.test(sql) && inner.messages.length > before) {
+        const id = "msg-" + ++seq;
+        inner.messages[inner.messages.length - 1].id = id;
+        return { rows: [{ id, created_at: new Date().toISOString() }] };
+      }
+      return r;
+    }
+  };
+  const drained = [];
+  const clock = clockStep();
+  const res = await handle({
+    event: ev("booking.created", { startTime: inHours(72) }, { clientId: "cl-1" }),
+    db, step: clock.step, now: clock.now, requestMagicLinkImpl: portalStub,
+    drainNowImpl: async (_db, messageId, opts) => {
+      drained.push({ messageId, orgId: opts.orgId });
+      return { ran: true, dispatched: 1, sent: 1, results: [] };
+    }
+  });
+  // Exactly the two confirmation rows, and only those two.
+  assert.equal(drained.length, 2);
+  assert.deepEqual(drained.map((d) => d.messageId), ["msg-1", "msg-2"]);
+  assert.ok(drained.every((d) => d.orgId === "org-1"));
+  assert.equal(res.confirmDispatch.length, 2);
+  // The reminders are NOT rushed — they belong to the sweep like everything else.
+  assert.ok(!drained.some((d) => d.messageId === "msg-3"));
+});
+
+test("F1: no message id means no immediate dispatch, and the run still finishes", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
+    templates: sms()
+  });
+  let calls = 0;
+  const clock = clockStep();
+  const res = await handle({
+    event: ev("booking.created", { startTime: inHours(72) }, { clientId: "cl-1" }),
+    db, step: clock.step, now: clock.now, requestMagicLinkImpl: portalStub,
+    drainNowImpl: async () => { calls += 1; return { ran: true }; }
+  });
+  assert.equal(calls, 0);
+  assert.equal(res.done, true);
+  assert.deepEqual(res.confirmDispatch, []);
+});
