@@ -135,3 +135,19 @@ into Confirmed automatically when the client RSVPs Yes on the calendar invite,
 or is Confirmed only ever set by hand? All five sims sat in Booked after
 booking, so nothing auto-moved them — but none of them had RSVP'd yet either.
 Not yet proven either way.
+
+**Step 1.3 · attribution PASS.** Client Control Panel "How they got here" on
+Sim One-Funding shows Source fb · Campaign funding600 · Ad 42-ringlights ·
+Landed on /watch · Magnet VSL. The five UTMs survive the funnel and land on
+the client record. Plumbing works.
+
+**F6 · The ad UTM naming in the SOP is stale — it is not how the ad matrix is
+built any more (owner note).**
+Chris on seeing "42-ringlights": that is not how the matrix is built for ad
+UTMs now. The value carries through correctly, so this is a test-data and
+convention problem, not a tracking bug.
+
+To do after the walk: get the CURRENT ad-matrix UTM convention from Chris,
+then update the five ad links in docs/workflows/manual-walkthrough-SOP.md
+section 3 and manual-walkthrough-runbook.html so the next walk exercises real
+naming. Until then, reporting grouped by ad name will not match live ads.
