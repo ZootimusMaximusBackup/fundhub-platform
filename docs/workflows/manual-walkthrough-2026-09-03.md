@@ -57,3 +57,17 @@ booking-confirmation email". That email is a plain Google Calendar invite with
 a Meet link and nothing else. So there is currently NO path to the portal for a
 client except asking for a link on the sign-in page. The corrected runbook line
 is still wrong — it names an email that does not contain the link.
+
+**F1 AMENDED · the text does arrive, but late.**
+Chris got the Sim One booking text at 5:50pm, roughly 3 minutes after booking
+(invite email landed 5:47pm). So it is not missing, it is slow. SOP says
+"within a minute". Owner note: booking confirmations need to be more immediate.
+Treat the delay as the finding, not the absence.
+
+**F3 · Does the CRM record that a client CONFIRMED the invite? (owner note)**
+Chris: "When they confirm, is there anywhere in the CRM that tracks they
+confirm? If not, there should be." The calendar invite offers Yes / No / Maybe
+(RSVP). Open question for Claude to trace: is that RSVP captured anywhere on
+the client record or pipeline card, and does anything change when a client
+accepts or declines? If nothing captures it, that is the finding, and the
+owner has said it should exist.
