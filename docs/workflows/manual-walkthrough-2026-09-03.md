@@ -507,3 +507,38 @@ Check the same two assets everywhere they appear, not just this template.
 
 Signature content for the record: "Josh · Funding Executive · Fundhub.ai ·
 (561) 304-8368 · Fundhub.ai — Funding Intelligence for Entrepreneurs".
+
+**F19 · EVERY EMAIL IS BEING SENT TWICE. Severity: HIGH.**
+Both the soft-pull email (6:24 PM) and the e-book email (6:34 PM) appear as
+TWO identical messages from noreply@fundhub.ai to +sim-05, same minute. The
+All Mail list confirms it with thread counts: "Fundhub 2", "Fundhub 2",
+"Fundhub 5". The booking sequence shows 5 in one thread.
+
+A client receives duplicates of every transactional email, including the one
+carrying a pay link. Check the dispatcher for double-processing of queued
+`messages` rows (src/messaging/dispatch.mjs, swept every 5 minutes by
+src/workflows/message-dispatch-sweeper.mjs) before assuming the workflow fires
+twice — a sweeper that does not lock a row will send it again on the next tick.
+
+**F18 REFINED · the white-box signature is template-specific.**
+The soft-pull email's signature shows white rectangles behind the wordmark and
+the "Josh" signature. The e-book email's signature renders the SAME two images
+cleanly with no white box. So one template's styling is at fault, not the image
+assets. Diff the two templates' signature block rather than re-exporting the
+PNGs.
+
+**Soft-pull email content · reads correctly.** Two clear numbered steps,
+base $32 plus $10 per business up to 5, an authorization link and a pay link.
+Nothing misleading. Two notes:
+- The authorization link is rendered as a raw signed URL, wrapping across three
+  lines (org, client, exp, sig all visible). Works, but ugly next to the tidy
+  "Pay soft-pull assessment" link above it. Use link text for both.
+- Payment goes to **fanbasis.com/agency-checkout/fundhub-1/…**, not Commas.
+  Worth confirming that is intended, since push-payment.mjs simulates a Commas
+  webhook.
+
+**E-book PDF · placeholder confirmed, and the email is honest about it.**
+Attachment `fundhub-ebook.pdf` present; Gmail's thumbnail renders blank. Body
+copy says "The PDF is attached (placeholder until the final file is ready)."
+So this is a known gap stated to the customer, not a silent failure. Still a
+real deliverable gap: a paying customer receives an empty book.
