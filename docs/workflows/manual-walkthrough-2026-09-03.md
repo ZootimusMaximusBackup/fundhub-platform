@@ -204,3 +204,31 @@ claims it does) — if it does, this is a CCP display gap; if it does not, the
 routing is not surfaced anywhere and that is far more serious.
 
 Both F8 and F9 are FIXES FOR AFTER THE WALK. Owner said: proceed.
+
+**F9 DOWNGRADED · the routing IS surfaced — on the Closer Dashboard.**
+Sim Five-Academy's closer screen shows exactly the four lines, matching the
+registry for ad 82:
+GATE 720+ · ENTRY Direct, sell what they were promised ·
+PRIMARY Funding, done-for-you · SECONDARY None.
+
+So F9 is a **display gap on the Client Control Panel only**, not missing data.
+The routing works end to end. Revised ask: surface gate/entry/primary/secondary
+on the CCP too, since that is the screen non-closers open. Severity: low.
+SOP step 1.4 / 5.1 expectation: PASS.
+
+**F10 · CONFIRMED LIVE — the lender matcher ignores the credit file.**
+Sim Five-Academy's closer screen reads **"307 lenders match this file"** while
+also reading "No credit pull on file yet" and "No crs_results row for this
+client yet". A client with zero credit data matches 307 lenders.
+
+This is exactly what the funding ground-truth agent predicted from the code
+(finding 4 in docs/workflows/expected-deliverables-funding-2026-09-03.md:
+matching uses no score, no card use, no tier, no estimate). Predicted ~313
+with no state on file; observed 307. Prediction and live behaviour agree.
+
+Consequence: the lender count shown to a closer is not evidence of anything
+about that client. A 588 repair client sees a near-identical number.
+
+Also observed on this screen and correct: all five sims listed in UP NEXT with
+their booked times; "What they can get" correctly refuses to show figures with
+no credit pull; success fee 10% house default.
