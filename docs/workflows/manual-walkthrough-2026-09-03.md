@@ -698,3 +698,30 @@ After Chris was told to click "Funding Mastery · $5,000", both screenshots
 still show **Funding · $3,000 deposit** highlighted as selected. Either the
 click was not made, or clicking a ladder row does not change the selection.
 Unresolved — confirm with Chris before recording as a defect.
+
+**LADDER QUESTION RESOLVED · the descent ladder WORKS.** Clicking
+"Funding Mastery · $5,000" selected it, and the client price screen reshaped
+correctly to S-19 "THE INVESTMENT — FUNDING MASTERY, A TO Z · $5,000 ·
+The full Fundhub program · Your own file · FINANCING AVAILABLE", then S-20
+"Two courses. One skill set." (Course 1 UWIQ deliverables + bank list $1,000,
+Course 2 Funding Mastery A to Z $5,000). Engine data line also gained
+`route EDU`. No defect. The earlier screenshots were taken before the click.
+
+**F22 · Client-side deck slides have most of the screen empty (owner: "the
+screens are falling apart").**
+On S-19, S-20 and especially S-23, all client-half content sits in a band at
+the top and the remaining two-thirds to three-quarters of the slide is blank
+white. Chris was viewing at 50% browser zoom, which exaggerates it, but the
+layout does not fill or balance the space at any zoom — there is no vertical
+centring and no scaling of the type to the slide.
+
+This is the half the CUSTOMER sees on a screen share. Judge it against
+docs/UI-STANDARDS.md before changing anything (that file is law for anything
+under public/app/).
+
+**Deck section 07 CLOSE · live actions, as built (S-23).**
+Client half reads "RIGHT NOW, ON THIS CALL — Let's get this going", with
+Agreement: Sent · Billing: On this call · Welcome email: Incoming.
+Staff actions available: **Send agreement + pay link** (primary), Invoice this
+client, Send contract, Send deliverables package now, a REPAIR REFERRAL
+checkbox, and Log disposition and close.
