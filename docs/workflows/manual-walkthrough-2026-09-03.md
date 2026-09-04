@@ -40,3 +40,20 @@ white-label pass. The SOP with diagrams is `docs/workflows/manual-walkthrough-SO
 ## Findings from the walks
 
 (one line per finding: path | screen | what happened | what should happen | fix PR)
+
+## Findings — live walk, 2026-09-03
+
+**F1 · Sim One-Funding · step 1.1 · no text message on booking.**
+Booking a slot produced only a Google Calendar invitation email
+("Invitation: Funding Strategy Meeting — Sim One-Funding", 7:00-7:30pm MST,
+Google Meet link). No SMS and no call arrived on the real cell.
+SOP step 1.1 says "Welcome email + text on your phone within a minute."
+Observed: calendar invite only. Reported by Chris, 5:47pm.
+
+**F2 · Sim One-Funding · the booking email carries NO portal sign-in link.**
+Follows from F1's screenshot. The runbook (steps 4.3 / 5.3 / 1.14, corrected
+in commit 1160b73d) tells the client to "sign in with the link from the
+booking-confirmation email". That email is a plain Google Calendar invite with
+a Meet link and nothing else. So there is currently NO path to the portal for a
+client except asking for a link on the sign-in page. The corrected runbook line
+is still wrong — it names an email that does not contain the link.
