@@ -635,3 +635,34 @@ for, per the owner-decisions rule — no advice attached.
 
 Owner has already said the figure is wrong ("939k is so wrong lmao"). Until it
 is fixed, do not run this deck screen in front of a real client.
+
+**Deck section 05 COMMIT · the descent ladder, as built.**
+Screen 17/24. "DESCENT LADDER — EVERY CALL MONETIZES", options in order:
+
+| Offer | Price |
+|---|---|
+| Funding · deposit (default selected) | $3,000 |
+| Repair DFY | $1,000 |
+| Repair trial round | $200 |
+| DIY letters + course | $1,000 |
+| Funding Mastery | $5,000 |
+| Education deliverables | $1,000 |
+
+Caption: "One click reshapes the price screen. Descend only on a no. Financing
+available on everything except the soft pull and the funding deposit."
+Objection buttons present: Think about it · $3K is a lot · What if it fails ·
+Spouse · Burned before · DIY · Reframes.
+
+Matches the SOP's five paths and prices. No finding.
+
+**Note · the ladder defaults to Funding $3,000 regardless of the client's
+routed offer.** Sim Five-Academy's own closer screen says PRIMARY is
+"Funding, done-for-you", so the $3,000 default is consistent with HIS routing,
+but the SOP path for this client is Capital Academy / Funding Mastery $5,000.
+Worth confirming later whether the ladder default follows the ad-registry
+primary offer or is simply always $3,000. Not yet proven either way — do not
+record as a defect.
+
+**$939,500 now confirmed on FOUR screens:** S-07 (client hero), S-08, S-09 and
+S-17 all carry it in the ENGINE DATA line. The wrong figure follows the whole
+deck, it is not one bad slide.
