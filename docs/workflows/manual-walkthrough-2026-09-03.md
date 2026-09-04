@@ -1348,3 +1348,56 @@ texts (F24) with no framing.
 
 **F49 · The Josh handoff SMS has an empty link.** Body ends "link: ." — the
 template variable never filled. Add to W7 (AI setter).
+
+**F50 · THE LIVE SITE CANNOT PRODUCE THE DESIGNED DELIVERABLES. It has only the
+plain fallback printer. Severity: MAXIMUM (with F42).**
+
+Chris supplied four reference PDFs from his Desktop ("Jordan Sample", dated
+July 25, 2026, outcome FUNDING_PLUS_REPAIR): funding_snapshot (9 pages),
+lender_match_list (10), credit_analysis_report (12), optimization_roadmap (15).
+These are the DESIGNED deliverables: dark covers with the rainbow rule, filled
+DATE, per-bureau score cards, bar/ladder charts, "What Is Costing You Money"
+ranked items with pay-for-delete guidance, "What Does Not Affect Your Funding",
+"Where You Could Be — After Optimization" lender table, "Application Order
+Warning", a QR "Let Us Build Your Game Plan Together" close, and a full
+6-month roadmap with month-by-month steps.
+
+The pack generated from the live code path for Sim Five (the Node/pdf-lib
+printer, the only one Netlify has) is the same skeleton with most of the body
+missing:
+
+| | Chris's reference (WeasyPrint) | Live-path output (Node fallback) |
+|---|---|---|
+| Funding Snapshot | 9 pages, charts, 6 sections, narrative | 4 pages, 3 sections, 4 lines of "next step" |
+| Lender list | 10 pages, score ladder, per-lender "fits you because", application order | 6 pages of raw FIELD/VALUE tables, no ladder, no order section |
+| Cover DATE | filled | **blank** |
+| "After optimization" score | projected 700+ | **blank** |
+| Accounts | listed once | **listed 3× (per bureau)** |
+| Costing-you / not-a-factor sections | present, ranked | **absent** |
+| QR close page | full, with booking URL | reduced to "fundhub.ai" |
+
+Cause: `src/underwrite/funding-letter-pdf.mjs` header comment describes "four
+WeasyPrint analysis reports". Netlify has no WeasyPrint, so production always
+takes the Node fallback (confirmed in the UWIQ spec). The reference PDFs were
+produced by the WeasyPrint path somewhere else. **The product Chris has been
+shown is not the product the live site can ship.**
+
+Also in the reference template itself: the booking link prints as
+`www.fundhubbookingurl.template` — a placeholder never replaced.
+
+Decision for the owner (recorded, not decided): either make WeasyPrint
+available to the deliverables path (a build/runtime change on Netlify or a
+separate render service), or bring the Node printer up to the designed
+template. Either way this is a workstream, not a fix.
+
+**Six-round dispute letters with escalations — EXISTS IN CODE. Not exercised
+tonight.** `src/repair/enroll.mjs:61` sets `rounds_cap = 6` for the full
+program and `2` for the trial. `src/repair/parse-loop.mjs:95-120` holds the
+R4+ escalation rounds (sworn CFPB path) and stamps `heldForEscalation`.
+Tables: `dispute_cases`, `dispute_items`, `dispute_letters`,
+`dispute_responses` (db/migrations/160_metro2_dispute_engine.sql). Events
+`repair.round.escalated` wired in src/repair/pipeline.mjs and notify.mjs.
+Why Chris saw no letters: Sim Five is a clean academy file — no derogatories,
+no repair path — so nothing fires, correctly. The repair engine's own defect
+(fires on Metro 2 reporting defects only, not on derogatories; owner-set to
+change) is already recorded and assigned to W8.
