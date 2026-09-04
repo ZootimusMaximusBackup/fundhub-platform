@@ -308,3 +308,29 @@ before the click. Awaiting the email in Chris's inbox.
 Also on this screen and worth noting: a "NO-PAY DOWNSELL — E-BOOK" control
 with a free-text price and the caption "Empty PDF attached until the real file
 is ready." The e-book product ships an empty PDF today.
+
+**F12 · The soft pull arrived by TEXT, not email. The UI says email.**
+Chris, on Sim Five-Academy: "I was texted not emailed."
+
+The button is labelled "Send soft pull ($32 + approval form)" and the success
+toast reads **"Soft pull emailed — pay link + approval form."** No email
+arrived. An SMS did.
+
+So one of two things is wrong and we do not yet know which:
+- the channel is right (SMS) and the toast copy lies, or
+- the channel is wrong (should be email, or both) and delivery went to the
+  fallback.
+
+Do not guess. Read the template and the send path after the walk. The SOP
+(step 1.5) also says "Email in your inbox with the consent link", so the
+written expectation matches the toast, not the observed behaviour.
+
+Note this is a $32 payment request plus a credit-consent form. Which channel
+carries it is a compliance-relevant question, not a cosmetic one:
+consent capture is on the CLAUDE.md section 7 flag list.
+COMPLIANCE REVIEW REQUIRED on any change to how this consent is delivered.
+
+**TODO after this sim · full SMS review.** Chris will share the complete text
+message thread so every SMS issue gets written up together. Expect findings on
+wording, timing (see F1: ~3 min vs the 60-second target), sender identity, and
+which messages should be email instead. Hold a section for it.
