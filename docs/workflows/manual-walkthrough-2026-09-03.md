@@ -141,8 +141,8 @@ Sim One-Funding shows Source fb · Campaign funding600 · Ad 42-ringlights ·
 Landed on /watch · Magnet VSL. The five UTMs survive the funnel and land on
 the client record. Plumbing works.
 
-**F6 · The ad UTM naming in the SOP is stale — it is not how the ad matrix is
-built any more (owner note).**
+**F6 · Ad UTM naming may be stale vs the ad matrix (owner note, UNCONFIRMED).**
+Chris added "unless I am wrong" — treat as unverified until the matrix is read.
 Chris on seeing "42-ringlights": that is not how the matrix is built for ad
 UTMs now. The value carries through correctly, so this is a test-data and
 convention problem, not a tracking bug.
@@ -151,3 +151,23 @@ To do after the walk: get the CURRENT ad-matrix UTM convention from Chris,
 then update the five ad links in docs/workflows/manual-walkthrough-SOP.md
 section 3 and manual-walkthrough-runbook.html so the next walk exercises real
 naming. Until then, reporting grouped by ad name will not match live ads.
+
+**F6 RETRACTED · the ad UTM naming is CORRECT. Chris's hunch was wrong.**
+Checked docs/ads/registry.json and src/ads/registry.mjs. The ad id is the
+leading digits of utm_content; the text after the dash is the ad's title.
+All five walk ads are real, current registry entries:
+
+| utm_content | id | title | lane | gate | entry | primary offer |
+|---|---|---|---|---|---|---|
+| 42-ringlights | 42 | ringlights | funding600 | 600 | direct | funding_dfy |
+| 43 | 43 | (none) | sorting | none | sorting | funding_dfy |
+| 45 | 45 | (none) | sorting | none | sorting | funding_dfy |
+| 26-underwriter | 26 | underwriter | uwiq | none | sorting | capital_blueprint |
+| 82 | 82 | (none) | premium | 720 | direct | funding_dfy |
+
+No SOP change needed. Attribution is healthy and the links exercise real ads.
+
+**F7 · Three registry ads have no title (minor data gap).**
+Ads 43, 45 and 82 have `"title": null` while 42 and 26 are named. So their
+utm_content is a bare number and any report grouped by ad name shows a digit
+with no label. Cheap fix: add titles in docs/ads/registry.json.
