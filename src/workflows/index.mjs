@@ -40,7 +40,7 @@ import { f08PostFundingMonitoring } from './f-08-post-funding-monitoring.mjs';
 import { f09FundingDeclinedNoPath } from './f-09-funding-declined-no-path.mjs';
 import { f10ClientFundingInboxProvisioner } from './f-10-client-funding-inbox-provisioner.mjs';
 import { f11BankEmailEventRouter } from './f-11-bank-email-event-router.mjs';
-import { ghlDocDocumentCheck } from './ghl-doc-document-check.mjs';
+import { docCheck } from './doc-check.mjs';
 import { inquiryCallSweeper } from './inquiry-call-sweeper.mjs';
 import { n01ColdNurture } from './n-01-cold-nurture.mjs';
 import { n02WarmNurture } from './n-02-warm-nurture.mjs';
@@ -171,7 +171,7 @@ export const functions = [
   f09FundingDeclinedNoPath,
   f10ClientFundingInboxProvisioner,
   f11BankEmailEventRouter,
-  ghlDocDocumentCheck,
+  docCheck,
   /* Bureau dispute calls, every 15 minutes. Its own header said "not registered
      until owner enables the schedule" — that gate was implemented as "leave it
      out of this array", which made it invisible on the Automations screen and

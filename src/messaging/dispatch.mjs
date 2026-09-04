@@ -39,13 +39,17 @@ import { isDraftTemplateCopy, isDraftTemplateRow } from "./draft-guard.mjs";
 import { fenceVerdict, MESSAGING_DRY_RUN } from "../lib/dry-run.mjs";
 import { signUnsubscribeUrl, withUnsubscribeFooter } from "./unsubscribe.mjs";
 
-/* GHL-DOC is retired. Leftover queued SMS-DOC-02 must not transmit. */
-const RETIRED_GHL_DOC_SMS = "SMS-DOC-02-REQUEST-MORE";
+/* If the document-check agent is retired, leftover queued SMS-DOC-02 must not
+   transmit. The code below treats "no row" as retired, so this literal MUST
+   track the agents row's `code`. Migration 310 renamed it GHL-DOC -> DOC-CHECK;
+   a stale literal here silently blocks every request-a-better-photo text and the
+   client is told nothing at all. */
+const RETIRED_DOC_CHECK_SMS = "SMS-DOC-02-REQUEST-MORE";
 
-async function isRetiredGhlDocSms(db, message) {
-  if (message.template_key !== RETIRED_GHL_DOC_SMS) return false;
+async function isRetiredDocCheckSms(db, message) {
+  if (message.template_key !== RETIRED_DOC_CHECK_SMS) return false;
   const { rows } = await db.query(
-    `SELECT status FROM agents WHERE org_id = $1 AND code = 'GHL-DOC' LIMIT 1`,
+    `SELECT status FROM agents WHERE org_id = $1 AND code = 'DOC-CHECK' LIMIT 1`,
     [message.org_id]
   );
   return !rows[0] || String(rows[0].status || "") === "retired";
@@ -456,9 +460,9 @@ export async function dispatchOne(db, message, options = {}) {
       }
     }
 
-    if (await isRetiredGhlDocSms(db, message)) {
+    if (await isRetiredDocCheckSms(db, message)) {
       console.warn(
-        `[dispatch] blocked message ${message.id}: GHL-DOC is retired; SMS-DOC-02 not sent`
+        `[dispatch] blocked message ${message.id}: DOC-CHECK is retired; SMS-DOC-02 not sent`
       );
       return await finalise(db, message, "blocked", OUTCOME.BLOCKED,
         "retired_ghl_doc", null);
