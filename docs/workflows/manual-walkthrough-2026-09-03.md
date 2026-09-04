@@ -1417,3 +1417,14 @@ F49 plus the copy note) is the scope. Rewrite for clarity and stage-awareness,
 fix the timing bugs, fill the empty variable, and kill the runaway chase at its
 root (events with no client_id + ClickFunnels multi-fire). Add to the fix batch
 as its own workflow.
+
+**F39 STOP · DONE (owner ran scripts/sim/stop-nobook-chase.mjs, ~20:19).**
+Verified 20:21:50: all five sims now carry a `booking.created` row on their own
+client record, so every sleeping chase run (24h / 72h waves) will take the
+"already booked" exit on wake. 17 queued SMS-NOBOOK rows blocked. Five more
+went out 20:19-20:20 from runs that had already passed their check when the
+exit rows landed — the tail of the 2-hour wave for Sims Three/Four/Five. Final
+tally tonight: 50 delivered + 1 sent = **51 no-booking texts to one phone**,
+all five sims hit.
+The script printed 0/0 on Chris's visible run because an earlier run had
+already done the work; the database state is what counts.
