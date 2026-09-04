@@ -334,3 +334,38 @@ COMPLIANCE REVIEW REQUIRED on any change to how this consent is delivered.
 message thread so every SMS issue gets written up together. Expect findings on
 wording, timing (see F1: ~3 min vs the 60-second target), sender identity, and
 which messages should be email instead. Hold a section for it.
+
+**CREDIT PUSHED · Sim Five-Academy (owner-authorized, live).**
+`scripts/sim/with-prod-env.sh push-credit --email …+sim-05@ --profile academy`
+Client 823c850e-deee-4022-bf80-27ec23f77915. EX 762 · EQ 770 · TU 758,
+4 tradelines, 4 liabilities, 0 inquiries, 0 negatives. Wrote crs_results
+c159f8e3-4205-4306-b8f3-07652a04b87e. Stamped outcome_tier=FULL_FUNDING,
+total_funding_estimate=199350. Emitted analysis.completed + decision.rendered.
+No bureau called, no card charged. Marked simulated.
+
+**F13 · The "premium buyer" test profile can never reach the premium tier.**
+Engine is CORRECT — this is a test-data defect, not an engine bug.
+`isPremiumStack` (vendor/underwriteiq-full/api/lite/crs/route-outcome.js:153)
+requires ALL of: median >= 760, utilization <= 10%, revolving anchor limit
+>= $10,000, revolving depth >= 3.
+Academy scores median 762 (passes) but its lines are the shared CLEAN set,
+which computes ~17% utilization — so it fails on card use and lands on
+FULL_FUNDING every time.
+Consequence: PREMIUM_STACK is untested by this walkthrough. Nobody has ever
+seen the "Premium Funding Approved" path run. To exercise it, the academy
+profile needs its own low-utilization line set.
+
+**F14 · The funding estimate ignores the credit score entirely.**
+Profile `funding` (median 724) and profile `academy` (median 762) both produce
+**$199,350 to the dollar**. Cause: both use the same CLEAN tradeline set, and
+the estimate is derived from the card/loan anchors and the utilization band
+only. A 38-point score difference changes nothing.
+Predicted in docs/workflows/expected-deliverables-funding-2026-09-03.md and now
+confirmed live on two different clients.
+Owner question for later: SHOULD score move the estimate? If yes this is a
+product bug; if no, the number is honest but the sim can never show variation.
+
+**Note · GoHighLevel was not called.** The push logged
+"ADAPTERS_DRY_RUN fence is up — stamped placeholder dry-ghl-823c850edeee".
+So the CRM sync to GoHighLevel is fenced off in this environment. Anything the
+walk expects to appear in GoHighLevel will not.
