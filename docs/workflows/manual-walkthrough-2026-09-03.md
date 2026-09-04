@@ -863,3 +863,50 @@ Note the same file carries a standing warning at :29 to confirm the signature
 header and body paths against a real Commas sandbox, and :47-51 records that
 this adapter was once wired to a header no real delivery ever carried — so this
 seam has broken before.
+
+**Contract flow · WORKS end to end.** "Please sign: Funding Mastery Program
+Agreement" email 6:51 PM → signed link opens contract.html with status
+WAITING FOR YOUR SIGNATURE → typed name + tick → "signing..." → SIGNED, "This
+document is signed. Nothing else is needed from you", signed by Chris Stanbridge
+9/3/2026 6:52:23 PM, with Download a copy. Mechanics are sound.
+
+**F28 · THE COMPANY-NAME FIELD POPULATES THE WRONG PARTY. Severity: HIGH.**
+The contract reads:
+
+    Between: Sim Five Academy LLC ("we")
+    And: Sim Five-Academy ("you")
+
+"Sim Five Academy LLC" is the value typed into the wording form's *Company
+name* box. It landed as the SELLER — the "we" — which must always be Fundhub.
+So the agreement currently says the client's own company is selling the program
+to the client. Every contract sent through this form has the same defect.
+
+This compounds F27 (owner-set: remove the wording form entirely). Removing the
+form fixes this too, since the seller should never be typed by staff.
+
+**F29 · The contract has no signature block inside the document.**
+The agreement body ends at "YOUR COPY" with no signature lines, no date line,
+no party blocks. The signature is captured in a separate panel below the
+document, so the saved and downloaded copy carries no visible execution block
+where a contract normally has one. Chris: "Lacking signature spot on document."
+
+**F30 · The contract wording is placeholder, not the real agreement (owner).**
+Chris: "Def not the real contract." The current body is six short generic
+sections (WHAT THIS IS / WHAT YOU PAY / WHAT WE DO NOT PROMISE / HOW LONG THIS
+LASTS / YOUR COPY). It reads as scaffolding, not the executed legal document.
+Real contract text is needed from Chris before this can go in front of a paying
+customer. Recorded as owner-stated fact, no advice attached.
+
+One thing the placeholder does get RIGHT and which must survive any rewrite:
+"We do not promise funding, any approval amount, any credit score change, or
+any particular result. This is an education program." That disclaimer is
+correct for the Academy offer and directly contradicts the closer's spoken wrap
+script (F23), which promises funding on the same sale.
+
+**F24 CONFIRMED WITH HARD EVIDENCE · two pay-link emails, two DIFFERENT links.**
+Both 6:47 PM to +sim-05, subject "Capital Academy — $5,000":
+`fanbasis.com/agency-checkout/fundhub-1/KBxJJ` and
+`fanbasis.com/agency-checkout/fundhub-1/NjAMN`.
+Distinct checkout ids, so these are two real sends creating two real pay links,
+not one message threaded twice. The no-feedback send button (F24) is
+demonstrably generating duplicate payment links for a single sale.
