@@ -1,5 +1,5 @@
 // Round Started — Client Notify.
-// Source: the CRM (root)-level workflow, no folder, 1 step (GHL-System-Map.md line 32-34).
+// Source: the CRM (root)-level workflow, no folder, 1 step (the CRM system map line 32-34).
 // Audit fix (workflow-coherence-audit.md): "orphaned root-level 1-step SMS, no
 // folder. Move into Funding folder" — this file IS that move; it lives alongside
 // the rest of the funding workflows now. Spec §6: "the enroll-API workaround dies

@@ -1,5 +1,5 @@
 // F-02 — Portal / ID Missing (Onboarding Nudge).
-// Source: the CRM workflow 4deadbb0-4749-45e5-a1b7-59ccb3d46f4a (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow 4deadbb0-4749-45e5-a1b7-59ccb3d46f4a (the CRM source-of-truth export).
 // Ports the live [AGENT DRAFT] definition (the F-02 in the CRM's DECOMMISSIONED folder is
 // the DECOM copy per the skip list; this is the other one).
 //

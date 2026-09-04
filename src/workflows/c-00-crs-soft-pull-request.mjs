@@ -1,5 +1,5 @@
 // C-00 — CRS Soft Pull Request (Invoice/Consent -> Paid Gate -> Request -> Pull).
-// Source: GHL-System-Map.md CREDIT OPS WORKFLOWS section.
+// Source: the CRM system map CREDIT OPS WORKFLOWS section.
 // The original's spreadsheet webhook calls are NOT ported — Spec §6: the AX series
 // (CRM ↔ spreadsheet mirroring) dissolves entirely with one database. Everything else
 // (CRS status/scope bookkeeping) is ported as ordinary custom_fields writes.

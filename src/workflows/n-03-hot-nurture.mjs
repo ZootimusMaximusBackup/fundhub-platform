@@ -1,5 +1,5 @@
 // N-03 — Long-Term Hot Nurture.
-// Source: the CRM workflow 831135dd-175d-4854-b555-1d7582a30249 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow 831135dd-175d-4854-b555-1d7582a30249 (the CRM source-of-truth export).
 // Same folder-name discrepancy as N-01/N-02; ports the live definition, not the
 // [AGENT DRAFT] copy.
 //

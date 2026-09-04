@@ -1,5 +1,5 @@
 // N-02 — Long-Term Warm Nurture.
-// Source: the CRM workflow d7e27768-7c48-4329-80f4-f0b6a77980a1 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow d7e27768-7c48-4329-80f4-f0b6a77980a1 (the CRM source-of-truth export).
 // Same folder-name discrepancy as N-01 (see workflow-migration-table.md); ports the
 // live definition, not the [AGENT DRAFT] copy.
 //

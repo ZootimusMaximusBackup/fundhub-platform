@@ -1,5 +1,5 @@
 // AF-02 — Referral Ownership Capture.
-// Source: the CRM workflow 0c561c0b-6216-4068-844d-35f307285ca6 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow 0c561c0b-6216-4068-844d-35f307285ca6 (the CRM source-of-truth export).
 //
 // Original triggers were "Tag Added: lead:new / analyzer:started / analyzer:complete"
 // — all three map cleanly onto canonical events already in canonical.mjs:

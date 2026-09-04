@@ -1,5 +1,5 @@
 // U-02 — Analyzer Complete -> Map + Letters + Delivery Email.
-// Source: GHL-System-Map.md UNDERWRITEIQ WORKFLOWS section.
+// Source: the CRM system map UNDERWRITEIQ WORKFLOWS section.
 // Real copy exists (EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md: "U-02 Analyzer Funding
 // Delivery" / "U-02 Analyzer Repair Delivery") — not seeded here (this port only
 // seeded the audit-flagged blank-milestone copy in templates-seed.mjs), so the send

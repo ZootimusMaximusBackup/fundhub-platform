@@ -1,5 +1,5 @@
 // AI-SET-04 — 3-Way Text Handoff.
-// Source: GHL-System-Map.md AI SETTER section.
+// Source: the CRM system map AI SETTER section.
 // Audit fix applied (Spec §6 + workflow-coherence-audit.md: "draft, never fires, no
 // trigger, no advisor follow-up. Publish, wire into DPC-03, add advisor message") —
 // this file IS that publish + wiring: real trigger (T-15 off the booked start), real

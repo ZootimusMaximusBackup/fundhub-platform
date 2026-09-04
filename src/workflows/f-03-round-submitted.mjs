@@ -1,5 +1,5 @@
 // F-03 — Round Submitted (F2/F4/F6...F20).
-// Source: the CRM workflow 40fc2df8-ac2c-4c75-ae75-5ac598ecb95e (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow 40fc2df8-ac2c-4c75-ae75-5ac598ecb95e (the CRM source-of-truth export).
 // Audit fix applied (Spec §6 + workflow-coherence-audit.md "Ready-to-paste copy"):
 // real, compliance-scrubbed SMS + email copy, not the blank/"test" original —
 // seeded via src/workflows/templates-seed.mjs (SMS-F03-ROUND-SUBMITTED /

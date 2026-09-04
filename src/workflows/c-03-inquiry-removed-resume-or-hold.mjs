@@ -1,5 +1,5 @@
 // C-03 — Inquiry Removed -> Resume or Hold (Fraud Alert Gate).
-// Source: GHL-System-Map.md CREDIT OPS WORKFLOWS section.
+// Source: the CRM system map CREDIT OPS WORKFLOWS section.
 // Trigger: inquiry.removed (exact canonical match). Gate: fraud alert present in
 // the payload (from whatever fraud-screening step runs during removal).
 

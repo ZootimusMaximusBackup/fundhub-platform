@@ -1,5 +1,5 @@
 // N-01 — Long-Term Cold Nurture.
-// Source: the CRM workflow c1172aa2-9a44-4eef-a439-8347457f60bd (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow c1172aa2-9a44-4eef-a439-8347457f60bd (the CRM source-of-truth export).
 // Filed in the CRM under the "DECOMMISSIONED WORKFLOWS" folder alongside its own true
 // DECOM duplicate — the folder name is misleading (see workflow-migration-table.md);
 // this ports the live definition, not the [AGENT DRAFT] copy (excluded per instructions).

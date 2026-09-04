@@ -1,5 +1,5 @@
 // F-07 — Funding Locked (F22).
-// Source: the CRM workflow 992e1734-3d5b-4d51-91cb-7b665650f407 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow 992e1734-3d5b-4d51-91cb-7b665650f407 (the CRM source-of-truth export).
 // Audit fix applied: real ready-to-paste SMS + email-subject copy (the FR22 "Total
 // Funding Locked" body from EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md, grepped for this one
 // key only), seeded via src/workflows/templates-seed.mjs.

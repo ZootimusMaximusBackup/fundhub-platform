@@ -1,5 +1,5 @@
 // DPC-02 — Call Outcome Enforcement + Call Held.
-// Source: GHL-System-Map.md DECISION & PROGRESS CONTROL section.
+// Source: the CRM system map DECISION & PROGRESS CONTROL section.
 // Trigger: booking.created. Waits until 5 minutes after the appointment's end time,
 // then checks whether the call actually happened (call.completed fired for this
 // client) — Showed moves the sales card to "showed" and tags call_held; No-Show

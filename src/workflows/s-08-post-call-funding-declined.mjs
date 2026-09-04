@@ -1,5 +1,5 @@
 // S-08 — Post-Call: Funding Didn't Buy.
-// Source: GHL-System-Map.md SALES WORKFLOWS section.
+// Source: the CRM system map SALES WORKFLOWS section.
 // Trigger: call.completed, gated on payload.outcome === "declined" (the same
 // underlying signal DS-01/DS-02 react to independently — this file's job is
 // strictly the sales-side tag + follow-up task, not the downsell send itself).

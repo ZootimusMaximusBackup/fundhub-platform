@@ -1,5 +1,5 @@
 // F-11 — Bank Email Event Router (Inbound).
-// Source: the CRM workflow f4a6d38d-7717-4f3c-96f6-84c81e885022 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow f4a6d38d-7717-4f3c-96f6-84c81e885022 (the CRM source-of-truth export).
 // Spec §4 adapter note: "Mailgun adapter: unchanged inbox classification, now writing
 // bank_inbox + events directly (F-11 becomes a handler)" — this file IS that handler.
 // src/handlers/comms.mjs's onMailResponse already writes the bank_inbox row; this

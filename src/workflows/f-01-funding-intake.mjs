@@ -1,5 +1,5 @@
 // F-01 — Funding Intake (F1).
-// Source: the CRM workflow 2cc2c234-c7ff-4889-9501-b5f75c67b3c9 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow 2cc2c234-c7ff-4889-9501-b5f75c67b3c9 (the CRM source-of-truth export).
 //
 // Original trigger: "Opportunity Stage changes to Funding Pipeline -> F1 Funding
 // Intake", gated on "Product Path = Funding". round.started is the canonical-spine

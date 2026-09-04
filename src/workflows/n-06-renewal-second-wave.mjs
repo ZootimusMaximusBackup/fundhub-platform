@@ -1,5 +1,5 @@
 // N-06 — Renewal / Second-Wave Funding.
-// Source: the CRM workflow 61b70897-fbf8-47e2-ae09-ea51a4af0279 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow 61b70897-fbf8-47e2-ae09-ea51a4af0279 (the CRM source-of-truth export).
 // Ports the live definition. Audit fix applied (workflow-coherence-audit.md: "N-06 /
 // AR-03 (AGENT DRAFT) — SMS step dropped vs the DECOM version — re-add"): the SMS
 // send is present below, unlike the AGENT DRAFT copy.

@@ -1,5 +1,5 @@
 // F-06 — Funding Conditions / Missing Docs.
-// Source: the CRM workflow 6e296a07-a758-49cb-ac71-686b1ec1da54 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow 6e296a07-a758-49cb-ac71-686b1ec1da54 (the CRM source-of-truth export).
 // Ports the live [AGENT DRAFT] definition.
 //
 // Original trigger was "Custom Field: Funding Condition Required = true" — a

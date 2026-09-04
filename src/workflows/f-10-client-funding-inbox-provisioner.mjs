@@ -1,5 +1,5 @@
 // F-10 — Client Funding Inbox Provisioner.
-// Source: the CRM workflow b76f38d2-057f-481b-a0e4-13d88fe8ab19 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow b76f38d2-057f-481b-a0e4-13d88fe8ab19 (the CRM source-of-truth export).
 // Ports the live [AGENT DRAFT] definition.
 //
 // Original action #1 was "Send Webhook -> provision_client_funding_inbox" — an

@@ -1,5 +1,5 @@
 // F-08 — Post-Funding Monitoring (F23).
-// Source: the CRM workflow b1dae8c5-8cca-4b0d-a29f-dcedaff796a8 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow b1dae8c5-8cca-4b0d-a29f-dcedaff796a8 (the CRM source-of-truth export).
 // Audit fix applied (workflow-coherence-audit.md: "dangling wait with nothing after
 // it. Remove or add follow-up") — the trailing no-op wait is simply not ported.
 //

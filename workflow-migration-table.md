@@ -2,7 +2,7 @@
 
 Living document, filled in one batch at a time per WORKFLOWS B3 (N-series → F-series →
 AR-series → AF-series → the rest). Every one of the 140 CRM workflows in
-`GHL-System-Map.md` gets a row here — MIGRATED / MERGED INTO X / RETIRED / BLOCKED /
+the CRM system map gets a row here — MIGRATED / MERGED INTO X / RETIRED / BLOCKED /
 DEFERRED — before this file is considered done. Rows not yet processed are marked
 PENDING rather than guessed.
 
@@ -38,7 +38,7 @@ reconciling, which surfaced repeatedly during this port: AF-06 filed under both
 DECOMMISSIONED and the AR-Series section, a second "DPC-04" filed under the AS-Series
 heading with unrelated content, two distinct workflows both keyed "S-02", N-08 present
 only in the DECOMMISSIONED folder despite Spec §6 listing it as live. Every distinct
-workflow definition actually encountered while reading `GHL-System-Map.md` end to end
+workflow definition actually encountered while reading the CRM system map end to end
 has a row below — none were skipped for being inconvenient.
 
 ---
@@ -46,7 +46,7 @@ has a row below — none were skipped for being inconvenient.
 ## Model drift — 04/08 vs 05/30
 
 **Status: needs Chris.** Every workflow in `src/workflows/` was ported from
-`fundhub-docs/sources/ghl-crm-source-of-truth.md`, dated **04/08/2026**, which says of
+the CRM source-of-truth export in `fundhub-docs/sources/`, dated **04/08/2026**, which says of
 itself "THESE RULES ARE OUTDATED." The current source of truth is **05/30/2026** and is
 **not in this repo** — it has not been uploaded. Everything below is derived from what
 is verifiable in code plus the one drift Chris stated directly; nothing here is inferred
@@ -449,7 +449,7 @@ work and need sequencing as new builds.
 | S-10 | RETIRED | Same. |
 | U-01 | RETIRED | Same. |
 | U-06 (old) | RETIRED | Superseded by the current U-06 (Spec §6 audit fix: "real analyzer entry URL, no placeholder" applies to the *live* U-06, not this one). |
-| N-01..N-08 (DECOM-folder copies) | RETIRED | Same workflow IDs as the live N-01–N-08 documented in `ghl-crm-source-of-truth.md`, but filed in the CRM's "DECOMMISSIONED WORKFLOWS" folder. Per task instruction the DECOM-folder copy is skipped regardless; the *live* N-01–N-07 are ported below via their AGENT DRAFT definitions (the only other copy that exists). N-08 has no such counterpart — see its own row. |
+| N-01..N-08 (DECOM-folder copies) | RETIRED | Same workflow IDs as the live N-01–N-08 documented in the CRM source-of-truth export, but filed in the CRM's "DECOMMISSIONED WORKFLOWS" folder. Per task instruction the DECOM-folder copy is skipped regardless; the *live* N-01–N-07 are ported below via their AGENT DRAFT definitions (the only other copy that exists). N-08 has no such counterpart — see its own row. |
 | AR-01..AR-03 (DECOM copies) | RETIRED | Live AR-series definitions exist separately under `## ACCOUNTS RECEIVABLE WORKFLOWS (AR-Series)` — pending the AR-series batch. |
 | F-02/F-06/F-10 (DECOM copies) | RETIRED | Live F-series definitions exist separately under `## FUNDING WORKFLOWS (F-Series)` — pending the F-series batch. |
 | AF-06 | RETIRED | Confirmed decommissioned; no live counterpart found elsewhere in the map. |
@@ -490,7 +490,7 @@ work and need sequencing as new builds.
 | F-10R | Inbox Verified Receiver (Inbound) | BLOCKED | Reacts to an inbound webhook from the same undocumented inbox-provisioning system F-10 can't call. No adapter, no canonical event, nothing to react to yet. Proposed vocabulary: `inbox.forwarding_verified` (payload `{ clientId }`), emitted by a future adapter for that system. Not built. |
 | F-11 | Bank Email Event Router (Inbound) | MIGRATED | `src/workflows/f-11-bank-email-event-router.mjs`. Trigger `mail.response` (Spec §4 names this exact conversion: "F-11 becomes a handler"). Creates the routing task per classification; APPROVED/COUNTEROFFER additionally move the client's card to the Funding pipeline's `approved` stage. DENIED/MISSING_DOCS get deeper follow-through in F-09/F-06 respectively — this file's job is strictly the routing task the CRM created for every classification. |
 | POD-01B | Funding Handoff & Pod Assignment | MERGED INTO F-01 | Its automated half (an external `lookup_pod` webhook) has no adapter; its fallback purpose (assign pod roles when missing) is exactly what F-01 already does via a task, so nothing is lost — just not auto-assigned. |
-| F-12A | Remote Install Kickoff (Zoho Unattended) | OUT OF SCOPE | Appears in `ghl-crm-source-of-truth.md` but not in `GHL-System-Map.md`'s 140-workflow crawl (the F-series Contents count is 13 and F-12A isn't one of them). Not part of the authoritative 140; not built. Flagged here so it isn't silently unaccounted for. |
+| F-12A | Remote Install Kickoff (Zoho Unattended) | OUT OF SCOPE | Appears in the CRM source-of-truth export but not in the CRM system map's 140-workflow crawl (the F-series Contents count is 13 and F-12A isn't one of them). Not part of the authoritative 140; not built. Flagged here so it isn't silently unaccounted for. |
 
 ---
 
