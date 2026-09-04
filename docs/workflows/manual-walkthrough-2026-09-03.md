@@ -1294,3 +1294,21 @@ Not possible tonight: there is nothing for the system to send. The only
 existing send is the deck button (F41), which emails "correction letters are
 ready" with no attachment. The five PDFs the system SHOULD produce were
 generated offline from the same code for the audit instead.
+
+**F39 STOP · owner-run script, sim clients only.** `scripts/sim/stop-nobook-chase.mjs`
+(commit c67ad302). The agent's direct write was refused by the harness (F32
+again), and the first hand-off failed because the blocked command had never
+written the file. Script now lives in the repo at a short path. Blocks queued
+SMS-NOBOOK-* rows for the five sims and records a booking.created ON each sim
+client so the sleeping 24h/72h chase runs exit on wake. Real clients untouched;
+the workflow itself unchanged (owner: notes only).
+
+**Clarification on the five PDFs handed to Chris (owner: "made up shit?").**
+They are NOT fabricated. They were produced by the live site's own
+`buildLetterPack()` (src/underwrite/letter-pack.mjs) and the same Node/pdf-lib
+printer Netlify uses, run on the exact simulated payload stored on Sim Five.
+Every number in them is what that code produced. What they are NOT is output of
+the live C-06 workflow — because that workflow has never produced a document
+for any client (F42). They are the audit copy of what the system should have
+delivered, generated from the system's own code; they did not travel through
+the system's delivery path, because there is none that works.
