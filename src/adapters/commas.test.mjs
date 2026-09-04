@@ -3,6 +3,8 @@ import assert from "node:assert";
 import crypto from "node:crypto";
 import {
   verifyCommasSignature,
+  verifyCommasWebhookAuth,
+  isSimulatedReceipt,
   normalizeCommasEvent,
   productOf,
   mapToCanonical,
@@ -15,6 +17,7 @@ import {
   PURPOSE_PRODUCT
 } from "./commas.mjs";
 import { drain, dedupeKeyFor } from "../payments/commas-inbox.mjs";
+import { looksMasked } from "../../scripts/sim/push-payment.mjs";
 import { _resetOrgCache } from "../events/bus.mjs";
 import { on, clearHandlers } from "../events/registry.mjs";
 
@@ -1026,4 +1029,150 @@ test("no link behind the payment is normal, not an error", async () => {
   assert.equal(swept.counts.done, 1);
   assert.deepEqual(db.store.map((e) => e.name), ["payment.received", "diagnostic.paid"]);
   assert.equal(db.store[0].payload.purpose, null);
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE SIMULATED-RECEIPT KEY (F26, 2026-09-03)
+
+   COMMAS_WEBHOOK_SECRET is stored on Netlify with --secret, so it reads back as
+   a mask and the walkthrough could never sign a receipt. SIM_WEBHOOK_SECRET is
+   the readable second key. The guarantee these tests pin is the one that makes
+   a second key safe at all:
+
+     the sim key opens ONLY a body that says it is simulated.
+
+   If that ever stops holding, the sim key becomes a way to post a payment that
+   looks live, so every test below is load-bearing. */
+
+const SIM_SECRET = "simwhsec_test";
+const simSign = (raw) => crypto.createHmac("sha256", SIM_SECRET).update(raw).digest("hex");
+
+const SIMULATED_RECEIPT = JSON.stringify({
+  id: "sim-evt-1",
+  type: "payment.succeeded",
+  data: { payment_id: "sim-pay-1", amount: 5000, simulated: true }
+});
+const REAL_RECEIPT = JSON.stringify({
+  id: "evt-1",
+  type: "payment.succeeded",
+  data: { payment_id: "pay-1", amount: 5000 }
+});
+
+test("sim key: a SIMULATED receipt signed with the sim key is accepted", () => {
+  const out = verifyCommasWebhookAuth({
+    rawBody: SIMULATED_RECEIPT,
+    providedHeader: simSign(SIMULATED_RECEIPT),
+    secret: SECRET,
+    simSecret: SIM_SECRET
+  });
+  assert.deepEqual(out, { ok: true, mode: "simulated" });
+});
+
+/* The one that matters. A body with no `simulated` marker is real traffic as far
+   as this endpoint can tell, and the sim key must not open it. */
+test("sim key: a REAL receipt signed with the sim key is REFUSED", () => {
+  const out = verifyCommasWebhookAuth({
+    rawBody: REAL_RECEIPT,
+    providedHeader: simSign(REAL_RECEIPT),
+    secret: SECRET,
+    simSecret: SIM_SECRET
+  });
+  assert.equal(out.ok, false);
+});
+
+test("sim key: the live key still opens everything, marker or not", () => {
+  assert.deepEqual(
+    verifyCommasWebhookAuth({
+      rawBody: REAL_RECEIPT, providedHeader: sign(REAL_RECEIPT), secret: SECRET, simSecret: SIM_SECRET
+    }),
+    { ok: true, mode: "live" }
+  );
+  assert.deepEqual(
+    verifyCommasWebhookAuth({
+      rawBody: SIMULATED_RECEIPT, providedHeader: sign(SIMULATED_RECEIPT), secret: SECRET, simSecret: SIM_SECRET
+    }),
+    { ok: true, mode: "live" }
+  );
+});
+
+/* No SIM_WEBHOOK_SECRET set is the state of every environment that has not opted
+   in, and it must behave exactly like the single-key code that came before. */
+test("sim key: absent simSecret refuses the sim signature outright", () => {
+  const out = verifyCommasWebhookAuth({
+    rawBody: SIMULATED_RECEIPT,
+    providedHeader: simSign(SIMULATED_RECEIPT),
+    secret: SECRET,
+    simSecret: undefined
+  });
+  assert.equal(out.ok, false);
+});
+
+test("sim key: a wrong signature is refused even when the body claims simulated", () => {
+  const out = verifyCommasWebhookAuth({
+    rawBody: SIMULATED_RECEIPT,
+    providedHeader: simSign(SIMULATED_RECEIPT + "x"),
+    secret: SECRET,
+    simSecret: SIM_SECRET
+  });
+  assert.equal(out.ok, false);
+});
+
+/* An unparseable body cannot be shown to carry the marker, so it cannot reach
+   the sim key — even though handleCommasWebhook deliberately STORES unparseable
+   bodies once they are authenticated. */
+test("sim key: an unparseable body never reaches the sim key", () => {
+  const junk = "{not json";
+  const out = verifyCommasWebhookAuth({
+    rawBody: junk, providedHeader: simSign(junk), secret: SECRET, simSecret: SIM_SECRET
+  });
+  assert.equal(out.ok, false);
+});
+
+test("isSimulatedReceipt reads both payload shapes", () => {
+  assert.equal(isSimulatedReceipt({ data: { simulated: true } }), true);   // enveloped
+  assert.equal(isSimulatedReceipt({ simulated: true }), true);             // flat
+  assert.equal(isSimulatedReceipt({ data: { object: { simulated: true } } }), true);
+  assert.equal(isSimulatedReceipt({ data: { simulated: "true" } }), false); // strict true only
+  assert.equal(isSimulatedReceipt({}), false);
+  assert.equal(isSimulatedReceipt(null), false);
+});
+
+/* End to end through the handler, which is what the live endpoint calls. */
+test("handleCommasWebhook: sim key stores a simulated receipt and refuses a real one", async () => {
+  _resetOrgCache(); clearHandlers();
+
+  const okDb = fakeDb();
+  const accepted = await handleCommasWebhook({
+    db: okDb,
+    rawBody: SIMULATED_RECEIPT,
+    signatureHeader: simSign(SIMULATED_RECEIPT),
+    secret: SECRET,
+    simSecret: SIM_SECRET
+  });
+  assert.equal(accepted.status, 200);
+  assert.equal(accepted.queued, true);
+  assert.equal(accepted.signedWith, "simulated");
+  assert.equal(okDb.inbox.length, 1);
+
+  const badDb = fakeDb();
+  const refused = await handleCommasWebhook({
+    db: badDb,
+    rawBody: REAL_RECEIPT,
+    signatureHeader: simSign(REAL_RECEIPT),
+    secret: SECRET,
+    simSecret: SIM_SECRET
+  });
+  assert.equal(refused.status, 401);
+  assert.equal(refused.reason, "bad_signature");
+  assert.equal(badDb.inbox.length, 0);
+});
+
+/* The mask guard. Netlify hands back asterisks for a --secret var; signing with
+   that is what produced the 401 that read like a signature bug. */
+test("looksMasked catches Netlify's redaction and passes a real key", () => {
+  assert.equal(looksMasked("********************"), true);
+  assert.equal(looksMasked("whs****"), true);
+  assert.equal(looksMasked("whsec_9f2c1a7b4e"), false);
+  assert.equal(looksMasked(""), false);
+  assert.equal(looksMasked(undefined), false);
 });

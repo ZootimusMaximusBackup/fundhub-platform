@@ -48,6 +48,17 @@ export function sign(raw, secret) {
   return crypto.createHmac("sha256", secret).update(raw).digest("hex");
 }
 
+/* looksMasked — is this value Netlify's redaction rather than the key itself?
+   `netlify env:get` on a var stored with --secret returns a short run of
+   asterisks. Signing with that produces a valid-looking HMAC of the wrong bytes,
+   so the site answers 401 and the failure reads like a signature bug instead of
+   a missing value. Four or more asterisks is not a real key. */
+export function looksMasked(value) {
+  const v = String(value || "");
+  const stars = (v.match(/\*/g) || []).length;
+  return stars >= 4;
+}
+
 async function main() {
   const email = String(arg("email", "")).trim().toLowerCase();
   const refArg = arg("ref");
@@ -59,8 +70,24 @@ async function main() {
     process.exit(2);
   }
   if (!process.env.DATABASE_URL) { console.error("DATABASE_URL is not set"); process.exit(2); }
-  const secret = process.env.COMMAS_WEBHOOK_SECRET;
-  if (!secret && !dry) { console.error("COMMAS_WEBHOOK_SECRET is not set (needed to sign the receipt)"); process.exit(2); }
+  /* SIM_WEBHOOK_SECRET FIRST, and this order is the whole point of it existing.
+     COMMAS_WEBHOOK_SECRET is a Netlify --secret, so `netlify env:get` returns a
+     mask of asterisks and every receipt signed with it was refused 401 (F26,
+     2026-09-03). SIM_WEBHOOK_SECRET is set without --secret, so it reads back
+     whole. The site accepts it only for a body carrying `simulated: true`, which
+     buildReceipt below always stamps. The live key still works if it is real. */
+  const secret = process.env.SIM_WEBHOOK_SECRET || process.env.COMMAS_WEBHOOK_SECRET;
+  if (!secret && !dry) {
+    console.error("neither SIM_WEBHOOK_SECRET nor COMMAS_WEBHOOK_SECRET is set (needed to sign the receipt)");
+    process.exit(2);
+  }
+  /* A masked value signs asterisks and produces a 401 that reads like a broken
+     signature. Say what it actually is, before the request goes out. */
+  if (secret && !dry && looksMasked(secret)) {
+    console.error("the signing key came back MASKED (mostly asterisks), so the receipt would be signed with asterisks and refused.");
+    console.error("set SIM_WEBHOOK_SECRET on Netlify WITHOUT --secret, or export it locally, then run again.");
+    process.exit(2);
+  }
 
   const db = pool();
   const orgId = await resolveDefaultOrg(db);

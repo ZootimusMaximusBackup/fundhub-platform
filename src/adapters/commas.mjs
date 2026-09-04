@@ -77,6 +77,57 @@ export function verifyCommasSignature(rawBody, providedHeader, secret) {
   }
 }
 
+/* --- 1b. The simulated-receipt key -----------------------------------------
+ *
+ * WHY A SECOND KEY EXISTS AT ALL.
+ *
+ * COMMAS_WEBHOOK_SECRET is stored on Netlify with --secret, so `netlify env:get`
+ * hands back a MASK of asterisks rather than the value. scripts/sim/push-payment.mjs
+ * therefore signed every walkthrough receipt with asterisks and this endpoint
+ * answered 401 bad_signature — which read like a broken signature and was not
+ * (proven 2026-09-03, F26). Rotating the real key would fix it and is forbidden:
+ * keys are never rotated here (owner-set, CLAUDE.md section 11).
+ *
+ * So a SECOND key, SIM_WEBHOOK_SECRET, is set WITHOUT --secret and is therefore
+ * readable back. It is still a strong random value — "not secret" means "Netlify
+ * will show it to the CLI", not "public".
+ *
+ * WHAT KEEPS IT FROM BEING A BACK DOOR. The sim key is accepted ONLY for a body
+ * that carries the `simulated` marker push-payment.mjs stamps. A real Commas
+ * delivery never carries that marker, so a real receipt signed with the sim key
+ * is refused, and the sim key can never post money that looks live. The real key
+ * keeps working for everything, marker or no marker.
+ *
+ * Marker position follows the same two payload shapes the parser already handles:
+ * enveloped ({data:{simulated:true}}) and flat ({simulated:true}). */
+export function isSimulatedReceipt(body) {
+  const b = body || {};
+  return b.simulated === true || inner(b).simulated === true;
+}
+
+/* verifyCommasWebhookAuth — the whole accept/refuse decision, pure and testable
+   without a database. Returns the key that matched so the caller can record it.
+
+   ORDER MATTERS. The live key is tried first and unconditionally, so nothing
+   about real traffic changes. Only after it fails is the body parsed, and only a
+   body that both parses AND self-identifies as simulated is offered the sim key. */
+export function verifyCommasWebhookAuth({ rawBody, providedHeader, secret, simSecret }) {
+  if (verifyCommasSignature(rawBody, providedHeader, secret)) {
+    return { ok: true, mode: "live" };
+  }
+  if (!simSecret) return { ok: false, mode: null };
+
+  let parsed = null;
+  try {
+    parsed = rawBody ? JSON.parse(rawBody) : null;
+  } catch {
+    return { ok: false, mode: null };
+  }
+  if (!isSimulatedReceipt(parsed)) return { ok: false, mode: null };
+  if (!verifyCommasSignature(rawBody, providedHeader, simSecret)) return { ok: false, mode: null };
+  return { ok: true, mode: "simulated" };
+}
+
 /* TWO PAYLOAD SHAPES, AND ONLY ONE OF THEM IS REAL TRAFFIC.
  *
  * A real delivery is always enveloped: { id, type, data, created_at }. The
@@ -516,8 +567,12 @@ export function mapToCanonical(evt) {
  * signature, so it genuinely came from Commas — and a payload we could not
  * parse but kept is a bug report, while one we refused is a lost payment.
  * Only an unsigned request is refused. */
-export async function handleCommasWebhook({ db, rawBody, signatureHeader, secret, headers = {} }) {
-  if (!verifyCommasSignature(rawBody, signatureHeader, secret)) {
+export async function handleCommasWebhook({ db, rawBody, signatureHeader, secret, simSecret, headers = {} }) {
+  /* simSecret is the walkthrough key and is offered ONLY to a body that says it
+     is simulated — see verifyCommasWebhookAuth. Callers that pass no simSecret
+     behave exactly as before. */
+  const auth = verifyCommasWebhookAuth({ rawBody, providedHeader: signatureHeader, secret, simSecret });
+  if (!auth.ok) {
     return { ok: false, status: 401, reason: "bad_signature", queued: false };
   }
 
@@ -552,6 +607,7 @@ export async function handleCommasWebhook({ db, rawBody, signatureHeader, secret
       inboxId: res.id,
       paymentId,
       eventType,
+      signedWith: auth.mode,
       reason: parseError ? `stored_unparseable:${parseError}` : null
     };
   } catch (err) {

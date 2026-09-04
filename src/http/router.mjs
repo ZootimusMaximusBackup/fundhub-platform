@@ -53,7 +53,17 @@ const STD = table({
      `x-webhook-signature`; this table named `x-commas-signature`, which no
      delivery has ever carried, so every real payment webhook failed
      verification and answered 401. The old name is kept as a fallback. */
-  commas: { fn: handleCommasWebhook, sig: COMMAS_SIG_HEADERS, env: "COMMAS_WEBHOOK_SECRET" },
+  /* `simEnv` is a SECOND accepted key, and commas is the only provider with one.
+     It exists because COMMAS_WEBHOOK_SECRET is stored on Netlify with --secret and
+     reads back as a mask, so the walkthrough's simulated receipts could never be
+     signed (F26, 2026-09-03). The adapter offers this key ONLY to a body carrying
+     the `simulated` marker, so it cannot post traffic that looks live. */
+  commas: {
+    fn: handleCommasWebhook,
+    sig: COMMAS_SIG_HEADERS,
+    env: "COMMAS_WEBHOOK_SECRET",
+    simEnv: "SIM_WEBHOOK_SECRET"
+  },
   /* CF 2.0 docs: X-Webhook-ClickFunnels-Signature (+ Timestamp). Legacy
      x-clickfunnels-signature kept as fallback for internal probes. */
   clickfunnels: {
@@ -420,6 +430,13 @@ async function dispatchWebhook({ db, provider, rawBody, headers = {}, url, env =
      keeps working through the old name without a second code path. */
   const signatureHeader = [].concat(cfg.sig).map((name) => h(name)).find(Boolean);
   return norm(await cfg.fn({
-    db, rawBody, signatureHeader, secret: env[cfg.env], headers
+    db,
+    rawBody,
+    signatureHeader,
+    secret: env[cfg.env],
+    /* undefined for every provider without a simEnv, which keeps their adapters
+       on the single-key path they already have. */
+    simSecret: cfg.simEnv ? env[cfg.simEnv] : undefined,
+    headers
   }));
 }
