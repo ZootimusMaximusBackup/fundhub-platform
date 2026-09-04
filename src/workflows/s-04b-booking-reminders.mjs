@@ -75,7 +75,7 @@ function planFromMemo(memo) {
 /* The same question asked again on waking, because a durable sleep can be
    resumed early after a retry or a replay and the sender must not take the
    scheduler's word for the time. */
-export function wakeRefusal(startMs, targetMs, nowMs) {
+function wakeRefusal(startMs, targetMs, nowMs) {
   if (nowMs >= startMs) return "appointment_already_started";
   if (nowMs < targetMs - REMINDER_SKEW_MS) return "woke_before_the_reminder_was_due";
   return null;
