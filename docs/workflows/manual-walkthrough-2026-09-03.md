@@ -542,3 +542,20 @@ Attachment `fundhub-ebook.pdf` present; Gmail's thumbnail renders blank. Body
 copy says "The PDF is attached (placeholder until the final file is ready)."
 So this is a known gap stated to the customer, not a silent failure. Still a
 real deliverable gap: a paying customer receives an empty book.
+
+**F19 RETRACTED (owner). Emails are NOT being sent twice.**
+Chris: "not true, remember we have multiple clients using same email."
+
+All five sim clients use plus-tags on ONE Gmail account, and Gmail threads by
+subject line regardless of the plus-tag. So "Fundhub 2" / "Fundhub 5" are
+messages to DIFFERENT sim clients collapsed into one thread by a shared
+subject, not duplicate sends to one client.
+
+The two 6:24 PM messages both addressed to +sim-05 are most likely explained by
+the "Send soft pull" button appearing on several screens of deck section 03
+(seen on screens 5, 6 and 7), so it can be pressed more than once during a
+walk.
+
+LESSON FOR THIS WALK: do not read Gmail thread counts as evidence of duplicate
+delivery while every sim shares one mailbox. Verify send counts against the
+`messages` table instead, not against the inbox.
