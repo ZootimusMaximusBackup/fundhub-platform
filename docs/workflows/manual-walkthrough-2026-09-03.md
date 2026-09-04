@@ -411,3 +411,39 @@ the tier. Minor next to F15 but it is on the same screen.
 **Also confirmed working:** a hard refresh DID populate the deck — consent: on
 file, paid $32.00: sent, scores correct. The earlier "not on this file yet" was
 a stale page, not a defect. Retracted as a finding.
+
+**F15 ROOT CAUSE FOUND. It is not a sync bug — the two numbers measure
+different things, and the bigger one is computed for a client with no
+business.**
+
+`src/sales/closer-deck.mjs:297-306`. The deck calls
+`applyStackedBusinessFunding(computeUnderwrite(bureaus, businessAgeMonths), businessAges)`
+and shows `totals.total_combined_funding` = **personal + stacked business
+funding**. It only falls back to the stored `total_funding_estimate`
+($199,350, personal only) when that stacked calculation returns null.
+
+So:
+- stored $199,350 = PERSONAL funding only
+- deck $939,500 = PERSONAL + STACKED BUSINESS
+
+Neither is "wrong arithmetic". They are different quantities, both presented
+as "the funding estimate", with no label distinguishing them.
+
+**The actual defect:** Sim Five-Academy's own Client Control Panel reads
+**"No businesses on file"**. The deck still stacked business funding for him,
+off the `businessAgeMonths: 72` the sim profile writes. A client with no
+business is being quoted roughly $740,000 of business funding.
+
+Owner verdict already given: "939k is so wrong". Treat $199,350 as the number
+closer to correct and the deck figure as the defect.
+
+Three things to decide after the walk:
+1. Should the deck ever stack business funding when no business exists on the
+   client? Almost certainly not — gate it on a real business record, not on a
+   loose age field.
+2. One of the two calculations must become authoritative and the other deleted.
+   Keeping both "in sync" will fail again.
+3. Label whatever is shown: personal-only vs personal+business, on the screen.
+
+Cross-reference F14 (the stored estimate ignores credit score) — so BOTH
+figures on this screen have an open correctness question.
