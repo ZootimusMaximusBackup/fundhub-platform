@@ -33,6 +33,7 @@ import {
   prequalFromCustomFields
 } from "../../src/http/portal-prequal.mjs";
 import { onRepairPath } from "../../src/repair/on-repair-path.mjs";
+import { mayAuthorizeDisputes } from "../../src/consent/dispute-consent.mjs";
 
 export default async function handler(req, res) {
   if (req.method && req.method !== "GET") {
@@ -210,6 +211,18 @@ export default async function handler(req, res) {
        field the screen does not need. The repair answer is a boolean either way. */
     const repairPath = await onRepairPath(db, { orgId, clientId });
 
+    /* AND WHETHER THEY MAY BE ASKED TO SIGN, which is a WIDER question than the
+       one above and the owner's own words for it (2026-09-03): "It's only for
+       repair and for the funding offer. If they're getting deliverables, meaning
+       e-products and courses, they don't need to sign for shit." A funding
+       customer is not on the repair path and their letter pack still contains
+       dispute work, so gating the form on `repair_path` alone left them unable to
+       authorize the letters we owe them. src/consent/dispute-consent.mjs adds the
+       funding OFFER — the entitlement — and deliberately not the funding TIER,
+       which the analyzer stamps on course buyers too. `repairPath` is handed in
+       so the repair reads happen once for both answers. */
+    const disputeConsent = await mayAuthorizeDisputes(db, { orgId, clientId, repairPath });
+
     return res.status(200).json(redact({
       ok: true,
       prequal_amount: prequalAmount,
@@ -224,6 +237,10 @@ export default async function handler(req, res) {
       // src/repair/on-repair-path.mjs, and the server applies the same one when
       // the signature is actually posted (api/consent/capture.mjs).
       repair_path: repairPath,
+      // Whether the dispute-letter authorization card belongs on this screen at
+      // all. Separate from repair_path on purpose: they are different questions
+      // and they disagree for every funding customer. The card reads THIS one.
+      dispute_consent: disputeConsent,
       advisor,
       stage: portalStage({
         softPullComplete,
