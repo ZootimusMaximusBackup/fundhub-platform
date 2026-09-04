@@ -16,12 +16,45 @@ export const EMAIL_NOBOOK_01 = "EMAIL-NOBOOK-01";
 export const EMAIL_NOBOOK_02 = "EMAIL-NOBOOK-02";
 export const EMAIL_NOBOOK_03 = "EMAIL-NOBOOK-03";
 
-async function hasBooked(db, clientId) {
+/* hasBooked — has this person booked a call yet?
+ *
+ * THE OLD VERSION COULD ONLY EVER SAY NO. It asked for booking events
+ * `WHERE client_id = $1`, and until 2026-09-03 the ClickFunnels adapter wrote
+ * every funnel event with client_id NULL. So the chase never learned that
+ * anybody had booked, and on 2026-09-03 one phone received 51 copies of "you
+ * have not booked yet" from customers who were sitting in the Booked column.
+ *
+ * The adapter now stamps the client on new events. This is the other half:
+ * every booking event ALREADY IN THE DATABASE still has a null client on it,
+ * and every chase run sleeping in production is going to wake against those
+ * rows. So the booking is also matched on the email address and the phone
+ * number carried in the event's own payload — which is how a run that went to
+ * sleep last night exits on wake instead of firing again.
+ *
+ * Scoped to the client's own company. The old query was not, and matching on an
+ * email address without that scope would let one company's booking answer for
+ * another's. Phone numbers are compared on their last ten digits so
+ * "+1 555-000-1111" and "5550001111" are the same number.
+ */
+export async function hasBooked(db, clientId) {
   const r = await db.query(
-    `SELECT DISTINCT name FROM events WHERE client_id = $1 AND name = ANY($2)`,
-    [clientId, ["booking.created"]]
+    `WITH me AS (SELECT org_id, email, phone FROM clients WHERE id = $1)
+     SELECT 1 AS booked
+       FROM events e, me
+      WHERE e.name = 'booking.created'
+        AND e.org_id = me.org_id
+        AND (
+             e.client_id = $1
+          OR (me.email IS NOT NULL
+              AND lower(COALESCE(e.payload->>'email','')) = lower(me.email))
+          OR (length(regexp_replace(COALESCE(me.phone,''), '\\D', '', 'g')) >= 10
+              AND right(regexp_replace(COALESCE(e.payload->>'phone',''), '\\D', '', 'g'), 10)
+                = right(regexp_replace(me.phone, '\\D', '', 'g'), 10))
+        )
+      LIMIT 1`,
+    [clientId]
   );
-  return r.rows.some((row) => row.name === "booking.created");
+  return r.rows.length > 0;
 }
 
 export async function handle({ event, db, step }) {

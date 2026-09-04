@@ -778,3 +778,186 @@ test("handleClickFunnelsWebhook: signed paid order writes a sale from the SLO ma
   assert.equal(store.sales[0].product_id, PRODUCT);
   assert.equal(Number(store.sales[0].agreed_price), 197);
 });
+
+/* ── F39: the client is attached at ingest, and one survey starts one run ──────
+ *
+ * Measured on 2026-09-03: 82 survey.submitted rows, 95 entry.captured rows and
+ * 6 booking.created rows in production, EVERY ONE with client_id NULL, and 51
+ * duplicate "you never booked" texts to clients who had booked. Both halves are
+ * pinned here.
+ *
+ * This fake stores events the way Postgres does — org, name, idempotency key,
+ * client id and payload — and answers the repeat look-back from that store, so
+ * the assertions below are about the adapter's real behaviour and not about a
+ * stub returning what the test wants.
+ */
+function funnelDb({ existingClient = { id: "cl-77", email: "runaway@example.com" } } = {}) {
+  const events = [];
+  const clients = existingClient ? [existingClient] : [];
+  let n = 0;
+  return {
+    events,
+    clients,
+    async query(sql, params = []) {
+      if (/FROM orgs/.test(sql)) return { rows: [{ id: "org-1" }] };
+      // resolveClient: find by email
+      if (/SELECT id, ghl_contact_id FROM clients/.test(sql)) {
+        const c = clients.find((c) => String(c.email).toLowerCase() === params[1]);
+        return { rows: c ? [{ id: c.id, ghl_contact_id: "ghl-1" }] : [] };
+      }
+      if (/INSERT INTO clients/.test(sql)) {
+        const id = "cl-new-" + ++n;
+        clients.push({ id, email: params[1] });
+        return { rows: [{ id }] };
+      }
+      if (/SELECT id, ghl_contact_id, email, phone, first_name, last_name/.test(sql)) {
+        const c = clients.find((c) => c.id === params[0]);
+        return { rows: c ? [{ ...c, ghl_contact_id: "ghl-1" }] : [] };
+      }
+      if (/UPDATE clients/.test(sql)) return { rows: [] };
+      // the repeat look-back
+      if (/SELECT 1\s+FROM events/.test(sql)) {
+        const [orgId, name, email, funnel] = params;
+        const hit = events.find((e) =>
+          e.org_id === orgId
+          && e.name === name
+          && String(e.payload?.email || "").toLowerCase() === email
+          && String(e.payload?.funnel || "") === funnel);
+        return { rows: hit ? [{ ok: 1 }] : [] };
+      }
+      if (/INSERT INTO events/.test(sql)) {
+        const [org_id, name, version, idem, client_id, payload] = params;
+        if (idem && events.some((e) => e.org_id === org_id && e.idempotency_key === idem)) {
+          return { rows: [] };
+        }
+        const id = "evt-" + ++n;
+        events.push({ id, org_id, name, version, idempotency_key: idem, client_id, payload });
+        return { rows: [{ id }] };
+      }
+      return { rows: [] };
+    }
+  };
+}
+
+const surveyBody = (id) => JSON.stringify({
+  id,
+  event: "contact_created",
+  funnel_name: "funding-apply",
+  data: {
+    contact: {
+      email: "runaway@example.com",
+      first_name: "Runaway",
+      phone: "555-000-1111",
+      custom_attributes: { cf_svy_available_capital: "50k" }
+    }
+  }
+});
+
+test("F39: entry.captured and survey.submitted are stored WITH the client id", async () => {
+  _resetOrgCache(); clearHandlers();
+  const db = funnelDb();
+  const raw = surveyBody("cf_survey_screen_1");
+  const res = await handleClickFunnelsWebhook({
+    db, rawBody: raw, signatureHeader: sign(raw), secret: SECRET
+  });
+  assert.equal(res.ok, true);
+  assert.deepEqual(res.emitted.map((e) => e.name), ["entry.captured", "survey.submitted"]);
+  // The defect: these two rows used to carry client_id = null.
+  assert.equal(db.events.length, 2);
+  for (const row of db.events) assert.equal(row.client_id, "cl-77");
+});
+
+test("F39: a booking.created is stored WITH the client id", async () => {
+  _resetOrgCache(); clearHandlers();
+  const db = funnelDb();
+  const raw = JSON.stringify({
+    id: "cf_appt_client",
+    event: "appointments/scheduled_event.created",
+    data: {
+      start_on: "2026-09-20T18:00:00Z",
+      end_on: "2026-09-20T18:30:00Z",
+      primary_contact: { email_address: "runaway@example.com", first_name: "Runaway" }
+    }
+  });
+  const res = await handleClickFunnelsWebhook({
+    db, rawBody: raw, signatureHeader: sign(raw), secret: SECRET
+  });
+  assert.equal(res.ok, true);
+  const booking = db.events.find((e) => e.name === "booking.created");
+  assert.ok(booking, "booking.created must be recorded");
+  assert.equal(booking.client_id, "cl-77");
+});
+
+test("F39: sixteen ClickFunnels posts for one survey start exactly ONE workflow run", async () => {
+  _resetOrgCache(); clearHandlers();
+  const db = funnelDb();
+  const results = [];
+  for (let i = 1; i <= 16; i++) {
+    // Each screen posts under its own CF submission id — that is why the
+    // idempotency key alone never collapsed them.
+    const raw = surveyBody(`cf_survey_screen_${i}`);
+    results.push(await handleClickFunnelsWebhook({
+      db, rawBody: raw, signatureHeader: sign(raw), secret: SECRET
+    }));
+  }
+
+  const surveys = results.map((r) => r.emitted.find((e) => e.name === "survey.submitted"));
+  const entries = results.map((r) => r.emitted.find((e) => e.name === "entry.captured"));
+
+  // ONE run each. This is the 51-texts defect, measured.
+  assert.equal(surveys.filter((e) => e.startedRun).length, 1);
+  assert.equal(entries.filter((e) => e.startedRun).length, 1);
+  assert.equal(surveys[0].startedRun, true);
+  assert.equal(surveys[15].startedRun, false);
+
+  // ...and NOTHING is thrown away: every post is still stored, so the answers
+  // the later screens carry still reach the client record.
+  assert.equal(db.events.filter((e) => e.name === "survey.submitted").length, 16);
+  assert.equal(db.events.filter((e) => e.name === "entry.captured").length, 16);
+  assert.ok(db.events.every((e) => e.client_id === "cl-77"));
+});
+
+test("F39: a genuinely new lead on a different funnel still starts its own run", async () => {
+  _resetOrgCache(); clearHandlers();
+  const db = funnelDb();
+  const first = surveyBody("cf_a");
+  await handleClickFunnelsWebhook({ db, rawBody: first, signatureHeader: sign(first), secret: SECRET });
+
+  const other = JSON.stringify({
+    id: "cf_b",
+    event: "contact_created",
+    funnel_name: "repair-apply",
+    data: { contact: { email: "runaway@example.com", first_name: "Runaway", custom_attributes: { cf_svy_available_capital: "10k" } } }
+  });
+  const res = await handleClickFunnelsWebhook({ db, rawBody: other, signatureHeader: sign(other), secret: SECRET });
+  assert.equal(res.emitted.find((e) => e.name === "survey.submitted").startedRun, true);
+});
+
+/* The proof that `startedRun: false` is not just a label the adapter writes on
+   itself. A durable workflow run begins when the bus hands the event to Inngest
+   — src/events/bus.mjs, the `inngest.send` at the end of emit(). This counts
+   those sends for real. */
+test("F39: sixteen posts produce ONE Inngest fan-out for survey.submitted", async () => {
+  _resetOrgCache(); clearHandlers();
+  const { inngest } = await import("../workflows/client.mjs");
+  const realSend = inngest.send;
+  const realKey = process.env.INNGEST_EVENT_KEY;
+  const sends = [];
+  inngest.send = async (payload) => { sends.push(payload); return { ids: [] }; };
+  process.env.INNGEST_EVENT_KEY = "test-key";
+  try {
+    const db = funnelDb();
+    for (let i = 1; i <= 16; i++) {
+      const raw = surveyBody(`cf_fanout_${i}`);
+      await handleClickFunnelsWebhook({ db, rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
+    }
+    assert.equal(sends.filter((s) => s.name === "survey.submitted").length, 1);
+    assert.equal(sends.filter((s) => s.name === "entry.captured").length, 1);
+    // and the fan-out carries the client, so the workflow knows who it is for
+    assert.equal(sends[0].data.clientId, "cl-77");
+  } finally {
+    inngest.send = realSend;
+    if (realKey === undefined) delete process.env.INNGEST_EVENT_KEY;
+    else process.env.INNGEST_EVENT_KEY = realKey;
+  }
+});
