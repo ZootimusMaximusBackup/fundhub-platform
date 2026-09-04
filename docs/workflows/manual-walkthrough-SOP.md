@@ -86,7 +86,7 @@ Your phone on all seven. Your own name, SSN, DOB and address on the **consent fo
 | Calendar (advisor tasks) | `https://fundhub.ai/app/calendar.html` |
 | Specialist desk (repair letters) | `https://fundhub.ai/app/inquiry-remover.html` |
 | Finance OS (invoices, pay links) | `https://fundhub.ai/app/finance-os.html` |
-| Client portal (open from the magic-link email) | `https://fundhub.ai/app/client-portal.html` |
+| Client portal (sign in with the link from the booking-confirmation email, or ask for one on the sign-in page) | `https://fundhub.ai/app/client-portal.html` |
 | Partner application form | `https://fundhub.ai/affiliates/` |
 | Partner home (after approval) | `https://fundhub.ai/app/partner-galaxy.html` |
 
@@ -147,7 +147,7 @@ flowchart TD
 | 1.11 | Upload one document via the portal (any PDF) | Missing-documents hold clears. |
 | 1.12 | **Open Bank Inbox.** Forward yourself one "approved for $X" email as a bank reply, or mark an approval by hand. | Approval recorded with an amount. Card can move to Approved. |
 | 1.13 | Move card **Approved → Funded** | Funded amount on the round. **Success-fee invoice** exists in Finance OS = approvals × fee %. F07 email + text arrive. |
-| 1.14 | Open the client portal as Sim One (magic link email) | Funding section visible. Tiles: Funding snapshot unlocked. |
+| 1.14 | Open the client portal as Sim One (link from the booking-confirmation email, or ask for one on the sign-in page) | Funding section visible. Tiles: Funding snapshot unlocked. |
 
 **Known before you start:** the Owner "funded" tile counts a client flag, not rounds. It can read 0 while the round is funded. Note it, do not chase it.
 
