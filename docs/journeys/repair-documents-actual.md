@@ -113,17 +113,17 @@ flowchart TD
 Three things on this path are real and are not fixed here. They are written down
 so nobody reads the diagram as more finished than it is.
 
-* **On a database built from the migrations alone, the document agent has no
-  instructions, so no photo is ever classified.** Measured 2026-09-04 on two
-  scratch Postgres databases with all 239 migrations applied to empty:
-  `select code, status, length(coalesce(prompt,'')) from agents where
-  code='DOC-CHECK'` returns `DOC-CHECK | draft | 0`, and 20 of the 22 seeded
-  agent rows have the same empty prompt. `classifyMmsImage()` then returns
-  `reason: 'agent_unavailable'` and the photo is filed as `other` — which is
-  safe, and is the same answer the code gave before any of this work, but it
-  means the classifier cannot help on such a database until an instruction is
-  written onto that row. Whether the live database carries one was not measured
-  here.
+* **CORRECTED 2026-09-04 — the earlier claim here was wrong.** An earlier draft
+  of this page said the document agent has no instructions on a freshly migrated
+  database, so no photo is ever classified. That is FALSE. On a virgin database
+  with all 239 migrations applied to empty, `select code, status,
+  length(coalesce(prompt,'')) from agents where code='DOC-CHECK'` returns
+  `DOC-CHECK | live | 3275` and classification works. The wrong number came from
+  measuring a database the test suite had already run against: the pg half
+  mutates the `agents` table, and afterwards the same query returns
+  `DOC-CHECK | draft | 0`. Never read the agents table on a database the suite
+  has touched, and never quote a seeded-row measurement without saying whether
+  the database was virgin.
 
 * **The credit-repair contract check does not run on this path.**
   `canLeaveIntake()` in `src/repair/croa.mjs` checks that a complete contract is

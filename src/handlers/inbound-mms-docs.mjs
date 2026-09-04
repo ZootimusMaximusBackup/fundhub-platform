@@ -55,12 +55,19 @@ const SUBTYPE_PATTERNS = Object.freeze([
 /* Any of these anywhere in the phrase and the phrase names nothing we can act
    on — either the agent is denying a document, doubting it, or saying the
    picture is unusable. */
-const NEGATION_OR_HEDGE = /\b(no|not|non|none|nothing|never|isn'?t|aren'?t|wasn'?t|doesn'?t|don'?t|didn'?t|can'?t|cannot|couldn'?t|won'?t|unable|fails?|failed|missing|absent|lacks?|without|unreadable|illegible|unclear|unknown|unsure|uncertain|unverified|invalid|expired|blurry|blurred|blurred|obscured|cropped|glare|dark|possibly|probably|maybe|might|appears?|appearing|seems?|looks?|likely|perhaps|either|or|another|someone|else|third[- ]party|mismatch(?:ed|es)?)\b/i;
+const NEGATION_OR_HEDGE = /\b(no|not|non|none|nothing|never|isn'?t|aren'?t|wasn'?t|doesn'?t|don'?t|didn'?t|can'?t|cannot|couldn'?t|won'?t|unable|fails?|failed|missing|absent|lacks?|without|unreadable|illegible|unclear|unknown|unsure|uncertain|unverified|invalid|expired|blurry|blurred|blurred|obscured|cropped|glare|dark|possibly|probably|maybe|might|appears?|appearing|seems?|looks?|likely|perhaps|either|or|another|someone|else|third[- ]party|mismatch(?:ed|es)?|brother|sister|spouse|wife|husband|father|mother|son|daughter|friend|roommate|relative|saying|claiming|handwritten|screenshot|scribbled)\b/i;
 
 /* The agent was asked for "the plainest name" for the document. Anything longer
    than this is a sentence about the photo, not a name for it, and a sentence is
-   where a wrong guess hides. */
-const MAX_NAME_WORDS = 6;
+   where a wrong guess hides.
+
+   FOUR, NOT SIX. At six a verifier got "driver license of the client's brother"
+   and "handwritten note saying ID card" both filed as a government ID, which
+   opens the identity gate on a document belonging to someone else or on no
+   document at all. Four still clears every real answer: "Arizona driver license",
+   "state issued photo id", "proof of address", "social security card". Raising it
+   again needs a test proving those two phrases still land as "other". */
+const MAX_NAME_WORDS = 4;
 
 function wordCount(text) {
   return String(text).trim().split(/\s+/).filter(Boolean).length;
