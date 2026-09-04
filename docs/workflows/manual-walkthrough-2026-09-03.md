@@ -80,3 +80,15 @@ calendar invite email + SMS + AI call all fire. None of them is missing.
 Verdict on F1: **WORKED, BUT DELAYED.** Not a broken automation.
 Owner-set target: all three must land **within 60 seconds** of the booking.
 Today they take about 3 minutes. The fix is latency, not wiring.
+
+**F4 · Test-data naming: use a distinct FIRST name per sim client (owner note).**
+Messages greet the client by FIRST name only, so every one of the five sims
+gets "Hey Sim" and they are impossible to tell apart in the inbox and on the
+phone. The path lives in the LAST name, where no message ever looks.
+
+Next run, put the distinguishing word in the FIRST name:
+first "Sim 3" / last "Trial" (and so on), not first "Sim" / last "Three-Trial".
+Update the data sheet in docs/workflows/manual-walkthrough-SOP.md section 3
+and the runbook HTML before the next walk.
+
+Not changing mid-run — the five clients for 2026-09-03 keep the current names.
