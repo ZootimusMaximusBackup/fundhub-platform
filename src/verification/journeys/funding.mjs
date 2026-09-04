@@ -118,24 +118,24 @@ export async function runFundingJourney(db, ctx, collector) {
   const afterCrm = (await db.query(
     `SELECT ghl_contact_id, custom_fields FROM clients WHERE id = $1`, [client.id]
   )).rows[0];
-  const ghl = afterCrm?.ghl_contact_id || null;
+  const crmLink = afterCrm?.ghl_contact_id || null;
   const crmWarned = !!(afterCrm?.custom_fields && afterCrm.custom_fields.ghl_link_missing);
-  if (ghl) {
+  if (crmLink) {
     collector.pass({
-      section, journey, role, id: "fund-ghl",
+      section, journey, role, id: "fund-crm-link",
       claim: "Client has ghl_contact_id linkage",
-      actual: { ghl }, file: "src/handlers/client-lifecycle.mjs"
+      actual: { crmLink }, file: "src/handlers/client-lifecycle.mjs"
     });
   } else if (crmWarned) {
     collector.pass({
-      section, journey, role, id: "fund-ghl",
+      section, journey, role, id: "fund-crm-link",
       claim: "Missing CRM link is stamped visibly (ghl_link_missing)",
       actual: { ghl_contact_id: null, ghl_link_missing: true },
       file: "src/handlers/client-lifecycle.mjs"
     });
   } else {
     collector.silent({
-      section, journey, role, id: "fund-ghl",
+      section, journey, role, id: "fund-crm-link",
       claim: "Client has ghl_contact_id linkage after lead capture",
       detail: "No ghl_contact_id and no ghl_link_missing warning. Silent null — SMS relay cannot address this client.",
       file: "src/handlers/client-lifecycle.mjs",
@@ -144,8 +144,8 @@ export async function runFundingJourney(db, ctx, collector) {
   }
   steps.push({
     step: "The CRM linkage",
-    status: ghl || crmWarned ? "PASS" : "SILENTLY-DID-NOTHING",
-    persisted: ghl || (crmWarned ? "warned:ghl_link_missing" : "null")
+    status: crmLink || crmWarned ? "PASS" : "SILENTLY-DID-NOTHING",
+    persisted: crmLink || (crmWarned ? "warned:ghl_link_missing" : "null")
   });
 
   // ── 2. Booking ──
@@ -865,7 +865,7 @@ export async function runFundingJourney(db, ctx, collector) {
     `Closer front commission: ${frontLedger[0]?.amount ?? "NONE"} (want ${MONEY.closerFlatDeposit})`,
     `Advisor back commission: ${advisorRow?.amount ?? "NONE"} (want ${MONEY.expectedAdvisorBack})`,
     `Closeout fee: ${closeout?.total_fee ?? "NONE"} (want ${MONEY.expectedSuccessFee})`,
-    `The CRM link: ${ghl || "MISSING"}`,
+    `The CRM link: ${crmLink || "MISSING"}`,
     `Contract: ${contractRow?.id || "MISSING"}`,
     `Messages queued: ${queued.length}`,
     "",

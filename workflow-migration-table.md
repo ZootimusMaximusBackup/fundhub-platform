@@ -454,7 +454,7 @@ work and need sequencing as new builds.
 | F-02/F-06/F-10 (DECOM copies) | RETIRED | Live F-series definitions exist separately under `## FUNDING WORKFLOWS (F-Series)` — pending the F-series batch. |
 | AF-06 | RETIRED | Confirmed decommissioned; no live counterpart found elsewhere in the map. |
 
-## AIRTABLE AUTOMATIONS (AX-Series) (12)
+## SPREADSHEET AUTOMATIONS (AX-Series) (12)
 
 | Disposition | Reasoning |
 |---|---|
