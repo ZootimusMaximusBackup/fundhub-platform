@@ -369,3 +369,9 @@ product bug; if no, the number is honest but the sim can never show variation.
 "ADAPTERS_DRY_RUN fence is up — stamped placeholder dry-ghl-823c850edeee".
 So the CRM sync to GoHighLevel is fenced off in this environment. Anything the
 walk expects to appear in GoHighLevel will not.
+
+**GoHighLevel note WITHDRAWN (owner).** Chris: "GoHighLevel isn't relevant for
+the CRM." The ADAPTERS_DRY_RUN fence skipping the GoHighLevel call is expected
+and correct, not a gap. Fundhub's own CRM is the system of record. Do not
+raise GoHighLevel as a finding again, and do not chase anything that "should
+have appeared" there.
