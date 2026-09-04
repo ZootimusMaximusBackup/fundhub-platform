@@ -491,3 +491,19 @@ opened (expected empty).
 
 **F4 CONFIRMED IN THE WILD.** Every message greets "Hey Sim" / "Hi Sim".
 Five clients, one indistinguishable first name, exactly as predicted.
+
+**F18 · Email signature images have a white background on a grey email.**
+Observed in the Fundhub email signature block. The "fundhub." wordmark and the
+"Josh" handwritten signature are images with a solid WHITE background, sitting
+on the email body's light-grey ground. Both render as visible white rectangles
+around the artwork.
+
+Fix: export both as PNGs with a transparent background, or set the signature
+block's background to match the image white. Transparent PNG is the right
+answer — the signature must sit correctly on any client's background, and
+Gmail/Outlook dark mode will make the white boxes worse, not better.
+
+Check the same two assets everywhere they appear, not just this template.
+
+Signature content for the record: "Josh · Funding Executive · Fundhub.ai ·
+(561) 304-8368 · Fundhub.ai — Funding Intelligence for Entrepreneurs".
