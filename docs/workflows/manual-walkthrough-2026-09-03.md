@@ -92,3 +92,21 @@ Update the data sheet in docs/workflows/manual-walkthrough-SOP.md section 3
 and the runbook HTML before the next walk.
 
 Not changing mid-run — the five clients for 2026-09-03 keep the current names.
+
+**F5 · AI SETTER IS BROKEN. Does not work at all. (owner, severity: highest)**
+Chris on the live walk: the AI setter "doesn't work AT ALL". Total failure,
+not a degraded or delayed behaviour like F1. He believes a Claude change
+broke it ("something was fucked by Claude").
+
+This is the top finding of the walk so far. Open, unassigned, un-diagnosed.
+
+To do after the walk (do NOT fix mid-run, SOP rule: write findings, don't fix):
+- Get the exact symptom from Chris: does the call not place, does it place and
+  the agent says nothing, does it hang up, or does it not follow its prompt?
+- Find when it last worked and diff the setter's prompt/config/workflow
+  registration against that point. Chris suspects a regression, so bisect
+  rather than redesign.
+- The `fundhub-agent-tester` skill exists for exactly this: run the live agent
+  prompt against a roleplay client and score prompt fulfilment.
+- Note this is the SETTER (books the call), distinct from the booking-
+  confirmation AI call in F1, which did fire.
