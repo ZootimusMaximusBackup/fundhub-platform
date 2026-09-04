@@ -25,8 +25,18 @@ const MAX_STRIKES = 2;
  * Nothing is loosened by fixing it. The threshold is untouched, and everything the
  * gate compared before, it still compares — see
  * src/metro2/letters/variance-derogatory.test.mjs, which pins the three-bureau
- * case AND pins that two genuinely identical letters are still refused. */
-const CLAIM_RULE_ID = String.raw`(?:M2-\d{3}|DEROG-[A-Z0-9]+(?:-[A-Z0-9]+)*)`;
+ * case AND pins that two genuinely identical letters are still refused.
+ *
+ * PI-* joined the list on 2026-09-03 for exactly the same reason, one step
+ * worse. It is the personal-information floor (src/metro2/diy/personal-info-floor.mjs),
+ * which every repair-path client gets on every bureau — and the floor's claims
+ * are the SAME words at all three bureaus by definition, because it is the same
+ * name and the same address. Left out of this list, a clean file would have
+ * produced one letter and two `variance_gate_exhausted` refusals, which is the
+ * empty desk the floor exists to end. Nothing is loosened: the threshold is
+ * untouched and every comparison the gate made before, it still makes. */
+const CLAIM_RULE_ID =
+  String.raw`(?:M2-\d{3}|DEROG-[A-Z0-9]+(?:-[A-Z0-9]+)*|PI-[A-Z0-9]+(?:-[A-Z0-9]+)*)`;
 
 /** Strip fixed citation/legal/item blocks before fingerprinting — facts stay fixed; prose varies. */
 export function proseForVariance(letterText) {
@@ -46,6 +56,7 @@ export function proseForVariance(letterText) {
     .replace(/^Severity:.*$/gim, " ")
     .replace(/\bM2-\d{3}\b/g, " ")
     .replace(/\bDEROG-[A-Z0-9]+(?:-[A-Z0-9]+)*\b/g, " ")
+    .replace(/\bPI-[A-Z0-9]+(?:-[A-Z0-9]+)+\b/g, " ")
     .replace(/15 U\.S\.C\.[^\n.]*/g, " ")
     .replace(/§\s*1681[^\n.]*/g, " ")
     .replace(/Field \d+:[\s\S]*?(?=\n|$)/g, " ")

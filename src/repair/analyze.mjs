@@ -21,6 +21,10 @@ import { createHash } from "node:crypto";
 
 import { violationsByBureauFromMergedCrs } from "../metro2/diy/from-crs.mjs";
 import { derogatoryClaimsByBureau, mergeDerogatoryClaims } from "../metro2/diy/derogatory.mjs";
+import {
+  personalInfoFloorByBureau,
+  mergePersonalInfoClaims
+} from "../metro2/diy/personal-info-floor.mjs";
 import { isCollectorFinding } from "../metro2/diy/collectors.mjs";
 import { clientOutcomeTier } from "../config/product-path.mjs";
 import { generateLetter } from "../metro2/letters/generate.mjs";
@@ -342,18 +346,54 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
   const onRepairPath = hasAgreement || REPAIR_PATH_TIERS.has(
     String(await clientOutcomeTier(db, clientId) || "")
   );
+
+  /* The identity read is HOISTED ABOVE the no_violations wall on purpose. The
+     personal-information floor below names the one name and the one address the
+     file should be consolidated to, and that name is the CLIENT'S OWN, read
+     here. It is never used to decide whether the bureau file carries a variant —
+     see the header of ../metro2/diy/personal-info-floor.mjs for why that
+     distinction is the difference between a real dispute and a false statement.
+
+     Hoisting moves two refusals earlier: a client with no record, or with no
+     legal name, is now answered `client_not_found` / `missing_identity` where a
+     clean file would previously have answered `no_violations` first. Both are
+     more accurate about what is actually wrong, and both are already honest
+     refusals in api/repair/generate.mjs. */
+  const identity = await loadIdentity(db, { orgId, clientId });
+  if (!identity) return { ok: false, reason: "client_not_found" };
+  if (!identity.fullName) return { ok: false, reason: "missing_identity" };
+
+  /* OWNER DECISION, 2026-09-03, FINAL: the personal-information FLOOR. Every
+     repair-path client, every round, clean file or not, gets personal-information
+     cleanup — one name, one address, and a dispute of every inquiry with no
+     account on the file. Letters about derogatory items sit ON TOP of that
+     floor. Before this, a repair client with a tidy file fell through the
+     no_violations wall below and got nothing at all.
+
+     Order is engine findings → derogatory claims → floor, because that is the
+     order a letter should argue in: a documented Metro 2 defect leads, the
+     derogatory items follow, and personal information is knowledge base § 5.8
+     tier 4 (supporting). */
+  const identityAddress = [
+    identity.addressLine1,
+    identity.addressLine2,
+    [identity.city, identity.state, identity.zip].filter(Boolean).join(", ")
+  ].filter(Boolean).join(", ") || null;
+
   const byBureau = onRepairPath
-    ? mergeDerogatoryClaims(
-      violationsByBureauFromMergedCrs(result),
-      derogatoryClaimsByBureau(result)
+    ? mergePersonalInfoClaims(
+      mergeDerogatoryClaims(
+        violationsByBureauFromMergedCrs(result),
+        derogatoryClaimsByBureau(result)
+      ),
+      personalInfoFloorByBureau(result, {
+        legalName: identity.fullName,
+        currentAddress: identityAddress
+      })
     )
     : violationsByBureauFromMergedCrs(result);
   const bureaus = BUREAU_CODES.filter((code) => (byBureau[code] || []).length > 0);
   if (bureaus.length === 0) return { ok: false, reason: "no_violations" };
-
-  const identity = await loadIdentity(db, { orgId, clientId });
-  if (!identity) return { ok: false, reason: "client_not_found" };
-  if (!identity.fullName) return { ok: false, reason: "missing_identity" };
 
   const stored = [];
   const skipped = [];

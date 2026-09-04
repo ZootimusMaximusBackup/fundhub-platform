@@ -189,7 +189,15 @@ describe("derogatory items and the offer path", () => {
     const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
     assert.equal(r.ok, true, JSON.stringify(r));
     assert.equal(r.letters.length, 1);
-    assert.deepEqual(r.letters[0].ruleIds, ["DEROG-COLLECTION"]);
+    /* The derogatory claim leads, and the personal-information floor
+       (../metro2/diy/personal-info-floor.mjs) sits underneath it — owner-set
+       2026-09-03, cleanup runs on every repair-path client on every round. This
+       file carries no alias block and no address block, so the floor's two
+       claims are the CONFIRM pair, never a fabricated second name. */
+    assert.deepEqual(
+      r.letters[0].ruleIds,
+      ["DEROG-COLLECTION", "PI-NAME-CONFIRM", "PI-ADDRESS-CONFIRM"]
+    );
   });
 
   test("FUNDING_PLUS_REPAIR is a repair path too", async () => {
@@ -211,5 +219,101 @@ describe("derogatory items and the offer path", () => {
     const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
     assert.equal(r.ok, true, JSON.stringify(r));
     assert.equal(r.letters.length, 1);
+  });
+});
+
+/* OWNER DECISION, 2026-09-03, FINAL — the personal-information floor.
+   "On EVERY customer on the credit-repair path, on EVERY round, clean file or
+   not, ALWAYS run personal-information cleanup." So a spotless file on a
+   repair-path client still produces a letter, and a client off that path still
+   produces nothing from the same file. */
+describe("the personal-information floor", () => {
+  /* One bureau, one name, one address, one clean account, one inquiry from the
+     creditor of that same account. Nothing here is disputable on its own: the
+     Metro 2 engine finds no defect, there is no derogatory item, the name and
+     address do not vary and the inquiry is explained by an account on the file. */
+  const SPOTLESS_FILE = {
+    bureausPulled: ["EX"],
+    bureaus: {
+      EX: {
+        creditFiles: [{
+          creditFileDetail: {
+            creditFileInfileDate: "2026-09-03",
+            creditFileResultStatusType: "FileReturned",
+            sourceType: "Experian"
+          },
+          aliases: [{ firstName: "Sim", middleName: null, lastName: "Repair" }],
+          addresses: [{
+            addressLine1: "412 Pecan St", city: "Austin", state: "TX",
+            postalCode: "78701", borrowerResidencyType: "Current",
+            dateReported: "2026-08-01"
+          }],
+          ssns: [],
+          employments: []
+        }],
+        inquiries: [{
+          creditorName: "EXAMPLE BANK NA", inquiryDate: "2026-08-01",
+          businessType: "Banking", sourceType: "Experian"
+        }],
+        tradelines: [{
+          creditorName: "EXAMPLE BANK NA",
+          accountIdentifier: "5121080011112222",
+          accountOpenedDate: "2019-06-12",
+          accountReportedDate: "2026-09-01",
+          accountOwnershipType: "Individual",
+          accountStatusType: "Open",
+          accountType: "Revolving",
+          currentRatingType: "AsAgreed",
+          currentBalanceAmount: "1842",
+          pastDueAmount: "0",
+          sourceType: "Experian"
+        }]
+      }
+    }
+  };
+
+  function dbFor(file, tier) {
+    return fakeDb({
+      "outcome_tier FROM clients": [{ outcome_tier: tier }],
+      "first_name, last_name FROM clients": [{ first_name: "Sim", last_name: "Repair" }],
+      "FROM contracts": [],
+      "FROM client_consents": [{ is_valid: true }],
+      "FROM dispute_letters dl": [],
+      "FROM repair_programs": [],
+      "FROM crs_results": [{ result: file }],
+      "FROM dispute_cases dc": [],
+      "INSERT INTO dispute_cases": [{
+        id: "case-1", org_id: ORG, client_id: CLIENT, bureau: "EX", round: "R1"
+      }],
+      "INSERT INTO dispute_items": [{ id: "item-1" }],
+      "INSERT INTO dispute_letters": [{ id: "letter-1", bureau: "EX", case_id: "case-1" }],
+      "FROM dispute_letters$": [],
+      "SELECT body_text FROM dispute_letters": []
+    });
+  }
+
+  test("a spotless file on a repair client still produces a cleanup letter", async () => {
+    const db = dbFor(SPOTLESS_FILE, "REPAIR_ONLY");
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.equal(r.letters.length, 1);
+    assert.deepEqual(
+      r.letters[0].ruleIds.slice().sort(),
+      ["PI-ADDRESS-CONFIRM", "PI-NAME-CONFIRM"]
+    );
+  });
+
+  test("the same spotless file off the repair path produces nothing", async () => {
+    const db = dbFor(SPOTLESS_FILE, "FULL_FUNDING");
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    assert.equal(r.ok, false);
+    assert.equal(r.reason, "no_violations");
+  });
+
+  test("one name on the file is never disputed as a second name", async () => {
+    const db = dbFor(SPOTLESS_FILE, "REPAIR_ONLY");
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    assert.ok(!/PI-NAME-CONSOLIDATE/.test(r.letters[0].body_text),
+      "a file carrying one name must never be told it carries more than one");
   });
 });
