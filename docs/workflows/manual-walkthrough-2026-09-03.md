@@ -1268,3 +1268,29 @@ answers. Add to W8.
 stored figure); projected $221,500; gap $22,150; scores 762/770/758, median 762;
 utilization 17%; nothing to dispute; three card paydowns (Chase → $1,200,
 Amex → $2,500, Capital One → $800).
+
+**F42 ESCALATED · THE UNDERWRITEIQ DELIVERABLES HAVE NEVER BEEN PRODUCED FOR
+ANY CLIENT, EVER. Severity: MAXIMUM.**
+Live database, all time: **0 documents** titled Credit Analysis Report,
+Funding Snapshot, Bank and Lender Match List, Credit Optimization Roadmap, or
+Capital Readiness Summary — for any client. The `documents` table holds only
+staff agreements and contracts. In the last 30 days: 4 `analysis.completed`
+events, 1 `diy.package.ready` (Aug 13), and no deliverable output.
+
+Checked and ruled out for Sim Five: workflow C-06 IS registered
+(src/workflows/index.mjs:156), listens on `analysis.completed`, and its first
+gate (`payload.source === "crs"`) PASSES — the sim stamps source "crs" exactly
+as the real pull does. So the event was recorded, the gate is open, and no
+documents came out. Whether Inngest actually invoked C-06, and if so which
+branch it took (missing_results / decline / funding / not_funding — lines
+151-185), is UNVERIFIED from the laptop; Inngest run logs are needed.
+
+Consequence: the core UnderwriteIQ product — the thing the $32 soft pull, the
+"file is ready" texts and the deck's "your numbers" all point at — has no
+delivery path that has ever worked in production.
+
+Owner asked for the deliverables to be emailed to him from the real system.
+Not possible tonight: there is nothing for the system to send. The only
+existing send is the deck button (F41), which emails "correction letters are
+ready" with no attachment. The five PDFs the system SHOULD produce were
+generated offline from the same code for the audit instead.
