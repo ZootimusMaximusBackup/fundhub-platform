@@ -1088,3 +1088,44 @@ says "Soft pull is $32. Everything else — book a call for pricing", and every
 tile then reads "On your call" — including Capital Academy, which the client
 has already bought and paid nothing toward. A client who owns an offer should
 not see it as a locked upsell.
+
+**F26 ROOT CAUSE FOUND · `COMMAS_WEBHOOK_SECRET` CANNOT BE READ BACK FROM
+NETLIFY. The sim payment tool has been signing with a MASK.**
+
+Measured, value never printed:
+
+| Read attempt | Result |
+|---|---|
+| `netlify env:get … --context production` | 20 chars, 5 distinct, first char `*`, only ~3 non-asterisk chars |
+| `netlify env:get … --plain` | empty |
+| `netlify env:list --context production --plain` | same 20-char mask |
+
+The variable is stored with `--secret` (CLAUDE.md section 11 requires that for
+anything holding a credential), and Netlify deliberately never returns a secret
+value to the CLI. So `scripts/sim/with-prod-env.sh` exports a MASK, and
+`push-payment.mjs` computes `HMAC-SHA256(raw, "****…")`. The live site verifies
+with the real secret, they differ, and it answers 401 bad_signature — correctly.
+
+Nothing is broken in the signing code, the header name, or the digest. The
+tool's design assumption is wrong: it assumed a secret could be read back.
+
+**Consequence: no simulated payment can post from a laptop today.** That blocks
+the paid half of every path in this walkthrough — entitlements, course unlock,
+money chain, offer emails, pipeline routing after payment.
+
+Two fixes, owner's choice (recorded, not decided by the agent):
+
+**A. Sandbox signing key (recommended).** Teach the commas webhook to also
+accept a second key, e.g. `SIM_WEBHOOK_SECRET`, set WITHOUT `--secret` so the
+CLI can read it, and accepted only for receipts carrying the existing
+`simulated` marker. Real Commas deliveries keep verifying against the real
+secret. No live payment risk. Costs one code change, one env var, one deploy.
+
+**B. Rotate `COMMAS_WEBHOOK_SECRET`** to a value Chris also holds. Faster but
+REAL Commas webhooks fail verification from the moment it changes until the new
+value is entered in Commas too — live payments stop posting in that window.
+
+Also worth fixing either way: `with-prod-env.sh` should FAIL LOUDLY when a
+secret comes back masked, rather than exporting asterisks and letting the tool
+produce a confusing 401. A two-line guard would have saved this entire
+diagnosis.
