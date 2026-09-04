@@ -1,10 +1,10 @@
 {
   "14a-course-buyer.png": {
-    "legend": "F35 \u2014 a course buyer is not asked",
+    "legend": "F35 — a course buyer is not asked",
     "marks": [
       {
         "n": "1",
-        "caption": "Capital Academy \u2014 all this client bought",
+        "caption": "Capital Academy — all this client bought",
         "box": {
           "x": 762,
           "y": 1312,
@@ -15,11 +15,11 @@
     ]
   },
   "14b-funding-buyer.png": {
-    "legend": "F35 AFTER \u2014 funding buyer is asked",
+    "legend": "F35 AFTER — funding buyer is asked",
     "marks": [
       {
         "n": "1",
-        "caption": "Sign to authorize dispute letters \u2014 shown",
+        "caption": "Sign to authorize dispute letters — shown",
         "box": {
           "x": 274,
           "y": 407,
@@ -30,7 +30,7 @@
     ]
   },
   "15-stage-after-signing.png": {
-    "legend": "F33 \u2014 stage after pull, call, signature",
+    "legend": "F33 — stage after pull, call, signature",
     "marks": [
       {
         "n": "1",
@@ -65,7 +65,7 @@
     ]
   },
   "16a-advisor-named.png": {
-    "legend": "F34 \u2014 the advisor is named",
+    "legend": "F34 — the advisor is named",
     "marks": [
       {
         "n": "1",
@@ -80,11 +80,11 @@
     ]
   },
   "16b-advisor-empty.png": {
-    "legend": "F34 \u2014 nobody assigned yet",
+    "legend": "F34 — nobody assigned yet",
     "marks": [
       {
         "n": "1",
-        "caption": "'Not assigned yet' \u2014 never a made-up name",
+        "caption": "'Not assigned yet' — never a made-up name",
         "box": {
           "x": 352,
           "y": 1784,
@@ -95,11 +95,11 @@
     ]
   },
   "17-owned-offer.png": {
-    "legend": "F37 \u2014 an owned offer is not an upsell",
+    "legend": "F37 — an owned offer is not an upsell",
     "marks": [
       {
         "n": "1",
-        "caption": "Owned: 'Included \u2014 you own this'",
+        "caption": "Owned: 'Included — you own this'",
         "box": {
           "x": 779,
           "y": 1461,
@@ -120,7 +120,7 @@
     ]
   },
   "18-messages-one-empty.png": {
-    "legend": "F36 \u2014 one empty row, not two",
+    "legend": "F36 — one empty row, not two",
     "marks": [
       {
         "n": "1",
