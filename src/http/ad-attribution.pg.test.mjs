@@ -81,10 +81,19 @@ describe("ad attribution: webhook → row → registry → reads", { skip: !HAVE
     return { status: r.status, body };
   };
 
+  /* EVENTS BEFORE CLIENTS. events.client_id is a foreign key with no cascade,
+     so a client that any event points at cannot be deleted while that event
+     exists. This used to run the other way round and pass, but only because the
+     ClickFunnels adapter wrote every funnel event with client_id NULL — the
+     defect fixed on 2026-09-04 (F39). Now that a funnel event names its
+     customer, the old order fails on the foreign key. Every other cleanup in
+     the repository already deletes events first
+     (src/verification/fixtures.mjs, src/demo/platform-seed.mjs); this one was
+     the exception. Nothing about what the test asserts changes. */
   async function wipe() {
     await db.query(`DELETE FROM bookings WHERE org_id = $1 AND attendee_email LIKE $2`, [org, `${NONCE}%`]);
-    await db.query(`DELETE FROM clients WHERE org_id = $1 AND email LIKE $2`, [org, `${NONCE}%`]);
     await db.query(`DELETE FROM events WHERE payload->>'email' LIKE $1`, [`${NONCE}%`]);
+    await db.query(`DELETE FROM clients WHERE org_id = $1 AND email LIKE $2`, [org, `${NONCE}%`]);
   }
 
   before(async () => {
