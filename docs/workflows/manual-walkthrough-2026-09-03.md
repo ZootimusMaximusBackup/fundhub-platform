@@ -1428,3 +1428,11 @@ tally tonight: 50 delivered + 1 sent = **51 no-booking texts to one phone**,
 all five sims hit.
 The script printed 0/0 on Chris's visible run because an earlier run had
 already done the work; the database state is what counts.
+
+**OWNER NOTE · accountability as an upsell — follow up later.**
+Chris: "follow up on accountability, we can easily upsell accountability as well
+as a upsell. But just make a note."
+Idea only, not a task: an accountability offer (check-ins / coaching on doing the
+roadmap and paydown steps) sold as an upsell on top of the deliverables and the
+Academy. Belongs to the offers work in `src/config/offers.mjs` and the ladder.
+Not scoped, not on the fix batch. Revisit after the front end and fulfillment.

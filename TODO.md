@@ -301,3 +301,4 @@ branch `feat/flywheel-runner` until #321 merges.
 - [ ] Tell W7 the exact AI setter symptom (call not placed / silent / hangs up / ignores prompt).
 - [ ] Tell W4 whether the dispute-letter consent belongs on every client's portal or only repair clients (F35).
 - [ ] Turn off the Gmail "FS Auto" filter before the re-walk (F17).
+- [ ] Accountability upsell — Chris's idea 2026-09-03, note only. Revisit after the fix batch and fulfillment. See manual-walkthrough-2026-09-03.md.
