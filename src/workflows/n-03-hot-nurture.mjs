@@ -1,14 +1,14 @@
 // N-03 — Long-Term Hot Nurture.
-// Source: GHL workflow 831135dd-175d-4854-b555-1d7582a30249 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow 831135dd-175d-4854-b555-1d7582a30249 (the CRM source-of-truth export).
 // Same folder-name discrepancy as N-01/N-02; ports the live definition, not the
 // [AGENT DRAFT] copy.
 //
-// Original GHL trigger was "Tag Added: nurture:hot"; replaced with funnel-depth
+// Original the CRM trigger was "Tag Added: nurture:hot"; replaced with funnel-depth
 // classification (see src/config/lead-temperature.mjs — flagged for Chris). Either
 // booking.created or call.completed can newly put a lead into "hot", so both are
 // triggers here (diagnostic.paid only ever moves a lead OUT of hot, into exit).
 //
-// SMS copy is confirmed missing in GHL (Chris's tracking note). Wired but gated on a
+// SMS copy is confirmed missing in the CRM (Chris's tracking note). Wired but gated on a
 // template existing.
 
 import { inngest } from "./client.mjs";

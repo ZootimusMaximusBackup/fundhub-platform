@@ -1,9 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { handle } from "./ghl-doc-document-check.mjs";
+import { handle } from "./doc-check.mjs";
 import { ev, pgFake } from "./test-support.mjs";
 
-test("docs.received does not queue SMS-DOC-02 when GHL-DOC is retired", async () => {
+test("docs.received does not queue SMS-DOC-02 when DOC-CHECK is retired", async () => {
   const db = pgFake({
     clients: [{ id: "cl-1", org_id: "org-1" }],
     templates: [{
@@ -18,7 +18,7 @@ test("docs.received does not queue SMS-DOC-02 when GHL-DOC is retired", async ()
   db.query = async (sql, params) => {
     if (/FROM agents/.test(sql)) {
       return { rows: [{
-        code: "GHL-DOC",
+        code: "DOC-CHECK",
         status: "retired",
         prompt: "You are the Document Check agent. Return JSON.",
         output_schema: { outcome: "accept, request_more, or hold" }
@@ -42,11 +42,11 @@ test("docs.received does not queue SMS-DOC-02 when GHL-DOC is retired", async ()
     recordRunImpl: async () => null
   });
   assert.equal(res.done, false);
-  assert.equal(res.reason, "ghl_doc_retired");
+  assert.equal(res.reason, "doc_check_retired");
   assert.equal(db.messages.length, 0);
 });
 
-test("docs.received for an inquiry_doc does not run GHL-DOC", async () => {
+test("docs.received for an inquiry_doc does not run DOC-CHECK", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1" }] });
   const res = await handle({
     event: ev("docs.received", {
@@ -57,16 +57,16 @@ test("docs.received for an inquiry_doc does not run GHL-DOC", async () => {
     db
   });
   assert.equal(res.done, false);
-  assert.equal(res.reason, "not_ghl_doc_kind");
+  assert.equal(res.reason, "not_doc_check_kind");
 });
 
-test("docs.received for a client bank_statement runs GHL-DOC and routes hold without client messages", async () => {
+test("docs.received for a client bank_statement runs DOC-CHECK and routes hold without client messages", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1" }] });
   const origQuery = db.query.bind(db);
   db.query = async (sql, params) => {
     if (/FROM agents/.test(sql)) {
       return { rows: [{
-        code: "GHL-DOC",
+        code: "DOC-CHECK",
         prompt: "You are the Document Check agent. Return JSON.",
         output_schema: { outcome: "accept, request_more, or hold" }
       }] };

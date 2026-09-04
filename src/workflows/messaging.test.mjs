@@ -146,7 +146,7 @@ test("sendTemplated: unknown merge token renders blank, send still queued", asyn
 
 // --- merge-tag context off the client record --------------------------------
 // THE BUG: every sendTemplated call site in src/workflows passes no `context`, so the
-// ported GHL copy's `{{contact.*}}` tags had nothing to resolve against — and with the
+// ported the CRM copy's `{{contact.*}}` tags had nothing to resolve against — and with the
 // old TOKEN_RE they rendered literally into live SMS and email.
 
 const client = (over = {}) => ({
@@ -172,7 +172,7 @@ test("REGRESSION: no merge tag survives into the queued body with braces intact"
   assert.ok(!body.includes("{{"), "an unrendered merge tag must never reach an outbound body");
 });
 
-test("custom_fields are reachable as contact.* — the 252 ported GHL fields", async () => {
+test("custom_fields are reachable as contact.* — the 252 ported the CRM fields", async () => {
   const db = pgFake({
     templates: [tpl("N-01-SMS", "{{contact.business_name}} owes {{contact.total_funding_estimate}}")],
     clients: [client({ custom_fields: { business_name: "Acme LLC", total_funding_estimate: 50000 } })]

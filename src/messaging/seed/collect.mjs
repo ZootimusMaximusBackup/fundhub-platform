@@ -36,7 +36,7 @@ export const SOURCES = [
     file: "EMAIL-TEMPLATES-SOURCE-OF-TRUTH.md",
     parse: parseEmailTemplates,
     expected: 162,
-    note: "GHL email templates (never compliance-audited)",
+    note: "The CRM email templates (never compliance-audited)",
   },
 ];
 

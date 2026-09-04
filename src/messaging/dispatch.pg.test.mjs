@@ -34,7 +34,7 @@ before(async () => {
   orgId = org.rows[0].id;
   const c = await db.query(
     `INSERT INTO clients (org_id, first_name, email, ghl_contact_id)
-     VALUES ($1, 'Dispatch', 'dispatch-pg-test@example.com', 'ghlDispatchTest')
+     VALUES ($1, 'Dispatch', 'dispatch-pg-test@example.com', 'crmDispatchTest')
      RETURNING id`,
     [orgId]
   );

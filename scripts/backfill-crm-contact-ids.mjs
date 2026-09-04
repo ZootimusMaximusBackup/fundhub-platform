@@ -1,22 +1,22 @@
 #!/usr/bin/env node
 // One-shot backfill: every client with an email and no ghl_contact_id gets a
-// GHL contact found-or-created (src/messaging/ghl-contacts.mjs), then stored.
+// CRM contact found-or-created (src/messaging/crm-contacts.mjs), then stored.
 //
 // REQUIRES DATABASE_URL. REQUIRES GHL_API_KEY (preferred) or GHL_RELAY_API_KEY
-// to be set — with neither set, ensureGhlContactId reports "not_configured"
+// to be set — with neither set, ensureCrmContactId reports "not_configured"
 // for every row rather than inventing a credential; this script counts that
 // as skipped_no_key and exits 1 so it cannot be mistaken for a real backfill.
 //
-//   node scripts/backfill-ghl-contact-ids.mjs              # dry-run (default)
-//   node scripts/backfill-ghl-contact-ids.mjs --dry-run    # same, explicit
-//   node scripts/backfill-ghl-contact-ids.mjs --write      # apply the UPDATEs
+//   node scripts/backfill-crm-contact-ids.mjs              # dry-run (default)
+//   node scripts/backfill-crm-contact-ids.mjs --dry-run    # same, explicit
+//   node scripts/backfill-crm-contact-ids.mjs --write      # apply the UPDATEs
 //
-// Dry-run still calls GHL (find-or-create is not free), it just skips the
+// Dry-run still calls the CRM (find-or-create is not free), it just skips the
 // UPDATE — so a dry-run run is the accurate preview of what --write will do,
 // not a guess.
 
 import { db, close } from "../src/db.mjs";
-import { ensureGhlContactId, config } from "../src/messaging/ghl-contacts.mjs";
+import { ensureCrmContactId, config } from "../src/messaging/crm-contacts.mjs";
 
 const WRITE = process.argv.includes("--write");
 
@@ -27,7 +27,7 @@ async function main() {
   }
   const cfg = config(process.env);
   if (!cfg.ok) {
-    console.error(`GHL API key unset: neither ${cfg.missing.join(" nor ")} is set.`);
+    console.error(`The CRM API key unset: neither ${cfg.missing.join(" nor ")} is set.`);
     console.error("Set GHL_API_KEY (preferred) or GHL_RELAY_API_KEY, then re-run.");
     process.exit(1);
   }
@@ -46,7 +46,7 @@ async function main() {
   for (const c of rows) {
     scanned += 1;
     try {
-      const r = await ensureGhlContactId(db, c, { dryRun: !WRITE });
+      const r = await ensureCrmContactId(db, c, { dryRun: !WRITE });
       if (!r.ok) {
         if (r.reason === "not_configured") skipped_no_key += 1;
         console.warn(`skip ${c.id}: ${r.reason}`);
@@ -60,7 +60,7 @@ async function main() {
         console.log(`would update ${c.id} -> ${r.contactId}`);
       }
     } catch (err) {
-      // ensureGhlContactId itself never throws — this is belt-and-suspenders
+      // ensureCrmContactId itself never throws — this is belt-and-suspenders
       // for anything unexpected between rows (e.g. a dropped db connection).
       errors += 1;
       console.error(`error ${c.id}:`, (err && err.message) || err);

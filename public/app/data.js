@@ -345,7 +345,7 @@ window.FHData = (function () {
     },
 
     /* The LOCAL inquiry_log queue. Not /api/inquiry — that proxies the external
-       Airtable runtime and returns its shape, not these columns. */
+       case runtime and returns its shape, not these columns. */
     inquiries:       function (p) { return this.read("inquiries", p); },
     /* GET /api/inquiries?recent=letters → data.letters[] — the letter and portal
        rows of inquiry_attempts, newest first, for the Specialist desk's "Recent

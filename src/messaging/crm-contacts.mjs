@@ -1,4 +1,4 @@
-// GHL LeadConnector contact resolution — find-or-create the GHL contact a
+// CRM LeadConnector contact resolution — find-or-create the CRM contact a
 // fundhub client maps to, so the ghl_relay SMS provider
 // (./providers/ghl-relay.mjs) has a `clients.ghl_contact_id` to address
 // (db/schema/001_init.sql:47 is where that column already lives).
@@ -7,7 +7,7 @@
 // one chokepoint (src/lib/outbound-fetch.mjs) behind the ADAPTERS fence.
 //
 // They did not used to. Creating a contact writes a real person's name, email
-// and phone into the company's GoHighLevel account — a vendor side effect on a
+// and phone into the company's CRM account — a vendor side effect on a
 // real client — and it ran on every new client with no fence in front of it at
 // all, because the fence lived in the calling handler and sat below an early
 // return. Guarding the caller was never enough; the guard belongs here, at the
@@ -27,7 +27,7 @@
 // Nothing here invents a credential. With neither key set, config() reports
 // not-configured and every exported function returns
 // { ok:false, reason:"not_configured" } rather than throwing — a client that
-// never gets a GHL contact id simply cannot receive SMS through ghl_relay yet.
+// never gets a CRM contact id simply cannot receive SMS through ghl_relay yet.
 
 import { transmit, ADAPTERS } from "../lib/outbound-fetch.mjs";
 
@@ -47,10 +47,10 @@ export function config(env = process.env) {
 }
 
 /**
- * findOrCreateGhlContact({ email, phone, firstName, lastName, locationId }, { fetchImpl, env })
+ * findOrCreateCrmContact({ email, phone, firstName, lastName, locationId }, { fetchImpl, env })
  * → { ok:true, contactId, created } | { ok:false, reason }
  *
- * Tries GHL's v2 upsert first — POST /contacts/upsert, which LeadConnector
+ * Tries the CRM's v2 upsert first — POST /contacts/upsert, which LeadConnector
  * documents as create-or-return-existing keyed on email/phone. Falls back to
  * search-then-create (GET /contacts/?email=... then POST /contacts/) if
  * upsert 404s or 405s on a deployment where that route is unavailable.
@@ -58,7 +58,7 @@ export function config(env = process.env) {
  * NEVER THROWS. `fetchImpl` is the test seam, same contract as
  * providers/http.mjs; a caller that supplies none gets globalThis.fetch.
  */
-export async function findOrCreateGhlContact(
+export async function findOrCreateCrmContact(
   { email, phone, firstName, lastName, locationId } = {},
   { fetchImpl, env = process.env } = {}
 ) {
@@ -85,7 +85,7 @@ export async function findOrCreateGhlContact(
   };
 
   /* Behind the adapters fence. Creating a contact writes a real person's name,
-     email and phone into the company's GoHighLevel account, which is a vendor
+     email and phone into the company's CRM account, which is a vendor
      side effect on a real client — so it is held exactly like a send is.
      transmit() never throws, so the try/catch that used to wrap these went with
      the bare fetch. */
@@ -158,28 +158,28 @@ async function searchThenCreate(
 }
 
 /**
- * ensureGhlContactId(db, clientRow, opts) — find-or-create a GHL contact for
+ * ensureCrmContactId(db, clientRow, opts) — find-or-create a CRM contact for
  * one stored `clients` row and, unless `opts.dryRun`, persist the id to
  * clients.ghl_contact_id. Shared by:
  *   - src/handlers/client-lifecycle.mjs (resolveClient, right after a new
  *     client is inserted, when the org's sms routing is ghl_relay)
- *   - scripts/backfill-ghl-contact-ids.mjs (bulk backfill; dryRun by default)
+ *   - scripts/backfill-crm-contact-ids.mjs (bulk backfill; dryRun by default)
  *
  * @param {object} clientRow  { id, email, phone, first_name, last_name }
  * @param {object} opts       { fetchImpl, env, dryRun = false }
  * @returns {object} { ok:true, contactId, created, updated } | { ok:false, reason }
  *
- * NEVER THROWS. A GHL failure must not be mistaken for a failed client write —
+ * NEVER THROWS. A CRM failure must not be mistaken for a failed client write —
  * callers wrap nothing extra around this on purpose.
  */
-export async function ensureGhlContactId(db, clientRow = {}, opts = {}) {
+export async function ensureCrmContactId(db, clientRow = {}, opts = {}) {
   const { fetchImpl, env = process.env, dryRun = false } = opts;
   try {
     const email = clientRow.email ? String(clientRow.email).trim().toLowerCase() : null;
     const phone = clientRow.phone || null;
     if (!email && !phone) return { ok: false, reason: "no_identifier" };
 
-    const result = await findOrCreateGhlContact(
+    const result = await findOrCreateCrmContact(
       { email, phone, firstName: clientRow.first_name || null, lastName: clientRow.last_name || null },
       { fetchImpl, env }
     );
@@ -190,11 +190,11 @@ export async function ensureGhlContactId(db, clientRow = {}, opts = {}) {
     }
     return { ok: true, contactId: result.contactId, created: Boolean(result.created), updated: !dryRun };
   } catch (err) {
-    // Belt-and-suspenders: findOrCreateGhlContact and the UPDATE above are
+    // Belt-and-suspenders: findOrCreateCrmContact and the UPDATE above are
     // already guarded, but a caller relying on "this never throws" must be
     // right even if a future edit adds a path that can.
     return { ok: false, reason: `unexpected_error: ${String((err && err.message) || err)}` };
   }
 }
 
-export default findOrCreateGhlContact;
+export default findOrCreateCrmContact;

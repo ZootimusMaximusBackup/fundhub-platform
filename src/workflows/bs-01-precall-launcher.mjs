@@ -1,5 +1,5 @@
 // BS-01 — Pre-Call Backend Launcher.
-// Source: GHL-System-Map.md BACK-END SELLING section.
+// Source: the CRM system map BACK-END SELLING section.
 // Merges in BS-EMAIL-FUNDING-72HR (live) and BS-EMAIL-REPAIR-72HR (live): both are
 // "Add to workflow" targets BS-01 enrolls into, not independently-triggered
 // workflows, so they're one continuous flow here rather than three separate files.

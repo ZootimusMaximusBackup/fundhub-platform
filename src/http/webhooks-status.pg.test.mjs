@@ -1,4 +1,4 @@
-// Delivery status callbacks — GHL cutover Ticket 2.
+// Delivery status callbacks — the CRM cutover Ticket 2.
 //
 // Lives under src/http/ and NOT under api/, because npm test globs only
 // "src/**/*.test.mjs" and "scripts/**/*.test.mjs". A test file placed beside a

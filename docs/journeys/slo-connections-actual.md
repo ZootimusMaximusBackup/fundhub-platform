@@ -33,5 +33,5 @@ flowchart TD
 
 ## Not in this code
 
-Soft pull, UnderwriteIQ, black reports, paper, recurring, white-label, GHL
+Soft pull, UnderwriteIQ, black reports, paper, recurring, white-label, the CRM
 writes, a new checkout, ClickFunnels apply.

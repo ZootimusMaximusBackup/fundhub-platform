@@ -1,10 +1,10 @@
 // Round Started — Client Notify.
-// Source: GHL (root)-level workflow, no folder, 1 step (GHL-System-Map.md line 32-34).
+// Source: the CRM (root)-level workflow, no folder, 1 step (the CRM system map line 32-34).
 // Audit fix (workflow-coherence-audit.md): "orphaned root-level 1-step SMS, no
 // folder. Move into Funding folder" — this file IS that move; it lives alongside
 // the rest of the funding workflows now. Spec §6: "the enroll-API workaround dies
-// with GHL; direct Twilio send with contact context" — sendTemplated below IS that
-// direct send (through our own messages/Twilio path, no GHL enroll-API involved).
+// with the CRM; direct Twilio send with contact context" — sendTemplated below IS that
+// direct send (through our own messages/Twilio path, no CRM enroll-API involved).
 //
 // Real, compliance-scrubbed copy exists (Workflow-SMS-Fixes-Ready-to-Paste.md):
 // "Hi {{first_name}}, your FundHub capital round is officially underway — we're

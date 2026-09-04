@@ -1,5 +1,5 @@
 // AI-SET-03 — No-Answer SMS Cadence.
-// Source: GHL-System-Map.md AI SETTER section.
+// Source: the CRM system map AI SETTER section.
 // Audit fix applied (workflow-coherence-audit.md: "all 3 waits = 1 min → triple-
 // texts client in ~2 min. Change to 30 min / 2 hr / 24 hr") — done below. Real,
 // compliance-scrubbed copy seeded via src/workflows/templates-seed.mjs. Despite the

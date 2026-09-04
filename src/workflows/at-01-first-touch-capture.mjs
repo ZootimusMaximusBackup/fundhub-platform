@@ -1,5 +1,5 @@
 // AT-01 — First Touch Capture.
-// Source: GHL-System-Map.md ATTRIBUTION WORKFLOWS section.
+// Source: the CRM system map ATTRIBUTION WORKFLOWS section.
 // AT-02 (Attribution Normalizer) is a defensive re-check of the same "don't
 // overwrite First Touch Date once set" rule this file already enforces via its own
 // gate — merged in rather than built as a separate file (see workflow-migration-table.md).

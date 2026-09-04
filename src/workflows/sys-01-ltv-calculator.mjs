@@ -1,5 +1,5 @@
 // SYS-01-LTV — Lifetime Value Calculator.
-// Source: GHL-System-Map.md DECISION & PROGRESS CONTROL section.
+// Source: the CRM system map DECISION & PROGRESS CONTROL section.
 // Trigger: round.funded. Accumulates each round's funded amount into a running
 // lifetime-value total — an explicit, unambiguous running sum (not an invented
 // formula), so built directly like SYS-01.

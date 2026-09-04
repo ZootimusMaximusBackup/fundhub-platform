@@ -4,7 +4,7 @@
 // src/http/read-api.mjs; this file is its SQL and nothing else.
 //
 // NOTE ON THE SOURCE. This reads the LOCAL inquiry_log table, which is not the
-// same thing as /api/inquiry — that endpoint proxies the external Airtable
+// same thing as /api/inquiry — that endpoint proxies the external spreadsheet
 // runtime and returns its shape. The screen's Work Queue columns map 1:1 onto
 // inquiry_log, so it reads the table directly rather than the proxy.
 //

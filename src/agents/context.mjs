@@ -1,6 +1,6 @@
 // Context fetcher — the shared memory read every agent turn uses.
 //
-// Master-spec §11 "shared memory" lived in GHL as contact.agent_context plus
+// Master-spec §11 "shared memory" lived in the CRM as contact.agent_context plus
 // whatever the Conversation AI injector pulled. It was never ported. This is
 // that port: one module, one shape, used by the runtime and exposed read-only
 // on the client control panel so a human sees exactly what the AI sees.

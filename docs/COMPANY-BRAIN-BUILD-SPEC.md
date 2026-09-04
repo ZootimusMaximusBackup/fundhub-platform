@@ -1,6 +1,6 @@
 # COMPANY BRAIN — BUILD SPEC v1
 
-**Status:** specced, not started. Behind the GHL cutover and the flagged screen queue.
+**Status:** specced, not started. Behind the CRM cutover and the flagged screen queue.
 **Owner decision required before build starts:** H-1, H-2, H-3 (bottom of this doc).
 
 ---
@@ -160,7 +160,7 @@ Steps 1–3 are a few hours with agents. Steps 4–7 are where the real time goe
 ## 8. Priority
 
 Behind, in order:
-1. GHL cutover — merge, migrations 110 + 111, env vars, routing flip
+1. The CRM cutover — merge, migrations 110 + 111, env vars, routing flip
 2. First real Journey Runner run
 3. automations.html — wire to real workflow registry
 4. agent-editor.html — remove sample data from live render path

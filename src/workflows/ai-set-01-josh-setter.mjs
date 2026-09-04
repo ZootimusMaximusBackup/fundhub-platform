@@ -1,5 +1,5 @@
 // AI-SET-01 — Josh Setter.
-// Source: GHL-System-Map.md AI SETTER section / vendor setter-prompt.js.
+// Source: the CRM system map AI SETTER section / vendor setter-prompt.js.
 // Trigger: booking.created. Dials Josh to confirm the Strategy Session.
 //
 // THE SCRIPT IS NOT REWRITTEN HERE. Prefer the live AG-04 row (Agent Editor).

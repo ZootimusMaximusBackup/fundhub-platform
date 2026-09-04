@@ -43,7 +43,7 @@ const claimed = (over = {}) => ({
 function fakeDb({
   optedOut = new Set(),
   routing = { email: { provider: "mailgun", enabled: true }, sms: { provider: "ghl_relay", enabled: true } },
-  client = { email: "person@example.com", ghl_contact_id: "ghlContact123", phone: "+15551234567" },
+  client = { email: "person@example.com", ghl_contact_id: "crmContact123", phone: "+15551234567" },
   rules = [],
   subject = "Your file",
   due = [],
@@ -102,7 +102,7 @@ const ENV = {
   MAILGUN_SEND_API_KEY: "key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   MAILGUN_SEND_DOMAIN: "mg.example.com",
   MAILGUN_SEND_FROM: "Fundhub <no-reply@mg.example.com>",
-  GHL_RELAY_API_KEY: "ghl-token",
+  GHL_RELAY_API_KEY: "crm-token",
   /* ADDED 2026-08-18 (T5-14). Outbound email now carries a signed unsubscribe
      link, appended at dispatch. Declared here so these tests exercise the real
      production path — with the secret set, the footer is built and the RFC 8058
@@ -286,15 +286,15 @@ describe("routing", () => {
     assert.ok(f.calls[0].url.includes("mailgun.net"), f.calls[0].url);
   });
 
-  test("sms routed to the GHL stub is rejected — never hits the network", async () => {
-    // Owner 2026-08-14: GHL account canceled. ghl_relay stays registered so
+  test("sms routed to the CRM stub is rejected — never hits the network", async () => {
+    // Owner 2026-08-14: the CRM account canceled. ghl_relay stays registered so
     // historical routing rows do not crash, but TRANSMITS=false and send()
     // permanently rejects. Live SMS is Twilio; this test pins the stub.
     const f = spy();
     const db = fakeDb();
     const res = await dispatchOne(db, claimed({ channel: "sms" }), { fetchImpl: f, env: ENV, now: MIDDAY });
     assert.strictEqual(res.outcome, OUTCOME.REJECTED);
-    assert.strictEqual(f.calls.length, 0, "GHL stub must not call the network");
+    assert.strictEqual(f.calls.length, 0, "The CRM stub must not call the network");
   });
 
   // No route is a HOLD. The alternative — picking a provider — would send a
@@ -423,7 +423,7 @@ describe("addressing", () => {
     assert.strictEqual(f.calls.length, 0);
   });
 
-  test("a client never synced to GHL cannot be texted", async () => {
+  test("a client never synced to the CRM cannot be texted", async () => {
     const f = spy();
     const db = fakeDb({ client: { ghl_contact_id: null } });
     const res = await dispatchOne(db, claimed({ channel: "sms" }), { fetchImpl: f, env: ENV, now: MIDDAY });

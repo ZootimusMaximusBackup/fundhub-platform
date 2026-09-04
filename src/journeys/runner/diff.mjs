@@ -146,7 +146,7 @@ function checkCondition(node, facts, journeyKey) {
   if (facts.clientColumns.includes(field)) {
     return finding("ok", "condition", node, journeyKey, `"${field}" is a column on clients`, { field });
   }
-  // custom_fields is jsonb and holds the ported GHL fields. Anything can be
+  // custom_fields is jsonb and holds the ported the CRM fields. Anything can be
   // written to it, so its presence cannot be proven from the schema — only
   // that this field is not a typed column. Whether anything WRITES it is the
   // real question and it is answered by the run, not the schema.

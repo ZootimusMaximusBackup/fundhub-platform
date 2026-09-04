@@ -1,5 +1,5 @@
 // S-04 — Call Booked -> Move to S2.
-// Source: GHL-System-Map.md SALES WORKFLOWS section.
+// Source: the CRM system map SALES WORKFLOWS section.
 // Trigger: booking.created (exact canonical match). Tags call:booked, sets
 // cf_call_outcome=booked, moves the sales card to the "booked" stage
 // (db/seed/002_pipelines.sql: sales.booked).

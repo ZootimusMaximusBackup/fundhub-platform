@@ -78,7 +78,7 @@ Effort key: **S** = small (hours), **M** = medium (days), **L** = large
 
 | | |
 |--|--|
-| **What exists** | `sendTemplated` (`src/workflows/messaging.mjs`) inserts `messages` with `status='queued'`, `provider='internal'`. ~26 Inngest workflows use it. Dispatcher (`src/messaging/dispatch.mjs`), outbox (`src/messaging/outbox.mjs`), Mailgun + GHL relay providers, CRM Outbox (`public/app/ops-admin.html` → `POST /api/messages-outbound`), Inngest sweeper `message-dispatch-sweeper` (**registered** in `src/workflows/index.mjs`, 49 functions), Netlify `staff-message-sweeper` every 5 minutes (**staff replies only**). |
+| **What exists** | `sendTemplated` (`src/workflows/messaging.mjs`) inserts `messages` with `status='queued'`, `provider='internal'`. ~26 Inngest workflows use it. Dispatcher (`src/messaging/dispatch.mjs`), outbox (`src/messaging/outbox.mjs`), Mailgun + the CRM relay providers, CRM Outbox (`public/app/ops-admin.html` → `POST /api/messages-outbound`), Inngest sweeper `message-dispatch-sweeper` (**registered** in `src/workflows/index.mjs`, 49 functions), Netlify `staff-message-sweeper` every 5 minutes (**staff replies only**). |
 | **What's missing** | (1) `INNGEST_EVENT_KEY` unset → sweeper never runs. (2) Provider credentials. (3) Per-org `messaging_settings.outbound_enabled`. (4) Owner decision to drain months of workflow backlog (staff sweeper deliberately skips it). (5) Rows written as `internal` need channel routing to a transmitting provider. |
 | **Files** | `src/workflows/messaging.mjs`, `src/messaging/dispatch.mjs`, `src/messaging/outbox.mjs`, `src/workflows/message-dispatch-sweeper.mjs`, `netlify/functions/staff-message-sweeper.mjs`, `api/messages-outbound.mjs`, `src/messaging/providers/*` |
 | **Work** | **M** (ops + owner decision). Staff replies already have a live path via compose → `dispatchMessage`. |
@@ -152,13 +152,13 @@ Effort key: **S** = small (hours), **M** = medium (days), **L** = large
 | **Files** | `scripts/drain-dead-letters.mjs`, `src/events/dead-letter.mjs` |
 | **Work** | **S** |
 
-#### B5. Workflows never migrated from GHL (documented gaps)
+#### B5. Workflows never migrated from the CRM (documented gaps)
 
 | | |
 |--|--|
 | **What exists** | Migration table documents missing N-07, BC-03, CT-00..03, AI agent layer, BS-01 task/ad enrollment gaps. |
 | **What's missing** | Whole workflows, not half-built ones. |
-| **Files** | docs referring to `workflow-migration-table` / GHL cutover notes |
+| **Files** | docs referring to `workflow-migration-table` / CRM cutover notes |
 | **Work** | **L** each |
 
 ---
@@ -320,12 +320,12 @@ Effort key: **S** = small (hours), **M** = medium (days), **L** = large
 | `INNGEST_EVENT_KEY` | unset | All 49 Inngest functions inert; bus bridge no-op |
 | `INNGEST_SIGNING_KEY` | unset | Inngest cannot securely invoke serve handler |
 | `messaging_settings.outbound_enabled` | per-org | Outbox drain refuses |
-| Mailgun / GHL / Twilio send env | unset | Dispatch cannot transmit |
+| Mailgun / CRM / Twilio send env | unset | Dispatch cannot transmit |
 | `DEMO_LOGINS_ENABLED` | unset | Seeded demo principals cannot log in |
 | `BANKING_MOCK_PROVIDER` | unset | Mock sync refuses |
 | `BANKING_PROVIDER` | `mock` | Real Plaid needs credentials + seam close |
 | `creative_providers` rows | none seeded | Generate throws |
-| Twilio provider `ENABLED` | `false` | Built; waiting A2P; routing still GHL by default |
+| Twilio provider `ENABLED` | `false` | Built; waiting A2P; routing still the CRM by default |
 
 ---
 
@@ -375,7 +375,7 @@ owner decision:
 
 ## Left unchecked (would need live env)
 
-- Whether Mailgun/GHL credentials are present in Netlify production.
+- Whether Mailgun/CRM credentials are present in Netlify production.
 - Whether `outbound_enabled` is true for any org.
 - Whether any `sales` / `funding_rounds` rows exist from historical imports.
 - Webhook stream / Commas double-count items from older AUDIT-FINDINGS (not re-proven here).
