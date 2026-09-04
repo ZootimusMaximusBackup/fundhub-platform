@@ -122,29 +122,28 @@ test("stored closer payload maps FICO, total, reasons — no invented numbers", 
   assert.equal(out.engine.fico.ex, 712);
   assert.equal(out.engine.fico.tu, 648);
   assert.equal(out.engine.afterFix, 214000);
-  /* Headline dollars come from the UnderwriteIQ stack, not the canned CRS 127500. */
-  const { toBureaus } = await import("../underwrite/adapter.mjs");
-  const { computeUnderwrite } = await import("../underwrite/engine.mjs");
-  const { applyStackedBusinessFunding } = await import("../underwrite/business-funding.mjs");
-  const adapter = toBureaus({
-    tradelines: [],
-    liabilities: [],
-    crsResults: [crs],
-    customFields: CLIENT.custom_fields,
-    businesses: []
-  });
-  const stacked = applyStackedBusinessFunding(
-    computeUnderwrite(adapter.bureaus, adapter.businessAgeMonths),
-    adapter.businessAges
-  );
-  assert.equal(out.engine.total, stacked.totals.total_combined_funding);
+  /* F15, owner-set 2026-09-03. This used to assert the opposite — that the
+     headline was a fresh UnderwriteIQ stack computed here at render time, "not
+     the canned CRS 127500". That recompute is what put $939,500 on a customer's
+     pre-approval slide while the engine had stored $199,350 and the client's own
+     portal was showing $199,350. The deck quotes the stored figure now, and
+     performs no funding arithmetic of its own. */
+  assert.equal(out.engine.total, 127500);
+  assert.equal(out.engine.totalSource, "stored engine estimate");
+  assert.equal(out.engine.totalBasis, "personal_only", "no company on this file");
   assert.equal(out.engine.negItems, 5);
   assert.equal(out.engine.reasons[0][0], "M2-013 · TU");
   assert.equal(out.income_estimates.experian.annual, 97000);
   assert.equal(out.income_estimates.equifax.annual, 81000);
 });
 
-test("two saved companies raise Present's UnderwriteIQ stack vs one, all else equal", async () => {
+/* F15, owner-set 2026-09-03: ONE stored number, no second calculation.
+   This test previously required the opposite — that adding a company row raised
+   the figure on the deck, because the deck re-ran the stack while it drew the
+   screen. A figure that should move when a company is added moves when the
+   engine runs again and STORES a new estimate. A sales screen never does its
+   own arithmetic on a number it reads out to a customer. */
+test("adding a company does not move the deck's figure — the stored estimate is the figure", async () => {
   const crs = {
     outcome_tier: "FULL_FUNDING",
     created_at: "2026-08-16T00:00:00Z",
@@ -189,8 +188,37 @@ test("two saved companies raise Present's UnderwriteIQ stack vs one, all else eq
     tradelines,
     businesses: [{ age_months: 30 }, { age_months: 30 }]
   }), { orgId: ORG, clientId: CID });
-  assert.ok(Number.isFinite(one.engine.total) && one.engine.total > 0);
-  assert.ok(two.engine.total > one.engine.total);
+  assert.equal(one.engine.total, 150000, "the stored preapprovals.totalCombined");
+  assert.equal(two.engine.total, one.engine.total);
+  /* The label still moves, because whether business money is in the stored
+     figure is a real difference the closer and the client must be able to see. */
+  assert.equal(one.engine.totalBasis, "personal_plus_business");
+  assert.equal(two.engine.totalBasis, "personal_plus_business");
+});
+
+/* Deck and portal quote ONE number. Chris, after the 2026-09-03 walk: "fix the
+   deck to the portal, not the reverse." They call the same reader, so they
+   cannot drift apart again. */
+test("the deck's figure is the client portal's figure", async () => {
+  const { prequalFromCustomFields } = await import("../http/portal-prequal.mjs");
+  const custom = { ...CLIENT.custom_fields, total_funding_estimate: 199350 };
+  const crs = {
+    outcome_tier: "FULL_FUNDING",
+    created_at: "2026-08-16T00:00:00Z",
+    result: {
+      environment: "production",
+      outcome: "FULL_FUNDING",
+      preapprovals: { totalCombined: 199350 },
+      scores: { perBureau: { ex: 762, tu: 758, eq: 770 } }
+    }
+  };
+  const out = await buildCloserDeck(fakeDb({
+    client: { ...CLIENT, outcome_tier: "FULL_FUNDING", custom_fields: custom },
+    crs
+  }), { orgId: ORG, clientId: CID });
+  assert.equal(out.engine.total, prequalFromCustomFields(custom));
+  assert.equal(out.engine.total, 199350);
+  assert.equal(out.engine.totalBasis, "personal_only");
 });
 
 test("empty CRS object is unavailable, not zeros", async () => {
@@ -200,6 +228,66 @@ test("empty CRS object is unavailable, not zeros", async () => {
   assert.equal(out.engine.available, false);
   assert.equal(out.engine.fico.ex, null);
   assert.equal(out.engine.total, null);
+});
+
+/* F11 — the deck printed 207883 where the client's own words belong, on the
+   slide headed "This is what you told us" and again as the biggest number on
+   the goal slide. ClickFunnels puts the answer-option ROW ID on cf_svy_<key>
+   and the words on cf_svy_<key>_label. */
+test("survey answers resolve to the client's words, never the option id", async () => {
+  const out = await buildCloserDeck(fakeDb({
+    client: {
+      ...CLIENT,
+      custom_fields: {
+        cf_svy_funding_target_amount: "207883",
+        cf_svy_funding_target_amount_label: "$200k - $400k",
+        cf_svy_planned_use: 207888,
+        cf_svy_planned_use_label: "Growth (marketing, inventory, hiring)",
+        cf_svy_has_business: "207918",
+        cf_svy_has_business_labels: ["Yes, 5+ years"],
+        // No label stored at all: a dash beats a database row id on a slide a
+        // customer is reading over a screen share.
+        cf_svy_business_revenue: "208124",
+        cf_svy_available_capital: "$100k+"
+      }
+    }
+  }), { orgId: ORG, clientId: CID });
+
+  assert.equal(out.survey.target, "$200k - $400k");
+  assert.equal(out.survey.use, "Growth (marketing, inventory, hiring)");
+  assert.equal(out.survey.hasBiz, "Yes, 5+ years");
+  assert.equal(out.survey.revenue, null, "a bare option id must not reach the slide");
+  assert.equal(out.survey.capital, "$100k+", "a real answer must survive untouched");
+});
+
+/* F16 — the panel read "pull: not started" and "tier: FULL_FUNDING" at the same
+   time, beside a full set of scores. Two records, one fact, and only one of
+   them was being asked. */
+test("a stored credit result is a finished pull, whatever the request row says", async () => {
+  const db = {
+    async query(sql) {
+      const s = String(sql);
+      if (/FROM clients c/i.test(s)) return { rows: [CLIENT] };
+      if (/FROM crs_results/i.test(s)) {
+        return { rows: [{ id: "crs-1", outcome_tier: "FULL_FUNDING", created_at: "2026-09-03T00:00:00Z", result: {} }] };
+      }
+      if (/FROM businesses/i.test(s)) return { rows: [] };
+      if (/FROM payment_links/i.test(s)) return { rows: [] };
+      if (/FROM soft_pull_requests/i.test(s)) return { rows: [] };
+      if (/FROM client_consents/i.test(s)) return { rows: [] };
+      throw new Error("unexpected sql: " + s.slice(0, 80));
+    }
+  };
+  const out = await buildCloserDeck(db, { orgId: ORG, clientId: CID });
+  assert.equal(out.soft_pull.pull_status, "complete");
+  assert.equal(out.soft_pull.pull_status_source, "crs_result");
+  assert.equal(out.soft_pull.outcome_tier, "FULL_FUNDING");
+});
+
+test("with no credit result at all the pull status stays honest", async () => {
+  const out = await buildCloserDeck(fakeDb({ client: CLIENT }), { orgId: ORG, clientId: CID });
+  assert.equal(out.soft_pull.pull_status, null);
+  assert.equal(out.soft_pull.pull_status_source, null);
 });
 
 test("selectedOfferKey: funding vs descent vs education", () => {

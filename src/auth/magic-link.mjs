@@ -106,10 +106,32 @@ const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     DEPLOY_PRIME_URL on a preview, so a deploy that sets neither of ours still
     mails a link to itself rather than to the wrong host. */
 export function magicLinkUrl(token, env = process.env) {
-  const base = String(
+  return `${portalBase(env)}/portal-login.html?t=${encodeURIComponent(token)}`;
+}
+
+/** portalLoginUrl — the same page with NO token on it.
+
+    THIS IS THE FALLBACK, AND IT EXISTS BECAUSE THE ALTERNATIVE IS A BLANK LINK.
+    renderTemplate() replaces an absent {{magic_link.url}} with the empty string
+    (src/lib/render-template.mjs), so a template that says "here is your link"
+    and is handed no link renders `<a href=""></a>` — a sentence promising a
+    door followed by nothing. Walk finding F2, 2026-09-03.
+
+    A tokenless link is not as good as a token: the client has to type their
+    address and wait for a second mail. It is enormously better than nothing,
+    because portal-login.html's whole job is to mail them a working one. Any
+    caller that cannot mint a token sends this instead of sending a hole. */
+export function portalLoginUrl(env = process.env) {
+  return `${portalBase(env)}/portal-login.html`;
+}
+
+/* PORTAL_BASE_URL names the site. Netlify sets URL on a production build and
+   DEPLOY_PRIME_URL on a preview, so a deploy that sets neither of ours still
+   points at itself rather than at the wrong host. */
+function portalBase(env = process.env) {
+  return String(
     env.PORTAL_BASE_URL || env.DEPLOY_PRIME_URL || env.URL || "https://fundhub.ai"
   ).replace(/\/+$/, "");
-  return `${base}/portal-login.html?t=${encodeURIComponent(token)}`;
 }
 
 /* ── REQUEST ────────────────────────────────────────────────────────────── */
@@ -209,6 +231,61 @@ export async function requestMagicLink(db, {
     token,
     linkId: ins.rows[0].id,
     expiresAt
+  };
+}
+
+/** issuePortalLinkForClient — a sign-in link for a client WE already know.
+
+    requestMagicLink() is written for a stranger typing an address into a form,
+    so it answers everybody identically and never says whether the address
+    matched. That is right there and wrong here: both callers of this function
+    are holding a `clients` row already, and "did the client get a link?" is a
+    question they are entitled to an answer to.
+
+      · api/soft-pull-approve.mjs — the account is created at purchase, and
+        before this nothing ever handed the client a credential for it. Walk
+        finding F31, 2026-09-03: every buyer got an active portal account they
+        could never sign into.
+      · the owner/admin "send portal sign-in link" action, because the reset
+        screen tells clients to ask an admin for one.
+
+    NO NEW ISSUING MACHINERY. It looks the address up and calls
+    requestMagicLink, so the TTL, the single use, the hash-only storage, the
+    rate limit and the queued email are all the ones already proven — a second
+    path that mints its own tokens is how one of them ends up weaker.
+
+    THE RATE LIMIT STILL APPLIES, and that is deliberate: an admin leaning on
+    the button is exactly the flood the limit is for. `limited` comes back true
+    so the caller can say so rather than reporting a send that did not happen.
+
+      → { ok: true, sent, outcome, url, expiresAt }   a link exists
+      → { ok: true, sent: false, limited: true }      asked too often, just now
+      → { ok: false, reason }                         no client, or no address */
+export async function issuePortalLinkForClient(db, {
+  orgId, clientId, ttlMinutes = LINK_TTL_MINUTES, queueEmail = true,
+  ip, userAgent, env = process.env
+} = {}) {
+  if (!clientId) return { ok: false, reason: "client_required" };
+
+  const org = orgId || (await resolveDefaultOrg(db));
+  const r = await db.query(
+    `SELECT email FROM clients WHERE id = $1 AND org_id = $2`, [clientId, org]);
+  const email = r.rows[0]?.email || null;
+  if (!email) return { ok: false, reason: "no_email_on_file" };
+
+  const out = await requestMagicLink(db, {
+    email, orgId: org, ip, userAgent, env, ttlMinutes, queueEmail
+  });
+  if (!out.ok) return { ok: false, reason: out.error || "request_failed" };
+  if (out.limited) return { ok: true, sent: false, limited: true, retryAfterMinutes: out.retryAfterMinutes };
+  if (!out.token) return { ok: true, sent: false, outcome: out.outcome || "no_account" };
+
+  return {
+    ok: true,
+    sent: out.sent === true,
+    outcome: "issued",
+    url: magicLinkUrl(out.token, env),
+    expiresAt: out.expiresAt
   };
 }
 

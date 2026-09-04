@@ -143,13 +143,38 @@ flowchart TD
 | 1.7 | Present → log disposition **Deposit** (key 1). Send contract (FUNDING-AGREEMENT). Send pay link ($3,000). | Contract email. Pay link email + text. Offer-bucket email (Funding DFY). |
 | 1.8 | Say "push payment #1". | Card moves to the funding board. Calendar shows task **Funding intake — pull CRS** for the advisor. Doc-collection hold set. |
 | 1.9 | On the funding board, move the card to **Apply Now**. | Tag `client:funding`. Next action: Collect Documents. Client funding inbox provisioned. |
-| 1.10 | Client Control Panel → **Generate Apps** | Lender match list appears with 30–50 lenders. Applications rows created. |
+| 1.10 | Client Control Panel → **Generate Apps** | The lender match list appears. **No application rows are created** — see the note under this table. How many lenders: **all 313** if the client has no state on file, or roughly **17–26** once a state is known (Texas 17, Florida 19, California 23). The screen draws the first 25 rows whatever the total, and 98 of the 313 lenders have no apply link, so those rows read "No URL" instead of an Apply button. |
 | 1.11 | Upload one document via the portal (any PDF) | Missing-documents hold clears. |
 | 1.12 | **Open Bank Inbox.** Forward yourself one "approved for $X" email as a bank reply, or mark an approval by hand. | Approval recorded with an amount. Card can move to Approved. |
 | 1.13 | Move card **Approved → Funded** | Funded amount on the round. **Success-fee invoice** exists in Finance OS = approvals × fee %. F07 email + text arrive. |
 | 1.14 | Open the client portal as Sim One (link from the booking-confirmation email, or ask for one on the sign-in page) | Funding section visible. Tiles: Funding snapshot unlocked. |
 
 **Known before you start:** the Owner "funded" tile counts a client flag, not rounds. It can read 0 while the round is funded. Note it, do not chase it.
+
+**Two corrections to step 1.10, measured 2026-09-03.**
+
+1. **"30–50 lenders" was never true.** The matcher checks four things only: is the
+   lender switched on, does the client's state appear in the lender's state list, does
+   the lender pull a bureau we are protecting, and then it spreads the pulls across
+   bureaus. It does not read the credit score, the card use, the income or the funding
+   estimate. Counted against the lender book in the repo
+   (`credentials/lenders-audit/lenders-audited.csv`, 313 lenders, all switched on),
+   the answer is 313 with no state on file and roughly 17–26 with one. Nothing in the
+   code or the data produces a range of 30 to 50.
+
+2. **Generate Apps creates no application rows.** The button re-reads the lender match
+   list and redraws it. An application row is created one at a time, the first time
+   someone presses **Bank yes** or **Bank no** on a single lender row
+   (`src/applications/status.mjs`, `logBankDecision`). That is deliberate: a row means
+   somebody actually applied, and pre-creating 25 of them would put 25 applications on
+   the file that nobody sent. Expect **0 rows** after 1.10 and the first row at 1.12.
+
+**Also known, and not a bug to chase:** the funding estimate does not read the credit
+score. The underwriting rules in `vendor/underwriteiq-full/api/lite/crs/` apply exactly
+three factors — the outcome tier, the card-use band, and whether the file is thin. The
+score reaches the money only by deciding the tier, and the two top tiers both carry a
+multiplier of 1.0. So two clients with the same accounts and scores of 724 and 762 get
+the same dollar figure, on purpose.
 
 ---
 
@@ -178,9 +203,29 @@ flowchart TD
 | 2.3 | Present → pick Credit repair, done-for-you → log disposition → send contract → send pay link | Contract CREDIT-REPAIR-AGREEMENT. Pay link $1,000. **Watch:** the disposition logs as *downsell*, not deposit. That is how the code is written; decide if you like it. |
 | 2.4 | "push payment #2" | Card on the **Optimization** board at Intake. |
 | 2.5 | Enroll the client in the repair program (Specialist desk, Repair tab). **Finding if there is no button:** the code has the endpoint but no automatic enroll on payment. | Chip shows program Full, 6 rounds. Portal tile Metro-2 letter pack unlocked. |
-| 2.6 | Specialist desk → Stage → Generate letters | Letters generated from the real report (0 letters if no CRS, that is correct). |
+| 2.6 | Specialist desk → Stage → Generate letters | **Three letters — one to Experian, one to Equifax, one to TransUnion.** Each names the derogatory accounts that bureau actually reports: Experian gets the late Capital One card, the Midland collection and the Synchrony charge-off; Equifax gets the late card, the Portfolio Recovery collection and the Synchrony charge-off; TransUnion gets the late card and both collections. Still 0 letters if there is no credit file on record — that is correct. |
 | 2.7 | Open each letter PDF. Read it as the client. | Correct name, address, bureau, items. This is the deliverable. Judge it hard. |
 | 2.8 | **Do not click Send with mail.** | Walk ends here. |
+
+**What changed on 2026-09-03, and why the letters exist now.**
+
+Before this, the repair walk produced **zero** letters. The letter engine only fired on a
+Metro 2 reporting defect — a contradiction inside the bureau's own data — and a collection
+that is reported cleanly has none. So a client whose whole file was collections and a
+charge-off got an empty desk.
+
+Owner decision, 2026-09-03: **any derogatory item deserves a letter, but only for a client
+on the repair path.** So every collection, charge-off and late payment now produces a
+claim, and a client who is not on a repair path still gets nothing no matter what their
+file holds.
+
+Two things to check when you read the letters at 2.7:
+
+* Each item names the account and the last four digits ("ending 6642"). If it says the
+  creditor with no digits, tell us.
+* The letter must **not** claim a Metro 2 defect it cannot show. A letter built only from
+  derogatory items says "FCRA dispute" in the subject line and never says Metro 2. A letter
+  that also carries an engine finding says Metro 2, because then there really is one.
 
 ---
 

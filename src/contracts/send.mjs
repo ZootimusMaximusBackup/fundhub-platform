@@ -45,6 +45,7 @@ import { normaliseFields, applyAutoFill, assertSignable } from "./fields.mjs";
 import { replaceSigners, listSigners, normaliseSigners } from "./signers.mjs";
 import { loadTemplatePdf } from "./upload.mjs";
 import { notifySigners } from "./notify.mjs";
+import { defaultContractValues } from "../config/offers.mjs";
 
 export const CONTRACT_MIME = "text/html";
 
@@ -124,6 +125,35 @@ export async function listContracts(db, {
 }
 
 /**
+ * withTemplateDefaults — the blanks, filled from the catalogue.
+ *
+ * OWNER DECISION 2026-09-03 (F27): the "wording for this client" panel comes out
+ * of the closer deck. Chris, verbatim: "it should already have that information.
+ * Just send it. We don't need to, like, enter in the information." So a send
+ * that carries NO typed values at all has to produce a complete document, and
+ * the only honest place to guarantee that is here — in the write path every
+ * screen goes through — rather than in whichever screen happens to be posting.
+ *
+ * A caller's value wins, but only if it is actually a value. An empty string
+ * from a form box nobody filled in must NOT beat the catalogue: a form that
+ * posts `{"deposit": ""}` would otherwise render a fee line with nothing in it,
+ * which is worse than a fee line that is wrong because nobody notices it.
+ *
+ * defaultContractValues() returns {} for a template it does not know — an org's
+ * own copy, or PARTNER-LICENSE, whose blanks are genuinely per-partner and are
+ * passed in by src/contracts/partner-license.mjs. Those callers are untouched.
+ */
+function withTemplateDefaults(templateKey, values) {
+  const filled = { ...defaultContractValues({ templateKey }) };
+  for (const [k, v] of Object.entries(values || {})) {
+    if (v == null) continue;
+    if (typeof v === "string" && v.trim() === "") continue;
+    filled[k] = v;
+  }
+  return filled;
+}
+
+/**
  * createDraft — a contract that exists but has no words yet.
  *
  * Kept separate from send() so a staff member can fill the blanks, look at the
@@ -162,6 +192,11 @@ export async function createDraft(db, {
     [owns.rows[0].first_name, owns.rows[0].last_name].filter(Boolean).join(" ") || "Client";
   const clientEmail = owns.rows[0].email || null;
 
+  /* Filled here, at the moment the draft is written, so merge_values on the row
+     IS what the document will render from. Filling at send instead would leave
+     the stored record disagreeing with the words that went out. */
+  const mergeValues = withTemplateDefaults(template.template_key, values);
+
   const { rows } = await db.query(
     `INSERT INTO contracts
        (org_id, client_id, staff_id, template_id, template_key, title, kind, subtype,
@@ -179,7 +214,7 @@ export async function createDraft(db, {
     [orgId, clientId, subjectStaffId || null, template.id, template.template_key,
      (title && String(title).trim()) || template.name,
      template.kind, template.subtype,
-     JSON.stringify(values || {}), template.signature_required, staffId,
+     JSON.stringify(mergeValues), template.signature_required, staffId,
      template.source_kind || "text",
      /* The template's boxes are copied onto the draft NOW rather than at send.
         A draft is where a sender adjusts what a particular contract says, and
@@ -213,12 +248,15 @@ export async function saveDraft(db, { orgId, id, values = {}, title = null } = {
       "Void it and start a new one if it needs to change.",
       "already_sent");
   }
+  /* Same catalogue fill as createDraft. A save that posts only the boxes a
+     screen happens to show must not blank the ones it does not. */
   const { rows } = await db.query(
     `UPDATE contracts SET merge_values = $3::jsonb,
             title = COALESCE(NULLIF(btrim($4), ''), title), updated_at = now()
       WHERE id = $1::uuid AND org_id = $2::uuid
       RETURNING ${CONTRACT_COLUMNS}`,
-    [id, orgId, JSON.stringify(values || {}), title == null ? "" : String(title)]
+    [id, orgId, JSON.stringify(withTemplateDefaults(current.template_key, values)),
+     title == null ? "" : String(title)]
   );
   return rows[0];
 }
@@ -326,7 +364,12 @@ export async function send(db, {
     });
   }
 
-  const values = current.merge_values || {};
+  /* A draft written before the catalogue fill existed carries whatever the old
+     screen posted. Filling again here means an old draft still sends a complete
+     document, and the value is written back onto the row in the same freeze
+     UPDATE below so the stored record never disagrees with the words that went
+     out. Drafts created since simply come back unchanged. */
+  const values = withTemplateDefaults(current.template_key, current.merge_values);
   const stillEmpty = missingRequired(template.manual_fields, values);
   if (stillEmpty.length) {
     throw badRequest(
@@ -381,13 +424,19 @@ export async function send(db, {
         SET status = 'sent', rendered_body = $3, body_sha = $4,
             document_id = $5, document_version_id = $6,
             signature_statement = $7, signature_required = $8,
+            merge_values = $11::jsonb,
             sent_at = $9, sent_by = $10::uuid, updated_at = now()
       WHERE id = $1::uuid AND org_id = $2::uuid AND status = 'draft'
       RETURNING ${CONTRACT_COLUMNS}`,
     [current.id, orgId, body, sha,
      registered.document?.id || null, registered.version?.id || null,
      template.signature_statement, template.signature_required,
-     at, staffId]
+     at, staffId,
+     /* The values the words were actually rendered from, frozen alongside them.
+        Still a 'draft' row at this instant, so trg_contracts_frozen permits it —
+        the same reason rendered_body and signature_statement can be written
+        here. Every later change is refused. */
+     JSON.stringify(values)]
   );
 
   if (!rows[0]) {

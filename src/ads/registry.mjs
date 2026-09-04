@@ -162,6 +162,19 @@ export function adsWithTag(tag, value, { registry = loadRegistry() } = {}) {
   });
 }
 
+/* Ad ids the registry lists with no title, in file order.
+
+   The title is the word after the dash in utm_content (42-ringlights → 42 +
+   "ringlights"). Only the owner can name an ad, so an untitled one cannot be
+   fixed by an agent — but it is not harmless: every report grouped by ad name
+   shows a bare digit with no label, and the closer screen prints the id where
+   the ad's name belongs. 21 of the 24 seeded ads were untitled on 2026-09-03
+   (F7). scripts/ads/check-registry-titles.mjs turns this list into a
+   non-zero exit so the gap cannot quietly ship. */
+export function untitledAdIds({ registry = loadRegistry() } = {}) {
+  return registry.ads.filter((ad) => ad.title == null || ad.title === "").map((ad) => ad.id);
+}
+
 /** Test hook: forget the cached file and the once-per-id warning set. */
 export function _resetRegistry() {
   cache = null;

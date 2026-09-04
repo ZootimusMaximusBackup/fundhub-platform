@@ -8,7 +8,8 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import {
-  requestMagicLink, verifyMagicLink, magicLinkUrl, normalizeEmail,
+  requestMagicLink, verifyMagicLink, magicLinkUrl, portalLoginUrl,
+  issuePortalLinkForClient, normalizeEmail,
   LINK_TTL_MINUTES, BOOKING_CONFIRM_LINK_TTL_MINUTES, LINK_LIMITS, MAGIC_LINK_TEMPLATE_KEY
 } from "./magic-link.mjs";
 
@@ -79,6 +80,52 @@ describe("magic link — no database needed", () => {
       // Ours wins over Netlify's when both are set.
       assert.ok(magicLinkUrl("t", { PORTAL_BASE_URL: "https://ours.test", URL: "https://theirs.test" })
         .startsWith("https://ours.test/"));
+    });
+  });
+
+  describe("the tokenless fallback", () => {
+    // Walk finding F2, 2026-09-03: the booking confirm email said "here is your
+    // link to sign in" and then showed an empty one, because an absent
+    // {{magic_link.url}} renders as "". A caller that cannot mint a token sends
+    // this instead of sending a hole.
+    test("points at the same sign-in page and carries no token", () => {
+      const url = portalLoginUrl({ PORTAL_BASE_URL: "https://x.test" });
+      assert.equal(url, "https://x.test/portal-login.html");
+      assert.ok(!url.includes("?"));
+      assert.ok(!url.includes("/api/"));
+    });
+
+    test("resolves its host exactly the way the tokened link does", () => {
+      for (const env of [
+        { PORTAL_BASE_URL: "https://ours.test", URL: "https://theirs.test" },
+        { DEPLOY_PRIME_URL: "https://preview.test" },
+        { URL: "https://prod.test" },
+        {}
+      ]) {
+        assert.equal(
+          portalLoginUrl(env) + "?t=tok",
+          magicLinkUrl("tok", env),
+          `hosts diverged for ${JSON.stringify(env)}`
+        );
+      }
+    });
+  });
+
+  describe("issuePortalLinkForClient", () => {
+    test("no client id is refused without a query", async () => {
+      const out = await issuePortalLinkForClient(noDb, { orgId: "org-1" });
+      assert.equal(out.ok, false);
+      assert.equal(out.reason, "client_required");
+    });
+
+    test("a client with no address on file is a named refusal, not a silent no-op", async () => {
+      // The caller is an owner looking at a client record, so "nowhere to send
+      // it" is a sentence they can act on — unlike the public form, which must
+      // answer every address identically.
+      const db = { async query() { return { rows: [{ email: null }] }; } };
+      const out = await issuePortalLinkForClient(db, { orgId: "org-1", clientId: "cl-1" });
+      assert.equal(out.ok, false);
+      assert.equal(out.reason, "no_email_on_file");
     });
   });
 

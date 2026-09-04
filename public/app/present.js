@@ -71,6 +71,92 @@
     "S-23": { title: "The close. Logistics.", lines: ["Awesome. Let's get this going. I'm sending the agreement right now. Best email for that?", "Review it while I get your billing info. What's your billing address?", "Collect the card. Fire the pay link. Keep them on the line until it posts."], watch: "Do not celebrate. Do not over-explain. No time to second-guess." },
     "S-24": { title: "Wrap", lines: ["Within 24 business hours your advisor reaches out and starts on your file. Within 72 business hours your first applications are submitted.", "Any questions before we wrap? ... Congratulations, [First Name]. You made a great decision. We're going to get you funded. Talk soon."], watch: "Confirm the payment posted before ending the call. Then log the disposition." }
   };
+  /* SECTION 07 IS PER OFFER, NOT PER ROUTE (F23, owner: "this is not accurate").
+     The FUND: / REPAIR: / EDU: line filter has three buckets and the descent
+     ladder has six rungs, so on 2026-09-03 a client who bought the $5,000
+     Funding Mastery COURSE was read the funding wrap out loud: "within 24
+     business hours your advisor reaches out", "within 72 business hours your
+     first applications are submitted", "we're going to get you funded". None of
+     that happens on an education sale — no advisor works the file, no
+     application is submitted, and nobody is funding him as a result of it. The
+     client half of the same screen was already correct; only the closer's
+     script was hardcoded to the funding path.
+
+     So the close script is keyed to the offer that was actually selected. Every
+     rung on the ladder has its own S-23 and S-24 here, and adding a rung
+     without adding its wrap is a missing key, not a silent wrong promise.
+     COMPLIANCE REVIEW REQUIRED — funding-outcome messaging to a consumer. */
+  var CLOSE_LOGISTICS = {
+    title: "The close. Logistics.",
+    lines: [
+      "Awesome. Let's get this going. I'm sending the agreement right now. Best email for that?",
+      "Review it while I get your billing info. What's your billing address?",
+      "Collect the card. Fire the pay link. Keep them on the line until it posts."
+    ],
+    watch: "Do not celebrate. Do not over-explain. No time to second-guess."
+  };
+  var CLOSE_TALK = {
+    FUNDING_DFY: {
+      "S-23": CLOSE_LOGISTICS,
+      "S-24": {
+        title: "Wrap",
+        lines: [
+          "Within 24 business hours your funding advisor reaches out and starts on your file. Within 72 business hours your first applications are submitted.",
+          "Any questions before we wrap? ... Congratulations, [First Name]. You made a great decision. We're going to get to work on this. Talk soon."
+        ],
+        watch: "Confirm the payment posted before ending the call. Then log the disposition."
+      }
+    },
+    REPAIR_DFY: {
+      "S-23": CLOSE_LOGISTICS,
+      "S-24": {
+        title: "Wrap",
+        lines: [
+          "Round one goes out today, built from the pull we just ran. It lands in your email and in your dashboard.",
+          "The bureaus have 30 to 45 days to answer each round, and you watch every dispute and every response happen live.",
+          "Any questions before we wrap? ... Congratulations, [First Name]. Talk soon."
+        ],
+        watch: "No advisor and no applications on this sale — it is credit repair. Never promise a deletion, a score, or a result. Confirm the payment posted, then log the disposition."
+      }
+    },
+    REPAIR_TRIAL: {
+      "S-23": CLOSE_LOGISTICS,
+      "S-24": {
+        title: "Wrap",
+        lines: [
+          "We run your first full round today, bureaus and creditors, built from the pull we just ran.",
+          "You watch every dispute and every response in your dashboard. After the round you decide whether to keep going.",
+          "Any questions before we wrap? ... Talk soon, [First Name]."
+        ],
+        watch: "One round, then their decision. Do not describe it as the full program. Never promise a deletion, a score, or a result."
+      }
+    },
+    UWIQ_DELIVERABLES: {
+      "S-23": CLOSE_LOGISTICS,
+      "S-24": {
+        title: "Wrap",
+        lines: [
+          "Your deliverables generate from the pull we just ran and land in your email today, with the how-to course.",
+          "You run it at your own pace. Nobody is working the file for you on this one — that's the whole point of it.",
+          "Whenever you want us to run the process for you instead, we're here. Any questions before we wrap?"
+        ],
+        watch: "This is a do-it-yourself purchase. No advisor, no applications submitted, no funding promised."
+      }
+    },
+    FUNDING_MASTERY: {
+      "S-23": CLOSE_LOGISTICS,
+      "S-24": {
+        title: "Wrap",
+        lines: [
+          "Your access gets set up on this call, and the deliverables from today's pull land in your email.",
+          "You work through the program at your own pace. This is education — you do the work, on your own file.",
+          "Whenever you're ready for us to run the full funding process for you, we're here. Any questions before we wrap?"
+        ],
+        watch: "This is an education sale. Do not promise an advisor, submitted applications, or funding."
+      }
+    }
+  };
+
   var OBJECTIONS = [
     { t: "Think about it", jump: "S-08", jumpLabel: "Show the process", lines: ["I want you to make the best decision for your business. Can I ask, when you say you need to think about it, is it the process you're unsure about, or the $3,000 deposit?", "Isolate it. 'Think about it' is never the real objection.", "If they can't articulate it: you told me you're a 9 on the process, you need [Amount] for [goal], and this has held you back [X time]. What's really going on? Pause. Let them fill the silence."] },
     { t: "$3K is a lot", jump: "S-20", jumpLabel: "Show the math", lines: ["Isolate: finances aside, anything else keeping you from being 100 percent certain?", "Should vs how: you're not in a SHOULD I place, you're in a HOW can I place. Right?", "Context: you just saw the system pre-approve you for [Amount]. The $3,000 is an advance on a fee you'd pay anyway. Is $3,000 a lot compared to [Amount] deployed in two weeks?"] },
@@ -94,8 +180,10 @@
     checks: {}, costNum: "", obj: null, showRef: false, toast: "", clientOnly: false,
     survey: {}, engine: { available: false, reason: "engine data unavailable", fico: {}, reasons: [] },
     offers: [], softPull: null, ebookDollars: "", saleMotion: "", loaded: false, error: null,
-    contractOpen: false, contractWordings: [], contractTplId: "", contractLink: "",
-    contractMsg: "", contractBusy: false,
+    contractLink: "", contractMsg: "",
+    /* One entry per send control: whether it is in flight, when it last went
+       out, and how many times. F24 — see sendBtn below. */
+    sends: {}, moreOpen: false, repairReferral: false,
     stagedLetters: [], repairBusy: false, repairMsg: "", amountPaidDollars: "",
     businesses: [], incBusy: "", incMsg: ""
   };
@@ -105,6 +193,18 @@
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
   function dash(v) { return v == null || v === "" ? "—" : String(v); }
+  /* F11 — the client's words, never the answer-option row id.
+     ClickFunnels stores the option ID on cf_svy_<key> and the words on
+     cf_svy_<key>_label. The server resolves the label first (closer-deck.mjs
+     surveyAnswer); this is the second line of defence, so a payload that still
+     carries a bare 5+ digit id shows a dash instead of printing 207883 on the
+     slide headed "This is what you told us" — or as the hero number on the
+     goal slide, where it was the biggest thing on the customer's screen. */
+  function isOptionId(v) {
+    if (typeof v === "number") return v >= 10000;
+    return typeof v === "string" && /^\d{5,}$/.test(v.trim());
+  }
+  function answer(v) { return isOptionId(v) ? null : v; }
   function money(n) {
     if (n == null || !Number.isFinite(Number(n))) return "—";
     return "$" + Number(n).toLocaleString("en-US");
@@ -159,58 +259,12 @@
     var o = offer(selectedOfferKey());
     return (o && o.contractTemplateKey) || null;
   }
-  function defaultContractBlankValues() {
-    var key = resolveContractTemplateKey();
-    var o = offer(selectedOfferKey());
-    var price = o && o.priceDisplay;
-    var base = { company_name: "Fundhub", company_email: "support@fundhub.ai" };
-    if (key === "SOFT-PULL-CONSENT") return Object.assign({}, base, { consent_days: "90" });
-    if (key === "REPAIR-TRIAL-AGREEMENT") {
-      return Object.assign({}, base, {
-        trial_fee: price || "$200",
-        scope: "One done-for-you dispute round. You watch progress in your portal."
-      });
-    }
-    if (key === "CREDIT-REPAIR-AGREEMENT") {
-      return Object.assign({}, base, {
-        monthly_fee: price || "$1,000",
-        term_days: "180",
-        scope: "Done-for-you credit repair: disputes, escalations, and dashboard access."
-      });
-    }
-    if (key === "FUNDING-AGREEMENT") {
-      var pct = (offer("FUNDING_DFY") && offer("FUNDING_DFY").successFeePercent) || 10;
-      return Object.assign({}, base, {
-        deposit: price || "$3,000",
-        success_fee: pct + "% of funded amount",
-        fee_due: "within 7 days of funding",
-        term_days: "180",
-        scope: "Done-for-you funding: matching, rounds, and inquiry sweeps."
-      });
-    }
-    if (key === "REPAIR-AND-FUNDING-AGREEMENT") {
-      var fund = offer("FUNDING_DFY");
-      var repair = offer("REPAIR_DFY");
-      var feePct = (fund && fund.successFeePercent) || 10;
-      return Object.assign({}, base, {
-        deposit: (fund && fund.priceDisplay) || "$3,000",
-        repair_fee: (repair && repair.priceDisplay) || "$1,000",
-        success_fee: feePct + "% of funded amount",
-        fee_due: "within 7 days of funding",
-        term_days: "180",
-        repair_scope: "Credit repair in parallel while funding rounds run.",
-        funding_scope: "Full done-for-you funding program."
-      });
-    }
-    if (key === "FUNDING-MASTERY-AGREEMENT") {
-      return Object.assign({}, base, {
-        program_fee: price || "$5,000",
-        term_days: "365",
-        scope: "Funding Mastery program access: the full A-to-Z course on your own file. This is education. You do the work."
-      });
-    }
-    return base;
-  }
+  /* No contract defaults live in this file any more, and that is the fix, not
+     an omission. The server fills every blank from the offer catalogue
+     (defaultContractValues in src/config/offers.mjs) — one price list, one
+     seller name. A copy of them here is what let a typed Company name land on
+     the agreement as the SELLER (F28). Present sends the client and the
+     template and nothing else. */
   function lettersOk() {
     var o = offer(selectedOfferKey());
     return !!(o && o.letters);
@@ -258,6 +312,13 @@
       '<div class="slide-body">' + inner + "</div></div>";
   }
   function kicker(t) { return '<div class="kicker"><span class="mono" style="color:var(--gray)">' + esc(t) + "</span></div>"; }
+  /* F22 — S-19, S-20 and S-23 put a band of content at the top of the slide and
+     left the bottom two thirds blank white. This is the half the CUSTOMER sees
+     on a screen share, and Chris was reading it at 50% zoom, where it fell
+     apart. Every other slide in the deck already centres its body; these did
+     not. `roomy` also opens the row rhythm with the slide height, so the block
+     fills and balances the space at any zoom rather than huddling at the top. */
+  function fill(inner) { return '<div class="fillslide roomy">' + inner + "</div>"; }
   function h1(t, size) { return '<h1 class="h1"' + (size ? ' style="font-size:' + size + '"' : "") + ">" + t + "</h1>"; }
   function sub(t) { return '<p class="sub">' + t + "</p>"; }
   function fine(t) { return '<p class="fine">' + t + "</p>"; }
@@ -337,6 +398,18 @@
       return row(esc(name), n, subs[i] || "");
     }).join("");
   }
+  /* What the pre-approval figure actually covers (F15). Never a guess: the
+     server sets this from whether the client has a real company on file. */
+  function basisLine(d) {
+    if (!d || d.total == null) return "";
+    if (d.totalBasis === "personal_plus_business") {
+      return "Personal credit lines plus business funding on the companies on your file. All amounts, rates and terms are set by funding partners based on qualification.";
+    }
+    if (d.totalBasis === "personal_only") {
+      return "Personal credit lines only — no business is on your file. All amounts, rates and terms are set by funding partners based on qualification.";
+    }
+    return "All amounts, rates and terms are set by funding partners based on qualification.";
+  }
   function unavail() {
     return '<div class="unavail"><span class="mono">Your numbers are not on this file yet</span><p class="sub" style="margin-top:6px">Nothing here is guessed.</p></div>';
   }
@@ -366,7 +439,7 @@
     }
 
     if (c === "S-01") {
-      return slide("S-01", "Session", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + kicker("Funding strategy session") + h1(esc(dash(sv.name)), "clamp(28px,4.2vw,52px)") + '<div style="font-family:var(--mono);font-size:clamp(11px,1.15vw,13px);color:var(--gray);margin-top:10px">' + esc(dash(sv.entity)) + '</div><div class="mono" style="margin-top:16px;letter-spacing:.06em">Customer-initiated · Soft inquiry · No obligation</div><div style="margin-top:18px;max-width:180px" class="hair"></div></div>');
+      return slide("S-01", "Session", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + kicker("Funding strategy session") + h1(esc(dash(sv.name)), "clamp(28px,4.2vw,52px)") + '<div style="font-family:var(--mono);font-size:clamp(11px,1.15vw,13px);color:var(--gray);margin-top:10px">' + esc(dash(answer(sv.entity))) + '</div><div class="mono" style="margin-top:16px;letter-spacing:.06em">Customer-initiated · Soft inquiry · No obligation</div><div style="margin-top:18px;max-width:180px" class="hair"></div></div>');
     }
     if (c === "S-02") {
       return slide("S-02", "How this call works", kicker("Process") + h1("A defined path. No obligation at any step.") + pathRows([
@@ -378,9 +451,9 @@
     if (c === "S-03") {
       var inc = state.incomeEstimates || {};
       return slide("S-03", "Your answers", kicker("Discovery") + h1("This is what you told us. Anything change?") + '<div style="margin-top:8px">' +
-        row("Funding target", esc(dash(sv.target))) +
-        row("Planned use", esc(dash(sv.use))) +
-        row("Business", esc(dash(sv.hasBiz)), esc(sv.entity || "")) +
+        row("Funding target", esc(dash(answer(sv.target)))) +
+        row("Planned use", esc(dash(answer(sv.use)))) +
+        row("Business", esc(dash(answer(sv.hasBiz))), esc(answer(sv.entity) || "")) +
         businesses().map(function (b) {
           return row(
             esc(b.name || "Business"),
@@ -388,15 +461,20 @@
             b.incorporated_date ? "Incorporated" : "We need the month and year to price the file"
           );
         }).join("") +
-        row("Monthly revenue", esc(dash(sv.revenue))) +
-        row("Annual income (they said)", esc(dash(sv.income))) +
+        row("Monthly revenue", esc(dash(answer(sv.revenue)))) +
+        row("Annual income (they said)", esc(dash(answer(sv.income)))) +
         row("Income Insight (Experian)", esc(dash(moneyYr(inc.experian)))) +
         row("IncomeView (Equifax)", esc(dash(moneyYr(inc.equifax)))) +
-        row("Capital on hand", esc(dash(sv.capital))) +
-        row("What changes with the money", esc(dash(sv.motivation))) + "</div>");
+        row("Capital on hand", esc(dash(answer(sv.capital)))) +
+        row("What changes with the money", esc(dash(answer(sv.motivation)))) + "</div>");
     }
     if (c === "S-04") {
-      return slide("S-04", "The goal", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + kicker("Begin with the end in mind") + h1(esc(dash(sv.target)), "clamp(32px,5.2vw,64px)") + sub(esc(dash(sv.use)) + ". What does the business look like 6 to 12 months from now with this deployed?") + '<div style="margin-top:16px;max-width:200px" class="hair"></div></div>');
+      var goal = answer(sv.target);
+      var goalUse = answer(sv.use);
+      /* No target on file: ask for it rather than putting a dash in 64px type
+         on the customer's screen. The sentence below drops its lead-in the
+         same way, so the copy never reads "—. What does the business…". */
+      return slide("S-04", "The goal", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + kicker("Begin with the end in mind") + h1(goal ? esc(goal) : "How much do you need?", "clamp(32px,5.2vw,64px)") + sub((goalUse ? esc(goalUse) + ". " : "") + "What does the business look like 6 to 12 months from now with this deployed?") + '<div style="margin-top:16px;max-width:200px" class="hair"></div></div>');
     }
     if (c === "S-05") {
       return slide("S-05", "The assessment", kicker("Next step") + h1("See exactly what you qualify for.") + sub("One soft-pull assessment. The engine reads your profile the way funding partners do, before you commit to anything.") + stats([[price("SOFT_PULL"), "one-time assessment"], ["Soft inquiry", "no score impact"], ["60 seconds", "results on this call"]]));
@@ -409,7 +487,14 @@
     }
     if (c === "S-07") {
       if (funding) {
-        return slide("S-07", "Your results", kicker("Pre-approved for approximately") + h1(money(d.total), "clamp(32px,5.2vw,64px)") + sub("Across multiple credit lines with 0 percent introductory rates.") + scores(d.fico));
+        /* COMPLIANCE REVIEW REQUIRED — the client-facing pre-approval figure.
+           F15: this said "$939,500" for a client whose own record read "No
+           businesses on file", because the deck stacked business funding onto
+           personal money off a loose age field. The number is now the stored
+           engine estimate, the same one the client's portal shows, and the line
+           under it says out loud what the money covers so nobody has to guess
+           whether business funding is in it. */
+        return slide("S-07", "Your results", kicker("Pre-approved for approximately") + h1(money(d.total), "clamp(32px,5.2vw,64px)") + sub("Across multiple credit lines with 0 percent introductory rates.") + fine(basisLine(d)) + scores(d.fico));
       }
       return slide("S-07", "Your results", kicker(dash(d.negItems) + " negative items found · read the way lenders read it") + h1("Here's what the AI found.") + scoreBars(d.fico) + '<div style="margin-top:8px">' + reasonsList(d, false) + "</div>" + sub("All fixable. Cleaned up, this file projects to " + money(d.afterFix) + " in approvals."));
     }
@@ -497,19 +582,19 @@
     }
     if (c === "S-19") {
       if (edu) {
-        if (rung === 0) return slide("S-19", "The investment", kicker("Funding Mastery, A to Z") + h1(price("FUNDING_MASTERY"), "clamp(28px,4.4vw,52px)") + '<div style="margin-top:8px;max-width:560px">' + row("The full Fundhub program", "A to Z", "Credit, optimization, and funding execution, start to finish") + row("Your own file", "Included data", "You work on your real reports, not examples") + "</div>" + financingNote("FUNDING_MASTERY"));
-        return slide("S-19", "The investment", kicker("Course one, everything from your file") + h1(price("UWIQ_DELIVERABLES"), "clamp(24px,3.8vw,44px)") + '<div style="margin-top:6px;max-width:580px">' + deliverableRows() + "</div>" + financingNote("UWIQ_DELIVERABLES"));
+        if (rung === 0) return slide("S-19", "The investment", fill(kicker("Funding Mastery, A to Z") + h1(price("FUNDING_MASTERY"), "clamp(28px,4.4vw,52px)") + '<div style="margin-top:8px;max-width:560px">' + row("The full Fundhub program", "A to Z", "Credit, optimization, and funding execution, start to finish") + row("Your own file", "Included data", "You work on your real reports, not examples") + "</div>" + financingNote("FUNDING_MASTERY")));
+        return slide("S-19", "The investment", fill(kicker("Course one, everything from your file") + h1(price("UWIQ_DELIVERABLES"), "clamp(24px,3.8vw,44px)") + '<div style="margin-top:6px;max-width:580px">' + deliverableRows() + "</div>" + financingNote("UWIQ_DELIVERABLES")));
       }
       if (funding) {
         return slide("S-19", "The investment", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + kicker("To activate the system today") + '<div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">' + h1(price("FUNDING_DFY"), "clamp(32px,5.2vw,60px)") + '<span style="font-family:var(--mono);font-size:clamp(12px,1.3vw,15px);color:var(--gray)">deposit</span></div>' + sub("Not an additional fee. It goes directly toward your 10 percent success fee on the back end.") + '<div style="margin-top:14px;max-width:200px" class="hair"></div></div>');
       }
-      if (rung === 0) return slide("S-19", "The investment", kicker("Done-for-you credit repair") + h1(price("REPAIR_DFY"), "clamp(28px,4.4vw,52px)") + '<div style="margin-top:8px;max-width:560px">' + row("Forensic audit", "Included", "Your full file, the way lenders see it") + row("Disputes", "All rounds", "Both the bureaus and the creditors, escalating") + row("Your dashboard", "Real time", "Watch every move happen. You don't touch a thing.") + "</div>" + financingNote("REPAIR_DFY"));
-      if (rung === 1) return slide("S-19", "The investment", kicker("Try it first, done for you") + h1(price("REPAIR_TRIAL"), "clamp(28px,4.4vw,52px)") + '<div style="margin-top:8px;max-width:560px">' + row("Round 1", "We run it", "Our team fires your first full round, bureaus and creditors") + row("You watch", "Dashboard", "Every dispute and response, live") + row("Then decide", "Your call", "Continue full done-for-you, or take it from here") + "</div>" + financingNote("REPAIR_TRIAL"));
-      return slide("S-19", "The investment", kicker("Do it yourself, everything from your file") + h1(price("UWIQ_DELIVERABLES"), "clamp(24px,3.8vw,44px)") + '<div style="margin-top:6px;max-width:580px">' + deliverableRows() + "</div>" + financingNote("UWIQ_DELIVERABLES"));
+      if (rung === 0) return slide("S-19", "The investment", fill(kicker("Done-for-you credit repair") + h1(price("REPAIR_DFY"), "clamp(28px,4.4vw,52px)") + '<div style="margin-top:8px;max-width:560px">' + row("Forensic audit", "Included", "Your full file, the way lenders see it") + row("Disputes", "All rounds", "Both the bureaus and the creditors, escalating") + row("Your dashboard", "Real time", "Watch every move happen. You don't touch a thing.") + "</div>" + financingNote("REPAIR_DFY")));
+      if (rung === 1) return slide("S-19", "The investment", fill(kicker("Try it first, done for you") + h1(price("REPAIR_TRIAL"), "clamp(28px,4.4vw,52px)") + '<div style="margin-top:8px;max-width:560px">' + row("Round 1", "We run it", "Our team fires your first full round, bureaus and creditors") + row("You watch", "Dashboard", "Every dispute and response, live") + row("Then decide", "Your call", "Continue full done-for-you, or take it from here") + "</div>" + financingNote("REPAIR_TRIAL")));
+      return slide("S-19", "The investment", fill(kicker("Do it yourself, everything from your file") + h1(price("UWIQ_DELIVERABLES"), "clamp(24px,3.8vw,44px)") + '<div style="margin-top:6px;max-width:580px">' + deliverableRows() + "</div>" + financingNote("UWIQ_DELIVERABLES")));
     }
     if (c === "S-20") {
-      if (edu) return slide("S-20", "Two courses", kicker("Side by side") + h1("Two courses. One skill set.") + '<div style="margin-top:10px;max-width:620px">' + row("Course 1 — UWIQ deliverables + bank list", price("UWIQ_DELIVERABLES"), "Everything from your file. You execute it with the how-to course.") + row("Course 2 — Funding Mastery, A to Z", price("FUNDING_MASTERY"), "The complete program, start to finish, on your own data", true) + "</div>");
-      if (funding) return slide("S-20", "The math", kicker("Line by line") + h1("We only make money when you get funded.") + '<div style="margin-top:10px;max-width:560px">' + row("Your funding", money(d.total), "Pre-approval from today's scan") + row("Total success fee, " + feePct + " percent", money(fee)) + row("Your deposit, credited", deposit != null ? ("- " + money(deposit)) : "—") + row("Back end balance", money(backEnd), "Only charged once the capital is actually in your hands", true) + "</div>" + sub("Our success is literally tied to yours."));
+      if (edu) return slide("S-20", "Two courses", fill(kicker("Side by side") + h1("Two courses. One skill set.") + '<div style="margin-top:10px;max-width:620px">' + row("Course 1 — UWIQ deliverables + bank list", price("UWIQ_DELIVERABLES"), "Everything from your file. You execute it with the how-to course.") + row("Course 2 — Funding Mastery, A to Z", price("FUNDING_MASTERY"), "The complete program, start to finish, on your own data", true) + "</div>"));
+      if (funding) return slide("S-20", "The math", fill(kicker("Line by line") + h1("We only make money when you get funded.") + '<div style="margin-top:10px;max-width:560px">' + row("Your funding", money(d.total), "Pre-approval from today's scan") + row("Total success fee, " + feePct + " percent", money(fee)) + row("Your deposit, credited", deposit != null ? ("- " + money(deposit)) : "—") + row("Back end balance", money(backEnd), "Only charged once the capital is actually in your hands", true) + "</div>" + sub("Our success is literally tied to yours.")));
       if (costN > 0) return slide("S-20", "Then we fund you", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + kicker("What staying stuck costs") + h1(money(costN) + " a month.", "clamp(28px,4.4vw,52px)") + '<div style="margin-top:10px;max-width:560px">' + row("Every month this file sits", money(costN), "Your number, from earlier on this call") + row("Over a year", money(costN * 12), "Gone, without the file moving an inch", true) + row("The fix", "Starts today", "Cleaned up first, funded second, strongest position") + "</div></div>");
       return slide("S-20", "Then we fund you", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + kicker("What staying stuck costs") + h1("Cleaned up first. Funded second.", "clamp(24px,3.6vw,44px)") + sub("We get your credit cleaned up first, so when we run the full funding process you're in the strongest possible position and we can maximize your approval amount.") + "</div>");
     }
@@ -524,7 +609,18 @@
       return slide("S-22", "Ready when you are", '<div style="flex:1;display:flex;flex-direction:column;justify-content:center">' + h1("Ready when you are.", "clamp(28px,4.6vw,56px)") + '<div class="mono" style="margin-top:12px;letter-spacing:.06em">' + (funding ? "Customer-initiated · Three guarantees · Two weeks" : "Customer-initiated · Starts today · Tracked live") + '</div><div style="margin-top:16px;max-width:200px" class="hair"></div></div>');
     }
     if (c === "S-23") {
-      return slide("S-23", "Getting you set up", kicker("Right now, on this call") + h1("Let's get this going.") + '<div style="margin-top:10px;max-width:620px">' + row("Agreement", "Sent", "Review it while we handle billing") + row("Billing", "On this call", "Secure payment, processed now") + row("Welcome email", "Incoming", "Advisor contact, timeline, and what we need from you") + "</div>");
+      /* "Advisor contact" is not true on every sale. The rows follow the offer
+         the closer actually chose, the same way the wrap script does (F23). */
+      var setup = row("Agreement", "Sent", "Review it while we handle billing")
+        + row("Billing", "On this call", "Secure payment, processed now");
+      if (edu) {
+        setup += row("Your access", "Today", "Set up on this call, with everything from today's pull");
+      } else if (funding) {
+        setup += row("Welcome email", "Incoming", "Advisor contact, timeline, and what we need from you");
+      } else {
+        setup += row("Welcome email", "Incoming", "Your dashboard, your first round, and what happens next");
+      }
+      return slide("S-23", "Getting you set up", fill(kicker("Right now, on this call") + h1("Let's get this going.") + '<div style="margin-top:10px;max-width:620px">' + setup + "</div>"));
     }
     if (c === "S-24") {
       var next = edu
@@ -539,6 +635,84 @@
 
   function ckBtn(label, action, primary, extra) {
     return '<button type="button" class="ck-btn' + (primary ? " k" : "") + '" data-act="' + esc(action) + '"' + (extra || "") + ">" + esc(label) + "</button>";
+  }
+
+  /* ───────── SEND CONTROLS (F24) ─────────
+     Chris, on 2026-09-03: "when I click it, it should show that it's been
+     clicked... I press it like three or four times, and then all of a sudden
+     the client gets like four or five text messages, four or five emails,
+     because I can't really tell." Two pay-link emails went to the same client
+     at 6:47 PM carrying two DIFFERENT checkout links, so the duplicate presses
+     were making duplicate real payments possible.
+
+     Every send control now: shows a pressed state the instant it is clicked,
+     is disabled while the request is in flight, refuses a second press for a
+     few seconds after a success (owner's number: three to five), and carries a
+     "Sent at 6:47 PM" line that STAYS on the button — a toast that vanishes is
+     what left the closer guessing. The repeat count is shown too, so a real
+     double send is visible instead of invisible. */
+  var SEND_COOLDOWN_MS = 4000;
+
+  function sendMark(act) { return state.sends[act] || null; }
+  function sendLocked(act) {
+    var m = sendMark(act);
+    if (!m) return false;
+    if (m.busy) return true;
+    return m.coolUntil != null && Date.now() < m.coolUntil;
+  }
+  function clockTime(d) {
+    try {
+      return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    } catch (e) {
+      return d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0");
+    }
+  }
+  function markSending(act) {
+    var prev = sendMark(act) || {};
+    state.sends[act] = { busy: true, sentAt: prev.sentAt || null, count: prev.count || 0, coolUntil: null };
+    render();
+  }
+  function markSent(act, ok) {
+    var prev = sendMark(act) || {};
+    if (!ok) {
+      /* A failed send is not a send. No timestamp, no cooldown — they need to
+         be able to try again straight away. */
+      state.sends[act] = { busy: false, sentAt: prev.sentAt || null, count: prev.count || 0, coolUntil: null };
+      render();
+      return;
+    }
+    state.sends[act] = {
+      busy: false,
+      sentAt: clockTime(new Date()),
+      count: (prev.count || 0) + 1,
+      coolUntil: Date.now() + SEND_COOLDOWN_MS
+    };
+    render();
+    setTimeout(function () {
+      var m = state.sends[act];
+      if (m) m.coolUntil = null;
+      render();
+    }, SEND_COOLDOWN_MS);
+  }
+
+  function sendBtn(label, action, primary, blocked) {
+    var m = sendMark(action);
+    var busy = !!(m && m.busy);
+    var cooling = !busy && sendLocked(action);
+    var off = busy || cooling || !!blocked;
+    var text = busy ? "Sending…" : (cooling ? "Sent — hold on" : label);
+    var html = ckBtn(text, action, primary && !off, off ? " disabled" : "");
+    if (m && m.sentAt) {
+      html += '<div class="sent-at">Sent at ' + esc(m.sentAt)
+        + (m.count > 1 ? " · sent " + m.count + " times" : "") + "</div>";
+    }
+    return html;
+  }
+
+  /* The close script for the offer that was actually chosen (F23). */
+  function closeTalk(c) {
+    var map = CLOSE_TALK[selectedOfferKey()];
+    return (map && map[c]) || null;
   }
 
   /* Ask for the month and year each company was incorporated. Business age is
@@ -575,7 +749,7 @@
   }
 
   function cockpit() {
-    var t = TALK[code()] || { title: "", lines: [], watch: "" };
+    var t = closeTalk(code()) || TALK[code()] || { title: "", lines: [], watch: "" };
     var d = state.engine || {};
     var funding = isFunding() && !state.edu;
     var ph = phase();
@@ -625,7 +799,12 @@
         html += "<div>consent: " + (sp.consent_valid ? "on file" : "waiting") + "</div>";
         var amt = sp.diagnostic_amount_cents != null ? ("$" + (Number(sp.diagnostic_amount_cents) / 100).toFixed(2)) : "$32";
         html += "<div>paid " + amt + ": " + (sp.diagnostic_paid ? "yes" : (sp.diagnostic_link_status || "not yet")) + "</div>";
-        html += "<div>pull: " + esc(sp.pull_status || "not started") + "</div>";
+        /* F16 — this read "pull: not started" on the same four lines as
+           "tier: FULL_FUNDING" and a full set of scores. The server now answers
+           from the stored credit result when one exists, and says which record
+           it read, so the two can never contradict each other again. */
+        html += "<div>pull: " + esc(sp.pull_status || "not started")
+          + (sp.pull_status_source === "crs_result" ? " (from the stored result)" : "") + "</div>";
         if (sp.outcome_tier) html += "<div>tier: " + esc(sp.outcome_tier) + "</div>";
         html += '</div><div style="margin-top:7px;display:flex;flex-direction:column;gap:5px">';
         html += ckBtn("Send soft pull ($32 + approval form)", "softpull", true);
@@ -673,8 +852,21 @@
       }
 
       if (code() === "S-23") {
-        html += '<div><span class="mono">Live actions</span><div style="margin-top:6px;display:flex;flex-direction:column;gap:5px">';
-        if (!isPrimaryPayOffer(selectedOfferKey())) {
+        /* ONE ACTION LEADS (F25). Chris: "we've already chosen the offer. So
+           it's just extra buttons that will throw people off. Obviously,
+           there's a black label on it. That's not enough." Section 07 used to
+           put the pay link, an invoice button, a contract button, a contract
+           wording FORM, a deliverables button, a referral tick box and the
+           disposition button on screen at once. Now the money action for the
+           chosen offer leads, its own fulfilment step sits directly under it,
+           and everything else is one click deeper (UI-STANDARDS section 9). */
+        var offerKey = selectedOfferKey();
+        var chosen = offer(offerKey);
+        html += '<div><span class="mono">Do this now</span>';
+        html += '<div style="font-size:10.5px;color:var(--gray2);margin:4px 0 6px">Chosen: '
+          + esc((chosen && chosen.name) || offerKey) + " · " + esc(price(offerKey)) + "</div>";
+        html += '<div style="margin-top:2px;display:flex;flex-direction:column;gap:5px">';
+        if (!isPrimaryPayOffer(offerKey)) {
           html += '<label class="mono" for="fh-sale-motion">Sale motion</label>';
           html += '<select id="fh-sale-motion" style="width:100%;border:1px solid var(--line);background:transparent;padding:6px 8px;font-size:12px">';
           html += '<option value="">Choose downsell or upsell</option>';
@@ -682,47 +874,17 @@
           html += '<option value="upsell"' + (state.saleMotion === "upsell" ? " selected" : "") + ">Upsell</option>";
           html += "</select>";
         }
-        html += ckBtn("Send agreement + pay link", "pay", true);
-        html += ckBtn("Invoice this client", "invoice", false);
-        html += ckBtn("Send contract", "contract", false);
-        if (state.contractOpen) {
-          html += '<div style="border:1px solid var(--line);padding:8px 9px;margin-top:2px">';
-          html += '<div class="mono" style="margin-bottom:6px">Wording for this client</div>';
-          if (!state.contractWordings.length && !state.contractMsg) {
-            html += '<div style="font-size:11px;color:var(--gray)">Loading wordings…</div>';
-          } else if (!state.contractWordings.length) {
-            html += '<div style="font-size:11px;color:var(--gray)">' + esc(state.contractMsg || "No wordings in use.") + "</div>";
-          } else {
-            html += '<select id="fh-contract-tpl" style="width:100%;border:1px solid var(--line);background:transparent;padding:6px 8px;font-size:12px">';
-            state.contractWordings.forEach(function (t) {
-              html += '<option value="' + esc(t.id) + '"' + (t.id === state.contractTplId ? " selected" : "") + ">" + esc(t.name || t.template_key || "Wording") + "</option>";
-            });
-            html += "</select>";
-            var picked = null;
-            for (var wi = 0; wi < state.contractWordings.length; wi++) {
-              if (state.contractWordings[wi].id === (state.contractTplId || state.contractWordings[0].id)) picked = state.contractWordings[wi];
-            }
-            var fields = (picked && picked.manual_fields) || [];
-            fields.forEach(function (f) {
-              html += '<input data-blank="' + esc(f.key) + '" placeholder="' + esc((f.label || f.key) + (f.required ? " *" : "")) + '" style="margin-top:6px;width:100%;background:transparent;border:1px solid var(--line);padding:6px 8px;font-size:12px">';
-            });
-            html += '<div style="display:flex;gap:6px;margin-top:8px">' + ckBtn(state.contractBusy ? "Sending…" : "Send this wording", "contract-go", true) +
-              (state.contractLink ? ckBtn("Copy link", "contract-copy", false) : "") + "</div>";
-          }
-          if (state.contractLink) {
-            html += '<input id="fh-contract-link" readonly value="' + esc(state.contractLink) + '" style="margin-top:7px;width:100%;border:1px solid var(--line);background:transparent;font-family:var(--mono);font-size:10px;padding:6px 8px">';
-          }
-          if (state.contractMsg) html += '<div style="font-size:10.5px;color:var(--gray);margin-top:6px">' + esc(state.contractMsg) + "</div>";
-          html += "</div>";
-        }
+        html += sendBtn("Send agreement + pay link", "pay", true);
+
+        /* The fulfilment step for THIS offer, and only this offer. */
         if (state.edu) {
-          html += ckBtn("Send deliverables package now", "letters");
+          html += sendBtn("Send deliverables package now", "letters", false);
         } else if (isRepairDfyOffer()) {
           html += '<div style="margin-top:4px"><span class="mono">Amount paid today</span>';
           html += '<input id="fh-repair-paid" value="' + esc(state.amountPaidDollars || String(offerDollars() || "")) + '" placeholder="dollars" style="margin-top:4px;width:100%;background:transparent;border:1px solid var(--line);color:var(--ink);font-family:var(--mono);font-size:11px;padding:7px 9px;outline:none">';
           html += "</div>";
-          html += ckBtn(state.repairBusy ? "Working…" : "Stage letters", "stage-letters", true);
-          html += ckBtn("Send now", "send-letters", state.stagedLetters.length > 0, state.stagedLetters.length ? "" : " disabled");
+          html += ckBtn(state.repairBusy ? "Working…" : "Stage letters", "stage-letters", false, state.repairBusy ? " disabled" : "");
+          html += sendBtn("Send letters now", "send-letters", false, !state.stagedLetters.length);
           if (state.repairMsg) html += '<div style="font-size:10.5px;color:var(--gray);margin-top:6px">' + esc(state.repairMsg) + "</div>";
           if (state.stagedLetters.length) {
             html += '<div style="margin-top:8px;border:1px solid var(--line);padding:8px;max-height:160px;overflow:auto">';
@@ -735,10 +897,36 @@
             html += "</div>";
           }
         } else if (lettersOk()) {
-          html += ckBtn("Generate letters and email now", "letters");
+          html += sendBtn("Generate letters and email now", "letters", false);
         }
-        html += '<label class="mono" style="display:flex;align-items:center;gap:8px;margin:10px 0 6px;font-size:12px;color:var(--ink)">' +
-          '<input type="checkbox" id="fh-repair-referral"> Repair referral</label>';
+
+        html += ckBtn(state.moreOpen ? "Hide the other actions" : "Other actions", "more");
+        if (state.moreOpen) {
+          html += '<div style="border:1px solid var(--line);padding:8px 9px;display:flex;flex-direction:column;gap:5px">';
+          html += sendBtn("Invoice this client", "invoice", false);
+          /* F27, owner-set: contract send is ONE CLICK, no typing. The
+             "wording for this client" panel — company name, what the program
+             includes, program fee, access length, company email, and a "Send
+             this wording" button — is gone. Chris: "it should already have that
+             information. Just send it... it needs to be just removed
+             completely." The system holds the client, the offer, the price and
+             the template, and it already matched the right template to the
+             offer without help. Removing the form also removes F28: the seller
+             on the agreement is Fundhub, never a name staff typed. */
+          html += sendBtn("Send contract", "contract", false);
+          if (state.contractLink) {
+            html += ckBtn("Copy the sign link", "contract-copy", false);
+            html += '<input id="fh-contract-link" readonly value="' + esc(state.contractLink) + '" style="width:100%;border:1px solid var(--line);background:transparent;font-family:var(--mono);font-size:10px;padding:6px 8px">';
+          }
+          if (state.contractMsg) html += '<div style="font-size:10.5px;color:var(--gray)">' + esc(state.contractMsg) + "</div>";
+          /* Kept in state, not read off the DOM at the end. This panel opens
+             and closes, and every open re-renders the checkbox from scratch —
+             a tick read off the element at disposition time would be silently
+             lost the moment the panel was closed. */
+          html += '<label class="mono" style="display:flex;align-items:center;gap:8px;margin:4px 0 0;font-size:12px;color:var(--ink)">' +
+            '<input type="checkbox" id="fh-repair-referral"' + (state.repairReferral ? " checked" : "") + "> Repair referral</label>";
+          html += "</div>";
+        }
         html += ckBtn("Log disposition and close", "disp");
         html += "</div></div>";
       }
@@ -769,7 +957,13 @@
         html += '<div style="border-top:1px solid var(--line);padding-top:9px"><span class="mono">Engine data</span><div style="margin-top:5px;font-family:var(--mono);font-size:10px;color:var(--gray);line-height:1.6">';
         if (!d.available) html += "<div>Your numbers are not on this file yet</div>";
         else {
-          html += "<div>" + esc(state.tier || "—") + (state.edu ? " · route EDU" : state.forceRepair ? " · DESCENT" : "") + " · " + money(d.total) + " · " + dash(d.fico.ex) + "/" + dash(d.fico.tu) + "/" + dash(d.fico.eq) + "</div>";
+          /* F15 — the money line names what it covers and where it came from.
+             It used to print a figure this screen had just recalculated, 4.7x
+             the one stored for the same file. */
+          var basis = d.totalBasis === "personal_plus_business"
+            ? " personal+business"
+            : (d.totalBasis === "personal_only" ? " personal only" : "");
+          html += "<div>" + esc(state.tier || "—") + (state.edu ? " · route EDU" : state.forceRepair ? " · DESCENT" : "") + " · " + money(d.total) + basis + " · " + dash(d.fico.ex) + "/" + dash(d.fico.tu) + "/" + dash(d.fico.eq) + "</div>";
           html += "<div>afterFix " + money(d.afterFix) + " · beliefs " + beliefs + "/7" + (state.temp > 0 ? " · temp " + state.temp + "/10" : "") + "</div>";
         }
         html += "</div></div>";
@@ -829,10 +1023,9 @@
       saleMotion.addEventListener("change", function (e) { state.saleMotion = e.target.value; });
       saleMotion.addEventListener("keydown", function (e) { e.stopPropagation(); });
     }
-    var tpl = document.getElementById("fh-contract-tpl");
-    if (tpl) {
-      tpl.addEventListener("change", function (e) { state.contractTplId = e.target.value; render(); });
-      tpl.addEventListener("keydown", function (e) { e.stopPropagation(); });
+    var referral = document.getElementById("fh-repair-referral");
+    if (referral) {
+      referral.addEventListener("change", function (e) { state.repairReferral = !!e.target.checked; });
     }
   }
 
@@ -857,58 +1050,60 @@
     state.tier = k; state.rung = 0; state.edu = false; state.forceRepair = false; render();
   }
 
-  function contractBlankValues() {
-    var out = {};
-    Array.prototype.forEach.call(document.querySelectorAll("[data-blank]"), function (el) {
-      out[el.getAttribute("data-blank")] = el.value;
-    });
-    return out;
-  }
+  /* ONE CLICK, NO TYPING (F27, owner-set 2026-09-03).
+     Chris: "it should already have that information. Just send it. We don't
+     need to, like, enter in the information... it needs to be just removed
+     completely."
 
-  function openContractSend() {
-    state.contractOpen = !state.contractOpen;
-    if (!state.contractOpen) { render(); return; }
-    state.contractMsg = "Loading wordings…";
-    render();
-    if (!window.FHContractSend) {
-      state.contractMsg = "Send helper failed to load.";
-      render();
-      return;
-    }
-    window.FHContractSend.listWordings().then(function (r) {
-      if (!r.ok) { state.contractMsg = r.error || "Could not load wordings."; render(); return; }
-      state.contractWordings = r.items || [];
-      var wantKey = resolveContractTemplateKey();
-      var picked = window.FHContractSend.pickTemplate(state.contractWordings, wantKey);
-      state.contractTplId = picked ? picked.id : (state.contractWordings[0] ? state.contractWordings[0].id : "");
-      state.contractMsg = state.contractWordings.length
-        ? (picked
-          ? "Matched " + (picked.name || picked.template_key) + " to this offer. Send when ready."
-          : "Pick a wording, then send. Copy the sign link after.")
-        : "No wordings in use. Make one on the Contracts page.";
-      render();
-      window.FHContractSend.fillBlankInputs(defaultContractBlankValues());
-    });
-  }
+     What this replaces: a "WORDING FOR THIS CLIENT" panel that made the closer
+     type Company name, What the program includes, Program fee, Access length
+     and Company email on a live call — for a client whose own record read "No
+     businesses on file", buying a personal education program. The typed
+     Company name then landed on the agreement as the SELLER, so the contract
+     said the client's own company was selling the program to the client (F28).
 
+     Nothing is typed now. The template is matched from the offer the closer
+     already chose, and the blanks come from the offer catalog, with Fundhub as
+     the seller every time. */
   function sendContractNow() {
     if (!window.FHContractSend || !contactId) { toast("No contact on this deck."); return; }
-    var id = state.contractTplId || (state.contractWordings[0] && state.contractWordings[0].id);
-    if (!id) { toast("Pick a wording first."); return; }
-    var values = contractBlankValues();
-    if (!Object.keys(values).length) values = defaultContractBlankValues();
-    state.contractBusy = true;
-    state.contractMsg = "Sending…";
+    markSending("contract");
+    state.contractMsg = "Finding the right agreement…";
     render();
-    window.FHContractSend.sendToClient({
-      clientId: contactId, templateId: id, values: values
-    }).then(function (r) {
-      state.contractBusy = false;
-      if (!r.ok) { state.contractMsg = r.error || "Could not send."; render(); return; }
-      state.contractLink = r.link || "";
-      state.contractMsg = r.message || "Sent. Copy the link and give it to them.";
+    window.FHContractSend.listWordings().then(function (r) {
+      if (!r.ok) {
+        state.contractMsg = r.error || "Could not load the agreements.";
+        markSent("contract", false);
+        return;
+      }
+      var wantKey = resolveContractTemplateKey();
+      var picked = window.FHContractSend.pickTemplate(r.items || [], wantKey);
+      if (!picked) {
+        /* Never fall back to "whatever is first in the list" — that is how the
+           wrong agreement reaches a customer. Say which one is missing. */
+        state.contractMsg = wantKey
+          ? ("No agreement is set up for this offer yet (" + wantKey + "). Add it on the Contracts page.")
+          : "This offer has no agreement attached yet.";
+        markSent("contract", false);
+        return;
+      }
+      var name = picked.name || picked.template_key;
+      state.contractMsg = "Sending " + name + "…";
       render();
-      if (state.contractLink) window.FHContractSend.copyText(state.contractLink);
+      window.FHContractSend.sendToClient({
+        clientId: contactId,
+        templateId: picked.id
+      }).then(function (sent) {
+        if (!sent.ok) {
+          state.contractMsg = sent.error || "Could not send.";
+          markSent("contract", false);
+          return;
+        }
+        state.contractLink = sent.link || "";
+        state.contractMsg = "Sent " + name + " to the client.";
+        markSent("contract", true);
+        if (state.contractLink) window.FHContractSend.copyText(state.contractLink);
+      });
     });
   }
 
@@ -1050,7 +1245,7 @@
     }
     state.repairBusy = true;
     state.repairMsg = "Sending…";
-    render();
+    markSending("send-letters");
     var r = await window.FHData.write("/api/repair/send", {
       mail: true,
       client_id: contactId,
@@ -1059,16 +1254,20 @@
     state.repairBusy = false;
     if (!r.ok) {
       state.repairMsg = (r.error && (r.error.message || r.error)) || "Send failed.";
-      render();
+      markSent("send-letters", false);
       return;
     }
     state.repairMsg = "Sent. Letters are in the mail queue.";
+    markSent("send-letters", true);
     toast("Repair letters sent.");
-    render();
   }
 
-  async function fire(action, extra) {
+  /* `act` is the button this came from, so the button can show that it is
+     sending, then that it sent, and refuse a second press in between (F24).
+     Actions with no button — nothing today — pass nothing and behave as before. */
+  async function fire(action, extra, act) {
     if (!window.FHData || !contactId) { toast("No contact on this deck."); return; }
+    if (act) markSending(act);
     var body = Object.assign({
       action: action,
       client_id: contactId,
@@ -1084,9 +1283,11 @@
     }, extra || {});
     var r = await window.FHData.write("/api/closer-deck", body);
     if (!r.ok) {
+      if (act) markSent(act, false);
       toast((r.error && (r.error.message || r.error)) || "Could not complete that action");
       return;
     }
+    if (act) markSent(act, true);
     if (action === "send_soft_pull") toast("Soft pull emailed — pay link + approval form.");
     else if (action === "send_ebook") toast("E-book email sent with PDF attached.");
     else if (action === "send_pay_link") toast("Agreement and pay link sent.");
@@ -1096,9 +1297,10 @@
 
   async function invoiceThisClient() {
     if (!window.FHData || !contactId) { toast("No contact on this deck."); return; }
-    toast("Looking up invoice…");
+    markSending("invoice");
     var list = await window.FHData.read("invoices", { client_id: contactId, limit: 5 });
     if (!list || !list.ok) {
+      markSent("invoice", false);
       toast((list && (list.error || list.message)) || "Could not load invoices.");
       return;
     }
@@ -1108,15 +1310,17 @@
       var st = String(items[i].status || "").toLowerCase();
       if (items[i].id && st !== "void" && st !== "written_off") { open = items[i]; break; }
     }
-    if (!open) { toast("No invoice on this file yet."); return; }
+    if (!open) { markSent("invoice", false); toast("No invoice on this file yet."); return; }
     var r = await window.FHData.write("/api/messages-outbound", {
       action: "email_invoice",
       invoice_id: open.id
     });
     if (!r.ok) {
+      markSent("invoice", false);
       toast((r.error && (r.error.message || r.error)) || "Could not email invoice.");
       return;
     }
+    markSent("invoice", true);
     toast("Invoice emailed.");
   }
 
@@ -1124,6 +1328,11 @@
     var btn = e.target.closest("[data-act]");
     if (!btn) return;
     var a = btn.getAttribute("data-act");
+    /* A locked send control is a send in flight or inside its cooldown. The
+       button is already disabled, but a stray click on a re-rendered button is
+       what produced two pay links for one sale on 2026-09-03, so the guard is
+       here as well as on the element (F24). */
+    if (sendLocked(a)) return;
     if (a === "client-only") { state.clientOnly = !state.clientOnly; render(); return; }
     if (a === "back") { go(-1); return; }
     if (a === "next") { go(1); return; }
@@ -1150,17 +1359,17 @@
     if (a === "obj-back") { state.obj = null; render(); return; }
     if (a.indexOf("obj:") === 0) { state.obj = Number(a.slice(4)); render(); return; }
     if (a.indexOf("obj-jump:") === 0) { jumpTo(a.slice(9)); return; }
-    if (a === "softpull") { fire("send_soft_pull"); return; }
+    if (a === "more") { state.moreOpen = !state.moreOpen; render(); return; }
+    if (a === "softpull") { fire("send_soft_pull", null, "softpull"); return; }
     if (a === "ebook") {
       var dollars = state.ebookDollars || (document.getElementById("fh-ebook") && document.getElementById("fh-ebook").value) || "";
       var cents = Math.round(parseFloat(String(dollars).replace(/[^0-9.]/g, "")) * 100);
       if (!Number.isFinite(cents) || cents < 100) { toast("Enter an e-book price first."); return; }
-      fire("send_ebook", { amount_cents: cents }); return;
+      fire("send_ebook", { amount_cents: cents }, "ebook"); return;
     }
-    if (a === "pay") { fire("send_pay_link"); return; }
+    if (a === "pay") { fire("send_pay_link", null, "pay"); return; }
     if (a === "invoice") { invoiceThisClient(); return; }
-    if (a === "contract") { openContractSend(); return; }
-    if (a === "contract-go") { sendContractNow(); return; }
+    if (a === "contract") { sendContractNow(); return; }
     if (a === "contract-copy") {
       if (window.FHContractSend) {
         window.FHContractSend.copyText(state.contractLink).then(function (ok) {
@@ -1169,13 +1378,12 @@
       }
       return;
     }
-    if (a === "letters") { fire("generate_letters"); return; }
+    if (a === "letters") { fire("generate_letters", null, "letters"); return; }
     if (a.indexOf("stamp-inc:") === 0) { stampIncorporated(Number(a.slice(10))); return; }
     if (a === "stage-letters") { stageRepairLetters(); return; }
     if (a === "send-letters") { sendRepairNow(); return; }
     if (a === "disp") {
-      var ref = document.getElementById("fh-repair-referral");
-      fire("log_disposition", { repair_referral: !!(ref && ref.checked) });
+      fire("log_disposition", { repair_referral: !!state.repairReferral });
       return;
     }
   });

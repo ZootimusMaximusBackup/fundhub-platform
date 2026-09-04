@@ -28,6 +28,36 @@ const RULE_PLAIN_NAMES = Object.freeze({
   "M2-036": "Duplicate same-day inquiry"
 });
 
+/**
+ * The prompt bank's Round 1 / Round 3 / furnisher lines name Metro 2 outright.
+ * A letter whose every claim is a derogatory-item claim (../diy/derogatory.mjs)
+ * asserts no Metro 2 defect, so saying so would be a false statement in a mailed
+ * letter — and a false statement is exactly what a furnisher uses to call the
+ * dispute frivolous. These are the accurate substitutes, applied ONLY when no
+ * M2- rule is present. A mixed letter keeps the original wording, because then
+ * the Metro 2 claim really is there.
+ */
+const WITHOUT_METRO2 = Object.freeze({
+  "I dispute the Metro 2 field defects identified below and ask you to delete or correct them.":
+    "I dispute the items identified below and ask you to delete or correct them.",
+  "This Round 3 letter is the last bureau notice on these Metro 2 defects. It is not a lawsuit.":
+    "This Round 3 letter is the last bureau notice on these items. It is not a lawsuit.",
+  "Please investigate the Metro 2 defects below on accounts you furnish.":
+    "Please investigate the items below on accounts you furnish.",
+  "The items below have Metro 2 reporting defects that make my file inaccurate or misleading.":
+    "The items below are reported inaccurately or in a way that makes my file misleading."
+});
+
+/** Does this letter carry at least one Metro 2 rule finding? */
+function hasMetro2Claim(violations) {
+  return (violations || []).some((v) => /^M2-/.test(String(v?.ruleId || "")));
+}
+
+function accurate(line, metro2Backed) {
+  if (metro2Backed) return line;
+  return WITHOUT_METRO2[line] || line;
+}
+
 const SEVERITY_LABEL = Object.freeze({
   deletion: "Deletion-tier",
   strong: "Strong",
@@ -44,6 +74,10 @@ function lastFourSsn(identity) {
 
 function plainName(v) {
   if (RULE_PLAIN_NAMES[v.ruleId]) return RULE_PLAIN_NAMES[v.ruleId];
+  /* A claim may carry its own name. The derogatory-item claims in
+     ../diy/derogatory.mjs do, because they are not Metro 2 rules and there is
+     no exhibit reference to fall back on. */
+  if (v.plainName) return String(v.plainName).trim();
   const metro = v.metro2Ref || metro2RefFor(v.ruleId);
   if (metro) return String(metro).trim();
   const reason = String(v.reason || "").trim();
@@ -58,7 +92,10 @@ function fieldLine(v) {
     const f = String(v.field).trim();
     return `Metro 2 field: ${/^field\b/i.test(f) ? f : `Field ${f}`}`;
   }
-  return "Metro 2 field: not specified by the engine";
+  /* No field and no exhibit reference. A derogatory-item claim asserts no Metro 2
+     defect, so naming a field would be the invention this whole module refuses.
+     The line is dropped instead — formatViolationParagraph filters nulls. */
+  return null;
 }
 
 function capItemStatutes(v) {
@@ -147,7 +184,9 @@ export function buildLetterText(opts = {}) {
   const seed = hashSeed(opts.seed ?? `${identity.fullName || ""}:${bureau}:${round}`);
   const ordered = rotateViolations(violations, seed + (opts.attempt || 0) * 7);
   const attempt = Number(opts.attempt) || 0;
-  const open = openingFor(seed + attempt, round);
+  const metro2Backed = hasMetro2Claim(violations);
+  const open = accurate(openingFor(seed + attempt, round), metro2Backed);
+  const lead = accurate(instr.lead, metro2Backed);
   const close = closingFor(seed + attempt + 3, round);
   const dateLine = opts.undated ? "[DATE — write today's date when you mail this]" : (opts.date || "");
   const name = identity.fullName || "[Consumer Name]";
@@ -186,9 +225,13 @@ export function buildLetterText(opts = {}) {
     : null;
   const citationBlock = resolvedCitationBlock(ordered);
   const ruleIdList = ordered.map((v) => v.ruleId).join(", ");
+  /* The subject line is the first thing read. It says Metro 2 only when a Metro 2
+     claim is actually in the letter; otherwise it says what the letter is — an
+     FCRA dispute. */
+  const kind = metro2Backed ? "Metro 2" : "FCRA";
   const reSubject = String(round).toUpperCase() === ROUND.FURNISHER
-    ? "Furnisher Metro 2 dispute"
-    : `Round ${instr.roundLabel || String(instr.round).replace(/^R/, "")} Metro 2 dispute`;
+    ? `Furnisher ${kind} dispute`
+    : `Round ${instr.roundLabel || String(instr.round).replace(/^R/, "")} ${kind} dispute`;
 
   const headerLines = [
     dateLine,
@@ -206,7 +249,7 @@ export function buildLetterText(opts = {}) {
     let inserted = false;
     for (const part of parts) {
       out.push(part);
-      if (!inserted && (part === open || part === instr.lead)) {
+      if (!inserted && (part === open || part === lead)) {
         out.push("");
         out.push(evidenceBlock);
         inserted = true;
@@ -218,10 +261,10 @@ export function buildLetterText(opts = {}) {
 
   let body;
   if (attempt % 3 === 1) {
-    body = withEvidence([open, "", instr.lead, "", instr.demand, "", ...paragraphs.flatMap((p) => [p, ""]), instr.ask]).join("\n");
+    body = withEvidence([open, "", lead, "", instr.demand, "", ...paragraphs.flatMap((p) => [p, ""]), instr.ask]).join("\n");
   } else if (attempt % 3 === 2) {
     body = withEvidence([
-      instr.lead,
+      lead,
       "",
       instr.demand,
       "",
@@ -241,7 +284,7 @@ export function buildLetterText(opts = {}) {
       "",
       ...paragraphs.flatMap((p) => [p, ""]),
       "",
-      instr.lead,
+      lead,
       "",
       instr.next
     ]).join("\n");

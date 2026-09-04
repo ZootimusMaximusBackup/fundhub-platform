@@ -62,6 +62,43 @@
 // a backlog that cannot be worked through in one pass is worked through in the
 // next one. Nothing is lost by stopping early — an unclaimed message is still
 // queued and still due.
+//
+//
+// ═══════════════════════════════════════════════════════════════════════════
+// F1 — WHERE THE THREE MINUTES ACTUALLY GO. MEASURED, 2026-09-03.
+//
+// The owner booked five simulated calls on the live site and the confirmation
+// text, email and AI call all landed roughly three minutes later against a
+// 60-second target. Measured against the production database afterwards, on
+// the real `events` and `messages` rows from that walk (all times UTC):
+//
+//   booking → the row is QUEUED           44s, 69s, 188s  (three bookings)
+//   queued  → the dispatcher first tries  46s to 270s
+//
+// Worked example, the last sim client of the walk:
+//   01:07:58  booking.created written
+//   01:11:06  SMS-S04-01-CONFIRM queued   (188s after the booking)
+//   01:12:01  EMAIL-S04-01-CONFIRM queued (243s)
+//   01:15:35  first dispatch attempt on both — 7m37s after the booking.
+//
+// So it is TWO delays, not one, and neither is small:
+//
+//   1. THIS SWEEPER'S CADENCE, and it is the half this file owns. Every
+//      templated message waits for the next pass. Worst case is one whole
+//      cron interval — five minutes — and the measured waits (46s…270s) are
+//      exactly the spread you get from arriving at a random point in a
+//      five-minute cycle. A 60-second target cannot be met by a five-minute
+//      clock, whatever else is fixed.
+//
+//   2. WORKFLOW-SIDE LATENCY BEFORE THE ROW EXISTS — s-04b-booking-reminders
+//      resolves the client, queues the text, mints a portal link, then queues
+//      the email, and each of those is a separate Inngest step round trip.
+//      That cost 44s for the first sim client of the walk and 188s for the
+//      fifth, i.e. it grows under load. NOT this file's to fix; recorded here
+//      because halving the sweep interval alone would still miss the target.
+//
+// The single-message path that answers (1) is outbox.drainMessageNow(). The
+// cadence below is unchanged pending the owner's call — see that function.
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";

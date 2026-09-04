@@ -1,5 +1,16 @@
 // COMPLIANCE REVIEW REQUIRED — funding / pre-approval amounts.
-// Present (closer-deck) and UnderwriteIQ must return the same stacked cents.
+//
+// F15, owner-set 2026-09-03. This file used to require the OPPOSITE of what it
+// now checks: that Present (the closer deck) recomputed the UnderwriteIQ stack
+// at render time so its headline matched api/read/underwrite. That recompute is
+// exactly the defect. On 2026-09-03 Present showed a customer "PRE-APPROVED FOR
+// APPROXIMATELY $939,500" while the engine had stored $199,350 and the client's
+// own portal was showing $199,350 — two client-facing screens, one person, one
+// minute, 4.7x apart. Chris: "fix the deck to the portal, not the reverse."
+//
+// So Present quotes the STORED estimate and does no funding arithmetic of its
+// own. api/read/underwrite is the engine surface and still computes. They are
+// two different questions and are no longer required to give one answer.
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
@@ -123,27 +134,33 @@ async function underwriteTotal(businesses) {
   return res.body.underwrite.totals.total_combined_funding;
 }
 
-describe("Present and UnderwriteIQ show the same stacked cents", () => {
-  test("one company: closer-deck total matches UnderwriteIQ combined, not the canned 125000", async () => {
-    const businesses = [{ age_months: 30 }];
-    const present = await presentTotal(businesses);
-    const underwrite = await underwriteTotal(businesses);
-    assert.ok(Number.isFinite(present) && present > 0);
-    assert.ok(Number.isFinite(underwrite) && underwrite > 0);
-    assert.notEqual(dollarsToCents(present), 12500000, "must not keep the canned CRS headline");
-    assert.equal(dollarsToCents(present), dollarsToCents(underwrite));
+describe("Present quotes the stored estimate, and only the stored estimate", () => {
+  test("the deck headline is the stored figure, not a render-time recalculation", async () => {
+    const present = await presentTotal([{ age_months: 30 }]);
+    const underwrite = await underwriteTotal([{ age_months: 30 }]);
+    assert.equal(dollarsToCents(present), 12500000, "the stored preapprovals.totalCombined");
+    assert.ok(Number.isFinite(underwrite) && underwrite > 0, "the engine surface still computes");
   });
 
-  test("three companies: both surfaces return the same higher stacked cents", async () => {
+  test("adding companies does not move the deck figure — only the engine can", async () => {
     const oneBiz = [{ age_months: 30 }];
     const threeBiz = [{ age_months: 30 }, { age_months: 30 }, { age_months: 30 }];
     const presentOne = await presentTotal(oneBiz);
-    const underwriteOne = await underwriteTotal(oneBiz);
     const presentThree = await presentTotal(threeBiz);
+    assert.equal(dollarsToCents(presentOne), dollarsToCents(presentThree));
+
+    // The engine surface is where a company count legitimately changes money.
+    const underwriteOne = await underwriteTotal(oneBiz);
     const underwriteThree = await underwriteTotal(threeBiz);
-    assert.equal(dollarsToCents(presentOne), dollarsToCents(underwriteOne));
-    assert.equal(dollarsToCents(presentThree), dollarsToCents(underwriteThree));
-    assert.ok(presentThree > presentOne);
     assert.ok(underwriteThree > underwriteOne);
+  });
+
+  test("no company on file means no business money anywhere", async () => {
+    // The live 2026-09-03 case: business_age_months 30 on the client, zero
+    // company rows. The loose field alone used to stack a business slice.
+    const underwrite = await underwriteTotal([]);
+    assert.ok(Number.isFinite(underwrite));
+    const oneBiz = await underwriteTotal([{ age_months: 30 }]);
+    assert.ok(oneBiz > underwrite, "the company is what adds business funding");
   });
 });

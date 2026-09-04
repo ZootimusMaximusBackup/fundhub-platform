@@ -46,6 +46,25 @@ input::placeholder{color:var(--gray2)}
 .kicker{margin-bottom:8px}
 .sub{font-family:var(--sans);font-size:clamp(11px,1.05vw,13px);line-height:1.5;color:var(--gray);margin:8px 0 0;max-width:620px}
 .fine{font-family:var(--sans);font-size:9.5px;line-height:1.45;color:var(--gray2);margin:10px 0 0;max-width:620px}
+/* F22 — the client half used to leave the bottom two thirds of these slides
+   blank. .fillslide centres the block in the slide the way the rest of the deck
+   already does; .roomy opens the row rhythm with the slide height so it fills
+   and balances at any zoom instead of huddling at the top. */
+.fillslide{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:center}
+/* The rhythm and the type both grow with the slide, so the block occupies the
+   screen instead of sitting in a small band. Sized off vh as well as vw so a
+   half-zoomed browser — how Chris was reading it — still fills. */
+.roomy .row{padding:clamp(9px,2.1vh,24px) 0}
+.roomy .row .l{font-size:clamp(13px,1.5vw,17px)}
+.roomy .row .r{font-size:clamp(12.5px,1.4vw,16px)}
+.roomy .row .subl{font-size:clamp(10.5px,1.15vw,13px);margin-top:3px}
+.roomy .kicker{margin-bottom:12px}
+.roomy .fin{margin-top:16px}
+/* The 560-620px caps on these blocks are written INLINE at each call site, so a
+   class rule cannot win without !important. Widening them is the other half of
+   filling the slide: centred content 620px wide inside a 1030px half still
+   reads as a screen with a hole in it. */
+.fillslide.roomy > div{max-width:min(860px,100%)!important}
 .row{display:flex;gap:14px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line)}
 .row .l{flex:1;min-width:0;font-size:clamp(11.5px,1.15vw,13.5px);color:var(--ink);font-weight:500}
 .row .l.strong{font-weight:650}
@@ -73,6 +92,11 @@ input::placeholder{color:var(--gray2)}
 .ck-bd{flex:1;min-height:0;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:11px}
 .ck-btn{font-family:var(--sans);font-size:11.5px;font-weight:600;padding:8px 11px;background:transparent;color:var(--ink);border:1px solid var(--line);cursor:pointer;text-align:left;width:100%}
 .ck-btn.k{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.ck-btn[disabled]{opacity:.5;cursor:default}
+/* F24 — this line STAYS. A toast that vanishes is what left the closer unsure
+   whether the text and the pay link went out, so the button was pressed three
+   and four times and the client got three and four of each. */
+.sent-at{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray);margin-top:-2px;padding-left:2px}
 .say{font-family:var(--sans);font-size:11.5px;color:var(--ink);line-height:1.45;padding-left:9px;border-left:2px solid var(--line)}
 .watch{border:1px solid var(--line);padding:9px}
 .ck-ft{padding:10px;border-top:1px solid var(--line);display:flex;gap:7px;flex-shrink:0}

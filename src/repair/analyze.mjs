@@ -20,7 +20,9 @@
 import { createHash } from "node:crypto";
 
 import { violationsByBureauFromMergedCrs } from "../metro2/diy/from-crs.mjs";
+import { derogatoryClaimsByBureau, mergeDerogatoryClaims } from "../metro2/diy/derogatory.mjs";
 import { isCollectorFinding } from "../metro2/diy/collectors.mjs";
+import { clientOutcomeTier } from "../config/product-path.mjs";
 import { generateLetter } from "../metro2/letters/generate.mjs";
 import { buildFurnisherValidationLetter } from "../metro2/letters/furnisher-validation.mjs";
 import { loadComplaintFilings } from "../metro2/rounds/complaint-filing.mjs";
@@ -42,6 +44,13 @@ export const ROUNDS = Object.freeze(["R1", "R2", "R3", "R4", "R5", "R6", "FURNIS
 
 /** How many prior letters to the same bureau the variance gate compares against. */
 const PRIOR_WINDOW = 5;
+
+/* The outcome tiers that put a client on the repair path. Both include repair —
+   REPAIR_ONLY is repair alone, FUNDING_PLUS_REPAIR is repair alongside funding.
+   The tier ladder is listed in src/config/product-path.mjs. A signed repair
+   agreement also counts, and counts first: a client who bought repair is on the
+   repair path whatever the analyzer last stamped on their record. */
+const REPAIR_PATH_TIERS = new Set(["REPAIR_ONLY", "FUNDING_PLUS_REPAIR"]);
 
 /**
  * Group collection / debt-buyer claims by creditor name_norm for furnisher letters.
@@ -289,9 +298,8 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
   // WS-A auth gate — do not remove. Prepare letters when a signed repair
   // agreement or a live signed/staff dispute_authorization is on file.
   // Send / paper mail stays a separate human click.
-  const authorized =
-    (await hasRepairAgreement(db, { orgId, clientId }))
-    || (await hasDisputeAuthorization(db, { orgId, clientId }));
+  const hasAgreement = await hasRepairAgreement(db, { orgId, clientId });
+  const authorized = hasAgreement || (await hasDisputeAuthorization(db, { orgId, clientId }));
   if (!authorized) return { ok: false, reason: "no_authorization" };
 
   const existingLetters = await loadExistingRoundLetters(db, { orgId, clientId, round });
@@ -324,7 +332,22 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
   const result = await newestCreditFile(db, { orgId, clientId });
   if (!result) return { ok: false, reason: "no_credit_file" };
 
-  const byBureau = violationsByBureauFromMergedCrs(result);
+  /* OWNER DECISION, 2026-09-03: "any derogatory deserves a letter, but only if
+     they are in the correct offer path." The Metro 2 engine only fires on a
+     reporting defect, so a repair client whose file is nothing but collections
+     and a charge-off got zero letters. Derogatory items now produce their own
+     claims — see ../metro2/diy/derogatory.mjs for what they assert and why they
+     are not Metro 2 rules — and ONLY for a client on the repair path. A client
+     off that path gets exactly what they got before: engine findings or nothing. */
+  const onRepairPath = hasAgreement || REPAIR_PATH_TIERS.has(
+    String(await clientOutcomeTier(db, clientId) || "")
+  );
+  const byBureau = onRepairPath
+    ? mergeDerogatoryClaims(
+      violationsByBureauFromMergedCrs(result),
+      derogatoryClaimsByBureau(result)
+    )
+    : violationsByBureauFromMergedCrs(result);
   const bureaus = BUREAU_CODES.filter((code) => (byBureau[code] || []).length > 0);
   if (bureaus.length === 0) return { ok: false, reason: "no_violations" };
 

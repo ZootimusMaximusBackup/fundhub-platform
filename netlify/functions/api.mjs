@@ -36,6 +36,7 @@ import authLogout from "../../api/auth/logout.mjs";
 import authSession from "../../api/auth/session.mjs";
 import authReset from "../../api/auth/reset.mjs";
 import authAdminReset from "../../api/auth/admin-reset.mjs";
+import authSendPortalLink from "../../api/auth/send-portal-link.mjs";
 import authInvite from "../../api/auth/invite.mjs";
 import authStaffRole from "../../api/auth/staff-role.mjs";
 import authStaffUpdate from "../../api/auth/staff-update.mjs";
@@ -262,6 +263,7 @@ export const ROUTES = {
   "auth/session": authSession,
   "auth/reset": authReset,
   "auth/admin-reset": authAdminReset,
+  "auth/send-portal-link": authSendPortalLink,
   "auth/invite": authInvite,
   "auth/staff-role": authStaffRole,
   "auth/staff-update": authStaffUpdate,

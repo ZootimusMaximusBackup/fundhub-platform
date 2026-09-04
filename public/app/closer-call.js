@@ -281,9 +281,15 @@
     });
     var lever = $(".lever");
     if (lever) {
-      var n = data.underwrite && data.underwrite.matched_lenders;
+      /* F10, owner-set: no credit pull on file, no lender count. Not 307, not
+         zero, not any number. This line used to read "307 lenders match this
+         file" three rows under "No credit pull on file yet", on a screen a
+         closer reads out loud. The server now sends matched_lenders null with
+         the reason why, and the reason is what shows. */
+      var uw = data.underwrite || {};
+      var n = uw.matched_lenders;
       lever.textContent = (n == null)
-        ? "Funding bands stay a dash until the report has a number."
+        ? (uw.lenders_reason || "Funding bands stay a dash until the report has a number.")
         : (n === 0
           ? "No lenders match this file yet."
           : n + " lender" + (n === 1 ? "" : "s") + " match this file.");

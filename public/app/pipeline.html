@@ -2031,6 +2031,7 @@ restore();
     return null;
   }
 
+  /* FH-DRAWER-BEGIN */
   /* CF stores option IDs on cf_svy_* and the words on *_label / *_labels.
      Never paint a bare 6-digit ID as the answer. */
   function isCfOptionId(v) {
@@ -2061,18 +2062,122 @@ restore();
     return String(v);
   }
 
+  /* One row per survey question, in the order the survey asks them
+     (docs/clickfunnels/cf-survey-ground-truth.md). The third slot is the
+     branch the question belongs to: the survey asks EITHER the two business
+     questions OR the two personal ones, never both, so painting all four to
+     everybody put two permanent "—" rows on every client and made a real
+     missing answer indistinguishable from a question that was never asked
+     (F8, 2026-09-03 walk). */
   var SURVEY_ROWS = [
-    ["Target amount", "cf_svy_funding_target_amount"],
-    ["Planned use", "cf_svy_planned_use"],
-    ["What money changes", "cf_svy_money_change_now"],
-    ["Current score", "cf_svy_self_reported_fico"],
-    ["Has a business", "cf_svy_has_business"],
-    ["Business revenue", "cf_svy_business_revenue"],
-    ["Can verify revenue", "cf_svy_revenue_verifiable"],
-    ["Personal income", "cf_svy_annual_income_range"],
-    ["Can verify income", "cf_svy_income_verifiable"],
-    ["Available capital", "cf_svy_available_capital"]
+    ["Target amount", "cf_svy_funding_target_amount", null],
+    ["Planned use", "cf_svy_planned_use", null],
+    ["What money changes", "cf_svy_money_change_now", null],
+    ["Current score", "cf_svy_self_reported_fico", null],
+    ["Has a business", "cf_svy_has_business", null],
+    ["Business revenue", "cf_svy_business_revenue", "business"],
+    ["Can verify revenue", "cf_svy_revenue_verifiable", "business"],
+    ["Personal income", "cf_svy_annual_income_range", "personal"],
+    ["Can verify income", "cf_svy_income_verifiable", "personal"],
+    ["Available capital", "cf_svy_available_capital", null]
   ];
+
+  /* Which side of the survey's one branch this client went down. The exact
+     option text is ground truth: any "Yes, …" tenure takes the business path,
+     "No, personal funding only" takes the personal path. */
+  function surveyBranch(cf) {
+    var answer = surveyAnswer(cf, "cf_svy_has_business");
+    if (answer) {
+      var s = String(answer).trim().toLowerCase();
+      if (s.indexOf("yes") === 0) return "business";
+      if (s.indexOf("no") === 0) return "personal";
+    }
+    /* No answer to the branch question. Do not guess a side — show whichever
+       side actually carries an answer, and neither when both are empty. */
+    var hasBusiness = surveyAnswer(cf, "cf_svy_business_revenue") != null ||
+      surveyAnswer(cf, "cf_svy_revenue_verifiable") != null;
+    var hasPersonal = surveyAnswer(cf, "cf_svy_annual_income_range") != null ||
+      surveyAnswer(cf, "cf_svy_income_verifiable") != null;
+    if (hasBusiness && !hasPersonal) return "business";
+    if (hasPersonal && !hasBusiness) return "personal";
+    return null;
+  }
+
+  /** [label, answer] for every survey question this client was actually asked. */
+  function surveyRowsFor(cf) {
+    var branch = surveyBranch(cf);
+    var out = [];
+    for (var i = 0; i < SURVEY_ROWS.length; i++) {
+      var row = SURVEY_ROWS[i];
+      if (row[2] && row[2] !== branch) continue;
+      out.push([row[0], surveyAnswer(cf, row[1])]);
+    }
+    return out;
+  }
+
+  /* The four routing lines the closer dashboard already reads off
+     /api/read/ad-attribution (public/app/closer-call.js paintAd). Same
+     endpoint, same wording — this screen is the one non-closers open, and it
+     was the only surface where gate/entry/primary/secondary never appeared
+     (F9, 2026-09-03 walk). Wording is the owner's, said once in
+     api/read/ad-attribution.mjs; keep the two screens reading the same. */
+  var OFFER_WORDS = {
+    funding_dfy: "Funding, done-for-you",
+    credit_optimization: "Credit optimization",
+    capital_blueprint: "Capital Blueprint",
+    capital_academy: "Capital Academy",
+    white_label: "White-label partner",
+    none: "None"
+  };
+  function offerWord(k) { return OFFER_WORDS[k] || k; }
+
+  /** [label, value] rows for the routing block, or [] when nothing is known. */
+  function adRoutingRows(payload) {
+    var v = payload && payload.resolved;
+    if (!v) return [];
+    var known = payload.registry && payload.registry.known;
+    var adId = payload.attribution && payload.attribution.ad_id;
+    var entry = v.entry === "direct"
+      ? "Direct · sell what they were promised"
+      : "Sorting · every road is open" +
+        (adId && !known ? " (ad " + adId + " not in the registry)" : (adId ? "" : " (no ad on file)"));
+    var secondary = v.secondary_offers === "all"
+      ? "All"
+      : (v.secondary_offers && v.secondary_offers.length
+          ? v.secondary_offers.map(offerWord).join(", ")
+          : "None");
+    return [
+      ["Gate", v.gate === "none" ? "No FICO gate" : v.gate + "+"],
+      ["Entry", entry],
+      ["Primary offer", offerWord(v.primary_offer) +
+        (v.entry === "sorting" && v.primary_offer !== "none" ? " · lead with it" : "")],
+      ["Secondary offers", secondary]
+    ];
+  }
+
+  window.FHPipelineDrawer = {
+    surveyAnswer: surveyAnswer,
+    surveyBranch: surveyBranch,
+    surveyRowsFor: surveyRowsFor,
+    adRoutingRows: adRoutingRows
+  };
+  /* FH-DRAWER-END */
+
+  /* One extra read after the drawer paints, appended into "How they got here".
+     Silent when the endpoint cannot answer — a closer must never read a guess
+     about what the ad promised, so nothing is better than a default. */
+  function paintAdRouting(section, clientId) {
+    if (!section || !clientId) return;
+    if (typeof FHData === "undefined" || !FHData.read) return;
+    FHData.read("ad-attribution", { client_id: clientId }).then(function (r) {
+      if (!drawerClient || drawerClient.client_id !== clientId) return;
+      if (!section.isConnected) return;
+      if (!r || !r.ok || !r.data) return;
+      adRoutingRows(r.data).forEach(function (pair) {
+        section.appendChild(rowAlways(pair[0], pair[1]));
+      });
+    });
+  }
 
   function paintDrawer(c, data) {
     drawerBody.textContent = "";
@@ -2149,10 +2254,11 @@ restore();
     attr.appendChild(rowAlways("Landed on", cf.landing_path || null));
     attr.appendChild(rowAlways("Magnet", cf.lead_magnet_type || null));
     drawerBody.appendChild(attr);
+    paintAdRouting(attr, clientId);
 
     var survey = sec("Survey");
-    SURVEY_ROWS.forEach(function (pair) {
-      survey.appendChild(rowAlways(pair[0], surveyAnswer(cf, pair[1])));
+    surveyRowsFor(cf).forEach(function (pair) {
+      survey.appendChild(rowAlways(pair[0], pair[1]));
     });
     drawerBody.appendChild(survey);
 

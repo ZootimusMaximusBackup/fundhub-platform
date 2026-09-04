@@ -132,8 +132,17 @@ test("the task Bland speaks is the agent's stored prompt, not a vendor file", as
     "the call must speak agents.prompt — that is what makes the Agent Editor the source of truth");
   assert.equal(body.task, `${RECORDING_NOTICE}\n\n${goodAgent.prompt}`,
     "the notice is the ONLY thing allowed in front of the stored prompt");
-  assert.equal(body.first_sentence, firstSentenceFromPrompt(goodAgent.prompt),
-    "Bland must have opening words — missing first_sentence ended prove calls in 0.13s");
+  /* NO first_sentence on a consumer call. This assertion used to be its exact
+     opposite — it pinned first_sentence === firstSentenceFromPrompt(prompt) — and
+     that is precisely the defect: Bland speaks first_sentence verbatim, so Josh
+     opened every call by reading his own instruction sheet out loud ("You are a
+     Fundhub voice agent."). That is what "the setter does not work AT ALL" was on
+     the 2026-09-03 walk. It also meant the recording notice, which taskWithRecordingNotice
+     puts in front of `task`, was never the first thing said on a recorded call.
+     Bland opens from the task when the key is absent. The prove line keeps its
+     opener — see the test below — because that handset auto-answers silent. */
+  assert.equal(body.first_sentence, undefined,
+    "a real consumer call must never be handed words to read out — Bland speaks first_sentence verbatim");
   assert.equal(body.wait_for_greeting, true, "a real client line still waits for a hello");
   assert.equal(body.phone_number, "+15551234567", "the number is normalised to E.164");
   assert.equal(body.metadata.agent_code, "AG-04");

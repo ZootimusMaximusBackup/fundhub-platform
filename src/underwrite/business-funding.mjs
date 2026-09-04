@@ -36,13 +36,19 @@ export function finiteAgeMonths(value) {
 
 /**
  * One age per listed company. A row with no age_months uses the client's
- * stored business_age_months. Zero listed rows keeps today's one-shop path
- * (the fallback age alone, or none).
+ * stored business_age_months. Zero listed rows means zero business money.
+ *
+ * F15, owner-set 2026-09-03: no company row, no business funding. The loose
+ * clients.custom_fields.business_age_months used to be enough on its own, so a
+ * client whose own record reads "No businesses on file" was quoted roughly
+ * $740,000 of business funding on a client-facing sales slide. An age is a
+ * property of a company; with no company there is nothing to age, and the
+ * fallback now only fills in a blank date on a company that actually exists.
  */
 export function resolveBusinessAges({ businesses = [], fallbackAgeMonths = null } = {}) {
   const fallback = finiteAgeMonths(fallbackAgeMonths);
   const rows = Array.isArray(businesses) ? businesses : [];
-  if (rows.length === 0) return fallback == null ? [] : [fallback];
+  if (rows.length === 0) return [];
   return rows.map((biz) => finiteAgeMonths(biz?.age_months) ?? fallback);
 }
 

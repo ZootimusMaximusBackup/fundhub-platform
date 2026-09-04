@@ -66,7 +66,12 @@ const FEE_BLANKS = Object.freeze({
     { field: "deposit", offer: "FUNDING_DFY" },
     { field: "repair_fee", offer: "REPAIR_DFY" }
   ],
-  "FUNDING-MASTERY-AGREEMENT": [{ field: "program_fee", offer: "FUNDING_MASTERY" }]
+  "FUNDING-MASTERY-AGREEMENT": [{ field: "program_fee", offer: "FUNDING_MASTERY" }],
+  // Added 2026-09-03. Capital Blueprint had no contract template at all until
+  // db/migrations/287_contract_seller_signature_and_real_text.sql — it was the
+  // only client offer in the catalogue with none, so a Blueprint sale closed
+  // with nothing to send and nothing anywhere said so.
+  "CAPITAL-BLUEPRINT-AGREEMENT": [{ field: "package_fee", offer: "UWIQ_DELIVERABLES" }]
 });
 
 const NON_PRICE_BLANKS = Object.freeze({
@@ -193,6 +198,7 @@ const PATHS = Object.freeze([
   { label: "REPAIR_DFY", offerKey: "REPAIR_DFY", tier: null },
   { label: "REPAIR_TRIAL", offerKey: "REPAIR_TRIAL", tier: null },
   { label: "FUNDING_MASTERY", offerKey: "FUNDING_MASTERY", tier: null },
+  { label: "UWIQ_DELIVERABLES", offerKey: "UWIQ_DELIVERABLES", tier: null },
   { label: "FUNDING_PLUS_REPAIR tier", offerKey: "FUNDING_DFY", tier: "FUNDING_PLUS_REPAIR" }
 ]);
 
@@ -206,7 +212,7 @@ describe("the copy this guard reads is really there", () => {
   // Without this, every assertion below could pass over an empty map — a guard
   // that silently stopped finding anything is worse than no guard.
   test("every contract the catalogue points at was found in db/", () => {
-    assert.ok(pathsWithTemplates.length >= 6, "the offer catalogue stopped naming contracts");
+    assert.ok(pathsWithTemplates.length >= 7, "the offer catalogue stopped naming contracts");
     for (const p of pathsWithTemplates) {
       const tpl = TEMPLATES.get(p.templateKey);
       assert.ok(tpl, `${p.label}: no db/ file defines ${p.templateKey}`);
@@ -334,6 +340,78 @@ describe("a rename cannot go half way", () => {
         `${p.label}: defaultContractValues() leaves ${JSON.stringify(missing)} empty on ` +
         `${p.templateKey}. A required blank with nothing in it is a fee line with nothing in it.`
       );
+    });
+  }
+});
+
+/* ───────────────────────────────────────────────────────────────────────────
+   THE PARTIES AND THE SIGNATURE BLOCK (F28 and F29, live walk 2026-09-03).
+
+   These live in this file rather than a new one because it already parses the
+   contract copy out of db/, and a second parser of the same SQL is the
+   "two functions doing the same thing" bug CLAUDE.md §8 names — on the copy a
+   client signs, of all places.
+
+   F28: every client contract opened "Between: {{field.company_name}} ("we")",
+   filled by a staff member at send time. On 2026-09-03 a closer typed the
+   CLIENT's own company into it and a $5,000 Fundhub agreement went out saying
+   the client's company was the seller. The seller is Fundhub LLC on every one,
+   so it is a sentence in the template and not a value any screen can reach.
+
+   F29: the bodies ended at "YOUR COPY" with no execution block, so the copy a
+   client read and downloaded had nowhere on it that looked signed.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+describe("the seller is Fundhub, written into the words", () => {
+  for (const p of pathsWithTemplates) {
+    test(`${p.templateKey} never prints a typed company name`, () => {
+      const tpl = TEMPLATES.get(p.templateKey);
+      assert.equal(
+        /\{\{\s*field\.company_name\s*\}\}/.test(tpl.body), false,
+        `${p.templateKey} still prints {{field.company_name}}. A staff member ` +
+        `types that, and on 2026-09-03 one typed the client's own company into ` +
+        `it and it rendered as the seller. Defined in: ${tpl.sources.join(" → ")}`
+      );
+      assert.equal(
+        tpl.fields.some((f) => f.key === "company_name"), false,
+        `${p.templateKey} still declares a company_name blank, so a screen can ` +
+        `still put a box on the page for somebody to fill in.`
+      );
+    });
+
+    test(`${p.templateKey} names Fundhub LLC itself`, () => {
+      assert.match(
+        TEMPLATES.get(p.templateKey).body, /Fundhub LLC/,
+        `${p.templateKey} does not name the seller anywhere. Removing the blank ` +
+        `without writing the party in leaves the document with no seller at all.`
+      );
+    });
+
+    test(`${p.label}: nothing fills a company_name value any more`, () => {
+      assert.equal(
+        Object.prototype.hasOwnProperty.call(p.values, "company_name"), false,
+        `defaultContractValues() still returns company_name for ${p.label}. The ` +
+        `blank is gone from the copy, so a value for it is a live seam with ` +
+        `nothing on the other end.`
+      );
+    });
+  }
+});
+
+describe("every document carries its own signature block", () => {
+  for (const p of pathsWithTemplates) {
+    test(`${p.templateKey} has parties, a signed-by line and a date inside the body`, () => {
+      const body = TEMPLATES.get(p.templateKey).body;
+      assert.match(body, /\nSIGNATURES\n/,
+        `${p.templateKey} has no SIGNATURES section in the words the client reads.`);
+      assert.match(body, /Signed by: an authorised signer of Fundhub LLC/,
+        `${p.templateKey} does not say who signs for Fundhub.`);
+      assert.match(body, /Signed by: _{6,}/,
+        `${p.templateKey} gives the client nowhere that reads as a signature line.`);
+      assert.match(body, /Date: _{6,}/,
+        `${p.templateKey} has no date line for the client's signature.`);
+      assert.match(body, /\{\{contact\.full_name\}\}/,
+        `${p.templateKey} does not name the client in its signature block.`);
     });
   }
 });

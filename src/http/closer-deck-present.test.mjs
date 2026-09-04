@@ -112,14 +112,60 @@ test("S-23 has Invoice this client, and it emails the open invoice", () => {
 });
 
 test("S-23 pay click always POSTs send_pay_link", () => {
+  /* The third argument is the button's own key, so the control can show that it
+     is sending and refuse a second press (F24). The action itself is unchanged
+     and is still never gated behind picking a sale motion. */
   assert.match(
     presentJs,
-    /if \(a === "pay"\) \{\s*fire\("send_pay_link"\); return; \}/
+    /if \(a === "pay"\) \{\s*fire\("send_pay_link", null, "pay"\); return; \}/
   );
   assert.doesNotMatch(
     presentJs,
     /Choose downsell or upsell first/
   );
+});
+
+/* F24 — the send button gave no feedback, so it was pressed three and four
+   times and the client got three and four texts, emails and pay links. Two
+   pay-link emails on 2026-09-03 carried two DIFFERENT live checkout links. */
+test("every send control shows it was pressed, locks, and keeps the sent time", () => {
+  assert.ok(presentJs.includes("function sendBtn("), "no shared send control");
+  assert.ok(presentJs.includes("SEND_COOLDOWN_MS"), "no cooldown after a success");
+  assert.ok(presentJs.includes('"Sending…"'), "no pressed state while in flight");
+  assert.ok(presentJs.includes("Sent at "), "the sent time must stay on the button");
+  assert.ok(presentJs.includes("if (sendLocked(a)) return;"),
+    "a locked control must refuse the click, not just look disabled");
+  for (const act of ["pay", "contract", "letters", "softpull", "ebook", "invoice", "send-letters"]) {
+    assert.ok(
+      presentJs.includes('sendBtn("') && presentJs.includes('"' + act + '"'),
+      act + " has no send-control state"
+    );
+  }
+});
+
+/* F27, owner-set: contract send is ONE CLICK, no typing. */
+test("the contract wording form is gone from the deck", () => {
+  assert.ok(!presentJs.includes("Wording for this client"), "the wording panel is still there");
+  assert.ok(!presentJs.includes("manual_fields"), "the template's manual fields are still rendered");
+  assert.ok(!presentJs.includes('id="fh-contract-tpl"'), "the wording picker is still there");
+  assert.ok(!presentJs.includes("data-blank"), "staff can still type contract blanks");
+  assert.ok(!presentJs.includes("contract-go"), "there is still a second send step");
+  assert.ok(!presentJs.includes("Send this wording"), "the wording send button survived");
+  assert.match(presentJs, /if \(a === "contract"\) \{ sendContractNow\(\); return; \}/,
+    "Send contract must send, not open a form");
+});
+
+/* F23 — the wrap script promised a funding advisor, submitted applications and
+   "we're going to get you funded" on a $5,000 EDUCATION sale. */
+test("the close script follows the offer, and education promises no funding", () => {
+  assert.ok(presentJs.includes("var CLOSE_TALK"), "section 07 copy is not keyed to the offer");
+  for (const key of ["FUNDING_DFY", "REPAIR_DFY", "REPAIR_TRIAL", "UWIQ_DELIVERABLES", "FUNDING_MASTERY"]) {
+    assert.match(presentJs, new RegExp(key + ":\\s*\\{"), "no close script for " + key);
+  }
+  const eduWrap = presentJs.slice(presentJs.indexOf("FUNDING_MASTERY: {"), presentJs.indexOf("var OBJECTIONS"));
+  assert.ok(!/get you funded/i.test(eduWrap), "the education wrap promises funding");
+  assert.ok(!/applications are submitted/i.test(eduWrap), "the education wrap promises applications");
+  assert.ok(!/your advisor reaches out/i.test(eduWrap), "the education wrap promises an advisor");
 });
 
 /* Hole 16 — a file with more than one company was priced off a business age

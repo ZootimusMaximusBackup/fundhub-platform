@@ -32,6 +32,7 @@ import {
 import { storeIdentity, PiiError } from "../src/pii/index.mjs";
 import { hashPassword } from "../src/auth/hash.mjs";
 import { newToken } from "../src/auth/session.mjs";
+import { issuePortalLinkForClient } from "../src/auth/magic-link.mjs";
 import { getOffer, formatCents } from "../src/config/offers.mjs";
 import {
   softPullTotalCents,
@@ -469,6 +470,32 @@ export default async function handler(req, res, deps = {}) {
 
     await replaceSoftPullBusinesses(database, { orgId, clientId, businesses });
 
+    /* THE CLIENT IS TOLD HOW TO GET IN, IN THE SAME BREATH AS THE ACCOUNT.
+       provisionClientAccount() above writes an ACTIVE `accounts` row with a
+       password hash of 32 discarded random bytes — a credential nobody holds,
+       including us (see the same pattern in src/auth/magic-link.mjs). Until
+       2026-09-03 nothing then sent that person anything, so every buyer walked
+       away with a live portal account they could not open and a reset screen
+       telling them to ask an admin. Walk finding F31.
+
+       NON-FATAL, DELIBERATELY. The consent, the identity and the checkout are
+       what this request is for; a mail-queue failure must not lose them. The
+       outcome is reported in the response instead, so the closer on the phone
+       can see the link did not go and say so. */
+    let portalLink = { sent: false, reason: null };
+    try {
+      const link = await issuePortalLinkForClient(database, {
+        orgId, clientId, ip: clientIp(req),
+        userAgent: req.headers?.["user-agent"] || null,
+        env
+      });
+      portalLink = link.ok
+        ? { sent: link.sent === true, reason: link.sent ? null : (link.limited ? "rate_limited" : link.outcome || "not_queued") }
+        : { sent: false, reason: link.reason || "not_queued" };
+    } catch (e) {
+      portalLink = { sent: false, reason: String(e && e.message ? e.message : e).slice(0, 120) };
+    }
+
     const consent = await captureConsent(database, {
       orgId,
       clientId,
@@ -511,6 +538,10 @@ export default async function handler(req, res, deps = {}) {
       pricing: { ...pricing, total_cents: amountCents, total_display: amountDisplay },
       checkout,
       checkout_error: checkoutError,
+      // Whether the sign-in email was queued. Never the link itself: this reply
+      // goes to a browser on a public signed link, and a portal token in it
+      // would be a second credential sitting in a response body.
+      portal_link: portalLink,
       next: checkout?.checkout_url
         ? `Pay ${amountDisplay} next — use the Pay button below.`
         : `Consent saved. Ask your advisor for the ${amountDisplay} pay link.`

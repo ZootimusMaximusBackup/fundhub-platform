@@ -41,7 +41,9 @@
 // It holds no URL and no credential and makes no outbound request. Transmission
 // lives in src/messaging/providers/* and nowhere else (CLAUDE.md §12).
 
-import { dispatchDue, DEFAULT_BATCH, resolveTimestampParam } from "./dispatch.mjs";
+import {
+  dispatchDue, dispatchMessage, DEFAULT_BATCH, resolveTimestampParam
+} from "./dispatch.mjs";
 import { createTask } from "../lib/create-task.mjs";
 
 /** What a company that has never touched its settings gets. See the header. */
@@ -193,12 +195,20 @@ function describe(settings, counts, routing) {
  * called from a button, a schedule and a send path, and none of them should fall
  * over because one message could not be routed.
  */
-export async function drain(db, { orgId, limit = DEFAULT_BATCH, now = null, dispatchOptions = {} } = {}) {
-  if (!orgId) return { ran: false, reason: "no_org", dispatched: 0, results: [] };
-
+/**
+ * allowance — "may this company send, and how many?"
+ *
+ * ONE PLACE, because there are now two callers: the batch drain below and
+ * drainMessageNow(). A second copy of the switch-then-cap rule is exactly the
+ * kind of duplicate that lets a paused company keep sending down one path.
+ *
+ * Returns { ok: true, settings, allowed } or { ok: false, refusal } where the
+ * refusal is already in drain()'s return shape.
+ */
+async function allowance(db, { orgId, limit, now }) {
   const settings = await settingsFor(db, orgId);
   if (!settings.outbound_enabled) {
-    return { ran: false, reason: "paused", dispatched: 0, results: [] };
+    return { ok: false, refusal: { ran: false, reason: "paused", dispatched: 0, results: [] } };
   }
 
   /* THE DAILY CAP. Counted from what has actually been sent today, so a
@@ -206,7 +216,6 @@ export async function drain(db, { orgId, limit = DEFAULT_BATCH, now = null, disp
      50,000 and taking the sending domain down with it. A cap of 0 means no
      ceiling was wanted; treat that as unlimited rather than as a block, because
      a 0 that silently stops all mail is the failure this file exists to end. */
-  let allowed = limit;
   if (settings.daily_send_cap > 0) {
     const { rows } = await db.query(
       `SELECT count(*)::int AS n FROM messages
@@ -216,11 +225,23 @@ export async function drain(db, { orgId, limit = DEFAULT_BATCH, now = null, disp
     const already = rows[0]?.n || 0;
     const room = settings.daily_send_cap - already;
     if (room <= 0) {
-      return { ran: false, reason: "daily_cap_reached", dispatched: 0, results: [], capped: true,
-               cap: settings.daily_send_cap, sentToday: already };
+      return {
+        ok: false,
+        refusal: { ran: false, reason: "daily_cap_reached", dispatched: 0, results: [], capped: true,
+                   cap: settings.daily_send_cap, sentToday: already }
+      };
     }
-    allowed = Math.min(limit, room);
+    return { ok: true, settings, allowed: Math.min(limit, room) };
   }
+  return { ok: true, settings, allowed: limit };
+}
+
+export async function drain(db, { orgId, limit = DEFAULT_BATCH, now = null, dispatchOptions = {} } = {}) {
+  if (!orgId) return { ran: false, reason: "no_org", dispatched: 0, results: [] };
+
+  const room = await allowance(db, { orgId, limit, now });
+  if (!room.ok) return room.refusal;
+  const { settings, allowed } = room;
 
   try {
     const out = await dispatchDue(db, { ...dispatchOptions, orgId, limit: allowed, now });
@@ -242,6 +263,79 @@ export async function drain(db, { orgId, limit = DEFAULT_BATCH, now = null, disp
     };
   } catch (err) {
     console.warn(`[outbox] drain failed for org ${orgId}: ${err.message}`);
+    return { ran: false, reason: "error", error: err.message, dispatched: 0, results: [] };
+  }
+}
+
+/**
+ * The owner's target for a booking confirmation, set on the 2026-09-03 walk:
+ * the text, the email and the AI call all land within SIXTY SECONDS of the
+ * booking. Exported so a test can hold the number still and so nothing has to
+ * restate it in prose.
+ */
+export const URGENT_MAX_LATENCY_MS = 60 * 1000;
+
+/**
+ * drainMessageNow — send ONE named message now, instead of waiting for a sweep.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * WHY THIS EXISTS. F1, measured 2026-09-03.
+ *
+ * A booking confirmation took about three minutes to arrive against a
+ * 60-second target. Roughly half of that is this queue: a templated row is
+ * written and then waits for the next scheduled pass, which is every five
+ * minutes (src/workflows/message-dispatch-sweeper.mjs, and the measurement is
+ * in its header). Measured waits on the walk's own rows: 46 to 270 seconds.
+ * No 60-second promise survives a five-minute clock.
+ *
+ * The sweeper stays exactly as it is. A message somebody is waiting on asks to
+ * be worked NOW, one row, by id — the same thing compose.mjs has always done
+ * for a staff reply, which is why this reuses dispatchMessage() rather than
+ * inventing a second send path.
+ *
+ * NOTHING CALLS THIS YET. It is the mechanism, not the policy: turning it on
+ * means a workflow asking for it at the point it queues the row, and the owner
+ * asked to be consulted before any immediate-send path goes live because it
+ * touches every outbound message. Until then this changes no behaviour.
+ *
+ * EVERY RULE STILL APPLIES, and none of them is re-implemented here:
+ *   * the per-company pause switch and the daily cap — allowance(), the same
+ *     call drain() makes, so an urgent send cannot outrun a paused company;
+ *   * gate → route → send, inside dispatchMessage → dispatchOne, unchanged;
+ *   * quiet hours, opt-out, restricted wording, retries — all the dispatcher's,
+ *     all untouched. "Urgent" means it is not made to wait for a clock. It does
+ *     NOT mean any check is skipped, and there is no flag here that could skip
+ *     one.
+ *
+ * A message that is not claimable (already sent, already blocked, being worked
+ * by a sweep right now) comes back as outcome NOT_CLAIMABLE and is left alone —
+ * that is the double-send guard doing its job, not a failure.
+ *
+ * Never throws, for the same reason drain() does not: the caller has already
+ * committed the row, and a message that could not be sent immediately is still
+ * queued and the next sweep still picks it up.
+ */
+export async function drainMessageNow(db, messageId, { orgId, now = null, dispatchOptions = {} } = {}) {
+  if (!orgId) return { ran: false, reason: "no_org", dispatched: 0, results: [] };
+  if (!messageId) return { ran: false, reason: "no_message", dispatched: 0, results: [] };
+
+  const room = await allowance(db, { orgId, limit: 1, now });
+  if (!room.ok) return room.refusal;
+
+  try {
+    const result = await dispatchMessage(db, messageId, { ...dispatchOptions, now });
+    return {
+      ran: true,
+      reason: null,
+      dispatched: 1,
+      sent: result?.outcome === "sent" ? 1 : 0,
+      blocked: result?.outcome === "blocked" ? 1 : 0,
+      results: [result]
+    };
+  } catch (err) {
+    /* Warn, do not throw. The row stays queued and the sweeper is the backstop,
+       so the worst case of a failure here is the delay we already have. */
+    console.warn(`[outbox] immediate send failed for message ${messageId}: ${err.message}`);
     return { ran: false, reason: "error", error: err.message, dispatched: 0, results: [] };
   }
 }

@@ -206,7 +206,18 @@ test("runCrsPull stores one tri-bureau result and replays without another order"
   assert.equal(db.events[0].payload.source, "crs");
   assert.ok(db.events[0].payload.scores);
   assert.ok(db.events[0].payload.bureaus);
-  assert.ok(Array.isArray(db.events[0].payload.inquiries));
+  /* Pin the key name. c-02-inquiry-created reads `newInquiries`; when this
+     emitter said `inquiries` no inquiry was ever logged from a real pull. The
+     second assertion keeps the dead name from coming back alongside it. */
+  assert.ok(Array.isArray(db.events[0].payload.newInquiries));
+  assert.equal("inquiries" in db.events[0].payload, false);
+  // c-02 reads `{ bureau, inquiry }` off each entry. Pin that too, so a payload
+  // that carries the right key but the wrong item shape still fails here.
+  assert.ok(db.events[0].payload.newInquiries.length > 0);
+  for (const inq of db.events[0].payload.newInquiries) {
+    assert.ok(inq.bureau, "each inquiry carries a bureau");
+    assert.ok(inq.inquiry, "each inquiry carries a creditor name");
+  }
   assert.ok(first.outcomeTier);
   assert.equal(db.events[0].payload.outcomeTier, first.outcomeTier);
   assert.equal(db.events[1].payload.outcomeTier, first.outcomeTier);

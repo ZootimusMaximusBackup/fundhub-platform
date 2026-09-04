@@ -26,10 +26,14 @@ function isBureauReport(value) {
 }
 
 /**
+ * Split a stored CRS result into one report per bureau.
+ * Exported because src/metro2/diy/derogatory.mjs needs exactly the same split
+ * and a second copy of it would drift.
+ *
  * @param {object} merged  crs_results.result (bureaus.TU|EX|EQ) or a single bureau body
- * @returns {Record<string, object[]>}
+ * @returns {Record<string, object>}
  */
-export function violationsByBureauFromMergedCrs(merged) {
+export function bureauReportsFromMergedCrs(merged) {
   if (!merged || typeof merged !== "object") return {};
 
   const reports = {};
@@ -46,6 +50,15 @@ export function violationsByBureauFromMergedCrs(merged) {
           : null;
     if (code) reports[code] = merged;
   }
+  return reports;
+}
+
+/**
+ * @param {object} merged  crs_results.result (bureaus.TU|EX|EQ) or a single bureau body
+ * @returns {Record<string, object[]>}
+ */
+export function violationsByBureauFromMergedCrs(merged) {
+  const reports = bureauReportsFromMergedCrs(merged);
 
   const out = {};
   for (const [code, report] of Object.entries(reports)) {

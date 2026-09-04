@@ -1,7 +1,8 @@
 // Closer deck payload + live actions.
 // Reads stored CRS + survey. Never invents FICO or reason copy.
-// Headline pre-approval is the UnderwriteIQ stack (same compute as
-// api/read/underwrite.mjs), not the stored CRS canned total.
+// Headline pre-approval is the STORED engine estimate — the same figure the
+// client portal quotes. This screen does no funding arithmetic of its own
+// (F15, owner-set 2026-09-03).
 
 import { getOffer, offerAllowsLetters, offersForClient, formatCents } from "../config/offers.mjs";
 import { isFundingPath } from "../config/product-path.mjs";
@@ -21,9 +22,10 @@ import { composeAndSend } from "../messaging/compose.mjs";
 import { dispatchMessage } from "../messaging/dispatch.mjs";
 import { secretFromEnv } from "../documents/signed-url.mjs";
 import { incomeEstimates } from "../http/client-detail.mjs";
-import { toBureaus } from "../underwrite/adapter.mjs";
-import { computeUnderwrite } from "../underwrite/engine.mjs";
-import { applyStackedBusinessFunding } from "../underwrite/business-funding.mjs";
+/* The client portal's own pre-qual reader. Deck and portal quote one number
+   (F15) because they call the same function, not because someone kept two
+   calculations in step. */
+import { prequalFromCustomFields } from "../http/portal-prequal.mjs";
 
 function jsonSafeLink(link, extra = {}) {
   if (!link) return null;
@@ -91,6 +93,47 @@ function cf(client, key) {
   const v = custom[key];
   if (Array.isArray(v)) return v.filter(Boolean).join(", ") || null;
   if (v == null || v === "") return null;
+  return String(v);
+}
+
+/* F11 — the deck printed 207883 where the client's own words belong, on the
+   slide headed "This is what you told us" and again as the biggest number on
+   the goal slide. ClickFunnels stores the answer-option ROW ID on cf_svy_<key>
+   and the words on cf_svy_<key>_label / _labels. Same rule pipeline.html
+   already uses (surveyAnswer, isCfOptionId) — reused here rather than rebuilt,
+   so the deck resolves the label wherever the raw id is all that got copied. */
+function isCfOptionId(v) {
+  if (typeof v === "number") return v >= 10000;
+  return typeof v === "string" && /^\d{5,}$/.test(v.trim());
+}
+
+function surveyAnswer(client, key) {
+  const custom = client?.custom_fields && typeof client.custom_fields === "object"
+    ? client.custom_fields : {};
+  const label = custom[`${key}_label`];
+  if (label != null && label !== "") return String(label);
+  const labels = custom[`${key}_labels`];
+  if (labels != null && labels !== "") {
+    if (Array.isArray(labels)) return labels.filter(Boolean).join(", ") || null;
+    if (typeof labels === "string") {
+      try {
+        const parsed = JSON.parse(labels);
+        if (Array.isArray(parsed)) return parsed.filter(Boolean).join(", ") || null;
+      } catch {
+        /* not JSON — the stored string is the label */
+      }
+    }
+    return String(labels);
+  }
+  const v = custom[key];
+  if (v == null || v === "") return null;
+  if (Array.isArray(v)) {
+    const words = v.filter((x) => x != null && x !== "" && !isCfOptionId(x));
+    return words.length ? words.join(", ") : null;
+  }
+  /* A bare option id is not an answer. Better a dash than a database row id
+     read out to a customer on a live call. */
+  if (isCfOptionId(v)) return null;
   return String(v);
 }
 
@@ -254,7 +297,10 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
   const client = clientRes.rows[0];
   if (!client) return null;
 
-  const [crsRes, bizRes, tradelinesRes, liabilitiesRes] = await Promise.all([
+  /* Tradelines and card liabilities are no longer read here. They existed only
+     to feed the render-time UnderwriteIQ recompute that F15 deleted; the deck
+     now quotes the stored estimate and does no arithmetic of its own. */
+  const [crsRes, bizRes] = await Promise.all([
     db.query(
       `SELECT result, outcome_tier, created_at
          FROM crs_results
@@ -262,49 +308,48 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
         ORDER BY created_at DESC LIMIT 1`,
       [clientId, orgId]
     ),
+    /* The columns the payload actually maps. This asked for age_months alone
+       while the response below reads id, name and incorporated_date, so every
+       company came back nameless and undated on a real database. */
     db.query(
-      `SELECT age_months FROM businesses
+      `SELECT id, name, age_months, incorporated_date FROM businesses
         WHERE client_id = $1 AND org_id = $2
         ORDER BY created_at ASC`,
-      [clientId, orgId]
-    ),
-    db.query(
-      `SELECT * FROM tradelines
-        WHERE client_id = $1 AND org_id = $2
-        ORDER BY apr ASC NULLS LAST, lender ASC`,
-      [clientId, orgId]
-    ),
-    db.query(
-      `SELECT * FROM card_liabilities
-        WHERE client_id = $1 AND org_id = $2
-        ORDER BY as_of DESC`,
       [clientId, orgId]
     )
   ]);
 
   const name = [client.first_name, client.last_name].filter(Boolean).join(" ").trim() || "Client";
   const engine = engineFromRow(crsRes.rows[0], client.outcome_tier);
-  /* COMPLIANCE REVIEW REQUIRED — Present money is the UnderwriteIQ stack, not
-     the stored CRS canned total. Same three calls as api/read/underwrite.mjs. */
+
+  /* COMPLIANCE REVIEW REQUIRED — the client-facing pre-approval figure.
+     F15, owner-set 2026-09-03: ONE stored number, no second calculation.
+
+     Present used to re-run the UnderwriteIQ stack here at render time and
+     overwrite the stored estimate with it. On 2026-09-03 that put $939,500 on
+     the customer's own "PRE-APPROVED FOR APPROXIMATELY" slide while the engine
+     had stored $199,350 and the client portal was showing $199,350 — the same
+     person quoted two pre-approval figures 4.7x apart on two client-facing
+     screens in the same minute. Owner: "fix the deck to the portal, not the
+     reverse."
+
+     So the recompute is gone, not synchronised. The deck reads what was
+     stored, through the SAME reader the portal uses (prequalFromCustomFields),
+     and falls back to the pre-approval carried on the stored CRS payload.
+     A number that should move because a company was added moves when the
+     engine runs again and stores a new estimate — never because a sales screen
+     did its own arithmetic. */
   if (engine.available) {
-    const adapter = toBureaus({
-      tradelines: tradelinesRes.rows,
-      liabilities: liabilitiesRes.rows,
-      crsResults: crsRes.rows,
-      customFields: client.custom_fields || {},
-      businesses: bizRes.rows
-    });
-    const underwrite = applyStackedBusinessFunding(
-      computeUnderwrite(adapter.bureaus, adapter.businessAgeMonths),
-      adapter.businessAges
-    );
-    const stacked = numOrNull(underwrite?.totals?.total_combined_funding);
-    if (stacked != null) engine.total = stacked;
+    const stored = prequalFromCustomFields(client.custom_fields || {});
+    if (stored != null) engine.total = stored;
   }
-  if (engine.total == null) {
-    const prequal = numOrNull(cf(client, "analyzer_prequal_amount") || cf(client, "total_funding_estimate"));
-    if (prequal != null && engine.available) engine.total = prequal;
-  }
+  /* Personal-only, or personal + business? Never ambiguous again (F15). The
+     deck labels the figure with what it actually covers: business money is in
+     the stored estimate only when the client has a real company on file. */
+  engine.totalBasis = engine.total == null
+    ? null
+    : (bizRes.rows.length > 0 ? "personal_plus_business" : "personal_only");
+  engine.totalSource = "stored engine estimate";
 
   const softPull = await softPullStatus(db, { orgId, clientId });
   const income = incomeEstimates(crsRes.rows);
@@ -314,13 +359,13 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
     survey: {
       name,
       entity: client.business_name || cf(client, "business_name") || cf(client, "cf_business_name"),
-      target: cf(client, "cf_svy_funding_target_amount"),
-      use: cf(client, "cf_svy_planned_use"),
-      hasBiz: cf(client, "cf_svy_has_business"),
-      revenue: cf(client, "cf_svy_business_revenue"),
-      income: cf(client, "cf_svy_annual_income_range"),
-      capital: cf(client, "cf_svy_available_capital"),
-      motivation: cf(client, "cf_svy_money_change_now")
+      target: surveyAnswer(client, "cf_svy_funding_target_amount"),
+      use: surveyAnswer(client, "cf_svy_planned_use"),
+      hasBiz: surveyAnswer(client, "cf_svy_has_business"),
+      revenue: surveyAnswer(client, "cf_svy_business_revenue"),
+      income: surveyAnswer(client, "cf_svy_annual_income_range"),
+      capital: surveyAnswer(client, "cf_svy_available_capital"),
+      motivation: surveyAnswer(client, "cf_svy_money_change_now")
     },
     /* Every company on the file, so the deck can ask for a missing
        incorporation month/year instead of guessing the age. */
@@ -366,6 +411,21 @@ async function softPullStatus(db, { orgId, clientId }) {
   const link = paid.rows[0] || null;
   const pull = req.rows[0] || null;
   const result = crs.rows[0] || null;
+
+  /* F16 — the panel read "pull: not started" and "tier: FULL_FUNDING" at the
+     same time, on the same four lines, beside a full set of scores. Two
+     different records were being reported as one fact: the request row in
+     soft_pull_requests, and the credit result in crs_results. Only the request
+     row was consulted, and a pull that reached the engine by any other path
+     never has one.
+
+     A stored credit result IS a finished pull. It wins, and pull_status_source
+     says which record answered so the two can never silently disagree again. */
+  const requestStatus = pull ? pull.status : null;
+  const requestSettled = requestStatus != null
+    && /^(complete|completed|done|resolved|fulfilled)$/i.test(String(requestStatus));
+  const pullStatus = result && !requestSettled ? "complete" : requestStatus;
+
   return {
     consent_valid: !!consent.valid,
     consent_reason: consent.reason || null,
@@ -373,7 +433,10 @@ async function softPullStatus(db, { orgId, clientId }) {
     diagnostic_link_status: link ? link.status : null,
     diagnostic_amount_cents: link ? Number(link.amount_cents) : null,
     diagnostic_checkout_url: link ? link.checkout_url : null,
-    pull_status: pull ? pull.status : null,
+    pull_status: pullStatus,
+    pull_status_source: result && !requestSettled
+      ? "crs_result"
+      : (pull ? "soft_pull_request" : null),
     pull_id: pull ? pull.id : null,
     crs_result_id: result ? result.id : (pull?.crs_result_id || null),
     outcome_tier: result ? result.outcome_tier : null

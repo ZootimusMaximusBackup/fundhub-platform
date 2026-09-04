@@ -14,7 +14,7 @@ import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { sendTemplated } from "./messaging.mjs";
 import { callHappened } from "./dpc-02-call-outcome-enforcement.mjs";
 import {
-  requestMagicLink, magicLinkUrl, BOOKING_CONFIRM_LINK_TTL_MINUTES
+  requestMagicLink, magicLinkUrl, portalLoginUrl, BOOKING_CONFIRM_LINK_TTL_MINUTES
 } from "../auth/magic-link.mjs";
 
 export const SMS_CONFIRM = "SMS-S04-01-CONFIRM";
@@ -37,6 +37,15 @@ function appointmentContext(payload = {}) {
       meeting_location: meeting
     }
   };
+}
+
+/* No token could be minted. The email still gets a real link — the sign-in page
+   that mails one — plus the reason, which is for the run log and never for the
+   client. `expires_minutes` is empty because a page that asks for your address
+   does not expire; the template prints it nowhere, and a number here would be a
+   promise about a token that was never made. */
+function fallbackPortalLink(reason) {
+  return { issued: false, reason, url: portalLoginUrl(), expires_minutes: "" };
 }
 
 export async function handle({ event, db, step, requestMagicLinkImpl = requestMagicLink }) {
@@ -64,13 +73,15 @@ export async function handle({ event, db, step, requestMagicLinkImpl = requestMa
       const r = await db.query(`SELECT email FROM clients WHERE id = $1 LIMIT 1`, [clientId]);
       email = r.rows[0]?.email || null;
     }
-    if (!email) return { issued: false };
+    if (!email) return fallbackPortalLink("no_email_on_booking");
     const out = await requestMagicLinkImpl(db, {
       email, orgId,
       ttlMinutes: BOOKING_CONFIRM_LINK_TTL_MINUTES,
       queueEmail: false
     });
-    if (!out?.ok || !out.token) return { issued: false };
+    if (!out?.ok) return fallbackPortalLink("request_refused");
+    if (out.limited) return fallbackPortalLink("rate_limited");
+    if (!out.token) return fallbackPortalLink(out.outcome || "no_token");
     return {
       issued: true,
       url: magicLinkUrl(out.token),
@@ -80,15 +91,19 @@ export async function handle({ event, db, step, requestMagicLinkImpl = requestMa
 
   // Owner decision 2026-08-22: booked stage is one text + Josh dial + one email,
   // all immediate. Text first, email second; the AI setter dials on its own leg.
+  // THE CONTEXT IS NEVER CONDITIONAL. It used to be spread in only when a token
+  // was minted, and an absent {{magic_link.url}} renders as the empty string —
+  // so the confirm email said "Here is your link to sign in to your Fundhub
+  // portal:" and then showed an empty link. Walk finding F2, 2026-09-03. When no
+  // token can be minted, portal.url is the tokenless sign-in page instead, which
+  // is a door the client can actually open.
   const confirmEmail = await step.run("send-confirm-email", () =>
     sendTemplated(db, {
       orgId, clientId, channel: "email", templateKey: EMAIL_CONFIRM,
       eventId: `${eventId}:confirm-email`,
       context: {
         ...context,
-        ...(portal.issued
-          ? { magic_link: { url: portal.url, expires_minutes: portal.expires_minutes } }
-          : {})
+        magic_link: { url: portal.url, expires_minutes: portal.expires_minutes }
       }
     }));
 

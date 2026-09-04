@@ -4,6 +4,22 @@
 // metadata, and whether an inquiry case is open (the portal's inquiry upload
 // door hangs off that one flag). Clients read their own file only; staff may
 // pass ?client_id= when previewing the portal.
+//
+// IT ALSO CARRIES THE THREE FACTS THE PORTAL USED TO GUESS AT (2026-09-03):
+//
+//   `stage`       — where the client actually is. The screen used to decide
+//                   this from ONE entitlement code, so a client who had been
+//                   pulled, had the call and signed a $5,000 agreement was
+//                   still told "Your call is next" (walk finding F33).
+//   `advisor`     — who looks after the file. The only read carrying a name was
+//                   staff-gated, so a client always saw a blank one (F34).
+//   `repair_path` — whether repair work belongs on this file at all. The
+//                   dispute-letter authorization card was shown to everybody,
+//                   including course buyers (F35).
+//
+// FACTS, NOT COPY. Every one of these is a boolean or a name; the words the
+// client reads stay in public/app/client-portal.html. An endpoint that returns
+// sentences is a second place to change the wording.
 
 import { db } from "../../src/db.mjs";
 import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
@@ -16,6 +32,7 @@ import {
   portalCreditScores,
   prequalFromCustomFields
 } from "../../src/http/portal-prequal.mjs";
+import { onRepairPath } from "../../src/repair/on-repair-path.mjs";
 
 export default async function handler(req, res) {
   if (req.method && req.method !== "GET") {
@@ -164,16 +181,56 @@ export default async function handler(req, res) {
       businesses: bizRes.rows
     });
 
+    /* THE STAGE READS AND THE ADVISOR READ FAIL SOFT, one by one.
+       Everything above is the answer this endpoint has always given and the
+       screen has always needed. These are additions, so a table that will not
+       answer must cost the caller the fact it could not read and nothing else —
+       the same reasoning as the signing block near the top of this file. */
+    const [callHeld, signedAt, paid, advisor] = await Promise.all([
+      readCallHeld(orgId, clientId),
+      readAgreementSignedAt(orgId, clientId),
+      readPaymentPosted(orgId, clientId),
+      readAdvisor(orgId, clientId, cf)
+    ]);
+
+    /* SOFT PULL IS TRUE ON EITHER SIGNAL. The custom-field flags are set by the
+       payment and analyzer handlers; a non-demo crs_results row is the pull
+       itself having landed. On the 2026-09-03 walk the pull had run and the
+       screen still said "we have not run those yet", so a real result row now
+       counts on its own rather than waiting for a flag to be mirrored onto it. */
+    const softPullComplete = cf.crs_paid === true
+      || String(cf.analyzer_status || "").toLowerCase() === "complete"
+      || crsRes.rows.length > 0;
+
+    /* THE TIER IS READ INSIDE onRepairPath, not selected onto the client row
+       above. Adding a column to that SELECT is tempting and costs more than it
+       saves: src/http/simplify-implementation.test.mjs pins that exact statement
+       as the proof this endpoint reads the SESSION's client and never the
+       client_id a caller asked for, so widening it moves a security pin for a
+       field the screen does not need. The repair answer is a boolean either way. */
+    const repairPath = await onRepairPath(db, { orgId, clientId });
+
     return res.status(200).json(redact({
       ok: true,
       prequal_amount: prequalAmount,
       prequal_display: formatPrequalUsd(prequalAmount),
       scores,
-      soft_pull_complete: cf.crs_paid === true
-        || String(cf.analyzer_status || "").toLowerCase() === "complete",
+      soft_pull_complete: softPullComplete,
       doc_agent_message: cf.doc_agent_message || null,
       inquiry_open: inquiryRes.rows.length > 0,
-      documents: portalDocuments(documentsRes)
+      documents: portalDocuments(documentsRes),
+      // Whether repair work belongs on this file. A boolean rather than a tier
+      // the screen would have to re-interpret — the rule lives in one place,
+      // src/repair/on-repair-path.mjs, and the server applies the same one when
+      // the signature is actually posted (api/consent/capture.mjs).
+      repair_path: repairPath,
+      advisor,
+      stage: portalStage({
+        softPullComplete,
+        callHeld,
+        agreementSignedAt: signedAt,
+        paymentPosted: paid
+      })
     }));
   } catch (err) {
     return res.status(500).json({
@@ -183,6 +240,192 @@ export default async function handler(req, res) {
       detail: safeError(err)
     });
   }
+}
+
+/* ── THE STAGE, AND THE FOUR FACTS UNDER IT ─────────────────────────────────
+ *
+ * WHAT WAS WRONG. The portal decided its whole stage from ONE entitlement code,
+ * `funding-snapshot`: hold it and the screen said "Where your funding is", miss
+ * it and the screen said "Before your call" — forever. So a client who had been
+ * credit-pulled, had the call, and signed a $5,000 agreement was still greeted
+ * with "Your call is next" and told "we have not run those yet". Walk finding
+ * F33, 2026-09-03.
+ *
+ * FOUR FACTS, EACH FROM THE TABLE THAT OWNS IT, none of them derived from any of
+ * the others. A client can pay before signing, or sign before the pull lands, and
+ * a chain of ifs that assumes one order gets those people wrong. So each is read
+ * on its own and `key` is simply the furthest one reached.
+ *
+ * ORDER OF THE LADDER: booked → soft_pull → call_held → agreement_signed → paid.
+ * That is the journey the SOP walks and the order the stepper on the screen
+ * already draws.
+ */
+export function portalStage({ softPullComplete, callHeld, agreementSignedAt, paymentPosted }) {
+  const facts = {
+    soft_pull_complete: !!softPullComplete,
+    call_held: !!callHeld,
+    agreement_signed: !!agreementSignedAt,
+    payment_posted: !!paymentPosted
+  };
+  let key = "booked";
+  if (facts.soft_pull_complete) key = "soft_pull";
+  if (facts.call_held) key = "call_held";
+  if (facts.agreement_signed) key = "agreement_signed";
+  if (facts.payment_posted) key = "paid";
+  return {
+    key,
+    // "Has anything at all happened yet?" is the one question the screen asks
+    // most often — it is what separates the before-the-call copy from the rest —
+    // so it is answered here rather than by four comparisons on the client.
+    before_call: key === "booked",
+    /* NAMED contract_signed_at ON PURPOSE, not agreement_signed_at. That other
+       name belongs to partners.agreement_signed_at, the single column standing
+       between an unsigned partner and a payout (042_partners.sql), and
+       src/contracts/partner-license-terms.test.mjs greps every file under src/
+       and api/ for it so a new writer cannot appear unnoticed. This field is the
+       CLIENT's signed agreement date for the portal stage ladder and touches no
+       partner row, so it must not answer to that grep. */
+    contract_signed_at: agreementSignedAt || null,
+    ...facts
+  };
+}
+
+/* A read that must never take the rest of the answer down with it. Returns the
+   fallback and warns; the caller treats that as "we could not find out", which
+   for every fact below is the same as "not yet", and the screen's before-call
+   copy is the honest thing to show when we do not know. */
+async function safeRead(label, fallback, run) {
+  try {
+    return await run();
+  } catch (err) {
+    console.warn(`[portal-summary] ${label} read failed:`, err && err.message);
+    return fallback;
+  }
+}
+
+/* THE CALL HAPPENED — two independent witnesses, either will do.
+   `call.completed` is the event the automations key off (see callHappened() in
+   src/workflows/dpc-02-call-outcome-enforcement.mjs). A `call_outcomes` row is a
+   closer having typed a disposition afterwards, which is the stronger evidence
+   of the two and does not depend on any webhook having fired. A no-show is
+   excluded: the appointment resolved, the call did not happen. */
+function readCallHeld(orgId, clientId) {
+  return safeRead("call_held", false, async () => {
+    const r = await db.query(
+      `SELECT
+         EXISTS (SELECT 1 FROM events
+                  WHERE org_id = $1 AND client_id = $2 AND name = 'call.completed') AS by_event,
+         EXISTS (SELECT 1 FROM call_outcomes
+                  WHERE org_id = $1 AND client_id = $2
+                    AND outcome <> 'no_show'
+                    AND is_demo IS NOT TRUE) AS by_outcome`,
+      [orgId, clientId]
+    );
+    return r.rows[0]?.by_event === true || r.rows[0]?.by_outcome === true;
+  });
+}
+
+/* ANY signed agreement, not a named template. 124's contracts_signed_status_ck
+   means signed_at is only ever set on a row whose status is 'signed', so the two
+   cannot disagree. The date comes back because the screen says what was signed
+   and when, and re-deriving it from the agreements list would be a second read
+   of the same fact. */
+function readAgreementSignedAt(orgId, clientId) {
+  return safeRead("agreement_signed", null, async () => {
+    const r = await db.query(
+      `SELECT signed_at FROM contracts
+        WHERE org_id = $1 AND client_id = $2 AND status = 'signed'
+        ORDER BY signed_at DESC NULLS LAST
+        LIMIT 1`,
+      [orgId, clientId]
+    );
+    return r.rows[0]?.signed_at || null;
+  });
+}
+
+/* MONEY ACTUALLY POSTED. 'succeeded' is the only success value anything writes
+   (src/handlers/client-lifecycle.mjs:recordTransaction and src/slo/purchase.mjs);
+   'failed' is the other one. Matching the exact string rather than "not failed"
+   keeps a future status nobody has defined from silently counting as paid. */
+function readPaymentPosted(orgId, clientId) {
+  return safeRead("payment_posted", false, async () => {
+    const r = await db.query(
+      `SELECT 1 FROM transactions
+        WHERE org_id = $1 AND client_id = $2
+          AND status = 'succeeded'
+          AND is_demo IS NOT TRUE
+        LIMIT 1`,
+      [orgId, clientId]
+    );
+    return r.rows.length > 0;
+  });
+}
+
+/* WHO LOOKS AFTER THIS FILE — and null rather than a guess.
+ *
+ * The portal's advisor panel used to read GET /api/dashboard/client, which is
+ * staff-gated and 401s for the person whose file it is, so a client ALWAYS saw a
+ * blank name (walk finding F34). The name has to come from a read the client is
+ * allowed to make, which is this one.
+ *
+ * THREE SOURCES, MOST EXPLICIT FIRST, and `source` says which one answered:
+ *   custom_field  — a name typed onto the client record
+ *   staff_link    — clients.custom_fields.cf_funding_advisor_user_id, the column
+ *                   db/schema/005 defines for exactly this, resolved to a staff row
+ *   call_outcome  — the funding advisor who logged a call on this file
+ *
+ * A CLOSER IS NOT A FUNDING ADVISOR and is deliberately not a fourth source.
+ * Closers sell; funding advisors submit the applications. Naming the closer under
+ * a panel headed "Your Funding Advisor" would be a confident wrong answer, which
+ * is worse than the empty state the screen now has words for.
+ *
+ * NOTHING BUT A NAME AND A ROLE LEAVES HERE. No email, no phone, no staff id —
+ * the panel's only action is the chat widget, so a contact detail in this payload
+ * would be exposure with no use.
+ */
+function readAdvisor(orgId, clientId, cf) {
+  return safeRead("advisor", null, async () => {
+    const typed = firstNonEmpty([
+      cf.advisor_name, cf.assigned_advisor, cf.funding_advisor
+    ]);
+    if (typed) return { name: typed, role: "funding_advisor", source: "custom_field" };
+
+    const linked = firstNonEmpty([cf.cf_funding_advisor_user_id]);
+    if (linked) {
+      const r = await db.query(
+        `SELECT name, role FROM staff
+          WHERE id::text = $1 AND org_id = $2 AND status <> 'suspended'`,
+        [linked, orgId]
+      );
+      const s = r.rows[0];
+      if (s && s.name) return { name: s.name, role: s.role || null, source: "staff_link" };
+    }
+
+    const r = await db.query(
+      `SELECT s.name, s.role
+         FROM call_outcomes o
+         JOIN staff s ON s.id = o.staff_id AND s.org_id = o.org_id
+        WHERE o.org_id = $1 AND o.client_id = $2
+          AND o.is_demo IS NOT TRUE
+          AND s.role = 'funding_advisor'
+          AND s.status <> 'suspended'
+        ORDER BY o.logged_at DESC
+        LIMIT 1`,
+      [orgId, clientId]
+    );
+    const s = r.rows[0];
+    return s && s.name
+      ? { name: s.name, role: s.role || null, source: "call_outcome" }
+      : null;
+  });
+}
+
+function firstNonEmpty(values) {
+  for (const v of values) {
+    const s = v == null ? "" : String(v).trim();
+    if (s) return s;
+  }
+  return null;
 }
 
 /* portalDocuments — listClientLibrary()'s rows, narrowed back to exactly the

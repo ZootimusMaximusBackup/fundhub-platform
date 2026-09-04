@@ -136,6 +136,13 @@ export const OFFERS = Object.freeze({
     paymentPurpose: "custom",
     productCode: "consulting-package",
     commasProductTitle: "Consulting Services Package",
+    /* Added 2026-09-03. Capital Blueprint was the ONLY client offer in this
+       catalogue with no contract, while the $200 repair trial had one — so a
+       Blueprint sale closed with nothing to send, resolveContractTemplateKey()
+       returned null, the deck matched no wording, and nothing said so. The
+       template is seeded by
+       db/migrations/287_contract_seller_signature_and_real_text.sql. */
+    contractTemplateKey: "CAPITAL-BLUEPRINT-AGREEMENT",
     contents: UWIQ_DELIVERABLES_CONTENTS
   }),
   FUNDING_MASTERY: Object.freeze({
@@ -379,25 +386,66 @@ export function resolveContractTemplateKey({ offerKey = null, tier = null } = {}
   return (o && o.contractTemplateKey) || null;
 }
 
-/** Default blank-field values for a contract send from the present deck. */
-export function defaultContractValues({ offerKey = null, tier = null } = {}) {
-  const templateKey = resolveContractTemplateKey({ offerKey, tier });
-  const o = getOffer(offerKey);
-  const price = formatCents(o && o.priceCents);
-  const company = "Fundhub";
-  const base = { company_name: company, company_email: "support@fundhub.ai" };
+/**
+ * OFFER_KEY_BY_TEMPLATE_KEY — the catalogue read backwards.
+ *
+ * defaultContractValues() is now called from two directions. The deck knows the
+ * OFFER and asks what to fill in; src/contracts/send.mjs holds a draft that
+ * knows only its TEMPLATE KEY (contracts.template_key) and asks the same thing.
+ * Without this map the second caller would have to carry its own copy of the
+ * prices, which is the duplicate-source arrangement that produced the
+ * $1,000-a-month repair defect. Built from OFFERS so it cannot drift from it.
+ *
+ * REPAIR-AND-FUNDING-AGREEMENT is absent on purpose: it is reached by TIER, not
+ * by any single offer, and its branch below reads both offers directly.
+ */
+const OFFER_KEY_BY_TEMPLATE_KEY = Object.freeze(
+  OFFER_KEYS.reduce((acc, k) => {
+    const key = OFFERS[k].contractTemplateKey;
+    if (key && !acc[key]) acc[key] = k;
+    return acc;
+  }, {})
+);
 
-  if (templateKey === "SOFT-PULL-CONSENT") {
-    return { ...base, consent_days: "90" };
+/**
+ * defaultContractValues — every blank a contract needs, filled from the
+ * catalogue. NOBODY TYPES THESE.
+ *
+ * Owner decision 2026-09-03 (F27): the "wording for this client" form comes out
+ * of the deck entirely. "It should already have that information. Just send
+ * it." So this function is the whole of what a contract's blanks are filled
+ * from, and src/contracts/send.mjs applies it at draft time — a send with no
+ * typed input at all has to produce a complete document.
+ *
+ * NO company_name AND NO company_email. That pair used to be here, and a staff
+ * member could type over them in the deck; on 2026-09-03 one typed the CLIENT's
+ * company into company_name and it rendered as the SELLER — "Between: Sim Five
+ * Academy LLC ("we")" on a Fundhub agreement (F28). The seller is Fundhub LLC
+ * on every client contract, so it is written into the template's words and is
+ * not a value any more. See
+ * db/migrations/287_contract_seller_signature_and_real_text.sql.
+ *
+ * Accepts a templateKey directly for callers that have one and no offer.
+ */
+export function defaultContractValues({ offerKey = null, tier = null, templateKey = null } = {}) {
+  const key = templateKey || resolveContractTemplateKey({ offerKey, tier });
+  const o = getOffer(offerKey) || getOffer(OFFER_KEY_BY_TEMPLATE_KEY[key]);
+  const price = formatCents(o && o.priceCents);
+
+  if (key === "SOFT-PULL-CONSENT") {
+    /* consent_days is DATA, not decoration. src/handlers/contract-consent.mjs
+       reads it off merge_values to set when the permission expires and treats an
+       absent value as no term at all — a permanent one. It stays a value even
+       though nobody types it. */
+    return { consent_days: "90" };
   }
-  if (templateKey === "REPAIR-TRIAL-AGREEMENT") {
+  if (key === "REPAIR-TRIAL-AGREEMENT") {
     return {
-      ...base,
       trial_fee: price || "$200",
       scope: "One done-for-you dispute round (bureaus and creditors on your file). You watch progress in your portal."
     };
   }
-  if (templateKey === "CREDIT-REPAIR-AGREEMENT") {
+  if (key === "CREDIT-REPAIR-AGREEMENT") {
     /* one_time_fee, NOT monthly_fee. REPAIR_DFY is $1,000 charged once (owner
        decision 2026-08-31), and the blank this fills used to be called
        monthly_fee inside a template sentence reading "per month while services
@@ -405,32 +453,26 @@ export function defaultContractValues({ offerKey = null, tier = null } = {}) {
        180-day term. db/migrations/273_repair_fee_charged_once.sql rewrites that
        sentence and renames the blank; this is the other half of that rename.
        src/contracts/offer-fee-language.test.mjs fails if the two drift apart
-       again. term_days stays: it is how long the work runs, not a billing
-       period, and the corrected copy says so. */
-    return {
-      ...base,
-      one_time_fee: price || "$1,000",
-      term_days: "180",
-      scope: "Done-for-you credit repair: forensic review, dispute rounds, creditor escalations, and live dashboard access."
-    };
+       again.
+
+       term_days and scope are gone from this one: 287 moves how long the work
+       runs, and what the work is, into the block of real agreement text Chris
+       supplies. Neither was ever a number this catalogue owns. */
+    return { one_time_fee: price || "$1,000" };
   }
-  if (templateKey === "FUNDING-AGREEMENT") {
+  if (key === "FUNDING-AGREEMENT") {
     const pct = (o && o.successFeePercent) || 10;
     return {
-      ...base,
       deposit: price || "$3,000",
       success_fee: `${pct}% of funded amount`,
-      fee_due: "within 7 days of funding",
-      term_days: "180",
-      scope: "Done-for-you funding: lender matching, strategic application rounds, and inquiry sweeps between rounds."
+      fee_due: "within 7 days of funding"
     };
   }
-  if (templateKey === "REPAIR-AND-FUNDING-AGREEMENT") {
+  if (key === "REPAIR-AND-FUNDING-AGREEMENT") {
     const fund = getOffer("FUNDING_DFY");
     const repair = getOffer("REPAIR_DFY");
     const pct = (fund && fund.successFeePercent) || 10;
     return {
-      ...base,
       deposit: formatCents(fund && fund.priceCents) || "$3,000",
       repair_fee: formatCents(repair && repair.priceCents) || "$1,000",
       success_fee: `${pct}% of funded amount`,
@@ -440,15 +482,17 @@ export function defaultContractValues({ offerKey = null, tier = null } = {}) {
       funding_scope: "Full done-for-you funding program: matching, rounds, and inquiry sweeps."
     };
   }
-  if (templateKey === "FUNDING-MASTERY-AGREEMENT") {
-    return {
-      ...base,
-      program_fee: price || "$5,000",
-      term_days: "365",
-      scope: "Funding Mastery program access: the full A-to-Z course on your own file. This is education. You do the work."
-    };
+  if (key === "FUNDING-MASTERY-AGREEMENT") {
+    return { program_fee: price || "$5,000" };
   }
-  return base;
+  if (key === "CAPITAL-BLUEPRINT-AGREEMENT") {
+    return { package_fee: price || "$1,000" };
+  }
+  /* An unknown template — an org's own copy, or PARTNER-LICENSE, whose two
+     blanks are genuinely per-partner and are passed in by
+     src/contracts/partner-license.mjs. Returning nothing rather than a guess
+     means send.mjs leaves those callers exactly as they were. */
+  return {};
 }
 
 /** Public JSON for the present page — no internals. */

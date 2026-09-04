@@ -250,12 +250,53 @@ export function emailRepTelHref(env = process.env) {
   return `tel:${e164}`;
 }
 
+/* THE SIGNATURE IMAGES NEED A WHITE GROUND UNDER THEM — F18, 2026-09-03.
+   ═══════════════════════════════════════════════════════════════════════════
+   The wordmark and the handwritten "Josh" are PNGs with a solid white
+   background. They looked clean in the e-book email and showed as two white
+   rectangles in the soft-pull email, which reads like an image problem and is
+   not one: BOTH emails carry this one footer, and neither template contains a
+   signature block of its own. The difference is where the footer lands.
+
+     plain-text body   ensureHtmlEmailBody() wraps the copy in the shell below
+                       and drops the footer into the card, whose background is
+                       already #ffffff. White artwork on white — no edge.
+     HTML body         the template brings its own document. The footer is
+                       injected before its </body>, i.e. AFTER that template's
+                       own centred card and directly onto the page background,
+                       which is #F4F4F5 in every seeded template. White artwork
+                       on grey — two visible rectangles.
+
+   Measured on the real rows sent during the 2026-09-03 walk: the e-book body
+   is 305 characters of plain text, the soft-pull body is 2816 characters of
+   HTML opening `<!DOCTYPE html>` with `background-color:#F4F4F5` on <body>.
+
+   So the standalone form below gives the footer a white card of its own,
+   centred at the same 600px the seeded templates use. It carries its own
+   ground rather than borrowing the template's, which is what makes it correct
+   on ANY page background — including a mail client's dark mode, where a
+   grey-vs-white mismatch gets worse, not better. */
+function footerCard(inner) {
+  return (
+    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" ` +
+    `style="border-collapse:collapse">` +
+    `<tr><td align="center" style="padding:0 12px 24px 12px">` +
+    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" ` +
+    `style="width:600px;max-width:100%;background-color:#ffffff;border-collapse:collapse">` +
+    `<tr><td style="padding:0 28px 20px 28px">${inner}</td></tr>` +
+    `</table></td></tr></table>`
+  );
+}
+
 /**
  * Premium personal-signature footer (HTML). Handwritten Josh first, then
  * name / title / phone / tagline as one tight block, plus a quiet outlined
  * Unsubscribe control (still a real link).
+ *
+ * `standalone` — true when this footer will be appended AFTER a template's own
+ * container rather than inside the shell's white card. See footerCard above.
  */
-export function unsubscribeFooter(url, { html = false, env = process.env } = {}) {
+export function unsubscribeFooter(url, { html = false, standalone = false, env = process.env } = {}) {
   const safe = String(url || "");
   if (!safe) return "";
   const phone = emailRepPhone(env);
@@ -279,8 +320,7 @@ export function unsubscribeFooter(url, { html = false, env = process.env } = {})
   const phoneLabel = escapeHtml(phone);
   const telHref = escapeHtml(tel);
 
-  return (
-    `${FOOTER_MARK}\n` +
+  const inner =
     `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" ` +
     `style="margin:20px 0 0;border-collapse:collapse;border-top:1px solid #e5e7eb">` +
     `<tr><td style="padding:16px 0 0 0;text-align:left">` +
@@ -321,8 +361,11 @@ export function unsubscribeFooter(url, { html = false, env = process.env } = {})
     `</a>` +
     `</td></tr></table>` +
 
-    `</td></tr></table>\n`
-  );
+    `</td></tr></table>`;
+
+  /* The mark stays first in whatever is returned — withUnsubscribeFooter reads
+     it to know a footer is already present and must not add a second one. */
+  return `${FOOTER_MARK}\n${standalone ? footerCard(inner) : inner}\n`;
 }
 
 /** Wrap plain copy in a clean one-column email shell (optional footer slot). */
@@ -361,7 +404,14 @@ export function withUnsubscribeFooter(body, url, env = process.env) {
   if (!url) return text;
   if (text.includes(String(url))) return text;
   if (text.includes(FOOTER_MARK)) return text;
-  const footer = unsubscribeFooter(url, { html: true, env });
+  /* Same test ensureHtmlEmailBody uses to decide whether it wraps, asked one
+     step earlier so the footer knows which ground it is going to land on. A
+     template that brings its own HTML gets the standalone card (F18); plain
+     copy gets the bare block, because the shell below already puts it inside a
+     white card and a card inside a card would double the padding. */
+  const footer = unsubscribeFooter(url, {
+    html: true, standalone: HTML_SNIFF.test(text), env
+  });
   return ensureHtmlEmailBody(text, footer);
 }
 

@@ -218,7 +218,24 @@ export async function placeCall({
     // Wrapped, not replaced: the recording notice is prepended because `record`
     // is true below. See RECORDING_NOTICE.
     task: taskWithRecordingNotice(agent.prompt),
-    first_sentence: firstSentenceFromPrompt(agent.prompt),
+    /* NO first_sentence ON A REAL CALL, and this is the AI setter's whole bug.
+       Bland speaks first_sentence VERBATIM before anything else. Deriving it from
+       the prompt (firstSentenceFromPrompt) meant Josh opened every call by reading
+       his own instruction sheet out loud — "You are a Fundhub voice agent." — which
+       is what "the setter does not work AT ALL" looked like on the 2026-09-03 walk.
+       Introduced 2026-08-26.
+
+       It broke the tape notice too: `task` is wrapped by taskWithRecordingNotice
+       because `record` is true below, but first_sentence was built from the RAW
+       prompt, so the recording notice was never the first thing said on a call that
+       was being recorded.
+
+       With the key absent Bland opens the call itself, using the task. The prove
+       line is the one exception: that number auto-answers silent, so it needs
+       something spoken to prove audio, and it is our own handset, not a consumer.
+       Any first_sentence ever added back for a consumer call MUST itself begin
+       "Just so you know, this call is recorded." */
+    ...(proveLine ? { first_sentence: "Hey — can you hear me?" } : {}),
     // The agent SMS line auto-answers silent. Waiting for a greeting ends the call in ~0.13s.
     wait_for_greeting: !proveLine,
     /* PICKUP — INERT UNTIL THE ACCOUNT OWNS A NUMBER. Asks Bland to dial from the

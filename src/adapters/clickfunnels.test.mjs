@@ -176,6 +176,64 @@ test("normalizeClickFunnelsEvent: CF 2.0 contact row is data (email_address + cu
   assert.deepEqual(evt.answers, { cf_svy_planned_use: "Growth" });
 });
 
+/* F8 / F11, live walk 2026-09-03. CF sends the answer-option row id on
+   cf_svy_<key> and the words on cf_svy_<key>_label / _labels. Copying the id
+   through verbatim put 207883 on a client-facing slide. The words are already
+   in the same payload — resolve there, not on each screen. */
+test("normalizeClickFunnelsEvent: an answer-option id resolves to the words CF sent with it", () => {
+  const evt = normalizeClickFunnelsEvent({
+    event_type: "contact.identified",
+    data: {
+      email_address: "sim05@example.com",
+      custom_attributes: {
+        cf_svy_funding_target_amount: 207883,
+        cf_svy_funding_target_amount_label: "$200k - $400k",
+        cf_svy_has_business: "207918",
+        cf_svy_has_business_label: "Yes, 5+ years"
+      }
+    }
+  });
+  assert.equal(evt.answers.cf_svy_funding_target_amount, "$200k - $400k");
+  assert.equal(evt.answers.cf_svy_has_business, "Yes, 5+ years");
+  // The label keys still travel — screens and the fico band reader use them.
+  assert.equal(evt.answers.cf_svy_funding_target_amount_label, "$200k - $400k");
+});
+
+test("normalizeClickFunnelsEvent: a multi-select id list resolves to its labels", () => {
+  const evt = normalizeClickFunnelsEvent({
+    event_type: "contact.identified",
+    data: {
+      email_address: "sim05@example.com",
+      custom_attributes: {
+        cf_svy_money_change_now: [207897, 207899],
+        // CF sends the multi-select labels as a JSON-encoded string.
+        cf_svy_money_change_now_labels:
+          '["Grow faster (more customers / more reach)","Stability (cover bills / buffer slow weeks)"]'
+      }
+    }
+  });
+  assert.deepEqual(evt.answers.cf_svy_money_change_now, [
+    "Grow faster (more customers / more reach)",
+    "Stability (cover bills / buffer slow weeks)"
+  ]);
+});
+
+test("normalizeClickFunnelsEvent: an id with no label is kept, and real words are untouched", () => {
+  const evt = normalizeClickFunnelsEvent({
+    event_type: "contact.identified",
+    data: {
+      email_address: "sim05@example.com",
+      custom_attributes: {
+        cf_svy_available_capital: 207975,
+        cf_svy_planned_use: "Growth (marketing, inventory, hiring)"
+      }
+    }
+  });
+  // Nothing to resolve it with — keep it rather than dropping the answer.
+  assert.equal(evt.answers.cf_svy_available_capital, 207975);
+  assert.equal(evt.answers.cf_svy_planned_use, "Growth (marketing, inventory, hiring)");
+});
+
 test("normalizeClickFunnelsEvent: keeps Facebook UTM from first_visit, drops the click id", () => {
   const evt = normalizeClickFunnelsEvent({
     event_type: "contact.created",

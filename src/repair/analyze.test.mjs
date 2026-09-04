@@ -124,3 +124,92 @@ describe("analyzeAndGenerate", () => {
     assert.ok(!db.seen.some((c) => /FROM crs_results/i.test(c.sql)));
   });
 });
+
+/* OWNER DECISION, 2026-09-03 — "any derogatory deserves a letter, but only if
+   they are in the correct offer path." These two tests are the whole rule: the
+   same damaged credit file produces letters for a repair-path client and nothing
+   for a client off that path. The Metro 2 engine finds no defect in this file, so
+   every claim in the letter comes from the derogatory pass. */
+describe("derogatory items and the offer path", () => {
+  const DAMAGED_FILE = {
+    bureausPulled: ["EX"],
+    bureaus: {
+      EX: {
+        creditFiles: [{
+          creditFileDetail: {
+            creditFileInfileDate: "2026-09-03",
+            creditFileResultStatusType: "FileReturned",
+            sourceType: "Experian"
+          }
+        }],
+        inquiries: [],
+        tradelines: [{
+          creditorName: "MIDLAND CREDIT MANAGEMENT",
+          accountIdentifier: "SIM-MCM-6642",
+          accountOpenedDate: "2024-02-20",
+          accountReportedDate: "2026-08-28",
+          accountOwnershipType: "Individual",
+          accountStatusType: "Open",
+          accountType: "Open",
+          loanType: "CollectionAgencyAttorney",
+          businessType: "Collection",
+          currentRatingType: "CollectionOrChargeOff",
+          currentBalanceAmount: "1840",
+          pastDueAmount: "0",
+          sourceType: "Experian"
+        }]
+      }
+    }
+  };
+
+  function dbFor(tier, { agreement = false } = {}) {
+    return fakeDb({
+      // Order matters: the outcome_tier read must be matched before the
+      // first_name/last_name read, and both are "FROM clients".
+      "outcome_tier FROM clients": [{ outcome_tier: tier }],
+      "first_name, last_name FROM clients": [{ first_name: "Sim", last_name: "Repair" }],
+      "FROM contracts": agreement ? [{ "?column?": 1 }] : [],
+      "FROM client_consents": [{ is_valid: true }],
+      "FROM dispute_letters dl": [],
+      "FROM repair_programs": [],
+      "FROM crs_results": [{ result: DAMAGED_FILE }],
+      "FROM dispute_cases dc": [],
+      "INSERT INTO dispute_cases": [{
+        id: "case-1", org_id: ORG, client_id: CLIENT, bureau: "EX", round: "R1"
+      }],
+      "INSERT INTO dispute_items": [{ id: "item-1" }],
+      "INSERT INTO dispute_letters": [{ id: "letter-1", bureau: "EX", case_id: "case-1" }],
+      "FROM dispute_letters$": [],
+      "SELECT body_text FROM dispute_letters": []
+    });
+  }
+
+  test("a repair-path client gets a letter for a collection the engine finds no defect in", async () => {
+    const db = dbFor("REPAIR_ONLY");
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.equal(r.letters.length, 1);
+    assert.deepEqual(r.letters[0].ruleIds, ["DEROG-COLLECTION"]);
+  });
+
+  test("FUNDING_PLUS_REPAIR is a repair path too", async () => {
+    const db = dbFor("FUNDING_PLUS_REPAIR");
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.equal(r.letters.length, 1);
+  });
+
+  test("a funding-only client gets nothing, whatever the file holds", async () => {
+    const db = dbFor("FULL_FUNDING");
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    assert.equal(r.ok, false);
+    assert.equal(r.reason, "no_violations");
+  });
+
+  test("a signed repair agreement is a repair path even with no tier stamped", async () => {
+    const db = dbFor(null, { agreement: true });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.equal(r.letters.length, 1);
+  });
+});

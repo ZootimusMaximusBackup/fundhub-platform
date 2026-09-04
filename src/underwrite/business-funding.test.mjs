@@ -55,9 +55,19 @@ test("no card dollars: extra companies stay $0 — no invented floor", () => {
   assert.equal(twoShops.totals.total_combined_funding, 0);
 });
 
+/* F15, owner-set 2026-09-03. This used to assert the opposite — that a loose
+   business_age_months alone produced [30] — which is how a client with no
+   company on file got business funding stacked onto his pre-approval. */
+test("no company row means no business age, whatever the loose field says", () => {
+  assert.deepEqual(resolveBusinessAges({ fallbackAgeMonths: 30 }), []);
+  assert.deepEqual(resolveBusinessAges({ businesses: [], fallbackAgeMonths: 30 }), []);
+  assert.deepEqual(resolveBusinessAges({ businesses: [], fallbackAgeMonths: null }), []);
+  // The live case: Sim Five-Academy carried business_age_months 72 and zero
+  // company rows, and was quoted business money he could not have.
+  assert.equal(stackedBusinessFunding(137500, resolveBusinessAges({ fallbackAgeMonths: 72 })), 0);
+});
+
 test("listed companies use their own age, then the client fallback", () => {
-  assert.deepEqual(resolveBusinessAges({ fallbackAgeMonths: 30 }), [30]);
-  assert.deepEqual(resolveBusinessAges({ businesses: [], fallbackAgeMonths: 30 }), [30]);
   assert.deepEqual(resolveBusinessAges({
     businesses: [{ age_months: 6 }, { age_months: null }],
     fallbackAgeMonths: 30

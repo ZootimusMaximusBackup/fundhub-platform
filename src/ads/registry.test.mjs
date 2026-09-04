@@ -4,7 +4,8 @@
 import { test, describe, beforeEach } from "node:test";
 import assert from "node:assert";
 import {
-  loadRegistry, parseRegistry, resolveAd, adsWithTag, laneOf, adIdOf, variantOf, UNKNOWN_AD, _resetRegistry
+  loadRegistry, parseRegistry, resolveAd, adsWithTag, laneOf, adIdOf, variantOf, untitledAdIds,
+  UNKNOWN_AD, _resetRegistry
 } from "./registry.mjs";
 
 const RULES = {
@@ -78,6 +79,35 @@ describe("docs/ads/registry.json", () => {
     // A sorting ad's "all" counts under every real offer, never under none.
     assert.ok(adsWithTag("secondary_offer", "capital_academy").some((a) => a.id === "78"));
     assert.ok(!adsWithTag("secondary_offer", "none").some((a) => a.id === "78"));
+  });
+
+  /* Ads Chris has not named yet, measured 2026-09-03 (F7 — the walk log said
+     three, it is twenty-one). An agent may not invent an ad title, so these
+     are listed rather than fixed. Naming one is two edits: add "title" to the
+     ad in docs/ads/registry.json, delete its id from here. The list only ever
+     shrinks — a NEW ad arriving without a title fails this test, which is the
+     point. `node scripts/ads/check-registry-titles.mjs` prints the same list
+     and exits non-zero while any of it remains. */
+  const UNTITLED_ALLOW_LIST = [
+    "27", "28", "29", "30", "31",
+    "43", "44", "45", "46",
+    "72", "73", "74", "75", "76", "77", "78", "79", "80", "81", "82", "83"
+  ];
+
+  test("every ad has a title, except the ones the owner has not named yet", () => {
+    const registry = loadRegistry({ reload: true });
+    const missing = untitledAdIds({ registry });
+    const unexpected = missing.filter((id) => !UNTITLED_ALLOW_LIST.includes(id));
+    assert.deepEqual(
+      unexpected, [],
+      `ad(s) ${unexpected.join(", ")} were added to docs/ads/registry.json with no title. ` +
+      `Ask Chris for the name — do not invent one.`
+    );
+    const named = UNTITLED_ALLOW_LIST.filter((id) => !missing.includes(id));
+    assert.deepEqual(
+      named, [],
+      `ad(s) ${named.join(", ")} now have a title — delete them from UNTITLED_ALLOW_LIST here.`
+    );
   });
 
   test("parseRegistry refuses a bad entry loudly", () => {

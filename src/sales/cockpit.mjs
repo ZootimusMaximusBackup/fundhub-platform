@@ -193,6 +193,7 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
     ),
     underwriteAdapter.businessAges
   );
+  const lenderMatch = gateLenderMatch({ credit, lenders });
   const precall = buildPrecall({
     client,
     conversations: conv.rows,
@@ -301,11 +302,7 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
     underwrite: {
       ...underwriteData,
       funding_round_id: closeoutRow?.id || null,
-      matched_lenders: Number(lenders.match_count || lenders.matches?.length || 0),
-      lenders: lenders.matches || [],
-      lenders_reason: (lenders.match_count || 0) === 0
-        ? "No lenders matched (empty lenders table or filters excluded all)"
-        : null,
+      ...lenderMatch,
       applications: apps.rows
     },
     deal: {
@@ -403,6 +400,51 @@ function summarizeCrs(row) {
     ),
     derogatories: result.derogatories ?? result.derogs ?? null,
     note: "Scores come from triMerge over the stored CRS payload; UnderwriteIQ projections sit beside this block in the same closer-call response."
+  };
+}
+
+/**
+ * THE LENDER COUNT IS GATED ON THE CREDIT FILE.
+ *
+ * F10, owner-set 2026-09-03. On 2026-09-03 this screen printed "307 lenders
+ * match this file" three lines under "No credit pull on file yet" and "No
+ * crs_results row for this client yet". A client with zero credit data matched
+ * 307 lenders, and a closer could repeat that number to a customer on a live
+ * call. Chris: with no credit pulled there should be no matched banks at all.
+ *
+ * So: no credit result, no count and no list. Never a number, never a zero —
+ * zero is itself an answer about this client, and there is no answer yet.
+ *
+ * Funding finding 7 is the other half and is NOT fixed here: the matcher
+ * itself reads no score, no tier, no card use and no estimate. matchLenders()
+ * in src/lenders/match.mjs filters on state, bureau sensitivity and the active
+ * flag only, so post-pull the count still does not move with the file. That
+ * needs a credit-aware clientState in src/lenders/match.mjs and store.mjs,
+ * which this module does not own. Gating is what can be done from here, and it
+ * is what removes the false number in front of the customer.
+ *
+ * @param {{ credit: object, lenders: object }} args
+ */
+export function gateLenderMatch({ credit = {}, lenders = {} } = {}) {
+  if (!credit.available) {
+    return {
+      matched_lenders: null,
+      lenders: [],
+      lenders_reason: "No credit pull on file yet — pull credit to see lender matches.",
+      lenders_gated_on: "credit_pull"
+    };
+  }
+  const count = Number(lenders.match_count || lenders.matches?.length || 0);
+  return {
+    matched_lenders: count,
+    lenders: lenders.matches || [],
+    lenders_reason: count === 0
+      ? "No lenders matched (empty lenders table or filters excluded all)"
+      : null,
+    /* Named out loud so nobody reads this count as an assessment of the file:
+       the match reads state and bureau sensitivity, not score or tier. */
+    lenders_basis: "state and bureau eligibility only — not score, tier or card use",
+    lenders_gated_on: null
   };
 }
 

@@ -219,8 +219,25 @@ describe("toBureaus — which bureaus are supplied, and what is recorded missing
     assert.equal(out.bureaus.transunion.inquiries, 0, "a real zero is a value, not a gap");
     assert.equal(out.bureaus.experian.negatives, 3);
     assert.equal(out.bureaus.experian.late_payment_events, 1);
-    assert.equal(out.businessAgeMonths, 18);
-    assert.deepEqual(out.businessAges, [18]);
+    /* F15, owner-set 2026-09-03. A loose business_age_months does NOT create a
+       company. This assertion used to read 18 / [18], and that is exactly how a
+       client with "No businesses on file" got roughly $740,000 of business money
+       stacked onto his deck figure — $939,500 shown against a stored estimate of
+       $199,350. With no `businesses` row there is no business age and no business
+       funding. See resolveBusinessAges in src/underwrite/business-funding.mjs. */
+    assert.equal(out.businessAgeMonths, null);
+    assert.deepEqual(out.businessAges, []);
+
+    // ...and the working case stays pinned, so the gate cannot swing shut on
+    // clients who really do have a company.
+    const withCompany = toBureaus({
+      crsResults: [crs(SCORES)],
+      tradelines: [line()],
+      customFields: { business_age_months: 18 },
+      businesses: [{ age_months: null }]
+    });
+    assert.equal(withCompany.businessAgeMonths, 18);
+    assert.deepEqual(withCompany.businessAges, [18]);
 
     // A real 0 must not be reported as missing.
     assert.ok(!out.missing.transunion.some((m) => m.field === "inquiries"));

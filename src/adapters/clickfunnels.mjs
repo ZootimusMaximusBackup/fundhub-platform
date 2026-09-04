@@ -72,6 +72,41 @@ function isAppointmentType(type) {
   );
 }
 
+/* ClickFunnels sends every single/multi-select answer TWICE: the answer-option
+   row id on `cf_svy_<key>`, and the words the person actually picked on
+   `cf_svy_<key>_label` (single) or `cf_svy_<key>_labels` (multi, a JSON array,
+   sometimes already encoded as a string). Copying the id through verbatim is
+   what put "207883" on a client-facing slide and on the sales deck (F11) and
+   left internal screens reading a bare number (F8) — every screen then had to
+   grow its own id-suppressing guard, and each one that forgot leaked the id.
+   Resolve it once, here, where the payload still has both halves. */
+function isCfOptionId(v) {
+  if (typeof v === "number") return v >= 10000;
+  return typeof v === "string" && /^\d{5,}$/.test(v.trim());
+}
+
+/** The words CF sent for `key`, from its _label / _labels sibling. */
+function cfLabelsFor(obj, key) {
+  const single = obj[`${key}_label`];
+  if (single != null && single !== "") return String(single);
+  const many = obj[`${key}_labels`];
+  if (many == null || many === "") return null;
+  if (Array.isArray(many)) {
+    const words = many.filter((x) => x != null && x !== "").map(String);
+    return words.length ? words : null;
+  }
+  try {
+    const parsed = JSON.parse(String(many));
+    if (Array.isArray(parsed)) {
+      const words = parsed.filter((x) => x != null && x !== "").map(String);
+      return words.length ? words : null;
+    }
+  } catch {
+    /* not JSON — CF sent a plain string */
+  }
+  return String(many);
+}
+
 /** Pull only FundHub survey keys from a CF attributes/fields object. */
 function pickSurveyAnswers(obj) {
   if (!obj || typeof obj !== "object" || Array.isArray(obj)) return null;
@@ -80,6 +115,19 @@ function pickSurveyAnswers(obj) {
     if (!String(k).startsWith("cf_svy_")) continue;
     if (v == null || v === "") continue;
     out[k] = v;
+  }
+  for (const k of Object.keys(out)) {
+    if (k.endsWith("_label") || k.endsWith("_labels")) continue;
+    const v = out[k];
+    const isIdList = Array.isArray(v) && v.length > 0 && v.every(isCfOptionId);
+    if (!isIdList && !isCfOptionId(v)) continue;
+    const words = cfLabelsFor(out, k);
+    /* No label came with the id. Keep the id rather than dropping the answer —
+       "they answered, we cannot read it" is a finding; silence is not. */
+    if (words == null) continue;
+    out[k] = Array.isArray(v)
+      ? (Array.isArray(words) ? words : [words])
+      : (Array.isArray(words) ? words.join(", ") : words);
   }
   return Object.keys(out).length ? out : null;
 }

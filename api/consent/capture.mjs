@@ -63,6 +63,7 @@ import { db } from "../../src/db.mjs";
 import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
 import { isUuid, requireRole, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { disclosureFor } from "../../src/consent/disclosures.mjs";
+import { onRepairPath } from "../../src/repair/on-repair-path.mjs";
 import { signSoftPullApproveUrl } from "../../src/consent/approve-token.mjs";
 import { secretFromEnv } from "../../src/documents/signed-url.mjs";
 import { readIdentity } from "../../src/pii/index.mjs";
@@ -353,6 +354,30 @@ async function handlePost(req, res, principal, orgId) {
 
   if (action !== "grant") {
     return res.status(400).json({ ok: false, error: "action must be one of: grant, revoke" });
+  }
+
+  /* A CLIENT MAY ONLY AUTHORIZE DISPUTE LETTERS IF DISPUTE LETTERS ARE THEIRS.
+     The owner's standing rule for the letter engine is that repair work happens
+     only for clients on the repair offer path, and until 2026-09-03 that rule
+     lived in the workflow and nowhere near this endpoint: the portal card was
+     unconditional markup and this handler took whatever it was sent. An Academy
+     buyer — a course, not credit repair — was shown the form and could sign it
+     (walk finding F35).
+
+     ONLY THE SELF-SERVE PATH IS NARROWED. Staff keep the ability to record an
+     authorization given on a call or on paper: that is a person exercising
+     judgment about a file they are looking at, and the same set of roles already
+     decides whether to order the pull. What is closed is the portal handing the
+     form to somebody who never bought repair. */
+  if (kind === "dispute_authorization" && principal.kind === "client") {
+    const allowed = await onRepairPath(db, { orgId, clientId });
+    if (!allowed) {
+      return res.status(403).json({
+        ok: false,
+        error: "Dispute letters are not part of what you bought, so there is nothing here to authorize.",
+        code: "not_on_repair_path"
+      });
+    }
   }
 
   /* THE WORDS COME FROM THE SERVER. body.consent_text is not read, and an

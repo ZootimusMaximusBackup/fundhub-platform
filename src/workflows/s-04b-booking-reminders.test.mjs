@@ -113,6 +113,51 @@ test("s-04b: confirm email carries a 365-day portal token and does not queue EMA
   assert.match(email.rendered_body, /Here is your link to sign in to your Fundhub portal/);
 });
 
+test("s-04b: no token still puts a real sign-in link in the confirm email", async () => {
+  // Walk finding F2, 2026-09-03. The magic_link context used to be spread in
+  // only when a token existed, and renderTemplate replaces an absent tag with
+  // the empty string — so the email said "Here is your link to sign in to your
+  // Fundhub portal:" and then showed <a href=""></a>. The client was told to
+  // click something that was not there.
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+15551234567", custom_fields: {} }],
+    templates: sms()
+  });
+  await handle({
+    event: ev("booking.created", { startTime: "2026-08-20T18:00:00Z", email: "a@b.com" }, { clientId: "cl-1" }),
+    db,
+    step: fakeStep(),
+    // Every shape that yields no token: an outright refusal, the rate limiter,
+    // and an address that matched nobody.
+    requestMagicLinkImpl: async () => ({ ok: true, limited: false, outcome: "no_account" })
+  });
+  const email = db.messages.find((m) => m.template_key === EMAIL_CONFIRM);
+  assert.ok(email);
+  assert.doesNotMatch(email.rendered_body, /href=""/);
+  assert.match(email.rendered_body, /portal-login\.html/);
+  assert.doesNotMatch(email.rendered_body, /\{\{magic_link/);
+});
+
+test("s-04b: a refused or rate-limited link request still ships the sign-in page", async () => {
+  for (const stub of [
+    async () => ({ ok: false, error: "email_required" }),
+    async () => ({ ok: true, limited: true, retryAfterMinutes: 15 })
+  ]) {
+    const db = pgFake({
+      clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
+      templates: sms()
+    });
+    await handle({
+      event: ev("booking.created", {}, { clientId: "cl-1" }),
+      db, step: fakeStep(), requestMagicLinkImpl: stub
+    });
+    const email = db.messages.find((m) => m.template_key === EMAIL_CONFIRM);
+    assert.ok(email);
+    assert.match(email.rendered_body, /portal-login\.html/);
+    assert.doesNotMatch(email.rendered_body, /href=""/);
+  }
+});
+
 test("s-04b listens to booking.created and booking.rescheduled", async () => {
   const { s04bBookingReminders } = await import("./s-04b-booking-reminders.mjs");
   const names = (s04bBookingReminders.opts.triggers || []).map((t) => t.event).sort();

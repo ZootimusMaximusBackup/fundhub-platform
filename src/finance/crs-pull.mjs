@@ -295,14 +295,19 @@ async function finishStored(db, {
      written means the same thing: no `simulated` key is a real pull. */
   const stamp = simulated ? { simulated: true, simulatedNotice: SIMULATED_MARKER } : {};
 
-  const inquiries = newInquiriesFor(merged);
+  /* The key is `newInquiries`, not `inquiries`. c-02-inquiry-created reads
+     `payload.newInquiries` and src/adapters/crs.mjs has always emitted that name.
+     This emitter used `inquiries`, so no real pull ever logged an inquiry, no
+     specialist task was ever raised, and the Open Inquiries tile stayed empty.
+     crs-pull.test.mjs pins the name so it cannot drift back. */
+  const newInquiries = newInquiriesFor(merged);
   const analysis = await emit(db, "analysis.completed", {
     crsResultId: stored.crsResult.id,
     requestId,
     source: "crs",
     scores: merged.scores || { ex: null, eq: null, tu: null },
     bureaus: merged.bureaus || {},
-    inquiries,
+    newInquiries,
     outcomeTier,
     ...stamp
   }, {

@@ -47,10 +47,18 @@ const RATING = {
 };
 const VENDOR_TYPE = { revolving: ["Revolving", "CreditCard"], installment: ["Installment", "Auto"], collection: ["Open", "CollectionAgencyAttorney"] };
 
-function line({ creditor, kind, limit, balance, apr, ref, opened, status = "current" }) {
+/* Which bureaus an account reports to. A real damaged file is lopsided — a
+   collection agency furnishes to the two bureaus it has a contract with, not
+   always all three — and several dispute strategies turn on that difference.
+   Clean, seasoned accounts do normally report to all three, so CLEAN keeps the
+   default and only the derogatory lines below name a subset. */
+const ALL_BUREAUS = Object.freeze(["EX", "EQ", "TU"]);
+
+function line({ creditor, kind, limit, balance, apr, ref, opened, status = "current", bureaus = ALL_BUREAUS }) {
   const r = RATING[status];
   const [accountType, loanType] = VENDOR_TYPE[kind];
   return {
+    bureaus,
     // vendor spellings — what the tier engine reads
     creditorName: creditor,
     accountIdentifier: ref,
@@ -83,19 +91,29 @@ function line({ creditor, kind, limit, balance, apr, ref, opened, status = "curr
   };
 }
 
+/* Account identifiers carry FOUR digits at the end on purpose. The system reads
+   the last four DIGITS off this string (src/metro2/normalize.mjs lastFour), and
+   the old "SIM-MCM-001" endings held only three, so every simulated account had
+   no account number at all: letters could not say "ending 1234", cross-bureau
+   matching (creditor + last four) could never fire, and a bureau's written reply
+   could not be matched back to the account it was about. The endings are also
+   distinct from each other, so two accounts never collapse into one. */
 const CLEAN = [
-  line({ creditor: "Chase Sapphire Preferred", kind: "revolving", limit: 12000, balance: 2100, apr: 22.24, ref: "SIM-CHASE-001", opened: "2019-04-12" }),
-  line({ creditor: "American Express Blue Business Cash", kind: "revolving", limit: 25000, balance: 4800, apr: 18.49, ref: "SIM-AMEX-001", opened: "2020-08-01" }),
-  line({ creditor: "Capital One Spark", kind: "revolving", limit: 8000, balance: 950, apr: 24.99, ref: "SIM-CAP1-001", opened: "2021-01-20" }),
-  line({ creditor: "Toyota Motor Credit", kind: "installment", limit: 28000, balance: 14200, apr: 5.9, ref: "SIM-TOYO-001", opened: "2022-06-15" })
+  line({ creditor: "Chase Sapphire Preferred", kind: "revolving", limit: 12000, balance: 2100, apr: 22.24, ref: "SIM-CHASE-8814", opened: "2019-04-12" }),
+  line({ creditor: "American Express Blue Business Cash", kind: "revolving", limit: 25000, balance: 4800, apr: 18.49, ref: "SIM-AMEX-2007", opened: "2020-08-01" }),
+  line({ creditor: "Capital One Spark", kind: "revolving", limit: 8000, balance: 950, apr: 24.99, ref: "SIM-CAP1-5163", opened: "2021-01-20" }),
+  line({ creditor: "Toyota Motor Credit", kind: "installment", limit: 28000, balance: 14200, apr: 5.9, ref: "SIM-TOYO-4490", opened: "2022-06-15" })
 ];
 
+/* The two collections and the charge-off report to two bureaus each, not three.
+   That is what a real damaged file looks like, and it is what lets the per-bureau
+   letters differ from one another. The two bank cards stay on all three. */
 const DAMAGED = [
-  line({ creditor: "Capital One Platinum", kind: "revolving", limit: 3000, balance: 2870, apr: 29.99, ref: "SIM-CAP1-002", opened: "2021-03-02", status: "late30" }),
-  line({ creditor: "Credit One Bank", kind: "revolving", limit: 1500, balance: 1490, apr: 31.49, ref: "SIM-CRED1-001", opened: "2022-09-14" }),
-  line({ creditor: "Midland Credit Management", kind: "collection", limit: 0, balance: 1840, apr: 0, ref: "SIM-MCM-001", opened: "2024-02-20", status: "collection" }),
-  line({ creditor: "Portfolio Recovery Associates", kind: "collection", limit: 0, balance: 960, apr: 0, ref: "SIM-PRA-001", opened: "2024-07-08", status: "collection" }),
-  line({ creditor: "Synchrony Bank / Care Credit", kind: "revolving", limit: 2500, balance: 2500, apr: 26.99, ref: "SIM-SYNC-001", opened: "2020-11-30", status: "chargeoff" })
+  line({ creditor: "Capital One Platinum", kind: "revolving", limit: 3000, balance: 2870, apr: 29.99, ref: "SIM-CAP1-7729", opened: "2021-03-02", status: "late30" }),
+  line({ creditor: "Credit One Bank", kind: "revolving", limit: 1500, balance: 1490, apr: 31.49, ref: "SIM-CRED1-3018", opened: "2022-09-14" }),
+  line({ creditor: "Midland Credit Management", kind: "collection", limit: 0, balance: 1840, apr: 0, ref: "SIM-MCM-6642", opened: "2024-02-20", status: "collection", bureaus: ["EX", "TU"] }),
+  line({ creditor: "Portfolio Recovery Associates", kind: "collection", limit: 0, balance: 960, apr: 0, ref: "SIM-PRA-9075", opened: "2024-07-08", status: "collection", bureaus: ["EQ", "TU"] }),
+  line({ creditor: "Synchrony Bank / Care Credit", kind: "revolving", limit: 2500, balance: 2500, apr: 26.99, ref: "SIM-SYNC-1256", opened: "2020-11-30", status: "chargeoff", bureaus: ["EX", "EQ"] })
 ];
 
 const INQ = (list) => list.map(([creditor, bureau, date]) => ({ creditorName: creditor, bureau, date }));
@@ -140,20 +158,30 @@ export const PROFILES = Object.freeze({
   }
 });
 
-function bureauReport(code, profile) {
+function bureauReport(code, profile, { infileDate }) {
   const sourceType = BUREAU_NAME[code];
+  /* The file date is the day the file was compiled. It was hardcoded to
+     2019-01-15 while every account on it reported 2026-08-28 — seven years in
+     the FUTURE relative to the file. The stale-reporting rule measures the gap
+     between the two, and a negative gap can never fire. It is now the pull date,
+     so the file is internally consistent. */
   return {
     repositoryIncluded: { transunion: code === "TU", experian: code === "EX", equifax: code === "EQ" },
     responseAlertMessages: [],
     creditFiles: [{
-      creditFileDetail: { borrowerSourceType: "Borrower", sourceType, creditFileResultStatusType: "FileReturned", creditFileInfileDate: "2019-01-15" },
+      creditFileDetail: { borrowerSourceType: "Borrower", sourceType, creditFileResultStatusType: "FileReturned", creditFileInfileDate: infileDate },
       aliases: [], ssns: [], employments: [], addresses: []
     }],
     scores: [{
       borrowerSourceType: "Borrower", modelName: "FICO® Score 9", modelNameType: "00W18", sourceType,
       scoreValue: String(profile.scores[code]), scoreMaximumValue: "850", scoreMinimumValue: "300", factaInquiriesIndicator: false, scoreFactors: []
     }],
-    tradelines: profile.lines.map((t) => ({ ...t, sourceType, bureau: code })),
+    /* Only the accounts that actually furnish to THIS bureau. Copying the whole
+       list into all three made every account appear everywhere, which no real
+       damaged file does and which the letter engine reads directly. */
+    tradelines: profile.lines
+      .filter((t) => (t.bureaus || ALL_BUREAUS).includes(code))
+      .map((t) => ({ ...t, sourceType, bureau: code })),
     inquiries: profile.inquiries.filter((i) => i.bureau === code).map((i) => ({
       creditorName: i.creditorName, borrowerSourceType: "Borrower", inquiryDate: i.date, businessType: "Banking", subscriberCode: "SIM", sourceType
     })),
@@ -164,12 +192,19 @@ function bureauReport(code, profile) {
 export function buildPayload(profileKey, { email, name, pulledAt = new Date().toISOString() }) {
   const p = PROFILES[profileKey];
   if (!p) throw new Error(`unknown profile ${profileKey}; one of ${Object.keys(PROFILES).join("|")}`);
+  const infileDate = String(pulledAt).slice(0, 10);
   const scores = { ex: p.scores.EX, eq: p.scores.EQ, tu: p.scores.TU };
-  const limit = p.lines.reduce((n, t) => n + Number(t.creditLimitAmount || 0), 0);
-  const bal = p.lines.filter((t) => t.accountType === "revolving").reduce((n, t) => n + Number(t.currentBalanceAmount || 0), 0);
-  const revLimit = p.lines.filter((t) => t.accountType === "revolving").reduce((n, t) => n + Number(t.creditLimitAmount || 0), 0);
+  /* `accountType` is the VENDOR spelling and the vendor capitalises it —
+     "Revolving", not "revolving". Matching lower case matched nothing, so the
+     stored card-use figure was always 0% and the stored total limit counted the
+     car loan as if it were a credit line. Both numbers are read straight onto
+     the screen, so both were wrong and flattering. */
+  const isCard = (t) => t.accountType === "Revolving";
+  const bal = p.lines.filter(isCard).reduce((n, t) => n + Number(t.currentBalanceAmount || 0), 0);
+  const revLimit = p.lines.filter(isCard).reduce((n, t) => n + Number(t.creditLimitAmount || 0), 0);
   const utilization = revLimit ? Math.round((bal / revLimit) * 100) : 0;
-  void limit;
+  /* Total CREDIT limit — cards only. An installment loan has a balance, not a limit. */
+  const limit = revLimit;
   return {
     source: "crs",
     product: "prequal-fico9",
@@ -181,12 +216,21 @@ export function buildPayload(profileKey, { email, name, pulledAt = new Date().to
     bureaus_pulled: "TU/EX/EQ",
     scores,
     scoreModels: { ex: "FICO 9", eq: "FICO 9", tu: "FICO 9" },
-    tradelines: p.lines.map((t, i) => ({ ...t, bureau: ["EX", "EQ", "TU"][i % 3], sourceType: BUREAU_NAME[["EX", "EQ", "TU"][i % 3]] })),
+    /* One row per account for the tradeline ingest, stamped with the first bureau
+       that actually reports it rather than a round-robin that ignored the file. */
+    tradelines: p.lines.map((t) => {
+      const code = (t.bureaus || ALL_BUREAUS)[0];
+      return { ...t, bureau: code, sourceType: BUREAU_NAME[code] };
+    }),
     inquiries: p.inquiries.map((i) => ({
       creditorName: i.creditorName, sourceType: BUREAU_NAME[i.bureau], inquiryDate: i.date, source: i.bureau, date: i.date
     })),
     publicRecords: [],
-    bureaus: { TU: bureauReport("TU", p), EX: bureauReport("EX", p), EQ: bureauReport("EQ", p) },
+    bureaus: {
+      TU: bureauReport("TU", p, { infileDate }),
+      EX: bureauReport("EX", p, { infileDate }),
+      EQ: bureauReport("EQ", p, { infileDate })
+    },
     bureauErrors: {},
     requestIds: { TU: "simulated-TU", EX: "simulated-EX", EQ: "simulated-EQ" },
     consumerSignals: { scores: { perBureau: { ...scores } }, utilization: { pct: utilization } },
@@ -246,6 +290,8 @@ async function main() {
   console.log(`profile  ${profileKey} — ${p.note}`);
   console.log(`scores   EX ${p.scores.EX} · EQ ${p.scores.EQ} · TU ${p.scores.TU} · ${p.lines.length} lines · ${p.inquiries.length} inquiries · ${countNegatives(p.lines)} negatives`);
   console.log(`tier     ${tier.outcome} · funding estimate ${fundingEstimate ?? "none"}`);
+  /* Say it out loud so the walkthrough is not surprised by a $0 business figure. */
+  console.log(`business $0 — no business credit report is passed, so business_age_months ${p.businessAgeMonths} is never read`);
   console.log(`prior    ${prior} crs_results row(s) already on this client${prior ? " — a new one is added, the newest wins" : ""}`);
   if (dry) { console.log("dry run — nothing written"); await close(); return; }
 
@@ -263,6 +309,13 @@ async function main() {
     crs_inquiries_tu: inqCount("TU"),
     crs_negative_items_count: countNegatives(p.lines),
     crs_late_payments_count: p.lines.filter((t) => /late/i.test(String(t.paymentStatus))).length,
+    /* DISPLAY ONLY. The funding estimator never reads this. Business money is
+       blocked at $0 unless a real BUSINESS CREDIT REPORT is passed to the engine
+       (estimate-preapprovals.js: `businessAvailable = bs?.available === true`),
+       and the age multiplier is only reached after that check passes. The sim
+       passes no business report, so the business half of every estimate here is
+       $0 and this 30 months is never consulted. Pinned by
+       src/underwrite/preapproval-modifiers.test.mjs. */
     business_age_months: p.businessAgeMonths,
     crs_utilization: payload.consumerSignals.utilization.pct
   });
@@ -271,7 +324,9 @@ async function main() {
   const requestId = `sim-walkthrough:${crs.id}`;
   await emit(db, "analysis.completed", {
     crsResultId: crs.id, requestId, source: "crs",
-    scores: payload.scores, bureaus: payload.bureaus, inquiries: newInquiriesFor(payload),
+    // `newInquiries` — the key c-02-inquiry-created reads. Emitting `inquiries`
+    // here meant the sim's inquiries were never logged either.
+    scores: payload.scores, bureaus: payload.bureaus, newInquiries: newInquiriesFor(payload),
     outcomeTier: tier.outcome, ...stamp
   }, { orgId, clientId: c.id, idempotencyKey: `crs-result:${crs.id}:analysis.completed:v1` });
   await emit(db, "decision.rendered", {

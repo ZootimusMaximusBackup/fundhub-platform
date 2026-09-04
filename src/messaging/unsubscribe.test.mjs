@@ -205,3 +205,62 @@ test("the link source is recorded apart from a STOP reply and a provider signal"
   assert.notEqual(UNSUBSCRIBE_LINK_SOURCE, "inbound_keyword");
   assert.notEqual(UNSUBSCRIBE_LINK_SOURCE, "provider_unsubscribe");
 });
+
+/* ── F18: the signature must not sit on the template's own background ──────
+   Reported on the 2026-09-03 walk: the wordmark and the handwritten "Josh"
+   showed as white rectangles in the soft-pull email and rendered cleanly in
+   the e-book email. Both carry this same footer. The soft-pull body is HTML
+   with a #F4F4F5 page ground, the e-book body is plain text — so the footer
+   landed on grey in one case and inside the shell's white card in the other.
+   These pin the fix: the footer brings its own white ground when it is
+   appended to a template that already has a document of its own. */
+
+/* Trimmed from the real 2026-09-03 soft-pull row (2816 chars): the parts that
+   matter are the doctype, the grey page ground and the template's own card. */
+const HTML_TEMPLATE_BODY =
+  `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"></head>` +
+  `<body style="margin:0;padding:0;background-color:#F4F4F5;">` +
+  `<table role="presentation" width="100%" style="background-color:#F4F4F5;">` +
+  `<tr><td align="center" style="padding:24px 12px;">` +
+  `<table role="presentation" width="100%" style="max-width:600px;background-color:#FFFFFF;">` +
+  `<tr><td style="padding:28px;">Two clear numbered steps.</td></tr>` +
+  `</table></td></tr></table></body></html>`;
+
+const UNSUB = "https://fundhub.ai/unsubscribe.html?x=1";
+const FOOTER_ENV = { FUNDHUB_REP_NUMBER: "+15613048368", APP_BASE_URL: "https://fundhub.ai" };
+
+test("F18 — a template with its own HTML gets the signature on a white card, not on its grey page", () => {
+  const out = withUnsubscribeFooter(HTML_TEMPLATE_BODY, UNSUB, FOOTER_ENV);
+
+  assert.ok(out.includes("Two clear numbered steps."), "the approved copy survives");
+  assert.ok(out.includes(EMAIL_SIGNATURE_PATH) && out.includes(EMAIL_LOGO_PATH),
+    "both signature images are still in the footer");
+
+  /* The white ground is the whole fix. Without it these two PNGs — white
+     artwork on a white background — draw as rectangles on #F4F4F5. */
+  const footer = out.slice(out.indexOf("<!-- fundhub-email-footer -->"));
+  assert.ok(/background-color:#ffffff/i.test(footer),
+    "the appended footer must carry its own white ground, not borrow the template's");
+  assert.ok(footer.indexOf("background-color:#ffffff") < footer.indexOf(EMAIL_LOGO_PATH),
+    "the white ground opens before the images, so both sit on it");
+  assert.ok(/width:600px/.test(footer),
+    "the footer card is centred at the same width the seeded templates use");
+});
+
+test("F18 — a plain-text body still gets the bare footer, because the shell already supplies the card", () => {
+  const out = withUnsubscribeFooter("Here's the e-book we talked about.", UNSUB, FOOTER_ENV);
+  const footer = out.slice(out.indexOf("<!-- fundhub-email-footer -->"));
+  assert.ok(!/width:600px/.test(footer),
+    "no second card inside the shell's card — that would double the padding");
+  assert.ok(out.includes(EMAIL_SIGNATURE_PATH), "the signature is still there");
+});
+
+test("F18 — one footer, one mark, however the body arrives", () => {
+  for (const body of [HTML_TEMPLATE_BODY, "plain copy"]) {
+    const out = withUnsubscribeFooter(body, UNSUB, FOOTER_ENV);
+    assert.equal(out.split("<!-- fundhub-email-footer -->").length - 1, 1,
+      "exactly one footer mark, so a second pass leaves the body alone");
+    assert.equal(out.split(EMAIL_SIGNATURE_PATH).length - 1, 1, "one signature image");
+    assert.equal(withUnsubscribeFooter(out, UNSUB, FOOTER_ENV), out, "re-appending is a no-op");
+  }
+});

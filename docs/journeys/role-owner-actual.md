@@ -17,7 +17,7 @@ flowchart TD
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| CAN[Can reach]
     CAN --> A_adintel[adintel — 1 route]
-    CAN --> A_auth[Signing in and out — 11 routes]
+    CAN --> A_auth[Signing in and out — 12 routes]
     CAN --> A_banking[banking — 3 routes]
     CAN --> A_brand[brand — 1 route]
     CAN --> A_campaigns[Campaigns — 9 routes]
@@ -56,7 +56,7 @@ flowchart TD
 
 ## What they can reach
 
-**214 of 216 routes.**
+**215 of 217 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -72,6 +72,7 @@ flowchart TD
 | `/api/auth/magic-link` | — | anyone |
 | `/api/auth/magic-link-verify` | — | anyone |
 | `/api/auth/reset` | POST | anyone |
+| `/api/auth/send-portal-link` | POST | owner, admin |
 | `/api/auth/session` | — | anyone |
 | `/api/auth/staff-role` | POST | owner, admin |
 | `/api/auth/staff-update` | POST | owner, admin |
@@ -284,7 +285,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**2 of 216 routes.**
+**2 of 217 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

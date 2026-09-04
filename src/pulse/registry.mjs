@@ -30,6 +30,7 @@ const API_KEYS = [
   "auth/magic-link-verify",
   "auth/magic-link",
   "auth/reset",
+  "auth/send-portal-link",
   "auth/session",
   "auth/staff-role",
   "auth/staff-update",
