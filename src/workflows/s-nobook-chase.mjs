@@ -36,7 +36,7 @@ export const EMAIL_NOBOOK_03 = "EMAIL-NOBOOK-03";
  * another's. Phone numbers are compared on their last ten digits so
  * "+1 555-000-1111" and "5550001111" are the same number.
  */
-async function hasBooked(db, clientId) {
+export async function hasBooked(db, clientId) {
   const r = await db.query(
     `WITH me AS (SELECT org_id, email, phone FROM clients WHERE id = $1)
      SELECT 1 AS booked
