@@ -238,7 +238,10 @@ function claim(ruleId, { bureau, subject, reason, observed, expected, creditor =
     metro2Ref: null,
     plainName: spec.plainName,
     subcase: null,
-    scope: "file",
+    /* "report" is the scope the engine's own file-level checks use
+       (../checks/personal-info.mjs, ../checks/inquiries.mjs) — this claim is
+       about the file, not about one tradeline. */
+    scope: "report",
     subject,
     creditor,
     account_last4: null,
