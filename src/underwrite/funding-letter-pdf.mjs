@@ -132,7 +132,17 @@ export async function persistFundingLetterFiles(db, store, {
       filename: file.filename || file.name || `${analysisType}.pdf`,
       generatedBy,
       sourceEventId: sourceEventId ? `${sourceEventId}:${subtype}` : null,
-      metadata: { stack: "funding", docType: analysisType }
+      // `engine` is stamped on the file by src/underwrite/black-report-pdf.mjs
+      // and says which printer produced these bytes: "weasyprint" /
+      // "weasyprint-remote" are the designed full-length documents,
+      // "pdf-lib" is the short fallback set. It lands on the document row so
+      // "did this client get the real documents?" is answerable from the
+      // database rather than from the code.
+      metadata: {
+        stack: "funding",
+        docType: analysisType,
+        ...(file.engine ? { engine: file.engine } : {})
+      }
     });
     stored.push({
       type: analysisType,
