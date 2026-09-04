@@ -1312,3 +1312,39 @@ the live C-06 workflow — because that workflow has never produced a document
 for any client (F42). They are the audit copy of what the system should have
 delivered, generated from the system's own code; they did not travel through
 the system's delivery path, because there is none that works.
+
+## SMS review — every text Chris's phone received tonight, what each is for, and the verdict
+
+Source: `messages` table, channel sms, to Chris's number, 2026-09-03 17:45-20:15 MST.
+Bodies verbatim. Workflow = the file that sends it. Owner asked: "figure out what
+these are for... AI slop." Verdicts are his to confirm; the facts are measured.
+
+| Sent | Template | Workflow | What it is for | Verdict |
+|---|---|---|---|---|
+| x5 | SMS-S00-WELCOME | s-00-welcome | Right after the survey: "Got your info. Next step is a quick call…" + booking link | Fine. Fires once per client. |
+| x5 | SMS-S04-01-CONFIRM | s-04b-booking-reminders | Right after booking: "You're booked for <time>. Reply CONFIRM so we know you're set." | Fine, but see F3: does a CONFIRM reply move the card to the Confirmed column? Unverified. |
+| x4 | SMS-S04-02-REMIND-24H | s-04b-booking-reminders | Supposed to be the 24-hour-before reminder: "your call is tomorrow at <time>" | **F47 · WRONG.** Sent within minutes of booking (17:51-18:10), not 24h before. Sim Five's call is Sunday and the text still says "tomorrow". Timing is broken. |
+| x1 | SMS-S04-03-REMIND-2H | s-04b-booking-reminders | Supposed to be the 2-hour-before reminder | Sent 17:52 for a 7:00 PM call — 68 minutes out, not 2h. Minor timing drift. |
+| x6 | (no template — deck) | closer-deck "Send agreement + pay link" | "Hi Sim, Fundhub Capital Academy: pay $5,000 <link>" | **F48 · Six copies = F24 (no button feedback). Copy is bare: no greeting from a person, no what-happens-next, just "pay $5,000".** Owner's word for it: slop. |
+| x1 | SMS-AISET04-HANDOFF | ai-set-04-3way-handoff | Josh AI, 15 min before the call: "I've intro'd your advisor so you're not walking in cold — link: ." | **F49 · BROKEN VARIABLE.** The link is empty ("link: ."). Client gets a text pointing at nothing. Ties to F5 (setter). |
+| x1 | SMS-S05A-NOSHOW-RECOVERY | s-05a-no-show-recovery | After a no-show: "Looks like we missed each other. grab a new time" | Correct. He genuinely did not join the 7:00 PM Meet. |
+| **x46** | SMS-NOBOOK-01 | s-nobook-chase | Meant for people who did the survey but NEVER booked, 2h later | **F39 / F40.** Fired 46 times at people who booked. "Your file is ready" is false — no file exists before the call. Runaway + wrong copy. |
+
+Totals: 69 texts to one phone in 2.5 hours, 46 of them the same broken chase.
+
+Copy-level note for the rewrite pass (owner: don't change yet): every message
+opens "Hey Sim, it's Fundhub" — same voice, same shape, same link in six of
+eight. Nothing tells the client which step they are on. The deck pay-link text
+has no context at all. The handoff text names Josh and then hands them an empty
+link. This is the "AI slop" the owner means: technically delivered, humanly
+meaningless.
+
+**F47 · The 24-hour reminder fires at booking time, not 24 hours before.**
+s-04b-booking-reminders sent "your call is tomorrow" 0-5 minutes after each
+booking, including to Sim Five whose call is three days out.
+
+**F48 · Deck pay-link SMS is bare and duplicated.** Six identical "pay $5,000"
+texts (F24) with no framing.
+
+**F49 · The Josh handoff SMS has an empty link.** Body ends "link: ." — the
+template variable never filled. Add to W7 (AI setter).
