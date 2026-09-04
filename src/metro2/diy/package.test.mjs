@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { buildDiyPackage } from "./package.mjs";
+import { buildDiyPackage, maybeComplaintFiles } from "./package.mjs";
 
 const identity = {
   fullName: "Alex Client",
@@ -120,5 +120,55 @@ describe("diy package", () => {
     assert.match(cfpb.text, /DATE — not mailed yet/);
     assert.match(cfpb.text, /I declare under penalty of perjury/);
     assert.doesNotMatch(cfpb.text, /fundhub/i);
+  });
+});
+
+/*
+ * The complaints are signed under penalty of perjury. The R1 timeline line is
+ * the only sentence in them that names Metro 2, so a pack whose claims are all
+ * derogatory-item claims (./derogatory.mjs — ruleId, field:null, no Metro 2
+ * finding) must not say a Metro 2 dispute was mailed.
+ */
+describe("complaint timeline names Metro 2 only when a Metro 2 rule is in the pack", () => {
+  const derog = {
+    ruleId: "DEROG-COLLECTION",
+    severity: "strong",
+    field: null,
+    reason: "Midland is reported as a collection account.",
+    citations: ["15 U.S.C. § 1681i(a)(1)"],
+    metro2Ref: null,
+    plainName: "Collection account disputed",
+    creditor: "Midland",
+    account_last4: "4521"
+  };
+
+  it("derogatory-only pack: plain wording, and no Metro 2 anywhere in either complaint", async () => {
+    const out = await maybeComplaintFiles({
+      identity,
+      violationsByBureau: { EQ: [derog] },
+      datedComplaints: false
+    });
+    assert.equal(out.ok, true);
+    const texts = out.files.filter((f) => f.text && f.path.endsWith(".pdf")).map((f) => f.text);
+    assert.equal(texts.length, 2);
+    for (const text of texts) {
+      assert.match(text, /Initial dispute via certified mail\./);
+      assert.equal(/metro\s*2/i.test(text), false);
+      assert.match(text, /Items disputed on this account:/);
+      assert.match(text, /penalty of perjury/i);
+    }
+  });
+
+  it("a pack with an M2- rule keeps the Metro 2 wording", async () => {
+    const out = await maybeComplaintFiles({
+      identity,
+      violationsByBureau: { EQ: [derog, v("M2-011")] },
+      datedComplaints: false
+    });
+    assert.equal(out.ok, true);
+    const text = out.files.find((f) => f.path.includes("cfpb")).text;
+    assert.match(text, /Initial Metro 2 dispute via certified mail\./);
+    assert.match(text, /Metro 2 field violations reported on this account:/);
+    assert.match(text, /Items disputed on this account:/);
   });
 });
