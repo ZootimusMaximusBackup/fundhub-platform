@@ -563,7 +563,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
         <div id="doc-agent-note" class="action-sub" hidden></div>
         <div id="upload-doors" class="upload-doors">
           <div class="upload-door door-funding" data-kind="client_upload">
-            <div class="door-title">Funding documents</div>
+            <div class="door-title">ID and personal documents</div>
             <select class="door-type" data-subtype aria-label="What kind of document is this?">
               <option value="">What is this? (helps us file it)</option>
               <option value="id_document">Photo ID</option>
@@ -575,7 +575,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
               <option value="additional_fraud_docs">Fraud / identity theft papers</option>
               <option value="other">Something else</option>
             </select>
-            <button class="upload-btn" type="button" data-upload-btn>Upload funding docs</button>
+            <button class="upload-btn" type="button" data-upload-btn>Upload documents</button>
             <input type="file" data-file-input multiple hidden accept=".pdf,.png,.jpg,.jpeg,.heic">
           </div>
           <div class="upload-door door-inquiry" data-kind="inquiry_doc">
@@ -1325,11 +1325,18 @@ document.addEventListener("DOMContentLoaded", async function () {
     inquiryCaseOpen = !!open;
     applyDoors();
   }
+  /* Mirrors activeUploadDoors() in src/repair/upload-doors.mjs — keep the two
+     in step. The `funding` door is the IDENTITY door: it is the only one that
+     carries photo ID and proof of address, and a repair client cannot start
+     their program without sending both. Gating it on funding-snapshot alone
+     left every repair-trial client (metro2-letter-pack) with nowhere to put
+     their ID. No price belongs in this file, not even inside a comment —
+     src/http/crm-html.test.mjs greps the whole page for one. */
   function doorsFromEntitlementCodes(codes) {
     var set={}; (codes||[]).forEach(function(c){set[String(c||"").toLowerCase()]=1;});
     var funding=!!set["funding-snapshot"], repair=!!set["metro2-letter-pack"];
     var inquiry=funding || !!set["credit-analysis-report"];
-    return { funding: funding, inquiry: inquiry, bureau_response: repair };
+    return { funding: funding || repair, inquiry: inquiry, bureau_response: repair };
   }
 
   function setOwnVisible(hasOwn) {
