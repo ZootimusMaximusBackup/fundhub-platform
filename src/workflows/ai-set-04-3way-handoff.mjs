@@ -14,7 +14,7 @@ import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { sendTemplated } from "./messaging.mjs";
 import { createTask } from "../lib/create-task.mjs";
-import { appointmentContext } from "./s-04b-booking-reminders.mjs";
+import { appointmentContext, REMINDER_SKEW_MS } from "./s-04b-booking-reminders.mjs";
 import { portalLoginUrl } from "../auth/magic-link.mjs";
 
 export const SMS_TEMPLATE_KEY = "SMS-AISET04-HANDOFF";
@@ -80,7 +80,7 @@ async function createAdvisorTaskOnce(db, { orgId, clientId, eventId }) {
   return { created: true };
 }
 
-export async function handle({ event, db, step }) {
+export async function handle({ event, db, step, now = () => Date.now() }) {
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
 
@@ -88,14 +88,37 @@ export async function handle({ event, db, step }) {
   const startTime = payload.startTime;
   if (!startTime) return { done: false, reason: "no_start_time" };
 
-  /* A start time nothing can read makes an Invalid Date, and sleepUntil on one
-     wakes at once — which is how a "your call starts in 15 minutes" text goes
-     out the moment somebody books. Same class as F47. */
-  const target = new Date(new Date(startTime).getTime() - 15 * 60 * 1000);
-  if (!Number.isFinite(target.getTime())) {
-    return { done: false, reason: "unreadable_start_time" };
-  }
-  await step.sleepUntil("wait-until-t-minus-15", target);
+  /* WHEN THIS TEXT IS ALLOWED TO GO, decided once and written down.
+   *
+   * Three ways this message used to be a lie about the clock, all the same
+   * class as F47:
+   *   * a start time nothing can read makes an Invalid Date, and sleepUntil on
+   *     one wakes at once;
+   *   * a booking whose start time is already in the past has a "fifteen
+   *     minutes before" moment that is further in the past still, so the sleep
+   *     also ends at once and the customer is told a finished call starts in
+   *     fifteen minutes;
+   *   * a booking taken inside the last fifteen minutes has no "fifteen minutes
+   *     before" left to reach at all.
+   * None of those is sent late. None of them is sent.
+   *
+   * The answer is worked out INSIDE a step, because Inngest re-runs everything
+   * outside a step on every replay against the clock as it is then — which is
+   * how the same shape switched both booking reminders off in
+   * src/workflows/s-04b-booking-reminders.mjs. Recorded once, it does not move.
+   * (A step's answer travels as JSON, so the moment is stored as text.)
+   */
+  const plan = await step.run("plan-handoff", () => {
+    const startMs = new Date(startTime).getTime();
+    if (!Number.isFinite(startMs)) return { ok: false, reason: "unreadable_start_time" };
+    const nowMs = now();
+    if (startMs <= nowMs) return { ok: false, reason: "appointment_already_started" };
+    const targetMs = startMs - 15 * 60 * 1000;
+    if (targetMs <= nowMs + REMINDER_SKEW_MS) return { ok: false, reason: "booked_inside_15m" };
+    return { ok: true, at: new Date(targetMs).toISOString() };
+  });
+  if (!plan.ok) return { done: false, reason: plan.reason };
+  await step.sleepUntil("wait-until-t-minus-15", new Date(plan.at));
 
   const orgId = event.orgId;
   const eventId = event.id;

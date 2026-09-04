@@ -119,7 +119,8 @@ flowchart TD
     ST -->|None| SK0[No reminders: no start time]
     ST -->|Cannot be read| SK1[No reminders: unreadable start time]
     ST -->|Already gone| SK2[No reminders: appointment already started]
-    ST -->|A real future moment| P24{Is 24h before<br/>still in the future?}
+    ST -->|A real future moment| PLAN[Write the two moments down<br/>inside a step, once, at booking time]
+    PLAN --> P24{Is 24h before<br/>still in the future?}
 
     P24 -->|No — booked inside a day| S24[24-hour reminder SKIPPED]
     P24 -->|Yes| W24[Sleep until 24h before]
@@ -149,6 +150,17 @@ call booked twenty hours out has a "24 hours before" that is already four hours
 gone — both used to fire at once, and both said "tomorrow". The tolerance either
 side of the intended moment is five minutes.
 
+**The two moments are decided once and written down.** The workflow engine does
+not run a long job from top to bottom. It runs it from the top, does the next
+piece of work it has not done yet, records that piece's answer, and starts the
+job again from the top — so anything worked out OUTSIDE a recorded piece of work
+is worked out again, against the clock as it is on that later pass. The first
+version of this repair worked the plan out in the open, which meant that at the
+exact moment each reminder came due the plan was recomputed, decided the moment
+had just gone, and sent nothing. Both reminders would have stopped for every
+customer. The plan, and the check made on waking, are now each a recorded piece
+of work, so the moments chosen when the booking arrived are the moments used.
+
 **The confirmation no longer waits for a clock tick.** The sender sweeps every
 five minutes, which is most of the three-minute delay the owner measured. The
 two confirmation rows — and only those two — now ask to be worked immediately,
@@ -166,7 +178,11 @@ flowchart TD
     C -->|No| S0[Stop]
     C -->|Yes| ST{Start time readable?}
     ST -->|No| S1[Stop: unreadable start time]
-    ST -->|Yes| W[Sleep until 15 minutes before]
+    ST -->|Yes| PAST{Has the call already started?}
+    PAST -->|Yes| S2[Stop: appointment already started]
+    PAST -->|No| NEAR{Is 15 minutes before<br/>still in the future?}
+    NEAR -->|No| S3[Stop: booked inside 15 minutes]
+    NEAR -->|Yes| W[Sleep until 15 minutes before<br/>the moment is recorded, once]
     W --> L[Find a link to give them]
     L --> L1{In the booking message?}
     L1 -->|Yes| USE[Use it]
@@ -182,6 +198,19 @@ The text used to end "link: ." — it asked for a meeting location and was given
 no context at all, so the tag rendered as nothing. ClickFunnels supplies no
 meeting link on any booking it takes, so a fallback that always answers is not
 an edge case, it is the ordinary path.
+
+**Known and not fixed here.** The fallback is the customer's portal sign-in
+page. It is a real, working address, but the wording live in the database today
+introduces it as though it were the link to join the call. The corrected wording
+sits in `docs/ads/sms-copy-2026-09.md` and in the held copy commit, waiting for
+the owner to read it; nothing in code makes that sentence honest, so it is named
+here rather than papered over.
+
+**Three ways this text used to be a lie about the clock, all now refused**: a
+start time nothing can read, a call that has already started, and a booking
+taken inside the last fifteen minutes. The first was refused before this repair
+pass; the other two were not, so a booking carrying yesterday's start time sent
+"Your call starts in 15 minutes" the instant it arrived.
 
 ## 6. Where a message actually goes out
 

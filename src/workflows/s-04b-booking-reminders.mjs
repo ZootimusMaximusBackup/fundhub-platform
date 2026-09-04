@@ -57,10 +57,25 @@ export function reminderPlan(startTime, nowMs) {
   return { ok: true, startMs, t24: at(24 * HOUR), t2: at(2 * HOUR) };
 }
 
+/* planFromMemo — turn the written-down plan back into dates.
+ *
+ * A step's answer is carried across a replay as JSON, so a Date goes in and a
+ * string comes back. The two moments are stored as text on purpose and rebuilt
+ * here, in one place, so the rest of the function works with dates exactly as
+ * it did before.
+ */
+function planFromMemo(memo) {
+  return {
+    startMs: memo.startMs,
+    t24: memo.t24 ? new Date(memo.t24) : null,
+    t2: memo.t2 ? new Date(memo.t2) : null
+  };
+}
+
 /* The same question asked again on waking, because a durable sleep can be
    resumed early after a retry or a replay and the sender must not take the
    scheduler's word for the time. */
-function wakeRefusal(startMs, targetMs, nowMs) {
+export function wakeRefusal(startMs, targetMs, nowMs) {
   if (nowMs >= startMs) return "appointment_already_started";
   if (nowMs < targetMs - REMINDER_SKEW_MS) return "woke_before_the_reminder_was_due";
   return null;
@@ -199,13 +214,45 @@ export async function handle({
     return { ...base, skippedReminders: "no_start_time" };
   }
 
-  const plan = reminderPlan(startTime, now());
-  if (!plan.ok) {
+  /* THE PLAN IS DECIDED ONCE, WHEN THE BOOKING ARRIVES, AND WRITTEN DOWN.
+   *
+   * Inngest does not run this function once from top to bottom. It runs it from
+   * the top, does the first step it has not done yet, records that step's
+   * answer, and then starts again from the top — replaying the steps it already
+   * has and re-running everything OUTSIDE a step against whatever the clock says
+   * on that later pass.
+   *
+   * So a plan computed out here was recomputed on every wake. When the run woke
+   * at "24 hours before the call", it asked "is 24 hours before the call still
+   * in the future?", answered no — it is this instant — and took the
+   * booked_inside_24h branch instead of sending. The same thing happened again
+   * at the 2-hour mark. Both reminders were silently switched off, which is why
+   * this is inside a step now: a step's answer is recorded on the first pass and
+   * handed back unchanged on every replay, so these are the moments chosen at
+   * booking time and they do not move. Same shape as the memoized wake time in
+   * src/workflows/ai-set-01-josh-setter.mjs.
+   *
+   * The live clock is still read, in wakeRefusal below — that is the check that
+   * a wake really is the moment it claims to be, and it has to see the real
+   * clock to be worth anything.
+   */
+  const planned = await step.run("plan-reminders", () => {
+    const p = reminderPlan(startTime, now());
+    if (!p.ok) return { ok: false, reason: p.reason };
+    return {
+      ok: true,
+      startMs: p.startMs,
+      t24: p.t24 ? p.t24.toISOString() : null,
+      t2: p.t2 ? p.t2.toISOString() : null
+    };
+  });
+  if (!planned.ok) {
     // An unreadable or already-past start time. The confirmation still goes —
     // it is a receipt for what they booked — but nothing that talks about
     // "tomorrow" or "in two hours" is sent about a moment we cannot place.
-    return { ...base, skippedReminders: plan.reason };
+    return { ...base, skippedReminders: planned.reason };
   }
+  const plan = planFromMemo(planned);
 
   const out = { ...base };
 
@@ -215,7 +262,11 @@ export async function handle({
     out.skipped24h = "booked_inside_24h";
   } else {
     await step.sleepUntil("wait-t-minus-24h", plan.t24);
-    const refused24 = wakeRefusal(plan.startMs, plan.t24.getTime(), now());
+    /* Inside a step for the same reason the plan is: the answer belongs to the
+       moment the run actually woke, not to whatever the clock says on some
+       later replay. */
+    const refused24 = await step.run("wake-check-24h", () =>
+      wakeRefusal(plan.startMs, plan.t24.getTime(), now()));
     if (refused24) {
       out.skipped24h = refused24;
     } else if (await step.run("recheck-24h", () => callHappened(db, clientId))) {
@@ -233,7 +284,8 @@ export async function handle({
     out.skipped2h = "booked_inside_2h";
   } else {
     await step.sleepUntil("wait-t-minus-2h", plan.t2);
-    const refused2 = wakeRefusal(plan.startMs, plan.t2.getTime(), now());
+    const refused2 = await step.run("wake-check-2h", () =>
+      wakeRefusal(plan.startMs, plan.t2.getTime(), now()));
     if (refused2) {
       out.skipped2h = refused2;
     } else if (await step.run("recheck-2h", () => callHappened(db, clientId))) {

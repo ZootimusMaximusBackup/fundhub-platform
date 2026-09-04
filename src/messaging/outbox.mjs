@@ -293,10 +293,25 @@ export const URGENT_MAX_LATENCY_MS = 60 * 1000;
  * for a staff reply, which is why this reuses dispatchMessage() rather than
  * inventing a second send path.
  *
- * NOTHING CALLS THIS YET. It is the mechanism, not the policy: turning it on
- * means a workflow asking for it at the point it queues the row, and the owner
- * asked to be consulted before any immediate-send path goes live because it
- * touches every outbound message. Until then this changes no behaviour.
+ * WHO CALLS THIS, AND WHY IT IS ON. Written 2026-09-04, replacing the earlier
+ * note that said nothing called it yet and that the owner wanted to be consulted
+ * before any immediate-send path went live. That note is out of date and this
+ * one records what actually happened, so the file and the code agree.
+ *
+ * ONE CALLER: src/workflows/s-04b-booking-reminders.mjs, step
+ * "dispatch-confirmation-now", for exactly TWO rows — the booking confirmation
+ * text and the booking confirmation email — and nothing else. Every other
+ * message in the system, including this workflow's own 24-hour and 2-hour
+ * reminders, still waits for the five-minute sweep.
+ *
+ * THE CONSULTATION CONDITION IS ANSWERED BY THE OWNER'S OWN REQUEST, not
+ * waived. F1 is his: he timed the booking confirmation at about three minutes
+ * and set a sixty-second target (walk finding F1, 2026-09-03). This is that
+ * target, applied to the two messages he named and to no others. It is recorded
+ * here rather than assumed: if he wants it narrower or off, one caller and one
+ * step are all there is to remove.
+ *
+ * "Immediate" is scope, not permission. Every check below still runs.
  *
  * EVERY RULE STILL APPLIES, and none of them is re-implemented here:
  *   * the per-company pause switch and the daily cap — allowance(), the same

@@ -399,3 +399,168 @@ test("F1: no message id means no immediate dispatch, and the run still finishes"
   assert.equal(res.done, true);
   assert.deepEqual(res.confirmDispatch, []);
 });
+
+/* ── The replay tests ─────────────────────────────────────────────────────────
+ *
+ * clockStep() above runs the workflow ONCE, straight through, with a virtual
+ * clock. Inngest does not do that. It runs the function from the top, performs
+ * the first step it has not done yet, records that step's answer, and then
+ * starts the whole function again from the top — replaying the recorded answers
+ * and re-running everything outside a step against the clock as it is on that
+ * later pass. A three-day-out booking is therefore driven a dozen times over
+ * three days, not once.
+ *
+ * Round 2 found a defect that only exists in that world: the reminder plan was
+ * computed outside a step, so on the wake at "24 hours before" it was worked out
+ * again against that instant, decided the moment had gone, and sent nothing.
+ * Both reminders were switched off in production while every test here passed.
+ *
+ * replayDriver() is the harness that can see it. It records each step by id
+ * through JSON (a Date really does come back as a string, which is the other
+ * half of the same bug), suspends and re-invokes after every step exactly as
+ * Inngest does, and moves the clock forward on each durable sleep.
+ */
+function replayDriver({ startAt = Date.now(), maxInvocations = 200 } = {}) {
+  const SUSPEND = Symbol("inngest-suspend");
+  const memo = new Map();
+  let t = startAt;
+  let invocations = 0;
+
+  const step = {
+    run: async (id, fn) => {
+      if (memo.has(id)) return memo.get(id);
+      const value = await fn();
+      // Inngest carries a step's answer as JSON. undefined has no JSON form.
+      const stored = value === undefined ? null : JSON.parse(JSON.stringify(value));
+      memo.set(id, stored);
+      throw SUSPEND;              // one step per invocation, then start again
+    },
+    sleep: async (id) => {
+      if (memo.has(id)) return;
+      memo.set(id, null);
+      throw SUSPEND;
+    },
+    sleepUntil: async (id, when) => {
+      if (memo.has(id)) return;
+      memo.set(id, null);
+      const target = new Date(when).getTime();
+      if (Number.isFinite(target)) t = Math.max(t, target);
+      throw SUSPEND;              // the durable wake is a new invocation
+    }
+  };
+
+  return {
+    step,
+    now: () => t,
+    clockAt: () => t,
+    invocations: () => invocations,
+    async drive(run) {
+      for (let i = 0; i < maxInvocations; i += 1) {
+        invocations += 1;
+        try {
+          return await run();
+        } catch (err) {
+          if (err !== SUSPEND) throw err;
+        }
+      }
+      throw new Error("replayDriver: the workflow never finished");
+    }
+  };
+}
+
+test("REPLAY: a call three days out still gets both reminders, once each, at the right moments", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: "+15551234567", custom_fields: {} }],
+    templates: sms()
+  });
+  const bookedAt = Date.now();
+  const startAtMs = bookedAt + 72 * 60 * 60 * 1000;
+  const driver = replayDriver({ startAt: bookedAt });
+  const sentAt = [];
+  const dbWatched = {
+    ...db,
+    async query(sql, params) {
+      const before = db.messages.length;
+      const r = await db.query(sql, params);
+      if (db.messages.length > before) {
+        sentAt.push({ key: db.messages[db.messages.length - 1].template_key, at: driver.now() });
+      }
+      return r;
+    }
+  };
+
+  const res = await driver.drive(() => handle({
+    event: ev("booking.created", { startTime: new Date(startAtMs).toISOString() }, { clientId: "cl-1" }),
+    db: dbWatched, step: driver.step, now: driver.now, requestMagicLinkImpl: portalStub
+  }));
+
+  // Inngest really did drive it many times, which is the whole point.
+  assert.ok(driver.invocations() > 1, `only ${driver.invocations()} invocation(s)`);
+
+  // Exactly one of each message, in order, and no duplicates.
+  assert.deepEqual(
+    db.messages.map((m) => m.template_key),
+    [SMS_CONFIRM, EMAIL_CONFIRM, SMS_REMIND_24H, SMS_REMIND_2H]
+  );
+  assert.equal(res.skipped24h, undefined);
+  assert.equal(res.skipped2h, undefined);
+
+  // And each reminder went out at its own moment, not at booking time.
+  const at = (key) => sentAt.find((s) => s.key === key).at;
+  assert.equal(at(SMS_REMIND_24H), startAtMs - 24 * 60 * 60 * 1000);
+  assert.equal(at(SMS_REMIND_2H), startAtMs - 2 * 60 * 60 * 1000);
+  assert.equal(at(SMS_CONFIRM), bookedAt);
+});
+
+test("REPLAY: a call six hours out gets the 2-hour text and no tomorrow text", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
+    templates: sms()
+  });
+  const bookedAt = Date.now();
+  const startAtMs = bookedAt + 6 * 60 * 60 * 1000;
+  const driver = replayDriver({ startAt: bookedAt });
+
+  const res = await driver.drive(() => handle({
+    event: ev("booking.created", { startTime: new Date(startAtMs).toISOString() }, { clientId: "cl-1" }),
+    db, step: driver.step, now: driver.now, requestMagicLinkImpl: portalStub
+  }));
+
+  assert.equal(res.skipped24h, "booked_inside_24h");
+  assert.equal(res.skipped2h, undefined);
+  assert.deepEqual(
+    db.messages.map((m) => m.template_key),
+    [SMS_CONFIRM, EMAIL_CONFIRM, SMS_REMIND_2H]
+  );
+  assert.equal(driver.clockAt(), startAtMs - 2 * 60 * 60 * 1000);
+});
+
+test("REPLAY: driving the finished run again after the call sends nothing twice", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
+    templates: sms()
+  });
+  const bookedAt = Date.now();
+  const startAtMs = bookedAt + 72 * 60 * 60 * 1000;
+  const driver = replayDriver({ startAt: bookedAt });
+  const res = await driver.drive(() => handle({
+    event: ev("booking.created", { startTime: new Date(startAtMs).toISOString() }, { clientId: "cl-1" }),
+    db, step: driver.step, now: driver.now, requestMagicLinkImpl: portalStub
+  }));
+  const afterRun = db.messages.map((m) => m.template_key);
+
+  // Inngest drives the same run once more, hours after the call — a retry, or
+  // the platform re-checking a run it already has answers for. Every step is
+  // already recorded, so nothing may be sent twice and the answer must not move.
+  const again = await handle({
+    event: ev("booking.created", { startTime: new Date(startAtMs).toISOString() }, { clientId: "cl-1" }),
+    db,
+    step: driver.step,
+    now: () => startAtMs + 3 * 60 * 60 * 1000,
+    requestMagicLinkImpl: portalStub
+  });
+
+  assert.deepEqual(db.messages.map((m) => m.template_key), afterRun);
+  assert.equal(again.skipped24h, res.skipped24h);
+  assert.equal(again.skipped2h, res.skipped2h);
+});

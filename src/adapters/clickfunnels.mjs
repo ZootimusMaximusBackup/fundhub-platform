@@ -385,9 +385,23 @@ function isFormSubmissionType(type) {
  * was general, not specific to that one workflow.
  *
  * resolveClient() is the repository's one authority on "which client is this",
- * it is idempotent, and every local handler for these three events already
- * calls it inside the same webhook. Calling it here does the same work a moment
- * earlier and keeps the answer on the row.
+ * and it is idempotent.
+ *
+ * WHAT THIS CHANGES, EXACTLY — corrected 2026-09-04 after review, because the
+ * first version of this note said more than was true. For `entry.captured` and
+ * `survey.submitted` it really is the same work a moment earlier: the local
+ * handlers onEntryCaptured and onSurveySubmitted already call resolveClient
+ * inside this same webhook (src/handlers/client-lifecycle.mjs register()).
+ *
+ * For the three booking events it is NOT. Nothing is registered on
+ * booking.created, booking.rescheduled or booking.cancelled, so a ClickFunnels
+ * delivery that carries only an appointment now calls resolveClient where
+ * nothing used to. On a customer we have never seen that writes a new `clients`
+ * row, and — only when GHL_API_KEY is set and the dry-run fence is down — syncs
+ * that contact to the CRM. Both are the ordinary behaviour of resolveClient on
+ * every other funnel event; what is new is that a booking-only webhook reaches
+ * it. No new outbound call is written here; the existing ADAPTERS fence still
+ * governs the CRM one.
  *
  * It never blocks the webhook. A resolver failure means the event is written
  * exactly as it is written today — with a null client — rather than the whole
