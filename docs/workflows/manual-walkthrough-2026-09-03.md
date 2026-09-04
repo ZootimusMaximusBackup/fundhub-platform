@@ -602,3 +602,36 @@ for a custom-purpose payment. Not a bug. F20 withdrawn as a defect.
 The only open question left, and it is small: should the e-book get its own
 mapped title rather than falling through to the default? Owner's call, not a
 finding. Everything else about this behaviour is working as specified.
+
+**F15 ESCALATED TO MAXIMUM · the wrong number is the CLIENT-FACING
+PRE-APPROVAL FIGURE. COMPLIANCE REVIEW REQUIRED.**
+Present deck screen S-07 "YOUR RESULTS", client half, Sim Five-Academy:
+
+    PRE-APPROVED FOR APPROXIMATELY
+    $939,500
+    Across multiple credit lines with 0 percent introductory rates.
+    EXPERIAN 762 · TRANSUNION 758 · EQUIFAX 770
+
+This is not internal engine data. It is the headline the customer reads, and
+the closer script beside it says out loud: "We can get you pre-approved for
+approximately [Amount] across multiple credit lines with 0 percent introductory
+rates. Pause. Let the number land."
+
+The number is wrong for the reason already established (F15 root cause): the
+deck stacks BUSINESS funding onto personal for a client whose own record says
+"No businesses on file", off a loose `businessAgeMonths` value. The engine's
+own stored figure for the same file is $199,350.
+
+Why this is the most serious finding of the walk:
+- It is a specific dollar pre-approval claim made to a consumer.
+- It is spoken aloud, by script, and the script instructs the closer to pause
+  so the number lands.
+- It also asserts "0 percent introductory rates" alongside it.
+- It is repeated on screen S-08 ("secure that [Amount] in the next two weeks").
+
+CLAUDE.md section 7: this is credit-outcome messaging to a consumer.
+**COMPLIANCE REVIEW REQUIRED** on the fix. Flagged as the marker Chris asked
+for, per the owner-decisions rule — no advice attached.
+
+Owner has already said the figure is wrong ("939k is so wrong lmao"). Until it
+is fixed, do not run this deck screen in front of a real client.
