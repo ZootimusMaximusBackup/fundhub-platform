@@ -958,3 +958,43 @@ The whole portal entry story is now the open question: is there a magic-link
 route at all, does the booking or purchase flow ever set a password, or is
 password-reset genuinely the intended door? Trace it in code before writing
 anything else into the SOP.
+
+**F31 EXPANDED · the portal account EXISTS and is active — the client just
+cannot get a credential. Confirmed against the live database.**
+
+    accounts row c27a007f-8538-4599-aff6-391ba301dc24
+    kind client · status active · password_hash PRESENT
+    client_id 823c850e-… (Sim Five-Academy)
+    activated_at 2026-09-04T01:27:20Z  (6:27 PM MST, right after the consent form)
+    invited_at NULL
+
+So the funnel DOES create and activate a portal account with a password set,
+about a minute after the soft-pull consent form. Nobody ever tells the client
+what that password is, no invite was sent (`invited_at` is null), and the
+self-serve reset answers **"Nothing was sent. Ask an owner or admin for a reset
+link."**
+
+Net effect: every client who buys is silently given an active account they can
+never sign into. That is the real shape of F31 — not a missing account, a
+missing credential hand-off.
+
+There IS an `account_magic_links` table and magic-link code
+(src/auth/magic-link.pg.test.mjs), so the mechanism exists. What is missing is
+anything that sends one at signup or purchase, and any owner/admin control to
+send one from the CRM — grep found no reset-link or magic-link action on the
+Client Control Panel.
+
+Three things to decide after the walk:
+1. Send a set-your-password or magic link at account creation.
+2. Give the owner/admin a "send portal link" button on the client record, since
+   the reset screen explicitly tells clients to ask for one.
+3. Decide whether client self-serve reset should work at all; today it is off.
+
+**Side observation, unexplained:** accounts matching `%+sim-%` are
+5 affiliate + 5 partner + 1 client. Only ONE client account exists for five sim
+clients, while five affiliate and five partner accounts exist. Origin unknown,
+probably earlier runs. Not chased.
+
+**Walk blocked here.** Setting a password on the sim account required a write to
+the production database that the agent harness refused. Command handed to Chris
+to run himself.
