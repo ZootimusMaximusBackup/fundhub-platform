@@ -12,7 +12,14 @@ import { sendTemplated } from "../workflows/messaging.mjs";
 import { mergeCustomFields } from "../workflows/custom-fields.mjs";
 import { addTags } from "../workflows/tags.mjs";
 import { EMAIL_TEMPLATE_KEY } from "../workflows/ds-02-diy-letters.mjs";
+/* The already-seeded, already-compliance-passed email that names the five
+   UnderwriteIQ documents by name. No new template key is minted here: an
+   unseeded key returns { sent:false, reason:"template_pending" } in silence
+   (../workflows/messaging.mjs), which is the same lie in a different place. */
+import { FUNDING_EMAIL_TEMPLATE_KEY as DELIVERABLES_EMAIL_TEMPLATE_KEY }
+  from "../workflows/u-02-analyzer-complete-delivery.mjs";
 import { buildLetterPackForClient } from "../underwrite/letter-pack.mjs";
+import { persistFundingLetterFiles } from "../underwrite/funding-letter-pdf.mjs";
 import { persistDiyPackageFiles } from "../metro2/diy/persist.mjs";
 import { storeFromEnv } from "../documents/store.mjs";
 import { logCallOutcome } from "./call-outcomes.mjs";
@@ -784,46 +791,92 @@ export async function generateDeckLetters(db, {
       { status: 409, code: "letters_blocked_funding_route" }
     );
   }
-  const pack = await buildLetterPackForClient(db, { clientId, pack: "repair" });
+  /* ═══════════════════════════════════════════════════════════════════════════
+     F41 — THE BUTTON SENDS THE PACK IT SAYS IT SENDS
+
+     The screen shows two different buttons through this one action, and until
+     2026-09-04 both asked for the REPAIR pack:
+
+       "Send deliverables package now"  — education path (present.js:897, edu)
+       "Generate letters and email now" — everything else (present.js:916)
+
+     For an academy or funding client the repair pack is zero files: there is
+     nothing to dispute on a clean file, correctly. The button still emailed
+     "your correction letters are ready", still told the presenter "Deliverables
+     sent to client", and still stamped diy_status = "Delivery Failed — Retry" on
+     the client. Three surfaces, three different stories, and nothing delivered.
+
+     Now the education path asks for the FUNDING pack — the five UnderwriteIQ
+     documents that ARE the deliverables package — saves them with the same saver
+     C-06 uses, and sends the already-seeded funding delivery email that names
+     those five documents (EMAIL-U02-ANALYZER-FUNDING-DELIVERY,
+     db/seed/009_u02_funding_delivery_template.sql). The repair path is unchanged.
+
+     AND NOTHING IS SENT WHEN NOTHING WAS BUILT. An empty pack now sends no
+     email, adds no tag, and returns the reason the pack was empty. Telling a
+     client their documents are ready when no document exists is the defect.
+     ═══════════════════════════════════════════════════════════════════════════ */
+  const wantsDeliverables = !!edu;
+  const pack = await buildLetterPackForClient(db, {
+    clientId,
+    pack: wantsDeliverables ? "funding" : "repair"
+  });
+  const files = pack.files || [];
   // THE BYTES ARE THE DELIVERABLE. This action used to build the pack, count the
   // files, email the client that their letters were ready, and never save a
   // single PDF. Same registry and same helper the DS-02 workflow uses.
   // A storage failure must not lose the call outcome, so it is recorded, not thrown.
   let persisted = { stored: [], skipped: "not_attempted" };
-  if (pack.files?.length) {
+  if (files.length) {
     try {
-      persisted = await persistDiyPackageFiles(db, store || storeFromEnv(), {
-        orgId,
-        clientId,
-        files: pack.files,
-        generatedBy: "closer-deck",
-        sourceEventId: `closer-deck-letters:${clientId}:${offerKey}`,
-        pack: "repair_letter_pack"
-      });
+      persisted = wantsDeliverables
+        ? await persistFundingLetterFiles(db, store || storeFromEnv(), {
+          orgId,
+          clientId,
+          files,
+          generatedBy: "closer-deck",
+          sourceEventId: `closer-deck-deliverables:${clientId}:${offerKey}`
+        })
+        : await persistDiyPackageFiles(db, store || storeFromEnv(), {
+          orgId,
+          clientId,
+          files,
+          generatedBy: "closer-deck",
+          sourceEventId: `closer-deck-letters:${clientId}:${offerKey}`,
+          pack: "repair_letter_pack"
+        });
     } catch (err) {
       persisted = { stored: [], skipped: String(err && err.message || err).slice(0, 240) };
     }
   }
-  const emailQueued = await sendTemplated(db, {
-    orgId,
-    clientId,
-    channel: "email",
-    templateKey: EMAIL_TEMPLATE_KEY,
-    eventId: `closer-deck-letters:${clientId}:${offerKey}`,
-    staffId
-  });
-  const email = await dispatchQueued(db, emailQueued);
-  await addTags(db, clientId, ["client:diy-letters"]);
+  const delivered = files.length > 0 && persisted.stored.length > 0;
+  let email = null;
+  if (delivered) {
+    const emailQueued = await sendTemplated(db, {
+      orgId,
+      clientId,
+      channel: "email",
+      templateKey: wantsDeliverables ? DELIVERABLES_EMAIL_TEMPLATE_KEY : EMAIL_TEMPLATE_KEY,
+      eventId: `closer-deck-letters:${clientId}:${offerKey}`,
+      staffId
+    });
+    email = await dispatchQueued(db, emailQueued);
+    await addTags(db, clientId, [wantsDeliverables ? "client:deliverables" : "client:diy-letters"]);
+  }
   await mergeCustomFields(db, clientId, {
-    diy_status: pack.files?.length ? "Delivered" : "Delivery Failed — Retry",
+    diy_status: delivered ? "Delivered" : "Delivery Failed — Retry",
     closer_deck_letters_at: new Date().toISOString(),
     closer_deck_letters_offer: offerKey
   });
   return {
-    delivered: !!(pack.files && pack.files.length),
-    letterCount: pack.files?.length || 0,
+    delivered,
+    pack: wantsDeliverables ? "deliverables" : "repair",
+    letterCount: files.length,
     documentsStored: persisted.stored.length,
     persistSkipped: persisted.skipped,
+    /* Why nothing went out, in the words the pack itself used. Null when it did.
+       The screen prints this, so a presenter is never told "sent" over silence. */
+    reason: delivered ? null : (pack.reason || pack.engineSkip || persisted.skipped || "empty_pack"),
     engineSkip: pack.engineSkip || null,
     email
   };

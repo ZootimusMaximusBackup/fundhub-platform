@@ -473,6 +473,14 @@ test("generateDeckLetters SAVES the repair pack — the PDFs reach the documents
 });
 
 test("generateDeckLetters records a storage failure instead of losing the call", async () => {
+  /* ASSERTION MOVED 2026-09-04, F41. This used to pin `delivered: true` when the
+     bucket was unreachable and zero documents were stored — and `delivered` is
+     what releases the "your documents are ready" email and what the presenter's
+     screen prints. That is the defect: the client was told their pack was ready
+     over an empty store. Nothing about the ORIGINAL intent is weakened — the
+     storage failure is still reported rather than swallowed, and the call
+     outcome is still stamped on the client — and the test now also pins that
+     nothing was sent and nothing was tagged. */
   const db = letterPackDb(sandboxPull());
   const brokenStore = {
     name: "broken",
@@ -486,8 +494,62 @@ test("generateDeckLetters records a storage failure instead of losing the call",
     store: brokenStore
   });
 
-  assert.equal(out.delivered, true, "the letters were still generated");
+  assert.ok(out.letterCount > 0, "the letters were still generated");
   assert.equal(out.documentsStored, 0);
+  assert.equal(out.delivered, false, "nothing was saved, so nothing was delivered");
   assert.match(out.persistSkipped, /bucket unreachable/,
     "a storage failure has to be reported, not swallowed");
+  assert.match(out.reason, /bucket unreachable/,
+    "the screen has to be able to say WHY nothing went out");
+  assert.equal(out.email, null, "no email may go out over an empty store");
+  assert.deepEqual(db.tagWrites, [], "no client tag over an empty store");
+  assert.equal(db.clientPatches.at(-1).diy_status, "Delivery Failed — Retry",
+    "the call outcome is still stamped on the client");
+});
+
+test("F41 — the deliverables button sends the FUNDING pack, not the repair pack", async () => {
+  /* The education path's button reads "Send deliverables package now". It used
+     to ask for the REPAIR pack, which is zero files on a clean file, and then
+     email the client that their correction letters were ready. */
+  const db = letterPackDb(sandboxPull());
+  const store = createStore({ provider: memoryProvider() });
+
+  const out = await generateDeckLetters(db, {
+    orgId: ORG, clientId: CID, staffId: "s1", offerKey: "UWIQ_DELIVERABLES", edu: true, store
+  });
+
+  assert.equal(out.pack, "deliverables");
+  assert.equal(out.delivered, true);
+  assert.ok(out.documentsStored >= 4, "the analysis documents have to be saved");
+  const subtypes = db._documents.map((d) => d.subtype);
+  /* The four analysis reports always come out of the funding pack. The fifth,
+     the Capital Readiness Summary, is emitted by the vendor's buildDocuments
+     only on a funding OUTCOME — the sandbox pull here scores repair — so it is
+     pinned where it belongs, in ../underwrite/funding-letter-pdf.test.mjs. */
+  for (const wanted of [
+    "credit_analysis_report", "funding_snapshot", "bank_lender_match_list",
+    "credit_optimization_roadmap"
+  ]) {
+    assert.ok(subtypes.includes(wanted), `${wanted} was not saved to the portal`);
+  }
+  assert.equal(subtypes.includes("metro2_dispute_letter_pack"), false,
+    "a deliverables package must not carry Metro 2 dispute letters");
+});
+
+test("F41 — an empty pack sends nothing and says why", async () => {
+  // No stored credit pull at all: there is nothing to build a pack out of.
+  const db = letterPackDb(null);
+  const store = createStore({ provider: memoryProvider() });
+
+  const out = await generateDeckLetters(db, {
+    orgId: ORG, clientId: CID, staffId: "s1", offerKey: "UWIQ_DELIVERABLES", edu: true, store
+  });
+
+  assert.equal(out.delivered, false);
+  assert.equal(out.letterCount, 0);
+  assert.equal(out.documentsStored, 0);
+  assert.ok(out.reason, "the screen must be given a reason to print");
+  assert.equal(out.email, null, "no email over an empty pack");
+  assert.deepEqual(db.tagWrites, [], "no tag over an empty pack");
+  assert.deepEqual(db._documents, [], "no document row over an empty pack");
 });
