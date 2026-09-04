@@ -18,43 +18,60 @@ decided, it says so.
 
 | # | What | Why it is his |
 |---|---|---|
-| 1 | **Paste the real contract text.** Four agreements are waiting. Until then every contract sent from the deck carries the words `THIS IS NOT THE REAL AGREEMENT TEXT. DO NOT SEND THIS.` in the middle of it. | Executed legal text. Agents never draft it (F30, owner-set). |
+| 1 | **DONE for two of four** — see 1.1. Still owed: the text for **FUNDING-AGREEMENT** ($3,000 deposit) and **CREDIT-REPAIR-AGREEMENT** ($1,000), plus a ruling on the **Blueprint price conflict**. | Executed legal text. Agents never draft it (F30, owner-set). |
 | 2 | **Fix two ClickFunnels questions in the CF editor.** "Annual Business Revenue" saves into nothing at all, so that answer never reaches us and cannot be recovered. "Can You Verify Revenue?" is saving into `cf_svy_business_revenue`, which is the other question's slot. | The bug is inside ClickFunnels, not in this repo. |
 | 3 | **Name 21 ads.** | An agent may not invent an ad title. |
 | 4 | **Buy a Bland phone number.** The account owns none, so every call dials from a shared pool line. | A purchase, not a code change. |
 | 5 | **Read the new Josh script** before it goes near a phone. | Owner reviews setter copy. |
 | 6 | **Turn off the Gmail "FS Auto" filter** before the re-walk (F17). | His inbox. |
 
-### 1.1 The contract text — exactly what to paste and where
+### 1.1 Contract text — two down, two to go
 
-The real full-length agreements are NOT in this repo. They are Word and PDF files
-on Chris's own machine, and agents did not open them (CLAUDE.md §2, this repo
-only):
+**UPDATE 2026-09-03, later the same evening.** Chris put the source documents in
+the repo at `docs/contracts/source-2026-08-28/`, so this is now mostly closed.
 
-* `~/Desktop/fundhub-contracts/Fundhub-Capital-Academy-Enrollment-Agreement.docx`
-* `~/Desktop/fundhub-contracts/Fundhub-Capital-Blueprint-Service-Agreement.docx`
-* `~/Documents/File-Sweep/Work-Bucket/Fundhub-Education-Service-Agreement.pdf`
+**Seeded, real, done** (`db/migrations/288_real_contract_text.sql` plus
+`db/seed/021_funding_mastery_agreement.sql`, text copied verbatim out of the
+`.docx`):
 
-Each agreement has exactly ONE marked block to paste into, inside
-`db/migrations/287_contract_seller_signature_and_real_text.sql`. Everything else —
-the seller party, the merge variables, the signature block, the fee lines — is
-already correct and does not need touching.
+* **Capital Academy** → `FUNDING-MASTERY-AGREEMENT`
+* **Capital Blueprint** → `CAPITAL-BLUEPRINT-AGREEMENT`
 
-**One warning that matters.** Once migration 287 has run on production it is never
-read again (CLAUDE.md §12). Pasting into it AFTER it ships changes nothing. If it
-has already deployed, the text goes into a NEW migration that supersedes it.
+Both name Fundhub LLC as the seller in their own first sentence and end in their
+own signature block, so F28 and F29 are answered by the documents themselves.
+Neither has any blank left to type, which is what makes send one click (F27).
 
-**No real text exists anywhere for the CREDIT-REPAIR-AGREEMENT.** The other three
-have a source document. This one does not. That gap is Chris's to close.
+**Still placeholder, and they will refuse to be sent by accident** — no text
+exists for either, and the packet PDF does not contain them (it holds Academy on
+pages 1-4, Blueprint on 5-8 and White Label on 9-19, checked page by page):
+
+* `FUNDING-AGREEMENT` ($3,000 deposit)
+* `CREDIT-REPAIR-AGREEMENT` ($1,000)
+
+Both still carry `THIS IS NOT THE REAL AGREEMENT TEXT. DO NOT SEND THIS.`, and
+the migration raises a notice naming them on every production deploy.
+
+#### The Blueprint price conflict — Chris decides, nobody else
+
+The Capital Blueprint agreement states its own price **twice**, in sections 1.3
+and 5.1, as **five thousand dollars**. The product charges **one thousand**
+(`src/config/offers.mjs`, `UWIQ_DELIVERABLES`), and this whole batch treated it
+as the $1,000 rung.
+
+The text was seeded exactly as written. Changing a dollar amount inside an
+executed consumer agreement is not a formatting fix and is not an agent's call.
+**Until Chris rules, a Blueprint contract quotes a figure the catalogue does not
+charge.** Either the document is right and the price list is wrong, or the
+reverse.
 
 **Two smaller contract gaps, deliberately left:**
 
-* `PARTNER-LICENSE` (white label) is untouched. It still fills the Fundhub side
-  from a typed blank and has no signature block in its body. White label is last
-  in the ecosystem order, so this was not in scope.
+* `PARTNER-LICENSE` (white label) is untouched. Its real text exists twice now —
+  in the packet PDF and already in `283_partner_license_template.sql` — and
+  reconciling the two is its own task. White label is last in the ecosystem order.
 * `REPAIR-TRIAL-AGREEMENT` and `REPAIR-AND-FUNDING-AGREEMENT` got the seller fix
-  and the signature block but keep provisional wording. They were not among the
-  four named agreements.
+  and a signature block but keep provisional wording. They were not among the four
+  named agreements.
 * The client's own business name is now on NO contract. F28 said the typed company
   name must never be the seller; it was removed rather than re-pointed at the
   client. If a client's company should appear as the buying party, that is a small
