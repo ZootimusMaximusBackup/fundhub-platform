@@ -94,6 +94,34 @@ const MONEY_SHAPED = /(fee|price|cost|deposit|amount|payment|charge)/i;
 const RECURRING =
   /(per\s+month|monthly|each\s+month|every\s+month|a\s+month|per\s+week|weekly|per\s+year|yearly|annually|annual|recurring|subscription|per\s+quarter|quarterly)/i;
 
+/* recurringHit — the first mention of a repeating charge that is NOT a denial of one.
+ *
+ * "the copy is written to avoid the vocabulary altogether" held while every body was
+ * synthesised in this repo. Chris's executed agreements are not, and they say:
+ *
+ *     "Tuition is five thousand dollars ($5,000), charged one time.
+ *      There is no recurring billing and no subscription."
+ *
+ * A bare match on that sentence fails a document that states the rule this guard
+ * exists to enforce, more plainly than the synthesised copy ever did — and the only
+ * way to pass would be to delete a sentence out of an executed contract.
+ *
+ * So a hit inside a sentence that NEGATES it is not a hit. Everything else still is:
+ * "billed monthly", "$1,000 per month" and "a monthly subscription" all have no
+ * negation and all still fail, which is the $1,000-a-month defect (273) this was
+ * written for. The negation must be in the same sentence, so "There is a monthly
+ * fee. No refunds." cannot launder itself on a neighbour's "no". */
+function recurringHit(text) {
+  for (const sentence of String(text || "").split(/(?<=[.!?])\s+|\n/)) {
+    const hit = sentence.match(RECURRING);
+    if (!hit) continue;
+    const before = sentence.slice(0, hit.index);
+    if (/\b(no|not|never|without|nor)\b[^.!?]*$/i.test(before)) continue;
+    return hit;
+  }
+  return null;
+}
+
 /* ───────────────────────────────────────────────────────────────────────────
    Reading the contract copy out of db/.
    ─────────────────────────────────────────────────────────────────────────── */
@@ -217,7 +245,25 @@ describe("the copy this guard reads is really there", () => {
       const tpl = TEMPLATES.get(p.templateKey);
       assert.ok(tpl, `${p.label}: no db/ file defines ${p.templateKey}`);
       assert.ok(tpl.body && tpl.body.length > 100, `${p.templateKey}: body did not parse`);
-      assert.ok(Array.isArray(tpl.fields) && tpl.fields.length, `${p.templateKey}: blanks did not parse`);
+      /* ZERO BLANKS IS A LEGITIMATE STATE, and it is the better one.
+         This used to demand at least one blank, which was right while every body
+         was synthesised here with a {{field.program_fee}} to fill. Chris's executed
+         agreements state their own price in their own words, so they have nothing
+         to type — that is F27 (one-click send, owner-set) working, not a parse
+         failure. What must never happen is a body that ASKS for a value nobody
+         declared, so the pairing is checked in both directions instead. */
+      assert.ok(Array.isArray(tpl.fields), `${p.templateKey}: blanks did not parse`);
+      const asks = [...tpl.body.matchAll(/\{\{field\.([a-z0-9_]+)\}\}/gi)].map((m) => m[1]);
+      const declared = new Set(tpl.fields.map((f) => f.key));
+      for (const key of asks) {
+        assert.ok(declared.has(key),
+          `${p.templateKey}: the words ask for {{field.${key}}} and no blank declares it, ` +
+          `so it renders empty on the copy the client signs.`);
+      }
+      if (!tpl.fields.length) {
+        assert.equal(asks.length, 0,
+          `${p.templateKey}: blanks did not parse — the body has field tags but no blanks.`);
+      }
     }
   });
 
@@ -289,10 +335,27 @@ describe("no contract describes a charge that repeats", () => {
     }
   });
 
+  /* THE GUARD'S OWN TEETH, pinned. recurringHit() learned to forgive a negated
+     mention so an executed contract could say "There is no recurring billing"
+     without failing. A forgiving rule that forgives too much is how a guard goes
+     quietly blind, so the exact defect it exists to catch — 273's $1,000 a month —
+     is asserted here as still failing. */
+  test("recurringHit still catches a real repeating charge, and only forgives a denial", () => {
+    assert.ok(recurringHit("You pay $1,000 per month for twelve months."), "a real monthly fee slipped through");
+    assert.ok(recurringHit("This is billed monthly."), "a monthly bill slipped through");
+    assert.ok(recurringHit("Your subscription renews automatically."), "a subscription slipped through");
+    assert.ok(recurringHit("The fee is annual."), "an annual fee slipped through");
+    assert.equal(recurringHit("Tuition is $5,000, charged one time. There is no recurring billing and no subscription."), null);
+    assert.equal(recurringHit("There is no monthly fee."), null);
+    // A neighbouring sentence's denial must not launder a real charge.
+    assert.ok(recurringHit("There are no refunds. You pay $99 per month."),
+      "a denial in one sentence excused a charge in the next");
+  });
+
   for (const p of pathsWithTemplates) {
     test(`${p.templateKey} says nothing about a repeating charge`, () => {
       const tpl = TEMPLATES.get(p.templateKey);
-      const hit = tpl.body.match(RECURRING);
+      const hit = recurringHit(tpl.body);
       assert.equal(
         hit, null,
         `${p.templateKey} contains ${JSON.stringify(hit && hit[0])} — this product is ` +
@@ -402,16 +465,47 @@ describe("every document carries its own signature block", () => {
   for (const p of pathsWithTemplates) {
     test(`${p.templateKey} has parties, a signed-by line and a date inside the body`, () => {
       const body = TEMPLATES.get(p.templateKey).body;
-      assert.match(body, /\nSIGNATURES\n/,
-        `${p.templateKey} has no SIGNATURES section in the words the client reads.`);
-      assert.match(body, /Signed by: an authorised signer of Fundhub LLC/,
-        `${p.templateKey} does not say who signs for Fundhub.`);
-      assert.match(body, /Signed by: _{6,}/,
-        `${p.templateKey} gives the client nowhere that reads as a signature line.`);
-      assert.match(body, /Date: _{6,}/,
-        `${p.templateKey} has no date line for the client's signature.`);
-      assert.match(body, /\{\{contact\.full_name\}\}/,
-        `${p.templateKey} does not name the client in its signature block.`);
+
+      /* TWO WORDINGS SATISFY THIS, and the property is what matters: the copy the
+         client reads and downloads must carry an execution block, so the document
+         does not end where a contract normally starts signing.
+
+         Synthesised bodies (287, and the ones still awaiting real text) use a
+         SIGNATURES section with ruled lines. Chris's executed agreements use their
+         own Acknowledgement plus STUDENT / FUNDHUB EDUCATION blocks. Demanding the
+         first wording would have failed the real documents, and the only way to
+         pass would have been to append a SECOND signature block underneath theirs.
+
+         Both shapes are checked strictly. A body with neither still fails, which is
+         F29. */
+      const synthesised = /\nSIGNATURES\n/.test(body);
+      const executed = /\bSTUDENT\b/.test(body) && /FUNDHUB EDUCATION/i.test(body);
+      assert.ok(synthesised || executed,
+        `${p.templateKey} has no signature block in the words the client reads. ` +
+        `Expected either a SIGNATURES section or the executed document's own ` +
+        `STUDENT / FUNDHUB EDUCATION blocks.`);
+
+      if (synthesised) {
+        assert.match(body, /Signed by: an authorised signer of Fundhub LLC/,
+          `${p.templateKey} does not say who signs for Fundhub.`);
+        assert.match(body, /Signed by: _{6,}/,
+          `${p.templateKey} gives the client nowhere that reads as a signature line.`);
+        assert.match(body, /Date: _{6,}/,
+          `${p.templateKey} has no date line for the client's signature.`);
+        assert.match(body, /\{\{contact\.full_name\}\}/,
+          `${p.templateKey} does not name the client in its signature block.`);
+      } else {
+        // Both sides sign, both sides date, and the client is still addressed by
+        // name — the merge header carries that for an executed document.
+        assert.ok((body.match(/^Signature\s*$/gm) || []).length >= 2,
+          `${p.templateKey}: the executed block does not give both parties a signature line.`);
+        assert.ok((body.match(/^Date\s*$/gm) || []).length >= 2,
+          `${p.templateKey}: the executed block does not give both parties a date line.`);
+        assert.match(body, /\{\{contact\.full_name\}\}/,
+          `${p.templateKey} does not name the client anywhere in the document.`);
+        assert.match(body, /Acknowledgement/i,
+          `${p.templateKey} lost the acknowledgement that precedes the signatures.`);
+      }
     });
   }
 });
