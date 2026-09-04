@@ -15,7 +15,7 @@ import assert from "node:assert";
 import { dispatchOne, OUTCOME } from "./dispatch.mjs";
 import { clearRuleCache } from "../compliance/screen.mjs";
 import { submitApplication } from "../adapters/lendflow.mjs";
-import { findOrCreateGhlContact } from "./ghl-contacts.mjs";
+import { findOrCreateCrmContact } from "./crm-contacts.mjs";
 
 const ORG = "00000000-0000-4000-8000-000000000001";
 const CLIENT = "00000000-0000-4000-8000-000000000003";
@@ -214,7 +214,7 @@ describe("ADAPTERS_DRY_RUN: nothing reaches a vendor", () => {
 
   test("a CRM contact is not created with the fence up", async () => {
     const f = spy();
-    const res = await findOrCreateGhlContact(
+    const res = await findOrCreateCrmContact(
       { email: "person@example.com", firstName: "A", lastName: "B" },
       { fetchImpl: f, env: { GHL_API_KEY: "ghl-token" } }
     );
@@ -226,7 +226,7 @@ describe("ADAPTERS_DRY_RUN: nothing reaches a vendor", () => {
 
   test("the two fences are independent — messaging off does not open adapters", async () => {
     const f = spy();
-    const res = await findOrCreateGhlContact(
+    const res = await findOrCreateCrmContact(
       { email: "person@example.com" },
       { fetchImpl: f, env: { GHL_API_KEY: "t", MESSAGING_DRY_RUN: "0" } }
     );

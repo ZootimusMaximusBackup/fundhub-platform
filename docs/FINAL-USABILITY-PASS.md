@@ -73,7 +73,7 @@ that screen and also in `docs/STILL-MISSING.md`.
 - ClickFunnels `CF_CAPTURE_MODE=1` → `webhook_captures`
 - Booking lifecycle: `booking.rescheduled` / `cancelled` / `noshow` + Cal.com + S-05a
 - Calendar Join Call / His file / coverage roster
-- The CRM contact id on create + `scripts/backfill-ghl-contact-ids.mjs`
+- The CRM contact id on create + `scripts/backfill-crm-contact-ids.mjs`
 - Meta + LinkedIn social OAuth + LinkedIn publish adapter
 - Command Center + Ops Admin KPIs from money chain / events / ad metrics
 - Playwright coverage for the new round + mobile smoke

@@ -115,18 +115,18 @@ export async function runFundingJourney(db, ctx, collector) {
 
   // CRM linkage — re-fetch after lead capture. Dry-run stamps dry-ghl-*;
   // missing key stamps custom_fields.ghl_link_missing (visible warning).
-  const afterGhl = (await db.query(
+  const afterCrm = (await db.query(
     `SELECT ghl_contact_id, custom_fields FROM clients WHERE id = $1`, [client.id]
   )).rows[0];
-  const ghl = afterGhl?.ghl_contact_id || null;
-  const ghlWarned = !!(afterGhl?.custom_fields && afterGhl.custom_fields.ghl_link_missing);
+  const ghl = afterCrm?.ghl_contact_id || null;
+  const crmWarned = !!(afterCrm?.custom_fields && afterCrm.custom_fields.ghl_link_missing);
   if (ghl) {
     collector.pass({
       section, journey, role, id: "fund-ghl",
       claim: "Client has ghl_contact_id linkage",
       actual: { ghl }, file: "src/handlers/client-lifecycle.mjs"
     });
-  } else if (ghlWarned) {
+  } else if (crmWarned) {
     collector.pass({
       section, journey, role, id: "fund-ghl",
       claim: "Missing CRM link is stamped visibly (ghl_link_missing)",
@@ -144,8 +144,8 @@ export async function runFundingJourney(db, ctx, collector) {
   }
   steps.push({
     step: "The CRM linkage",
-    status: ghl || ghlWarned ? "PASS" : "SILENTLY-DID-NOTHING",
-    persisted: ghl || (ghlWarned ? "warned:ghl_link_missing" : "null")
+    status: ghl || crmWarned ? "PASS" : "SILENTLY-DID-NOTHING",
+    persisted: ghl || (crmWarned ? "warned:ghl_link_missing" : "null")
   });
 
   // ── 2. Booking ──

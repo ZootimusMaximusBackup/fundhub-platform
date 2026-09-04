@@ -15,7 +15,7 @@ import { on } from "../events/registry.mjs";
 import { logStaffEvent } from "../shifts/telemetry.mjs";
 import { resolveShiftId } from "../shifts/attribution.mjs";
 import { upsertClientAdAttribution } from "../ads/store.mjs";
-import { ensureGhlContactId, config as ghlConfig } from "../messaging/ghl-contacts.mjs";
+import { ensureCrmContactId, config as crmConfig } from "../messaging/crm-contacts.mjs";
 import { adaptersBlocked } from "../lib/dry-run.mjs";
 import { upsertSurveyCarbonCopy } from "./client-custom-fields.mjs";
 import { addTags } from "../workflows/tags.mjs";
@@ -43,7 +43,7 @@ export function splitName(name) {
 }
 
 /** Stamp a visible warning on the client when the CRM linkage is missing. */
-async function markGhlMissing(db, clientId, reason) {
+async function markCrmLinkMissing(db, clientId, reason) {
   try {
     await db.query(
       `UPDATE clients
@@ -75,13 +75,13 @@ async function markGhlMissing(db, clientId, reason) {
  *
  * NEVER throws and NEVER blocks client creation.
  */
-async function syncGhlContact(db, { clientId, orgId, email, phone, firstName, lastName }, opts = {}) {
+async function syncCrmContact(db, { clientId, orgId, email, phone, firstName, lastName }, opts = {}) {
   const env = opts.env || process.env;
   if (!email && !phone) {
     console.warn(
       `[client-lifecycle] client ${clientId}: no email/phone — cannot link a CRM contact`
     );
-    await markGhlMissing(db, clientId, "no_identifier");
+    await markCrmLinkMissing(db, clientId, "no_identifier");
     return;
   }
 
@@ -107,9 +107,9 @@ async function syncGhlContact(db, { clientId, orgId, email, phone, firstName, la
       return;
     }
 
-    const cfg = ghlConfig(env);
+    const cfg = crmConfig(env);
     if (cfg.ok) {
-      const result = await ensureGhlContactId(
+      const result = await ensureCrmContactId(
         db,
         { id: clientId, email, phone, first_name: firstName, last_name: lastName },
         opts
@@ -119,7 +119,7 @@ async function syncGhlContact(db, { clientId, orgId, email, phone, firstName, la
         `[client-lifecycle] client ${clientId}: the CRM link failed (${result.reason}). ` +
         `SMS via ghl_relay will not work until this is fixed.`
       );
-      await markGhlMissing(db, clientId, result.reason);
+      await markCrmLinkMissing(db, clientId, result.reason);
       return;
     }
 
@@ -127,12 +127,12 @@ async function syncGhlContact(db, { clientId, orgId, email, phone, firstName, la
       `[client-lifecycle] client ${clientId}: GHL_API_KEY unset — ghl_contact_id left null. ` +
       `This client cannot receive SMS through the CRM relay.`
     );
-    await markGhlMissing(db, clientId, "not_configured");
+    await markCrmLinkMissing(db, clientId, "not_configured");
   } catch (err) {
     console.warn(
       `[client-lifecycle] client ${clientId}: the CRM sync threw (${String(err && err.message || err).slice(0, 120)})`
     );
-    await markGhlMissing(db, clientId, "exception");
+    await markCrmLinkMissing(db, clientId, "exception");
   }
 }
 
@@ -142,7 +142,7 @@ async function syncGhlContact(db, { clientId, orgId, email, phone, firstName, la
 // `opts` ({ fetchImpl, env }) is the CRM contact-sync test seam — every real
 // call site omits it and gets globalThis.fetch / process.env, same default as
 // every provider in src/messaging/providers/.
-async function backfillGhlIfMissing(db, clientId, orgId, p, opts = {}) {
+async function backfillCrmLinkIfMissing(db, clientId, orgId, p, opts = {}) {
   if (!clientId || !orgId) return clientId;
   const { rows } = await db.query(
     `SELECT id, ghl_contact_id, email, phone, first_name, last_name
@@ -154,7 +154,7 @@ async function backfillGhlIfMissing(db, clientId, orgId, p, opts = {}) {
   if (row.ghl_contact_id) return clientId;
 
   const { firstName, lastName } = splitName(p?.name);
-  await syncGhlContact(db, {
+  await syncCrmContact(db, {
     clientId,
     orgId,
     email: row.email || (p?.email ? String(p.email).trim().toLowerCase() : null),
@@ -189,7 +189,7 @@ export async function resolveClient(db, event, opts = {}) {
     // Explicit id still needs a CRM link when missing — lead capture often
     // creates the row first, then emits with clientId set.
     await patchClientContact(db, event.clientId, p);
-    return backfillGhlIfMissing(db, event.clientId, orgId, p, opts);
+    return backfillCrmLinkIfMissing(db, event.clientId, orgId, p, opts);
   }
   const email = String(p.email || "").trim().toLowerCase();
   if (!orgId || !email) return null;
@@ -201,7 +201,7 @@ export async function resolveClient(db, event, opts = {}) {
   if (found.rows[0]) {
     await patchClientContact(db, found.rows[0].id, p);
     // Existing row with a null the CRM id is the silent-null hazard — backfill.
-    return backfillGhlIfMissing(db, found.rows[0].id, orgId, p, opts);
+    return backfillCrmLinkIfMissing(db, found.rows[0].id, orgId, p, opts);
   }
 
   const { firstName, lastName } = splitName(p.name);
@@ -217,7 +217,7 @@ export async function resolveClient(db, event, opts = {}) {
   );
   if (ins.rows[0]) {
     const clientId = ins.rows[0].id;
-    await syncGhlContact(db, { clientId, orgId, email, phone: p.phone || null, firstName, lastName }, opts);
+    await syncCrmContact(db, { clientId, orgId, email, phone: p.phone || null, firstName, lastName }, opts);
     return clientId;
   }
 
@@ -228,7 +228,7 @@ export async function resolveClient(db, event, opts = {}) {
   );
   if (!re.rows[0]) return null;
   await patchClientContact(db, re.rows[0].id, p);
-  return backfillGhlIfMissing(db, re.rows[0].id, orgId, p, opts);
+  return backfillCrmLinkIfMissing(db, re.rows[0].id, orgId, p, opts);
 }
 
 // Merge a partial object into clients.custom_fields (jsonb). No-op on empty.
