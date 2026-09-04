@@ -281,3 +281,30 @@ six meaningless numbers on a slide that says "this is what you told us".
 
 Fix: resolve the option id to its display label before render. Check whether
 the same unresolved id leaks into any other client-facing surface.
+
+**F11 ESCALATED · the raw ID is the HERO NUMBER on the goal slide.**
+Present deck screen S-04 "THE GOAL", client half. Under the heading
+"BEGIN WITH THE END IN MIND" the screen prints **207883** in the largest type
+on the page, then a paragraph beginning "207888. What does the business look
+like 6 to 12 months from now with this deployed?"
+
+So the defect is not confined to a list of rows (F11 original, screen S-03).
+The same unresolved option id is rendered as the single biggest visual element
+on a client-facing slide, and again mid-sentence in body copy.
+
+Context that makes this expensive: the closer's own notes on the matching
+screen read "The cost number is what the $3,000 gets anchored against. Do not
+skip it." The deck is built so this number carries the price anchor. Today it
+shows a database row id.
+
+Screens confirmed affected so far: S-03 (six rows), S-04 (hero + body).
+Check every remaining deck screen for the same leak.
+
+**Step 1.5 / 5.x · soft pull SENT.** "Send soft pull ($32 + approval form)"
+returned the toast "Soft pull emailed — pay link + approval form." Live soft
+pull panel read consent: waiting · paid $32: not yet · pull: not started
+before the click. Awaiting the email in Chris's inbox.
+
+Also on this screen and worth noting: a "NO-PAY DOWNSELL — E-BOOK" control
+with a free-text price and the caption "Empty PDF attached until the real file
+is ready." The e-book product ships an empty PDF today.
