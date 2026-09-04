@@ -300,9 +300,51 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
     assert.equal(await countRows("dispute_letters"), 0);
   });
 
-  test("a clean credit file: answers no_violations and writes no letter", async () => {
+  /* OWNER DECISION, 2026-09-03, FINAL. This test used to assert that a clean
+     credit file produced NOTHING. It no longer does, and the change is the
+     point: "on EVERY customer on the credit-repair path, on EVERY round, clean
+     file or not, ALWAYS run personal-information cleanup." buildClient's default
+     puts a signed repair agreement on the client, so this client IS on the
+     repair path and the floor fires.
+
+     The protection the old test existed for has not been dropped — it moved to
+     the test directly below, which is the same clean file on a client who is NOT
+     on the repair path, and still writes nothing at all. */
+  test("a clean credit file on a repair client still gets the cleanup letter", async () => {
     await wipeClient();
     await buildClient({ result: { bureausPulled: ["EQ"], bureaus: { EQ: cleanReport() } } });
+
+    const r = await post({ client_id: clientId });
+
+    assert.equal(r.code, 200);
+    assert.equal(r.body.ok, true, JSON.stringify(r.body));
+    assert.equal(await countRows("dispute_letters"), 1,
+      "a repair customer with a spotless file still gets personal-information cleanup");
+
+    const items = await db.query(
+      `SELECT rule_id FROM dispute_items WHERE client_id = $1::uuid ORDER BY rule_id`, [clientId]);
+    assert.deepEqual(items.rows.map((i) => i.rule_id),
+      ["PI-ADDRESS-CONFIRM", "PI-NAME-CONFIRM"],
+      "on a tidy file the floor CONFIRMS one name and one address — it never "
+      + "disputes a second name or address that is not there");
+
+    const letters = await db.query(
+      `SELECT body_text FROM dispute_letters WHERE client_id = $1::uuid`, [clientId]);
+    assert.doesNotMatch(letters.rows[0].body_text, /more than one name/i,
+      "this file carries no second name and the letter must not say it does");
+    assert.doesNotMatch(letters.rows[0].body_text, /Metro 2/,
+      "no Metro 2 defect is claimed, so the letter must not say one is");
+  });
+
+  test("the same clean file, a client NOT on the repair path: writes nothing", async () => {
+    await wipeClient();
+    /* Staff dispute authorization, but no signed repair agreement and no repair
+       outcome tier — so this client is not on the repair path. */
+    await buildClient({
+      result: { bureausPulled: ["EQ"], bureaus: { EQ: cleanReport() } },
+      authorized: true,
+      agreement: false
+    });
 
     const r = await post({ client_id: clientId });
 

@@ -317,3 +317,78 @@ describe("the personal-information floor", () => {
       "a file carrying one name must never be told it carries more than one");
   });
 });
+
+/* OWNER RULE, 2026-09-03 — "re-pull the credit file before each round and drop
+   from the next round whatever has already been removed." Dropping what was
+   removed is automatic: every claim is computed from the newest stored pull, so
+   a deleted item is simply not there. The re-pull is not automatic, so Round 2
+   and later refuse until a newer pull is on record. */
+describe("the re-pull gate between rounds", () => {
+  const FILE = {
+    bureausPulled: ["EX"],
+    bureaus: {
+      EX: {
+        creditFiles: [{
+          creditFileDetail: {
+            creditFileInfileDate: "2026-09-03",
+            creditFileResultStatusType: "FileReturned",
+            sourceType: "Experian"
+          },
+          aliases: [{ firstName: "Sim", lastName: "Repair" }],
+          addresses: [], ssns: [], employments: []
+        }],
+        inquiries: [],
+        tradelines: []
+      }
+    }
+  };
+
+  /* Key order matters: the MAX(created_at) read must be matched before the
+     round-letters read, because both queries name `dispute_letters dl`. */
+  function dbFor({ pulledAt, priorRoundAt }) {
+    return fakeDb({
+      "MAX\\(dl\\.created_at\\)": [{ newest: priorRoundAt }],
+      "outcome_tier FROM clients": [{ outcome_tier: "REPAIR_ONLY" }],
+      "first_name, last_name FROM clients": [{ first_name: "Sim", last_name: "Repair" }],
+      "FROM contracts": [],
+      "FROM client_consents": [{ is_valid: true }],
+      "FROM dispute_letters dl": [],
+      "FROM repair_programs": [{ program: "full", rounds_cap: 6, status: "active" }],
+      "FROM crs_results": [{ result: FILE, created_at: pulledAt }],
+      "FROM dispute_cases dc": [],
+      "INSERT INTO dispute_cases": [{
+        id: "case-2", org_id: ORG, client_id: CLIENT, bureau: "EX", round: "R2"
+      }],
+      "INSERT INTO dispute_items": [{ id: "item-2" }],
+      "INSERT INTO dispute_letters": [{ id: "letter-2", bureau: "EX", case_id: "case-2" }],
+      "FROM dispute_letters$": [],
+      "SELECT body_text FROM dispute_letters": []
+    });
+  }
+
+  test("Round 2 on the same file Round 1 was written from is refused", async () => {
+    const db = dbFor({ pulledAt: "2026-06-01T00:00:00Z", priorRoundAt: "2026-07-01T00:00:00Z" });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R2" });
+    assert.equal(r.ok, false);
+    assert.equal(r.reason, "credit_file_stale_for_round");
+  });
+
+  test("a fresh pull clears it — the refusal is not a lock", async () => {
+    const db = dbFor({ pulledAt: "2026-08-01T00:00:00Z", priorRoundAt: "2026-07-01T00:00:00Z" });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R2" });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.equal(r.letters.length, 1);
+  });
+
+  test("Round 1 is never blocked — there is no earlier round to be stale against", async () => {
+    const db = dbFor({ pulledAt: "2026-06-01T00:00:00Z", priorRoundAt: "2026-07-01T00:00:00Z" });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    assert.equal(r.ok, true, JSON.stringify(r));
+  });
+
+  test("a client with no earlier round is not blocked", async () => {
+    const db = dbFor({ pulledAt: "2026-06-01T00:00:00Z", priorRoundAt: null });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R2" });
+    assert.equal(r.ok, true, JSON.stringify(r));
+  });
+});

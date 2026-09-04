@@ -32,14 +32,18 @@ const HONEST_REFUSALS = new Set([
   "no_credit_file",
   "no_violations",
   "missing_identity",
-  "no_authorization"
+  "no_authorization",
+  "credit_file_stale_for_round"
 ]);
 
 const HONEST_MESSAGES = Object.freeze({
   no_credit_file: "No credit file on record for this client.",
   no_violations: "The credit file looks clean — nothing to dispute.",
   missing_identity: "Client is missing a legal name on the record.",
-  no_authorization: "No signed repair agreement or staff authorization on file."
+  no_authorization: "No signed repair agreement or staff authorization on file.",
+  credit_file_stale_for_round:
+    "Pull a fresh credit report before this round. The newest one on file is older "
+    + "than the last round's letters, so we cannot tell what the bureaus already removed."
 });
 
 export default async function handler(req, res, deps = {}) {

@@ -110,12 +110,46 @@ function refusalReason(err) {
 
 async function newestCreditFile(db, { orgId, clientId }) {
   const r = await db.query(
-    `SELECT result FROM crs_results
+    `SELECT result, created_at FROM crs_results
       WHERE client_id = $1::uuid AND org_id = $2::uuid
       ORDER BY created_at DESC LIMIT 1`,
     [clientId, orgId]
   );
-  return r.rows[0]?.result || null;
+  const row = r.rows[0];
+  if (!row?.result) return null;
+  return { result: row.result, pulledAt: row.created_at || null };
+}
+
+/**
+ * When the newest bureau letter in an EARLIER round was written.
+ *
+ * OWNER RULE, 2026-09-03: "re-pull the credit file before each round and drop
+ * from the next round whatever has already been removed." Dropping what was
+ * removed happens on its own — every claim in this module is computed from the
+ * newest stored pull, so an item the bureau deleted simply is not there any
+ * more. What does NOT happen on its own is the re-pull: run Round 2 off the same
+ * file Round 1 was written from and the client re-disputes items that may
+ * already be gone, in the same words, which is how a bureau reaches for a
+ * frivolous determination.
+ *
+ * So R2 and later refuse until a newer pull is on record. R1 is exempt because
+ * there is no earlier round to be stale against, and FURNISHER is exempt because
+ * it is not a rung on the bureau ladder.
+ */
+async function newestPriorRoundLetterAt(db, { orgId, clientId, round }) {
+  const index = ROUNDS.indexOf(round);
+  const earlier = ROUNDS.slice(0, index).filter((r) => r !== "FURNISHER");
+  if (earlier.length === 0) return null;
+  const r = await db.query(
+    `SELECT MAX(dl.created_at) AS newest
+       FROM dispute_letters dl
+       JOIN dispute_cases dc ON dc.id = dl.case_id
+      WHERE dl.org_id = $1::uuid AND dl.client_id = $2::uuid
+        AND dc.round = ANY($3::text[])
+        AND COALESCE(dl.target, 'bureau') = 'bureau'`,
+    [orgId, clientId, earlier]
+  );
+  return r.rows[0]?.newest || null;
 }
 
 /** Map a businesses.entity_data object to the letter return-address shape. */
@@ -333,8 +367,26 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
     };
   }
 
-  const result = await newestCreditFile(db, { orgId, clientId });
-  if (!result) return { ok: false, reason: "no_credit_file" };
+  const creditFile = await newestCreditFile(db, { orgId, clientId });
+  if (!creditFile) return { ok: false, reason: "no_credit_file" };
+  const result = creditFile.result;
+
+  /* The re-pull gate. See newestPriorRoundLetterAt above for the rule. This is a
+     refusal, not a lock: it clears the moment a newer pull lands on the client,
+     which is one run of the pull the round was supposed to start with. */
+  if (round !== "R1" && round !== "FURNISHER") {
+    const priorRoundAt = await newestPriorRoundLetterAt(db, { orgId, clientId, round });
+    const pulledAt = creditFile.pulledAt;
+    if (priorRoundAt && pulledAt && new Date(pulledAt) <= new Date(priorRoundAt)) {
+      return {
+        ok: false,
+        reason: "credit_file_stale_for_round",
+        round,
+        credit_file_pulled_at: pulledAt,
+        prior_round_letter_at: priorRoundAt
+      };
+    }
+  }
 
   /* OWNER DECISION, 2026-09-03: "any derogatory deserves a letter, but only if
      they are in the correct offer path." The Metro 2 engine only fires on a
