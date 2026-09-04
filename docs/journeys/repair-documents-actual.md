@@ -28,10 +28,10 @@ flowchart TD
     DOORS --> PORTAL["Client portal, the identity door<br/>public/app/client-portal.html<br/>open to repair AND funding clients"]
     DOORS --> TEXT["They text a photo<br/>src/handlers/inbound-mms-docs.mjs"]
 
-    TEXT --> CLASSIFY{"GHL-DOC reads the image:<br/>what IS this?"}
-    CLASSIFY -->|"'Arizona driver license'"| SUB1["filed as id_document"]
+    TEXT --> CLASSIFY{"DOC-CHECK reads the image:<br/>what IS this?"}
+    CLASSIFY -->|"'Arizona driver license'<br/>a plain name, no doubt in it"| SUB1["filed as id_document"]
     CLASSIFY -->|"'utility bill'"| SUB2["filed as proof_of_address"]
-    CLASSIFY -->|"unclear, or two answers at once"| SUB3["filed as other<br/>never a guess"]
+    CLASSIFY -->|"'no valid ID in this photo'<br/>'too blurry to read the ID'<br/>'appears to be a licence'<br/>the agent held it or listed a problem<br/>a whole sentence, not a name<br/>two answers at once, or none"| SUB3["filed as other<br/>the label is never stronger<br/>than the evidence"]
 
     PORTAL --> RECV[["event: docs.received"]]
     SUB1 --> RECV
@@ -60,7 +60,7 @@ flowchart TD
 | Listens for uploads | `src/repair/register.mjs` | `docs.received → onRepairDocsReceived` |
 | The upload doors | `src/repair/upload-doors.mjs` | the identity door opens for repair AND funding |
 | A texted photo | `src/handlers/inbound-mms-docs.mjs` | classified before it is filed |
-| Reads the images | `src/handlers/ghl-doc.mjs` | seeded in `db/migrations/114_ghl_agent_seed.sql` |
+| Reads the images | `src/handlers/doc-check.mjs` | seeded in `db/migrations/114_ghl_agent_seed.sql` |
 
 ## What was broken until 2026-09-04
 
@@ -88,9 +88,58 @@ flowchart TD
 * **An upload never moves a file backwards.** `onRepairDocsReceived` only acts on
   a card sitting on `intake` or `awaiting_documents`. A client on round five
   texting a bureau letter changes nothing.
-* **An unclear photo stays "other".** If the agent's answer names two document
-  types, or none, the subtype falls back to `other`. The filename is never read:
-  an MMS filename is `mms-<message id>-<n>` and says nothing.
+* **The label is never stronger than the evidence.** A photo is typed as a
+  government ID only when the document agent plainly named one. The subtype
+  falls back to `other` — the same as before any of this work — whenever:
+  the agent's words carry a denial or a doubt ("no valid ID was visible", "too
+  blurry to read the ID", "appears to be a driver's license", "possibly a
+  passport", "belonging to someone other than the client"); the agent held the
+  document, asked for a better one, or listed a problem with it; the answer is a
+  sentence about the photo rather than a short name for it; the answer names two
+  document types, or none. When two answers come back they must agree, and one
+  answer we cannot read spoils the whole reply. Nothing is ever inferred from
+  the filename, the sender, or the order the pictures arrived in: an MMS
+  filename is `mms-<message id>-<n>` and says nothing. A photo that stays
+  `other` is recorded with `classified_by: null`, so an unread picture never
+  looks agent-verified.
+
+  This matters because `id_document` is one leg of the identity gate in
+  `src/inquiry-ops/doc-gate.mjs`, and that gate is what decides whether dispute
+  letters may be mailed in a client's name. A wrong label there would open it on
+  nothing.
+
+## What this page does NOT claim
+
+Three things on this path are real and are not fixed here. They are written down
+so nobody reads the diagram as more finished than it is.
+
+* **On a database built from the migrations alone, the document agent has no
+  instructions, so no photo is ever classified.** Measured 2026-09-04 on two
+  scratch Postgres databases with all 239 migrations applied to empty:
+  `select code, status, length(coalesce(prompt,'')) from agents where
+  code='DOC-CHECK'` returns `DOC-CHECK | draft | 0`, and 20 of the 22 seeded
+  agent rows have the same empty prompt. `classifyMmsImage()` then returns
+  `reason: 'agent_unavailable'` and the photo is filed as `other` — which is
+  safe, and is the same answer the code gave before any of this work, but it
+  means the classifier cannot help on such a database until an instruction is
+  written onto that row. Whether the live database carries one was not measured
+  here.
+
+* **The credit-repair contract check does not run on this path.**
+  `canLeaveIntake()` in `src/repair/croa.mjs` checks that a complete contract is
+  on file before a repair file leaves `intake`. `src/repair/handlers.mjs` only
+  applies it when the event payload carries `fromIntake`, and nothing in the
+  repository sets that flag — `git grep -n fromIntake -- src` returns only the
+  check itself. So enrolment moves the card to `awaiting_documents` without that
+  check running. COMPLIANCE REVIEW REQUIRED.
+
+* **Nothing moves a card out of `analysis` on its own.** When both documents
+  land, the card moves to `analysis` and the client's portal reads "We're
+  reviewing your report" (`src/repair/portal.mjs`). The only caller of
+  `analyzeAndGenerate()` is `api/repair/generate.mjs`, which a member of staff
+  has to press. `src/repair/sla.mjs` raises `engineering_engine_failure` on the
+  staff board one hour later. No repair client had ever reached this stage
+  before this change, so this is newly reachable behaviour.
 
 ## Not covered here
 
