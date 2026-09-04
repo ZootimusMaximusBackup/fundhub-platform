@@ -1,10 +1,10 @@
 // N-06 — Renewal / Second-Wave Funding.
-// Source: GHL workflow 61b70897-fbf8-47e2-ae09-ea51a4af0279 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow 61b70897-fbf8-47e2-ae09-ea51a4af0279 (ghl-crm-source-of-truth.md).
 // Ports the live definition. Audit fix applied (workflow-coherence-audit.md: "N-06 /
 // AR-03 (AGENT DRAFT) — SMS step dropped vs the DECOM version — re-add"): the SMS
 // send is present below, unlike the AGENT DRAFT copy.
 //
-// Original GHL trigger was "Daily Scheduler", gated on "Funding Locked Date older
+// Original the CRM trigger was "Daily Scheduler", gated on "Funding Locked Date older
 // than 6 months AND tag client:funding present" — a nightly table scan, which is
 // exactly the polling this port isn't allowed to do. Converted to event + durable
 // wait instead: trigger once off round.funded, step.sleep 6 months, then re-check
@@ -12,7 +12,7 @@
 // column to "Funding Locked Date"/"tag client:funding"; there's no funding-locked-
 // date column to check against directly). No new canonical event, no cron.
 //
-// SMS copy is confirmed missing in GHL (Chris's tracking note). Wired but gated on a
+// SMS copy is confirmed missing in the CRM (Chris's tracking note). Wired but gated on a
 // template existing.
 
 import { inngest } from "./client.mjs";

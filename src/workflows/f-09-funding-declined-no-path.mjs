@@ -1,5 +1,5 @@
 // F-09 — Funding Declined / No Path.
-// Source: GHL workflow 2af6ed68-3661-4b3b-821f-5b4e49c0e52a (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow 2af6ed68-3661-4b3b-821f-5b4e49c0e52a (ghl-crm-source-of-truth.md).
 //
 // Original trigger was "Tag Added: funding:no-path" — an undocumented upstream
 // assigner, same shape as N-01/02/03's tag problem. Here there's an actual concrete

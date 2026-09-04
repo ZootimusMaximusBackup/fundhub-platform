@@ -1,4 +1,4 @@
-// Adversarial tests for GHL contact resolution. NO NETWORK IS TOUCHED — every
+// Adversarial tests for the CRM contact resolution. NO NETWORK IS TOUCHED — every
 // case injects `fetchImpl`, the same seam src/messaging/providers/*.test.mjs
 // uses, so nothing here needs a live LeadConnector account to be trustworthy.
 
@@ -196,7 +196,7 @@ test("ensureGhlContactId: dryRun finds/creates but never writes — this is the 
   assert.deepEqual(db.updates, [], "dryRun must not touch the database");
 });
 
-test("ensureGhlContactId: no email/phone on the row — no_identifier, no GHL call", async () => {
+test("ensureGhlContactId: no email/phone on the row — no_identifier, no CRM call", async () => {
   const db = dbFake();
   const fetchImpl = fakeFetch({ status: 200, body: { id: "should-not-be-called" } });
   const r = await ensureGhlContactId(db, { id: "cl-3" }, { fetchImpl, env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "k" } });

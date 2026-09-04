@@ -1,8 +1,8 @@
 # fundhub-platform
 
-The custom platform replacing GoHighLevel + Airtable + Commas-hosted checkout with **one Vercel company, one Postgres database, one event stream** (ClickFunnels stays the front end). Per the **Master Rebuild Spec v1** (APPROVED 2026-07-22) — canonical copy at `fundhub-docs` → `/raw/master-rebuild-spec.md`.
+The custom platform replacing the old CRM and spreadsheet + Commas-hosted checkout with **one Vercel company, one Postgres database, one event stream** (ClickFunnels stays the front end). Per the **Master Rebuild Spec v1** (APPROVED 2026-07-22) — canonical copy at `fundhub-docs` → `/raw/master-rebuild-spec.md`.
 
-> Built WHILE the live GHL system keeps running. Nothing about launch pauses. Cut over rail by rail once gates pass.
+> Built WHILE the live CRM system keeps running. Nothing about launch pauses. Cut over rail by rail once gates pass.
 
 ## Requirements
 
@@ -17,7 +17,7 @@ This is the **B1 (Schema + events)** deliverable — the foundation every other 
 - **`db/seed/002_pipelines.sql`** — the 7 pipelines + stages seeded exactly from Spec §5.
 
 ### Open item before B2/B3 build against this
-- **`clients` 252 custom fields:** the schema holds them in `custom_fields jsonb` for now. Migration `003_clients_custom_fields.sql` must generate the **typed columns** from the CRM Source of Truth field export (Rule 2 — exact GHL names kept, e.g. `cf_svy_funding_target_amount`). Generate that before the CRM adapter (B2) writes typed data.
+- **`clients` 252 custom fields:** the schema holds them in `custom_fields jsonb` for now. Migration `003_clients_custom_fields.sql` must generate the **typed columns** from the CRM Source of Truth field export (Rule 2 — exact the CRM names kept, e.g. `cf_svy_funding_target_amount`). Generate that before the CRM adapter (B2) writes typed data.
 
 ## Build order (Spec §16)
 Phase 0: this schema + event bus + replay harness + Cognee ingestion + swarm boot (B1–B8, V1–V4).
@@ -30,7 +30,7 @@ Tooling (mandated): OpenCode + Antigravity + **Cognee** (shared memory — every
 - `db/seed/002_pipelines.sql` — 7 pipelines + stages (§5).
 - `db/migrate.mjs` — idempotent migrations runner (tracks `schema_migrations`, one txn per file). Run: `DATABASE_URL=… npm run migrate`.
 - `src/events/` — the **event bus** (§4 + §16 replay harness): `emit()` (append-only, idempotent by key, dispatches handlers), `replay()` (re-fires stored events — the V1 validator's tool), `canonical.mjs` (the event names), `registry.mjs` (handler registration). `src/db.mjs` = pg pool.
-- `src/adapters/` — **the B2 adapter layer.** Every adapter does the same three things: verify the source signature (fail-closed), normalize the raw body, and `emit()` canonical events onto the bus. NONE do GHL/Airtable/CRS side effects inline — those become handlers registered on the bus (so one event can drive many reactions, and `replay()` re-drives them). Ported from the live handlers where they exist.
+- `src/adapters/` — **the B2 adapter layer.** Every adapter does the same three things: verify the source signature (fail-closed), normalize the raw body, and `emit()` canonical events onto the bus. NONE do the old CRM and spreadsheet/CRS side effects inline — those become handlers registered on the bus (so one event can drive many reactions, and `replay()` re-drives them). Ported from the live handlers where they exist.
   - `commas.mjs` — Commas/FanBasis payments (HMAC-SHA256). `$32 Business Financial Assessment` → `payment.received`+`diagnostic.paid`; `Consulting Services Deposit` → `deposit.paid`; `Consulting Services Package` (DIY) → `sale.closed`; failures → `payment.failed`. Routes **strictly on product name, never amount**.
   - `clickfunnels.mjs` — funnel front end (HMAC-SHA256). Lead/opt-in → `entry.captured`; survey step → also `survey.submitted`.
   - `twilio.mjs` — inbound SMS. Real Twilio HMAC-SHA1 signature scheme (base64 of URL+sorted params). Inbound message → `message.inbound`.
@@ -38,7 +38,7 @@ Tooling (mandated): OpenCode + Antigravity + **Cognee** (shared memory — every
   - `crs.mjs` — CRS engine OUTPUT (no webhook/signature — a mapper the platform calls after the engine runs). Completed result → `analysis.completed` + `decision.rendered`.
   - `bland.mjs` — Bland voice calls (HMAC-SHA256 shared secret, ⚠️ confirm scheme). Finished call → `call.completed` (in-progress calls emit nothing).
 - **105 unit tests pass without a live Postgres** (`npm test`) — bus + 7 adapters. Each verifies signature accept/reject, normalize, canonical mapping, idempotent re-delivery, and handler dispatch.
-- `src/handlers/client-lifecycle.mjs` — **the reactions layer (Phase 2 start).** Adapters emit events; these handlers write DOMAIN STATE to Postgres — the platform replacement for what GHL/Airtable did. `register()` wires: `entry.captured`/`survey.submitted` → find-or-create client + fold survey answers into `custom_fields`; `payment.received` → insert a `transactions` row; `diagnostic.paid`/`deposit.paid`/`sale.closed` → stamp client flags; `analysis.completed` → append `crs_results`; `decision.rendered` → set `outcome_tier` + funding estimate. Every write is IDEMPOTENT (find-or-create by email, `ON CONFLICT DO NOTHING` on the txn ref, event-id dedup on crs_results) so `replay()` re-drives events without double-writing. Migration `003_client_indexes.sql` adds the unique indexes this relies on.
+- `src/handlers/client-lifecycle.mjs` — **the reactions layer (Phase 2 start).** Adapters emit events; these handlers write DOMAIN STATE to Postgres — the platform replacement for what the old CRM and spreadsheet did. `register()` wires: `entry.captured`/`survey.submitted` → find-or-create client + fold survey answers into `custom_fields`; `payment.received` → insert a `transactions` row; `diagnostic.paid`/`deposit.paid`/`sale.closed` → stamp client flags; `analysis.completed` → append `crs_results`; `decision.rendered` → set `outcome_tier` + funding estimate. Every write is IDEMPOTENT (find-or-create by email, `ON CONFLICT DO NOTHING` on the txn ref, event-id dedup on crs_results) so `replay()` re-drives events without double-writing. Migration `003_client_indexes.sql` adds the unique indexes this relies on.
 - `src/handlers/comms.mjs` — reactions layer batch 2 (comms + scheduling): `message.inbound`→`messages` (sms), `call.completed`→`messages` (voice), `mail.response`→`bank_inbox` (classified bank email), `booking.created`→`tasks` (closer follow-up). SMS/mail/voice only LINK to an existing client (never mint one from an inbound message); booking resolves-or-creates. Idempotent via migration `004_comms_indexes.sql` (messages provider_ref unique) + event-id / booking-uid guard selects. Between the two handler modules, all 12 core journey + side events now persist domain state.
 - `src/http/router.mjs` + `api/webhooks/[provider].mjs` — **the HTTP layer that makes it a runnable service.** `POST /api/webhooks/{commas|twilio|mailgun|bland|clickfunnels}` → the router picks the adapter, hands it the right signature header + secret (from env), and returns `{status, body}`. `src/register-all.mjs` wires every handler onto the bus on cold start. `api/health.mjs` checks the DB. Deploy target = Vercel (Spec §2).
 - `api/dashboard/clients.mjs` + `api/dashboard/client.mjs` + `public/dashboard.html` — **read-only closer dashboard on real data** (Phase 3 start): one aggregate query for journey state per client (paid flags, outcome tier, funding estimate, tx summary, last activity) + a full detail view (transactions/crs_results/messages/tasks). Verified end-to-end (events → handlers → Postgres → dashboard). **Auth: shared-secret** (`DASHBOARD_SECRET`) — endpoints require the `x-dashboard-key` header / `?key=`, fail-closed in production; open the page as `/dashboard.html?key=<secret>`. Output is HTML-escaped (no XSS from client-controlled fields). Single-tenant internal tool — the key IS the auth.
@@ -118,7 +118,7 @@ npm run diagrams:check  # fail if the committed diagrams are stale
 diagrams are regenerated — they cannot drift quietly.
 
 ## Next
-Provision a Postgres, run `npm install` + `npm run migrate` to validate the schema live, then register HANDLERS on the bus (the reactions: GHL field writes, Airtable sync, CRS pulls, letter gen). Each adapter's `⚠️ CONFIRM` block must be checked against a real payload before that source cuts over. Deferred behind the Monday launch — builds in parallel.
+Provision a Postgres, run `npm install` + `npm run migrate` to validate the schema live, then register HANDLERS on the bus (the reactions: CRM field writes, spreadsheet sync, CRS pulls, letter gen). Each adapter's `⚠️ CONFIRM` block must be checked against a real payload before that source cuts over. Deferred behind the Monday launch — builds in parallel.
 
 ## Hiring — always-on inbound recruiting (migration 051)
 

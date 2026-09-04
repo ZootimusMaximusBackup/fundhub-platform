@@ -1,9 +1,9 @@
 // BC-01 — Customer Responsiveness Classifier.
 // Source: GHL-System-Map.md BEHAVIORAL COMPLIANCE section.
 // Writes to behavior_scores.responsiveness (numeric) — the schema's nightly-scoring
-// column already anticipated this. GHL's categorical Fast/Normal/Slow is mapped to
+// column already anticipated this. The CRM's categorical Fast/Normal/Slow is mapped to
 // 1.0/0.5/0.0 (decision logged in workflow-migration-table.md — the schema column is
-// numeric, GHL's was a select field).
+// numeric, the CRM's was a select field).
 //
 // Trigger: round.started. Checks docs-missing clearance (crs_paid, or docs:missing
 // no longer tagged) at 24h and 48h waits, same wait ladder as the original.

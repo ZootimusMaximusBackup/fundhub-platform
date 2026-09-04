@@ -113,7 +113,7 @@ export async function runFundingJourney(db, ctx, collector) {
     file: "src/workflows/s-01-new-lead-intake.mjs"
   });
 
-  // GHL linkage — re-fetch after lead capture. Dry-run stamps dry-ghl-*;
+  // CRM linkage — re-fetch after lead capture. Dry-run stamps dry-ghl-*;
   // missing key stamps custom_fields.ghl_link_missing (visible warning).
   const afterGhl = (await db.query(
     `SELECT ghl_contact_id, custom_fields FROM clients WHERE id = $1`, [client.id]
@@ -129,7 +129,7 @@ export async function runFundingJourney(db, ctx, collector) {
   } else if (ghlWarned) {
     collector.pass({
       section, journey, role, id: "fund-ghl",
-      claim: "Missing GHL link is stamped visibly (ghl_link_missing)",
+      claim: "Missing CRM link is stamped visibly (ghl_link_missing)",
       actual: { ghl_contact_id: null, ghl_link_missing: true },
       file: "src/handlers/client-lifecycle.mjs"
     });
@@ -143,7 +143,7 @@ export async function runFundingJourney(db, ctx, collector) {
     });
   }
   steps.push({
-    step: "GHL linkage",
+    step: "The CRM linkage",
     status: ghl || ghlWarned ? "PASS" : "SILENTLY-DID-NOTHING",
     persisted: ghl || (ghlWarned ? "warned:ghl_link_missing" : "null")
   });
@@ -865,13 +865,13 @@ export async function runFundingJourney(db, ctx, collector) {
     `Closer front commission: ${frontLedger[0]?.amount ?? "NONE"} (want ${MONEY.closerFlatDeposit})`,
     `Advisor back commission: ${advisorRow?.amount ?? "NONE"} (want ${MONEY.expectedAdvisorBack})`,
     `Closeout fee: ${closeout?.total_fee ?? "NONE"} (want ${MONEY.expectedSuccessFee})`,
-    `GHL link: ${ghl || "MISSING"}`,
+    `The CRM link: ${ghl || "MISSING"}`,
     `Contract: ${contractRow?.id || "MISSING"}`,
     `Messages queued: ${queued.length}`,
     "",
     blocking
       ? "Operator verdict: NO — a real funding file would stall or under-bill on this path today."
-      : "Operator verdict: YES for the money spine; still check GHL link, contract send, and live webhooks separately."
+      : "Operator verdict: YES for the money spine; still check the CRM link, contract send, and live webhooks separately."
   ].join("\n");
 
   // Cleanup sim via official teardown helper when possible

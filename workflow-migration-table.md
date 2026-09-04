@@ -1,7 +1,7 @@
 # Workflow Migration Table
 
 Living document, filled in one batch at a time per WORKFLOWS B3 (N-series → F-series →
-AR-series → AF-series → the rest). Every one of the 140 GHL workflows in
+AR-series → AF-series → the rest). Every one of the 140 CRM workflows in
 `GHL-System-Map.md` gets a row here — MIGRATED / MERGED INTO X / RETIRED / BLOCKED /
 DEFERRED — before this file is considered done. Rows not yet processed are marked
 PENDING rather than guessed.
@@ -63,10 +63,10 @@ has completed is reading a value that has not been produced yet.
 ### Field mapping (why `cf_analyzer_recommendation` greps clean)
 
 The 04/08 doc's `cf_analyzer_recommendation` (24 occurrences) was **not ported under that
-name**. It has two successors in this codebase, and an audit that greps for the GHL field
+name**. It has two successors in this codebase, and an audit that greps for the CRM field
 name finds nothing:
 
-| 04/08 GHL field | Ported to | Written by | On event |
+| 04/08 CRM field | Ported to | Written by | On event |
 |---|---|---|---|
 | `cf_analyzer_recommendation` (the 6-tier decision) | `clients.outcome_tier`, read via `clientOutcomeTier()` in `src/config/product-path.mjs` | `client-lifecycle.mjs:onDecisionRendered` | `decision.rendered` — **and nothing else** |
 | `cf_analyzer_recommendation` (the dollar figure shown to the client) | `custom_fields.total_funding_estimate` | `client-lifecycle.mjs:onDecisionRendered` | `decision.rendered` |
@@ -390,7 +390,7 @@ work and need sequencing as new builds.
 
 ## Open decisions for Darwin
 
-1. **Lead temperature (N-01/02/03).** The GHL source tagged leads `nurture:cold` /
+1. **Lead temperature (N-01/02/03).** The CRM source tagged leads `nurture:cold` /
    `nurture:warm` / `nurture:hot` via an undocumented side-automation — no source
    describes how that tag was assigned, and `outcome_tier` can't stand in for it
    (it's only set post-`decision.rendered`, well past where most nurture targets
@@ -415,7 +415,7 @@ work and need sequencing as new builds.
    - `repair.portal_updated` — emitted when the bureau portal status changes.
      Payload: `{ clientId, roundNumber, bureauStatus }`.
    - `repair.completed` — emitted when a repair round is marked complete (this is
-     the one N-05 actually needs — maps to GHL's "Repair Complete Date" field
+     the one N-05 actually needs — maps to the CRM's "Repair Complete Date" field
      update). Payload: `{ clientId, roundNumber, completedAt }`.
    - `repair.upgrade_invited` — emitted when the client is invited to upgrade after
      repair completion. Payload: `{ clientId, roundNumber }`.
@@ -423,7 +423,7 @@ work and need sequencing as new builds.
    port until this is decided — expect this to come up again in a later batch (the
    spec's R-series).
 
-3. **N-07 inactivity threshold — undefined at the source.** GHL's own definition of
+3. **N-07 inactivity threshold — undefined at the source.** The CRM's own definition of
    N-07's trigger literally says "No activity for X days — definition deferred." This
    was never finished, not just undocumented. Combined with N-07 being a mass send to
    dormant non-clients, it needs both a threshold and a consent/quiet-hours review
@@ -441,7 +441,7 @@ work and need sequencing as new builds.
 
 | Key | Disposition | Reasoning |
 |---|---|---|
-| S-03 | RETIRED | Confirmed decommissioned (workflow-coherence-audit.md); still `published` in GHL but folder-flagged dead. |
+| S-03 | RETIRED | Confirmed decommissioned (workflow-coherence-audit.md); still `published` in the CRM but folder-flagged dead. |
 | S-04B | RETIRED | Same. |
 | S-05a | RETIRED | Same. |
 | S-07 | RETIRED | Same. |
@@ -449,7 +449,7 @@ work and need sequencing as new builds.
 | S-10 | RETIRED | Same. |
 | U-01 | RETIRED | Same. |
 | U-06 (old) | RETIRED | Superseded by the current U-06 (Spec §6 audit fix: "real analyzer entry URL, no placeholder" applies to the *live* U-06, not this one). |
-| N-01..N-08 (DECOM-folder copies) | RETIRED | Same workflow IDs as the live N-01–N-08 documented in `ghl-crm-source-of-truth.md`, but filed in GHL's "DECOMMISSIONED WORKFLOWS" folder. Per task instruction the DECOM-folder copy is skipped regardless; the *live* N-01–N-07 are ported below via their AGENT DRAFT definitions (the only other copy that exists). N-08 has no such counterpart — see its own row. |
+| N-01..N-08 (DECOM-folder copies) | RETIRED | Same workflow IDs as the live N-01–N-08 documented in `ghl-crm-source-of-truth.md`, but filed in the CRM's "DECOMMISSIONED WORKFLOWS" folder. Per task instruction the DECOM-folder copy is skipped regardless; the *live* N-01–N-07 are ported below via their AGENT DRAFT definitions (the only other copy that exists). N-08 has no such counterpart — see its own row. |
 | AR-01..AR-03 (DECOM copies) | RETIRED | Live AR-series definitions exist separately under `## ACCOUNTS RECEIVABLE WORKFLOWS (AR-Series)` — pending the AR-series batch. |
 | F-02/F-06/F-10 (DECOM copies) | RETIRED | Live F-series definitions exist separately under `## FUNDING WORKFLOWS (F-Series)` — pending the F-series batch. |
 | AF-06 | RETIRED | Confirmed decommissioned; no live counterpart found elsewhere in the map. |
@@ -458,19 +458,19 @@ work and need sequencing as new builds.
 
 | Disposition | Reasoning |
 |---|---|
-| RETIRED (all 12) | Spec §6: "Dissolves entirely: the AX series. With one database there is no GHL↔Airtable mirroring." AX-01 client create/sync becomes the client upsert already implemented on `entry.captured`/`survey.submitted` (`src/handlers/client-lifecycle.mjs`, `resolveClient`). AX-02/03/20/21/24 become ordinary event handlers, already covered by the existing reactions layer — nothing left to port under the AX name. |
+| RETIRED (all 12) | Spec §6: "Dissolves entirely: the AX series. With one database there is no CRM ↔ spreadsheet mirroring." AX-01 client create/sync becomes the client upsert already implemented on `entry.captured`/`survey.submitted` (`src/handlers/client-lifecycle.mjs`, `resolveClient`). AX-02/03/20/21/24 become ordinary event handlers, already covered by the existing reactions layer — nothing left to port under the AX name. |
 
 ## NURTURE WORKFLOWS (N-Series) — this batch
 
 | Key | Name | Disposition | Reasoning |
 |---|---|---|---|
-| N-01 | Long-Term Cold Nurture | MIGRATED | `src/workflows/n-01-cold-nurture.mjs`. Ported the live [AGENT DRAFT] copy (sole variant for this key). Trigger replaced per decision #1 above: `entry.captured`, gated on funnel-depth temperature = cold. SMS wired, gated on template existing (real copy confirmed missing in GHL — Chris's own tracking note). |
+| N-01 | Long-Term Cold Nurture | MIGRATED | `src/workflows/n-01-cold-nurture.mjs`. Ported the live [AGENT DRAFT] copy (sole variant for this key). Trigger replaced per decision #1 above: `entry.captured`, gated on funnel-depth temperature = cold. SMS wired, gated on template existing (real copy confirmed missing in the CRM — Chris's own tracking note). |
 | N-02 | Long-Term Warm Nurture | MIGRATED | `src/workflows/n-02-warm-nurture.mjs`. Same pattern; trigger `survey.submitted`, gated on temperature = warm. |
 | N-03 | Long-Term Hot Nurture | MIGRATED | `src/workflows/n-03-hot-nurture.mjs`. Same pattern; triggers on `booking.created` OR `call.completed` (either can newly produce "hot"), gated on temperature = hot. |
 | N-04 | Post-Funding Nurture | MIGRATED | `src/workflows/n-04-post-funding-nurture.mjs`. Original trigger "Pipeline Stage Changed → F23 Post-Funding Monitoring" mapped to `round.funded` (the event that puts a client into that stage); the gate (tag client:funding present) is implied by round.funded having fired, so no separate check. |
 | N-05 | Repair-Complete Nurture | BLOCKED | Needs Optimization/Repair pipeline canonical events that don't exist yet. Proposal in "Open decisions for Darwin" §2 above. Not ported; do not add events without Darwin's sign-off. |
 | N-06 | Renewal / Second-Wave Funding | MIGRATED | `src/workflows/n-06-renewal-second-wave.mjs`. Original trigger was a Daily Scheduler (polling) gated on "Funding Locked Date older than 6 months" — converted to `round.funded` + a durable 6-month `step.sleep`, re-checking `clients.funded` at wake instead of scanning nightly. Audit fix applied (workflow-coherence-audit.md: SMS step dropped in the AGENT DRAFT regression) — SMS is present here. |
-| N-07 | Global Re-engagement (Inactive Leads) | DEFERRED | Two reasons, both from the GHL source itself: (1) the inactivity threshold ("no activity for X days") is marked "definition deferred" — never finished, not just undocumented; (2) it's a mass send to dormant non-clients, which needs a consent + quiet-hours review before it exists as code at all (Spec §7 compliance gate). Not built. |
+| N-07 | Global Re-engagement (Inactive Leads) | DEFERRED | Two reasons, both from the CRM source itself: (1) the inactivity threshold ("no activity for X days") is marked "definition deferred" — never finished, not just undocumented; (2) it's a mass send to dormant non-clients, which needs a consent + quiet-hours review before it exists as code at all (Spec §7 compliance gate). Not built. |
 | N-08 | Analyzer Re-run (6–12 months) | RETIRED | **Conflict, recorded rather than resolved:** Master Rebuild Spec §6 lists "N-01 to N-08 (live versions)" as workflows to port. But the system map has no live/AGENT-DRAFT copy of N-08 anywhere — it exists *only* in the DECOMMISSIONED WORKFLOWS folder, which the task's own skip list already covers. No live definition exists to reconstruct from. Flagged for Darwin. |
 
 ## FUNDING WORKFLOWS (F-Series) — this batch
@@ -478,7 +478,7 @@ work and need sequencing as new builds.
 | Key | Name | Disposition | Reasoning |
 |---|---|---|---|
 | F-01 | Funding Intake (F1) | MIGRATED | `src/workflows/f-01-funding-intake.mjs`. Trigger `round.started`; gate "Product Path = Funding" via `outcome_tier` (see decision below). Pod-missing fallback (create task) covers POD-01B's purpose — see POD-01B row. |
-| F-02 | Portal / ID Missing (Onboarding Nudge) | MIGRATED | `src/workflows/f-02-portal-id-missing.mjs`. Ported the live [AGENT DRAFT] copy. Trigger `round.started` + `step.sleep` (2-4h range → 3h picked, see decision below) + a 2-day recheck, mirroring GHL's wait/recheck structure without polling. |
+| F-02 | Portal / ID Missing (Onboarding Nudge) | MIGRATED | `src/workflows/f-02-portal-id-missing.mjs`. Ported the live [AGENT DRAFT] copy. Trigger `round.started` + `step.sleep` (2-4h range → 3h picked, see decision below) + a 2-day recheck, mirroring the CRM's wait/recheck structure without polling. |
 | F-03 | Round Submitted (F2/F4/F6...F20) | MIGRATED | `src/workflows/f-03-round-submitted.mjs`. Trigger `round.submitted` (exact match — this is the file the task brief used as its own naming example). Audit fix: real ready-to-paste SMS + email copy, not the blank original. |
 | F-04 | Round Approvals (F3/F5/F7...F21) | MIGRATED | `src/workflows/f-04-round-approvals.mjs`. Trigger `round.approved`. Audit fix: real ready-to-paste SMS + email-subject copy. |
 | F-05 | Inquiry Cleanup Gate (Between Rounds) | MIGRATED | `src/workflows/f-05-inquiry-cleanup-gate.mjs`. Trigger `round.approved` (same stage as F-04, different reaction). Flips open `inquiry_log` rows to Pending Removal; C-02 (Inquiry Removal pipeline) takes over from there — out of this batch's scope. |
@@ -488,7 +488,7 @@ work and need sequencing as new builds.
 | F-09 | Funding Declined / No Path | MIGRATED | `src/workflows/f-09-funding-declined-no-path.mjs`. Original trigger ("Tag Added: funding:no-path") replaced with `mail.response` (classification DENIED) — the same concrete upstream signal F-11 already classifies, rather than an undocumented tag-assigner. Gate: Product Path = Funding. |
 | F-10 | Client Funding Inbox Provisioner | MIGRATED (partial — see decision below) | `src/workflows/f-10-client-funding-inbox-provisioner.mjs`. Trigger `round.started`. **The external `provision_client_funding_inbox` webhook is NOT called** — no adapter exists for it and none was documented; a deterministic forwarding address is computed locally and an ops task created for the real provisioning + confirmation call instead. |
 | F-10R | Inbox Verified Receiver (Inbound) | BLOCKED | Reacts to an inbound webhook from the same undocumented inbox-provisioning system F-10 can't call. No adapter, no canonical event, nothing to react to yet. Proposed vocabulary: `inbox.forwarding_verified` (payload `{ clientId }`), emitted by a future adapter for that system. Not built. |
-| F-11 | Bank Email Event Router (Inbound) | MIGRATED | `src/workflows/f-11-bank-email-event-router.mjs`. Trigger `mail.response` (Spec §4 names this exact conversion: "F-11 becomes a handler"). Creates the routing task per classification; APPROVED/COUNTEROFFER additionally move the client's card to the Funding pipeline's `approved` stage. DENIED/MISSING_DOCS get deeper follow-through in F-09/F-06 respectively — this file's job is strictly the routing task GHL created for every classification. |
+| F-11 | Bank Email Event Router (Inbound) | MIGRATED | `src/workflows/f-11-bank-email-event-router.mjs`. Trigger `mail.response` (Spec §4 names this exact conversion: "F-11 becomes a handler"). Creates the routing task per classification; APPROVED/COUNTEROFFER additionally move the client's card to the Funding pipeline's `approved` stage. DENIED/MISSING_DOCS get deeper follow-through in F-09/F-06 respectively — this file's job is strictly the routing task the CRM created for every classification. |
 | POD-01B | Funding Handoff & Pod Assignment | MERGED INTO F-01 | Its automated half (an external `lookup_pod` webhook) has no adapter; its fallback purpose (assign pod roles when missing) is exactly what F-01 already does via a task, so nothing is lost — just not auto-assigned. |
 | F-12A | Remote Install Kickoff (Zoho Unattended) | OUT OF SCOPE | Appears in `ghl-crm-source-of-truth.md` but not in `GHL-System-Map.md`'s 140-workflow crawl (the F-series Contents count is 13 and F-12A isn't one of them). Not part of the authoritative 140; not built. Flagged here so it isn't silently unaccounted for. |
 
@@ -504,7 +504,7 @@ explicit stop condition regardless of the "run straight through" mode change.
 | AR-01 | Invoice Sent | BLOCKED | Gated on "Balance Due > 0" — see proposal below. |
 | AR-02 | Invoice Reminder | BLOCKED | Same. |
 | AR-03 | Escalation | BLOCKED | Same. Audit fix noted for later (workflow-coherence-audit.md: AGENT DRAFT dropped the SMS step vs the DECOM version — re-add once built) — not applied since nothing is built yet. |
-| AR-04 | Collections Handoff | BLOCKED | Same gate, plus sends client identity + balance + contract links to an external collections webhook that was never built even in GHL (`draft` status, placeholder `example.com` URL). Money and PII together — needs a human decision on whether/how this ships at all, not just a data-model fix. |
+| AR-04 | Collections Handoff | BLOCKED | Same gate, plus sends client identity + balance + contract links to an external collections webhook that was never built even in the CRM (`draft` status, placeholder `example.com` URL). Money and PII together — needs a human decision on whether/how this ships at all, not just a data-model fix. |
 
 ### Proposal: what AR needs before it can be built
 
@@ -526,7 +526,7 @@ explicit stop condition regardless of the "run straight through" mode change.
    - `invoice.paid` / `invoice.written_off` — payload `{ clientId, invoiceId }`.
 
 3. **The Balance Due formula itself — open question for Chris and Darwin,
-   inherited from F-07.** GHL's own F-07 steps copy `total_approved_amount`
+   inherited from F-07.** The CRM's own F-07 steps copy `total_approved_amount`
    straight into `Commission Owed` and then into `Balance Due` with no visible
    fee-percent multiplication, despite gating on a fee percent existing. Until
    someone confirms what that figure actually should be, there is no correct
@@ -542,10 +542,10 @@ None of AR-01..04 are built. Revisit once 1-3 above are resolved.
 | Key | Name | Disposition | Reasoning |
 |---|---|---|---|
 | AF-01 | Affiliate Activation | BLOCKED | Needs affiliate tier/tracking-id state — see schema proposal below. |
-| AF-02 | Referral Ownership Capture | MIGRATED | `src/workflows/af-02-referral-ownership-capture.mjs`. Triggers `entry.captured`/`diagnostic.paid`/`analysis.completed` (canonical mappings of GHL's `lead:new`/`analyzer:started`/`analyzer:complete` tags). Operates entirely on the *lead's own* `clients.custom_fields` (sticky first-touch attribution), so it doesn't need the missing affiliate data model. |
+| AF-02 | Referral Ownership Capture | MIGRATED | `src/workflows/af-02-referral-ownership-capture.mjs`. Triggers `entry.captured`/`diagnostic.paid`/`analysis.completed` (canonical mappings of the CRM's `lead:new`/`analyzer:started`/`analyzer:complete` tags). Operates entirely on the *lead's own* `clients.custom_fields` (sticky first-touch attribution), so it doesn't need the missing affiliate data model. |
 | AF-03A | Tier2 Auto-Unlock — Paid Outcome | BLOCKED | Trigger maps cleanly to `sale.closed` + product-path gating (no new event needed), but the actions all read/write the affiliate's own tier level + unlock date — see schema proposal below. |
 | AF-03B | Tier2 Auto-Unlock — First Recruit | BLOCKED | Same data-model gap (recruiter's tier level + direct downline count). |
-| AF-04 | Commission Accrual (Outcome-Based) | BLOCKED | Two independent blockers: (1) money — the source doc itself marks "Funding/Repair Commission Amount" as `(your calc / number field)`, i.e. explicitly unspecified even in GHL, same category as the F-07 commission gap; (2) the affiliate tier/tracking-id/balance-due/payout-status data model doesn't exist to write to even once the formula is known. Trigger would map cleanly to `sale.closed` + product-path gating (no new event needed) — that part isn't the blocker. |
+| AF-04 | Commission Accrual (Outcome-Based) | BLOCKED | Two independent blockers: (1) money — the source doc itself marks "Funding/Repair Commission Amount" as `(your calc / number field)`, i.e. explicitly unspecified even in the CRM, same category as the F-07 commission gap; (2) the affiliate tier/tracking-id/balance-due/payout-status data model doesn't exist to write to even once the formula is known. Trigger would map cleanly to `sale.closed` + product-path gating (no new event needed) — that part isn't the blocker. |
 | AF-05 | Payout Pending Ops | BLOCKED | Downstream of AF-04; nothing to route without it. |
 | AF-06 | Affiliate Reactivation | RETIRED | Already in the 23 confirmed-decommissioned list (see top of this file). |
 | AF-06C | Reactivation Cooldown (15d) | RETIRED | Its only job is removing the `affiliate:reactivation-sent` tag that AF-06 (retired) would have set — orphaned, nothing left to clean up after. |
@@ -580,31 +580,31 @@ product-path gating, no new event needed).
 Per the mode change above — logged here for Darwin to review, not gated on approval.
 
 1. **Product Path = Funding/Repair mapping** (`src/config/product-path.mjs`, used by
-   F-01/F-09 and likely more later). GHL's "Product Path" field has no direct
+   F-01/F-09 and likely more later). The CRM's "Product Path" field has no direct
    equivalent column; mapped to `clients.outcome_tier`: `FUNDING_PLUS_REPAIR` /
    `FULL_FUNDING` / `PREMIUM_STACK` = Funding path, `REPAIR_ONLY` = Repair path. This
    is a categorical/name-based mapping (Rule 4-compliant — no dollar amounts
    involved), but the exact tier-to-path assignment is my read of the schema
    comment, not a confirmed business rule.
-2. **F-02 wait duration.** GHL's own doc gives a range ("2-4 hours"), not a single
+2. **F-02 wait duration.** The CRM's own doc gives a range ("2-4 hours"), not a single
    number. Picked 3h (the midpoint) for the initial wait. Mechanical timing choice.
 3. **F-06/F-09 round-matching.** `bank_inbox` has no `funding_round_id` column, so
    "set hold_reason on the client's most recent funding round" stands in for "the
    round this bank email is actually about." Fine for a single-round-in-flight
    client; could mis-target if a client somehow has two rounds open at once.
 4. **F-07 commission/balance-due — RESOLVED 2026-08-30. Kept for the record.**
-   GHL's own steps show a straight field copy (Commission Owed = Total Approved
+   The CRM's own steps show a straight field copy (Commission Owed = Total Approved
    Amount; Balance Due = Commission Owed) with no visible fee-percent multiplication,
    despite the gate checking that a fee percent exists. Whether `total_approved_amount`
    already *is* the fee amount, or something else, was not resolvable from anything
    read for this port, so no formula was guessed at the time.
-   **The owner has since settled it and the formula no longer comes from GHL at all:**
+   **The owner has since settled it and the formula no longer comes from the CRM at all:**
    fee = confirmed approvals × the success fee percent agreed on the client's sale
    (`docs/CLOSEOUT-FEE-BASIS.md`, owner-set 2026-08-30). F-07 computes and raises the
    invoice. A round with nothing confirmed, or a sale with no agreed rate, still
    refuses with a named reason and a task — it is never billed a guessed or zero
    amount.
-5. **F-10/F-10R/POD-01B external webhooks.** Three GHL workflows call external
+5. **F-10/F-10R/POD-01B external webhooks.** Three CRM workflows call external
    systems (`provision_client_funding_inbox`, its inbound confirmation, `lookup_pod`)
    that have no adapter anywhere in this codebase and no documented API contract.
    Rather than invent adapters/endpoints for undocumented external systems, the
@@ -629,14 +629,14 @@ Per the mode change above — logged here for Darwin to review, not gated on app
    correlation column exists in the schema. Fine for one-booking-in-flight; could
    misfire with two concurrent bookings for the same client.
 10. **BC-01/BC-02 categorical→numeric mapping.** `behavior_scores.responsiveness`/
-    `friction` are numeric columns; GHL's Fast/Normal/Slow and High/Medium/Low are
+    `friction` are numeric columns; the CRM's Fast/Normal/Slow and High/Medium/Low are
     mapped to 1.0/0.5/0.0. **Known gap:** `behavior_scores` has no idempotency hook
     in the schema (no unique constraint, no jsonb column to stash an event id) —
     unlike every other handler in this port, a replayed event writes a second row.
     Low-risk (analytics only, not money/messaging/PII), documented with a test
     rather than hidden; would need a schema change (out of scope) to fix for real.
 11. **S-06 sets `custom_fields.product_path`** in addition to using `outcome_tier`
-    for gating elsewhere — a display-parity mirror of GHL's literal "Product Path"
+    for gating elsewhere — a display-parity mirror of the CRM's literal "Product Path"
     field, not a new gating mechanism.
 12. **BS-01 drip cadence — CORRECTED.** The first port read the source's bare
     "Wait" steps as a flat 4h interval, which collapsed a three-day sequence into a
@@ -686,7 +686,7 @@ Per the mode change above — logged here for Darwin to review, not gated on app
 |---|---|---|---|
 | BC-01 | Customer Responsiveness Classifier | MIGRATED | `src/workflows/bc-01-customer-responsiveness.mjs`. Trigger `round.started`; 24h/48h wait ladder against `crs_paid`/docs-cleared state, written to `behavior_scores.responsiveness`. |
 | BC-02 | Customer Friction Level Detector | MIGRATED | `src/workflows/bc-02-customer-friction.mjs`. Trigger `round.started`; classifies from current tag state (`ar:collections`/`docs:missing`/`ops:action-required`), written to `behavior_scores.friction`. |
-| BC-03 | Primary Motivation Assignment | DEFERRED | Source itself says "THIS IS FOR AI, LEAVE OFF THEN TEST LATER" — explicitly not ready even in GHL. Not built. |
+| BC-03 | Primary Motivation Assignment | DEFERRED | Source itself says "THIS IS FOR AI, LEAVE OFF THEN TEST LATER" — explicitly not ready even in the CRM. Not built. |
 
 ## ATTRIBUTION WORKFLOWS (AT-Series)
 
@@ -721,7 +721,7 @@ Per the mode change above — logged here for Darwin to review, not gated on app
 | Key | Name | Disposition | Reasoning |
 |---|---|---|---|
 | POD-01A | Lead Intake & Setter Assignment | BLOCKED | Round-robin rep assignment needs a shared rotation counter with no column to live in (`staff` table has none). See decision #15 above. |
-| S-01 | New Lead / Intake | MIGRATED | `src/workflows/s-01-new-lead-intake.mjs`. Trigger `entry.captured`. GHL-internal webhook step (POST back to GHL) dropped — dies with GHL. |
+| S-01 | New Lead / Intake | MIGRATED | `src/workflows/s-01-new-lead-intake.mjs`. Trigger `entry.captured`. CRM-internal webhook step (POST back to the CRM) dropped — dies with the CRM. |
 | S-02 | Incomplete App (Survey) | MIGRATED | `src/workflows/s-02-incomplete-survey-nudge.mjs`. Audit fix applied (2-min wait → 20 min, per "bump to 15-30 min"). |
 | S-04 | Call Booked → Move to S2 | MIGRATED | `src/workflows/s-04-call-booked.mjs`. Trigger `booking.created`. |
 | S-05 | No Show | MERGED INTO DPC-02 | Same action DPC-02's no-show branch already performs — see decision #8 above. |
@@ -785,7 +785,7 @@ Per the mode change above — logged here for Darwin to review, not gated on app
 
 | Key | Name | Disposition | Reasoning |
 |---|---|---|---|
-| C-00 | CRS Soft Pull Request | MIGRATED | `src/workflows/c-00-crs-soft-pull-request.mjs`. Trigger `diagnostic.paid`. Airtable webhook calls dropped (AX dissolution, Spec §6) — everything else ported as custom_fields writes. **FLAG (model drift):** this workflow encodes the pre-call premise itself — it requests the pull at payment time. Under 05/30 the pull is initiated on the call. Needs the 05/30 doc before it is re-pointed. |
+| C-00 | CRS Soft Pull Request | MIGRATED | `src/workflows/c-00-crs-soft-pull-request.mjs`. Trigger `diagnostic.paid`. The spreadsheet webhook calls dropped (AX dissolution, Spec §6) — everything else ported as custom_fields writes. **FLAG (model drift):** this workflow encodes the pre-call premise itself — it requests the pull at payment time. Under 05/30 the pull is initiated on the call. Needs the 05/30 doc before it is re-pointed. |
 | C-02 | Inquiry Created → Assign Inquiry Specialist | MIGRATED | `src/workflows/c-02-inquiry-created.mjs`. Trigger `analysis.completed`, gated on `payload.newInquiries`. Logs to `inquiry_log`. |
 | C-02B | Inquiry Removal Requested | MIGRATED | `src/workflows/c-02b-inquiry-removal-requested.mjs`. Trigger `deposit.paid` — Spec §4.2's named auto-trigger, ported directly. |
 | C-03 | Inquiry Removed → Resume or Hold (Fraud Alert Gate) | MIGRATED | `src/workflows/c-03-inquiry-removed-resume-or-hold.mjs`. Trigger `inquiry.removed` (exact match). |
@@ -801,4 +801,4 @@ Per the mode change above — logged here for Darwin to review, not gated on app
 | HX-02 | Lifecycle Manager | RETIRED | Same. |
 | HX-03 | Data Completeness Checks | RETIRED | Same. |
 | HX-04 | Duplicate Blocker (Receiver) | RETIRED | Same. |
-| HX-05 | GHL ↔ Airtable Reconciliation | RETIRED | Same, plus independently covered by the AX dissolution (no more Airtable to reconcile against). |
+| HX-05 | CRM ↔ spreadsheet Reconciliation | RETIRED | Same, plus independently covered by the AX dissolution (no more spreadsheet to reconcile against). |

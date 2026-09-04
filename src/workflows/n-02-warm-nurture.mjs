@@ -1,14 +1,14 @@
 // N-02 — Long-Term Warm Nurture.
-// Source: GHL workflow d7e27768-7c48-4329-80f4-f0b6a77980a1 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow d7e27768-7c48-4329-80f4-f0b6a77980a1 (ghl-crm-source-of-truth.md).
 // Same folder-name discrepancy as N-01 (see workflow-migration-table.md); ports the
 // live definition, not the [AGENT DRAFT] copy.
 //
-// Original GHL trigger was "Tag Added: nurture:warm"; replaced with funnel-depth
+// Original the CRM trigger was "Tag Added: nurture:warm"; replaced with funnel-depth
 // classification (see src/config/lead-temperature.mjs — flagged for Chris). Only
 // survey.submitted can newly put a lead into "warm" (booking.created/call.completed
 // only ever move a lead OUT of warm, into hot), so that's the only trigger needed.
 //
-// SMS copy is confirmed missing in GHL (Chris's tracking note). Wired but gated on a
+// SMS copy is confirmed missing in the CRM (Chris's tracking note). Wired but gated on a
 // template existing.
 
 import { inngest } from "./client.mjs";

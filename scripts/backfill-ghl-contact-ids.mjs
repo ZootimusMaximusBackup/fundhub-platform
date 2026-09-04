@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // One-shot backfill: every client with an email and no ghl_contact_id gets a
-// GHL contact found-or-created (src/messaging/ghl-contacts.mjs), then stored.
+// CRM contact found-or-created (src/messaging/ghl-contacts.mjs), then stored.
 //
 // REQUIRES DATABASE_URL. REQUIRES GHL_API_KEY (preferred) or GHL_RELAY_API_KEY
 // to be set — with neither set, ensureGhlContactId reports "not_configured"
@@ -11,7 +11,7 @@
 //   node scripts/backfill-ghl-contact-ids.mjs --dry-run    # same, explicit
 //   node scripts/backfill-ghl-contact-ids.mjs --write      # apply the UPDATEs
 //
-// Dry-run still calls GHL (find-or-create is not free), it just skips the
+// Dry-run still calls the CRM (find-or-create is not free), it just skips the
 // UPDATE — so a dry-run run is the accurate preview of what --write will do,
 // not a guess.
 
@@ -27,7 +27,7 @@ async function main() {
   }
   const cfg = config(process.env);
   if (!cfg.ok) {
-    console.error(`GHL API key unset: neither ${cfg.missing.join(" nor ")} is set.`);
+    console.error(`The CRM API key unset: neither ${cfg.missing.join(" nor ")} is set.`);
     console.error("Set GHL_API_KEY (preferred) or GHL_RELAY_API_KEY, then re-run.");
     process.exit(1);
   }

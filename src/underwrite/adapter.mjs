@@ -94,7 +94,7 @@ import { resolveBusinessAges } from "./business-funding.mjs";
 export const BUREAUS = Object.freeze(["experian", "equifax", "transunion"]);
 
 /* The three inquiry columns, by bureau. These are the ONLY per-bureau measures
-   fundhub carries besides the scores. Names are the live GHL custom fields
+   fundhub carries besides the scores. Names are the live CRM custom fields
    recorded in db/schema/meta/custom-field-map.json. */
 const INQUIRY_FIELDS = Object.freeze({
   experian: "crs_inquiries_ex",

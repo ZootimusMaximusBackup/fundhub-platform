@@ -333,7 +333,7 @@ describe("mailgun provider", () => {
 });
 
 // ---------------------------------------------------------------------------
-// GHL relay
+// CRM relay
 // ---------------------------------------------------------------------------
 
 describe("ghl relay provider", () => {
@@ -552,7 +552,7 @@ describe("twilio provider", () => {
     assert.doesNotMatch(f.calls[0].init.body, /workflow%3AT%3Aevt2|providerRef/i);
   });
 
-  test("refuses a GHL contact id where a phone number belongs", async () => {
+  test("refuses a CRM contact id where a phone number belongs", async () => {
     const f = fakeFetch({ status: 201, body: { sid: "SM1" } });
     const r = await twilio.send({ ...twMsg, to: "ghlContact123" }, { fetchImpl: f, env: TW_ENV });
     assert.strictEqual(r.status, "rejected");
@@ -705,7 +705,7 @@ describe("provider contract, structurally", () => {
   });
 
   test("transmitting providers reach the network through the shared helper", () => {
-    // GHL is a no-op stub (owner 2026-08-14) — it must NOT call the network.
+    // CRM is a no-op stub (owner 2026-08-14) — it must NOT call the network.
     for (const f of ["mailgun.mjs", "resend.mjs", "twilio.mjs"]) {
       const code = codeOf(f);
       assert.ok(!/\bfetch\s*\(/.test(code), `${f} must call postJson, not fetch directly`);

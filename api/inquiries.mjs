@@ -11,7 +11,7 @@
 // The queue read stays where it was: /api/read/inquiries still serves it.
 //
 // NOT NAMED /api/inquiry. That path already exists and proxies the external
-// Airtable runtime; this one writes the local inquiry_log table. Two different
+// spreadsheet runtime; this one writes the local inquiry_log table. Two different
 // systems, two different paths, no ambiguity about which one a call hit.
 //
 // *** THE POST BRANCH REQUIRES AN OPEN SHIFT. THE GET BRANCH DOES NOT. ***

@@ -59,7 +59,7 @@
        staff still send contracts from the client flow; they do not open the
        screen that creates, uploads or changes the wording. */
     "contracts.html",
-    /* lenders.html — funding advisor maintenance surface for the seven Airtable
+    /* lenders.html — funding advisor maintenance surface for the seven spreadsheet
        lender product tables (+ bureau mismatch review). ROLE_SETS.LENDERS at
        the API — owner, admin, funding_advisor — narrowed from ROLE_SETS.STAFF
        by owner decision 2026-08-17: the Lenders list is the funding advisor's

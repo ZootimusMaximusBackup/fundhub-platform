@@ -12,7 +12,7 @@
 // concurrent bookings.
 //
 // Stage mapping (also logged): db/seed/002_pipelines.sql's sales pipeline has no
-// distinct "no_show" stage (GHL's "S4 No Show") — mapped to the closest existing
+// distinct "no_show" stage (the CRM's "S4 No Show") — mapped to the closest existing
 // stage, "lost", rather than inventing a new seed row. Also folds in S-05 (No Show)
 // and merges DPC-04's decision-related actions where they overlap.
 

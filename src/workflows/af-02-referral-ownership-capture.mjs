@@ -1,5 +1,5 @@
 // AF-02 — Referral Ownership Capture.
-// Source: GHL workflow 0c561c0b-6216-4068-844d-35f307285ca6 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow 0c561c0b-6216-4068-844d-35f307285ca6 (ghl-crm-source-of-truth.md).
 //
 // Original triggers were "Tag Added: lead:new / analyzer:started / analyzer:complete"
 // — all three map cleanly onto canonical events already in canonical.mjs:
@@ -9,7 +9,7 @@
 // This one operates entirely on the LEAD's own client record (clients.custom_fields)
 // — "Affiliate Tier1/Tier2 Owner" here just means "which affiliate referred this
 // lead", captured from inbound referral params (a1/a2) on the triggering event's
-// payload. Sticky: only ever set once, never overwritten (GHL's own rule) — enforced
+// payload. Sticky: only ever set once, never overwritten (the CRM's own rule) — enforced
 // by gating on the field currently being empty before writing.
 //
 // Also writes affiliate_referrals via attribute() when a1 matches a live tracking
@@ -46,7 +46,7 @@ export async function handle({ event, db, step }) {
   await step.run("set-ownership", () => mergeCustomFields(db, clientId, patch));
 
   // Also write affiliate_referrals so portal REFERRED / CONVERTED tiles grow.
-  // custom_fields stay as the sticky first-touch mirror (GHL parity).
+  // custom_fields stay as the sticky first-touch mirror (the CRM parity).
   let referral = null;
   if (a1 && patch.affiliate_tier1_owner) {
     referral = await step.run("attribute-direct", async () => {

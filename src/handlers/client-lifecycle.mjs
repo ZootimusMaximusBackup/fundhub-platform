@@ -1,7 +1,7 @@
 // Client-lifecycle handlers — Master Rebuild Spec Phase 2 (the "reactions" layer).
 //
 // Adapters emit canonical events; THESE react by writing domain state to Postgres.
-// This is the platform replacement for what GHL/Airtable did: keep a client row,
+// This is the platform replacement for what the old CRM and spreadsheet did: keep a client row,
 // record payments, store CRS results, stamp the outcome. Everything here is
 // IDEMPOTENT (Rule 9): the bus dedupes normal deliveries, and replay() re-drives
 // events — so a handler that runs twice must not double-write. We lean on:
@@ -42,7 +42,7 @@ export function splitName(name) {
   return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
 }
 
-/** Stamp a visible warning on the client when GHL linkage is missing. */
+/** Stamp a visible warning on the client when the CRM linkage is missing. */
 async function markGhlMissing(db, clientId, reason) {
   try {
     await db.query(
@@ -62,7 +62,7 @@ async function markGhlMissing(db, clientId, reason) {
 }
 
 /**
- * Best-effort GHL contact sync for a just-created client.
+ * Best-effort the CRM contact sync for a just-created client.
  *
  * Decision (2026-08-04): never leave ghl_contact_id null silently.
  *   1. When GHL_API_KEY is set — find-or-create regardless of sms routing
@@ -79,7 +79,7 @@ async function syncGhlContact(db, { clientId, orgId, email, phone, firstName, la
   const env = opts.env || process.env;
   if (!email && !phone) {
     console.warn(
-      `[client-lifecycle] client ${clientId}: no email/phone — cannot link a GHL contact`
+      `[client-lifecycle] client ${clientId}: no email/phone — cannot link a CRM contact`
     );
     await markGhlMissing(db, clientId, "no_identifier");
     return;
@@ -88,7 +88,7 @@ async function syncGhlContact(db, { clientId, orgId, email, phone, firstName, la
   try {
     /* THE FENCE COMES FIRST. It used to sit below the `cfg.ok` branch, which
        returns whenever GHL_API_KEY is set — so in production, where the key is
-       set, the dry-run branch was unreachable and the sync called GoHighLevel
+       set, the dry-run branch was unreachable and the sync called the CRM
        no matter what the flag said. Order was the whole bug. */
     if (adaptersBlocked(env)) {
       const placeholder = `dry-ghl-${String(clientId).replace(/-/g, "").slice(0, 12)}`;
@@ -102,7 +102,7 @@ async function syncGhlContact(db, { clientId, orgId, email, phone, firstName, la
       );
       console.warn(
         `[client-lifecycle] client ${clientId}: ADAPTERS_DRY_RUN fence is up — ` +
-        `stamped placeholder ${placeholder} and did not call GoHighLevel`
+        `stamped placeholder ${placeholder} and did not call the CRM`
       );
       return;
     }
@@ -116,7 +116,7 @@ async function syncGhlContact(db, { clientId, orgId, email, phone, firstName, la
       );
       if (result.ok) return;
       console.warn(
-        `[client-lifecycle] client ${clientId}: GHL link failed (${result.reason}). ` +
+        `[client-lifecycle] client ${clientId}: the CRM link failed (${result.reason}). ` +
         `SMS via ghl_relay will not work until this is fixed.`
       );
       await markGhlMissing(db, clientId, result.reason);
@@ -125,12 +125,12 @@ async function syncGhlContact(db, { clientId, orgId, email, phone, firstName, la
 
     console.warn(
       `[client-lifecycle] client ${clientId}: GHL_API_KEY unset — ghl_contact_id left null. ` +
-      `This client cannot receive SMS through the GHL relay.`
+      `This client cannot receive SMS through the CRM relay.`
     );
     await markGhlMissing(db, clientId, "not_configured");
   } catch (err) {
     console.warn(
-      `[client-lifecycle] client ${clientId}: GHL sync threw (${String(err && err.message || err).slice(0, 120)})`
+      `[client-lifecycle] client ${clientId}: the CRM sync threw (${String(err && err.message || err).slice(0, 120)})`
     );
     await markGhlMissing(db, clientId, "exception");
   }
@@ -139,7 +139,7 @@ async function syncGhlContact(db, { clientId, orgId, email, phone, firstName, la
 // Resolve the platform client for an event: prefer an explicit clientId on the
 // event, else find-or-create by (org, email). Returns a client uuid or null.
 //
-// `opts` ({ fetchImpl, env }) is the GHL contact-sync test seam — every real
+// `opts` ({ fetchImpl, env }) is the CRM contact-sync test seam — every real
 // call site omits it and gets globalThis.fetch / process.env, same default as
 // every provider in src/messaging/providers/.
 async function backfillGhlIfMissing(db, clientId, orgId, p, opts = {}) {
@@ -186,7 +186,7 @@ export async function resolveClient(db, event, opts = {}) {
   const orgId = event.orgId;
   const p = event.payload || {};
   if (event.clientId) {
-    // Explicit id still needs a GHL link when missing — lead capture often
+    // Explicit id still needs a CRM link when missing — lead capture often
     // creates the row first, then emits with clientId set.
     await patchClientContact(db, event.clientId, p);
     return backfillGhlIfMissing(db, event.clientId, orgId, p, opts);
@@ -200,7 +200,7 @@ export async function resolveClient(db, event, opts = {}) {
   );
   if (found.rows[0]) {
     await patchClientContact(db, found.rows[0].id, p);
-    // Existing row with a null GHL id is the silent-null hazard — backfill.
+    // Existing row with a null the CRM id is the silent-null hazard — backfill.
     return backfillGhlIfMissing(db, found.rows[0].id, orgId, p, opts);
   }
 
@@ -332,7 +332,7 @@ export async function onPaymentFailed(event, db) {
 }
 
 // diagnostic.paid ($32) / deposit.paid / sale.closed — stamp a flag on the client.
-// custom_fields flags mirror the GHL fields the live system flips (crs_paid etc).
+// custom_fields flags mirror the CRM fields the live system flips (crs_paid etc).
 export async function onDiagnosticPaid(event, db) {
   const clientId = await resolveClient(db, event);
   if (!clientId) return;
@@ -451,7 +451,7 @@ export async function onDecisionRendered(event, db) {
     // bug" note in workflow-migration-table.md), so the AI-SET-03 and AI-SET-04 SMS copy —
     // "you've been pre-approved for {{contact.analyzer_prequal_amount}} in capital" — merged
     // an always-empty field. Fixed here rather than by repointing the templates at
-    // total_funding_estimate: db/schema/005 and the GHL custom-field map both carry
+    // total_funding_estimate: db/schema/005 and the CRM custom-field map both carry
     // analyzer_prequal_amount as its own MONETORY field, and that ported copy is already
     // flagged for a rewrite pass — changing its merge tag now would collide with that.
     //

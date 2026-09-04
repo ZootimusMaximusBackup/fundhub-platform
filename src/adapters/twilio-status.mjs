@@ -1,4 +1,4 @@
-// Twilio delivery-status callback adapter — GHL cutover Ticket 2.
+// Twilio delivery-status callback adapter — the CRM cutover Ticket 2.
 //
 // This is the RETURN PATH, and it is a different webhook from the inbound SMS
 // one in twilio.mjs. Twilio POSTs here after it has tried to deliver a message

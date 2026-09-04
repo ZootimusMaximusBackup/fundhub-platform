@@ -366,12 +366,12 @@ restricts marketing texts by hour, with per-message penalties. The system uses
 
 ## 4. Twilio — written, then withdrawn
 
-Owner direction: *"We're gonna be using Twilio. GHL is just a patch."*
+Owner direction: *"We're gonna be using Twilio. The CRM is just a patch."*
 
 A migration was written to repoint SMS at Twilio and **then withdrawn**, because
 acting on it surfaced something the first pass had missed: **A2P 10DLC**. Three
 separate places in this repository already record that the carrier registration
-lives on the GHL side and that Twilio ships `ENABLED = false` waiting for it.
+lives on the CRM side and that Twilio ships `ENABLED = false` waiting for it.
 Unregistered A2P traffic is not rejected loudly — carriers filter it silently.
 A migration runs unattended on deploy, so encoding "the registration has
 cleared" would move live customer texting onto an unverified route with nobody
@@ -381,7 +381,7 @@ present.
 one-line switch, the three environment variables it needs, and the code change
 that must go with it.
 
-**The underlying problem is real and is NOT fixed.** The GHL relay addresses a
+**The underlying problem is real and is NOT fixed.** The CRM relay addresses a
 text by `clients.ghl_contact_id`, which is a legacy import key and is NULL for
 anybody created in this platform since the cutover. Those customers cannot
 receive a text reply. The query that measures it is in 118's header.

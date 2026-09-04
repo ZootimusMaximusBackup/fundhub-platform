@@ -1,5 +1,5 @@
 // DS-02 — DIY Letters.
-// Source: GHL workflow (GHL-System-Map.md DOWNSELL WORKFLOWS section).
+// Source: the CRM workflow (GHL-System-Map.md DOWNSELL WORKFLOWS section).
 //
 // HARD RULE 1 — the reason this file exists in this exact shape: dispute letters
 // fire ONLY on the not-qualified downsell path, never on the funding route. The

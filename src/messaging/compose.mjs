@@ -97,7 +97,7 @@ export const MAX_BODY_LENGTH = 4000;
 /* Which client column addresses a channel. The same map as
    src/workflows/messaging.mjs's ADDRESS_BY_CHANNEL and for the same reason: the
    destination is recorded in the terms of the CHANNEL, and a provider that
-   addresses by something else (the GHL relay wants a contact id) resolves it
+   addresses by something else (the CRM relay wants a contact id) resolves it
    live at dispatch. */
 const ADDRESS_BY_CHANNEL = { email: "email", sms: "phone" };
 

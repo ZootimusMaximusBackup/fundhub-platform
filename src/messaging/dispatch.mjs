@@ -272,7 +272,7 @@ async function routeFor(db, orgId, channel) {
 /* addressFor — the destination, read off the client record.
 
    Which column depends on the provider, not the channel: Mailgun wants an email
-   address, the GHL relay wants a contact id. Asking the provider (via
+   address, the CRM relay wants a contact id. Asking the provider (via
    ADDRESS_FIELD) rather than branching on its name here means adding a provider
    does not mean editing this file.
 
@@ -290,7 +290,7 @@ const NATURAL_COLUMN = { email: "email", sms: "phone", voice: "phone" };
    ADDRESS_FIELD = "natural" and gets the channel's own column instead. Added at
    the five-branch merge for `internal` and `memory`; every vendor provider still
    names its column outright, because Mailgun wanting an email address and the
-   GHL relay wanting a contact id is exactly the thing ADDRESS_FIELD records. */
+   The CRM relay wanting a contact id is exactly the thing ADDRESS_FIELD records. */
 const NATURAL = "natural";
 
 /** The client column this provider reads for this channel, or null if there
@@ -311,7 +311,7 @@ async function addressFor(db, message, providerName) {
      wherever the client record points now.
 
      Only when the provider addresses by the channel's natural column, though.
-     The GHL relay addresses a contact id, which is not a destination the queue
+     The CRM relay addresses a contact id, which is not a destination the queue
      could have recorded in channel terms, so that resolves live. And rows queued
      before 111 have no recorded address at all — they fall through to the same
      lookup the dispatcher did before this column existed. */
