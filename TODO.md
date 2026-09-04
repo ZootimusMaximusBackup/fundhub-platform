@@ -1,5 +1,67 @@
 # TODO
 
+## Tomorrow 9/4 — read this first
+
+The 2026-09-03 fix batch shipped overnight. 30 of 37 walkthrough defects fixed,
+your real Capital Academy and Capital Blueprint contracts seeded, Blueprint
+repriced to $5,000. All live and verified in the production database.
+
+**Do not send a funding-deposit or credit-repair contract.** Those two still carry
+"THIS IS NOT THE REAL AGREEMENT TEXT. DO NOT SEND THIS." on purpose, because no
+text exists for them. Academy and Blueprint are safe.
+
+### Yours, in the order they unblock things
+
+1. **Two contract texts.** FUNDING-AGREEMENT ($3,000 deposit) and
+   CREDIT-REPAIR-AGREEMENT ($1,000). Neither is in the packet you supplied —
+   Academy, Blueprint and White Label are, and those are handled. Drop them in
+   `docs/contracts/source-2026-08-28/` and an agent seeds them.
+2. **Two ClickFunnels questions**, in the CF editor. "Annual Business Revenue"
+   saves into nothing at all, so that answer never reaches us and cannot be
+   recovered. "Can You Verify Revenue?" is saving into the other question's slot.
+   Part B of `docs/clickfunnels/OWNER-CF-SETUP-CHECKLIST.md`.
+3. **A Bland phone number.** The account owns none, so every call dials from a
+   shared pool line — the likeliest reason a call rings and nobody speaks.
+4. **21 ad names.** Ids in `docs/workflows/fix-batch-2026-09-03-remaining.md` §1.2.
+   A check now fails while any is blank, so they cannot quietly stay unnamed.
+5. **Turn off the Gmail "FS Auto" filter** before the re-walk, or it hides Fundhub
+   mail from your Inbox and the walk lies to you again.
+6. **Read the new Josh script** before it goes near a phone.
+
+### Four questions, one line each
+
+- Booking confirmations: send-now for the three booking messages only
+  (recommended), or run the sweeper every minute for everything?
+- What counts as a confirmed booking — the Google calendar Yes, the YES text back,
+  or both? Nothing moves Booked → Confirmed today.
+- Should "Generate Apps" create application rows, or is the SOP wrong?
+- Capital Academy is also $5,000, so the education ladder now has two rungs at one
+  price and "step down on a no" has nothing to step down to. Keep both as a choice
+  of course, make Blueprint a bridge into Academy, or reprice?
+
+### Known and not fixed
+
+- **No lender in the book records a minimum credit score.** All 313 rows checked.
+  The matcher now reads the credit file but screens nobody until that data exists.
+- **No personal lenders at all** — 196 + 117 business cards, zero personal, while
+  the estimate promises $199,350 of personal money.
+- **Bureau rotation is inert** — 310 of 313 lenders have a blank bureaus_pulled.
+- **The DIY letter pack fix was deliberately not shipped.** It turns 7 working
+  letters into 0. Measurement recorded in `src/metro2/diy/deliver.mjs`.
+- **Nothing writes an advisor assignment**, so the portal's advisor line will
+  usually show its empty state honestly rather than a name.
+
+### Two honest gaps in what shipped
+
+- **No browser touched the live site.** Every screen fix is unproven until the
+  re-walk. Seven agents shared one checkout, so browser proof was skipped on purpose.
+- **The database test phase never ran** — no DATABASE_URL, 693 tests skipped. The
+  8,594 passing are the unit phase only.
+
+Full detail: `docs/workflows/fix-batch-2026-09-03-remaining.md`.
+
+---
+
 ## Chris — launch list, 2026-09-03 (launch Mon 9/7; financing approves Fri 9/4)
 
 ### Today 9/3
