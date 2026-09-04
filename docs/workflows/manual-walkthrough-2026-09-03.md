@@ -752,3 +752,48 @@ CLAUDE.md section 7: credit/funding-outcome messaging to a consumer.
 Check every section-07 script line against each of the six ladder offers, not
 just this one — if the wrap is hardcoded to the funding path, the earlier
 sections likely are too.
+
+**Send agreement + pay link · WORKS.** Sim Five-Academy. Delivered by text,
+and presumed by email too. Contract auto-matched correctly: the wording panel
+pre-selected **"Funding Mastery Program Agreement"** with the note "Matched
+Funding Mastery Program Agreement to this offer. Send when ready." The offer
+chosen on the ladder does drive the contract template. Good.
+
+**F24 · THE BUTTON GIVES NO FEEDBACK, SO IT GETS PRESSED REPEATEDLY AND THE
+CLIENT IS SPAMMED. Severity: HIGH. This also explains the earlier duplicate
+emails.**
+Chris, verbatim: "when I click it, it should show that it's been clicked, bro.
+And it should have, like, a reset of five seconds or something, or like three
+seconds... I don't know it's been sent other than the little bottom thing, but
+I press it like three or four times, and then all of a sudden the client gets
+like four or five text messages, four or five emails, because I can't really
+tell."
+
+So the two 6:24 PM messages to +sim-05 (recorded earlier, then set aside when
+F19 was retracted) were REAL duplicates after all — not a Gmail threading
+artifact and not a workflow firing twice. The cause is a send button with no
+pressed state, no disabled state, and no cooldown. Every extra press is another
+real text and another real email to a customer.
+
+Required fix on every send control in the deck:
+- immediate visual pressed/sending state on click
+- disable the button while the request is in flight
+- a cooldown of roughly 3-5 seconds after success (owner's number)
+- a persistent "Sent at HH:MM" line, not just a toast that vanishes
+
+This is a customer-experience and cost problem, and for SMS it is also a
+consent/frequency question. Applies to Send soft pull, Send agreement + pay
+link, Send contract, Send this wording, Send deliverables package now, and
+Send e-book email.
+
+**F25 · Too many live-action buttons after the offer is already chosen.**
+Chris: "It's all kind of confusing as fuck, though, because we've already
+chosen the offer. So it's just extra buttons that will throw people off.
+Obviously, there's a black label on it. That's not enough."
+
+Section 07 presents Send agreement + pay link, Invoice this client, Send
+contract, a contract wording form, Send deliverables package now, a Repair
+referral checkbox, and Log disposition and close — all at once, with only the
+black fill marking the intended one. Once the ladder selection is made, the
+screen should lead with the single correct action for that offer and demote or
+hide the rest. Owner has judged the current emphasis insufficient.
