@@ -375,3 +375,39 @@ the CRM." The ADAPTERS_DRY_RUN fence skipping the GoHighLevel call is expected
 and correct, not a gap. Fundhub's own CRM is the system of record. Do not
 raise GoHighLevel as a finding again, and do not chase anything that "should
 have appeared" there.
+
+**F15 · TWO DIFFERENT FUNDING NUMBERS FOR THE SAME CLIENT. Severity: HIGHEST.**
+Sim Five-Academy, same credit file, same minute:
+
+| Source | Funding figure |
+|---|---|
+| Tier engine write (push-credit output, client row `total_funding_estimate`) | **$199,350** |
+| Present deck "ENGINE DATA" line, shown on the sales call | **$939,500** |
+
+4.7x apart. The deck figure is the one a closer reads to a client.
+Deck line in full: `FULL_FUNDING · $939,500 · 762/758/770 · afterFix — · beliefs 0/7`.
+Scores match the pushed file exactly (762/758/770), so both numbers are being
+computed from the SAME credit data and disagreeing.
+
+Note the deck's own comment at public/app/present.js:917-920 says the
+pre-approval figure "comes from state.engine, which the SERVER computes from
+business age" — so the deck recomputes rather than reading the stored estimate.
+Two independent calculations of the same quantity, no reconciliation.
+push-credit wrote businessAgeMonths: 72 for the academy profile, which is
+likely why the deck's number is far larger.
+
+This is a money figure quoted to a customer. Until it is resolved, no funding
+estimate shown on the deck can be trusted.
+
+Do NOT fix mid-walk. Next steps after: find the server endpoint behind the deck
+payload, diff its estimate math against src/finance/crs-tier.mjs, and decide
+which one is authoritative. One of them must be deleted, not "kept in sync".
+
+**F16 · Status line contradicts the result.** Same panel reads
+`pull: not started` while also reading `tier: FULL_FUNDING` and showing full
+engine data. The pull-status indicator is not updated by the path that stamps
+the tier. Minor next to F15 but it is on the same screen.
+
+**Also confirmed working:** a hard refresh DID populate the deck — consent: on
+file, paid $32.00: sent, scores correct. The earlier "not on this file yet" was
+a stale page, not a defect. Retracted as a finding.
