@@ -223,7 +223,7 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
    failed read and a non-repair client all keep the card shut. The server refuses
    the signature on the same rule (api/consent/capture.mjs) — this is the screen
    half of it, not the whole gate. */
-body.no-repair-path #dispute-auth-card{display:none !important}
+body.no-dispute-consent #dispute-auth-card{display:none !important}
 .doc-need.covered{border-color:var(--green-line)}
 .doc-need.covered .dn-age{color:var(--green)}
 
@@ -380,7 +380,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
 </style>
 <script defer src="shell.js"></script>
 </head>
-<body class="no-funding no-docs no-own no-funding-door no-inquiry-door no-bureau-door no-upload-doors no-repair-path">
+<body class="no-funding no-docs no-own no-funding-door no-inquiry-door no-bureau-door no-upload-doors no-dispute-consent">
 <div class="shell">
 
   <header class="topbar">
@@ -1905,11 +1905,19 @@ document.addEventListener("DOMContentLoaded", async function () {
       stage = data.stage || null;
       paintStage();
       setAdvisorFromFile(data.advisor || null);
-      /* THE DISPUTE CARD OPENS ONLY FOR A REPAIR CLIENT (F35). Absent or false
-         keeps it shut, which is why the test is `=== true` and not truthiness:
-         an older deploy of this endpoint answers with no such field, and a
-         missing answer must not open a consent form. */
-      document.body.classList.toggle("no-repair-path", data.repair_path !== true);
+      /* THE DISPUTE CARD OPENS FOR REPAIR AND FOR THE FUNDING OFFER, AND FOR
+         NOBODY ELSE (F35, owner-set 2026-09-03). Absent or false keeps it shut,
+         which is why the test is `!== true` and not truthiness: an older deploy
+         of this endpoint answers with no such field, and a missing answer must
+         not open a consent form.
+
+         IT READS `dispute_consent`, NOT `repair_path`. The two are different
+         questions and they disagree for every funding customer: a funding client
+         is not on the repair path and still has dispute letters in their pack.
+         The server decides which is which — src/consent/dispute-consent.mjs —
+         and api/consent/capture.mjs refuses a signature by the same rule, so
+         this class only hides a form that would be refused anyway. */
+      document.body.classList.toggle("no-dispute-consent", data.dispute_consent !== true);
       var note = document.getElementById("doc-agent-note");
       if (note) {
         var msg = data.doc_agent_message;

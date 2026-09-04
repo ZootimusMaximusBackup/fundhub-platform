@@ -63,7 +63,7 @@ import { db } from "../../src/db.mjs";
 import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
 import { isUuid, requireRole, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { disclosureFor } from "../../src/consent/disclosures.mjs";
-import { onRepairPath } from "../../src/repair/on-repair-path.mjs";
+import { mayAuthorizeDisputes } from "../../src/consent/dispute-consent.mjs";
 import { signSoftPullApproveUrl } from "../../src/consent/approve-token.mjs";
 import { secretFromEnv } from "../../src/documents/signed-url.mjs";
 import { readIdentity } from "../../src/pii/index.mjs";
@@ -368,14 +368,28 @@ async function handlePost(req, res, principal, orgId) {
      authorization given on a call or on paper: that is a person exercising
      judgment about a file they are looking at, and the same set of roles already
      decides whether to order the pull. What is closed is the portal handing the
-     form to somebody who never bought repair. */
+     form to somebody who never bought repair.
+
+     WIDENED ONCE, ON THE OWNER'S OWN WORDS (2026-09-03): "It's only for repair
+     and for the funding offer. If they're getting deliverables, meaning
+     e-products and courses, they don't need to sign for shit." The first pass at
+     this gate asked only ../../src/repair/on-repair-path.mjs, so a customer who
+     bought FUNDING was refused an authorization for letters their own pack
+     contains. src/consent/dispute-consent.mjs is the owner's rule whole: repair
+     OR the funding offer, by ENTITLEMENT — never by outcome tier, in either
+     direction. The tier is stamped by a real credit pull on course buyers too,
+     so a funding tier and a REPAIR_ONLY tier BOTH put the form straight back in
+     front of the Academy buyer this finding was raised on. That is not
+     hypothetical: reaching REPAIR_ONLY through onRepairPath() is the leak the
+     second pass at this fix shipped with, and src/consent/dispute-consent.mjs
+     no longer calls it. */
   if (kind === "dispute_authorization" && principal.kind === "client") {
-    const allowed = await onRepairPath(db, { orgId, clientId });
+    const allowed = await mayAuthorizeDisputes(db, { orgId, clientId });
     if (!allowed) {
       return res.status(403).json({
         ok: false,
         error: "Dispute letters are not part of what you bought, so there is nothing here to authorize.",
-        code: "not_on_repair_path"
+        code: "not_on_dispute_path"
       });
     }
   }

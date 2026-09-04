@@ -553,3 +553,30 @@ test("F41 — an empty pack sends nothing and says why", async () => {
   assert.deepEqual(db.tagWrites, [], "no tag over an empty pack");
   assert.deepEqual(db._documents, [], "no document row over an empty pack");
 });
+
+/* ── F48: the pay-link text says who it is from and what it is for ────────────
+ *
+ * Received 2026-09-03: "Hi Sim, Fundhub Capital Academy: pay $5,000 <link>".
+ * The owner's verdict on his own product was that it reads like spam. It is one
+ * message either way — this is about what it says, not how many go out.
+ */
+test("F48: the pay-link text names the sender, the offer, the call and the way out", async () => {
+  const { payLinkSmsBody } = await import("./closer-deck.mjs");
+  const body = payLinkSmsBody({
+    firstName: "Sim",
+    description: "Capital Academy",
+    amount: "$5,000",
+    checkoutUrl: "https://pay.example.com/abc123"
+  });
+  assert.match(body, /Hi Sim/);
+  assert.match(body, /it's Fundhub/);
+  assert.match(body, /Capital Academy/);
+  assert.match(body, /\$5,000/);
+  assert.match(body, /https:\/\/pay\.example\.com\/abc123/);
+  assert.match(body, /from your call/);
+  assert.match(body, /Reply here/);
+  // The shipped opt-out line, exactly as every other text carries it.
+  assert.match(body, /Reply STOP to opt out\./);
+  // And the shape the owner called slop is gone.
+  assert.doesNotMatch(body, /Fundhub Capital Academy: pay/);
+});

@@ -348,6 +348,27 @@ export function pgFake(seed = {}) {
         const n = events.filter((e) => e.client_id === params[0] && e.name === "booking.created").length;
         return { rows: [{ n }] };
       }
+      /* s-nobook-chase hasBooked — client id OR the email/phone carried in a
+         historical event whose client_id is null. Mirrors the SQL exactly:
+         same company, last-ten-digits phone compare, case-insensitive email. */
+      if (/WITH me AS \(SELECT org_id, email, phone FROM clients/.test(sql)) {
+        const clientId = params[0];
+        const me = clients.find((c) => c.id === clientId);
+        if (!me) return { rows: [] };
+        const digits = (s) => String(s || "").replace(/\D/g, "");
+        const myPhone = digits(me.phone);
+        const hit = events.some((e) => {
+          if (e.name !== "booking.created") return false;
+          if (e.org_id && me.org_id && e.org_id !== me.org_id) return false;
+          if (e.client_id && e.client_id === clientId) return true;
+          const p = e.payload || {};
+          if (me.email && p.email
+            && String(p.email).toLowerCase() === String(me.email).toLowerCase()) return true;
+          if (myPhone.length >= 10 && digits(p.phone).slice(-10) === myPhone.slice(-10)) return true;
+          return false;
+        });
+        return { rows: hit ? [{ booked: 1 }] : [] };
+      }
       if (/SELECT DISTINCT name FROM events/.test(sql)) {
         const [clientId, names] = params;
         return { rows: events.filter((e) => e.client_id === clientId && names.includes(e.name)).map((e) => ({ name: e.name })) };

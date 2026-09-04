@@ -687,6 +687,27 @@ function paymentPurpose(offer) {
   return offer.paymentPurpose || "custom";
 }
 
+/* F48, 2026-09-03. What arrived on the customer's phone was
+ * "Hi Sim, Fundhub Capital Academy: pay $5,000 <link>" — no person, no reason,
+ * no reference to the call it came out of. Read cold, beside a dollar amount
+ * and a payment link, that is indistinguishable from a scam, which is what the
+ * owner said when he received six copies of it.
+ *
+ * So the text now says who it is from, which conversation it belongs to, and
+ * what to do if they are not ready — and it carries the same opt-out line every
+ * other text in the system carries, word for word. Same single message, same
+ * link, same amount: this changes what it says, not how often it is sent. The
+ * button that sends it belongs to another lane and is untouched here.
+ */
+export function payLinkSmsBody({ firstName, description, amount, checkoutUrl }) {
+  return (
+    `Hi ${firstName}, it's Fundhub. Here's the ${description} payment link ` +
+    `from your call — ${amount}: ${checkoutUrl}\n` +
+    `Questions before you pay? Reply here and your advisor will answer. ` +
+    `Reply STOP to opt out.`
+  );
+}
+
 export async function sendDeckPayLink(db, {
   orgId, clientId, staffId, staffRole = null, offerKey,
   saleMotion = null, checkoutBaseUrl, env = process.env
@@ -763,7 +784,9 @@ export async function sendDeckPayLink(db, {
       staffId,
       clientId,
       channel: "sms",
-      body: `Hi ${firstName}, Fundhub ${description}: pay ${amount} ${link.checkout_url}`,
+      body: payLinkSmsBody({
+        firstName, description, amount, checkoutUrl: link.checkout_url
+      }),
       idempotencyKey: `pay-link-sms:${link.id}`
     }));
   } catch {

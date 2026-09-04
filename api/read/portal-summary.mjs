@@ -33,6 +33,7 @@ import {
   prequalFromCustomFields
 } from "../../src/http/portal-prequal.mjs";
 import { onRepairPath } from "../../src/repair/on-repair-path.mjs";
+import { mayAuthorizeDisputes } from "../../src/consent/dispute-consent.mjs";
 
 export default async function handler(req, res) {
   if (req.method && req.method !== "GET") {
@@ -210,6 +211,22 @@ export default async function handler(req, res) {
        field the screen does not need. The repair answer is a boolean either way. */
     const repairPath = await onRepairPath(db, { orgId, clientId });
 
+    /* AND WHETHER THEY MAY BE ASKED TO SIGN, which is a DIFFERENT question from
+       the one above, and the owner's own words for it (2026-09-03): "It's only
+       for repair and for the funding offer. If they're getting deliverables,
+       meaning e-products and courses, they don't need to sign for shit."
+
+       DIFFERENT, NOT WIDER, AND IT IS NOT `repairPath` PLUS SOMETHING. It is
+       wider on one side — a funding customer is not a repair client and their
+       letter pack still contains dispute work, so gating on `repair_path` alone
+       left them unable to authorize the letters we owe them. It is NARROWER on
+       the other — `repair_path` says yes on an outcome_tier of REPAIR_ONLY, and
+       that tier is stamped by a real credit pull on course buyers too, so
+       feeding this answer in re-opened F35 for exactly the buyer it was raised
+       on. src/consent/dispute-consent.mjs therefore reads the two ENTITLEMENTS
+       and no tier, and is asked on its own rather than handed `repairPath`. */
+    const disputeConsent = await mayAuthorizeDisputes(db, { orgId, clientId });
+
     return res.status(200).json(redact({
       ok: true,
       prequal_amount: prequalAmount,
@@ -224,6 +241,10 @@ export default async function handler(req, res) {
       // src/repair/on-repair-path.mjs, and the server applies the same one when
       // the signature is actually posted (api/consent/capture.mjs).
       repair_path: repairPath,
+      // Whether the dispute-letter authorization card belongs on this screen at
+      // all. Separate from repair_path on purpose: they are different questions
+      // and they disagree for every funding customer. The card reads THIS one.
+      dispute_consent: disputeConsent,
       advisor,
       stage: portalStage({
         softPullComplete,
