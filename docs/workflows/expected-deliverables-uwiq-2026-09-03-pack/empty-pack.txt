@@ -1,0 +1,34 @@
+REPAIR PACK — what "Send deliverables package now" on the Present deck builds for Sim Five-Academy
+Client id 823c850e-deee-4022-bf80-27ec23f77915 · stanbridgejchris+sim-05@gmail.com · tier FULL_FUNDING
+Built 2026-09-04T03:05:10.661Z with src/underwrite/letter-pack.mjs buildLetterPack({ pack: "repair" }), no database.
+
+FILES PRODUCED: 0
+reason: empty_pack
+deliverableSkip: not_funding   (the four analysis reports are skipped on the repair pack)
+summarySkip: null
+complaintSkip: no_dispute_letters
+engine outcome: FULL_FUNDING (Approved for Funding)
+
+WHY IT IS EMPTY
+- Dispute letters need a negative account. This file has none.
+- Personal-info letters need a name, address, SSN, employer, or birth date on the bureau file. The sim writes none.
+- Repair summaries (Optimization Plan Summary, Issue Priority Sheet) only exist when the tier is REPAIR_ONLY.
+- Metro 2 violations found on this file: 0.
+
+WHAT THE BUTTON DID ANYWAY (src/sales/closer-deck.mjs generateDeckLetters)
+1. Saved nothing to the client's Documents list (no files to save).
+2. Sent ONE email to the client — template EMAIL-DS02-DIY-LETTERS-READY.
+   Subject: "Your correction letters are ready"
+   Body starts: "Hey Sim, Your correction letters are ready. Log into your client portal to view and download them." + portal link,
+   then instructions to print, sign, and mail them certified.
+   (Sent only if the client has not opted out, the template is compliance-approved, and the company send switch is on — live state, UNVERIFIED.)
+3. Tagged the client client:diy-letters.
+4. Wrote custom fields: diy_status = "Delivery Failed — Retry", closer_deck_letters_at = <now>, closer_deck_letters_offer = UWIQ_DELIVERABLES.
+5. Returned { delivered: false, letterCount: 0, documentsStored: 0 }.
+
+WHAT THE PRESENTER SAW (public/app/present.js fire())
+- Toast: "Deliverables sent to client."
+- The button flipped to its "sent" state.
+The screen only checks that the call did not error. It never reads `delivered`.
+
+The real deliverables (the five funding-pack files beside this note) are built only by the automatic C-06 workflow when the credit file lands, and only four of them are saved.

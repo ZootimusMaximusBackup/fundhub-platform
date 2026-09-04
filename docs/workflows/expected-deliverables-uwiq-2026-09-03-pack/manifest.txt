@@ -1,0 +1,11 @@
+Sim Five-Academy — UnderwriteIQ pack, built 2026-09-04T03:05:10.661Z with the Node/pdf-lib printer (no WeasyPrint, as on Netlify). No database.
+funding pack: 5 files, reason=null, deliverableCount=4
+repair pack:  0 files, reason=empty_pack
+Only the four analysis reports are saved to the portal by C-06; Capital-Readiness-Summary.pdf is built and dropped.
+
+   11166  Bank-Lender-Match-List.pdf
+    1597  Capital-Readiness-Summary.pdf
+    7752  Credit-Analysis-Report.pdf
+    5340  Credit-Optimization-Roadmap.pdf
+    5903  Funding-Snapshot.pdf
+    2163  empty-pack.txt
