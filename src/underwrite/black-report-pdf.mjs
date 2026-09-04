@@ -63,9 +63,20 @@ export const ENGINE = Object.freeze({
 });
 
 /** How long to wait on the render service before giving up and printing the
-    short documents. A slow service must never hold up a credit pull. The
-    Python printer takes single-digit seconds; 45 is a ceiling, not a target. */
-export const REMOTE_TIMEOUT_MS = Number(process.env.BLACK_REPORT_RENDER_TIMEOUT_MS || 45_000);
+    short documents. A slow service must never hold up a credit pull.
+    The Python printer takes single-digit seconds (2.3s measured on the Jordan
+    Sample data), so this is a ceiling, not a target.
+
+    WHY 8s AND NOT LONGER. A synchronous Netlify function is killed at 10s on the
+    current plan, and nothing in netlify.toml raises it. A DEAD service fails fast
+    and the Node fallback runs; a HUNG one does not — it just holds the socket. So
+    any timeout at or above the function budget means the platform kills the whole
+    function first and the fallback below never gets to run, which is the exact
+    silent-short-documents failure this file exists to prevent. 8s leaves ~2s to
+    print the fallback and return. Raise it only where the caller genuinely has a
+    longer budget than a sync function — an Inngest step does — and raise it there
+    with BLACK_REPORT_RENDER_TIMEOUT_MS rather than by editing this default. */
+export const REMOTE_TIMEOUT_MS = Number(process.env.BLACK_REPORT_RENDER_TIMEOUT_MS || 8_000);
 
 let cachedPython = undefined;
 
