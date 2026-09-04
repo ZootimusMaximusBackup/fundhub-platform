@@ -171,3 +171,36 @@ No SOP change needed. Attribution is healthy and the links exercise real ads.
 Ads 43, 45 and 82 have `"title": null` while 42 and 26 are named. So their
 utm_content is a bare number and any report grouped by ad name shows a digit
 with no label. Cheap fix: add titles in docs/ads/registry.json.
+
+**F8 · Survey answers are landing in the WRONG FIELDS on the Client Control
+Panel.** Observed on Sim Five-Academy. What Chris typed vs what the panel shows:
+
+| Survey screen | He answered | Panel shows |
+|---|---|---|
+| 7 Revenue | $1M+ | **missing entirely** |
+| 8 Can you verify | Yes, both | shown as **"Business revenue: Yes, both"** |
+| Can verify revenue | (from screen 8) | — |
+| Personal income | n/a | — |
+| Can verify income | n/a | — |
+
+So the screen-8 verify answer is being written into the revenue field, and the
+real revenue figure ($1M+) is dropped. Four fields read "—" that should carry
+data. This is a field-mapping bug, not an empty client.
+
+**F9 · The Client Control Panel does not show the OFFER ROUTING at all
+(owner: "that is not what is actually in the repository").**
+"How they got here" shows only Source / Campaign / Ad / Landed on / Magnet.
+It does NOT show gate, entry, primary offer or secondary offers — which is the
+whole point of ad attribution, and the data exists.
+
+For Sim Five-Academy (ad 82) the registry already holds:
+gate **720** · entry **direct** · primary **funding_dfy** · secondary **none**.
+None of it reaches this screen. Tier and Prequal under PATH also read "—".
+
+Owner is explicit that tracking primary/secondary offer per client is how the
+system was designed. The registry has it; the panel does not surface it.
+Verify next whether the Closer Dashboard shows the four ad lines (SOP 1.4
+claims it does) — if it does, this is a CCP display gap; if it does not, the
+routing is not surfaced anywhere and that is far more serious.
+
+Both F8 and F9 are FIXES FOR AFTER THE WALK. Owner said: proceed.
