@@ -29,10 +29,14 @@
 //   2. black-report-client's monthsOpen() ages the AU account. Every openedDate
 //      in the fixture is null, so au_account.age is "" forever.
 //   3. The WeasyPrint printer stamps today's date into the PDF. That is why the
-//      byte/text pin below runs against the pdf-lib printer (engine: "node"),
-//      which leaves DATE blank, and the WeasyPrint path is pinned by its INPUT
-//      (the CLIENT dict) and its TEMPLATE (the generator script), not its output.
-//      See NOT LOCKED, below.
+//      byte/text pin below runs against the pdf-lib printer (engine: "node") and
+//      the WeasyPrint path is pinned by its INPUT (the CLIENT dict) and its
+//      TEMPLATE (the generator script), not its output. See NOT LOCKED, below.
+//   4. The pdf-lib printer used to leave the cover DATE blank, which is what made
+//      it clock-safe and is exactly the defect F50 recorded — every document the
+//      live site produced carried an empty date box. It now prints the day the
+//      credit file was pulled, so ENGINE_RESULT below carries a fixed `pulledAt`
+//      and the printed date is a property of the INPUT, not of the calendar.
 //
 // ─────────────────────────────────────────────────────────────────────────────
 // NOT LOCKED BY THIS FILE — stated so nobody mistakes green here for total cover
@@ -73,9 +77,11 @@ import { extractPdfText } from "../company-brain/pdf-text.mjs";
 
 // Never call live Claude from a unit test. Same guard as ./letter-pack.test.mjs.
 delete process.env.ANTHROPIC_API_KEY;
-// buildBlackReportClient copies BOOKING_URL straight into the client dict, so a
-// developer with it set locally would otherwise see a different digest than CI.
+// buildBlackReportClient resolves the booking link into the client dict, so a
+// developer with either of these set locally would otherwise see a different
+// digest than CI. With both gone the resolver returns its own fixed default.
 delete process.env.BOOKING_URL;
+delete process.env.SALES_MEET_BOOKING_URL;
 
 /* ─────────────── digest helpers ─────────────── */
 
@@ -111,6 +117,8 @@ const PERSONAL = Object.freeze({
 /** The shape a stored credit pull arrives in, trimmed to what these surfaces read. */
 const ENGINE_RESULT = Object.freeze({
   outcome: "FUNDING_PLUS_REPAIR",
+  // Fixed on purpose. See clock-stability note 4 above.
+  pulledAt: "2026-03-01T00:00:00.000Z",
   suggestions: ["Pay balances down."],
   consumerSignals: {
     scores: { median: 610, perBureau: { ex: 600, eq: 610, tu: 620 } },
@@ -168,22 +176,36 @@ const BUREAUS_NONE = Object.freeze({});
    Every value below was measured on 2026-08-28 on branch audit/baseline-wf,
    cut from origin/main at commit 4d6cf31b, on macOS with Node 26. */
 
+/* MOVED DELIBERATELY 2026-09-04, W10 — the deliverables rebuild (F43, F44, F45,
+   F46, F50). Three of the seven pins below were re-recorded on this branch; the
+   four scoring-engine pins did not move, which is the point: the funding numbers
+   are exactly what they were and only what is PRINTED changed.
+
+   blackReportClient / emptyBlackReportClient moved because the record gained the
+   fields the designed reference set needs and the live documents never had — the
+   cover date, a real booking link, the two lender buckets kept apart, the score
+   ladder, the engine's own costing-you and not-a-factor findings, and the
+   client's business entity — and because accounts that furnish to more than one
+   bureau now appear once instead of once per bureau.
+
+   The four printed documents moved for the same reason: they carry those
+   sections now. Page counts went 4/3/6/3 to 4/4/8/5. */
 const BASELINE = Object.freeze({
   engineMaxed:            "0581c1b9b5f713dc7958b5e3e1e961b0be245beac174814d9a04068e1a692d0a",
   engineMaxedSuggestions: "d06e816746ef7dddb015f77ebf605b9a7f30f15df1d233b8e47702f4577f2d19",
   engineScoreOnly:        "0fe3f24ebe0560a04fe24fdb14afc974e0725f3e96571ab12b34c5a7e8a589e7",
   engineNoBureaus:        "79f0c7c1d8eb1853e314681051005eeafd3b07550da2855ab9eb6bbffe8a8260",
-  blackReportClient:      "4a0f0fe651ddfa21bdb5c632ef7c80a9fd6778e1632aba56d7344657b9c75f0a",
-  emptyBlackReportClient: "feb8f216fb06c85d9dc0a95170fb71a167ee0963221ff24aef858f681b03009b",
+  blackReportClient:      "d4ead7287903034f5100f0b80ff5e85925e514a34611164beb727bef969599a8",
+  emptyBlackReportClient: "21826d2ea2496e6674a8bb909de81d2aef49a277c3470c1f854094950fb2ca79",
   generatorScript:        "9d0babe55544aa695cca8505a6a2d0af1370f50d01817c0f8e51af35ba62259d"
 });
 
 /** The four PDFs the in-process printer produces, and the words inside each. */
 const BASELINE_NODE_PDFS = Object.freeze([
-  { filename: "Credit-Analysis-Report.pdf",     type: "credit_analysis",  pages: 4, textSha: "2a263c90866720920345e355b02dac8991dab9ce746756585a334dbd44a88eb2" },
-  { filename: "Funding-Snapshot.pdf",           type: "funding_snapshot", pages: 3, textSha: "8c6414699579bb25847d33bc6e44beec88339a9650e978c67c575ffe9de05c42" },
-  { filename: "Bank-Lender-Match-List.pdf",     type: "lender_match",     pages: 6, textSha: "5985d2dcfb4a563ee0fd55bc3d12ab9b66d4ff82e7f0188e919987c9e8a744fc" },
-  { filename: "Credit-Optimization-Roadmap.pdf", type: "roadmap",         pages: 3, textSha: "c44be557e52ac6070fc9cd0eba4ce5560dcab012acd0a61e09ae4ae71a929cc8" }
+  { filename: "Credit-Analysis-Report.pdf",     type: "credit_analysis",  pages: 4, textSha: "aae3d12922f71f2a9beb04719fabb432fdf049ff075a1aa8f9a47702832d832a" },
+  { filename: "Funding-Snapshot.pdf",           type: "funding_snapshot", pages: 4, textSha: "9578d5447d637d1d6449393fe048d2b07c478033409e48f9f8d040aef1343c3a" },
+  { filename: "Bank-Lender-Match-List.pdf",     type: "lender_match",     pages: 8, textSha: "eb60bf04a4d78f147be4d91bf05a88f7a94d908c5e9eaf56fa13ca865afb2681" },
+  { filename: "Credit-Optimization-Roadmap.pdf", type: "roadmap",         pages: 5, textSha: "8cd1b3ccd90d09f9b7f06f9c2177c37bc74177d83c3bc054520e00d645d3c4e2" }
 ]);
 
 /** Every document a client receives, in order. [filename, type, bureau]. */
@@ -345,8 +367,18 @@ describe("baseline — the black report client record", () => {
     pinned(digest(empty), BASELINE.emptyBlackReportClient,
       "the blank record used when there is no credit pull");
     assert.equal(empty.applicant, "Client");
-    assert.equal(digest(empty), digest({ ...emptyBlackReportClient(), applicant: "Client" }),
-      "a blank pull must produce the blank record, with nothing filled in");
+    /* The booking link is the ONE field that does not come from a credit pull —
+       it is where the client books a call, and that is true before any pull
+       exists. Everything else on a blank record stays blank. */
+    assert.equal(digest(empty),
+      digest({ ...emptyBlackReportClient(), applicant: "Client", booking_url: empty.booking_url }),
+      "a blank pull must produce the blank record, with nothing but the booking link filled in");
+    assert.equal(empty.date, "", "no credit pull, no date");
+    assert.equal(empty.preapproval_now, null, "no credit pull, no funding number");
+    assert.deepEqual(empty.lenders_now, []);
+    assert.deepEqual(empty.costing_you, []);
+    assert.match(empty.booking_url, /^https?:\/\//,
+      "the booking link must be a real address, never a placeholder");
   });
 });
 

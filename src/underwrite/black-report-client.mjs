@@ -6,6 +6,7 @@
 // COMPLIANCE REVIEW REQUIRED — credit-repair / projected-score adjacent.
 
 import { createRequire } from "node:module";
+import { salesMeetBookingUrl } from "../insights/meet.mjs";
 
 const require = createRequire(import.meta.url);
 const { matchLenders } = require("../../vendor/underwriteiq-full/api/lite/crs/lender-matrix.js");
@@ -40,11 +41,34 @@ export function emptyBlackReportClient() {
     au_account: { creditor: "", bureau: "", limit: null, balance: null, util: "", age: "" },
     negatives: [],
     inquiries: [],
+    inquiry_total: 0,
     personal_data: [],
     installments: [],
     mortgages: [],
     public_obligations: [],
-    lenders: []
+    lenders: [],
+    /* F45. The vendor matcher already splits its answer in two and this file
+       used to flatten both halves into one list, which is why every lender
+       landed under "After optimization" and nothing under "Available right
+       now". The split is kept from here on. `lenders` stays as it was — the
+       WeasyPrint template reads it — and these two carry the buckets. */
+    lenders_now: [],
+    lenders_after: [],
+    /* The reference's score ladder: how many points away each locked lender is. */
+    score_ladder: [],
+    /* What the engine's own optimization findings say is costing this client
+       money, and what it says does NOT affect funding. The words are the
+       vendor engine's, already written at a 5th grade reading level; nothing
+       here authors a new claim about credit outcomes. */
+    costing_you: [],
+    not_a_factor: [],
+    strategy: [],
+    /* F44. Whether this client has a company on file at all, and how old it is.
+       Owner rule (F15, 2026-09-03, ../underwrite/business-funding.mjs): no
+       company row, no business. This is display only — the business half of the
+       funding estimate is gated on a real BUSINESS CREDIT REPORT in the vendor
+       estimator and nothing here moves that. */
+    business: { hasEntity: false, ageMonths: null, name: "" }
   };
 }
 
@@ -113,6 +137,70 @@ function tradelinesOf(crsResult) {
   return list.map(normalizeTradeline).filter(Boolean);
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// F43 — ONE ACCOUNT, ONE ROW
+//
+// A tri-merge report is THREE reports. An account that furnishes to all three
+// bureaus arrives here three times, and until now nothing merged them: the
+// printed documents showed nine card rows for three cards, three Toyota loans
+// for one car, and totals three times the truth ($23,550 of balance against
+// $135,000 of limit, with a paydown target of $13,500 instead of $4,500).
+//
+// The merge happens HERE, in the display mapper, and never in the engine. Both
+// sides of the utilisation fraction triple together, so the engine's percentage
+// and therefore the client's tier and pre-approval are correct as they stand —
+// collapsing accounts upstream would silently move a funding number. See the
+// UWIQ spec section 5 #3, and CLAUDE.md section 12 on money.
+//
+// The key is the creditor plus the account identifier, because that is the pair
+// the rest of the system already matches on across bureaus (../metro2/
+// normalize.mjs lastFour). When a line carries no identifier the fallback adds
+// account type, balance and limit, so two genuinely different accounts at one
+// creditor stay two rows.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function accountKey(t) {
+  const creditor = String(t?.creditorName || t?.creditor || "").trim().toLowerCase();
+  const ref = String(t?.accountIdentifier || t?.accountId || t?.accountNumber || t?.account_ref || "").trim().toLowerCase();
+  if (creditor && ref) return `${creditor}|${ref}`;
+  return [
+    creditor,
+    accountTypeOf(t),
+    String(finiteNumber(t?.currentBalance ?? t?.balance) ?? ""),
+    String(finiteNumber(t?.effectiveLimit ?? t?.creditLimit ?? t?.limit) ?? ""),
+    String(t?.openedDate || "")
+  ].join("|");
+}
+
+/**
+ * One row per real account, carrying every bureau it was seen on.
+ * Order is preserved: the first sighting wins, later ones only add a bureau.
+ */
+export function dedupeTradelines(tradelines) {
+  const byKey = new Map();
+  for (const t of tradelines || []) {
+    if (!t) continue;
+    const key = accountKey(t);
+    const seen = byKey.get(key);
+    if (!seen) {
+      byKey.set(key, { ...t, sources: t.source ? [t.source] : [] });
+      continue;
+    }
+    if (t.source && !seen.sources.includes(t.source)) seen.sources.push(t.source);
+    // A bureau that reports the account as derogatory is the one that matters.
+    if (t.isDerogatory) seen.isDerogatory = true;
+  }
+  return [...byKey.values()];
+}
+
+/** "Experian, Equifax" — every bureau this one account was found on. */
+function bureauCell(t) {
+  const list = (t?.sources && t.sources.length ? t.sources : [t?.source])
+    .map(bureauLabel)
+    .filter(Boolean);
+  return list.length ? list.join(", ") : "";
+}
+
 function inquiriesOf(crsResult) {
   const fromNorm = crsResult?.normalized?.inquiries;
   const fromTop = crsResult?.inquiries;
@@ -167,7 +255,7 @@ function utilStatus(t, pct) {
 
 function utilTarget(limit) {
   if (limit == null || limit <= 0) return "";
-  return `$${Math.round(limit * 0.1)} or less`;
+  return `${formatUsdPlain(Math.round(limit * 0.1))} or less`;
 }
 
 function monthsOpen(openedDate) {
@@ -228,9 +316,13 @@ function mapBureaus(crsResult) {
   // Stored pulls often have scores but no bureauNegatives.pulled flag.
   const scores = scoresFromEngine(crsResult);
   const byBureau = { experian: 0, equifax: 0, transunion: 0 };
-  for (const item of mapNegatives(crsResult, tradelinesOf(crsResult))) {
-    const key = bureauSource(item.bureau);
-    if (byBureau[key] != null) byBureau[key] += 1;
+  /* One merged negative row can name more than one bureau (see mapNegatives),
+     and each bureau it names carries that item on its own file. */
+  for (const item of mapNegatives(crsResult, dedupeTradelines(tradelinesOf(crsResult)))) {
+    for (const label of String(item.bureau || "").split(",")) {
+      const key = bureauSource(label.trim());
+      if (byBureau[key] != null) byBureau[key] += 1;
+    }
   }
   for (const key of BUREAU_KEYS) {
     if (!Number.isFinite(scores[key])) continue;
@@ -257,7 +349,7 @@ function mapRevolving(tradelines) {
     const pct = utilPct(balance, limit);
     rows.push([
       creditor,
-      bureauLabel(t.source),
+      bureauCell(t),
       balance,
       limit,
       pct == null ? "" : `${pct}%`,
@@ -268,6 +360,28 @@ function mapRevolving(tradelines) {
   return rows;
 }
 
+/**
+ * Balance and limit across the de-duplicated open revolving rows.
+ *
+ * The engine's own totals are the tri-merge totals and are three times these on
+ * a file that reports to all three bureaus. The PERCENTAGE is the same either
+ * way — both sides scale together — so the engine keeps ownership of it and of
+ * everything downstream. Only what is printed changes.
+ */
+function displayUtilTotals(revolvingRows) {
+  let balance = 0;
+  let limit = 0;
+  let sawLimit = false;
+  for (const row of revolvingRows || []) {
+    if (row[6] === "CLOSED") continue;
+    const b = finiteNumber(row[2]);
+    const l = finiteNumber(row[3]);
+    if (b != null) balance += b;
+    if (l != null && l > 0) { limit += l; sawLimit = true; }
+  }
+  return sawLimit ? { balance, limit } : null;
+}
+
 function mapAu(tradelines) {
   const au = tradelines.find((t) => t?.isAU && (t.creditorName || t.creditor));
   if (!au) return { creditor: "", bureau: "", limit: null, balance: null, util: "", age: "" };
@@ -276,7 +390,7 @@ function mapAu(tradelines) {
   const pct = utilPct(balance, limit);
   return {
     creditor: au.creditorName || au.creditor || "",
-    bureau: bureauLabel(au.source),
+    bureau: bureauCell(au),
     limit,
     balance,
     util: pct == null ? "" : `${pct}%`,
@@ -313,15 +427,34 @@ function mapNegatives(crsResult, tradelines) {
         balance: t.currentBalance ?? t.balance,
         source: t.source
       }));
-  const rows = [];
-  let n = 1;
+  /* F43 again. One derogatory account furnishing to two bureaus is ONE problem
+     to fix, not two, so the row carries both bureau names. The key is the same
+     creditor+identifier pair the tradeline merge uses; bureauNegatives items
+     carry no identifier, so those fall back on creditor + type + balance. */
+  const merged = new Map();
   for (const item of src) {
     if (!item.creditor) continue;
+    const key = [
+      String(item.creditor).trim().toLowerCase(),
+      String(item.type || "").toLowerCase(),
+      String(finiteNumber(item.balance) ?? "")
+    ].join("|");
+    const seen = merged.get(key);
+    if (seen) {
+      const label = bureauLabel(item.source) || item.bureau;
+      if (label && !seen.bureaus.includes(label)) seen.bureaus.push(label);
+      continue;
+    }
+    merged.set(key, { ...item, bureaus: [item.bureau].filter(Boolean) });
+  }
+  const rows = [];
+  let n = 1;
+  for (const item of merged.values()) {
     const bal = finiteNumber(item.balance);
     rows.push({
       n,
       creditor: item.creditor,
-      bureau: item.bureau,
+      bureau: item.bureaus.join(", "),
       type: item.type || "",
       balance: bal == null ? "" : formatUsdPlain(bal),
       why: "",
@@ -456,37 +589,267 @@ function lenderCategory(type) {
   return t;
 }
 
-function mapLenders(crsResult) {
+// ═══════════════════════════════════════════════════════════════════════════════
+// F44 — THE BUSINESS THE CLIENT ALREADY HAS
+//
+// The vendor matcher decides "Business entity required" from
+// businessSignals.available, which is true only when a real BUSINESS CREDIT
+// REPORT was passed to the engine. Fundhub does not buy one, so `available` is
+// false for every client — and a client with a company on file for six years
+// was still told to go form an LLC, in a document with his name on it.
+//
+// This does NOT touch money. The business half of the pre-approval is gated on
+// the same `bs.available === true` inside the vendor's estimate-preapprovals.js
+// and stays exactly where it is; inventing a business figure off an age alone is
+// the defect the owner closed on 2026-09-03 (F15, ../underwrite/business-funding.mjs:
+// "no company row, no business funding"). What changes is what the client is
+// TOLD: a lender that wants an entity is judged on the entity that exists, and
+// the roadmap stops opening with "file an LLC" for a business that is six years
+// old.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** businessSignals for the MATCHER only. Never handed to the estimator. */
+function matcherBusinessSignals(engineSignals, business) {
+  if (!business?.hasEntity) return engineSignals;
+  const ageMonths = finiteNumber(business.ageMonths);
+  return {
+    ...(engineSignals && typeof engineSignals === "object" ? engineSignals : {}),
+    available: true,
+    profile: {
+      ...(engineSignals?.profile && typeof engineSignals.profile === "object" ? engineSignals.profile : {}),
+      ageMonths: ageMonths == null ? 0 : ageMonths
+    }
+  };
+}
+
+function lenderRow(lender, bucket) {
+  const { low, high } = parseEstRange(lender.estRange);
+  if (low == null || high == null) return null;
+  const score = finiteNumber(lender.minScore);
+  if (score == null) return null;
+  return [
+    lender.name || "",
+    lenderCategory(lender.type),
+    lender.type || "",
+    low,
+    high,
+    score,
+    lender.minTIB ? `${lender.minTIB} months minimum` : null,
+    lender.minRevenue ? `$${Number(lender.minRevenue).toLocaleString("en-US")}/year minimum` : null,
+    lender.whyFit || lender.whatNeeded || "",
+    bucket,
+    lender.whatNeeded || ""
+  ];
+}
+
+/**
+ * F45. The vendor matcher returns two buckets and this used to flatten them,
+ * which is why the printed shortlist put all fifteen lenders under "after
+ * optimization" and left "available right now" empty on every document.
+ */
+function mapLenders(crsResult, business) {
   const cs = crsResult?.consumerSignals;
-  const bs = crsResult?.businessSignals;
   const outcome = crsResult?.outcome;
-  if (!cs?.scores) return [];
+  if (!cs?.scores) return { all: [], now: [], after: [] };
   let matched;
   try {
-    matched = matchLenders(cs, bs, outcome);
+    matched = matchLenders(cs, matcherBusinessSignals(crsResult?.businessSignals, business), outcome);
   } catch {
-    return [];
+    return { all: [], now: [], after: [] };
   }
-  const list = [...(matched.availableNow || []), ...(matched.afterOptimization || [])];
-  const rows = [];
-  for (const lender of list) {
-    const { low, high } = parseEstRange(lender.estRange);
-    if (low == null || high == null) continue;
-    const score = finiteNumber(lender.minScore);
-    if (score == null) continue;
-    rows.push([
-      lender.name || "",
-      lenderCategory(lender.type),
-      lender.type || "",
-      low,
-      high,
-      score,
-      lender.minTIB ? `${lender.minTIB} months minimum` : null,
-      lender.minRevenue ? `$${Number(lender.minRevenue).toLocaleString("en-US")}/year minimum` : null,
-      lender.whyFit || lender.whatNeeded || ""
-    ]);
+  const now = [];
+  const after = [];
+  for (const lender of matched.availableNow || []) {
+    const row = lenderRow(lender, "now");
+    if (row) now.push(row);
   }
-  return rows;
+  for (const lender of matched.afterOptimization || []) {
+    const row = lenderRow(lender, "after");
+    if (row) after.push(row);
+  }
+  return { all: [...now, ...after], now, after };
+}
+
+/**
+ * The reference set's score ladder: every lender still out of reach, grouped by
+ * the score it wants, with how many points away this client is. Nothing is
+ * projected — the gap is arithmetic on two numbers already on the file.
+ */
+function scoreLadder(afterRows, median) {
+  const med = finiteNumber(median);
+  if (med == null) return [];
+  const byScore = new Map();
+  for (const row of afterRows || []) {
+    const score = finiteNumber(row[5]);
+    if (score == null || score <= med) continue;
+    if (!byScore.has(score)) byScore.set(score, []);
+    byScore.get(score).push(row[0]);
+  }
+  return [...byScore.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([score, names]) => ({ score, gap: score - med, names, count: names.length }));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// "WHAT IS COSTING YOU MONEY" AND "WHAT DOES NOT AFFECT YOUR FUNDING"
+//
+// COMPLIANCE REVIEW REQUIRED — credit-repair messaging. Marker only.
+//
+// Both sections in the designed reference set are ranked lists of the client's
+// own problems with a plain-English line each. NOTHING IS AUTHORED HERE. Every
+// sentence is the vendor engine's own optimization finding — code, severity,
+// plainEnglishProblem, whyItMatters, whatToDoNext — written at a 5th grade
+// reading level by rules the engine already ships
+// (vendor/underwriteiq-full/api/lite/crs/optimization-findings.js). This file
+// only sorts them, splits them into the two sections, and de-duplicates the
+// tri-merge repeats.
+//
+// The split is the engine's own category, not a judgement made here: the
+// engine's rule is "Inquiries do not affect funding — never imply they hurt
+// funding", and an AU finding says the client "is not responsible for the debt".
+// Those are the not-a-factor section. Everything the engine flags as a real
+// problem is the costing-you section.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const SEVERITY_ORDER = Object.freeze({ critical: 0, high: 1, medium: 2, low: 3, info: 4 });
+
+/* Findings about HOW to play the file rather than what is wrong with it. The
+   reference set puts these in "Your Next Step", not in the ranked problem list —
+   "do not open new accounts before funding" is advice, not a cost. */
+const STRATEGIC_CODES = Object.freeze(new Set(["FUNDING_FIRST", "APPLY_NOW", "FUNDING_WINDOW"]));
+
+/* The engine's OVERALL utilisation finding names a dollar target worked out from
+   the tri-merge total, which counts an account once per bureau (F43). Its
+   percentage is right — both sides of the fraction triple together — but its
+   target balance is three times too high on a file that reports to all three.
+   The number is corrected here, against the de-duplicated limit this file
+   already computes, and only the number: the sentence around it is the engine's
+   own approved wording. */
+const OVERALL_UTIL_CODES = Object.freeze(new Set([
+  "UTIL_MODERATE", "UTIL_HIGH", "UTIL_CRITICAL", "UTIL_OVERALL", "UTIL_OVERALL_OVER_10"
+]));
+
+/** Findings the engine says do NOT affect a funding decision. */
+const NOT_A_FACTOR_CATEGORIES = Object.freeze(new Set(["inquiries", "au", "authorized_user"]));
+const NOT_A_FACTOR_CODES = Object.freeze(new Set([
+  "INQUIRY_CLEANUP", "INQUIRY_HIGH", "INQUIRY_DUPLICATES", "AU_ACCOUNT", "AU_DOMINANCE",
+  "AU_NOT_RESPONSIBLE", "DONT_CLOSE_OLDEST", "STRONG_ANCHOR"
+]));
+
+function findingsOf(crsResult) {
+  const list = crsResult?.findings || crsResult?.optimization_findings;
+  if (!Array.isArray(list)) return [];
+  /* The tri-merge repeats every account, so the engine repeats every account's
+     finding. Same defect as F43, same fix: one row per real problem. */
+  const seen = new Set();
+  const out = [];
+  for (const f of list) {
+    if (!f || typeof f !== "object") continue;
+    if (f.customerSafe === false) continue;
+    const key = `${f.code || ""}|${f.targetState || ""}|${f.plainEnglishProblem || ""}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(f);
+  }
+  return out;
+}
+
+function isStrategic(f) {
+  return String(f.category || "").toLowerCase() === "strategic"
+    || STRATEGIC_CODES.has(String(f.code || "").toUpperCase());
+}
+
+function isNotAFactor(f) {
+  return NOT_A_FACTOR_CATEGORIES.has(String(f.category || "").toLowerCase())
+    || NOT_A_FACTOR_CODES.has(String(f.code || "").toUpperCase());
+}
+
+function findingLines(f) {
+  return [f.plainEnglishProblem, f.whyItMatters, f.whatToDoNext]
+    .map((s) => String(s || "").trim())
+    .filter(Boolean);
+}
+
+function bySeverity(a, b) {
+  const sa = SEVERITY_ORDER[String(a.severity || "").toLowerCase()] ?? 9;
+  const sb = SEVERITY_ORDER[String(b.severity || "").toLowerCase()] ?? 9;
+  return sa - sb;
+}
+
+/* F44. The engine emits NO_BUSINESS_ENTITY off businessSignals.available, which
+   is false for every Fundhub client because no business credit report is bought.
+   Telling a client with a six-year-old company on file to go form an LLC is the
+   defect; the company on file is the answer to it. */
+const NO_ENTITY_CODES = Object.freeze(new Set(["NO_BUSINESS_ENTITY", "BUSINESS_ENTITY_MISSING"]));
+
+function correctedLines(f, targetBalance) {
+  const lines = findingLines(f);
+  if (targetBalance == null) return lines;
+  if (!OVERALL_UTIL_CODES.has(String(f.code || "").toUpperCase())) return lines;
+  const money = formatUsdPlain(targetBalance);
+  return lines.map((line) => line.replace(/\$[\d,]+/g, money));
+}
+
+function mapCostingYou(findings, business, targetBalance) {
+  const hasEntity = business?.hasEntity === true;
+  const rows = findings
+    .filter((f) => !isNotAFactor(f) && !isStrategic(f))
+    .filter((f) => !(hasEntity && NO_ENTITY_CODES.has(String(f.code || "").toUpperCase())))
+    .sort(bySeverity);
+  return rows.map((f, i) => ({
+    n: i + 1,
+    code: f.code || "",
+    severity: String(f.severity || "").toLowerCase(),
+    title: String(f.targetState || f.plainEnglishProblem || "").trim(),
+    lines: correctedLines(f, targetBalance)
+  }));
+}
+
+function mapStrategic(findings) {
+  return findings.filter(isStrategic).sort(bySeverity).map((f) => ({
+    code: f.code || "",
+    title: String(f.targetState || f.plainEnglishProblem || "").trim(),
+    lines: findingLines(f)
+  }));
+}
+
+function mapNotAFactor(findings) {
+  return findings.filter((f) => isNotAFactor(f) && !isStrategic(f)).sort(bySeverity).map((f) => ({
+    code: f.code || "",
+    title: String(f.targetState || f.plainEnglishProblem || "").trim(),
+    lines: findingLines(f)
+  }));
+}
+
+/**
+ * The date printed on every cover. It was never assigned, so every document the
+ * live site produced carried a blank DATE box (F50). It is the day the credit
+ * file was pulled — the date the numbers below it are true as of — and falls
+ * back to today only when the pull carries no date of its own.
+ */
+export function reportDate(crsResult, now = new Date()) {
+  const raw = crsResult?.pulledAt
+    || crsResult?.responseDetail?.dateRequested
+    || crsResult?.normalized?.meta?.pulledAt
+    || null;
+  const d = raw ? new Date(raw) : now;
+  const when = Number.isNaN(d.getTime()) ? now : d;
+  return when.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
+}
+
+/**
+ * The booking page a client is actually sent to. The designed reference set
+ * prints `www.fundhubbookingurl.template` — a placeholder in the template that
+ * was never replaced — and the Node printer fell back to the bare string
+ * "fundhub.ai", which is not a booking page either. One resolver, the same one
+ * every text message and email already uses (../insights/meet.mjs).
+ */
+export function bookingUrlFor(personal, env = process.env) {
+  const fromClient = String(personal?.bookingUrl || personal?.booking_link || "").trim();
+  if (/^https?:\/\//i.test(fromClient)) return fromClient;
+  const fromEnv = String(env.BOOKING_URL || "").trim();
+  if (/^https?:\/\//i.test(fromEnv)) return fromEnv;
+  return salesMeetBookingUrl(env);
 }
 
 function preapprovalOf(block) {
@@ -554,10 +917,20 @@ export function mergeStoredUnderwrite(engine, stored) {
 }
 
 /**
- * @param {{ crsResult?: object, personal?: object }} input
+ * @param {object}  input
+ * @param {object} [input.crsResult] the engine result for this client
+ * @param {object} [input.personal]  name and address the letters are addressed from
+ * @param {object} [input.business]  what this client has on file for a company.
+ *   `{ hasEntity, ageMonths, name }`. Display only — see the F44 block above.
+ * @param {Date}   [input.now]       injectable clock, for the date on the cover
  * @returns {object} CLIENT dict for fundhub_gen.py --client
  */
-export function buildBlackReportClient({ crsResult = null, personal = null } = {}) {
+export function buildBlackReportClient({
+  crsResult = null,
+  personal = null,
+  business = null,
+  now = new Date()
+} = {}) {
   const client = emptyBlackReportClient();
   const who = personal && typeof personal === "object" ? personal : {};
   const address = oneLineAddress(who.address);
@@ -565,8 +938,15 @@ export function buildBlackReportClient({ crsResult = null, personal = null } = {
   client.address = address;
   client.state = stateFromPersonal(who, address);
   client.outcome = crsResult?.outcome ? String(crsResult.outcome) : "";
-  client.booking_url = process.env.BOOKING_URL ? String(process.env.BOOKING_URL).trim() : "";
+  client.booking_url = bookingUrlFor(who);
+  const biz = business && typeof business === "object" ? business : {};
+  client.business = {
+    hasEntity: biz.hasEntity === true,
+    ageMonths: finiteNumber(biz.ageMonths),
+    name: String(biz.name || "").trim()
+  };
   if (crsResult) {
+    client.date = reportDate(crsResult, now);
     client.scores = scoresFromEngine(crsResult);
     client.preapproval_now = preapprovalOf(crsResult.preapprovals);
     client.preapproval_after = preapprovalOf(crsResult.projectedPreapproval);
@@ -574,24 +954,42 @@ export function buildBlackReportClient({ crsResult = null, personal = null } = {
     if (client.preapproval_after == null) client.preapproval_after = client.preapproval_now;
     const util = crsResult.consumerSignals?.utilization;
     if (util) {
+      client.util_pct = util.pct == null ? "" : `${util.pct}%`;
+    }
+    /* F43. One row per real account, and the printed totals to match. */
+    const tradelines = dedupeTradelines(tradelinesOf(crsResult));
+    client.bureaus = mapBureaus(crsResult);
+    client.revolving = mapRevolving(tradelines);
+    const totals = displayUtilTotals(client.revolving);
+    if (totals) {
+      client.util_total_balance = totals.balance;
+      client.util_total_limit = totals.limit;
+      client.util_target_balance = Math.round(totals.limit * 0.1);
+    } else if (util) {
       client.util_total_balance = finiteNumber(util.totalBalance);
       client.util_total_limit = finiteNumber(util.totalLimit);
-      client.util_pct = util.pct == null ? "" : `${util.pct}%`;
       if (client.util_total_limit != null) {
         client.util_target_balance = Math.round(client.util_total_limit * 0.1);
       }
     }
-    const tradelines = tradelinesOf(crsResult);
-    client.bureaus = mapBureaus(crsResult);
-    client.revolving = mapRevolving(tradelines);
     client.au_account = mapAu(tradelines);
     client.negatives = mapNegatives(crsResult, tradelines);
-    client.inquiries = mapInquiries(inquiriesOf(crsResult));
+    const inquiries = inquiriesOf(crsResult);
+    client.inquiries = mapInquiries(inquiries);
+    client.inquiry_total = inquiries.length;
     client.personal_data = mapPersonalData(identityOf(crsResult));
     client.installments = mapTypedTradelines(tradelines, "installment");
     client.mortgages = mapTypedTradelines(tradelines, "mortgage");
     client.public_obligations = mapPublicObligations(publicRecordsOf(crsResult));
-    client.lenders = mapLenders(crsResult);
+    const lenders = mapLenders(crsResult, client.business);
+    client.lenders = lenders.all;
+    client.lenders_now = lenders.now;
+    client.lenders_after = lenders.after;
+    client.score_ladder = scoreLadder(lenders.after, crsResult.consumerSignals?.scores?.median);
+    const findings = findingsOf(crsResult);
+    client.costing_you = mapCostingYou(findings, client.business, client.util_target_balance);
+    client.not_a_factor = mapNotAFactor(findings);
+    client.strategy = mapStrategic(findings);
   }
   return client;
 }

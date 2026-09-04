@@ -11,6 +11,7 @@ import { hasFundingAnalysisPdfs, FUNDING_ANALYSIS_FILENAMES } from "./letter-pac
 import { buildBlackReportClient, hasBlackReportSource, mergeStoredUnderwrite } from "./black-report-client.mjs";
 import { printBlackReports } from "./black-report-pdf.mjs";
 import { violationsByBureauFromMergedCrs } from "../metro2/diy/from-crs.mjs";
+import { resolveBusinessAges } from "./business-funding.mjs";
 import { derogatoryClaimsByBureau, mergeDerogatoryClaims } from "../metro2/diy/derogatory.mjs";
 import { maybeComplaintFiles, COMPLAINT_FOLDER } from "../metro2/diy/package.mjs";
 import { LETTER_TYPES } from "../metro2/letters/catalog.mjs";
@@ -200,14 +201,14 @@ function asFiles(list) {
     });
 }
 
-async function uiqDeliverablePdfs(crsResult, personal, pack, _generate = generateDeliverables, storedCrs = null) {
+async function uiqDeliverablePdfs(crsResult, personal, pack, _generate = generateDeliverables, storedCrs = null, business = null) {
   if (pack !== "funding") return { files: [], skip: "not_funding" };
   if (!crsResult && !storedCrs) return { files: [], skip: "no_engine" };
   const source = mergeStoredUnderwrite(crsResult, storedCrs);
   if (!source) return { files: [], skip: "no_engine" };
   if (!hasBlackReportSource(source)) return { files: [], skip: "no_scores" };
   try {
-    const client = buildBlackReportClient({ crsResult: source, personal });
+    const client = buildBlackReportClient({ crsResult: source, personal, business });
     const printed = await printBlackReports({ client });
     const files = printed.files || [];
     if (!files.length) return { files: [], skip: printed.skip || "render_empty" };
@@ -406,7 +407,11 @@ export async function buildLetterPack({
   priorOutcomes = [],
   // Whether this client's offer path is a repair path. False is the old
   // behaviour, so a caller that does not know the tier changes nothing.
-  onRepairPath = false
+  onRepairPath = false,
+  /* F44. What this client has on file for a company: `{ hasEntity, ageMonths,
+     name }`. Null is the old behaviour — no company, so the documents say what
+     they always said. Display only; the funding estimate is untouched. */
+  business = null
 } = {}) {
   const who = personal || { name: "Client", address: "" };
   const path = pack === "repair" ? "repair" : "fundable";
@@ -448,7 +453,7 @@ export async function buildLetterPack({
       summarySkip = String(err && err.message || err).slice(0, 240);
     }
   }
-  const uiq = await uiqDeliverablePdfs(crsResult, who, pack, generateDeliverablesFn, storedCrs);
+  const uiq = await uiqDeliverablePdfs(crsResult, who, pack, generateDeliverablesFn, storedCrs, business);
   const letterFiles = asFiles(letters);
   // The documents this pack produced on its own merits. Escalation is NOT in here.
   const earned = [...uiq.files, ...asFiles(summaries), ...letterFiles];
@@ -515,6 +520,40 @@ function sharpenEmptyReason(reason, { engineSkip, engineFault }) {
   return reason;
 }
 
+/**
+ * F44 — what this client actually has on file for a company.
+ *
+ * The rule is the owner's, already settled and already implemented:
+ * ../underwrite/business-funding.mjs resolveBusinessAges — NO COMPANY ROW, NO
+ * BUSINESS. A loose clients.custom_fields.business_age_months is not a company;
+ * it only fills in a blank date on a company that exists. That rule is reused
+ * here rather than re-stated, so the documents and the funding screens can never
+ * disagree about whether this client has an entity.
+ *
+ * Read-only and fail-soft: a hiccup here must cost a sentence in a PDF, never
+ * the whole pack.
+ */
+async function readBusinessOnFile(db, { clientId, customFields } = {}) {
+  try {
+    const r = await db.query(
+      `SELECT name, age_months FROM businesses WHERE client_id = $1 ORDER BY created_at ASC`,
+      [clientId]
+    );
+    const rows = r.rows || [];
+    if (!rows.length) return { hasEntity: false, ageMonths: null, name: "" };
+    const cf = customFields && typeof customFields === "object" ? customFields : {};
+    const ages = resolveBusinessAges({ businesses: rows, fallbackAgeMonths: cf.business_age_months });
+    const oldest = ages.reduce((best, age) => (age != null && (best == null || age > best) ? age : best), null);
+    return {
+      hasEntity: true,
+      ageMonths: oldest,
+      name: String(rows[0]?.name || "").trim()
+    };
+  } catch {
+    return { hasEntity: false, ageMonths: null, name: "" };
+  }
+}
+
 export async function buildLetterPackForClient(
   db,
   { clientId, pack = "funding" } = {},
@@ -575,12 +614,14 @@ export async function buildLetterPackForClient(
   // a failure is reported rather than thrown: the worst a hiccup here may cost
   // is an escalation, never the client's Round 1 letters.
   const prior = await loadPriorOutcomes(db, { clientId });
+  const business = await readBusinessOnFile(db, { clientId, customFields: row.custom_fields });
   try {
     const packOut = await buildLetterPack({
       crsResult: engine,
       personal,
       pack,
       storedCrs,
+      business,
       priorOutcomes: prior.outcomes,
       // outcome_tier was already on the row this function reads and had never
       // been used. It is the offer path the owner rule turns on.
