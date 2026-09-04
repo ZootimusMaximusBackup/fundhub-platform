@@ -71,3 +71,12 @@ confirm? If not, there should be." The calendar invite offers Yes / No / Maybe
 the client record or pipeline card, and does anything change when a client
 accepts or declines? If nothing captures it, that is the finding, and the
 owner has said it should exist.
+
+**F1 AMENDED AGAIN · the AI call fires too, also delayed.**
+Chris also received the AI phone call at the same time as the text (~5:50pm,
+roughly 3 minutes after booking). So the full booking sequence works:
+calendar invite email + SMS + AI call all fire. None of them is missing.
+
+Verdict on F1: **WORKED, BUT DELAYED.** Not a broken automation.
+Owner-set target: all three must land **within 60 seconds** of the booking.
+Today they take about 3 minutes. The fix is latency, not wiring.
