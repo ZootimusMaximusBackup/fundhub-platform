@@ -666,3 +666,35 @@ record as a defect.
 **$939,500 now confirmed on FOUR screens:** S-07 (client hero), S-08, S-09 and
 S-17 all carry it in the ENGINE DATA line. The wrong figure follows the whole
 deck, it is not one bad slide.
+
+**OFFER NAMES AND PRICES — recorded (owner asked these be saved).**
+The descent ladder on deck section 05, exactly as it reads live 2026-09-03:
+
+| # | Offer name (verbatim) | Price |
+|---|---|---|
+| 1 | Funding · deposit | $3,000 |
+| 2 | Repair DFY | $1,000 |
+| 3 | Repair trial round | $200 |
+| 4 | DIY letters + course | $1,000 |
+| 5 | Funding Mastery | $5,000 |
+| 6 | Education deliverables | $1,000 |
+
+Rules shown with the ladder: "One click reshapes the price screen. Descend only
+on a no. Financing available on everything except the soft pull and the funding
+deposit."
+
+Objection buttons present: Think about it · $3K is a lot · What if it fails ·
+Spouse · Burned before · DIY · Reframes.
+
+**F21 · Missing objection handling from "alec dupesh" (owner note, low
+priority).** Chris: "common objections from alec dupesh should be here....but
+honestly not huge deal." Name recorded verbatim as he said it — do not guess
+who this is or substitute a different trainer's material. Ask Chris for the
+source before adding anything.
+Owner explicitly rated this LOW. Do not treat it as blocking.
+
+**OPEN QUESTION · did the ladder selection actually change?**
+After Chris was told to click "Funding Mastery · $5,000", both screenshots
+still show **Funding · $3,000 deposit** highlighted as selected. Either the
+click was not made, or clicking a ladder row does not change the selection.
+Unresolved — confirm with Chris before recording as a defect.
