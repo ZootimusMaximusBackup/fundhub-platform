@@ -211,17 +211,21 @@ export default async function handler(req, res) {
        field the screen does not need. The repair answer is a boolean either way. */
     const repairPath = await onRepairPath(db, { orgId, clientId });
 
-    /* AND WHETHER THEY MAY BE ASKED TO SIGN, which is a WIDER question than the
-       one above and the owner's own words for it (2026-09-03): "It's only for
-       repair and for the funding offer. If they're getting deliverables, meaning
-       e-products and courses, they don't need to sign for shit." A funding
-       customer is not on the repair path and their letter pack still contains
-       dispute work, so gating the form on `repair_path` alone left them unable to
-       authorize the letters we owe them. src/consent/dispute-consent.mjs adds the
-       funding OFFER — the entitlement — and deliberately not the funding TIER,
-       which the analyzer stamps on course buyers too. `repairPath` is handed in
-       so the repair reads happen once for both answers. */
-    const disputeConsent = await mayAuthorizeDisputes(db, { orgId, clientId, repairPath });
+    /* AND WHETHER THEY MAY BE ASKED TO SIGN, which is a DIFFERENT question from
+       the one above, and the owner's own words for it (2026-09-03): "It's only
+       for repair and for the funding offer. If they're getting deliverables,
+       meaning e-products and courses, they don't need to sign for shit."
+
+       DIFFERENT, NOT WIDER, AND IT IS NOT `repairPath` PLUS SOMETHING. It is
+       wider on one side — a funding customer is not a repair client and their
+       letter pack still contains dispute work, so gating on `repair_path` alone
+       left them unable to authorize the letters we owe them. It is NARROWER on
+       the other — `repair_path` says yes on an outcome_tier of REPAIR_ONLY, and
+       that tier is stamped by a real credit pull on course buyers too, so
+       feeding this answer in re-opened F35 for exactly the buyer it was raised
+       on. src/consent/dispute-consent.mjs therefore reads the two ENTITLEMENTS
+       and no tier, and is asked on its own rather than handed `repairPath`. */
+    const disputeConsent = await mayAuthorizeDisputes(db, { orgId, clientId });
 
     return res.status(200).json(redact({
       ok: true,

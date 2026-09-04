@@ -376,9 +376,13 @@ async function handlePost(req, res, principal, orgId) {
      this gate asked only ../../src/repair/on-repair-path.mjs, so a customer who
      bought FUNDING was refused an authorization for letters their own pack
      contains. src/consent/dispute-consent.mjs is the owner's rule whole: repair
-     OR the funding offer, by ENTITLEMENT — never by outcome tier, which the
-     analyzer stamps on course buyers too and which would put the form straight
-     back in front of the Academy buyer this finding was raised on. */
+     OR the funding offer, by ENTITLEMENT — never by outcome tier, in either
+     direction. The tier is stamped by a real credit pull on course buyers too,
+     so a funding tier and a REPAIR_ONLY tier BOTH put the form straight back in
+     front of the Academy buyer this finding was raised on. That is not
+     hypothetical: reaching REPAIR_ONLY through onRepairPath() is the leak the
+     second pass at this fix shipped with, and src/consent/dispute-consent.mjs
+     no longer calls it. */
   if (kind === "dispute_authorization" && principal.kind === "client") {
     const allowed = await mayAuthorizeDisputes(db, { orgId, clientId });
     if (!allowed) {

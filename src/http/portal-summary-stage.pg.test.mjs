@@ -141,6 +141,12 @@ describe("/api/read/portal-summary — stage, advisor, dispute consent",
        VALUES ($1,$2,$3,'FULL_FUNDING',false)`,
       [org, client, JSON.stringify({ scores: { experian: 690 } })]
     );
+    /* AND THE TIER LANDS ON THE CLIENT ROW, because that is where every gate
+       reads it from — src/finance/crs-pull.mjs persistOutcomeTier() does this
+       same UPDATE on any non-simulated pull. Writing it only onto crs_results
+       left clients.outcome_tier NULL, which made the F35 assertions below pass
+       without ever putting a tier in front of the gate they were testing. */
+    await db.query(`UPDATE clients SET outcome_tier = 'FULL_FUNDING' WHERE id = $1`, [client]);
     s = (await load()).stage;
     assert.equal(s.key, "soft_pull");
     assert.equal(s.soft_pull_complete, true);
@@ -195,10 +201,15 @@ describe("/api/read/portal-summary — stage, advisor, dispute consent",
 
   /* ── F35 · WHO MAY BE ASKED TO SIGN ──────────────────────────────────────
      Owner-set 2026-09-03: repair and the funding offer, never courses or
-     e-products. The client above owns nothing yet, and their outcome_tier is
-     FULL_FUNDING — which is precisely the trap: a course buyer who had a pull
-     must still be refused. */
+     e-products. The client above owns nothing yet, and the pull above stamped
+     FULL_FUNDING onto clients.outcome_tier — which is precisely the trap: a
+     course buyer who had a pull must still be refused. */
   test("the dispute-consent gate follows the offer, not the tier", async () => {
+    const tierOnFile = async () =>
+      (await db.query(`SELECT outcome_tier FROM clients WHERE id = $1`, [client])).rows[0].outcome_tier;
+    assert.equal(await tierOnFile(), "FULL_FUNDING",
+      "the tier must actually be on the client row or this test proves nothing");
+
     let body = await load();
     assert.equal(body.dispute_consent, false, "a client who bought nothing must not be asked to sign");
     assert.equal(body.repair_path, false);
@@ -207,6 +218,18 @@ describe("/api/read/portal-summary — stage, advisor, dispute consent",
     body = await load();
     assert.equal(body.dispute_consent, false,
       "a COURSE buyer whose pull said FULL_FUNDING must still be refused — this is F35");
+
+    /* THE SECOND HALF OF F35, and the one that got shipped broken: REPAIR_ONLY.
+       The gate used to reach that tier through onRepairPath() and say yes, and
+       a real pull writes REPAIR_ONLY onto this column on any client whose file
+       grades that way — course buyers included. */
+    await db.query(`UPDATE clients SET outcome_tier = 'REPAIR_ONLY' WHERE id = $1`, [client]);
+    body = await load();
+    assert.equal(body.dispute_consent, false,
+      "a COURSE buyer whose pull said REPAIR_ONLY must still be refused — this is F35 too");
+    assert.equal(body.repair_path, true,
+      "repair_path itself still follows the tier; only the consent gate stopped doing so");
+    await db.query(`UPDATE clients SET outcome_tier = 'FULL_FUNDING' WHERE id = $1`, [client]);
 
     await grant(db, { orgId: org, clientId: client, code: "funding-snapshot" });
     body = await load();

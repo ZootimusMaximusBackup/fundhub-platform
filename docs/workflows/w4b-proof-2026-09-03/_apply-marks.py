@@ -75,10 +75,16 @@ def mark_image(src: Path, spec: dict) -> None:
     for m in marks:
         box = m["box"]
         x, y, w, h = box["x"], box["y"], box["w"], box["h"]
-        x = max(0, min(x, im.width - 1))
-        y = max(0, min(y, im.height - 1))
-        w = max(8, min(w, im.width - x))
-        h = max(8, min(h, im.height - y))
+        # A BOX OFF THE PICTURE IS A BUG, NOT SOMETHING TO TIDY UP. Clamping it
+        # is what put four red boxes on the bottom status bar of the first run
+        # of this proof, each with a caption describing an element that was not
+        # in the frame. Refuse instead, and say which one.
+        if x < 0 or y < 0 or x + w > im.width or y + h > im.height:
+            raise SystemExit(
+                f"{src.name}: mark {m.get('n')} ({m.get('caption')}) has box "
+                f"{box} outside the {im.width}x{im.height} image. Re-run "
+                f"e2e/w4b-portal-walk.spec.mjs — the element was never scrolled into view."
+            )
         draw.rectangle([x - 3, y - 3, x + w + 3, y + h + 3], outline=RED, width=5)
         label = str(m.get("n") or m.get("label") or "1")
         bx = max(4, x - 6)

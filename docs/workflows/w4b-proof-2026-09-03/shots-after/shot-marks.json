@@ -1,13 +1,17 @@
 {
   "14a-course-buyer.png": {
     "legend": "F35 — a course buyer is not asked",
+    "viewport": {
+      "w": 1280,
+      "h": 1000
+    },
     "marks": [
       {
         "n": "1",
         "caption": "Capital Academy — all this client bought",
         "box": {
           "x": 762,
-          "y": 1312,
+          "y": 356,
           "w": 221,
           "h": 313
         }
@@ -16,6 +20,10 @@
   },
   "14b-funding-buyer.png": {
     "legend": "F35 AFTER — funding buyer is asked",
+    "viewport": {
+      "w": 1280,
+      "h": 1000
+    },
     "marks": [
       {
         "n": "1",
@@ -31,6 +39,10 @@
   },
   "15-stage-after-signing.png": {
     "legend": "F33 — stage after pull, call, signature",
+    "viewport": {
+      "w": 1280,
+      "h": 1000
+    },
     "marks": [
       {
         "n": "1",
@@ -66,13 +78,17 @@
   },
   "16a-advisor-named.png": {
     "legend": "F34 — the advisor is named",
+    "viewport": {
+      "w": 1280,
+      "h": 1000
+    },
     "marks": [
       {
         "n": "1",
         "caption": "Your Funding Advisor: the assigned name",
         "box": {
           "x": 352,
-          "y": 1784,
+          "y": 791,
           "w": 151,
           "h": 24
         }
@@ -81,13 +97,17 @@
   },
   "16b-advisor-empty.png": {
     "legend": "F34 — nobody assigned yet",
+    "viewport": {
+      "w": 1280,
+      "h": 1000
+    },
     "marks": [
       {
         "n": "1",
         "caption": "'Not assigned yet' — never a made-up name",
         "box": {
           "x": 352,
-          "y": 1784,
+          "y": 791,
           "w": 151,
           "h": 24
         }
@@ -96,13 +116,17 @@
   },
   "17-owned-offer.png": {
     "legend": "F37 — an owned offer is not an upsell",
+    "viewport": {
+      "w": 1280,
+      "h": 1000
+    },
     "marks": [
       {
         "n": "1",
         "caption": "Owned: 'Included — you own this'",
         "box": {
           "x": 779,
-          "y": 1461,
+          "y": 751,
           "w": 187,
           "h": 48
         }
@@ -112,7 +136,7 @@
         "caption": "Not owned: still 'On your call'",
         "box": {
           "x": 547,
-          "y": 1211,
+          "y": 501,
           "w": 187,
           "h": 24
         }
@@ -121,6 +145,10 @@
   },
   "18-messages-one-empty.png": {
     "legend": "F36 — one empty row, not two",
+    "viewport": {
+      "w": 1280,
+      "h": 1000
+    },
     "marks": [
       {
         "n": "1",

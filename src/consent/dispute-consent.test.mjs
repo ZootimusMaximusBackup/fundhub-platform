@@ -9,22 +9,34 @@
 // offer. If they're getting deliverables, meaning e-products and courses, they
 // don't need to sign for shit."
 //
-// So every case below is one of three answers: repair yes, funding offer yes,
-// everything else no. The trap case is the last group — a course buyer whose
-// analyzer tier says FULL_FUNDING, which is why this gate reads the ENTITLEMENT
-// and never the tier.
+// The SECOND fix still leaked, through a route nobody looked at twice: it asked
+// onRepairPath(), which says yes on an outcome_tier of REPAIR_ONLY, and
+// `clients.outcome_tier` is written by a real credit pull. A course buyer whose
+// file graded REPAIR_ONLY got the form back. That case is the last group below
+// and it is the reason this gate reads entitlements and NO tier at all.
+//
+// So every case here is one of three answers: repair bought yes, funding offer
+// bought yes, everything else no — whatever the tier says.
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { mayAuthorizeDisputes, FUNDING_OFFER_ENTITLEMENT_CODE } from "./dispute-consent.mjs";
+import {
+  mayAuthorizeDisputes,
+  FUNDING_OFFER_ENTITLEMENT_CODE,
+  DISPUTE_CONSENT_ENTITLEMENT_CODES
+} from "./dispute-consent.mjs";
 import { REPAIR_ENTITLEMENT_CODE } from "../repair/on-repair-path.mjs";
 
-/* Shaped like the two reads this module can make: the clients row for the tier,
-   and v_client_entitlements for an active code. */
-function fakeDb({ tier = null, codes = [], failEntitlements = false } = {}) {
+/* Shaped like the ONE read this module can make: v_client_entitlements for an
+   active code. A `clients` read is a failure now, not a fallback — see the
+   "never touches the tier" test. */
+function fakeDb({ tier = null, codes = [], failEntitlements = false, onClientRead } = {}) {
   return {
     async query(sql, params) {
-      if (/FROM clients/i.test(sql)) return { rows: [{ outcome_tier: tier }] };
+      if (/FROM clients/i.test(sql)) {
+        if (onClientRead) onClientRead();
+        return { rows: [{ outcome_tier: tier }] };
+      }
       if (/v_client_entitlements/i.test(sql)) {
         if (failEntitlements) throw new Error("relation does not exist");
         return { rows: codes.includes(params[2]) ? [{ "?column?": 1 }] : [] };
@@ -42,15 +54,13 @@ describe("mayAuthorizeDisputes", () => {
     // repair-bundle / consulting-package → metro2-letter-pack.
     assert.equal(FUNDING_OFFER_ENTITLEMENT_CODE, "funding-snapshot");
     assert.equal(REPAIR_ENTITLEMENT_CODE, "metro2-letter-pack");
+    assert.deepEqual([...DISPUTE_CONSENT_ENTITLEMENT_CODES],
+      ["metro2-letter-pack", "funding-snapshot"],
+      "these two purchases and nothing else open the form");
   });
 
   test("a repair buyer may sign", async () => {
     const db = fakeDb({ tier: null, codes: [REPAIR_ENTITLEMENT_CODE] });
-    assert.equal(await mayAuthorizeDisputes(db, who), true);
-  });
-
-  test("a REPAIR_ONLY client may sign before they have bought anything", async () => {
-    const db = fakeDb({ tier: "REPAIR_ONLY", codes: [] });
     assert.equal(await mayAuthorizeDisputes(db, who), true);
   });
 
@@ -74,6 +84,26 @@ describe("mayAuthorizeDisputes", () => {
     }
   });
 
+  test("an Academy buyer whose PULL said REPAIR_ONLY is still refused", async () => {
+    /* THE HOLE THE SECOND FIX LEFT OPEN. Routing through onRepairPath() meant
+       REPAIR_ONLY was a yes, and src/finance/crs-pull.mjs writes exactly that
+       word onto clients.outcome_tier on any real pull — course buyers included.
+       A course buyer with a weak credit file was still being handed the form. */
+    const db = fakeDb({ tier: "REPAIR_ONLY", codes: ["funding-mastery-course"] });
+    assert.equal(await mayAuthorizeDisputes(db, who), false,
+      "REPAIR_ONLY on a course-only buyer must not open the dispute form");
+  });
+
+  test("REPAIR_ONLY on a client who has bought nothing at all is also refused", async () => {
+    /* Deliberate, and a real narrowing: the previous version said yes here.
+       Nothing was BOUGHT, so under the owner's rule there is nothing to
+       authorize in the portal. Staff can still record an authorization —
+       api/consent/capture.mjs only narrows the client principal — and the DIY
+       letter workflow still runs off the tier through onRepairPath(). */
+    const db = fakeDb({ tier: "REPAIR_ONLY", codes: [] });
+    assert.equal(await mayAuthorizeDisputes(db, who), false);
+  });
+
   test("a Capital Blueprint (deliverables) buyer is refused", async () => {
     // "If they're getting deliverables, meaning e-products and courses, they
     // don't need to sign for shit." — owner, 2026-09-03.
@@ -86,24 +116,16 @@ describe("mayAuthorizeDisputes", () => {
     assert.equal(await mayAuthorizeDisputes(db, who), false);
   });
 
-  test("a caller that already knows the repair answer is not asked twice", async () => {
-    let clientReads = 0;
-    const db = {
-      async query(sql, params) {
-        if (/FROM clients/i.test(sql)) { clientReads += 1; return { rows: [{ outcome_tier: null }] }; }
-        if (/v_client_entitlements/i.test(sql)) {
-          return { rows: params[2] === FUNDING_OFFER_ENTITLEMENT_CODE ? [{ x: 1 }] : [] };
-        }
-        throw new Error("unexpected query");
-      }
-    };
-    assert.equal(await mayAuthorizeDisputes(db, { ...who, repairPath: false }), true);
-    assert.equal(clientReads, 0, "the repair reads must not be repeated when the answer was handed in");
-  });
-
-  test("repairPath true short-circuits to yes", async () => {
-    const db = { async query() { throw new Error("must not read anything"); } };
-    assert.equal(await mayAuthorizeDisputes(db, { ...who, repairPath: true }), true);
+  test("it never reads the tier, on any answer", async () => {
+    /* A pin, not a nicety: the moment a `clients` read reappears here, the
+       tier is back in the decision and F35 is one refactor from returning. */
+    for (const codes of [[REPAIR_ENTITLEMENT_CODE], [FUNDING_OFFER_ENTITLEMENT_CODE],
+                         ["funding-mastery-course"], []]) {
+      let clientReads = 0;
+      const db = fakeDb({ tier: "REPAIR_ONLY", codes, onClientRead: () => { clientReads += 1; } });
+      await mayAuthorizeDisputes(db, who);
+      assert.equal(clientReads, 0, `the tier was read for codes ${JSON.stringify(codes)}`);
+    }
   });
 
   test("it fails closed", async () => {

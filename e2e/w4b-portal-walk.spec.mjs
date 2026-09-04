@@ -17,18 +17,37 @@
 // which docs/workflows/w4b-proof-2026-09-03/_apply-marks.py burns into a red box
 // with a number and a legend (CLAUDE.md §8 — an unmarked screenshot is not
 // evidence). Set W4B_PHASE=before to capture the pre-fix screen.
+//
+// IT WRITES TO A SCRATCH DIRECTORY, NOT INTO THE REPOSITORY. Running the browser
+// suite used to overwrite the committed PNGs in the working tree, so anybody who
+// ran it — for an unrelated reason, on an unrelated branch — silently changed
+// seven files of evidence. Output goes under the system temp directory unless
+// W4B_PROOF_OUT names somewhere else, and copying it into
+// docs/workflows/w4b-proof-2026-09-03/ is a deliberate second step.
+//
+// AND THE BOXES ARE CHECKED AGAINST THE PICTURE BEFORE IT IS KEPT. The first run
+// of this file measured elements sitting inside the portal's own inner scroll
+// container without scrolling them into view, so four of seven red boxes were
+// drawn at coordinates outside the image and _apply-marks.py clamped them onto
+// the bottom status bar. The caption then described something that was not in
+// the frame at all. shot() now scrolls each marked element into view first and
+// FAILS THE TEST if any box still falls outside the screenshot — an annotation
+// pointing at empty space is worse evidence than no picture.
 
 import { test, expect } from "@playwright/test";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CLIENT_ID, json } from "./harness.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const PHASE = process.env.W4B_PHASE === "before" ? "before" : "after";
-const PROOF = path.resolve(HERE, "../docs/workflows/w4b-proof-2026-09-03");
-const RAW = path.join(PROOF, `shots-${PHASE}`, "_raw");
-const MANIFEST = path.join(PROOF, `shots-${PHASE}`, "shot-marks.json");
+const OUT_ROOT = process.env.W4B_PROOF_OUT
+  ? path.resolve(process.env.W4B_PROOF_OUT)
+  : path.join(os.tmpdir(), "w4b-proof-2026-09-03");
+const RAW = path.join(OUT_ROOT, `shots-${PHASE}`, "_raw");
+const MANIFEST = path.join(OUT_ROOT, `shots-${PHASE}`, "shot-marks.json");
 
 fs.mkdirSync(RAW, { recursive: true });
 
@@ -115,25 +134,75 @@ async function openPortal(page, { entitlements = [], summary = {} } = {}) {
 function readManifest() {
   try { return JSON.parse(fs.readFileSync(MANIFEST, "utf8")); } catch { return {}; }
 }
-async function shot(page, file, legend, marks) {
+/* measure — every mark's live box at the CURRENT scroll position. A selector that
+   matches nothing gives null, which is a legitimate answer for a `before` shot of
+   something that does not exist yet. */
+async function measure(page, marks) {
   const out = [];
-  for (let i = 0; i < marks.length; i++) {
-    const el = page.locator(marks[i].selector).first();
+  for (const m of marks) {
     let box = null;
-    try {
-      box = await el.boundingBox({ timeout: 2000 });
-    } catch { box = null; }
-    out.push({
-      n: String(i + 1),
-      caption: marks[i].caption,
-      box: box
-        ? { x: Math.round(box.x), y: Math.round(box.y), w: Math.round(box.width), h: Math.round(box.height) }
-        : null
-    });
+    try { box = await page.locator(m.selector).first().boundingBox({ timeout: 2000 }); } catch { box = null; }
+    out.push(box);
   }
+  return out;
+}
+
+/* bringIntoFrame — scroll until every marked element is inside the viewport.
+   `fullPage: true` would not help: the portal scrolls in its own inner container,
+   and a full-page capture only grows with the DOCUMENT's scroll height, so the
+   container's hidden rows are still off the picture. Scrolling the real element
+   is the only thing that puts it in front of the camera. */
+async function bringIntoFrame(page, marks) {
+  const vp = page.viewportSize();
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const boxes = await measure(page, marks);
+    const seen = boxes.filter(Boolean);
+    if (!seen.length) return boxes;
+    const top = Math.min(...seen.map((b) => b.y));
+    const bottom = Math.max(...seen.map((b) => b.y + b.height));
+    if (top >= 0 && bottom <= vp.height) return boxes;
+    // Anchor on whichever marked element sits highest, so a group is pulled in
+    // together rather than each one chasing the last out of frame.
+    const i = boxes.findIndex((b) => b && b.y === top);
+    try { await page.locator(marks[i].selector).first().scrollIntoViewIfNeeded({ timeout: 2000 }); } catch { /* keep the last position */ }
+    await page.waitForTimeout(200);
+  }
+  return measure(page, marks);
+}
+
+async function shot(page, file, legend, marks) {
+  const vp = page.viewportSize();
+  const boxes = await bringIntoFrame(page, marks);
   await page.screenshot({ path: path.join(RAW, file), fullPage: false });
+
+  /* THE BOX HAS TO BE ON THE PICTURE. _apply-marks.py clamps an out-of-range box
+     to the edge of the image, which is how four captions ended up describing
+     something that was not in the frame. Failing here is the point: a red box
+     that lands on the status bar is worse than no screenshot at all. */
+  const strays = [];
+  boxes.forEach((b, i) => {
+    if (!b) return;
+    if (b.x < 0 || b.y < 0 || b.x + b.width > vp.width || b.y + b.height > vp.height) {
+      strays.push(`${marks[i].selector} at ${JSON.stringify(b)}`);
+    }
+  });
+  if (strays.length) {
+    throw new Error(
+      `${file}: ${strays.length} red box(es) fall outside the ${vp.width}x${vp.height} screenshot, ` +
+      `so the caption would point at empty space — ${strays.join("; ")}`
+    );
+  }
+
+  const out = marks.map((m, i) => ({
+    n: String(i + 1),
+    caption: m.caption,
+    box: boxes[i]
+      ? { x: Math.round(boxes[i].x), y: Math.round(boxes[i].y), w: Math.round(boxes[i].width), h: Math.round(boxes[i].height) }
+      : null
+  }));
+
   const manifest = readManifest();
-  manifest[file] = { legend, marks: out };
+  manifest[file] = { legend, viewport: { w: vp.width, h: vp.height }, marks: out };
   fs.writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2));
 }
 
