@@ -21,18 +21,28 @@ export const FUNDING_LETTER_SUBTYPE = Object.freeze({
   personal_info: "funding_personal_info"
 });
 
+/* THE FIFTH DOCUMENT (F46, fixed 2026-09-04).
+   buildLetterPack has always produced FIVE files on the funding path, and this
+   map knew four of them. Capital-Readiness-Summary.pdf (type "funding_summary",
+   named in ../underwrite/letter-pack.mjs NICE_NAME) matched neither
+   isFundingLetterFile nor analysisTypeOf, so the loop below `continue`d past it
+   and the one document that prints "Approved for Funding" in words never
+   reached the client's portal. It is the same shape as the other four — one row
+   per client per subtype — so it belongs here and nowhere else. */
 export const FUNDING_ANALYSIS_SUBTYPE = Object.freeze({
   credit_analysis: "credit_analysis_report",
   roadmap: "credit_optimization_roadmap",
   funding_snapshot: "funding_snapshot",
-  lender_match: "bank_lender_match_list"
+  lender_match: "bank_lender_match_list",
+  funding_summary: "capital_readiness_summary"
 });
 
 const ANALYSIS_TITLES = Object.freeze({
   credit_analysis: "Credit Analysis Report",
   roadmap: "Credit Optimization Roadmap",
   funding_snapshot: "Funding Snapshot",
-  lender_match: "Bank and Lender Match List"
+  lender_match: "Bank and Lender Match List",
+  funding_summary: "Capital Readiness Summary"
 });
 
 const TYPE_ORDER = ["inquiry_removal", "personal_info"];
@@ -62,6 +72,7 @@ function analysisTypeOf(file) {
   }
   if (fn.includes("funding_snapshot") || fn.includes("funding-snapshot")) return "funding_snapshot";
   if (fn.includes("lender_match") || fn.includes("lender-match") || fn.includes("bank-lender")) return "lender_match";
+  if (fn.includes("capital_readiness") || fn.includes("capital-readiness")) return "funding_summary";
   return null;
 }
 
