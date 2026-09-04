@@ -110,3 +110,14 @@ To do after the walk (do NOT fix mid-run, SOP rule: write findings, don't fix):
   prompt against a roleplay client and score prompt fulfilment.
 - Note this is the SETTER (books the call), distinct from the booking-
   confirmation AI call in F1, which did fire.
+
+**F5 ADDENDUM · two named causes (owner-set).**
+Chris: "We need a more powerful model of Josh AI. And the prompt is fucked."
+
+So F5 splits into two pieces of work, both owner-decided, not open questions:
+1. **Model upgrade** — the Josh AI setter agent runs on too weak a model.
+   Raise the tier. Owner call, already made.
+2. **Prompt rewrite** — the setter's prompt is bad and needs rewriting, not
+   patching.
+
+Both are post-walk. Do not touch mid-run.
