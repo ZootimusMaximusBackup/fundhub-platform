@@ -447,3 +447,14 @@ Three things to decide after the walk:
 
 Cross-reference F14 (the stored estimate ignores credit score) — so BOTH
 figures on this screen have an open correctness question.
+
+**E-book no-pay downsell · SENT.** Sim Five-Academy, price typed as `5`,
+"Send e-book email" returned "E-book email sent with PDF attached."
+Expected per the control's own caption: "Empty PDF attached until the real
+file is ready." Verifying the delivered attachment now.
+
+Watch on this one: the amount field took a bare `5`. Confirm whether that means
+$5.00 or 5 cents — the deck's e-book handler validates cents
+(src/sales/closer-deck.mjs:538-545, "whole-cent amount between $1 and
+$500,000"), so a bare 5 could be read either way. If the client is charged
+$0.05 or $5.00 when Chris meant the other, that is a money bug.
