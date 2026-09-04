@@ -2,11 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   AGENT_CODE,
-  GHL_DOC_TYPES,
-  shouldRunGhlDoc,
-  onDocsReceivedGhlDoc,
+  DOC_CHECK_TYPES,
+  shouldRunDocCheck,
+  onDocsReceivedDocCheck,
   parseAgentJson
-} from "./ghl-doc.mjs";
+} from "./doc-check.mjs";
 import { onDocsReceivedFlipInquiryGate } from "./inquiry-docs.mjs";
 
 const ORG = "11111111-1111-4111-8111-111111111111";
@@ -22,8 +22,8 @@ function event(payload, extra = {}) {
   };
 }
 
-test("GHL-DOC types are the six client-document names from the spec", () => {
-  assert.deepEqual([...GHL_DOC_TYPES], [
+test("DOC-CHECK types are the six client-document names from the spec", () => {
+  assert.deepEqual([...DOC_CHECK_TYPES], [
     "id_document",
     "proof_of_address",
     "articles_of_organization",
@@ -33,30 +33,30 @@ test("GHL-DOC types are the six client-document names from the spec", () => {
   ]);
 });
 
-test("shouldRunGhlDoc: client_upload subtype matches, inquiry_doc does not", () => {
-  assert.equal(shouldRunGhlDoc({ kind: "client_upload", subtype: "id_document" }), true);
-  assert.equal(shouldRunGhlDoc({ kind: "id_document" }), true);
-  assert.equal(shouldRunGhlDoc({ kind: "inquiry_doc", subtype: "id_document" }), false);
-  assert.equal(shouldRunGhlDoc({ kind: "bureau_response", subtype: "bureau_letter" }), false);
-  assert.equal(shouldRunGhlDoc({ kind: "client_upload", subtype: "other" }), true);
-  assert.equal(shouldRunGhlDoc({ kind: "client_upload", subtype: "articles_of_organization" }), true);
+test("shouldRunDocCheck: client_upload subtype matches, inquiry_doc does not", () => {
+  assert.equal(shouldRunDocCheck({ kind: "client_upload", subtype: "id_document" }), true);
+  assert.equal(shouldRunDocCheck({ kind: "id_document" }), true);
+  assert.equal(shouldRunDocCheck({ kind: "inquiry_doc", subtype: "id_document" }), false);
+  assert.equal(shouldRunDocCheck({ kind: "bureau_response", subtype: "bureau_letter" }), false);
+  assert.equal(shouldRunDocCheck({ kind: "client_upload", subtype: "other" }), true);
+  assert.equal(shouldRunDocCheck({ kind: "client_upload", subtype: "articles_of_organization" }), true);
 });
 
-test("inquiry-docs handler and GHL-DOC gate are different functions", () => {
-  assert.notEqual(onDocsReceivedGhlDoc, onDocsReceivedFlipInquiryGate);
+test("inquiry-docs handler and DOC-CHECK gate are different functions", () => {
+  assert.notEqual(onDocsReceivedDocCheck, onDocsReceivedFlipInquiryGate);
   assert.equal(typeof onDocsReceivedFlipInquiryGate, "function");
 });
 
-test("onDocsReceivedGhlDoc: inquiry_doc is skipped so the inquiry gate keeps that path", async () => {
-  const res = await onDocsReceivedGhlDoc(null, event({
+test("onDocsReceivedDocCheck: inquiry_doc is skipped so the inquiry gate keeps that path", async () => {
+  const res = await onDocsReceivedDocCheck(null, event({
     kind: "inquiry_doc", subtype: "id_document", document_id: "doc-1"
   }));
   assert.equal(res.done, false);
-  assert.equal(res.reason, "not_ghl_doc_kind");
+  assert.equal(res.reason, "not_doc_check_kind");
 });
 
-test("onDocsReceivedGhlDoc: retired GHL-DOC does not queue SMS-DOC-02", async () => {
-  const { SMS_DOC_02 } = await import("./ghl-doc.mjs");
+test("onDocsReceivedDocCheck: retired DOC-CHECK does not queue SMS-DOC-02", async () => {
+  const { SMS_DOC_02 } = await import("./doc-check.mjs");
   const { pgFake } = await import("../workflows/test-support.mjs");
   const db = pgFake({
     clients: [{ id: CLIENT, org_id: ORG, email: "a@b.com", custom_fields: {} }],
@@ -78,7 +78,7 @@ test("onDocsReceivedGhlDoc: retired GHL-DOC does not queue SMS-DOC-02", async ()
   };
   let modelCalls = 0;
   const runs = [];
-  const res = await onDocsReceivedGhlDoc(db, event({
+  const res = await onDocsReceivedDocCheck(db, event({
     kind: "client_upload",
     subtype: "id_document",
     document_id: "doc-1"
@@ -91,16 +91,16 @@ test("onDocsReceivedGhlDoc: retired GHL-DOC does not queue SMS-DOC-02", async ()
     recordRunImpl: async (_db, row) => { runs.push(row); return row; }
   });
   assert.equal(res.done, false);
-  assert.equal(res.reason, "ghl_doc_retired");
+  assert.equal(res.reason, "doc_check_retired");
   assert.equal(modelCalls, 0);
   assert.equal(db.messages.length, 0);
   assert.equal(runs.length, 1);
   assert.equal(runs[0].agentCode, AGENT_CODE);
-  assert.equal(runs[0].outcome, "ghl_doc_retired");
+  assert.equal(runs[0].outcome, "doc_check_retired");
 });
 
-test("onDocsReceivedGhlDoc: draft GHL-DOC does not run", async () => {
-  const res = await onDocsReceivedGhlDoc({
+test("onDocsReceivedDocCheck: draft DOC-CHECK does not run", async () => {
+  const res = await onDocsReceivedDocCheck({
     async query(sql) {
       if (/FROM agents/.test(sql)) {
         return { rows: [{
@@ -122,10 +122,10 @@ test("onDocsReceivedGhlDoc: draft GHL-DOC does not run", async () => {
     }
   });
   assert.equal(res.done, false);
-  assert.equal(res.reason, "ghl_doc_not_live");
+  assert.equal(res.reason, "doc_check_not_live");
 });
 
-test("onDocsReceivedGhlDoc: runs GHL-DOC and does not send", async () => {
+test("onDocsReceivedDocCheck: runs DOC-CHECK and does not send", async () => {
   const runs = [];
   const prompts = [];
   const db = {
@@ -152,7 +152,7 @@ test("onDocsReceivedGhlDoc: runs GHL-DOC and does not send", async () => {
       return { rows: [] };
     }
   };
-  const res = await onDocsReceivedGhlDoc(db, event({
+  const res = await onDocsReceivedDocCheck(db, event({
     kind: "client_upload",
     subtype: "id_document",
     document_id: "doc-1",
@@ -183,7 +183,7 @@ test("onDocsReceivedGhlDoc: runs GHL-DOC and does not send", async () => {
 });
 
 test("clientContextLines: formats on-file address for the model", async () => {
-  const { clientContextLines } = await import("./ghl-doc.mjs");
+  const { clientContextLines } = await import("./doc-check.mjs");
   const lines = clientContextLines({
     first_name: "Chris",
     last_name: "Stanbridge",
@@ -203,8 +203,8 @@ test("parseAgentJson reads fenced JSON", () => {
   assert.equal(obj.outcome, "request_more");
 });
 
-test("routeGhlDocOutcome: accept clears the document hold and sends DOC-03", async () => {
-  const { routeGhlDocOutcome, EMAIL_DOC_03, SMS_DOC_03 } = await import("./ghl-doc.mjs");
+test("routeDocCheckOutcome: accept clears the document hold and sends DOC-03", async () => {
+  const { routeDocCheckOutcome, EMAIL_DOC_03, SMS_DOC_03 } = await import("./doc-check.mjs");
   const { pgFake } = await import("../workflows/test-support.mjs");
   const { FUNDING_DOC_HOLD } = await import("../inquiry-ops/doc-gate.mjs");
   const db = pgFake({
@@ -214,7 +214,7 @@ test("routeGhlDocOutcome: accept clears the document hold and sends DOC-03", asy
       { org_id: ORG, template_key: SMS_DOC_03, channel: "sms", body: "ok sms", compliance_passed: true }
     ]
   });
-  const res = await routeGhlDocOutcome(db, {
+  const res = await routeDocCheckOutcome(db, {
     orgId: ORG, clientId: CLIENT, eventId: "e-acc", json: { outcome: "accept" }
   });
   assert.equal(res.routed, true);
@@ -223,8 +223,8 @@ test("routeGhlDocOutcome: accept clears the document hold and sends DOC-03", asy
   assert.deepEqual(db.messages.map((m) => m.template_key).sort(), [EMAIL_DOC_03, SMS_DOC_03].sort());
 });
 
-test("routeGhlDocOutcome: request_more keeps the gate and stores the agent note", async () => {
-  const { routeGhlDocOutcome, SMS_DOC_02 } = await import("./ghl-doc.mjs");
+test("routeDocCheckOutcome: request_more keeps the gate and stores the agent note", async () => {
+  const { routeDocCheckOutcome, SMS_DOC_02 } = await import("./doc-check.mjs");
   const { pgFake } = await import("../workflows/test-support.mjs");
   const { FUNDING_DOC_HOLD } = await import("../inquiry-ops/doc-gate.mjs");
   const db = pgFake({
@@ -233,7 +233,7 @@ test("routeGhlDocOutcome: request_more keeps the gate and stores the agent note"
       { org_id: ORG, template_key: SMS_DOC_02, channel: "sms", body: "more", compliance_passed: true }
     ]
   });
-  const res = await routeGhlDocOutcome(db, {
+  const res = await routeDocCheckOutcome(db, {
     orgId: ORG, clientId: CLIENT, eventId: "e-more",
     json: { outcome: "request_more", message_to_client: "Need a clearer ID photo" }
   });
@@ -243,4 +243,53 @@ test("routeGhlDocOutcome: request_more keeps the gate and stores the agent note"
   assert.equal(db.clients[0].custom_fields.doc_agent_message, "Need a clearer ID photo");
   assert.equal(db.messages.length, 1);
   assert.equal(db.messages[0].template_key, SMS_DOC_02);
+});
+
+test("routeDocCheckOutcome: an accept that read nothing records no identity", async () => {
+  const { routeDocCheckOutcome, EMAIL_DOC_03, SMS_DOC_03 } = await import("./doc-check.mjs");
+  const { pgFake } = await import("../workflows/test-support.mjs");
+  const db = pgFake({
+    clients: [{ id: CLIENT, org_id: ORG, email: "a@b.com", custom_fields: {} }],
+    templates: [
+      { org_id: ORG, template_key: EMAIL_DOC_03, channel: "email", body: "ok", compliance_passed: true },
+      { org_id: ORG, template_key: SMS_DOC_03, channel: "sms", body: "ok sms", compliance_passed: true }
+    ]
+  });
+  const res = await routeDocCheckOutcome(db, {
+    orgId: ORG, clientId: CLIENT, eventId: "e-acc-none",
+    documentId: "doc-1", versionId: "ver-1",
+    json: { outcome: "accept", documents_reviewed: ["bank statement"], issues: [] }
+  });
+  assert.equal(res.routed, true);
+  assert.equal(res.identity.written, false);
+  assert.equal(res.identity.reason, "nothing_verified");
+});
+
+test("routeDocCheckOutcome: request_more never records an identity, whatever the model read", async () => {
+  const { routeDocCheckOutcome, SMS_DOC_02 } = await import("./doc-check.mjs");
+  const { pgFake } = await import("../workflows/test-support.mjs");
+  const db = pgFake({
+    clients: [{ id: CLIENT, org_id: ORG, email: "a@b.com", custom_fields: {} }],
+    templates: [
+      { org_id: ORG, template_key: SMS_DOC_02, channel: "sms", body: "more", compliance_passed: true }
+    ]
+  });
+  const seen = [];
+  const orig = db.query.bind(db);
+  db.query = async (sql, params) => { seen.push(sql); return orig(sql, params); };
+  const res = await routeDocCheckOutcome(db, {
+    orgId: ORG, clientId: CLIENT, eventId: "e-more-2",
+    documentId: "doc-1", versionId: "ver-1",
+    json: {
+      outcome: "request_more",
+      message_to_client: "retake it",
+      verified_legal_name: "Christopher John Stanbridge",
+      verified_address: { line1: "1005 W Hudson Way" },
+      verified_date_of_birth: "1985-04-02"
+    }
+  });
+  assert.equal(res.routed, true);
+  assert.equal(res.identity, undefined);
+  assert.equal(seen.some((s) => /pii_identity/.test(s)), false,
+    "a document the agent refused proves nothing and must not reach pii_identity");
 });
