@@ -828,3 +828,38 @@ Agreement form still requires Company name and Company email as mandatory
 fields. Either the template should have a personal variant, or those fields
 should not be required for an education purchase.
 Walk continued with placeholder values so as not to block.
+
+**F27 UPGRADED · OWNER-SET: REMOVE THE CONTRACT WORDING FORM ENTIRELY.**
+Chris, verbatim: "this needs to be fixed. This is horrific... it should already
+have that information. Just send it. We don't need to, like, enter in the
+information. That is booty. It needs to be changed... it needs to be just
+removed completely."
+
+Decision, not a suggestion: the "WORDING FOR THIS CLIENT" panel on deck section
+07 — Company name, What the program includes, Program fee, Access length
+(days), Company email, and the "Send this wording" button — comes out. The
+system already holds the client, the offer, the price and the contract
+template; it correctly auto-matched "Funding Mastery Program Agreement" to the
+selected offer without any help. Sending the contract must be one click with
+no typing.
+
+Log as owner-set and do not re-raise. F27's earlier framing (make company
+fields optional / add a personal variant) is superseded — the whole form goes.
+
+**Payment signature — diagnosis so far, one pass, not yet solved.**
+The header name is NOT the problem. `src/adapters/commas.mjs:53` accepts
+`x-webhook-signature` first, which is exactly what push-payment.mjs sends
+(:103). Both sides compute HMAC-SHA256 over the raw body and compare hex
+(`verifyCommasSignature`, :67-71), and the adapter also tolerates a "sha256="
+prefix. So header, algorithm and encoding all match.
+
+That leaves the secret itself or the exact bytes signed. Most likely the
+`COMMAS_WEBHOOK_SECRET` this laptop reads from Netlify is not the value the
+deployed site verifies with. Next pass: confirm what the running site actually
+has, rather than what `netlify env:get` returns. Stopping here per the
+two-attempt rule instead of guessing at a third change.
+
+Note the same file carries a standing warning at :29 to confirm the signature
+header and body paths against a real Commas sandbox, and :47-51 records that
+this adapter was once wired to a header no real delivery ever carried — so this
+seam has broken before.
