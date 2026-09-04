@@ -49,7 +49,7 @@ const WITHOUT_METRO2 = Object.freeze({
 });
 
 /** Does this letter carry at least one Metro 2 rule finding? */
-function hasMetro2Claim(violations) {
+export function hasMetro2Claim(violations) {
   return (violations || []).some((v) => /^M2-/.test(String(v?.ruleId || "")));
 }
 
