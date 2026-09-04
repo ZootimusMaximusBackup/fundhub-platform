@@ -1,0 +1,9 @@
+Sim Five-Academy (simulated) — the five documents the DATABASE held after one
+analysis.completed event, with INNGEST_EVENT_KEY unset. Local Postgres 16,
+scratch database, all 238 migrations. Bytes read back out of the document store.
+
+   12364  bank_lender_match_list       Bank-and-Lender-Match-List.pdf
+    1599  capital_readiness_summary    Capital-Readiness-Summary.pdf
+    8954  credit_analysis_report       Credit-Analysis-Report.pdf
+    9536  credit_optimization_roadmap  Credit-Optimization-Roadmap.pdf
+   11125  funding_snapshot             Funding-Snapshot.pdf
