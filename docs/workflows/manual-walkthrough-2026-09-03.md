@@ -910,3 +910,29 @@ Both 6:47 PM to +sim-05, subject "Capital Academy — $5,000":
 Distinct checkout ids, so these are two real sends creating two real pay links,
 not one message threaded twice. The no-feedback send button (F24) is
 demonstrably generating duplicate payment links for a single sale.
+
+**F30 ACTION SET BY OWNER · SEED REAL CONTRACTS.**
+Chris: "Seed real contracts."
+
+Owner-set task, not a suggestion. The placeholder bodies come out and the real
+executed agreement text goes into the contract templates as seeded data, so
+every offer sends its true document.
+
+What this needs, in order:
+1. Chris supplies the real contract text, one per agreement. Known templates in
+   play so far: Funding Mastery Program Agreement (Academy, $5,000),
+   FUNDING-AGREEMENT (funding DFY, $3,000 deposit), CREDIT-REPAIR-AGREEMENT
+   (repair DFY, $1,000). The SOP also records that Capital Blueprint ($1,000)
+   has **no contract template at all** — that gap is still open.
+2. Seed them into `contract_templates` by `template_key` via db/seed, so they
+   ship with the repo rather than being typed on a call.
+3. Fix F28 in the same pass: the seller party is always Fundhub, never a staff-
+   typed value.
+4. Add the signature block inside the document body (F29).
+
+Do NOT draft contract language independently — this is executed legal text and
+Chris supplies it. Agents seed what he provides.
+
+The one line that must survive into the Academy contract verbatim in substance:
+no promise of funding, approval amount, credit score change, or any particular
+result; it is an education program.
