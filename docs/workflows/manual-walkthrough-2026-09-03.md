@@ -580,3 +580,25 @@ message to the SAME address (+sim-05), which the shared-mailbox explanation
 does not cover. Owner has ruled duplicates are not happening; recording the
 observation only so it can be settled from the `messages` table rather than
 from Gmail. No action now.
+
+**F20 CORRECTED · the generic product title is BY DESIGN and rule-governed.**
+Chris: "there are hard rules on what api shows commas... it's in repo."
+Confirmed at `src/config/offers.mjs:35-79`. The comment is explicit:
+"Resolve the Commas-facing product title — never staff free text."
+
+The rule maps a title per product code and per payment purpose:
+
+| Product code / purpose | Commas-facing title |
+|---|---|
+| diagnostic | Consulting Services Assessment |
+| card-stacking-dfy / deposit | Consulting Services Engagement |
+| repair | Consulting Services Standard |
+| (invoice) | Consulting Services Completion |
+| custom / fallback | Consulting Services Package |
+
+So "Consulting Services Package" on the e-book checkout is the CORRECT default
+for a custom-purpose payment. Not a bug. F20 withdrawn as a defect.
+
+The only open question left, and it is small: should the e-book get its own
+mapped title rather than falling through to the default? Owner's call, not a
+finding. Everything else about this behaviour is working as specified.
