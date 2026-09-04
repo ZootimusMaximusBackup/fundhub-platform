@@ -1040,3 +1040,51 @@ Note for accuracy: the memory note "never print TEST_ACCOUNT_PASSWORD" is the
 agent's own prior convention, not a rule Chris set. He has made clear it should
 not slow the walk down. Owner-set: do not withhold test credentials from him
 for his own sandbox accounts.
+
+**PORTAL CHECK · Sim Five-Academy, signed in as the client.**
+
+**CONFIRMED: the payment never posted.** Account & history → Payments reads
+"No payments yet — They show here after you pay". All six UNLOCK MORE tiles are
+LOCKED, Capital Academy included, so the client has **no access to the course
+he signed for**. This is the downstream proof of F26 (webhook bad_signature).
+
+**F15 GETS A TIEBREAK · the portal shows the RIGHT number.**
+The client portal says "Your soft-pull assessment is in. You're pre-qualified
+for approximately **$199,350**" and "PRE-QUALIFIED FOR $199,350" — matching the
+stored `total_funding_estimate`, NOT the deck's $939,500. So two client-facing
+surfaces quote different pre-qualification figures for the same person, and the
+portal is the correct one. Fix the deck to the portal, not the reverse.
+
+**What WORKS in the portal:**
+- Agreements tab: Funding Mastery Program Agreement, 6:51:07 PM, SIGNED.
+- Documents tab: both the signed PDF (6:52:24 PM, application/pdf) and the
+  original HTML (6:51:07 PM), each ON FILE.
+- Success fee correctly stated: 10% of what funds, due when the money lands.
+- Chat widget present, "Message staff", and a welcome video (CP-01, 1:19).
+
+**F33 · The portal still says the call has not happened.**
+Header: "Welcome back, Sim — Welcome to your Fundhub portal. **Your call is
+next.**" and a black banner headed "**BEFORE YOUR CALL**", plus "Your reports
+land here after your call and credit pull. Nothing is missing — we have not run
+those yet." The credit pull HAS run, the call HAS happened, and he has signed a
+$5,000 agreement. The portal's stage copy never advanced.
+
+**F34 · "YOUR FUNDING ADVISOR — Name not shown here."** No advisor is named on
+a client who just bought. The panel says "Looks after your file" under a blank
+name.
+
+**F35 · The dispute-letter authorization form is shown to an Academy buyer.**
+"Sign to authorize dispute letters — I authorize Fundhub to prepare credit
+dispute letters and complaint drafts from my credit file" sits high on the page
+for a client who bought an education course, not credit repair. Confirm whether
+that is intentional (consent captured for everyone) or leaking from the repair
+path. Do not change it until Chris says which.
+
+**F36 · Messages tab renders "No messages yet." twice** — two identical empty
+rows.
+
+**F37 · Pricing copy contradicts itself on the tiles.** The UNLOCK MORE header
+says "Soft pull is $32. Everything else — book a call for pricing", and every
+tile then reads "On your call" — including Capital Academy, which the client
+has already bought and paid nothing toward. A client who owns an offer should
+not see it as a locked upsell.
