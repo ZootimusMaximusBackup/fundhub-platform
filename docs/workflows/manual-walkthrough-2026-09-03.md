@@ -1436,3 +1436,17 @@ Idea only, not a task: an accountability offer (check-ins / coaching on doing th
 roadmap and paydown steps) sold as an upsell on top of the deliverables and the
 Academy. Belongs to the offers work in `src/config/offers.mjs` and the ladder.
 Not scoped, not on the fix batch. Revisit after the front end and fulfillment.
+
+**OWNER-SET RULE · repair ALWAYS does personal-info cleanup, even on a clean
+file.** Chris: "even if it's clean we should still be removing all personal
+info. 1 name, 1 address, zero inquiries, even if no negatives. Always. That's
+just simple credit repair."
+So the repair engine's minimum output on ANY repair-path client is:
+consolidate to one legal name, one current address, and dispute every inquiry
+with no matching open account — regardless of derogatories. Derogatory letters
+are on top of that. (The reference deliverables already say this: "Your
+personal info dispute letters clean this up to one current address" and
+"inquiry removal letters target Experian first".)
+Consequence for the sim: push-credit.mjs writes no names/addresses/SSN and no
+personal-info variants, so the sim can never exercise this. Add name/address
+variants and inquiries to the repair and trial profiles.
