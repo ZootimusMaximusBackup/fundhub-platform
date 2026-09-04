@@ -725,3 +725,30 @@ Agreement: Sent · Billing: On this call · Welcome email: Incoming.
 Staff actions available: **Send agreement + pay link** (primary), Invoice this
 client, Send contract, Send deliverables package now, a REPAIR REFERRAL
 checkbox, and Log disposition and close.
+
+**F23 · The wrap script promises FUNDING to a client who bought the COURSE.
+(owner: "this is not accurate")**
+Deck screen 24/24, section 07 CLOSE "Wrap", with Funding Mastery $5,000
+selected and the engine line reading `route EDU`. The closer is scripted to say:
+
+  "Within 24 business hours your advisor reaches out and starts on your file.
+   Within 72 business hours your first applications are submitted."
+  "Congratulations, Sim. You made a great decision. We're going to get you
+   funded. Talk soon."
+
+None of that is true for this purchase. Sim Five-Academy bought a $5,000
+education program. No advisor works his file, no applications get submitted,
+and nobody is getting him funded as a result of this sale.
+
+The client half of the same screen IS correct — "Today: Deliverables ·
+Your pace: Program · When you're ready: Funding — we run the full process
+whenever you want." So the customer-facing copy adapts to the offer and the
+closer script does not.
+
+This is a spoken promise of a funding outcome attached to an education sale.
+CLAUDE.md section 7: credit/funding-outcome messaging to a consumer.
+**COMPLIANCE REVIEW REQUIRED** on the fix.
+
+Check every section-07 script line against each of the six ladder offers, not
+just this one — if the wrap is hardcoded to the funding path, the earlier
+sections likely are too.
