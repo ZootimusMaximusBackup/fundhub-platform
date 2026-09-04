@@ -114,7 +114,30 @@ describe("the two repair-path profiles now carry real personal information", () 
     }
   });
 
+  /* The address the floor is told to keep is the CLIENT RECORD's, and there is
+     no address claim at all without one — see the header of
+     src/metro2/diy/personal-info-floor.mjs. These are the current addresses the
+     two simulated files carry, so the walkthrough exercises the consolidation. */
+  const SIM_CURRENT_ADDRESS = Object.freeze({
+    repair: "1180 Ridgemont Dr, Cedar Park, TX, 78613",
+    trial: "3402 Alameda Ct, Pflugerville, TX, 78660"
+  });
+
   test("the floor now has a real consolidation to demand, not just a confirmation", () => {
+    for (const key of REPAIR_PROFILES) {
+      const floor = personalInfoFloorByBureau(payloadFor(key, "Sim Repair"), {
+        legalName: "Sim Repair",
+        currentAddress: SIM_CURRENT_ADDRESS[key]
+      });
+      for (const [code, claims] of Object.entries(floor)) {
+        const rules = claims.map((c) => c.ruleId);
+        assert.ok(rules.includes("PI-NAME-CONSOLIDATE"), `${key}/${code} name`);
+        assert.ok(rules.includes("PI-ADDRESS-CONSOLIDATE"), `${key}/${code} address`);
+      }
+    }
+  });
+
+  test("with no address on the client record the sim file gets the name cleanup and no address claim", () => {
     for (const key of REPAIR_PROFILES) {
       const floor = personalInfoFloorByBureau(payloadFor(key, "Sim Repair"), {
         legalName: "Sim Repair",
@@ -123,7 +146,8 @@ describe("the two repair-path profiles now carry real personal information", () 
       for (const [code, claims] of Object.entries(floor)) {
         const rules = claims.map((c) => c.ruleId);
         assert.ok(rules.includes("PI-NAME-CONSOLIDATE"), `${key}/${code} name`);
-        assert.ok(rules.includes("PI-ADDRESS-CONSOLIDATE"), `${key}/${code} address`);
+        assert.equal(rules.filter((r) => r.startsWith("PI-ADDRESS-")).length, 0,
+          `${key}/${code} must claim nothing about an address nobody gave us`);
       }
     }
   });

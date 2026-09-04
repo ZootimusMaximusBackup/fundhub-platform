@@ -11,6 +11,13 @@ Owner decision, 2026-09-03, final.
 Letters about bad accounts sit **on top** of that floor. A customer who is not on
 a repair path gets none of it, whatever their file holds.
 
+**Two things the owner rule does not reach, and both are in the diagrams below.**
+A customer on Round 2 or later whose newest credit pull is older than the last
+round's letters gets no letter at all until a fresh pull lands. And a customer
+with **no home address on record** gets the name cleanup but no address claim,
+because we do not know their address and a letter may not state one we do not
+have.
+
 Traced from the code in `src/repair/analyze.mjs` and
 `src/metro2/diy/personal-info-floor.mjs`, not from the spec.
 
@@ -51,7 +58,9 @@ flowchart TD
     N -->|Exactly one| N1[PI-NAME-CONFIRM<br/>quotes that one name and asks<br/>the bureau to hold the file to it]
     N -->|None visible| N0[PI-NAME-CONFIRM<br/>says nothing about what the file<br/>holds, names the one name to use]
 
-    S --> D{How many different addresses<br/>does the file report?}
+    S --> A0{Is the customer's OWN home<br/>address on record?}
+    A0 -->|No| A1[NO address claim at all.<br/>Unknown stays unknown — the<br/>company address is never<br/>used as the home address.]
+    A0 -->|Yes| D{How many different addresses<br/>does the file report?}
     D -->|Two or more| D2[PI-ADDRESS-CONSOLIDATE]
     D -->|One or none| D1[PI-ADDRESS-CONFIRM]
 
@@ -79,6 +88,18 @@ customer's name. So:
 * The inquiry claim never says the customer failed to authorise the inquiry.
   Nothing in a credit report carries that fact, so the letter asks for the
   permissible purpose instead of asserting there was none.
+* **The letter never states an address the customer has not given us.** A
+  customer with no home address on record gets no address claim. The letterhead
+  at the top of the page may still fall back to their company address, because
+  the envelope needs a reply address, but nothing inside the letter says that is
+  where they live.
+* **A letter whose every claim says the file is CORRECT does not call itself a
+  dispute.** On a spotless file the two claims are confirmations, so the letter
+  is headed a personal information confirmation, each claim is headed a
+  *Request* rather than a *Violation*, and the surrounding sentences ask for
+  confirmation instead of telling the bureau the file is inaccurate. A letter
+  with even one real dispute in it keeps the dispute wording, because then the
+  dispute really is there.
 
 ### Rounds
 

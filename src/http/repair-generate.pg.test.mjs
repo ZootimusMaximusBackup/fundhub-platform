@@ -334,6 +334,50 @@ describe("POST /api/repair/generate", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
       "this file carries no second name and the letter must not say it does");
     assert.doesNotMatch(letters.rows[0].body_text, /Metro 2/,
       "no Metro 2 defect is claimed, so the letter must not say one is");
+
+    /* THE LETTER ITSELF, NOT JUST THE CLAIMS INSIDE IT. Both claims here say
+       the file is CORRECT, so nothing in the letter may tell the bureau the
+       file is inaccurate or demand that it be corrected. A letter cannot say
+       "these two things are right, please fix them". */
+    const body = letters.rows[0].body_text;
+    assert.doesNotMatch(body, /inaccurat/i,
+      "every claim in this letter says the file is right — it may not call the file inaccurate");
+    assert.doesNotMatch(body, /reporting error|defect/i);
+    assert.doesNotMatch(body, /Delete or correct each item/i,
+      "it may not demand correction of the items it has just confirmed");
+    assert.doesNotMatch(body, /Violation PI-/,
+      "a claim that says the file is correct is not a violation and is not headed as one");
+    assert.match(body, /Request PI-NAME-CONFIRM/);
+    assert.match(body, /Re: Round 1 FCRA personal information confirmation/,
+      "the subject line must say what the letter is");
+    assert.doesNotMatch(body, /\{"/, "no raw data blob may appear in a mailed letter");
+  });
+
+  test("a repair client with NO address on record: the letter claims nothing about an address", async () => {
+    /* The letterhead may fall back to a company address because the envelope
+       needs a reply address. Nothing INSIDE the letter may assert that the
+       company's street is where the client lives, and the client's real
+       addresses on the file may not be put in a delete list. */
+    await wipeClient();
+    await buildClient({
+      result: { bureausPulled: ["EQ"], bureaus: { EQ: cleanReport() } },
+      withAddress: false
+    });
+
+    const r = await post({ client_id: clientId });
+
+    assert.equal(r.code, 200);
+    assert.equal(r.body.ok, true, JSON.stringify(r.body));
+
+    const items = await db.query(
+      `SELECT rule_id FROM dispute_items WHERE client_id = $1::uuid ORDER BY rule_id`, [clientId]);
+    assert.deepEqual(items.rows.map((i) => i.rule_id), ["PI-NAME-CONFIRM"],
+      "the name cleanup still happens; the address claim does not, because we do not know the address");
+
+    const letters = await db.query(
+      `SELECT body_text FROM dispute_letters WHERE client_id = $1::uuid`, [clientId]);
+    assert.doesNotMatch(letters.rows[0].body_text, /My address is/i,
+      "a letter may not state an address the client has never given us");
   });
 
   test("the same clean file, a client NOT on the repair path: writes nothing", async () => {

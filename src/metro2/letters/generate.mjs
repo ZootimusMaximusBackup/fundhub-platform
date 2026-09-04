@@ -53,7 +53,105 @@ function hasMetro2Claim(violations) {
   return (violations || []).some((v) => /^M2-/.test(String(v?.ruleId || "")));
 }
 
-function accurate(line, metro2Backed) {
+/**
+ * The two claims that say the file is RIGHT.
+ *
+ * COMPLIANCE REVIEW REQUIRED — dispute logic.
+ *
+ * The personal-information floor (../diy/personal-info-floor.mjs) runs for every
+ * repair-path client on every round, so a client whose file is spotless gets a
+ * letter whose every claim is one of these: the file reports one name, it should
+ * stay that one name; it reports one address, it should stay that one address.
+ * A letter cannot say "these two things are right, please fix them" — the
+ * surrounding prose was written for claims that dispute something.
+ *
+ * So the same substitution mechanism WITHOUT_METRO2 already uses is extended:
+ * when EVERY claim in the letter is a confirmation, the lines that either state
+ * the file is inaccurate or demand deletion or correction of the items in this
+ * letter are swapped for lines that ask for the confirmation and cleanup the
+ * claims actually request. Lines that do neither are left exactly as they are.
+ * A letter with even one real dispute in it keeps the original wording, because
+ * then the dispute really is there.
+ */
+const CONFIRMATION_RULE_IDS = Object.freeze(["PI-NAME-CONFIRM", "PI-ADDRESS-CONFIRM"]);
+
+/** Is this one of the claims that asserts the file is correct? */
+function isConfirmationClaim(v) {
+  return CONFIRMATION_RULE_IDS.includes(String(v?.ruleId || ""));
+}
+
+/** Does EVERY claim in this letter say the file is correct? */
+function isConfirmationOnly(violations) {
+  const list = (violations || []).filter((v) => v && v.ruleId);
+  return list.length > 0 && list.every(isConfirmationClaim);
+}
+
+/* Keyed by the exact line the prompt bank produced. Consulted before
+   WITHOUT_METRO2, so a line that appears in both takes the confirmation
+   wording. Every replacement stays distinct from its neighbours in the same
+   pool: three bureau letters draw three different openings and three different
+   closings by design (see the bureau-spread note in buildLetterText), and
+   collapsing two of them onto one line would hand the variance gate two letters
+   it has to refuse. */
+const CONFIRMATION_ONLY = Object.freeze({
+  // ── Round 1 ──────────────────────────────────────────────────────────────
+  "I am writing to dispute inaccurate information on my credit file.":
+    "I am writing about the personal information on my credit file.",
+  "The following accounts are reported inaccurately on my consumer report.":
+    "This letter is about the personal information on my consumer report, not about an account.",
+  "I dispute the Metro 2 field defects identified below and ask you to delete or correct them.":
+    "I ask you to confirm the personal information you hold on me and to hold my file to it.",
+  "Please investigate and correct the reporting errors on my file as required by federal law.":
+    "Please review the personal information on my file and confirm in writing what it holds.",
+  "The items below have Metro 2 reporting defects that make my file inaccurate or misleading.":
+    "The requests below are about the personal information on my file — the name and the address my file is reported under.",
+  "Please reinvestigate each item within 30 days under FCRA section 611(a)(1). I also ask for the method of verification for any item you keep on the file.":
+    "Please review the personal information on my file within 30 days and send me written confirmation of what it holds.",
+  "Delete or correct each item after a reasonable investigation, and send written results to the address above.":
+    "Act on each request above and send written results to the address above.",
+  "Delete or correct each item after a real investigation, and confirm in writing.":
+    "Confirm in writing what my personal information holds once you have reviewed it.",
+  "I request written confirmation of every deletion and every correction made to my file.":
+    "I request written confirmation of what my personal information holds, and of any change you make to it.",
+  "If you rubber-stamp these items without a real investigation, my next letter will be a Round 2 method-of-verification demand. A CFPB or attorney-general complaint is reserved for later. This is not a final notice.":
+    "If you do not answer, my next letter will be a Round 2 method-of-verification demand. A CFPB or attorney-general complaint is reserved for later. This is not a final notice.",
+  /* ── Round 2 ────────────────────────────────────────────────────────────
+     A Round 2 letter whose Round 1 was a confirmation request cannot say "I
+     already disputed these items" — nothing was disputed. These say what did
+     happen: an earlier letter about the same personal information. */
+  "I already disputed these items. They still show as verified, or you never answered.":
+    "I wrote to you before about the personal information on my file. This letter follows that up.",
+  "You did not tell me how you verified the items listed below after my first dispute.":
+    "This is a second letter about the personal information on my file.",
+  "I am writing again because the prior reinvestigation did not describe the method of verification.":
+    "I am writing again about the name and the address my file is reported under.",
+  "I already sent a prior dispute. Your response marked items as verified, or you did not answer, without telling me the method of verification.":
+    "This letter follows up my earlier letter about the personal information on my file.",
+  "If you cannot produce that method, delete the items. I will then dispute the same items with the furnisher.":
+    "If your records do not match what I have set out above, correct my personal information and tell me in writing what you changed.",
+  "If you cannot produce that method, delete the items. I will then dispute them with the furnisher.":
+    "If your records do not support what my file reports, correct my personal information and tell me in writing what you changed.",
+  // ── Round 3 (also used by rounds 4, 5 and 6) ─────────────────────────────
+  "I already asked you to reinvestigate and to describe your method of verification. The defects remain.":
+    "I already asked you to confirm the personal information on my file. It is still not settled.",
+  "Under FCRA section 611(a)(5)(A), delete each item you cannot verify.":
+    "Under FCRA section 611(a)(5)(A), delete any personal information on my file you cannot verify as mine.",
+  "I demand deletion of the unverifiable items below within 15 days.":
+    "I ask you to settle the personal information on my file within 15 days.",
+  "Two prior disputes did not produce a reasonable investigation or a method of verification.":
+    "Two earlier letters about the personal information on my file have not settled it.",
+  "Under FCRA section 611(a)(5)(A), delete each item you cannot verify. I demand deletion within 15 days of this letter.":
+    "Under FCRA section 611(a)(5)(A), delete any name or address on my file you cannot verify as mine, and confirm my personal information within 15 days of this letter.",
+  "Send written confirmation of every deletion to the address above.":
+    "Send written confirmation of my personal information to the address above.",
+  "Delete each unverifiable item within 15 days under FCRA section 611(a)(5)(A).":
+    "Within 15 days, confirm my personal information and delete anything attached to it that is not mine.",
+  "If these items remain after 15 days, I will file with the CFPB and my state attorney general.":
+    "If my personal information is not settled after 15 days, I will file with the CFPB and my state attorney general."
+});
+
+function accurate(line, metro2Backed, confirmationOnly = false) {
+  if (confirmationOnly && CONFIRMATION_ONLY[line]) return CONFIRMATION_ONLY[line];
   if (metro2Backed) return line;
   return WITHOUT_METRO2[line] || line;
 }
@@ -120,14 +218,46 @@ function accountLine(v) {
   return `Account ending ${last4}`;
 }
 
+/**
+ * What a claim's `observed` / `expected` reads as in a mailed letter.
+ *
+ * Every Metro 2 claim passes a scalar and keeps exactly the wording it always
+ * had. The personal-information floor passes an object, and JSON.stringify put
+ * a raw `{"namesReportedOnFile":["Sim Repair"],...}` blob into a letter to a
+ * credit bureau. An object is written out as plain phrases instead.
+ */
+function readableValue(value) {
+  if (typeof value !== "object" || value === null) return JSON.stringify(value);
+  const parts = [];
+  for (const [key, raw] of Object.entries(value)) {
+    if (raw === "") continue;
+    if (Array.isArray(raw) && raw.length === 0) continue;
+    const label = String(key).replace(/([a-z0-9])([A-Z])/g, "$1 $2").toLowerCase();
+    let printed;
+    /* NULL is unknown and it stays visible as unknown. It is never dropped and
+       never turned into a zero. */
+    if (raw == null) printed = "not reported";
+    else if (Array.isArray(raw)) printed = raw.map((r) => JSON.stringify(String(r))).join(", ");
+    else if (typeof raw === "boolean") printed = raw ? "yes" : "no";
+    else if (typeof raw === "object") printed = JSON.stringify(raw);
+    else printed = JSON.stringify(raw);
+    parts.push(`${label}: ${printed}`);
+  }
+  return parts.length ? parts.join("; ") : JSON.stringify(value);
+}
+
 function formatViolationParagraph(v) {
   if (!v?.ruleId) return null;
-  const observed = v.observed == null ? "not populated as required" : JSON.stringify(v.observed);
-  const expected = v.expected == null ? "compliant Metro 2 reporting" : JSON.stringify(v.expected);
+  const observed = v.observed == null ? "not populated as required" : readableValue(v.observed);
+  const expected = v.expected == null ? "compliant Metro 2 reporting" : readableValue(v.expected);
   const statutes = capItemStatutes(v);
   const sev = SEVERITY_LABEL[v.severity] || "Supporting";
+  /* A claim that says the file is CORRECT is not a violation and may not be
+     headed as one. It is a request, and it is labelled a request. The variance
+     gate strips both headings — see CLAIM_RULE_ID in ./variance.mjs. */
+  const heading = isConfirmationClaim(v) ? "Request" : "Violation";
   return [
-    `Violation ${v.ruleId} — ${plainName(v)}`,
+    `${heading} ${v.ruleId} — ${plainName(v)}`,
     fieldLine(v),
     `Severity: ${sev}`,
     accountLine(v),
@@ -185,6 +315,7 @@ export function buildLetterText(opts = {}) {
   const ordered = rotateViolations(violations, seed + (opts.attempt || 0) * 7);
   const attempt = Number(opts.attempt) || 0;
   const metro2Backed = hasMetro2Claim(violations);
+  const confirmationOnly = isConfirmationOnly(violations);
   /* WHY THE BUREAU IS SPREAD ACROSS THE POOL BY HAND, AND NOT LEFT TO THE SEED.
    *
    * The variance gate strips every itemised claim block before it compares two
@@ -213,9 +344,12 @@ export function buildLetterText(opts = {}) {
    * already written and already in use for that round. Only which of them a
    * given bureau draws has changed. */
   const bureauSpread = { TU: 0, EX: 2, EQ: 4 }[bureau] ?? 0;
-  const open = accurate(openingFor(seed + attempt + bureauSpread, round), metro2Backed);
-  const lead = accurate(instr.lead, metro2Backed);
-  const close = closingFor(seed + attempt * 5 + 3 + bureauSpread * 2, round);
+  const open = accurate(openingFor(seed + attempt + bureauSpread, round), metro2Backed, confirmationOnly);
+  const lead = accurate(instr.lead, metro2Backed, confirmationOnly);
+  const close = accurate(closingFor(seed + attempt * 5 + 3 + bureauSpread * 2, round), metro2Backed, confirmationOnly);
+  const demand = accurate(instr.demand, metro2Backed, confirmationOnly);
+  const ask = accurate(instr.ask, metro2Backed, confirmationOnly);
+  const next = accurate(instr.next, metro2Backed, confirmationOnly);
   const dateLine = opts.undated ? "[DATE — write today's date when you mail this]" : (opts.date || "");
   const name = identity.fullName || "[Consumer Name]";
   const addr = [
@@ -255,11 +389,13 @@ export function buildLetterText(opts = {}) {
   const ruleIdList = ordered.map((v) => v.ruleId).join(", ");
   /* The subject line is the first thing read. It says Metro 2 only when a Metro 2
      claim is actually in the letter; otherwise it says what the letter is — an
-     FCRA dispute. */
+     FCRA dispute. And it does not call itself a dispute at all when every claim
+     in it says the file is correct. */
   const kind = metro2Backed ? "Metro 2" : "FCRA";
+  const action = confirmationOnly ? "personal information confirmation" : "dispute";
   const reSubject = String(round).toUpperCase() === ROUND.FURNISHER
-    ? `Furnisher ${kind} dispute`
-    : `Round ${instr.roundLabel || String(instr.round).replace(/^R/, "")} ${kind} dispute`;
+    ? `Furnisher ${kind} ${action}`
+    : `Round ${instr.roundLabel || String(instr.round).replace(/^R/, "")} ${kind} ${action}`;
 
   const headerLines = [
     dateLine,
@@ -289,32 +425,32 @@ export function buildLetterText(opts = {}) {
 
   let body;
   if (attempt % 3 === 1) {
-    body = withEvidence([open, "", lead, "", instr.demand, "", ...paragraphs.flatMap((p) => [p, ""]), instr.ask]).join("\n");
+    body = withEvidence([open, "", lead, "", demand, "", ...paragraphs.flatMap((p) => [p, ""]), ask]).join("\n");
   } else if (attempt % 3 === 2) {
     body = withEvidence([
       lead,
       "",
-      instr.demand,
+      demand,
       "",
       open,
       "",
-      instr.ask,
+      ask,
       "",
       ...paragraphs.flatMap((p) => [p, ""]),
       "",
-      instr.next
+      next
     ]).join("\n");
   } else {
     body = withEvidence([
       open,
       "",
-      instr.demand,
+      demand,
       "",
       ...paragraphs.flatMap((p) => [p, ""]),
       "",
       lead,
       "",
-      instr.next
+      next
     ]).join("\n");
   }
 

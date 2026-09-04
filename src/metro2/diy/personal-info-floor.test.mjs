@@ -12,8 +12,6 @@ import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  PERSONAL_INFO_RULE_IDS,
-  isPersonalInfoRuleId,
   nameLabel,
   normalizeLabel,
   addressLabel,
@@ -78,13 +76,6 @@ const PRIOR_HOME = {
 const rulesOf = (claims) => claims.map((c) => c.ruleId);
 
 describe("the floor's own shape", () => {
-  test("every rule id it can emit is one it recognises", () => {
-    for (const id of PERSONAL_INFO_RULE_IDS) assert.equal(isPersonalInfoRuleId(id), true);
-    assert.equal(isPersonalInfoRuleId("M2-005"), false);
-    assert.equal(isPersonalInfoRuleId("DEROG-COLLECTION"), false);
-    assert.equal(isPersonalInfoRuleId(null), false);
-  });
-
   test("every claim carries a rule id and a severity, or it can never become an item", () => {
     const out = personalInfoFloorByBureau(fileWith({ aliases: [{ firstName: "Sim", lastName: "Repair" }] }), {
       legalName: "Sim Repair"
@@ -105,7 +96,7 @@ describe("NEVER INVENT A NAME VARIANT", () => {
        initial, the client record does not. */
     const out = personalInfoFloorByBureau(
       fileWith({ aliases: [{ firstName: "Barbara", middleName: "M", lastName: "Doty" }] }),
-      { legalName: "Barbara Doty" }
+      { legalName: "Barbara Doty", currentAddress: "412 Pecan St, Austin, TX, 78701" }
     );
     assert.deepEqual(rulesOf(out.EX), ["PI-NAME-CONFIRM", "PI-ADDRESS-CONFIRM"]);
     const name = out.EX[0];
@@ -217,9 +208,88 @@ describe("addresses", () => {
   test("a ZIP+4 is the same address as its five-digit form", () => {
     const out = personalInfoFloorByBureau(
       fileWith({ addresses: [HOME, { ...HOME, postalCode: "78701-1234" }] }),
-      { legalName: "Sim Repair" }
+      { legalName: "Sim Repair", currentAddress: "412 Pecan St, Austin, TX, 78701" }
     );
     assert.equal(out.EX[1].ruleId, "PI-ADDRESS-CONFIRM");
+  });
+});
+
+describe("NO PERSONAL ADDRESS ON RECORD MEANS NO ADDRESS CLAIM", () => {
+  /* The floor used to be handed whatever address the letter's return-address
+     loader had found, which for a client with no personal address on record is
+     their BUSINESS street address. The letter then said "My address is <the
+     company's address>" and asked the bureau to delete the consumer's real
+     current residential address. Unknown is unknown. */
+  test("a file with two addresses and no client address makes no address claim", () => {
+    const out = personalInfoFloorByBureau(
+      fileWith({ addresses: [HOME, PRIOR_HOME] }),
+      { legalName: "Sim Repair", currentAddress: null }
+    );
+    assert.deepEqual(rulesOf(out.EX), ["PI-NAME-CONFIRM"]);
+    for (const claim of out.EX) {
+      assert.doesNotMatch(claim.reason, /My address is/i);
+      assert.doesNotMatch(claim.reason, /412 Pecan St|77 Old Mill Rd/);
+    }
+  });
+
+  test("an empty string is not an address either", () => {
+    const out = personalInfoFloorByBureau(
+      fileWith({ addresses: [HOME] }),
+      { legalName: "Sim Repair", currentAddress: "   " }
+    );
+    assert.deepEqual(rulesOf(out.EX), ["PI-NAME-CONFIRM"]);
+  });
+
+  test("the consumer's own address never lands in the delete list over a ZIP+4 or a spelled-out street", () => {
+    for (const stated of [
+      "412 Pecan St, Austin, TX, 78701-1234",
+      "412 Pecan Street, Austin, TX, 78701",
+      "412 PECAN ST, AUSTIN, TX, 78701"
+    ]) {
+      const out = personalInfoFloorByBureau(
+        fileWith({ addresses: [HOME, PRIOR_HOME] }),
+        { legalName: "Sim Repair", currentAddress: stated }
+      );
+      const addr = out.EX[1];
+      assert.equal(addr.ruleId, "PI-ADDRESS-CONSOLIDATE");
+      assert.doesNotMatch(addr.reason, /delete[^.]*"412 Pecan St[^"]*"/,
+        `stated as "${stated}", the letter asked to delete the consumer's own address`);
+      assert.match(addr.reason, /delete "77 Old Mill Rd, Round Rock, TX, 78664"/);
+    }
+  });
+});
+
+describe("a CONFIRM claim never asks the bureau to hold the file to a name or address that is not the consumer's", () => {
+  test("name: when the file's one name differs from the record, it confirms ONE name, mine", () => {
+    const out = personalInfoFloorByBureau(
+      fileWith({ aliases: [{ firstName: "Barbara", middleName: "M", lastName: "Doty" }] }),
+      { legalName: "Barb Doty" }
+    );
+    const name = out.EX[0];
+    assert.equal(name.ruleId, "PI-NAME-CONFIRM");
+    assert.deepEqual(quotedFacts(name.reason), ["Barbara M Doty"]);
+    assert.doesNotMatch(name.reason, /carries this one name/,
+      "it must not ask the bureau to hold the file to a name the consumer has not claimed");
+    assert.match(name.reason, /one name only, mine/);
+  });
+
+  test("name: when they match, it does confirm THAT name", () => {
+    const out = personalInfoFloorByBureau(
+      fileWith({ aliases: [{ firstName: "Barbara", middleName: "M", lastName: "Doty" }] }),
+      { legalName: "Barbara M Doty" }
+    );
+    assert.match(out.EX[0].reason, /carries this one name and no other/);
+  });
+
+  test("address: when the file's one address differs from the record, it confirms ONE address, mine", () => {
+    const out = personalInfoFloorByBureau(
+      fileWith({ addresses: [HOME] }),
+      { legalName: "Sim Repair", currentAddress: "9 New Rd, Dallas, TX, 75201" }
+    );
+    const addr = out.EX[1];
+    assert.equal(addr.ruleId, "PI-ADDRESS-CONFIRM");
+    assert.doesNotMatch(addr.reason, /carries this one address/);
+    assert.match(addr.reason, /one address only, mine/);
   });
 });
 
@@ -260,9 +330,10 @@ describe("inquiries with no account on the file", () => {
     const out = personalInfoFloorByBureau(
       fileWith({
         tradelines: [ACCOUNT],
-        inquiries: [{ creditorName: "EXAMPLE BANK NA", inquiryDate: "2026-05-02", sourceType: "Experian" }]
+        inquiries: [{ creditorName: "EXAMPLE BANK NA", inquiryDate: "2026-05-02", sourceType: "Experian" }],
+        addresses: [HOME]
       }),
-      { legalName: "Sim Repair" }
+      { legalName: "Sim Repair", currentAddress: "412 Pecan St, Austin, TX, 78701" }
     );
     assert.deepEqual(rulesOf(out.EX), ["PI-NAME-CONFIRM", "PI-ADDRESS-CONFIRM"]);
   });
@@ -319,10 +390,32 @@ describe("the floor really is a floor", () => {
         }
       }
     };
-    const out = personalInfoFloorByBureau(merged, { legalName: "Sim Repair" });
+    const out = personalInfoFloorByBureau(merged, {
+      legalName: "Sim Repair",
+      currentAddress: "412 Pecan St, Austin, TX, 78701"
+    });
     assert.deepEqual(Object.keys(out).sort(), ["EX", "TU"]);
     for (const code of Object.keys(out)) {
       assert.ok(out[code].length >= 2, `${code} must get the name and address claims`);
+    }
+  });
+
+  test("with NO address on the client record every bureau still gets the name claim", () => {
+    const merged = {
+      bureaus: {
+        EX: fileWith({}).bureaus.EX,
+        TU: {
+          creditFiles: [{ creditFileDetail: { sourceType: "TransUnion", creditFileInfileDate: "2026-09-03" } }],
+          inquiries: [],
+          tradelines: []
+        }
+      }
+    };
+    const out = personalInfoFloorByBureau(merged, { legalName: "Sim Repair", currentAddress: null });
+    assert.deepEqual(Object.keys(out).sort(), ["EX", "TU"]);
+    for (const code of Object.keys(out)) {
+      assert.deepEqual(rulesOf(out[code]), ["PI-NAME-CONFIRM"],
+        `${code} keeps the name claim and makes no claim about an address nobody gave us`);
     }
   });
 

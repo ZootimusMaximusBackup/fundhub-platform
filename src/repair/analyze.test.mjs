@@ -162,12 +162,18 @@ describe("derogatory items and the offer path", () => {
     }
   };
 
-  function dbFor(tier, { agreement = false } = {}) {
+  function dbFor(tier, { agreement = false, personalAddress = true } = {}) {
     return fakeDb({
       // Order matters: the outcome_tier read must be matched before the
       // first_name/last_name read, and both are "FROM clients".
       "outcome_tier FROM clients": [{ outcome_tier: tier }],
-      "first_name, last_name FROM clients": [{ first_name: "Sim", last_name: "Repair" }],
+      "first_name, last_name": [{ first_name: "Sim", last_name: "Repair" }],
+      /* pii_identity is the ONLY source of the client's own address. Without a
+         row here the floor makes no address claim, which is the point of the
+         second test below. */
+      "FROM pii_identity": personalAddress
+        ? [{ addresses: [{ address_line1: "412 Pecan St", city: "Austin", state: "TX", zip: "78701" }] }]
+        : [],
       "FROM contracts": agreement ? [{ "?column?": 1 }] : [],
       "FROM client_consents": [{ is_valid: true }],
       "FROM dispute_letters dl": [],
@@ -272,10 +278,13 @@ describe("the personal-information floor", () => {
     }
   };
 
-  function dbFor(file, tier) {
+  function dbFor(file, tier, { personalAddress = true } = {}) {
     return fakeDb({
       "outcome_tier FROM clients": [{ outcome_tier: tier }],
-      "first_name, last_name FROM clients": [{ first_name: "Sim", last_name: "Repair" }],
+      "first_name, last_name": [{ first_name: "Sim", last_name: "Repair" }],
+      "FROM pii_identity": personalAddress
+        ? [{ addresses: [{ address_line1: "412 Pecan St", city: "Austin", state: "TX", zip: "78701" }] }]
+        : [],
       "FROM contracts": [],
       "FROM client_consents": [{ is_valid: true }],
       "FROM dispute_letters dl": [],
@@ -301,6 +310,46 @@ describe("the personal-information floor", () => {
       r.letters[0].ruleIds.slice().sort(),
       ["PI-ADDRESS-CONFIRM", "PI-NAME-CONFIRM"]
     );
+  });
+
+  test("with NO address on the client record the letter makes no address claim at all", async () => {
+    /* THE BUSINESS ADDRESS IS NOT THE HOME ADDRESS. loadIdentity is allowed to
+       fall back to the company street for the letterhead, because an envelope
+       needs a reply address. It is not allowed to feed that value to the floor:
+       doing so asserted the client's business address as their residence and
+       asked the bureau to delete their real one. */
+    const db = fakeDb({
+      "outcome_tier FROM clients": [{ outcome_tier: "REPAIR_ONLY" }],
+      "first_name, last_name": [{ first_name: "Sim", last_name: "Repair" }],
+      "FROM pii_identity": [],
+      "FROM businesses": [{
+        entity_data: { address_line1: "204 Horse Blvd", city: "Austin", state: "TX", postal_code: "78701" }
+      }],
+      "FROM contracts": [],
+      "FROM client_consents": [{ is_valid: true }],
+      "FROM dispute_letters dl": [],
+      "FROM repair_programs": [],
+      "FROM crs_results": [{ result: SPOTLESS_FILE }],
+      "FROM dispute_cases dc": [],
+      "INSERT INTO dispute_cases": [{
+        id: "case-1", org_id: ORG, client_id: CLIENT, bureau: "EX", round: "R1"
+      }],
+      "INSERT INTO dispute_items": [{ id: "item-1" }],
+      "INSERT INTO dispute_letters": [{ id: "letter-1", bureau: "EX", case_id: "case-1" }],
+      "FROM dispute_letters$": [],
+      "SELECT body_text FROM dispute_letters": []
+    });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.deepEqual(r.letters[0].ruleIds, ["PI-NAME-CONFIRM"]);
+    const body = r.letters[0].body_text;
+    assert.doesNotMatch(body, /My address is/i,
+      "a letter may not state an address the client has never given us");
+    assert.doesNotMatch(body, /delete "412 Pecan St[^"]*"/,
+      "and it may not ask the bureau to delete the address that IS on the file");
+    /* The company street may still appear once, as the return address at the
+       top of the letter. It may not appear inside a claim. */
+    assert.match(body, /204 Horse Blvd/);
   });
 
   test("the same spotless file off the repair path produces nothing", async () => {
@@ -349,7 +398,7 @@ describe("the re-pull gate between rounds", () => {
     return fakeDb({
       "MAX\\(dl\\.created_at\\)": [{ newest: priorRoundAt }],
       "outcome_tier FROM clients": [{ outcome_tier: "REPAIR_ONLY" }],
-      "first_name, last_name FROM clients": [{ first_name: "Sim", last_name: "Repair" }],
+      "first_name, last_name": [{ first_name: "Sim", last_name: "Repair" }],
       "FROM contracts": [],
       "FROM client_consents": [{ is_valid: true }],
       "FROM dispute_letters dl": [],

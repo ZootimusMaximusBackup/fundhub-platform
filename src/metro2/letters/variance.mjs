@@ -27,16 +27,32 @@ const MAX_STRIKES = 2;
  * src/metro2/letters/variance-derogatory.test.mjs, which pins the three-bureau
  * case AND pins that two genuinely identical letters are still refused.
  *
- * PI-* joined the list on 2026-09-03 for exactly the same reason, one step
- * worse. It is the personal-information floor (src/metro2/diy/personal-info-floor.mjs),
- * which every repair-path client gets on every bureau — and the floor's claims
- * are the SAME words at all three bureaus by definition, because it is the same
- * name and the same address. Left out of this list, a clean file would have
- * produced one letter and two `variance_gate_exhausted` refusals, which is the
- * empty desk the floor exists to end. Nothing is loosened: the threshold is
- * untouched and every comparison the gate made before, it still makes. */
+ * PI-* joined the list on 2026-09-03. It is the personal-information floor
+ * (src/metro2/diy/personal-info-floor.mjs), which every repair-path client gets
+ * on every bureau — and the floor's claims are the SAME words at all three
+ * bureaus by definition, because it is the same name and the same address.
+ *
+ * WHAT THAT CHANGE ACTUALLY BUYS, MEASURED (corrected 2026-09-03 after a
+ * verifier tested the earlier claim written here and found it false): it is
+ * ROUND 2 and later, not Round 1. Prior letters are read per bureau
+ * (src/repair/analyze.mjs priorLetterBodies filters `AND bureau = $3`), so the
+ * three bureau letters in one Round 1 batch are never compared against each
+ * other and a clean Round 1 file produced three letters and no refusal with or
+ * without this entry. Round 2 IS compared — against Round 1's letter to the
+ * same bureau — and there the floor's identical claim block is what tips the
+ * similarity over the threshold. The line that used to sit here said a clean
+ * file would otherwise have produced one letter and two refusals at Round 1.
+ * That was wrong and it is deleted rather than reworded.
+ *
+ * Nothing is loosened: the threshold is untouched and every comparison the gate
+ * made before, it still makes.
+ *
+ * "Request" is accepted beside "Violation" because a claim that says the file is
+ * CORRECT is headed Request in the letter (src/metro2/letters/generate.mjs
+ * formatViolationParagraph). Both are the same item block and both are stripped. */
 const CLAIM_RULE_ID =
   String.raw`(?:M2-\d{3}|DEROG-[A-Z0-9]+(?:-[A-Z0-9]+)*|PI-[A-Z0-9]+(?:-[A-Z0-9]+)*)`;
+const CLAIM_HEADING = String.raw`(?:Violation|Request)`;
 
 /** Strip fixed citation/legal/item blocks before fingerprinting — facts stay fixed; prose varies. */
 export function proseForVariance(letterText) {
@@ -44,7 +60,7 @@ export function proseForVariance(letterText) {
     .replace(/CITATIONS:[\s\S]*?(?=\nCLOSING:|\nSincerely|\nRespectfully|$)/i, " ")
     .replace(
       new RegExp(
-        `Violation ${CLAIM_RULE_ID}[\\s\\S]*?(?=\\n\\nViolation ${CLAIM_RULE_ID}|\\n\\nCITATIONS:|\\n\\nCLOSING:|$)`,
+        `${CLAIM_HEADING} ${CLAIM_RULE_ID}[\\s\\S]*?(?=\\n\\n${CLAIM_HEADING} ${CLAIM_RULE_ID}|\\n\\nCITATIONS:|\\n\\nCLOSING:|$)`,
         "gi"
       ), " ")
     .replace(

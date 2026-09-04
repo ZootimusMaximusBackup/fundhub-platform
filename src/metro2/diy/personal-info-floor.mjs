@@ -66,15 +66,6 @@ import { bureauReportsFromMergedCrs, reportAsOf } from "./from-crs.mjs";
 const S = STATUTES;
 const C = CASES;
 
-/** Every rule id this module can emit. */
-export const PERSONAL_INFO_RULE_IDS = Object.freeze([
-  "PI-NAME-CONSOLIDATE",
-  "PI-NAME-CONFIRM",
-  "PI-ADDRESS-CONSOLIDATE",
-  "PI-ADDRESS-CONFIRM",
-  "PI-INQUIRY-UNMATCHED"
-]);
-
 /**
  * ruleId → the plain name a letter prints and the authority it rests on.
  * `scope` matches the shape ../../metro2/letters/generate.mjs already handles.
@@ -107,11 +98,6 @@ export const PERSONAL_INFO_CLAIMS = Object.freeze({
   })
 });
 
-/** Is this rule id one of the personal-information floor's rather than Metro 2's? */
-export function isPersonalInfoRuleId(ruleId) {
-  return Object.prototype.hasOwnProperty.call(PERSONAL_INFO_CLAIMS, String(ruleId || ""));
-}
-
 function text(value) {
   return value == null ? "" : String(value).trim();
 }
@@ -141,6 +127,41 @@ export function normalizeAddress(address) {
     [address?.line1, address?.line2, address?.city, address?.state, zip5].map(text)
       .filter(Boolean).join(" ")
   );
+}
+
+/* Street words a postal address is written either way round. Folded ONLY when
+   the client record's address is matched against the addresses the file
+   reports — never when deciding whether two file addresses are distinct. */
+const STREET_WORDS = Object.freeze(new Map([
+  ["STREET", "ST"], ["AVENUE", "AVE"], ["ROAD", "RD"], ["DRIVE", "DR"],
+  ["BOULEVARD", "BLVD"], ["LANE", "LN"], ["COURT", "CT"], ["PLACE", "PL"],
+  ["TERRACE", "TER"], ["PARKWAY", "PKWY"], ["HIGHWAY", "HWY"], ["CIRCLE", "CIR"],
+  ["SQUARE", "SQ"], ["TRAIL", "TRL"], ["APARTMENT", "APT"], ["SUITE", "STE"],
+  ["NORTH", "N"], ["SOUTH", "S"], ["EAST", "E"], ["WEST", "W"],
+  ["NORTHEAST", "NE"], ["NORTHWEST", "NW"], ["SOUTHEAST", "SE"], ["SOUTHWEST", "SW"]
+]));
+
+/**
+ * The key used to ask ONE question: is the address the client record holds the
+ * same address the file is already printing?
+ *
+ * It folds a ZIP+4 to its five digits and the common street words to their
+ * abbreviations, because "412 Pecan Street, Austin, TX, 78701-1234" and
+ * "412 Pecan St, Austin, TX, 78701" are one address and the consumer's own
+ * current address must never land in a deletion list. Distinctness of two
+ * addresses ON THE FILE keeps using normalizeAddress; folding harder here can
+ * only ever make the letter KEEP an address it would otherwise have asked to
+ * delete, which is the safe direction of the two.
+ */
+export function addressMatchKey(label) {
+  const tokens = normalizeLabel(label).split(" ").filter(Boolean);
+  const out = [];
+  for (const token of tokens) {
+    const prev = out[out.length - 1] || "";
+    if (/^\d{4}$/.test(token) && /^\d{5}$/.test(prev)) continue; // the +4 of a ZIP+4
+    out.push(STREET_WORDS.get(token) || token);
+  }
+  return out.join(" ");
 }
 
 /**
@@ -287,16 +308,27 @@ export function nameClaim({ namesOnFile, legalName, bureau }) {
   }
 
   if (labels.length === 1) {
+    /* The one name on the file and the name on the client record are two
+       independent values and they routinely differ — a file carrying a middle
+       initial against a record that does not is the ordinary case. Where they
+       differ, the letter must not ask the bureau to hold the file to the label
+       it is printing while the consumer asserts a different one; it asks the
+       bureau to hold the file to ONE name, the consumer's. */
+    const confirmed = Boolean(onFile);
     return claim("PI-NAME-CONFIRM", {
       bureau,
       subject: keep || labels[0],
       observed: { namesReportedOnFile: labels, keepOnly: keep || labels[0] },
       expected: "one name on the file",
-      reason:
-        `This file reports one name: "${labels[0]}". My name is ${keep}. ` +
-        `Confirm in writing that my personal information carries this one name ` +
-        `and no other, and add no further name or spelling to it. If any other ` +
-        `name is or becomes attached to this file it is not mine and must be deleted.`
+      reason: confirmed
+        ? `This file reports one name: "${labels[0]}". My name is ${keep}. ` +
+          `Confirm in writing that my personal information carries this one name ` +
+          `and no other, and add no further name or spelling to it. If any other ` +
+          `name is or becomes attached to this file it is not mine and must be deleted.`
+        : `This file reports one name: "${labels[0]}". My name is ${keep}. ` +
+          `Confirm in writing that my personal information carries one name only, ` +
+          `mine, and add no further name or spelling to it. If a name or spelling ` +
+          `that is not mine is or becomes attached to this file, delete it.`
     });
   }
 
@@ -316,24 +348,34 @@ export function nameClaim({ namesOnFile, legalName, bureau }) {
  * The address half. Same rule as the name half: two or more addresses genuinely
  * on the file is a consolidation; one is a confirmation; none asserts nothing.
  *
- * The address to KEEP is the client's own — a consumer assertion. Where the
- * client record has none, the file's own "Current" address is used, and failing
- * that the first one listed, which is what the bureau is showing anyway.
+ * NO ADDRESS ON THE CLIENT RECORD MEANS UNKNOWN, AND UNKNOWN MEANS NO CLAIM.
+ * This function returns null in that case and the bureau's letter carries the
+ * name claim and the inquiry claims without an address claim at all.
+ *
+ * An earlier version fell back to whatever address the letter's return-address
+ * loader had found, which for a client with no personal address on record is
+ * their BUSINESS street address (../../repair/analyze.mjs
+ * loadCompanyReturnAddress). That put "My address is <the company's address>"
+ * into a mailed letter and asked the bureau to delete the consumer's real
+ * current residential address — a false statement of fact, and one that harms
+ * the consumer. Falling back to the file's own "Current" label instead is the
+ * same mistake one step quieter: it would have the consumer assert as their own
+ * an address they have never given us. A missing personal address is missing;
+ * it does not get filled in from another field.
  */
 export function addressClaim({ addressesOnFile, currentAddress, bureau }) {
-  const labels = addressesOnFile.map((a) => a.label);
   const stated = text(currentAddress);
-  const statedKey = normalizeLabel(stated);
-  const matched = addressesOnFile.find((a) => normalizeLabel(a.label) === statedKey);
-  const fileCurrent = addressesOnFile.find((a) => a.item?.isCurrent === true);
-  const keep = stated
-    ? (matched ? matched.label : stated)
-    : (fileCurrent?.label || labels[0] || null);
-  const keepKey = normalizeLabel(keep);
+  if (!stated) return null;
+
+  const labels = addressesOnFile.map((a) => a.label);
+  const statedKey = addressMatchKey(stated);
+  const matched = addressesOnFile.find((a) => addressMatchKey(a.label) === statedKey);
+  const keep = matched ? matched.label : stated;
+  const keepKey = addressMatchKey(keep);
 
   if (labels.length >= 2) {
     const remove = addressesOnFile
-      .filter((a) => normalizeLabel(a.label) !== keepKey)
+      .filter((a) => addressMatchKey(a.label) !== keepKey)
       .map((a) => a.label);
     return claim("PI-ADDRESS-CONSOLIDATE", {
       bureau,
@@ -350,16 +392,25 @@ export function addressClaim({ addressesOnFile, currentAddress, bureau }) {
   }
 
   if (labels.length === 1) {
+    /* Same split as the name half: the one address on the file and the address
+       on the client record can disagree, and where they do the letter asks the
+       bureau to hold the file to ONE address, the consumer's, rather than to
+       the label the file happens to be printing. */
+    const confirmed = Boolean(matched);
     return claim("PI-ADDRESS-CONFIRM", {
       bureau,
       subject: keep,
       observed: { addressesReportedOnFile: labels, keepOnly: keep },
       expected: "one address on the file",
-      reason:
-        `This file reports one address: "${labels[0]}". My address is ${keep}. ` +
-        `Confirm in writing that my personal information carries this one address ` +
-        `and no other, and add no further address to it. If any other address is ` +
-        `or becomes attached to this file it is not mine and must be deleted.`
+      reason: confirmed
+        ? `This file reports one address: "${labels[0]}". My address is ${keep}. ` +
+          `Confirm in writing that my personal information carries this one address ` +
+          `and no other, and add no further address to it. If any other address is ` +
+          `or becomes attached to this file it is not mine and must be deleted.`
+        : `This file reports one address: "${labels[0]}". My address is ${keep}. ` +
+          `Confirm in writing that my personal information carries one address only, ` +
+          `mine, and add no further address to it. If an address that is not mine is ` +
+          `or becomes attached to this file, delete it.`
     });
   }
 
@@ -368,13 +419,10 @@ export function addressClaim({ addressesOnFile, currentAddress, bureau }) {
     subject: keep,
     observed: { addressesReportedOnFile: [], keepOnly: keep },
     expected: "one address on the file",
-    reason: keep
-      ? `My address is ${keep}. Report my personal information under that one ` +
-        `address only. Confirm in writing which addresses are attached to this ` +
-        `file, and if any address other than ${keep} is attached to it, delete it.`
-      : `Confirm in writing which addresses are attached to my personal ` +
-        `information on this file. Any address that is not my own must be deleted, ` +
-        `and my file must carry one address only.`
+    reason:
+      `My address is ${keep}. Report my personal information under that one ` +
+      `address only. Confirm in writing which addresses are attached to this ` +
+      `file, and if any address other than ${keep} is attached to it, delete it.`
   });
 }
 
@@ -418,15 +466,20 @@ export function inquiryClaims({ inquiries, accountKeys, bureau }) {
 /**
  * The floor, per bureau.
  *
- * EVERY bureau with a report on the pull gets at least the name claim and the
- * address claim. That is the owner rule literally: cleanup happens even when
- * the file is completely clean, so this function never returns an empty list
- * for a bureau that has a file.
+ * EVERY bureau with a report on the pull gets the name claim, so this function
+ * never returns an empty list for a bureau that has a file. That is the owner
+ * rule: cleanup happens even when the file is completely clean.
+ *
+ * THE ONE EXCEPTION, and it is deliberate: a client with NO personal address on
+ * record gets no address claim, because we do not know their address and a
+ * letter may not assert one we do not have. See addressClaim above.
  *
  * @param {object} merged  crs_results.result
  * @param {{ legalName?: string|null, currentAddress?: string|null }} consumer
- *        What the CLIENT RECORD says about the client. Never used to decide
- *        whether the file carries a variant — only to name what to keep.
+ *        What the CLIENT RECORD says about the client. `currentAddress` must be
+ *        the client's OWN address or null — never a company address standing in
+ *        for one. Never used to decide whether the file carries a variant, only
+ *        to name what to keep.
  * @returns {Record<string, object[]>}
  */
 export function personalInfoFloorByBureau(merged, { legalName = null, currentAddress = null } = {}) {

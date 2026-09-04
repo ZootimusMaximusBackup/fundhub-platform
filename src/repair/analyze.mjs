@@ -200,6 +200,16 @@ async function loadExistingRoundLetters(db, { orgId, clientId, round }) {
   }));
 }
 
+/** "412 Pecan St, Austin, TX, 78701" from a return-address row, or null. */
+export function joinedAddress(addr) {
+  if (!addr?.address_line1) return null;
+  return [
+    addr.address_line1,
+    addr.address_line2,
+    [addr.address_city, addr.address_state, addr.address_zip].filter(Boolean).join(", ")
+  ].filter(Boolean).join(", ") || null;
+}
+
 async function loadIdentity(db, { orgId, clientId }) {
   const c = await db.query(
     `SELECT first_name, last_name FROM clients
@@ -211,12 +221,22 @@ async function loadIdentity(db, { orgId, clientId }) {
   const fullName = [row.first_name, row.last_name].filter(Boolean).join(" ").trim();
   if (!fullName) return { fullName: null, complete: false };
 
-  let addr = null;
+  /* TWO DIFFERENT ADDRESSES, AND THEY MUST NOT BE CONFUSED.
+     `personal` is the client's own address, from pii_identity. `addr` is
+     whatever we can print as a RETURN ADDRESS at the top of the letter, which
+     is allowed to fall back to the client's company address because an envelope
+     needs somewhere for the reply to go.
+     Only `personal` may be used to say "my address is …" inside the letter.
+     Passing the company fallback into the personal-information floor is how a
+     client with no address on record had their business address asserted as
+     their home and their real home address put in a deletion list. */
+  let personal = null;
   try {
-    addr = await loadClientReturnAddress(db, { orgId, clientId });
+    personal = await loadClientReturnAddress(db, { orgId, clientId });
   } catch {
-    addr = null;
+    personal = null;
   }
+  let addr = personal?.address_line1 ? personal : null;
   if (!addr?.address_line1) {
     try {
       addr = await loadCompanyReturnAddress(db, { orgId, clientId }) || addr;
@@ -231,6 +251,8 @@ async function loadIdentity(db, { orgId, clientId }) {
     city: addr?.address_city || null,
     state: addr?.address_state || null,
     zip: addr?.address_zip || null,
+    /* NULL means unknown and stays NULL. */
+    personalAddress: joinedAddress(personal),
     complete: Boolean(addr?.address_line1)
   };
 }
@@ -426,11 +448,10 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
      order a letter should argue in: a documented Metro 2 defect leads, the
      derogatory items follow, and personal information is knowledge base § 5.8
      tier 4 (supporting). */
-  const identityAddress = [
-    identity.addressLine1,
-    identity.addressLine2,
-    [identity.city, identity.state, identity.zip].filter(Boolean).join(", ")
-  ].filter(Boolean).join(", ") || null;
+  /* The client's OWN address, or null. Never the company address that the
+     letterhead is allowed to fall back to — see loadIdentity above. Null here
+     means the floor makes no address claim at all. */
+  const identityAddress = identity.personalAddress || null;
 
   const byBureau = onRepairPath
     ? mergePersonalInfoClaims(
