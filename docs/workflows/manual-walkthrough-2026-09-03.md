@@ -458,3 +458,36 @@ $5.00 or 5 cents — the deck's e-book handler validates cents
 (src/sales/closer-deck.mjs:538-545, "whole-cent amount between $1 and
 $500,000"), so a bare 5 could be read either way. If the client is charged
 $0.05 or $5.00 when Chris meant the other, that is a money bug.
+
+**F12 RETRACTED · the soft-pull email DID arrive.** Subject "Your soft-pull
+assessment — authorize, then pay", 6:24 PM, to +sim-05. Chris received BOTH an
+SMS and an email; only the SMS was noticed at the time. The toast copy
+("Soft pull emailed") and SOP step 1.5 are correct. No channel defect.
+The compliance flag raised under F12 is withdrawn with it.
+
+**F17 · Fundhub mail is skipping the inbox (environment, not product).**
+Every Fundhub message carries the Gmail labels `FS Auto` / `FS Fundhub` and
+lands in All Mail rather than Inbox. That is a filter on Chris's own account.
+It caused F12's false finding and will keep hiding walk evidence.
+Action: check the "FS Auto" filter before the next walk, or run the walk from
+All Mail. Not a product defect — recorded so the next run does not repeat the
+mistake.
+
+**Email sequence observed for Sim Five-Academy (times MST, 2026-09-03):**
+
+| Time | Subject |
+|---|---|
+| 6:05 / 6:10 / 6:15 PM | "You're booked — <date/time>" (one per sim as each booked) |
+| 6:07 PM | "A new appointment has been scheduled!" (staff-side) |
+| 6:08 PM | Google Calendar invitation |
+| 6:24 PM | "Your soft-pull assessment — authorize, then pay" |
+| 6:34 PM | "Fundhub e-book — $5" (with attachment) |
+| 6:35 PM | "You're in — here's what happens next" |
+
+**E-book amount resolved:** a bare `5` in the price field means **$5.00**, not
+5 cents — the delivered subject line reads "Fundhub e-book — $5". The concern
+logged with the send is closed. PDF attachment present; contents still to be
+opened (expected empty).
+
+**F4 CONFIRMED IN THE WILD.** Every message greets "Hey Sim" / "Hi Sim".
+Five clients, one indistinguishable first name, exactly as predicted.
