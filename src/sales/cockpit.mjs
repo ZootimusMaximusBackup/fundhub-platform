@@ -415,13 +415,13 @@ function summarizeCrs(row) {
  * So: no credit result, no count and no list. Never a number, never a zero —
  * zero is itself an answer about this client, and there is no answer yet.
  *
- * Funding finding 7 is the other half and is NOT fixed here: the matcher
- * itself reads no score, no tier, no card use and no estimate. matchLenders()
- * in src/lenders/match.mjs filters on state, bureau sensitivity and the active
- * flag only, so post-pull the count still does not move with the file. That
- * needs a credit-aware clientState in src/lenders/match.mjs and store.mjs,
- * which this module does not own. Gating is what can be done from here, and it
- * is what removes the false number in front of the customer.
+ * Funding finding 7 is the other half. matchLenders() now takes the credit
+ * file and skips a lender whose own stated minimum score is above it — but no
+ * lender in the table states one (0 of 313 rows in the CSV load path say
+ * anything about a score), so the credit gate excludes nobody yet. So
+ * `lenders_basis` is no longer a fixed sentence: it reports what the matcher
+ * actually did to THIS count, and while the requirement data is missing it
+ * says so instead of implying a screen that did not happen.
  *
  * @param {{ credit: object, lenders: object }} args
  */
@@ -441,11 +441,32 @@ export function gateLenderMatch({ credit = {}, lenders = {} } = {}) {
     lenders_reason: count === 0
       ? "No lenders matched (empty lenders table or filters excluded all)"
       : null,
-    /* Named out loud so nobody reads this count as an assessment of the file:
-       the match reads state and bureau sensitivity, not score or tier. */
-    lenders_basis: "state and bureau eligibility only — not score, tier or card use",
+    lenders_basis: lendersBasis(lenders.summary && lenders.summary.credit),
     lenders_gated_on: null
   };
+}
+
+/* What this count was actually decided on, in the words a closer could repeat.
+   Never claims the file was weighed when it was not. */
+function lendersBasis(c) {
+  if (!c || !c.available) {
+    return "State and bureau eligibility. The credit file was not read into this match.";
+  }
+  const stated = Number(c.lenders_with_stated_minimum || 0);
+  if (stated === 0) {
+    return "State and bureau eligibility, plus this file's score. "
+      + "No lender on the list records a minimum score, so the score ruled none of them out.";
+  }
+  const out = Number(c.lenders_excluded_on_score || 0);
+  let line = `State and bureau eligibility, plus this file's score. ${stated} `
+    + `lender${stated === 1 ? "" : "s"} record a minimum score; `
+    + `${out} ${out === 1 ? "was" : "were"} ruled out on this file.`;
+  const unread = Number(c.lenders_with_unreadable_requirement || 0);
+  if (unread > 0) {
+    line += ` ${unread} more mention${unread === 1 ? "s" : ""} a score in wording we could not read, `
+      + "and were kept rather than dropped.";
+  }
+  return line;
 }
 
 function buildPrecall({ client, conversations, messages }) {

@@ -42,19 +42,85 @@ test("zero is not the answer either — it is still a number about this client",
   assert.equal(out.matched_lenders, null);
 });
 
+/* REWRITTEN 2026-09-03 (funding finding 7). This test used to assert
+   lenders_basis matched /not score, tier or card use/. That sentence pinned the
+   defect: the matcher genuinely ignored the credit file, so the payload said so.
+   matchLenders() now takes the file, and a fixed sentence claiming it does not
+   would be a lie the moment lender minimums are recorded. The basis is now
+   derived from summary.credit, so these cases pin the derivation instead. */
 test("after a pull the count is reported, with what it was matched on", () => {
   const out = gateLenderMatch({
     credit: PULLED,
-    lenders: { match_count: 2, matches: [{ id: "a" }, { id: "b" }] }
+    lenders: {
+      match_count: 2,
+      matches: [{ id: "a" }, { id: "b" }],
+      summary: {
+        credit: {
+          available: true,
+          lenders_with_stated_minimum: 4,
+          lenders_excluded_on_score: 1,
+          lenders_with_unreadable_requirement: 0
+        }
+      }
+    }
   });
   assert.equal(out.matched_lenders, 2);
   assert.equal(out.lenders.length, 2);
   assert.equal(out.lenders_gated_on, null);
-  /* Funding finding 7: the matcher reads state and bureau sensitivity only —
-     no score, no tier, no card use, no estimate. Until src/lenders/match.mjs
-     reads the credit file, the payload has to say so rather than let the count
-     be read as an assessment of this client. */
-  assert.match(out.lenders_basis, /not score, tier or card use/i);
+  assert.match(out.lenders_basis, /this file's score/i);
+  assert.match(out.lenders_basis, /4 lenders record a minimum score/i);
+  assert.match(out.lenders_basis, /1 was ruled out/i);
+});
+
+/* TODAY'S DATA. 0 of 313 lender rows in the CSV load path state a credit
+   minimum, so the score gate excludes nobody. The count must not be dressed up
+   as an assessment it did not perform. */
+test("with no lender minimums recorded, the basis says the score ruled nobody out", () => {
+  const out = gateLenderMatch({
+    credit: PULLED,
+    lenders: {
+      match_count: 307,
+      matches: new Array(307).fill({ id: "x" }),
+      summary: {
+        credit: {
+          available: true,
+          lenders_with_stated_minimum: 0,
+          lenders_excluded_on_score: 0,
+          lenders_with_unreadable_requirement: 0
+        }
+      }
+    }
+  });
+  assert.match(out.lenders_basis, /No lender on the list records a minimum score/i);
+  assert.doesNotMatch(out.lenders_basis, /ruled out on this file/i);
+});
+
+test("unreadable requirement wording is reported, not hidden", () => {
+  const out = gateLenderMatch({
+    credit: PULLED,
+    lenders: {
+      match_count: 5,
+      matches: [],
+      summary: {
+        credit: {
+          available: true,
+          lenders_with_stated_minimum: 2,
+          lenders_excluded_on_score: 0,
+          lenders_with_unreadable_requirement: 3
+        }
+      }
+    }
+  });
+  assert.match(out.lenders_basis, /3 more mention a score in wording we could not read/i);
+  assert.match(out.lenders_basis, /kept rather than dropped/i);
+});
+
+test("a match that carried no credit summary never claims the file was weighed", () => {
+  const out = gateLenderMatch({
+    credit: PULLED,
+    lenders: { match_count: 2, matches: [{ id: "a" }, { id: "b" }] }
+  });
+  assert.match(out.lenders_basis, /credit file was not read into this match/i);
 });
 
 test("a pulled file with nothing matched still says so", () => {

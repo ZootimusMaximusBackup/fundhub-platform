@@ -9,6 +9,7 @@
 // COMPLIANCE REVIEW REQUIRED — credit-file adjacent. Public chrome says Audit.
 
 import { violationsByBureauFromMergedCrs } from "../metro2/diy/from-crs.mjs";
+import { derogatoryClaimsByBureau, mergeDerogatoryClaims } from "../metro2/diy/derogatory.mjs";
 import { buildRoundPlan } from "../repair/round-plan.mjs";
 import { buildBlackReportClient } from "../underwrite/black-report-client.mjs";
 
@@ -105,17 +106,40 @@ function money(n) {
 }
 
 /**
- * @param {{ crsResult?: object, personal?: object }} [input]
+ * @param {{ crsResult?: object, personal?: object, onRepairPath?: boolean }} [input]
  * @returns {{ ok: true, source: string, bookUrl: string, today: object, later: object, accounts: object[], rounds: object[] }}
  */
-export function buildOptimizeRoadmap({ crsResult = null, personal = null } = {}) {
+export function buildOptimizeRoadmap({
+  crsResult = null,
+  personal = null,
+  // OWNER DECISION, 2026-09-03: "any derogatory deserves a letter, but only if
+  // they are in the correct offer path." See the block below `findings`.
+  onRepairPath = false
+} = {}) {
   const file = crsResult && typeof crsResult === "object" ? crsResult : SAMPLE_STORED_FILE;
   const source = crsResult ? "file" : "sample";
   const client = buildBlackReportClient({
     crsResult: file,
     personal: personal || { name: "You" }
   });
-  const findings = violationsByBureauFromMergedCrs(file);
+  /* The 38 Metro 2 checks fire only on a reporting DEFECT — two fields that
+     contradict each other, a date that cannot be true. A collection reported
+     cleanly trips none of them, so this page drew an EMPTY roadmap for a file
+     that is nothing but collections and charge-offs.
+     ../metro2/diy/derogatory.mjs is the item half of the owner's rule.
+
+     THE OFFER-PATH HALF CANNOT BE ANSWERED HERE, so the caller must answer it.
+     This function has no client, no org and no tier: /api/public/optimize is a
+     no-auth referral door and calls it with no arguments at all, which means the
+     sample file. Defaulting this to false keeps that page exactly as it is —
+     a stranger on no offer path is shown no dispute claims, which is the same
+     rule that stopped an Academy buyer being asked to authorize disputes (F35).
+     A caller that knows the client answers it from clients.outcome_tier, or
+     from ../repair/on-repair-path.mjs when it also has the org id. */
+  const engineFindings = violationsByBureauFromMergedCrs(file);
+  const findings = onRepairPath
+    ? mergeDerogatoryClaims(engineFindings, derogatoryClaimsByBureau(file))
+    : engineFindings;
   const items = itemsFromFindings(findings);
   const rounds = buildRoundPlan({
     items,

@@ -39,6 +39,7 @@ import {
   complaintIdentityFromPersonal
 } from "./letter-pack.mjs";
 import { mergeBureauReports } from "../finance/crs-map.mjs";
+import { violationsByBureauFromMergedCrs } from "../metro2/diy/from-crs.mjs";
 import { extractPdfText } from "../company-brain/pdf-text.mjs";
 
 // Never call live Claude from a unit test. Same guard as ./letter-pack.test.mjs.
@@ -580,5 +581,178 @@ describe("complaint identity", () => {
   test("the placeholder name 'Client' is not printed as a legal name", () => {
     const id = complaintIdentityFromPersonal({ name: "Client", address: "" });
     assert.equal(id.fullName, "");
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE DEROGATORY FILE THAT REACHED R4 AND HAD NOTHING TO ESCALATE WITH
+
+   COMPLIANCE REVIEW REQUIRED — dispute logic and credit-repair messaging.
+
+   OWNER DECISION, 2026-09-03: "any derogatory deserves a letter, but only if
+   they are in the correct offer path."
+
+   The pull below is a real sandbox Experian file with its tradelines replaced by
+   a collection and a charge-off that are reported PERFECTLY — every field agrees
+   with every other field, so all 38 Metro 2 checks come back empty. It is also,
+   to the person who owns it, a wrecked credit report.
+
+   The bureau letters were never the problem: the vendor writer picks accounts by
+   their derogatory status, not by an engine finding, so this client always got
+   their rounds. The complaints were. Both name accounts, and the account list
+   was read from the Metro 2 engine alone — so a client who worked three rounds
+   on this file, got three "verified" answers, had a human confirm each one and
+   arrived at R4 was told there was nothing to complain about.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const derogRecord = (over = {}) => ({
+  creditorName: "EXAMPLE BANK NA",
+  accountIdentifier: "SIM-EXAMPLE-4021",
+  accountOpenedDate: "2021-03-02",
+  accountReportedDate: "2026-08-28",
+  accountOwnershipType: "Individual",
+  accountStatusType: "Open",
+  accountType: "Revolving",
+  loanType: "CreditCard",
+  businessType: "Banking",
+  currentRatingType: "AsAgreed",
+  currentBalanceAmount: "2870",
+  pastDueAmount: "0",
+  _30DayLates: "0",
+  _60DayLates: "0",
+  _90DayLates: "0",
+  sourceType: "Experian",
+  ...over
+});
+
+/**
+ * A pull the scoring engine can read, carrying nothing but derogatory accounts
+ * and no Metro 2 defect at all. The personal-information block is dropped on
+ * purpose: the sandbox file's old addresses trip M2-031, and one engine finding
+ * would hide exactly the hole these tests exist to show.
+ */
+const STORED_CRS_DEROGATORY_ONLY = (() => {
+  const ex = loadSandbox("exp.json");
+  ex.creditFiles = [{ creditFileDetail: ex.creditFiles[0].creditFileDetail }];
+  ex.inquiries = [];
+  ex.publicRecords = [];
+  ex.tradelines = [
+    derogRecord({
+      creditorName: "MIDLAND CREDIT MANAGEMENT",
+      accountIdentifier: "SIM-MCM-6642",
+      businessType: "Collection",
+      loanType: "CollectionAgencyAttorney",
+      currentRatingType: "CollectionOrChargeOff",
+      currentBalanceAmount: "1840"
+    }),
+    derogRecord({
+      creditorName: "CAP ONE BANK",
+      accountIdentifier: "SIM-CAP-7729",
+      currentRatingType: "CollectionOrChargeOff",
+      currentBalanceAmount: "2100"
+    })
+  ];
+  return mergeBureauReports({
+    reports: { EX: ex },
+    requestIds: { EX: "ex-1" },
+    environment: "sandbox"
+  });
+})();
+
+/** R4 on the collection, recorded and human-confirmed. Same shape as ESCALATED_R4. */
+const ESCALATED_R4_DEROGATORY = Object.freeze([
+  Object.freeze({ bureau: "EX", creditor: "MIDLAND CREDIT MANAGEMENT", account_last4: "6642", round: "R4" })
+]);
+
+/** fakeClientDb, but the offer path is the thing under test rather than a constant. */
+function clientDbOnTier(outcomeTier, storedCrs, priorOutcomes = []) {
+  return {
+    async query(sql) {
+      if (/FROM clients/i.test(sql)) {
+        return {
+          rows: [{
+            first_name: "Fixture",
+            last_name: "Client",
+            custom_fields: { address: "100 Test Ave", city: "Denton", state: "TX", zip: "76205" },
+            outcome_tier: outcomeTier
+          }]
+        };
+      }
+      if (/FROM crs_results/i.test(sql)) return { rows: storedCrs ? [{ result: storedCrs }] : [] };
+      if (/FROM dispute_items/i.test(sql)) return { rows: [...priorOutcomes] };
+      return { rows: [] };
+    }
+  };
+}
+
+describe("a repair-path client whose file is derogatory but carries no Metro 2 defect", () => {
+  test("the Metro 2 engine finds nothing on this file — that is the whole point", () => {
+    const findings = violationsByBureauFromMergedCrs(STORED_CRS_DEROGATORY_ONLY);
+    assert.deepEqual(findings, {},
+      "the fixture must trip no Metro 2 check, or these tests prove nothing");
+  });
+
+  test("ON the repair path, the complaints ship and name the collection", async () => {
+    const out = await buildEscalationComplaints({
+      storedCrs: STORED_CRS_DEROGATORY_ONLY,
+      personal: PERSONAL,
+      pack: "repair",
+      disputeLetters: DISPUTE_LETTERS,
+      priorOutcomes: ESCALATED_R4_DEROGATORY,
+      onRepairPath: true
+    });
+    assert.equal(out.skip, null, "a collection and a charge-off are something to complain about");
+    assert.deepEqual(out.files.map((f) => f.filename), [COVER_FILE, CFPB_FILE, AG_FILE]);
+    const cfpb = await textOf(out.files.find((f) => f.filename === CFPB_FILE));
+    assert.match(cfpb, /MIDLAND CREDIT MANAGEMENT/,
+      "the complaint must name the account the client actually disputed");
+  });
+
+  test("OFF the repair path, the same file still produces no complaint", async () => {
+    const out = await buildEscalationComplaints({
+      storedCrs: STORED_CRS_DEROGATORY_ONLY,
+      personal: PERSONAL,
+      pack: "repair",
+      disputeLetters: DISPUTE_LETTERS,
+      priorOutcomes: ESCALATED_R4_DEROGATORY
+      // onRepairPath omitted — the owner rule's second half. A client who is not
+      // on a repair path gets nothing, whatever their file holds.
+    });
+    assert.deepEqual(out.files, []);
+    assert.equal(out.skip, "no_violations");
+  });
+
+  test("through buildLetterPackForClient, a REPAIR_ONLY client gets both halves", async () => {
+    const pack = await buildLetterPackForClient(
+      clientDbOnTier("REPAIR_ONLY", STORED_CRS_DEROGATORY_ONLY, ESCALATED_R4_DEROGATORY),
+      { clientId: "cl-derog", pack: "repair" }
+    );
+    const rows = names(pack);
+    assert.ok(rows.some((n) => /round\d/.test(n)),
+      `expected the bureau rounds, got ${rows.join(", ")}`);
+    assert.deepEqual(rows.filter(isComplaint), [COVER_FILE, CFPB_FILE, AG_FILE]);
+    assert.equal(pack.complaintSkip, null);
+    assert.equal(pack.escalationRound, "R4");
+  });
+
+  test("through buildLetterPackForClient, a funding client keeps their letters and gets no complaint", async () => {
+    const pack = await buildLetterPackForClient(
+      clientDbOnTier("FULL_FUNDING", STORED_CRS_DEROGATORY_ONLY, ESCALATED_R4_DEROGATORY),
+      { clientId: "cl-derog", pack: "repair" }
+    );
+    const rows = names(pack);
+    assert.ok(rows.some((n) => /round\d/.test(n)),
+      "the bureau rounds are the vendor writer's, not the engine's — they must be untouched");
+    assert.deepEqual(rows.filter(isComplaint), []);
+    assert.equal(pack.complaintSkip, "no_violations");
+  });
+
+  test("a null tier is not a repair path — it fails closed", async () => {
+    const pack = await buildLetterPackForClient(
+      clientDbOnTier(null, STORED_CRS_DEROGATORY_ONLY, ESCALATED_R4_DEROGATORY),
+      { clientId: "cl-derog", pack: "repair" }
+    );
+    assert.deepEqual(names(pack).filter(isComplaint), []);
+    assert.equal(pack.complaintSkip, "no_violations");
   });
 });

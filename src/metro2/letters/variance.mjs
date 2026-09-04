@@ -5,15 +5,47 @@
 const DEFAULT_THRESHOLD = 0.35;
 const MAX_STRIKES = 2;
 
+/* Every rule id a claim block can be headed with.
+ *
+ * M2-### is a Metro 2 reporting defect. DEROG-* is a derogatory-item claim, added
+ * 2026-09-03 for the owner rule "any derogatory deserves a letter, but only for
+ * clients on the repair path" (src/metro2/diy/derogatory.mjs). Both render through
+ * the same writer as `Violation <ruleId> — <plain name>`, so both are item blocks
+ * and both belong in the strip list below.
+ *
+ * THIS PATTERN MISSING DEROG- IS WHY THE OWNER RULE ONLY HALF WORKED. A repair
+ * client with a collection and a charge-off is supposed to get three letters, one
+ * per bureau. They got ONE: the first bureau was written and the other two came
+ * back `variance_gate_exhausted`. The same account is disputed at all three
+ * bureaus in the same words — which is correct, it is the same account — and with
+ * the claim blocks left in the comparison the three letters fingerprinted at
+ * 0.975 similarity against a 0.35 threshold. The gate refused the product it was
+ * meant to protect.
+ *
+ * Nothing is loosened by fixing it. The threshold is untouched, and everything the
+ * gate compared before, it still compares — see
+ * src/metro2/letters/variance-derogatory.test.mjs, which pins the three-bureau
+ * case AND pins that two genuinely identical letters are still refused. */
+const CLAIM_RULE_ID = String.raw`(?:M2-\d{3}|DEROG-[A-Z0-9]+(?:-[A-Z0-9]+)*)`;
+
 /** Strip fixed citation/legal/item blocks before fingerprinting — facts stay fixed; prose varies. */
 export function proseForVariance(letterText) {
   return String(letterText || "")
     .replace(/CITATIONS:[\s\S]*?(?=\nCLOSING:|\nSincerely|\nRespectfully|$)/i, " ")
-    .replace(/Violation M2-\d{3}[\s\S]*?(?=\n\nViolation M2-|\n\nCITATIONS:|\n\nCLOSING:|$)/gi, " ")
-    .replace(/Item \d+ \(M2-\d{3}\)[\s\S]*?(?=\n\nItem \d+|\n\nTone:|\n\nHooks:|\n\nRequested|\n\nCITATIONS:|\n\nCLOSING:|$)/gi, " ")
+    .replace(
+      new RegExp(
+        `Violation ${CLAIM_RULE_ID}[\\s\\S]*?(?=\\n\\nViolation ${CLAIM_RULE_ID}|\\n\\nCITATIONS:|\\n\\nCLOSING:|$)`,
+        "gi"
+      ), " ")
+    .replace(
+      new RegExp(
+        `Item \\d+ \\(${CLAIM_RULE_ID}\\)[\\s\\S]*?(?=\\n\\nItem \\d+|\\n\\nTone:|\\n\\nHooks:|\\n\\nRequested|\\n\\nCITATIONS:|\\n\\nCLOSING:|$)`,
+        "gi"
+      ), " ")
     .replace(/^Metro 2 field:.*$/gim, " ")
     .replace(/^Severity:.*$/gim, " ")
     .replace(/\bM2-\d{3}\b/g, " ")
+    .replace(/\bDEROG-[A-Z0-9]+(?:-[A-Z0-9]+)*\b/g, " ")
     .replace(/15 U\.S\.C\.[^\n.]*/g, " ")
     .replace(/§\s*1681[^\n.]*/g, " ")
     .replace(/Field \d+:[\s\S]*?(?=\n|$)/g, " ")

@@ -185,9 +185,37 @@ export function buildLetterText(opts = {}) {
   const ordered = rotateViolations(violations, seed + (opts.attempt || 0) * 7);
   const attempt = Number(opts.attempt) || 0;
   const metro2Backed = hasMetro2Claim(violations);
-  const open = accurate(openingFor(seed + attempt, round), metro2Backed);
+  /* WHY THE BUREAU IS SPREAD ACROSS THE POOL BY HAND, AND NOT LEFT TO THE SEED.
+   *
+   * The variance gate strips every itemised claim block before it compares two
+   * letters (proseForVariance), so what it actually compares is the header, the
+   * opening, the lead and the closing. Two bureau letters that draw the SAME
+   * opening and closing are then ~91% identical and the gate refuses the batch —
+   * correctly, that is its job.
+   *
+   * The bureau is already in the seed, so the draw was meant to differ. It did
+   * not reliably, for two reasons. The pools hold six lines each and
+   * `closingFor(seed + 3)` moves in lockstep with `openingFor(seed)`, so two
+   * bureaus whose seeds are congruent mod 6 collide on BOTH lines at once — a
+   * one-in-six pair collision, not one in thirty-six, and with three bureaus
+   * drawing that is a coin flip on every batch.
+   *
+   * It bit hardest on the letters added 2026-09-03 for the owner rule "any
+   * derogatory deserves a letter" — measured, a repair client with a collection
+   * and a charge-off got ONE letter and two `variance_gate_exhausted` refusals —
+   * but nothing about it was specific to those. A three-bureau Metro 2 batch was
+   * always the same coin flip, absorbed by the regeneration strikes.
+   *
+   * So the spread is made deterministic instead of hoped for. Offsets 0 / 2 / 4
+   * over a six-line pool put the three bureaus on three different openings on
+   * every attempt, and the closing is mixed differently so it does not track the
+   * opening. NO NEW COPY IS INTRODUCED: every line drawn is one of the six
+   * already written and already in use for that round. Only which of them a
+   * given bureau draws has changed. */
+  const bureauSpread = { TU: 0, EX: 2, EQ: 4 }[bureau] ?? 0;
+  const open = accurate(openingFor(seed + attempt + bureauSpread, round), metro2Backed);
   const lead = accurate(instr.lead, metro2Backed);
-  const close = closingFor(seed + attempt + 3, round);
+  const close = closingFor(seed + attempt * 5 + 3 + bureauSpread * 2, round);
   const dateLine = opts.undated ? "[DATE — write today's date when you mail this]" : (opts.date || "");
   const name = identity.fullName || "[Consumer Name]";
   const addr = [

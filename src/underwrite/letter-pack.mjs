@@ -11,6 +11,7 @@ import { hasFundingAnalysisPdfs, FUNDING_ANALYSIS_FILENAMES } from "./letter-pac
 import { buildBlackReportClient, hasBlackReportSource, mergeStoredUnderwrite } from "./black-report-client.mjs";
 import { printBlackReports } from "./black-report-pdf.mjs";
 import { violationsByBureauFromMergedCrs } from "../metro2/diy/from-crs.mjs";
+import { derogatoryClaimsByBureau, mergeDerogatoryClaims } from "../metro2/diy/derogatory.mjs";
 import { maybeComplaintFiles, COMPLAINT_FOLDER } from "../metro2/diy/package.mjs";
 import { LETTER_TYPES } from "../metro2/letters/catalog.mjs";
 import {
@@ -27,6 +28,18 @@ const { generateDeliverables } = generateDeliverablesMod;
 
 const FUNDING_SUMMARIES = new Set(["funding_summary", "business_prep_summary"]);
 const REPAIR_SUMMARIES = new Set(["repair_plan_summary", "issue_priority_sheet"]);
+
+/* The outcome tiers that put a client on the repair path, same pair the
+   specialist desk uses (../repair/analyze.mjs REPAIR_PATH_TIERS). REPAIR_ONLY is
+   repair alone; FUNDING_PLUS_REPAIR is repair alongside funding. The ladder
+   itself is listed in ../config/product-path.mjs.
+
+   ../repair/on-repair-path.mjs is the fuller answer — it also honours the
+   `metro2-letter-pack` entitlement, which a repair buyer holds before any pull
+   has run — but it needs an org id to bind the read to one tenant, and
+   buildLetterPackForClient is handed a client id and nothing else. The tier is
+   what this file can actually see, so the tier is what it uses. */
+const REPAIR_PATH_TIERS = new Set(["REPAIR_ONLY", "FUNDING_PLUS_REPAIR"]);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // WHY `reason` IS MORE THAN "empty_pack"
@@ -312,13 +325,16 @@ export function complaintIdentityFromPersonal(personal) {
  *   answers on file for this client (./prior-outcome.mjs loadPriorOutcomes).
  *   Not optional and never defaulted: an empty list means the client is on
  *   Round 1 and gets no complaint. See RULE 1 above.
+ * @param {boolean} [args.onRepairPath] whether this client's offer path is a
+ *   repair path. Defaults to false — see the derogatory block below.
  */
 export async function buildEscalationComplaints({
   storedCrs,
   personal,
   pack,
   disputeLetters,
-  priorOutcomes
+  priorOutcomes,
+  onRepairPath = false
 } = {}) {
   if (pack !== "repair") return { files: [], skip: "not_repair" };
   if (!(disputeLetters || []).some(isDisputeLetter)) {
@@ -331,9 +347,31 @@ export async function buildEscalationComplaints({
   }
   if (!storedCrs) return { files: [], skip: "no_stored_crs" };
   try {
+    /* OWNER DECISION, 2026-09-03: "any derogatory deserves a letter, but only if
+       they are in the correct offer path."
+
+       This is the one place in this file that reads the Metro 2 engine, and the
+       engine fires only on a reporting DEFECT. So a repair client who worked
+       three bureau rounds on a file of collections and charge-offs — accounts
+       reported cleanly, with no defect to find — reached R4 and was told
+       "no_violations": the two complaints name accounts, and the engine had
+       named none. They got their dispute letters (those come from the vendor
+       writer, which reads the account's derogatory status, not the engine) and
+       then nothing to escalate with.
+
+       Derogatory items now carry their own claims — ../metro2/diy/derogatory.mjs
+       for what they assert and why they are not Metro 2 rules — and only for a
+       client on the repair path. Off that path this reads exactly as it did.
+
+       Safe to merge here and nowhere near the dispute letters: the complaint
+       builder names accounts and runs no variance gate over its output. */
+    const engineFindings = violationsByBureauFromMergedCrs(storedCrs);
+    const violationsByBureau = onRepairPath
+      ? mergeDerogatoryClaims(engineFindings, derogatoryClaimsByBureau(storedCrs))
+      : engineFindings;
     const built = await maybeComplaintFiles({
       identity: complaintIdentityFromPersonal(personal),
-      violationsByBureau: violationsByBureauFromMergedCrs(storedCrs),
+      violationsByBureau,
       // Undated. The client writes the date and hand-signs the declaration.
       datedComplaints: false
     });
@@ -365,7 +403,10 @@ export async function buildLetterPack({
   // Confirmed bureau answers already on file. Empty means every account is
   // still on Round 1 — which is exactly the behaviour of this function before
   // the wire existed. See ./prior-outcome.mjs for why nothing may default here.
-  priorOutcomes = []
+  priorOutcomes = [],
+  // Whether this client's offer path is a repair path. False is the old
+  // behaviour, so a caller that does not know the tier changes nothing.
+  onRepairPath = false
 } = {}) {
   const who = personal || { name: "Client", address: "" };
   const path = pack === "repair" ? "repair" : "fundable";
@@ -420,7 +461,8 @@ export async function buildLetterPack({
     disputeLetters: letterFiles,
     // The same recorded answers that moved the rounds above. A client who never
     // reached R4 gets no sworn complaint. See RULE 1 in the block above.
-    priorOutcomes
+    priorOutcomes,
+    onRepairPath
   });
   const files = [...earned, ...escalation.files];
   let reason = null;
@@ -539,7 +581,10 @@ export async function buildLetterPackForClient(
       personal,
       pack,
       storedCrs,
-      priorOutcomes: prior.outcomes
+      priorOutcomes: prior.outcomes,
+      // outcome_tier was already on the row this function reads and had never
+      // been used. It is the offer path the owner rule turns on.
+      onRepairPath: REPAIR_PATH_TIERS.has(String(row.outcome_tier || ""))
     });
     return {
       ...packOut,

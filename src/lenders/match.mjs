@@ -8,7 +8,10 @@
       eligible_states = unknown → include (do not invent a restriction).
    3. inquiry sensitivity — skip lenders whose bureaus_pulled intersect
       sensitive bureaus (open/recent inquiries on that bureau).
-   4. bureau rotation — rank by how little the planned set already leans on
+   4. the credit file — skip a lender whose own stated minimum score is above
+      this file's score. See "THE CREDIT FILE" below for why this reads almost
+      nothing today.
+   5. bureau rotation — rank by how little the planned set already leans on
       each lender's expected bureau(s).
 
    Returns { matches, skipped, summary } — never fabricates lenders. */
@@ -52,6 +55,180 @@ export function resolveMatchState(customFields = {}, businesses = []) {
   }
   const cf = customFields && typeof customFields === "object" ? customFields : {};
   return cf.business_state || cf.state || cf.home_state || null;
+}
+
+/* ─────────────────────────── THE CREDIT FILE ───────────────────────────
+   Funding finding 7, 2026-09-03: this matcher read state, bureau sensitivity
+   and the active flag and nothing else, so a 588 repair file and a 780 funding
+   file got the identical list and a lender who only takes 700+ matched both.
+
+   MEASURED BEFORE BUILDING, against the load path
+   (credentials/lenders-audit/lenders-audited.csv, 313 rows, the CSV import
+   that fills this table):
+
+     * there is no minimum-credit-score column on `lenders` at all — see
+       db/migrations/138_lenders.sql. The nearest columns,
+       minimum_time_in_business_years and minimum_revenue_threshold, are real
+       and numeric but are 0/313 filled, and are business facts, not credit;
+     * `stated_requirements` is filled on 75 of 313 rows and mentions checking
+       accounts, seasoning and business age. Searching EVERY column of all 313
+       rows for "fico", "credit score", "score" or an "NNN+" figure returns
+       0 rows.
+
+   So no lender in this table states a credit minimum, and this gate therefore
+   excludes nobody today. That is the correct outcome and not a bug to route
+   around: a guessed credit floor would silently hide real lenders from a real
+   client. The pathway below is what the data drops into when it exists —
+   either a numeric `minimum_credit_score` column (a migration nobody has
+   written) or readable words in `stated_requirements`.
+
+   Reading rule, both directions: a lender we cannot read is a lender we may
+   not exclude. Unparseable requirement text keeps the lender and is counted
+   as unreadable in the summary, never turned into a number. */
+
+const FICO_MIN = 300;
+const FICO_MAX = 850;
+
+function fico(v) {
+  const n = Number(v);
+  return Number.isFinite(n) && n >= FICO_MIN && n <= FICO_MAX ? n : null;
+}
+
+/**
+ * The credit file as the matcher sees it. Pure — the caller does the reading
+ * (store.mjs owns the crs_results query) so this stays testable without a
+ * database and cannot be handed a shape it did not ask for.
+ *
+ * `available` is true only when at least one in-range FICO score is present.
+ * A tier or an estimate with no score cannot exclude a lender on score, and
+ * saying "available" without one would let a caller believe otherwise.
+ *
+ * @param {object} [file]
+ * @param {{EX?:number|null, EQ?:number|null, TU?:number|null}} [file.scores]
+ * @param {number|null} [file.utilizationPct]  revolving card use, percent
+ * @param {string|null} [file.tier]            stored outcome tier
+ * @param {number|null} [file.fundingEstimate] stored total funding estimate
+ * @param {string|Date|null} [file.pulledAt]
+ * @returns {object} credit profile
+ */
+export function resolveCreditProfile({
+  scores = {},
+  utilizationPct = null,
+  tier = null,
+  fundingEstimate = null,
+  pulledAt = null
+} = {}) {
+  const s = scores && typeof scores === "object" ? scores : {};
+  const byBureau = {
+    EX: fico(s.EX ?? s.ex ?? s.experian),
+    EQ: fico(s.EQ ?? s.eq ?? s.equifax),
+    TU: fico(s.TU ?? s.tu ?? s.transunion)
+  };
+  const present = Object.values(byBureau).filter((v) => v != null);
+  const util = Number(utilizationPct);
+  const est = Number(fundingEstimate);
+  return {
+    available: present.length > 0,
+    scores: byBureau,
+    /* The best bureau, not the middle or the worst. It is the only score that
+       can be compared without over-excluding: a lender is refused only when
+       even this client's strongest bureau is under the lender's own floor. */
+    best_score: present.length ? Math.max(...present) : null,
+    utilization_pct: Number.isFinite(util) ? util : null,
+    tier: tier ? String(tier) : null,
+    funding_estimate: Number.isFinite(est) ? est : null,
+    pulled_at: pulledAt || null
+  };
+}
+
+/* A three-digit figure only counts as a floor when the words around it say it
+   is one AND say it is a credit score. Both halves are required: "2+ years
+   business age" has a floor marker and no score, "700 average" has a score and
+   no floor. Everything else reads as "no stated minimum". */
+const MIN_MARKER = "(?:min(?:imum)?|at\\s+least|requires?|required|no\\s+less\\s+than|floor)";
+// Word-bounded so "underscore" and the like are not read as a credit score.
+const SCORE_WORD = "\\b(?:fico|credit\\s*score|scores?)\\b";
+const GAP = "[^.;\\n]{0,30}?";
+const MIN_SCORE_PATTERNS = [
+  // "minimum credit score 700", "requires a FICO of 680"
+  new RegExp(`\\b${MIN_MARKER}\\b${GAP}${SCORE_WORD}[^.;\\n]{0,15}?\\b([3-8]\\d{2})\\b`, "i"),
+  // "minimum 700 FICO"
+  new RegExp(`\\b${MIN_MARKER}\\b[^.;\\n]{0,15}?\\b([3-8]\\d{2})\\b[^.;\\n]{0,15}?${SCORE_WORD}`, "i"),
+  // "FICO 700+", "credit score 680 or higher"
+  new RegExp(`${SCORE_WORD}[^.;\\n]{0,20}?\\b([3-8]\\d{2})\\b\\s*(?:\\+|or\\s+(?:higher|above|better|more))`, "i"),
+  // "700+ FICO"
+  new RegExp(`\\b([3-8]\\d{2})\\s*\\+\\s*${SCORE_WORD}`, "i")
+];
+
+/* "No minimum credit score", "without a 700 FICO" — a negation in front of the
+   phrase inverts it, so the number is not a floor. Cheaper and safer to drop
+   the whole candidate than to try to read the sentence.
+
+   The window stops at `.` and `;`, so a negation in an earlier clause cannot
+   reach across and cancel a real floor in this one. Erring toward "negated"
+   errs toward keeping the lender, which is the safe direction. */
+const NEGATED = /\b(?:no|not|none|without|regardless\s+of)\b[^.;\n]{0,40}$/i;
+
+/**
+ * Does this text mention a credit score at all? Used to separate "states no
+ * minimum" from "states one we could not read" in the summary, so a parser
+ * that gets worse shows up as a number instead of as silently fewer skips.
+ *
+ * @param {string|null|undefined} raw
+ * @returns {boolean}
+ */
+export function mentionsCreditScore(raw) {
+  const text = String(raw || "");
+  if (!text.trim()) return false;
+  return new RegExp(`${SCORE_WORD}`, "i").test(text) && /\b[3-8]\d{2}\b/.test(text);
+}
+
+/**
+ * The lender's own stated credit floor, or null.
+ *
+ * Numeric column first when one exists — `minimum_credit_score` is the drop-in
+ * point for real data and is absent from the schema today. Otherwise a
+ * conservative read of `stated_requirements`: when several candidates parse,
+ * the LOWEST wins, because the lowest excludes the fewest people.
+ *
+ * @param {object} lender
+ * @returns {{ min: number|null, source: string|null, unreadable: boolean }}
+ */
+export function lenderMinScore(lender = {}) {
+  const column = fico(lender.minimum_credit_score);
+  if (column != null) return { min: column, source: "column", unreadable: false };
+
+  const raw = String(lender.stated_requirements || "");
+  const found = [];
+  for (const re of MIN_SCORE_PATTERNS) {
+    const m = re.exec(raw);
+    if (!m) continue;
+    if (NEGATED.test(raw.slice(0, m.index + m[0].indexOf(m[1])))) continue;
+    const n = fico(m[1]);
+    if (n != null) found.push(n);
+  }
+  if (found.length) {
+    return { min: Math.min(...found), source: "stated_requirements", unreadable: false };
+  }
+  return { min: null, source: null, unreadable: mentionsCreditScore(raw) };
+}
+
+/**
+ * Which of this client's scores this lender would actually see. A lender that
+ * names the bureau it pulls is judged on that bureau; one that names none — as
+ * 310 of 313 rows do — is judged on the client's best score.
+ *
+ * @param {string[]} lenderBureaus  normalized codes from parseBureaus
+ * @param {object} credit           a resolveCreditProfile result
+ * @returns {number|null}
+ */
+export function scoreForLender(lenderBureaus = [], credit = null) {
+  if (!credit || !credit.available) return null;
+  const seen = (lenderBureaus || [])
+    .map((b) => credit.scores?.[b])
+    .filter((v) => v != null);
+  if (seen.length) return Math.max(...seen);
+  return credit.best_score;
 }
 
 /**
@@ -140,6 +317,9 @@ function bureauOverlap(lenderBureaus, avoid) {
  * @param {boolean} [opts.includeInactive]
  * @param {boolean} [opts.includeDemo]  Demo Mode. Default false = exclude.
  * @param {number} [opts.recentInquiryDays]
+ * @param {object|null} [opts.credit]   resolveCreditProfile result, or null
+ *   when no pull is on file. Null means the score gate does not run — it does
+ *   NOT mean everybody passes it silently; `summary.credit.available` says so.
  * @returns {{ matches: object[], skipped: object[], summary: object }}
  */
 export function matchLenders({
@@ -151,12 +331,16 @@ export function matchLenders({
   includeInactive = false,
   includeDemo = false,
   recentInquiryDays = 30,
+  credit = null,
   now = new Date()
 } = {}) {
   const avoid = sensitiveBureaus(inquiryLog, { recentDays: recentInquiryDays, now, cases });
   const bureauUse = new Map(); // code → count among accepted so far (rotation)
   const matches = [];
   const skipped = [];
+  let statedMinimums = 0;   // lenders whose own floor we could read
+  let unreadable = 0;       // lenders that talk about a score we could not read
+  let excludedOnScore = 0;
 
   /* DEMO MODE, EXCLUDED BY DEFAULT.
 
@@ -195,6 +379,24 @@ export function matchLenders({
       continue;
     }
 
+    /* THE CREDIT FILE. Reached only after the structural gates, so a lender
+       refused for its state or a hot bureau is never also reported as a credit
+       refusal. Order matters on the screen: `skipped` is read out loud. */
+    const requirement = lenderMinScore(L);
+    if (requirement.min != null) statedMinimums++;
+    if (requirement.unreadable) unreadable++;
+    const fileScore = scoreForLender(bureaus, credit);
+    if (requirement.min != null && fileScore != null && fileScore < requirement.min) {
+      excludedOnScore++;
+      skipped.push({
+        id: L.id, name: L.name, reason: "score_below_minimum",
+        minimum_score: requirement.min,
+        minimum_source: requirement.source,
+        file_score: fileScore
+      });
+      continue;
+    }
+
     const rotationCost = bureaus.reduce((s, b) => s + (bureauUse.get(b) || 0), 0);
     const tier = L.priority_tier == null ? 99 : Number(L.priority_tier);
     matches.push({
@@ -211,6 +413,7 @@ export function matchLenders({
       max_known_loc: L.max_known_loc,
       insider_tips: L.insider_tips,
       stated_requirements: L.stated_requirements,
+      stated_minimum_score: requirement.min,
       is_demo: !!L.is_demo,
       rotation_cost: rotationCost,
       sort_tier: tier
@@ -243,7 +446,24 @@ export function matchLenders({
       match_count: matches.length,
       skipped_count: skipped.length,
       sensitive_bureaus: [...avoid],
-      client_state: clientState || null
+      client_state: clientState || null,
+      /* What the credit file actually did to this count. The three counters
+         are the honest answer to "does this number mean anything about this
+         client" — with today's data lenders_with_stated_minimum is 0, so the
+         answer is no, and the closer screen has to be able to say that rather
+         than imply a screen that did not happen. */
+      credit: {
+        available: !!(credit && credit.available),
+        scores: credit && credit.available ? credit.scores : null,
+        best_score: credit && credit.available ? credit.best_score : null,
+        utilization_pct: credit ? credit.utilization_pct : null,
+        tier: credit ? credit.tier : null,
+        funding_estimate: credit ? credit.funding_estimate : null,
+        pulled_at: credit ? credit.pulled_at : null,
+        lenders_with_stated_minimum: statedMinimums,
+        lenders_with_unreadable_requirement: unreadable,
+        lenders_excluded_on_score: excludedOnScore
+      }
     }
   };
 }

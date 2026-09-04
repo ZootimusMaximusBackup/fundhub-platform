@@ -269,6 +269,16 @@
   @media (max-width:900px){ .pull-row{grid-template-columns:1fr;} }
   .action-btn.confirm-required{background:#1C1C20;}
   .action-btn.confirm-required .arrow{font-size:var(--fs-caption);text-transform:uppercase;letter-spacing:.4px;color:#F5CE8F;}
+
+  /* Send portal sign-in link. Disabled on this button means "a send is in
+     flight, or one just succeeded", so it has to LOOK unpressable — the defect
+     this control was built against is a send button that gave no sign it had
+     been pressed, so it got pressed four times and the client got four emails
+     (F24, 2026-09-03). The sent line sits under the button and never clears;
+     a toast that vanishes is what left the closer guessing. */
+  .portal-link .action-btn[disabled]{opacity:.5;cursor:not-allowed;}
+  .portal-link-sent{font-size:var(--fs-body);line-height:1.45;color:var(--text-dim);margin:8px 0 0;}
+
   .action-error{
     display:flex;gap:8px;background:var(--red-bg);border:1px solid var(--red-line);border-radius:6px;
     padding:8px 10px;margin-bottom:10px;font-size:var(--fs-caption);color:var(--red);
@@ -843,6 +853,22 @@
         <button type="button" class="action-btn" id="ccp-generate-apps" style="cursor:pointer;">Generate Apps <span class="arrow">→</span></button>
         <button type="button" class="action-btn" id="ccp-issue-ir" style="cursor:pointer;">Issue Inquiry Removal <span class="arrow">→</span></button>
         <p id="ccp-issue-ir-status" style="font-size:var(--fs-body);color:var(--text-dim);margin:8px 0 0;"></p>
+        <!-- THE PRESS THE RESET SCREEN HAS ALWAYS PROMISED. A client who pays
+             gets a portal account whose password nobody holds, and the reset
+             screen they land on tells them to ask an owner or admin for a link
+             — while no owner or admin control existed anywhere to send one
+             (walk finding F31, 2026-09-03). It goes here, in the group where
+             the desk already acts on this file, and not on a new screen.
+
+             HIDDEN, NOT DISABLED, for every other role: UI-STANDARDS §5 says a
+             role never sees a control it cannot use.
+             api/auth/send-portal-link.mjs is still the authority and still
+             refuses; this only stops the page offering a button whose answer is
+             already known to be no. -->
+        <div class="portal-link" id="ccp-portal-link-wrap" hidden>
+          <button type="button" class="action-btn" id="ccp-portal-link" style="cursor:pointer;"><span id="ccp-portal-link-label">Send portal sign-in link</span> <span class="arrow">→</span></button>
+          <p id="ccp-portal-link-status" class="portal-link-sent" role="status" aria-live="polite"></p>
+        </div>
       </div>
 
       <!-- ── REFERENCE, AND BELOW THE ACTION ON PURPOSE (§12 rule 3) ────────
@@ -2494,6 +2520,102 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         say("Case opened. Going to Inquiry Remover…");
         location.href = "inquiry-remover.html";
+      });
+    });
+  })();
+
+  /* ── SEND THE CLIENT THEIR PORTAL SIGN-IN LINK ─────────────────────────────
+     Every client who buys is given an active portal account with a password
+     hash nobody holds, and the reset screen they land on tells them, in those
+     words, to ask an owner or admin for a link. Nothing in the CRM could send
+     one, so the only instruction the product gave a stuck client was impossible
+     to follow (walk finding F31, 2026-09-03). POST /api/auth/send-portal-link
+     is that press, and this is the place to press it.
+
+     THE BUTTON DISCIPLINE IS F24'S, AND IT IS HALF THE REASON THIS EXISTS.
+     Chris, 2026-09-03: "I press it like three or four times, and then all of a
+     sudden the client gets like four or five text messages." Two pay-link
+     emails carrying two DIFFERENT checkout links went out of the deck that
+     way. A sign-in link is a bearer credential, so four of them is four live
+     doors into one person's file — a worse version of the same defect. So:
+     pressed the instant it is clicked, disabled while the request is in flight,
+     no second press for a few seconds after a success, and a "Sent at 3:04 PM"
+     line that STAYS under the button. A toast that vanishes is exactly what
+     left the closer guessing.
+
+     A FAILURE IS NEVER REPORTED AS A SEND, and never locks the button. The
+     endpoint answers in finished sentences a non-engineer can act on — "This
+     client has no email address on file, so there is nowhere to send a link",
+     "A link was already sent to this client a moment ago" — and FHData.write
+     hands those through, so they are printed rather than rewritten here. Only
+     the server knows which of them applies.
+
+     `sent:false` ON AN OK REPLY IS ALSO NOT A SEND. It means the link was made
+     but the email never reached the queue, which is the one case where saying
+     "Sent" would be a straight lie. */
+  (function wirePortalLink() {
+    /* Owner's number on the deck for the same control: three to five seconds. */
+    var SEND_COOLDOWN_MS = 4000;
+    var LABEL = "Send portal sign-in link";
+    var wrap = $("ccp-portal-link-wrap");
+    var btn = $("ccp-portal-link");
+    var label = $("ccp-portal-link-label");
+    var status = $("ccp-portal-link-status");
+    if (!wrap || !btn || !label) return;
+
+    /* The role shell.js caches at sign-in — the same read every other gated
+       screen in this suite does. It decides ONE thing: whether the control
+       renders at all. An unrecognised role renders nothing, which is the safe
+       direction, and the endpoint refuses either way. */
+    var viewerRole = "";
+    try { viewerRole = String(localStorage.getItem("fh_role") || "").trim().toLowerCase(); }
+    catch (e) { viewerRole = ""; }
+    if (viewerRole !== "owner" && viewerRole !== "admin") return;
+    wrap.hidden = false;
+
+    function say(message) { if (status) status.textContent = message || ""; }
+    function clockTime(d) {
+      try { return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
+      catch (e) { return d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0"); }
+    }
+    /* Back to pressable, with the sent line left alone — a later failure must
+       not erase the record of an earlier real send. */
+    function release() {
+      btn.disabled = false;
+      label.textContent = LABEL;
+    }
+
+    if (!id) {
+      btn.disabled = true;
+      say("Open a client file before sending a sign-in link.");
+      return;
+    }
+
+    var sentCount = 0;
+    btn.addEventListener("click", function () {
+      if (btn.disabled) return;
+      if (!window.FHData || typeof FHData.write !== "function") {
+        say("Not available — the data layer has not loaded.");
+        return;
+      }
+      btn.disabled = true;
+      label.textContent = "Sending…";
+      FHData.write("/api/auth/send-portal-link", { client_id: id }).then(function (res) {
+        if (!res || !res.ok) {
+          release();
+          say((res && res.error) || "The sign-in link was not sent. Try again.");
+          return;
+        }
+        if (!res.data || res.data.sent !== true) {
+          release();
+          say("A link was made but no email went out. Try again, and tell the desk if it keeps happening.");
+          return;
+        }
+        sentCount += 1;
+        say("Sent at " + clockTime(new Date()) +
+          (sentCount > 1 ? " · sent " + sentCount + " times" : ""));
+        label.textContent = "Sent — hold on";
+        setTimeout(release, SEND_COOLDOWN_MS);
       });
     });
   })();

@@ -95,6 +95,25 @@ function hasViolationMap(vmap) {
   return Object.values(vmap || {}).some((arr) => Array.isArray(arr) && arr.length > 0);
 }
 
+/* MEASURED 2026-09-03 — the owner's "any derogatory deserves a letter" rule
+   CANNOT be applied here yet, and the reason is not in this file.
+
+   Merging derogatory claims (./derogatory.mjs) into the map below is a two-line
+   change and this function has everything it needs to gate it: db, orgId and
+   clientId, so ../../repair/on-repair-path.mjs answers directly. The blocker is
+   downstream in ./package.mjs. That builder writes R1, R2 and R3 for all three
+   bureaus in ONE batch and runs assertBatchVariance over the whole batch at
+   0.45. Derogatory claims name the SAME accounts on all three bureaus and their
+   prose is one of three fixed templates, so the letters collide with each other
+   and the gate refuses the batch outright — `reason: "batch_variance"`, zero
+   files. On the sandbox three-bureau pull that takes a working 7-letter pack to
+   NOTHING. Turning zero letters into zero letters and breaking every file that
+   works today is not the fix, so it is not applied.
+
+   What has to happen first, in ./package.mjs or ../letters/: the batch gate must
+   stop comparing letters that argue the same accounts to different bureaus, or
+   the derogatory claim prose must vary per bureau and per round. Then this
+   function is a two-line change. */
 async function resolveViolationsByBureau(db, { clientId, violationsByBureau } = {}) {
   const given = violationsByBureau || {};
   if (hasViolationMap(given)) return given;

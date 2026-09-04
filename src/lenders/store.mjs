@@ -4,9 +4,10 @@ import { INLINE_EDIT_FIELDS, LENDER_CSV_COLUMNS, isLenderTable } from "./tables.
 import { isTipRow } from "./tips.mjs";
 import { buildObservation } from "./observations.mjs";
 import { parseLenderCsv, serializeLenderCsv } from "./csv.mjs";
-import { matchLenders, resolveMatchState } from "./match.mjs";
+import { matchLenders, resolveMatchState, resolveCreditProfile } from "./match.mjs";
 import { orgDemoModeEnabled } from "../demo/exclude-demo.mjs";
 import { logoPathOrPlaceholder } from "./resolve-logo.mjs";
+import { triMerge, utilisation } from "../http/client-detail.mjs";
 
 const SELECT_COLS = `
   id, org_id, lender_table, name, product_name, logo_path, application_url, lender_row_url,
@@ -364,6 +365,33 @@ export async function matchForClient(db, {
   );
   const clientState = resolveMatchState(cf, bizR.rows);
 
+  /* THE CREDIT FILE (funding finding 7). Five rows, not one: triMerge walks
+     back past sandbox fixtures and past pulls that carried no score, so
+     handing it only the newest row returns nothing whenever the newest row is
+     one of those. Same extraction the closer's credit panel uses, so the score
+     the matcher screens on is the score on the screen beside it. */
+  const crs = await db.query(
+    `SELECT result, outcome_tier, created_at
+       FROM crs_results
+      WHERE org_id = $1::uuid AND client_id = $2::uuid
+      ORDER BY created_at DESC
+      LIMIT 5`,
+    [orgId, clientId]
+  );
+  const merged = triMerge(crs.rows);
+  const util = utilisation(crs.rows, { custom_fields: cf });
+  const newest = crs.rows[0] || null;
+  const payload = safeResult(newest && newest.result);
+  const credit = resolveCreditProfile({
+    scores: { EX: merged.experian, EQ: merged.equifax, TU: merged.transunion },
+    utilizationPct: util.percent,
+    tier: newest ? newest.outcome_tier : null,
+    // Stored estimate, same precedence as tierReasoning(): the CRM field the
+    // client was actually quoted wins over the raw engine number.
+    fundingEstimate: cf.total_funding_estimate ?? payload.fundingEstimate ?? null,
+    pulledAt: merged.asOf || (newest ? newest.created_at : null)
+  });
+
   const inq = await db.query(
     `SELECT bureau, status, created_at
        FROM inquiry_log
@@ -402,8 +430,21 @@ export async function matchForClient(db, {
     cases: cases.rows,
     lenderTable,
     recentInquiryDays,
-    includeDemo: demoMode
+    includeDemo: demoMode,
+    credit
   });
 }
 
-export { matchLenders, resolveMatchState, publicLender };
+/** crs_results.result is jsonb, but a text column shows up as a string here. */
+function safeResult(v) {
+  if (!v) return {};
+  if (typeof v === "object") return v;
+  try {
+    const parsed = JSON.parse(v);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+export { matchLenders, resolveMatchState, resolveCreditProfile, publicLender };

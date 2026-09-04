@@ -88,6 +88,7 @@ test("matchForClient uses company state when the person row has none", async () 
       const s = String(sql);
       if (s.includes("FROM clients")) return { rows: [{ id: "c1", custom_fields: {} }] };
       if (s.includes("FROM businesses")) return { rows: [{ entity_data: { state: "TX" } }] };
+      if (s.includes("FROM crs_results")) return { rows: [] };
       if (s.includes("FROM inquiry_log")) return { rows: [] };
       if (s.includes("FROM inquiry_removal_cases")) return { rows: [] };
       if (s.includes("demo_mode_enabled")) return { rows: [{ demo_mode_enabled: false }] };
@@ -98,6 +99,49 @@ test("matchForClient uses company state when the person row has none", async () 
   const r = await matchForClient(db, { orgId: "o1", clientId: "c1" });
   assert.equal(r.summary.client_state, "TX");
   assert.deepEqual(r.matches.map((m) => m.name).sort(), ["All", "Texas"]);
+  assert.equal(r.summary.credit.available, false, "no crs row is not a credit file");
+});
+
+/* matchForClient must carry the credit file into the match, not just the state
+   (funding finding 7). The crs payload shape here is the one the analyzer
+   really stores — src/handlers/client-lifecycle.mjs writes the
+   analysis.completed payload into crs_results.result. */
+test("matchForClient reads the newest credit pull and screens on it", async () => {
+  const lenders = [
+    { id: "hi", name: "Prime", lender_table: "OnlineBizCC", active: true, priority_tier: 1, eligible_states: "All States", stated_requirements: "Minimum credit score 700.", is_demo: false },
+    { id: "lo", name: "Starter", lender_table: "OnlineBizCC", active: true, priority_tier: 1, eligible_states: "All States", stated_requirements: "Minimum credit score 560.", is_demo: false }
+  ];
+  const db = {
+    async query(sql) {
+      const s = String(sql);
+      if (s.includes("FROM clients")) {
+        return { rows: [{ id: "c1", custom_fields: { total_funding_estimate: 199350 } }] };
+      }
+      if (s.includes("FROM businesses")) return { rows: [{ entity_data: { state: "TX" } }] };
+      if (s.includes("FROM crs_results")) {
+        return {
+          rows: [{
+            outcome_tier: "Tier 3",
+            created_at: "2026-09-01T00:00:00Z",
+            result: { scores: { ex: 588, eq: 592, tu: 585 }, utilization: 84 }
+          }]
+        };
+      }
+      if (s.includes("FROM inquiry_log")) return { rows: [] };
+      if (s.includes("FROM inquiry_removal_cases")) return { rows: [] };
+      if (s.includes("demo_mode_enabled")) return { rows: [{ demo_mode_enabled: false }] };
+      if (s.includes("FROM lenders")) return { rows: lenders };
+      throw new Error("unexpected sql: " + s);
+    }
+  };
+  const r = await matchForClient(db, { orgId: "o1", clientId: "c1" });
+  assert.equal(r.summary.credit.available, true);
+  assert.equal(r.summary.credit.best_score, 592);
+  assert.equal(r.summary.credit.tier, "Tier 3");
+  assert.equal(r.summary.credit.utilization_pct, 84);
+  assert.equal(r.summary.credit.funding_estimate, 199350);
+  assert.deepEqual(r.matches.map((m) => m.name), ["Starter"]);
+  assert.equal(r.skipped.find((x) => x.id === "hi").reason, "score_below_minimum");
 });
 
 test("CSV round-trip keeps lender_table and name", () => {
