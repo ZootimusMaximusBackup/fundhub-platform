@@ -43,7 +43,7 @@ const claimed = (over = {}) => ({
 function fakeDb({
   optedOut = new Set(),
   routing = { email: { provider: "mailgun", enabled: true }, sms: { provider: "ghl_relay", enabled: true } },
-  client = { email: "person@example.com", ghl_contact_id: "ghlContact123", phone: "+15551234567" },
+  client = { email: "person@example.com", ghl_contact_id: "crmContact123", phone: "+15551234567" },
   rules = [],
   subject = "Your file",
   due = [],
@@ -102,7 +102,7 @@ const ENV = {
   MAILGUN_SEND_API_KEY: "key-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   MAILGUN_SEND_DOMAIN: "mg.example.com",
   MAILGUN_SEND_FROM: "Fundhub <no-reply@mg.example.com>",
-  GHL_RELAY_API_KEY: "ghl-token",
+  GHL_RELAY_API_KEY: "crm-token",
   /* ADDED 2026-08-18 (T5-14). Outbound email now carries a signed unsubscribe
      link, appended at dispatch. Declared here so these tests exercise the real
      production path — with the secret set, the footer is built and the RFC 8058

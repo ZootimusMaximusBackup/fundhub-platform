@@ -54,7 +54,7 @@ const MG_ENV = {
   MAILGUN_SEND_DOMAIN: "mg.example.com",
   MAILGUN_SEND_FROM: "Fundhub <no-reply@mg.example.com>"
 };
-const GHL_ENV = { ...LIVE, GHL_RELAY_API_KEY: "ghl-secret-token-value" };
+const GHL_ENV = { ...LIVE, GHL_RELAY_API_KEY: "crm-secret-token-value" };
 
 const emailMsg = {
   id: "m1", orgId: "o1", clientId: "c1", channel: "email",
@@ -63,7 +63,7 @@ const emailMsg = {
 };
 const smsMsg = {
   id: "m2", orgId: "o1", clientId: "c1", channel: "sms",
-  to: "ghlContact123", subject: null, body: "Your documents were received.",
+  to: "crmContact123", subject: null, body: "Your documents were received.",
   providerRef: "workflow:T:evt2"
 };
 
@@ -554,7 +554,7 @@ describe("twilio provider", () => {
 
   test("refuses a CRM contact id where a phone number belongs", async () => {
     const f = fakeFetch({ status: 201, body: { sid: "SM1" } });
-    const r = await twilio.send({ ...twMsg, to: "ghlContact123" }, { fetchImpl: f, env: TW_ENV });
+    const r = await twilio.send({ ...twMsg, to: "crmContact123" }, { fetchImpl: f, env: TW_ENV });
     assert.strictEqual(r.status, "rejected");
     assert.strictEqual(f.calls.length, 0, "nothing may reach twilio");
   });
