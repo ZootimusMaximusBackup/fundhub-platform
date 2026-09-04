@@ -224,6 +224,7 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/287_contract_seller_signature_and_real_text.sql",
   "migrations/288_real_contract_text.sql",
   "migrations/289_capital_blueprint_price.sql",
+  "migrations/295_sms_copy_2026_09.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql",
   "seed/007_contract_templates.sql",
