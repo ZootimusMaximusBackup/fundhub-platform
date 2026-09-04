@@ -797,3 +797,34 @@ referral checkbox, and Log disposition and close — all at once, with only the
 black fill marking the intended one. Once the ladder selection is made, the
 screen should lead with the single correct action for that offer and demote or
 hide the rest. Owner has judged the current emphasis insufficient.
+
+**F26 · BLOCKER · the simulated payment is REJECTED by the live webhook.**
+`scripts/sim/with-prod-env.sh push-payment --email …+sim-05@`
+resolved the right link (pl_1e544cf878f9c46f93741356 · product funding-mastery
+"Funding Mastery Course" · $5,000.00 · status sent) and posted to
+https://fundhub.ai/api/webhooks/commas, which answered:
+
+    HTTP 401 {"ok":false,"status":401,"reason":"bad_signature","queued":false}
+
+So no payment lands, no entitlement is granted, and the whole
+post-payment half of path 5 cannot be walked until this is fixed.
+
+Checked so far: `COMMAS_WEBHOOK_SECRET` DOES come back from Netlify production
+(20 characters, value not printed). The script signs with
+`HMAC-SHA256(raw, secret)` hex into header `x-webhook-signature`
+(scripts/sim/push-payment.mjs:47, :103). So the secret is present and the
+method is the documented one — the mismatch is elsewhere: either the live
+handler expects a different header name, a different digest encoding, a
+prefixed scheme, or a signature over a different byte string than `raw`.
+
+NOT yet diagnosed further. Next step is to read the live handler behind
+`webhooks/commas` and compare its verification to the script's signing, one
+pass, no guessing.
+
+**F27 · The contract wording form demands COMPANY details from a client with
+no company.** Sim Five-Academy's own record says "No businesses on file", he is
+buying a $5,000 personal education program, and the Funding Mastery Program
+Agreement form still requires Company name and Company email as mandatory
+fields. Either the template should have a personal variant, or those fields
+should not be required for an education purchase.
+Walk continued with placeholder values so as not to block.
