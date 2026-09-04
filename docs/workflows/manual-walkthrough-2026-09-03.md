@@ -121,3 +121,17 @@ So F5 splits into two pieces of work, both owner-decided, not open questions:
    patching.
 
 Both are post-walk. Do not touch mid-run.
+
+**Step 1.2 / all paths · PASS.** All five sims present in **Booked** on the
+pipeline board, correct self-reported score bands on each card
+(One-Funding 700-749, Two-Repair 580-649, Three-Trial 580-649,
+Four-Blueprint 650-699, Five-Academy 750+), phone and email on each.
+Booked column count reads 6 — one pre-existing non-sim lead also sits there.
+
+**F3 UPDATE · a "Confirmed" stage DOES exist on the pipeline board.**
+The board shows Booked → **Confirmed** as adjacent columns, so the CRM has a
+place to record a confirmation. Still to verify: does anything move a card
+into Confirmed automatically when the client RSVPs Yes on the calendar invite,
+or is Confirmed only ever set by hand? All five sims sat in Booked after
+booking, so nothing auto-moved them — but none of them had RSVP'd yet either.
+Not yet proven either way.
