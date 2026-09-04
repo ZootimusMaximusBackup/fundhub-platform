@@ -232,3 +232,23 @@ about that client. A 588 repair client sees a near-identical number.
 Also observed on this screen and correct: all five sims listed in UP NEXT with
 their booked times; "What they can get" correctly refuses to show figures with
 no credit pull; success fee 10% house default.
+
+**F10 ESCALATED · owner verdict: showing ANY lender count before a credit pull
+is wrong. Severity: HIGH.**
+Chris: "we didn't pull their fucking credit yet, so there shouldn't be any
+matched banks at all."
+
+Owner-set: with no credit file on the client, the correct display is **no
+lender count at all** — not 307, not any number. The screen already knows the
+file is empty (it prints "No credit pull on file yet" three times in the same
+panel) and then contradicts itself with "307 lenders match this file".
+
+Two separate defects, both now owner-decided:
+1. **Gate the count.** No credit pull on file → show nothing, or "pull credit
+   to see matches". Never a number.
+2. **Make matching actually use the credit file.** Post-pull, the count must
+   change based on score / tier / card use. Today it does not (F10 original,
+   proven live and in code).
+
+Note the wording is a lie either way: "match this file" when there is no file.
+This is a number a closer could repeat to a client on a live call.
