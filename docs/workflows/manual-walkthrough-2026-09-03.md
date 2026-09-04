@@ -1129,3 +1129,31 @@ Also worth fixing either way: `with-prod-env.sh` should FAIL LOUDLY when a
 secret comes back masked, rather than exporting asterisks and letting the tool
 produce a confusing 401. A two-line guard would have saved this entire
 diagnosis.
+
+## Session 2 — deliverables and credit repair (same night, 2026-09-03)
+
+**F35 RESOLVED · OWNER-SET: the dispute-letter authorization block shows ONLY
+for repair and funding offers.** Chris: "if they aren't going through credit
+repair, they don't need to authorize... It's only for repair and for the funding
+offer. If they're getting deliverables, meaning e-products and courses, they
+don't need to sign for shit." So on Sim Five-Academy's portal that block is a
+defect: gate it on product path. Moves from UNVERIFIED to a W4 fix.
+
+**F38 · REQUIREMENT (owner, already demanded): clients must be able to upload
+the documents the bureaus send them, into their own portal.** Chris: "they need
+to be able to upload their documents that they get from the bureaus. You scan it
+and upload it into their portal... if this is not built, this is fucked up."
+Status: NOT YET CHECKED. Trace whether the client portal has a document upload
+for bureau responses (portal Documents tab showed only the two contract files).
+If absent, it is a high finding on the repair path.
+
+**Owner clarification for the letter audit:** the deliverables letter pack and the
+repair-fulfillment round letters must be THE SAME letters. The pack is
+generated once from the snapshot and handed to the client; the fulfillment
+letters come off the same engine but are sent by the specialist desk in tracked
+rounds. Any difference in content between the two is a bug.
+
+**Plan for this session (owner-set):** the agent fires the deliverables package
+to Sim Five-Academy itself (no button clicking by Chris), and hands Chris a copy
+of the simulated credit report. Chris audits the letters against the report by
+hand and validates the logic. Notes only, no fixes.
