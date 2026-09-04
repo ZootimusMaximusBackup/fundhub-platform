@@ -118,6 +118,77 @@ const DAMAGED = [
 
 const INQ = (list) => list.map(([creditor, bureau, date]) => ({ creditorName: creditor, bureau, date }));
 
+/* ── PERSONAL INFORMATION ON THE SIMULATED FILE ────────────────────────────
+   Every bureau file the sim built carried `aliases: [], ssns: [], addresses: []`,
+   so there was never a name to consolidate, never a second address to remove and
+   never an SSN on the file. The personal-information floor added 2026-09-03
+   (src/metro2/diy/personal-info-floor.mjs) could not be exercised by a
+   walkthrough at all — the two repair-path profiles produced only the
+   "confirm one name / confirm one address" claims, which is the branch that
+   fires when the file is already tidy, not the branch that consolidates.
+
+   Only the two repair-path profiles get this. funding, blueprint and academy are
+   left exactly as they were — see the pin in push-credit.test.mjs.
+
+   NOTHING HERE IS A REAL PERSON. The addresses are invented, and the socials
+   begin 000, an area number the Social Security Administration has never issued
+   and never will, so these cannot collide with anybody's real number. */
+const SIM_IDENTITY = Object.freeze({
+  repair: Object.freeze({
+    ssn: "000112233",
+    addresses: Object.freeze([
+      { line1: "1180 Ridgemont Dr", city: "Cedar Park", state: "TX", zip: "78613", current: true, reported: "2026-08-01" },
+      { line1: "77 Old Mill Rd", city: "Round Rock", state: "TX", zip: "78664", current: false, reported: "2021-04-02" }
+    ])
+  }),
+  trial: Object.freeze({
+    ssn: "000445566",
+    addresses: Object.freeze([
+      { line1: "3402 Alameda Ct", city: "Pflugerville", state: "TX", zip: "78660", current: true, reported: "2026-07-14" },
+      { line1: "915 W 12th St", line2: "Apt 4", city: "Austin", state: "TX", zip: "78703", current: false, reported: "2020-09-30" }
+    ])
+  })
+});
+
+/* The surname with its last two letters transposed — "Repair" → "Repari". A real
+   misspelling on a bureau file is a keying slip, not a different name. */
+function transposeTail(word) {
+  if (word.length < 3) return word;
+  return word.slice(0, -2) + word.slice(-1) + word.slice(-2, -1);
+}
+
+/**
+ * Three reported names built from the CLIENT'S OWN name: the name as the record
+ * holds it, a middle-initial variant, and a misspelled surname. That is what a
+ * mixed or mis-keyed file actually looks like, and it is what gives the floor a
+ * real consolidation to demand rather than a confirmation to ask for.
+ *
+ * Exported so the test can prove the shape without re-deriving it.
+ */
+export function simAliases(fullName) {
+  const parts = String(fullName || "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return [];
+  const first = parts[0];
+  const last = parts[parts.length - 1];
+  return [
+    { firstName: first, middleName: null, lastName: last },
+    { firstName: first, middleName: "J", lastName: last },
+    { firstName: first, middleName: null, lastName: transposeTail(last) }
+  ];
+}
+
+function vendorAddresses(identity) {
+  return (identity?.addresses || []).map((a) => ({
+    addressLine1: a.line1,
+    addressLine2: a.line2 || null,
+    city: a.city,
+    state: a.state,
+    postalCode: a.zip,
+    borrowerResidencyType: a.current ? "Current" : "Prior",
+    dateReported: a.reported
+  }));
+}
+
 /* Shaped for the path. Scores in FICO 9 points. Negatives are counted from the
    lines, never typed twice. */
 export const PROFILES = Object.freeze({
@@ -128,18 +199,33 @@ export const PROFILES = Object.freeze({
     inquiries: INQ([["Chase Bank USA NA", "EX", "2025-11-14"], ["Discover Financial Svcs", "EX", "2026-01-08"], ["US Bank NA", "EX", "2026-02-27"], ["Amex Membership Banking", "EX", "2026-04-03"], ["Barclays Bank Delaware", "EQ", "2025-12-19"], ["Citibank NA", "EQ", "2026-03-11"], ["Navy Federal CU", "TU", "2026-05-22"]]),
     businessAgeMonths: 30
   },
+  /* The two repair-path profiles carry personal information and inquiries with
+     no account behind them, so the personal-information floor has something real
+     to work on. The first two inquiries on each are answered by an account that
+     is on the file; the rest are not, and are the ones the floor disputes. */
   repair: {
     note: "Path 2 — high-500s file, two collections, one charge-off, one late. Should route to repair.",
     scores: { EX: 588, EQ: 602, TU: 595 },
     lines: DAMAGED,
-    inquiries: INQ([["Capital One", "EX", "2026-02-11"], ["Credit One", "EQ", "2026-03-02"]]),
+    identity: SIM_IDENTITY.repair,
+    inquiries: INQ([
+      ["Capital One", "EX", "2026-02-11"],
+      ["Credit One", "EQ", "2026-03-02"],
+      ["Aventine Auto Finance", "EX", "2026-06-04"],
+      ["Kestrel Card Services", "EQ", "2026-05-16"],
+      ["Northgate Lending Group", "TU", "2026-07-21"]
+    ]),
     businessAgeMonths: 18
   },
   trial: {
     note: "Path 3 — low-600s, one collection and one charge-off. Personal funding only.",
     scores: { EX: 612, EQ: 620, TU: 609 },
     lines: [CLEAN[2], DAMAGED[2], DAMAGED[4]],
-    inquiries: INQ([["Discover Financial Svcs", "TU", "2026-04-19"]]),
+    identity: SIM_IDENTITY.trial,
+    inquiries: INQ([
+      ["Discover Financial Svcs", "TU", "2026-04-19"],
+      ["Harborline Auto Group", "EX", "2026-06-27"]
+    ]),
     businessAgeMonths: 0
   },
   blueprint: {
@@ -158,7 +244,7 @@ export const PROFILES = Object.freeze({
   }
 });
 
-function bureauReport(code, profile, { infileDate }) {
+function bureauReport(code, profile, { infileDate, name = "" }) {
   const sourceType = BUREAU_NAME[code];
   /* The file date is the day the file was compiled. It was hardcoded to
      2019-01-15 while every account on it reported 2026-08-28 — seven years in
@@ -170,7 +256,14 @@ function bureauReport(code, profile, { infileDate }) {
     responseAlertMessages: [],
     creditFiles: [{
       creditFileDetail: { borrowerSourceType: "Borrower", sourceType, creditFileResultStatusType: "FileReturned", creditFileInfileDate: infileDate },
-      aliases: [], ssns: [], employments: [], addresses: []
+      /* Personal information, for the profiles that carry any. A profile with no
+         `identity` keeps the empty arrays it always had. */
+      aliases: profile.identity ? simAliases(name) : [],
+      ssns: profile.identity?.ssn
+        ? [{ ssn: profile.identity.ssn, value: profile.identity.ssn, sourceType }]
+        : [],
+      employments: [],
+      addresses: vendorAddresses(profile.identity)
     }],
     scores: [{
       borrowerSourceType: "Borrower", modelName: "FICO® Score 9", modelNameType: "00W18", sourceType,
@@ -227,9 +320,9 @@ export function buildPayload(profileKey, { email, name, pulledAt = new Date().to
     })),
     publicRecords: [],
     bureaus: {
-      TU: bureauReport("TU", p, { infileDate }),
-      EX: bureauReport("EX", p, { infileDate }),
-      EQ: bureauReport("EQ", p, { infileDate })
+      TU: bureauReport("TU", p, { infileDate, name }),
+      EX: bureauReport("EX", p, { infileDate, name }),
+      EQ: bureauReport("EQ", p, { infileDate, name })
     },
     bureauErrors: {},
     requestIds: { TU: "simulated-TU", EX: "simulated-EX", EQ: "simulated-EQ" },

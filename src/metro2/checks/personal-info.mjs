@@ -113,12 +113,53 @@ export function checkNameVariants(context) {
     });
 }
 
+/**
+ * A date of birth reduced to YYYY-MM-DD, or NULL when it cannot be read.
+ *
+ * The two sides of check 33 come from different places and are written
+ * differently: a bureau file carries "1985-03-02T00:00:00Z" or "1985-03-02",
+ * while a verified identity read off a government ID carries whatever that
+ * document printed — commonly "03/02/1985". Comparing those as raw strings
+ * makes every consumer look like a mixed file and would mail a bureau the claim
+ * that the consumer's own correct date of birth belongs to somebody else.
+ *
+ * A value this cannot read returns NULL, and null means unknown: the check
+ * returns no violation rather than guessing which way round a bare "03/04/1985"
+ * was meant.
+ */
+export function dobKey(value) {
+  const raw = value == null ? "" : String(value).trim();
+  if (raw === "") return null;
+  const iso = /^(\d{4})-(\d{2})-(\d{2})(?:[T ]|$)/.exec(raw);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const slash = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/.exec(raw);
+  if (slash) {
+    const month = Number(slash[1]);
+    const day = Number(slash[2]);
+    /* Ambiguous only if BOTH halves could be a month. US order is assumed for
+       the unambiguous case and refused for the ambiguous one. */
+    if (month > 12 || day > 12) {
+      const m = month > 12 ? day : month;
+      const d = month > 12 ? month : day;
+      if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+      return `${slash[3]}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    }
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    return `${slash[3]}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+  return null;
+}
+
 /** Check 33 — DOB field. Date of birth mismatch. */
 export function checkDateOfBirthMismatch(context) {
   const fileDob = str(context?.file?.dateOfBirth);
   const consumerDob = str(context?.consumer?.dateOfBirth);
   if (fileDob === null || consumerDob === null) return [];
-  if (fileDob === consumerDob) return [];
+  const fileKey = dobKey(fileDob);
+  const consumerKey = dobKey(consumerDob);
+  /* Either side unreadable is unknown, and unknown makes no claim. */
+  if (fileKey === null || consumerKey === null) return [];
+  if (fileKey === consumerKey) return [];
 
   return [
     violation({

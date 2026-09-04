@@ -29,25 +29,67 @@ export const ROUND = Object.freeze({
  *
  *   AFTER ROUND 3, EVERY BUREAU LETTER IS A FINAL NOTICE.
  *
- * R4, R5 and R6 therefore all take the R3 pool. Going back to the R2
- * method-of-verification wording at round 4 or round 6 asks the bureau a
- * question that was already asked twice and is a step DOWN in authority, which
- * is the opposite of the ladder. The R3 pool is the strongest bureau wording
- * that exists in this repository; no stronger one was invented, and none may be.
- *
- * The escalation past R3 is not carried by stronger prose. It is carried by the
- * CFPB and state AG complaints, which are separate documents with a separate
+ * That is still true and nothing below changes it. R4, R5 and R6 carry EXACTLY
+ * the authority R3 carries — the same statutory hooks, the same 15-day deletion
+ * demand, no new statute, no stronger claim, and every mention of the CFPB or a
+ * state attorney general still in the future tense so no letter can assert a
+ * filing this repository has no record of. The escalation past R3 is carried by
+ * the CFPB and state AG complaints, which are separate documents with a separate
  * builder (src/metro2/diy/package.mjs `maybeComplaintFiles`).
  *
- * SAFE BY CONSTRUCTION: no wording in the R3 pool claims a complaint HAS been
- * filed. Every reference to the CFPB or a state attorney general in it is future
- * tense — "I will file", "those come next" — so reusing it at R4–R6 cannot
- * assert a filing this repository has no record of.
+ * ── WHY THEY NO LONGER SHARE R3's WORDS. MEASURED 2026-09-04. ─────────────
+ *
+ * R4, R5 and R6 used to return the R3 pool outright, so a Round 4 bureau letter
+ * was word-for-word a Round 3 bureau letter. The variance gate
+ * (./variance.mjs, Jaccard over 5-character shingles, threshold 0.35) compares
+ * every new letter against the last five to the same bureau, and two letters
+ * built from the same six sentences score far above that. So it refused them.
+ *
+ * Measured on origin/main, real Postgres, the production sim seed, a repair
+ * client with a damaged file, rounds run in order:
+ *
+ *   R1 → 5 letters   R2 → 3 letters   R3 → 3 letters
+ *   R4 → 0 letters   R5 → 0 letters   R6 → 0 letters
+ *
+ * — every bureau `variance_gate_exhausted`. The six-round ladder the product
+ * sells stopped dead at three, silently, for every client and every file shape
+ * (a spotless file and a clean file were measured the same way, same result).
+ *
+ * The gate is not the bug and is not loosened: the threshold is untouched and
+ * the strike count is untouched. What was missing is that R4, R5 and R6 had
+ * nothing of their own to say. They have their own paraphrases now — the same
+ * demand in different words, which is all the six lines in each R1/R2/R3 pool
+ * ever were.
  */
 export function promptPoolRound(round) {
   const r = String(round || ROUND.R1).toUpperCase();
   if (r === ROUND.R4 || r === ROUND.R5 || r === ROUND.R6) return ROUND.R3;
   return r;
+}
+
+/**
+ * Which pool of WORDS a round draws from. Not the same question as
+ * `promptPoolRound` above, and the difference is why both exist.
+ *
+ * `promptPoolRound` answers "which of the three letter SHAPES is this" — a
+ * first dispute, a method-of-verification demand, or a final notice — and two
+ * modules outside this one depend on that answer: ../../underwrite/prior-outcome.mjs
+ * decides from it what a bureau has already been asked, and ../../repair/round-plan.mjs
+ * prints it beside each rung of the plan. To both of them a Round 5 letter is a
+ * final notice, and it still is. Nothing below changes that.
+ *
+ * This function answers the narrower question the writer asks: which six
+ * openings and which six closings does THIS round get. R4, R5 and R6 have their
+ * own now, saying what R3 says in their own words, because sharing R3's exact
+ * sentences meant the variance gate refused every one of them (the measurement
+ * is in the block above).
+ *
+ * A round with no pool of its own falls back to R1, which is what an
+ * unrecognised round always did.
+ */
+export function prosePoolRound(round) {
+  const r = String(round || ROUND.R1).toUpperCase();
+  return Object.prototype.hasOwnProperty.call(ROUND, r) ? r : ROUND.R1;
 }
 const OPENINGS = Object.freeze({
   [ROUND.R1]: Object.freeze([
@@ -73,6 +115,38 @@ const OPENINGS = Object.freeze({
     "I demand deletion of the unverifiable items below within 15 days.",
     "Two prior disputes did not produce a reasonable investigation or a method of verification.",
     "This Round 3 letter is the last bureau notice on these Metro 2 defects. It is not a lawsuit."
+  ]),
+  /* ── R4, R5, R6 ────────────────────────────────────────────────────────
+     Same authority as R3, different words. Each line says only what this
+     repository can stand behind: the items are still on the file, because every
+     claim in the letter was computed from the NEWEST stored pull; and a
+     complaint is something the consumer WILL bring, never one already brought.
+     Nothing here counts earlier letters — a round number is a fact of the case
+     record, but "my third letter" would be a claim about what was actually
+     mailed, and mailing is a separate human step. */
+  [ROUND.R4]: Object.freeze([
+    "The items listed below are still on my consumer file, and I am carrying them to the Consumer Financial Protection Bureau.",
+    "My file still shows the items set out below. This letter asks your bureau to take them off it.",
+    "Under the Fair Credit Reporting Act I ask your bureau to delete the items below, which my file still carries.",
+    "This letter concerns items my consumer file still reports, and what I intend to do if it keeps reporting them.",
+    "Your bureau still reports the items below about me. A federal regulator takes complaints about exactly this.",
+    "I am putting your bureau on notice about the items below, which remain on the file you hold on me."
+  ]),
+  [ROUND.R5]: Object.freeze([
+    "The items below are still on my file, and my state attorney general accepts complaints about a credit bureau that keeps reporting them.",
+    "My consumer file continues to report the items set out below, and this letter is the notice I give before going to my state attorney general.",
+    "Your bureau still reports the items below. I am preparing a complaint to the attorney general of my state.",
+    "This letter is about items my file still carries and about the state office I will take them to.",
+    "Under the Fair Credit Reporting Act, delete the items below. My state attorney general is the next place I go.",
+    "I am giving your bureau written notice about the items below before I take them to my state's attorney general."
+  ]),
+  [ROUND.R6]: Object.freeze([
+    "This is the final written notice I will send your bureau about the items below.",
+    "My file still reports the items set out below, and this letter closes my direct correspondence with your bureau about them.",
+    "Everything below is still on the file you hold on me. This is the last of these letters.",
+    "I have nothing further to send your bureau after this letter about the items below.",
+    "This letter ends what I will send you directly about the items my file still reports below.",
+    "Your bureau still reports the items below. This is my closing written notice about them."
   ]),
   [ROUND.FURNISHER]: Object.freeze([
     "I am sending this direct dispute to you as the furnisher under 12 CFR 1022.43.",
@@ -109,6 +183,30 @@ const CLOSINGS = Object.freeze({
     "If these items remain after 15 days, I will file with the CFPB and my state attorney general.",
     "Do not treat this letter as a court filing. It is the last bureau notice on these items."
   ]),
+  [ROUND.R4]: Object.freeze([
+    "Remove what you cannot verify within 15 days under FCRA section 611(a)(5)(A).",
+    "Write to me at the address above with what you did and what you removed.",
+    "A complaint to the Consumer Financial Protection Bureau is what follows this letter, not a lawsuit.",
+    "My rights under 15 U.S.C. § 1681n and § 1681o are not given up by sending this.",
+    "Answer this in writing. A regulator's file is the alternative and I would rather not open one.",
+    "Tell me in writing what you removed and what you kept, and why you kept it."
+  ]),
+  [ROUND.R5]: Object.freeze([
+    "Take off what you cannot verify, within 15 days, under FCRA section 611(a)(5)(A).",
+    "Put your answer in writing to the address at the top of this letter.",
+    "My state's attorney general is where this goes next. This letter is not a lawsuit.",
+    "Nothing in this letter gives up my rights under 15 U.S.C. § 1681n or § 1681o.",
+    "Write back and name what came off my file and what stayed on it.",
+    "Fifteen days, in writing, to the address above. After that I go to my state."
+  ]),
+  [ROUND.R6]: Object.freeze([
+    "Within 15 days, remove what you cannot verify, under FCRA section 611(a)(5)(A).",
+    "Send your written answer to the address at the top of this letter.",
+    "This is a letter, not a court filing, and not a claim that anything has been filed anywhere.",
+    "My rights under 15 U.S.C. § 1681n and § 1681o remain mine after this letter.",
+    "Put in writing what came off the file and what did not.",
+    "I have said what I have to say to your bureau. Answer it in writing."
+  ]),
   [ROUND.FURNISHER]: Object.freeze([
     "Investigate each item and tell the bureaus the outcome in writing.",
     "If you cannot support an item with original records, stop reporting it.",
@@ -120,7 +218,7 @@ const CLOSINGS = Object.freeze({
 });
 
 function poolFor(table, round) {
-  const key = promptPoolRound(round);
+  const key = prosePoolRound(round);
   return table[key] || table[ROUND.R1];
 }
 
@@ -136,7 +234,7 @@ export function closingFor(seed = 0, round = ROUND.R1) {
 
 export function roundInstructions(round) {
   const actual = String(round || ROUND.R1).toUpperCase();
-  const pool = promptPoolRound(actual);
+  const pool = prosePoolRound(actual);
   const label = actual === ROUND.FURNISHER
     ? "furnisher"
     : (/^R(\d+)$/.exec(actual)?.[1] || "1");
@@ -163,6 +261,42 @@ export function roundInstructions(round) {
         demand: "Under FCRA section 611(a)(5)(A), delete each item you cannot verify. I demand deletion within 15 days of this letter.",
         ask: "Send written confirmation of every deletion to the address above.",
         next: "Rights under 15 U.S.C. § 1681n and § 1681o stay reserved. This is not a lawsuit and not a CFPB filing. Those come next if you still fail."
+      };
+    /* Same hooks as R3, same 15-day deletion demand, said differently. The
+       CFPB and the state attorney general are named the way R3 names them —
+       as somewhere the consumer WILL go, never somewhere they have been. */
+    case ROUND.R4:
+      return {
+        round: actual,
+        roundLabel: label,
+        hooks: ["FCRA § 611(a)(5)(A)", "15 U.S.C. § 1681n", "15 U.S.C. § 1681o"],
+        tone: "Bureau notice alongside the CFPB complaint",
+        lead: "My consumer file still reports the items set out below.",
+        demand: "FCRA section 611(a)(5)(A) requires you to delete an item you cannot verify. Do that within 15 days of this letter, for every item below you cannot stand behind.",
+        ask: "Tell me in writing what came off my file and what stayed on it.",
+        next: "The Consumer Financial Protection Bureau is where I take this next. Nothing in this letter is a lawsuit, and nothing in it says a complaint has already been filed. My rights under 15 U.S.C. § 1681n and § 1681o stay mine."
+      };
+    case ROUND.R5:
+      return {
+        round: actual,
+        roundLabel: label,
+        hooks: ["FCRA § 611(a)(5)(A)", "15 U.S.C. § 1681n", "15 U.S.C. § 1681o"],
+        tone: "Bureau notice alongside the state attorney general complaint",
+        lead: "The items set out below have not come off the file your bureau holds on me.",
+        demand: "Delete every item below that you cannot verify, within 15 days, as FCRA section 611(a)(5)(A) requires.",
+        ask: "Put your answer in writing and send it to the address at the top of this letter.",
+        next: "My state's attorney general is the next office I bring this to. This letter is not a lawsuit and claims no filing has been made. Rights under 15 U.S.C. § 1681n and § 1681o stay reserved."
+      };
+    case ROUND.R6:
+      return {
+        round: actual,
+        roundLabel: label,
+        hooks: ["FCRA § 611(a)(5)(A)", "15 U.S.C. § 1681n", "15 U.S.C. § 1681o"],
+        tone: "Closing bureau notice",
+        lead: "What is set out below is still on the file your bureau holds on me.",
+        demand: "Under FCRA section 611(a)(5)(A) an item you cannot verify comes off. Take the items below off within 15 days unless you can verify them.",
+        ask: "Write back and say what you removed and what you kept.",
+        next: "This is the last of these letters from me to your bureau. It is not a court filing and it does not say that anything has been filed anywhere. My rights under 15 U.S.C. § 1681n and § 1681o are unaffected."
       };
     case ROUND.FURNISHER:
       return {

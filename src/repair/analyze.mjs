@@ -21,6 +21,11 @@ import { createHash } from "node:crypto";
 
 import { violationsByBureauFromMergedCrs } from "../metro2/diy/from-crs.mjs";
 import { derogatoryClaimsByBureau, mergeDerogatoryClaims } from "../metro2/diy/derogatory.mjs";
+import {
+  personalInfoFloorByBureau,
+  mergePersonalInfoClaims
+} from "../metro2/diy/personal-info-floor.mjs";
+import { consumerContextFrom } from "../metro2/diy/consumer-context.mjs";
 import { isCollectorFinding } from "../metro2/diy/collectors.mjs";
 import { clientOutcomeTier } from "../config/product-path.mjs";
 import { generateLetter } from "../metro2/letters/generate.mjs";
@@ -106,12 +111,46 @@ function refusalReason(err) {
 
 async function newestCreditFile(db, { orgId, clientId }) {
   const r = await db.query(
-    `SELECT result FROM crs_results
+    `SELECT result, created_at FROM crs_results
       WHERE client_id = $1::uuid AND org_id = $2::uuid
       ORDER BY created_at DESC LIMIT 1`,
     [clientId, orgId]
   );
-  return r.rows[0]?.result || null;
+  const row = r.rows[0];
+  if (!row?.result) return null;
+  return { result: row.result, pulledAt: row.created_at || null };
+}
+
+/**
+ * When the newest bureau letter in an EARLIER round was written.
+ *
+ * OWNER RULE, 2026-09-03: "re-pull the credit file before each round and drop
+ * from the next round whatever has already been removed." Dropping what was
+ * removed happens on its own — every claim in this module is computed from the
+ * newest stored pull, so an item the bureau deleted simply is not there any
+ * more. What does NOT happen on its own is the re-pull: run Round 2 off the same
+ * file Round 1 was written from and the client re-disputes items that may
+ * already be gone, in the same words, which is how a bureau reaches for a
+ * frivolous determination.
+ *
+ * So R2 and later refuse until a newer pull is on record. R1 is exempt because
+ * there is no earlier round to be stale against, and FURNISHER is exempt because
+ * it is not a rung on the bureau ladder.
+ */
+async function newestPriorRoundLetterAt(db, { orgId, clientId, round }) {
+  const index = ROUNDS.indexOf(round);
+  const earlier = ROUNDS.slice(0, index).filter((r) => r !== "FURNISHER");
+  if (earlier.length === 0) return null;
+  const r = await db.query(
+    `SELECT MAX(dl.created_at) AS newest
+       FROM dispute_letters dl
+       JOIN dispute_cases dc ON dc.id = dl.case_id
+      WHERE dl.org_id = $1::uuid AND dl.client_id = $2::uuid
+        AND dc.round = ANY($3::text[])
+        AND COALESCE(dl.target, 'bureau') = 'bureau'`,
+    [orgId, clientId, earlier]
+  );
+  return r.rows[0]?.newest || null;
 }
 
 /** Map a businesses.entity_data object to the letter return-address shape. */
@@ -162,6 +201,16 @@ async function loadExistingRoundLetters(db, { orgId, clientId, round }) {
   }));
 }
 
+/** "412 Pecan St, Austin, TX, 78701" from a return-address row, or null. */
+export function joinedAddress(addr) {
+  if (!addr?.address_line1) return null;
+  return [
+    addr.address_line1,
+    addr.address_line2,
+    [addr.address_city, addr.address_state, addr.address_zip].filter(Boolean).join(", ")
+  ].filter(Boolean).join(", ") || null;
+}
+
 async function loadIdentity(db, { orgId, clientId }) {
   const c = await db.query(
     `SELECT first_name, last_name FROM clients
@@ -173,12 +222,22 @@ async function loadIdentity(db, { orgId, clientId }) {
   const fullName = [row.first_name, row.last_name].filter(Boolean).join(" ").trim();
   if (!fullName) return { fullName: null, complete: false };
 
-  let addr = null;
+  /* TWO DIFFERENT ADDRESSES, AND THEY MUST NOT BE CONFUSED.
+     `personal` is the client's own address, from pii_identity. `addr` is
+     whatever we can print as a RETURN ADDRESS at the top of the letter, which
+     is allowed to fall back to the client's company address because an envelope
+     needs somewhere for the reply to go.
+     Only `personal` may be used to say "my address is …" inside the letter.
+     Passing the company fallback into the personal-information floor is how a
+     client with no address on record had their business address asserted as
+     their home and their real home address put in a deletion list. */
+  let personal = null;
   try {
-    addr = await loadClientReturnAddress(db, { orgId, clientId });
+    personal = await loadClientReturnAddress(db, { orgId, clientId });
   } catch {
-    addr = null;
+    personal = null;
   }
+  let addr = personal?.address_line1 ? personal : null;
   if (!addr?.address_line1) {
     try {
       addr = await loadCompanyReturnAddress(db, { orgId, clientId }) || addr;
@@ -193,8 +252,124 @@ async function loadIdentity(db, { orgId, clientId }) {
     city: addr?.address_city || null,
     state: addr?.address_state || null,
     zip: addr?.address_zip || null,
+    /* NULL means unknown and stays NULL. */
+    personalAddress: joinedAddress(personal),
     complete: Boolean(addr?.address_line1)
   };
+}
+
+/* ── THE ONE NAME AND THE ONE ADDRESS COME FROM THE UPLOADED DOCUMENTS ─────
+ *
+ * COMPLIANCE REVIEW REQUIRED — dispute logic.
+ *
+ * The client uploads a government ID and a proof of address. An agent reads both
+ * images, checks they are legible and that the two addresses match, and the name
+ * and address on those documents become the truth this product argues from: that
+ * one name stays on the credit report and every other name variant is disputed
+ * off; that one address stays and every other address is disputed off.
+ *
+ * src/identity/ owns that read. This module only consumes it, and it consumes
+ * NOTHING ELSE for the purpose. `clients.first_name` is what somebody typed into
+ * a form. `pii_identity.addresses[0]` is whichever address happens to sort first.
+ * Neither is evidence, and a dispute letter mailed to a credit bureau in a real
+ * person's name may not assert a name or an address on the strength of a typed
+ * field.
+ *
+ * NOT YET BUILT IS A NORMAL ANSWER. src/identity/ is another lane's work and may
+ * land after this. So the module is loaded dynamically, once, and every failure
+ * — module missing, export missing, throw, malformed answer — resolves to null.
+ * Null means UNKNOWN, and unknown makes no claim at all: the floor's name and
+ * address claims drop out (../metro2/diy/personal-info-floor.mjs) and the
+ * engine's consumer context stays notVisible (../metro2/diy/consumer-context.mjs),
+ * which is exactly the behaviour this file had before any of it existed.
+ *
+ * The candidate paths are tried in order and the first module that exports a
+ * `verifiedIdentity` function wins.
+ */
+const IDENTITY_MODULES = Object.freeze([
+  "../identity/index.mjs",
+  "../identity/verified-identity.mjs",
+  "../identity/identity.mjs"
+]);
+
+let verifiedIdentityFnPromise = null;
+
+async function resolveVerifiedIdentityFn() {
+  if (!verifiedIdentityFnPromise) {
+    verifiedIdentityFnPromise = (async () => {
+      for (const path of IDENTITY_MODULES) {
+        try {
+          const mod = await import(path);
+          if (typeof mod?.verifiedIdentity === "function") return mod.verifiedIdentity;
+        } catch {
+          /* not there yet, or not loadable — try the next one */
+        }
+      }
+      return null;
+    })();
+  }
+  return verifiedIdentityFnPromise;
+}
+
+/** Exported for tests only — forget which module answered last. */
+export function resetVerifiedIdentityCache() {
+  verifiedIdentityFnPromise = null;
+}
+
+/**
+ * `{ legalName, address, dateOfBirth, source, verifiedAt }` or NULL.
+ *
+ * Every field is passed through as-is except that empty strings become null,
+ * because "" from a form is not a verified value. NULL survives: an identity
+ * with a verified name and no verified address yields a name claim and no
+ * address claim, never an address borrowed from somewhere else.
+ */
+export async function loadVerifiedIdentity(db, { orgId, clientId }, override = null) {
+  const fn = typeof override === "function" ? override : await resolveVerifiedIdentityFn();
+  if (!fn) return null;
+  let got;
+  try {
+    got = await fn(db, { orgId, clientId });
+  } catch {
+    return null;
+  }
+  if (!got || typeof got !== "object") return null;
+
+  const clean = (v) => {
+    if (v == null) return null;
+    if (typeof v === "object") return v;
+    const t = String(v).trim();
+    return t === "" ? null : t;
+  };
+  const legalName = clean(got.legalName ?? got.name ?? null);
+  const address = clean(got.address ?? got.currentAddress ?? null);
+  if (!legalName && !address) return null;
+  return {
+    legalName,
+    address,
+    dateOfBirth: clean(got.dateOfBirth ?? got.dob ?? null),
+    employers: Array.isArray(got.employers) ? got.employers : null,
+    source: clean(got.source ?? null),
+    verifiedAt: clean(got.verifiedAt ?? got.verified_at ?? null)
+  };
+}
+
+/**
+ * An address object flattened to the one line a letter prints, or null.
+ * A plain string comes back unchanged.
+ */
+export function verifiedAddressLabel(address) {
+  if (address == null) return null;
+  if (typeof address === "string") return address.trim() || null;
+  if (typeof address !== "object") return null;
+  const street = [address.line1 ?? address.address_line1, address.line2 ?? address.address_line2]
+    .map((p) => (p == null ? "" : String(p).trim())).filter(Boolean).join(" ");
+  const tail = [
+    address.city ?? address.address_city,
+    address.state ?? address.address_state,
+    address.postal ?? address.zip ?? address.address_zip
+  ].map((p) => (p == null ? "" : String(p).trim())).filter(Boolean).join(", ");
+  return [street, tail].filter(Boolean).join(", ") || null;
 }
 
 async function openCasesByBureau(db, { orgId, clientId, round }) {
@@ -290,7 +465,19 @@ async function existingFurnisherLetter(db, { orgId, clientId, furnisherAddressId
  * Analyse a client's stored credit file and store the dispute letters it
  * supports. Writes only; never transmits.
  */
-export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", staffId = null } = {}) {
+/**
+ * @param {object} db
+ * @param {{orgId, clientId, round?, staffId?, verifiedIdentity?}} opts
+ *        `verifiedIdentity` overrides where the verified name and address are
+ *        read from: `(db, {orgId, clientId}) => identity|null`. Left out — which
+ *        is every production caller — it resolves src/identity/ dynamically, and
+ *        answers null while that module does not exist yet. It is a seam, not a
+ *        second source of truth: whatever supplies it must still be the read of
+ *        the client's uploaded government ID and proof of address.
+ */
+export async function analyzeAndGenerate(db, {
+  orgId, clientId, round = "R1", staffId = null, verifiedIdentity = null
+} = {}) {
   if (!db?.query) return { ok: false, reason: "db_required" };
   if (!orgId || !clientId) return { ok: false, reason: "missing_ids" };
   if (!ROUNDS.includes(round)) return { ok: false, reason: "invalid_round", round };
@@ -329,8 +516,26 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
     };
   }
 
-  const result = await newestCreditFile(db, { orgId, clientId });
-  if (!result) return { ok: false, reason: "no_credit_file" };
+  const creditFile = await newestCreditFile(db, { orgId, clientId });
+  if (!creditFile) return { ok: false, reason: "no_credit_file" };
+  const result = creditFile.result;
+
+  /* The re-pull gate. See newestPriorRoundLetterAt above for the rule. This is a
+     refusal, not a lock: it clears the moment a newer pull lands on the client,
+     which is one run of the pull the round was supposed to start with. */
+  if (round !== "R1" && round !== "FURNISHER") {
+    const priorRoundAt = await newestPriorRoundLetterAt(db, { orgId, clientId, round });
+    const pulledAt = creditFile.pulledAt;
+    if (priorRoundAt && pulledAt && new Date(pulledAt) <= new Date(priorRoundAt)) {
+      return {
+        ok: false,
+        reason: "credit_file_stale_for_round",
+        round,
+        credit_file_pulled_at: pulledAt,
+        prior_round_letter_at: priorRoundAt
+      };
+    }
+  }
 
   /* OWNER DECISION, 2026-09-03: "any derogatory deserves a letter, but only if
      they are in the correct offer path." The Metro 2 engine only fires on a
@@ -342,18 +547,64 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
   const onRepairPath = hasAgreement || REPAIR_PATH_TIERS.has(
     String(await clientOutcomeTier(db, clientId) || "")
   );
-  const byBureau = onRepairPath
-    ? mergeDerogatoryClaims(
-      violationsByBureauFromMergedCrs(result),
-      derogatoryClaimsByBureau(result)
-    )
-    : violationsByBureauFromMergedCrs(result);
-  const bureaus = BUREAU_CODES.filter((code) => (byBureau[code] || []).length > 0);
-  if (bureaus.length === 0) return { ok: false, reason: "no_violations" };
 
+  /* The identity read is HOISTED ABOVE the no_violations wall on purpose. The
+     personal-information floor below names the one name and the one address the
+     file should be consolidated to, and that name is the CLIENT'S OWN, read
+     here. It is never used to decide whether the bureau file carries a variant —
+     see the header of ../metro2/diy/personal-info-floor.mjs for why that
+     distinction is the difference between a real dispute and a false statement.
+
+     Hoisting moves two refusals earlier: a client with no record, or with no
+     legal name, is now answered `client_not_found` / `missing_identity` where a
+     clean file would previously have answered `no_violations` first. Both are
+     more accurate about what is actually wrong, and both are already honest
+     refusals in api/repair/generate.mjs. */
   const identity = await loadIdentity(db, { orgId, clientId });
   if (!identity) return { ok: false, reason: "client_not_found" };
   if (!identity.fullName) return { ok: false, reason: "missing_identity" };
+
+  /* OWNER DECISION, 2026-09-03, FINAL: the personal-information FLOOR. Every
+     repair-path client, every round, clean file or not, gets personal-information
+     cleanup — one name, one address, and a dispute of every inquiry with no
+     account on the file. Letters about derogatory items sit ON TOP of that
+     floor. Before this, a repair client with a tidy file fell through the
+     no_violations wall below and got nothing at all.
+
+     Order is engine findings → derogatory claims → floor, because that is the
+     order a letter should argue in: a documented Metro 2 defect leads, the
+     derogatory items follow, and personal information is knowledge base § 5.8
+     tier 4 (supporting). */
+  /* WHAT THE LETTER IS ALLOWED TO CALL THE CONSUMER'S NAME AND ADDRESS.
+     Read off the uploaded ID and proof of address, never off the CRM record —
+     see loadVerifiedIdentity above. Both may be null, and null means the letter
+     makes no claim about that thing at all. `identity` is still used for the
+     letterhead, which is a different job: an envelope needs somewhere for the
+     reply to go and may fall back to the client's company address, while the
+     sentence "my name is X" may not fall back to anything. */
+  const verified = await loadVerifiedIdentity(db, { orgId, clientId }, verifiedIdentity);
+  const verifiedName = verified?.legalName || null;
+  const verifiedAddress = verifiedAddressLabel(verified?.address);
+  /* Feeds ../metro2/checks/personal-info.mjs — the name, date-of-birth and
+     employment rules, which had no consumer side to compare against and so could
+     never fire. Empty when there is no verified identity, which leaves them
+     exactly as dark as they were. */
+  const consumerContext = consumerContextFrom(verified);
+
+  const byBureau = onRepairPath
+    ? mergePersonalInfoClaims(
+      mergeDerogatoryClaims(
+        violationsByBureauFromMergedCrs(result, consumerContext),
+        derogatoryClaimsByBureau(result)
+      ),
+      personalInfoFloorByBureau(result, {
+        legalName: verifiedName,
+        currentAddress: verifiedAddress
+      })
+    )
+    : violationsByBureauFromMergedCrs(result, consumerContext);
+  const bureaus = BUREAU_CODES.filter((code) => (byBureau[code] || []).length > 0);
+  if (bureaus.length === 0) return { ok: false, reason: "no_violations" };
 
   const stored = [];
   const skipped = [];
@@ -589,6 +840,11 @@ export async function analyzeAndGenerate(db, { orgId, clientId, round = "R1", st
     warnings,
     letters_stored: stored.length,
     identity_complete: identity.complete,
+    /* Whether the one name and the one address in these letters came off the
+       client's uploaded documents. FALSE means the letters make no name or
+       address claim at all — not that they fell back to the CRM. */
+    verified_identity: Boolean(verified),
+    verified_identity_source: verified?.source || null,
     events
   };
 }

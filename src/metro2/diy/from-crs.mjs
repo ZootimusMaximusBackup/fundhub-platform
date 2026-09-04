@@ -55,15 +55,29 @@ export function bureauReportsFromMergedCrs(merged) {
 
 /**
  * @param {object} merged  crs_results.result (bureaus.TU|EX|EQ) or a single bureau body
+ * @param {object} [consumerContext]  WHAT THE CONSUMER SAYS IS TRUE, provenance
+ *        wrapped — see ./consumer-context.mjs. Three of the four rules in
+ *        ../checks/personal-info.mjs (name variants, date of birth, employment)
+ *        compare the bureau's file against this side and CANNOT FIRE WITHOUT IT;
+ *        ../normalize.mjs marks every consumer field notVisible() because
+ *        nothing in a credit report carries it. Until 2026-09-04 this function
+ *        passed nothing, so the only personal-information rule that ever ran was
+ *        M2-031, "delete addresses older than two reporting cycles" — age-based
+ *        cleanup, not the identity-based cleanup the product sells.
+ *
+ *        It must carry the VERIFIED identity — the name read off the client's
+ *        uploaded government ID — and nothing else. Default {} keeps every other
+ *        caller (../../optimize-page/roadmap.mjs, ../../underwrite/letter-pack.mjs,
+ *        ./deliver.mjs) behaving exactly as it did.
  * @returns {Record<string, object[]>}
  */
-export function violationsByBureauFromMergedCrs(merged) {
+export function violationsByBureauFromMergedCrs(merged, consumerContext = {}) {
   const reports = bureauReportsFromMergedCrs(merged);
 
   const out = {};
   for (const [code, report] of Object.entries(reports)) {
     const asOf = reportAsOf(report);
-    const { tradelines, context } = normalizeFromCrs(report, { asOf });
+    const { tradelines, context } = normalizeFromCrs(report, { asOf, consumerContext });
     const result = runReport(tradelines, context);
     const list = packViolationsFromReport(result);
     if (list.length) out[code] = list;

@@ -1,6 +1,27 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { addressFromBusinessEntity, analyzeAndGenerate } from "./analyze.mjs";
+import {
+  addressFromBusinessEntity,
+  analyzeAndGenerate,
+  verifiedAddressLabel
+} from "./analyze.mjs";
+
+/* THE VERIFIED IDENTITY — the stand-in for src/identity/ in these tests.
+   The one name and the one address a letter is allowed to assert come off the
+   client's uploaded government ID and proof of address, never off the CRM
+   record. src/identity/ owns that read and is another lane's module; until it
+   exists, analyzeAndGenerate answers null for every client and the letters make
+   no name or address claim at all. These tests inject it through the same seam
+   that module will fill. */
+const VERIFIED = Object.freeze({
+  legalName: "Sim Repair",
+  address: "412 Pecan St, Austin, TX, 78701",
+  source: "id_document",
+  verifiedAt: "2026-09-01T00:00:00Z"
+});
+const verifiedIdentity = () => VERIFIED;
+/** Name verified off the ID, no proof of address accepted yet. */
+const verifiedNameOnly = () => ({ ...VERIFIED, address: null });
 
 const ORG = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const CLIENT = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
@@ -55,7 +76,7 @@ describe("analyzeAndGenerate", () => {
       }],
       "FROM clients": [{ first_name: "Sim", last_name: "Repair" }]
     });
-    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1", verifiedIdentity });
     assert.equal(r.ok, false);
     assert.equal(r.reason, "no_authorization");
     assert.ok(!db.seen.some((c) => /FROM dispute_letters/i.test(c.sql)));
@@ -74,7 +95,7 @@ describe("analyzeAndGenerate", () => {
       }],
       "FROM clients": [{ first_name: "Sim", last_name: "Repair" }]
     });
-    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1", verifiedIdentity });
     assert.equal(r.ok, true);
     assert.equal(r.already_generated, true);
     assert.equal(r.letters.length, 1);
@@ -92,7 +113,7 @@ describe("analyzeAndGenerate", () => {
       }],
       "FROM clients": [{ first_name: "Sim", last_name: "Repair" }]
     });
-    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1", verifiedIdentity });
     assert.equal(r.ok, true);
     assert.equal(r.already_generated, true);
     assert.equal(r.letters.length, 1);
@@ -104,7 +125,7 @@ describe("analyzeAndGenerate", () => {
       "FROM repair_programs": [{ program: "trial", rounds_cap: 2, status: "active" }],
       "FROM crs_results": [{ result: { bureausPulled: ["EQ"] } }]
     });
-    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1", verifiedIdentity });
     assert.equal(r.ok, false);
     assert.equal(r.reason, "no_authorization");
     assert.ok(!db.seen.some((c) => /FROM crs_results/i.test(c.sql)));
@@ -118,7 +139,7 @@ describe("analyzeAndGenerate", () => {
       "FROM repair_programs": [],
       "FROM crs_results": [{ result: { bureausPulled: ["EQ"] } }]
     });
-    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1", verifiedIdentity });
     assert.equal(r.ok, false);
     assert.equal(r.reason, "no_authorization");
     assert.ok(!db.seen.some((c) => /FROM crs_results/i.test(c.sql)));
@@ -162,12 +183,18 @@ describe("derogatory items and the offer path", () => {
     }
   };
 
-  function dbFor(tier, { agreement = false } = {}) {
+  function dbFor(tier, { agreement = false, personalAddress = true } = {}) {
     return fakeDb({
       // Order matters: the outcome_tier read must be matched before the
       // first_name/last_name read, and both are "FROM clients".
       "outcome_tier FROM clients": [{ outcome_tier: tier }],
-      "first_name, last_name FROM clients": [{ first_name: "Sim", last_name: "Repair" }],
+      "first_name, last_name": [{ first_name: "Sim", last_name: "Repair" }],
+      /* pii_identity is the ONLY source of the client's own address. Without a
+         row here the floor makes no address claim, which is the point of the
+         second test below. */
+      "FROM pii_identity": personalAddress
+        ? [{ addresses: [{ address_line1: "412 Pecan St", city: "Austin", state: "TX", zip: "78701" }] }]
+        : [],
       "FROM contracts": agreement ? [{ "?column?": 1 }] : [],
       "FROM client_consents": [{ is_valid: true }],
       "FROM dispute_letters dl": [],
@@ -186,30 +213,416 @@ describe("derogatory items and the offer path", () => {
 
   test("a repair-path client gets a letter for a collection the engine finds no defect in", async () => {
     const db = dbFor("REPAIR_ONLY");
-    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1", verifiedIdentity });
     assert.equal(r.ok, true, JSON.stringify(r));
     assert.equal(r.letters.length, 1);
-    assert.deepEqual(r.letters[0].ruleIds, ["DEROG-COLLECTION"]);
+    /* The derogatory claim leads, and the personal-information floor
+       (../metro2/diy/personal-info-floor.mjs) sits underneath it — owner-set
+       2026-09-03, cleanup runs on every repair-path client on every round. This
+       file carries no alias block and no address block, so the floor's two
+       claims are the CONFIRM pair, never a fabricated second name. */
+    assert.deepEqual(
+      r.letters[0].ruleIds,
+      ["DEROG-COLLECTION", "PI-NAME-CONFIRM", "PI-ADDRESS-CONFIRM"]
+    );
   });
 
   test("FUNDING_PLUS_REPAIR is a repair path too", async () => {
     const db = dbFor("FUNDING_PLUS_REPAIR");
-    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1", verifiedIdentity });
     assert.equal(r.ok, true, JSON.stringify(r));
     assert.equal(r.letters.length, 1);
   });
 
   test("a funding-only client gets nothing, whatever the file holds", async () => {
     const db = dbFor("FULL_FUNDING");
-    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1", verifiedIdentity });
     assert.equal(r.ok, false);
     assert.equal(r.reason, "no_violations");
   });
 
   test("a signed repair agreement is a repair path even with no tier stamped", async () => {
     const db = dbFor(null, { agreement: true });
-    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1" });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1", verifiedIdentity });
     assert.equal(r.ok, true, JSON.stringify(r));
     assert.equal(r.letters.length, 1);
+  });
+});
+
+/* OWNER DECISION, 2026-09-03, FINAL — the personal-information floor.
+   "On EVERY customer on the credit-repair path, on EVERY round, clean file or
+   not, ALWAYS run personal-information cleanup." So a spotless file on a
+   repair-path client still produces a letter, and a client off that path still
+   produces nothing from the same file. */
+describe("the personal-information floor", () => {
+  /* One bureau, one name, one address, one clean account, one inquiry from the
+     creditor of that same account. Nothing here is disputable on its own: the
+     Metro 2 engine finds no defect, there is no derogatory item, the name and
+     address do not vary and the inquiry is explained by an account on the file. */
+  const SPOTLESS_FILE = {
+    bureausPulled: ["EX"],
+    bureaus: {
+      EX: {
+        creditFiles: [{
+          creditFileDetail: {
+            creditFileInfileDate: "2026-09-03",
+            creditFileResultStatusType: "FileReturned",
+            sourceType: "Experian"
+          },
+          aliases: [{ firstName: "Sim", middleName: null, lastName: "Repair" }],
+          addresses: [{
+            addressLine1: "412 Pecan St", city: "Austin", state: "TX",
+            postalCode: "78701", borrowerResidencyType: "Current",
+            dateReported: "2026-08-01"
+          }],
+          ssns: [],
+          employments: []
+        }],
+        inquiries: [{
+          creditorName: "EXAMPLE BANK NA", inquiryDate: "2026-08-01",
+          businessType: "Banking", sourceType: "Experian"
+        }],
+        tradelines: [{
+          creditorName: "EXAMPLE BANK NA",
+          accountIdentifier: "5121080011112222",
+          accountOpenedDate: "2019-06-12",
+          accountReportedDate: "2026-09-01",
+          accountOwnershipType: "Individual",
+          accountStatusType: "Open",
+          accountType: "Revolving",
+          currentRatingType: "AsAgreed",
+          currentBalanceAmount: "1842",
+          pastDueAmount: "0",
+          sourceType: "Experian"
+        }]
+      }
+    }
+  };
+
+  function dbFor(file, tier, { personalAddress = true } = {}) {
+    return fakeDb({
+      "outcome_tier FROM clients": [{ outcome_tier: tier }],
+      "first_name, last_name": [{ first_name: "Sim", last_name: "Repair" }],
+      "FROM pii_identity": personalAddress
+        ? [{ addresses: [{ address_line1: "412 Pecan St", city: "Austin", state: "TX", zip: "78701" }] }]
+        : [],
+      "FROM contracts": [],
+      "FROM client_consents": [{ is_valid: true }],
+      "FROM dispute_letters dl": [],
+      "FROM repair_programs": [],
+      "FROM crs_results": [{ result: file }],
+      "FROM dispute_cases dc": [],
+      "INSERT INTO dispute_cases": [{
+        id: "case-1", org_id: ORG, client_id: CLIENT, bureau: "EX", round: "R1"
+      }],
+      "INSERT INTO dispute_items": [{ id: "item-1" }],
+      "INSERT INTO dispute_letters": [{ id: "letter-1", bureau: "EX", case_id: "case-1" }],
+      "FROM dispute_letters$": [],
+      "SELECT body_text FROM dispute_letters": []
+    });
+  }
+
+  test("a spotless file on a repair client still produces a cleanup letter", async () => {
+    const db = dbFor(SPOTLESS_FILE, "REPAIR_ONLY");
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1", verifiedIdentity });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.equal(r.letters.length, 1);
+    assert.deepEqual(
+      r.letters[0].ruleIds.slice().sort(),
+      ["PI-ADDRESS-CONFIRM", "PI-NAME-CONFIRM"]
+    );
+  });
+
+  test("with NO verified address the letter makes no address claim at all", async () => {
+    /* THE BUSINESS ADDRESS IS NOT THE HOME ADDRESS. loadIdentity is allowed to
+       fall back to the company street for the letterhead, because an envelope
+       needs a reply address. It is not allowed to feed that value to the floor:
+       doing so asserted the client's business address as their residence and
+       asked the bureau to delete their real one. Nor may the CRM address stand
+       in for a verified one — only the proof of address the client uploaded
+       counts, and here they uploaded an ID and nothing else. */
+    const db = fakeDb({
+      "outcome_tier FROM clients": [{ outcome_tier: "REPAIR_ONLY" }],
+      "first_name, last_name": [{ first_name: "Sim", last_name: "Repair" }],
+      "FROM pii_identity": [],
+      "FROM businesses": [{
+        entity_data: { address_line1: "204 Horse Blvd", city: "Austin", state: "TX", postal_code: "78701" }
+      }],
+      "FROM contracts": [],
+      "FROM client_consents": [{ is_valid: true }],
+      "FROM dispute_letters dl": [],
+      "FROM repair_programs": [],
+      "FROM crs_results": [{ result: SPOTLESS_FILE }],
+      "FROM dispute_cases dc": [],
+      "INSERT INTO dispute_cases": [{
+        id: "case-1", org_id: ORG, client_id: CLIENT, bureau: "EX", round: "R1"
+      }],
+      "INSERT INTO dispute_items": [{ id: "item-1" }],
+      "INSERT INTO dispute_letters": [{ id: "letter-1", bureau: "EX", case_id: "case-1" }],
+      "FROM dispute_letters$": [],
+      "SELECT body_text FROM dispute_letters": []
+    });
+    const r = await analyzeAndGenerate(db, {
+      orgId: ORG, clientId: CLIENT, round: "R1", verifiedIdentity: verifiedNameOnly
+    });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.deepEqual(r.letters[0].ruleIds, ["PI-NAME-CONFIRM"]);
+    const body = r.letters[0].body_text;
+    assert.doesNotMatch(body, /My address is/i,
+      "a letter may not state an address the client has never given us");
+    assert.doesNotMatch(body, /delete "412 Pecan St[^"]*"/,
+      "and it may not ask the bureau to delete the address that IS on the file");
+    /* The company street may still appear once, as the return address at the
+       top of the letter. It may not appear inside a claim. */
+    assert.match(body, /204 Horse Blvd/);
+  });
+
+  test("the same spotless file off the repair path produces nothing", async () => {
+    const db = dbFor(SPOTLESS_FILE, "FULL_FUNDING");
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1", verifiedIdentity });
+    assert.equal(r.ok, false);
+    assert.equal(r.reason, "no_violations");
+  });
+
+  test("one name on the file is never disputed as a second name", async () => {
+    const db = dbFor(SPOTLESS_FILE, "REPAIR_ONLY");
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1", verifiedIdentity });
+    assert.ok(!/PI-NAME-CONSOLIDATE/.test(r.letters[0].body_text),
+      "a file carrying one name must never be told it carries more than one");
+  });
+});
+
+/* OWNER RULE, 2026-09-03 — "re-pull the credit file before each round and drop
+   from the next round whatever has already been removed." Dropping what was
+   removed is automatic: every claim is computed from the newest stored pull, so
+   a deleted item is simply not there. The re-pull is not automatic, so Round 2
+   and later refuse until a newer pull is on record. */
+describe("the re-pull gate between rounds", () => {
+  const FILE = {
+    bureausPulled: ["EX"],
+    bureaus: {
+      EX: {
+        creditFiles: [{
+          creditFileDetail: {
+            creditFileInfileDate: "2026-09-03",
+            creditFileResultStatusType: "FileReturned",
+            sourceType: "Experian"
+          },
+          aliases: [{ firstName: "Sim", lastName: "Repair" }],
+          addresses: [], ssns: [], employments: []
+        }],
+        inquiries: [],
+        tradelines: []
+      }
+    }
+  };
+
+  /* Key order matters: the MAX(created_at) read must be matched before the
+     round-letters read, because both queries name `dispute_letters dl`. */
+  function dbFor({ pulledAt, priorRoundAt }) {
+    return fakeDb({
+      "MAX\\(dl\\.created_at\\)": [{ newest: priorRoundAt }],
+      "outcome_tier FROM clients": [{ outcome_tier: "REPAIR_ONLY" }],
+      "first_name, last_name": [{ first_name: "Sim", last_name: "Repair" }],
+      "FROM contracts": [],
+      "FROM client_consents": [{ is_valid: true }],
+      "FROM dispute_letters dl": [],
+      "FROM repair_programs": [{ program: "full", rounds_cap: 6, status: "active" }],
+      "FROM crs_results": [{ result: FILE, created_at: pulledAt }],
+      "FROM dispute_cases dc": [],
+      "INSERT INTO dispute_cases": [{
+        id: "case-2", org_id: ORG, client_id: CLIENT, bureau: "EX", round: "R2"
+      }],
+      "INSERT INTO dispute_items": [{ id: "item-2" }],
+      "INSERT INTO dispute_letters": [{ id: "letter-2", bureau: "EX", case_id: "case-2" }],
+      "FROM dispute_letters$": [],
+      "SELECT body_text FROM dispute_letters": []
+    });
+  }
+
+  test("Round 2 on the same file Round 1 was written from is refused", async () => {
+    const db = dbFor({ pulledAt: "2026-06-01T00:00:00Z", priorRoundAt: "2026-07-01T00:00:00Z" });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R2", verifiedIdentity });
+    assert.equal(r.ok, false);
+    assert.equal(r.reason, "credit_file_stale_for_round");
+  });
+
+  test("a fresh pull clears it — the refusal is not a lock", async () => {
+    const db = dbFor({ pulledAt: "2026-08-01T00:00:00Z", priorRoundAt: "2026-07-01T00:00:00Z" });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R2", verifiedIdentity });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.equal(r.letters.length, 1);
+  });
+
+  test("Round 1 is never blocked — there is no earlier round to be stale against", async () => {
+    const db = dbFor({ pulledAt: "2026-06-01T00:00:00Z", priorRoundAt: "2026-07-01T00:00:00Z" });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R1", verifiedIdentity });
+    assert.equal(r.ok, true, JSON.stringify(r));
+  });
+
+  test("a client with no earlier round is not blocked", async () => {
+    const db = dbFor({ pulledAt: "2026-06-01T00:00:00Z", priorRoundAt: null });
+    const r = await analyzeAndGenerate(db, { orgId: ORG, clientId: CLIENT, round: "R2", verifiedIdentity });
+    assert.equal(r.ok, true, JSON.stringify(r));
+  });
+});
+
+
+/* ── NO VERIFIED DOCUMENTS, NO CLAIM ABOUT WHO THE CONSUMER IS ─────────────
+ *
+ * COMPLIANCE REVIEW REQUIRED — dispute logic.
+ *
+ * The one name and the one address a letter asserts are read off the client's
+ * uploaded government ID and proof of address (src/identity/). Where that read
+ * has not happened, the letter says nothing at all about the client's name or
+ * address. It does NOT fall back to clients.first_name, to the first row of
+ * pii_identity, or to the letterhead's company-address fallback. A dispute
+ * letter goes to a credit bureau in a real person's name; asserting an identity
+ * on the strength of a typed CRM field is how a client's real address ends up
+ * in a deletion list.
+ */
+describe("no verified identity", () => {
+  const CLEAN_FILE = {
+    bureausPulled: ["EX"],
+    bureaus: {
+      EX: {
+        creditFiles: [{
+          creditFileDetail: {
+            creditFileInfileDate: "2026-09-03",
+            creditFileResultStatusType: "FileReturned",
+            sourceType: "Experian"
+          },
+          aliases: [{ firstName: "Sim", middleName: null, lastName: "Repair" }],
+          addresses: [{
+            addressLine1: "412 Pecan St", city: "Austin", state: "TX",
+            postalCode: "78701", borrowerResidencyType: "Current",
+            dateReported: "2026-08-01"
+          }],
+          ssns: [], employments: []
+        }],
+        inquiries: [],
+        tradelines: []
+      }
+    }
+  };
+
+  /* Same file, plus one collection, so there is something to dispute even when
+     the personal-information floor stays silent. */
+  const CLEAN_PLUS_COLLECTION = structuredClone(CLEAN_FILE);
+  CLEAN_PLUS_COLLECTION.bureaus.EX.tradelines = [{
+    creditorName: "MIDLAND CREDIT MANAGEMENT",
+    accountIdentifier: "SIM-MCM-6642",
+    accountOpenedDate: "2024-02-20",
+    accountReportedDate: "2026-08-28",
+    accountOwnershipType: "Individual",
+    accountStatusType: "Open",
+    accountType: "Open",
+    loanType: "CollectionAgencyAttorney",
+    businessType: "Collection",
+    currentRatingType: "CollectionOrChargeOff",
+    currentBalanceAmount: "1840",
+    pastDueAmount: "0",
+    sourceType: "Experian"
+  }];
+
+  function dbFor(file) {
+    return fakeDb({
+      "outcome_tier FROM clients": [{ outcome_tier: "REPAIR_ONLY" }],
+      "first_name, last_name": [{ first_name: "Sim", last_name: "Repair" }],
+      "FROM pii_identity": [{
+        addresses: [{ address_line1: "412 Pecan St", city: "Austin", state: "TX", zip: "78701" }]
+      }],
+      "FROM contracts": [],
+      "FROM client_consents": [{ is_valid: true }],
+      "FROM dispute_letters dl": [],
+      "FROM repair_programs": [],
+      "FROM crs_results": [{ result: file }],
+      "FROM dispute_cases dc": [],
+      "INSERT INTO dispute_cases": [{
+        id: "case-1", org_id: ORG, client_id: CLIENT, bureau: "EX", round: "R1"
+      }],
+      "INSERT INTO dispute_items": [{ id: "item-1" }],
+      "INSERT INTO dispute_letters": [{ id: "letter-1", bureau: "EX", case_id: "case-1" }],
+      "FROM dispute_letters$": [],
+      "SELECT body_text FROM dispute_letters": []
+    });
+  }
+
+  test("a clean file and no verified identity produces NO letter, not a CRM-backed one", async () => {
+    const r = await analyzeAndGenerate(dbFor(CLEAN_FILE), {
+      orgId: ORG, clientId: CLIENT, round: "R1"
+    });
+    assert.equal(r.ok, false);
+    assert.equal(r.reason, "no_violations");
+  });
+
+  test("a real dispute still ships — it just makes no claim about the name", async () => {
+    const r = await analyzeAndGenerate(dbFor(CLEAN_PLUS_COLLECTION), {
+      orgId: ORG, clientId: CLIENT, round: "R1"
+    });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.deepEqual(r.letters[0].ruleIds, ["DEROG-COLLECTION"]);
+    assert.equal(r.verified_identity, false);
+    const body = r.letters[0].body_text;
+    assert.doesNotMatch(body, /My name is/i);
+    assert.doesNotMatch(body, /My address is/i);
+    assert.ok(!/PI-NAME/.test(body) && !/PI-ADDRESS/.test(body));
+  });
+
+  test("with the documents read, the same file carries the name and address claims", async () => {
+    const r = await analyzeAndGenerate(dbFor(CLEAN_PLUS_COLLECTION), {
+      orgId: ORG, clientId: CLIENT, round: "R1", verifiedIdentity
+    });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.deepEqual(
+      r.letters[0].ruleIds,
+      ["DEROG-COLLECTION", "PI-NAME-CONFIRM", "PI-ADDRESS-CONFIRM"]
+    );
+    assert.equal(r.verified_identity, true);
+    assert.equal(r.verified_identity_source, "id_document");
+  });
+
+  test("an identity module that throws is treated as no identity, never as a crash", async () => {
+    const r = await analyzeAndGenerate(dbFor(CLEAN_PLUS_COLLECTION), {
+      orgId: ORG,
+      clientId: CLIENT,
+      round: "R1",
+      verifiedIdentity: () => { throw new Error("identity service down"); }
+    });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    assert.equal(r.verified_identity, false);
+    assert.deepEqual(r.letters[0].ruleIds, ["DEROG-COLLECTION"]);
+  });
+
+  test("ONE name claim per bureau, never two", async () => {
+    /* The file carries a name that is not the consumer's. M2-032 in
+       ../metro2/checks/personal-info.mjs disputes it by name, and it can fire
+       now that the consumer side of the context is supplied. The floor's own
+       name claim stands down rather than asking for the same deletion twice —
+       ../metro2/diy/personal-info-floor.mjs mergePersonalInfoClaims. */
+    const mixedFile = structuredClone(CLEAN_FILE);
+    mixedFile.bureaus.EX.creditFiles[0].aliases.push({ firstName: "Simon", lastName: "Repairs" });
+    const r = await analyzeAndGenerate(dbFor(mixedFile), {
+      orgId: ORG, clientId: CLIENT, round: "R1", verifiedIdentity
+    });
+    assert.equal(r.ok, true, JSON.stringify(r));
+    const ids = r.letters[0].ruleIds;
+    assert.ok(ids.includes("M2-032"), JSON.stringify(ids));
+    assert.equal(ids.filter((id) => /NAME/.test(id)).length, 0, JSON.stringify(ids));
+    assert.ok(ids.includes("PI-ADDRESS-CONFIRM"), "the address half is untouched");
+  });
+});
+
+describe("verifiedAddressLabel", () => {
+  test("a string passes through, an object is flattened, nothing is invented", () => {
+    assert.equal(verifiedAddressLabel("412 Pecan St, Austin, TX, 78701"),
+      "412 Pecan St, Austin, TX, 78701");
+    assert.equal(
+      verifiedAddressLabel({ line1: "412 Pecan St", city: "Austin", state: "TX", postal: "78701" }),
+      "412 Pecan St, Austin, TX, 78701"
+    );
+    assert.equal(verifiedAddressLabel(null), null);
+    assert.equal(verifiedAddressLabel("   "), null);
+    assert.equal(verifiedAddressLabel({}), null);
   });
 });
