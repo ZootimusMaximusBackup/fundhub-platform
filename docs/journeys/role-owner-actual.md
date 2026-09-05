@@ -49,15 +49,14 @@ flowchart TD
     CAN --> A_top_level[Everything else — 41 routes]
     CAN --> A_trials[trials — 4 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 3 routes]
-    CANT --> B_affiliates[affiliates — 1 blocked]
+    WHO -->|Yes| CANT[Blocked — 2 routes]
     CANT --> B_chat[chat — 1 blocked]
     CANT --> B_read[Reading data — 1 blocked]
 ```
 
 ## What they can reach
 
-**216 of 219 routes.**
+**216 of 218 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -196,7 +195,6 @@ flowchart TD
 | `/api/public/unsubscribe` | — | anyone |
 | `/api/read/ad-attribution` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/ad-books` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
-| `/api/read/affiliate-portal` | GET | staff, affiliate, client |
 | `/api/read/affiliates` | GET | employees: owner, admin, sales_manager<br>plus: affiliate |
 | `/api/read/agent-context` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/agent-shadow-log` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -205,6 +203,7 @@ flowchart TD
 | `/api/read/bank-inbox` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/banking-surface` | GET | owner, admin, sales_manager |
 | `/api/read/call-outcomes` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/client-progress` | GET | staff, client |
 | `/api/read/closer-call` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/closer-deck` | GET | closer, sales_manager, owner, admin |
 | `/api/read/closer-now` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -287,11 +286,10 @@ flowchart TD
 
 ## What they are blocked from
 
-**3 of 219 routes.**
+**2 of 218 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
-| `/api/affiliates/refer` | POST | client |
 | `/api/chat/portal-message` | POST | client |
 | `/api/read/company-brain-affiliate` | POST | employees: affiliate, partner<br>plus: affiliate, partner |
 

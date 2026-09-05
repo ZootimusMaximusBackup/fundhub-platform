@@ -179,6 +179,9 @@ const API_KEYS = [
   "read/bank-inbox",
   "read/banking-surface",
   "read/call-outcomes",
+  /* The only read behind the client progress page. An outage here is a client
+     who paid up to $10,000 seeing no scores, no checklist and no next step. */
+  "read/client-progress",
   "read/closer-call",
   "read/closer-deck",
   "read/closer-now",

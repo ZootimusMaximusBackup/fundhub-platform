@@ -16,7 +16,6 @@ flowchart TD
     AUTH -->|Yes| WHO{Recognised as client?}
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| CAN[Can reach]
-    CAN --> A_affiliates[affiliates — 1 route]
     CAN --> A_auth[Signing in and out — 6 routes]
     CAN --> A_chat[chat — 1 route]
     CAN --> A_climate[climate — 2 routes]
@@ -62,11 +61,10 @@ flowchart TD
 
 ## What they can reach
 
-**36 of 219 routes.**
+**35 of 218 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
-| `/api/affiliates/refer` | POST | client |
 | `/api/auth/login` | GET | anyone |
 | `/api/auth/logout` | — | anyone |
 | `/api/auth/magic-link` | — | anyone |
@@ -95,7 +93,7 @@ flowchart TD
 | `/api/public/partner-page` | GET | anyone |
 | `/api/public/survey-submit` | POST | **not a sign-in** — provider signature |
 | `/api/public/unsubscribe` | — | anyone |
-| `/api/read/affiliate-portal` | GET | staff, affiliate, client |
+| `/api/read/client-progress` | GET | staff, client |
 | `/api/read/entitlements` | GET | employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager<br>plus: client |
 | `/api/read/portal-contracts` | GET | staff, client |
 | `/api/read/portal-summary` | GET | staff, client |
@@ -110,7 +108,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**183 of 219 routes.**
+**183 of 218 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

@@ -225,6 +225,7 @@ import contracts from "../../api/contracts.mjs";
 import readContracts from "../../api/read/contracts.mjs";
 import readPortalContracts from "../../api/read/portal-contracts.mjs";
 import readPortalSummary from "../../api/read/portal-summary.mjs";
+import readClientProgress from "../../api/read/client-progress.mjs";
 import contractsSign from "../../api/contracts/sign.mjs";
 import messagesOutbound from "../../api/messages-outbound.mjs";
 import agentsWrite from "../../api/agents.mjs";
@@ -953,6 +954,7 @@ export const ROUTES = {
   "read/contracts": readContracts,
   "read/portal-contracts": readPortalContracts,
   "read/portal-summary": readPortalSummary,
+  "read/client-progress": readClientProgress,
   "contracts/sign": contractsSign,
 
   // ── The outbound queue ─────────────────────────────────────────────────────
