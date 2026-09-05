@@ -166,7 +166,7 @@ sequence.
 things, not one. The card moves to intake, and then the very same handler asks "has this person
 sent us their ID and their proof of address?" — `src/repair/handlers.mjs:215-221`. The answer picks
 the event: `repair.docs.needed` if anything is missing, `repair.docs.complete` if both are already
-there (`:81`). The card then moves again (`:103`). An upload later ends the stage the same way,
+there (`:81`). The card then moves again (`:105`). An upload later ends the stage the same way,
 through `onRepairDocsReceived` (`:137`), which the bus calls on `docs.received`
 (`src/repair/register.mjs:39`, reached from `src/workflows/index.mjs:1-2`).
 
@@ -178,11 +178,11 @@ through `onRepairDocsReceived` (`:137`), which the bus calls on `docs.received`
 | `repair.enrolled`, no documents on file | emitted `repair.docs.needed`, missing `["id_document","proof_of_address"]`, card landed on **awaiting_documents** |
 | `repair.enrolled`, both documents already on file | emitted `repair.docs.complete`, card landed on **analysis** — the documents stage is skipped |
 | `docs.received`, both documents now on file | emitted `repair.docs.complete`, card landed on **analysis** |
-| `docs.received` while the file is at `in_transit` | refused — `stage_not_waiting_on_documents`. A round-5 client uploading something is not dragged backwards (`:132-134`) |
+| `docs.received` while the file is at `in_transit` | refused — `stage_not_waiting_on_documents`. A round-5 client uploading something is not dragged backwards (`:128-131`) |
 | the document read throws | nothing emitted — `documents_unreadable` (`:79`). The card stays where it is. Unknown stays unknown |
 
 That last row is the one that matters for the screen: **a database that will not answer must never
-be rendered as "you have not sent your ID"** (`src/repair/handlers.mjs:37-39`).
+be rendered as "you have not sent your ID"** (`src/repair/handlers.mjs:38-40`).
 
 **Delivery is not automatic in the obvious way.** `repair.letters.delivered` only fires when the
 postal provider's webhook arrives, the inquiry-removal lookup misses first, **and** the provider's

@@ -148,7 +148,7 @@ apart: `nextSelfServeRoundNo()` counts only paid requests and never reads the pl
 function is `src/waypoints/store.mjs:229-238` and the owner's reasoning is in the comment directly
 above it at `:221-228`. Two separate things back this up, and this page cites both rather than
 picking one: a test asserts the table has no column joining the counters
-(`src/waypoints/store.pg.test.mjs:326-337`), and the table's own comment in the database says the
+(`src/waypoints/store.pg.test.mjs:327-337`), and the table's own comment in the database says the
 same (`db/migrations/331_paid_service_requests.sql:321`).
 
 ---
@@ -197,9 +197,9 @@ flow bends around, and the database will not let a row claim it dishonestly:
   (`:264-267`).
 
 Between `staged` and the post there is exactly one door: a member of staff pressing send. It is
-`POST /api/repair/send`, and it is staff-only — `requireAuth` then `requireRole(ROLE_SETS.STAFF)`
-(`api/repair/send.mjs:24-27`) — and it will not post anything unless the request explicitly says
-`mail: true` (`:34`).
+`POST /api/repair/send`, and it is staff-only — `auth()` then `requireRole(res, staff,
+ROLE_SETS.STAFF)` (`api/repair/send.mjs:23-26`) — and it will not post anything unless the request
+explicitly says `mail: true` (`:34`).
 
 ---
 
