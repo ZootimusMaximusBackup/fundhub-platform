@@ -117,10 +117,19 @@ while the real rates sit in `affiliate_commission_rules`.
 * The post-call stepper at `:506-514` is **five hardcoded ticks**, and its labels are the
   **funding** journey shown to repair clients. Retire or correct it.
 
-### 6. AI support
-`api/chat/*` already reaches a client principal. Feed it the progress facts so "where is my file"
-is answered from the truth. Then the nudge on a stalled waypoint, reusing the existing agent
-runtime rather than a new one.
+### 6. AI support and the accountability layer — SEE ITS OWN SPEC
+`docs/workflows/portal-accountability-spec.md`. This is the half that makes the page a service
+rather than a screen: the client is chased by email and text when they stall, and can ask a
+question and get an answer from the truth.
+
+**It is WAVE 4, not wave 3.** It depends on waypoints being real and visible first, and it is the
+piece most likely to cause harm if rushed, because it is the one that talks to people. Do not
+start it inside wave 3 — read the spec, note it as next, and finish the screen.
+
+Two things from that spec worth knowing even if you do not build it: copy is deliberately
+placeholder because Chris is auditing every email and text in a separate thread, so use stable
+template keys and let him swap the words. And the exit conditions are the feature, not a detail —
+a chase loop in this product once sent 51 identical texts to one phone in two hours.
 
 ---
 

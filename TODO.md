@@ -12,6 +12,28 @@ text exists for them. Academy and Blueprint are safe.
 
 ### Yours, in the order they unblock things
 
+0. **Finalise the UnderwriteIQ strategy. It is not finalised and it is going out to
+   clients right now.** The Credit Optimization Roadmap prints a six-month plan
+   generated per client — a paydown table with real balances and targets, the dispute
+   rounds, file the LLC, take the personal loan early, and then Month 5: get an EIN,
+   register with Dun & Bradstreet for a DUNS number, open net-30 vendor accounts with
+   Uline, Quill and Grainger, and build Paydex.
+
+   Chris on 2026-09-05: **"we dont do DUNS"**, and the strategy itself is not settled.
+
+   Nothing in the platform backs the Month 5 half. Searched: no vendor list, no Paydex
+   field, no business-credit tracking, no record of whether a client opened anything.
+   The Before & After table nonetheless promises "Business Credit Profile: None →
+   Active (Paydex building)", which no part of the system can observe or deliver.
+   It is prose in `scripts/black-reports/fundhub_gen.py` (lines 1333, 1483, 1524, 1554)
+   and in `vendor/underwriteiq-full/api/lite/crs/summary-doc-generator.js:392`.
+
+   Two decisions, both yours: which tasks stay in the plan, and for the ones that stay,
+   whether the platform tracks them or they remain advice. Until that is settled the
+   accountability layer (`docs/workflows/portal-accountability-spec.md`) cannot chase
+   Month 5 at all, because nothing knows those tasks exist.
+
+
 1. **Two contract texts.** FUNDING-AGREEMENT ($3,000 deposit) and
    CREDIT-REPAIR-AGREEMENT ($1,000). Neither is in the packet you supplied —
    Academy, Blueprint and White Label are, and those are handled. Drop them in
