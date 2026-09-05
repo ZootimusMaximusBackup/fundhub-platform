@@ -17,8 +17,24 @@
 //   personal → crs_results.result, read through triMerge() so the FICO range
 //              check, the score-model check and the sandbox-fixture exclusion
 //              are the same ones the staff screens already apply.
-//   business → businesses.entity_data, the same key precedence businessCredit()
-//              uses, applied per row instead of to the first row only.
+//   business → businesses.entity_data only, applied per row instead of to the
+//              first row only.
+//
+// THE BUSINESS KEY LIST IS NARROWER THAN businessCredit()'s, ON PURPOSE, AND
+// THAT IS A REAL DIFFERENCE WORTH KNOWING. src/http/client-detail.mjs:313-316
+// reads FIVE candidates — scores.intelliscore, entity.intelliscore,
+// commercialScore.score, then clients.custom_fields.biz_intelliscore and
+// custom_fields.intelliscore — and also surfaces an FSR at :317. This file reads
+// the first THREE and no FSR, because the last two live on the CLIENT row rather
+// than the business row and there is no honest way to attribute one client-level
+// number to one of several businesses on a page whose whole point is that the
+// panel toggles between them. So if a number is ever stored in custom_fields it
+// will show on the staff detail screen and read "not pulled" here.
+//
+// That is latent, not live: grep of src/, api/, db/ and public/ finds NO writer
+// for any of the five keys or for the FSR — every hit is a reader. Nothing in
+// this repository has ever stored a business credit score, so today every
+// business panel returns `score: null`. Measured 2026-09-05, not assumed.
 
 import { triMerge } from "../http/client-detail.mjs";
 
@@ -82,6 +98,15 @@ export function scoresOfResult(row) {
  * rather than "not pulled". Each bureau therefore walks the rows newest-first
  * and stops at its own first real number, and `pulledAt` says which pull that
  * was, so a stale panel is visibly stale instead of silently current.
+ *
+ * KNOWN MISMATCH, DISCLOSED RATHER THAN PAPERED OVER. `reportDocumentId` is the
+ * NEWEST credit report on file, whichever pull the panel's own number came from.
+ * So a January TransUnion panel can link to the March report, and the March
+ * report may have no TransUnion score in it. The panel's date is still honest —
+ * it says January — but the document behind it is not the document that number
+ * was read from. Fixing this properly needs a link from a report document back
+ * to the crs_results row it was generated from, and no such column exists.
+ * Guessing one by matching timestamps would be worse. Left as is, on the record.
  */
 export function personalPanels(crsResults = [], { reportDocumentId = null } = {}) {
   const rows = newestFirst(crsResults);
@@ -115,9 +140,21 @@ export function personalPanels(crsResults = [], { reportDocumentId = null } = {}
  * whose score has not been pulled — and that second case is the one that gets a
  * panel with `score: null`.
  *
- * `pulledAt` is the business row's own `updated_at` and only when a score was
- * actually found. `businesses` has no per-score timestamp, so a date on a panel
- * with no score would be a date attached to nothing.
+ * `pulledAt` IS ALWAYS null, AND THAT IS THE FIX, NOT THE GAP.
+ *
+ * It used to be `businesses.updated_at`. That column is maintained by a database
+ * trigger (trg_businesses_updated) on EVERY update to the row, so editing the
+ * business address — or its name, or its age — silently repainted the client's
+ * business score as freshly pulled. A date we do not have is null. It is never a
+ * nearby timestamp that looks like one, and `created_at` is no better: it is
+ * when the row was inserted, which is not when anybody pulled a score either.
+ *
+ * `businesses` has no per-score timestamp anywhere: id, org_id, client_id, name,
+ * age_months, entity_data, created_at, updated_at, and nothing inside
+ * entity_data (api/soft-pull-approve.mjs:241-260 writes the whole object and
+ * stores no pull date). Verified against the real table, 2026-09-05. Until a
+ * per-business pull timestamp exists, this stays null and the screen says
+ * "date unknown" rather than a date that is wrong.
  */
 export function businessPanels(businesses = [], { reportDocumentId = null } = {}) {
   return (Array.isArray(businesses) ? businesses : []).map((biz) => {
@@ -132,7 +169,7 @@ export function businessPanels(businesses = [], { reportDocumentId = null } = {}
       name: biz && biz.name ? String(biz.name) : null,
       bureau: BUSINESS_BUREAU,
       score,
-      pulledAt: score === null ? null : isoOrNull(biz.updated_at),
+      pulledAt: null,
       reportDocumentId: score === null ? null : (reportDocumentId || null)
     };
   });

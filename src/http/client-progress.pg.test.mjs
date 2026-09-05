@@ -120,6 +120,7 @@ describe("/api/read/client-progress", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
       await db.query(`DELETE FROM client_waypoints WHERE client_id = ANY($1)`, [ids]);
       await db.query(`DELETE FROM repair_decision_log WHERE client_id = ANY($1)`, [ids]);
       await db.query(`DELETE FROM dispute_items WHERE client_id = ANY($1)`, [ids]);
+      await db.query(`DELETE FROM dispute_letters WHERE client_id = ANY($1)`, [ids]);
       await db.query(`DELETE FROM dispute_cases WHERE client_id = ANY($1)`, [ids]);
       await db.query(`DELETE FROM repair_programs WHERE client_id = ANY($1)`, [ids]);
       await db.query(`DELETE FROM cards WHERE client_id = ANY($1)`, [ids]);
@@ -173,8 +174,10 @@ describe("/api/read/client-progress", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
        row, not against a string a unit test made up. */
     await db.query(
       `INSERT INTO repair_decision_log (org_id, client_id, decision, created_at)
-       VALUES ($1,$2,'letters_mailed','2026-03-03T00:00:00Z'),
-              ($1,$2,'cfpb_complaint_filed','2026-03-04T00:00:00Z')`,
+       VALUES ($1,$2,'repair.letters.sent','2026-03-03T00:00:00Z'),
+              ($1,$2,'cfpb_complaint_filed','2026-03-04T00:00:00Z'),
+              ($1,$2,'cfpb_complaint_mailed','2026-03-05T00:00:00Z'),
+              ($1,$2,'state_ag_complaint_sent','2026-03-06T00:00:00Z')`,
       [org, mid]
     );
     await db.query(
@@ -200,6 +203,53 @@ describe("/api/read/client-progress", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
       orgId: org, clientId: mid, key: "mail_round_2", title: "Mail round 2",
       position: 6, ownerKind: "fundhub"
     });
+
+    // ── R4: a CFPB complaint we built and POSTED ──────────────────────────
+    // The whole point of this fixture: the letter is in the post, the row says
+    // 'sent', and the page must still never call it filed.
+    const r4 = await makeClient("r4", { firstName: "Rfour" });
+    const r4Case = (await db.query(
+      `INSERT INTO dispute_cases (org_id, client_id, bureau, round, status, response_due_at)
+       VALUES ($1,$2,'EX','R4','awaiting_response','2026-05-02T00:00:00Z') RETURNING id`,
+      [org, r4]
+    )).rows[0].id;
+    await db.query(
+      `INSERT INTO dispute_letters
+         (case_id, org_id, client_id, bureau, round, status, body_text, target,
+        send_claimed_at, mailed_at, created_at)
+       VALUES ($1,$2,$3,'EX','R4','sent','CFPB complaint body','cfpb',
+               '2026-04-03T00:00:00Z','2026-04-04T00:00:00Z','2026-04-01T00:00:00Z')`,
+      [r4Case, org, r4]
+    );
+    await db.query(
+      `INSERT INTO repair_decision_log (org_id, client_id, decision, created_at)
+       VALUES ($1,$2,'repair.round.escalated','2026-04-01T00:00:00Z'),
+              ($1,$2,'cfpb_complaint_mailed','2026-04-04T00:00:00Z')`,
+      [org, r4]
+    );
+    await moveRepairCard(db, { orgId: org, clientId: r4, stageKey: "in_transit" });
+
+    // ── R5: a state AG complaint BUILT but not yet posted ─────────────────
+    const r5 = await makeClient("r5", { firstName: "Rfive" });
+    const r5Case = (await db.query(
+      `INSERT INTO dispute_cases (org_id, client_id, bureau, round, status, response_due_at)
+       VALUES ($1,$2,'EQ','R5','awaiting_response','2026-06-02T00:00:00Z') RETURNING id`,
+      [org, r5]
+    )).rows[0].id;
+    // R4 was posted earlier; R5 is only generated. Two rungs, two states.
+    await db.query(
+      `INSERT INTO dispute_letters
+         (case_id, org_id, client_id, bureau, round, status, body_text, target, mailed_at, created_at)
+       VALUES ($1,$2,$3,'EQ','R4','sent','CFPB complaint body','cfpb',NULL,'2026-04-01T00:00:00Z'),
+              ($1,$2,$3,'EQ','R5','generated','State AG complaint body','state_ag',NULL,'2026-05-01T00:00:00Z')`,
+      [r5Case, org, r5]
+    );
+    await db.query(
+      `INSERT INTO repair_decision_log (org_id, client_id, decision, created_at)
+       VALUES ($1,$2,'state_ag_complaint_filed','2026-05-01T00:00:00Z')`,
+      [org, r5]
+    );
+    await moveRepairCard(db, { orgId: org, clientId: r5, stageKey: "in_transit" });
 
     // ── NEW: nothing on file at all ───────────────────────────────────────
     await makeClient("fresh", { firstName: "Fresh" });
@@ -344,15 +394,178 @@ describe("/api/read/client-progress", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
 
   test("MID: the timeline never says a regulator complaint was filed", async () => {
     const b = await load("mid");
-    assert.ok(b.timeline.length >= 2, "both decision rows reached the timeline");
+    assert.ok(b.timeline.length >= 4, "all four decision rows reached the timeline");
     for (const line of b.timeline) {
       assert.equal(claimsFiled(line.text), false,
         `the timeline claimed a filing: ${line.text}`);
     }
-    assert.ok(b.timeline.some((l) => /prepared for you to file/.test(l.text)),
-      "the CFPB row is still shown, rewritten to the true thing");
+    /* THE ALLOWLIST, PROVED AGAINST REAL STORED ROWS. Three of the four decision
+       rows are strings nobody writes today, including the two the old denylist
+       printed verbatim. Each renders as the neutral line, so no regulator is
+       named on the timeline at all. */
+    for (const line of b.timeline) {
+      assert.ok(!/cfpb|attorney general|state ag/i.test(line.text),
+        `a regulator reached the timeline: ${line.text}`);
+      assert.ok(!/complaint/i.test(line.text),
+        `the stored decision name leaked: ${line.text}`);
+    }
+    const neutral = b.timeline.filter((l) => /progress update/.test(l.text));
+    assert.equal(neutral.length, 3,
+      "the three unknown decision names all render as the neutral line");
     assert.ok(b.timeline.some((l) => /letters mailed/.test(l.text)),
-      "the honest line is untouched");
+      "the one allowlisted decision keeps its own words");
+  });
+
+  /* ── ROUNDS 4 AND 5: PREPARED, SENT, FILED ───────────────────────────────
+   *
+   * Owner-set 2026-09-05. "sent" renders as sent and never as filed. "filed"
+   * is true only because the client said so, and the payload names who said it.
+   * Nothing in this branch writes that report, so `filed` is false everywhere.
+   */
+
+  test("R4: a POSTED CFPB complaint reads as sent, and nowhere as filed", async () => {
+    const b = await load("r4");
+    assert.equal(b.escalations.length, 1, "one rung reached, so one entry");
+    const [e] = b.escalations;
+    assert.equal(e.round, 4);
+    assert.equal(e.target, "cfpb");
+    assert.equal(e.state, "sent");
+    assert.equal(e.preparedAt, "2026-04-01T00:00:00.000Z");
+    assert.equal(e.sentAt, "2026-04-04T00:00:00.000Z");
+    assert.equal(e.filed, false);
+    assert.equal(e.filedAt, null);
+    assert.equal(e.filedReportedBy, null);
+    assert.equal(e.caseNumber, null);
+  });
+
+  test("R5: a BUILT-not-posted state AG complaint reads as prepared", async () => {
+    const b = await load("r5");
+    assert.equal(b.escalations.length, 2, "R4 and R5 both have letter rows");
+    const r4 = b.escalations.find((x) => x.round === 4);
+    const r5 = b.escalations.find((x) => x.round === 5);
+    // R4 here is status 'sent' with NO mailed_at — the shape recordComplaintFiling
+    // actually writes. Sent, with an unknown date, and no invented one.
+    assert.equal(r4.state, "sent");
+    assert.equal(r4.sentAt, null, "created_at must not stand in for a mailing date");
+    assert.equal(r5.target, "state_ag");
+    assert.equal(r5.state, "prepared");
+    assert.equal(r5.preparedAt, "2026-05-01T00:00:00.000Z");
+    assert.equal(r5.sentAt, null);
+    assert.equal(r5.filed, false);
+  });
+
+  test("no string ANYWHERE in the R4 or R5 payload asserts a filing", async () => {
+    /* THE WHOLE RESPONSE, WALKED. Every string value in the entire JSON body for
+       three clients — not just the timeline and not just the escalations. This
+       is the test that fails if a FUTURE field starts carrying a phrase.
+       Wide on purpose: "filings" and "files" are included so the plural and the
+       verb form cannot slip past. */
+    const FILING = /\b(filed|filing|filings|files|submitted|submission|lodged)\b/i;
+    const REGULATOR = /\b(cfpb|consumer financial protection|attorney general|state ag)\b/i;
+    /* TWO STRINGS IN THIS PAYLOAD NAME A REGULATOR, BOTH DELIBERATELY, AND
+       NEITHER SAYS ANYTHING HAPPENED:
+         stage.roundLabel                      "CFPB complaint" — the rung's name
+         paidServices[].components[].label     the price line for the add-on
+       They are listed here by exact value rather than waved through by a loose
+       pattern, so a THIRD one cannot appear without this test failing. */
+    const KNOWN_REGULATOR_STRINGS = new Set([
+      "CFPB complaint",
+      "State attorney general complaint",
+      "CFPB and state attorney general filings",
+      // escalations[].target — a machine enum the screen switches on, not copy.
+      "cfpb",
+      "state_ag"
+    ]);
+    for (const name of ["r4", "r5", "mid"]) {
+      const body = await load(name);
+      const strings = [];
+      (function walk(v) {
+        if (typeof v === "string") { strings.push(v); return; }
+        if (Array.isArray(v)) { v.forEach(walk); return; }
+        if (v && typeof v === "object") { Object.values(v).forEach(walk); }
+      })(body);
+      assert.ok(strings.length > 0, `${name} returned no strings at all`);
+      for (const s of strings) {
+        if (KNOWN_REGULATOR_STRINGS.has(s)) continue;
+        assert.equal(claimsFiled(s), false,
+          `${name}: a value asserts a regulator filing: ${s}`);
+        assert.ok(!(FILING.test(s) && REGULATOR.test(s)),
+          `${name}: a value pairs a regulator with a filing word: ${s}`);
+        assert.ok(!REGULATOR.test(s),
+          `${name}: a NEW string names a regulator: "${s}" — decide what it may ` +
+          "say and add it to KNOWN_REGULATOR_STRINGS, do not widen a pattern");
+      }
+      /* The timeline is held to the stricter rule: no filing word at all, and no
+         regulator at all. Its words come from the allowlist, so this is what
+         keeps the allowlist honest against the real database. */
+      for (const line of body.timeline) {
+        assert.ok(!FILING.test(line.text),
+          `${name}: a timeline line uses a filing word: ${line.text}`);
+        assert.ok(!REGULATOR.test(line.text),
+          `${name}: a timeline line names a regulator: ${line.text}`);
+      }
+      /* And the escalation entries themselves: the only place `state` may say
+         "sent", and it may never say "filed" unless `filed` is true. */
+      for (const e of body.escalations) {
+        assert.ok(["prepared", "sent", "filed"].includes(e.state));
+        if (e.state === "filed") {
+          assert.equal(e.filed, true);
+          assert.ok(e.filedAt, "filed with no date is not a filing");
+          assert.ok(e.filedReportedBy, "filed with nobody who said so is not a filing");
+        }
+      }
+    }
+  });
+
+  test("a client who never reached R4 has an EMPTY escalation list", async () => {
+    const b = await load("fresh");
+    assert.deepEqual(b.escalations, [],
+      "no letter rows means no entry — not two placeholders reading 'not prepared'");
+    const mid = await load("mid");
+    assert.deepEqual(mid.escalations, [], "mid is on R2 and has no complaint letters");
+  });
+
+  test("filed is false for every client, because nothing writes the report yet", async () => {
+    for (const name of ["mid", "r4", "r5", "fresh"]) {
+      const b = await load(name);
+      for (const e of b.escalations) {
+        assert.equal(e.filed, false, `${name} round ${e.round} came back filed`);
+        assert.equal(e.filedAt, null);
+      }
+    }
+  });
+
+  test("a client-reported filing IS honoured, and the payload says who said so", async () => {
+    /* Proves the third state is wired to a real read and not a hardcoded false.
+       The ping that writes this is wave 4; the fixture writes the same value by
+       hand so the path can be driven now. */
+    await db.query(
+      `UPDATE clients
+          SET custom_fields = jsonb_set(COALESCE(custom_fields,'{}'::jsonb),
+              '{escalation_filings}',
+              '{"R4":{"filedAt":"2026-04-20T00:00:00Z","reportedBy":"client","caseNumber":"260420-9911"}}'::jsonb)
+        WHERE id = $1::uuid`,
+      [c.r4.id]
+    );
+    try {
+      const b = await load("r4");
+      const [e] = b.escalations;
+      assert.equal(e.state, "filed");
+      assert.equal(e.filed, true);
+      assert.equal(e.filedAt, "2026-04-20T00:00:00.000Z");
+      assert.equal(e.filedReportedBy, "client", "the page must be able to say who said so");
+      assert.equal(e.caseNumber, "260420-9911");
+      // The earlier facts are still there underneath.
+      assert.equal(e.sentAt, "2026-04-04T00:00:00.000Z");
+      // And it still does not put a filing sentence anywhere in the body.
+      assert.ok(b.timeline.every((l) => !claimsFiled(l.text)));
+    } finally {
+      await db.query(
+        `UPDATE clients SET custom_fields = custom_fields - 'escalation_filings'
+          WHERE id = $1::uuid`,
+        [c.r4.id]
+      );
+    }
   });
 
   test("MID: the paid round is offered, priced from pricing.mjs, and not in flight", async () => {
@@ -490,6 +703,48 @@ describe("/api/read/client-progress", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
       first.scores.business.map((p) => p.businessId),
       "businessId must be the same on the next request or the toggle breaks"
     );
+  });
+
+  /* A DATE WE DO NOT HAVE IS NULL.
+     `businesses.updated_at` is written by a trigger on every edit to the row, so
+     it used to repaint the score as freshly pulled whenever anybody changed the
+     address. This drives the real endpoint before and after an edit. */
+  test("ONEBIZ: a business score carries NO pull date, before or after a row edit", async () => {
+    const before = await load("onebiz");
+    assert.equal(before.scores.business.length, 1);
+    assert.equal(before.scores.business[0].score, 42, "the score is still read");
+    assert.strictEqual(before.scores.business[0].pulledAt, null,
+      "no per-business pull timestamp exists in this schema, so it must be null");
+
+    const row = (await db.query(
+      `SELECT updated_at FROM businesses WHERE client_id = $1::uuid`, [c.onebiz.id]
+    )).rows[0];
+    await db.query(
+      `UPDATE businesses SET age_months = 31 WHERE client_id = $1::uuid`, [c.onebiz.id]
+    );
+    const bumped = (await db.query(
+      `SELECT updated_at FROM businesses WHERE client_id = $1::uuid`, [c.onebiz.id]
+    )).rows[0];
+    /* Compared as epoch milliseconds on purpose: String(Date) prints only to the
+       second and the trigger fires within the same second, which hides the move. */
+    assert.notEqual(new Date(bumped.updated_at).getTime(), new Date(row.updated_at).getTime(),
+      "the trigger really did move updated_at — this is what used to leak");
+
+    const after = await load("onebiz");
+    assert.strictEqual(after.scores.business[0].pulledAt, null,
+      "editing the business row must not repaint the score as freshly pulled");
+    assert.equal(after.scores.business[0].score, 42);
+  });
+
+  test("TWOBIZ: neither business panel invents a pull date", async () => {
+    const b = await load("twobiz");
+    for (const panel of b.scores.business) {
+      assert.strictEqual(panel.pulledAt, null, `${panel.name} carried a pull date`);
+    }
+    // The personal panels DO have real pull dates — this is not a blanket null.
+    const mid = await load("mid");
+    assert.ok(mid.scores.personal.some((p) => p.pulledAt !== null),
+      "personal panels still carry the crs_results date they were read from");
   });
 
   test("TWOBIZ: the business panels are not a single blended number", async () => {

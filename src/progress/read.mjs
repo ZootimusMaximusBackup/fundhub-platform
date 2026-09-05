@@ -7,10 +7,43 @@
 // quietly return something else, because a second lane is coding against the
 // same document.
 //
-// FACTS, NOT COPY. Every value is a number, a boolean, an ISO date, an
-// identifier or an enum. The words a client reads live in the front end. That is
-// the rule api/read/portal-summary.mjs:20 states and it is why that endpoint has
-// survived a year of copy changes without being touched.
+// MOSTLY FACTS, AND HERE IS EXACTLY WHERE IT IS NOT.
+//
+// The aim is api/read/portal-summary.mjs:20's rule — numbers, booleans, dates,
+// identifiers and enums, with the words a client reads living in the front end.
+// This endpoint does NOT fully reach it, and an earlier version of this comment
+// claimed it did. It does not, in six places, and every one of them is English a
+// client can read:
+//
+//   timeline[].text          chosen from the allowlist in ./timeline.mjs
+//   stage.roundLabel         roundLadderEntry().title, e.g. "Round 2 FCRA /
+//                            method of verification"
+//   paidServices[].components[].label   from src/waypoints/pricing.mjs
+//   waypoints[].title        stored on the waypoint row
+//   waypoints[].paidAlternative.label   stored on the waypoint row
+//   scores.business[].name   the business's own stored name
+//
+// All six are read from somewhere else rather than authored here, but they are
+// still the compliance surface, and saying otherwise understated it for the one
+// person reviewing this. The timeline is the one that matters most, which is why
+// ./timeline.mjs picks its words from a closed list instead of printing a stored
+// machine name.
+//
+// EXACTLY THREE OF THOSE STRINGS NAME A REGULATOR, and none of them says
+// anything happened:
+//
+//   "CFPB complaint"                          stage.roundLabel — the rung's name
+//   "State attorney general complaint"        stage.roundLabel — the rung's name
+//   "CFPB and state attorney general filings" a PRICE LINE for an add-on the
+//                                             client can buy, from
+//                                             src/waypoints/pricing.mjs
+//
+// The third is the one worth reading twice. It is the label on a $20 line item,
+// so it describes a product, not an event — but it does put the word "filings"
+// in front of a client, and that is disclosed rather than argued away. It is not
+// changed here because src/waypoints/pricing.mjs is another lane's file.
+// src/http/client-progress.pg.test.mjs holds these three by exact value, so a
+// FOURTH regulator string cannot appear in this payload without failing a test.
 //
 // NULL MEANS UNKNOWN AND MUST SURVIVE (CLAUDE.md §12). Not one field in here
 // substitutes 0, "" or a value from a neighbouring column for something the
@@ -18,8 +51,12 @@
 //
 // NOTHING HERE SAYS "credit repair" (owner-set). The internal tables, the
 // entitlement codes and the letters keep their names — renaming a stored value
-// breaks the feature silently — but no string this function RETURNS is
-// client-facing copy at all, so the guardrail costs it nothing.
+// breaks the feature silently — and the six client-facing strings above are
+// funding-optimisation and capital-readiness wording.
+//
+// ROUNDS 4 AND 5 ARE NEVER RETURNED AS FILED unless a client said they filed.
+// See ./escalations.mjs. Nothing in this branch writes that report, so `filed`
+// is false for every client today.
 //
 // COMPLIANCE REVIEW REQUIRED — fee timing. `paidServices` quotes a price for a
 // self-serve dispute round. It charges nobody: there is no processor call in
@@ -36,6 +73,10 @@ import {
   personalPanels, businessPanels, middleScore, scoreSeries, scoresOfResult, isoOrNull
 } from "./scores.mjs";
 import { progressTimeline } from "./timeline.mjs";
+import {
+  escalationStates, ESCALATION_LETTERS_SQL, ESCALATION_ROUNDS
+} from "./escalations.mjs";
+import { COMPLAINT_TARGET } from "../metro2/rounds/complaint-filing.mjs";
 
 /* The deliverable subtype that IS the personal credit report. Written by
    src/underwrite/funding-letter-pdf.mjs's FUNDING_ANALYSIS_SUBTYPE map, which is
@@ -69,7 +110,8 @@ export async function readClientProgress(db, { orgId, clientId, now = new Date()
 
   const [
     crsRows, businessRows, documentRows, programRow, caseRow, cardRow,
-    waypointRows, paidRows, itemCounts, timeline, repairPath, referral
+    waypointRows, paidRows, itemCounts, timeline, repairPath, customFields,
+    escalationRows
   ] = await Promise.all([
     /* EVERY crs_results row, no LIMIT — the same read portal-summary.mjs
        already makes. The newest is the panel and the whole list is the series,
@@ -162,8 +204,26 @@ export async function readClientProgress(db, { orgId, clientId, now = new Date()
 
     soft("on_repair_path", false, () => onRepairPath(db, { orgId, clientId })),
 
-    readReferral(db, { orgId, clientId })
+    /* One read of custom_fields, shared by the referral panel and the R4/R5
+       filing report. Both use it as the repository's existing extension point
+       (see readReferral below and ./escalations.mjs), so reading it twice would
+       be two round trips for one row. */
+    soft("clients.custom_fields", null, () => db.query(
+      `SELECT custom_fields FROM clients WHERE id = $1::uuid AND org_id = $2::uuid`,
+      [clientId, orgId]
+    ).then((r) => r.rows[0]?.custom_fields || null)),
+
+    /* R4 and R5 complaint letters — prepared ones as well as posted ones, which
+       is why loadComplaintFilings() cannot be reused here: it returns only rows
+       already accepted by the mail provider, and "prepared" is a state this page
+       has to be able to show. */
+    soft("escalation_letters", [], () => db.query(
+      ESCALATION_LETTERS_SQL,
+      [clientId, orgId, Object.values(COMPLAINT_TARGET), [...ESCALATION_ROUNDS]]
+    ).then((r) => r.rows))
   ]);
+
+  const referral = await readReferral(db, { orgId, customFields });
 
   const stageKey = await soft("repair_stage", null,
     () => readRepairStage(db, { orgId, clientId }));
@@ -233,6 +293,11 @@ export async function readClientProgress(db, { orgId, clientId, now = new Date()
     movement,
     waypoints,
     nextStep: next,
+    /* ADDITION TO THE CONTRACT (owner-set 2026-09-05, after the contract was
+       written). Rounds 4 and 5 in three states — prepared, sent, filed — so the
+       screen can say a complaint left us without ever saying it was filed. An
+       empty array means this client has never reached R4. */
+    escalations: escalationStates(escalationRows, customFields),
     timeline,
     deliverables: documentRows.map((d) => ({
       documentId: d.id,
@@ -366,14 +431,10 @@ export function paidRoundOffer({ paidRows = [], repairPath = false } = {}) {
  * is how you mint a link that 404s. The front end knows its own origin and can
  * build the link from `code`.
  */
-async function readReferral(db, { orgId, clientId }) {
+async function readReferral(db, { orgId, customFields }) {
   const none = { enrolled: false, shareUrl: null, code: null };
   return soft("referral", none, async () => {
-    const c = await db.query(
-      `SELECT custom_fields FROM clients WHERE id = $1::uuid AND org_id = $2::uuid`,
-      [clientId, orgId]
-    );
-    const raw = c.rows[0]?.custom_fields?.referral_affiliate_id;
+    const raw = customFields?.referral_affiliate_id;
     const id = raw == null ? "" : String(raw).trim();
     if (!id) return none;
     const a = await db.query(

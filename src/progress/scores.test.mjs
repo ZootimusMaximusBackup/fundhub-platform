@@ -92,6 +92,31 @@ describe("business panels", () => {
     assert.deepEqual(panels.map((p) => p.bureau), [BUSINESS_BUREAU, BUSINESS_BUREAU]);
   });
 
+  /* THE ROW-EDIT TIMESTAMP IS NOT A PULL DATE.
+     `businesses.updated_at` is written by a database trigger on EVERY update to
+     the row, so this used to repaint a client's business score as freshly pulled
+     the moment anybody edited the address. `businesses` carries no per-score
+     timestamp at all, so the honest answer is null. */
+  test("a business score NEVER carries a pull date, because none is stored", () => {
+    const edited = { ...one, updated_at: "2026-09-05T10:00:00Z" };
+    const panels = businessPanels([edited], { reportDocumentId: "doc-9" });
+    assert.equal(panels[0].score, 42, "the score itself is still read");
+    assert.strictEqual(panels[0].pulledAt, null,
+      "updated_at is when the row was edited, not when a score was pulled");
+  });
+
+  test("editing the business row does not change what the panel says was pulled", () => {
+    const before = businessPanels([{ ...one, updated_at: "2026-01-01T00:00:00Z" }]);
+    const after = businessPanels([{ ...one, updated_at: "2026-09-05T10:00:00Z" }]);
+    assert.strictEqual(before[0].pulledAt, after[0].pulledAt);
+    assert.strictEqual(after[0].pulledAt, null);
+  });
+
+  test("created_at is not substituted for the missing pull date either", () => {
+    const panels = businessPanels([{ ...one, created_at: "2026-02-02T00:00:00Z" }]);
+    assert.strictEqual(panels[0].pulledAt, null);
+  });
+
   test("the business id is the primary key, so it is stable across two reads", () => {
     const a = businessPanels([one, two]).map((p) => p.businessId);
     const b = businessPanels([one, two]).map((p) => p.businessId);
