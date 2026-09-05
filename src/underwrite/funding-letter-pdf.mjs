@@ -1,29 +1,52 @@
 // Persist + load funding-stack PDFs: inquiry_removal, personal_info, and the
-// FIVE analysis deliverables. Uses the existing documents registry.
+// analysis deliverables. Uses the existing documents registry.
 // COMPLIANCE REVIEW REQUIRED — bureau / dispute letter adjacent.
 //
-// F46 — WHY THERE ARE FIVE ANALYSIS SUBTYPES AND NOT FOUR.
-// buildLetterPack (src/underwrite/letter-pack.mjs:460) puts five analysis-shaped
-// files in a funding pack, not four. Four come from the black-report printer
-// (credit_analysis, funding_snapshot, lender_match, roadmap). The fifth,
-// `funding_summary`, comes from a different generator entirely —
-// vendor/underwriteiq-full/api/lite/crs/summary-doc-generator.js, reached through
-// generateAllSummaryDocuments — and letter-pack names it
-// Capital-Readiness-Summary.pdf (:85).
+// HOW MANY ANALYSIS DELIVERABLES IS NOT A FIXED NUMBER.
+// An ordinary funding client gets FIVE. A thin-file or authorized-user-dominant
+// client gets SIX — the sixth is the Business Readiness Guide, and
+// vendor/underwriteiq-full/api/lite/crs/build-documents.js:162-168 only adds it
+// when `consumerSignals.tradelines.thinFile` is true or
+// `consumerSignals.tradelines.auDominance` is over 0.6. Any sentence in this repo
+// that says "a funding pack carries five documents" is true only of the ordinary
+// client. Do not write the fixed number anywhere.
 //
-// FUNDING_ANALYSIS_SUBTYPE had four keys, so analysisTypeOf() returned null for
-// that fifth file and the loop below skipped it. It was built, then dropped on
-// the floor, while the delivery email promises it as item 5
+// F46 — WHAT WAS DROPPED, AND WHY IT HAPPENED TWICE.
+// buildLetterPack (src/underwrite/letter-pack.mjs:460) puts five or six
+// analysis-shaped files in a funding pack. Four come from the black-report
+// printer (credit_analysis, funding_snapshot, lender_match, roadmap). The other
+// one or two come from a different generator entirely —
+// vendor/underwriteiq-full/api/lite/crs/summary-doc-generator.js, reached through
+// generateAllSummaryDocuments — and letter-pack names them
+// Capital-Readiness-Summary.pdf and Business-Readiness-Guide.pdf (:85, :87).
+// letter-pack's FUNDING_SUMMARIES set (:29) lets both into the pack.
+//
+// FUNDING_ANALYSIS_SUBTYPE listed only the printer's four, so analysisTypeOf()
+// returned null for both summaries and the loop below skipped them without a
+// word. They were built, then dropped on the floor, while the delivery email
+// promises the Capital Readiness Summary as item 5
 // (src/messaging/templates/u02-funding-delivery.html:40).
 //
+// THE ROOT CAUSE WAS THE SILENCE, NOT THE MISSING KEYS. A single unguarded
+// `continue` swallowed every file the map did not know, so adding a seventh
+// document to the pack tomorrow would vanish it the same way. Every file handed
+// to persistFundingLetterFiles now lands in exactly one of three buckets —
+// `stored`, `notStored` (a deliberate exclusion, with the reason), or
+// `unrecognised`. An unrecognised file is counted, named, and logged with
+// console.warn, and `strict: true` makes it throw instead. The three buckets and
+// `stored` always add up to the number of files in; the tests assert that.
+//
 // MEASURED 2026-09-05 on a scratch Postgres, real buildLetterPackForClient over
-// the repo's own `academy` simulated credit file (tier FULL_FUNDING): the pack
-// carried five files, the saver stored four. With funding_summary added it
-// stores five.
+// the repo's own `academy` simulated credit file (tier FULL_FUNDING):
+//   ordinary client                 — 5 files in, 5 rows out
+//   authorized-user-dominant client — 6 files in, 5 rows out BEFORE this fix
+//                                     (business_prep_summary silently dropped),
+//                                     6 rows out after.
 
 import { KINDS, buildDocumentKey } from "../documents/kinds.mjs";
 import { storeAndRegister } from "../documents/register.mjs";
 import { storeFromEnv } from "../documents/store.mjs";
+import { LETTER_TYPES } from "../metro2/letters/catalog.mjs";
 import {
   FUNDING_LETTER_TYPES,
   isFundingLetterFile,
@@ -42,17 +65,20 @@ export const FUNDING_LETTER_SUBTYPE = Object.freeze({
 
 // Key = the `type` letter-pack stamps on the file. Value = the documents.subtype
 // row. Both halves are strings that already exist elsewhere in the repo; nothing
-// here is invented. `funding_summary` is the vendor generator's own type name
-// (build-documents.js:154, summary-doc-generator.js:7) and is the fifth
-// deliverable — the DELIVERABLE kind is described as "the five UnderwriteIQ
-// deliverables" in src/documents/kinds.mjs. subtype is NOT constrained by the
-// database (kinds.mjs header), so no migration is needed to add one.
+// here is invented. `funding_summary` and `business_prep_summary` are the vendor
+// generator's own type names (build-documents.js:154 and :165,
+// summary-doc-generator.js:12) and both are let into the funding pack by
+// letter-pack.mjs's FUNDING_SUMMARIES set (:29). subtype is NOT constrained by
+// the database (kinds.mjs header), so no migration is needed to add one.
 export const FUNDING_ANALYSIS_SUBTYPE = Object.freeze({
   credit_analysis: "credit_analysis_report",
   roadmap: "credit_optimization_roadmap",
   funding_snapshot: "funding_snapshot",
   lender_match: "bank_lender_match_list",
-  funding_summary: "funding_summary"
+  funding_summary: "funding_summary",
+  // Conditional: only a thin-file or authorized-user-dominant client gets this
+  // one (build-documents.js:162-168). Its absence from a pack is normal.
+  business_prep_summary: "business_prep_summary"
 });
 
 const ANALYSIS_TITLES = Object.freeze({
@@ -63,8 +89,49 @@ const ANALYSIS_TITLES = Object.freeze({
   // The title the vendor renderer itself uses for this type
   // (vendor/underwriteiq-full/api/lite/crs/render-pdf.js:955), and the name the
   // delivery email gives it.
-  funding_summary: "Capital Readiness Summary"
+  funding_summary: "Capital Readiness Summary",
+  // The title its own renderer draws on page one
+  // (summary-doc-generator.js:368, generateBusinessPrepSummary).
+  business_prep_summary: "Business Readiness Guide"
 });
+
+// ── WHAT THE SAVER DELIBERATELY DOES NOT STORE, AND WHY ────────────────────
+// A funding pack carries more than the funding stack. These buckets are the
+// files this function is supposed to walk past. Anything that is neither stored
+// nor in one of these buckets is UNRECOGNISED — reported, never swallowed.
+export const NOT_STORED_REASON = Object.freeze({
+  /** Metro 2 round letter. Never belongs on the funding stack. */
+  DISPUTE: "dispute_letter",
+  /** CFPB / state AG complaint and its cover sheet. The client files these. */
+  ESCALATION: "escalation_complaint",
+  /** The repair pack's own summaries, if a repair pack is ever handed here. */
+  REPAIR_SUMMARY: "repair_pack_summary",
+  /** Staff-only paperwork the client never sees. */
+  INTERNAL: "internal_document",
+  /** A funding letter with no bureau or no type — cannot be keyed. */
+  LETTER_UNADDRESSED: "letter_missing_bureau_or_type",
+  /** Recognised, but arrived with no bytes on it. */
+  EMPTY: "empty_file"
+});
+
+/** Repair-pack summary types (letter-pack.mjs:30 REPAIR_SUMMARIES). */
+const REPAIR_SUMMARY_TYPES = new Set(["repair_plan_summary", "issue_priority_sheet"]);
+
+/** Staff-only summary types (vendor build-documents.js:38, :43, :95, :159). */
+const INTERNAL_TYPES = new Set(["operator_checklist", "hold_notice"]);
+
+/** The escalation complaint types (src/metro2/letters/catalog.mjs). */
+const ESCALATION_TYPES = new Set([
+  LETTER_TYPES.CFPB_COMPLAINT,
+  LETTER_TYPES.STATE_AG_COMPLAINT
+]);
+
+// The folder every escalation file sits in, including the COVER.txt that carries
+// no `type` at all. The literal is COMPLAINT_FOLDER from
+// src/metro2/diy/package.mjs:360; it is copied rather than imported so this
+// module does not drag the whole Metro 2 PDF tree in behind it. A unit test
+// imports the real constant and asserts this still matches, so it cannot drift.
+const COMPLAINT_FOLDER_LITERAL = "06-complaints-CONDITIONAL";
 
 const TYPE_ORDER = ["inquiry_removal", "personal_info"];
 
@@ -103,38 +170,109 @@ function analysisTypeOf(file) {
     || fn.includes("capital_readiness") || fn.includes("capital-readiness")) {
     return "funding_summary";
   }
+  // The sixth deliverable, present only for a thin-file or authorized-user-
+  // dominant client. Same two spellings: the vendor generator's raw
+  // `business_prep_summary.pdf` (summary-doc-generator.js:455) and the pack's
+  // `Business-Readiness-Guide.pdf` (letter-pack.mjs:87).
+  if (fn.includes("business_prep") || fn.includes("business-prep")
+    || fn.includes("business_readiness") || fn.includes("business-readiness")) {
+    return "business_prep_summary";
+  }
+  return null;
+}
+
+function fileLabel(file) {
+  return String(file?.filename || file?.name || file?.path || "").trim() || "<unnamed>";
+}
+
+/**
+ * Which deliberate-exclusion bucket this file falls in, or null if the saver is
+ * supposed to be interested in it. Never returns a bucket for a file the saver
+ * can actually store — the caller checks this first.
+ */
+function excludedReason(file) {
+  const label = fileLabel(file).toLowerCase();
+  if (isDisputeLetterFile(file)) return NOT_STORED_REASON.DISPUTE;
+  if (ESCALATION_TYPES.has(file?.type)) return NOT_STORED_REASON.ESCALATION;
+  if (label.startsWith(`${COMPLAINT_FOLDER_LITERAL.toLowerCase()}/`)) {
+    return NOT_STORED_REASON.ESCALATION;
+  }
+  if (REPAIR_SUMMARY_TYPES.has(file?.type)) return NOT_STORED_REASON.REPAIR_SUMMARY;
+  if (INTERNAL_TYPES.has(file?.type)) return NOT_STORED_REASON.INTERNAL;
   return null;
 }
 
 /**
- * Store funding-stack letter PDFs and the five analysis deliverables.
+ * Store funding-stack letter PDFs and the analysis deliverables — five for an
+ * ordinary client, six when the pack also carries the Business Readiness Guide.
  * Letters: one row per client+type+bureau. Analysis: one row per subtype.
  * Skips dispute / Metro 2 round letters even if they are in the pack.
+ *
+ * EVERY FILE IS ACCOUNTED FOR. `stored` + `notStored` + `unrecognised` always
+ * has one entry per file handed in. A file the saver does not recognise is
+ * counted, named and logged — with `strict: true` it throws instead. Nothing
+ * leaves this function in silence again.
+ *
+ * @param {boolean} [opts.strict] throw on the first unrecognised file
+ * @returns {Promise<{stored:Array, notStored:Array, unrecognised:Array,
+ *   filesIn:number, skipped:string|null}>}
  */
 export async function persistFundingLetterFiles(db, store, {
   orgId,
   clientId,
   files = [],
   generatedBy = "c-06-crs-results-router",
-  sourceEventId = null
+  sourceEventId = null,
+  strict = false
 } = {}) {
   if (!db || !store || !orgId || !clientId) {
-    return { stored: [], skipped: "missing_args" };
+    return {
+      stored: [], notStored: [], unrecognised: [], filesIn: 0, skipped: "missing_args"
+    };
   }
+  const list = files || [];
   const stored = [];
-  for (const file of files || []) {
-    const body = file.content || file.buffer || file.pdf || file.bytes;
-    if (!body) continue;
+  const notStored = [];
+  const unrecognised = [];
+  const skip = (file, reason) => notStored.push({ file: fileLabel(file), reason });
 
-    const isLetter = isFundingLetterFile(file) && !isDisputeLetterFile(file);
+  for (const file of list) {
+    const excluded = excludedReason(file);
+    if (excluded) {
+      skip(file, excluded);
+      continue;
+    }
+
+    const isLetter = isFundingLetterFile(file);
     const analysisType = analysisTypeOf(file);
-    if (!isLetter && !analysisType) continue;
+
+    // THE LINE THAT DROPPED TWO DELIVERABLES. It used to be a bare `continue`.
+    if (!isLetter && !analysisType) {
+      unrecognised.push({ file: fileLabel(file), type: file?.type ?? null });
+      if (strict) {
+        throw new Error(
+          `persistFundingLetterFiles: unrecognised file ${fileLabel(file)} `
+          + `(type ${file?.type ?? "none"}). Add it to FUNDING_ANALYSIS_SUBTYPE `
+          + `or to a NOT_STORED_REASON bucket — do not let it fall through.`
+        );
+      }
+      continue;
+    }
+
+    const body = file.content || file.buffer || file.pdf || file.bytes;
+    if (!body) {
+      skip(file, NOT_STORED_REASON.EMPTY);
+      continue;
+    }
 
     if (isLetter) {
       const type = letterTypeOf(file);
       const bureau = letterBureau(file);
       const subtype = type ? FUNDING_LETTER_SUBTYPE[type] : null;
-      if (!type || !bureau || !subtype) continue;
+      if (!type || !bureau || !subtype) {
+        skip(file, NOT_STORED_REASON.LETTER_UNADDRESSED);
+        continue;
+      }
 
       const { document } = await storeAndRegister(db, store, {
         orgId,
@@ -191,7 +329,18 @@ export async function persistFundingLetterFiles(db, store, {
       documentKey: document?.document_key || null
     });
   }
-  return { stored, skipped: null };
+
+  // Loud on purpose. This is the line that would have caught F46 on the day it
+  // shipped, and it is what stops a seventh document vanishing next time.
+  if (unrecognised.length) {
+    console.warn(
+      `[funding-letter-pdf] ${unrecognised.length} file(s) NOT SAVED — the saver `
+      + `does not recognise them: `
+      + unrecognised.map((u) => `${u.file} (type ${u.type ?? "none"})`).join(", ")
+    );
+  }
+
+  return { stored, notStored, unrecognised, filesIn: list.length, skipped: null };
 }
 
 /**

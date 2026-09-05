@@ -54,7 +54,18 @@ const GONE = (res) => res.status(404).json({ ok: false, error: "not_found" });
 
    ONLY for text/html. PDFs and images keep their exact previous behaviour —
    they still open inline in a new tab, which is what every screen that links
-   here expects. */
+   here expects.
+
+   WHERE THIS GUARD DOES NOT REACH: the 302 branch further down. Headers set on
+   a redirect describe the redirect, not the object the browser fetches next, so
+   an HTML document served through a public blob URL would render on the blob
+   host with no Content-Security-Policy and no Content-Disposition. That branch
+   fires only when storage_key is itself an https URL, which today only the
+   vercel-blob provider produces — and `@vercel/blob` is not a dependency of
+   this repo (src/documents/store.mjs:207), so nothing reaches it. If that
+   provider is ever installed, the guard has to move onto the object: set the
+   content type and disposition at upload time, or stream the bytes through here
+   instead of redirecting. */
 const isHtmlType = (t) => /^text\/html\s*(;|$)/i.test(String(t || "").trim());
 
 function guardHtml(res, mimeType) {
@@ -98,8 +109,10 @@ export default async function handler(req, res) {
 
     res.setHeader("cache-control", "private, no-store");
     res.setHeader("x-content-type-options", "nosniff");
-    // The registered mime type is what every path below serves, including the
-    // 302 and the HEAD, so the guard goes on before any of them branch.
+    // The registered mime type is what the byte-streaming path and the HEAD
+    // serve, so the guard goes on before either of them branches. It is set on
+    // the 302 response too, but there it is inert — see the block above: a
+    // redirect's headers do not travel to the object the browser fetches next.
     guardHtml(res, target.mime_type);
     if (req.method === "HEAD") {
       res.setHeader("content-type", target.mime_type || "application/octet-stream");
