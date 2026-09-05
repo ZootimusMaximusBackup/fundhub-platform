@@ -9,6 +9,7 @@ import {
   recordComplaintFiling
 } from "../metro2/rounds/complaint-filing.mjs";
 import { onRepairEvent } from "./handlers.mjs";
+import { logDecision } from "../metro2/rounds/store.mjs";
 
 export class RepairSendError extends Error {
   constructor(message, { status = 400, code = "repair_send" } = {}) {
@@ -28,9 +29,27 @@ export class RepairSendError extends Error {
 // real person's post, two at the bureau, and two bills. A disabled button in a
 // browser is not a guard — a retry, a second tab or curl walks past it.
 //
-// db/migrations/332 adds the database half: a `mailed_at` column, a 'sending'
-// status, and uq_dispute_letters_one_mailing, a partial unique index over
-// (org_id, case_id, bureau, round, target) WHERE mailed_at IS NOT NULL.
+// db/migrations/332 added the database half and got one thing badly wrong: it
+// made the claim and the mailing the same fact, stamping `mailed_at` BEFORE the
+// provider was called. So the unique index counted ATTEMPTS, and an attempt
+// that died above the network burned the only mailing slot the letter would
+// ever have. db/migrations/333 splits them:
+//
+//   send_claimed_at — this row is TAKEN. Stamped before the call. Releasable.
+//   mailed_at       — this row WAS MAILED. Stamped only after the provider
+//                     answered with an id. Never released, by anyone.
+//
+// and keys one partial unique index on each, over
+// (org_id, case_id, bureau, round, target):
+//
+//   uq_dispute_letters_one_mailing     WHERE mailed_at IS NOT NULL
+//     One physical mailing per case, bureau, round and destination, for ever.
+//     Nothing below can release a row from it.
+//   uq_dispute_letters_one_send_claim  WHERE send_claimed_at IS NOT NULL
+//     A superset (a mailed row keeps its claim), so a regenerated replacement
+//     for an already-mailed letter is refused at CLAIM time — before the call,
+//     rather than by a unique violation after the envelope is in the post.
+//     This one releases.
 //
 // This is the code half. A letter is CLAIMED before the provider is called, in
 // one statement, so two callers cannot both pass the check: the second one's
@@ -46,17 +65,48 @@ export class RepairSendError extends Error {
 
 const UNIQUE_VIOLATION = "23505";
 
-// The mailer's refusals that happen ABOVE the network call — every one of them
-// is a check in our own code in src/messaging/providers/mail-letter.mjs or
-// src/metro2/delivery/send.mjs that returns before `postJson` is reached. When
-// one of these comes back, nothing was transmitted, so the claim is released
-// and the letter stays sendable.
+// ═══════════════════════════════════════════════════════════════════════════
+// DID ANYTHING ACTUALLY GO OUT? — THE FACT FIRST, THE STRINGS ONLY AS FALLBACK
 //
-// Anything else keeps the claim. If a call was made and did not come back we do
-// not know whether the letter went, and retrying is the one action that can
-// actually mail it twice. Same call subscription_charges makes for 'in_flight'
-// (db/migrations/276): a stuck row is a support ticket, a second mailing is a
-// letter in somebody's post that we cannot take back.
+// This decision is the whole guard. Get it wrong one way and a real person gets
+// two identical dispute letters and we get two bills. Get it wrong the other
+// way and a send that never happened permanently destroys the letter, and the
+// replacement, and every replacement after that.
+//
+// IT WAS WRONG THE SECOND WAY, and it was wrong because it read prose. The list
+// below was the only test, so a refusal whose wording was not on it kept the
+// claim. Measured on a real database on 2026-09-05 with a fetch implementation
+// that throws if it is ever reached — it never fired, so nothing was
+// transmitted, and the letter still died:
+//
+//   press 1  outbound fence held the call   -> row: sending | mailed_at STAMPED
+//   press 2  same letter, fence off         -> "already_mailed",  mailer called 0
+//   press 3  a brand new replacement row    -> "already_mailed_duplicate_letter"
+//
+// The caller had already been handed the answer. src/lib/outbound-fetch.mjs
+// returns `transmitted: false` from every branch that sits above the fetch
+// call, and src/messaging/providers/mail-letter.mjs now carries that up as
+// `preTransmission`. So the order is:
+//
+//   1. If the mailer stated a fact, believe the fact — either way. An explicit
+//      preTransmission:false overrides the strings, because "we made the call"
+//      is knowledge and a matching prefix is a coincidence.
+//   2. Only if it said nothing, fall back to the strings.
+//
+// BOTH EXIST ON PURPOSE. Not every caller passes the flag through: the mailSender
+// closure in api/repair/send.mjs rebuilds the result as
+// `{ ok, outcome, error }` and drops everything else, and mailBureauLetter's own
+// address refusals (src/metro2/delivery/send.mjs) are plain objects with no flag
+// at all. Those are all genuinely pre-transmission and the list is what still
+// catches them. Delete the list and they start keeping claims they should
+// release; trust the list alone and you are back to the bug above.
+//
+// Anything not proven pre-transmission KEEPS THE CLAIM. If a call was made and
+// did not come back we do not know whether the letter went, and retrying is the
+// one action that can actually mail it twice. Same call subscription_charges
+// makes for 'in_flight' (db/migrations/276). The difference from before is that
+// a kept claim is no longer a dead end: clearStuckSendClaim() below gives a
+// human a way out, on the record.
 const PRE_TRANSMISSION_REFUSALS = [
   "POSTGRID_API_KEY unset",
   "return_address_required",
@@ -65,12 +115,32 @@ const PRE_TRANSMISSION_REFUSALS = [
   "bureau_mail_address_missing",
   "bureau_mail_address_incomplete",
   "pdf_or_html_required",
-  "private_carrier_forbidden_for_po_box"
+  "private_carrier_forbidden_for_po_box",
+  // The chokepoint's own refusals, for the callers that drop `preTransmission`.
+  // Every one of these is returned above the fetch call in
+  // src/lib/outbound-fetch.mjs — see transmit() and held().
+  "MESSAGING_DRY_RUN ",
+  "ADAPTERS_DRY_RUN ",
+  "outbound transmit refused: no fence declared",
+  "no fetch implementation available"
 ];
 
 export function isPreTransmissionRefusal(error) {
   const s = String(error || "");
   return PRE_TRANSMISSION_REFUSALS.some((prefix) => s.startsWith(prefix));
+}
+
+/**
+ * Did this failure provably happen before anything left the process?
+ *
+ * @param {object|null} sent   What the mailer returned.
+ * @param {string} error       The error text pulled off it.
+ * @returns {boolean}          true = release the claim, the letter is sendable.
+ */
+export function nothingWasTransmitted(sent, error) {
+  // A stated fact beats a matched string, in both directions.
+  if (typeof sent?.preTransmission === "boolean") return sent.preTransmission;
+  return isPreTransmissionRefusal(error);
 }
 
 /**
@@ -91,17 +161,19 @@ async function claimLetterForMailing(db, { letterId, orgId, clientId }) {
           WHERE id = $1::uuid AND org_id = $2::uuid AND client_id = $3::uuid
        )
        UPDATE dispute_letters d
-          SET status = 'sending', mailed_at = now()
+          SET status = 'sending', send_claimed_at = now()
          FROM prior
         WHERE d.id = prior.id
+          AND d.send_claimed_at IS NULL
           AND d.mailed_at IS NULL
           AND d.status NOT IN ('sending', 'sent', 'delivered')
        RETURNING prior.status AS prior_status`,
       [letterId, orgId, clientId]
     );
   } catch (err) {
-    // uq_dispute_letters_one_mailing: another row for the same case, bureau,
-    // round and destination has already been mailed. This one must not be.
+    // uq_dispute_letters_one_send_claim: another row for the same case, bureau,
+    // round and destination already holds the claim, or already carries a
+    // mailing. Either way this one must not go to the provider.
     if (err?.code === UNIQUE_VIOLATION) {
       return { claimed: false, reason: "already_mailed_duplicate_letter", priorStatus: null };
     }
@@ -121,7 +193,7 @@ async function claimLetterForMailing(db, { letterId, orgId, clientId }) {
   let existing = null;
   try {
     const r = await db.query(
-      `SELECT status, mailed_at FROM dispute_letters
+      `SELECT status, mailed_at, send_claimed_at FROM dispute_letters
         WHERE id = $1::uuid AND org_id = $2::uuid AND client_id = $3::uuid LIMIT 1`,
       [letterId, orgId, clientId]
     );
@@ -131,21 +203,33 @@ async function claimLetterForMailing(db, { letterId, orgId, clientId }) {
   }
 
   if (!existing) return { claimed: true, reason: null, priorStatus: null };
-  if (existing.mailed_at) return { claimed: false, reason: "already_mailed", priorStatus: existing.status ?? null };
-  if (["sending", "sent", "delivered"].includes(existing.status)) {
-    return { claimed: false, reason: "already_mailed", priorStatus: existing.status };
+  // It went. Nothing releases this and nothing ever will.
+  if (existing.mailed_at || ["sent", "delivered"].includes(existing.status)) {
+    return { claimed: false, reason: "already_mailed", priorStatus: existing.status ?? null };
+  }
+  // Claimed but not mailed. Either another caller is inside the provider call
+  // right now, or one was and never came back. Named apart from 'already_mailed'
+  // because it is a different thing and it has a way out: a human clears it with
+  // clearStuckSendClaim() and the letter becomes sendable again.
+  if (existing.send_claimed_at || existing.status === "sending") {
+    return { claimed: false, reason: "send_claim_held", priorStatus: existing.status ?? null };
   }
   return { claimed: true, reason: null, priorStatus: existing.status ?? null };
 }
 
-/** Give the letter back, for a refusal that provably happened before transmission. */
+/** Give the letter back, for a refusal that provably happened before transmission.
+ *
+ *  `mailed_at IS NULL` is load-bearing, not belt-and-braces. A release must never
+ *  be able to un-mail a letter that really went out, whatever the caller believed
+ *  when it asked. */
 async function releaseLetterClaim(db, { letterId, orgId, clientId, priorStatus }) {
   if (!letterId || !db?.query) return;
   await db.query(
     `UPDATE dispute_letters
-        SET status = COALESCE($4, 'ready'), mailed_at = NULL
+        SET status = COALESCE($4, 'ready'), send_claimed_at = NULL
       WHERE id = $1::uuid AND org_id = $2::uuid AND client_id = $3::uuid
-        AND status = 'sending'`,
+        AND status = 'sending'
+        AND mailed_at IS NULL`,
     [letterId, orgId, clientId, priorStatus || null]
   ).catch(() => {});
 }
@@ -335,8 +419,9 @@ export async function sendRepairLetters(db, {
       const err = sent?.error || sent?.outcome || "mail_failed";
       // Give the letter back only when the refusal provably happened before any
       // request left this process. Everything else keeps the claim, because a
-      // call that was made and did not come back may already have mailed.
-      if (isPreTransmissionRefusal(err)) {
+      // call that was made and did not come back may already have mailed — and
+      // a kept claim is now clearable by a human rather than terminal.
+      if (nothingWasTransmitted(sent, err)) {
         await releaseLetterClaim(db, {
           letterId: claimLetterId,
           orgId,
@@ -351,9 +436,16 @@ export async function sendRepairLetters(db, {
     const providerId = sent?.providerId || sent?.id || null;
     const letterId = claimLetterId;
     if (letterId && providerId && db?.query) {
+      // THIS is where mailed_at is stamped — the provider answered and gave us
+      // an id, so the letter is in its hands. Not at claim time, which is what
+      // 332 did and what let a send that never happened kill the letter.
+      // COALESCE so a re-run cannot move the recorded mailing time.
       await db.query(
         `UPDATE dispute_letters
-            SET status = 'sent', postgrid_letter_id = $2
+            SET status = 'sent',
+                postgrid_letter_id = $2,
+                mailed_at = COALESCE(mailed_at, now()),
+                send_claimed_at = COALESCE(send_claimed_at, now())
           WHERE id = $1::uuid AND org_id = $3::uuid AND client_id = $4::uuid
             AND status <> 'delivered'`,
         [letterId, String(providerId), orgId, clientId]
@@ -428,4 +520,151 @@ export async function sendRepairLetters(db, {
   }
 
   return { ok: anyOk, results };
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THE WAY OUT OF A STUCK CLAIM
+//
+// A letter whose provider call went out and never came back keeps its claim, on
+// purpose: nobody can say whether it was mailed, and a retry is the one action
+// that can put a second envelope in a real person's post.
+//
+// Before this, that was the end of the story. Nothing in the repository could
+// clear the row. The PostGrid webhook keys on postgrid_letter_id, which is NULL
+// on a stuck row, so it never fires. The re-stage path skipped 'sending', so it
+// wrote a fresh row that the unique index then refused as well. "A human
+// reconciles it" named no human and no action.
+//
+// So: a staff member reconciles the letter against the provider's own record,
+// decides it did not go, and says so here — with their id and their reason,
+// both stored on the row and written to repair_decision_log where
+// src/repair/lens.mjs renders it in plain words on the client's timeline.
+//
+// WHAT THIS CAN AND CANNOT DO.
+//   It clears send_claimed_at. It NEVER touches mailed_at, and it refuses
+//   outright on any row that carries one, or a provider id. So it cannot turn a
+//   letter that really went out into one that may go out again — that invariant
+//   lives in uq_dispute_letters_one_mailing and nothing here can release a row
+//   from it.
+//
+//   It CAN be wrong in the other direction. If the letter did reach PostGrid and
+//   the reply was simply lost, clearing lets it be sent a second time. That risk
+//   is real, it is why this is deliberate and attributed rather than automatic,
+//   and it is why nothing calls this on a timer.
+
+/** How long a claim must have sat before a human may call it stuck. Short
+    enough to be usable inside one support conversation, long enough that it
+    cannot race a provider call that is simply slow — the transport's own hard
+    timeout is 10s (src/lib/outbound-fetch.mjs DEFAULT_TIMEOUT_MS). */
+export const STUCK_CLAIM_MIN_AGE_MINUTES = 15;
+
+/**
+ * Release a send claim that a human has decided did not result in a mailing.
+ *
+ * @param {object} db
+ * @param {object} opts
+ * @param {string} opts.orgId
+ * @param {string} opts.letterId
+ * @param {string} opts.staffId    Who is making the call. Recorded, not optional.
+ * @param {string} opts.reason     Why they believe it did not go. Recorded.
+ * @param {number} [opts.minAgeMinutes]
+ * @returns {Promise<{ok: boolean, reason?: string, letterId?: string, status?: string}>}
+ */
+export async function clearStuckSendClaim(db, {
+  orgId,
+  letterId,
+  staffId,
+  reason,
+  minAgeMinutes = STUCK_CLAIM_MIN_AGE_MINUTES
+} = {}) {
+  const why = String(reason ?? "").trim();
+  if (!db?.query) return { ok: false, reason: "db_required" };
+  if (!orgId || !letterId) return { ok: false, reason: "org_and_letter_required" };
+  if (!staffId) return { ok: false, reason: "staff_id_required" };
+  if (!why) return { ok: false, reason: "reason_required" };
+
+  const found = await db.query(
+    `SELECT id, client_id, case_id, status, mailed_at, send_claimed_at, postgrid_letter_id
+       FROM dispute_letters
+      WHERE id = $1::uuid AND org_id = $2::uuid LIMIT 1`,
+    [letterId, orgId]
+  );
+  const row = found?.rows?.[0] || null;
+  if (!row) return { ok: false, reason: "not_found" };
+
+  // It went. There is nothing stuck here and nothing to clear.
+  if (row.mailed_at) return { ok: false, reason: "already_mailed", status: row.status };
+  if (row.postgrid_letter_id) {
+    return { ok: false, reason: "provider_accepted", status: row.status };
+  }
+  if (row.status !== "sending" || !row.send_claimed_at) {
+    return { ok: false, reason: "not_claimed", status: row.status };
+  }
+
+  // Refuse to race a call that is merely slow.
+  const ageMs = Date.now() - new Date(row.send_claimed_at).getTime();
+  const minMs = Math.max(0, Number(minAgeMinutes) || 0) * 60_000;
+  if (!(ageMs >= minMs)) {
+    return { ok: false, reason: "claim_too_fresh", status: row.status };
+  }
+
+  const cleared = await db.query(
+    `UPDATE dispute_letters
+        SET status = 'ready',
+            send_claimed_at = NULL,
+            send_claim_cleared_at = now(),
+            send_claim_cleared_by = $3::uuid,
+            send_claim_cleared_reason = $4
+      WHERE id = $1::uuid AND org_id = $2::uuid
+        AND status = 'sending'
+        AND mailed_at IS NULL
+        AND postgrid_letter_id IS NULL
+      RETURNING id, status`,
+    [letterId, orgId, staffId, why]
+  );
+  if (!cleared?.rows?.length) {
+    // Something changed under us between the read and the write. Refusing is
+    // the only safe answer: the row may have just been mailed.
+    return { ok: false, reason: "not_claimed" };
+  }
+
+  await logDecision(db, {
+    orgId,
+    clientId: row.client_id,
+    caseId: row.case_id,
+    decision: "repair.letter.send_claim_cleared",
+    payload: {
+      letterId,
+      staffId,
+      reason: why,
+      claimedAt: row.send_claimed_at,
+      note: "Staff judged the provider call never mailed this letter. It is sendable again."
+    }
+  }).catch(() => {});
+
+  return { ok: true, letterId, status: cleared.rows[0].status };
+}
+
+/**
+ * The reconciliation read: letters holding a claim with no mailing behind it.
+ * This is what a staff screen lists before anybody clears anything.
+ */
+export async function listStuckSendClaims(db, { orgId, clientId = null, minAgeMinutes = STUCK_CLAIM_MIN_AGE_MINUTES } = {}) {
+  if (!db?.query || !orgId) return [];
+  const r = await db.query(
+    `SELECT dl.id, dl.client_id, dl.case_id, dl.bureau, dl.round, dl.target,
+            dl.status, dl.send_claimed_at
+       FROM dispute_letters dl
+      WHERE dl.org_id = $1::uuid
+        AND dl.status = 'sending'
+        AND dl.send_claimed_at IS NOT NULL
+        AND dl.mailed_at IS NULL
+        AND dl.postgrid_letter_id IS NULL
+        AND dl.send_claimed_at < now() - make_interval(mins => $3::int)
+        AND ($2::uuid IS NULL OR dl.client_id = $2::uuid)
+      ORDER BY dl.send_claimed_at ASC`,
+    [orgId, clientId, Math.max(0, Number(minAgeMinutes) || 0)]
+  );
+  return r.rows;
 }
