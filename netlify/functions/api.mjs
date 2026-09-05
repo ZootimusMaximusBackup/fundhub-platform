@@ -67,6 +67,8 @@ import readDocuments from "../../api/read/documents.mjs";
 import readBankInbox from "../../api/read/bank-inbox.mjs";
 import readFundingRounds from "../../api/read/funding-rounds.mjs";
 import readAffiliates from "../../api/read/affiliates.mjs";
+import readAffiliatePortal from "../../api/read/affiliate-portal.mjs";
+import affiliatesRefer from "../../api/affiliates/refer.mjs";
 import readPartners from "../../api/read/partners.mjs";
 import readPartnerProduction from "../../api/read/partner-production.mjs";
 import readPartnerHomeTiles from "../../api/read/partner-home-tiles.mjs";
@@ -371,6 +373,25 @@ export const ROUTES = {
   "read/ai-bureau-config": readAiBureauConfig,
   "read/proxy-sessions": readProxySessions,
   "read/affiliates": readAffiliates,
+
+  /* ONE AFFILIATE'S OWN referrals, payouts, rates and gates. Routed in the same
+     commit as the handler, because this endpoint exists precisely to end a
+     feature that was built and never connected: public/app/affiliate.html has
+     declared `var LEADS=[]` (:398) and `var PAYOUTS=[]` (:477) since it was
+     written and assigned neither, so both tables have always read "No referrals
+     on file". An unrouted handler here would reproduce that exact failure.
+
+     read/affiliates above is a different question and stays as it is: that one
+     answers STAFF with per-affiliate counts across the roster. This one answers
+     the affiliate — or a client who has become a light affiliate — with their
+     own rows, and pins a non-staff caller to themselves. */
+  "read/affiliate-portal": readAffiliatePortal,
+
+  /* "Refer a friend". Turns a client into a light affiliate and hands back
+     their share link (docs/workflows/portal-rebuild-plan.md §4, owner-set).
+     Routed with its handler and its migration for the same reason as every
+     other line here. Not under "read/" — it writes. */
+  "affiliates/refer": affiliatesRefer,
   "read/partners": readPartners,
   /* Where a partner stands against the production floor — the only filter on the
      partner base (W0-decisions.md, W1-money-model.md §6). The monthly job writes
