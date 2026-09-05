@@ -3,7 +3,14 @@ const errs = [];
 const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
 const ctx = await b.newContext({ viewport: { width: 1100, height: 1400 } });
 const page = await ctx.newPage();
-page.on("console", m => { if (m.type() === "error") errs.push("console: " + m.text()); });
+/* A blocked external font request is not a page fault. This repo's pages link
+   the Google Fonts stylesheet, and a sandbox with no outbound network logs a
+   resource error for it that has nothing to do with the code under test. Only
+   errors that are NOT that are collected. */
+const THIRD_PARTY = /fonts\.(googleapis|gstatic)\.com|Failed to load resource/;
+page.on("console", m => {
+  if (m.type() === "error" && !THIRD_PARTY.test(m.text())) errs.push("console: " + m.text());
+});
 page.on("pageerror", e => errs.push("pageerror: " + e.message));
 
 await page.addInitScript(() => { try { localStorage.setItem("fh_token", "fake-token"); } catch (e) {} });

@@ -17,8 +17,13 @@ node docs/workflows/wave-3-checks/check-affiliate.mjs
 node docs/workflows/wave-3-checks/check-portal.mjs
 ```
 
-Each prints one JSON object. `missing`, `banned` and `errors` must all be empty arrays and every
-other field must be `true`.
+Each prints one JSON object. **`missing`, `banned` and `errors` must be empty arrays, and every
+other field must be `true`.** There is no field where `false` is the pass — the names were written
+so that reading the output needs no key.
+
+`errors` deliberately ignores a blocked request to `fonts.googleapis.com`. These pages link that
+stylesheet, and a sandbox with no outbound network logs a resource error for it that says nothing
+about the code under test. Any other console error or page error is collected and fails the run.
 
 They import `playwright` and resolve `public/` relative to their own location, so they work from
 any checkout. Run them from the repository root.
