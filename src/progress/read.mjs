@@ -128,9 +128,14 @@ export async function readClientProgress(db, { orgId, clientId, now = new Date()
     /* ORDERED BY created_at, NOT updated_at. The panel toggles between
        businesses and the order it toggles in must not change because somebody
        edited an address — portal-summary orders by updated_at, which is right
-       for "show me the freshest one" and wrong for a stable tab strip. */
+       for "show me the freshest one" and wrong for a stable tab strip.
+
+       updated_at IS DELIBERATELY NOT SELECTED. It used to be, and it was used as
+       the business score's pull date, which was wrong: a trigger rewrites it on
+       every edit to the row. Leaving the column in the row object is an
+       invitation to make that mistake again. */
     soft("businesses", [], () => db.query(
-      `SELECT id, name, age_months, entity_data, created_at, updated_at
+      `SELECT id, name, age_months, entity_data, created_at
          FROM businesses
         WHERE client_id = $1::uuid AND org_id = $2::uuid
         ORDER BY created_at ASC, id ASC`,
