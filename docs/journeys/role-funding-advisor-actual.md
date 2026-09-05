@@ -34,7 +34,7 @@ flowchart TD
     CAN --> A_partner_marketing[partner-marketing — 5 routes]
     CAN --> A_proxy[proxy — 2 routes]
     CAN --> A_public[public — 8 routes]
-    CAN --> A_read[Reading data — 46 routes]
+    CAN --> A_read[Reading data — 47 routes]
     CAN --> A_repair[repair — 2 routes]
     CAN --> A_social[social — 6 routes]
     CAN --> A_staff[staff — 1 route]
@@ -66,7 +66,7 @@ flowchart TD
 
 ## What they can reach
 
-**149 of 217 routes.**
+**150 of 218 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -166,6 +166,7 @@ flowchart TD
 | `/api/read/ai-bureau-config` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/bank-inbox` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/call-outcomes` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/client-progress` | GET | staff, client |
 | `/api/read/closer-call` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/closer-now` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/company-activity` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -229,7 +230,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**68 of 217 routes.**
+**68 of 218 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
