@@ -77,9 +77,37 @@ export default async function handler(req, res, deps = {}) {
             fetchImpl: deps.fetchImpl
           });
           if (!sent.ok) {
-            return { ok: false, outcome: `mail_failed:${sent.error || "unknown"}`, error: sent.error };
+            // CARRY THE FACT, NOT JUST THE WORDS.
+            //
+            // This used to return `{ ok, outcome, error }` and nothing else, so
+            // the provider's own answer to "did a request actually leave this
+            // process?" was thrown away right here. src/repair/send.mjs then
+            // had only the error STRING to decide on, and its string list is a
+            // fallback, not knowledge: a refusal whose wording is not on the
+            // list keeps the letter's claim and needs a human to release it,
+            // and a wording that matches by coincidence releases a letter that
+            // may already be in the post.
+            //
+            // src/messaging/providers/mail-letter.mjs states the fact as
+            // `preTransmission` on every failure it returns. Pass it through
+            // exactly as given, including undefined — `nothingWasTransmitted()`
+            // only believes an actual boolean and falls back to the strings
+            // otherwise. Never default it: inventing `true` here would hand
+            // back the claim on a letter nobody can prove did not go out.
+            return {
+              ok: false,
+              outcome: `mail_failed:${sent.error || "unknown"}`,
+              error: sent.error,
+              ...(typeof sent.preTransmission === "boolean"
+                ? { preTransmission: sent.preTransmission }
+                : {})
+            };
           }
-          return { ok: true, providerId: sent.providerId, outcome: "sent" };
+          // providerId may legitimately be null — PostGrid can answer 200 with
+          // no id in the body. The letter is still in the post, so `ok: true`
+          // is the whole of the fact and sendRepairLetters records the mailing
+          // on that, not on the id.
+          return { ok: true, providerId: sent.providerId ?? null, outcome: "sent" };
         }
       : null;
 
