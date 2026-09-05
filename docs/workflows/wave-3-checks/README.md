@@ -17,6 +17,33 @@ node docs/workflows/wave-3-checks/check-affiliate.mjs
 node docs/workflows/wave-3-checks/check-portal.mjs
 ```
 
+## check-progress-live.mjs — the same page, against the REAL endpoints
+
+The three above run anywhere, because a fixture answers for the server. This one
+does not: it needs a Postgres with the migrations applied, a seeded client, and a
+server running the real `netlify/functions/api.mjs` in front of `public/`. What it
+buys is the difference between "the screen renders this shape" and "the whole path
+works" — and it earned that on the run it was written for, catching two pieces of
+wrong copy that no fixture could have.
+
+It takes the client's session token in `TOK`:
+
+```bash
+TOK=<a client account session token> node docs/workflows/wave-3-checks/check-progress-live.mjs
+```
+
+Every field must be `true` and `errors` empty, except `startedFrom` and
+`postOutcome`, which report which path the run took rather than pass or fail.
+
+TWO OUTCOMES OF THE ROUND BUTTON ARE BOTH CORRECT and the check accepts either.
+A first press whose checkout cannot be minted answers 502 with the server's own
+refusal sentence; a repeat press answers ok:true with `checkout_pending`, which is
+the losing side of a race where the winning press is minting the link right then.
+What is asserted in both: the client is told no money moved, the page never claims
+a payment succeeded, and the reassurance is not printed twice. Without a payment
+key configured the first branch is what you will see, and that is not a failure of
+the page.
+
 Each prints one JSON object. **`missing`, `banned` and `errors` must be empty arrays, and every
 other field must be `true`.** There is no field where `false` is the pass — the names were written
 so that reading the output needs no key.
