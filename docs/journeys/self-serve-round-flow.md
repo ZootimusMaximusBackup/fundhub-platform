@@ -77,7 +77,7 @@ flowchart TD
     AWAIT -->|"client never pays"| FAILED
     PAID -.->|"UNVERIFIED — nothing triggers a pull from this row yet"| PULL
     PULL -->|"no consent / no account / a pull is already running / the bureaus refused"| FAILED
-    PULL -->|"report came back"| ANALYSE
+    PULL -.->|"UNVERIFIED — report came back, but nothing hands it to the analyser for a paid round"| ANALYSE
     ANALYSE -->|"no signed authorisation on file"| FAILED
     ANALYSE -->|"no report stored"| FAILED
     ANALYSE -->|"nothing wrong found"| FAILED

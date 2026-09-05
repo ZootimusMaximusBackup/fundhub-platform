@@ -129,7 +129,12 @@ flowchart TD
     UNKNOWN -.->|"a read that fails answers 'unknown', never 'intake'"| INTAKE
 ```
 
-**Solid arrows fire today. Dashed arrows are the ones nothing fires.** `repair.stalled` and
+**Solid arrows fire today. A dashed arrow labelled `UNVERIFIED` is one nothing fires** — there are
+five of them, and §6 gives the reason for each. The one other dashed arrow, from "we cannot tell"
+into intake, is a **note rather than a transition**: it marks the answer that must never be turned
+into a stage, and it is explained under §3's third heading.
+
+`repair.stalled` and
 `repair.cancelled` are drawn from "any state" because the map turns an event into a state without
 caring where the file was — `EVENT_STAGE`, `src/repair/pipeline.mjs:64-81`, is a lookup, not a
 sequence.
