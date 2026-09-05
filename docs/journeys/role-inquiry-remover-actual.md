@@ -32,14 +32,15 @@ flowchart TD
     CAN --> A_gifts[gifts — 1 route]
     CAN --> A_partner_marketing[partner-marketing — 5 routes]
     CAN --> A_public[public — 8 routes]
-    CAN --> A_read[Reading data — 43 routes]
+    CAN --> A_read[Reading data — 44 routes]
     CAN --> A_repair[repair — 5 routes]
     CAN --> A_social[social — 6 routes]
     CAN --> A_staff[staff — 1 route]
     CAN --> A_top_level[Everything else — 26 routes]
     CAN --> A_trials[trials — 2 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 74 routes]
+    WHO -->|Yes| CANT[Blocked — 75 routes]
+    CANT --> B_affiliates[affiliates — 1 blocked]
     CANT --> B_auth[Signing in and out — 6 blocked]
     CANT --> B_banking[banking — 2 blocked]
     CANT --> B_brand[brand — 1 blocked]
@@ -65,7 +66,7 @@ flowchart TD
 
 ## What they can reach
 
-**143 of 217 routes.**
+**144 of 219 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -153,6 +154,7 @@ flowchart TD
 | `/api/public/unsubscribe` | — | anyone |
 | `/api/read/ad-attribution` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/ad-books` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
+| `/api/read/affiliate-portal` | GET | staff, affiliate, client |
 | `/api/read/agent-context` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/agent-shadow-log` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/read/agents` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
@@ -222,10 +224,11 @@ flowchart TD
 
 ## What they are blocked from
 
-**74 of 217 routes.**
+**75 of 219 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
+| `/api/affiliates/refer` | POST | client |
 | `/api/ai-bureau-config` | POST | owner, admin, funding_advisor |
 | `/api/auth/admin-reset` | POST | owner, admin |
 | `/api/auth/invite` | POST | owner, admin |

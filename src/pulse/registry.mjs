@@ -21,6 +21,7 @@ const API_KEYS = [
   "adintel/board",
   "agent-call",
   "agents",
+  "affiliates/refer",
   "ai-bureau-config",
   "applications",
   "auth/admin-reset",
@@ -165,6 +166,12 @@ const API_KEYS = [
   "read/ad-attribution",
   "read/ad-books",
   "read/affiliates",
+  /* One affiliate's own referrals, payouts, rates and payout gates. Separate
+     from read/affiliates above, which answers staff with roster-wide counts.
+     Monitored because an outage here empties both tables on the affiliate
+     screen, whose empty state reads "No referrals on file" — an affiliate would
+     read that as their referrals having vanished, not as a server being down. */
+  "read/affiliate-portal",
   "read/agent-context",
   "read/agent-shadow-log",
   "read/agents",
