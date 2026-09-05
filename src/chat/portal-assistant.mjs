@@ -7,27 +7,20 @@
 // Transport is src/agents/model.mjs (callModel). No second Anthropic client.
 
 import { callModel } from "../agents/model.mjs";
-import { progressFactLines } from "./progress-facts.mjs";
 
 export const PORTAL_ASSISTANT_MAX_TOKENS = 400;
 
 /* What the assistant is allowed to know. Built from the client's own row and
    nothing else — no other client, no staff notes, no internal tier reasoning.
    Anything absent stays absent: a missing pre-qual is "not yet", never a guess. */
-export function portalAssistantContext({ client = {}, prequalDisplay = null, progress = null } = {}) {
+export function portalAssistantContext({ client = {}, prequalDisplay = null } = {}) {
   const cf = client.custom_fields || {};
   return {
     firstName: client.first_name ? String(client.first_name) : null,
     prequalDisplay: prequalDisplay || null,
     softPullComplete: cf.crs_paid === true
       || String(cf.analyzer_status || "").toLowerCase() === "complete",
-    hasBookedCall: cf.call_outcome === "booked" || cf.call_outcome === "held",
-    /* WHERE THEIR FILE ACTUALLY IS. Read by src/chat/progress-facts.mjs from the
-       client's own rows, and null when the caller did not look it up or nothing
-       is known. Before this, "where is my file" was the commonest question this
-       assistant had no fact for, so it either guessed or deflected. It is passed
-       through unchanged — this function still invents nothing. */
-    progress: progress || null
+    hasBookedCall: cf.call_outcome === "booked" || cf.call_outcome === "held"
   };
 }
 
@@ -46,17 +39,6 @@ export function portalAssistantSystemPrompt(context = {}) {
     ? "They have a call booked or held with an advisor."
     : "No advisor call is recorded on their file yet.");
 
-  /* WHERE THE FILE IS. progressFactLines returns [] when nothing is known, so a
-     client with no programme gets exactly the prompt this function built before,
-     rather than a block of "we do not know" lines that would teach the model to
-     start talking about a file it has no facts on.
-
-     These lines carry their own refusals with them — most importantly the one
-     about rounds 4 and above, which must never be described as received or acted
-     on by a regulator, because nothing in this system records that
-     (src/metro2/letters/catalog.mjs:57-65). */
-  for (const line of progressFactLines(context.progress)) facts.push(line);
-
   return [
     "You are the Fundhub assistant inside a client's own portal. You are talking",
     "directly to the client about their own file. Be warm, short, and plain.",
@@ -74,15 +56,6 @@ export function portalAssistantSystemPrompt(context = {}) {
     "  you were not told above.",
     "- Never claim an action has been taken on their file. You cannot do anything",
     "  to their file. You only explain and answer.",
-    "- Never state a round number, a date, or a step that is not in the list",
-    "  above. If they ask where their file is and the list does not say, tell",
-    "  them you do not have it in front of you and their advisor will confirm.",
-    "- Never say a complaint has been filed, received, accepted or opened by a",
-    "  regulator, a government body or an attorney general. You do not know that",
-    "  and neither does this system.",
-    "- Never sell anything. Do not quote a price, do not offer to speed anything",
-    "  up for a fee, and do not mention buying an extra round. If they ask what",
-    "  something costs, say their advisor will go through it with them.",
     "- If you do not know, say you do not know and that their advisor will follow",
     "  up. Their message is already saved for the team either way.",
     "- If they ask about a refund, a complaint, a cancellation, a legal question,",

@@ -11,7 +11,6 @@ import {
   answerPortalMessage, portalAssistantContext
 } from "../../src/chat/portal-assistant.mjs";
 import { prequalFromCustomFields, formatPrequalUsd } from "../../src/http/portal-prequal.mjs";
-import { readProgressFacts } from "../../src/chat/progress-facts.mjs";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -93,16 +92,9 @@ async function replyFor(database, { orgId, clientId, question, conversationId, c
   );
   const client = found.rows[0] || {};
   const cf = client.custom_fields || {};
-
-  /* WHERE THEIR FILE IS. Plan step 7. readProgressFacts never throws and returns
-     "nothing known" on any failure, so this cannot turn a saved message into a
-     500 — the same best-effort contract the model call above it already has. */
-  const progress = await readProgressFacts(database, { orgId, clientId });
-
   const context = portalAssistantContext({
     client,
-    prequalDisplay: formatPrequalUsd(prequalFromCustomFields(cf)),
-    progress
+    prequalDisplay: formatPrequalUsd(prequalFromCustomFields(cf))
   });
 
   const answer = await answerPortalMessage({ question, context });
