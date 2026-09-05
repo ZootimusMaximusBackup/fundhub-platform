@@ -26,7 +26,7 @@ case the contract was written for.
 | B | Affiliate screen fixes | cloud/wave-3 | `public/app/affiliate.html`, `api/read/affiliate-portal.mjs` | done |
 | C | Referral enrolment | cloud/wave-3 | `api/affiliates/refer.mjs` | done |
 | D | Client portal fixes | cloud/wave-3 | `public/app/client-portal.html` | done |
-| E | AI support context | cloud/wave-3 | `api/chat/*` | done |
+| E | AI support context | cloud/wave-3 | `api/chat/*` | **REVERTED — moved to wave 4 by the handoff mid-run. Code kept at commit a8723521.** |
 
 Shared file, touched by B, C and E: the `ROUTES` map in `netlify/functions/api.mjs`. One line
 each. No ROUTES key may start with `documents/` (`src/http/routes.test.mjs:239`).
@@ -94,6 +94,32 @@ Recorded as required by the handoff. Each is the conservative option.
 1. **Wave 2's files are not recreated.** See the section above. The progress page calls
    `/api/read/client-progress` and renders an honest "not available yet" state if that endpoint is
    absent, so the page is not broken by the ordering — it is simply empty until wave 2 lands.
+
+2. **A client may now hold an affiliate code, and that needed a migration.** `044_accounts.sql`
+   allowed exactly one subject per account, so a client account could not carry an affiliate id at
+   all, and one login per email address means a second account was not available either. Migration
+   340 relaxes the constraint in one direction only. The alternative — a second account with a
+   second email for the same person — would have given one human two passwords and split them
+   across two principals. Recorded rather than asked, because the owner decision ("clients become
+   LIGHT affiliates") only reads one way.
+
+3. **The tax gate reports an absence, it does not accuse.** Section 4 asks for the tax gate to be
+   enforced in the UI. There was no tax column anywhere in `db/` to enforce it from. Migration 340
+   adds `affiliates.tax_form_received_at`, nothing writes it, and both the migration and the screen
+   say so — so it reads "we have no record of your tax form", never "you have not sent one". An
+   affiliate who posted a W-9 last year is in exactly that state and this system cannot tell them
+   apart. No payout logic reads the column.
+
+4. **The post-call stepper was retired, not corrected.** The handoff allowed either. Six of its
+   eight steps have no fact in that screen's payload, so a corrected version would be eight grey
+   circles that never move — less than the status line above it already says.
+
+5. **The COOKIE tile was replaced, not renumbered.** It said "60d" and there is no
+   attribution-window column anywhere in `db/`. Attribution is first touch and does not expire, so
+   the tile says that. Putting a different number there would have been the same invention.
+
+6. **AI support was built and then reverted.** The handoff moved it to wave 4 while this branch was
+   being written. The code is at commit a8723521 for wave 4 to cherry-pick.
 
 ## Blockers and open questions
 
