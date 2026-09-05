@@ -1,4 +1,4 @@
-import { chromium } from "/home/user/fundhub-platform/node_modules/playwright/index.mjs";
+import { chromium } from "playwright";
 
 const MARK_CSS = `
 .fhmark{position:absolute;border:3px solid #E11D48;border-radius:6px;pointer-events:none;z-index:99998}

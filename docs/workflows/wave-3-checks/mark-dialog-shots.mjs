@@ -1,4 +1,4 @@
-import { chromium } from "/home/user/fundhub-platform/node_modules/playwright/index.mjs";
+import { chromium } from "playwright";
 
 const CSS = `
 #dlg{position:relative}

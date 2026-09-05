@@ -2,7 +2,7 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 
-const ROOT = "/home/user/fundhub-platform/public";
+const ROOT = new URL("../../../public/", import.meta.url).pathname;
 const TYPES = { ".html":"text/html", ".js":"text/javascript", ".css":"text/css", ".svg":"image/svg+xml", ".ico":"image/x-icon", ".png":"image/png" };
 
 const PROGRESS = {

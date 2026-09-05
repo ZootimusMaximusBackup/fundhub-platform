@@ -20,9 +20,8 @@ node docs/workflows/wave-3-checks/check-portal.mjs
 Each prints one JSON object. `missing`, `banned` and `errors` must all be empty arrays and every
 other field must be `true`.
 
-They import Playwright by absolute path because they run standalone rather than under
-`playwright.config`. On a machine where the repo is not at `/home/user/fundhub-platform`, change
-that one import line at the top of each file.
+They import `playwright` and resolve `public/` relative to their own location, so they work from
+any checkout. Run them from the repository root.
 
 ## THE DATA IS A FIXTURE. READ THIS BEFORE QUOTING A PASS.
 

@@ -1,4 +1,4 @@
-import { chromium } from "/home/user/fundhub-platform/node_modules/playwright/index.mjs";
+import { chromium } from "playwright";
 const errs = [];
 const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
 const page = await b.newPage({ viewport: { width: 1400, height: 1200 }, deviceScaleFactor: 1.5 });
