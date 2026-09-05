@@ -3,11 +3,17 @@
 **What the code does today.** Hand-written, traced from the code on 2026-09-05. Not generated:
 `npm run journeys` builds nine pages from the routing table and this is not a routing change.
 
-Every step below names the file and line it was read from. **Three steps in the middle of this flow
+Every step below names the file and line it was read from. **Five steps in the middle of this flow
 have no code joining them yet** — the tables and the pricing exist, the analyser and the send loop
 exist, and the wiring between them is the endpoint lane's work. Those steps are drawn with a dashed
 line and marked `UNVERIFIED`, and §7 lists every one with the reason. Drawing them solid would tell
 a non-coder the money path works today. It does not.
+
+**Corrected 2026-09-05.** An earlier version of this page drew the two checkout hops
+(`priced → payment page` and `payment page → the client`) as **solid**, while §7 of the same page
+admitted nothing mints a payment page for one of these rows. Both are now dashed, which is what the
+page's own convention requires. The same pass moved "this round was already written" out of the
+refusal list, because it is a **success** — see §7a.
 
 Language note (owner-set): no repair wording appears in anything a client reads here. This is a
 funding optimisation round.
@@ -59,13 +65,14 @@ flowchart TD
 
     FAILED(["Stopped — the client is told why"])
     SAMEROW(["The first request is handed back — one row, one charge"])
+    HANDBACK(["Handed back — the round was ALREADY written, and its letters come back ready to post"])
 
     PRESS --> DUP
     DUP -->|"yes — same press key"| SAMEROW
     DUP -->|"no"| QUOTED
-    QUOTED --> LINK
+    QUOTED -.->|"UNVERIFIED — nothing mints a payment page for one of these rows"| LINK
     LINK -->|"payments not set up / page would not open"| FAILED
-    LINK -->|"yes"| AWAIT
+    LINK -.->|"UNVERIFIED — no code writes the awaiting_payment status"| AWAIT
     AWAIT -.->|"UNVERIFIED — nothing joins the payment to this row yet"| PAID
     AWAIT -->|"client never pays"| FAILED
     PAID -.->|"UNVERIFIED — nothing triggers a pull from this row yet"| PULL
@@ -75,8 +82,10 @@ flowchart TD
     ANALYSE -->|"no report stored"| FAILED
     ANALYSE -->|"nothing wrong found"| FAILED
     ANALYSE -->|"this round is past the plan's limit"| FAILED
-    ANALYSE -->|"this round was already written"| FAILED
+    ANALYSE -->|"we could not find the client record"| FAILED
     ANALYSE -->|"we do not have the client's full legal name"| FAILED
+    ANALYSE -->|"this round was already written — NOT a refusal"| HANDBACK
+    HANDBACK --> STAGED
     ANALYSE -->|"yes"| STAGED
 
     STAGED ==>|"A PERSON PRESSES SEND. Nothing automatic crosses this line."| CLAIM
@@ -135,9 +144,12 @@ zero is refused outright (`:178-179`).
 less (`store.mjs:176-178`).
 
 **A paid round does not use up a round from the plan.** The two counters are deliberately kept
-apart: `nextSelfServeRoundNo()` counts only paid requests and never reads the plan's limit
-(`store.mjs:222-238`), and a test asserts the table has no column joining them
-(`src/waypoints/store.pg.test.mjs:326-337`).
+apart: `nextSelfServeRoundNo()` counts only paid requests and never reads the plan's limit — the
+function is `src/waypoints/store.mjs:229-238` and the owner's reasoning is in the comment directly
+above it at `:221-228`. Two separate things back this up, and this page cites both rather than
+picking one: a test asserts the table has no column joining the counters
+(`src/waypoints/store.pg.test.mjs:326-337`), and the table's own comment in the database says the
+same (`db/migrations/331_paid_service_requests.sql:321`).
 
 ---
 
@@ -146,8 +158,9 @@ apart: `nextSelfServeRoundNo()` counts only paid requests and never reads the pl
 Nothing in this repository can charge a card that is already on file. Every purchase mints a
 **hosted payment page** the client visits themselves.
 
-`createCheckoutSession()`, `src/payments/commas-api.mjs:260-380`. Four ways it refuses, each its own
-labelled edge above:
+`createCheckoutSession()`, `src/payments/commas-api.mjs:260-380`. **Five** ways it refuses. The
+diagram above collapses all five into one edge, `payments not set up / page would not open`, to keep
+it readable — this table is the full list, and it is the authority:
 
 | Refusal | Line |
 |---|---|
@@ -159,6 +172,14 @@ labelled edge above:
 
 A refused page means **no row moves to `awaiting_payment`**. The client is told, and nothing is
 prepared.
+
+**And nothing moves a row to `awaiting_payment` when it succeeds either.** Corrected 2026-09-05:
+`awaiting_payment` is a value in the status CHECK list
+(`db/migrations/331_paid_service_requests.sql:165`) and nowhere else. A search of `src/`, `api/`
+and `netlify/` for the string returns **nothing**, and a search for `UPDATE paid_service_requests`
+returns **nothing** — `src/waypoints/store.mjs` only ever INSERTs (`:180-194`) and SELECTs (`:200`,
+`:213`, `:230`). A row written by a press is stuck at `quoted` forever, because no code in this
+repository can move it. That is why the two checkout hops in the diagram are dashed.
 
 ---
 
@@ -210,20 +231,44 @@ the bureau's 30 day clock.
 
 | Step | Why it could not be traced |
 |---|---|
-| Payment page → money recorded on the request row | A search of `src/` and `api/` finds `paid_service_requests` referenced only in `src/waypoints/store.mjs` and its test. The payment webhook path exists and emits `payment.received` (`src/adapters/commas.mjs:523`), and `requestPaidService` accepts a `checkoutUrl` (`store.mjs:161`) — but **nothing mints the page for a paid service request and nothing marks one paid.** |
+| Priced → a payment page is minted | **Nothing mints one for a paid service request.** `requestPaidService` accepts a `checkoutUrl` (`store.mjs:161`) and stores it, but nothing calls `createCheckoutSession()` for one of these rows and nothing writes the URL back. |
+| Payment page → the client is waiting on it | **No code writes the `awaiting_payment` status.** It exists only in the CHECK list at `db/migrations/331:165`. There is no `UPDATE paid_service_requests` anywhere in `src/`, `api/` or `netlify/`. |
+| Payment page → money recorded on the request row | A search of `src/` and `api/` finds `paid_service_requests` referenced only in `src/waypoints/store.mjs` and its test. The payment webhook path exists and emits `payment.received` (`src/adapters/commas.mjs:523`) — but **nothing marks one of these rows paid.** |
 | Money recorded → fresh credit pull | The only thing in the repository that triggers a pull from a payment is `diagnostic.paid` → workflow C-00 (`src/handlers/diagnostic-soft-pull.mjs:21-31`). Nothing connects a paid service request to it. The owner's plan requires every paid round to re-pull first; that wiring is not written. |
 | Fresh pull → the analyser | Same absence. C-00 ends by returning its result (`src/workflows/c-00-crs-soft-pull-request.mjs:125-134`); nothing reads that and calls the analyser for a paid round. |
 
-The pull's own refusals **are** traced and are drawn above, from
-`src/workflows/c-00-crs-soft-pull-request.mjs`: no client (`:60`), no account to attribute the pull
-to (`:79`), consent refused (`:102`), a pull already outstanding (`:111-115`), and the pull itself
-failing (`:132`).
+The pull's own refusals **are** traced, from `src/workflows/c-00-crs-soft-pull-request.mjs`: no
+client (`:60`), no account to attribute the pull to (`:79`), consent refused (`:102`), a pull
+already outstanding (`:111-115`), and the pull itself failing (`:132`). **Five refusals, drawn above
+as one edge** naming four of them. This table is the full list.
 
-The analyser's refusals are all traced, from `src/repair/analyze.mjs`: no signed authorisation
-(`:311`), this round already written (`:313-330`), past the plan's round limit (`:330-338`), no
-stored report (`:341`), nothing wrong found (`:360`), client record missing (`:363`), no full legal
-name on file (`:364`). Per bureau it also skips a bureau with no rule-backed claims (`:378`) and one
-already written (`:384`).
+The analyser's **six** refusals are all traced, from `src/repair/analyze.mjs`, and each one now has
+its own labelled edge in the diagram:
+
+| Refusal | Line |
+|---|---|
+| No signed authorisation on file | `:311` |
+| Past the plan's round limit | `:328-337` (`round_cap_exceeded` at `:333`) |
+| No stored credit report | `:341` |
+| Nothing wrong found | `:360` |
+| The client record could not be found | `:363` — **this one had no edge before 2026-09-05 and now does** |
+| No full legal name on file | `:364` |
+
+Per bureau it also skips a bureau with no rule-backed claims (`:378`) and one already written
+(`:384`). A skip is a `skipped.push()` and a `continue`, not a stop.
+
+### 7a. "This round was already written" is a SUCCESS, not a refusal
+
+Corrected 2026-09-05. An earlier version of this page drew this as an edge into "Stopped — the
+client is told why", and listed it among the analyser's refusals. **It is neither.**
+
+`src/repair/analyze.mjs:314-326` returns `ok: true`, with `already_generated: true`, the round, the
+case ids, and **`letters: existingLetters` — the letters themselves, handed straight back**. Nothing
+stops. The round is already staged and ready to post.
+
+This matters because of who is reading the screen. A client who has just paid for a round would
+have been told their round **stopped**, when the round was in fact finished and waiting. That is the
+worst direction for this particular error to point.
 
 ---
 
@@ -231,10 +276,11 @@ already written (`:384`).
 
 **The plan's round limit still refuses a paid round.** Owner-set: a paid round must not consume a
 round from the plan, and the table honours that — there is no column joining the two counters
-(`db/migrations/331` table comment; `src/waypoints/store.mjs:222-231`).
+(`db/migrations/331_paid_service_requests.sql:321` table comment;
+`src/waypoints/store.mjs:221-238`).
 
 But the analyser does not know that. `analyzeAndGenerate` reads `repair_programs.rounds_cap` and
-returns `round_cap_exceeded` for any round past it (`src/repair/analyze.mjs:330-338`). A trial client
+returns `round_cap_exceeded` for any round past it (`src/repair/analyze.mjs:328-337`). A trial client
 whose plan covers two rounds, who then buys a third round with their own money, would be refused
 there today.
 
@@ -243,13 +289,30 @@ endpoint that calls the analyser for a paid round.
 
 ---
 
-## 9. Rounds 4 and 5 may never be shown as filed
+## 9. Rounds 4 and 5 carry three states, and a paid round cannot reach the third
 
 Carried over from `docs/journeys/client-progress-flow.md` because it applies to anything a client
-buys as well: **nothing in this repository records whether a federal regulator complaint or a state
-attorney general complaint was actually submitted** (`src/metro2/letters/catalog.mjs:57-65`). The
-documents are produced and handed to the client to sign and file personally. A paid round may
-produce them. Neither this flow nor any screen may say either one was filed.
+buys as well. **Owner-set, 2026-09-05:** rounds 4 and 5 move through **prepared → sent → filed**,
+and **only the client telling us moves anything to filed**.
+
+```mermaid
+flowchart LR
+    PREP["PREPARED<br/>the complaint exists as a document"]
+    SENT["SENT<br/>the pack went to the client"]
+    FILED["FILED<br/>the client submitted it"]
+
+    PREP -->|"the pack is built and stored"| SENT
+    SENT -.->|"UNVERIFIED — NOTHING IN THIS REPOSITORY CAN RECORD THIS.<br/>Buying a round does not change that."| FILED
+```
+
+**Nothing in this repository records whether a federal regulator complaint or a state attorney
+general complaint was actually submitted** (`src/metro2/letters/catalog.mjs:56-68`). A search of
+`src/`, `api/` and `db/migrations` for `complaint_filed`, `filed_at`, `ag_filed` and
+`complaint_sent` returns no results at all.
+
+The documents are produced (`src/metro2/diy/package.mjs:396` and `:402`) and handed to the client to
+sign and file personally. A paid round may produce them. **Paying does not move the flag, because
+there is no flag.** Neither this flow nor any screen may say either one was filed.
 
 ---
 
@@ -259,3 +322,31 @@ produce them. Neither this flow nor any screen may say either one was filed.
 asked to pay for a dispute round and when, and the human gate between payment and posting. It
 changes no code; the two modules it draws from carry the same label already
 (`src/waypoints/pricing.mjs:1`, `db/migrations/331:3`).
+
+---
+
+## 11. What was re-checked on 2026-09-05, and what changed
+
+Every claim on this page has been re-checked against **the branch it ships on**, not `origin/main`.
+
+**Found wrong and corrected:**
+
+| Claim | What was wrong |
+|---|---|
+| `priced → payment page → the client` drawn as solid arrows | Nothing mints a payment page for one of these rows and no code writes `awaiting_payment`. The page's own §7 already said so. **Both are now dashed** |
+| "this round was already written" drawn as an edge into "Stopped" | It is a **success** returning the existing letters (`analyze.mjs:314-326`, `ok: true`). Now drawn as a hand-back into "ready to post" — see §7a |
+| "Four ways it refuses, each its own labelled edge above" | There are **five**, and they are **one** collapsed edge. Both halves of the sentence were wrong; the count is fixed and the collapsing is now stated |
+| the analyser's refusals described as seven, drawn as six | There are **six** refusals plus two per-bureau skips. `client_not_found` (`:363`) had no edge and now has one |
+| `nextSelfServeRoundNo()` cited as `:222-238` here and `:222-231` in the changelog | The function is `:229-238`, its comment `:221-228`. Both places now say `:221-238` |
+| `already_generated` and the round cap cited together as `:313-330` / `:330-338` | Two unrelated blocks. Now `:314-326` and `:328-337` |
+| `catalog.mjs:57-65` | The comment block runs `:56-68` |
+
+**Re-checked and confirmed still exact** — every citation in §2, §3, §5 and §6: the press guard and
+its partial unique index, the three price constants as integer cents, the status list and the four
+database CHECKs, the staff gate on `POST /api/repair/send` and its `mail: true` requirement, all
+four send refusals, the `mailed_at IS NULL` release guard, and all five checkout and five pull
+refusal lines.
+
+**Still not done:** the Mermaid blocks on this page have not been rendered. No Mermaid renderer is
+installed in this repository and no dependency was added to get one. They were checked for balanced
+quotes, brackets and `subgraph`/`end` pairs only.
