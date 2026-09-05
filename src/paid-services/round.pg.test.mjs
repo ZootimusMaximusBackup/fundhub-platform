@@ -58,11 +58,11 @@ describe("the self-serve paid round", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
 
   /* A stand-in for the processor. Counts its calls, because the call count is
      the charge count: every call is one checkout page a client could pay on. */
-  function mintCounter({ fail = false } = {}) {
+  function mintCounter({ fail = false, failReason = "checkout_unreachable: simulated outage" } = {}) {
     const calls = [];
     const fn = async (args) => {
       calls.push(args);
-      if (fail) return { ok: false, reason: "checkout_unreachable: simulated outage" };
+      if (fail) return { ok: false, reason: failReason };
       return { ok: true, checkoutUrl: `https://pay.example.test/${args.requestId}`, sessionId: "sess_1" };
     };
     fn.calls = calls;
@@ -502,6 +502,26 @@ describe("the self-serve paid round", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
       assert.match(row.state_reason, /checkout_unavailable/);
       assert.equal(row.paid_at, null);
       assert.equal(row.checkout_url, null);
+    });
+
+    test("the processor's own words never reach the client, only a code", async () => {
+      /* The processor's reason has been observed carrying an API key fragment,
+         an internal hostname and a request id. api/paid-services.mjs returns
+         state_reason verbatim to a client principal, so that column must hold a
+         code and nothing else. */
+      const hostile =
+        "Invalid API Key provided: sk_live_51Hx9****abc at " +
+        "https://api.commas.internal/v2/checkout (request_id req_9f2c)";
+      const out = await ask({ mintFn: mintCounter({ fail: true, failReason: hostile }) });
+      assert.equal(out.ok, false);
+
+      const [row] = await rowsFor(client);
+      assert.equal(row.state_reason, "checkout_unavailable",
+        "state_reason must be a bare code — it is handed to the client verbatim");
+      for (const secret of ["sk_live", "commas.internal", "req_9f2c", "Invalid API Key"]) {
+        assert.ok(!String(row.state_reason).includes(secret),
+          `state_reason leaked ${secret} to the client`);
+      }
     });
 
     test("...and the client can try again afterwards", async () => {
