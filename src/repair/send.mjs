@@ -19,6 +19,137 @@ export class RepairSendError extends Error {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// THE DOUBLE-MAILING GUARD
+//
+// Before this, the loop below set status='sent' with no check of the current
+// status, and dispute_letters carried no unique index. So re-POSTing the same
+// payload handed the same letters to PostGrid again: two identical letters in a
+// real person's post, two at the bureau, and two bills. A disabled button in a
+// browser is not a guard — a retry, a second tab or curl walks past it.
+//
+// db/migrations/332 adds the database half: a `mailed_at` column, a 'sending'
+// status, and uq_dispute_letters_one_mailing, a partial unique index over
+// (org_id, case_id, bureau, round, target) WHERE mailed_at IS NOT NULL.
+//
+// This is the code half. A letter is CLAIMED before the provider is called, in
+// one statement, so two callers cannot both pass the check: the second one's
+// UPDATE matches nothing and it never makes the call.
+//
+// REFUSE ONLY ON POSITIVE EVIDENCE. A claim that affects no rows is not by
+// itself proof of a double send — the letter id might name no row at all, which
+// is a bad request and is exactly as (un)guarded as it was before this change.
+// So a failed claim is followed by a read, and the send is refused only when
+// that read shows a row that really is already claimed or already sent, or when
+// the unique index rejected the claim because a DIFFERENT row for the same
+// case, bureau, round and destination has already gone out.
+
+const UNIQUE_VIOLATION = "23505";
+
+// The mailer's refusals that happen ABOVE the network call — every one of them
+// is a check in our own code in src/messaging/providers/mail-letter.mjs or
+// src/metro2/delivery/send.mjs that returns before `postJson` is reached. When
+// one of these comes back, nothing was transmitted, so the claim is released
+// and the letter stays sendable.
+//
+// Anything else keeps the claim. If a call was made and did not come back we do
+// not know whether the letter went, and retrying is the one action that can
+// actually mail it twice. Same call subscription_charges makes for 'in_flight'
+// (db/migrations/276): a stuck row is a support ticket, a second mailing is a
+// letter in somebody's post that we cannot take back.
+const PRE_TRANSMISSION_REFUSALS = [
+  "POSTGRID_API_KEY unset",
+  "return_address_required",
+  "return_address_incomplete",
+  "destination_address_missing",
+  "bureau_mail_address_missing",
+  "bureau_mail_address_incomplete",
+  "pdf_or_html_required",
+  "private_carrier_forbidden_for_po_box"
+];
+
+export function isPreTransmissionRefusal(error) {
+  const s = String(error || "");
+  return PRE_TRANSMISSION_REFUSALS.some((prefix) => s.startsWith(prefix));
+}
+
+/**
+ * Take the letter for mailing, before anything is transmitted.
+ *
+ * @returns {Promise<{claimed: boolean, reason: string|null, priorStatus: string|null}>}
+ *   claimed true  — this caller holds the letter and may send it.
+ *   claimed false — do not send. `reason` says why.
+ */
+async function claimLetterForMailing(db, { letterId, orgId, clientId }) {
+  if (!letterId || !db?.query) return { claimed: true, reason: null, priorStatus: null };
+
+  let claim;
+  try {
+    claim = await db.query(
+      `WITH prior AS (
+         SELECT id, status FROM dispute_letters
+          WHERE id = $1::uuid AND org_id = $2::uuid AND client_id = $3::uuid
+       )
+       UPDATE dispute_letters d
+          SET status = 'sending', mailed_at = now()
+         FROM prior
+        WHERE d.id = prior.id
+          AND d.mailed_at IS NULL
+          AND d.status NOT IN ('sending', 'sent', 'delivered')
+       RETURNING prior.status AS prior_status`,
+      [letterId, orgId, clientId]
+    );
+  } catch (err) {
+    // uq_dispute_letters_one_mailing: another row for the same case, bureau,
+    // round and destination has already been mailed. This one must not be.
+    if (err?.code === UNIQUE_VIOLATION) {
+      return { claimed: false, reason: "already_mailed_duplicate_letter", priorStatus: null };
+    }
+    // Any other database failure means we do not know whether this letter is
+    // safe to send, so it is not sent. Refusing one letter rather than throwing
+    // keeps the rest of the batch — including letters already handed to the
+    // provider — reportable to the caller.
+    return { claimed: false, reason: "claim_failed", priorStatus: null };
+  }
+
+  if (claim?.rows?.length) {
+    return { claimed: true, reason: null, priorStatus: claim.rows[0].prior_status ?? null };
+  }
+
+  // Nothing was claimed. Read the row and refuse only if it says, positively,
+  // that this letter has already been taken.
+  let existing = null;
+  try {
+    const r = await db.query(
+      `SELECT status, mailed_at FROM dispute_letters
+        WHERE id = $1::uuid AND org_id = $2::uuid AND client_id = $3::uuid LIMIT 1`,
+      [letterId, orgId, clientId]
+    );
+    existing = r?.rows?.[0] || null;
+  } catch {
+    existing = null;
+  }
+
+  if (!existing) return { claimed: true, reason: null, priorStatus: null };
+  if (existing.mailed_at) return { claimed: false, reason: "already_mailed", priorStatus: existing.status ?? null };
+  if (["sending", "sent", "delivered"].includes(existing.status)) {
+    return { claimed: false, reason: "already_mailed", priorStatus: existing.status };
+  }
+  return { claimed: true, reason: null, priorStatus: existing.status ?? null };
+}
+
+/** Give the letter back, for a refusal that provably happened before transmission. */
+async function releaseLetterClaim(db, { letterId, orgId, clientId, priorStatus }) {
+  if (!letterId || !db?.query) return;
+  await db.query(
+    `UPDATE dispute_letters
+        SET status = COALESCE($4, 'ready'), mailed_at = NULL
+      WHERE id = $1::uuid AND org_id = $2::uuid AND client_id = $3::uuid
+        AND status = 'sending'`,
+    [letterId, orgId, clientId, priorStatus || null]
+  ).catch(() => {});
+}
+
 async function resolveLetterRouting(db, letter, { orgId, identity = null }) {
   const letterId = letter.letterId || letter.letter_id || null;
   let target = letter.target || null;
@@ -140,6 +271,26 @@ export async function sendRepairLetters(db, {
       to: routing.to
     };
 
+    // CLAIM BEFORE SENDING. Everything above this line is addressing; nothing
+    // has been transmitted yet, so this is the last honest moment to decide
+    // whether this letter is allowed to go.
+    const claimLetterId = letter.letterId || letter.letter_id || null;
+    const claim = await claimLetterForMailing(db, {
+      letterId: claimLetterId,
+      orgId,
+      clientId
+    });
+    if (!claim.claimed) {
+      results.push({
+        bureau,
+        target: routing.target,
+        ok: false,
+        error: claim.reason,
+        letterId: claimLetterId
+      });
+      continue;
+    }
+
     let sent;
     if (typeof mailSender === "function") {
       sent = await mailSender({
@@ -182,17 +333,29 @@ export async function sendRepairLetters(db, {
 
     if (sent?.ok === false || (sent && sent.ok !== true && sent.providerId == null && sent.outcome?.startsWith?.("mail_failed"))) {
       const err = sent?.error || sent?.outcome || "mail_failed";
+      // Give the letter back only when the refusal provably happened before any
+      // request left this process. Everything else keeps the claim, because a
+      // call that was made and did not come back may already have mailed.
+      if (isPreTransmissionRefusal(err)) {
+        await releaseLetterClaim(db, {
+          letterId: claimLetterId,
+          orgId,
+          clientId,
+          priorStatus: claim.priorStatus
+        });
+      }
       results.push({ bureau, target: routing.target, ok: false, error: err });
       continue;
     }
 
     const providerId = sent?.providerId || sent?.id || null;
-    const letterId = letter.letterId || letter.letter_id || null;
+    const letterId = claimLetterId;
     if (letterId && providerId && db?.query) {
       await db.query(
         `UPDATE dispute_letters
             SET status = 'sent', postgrid_letter_id = $2
-          WHERE id = $1::uuid AND org_id = $3::uuid AND client_id = $4::uuid`,
+          WHERE id = $1::uuid AND org_id = $3::uuid AND client_id = $4::uuid
+            AND status <> 'delivered'`,
         [letterId, String(providerId), orgId, clientId]
       ).catch(() => {});
     }
