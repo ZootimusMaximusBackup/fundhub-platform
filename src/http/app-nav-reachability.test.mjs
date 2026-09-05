@@ -395,12 +395,41 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
    an owner decision, not a regression this file should still be guarding. */
 
 describe("app shell — every link points at a file that is really there", () => {
+  /* A SCREEN MAY LINK OUT OF /app/, AND THAT IS NOT A BROKEN LINK.
+     public/ holds the pages a CUSTOMER opens — contract.html, portal-login.html,
+     progress.html — and they deliberately live at the site root rather than
+     under /app/, because every file in /app/ loads shell.js (which grants a
+     client principal one screen) and data.js (which attaches a staff token to
+     every request). public/contract.html:14-24 spells that out.
+
+     This check used to compare every href against the /app/ listing alone, so a
+     link to one of those root pages was reported as going nowhere. It now
+     resolves against both directories — so a root page is still CHECKED, and a
+     typo in one is still caught; what changed is that being at the root is no
+     longer itself the failure. */
+  const ROOT = path.resolve(HERE, "../../public");
+  const ROOT_FILES = fs.readdirSync(ROOT).filter((f) => f.endsWith(".html")).sort();
+  const REACHABLE = new Set([...FILES, ...ROOT_FILES]);
+
   test("no screen links to an .html file that does not exist", () => {
     const broken = [];
     for (const f of FILES) {
       const hrefs = [...HTML.get(f).matchAll(/href="\.?\/?([a-z0-9-]+\.html)"/gi)].map((m) => m[1]);
       for (const to of new Set(hrefs)) {
-        if (!FILES.includes(to)) broken.push(`${f} -> ${to}`);
+        if (!REACHABLE.has(to)) broken.push(`${f} -> ${to}`);
+      }
+    }
+    assert.deepEqual(broken, [], "these links go nowhere:\n  " + broken.join("\n  "));
+  });
+
+  test("the customer-facing root pages link nowhere that does not exist either", () => {
+    // The same check, applied to the pages the old one could not see at all.
+    const broken = [];
+    for (const f of ROOT_FILES) {
+      const src = fs.readFileSync(path.join(ROOT, f), "utf8");
+      const hrefs = [...src.matchAll(/href="\.?\/?(?:app\/)?([a-z0-9-]+\.html)"/gi)].map((m) => m[1]);
+      for (const to of new Set(hrefs)) {
+        if (!REACHABLE.has(to)) broken.push(`${f} -> ${to}`);
       }
     }
     assert.deepEqual(broken, [], "these links go nowhere:\n  " + broken.join("\n  "));
