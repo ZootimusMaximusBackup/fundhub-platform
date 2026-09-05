@@ -26,7 +26,13 @@ buys is the difference between "the screen renders this shape" and "the whole pa
 works" — and it earned that on the run it was written for, catching two pieces of
 wrong copy that no fixture could have.
 
-It takes the client's session token in `TOK`:
+Set it up with the seed script here, which prints the token on its last line:
+
+```bash
+DATABASE_URL=<scratch db> node docs/workflows/wave-3-checks/seed-live-client.mjs
+```
+
+Then run the check with that token in `TOK`:
 
 ```bash
 TOK=<a client account session token> node docs/workflows/wave-3-checks/check-progress-live.mjs
