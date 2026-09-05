@@ -123,4 +123,22 @@ Recorded as required by the handoff. Each is the conservative option.
 
 ## Blockers and open questions
 
-None blocking. Anything found is listed here as it is found.
+None blocking. Findings, recorded rather than worked around:
+
+1. **A light-affiliate client sees a dash on the four KPI tiles.** REFERRED, CONVERTED, OWED and
+   PAID on `public/app/affiliate.html` are painted from `/api/read/affiliates`, which admits staff
+   and an `affiliate` principal but not a `client`. A client who pressed "Refer a friend" stays a
+   `client` principal by design (migration 340), so that read returns them nothing and the four
+   tiles keep whatever the markup ships. The referrals and payouts TABLES below them are correct —
+   they come from the new `read/affiliate-portal`. Not worked around, because that file carries a
+   written standing rule that these tiles are painted from that read and never from the referral
+   rows. The one change made was the OWED tile's shipped default, from `$0` to a dash: `$0` told a
+   caller they were owed nothing, which the page could not know. Fixing it properly is either
+   widening `read/affiliates` to a light-affiliate client or lifting that standing rule, and both
+   are Chris's call.
+
+2. **The demo-login roster check parses comments as roles.** `src/http/demo-logins.test.mjs`
+   matches `/^\s*([a-z_]+):/` across the whole `ROLE_TABS` block in `shell.js`, comments included,
+   so a comment line beginning with a lowercase word and a colon is read as a role with no demo
+   account behind it. Cost one debugging round. The comment was reworded rather than the check
+   loosened; noted so the next person does not lose the same round.

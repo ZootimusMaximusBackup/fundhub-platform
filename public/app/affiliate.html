@@ -268,7 +268,17 @@ table.grid tbody tr:hover{background:var(--soft)}
       <div class="stats" style="margin-top:14px">
         <div class="stat"><div class="eyebrow">REFERRED</div><div class="sv" id="kRef">—</div><div class="sd" id="kRefNote">lifetime leads attributed to your code</div></div>
         <div class="stat"><div class="eyebrow">CONVERTED</div><div class="sv" id="kConv">—</div><div class="sd" id="kConvRate">referrals that paid a qualifying product</div></div>
-        <div class="stat"><div class="eyebrow">OWED</div><div class="sv" id="kOwed">$0</div><div class="sd" id="kOwedNote">accrued, not yet paid</div></div>
+        <!-- SHIPPED DEFAULT IS A DASH, NOT $0. The four tiles are painted from
+             /api/read/affiliates, which admits staff and an `affiliate` principal —
+             but NOT a `client` who has become a light affiliate (plan section 4).
+             That caller gets nothing back, so whatever this markup ships with is
+             what they read. "$0" told them they were owed nothing, which this page
+             had no way to know; a dash says we do not have the figure, which is
+             true. The three tiles beside it already shipped a dash for exactly
+             this reason. Painting it from the referral rows instead is refused by
+             the standing rule further down this file, and the gap is on the
+             wave 3 board rather than worked around here. -->
+        <div class="stat"><div class="eyebrow">OWED</div><div class="sv" id="kOwed">—</div><div class="sd" id="kOwedNote">accrued, not yet paid</div></div>
         <div class="stat"><div class="eyebrow">PAID</div><div class="sv" id="kPaid">—</div><div class="sd" id="kPaidNote">lifetime · from settled payout runs</div></div>
       </div>
 
