@@ -139,6 +139,12 @@ const API_KEYS = [
      them on a monthly cycle, so an outage here is revenue not asked for. */
   "partner-addons",
   "payment-links",
+  /* The self-serve paid round. A plain GET answers with the price list and
+     whether this client may buy one, so it is a real uptime door: a client
+     seeing "could not load" on a page with a price on it is an outage worth
+     knowing about. The POST half is the one that mints a hosted checkout link,
+     and a GET never touches it. */
+  "paid-services",
   "pii",
   "pipeline-cards",
   "pipeline-clients",

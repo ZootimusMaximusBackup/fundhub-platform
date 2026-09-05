@@ -26,7 +26,7 @@ flowchart TD
     CAN --> A_finance[Finance — 1 route]
     CAN --> A_public[public — 8 routes]
     CAN --> A_read[Reading data — 3 routes]
-    CAN --> A_top_level[Everything else — 7 routes]
+    CAN --> A_top_level[Everything else — 8 routes]
     CAN --> A_trials[trials — 1 route]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 183 routes]
@@ -61,7 +61,7 @@ flowchart TD
 
 ## What they can reach
 
-**34 of 217 routes.**
+**35 of 218 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -85,6 +85,7 @@ flowchart TD
 | `/api/health` | — | anyone |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
+| `/api/paid-services` | GET, POST | staff, client |
 | `/api/public/affiliate-click` | POST | anyone |
 | `/api/public/education-enroll` | POST | **not a sign-in** — provider signature |
 | `/api/public/funnel-checkout` | GET, POST | **not a sign-in** — provider signature |
@@ -107,7 +108,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**183 of 217 routes.**
+**183 of 218 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
