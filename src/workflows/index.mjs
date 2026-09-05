@@ -14,6 +14,7 @@ import { bs01PrecallLauncher } from './bs-01-precall-launcher.mjs';
 import { contractChaser } from './contract-chaser.mjs';
 import { dailyPulse } from './daily-pulse.mjs';
 import { messageDispatchSweeper } from './message-dispatch-sweeper.mjs';
+import { hiringBenchSweeper } from './hiring-bench-sweeper.mjs';
 import { meetTranscriptSweeper } from './meet-transcript-sweeper.mjs';
 import { subscriptionBillingSweeper } from './subscription-billing-sweeper.mjs';
 import { partnerProductionFloorReview } from './partner-production-floor.mjs';
@@ -109,6 +110,28 @@ export const functions = [
 
      The file's own header carries the full reasoning for what moved. */
   messageDispatchSweeper,
+
+  /* THE ONLY THING THAT ASKS "SHOULD WE BE HIRING" WITHOUT BEING ASKED FIRST.
+     Registered 2026-09-05. src/hiring/bench.mjs has argued since 051 that
+     recruiting has to be always-on — you notice the bench is thin when somebody
+     quits, and then you hire needy — and nothing had ever run it. Its only door
+     was GET /api/hiring/bench, a read-only screen docs/WIRING-AUDIT.md records
+     as never called by any front end. So the always-on pipeline was on-demand.
+
+     REGISTERING IT WRITES TASKS AND NOTHING ELSE. No candidate is contacted,
+     advanced, ranked or rejected (051 forbids a software rejection outright), no
+     job is posted, nothing is emailed or texted. Each alert routes through
+     src/hiring/owner.mjs assigneeFor, so it lands with the sales manager or the
+     owner per the rule in migration 294 rather than in one shared queue. The task
+     dedupe key carries the date, so the ceiling is one task per role per day
+     whatever the schedule says.
+
+     NOT SCHEDULED, DELIBERATELY: src/ops/hire-closer.mjs actOnPacked — the
+     packed-calendar rule. It is closer-only, it routes past the resolver, and
+     every run posts to LinkedIn, which has no partner access. It stays behind
+     POST /api/ops/hire-closer where a human presses it. The sweeper's header
+     carries the full reasoning. */
+  hiringBenchSweeper,
   meetTranscriptSweeper,
 
   /* THE RECURRING BILLING RAIL. Registered 2026-08-31. Until it, nothing in

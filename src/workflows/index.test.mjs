@@ -66,7 +66,20 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
   const disk = idsOnDisk();
   const expected = disk.size - Object.keys(DELIBERATELY_UNSERVED).length;
 
-  /* 68 since the partner production floor review (2026-08-31) — the only filter
+  /* 69 since the hiring bench sweeper (2026-09-05) — the first thing in this
+     repo that asks "should we be recruiting" without a human asking it first.
+     src/hiring/bench.mjs has made the always-on argument since 051 and nothing
+     ran it: its only door was GET /api/hiring/bench, a read-only screen
+     docs/WIRING-AUDIT.md records as never called by any front end. Registering
+     it writes TASKS ONLY — no candidate is contacted, advanced, ranked or
+     rejected, no job is posted, nothing is mailed — and each alert routes
+     through src/hiring/owner.mjs assigneeFor rather than into one shared queue.
+     The date is in the task dedupe key, so one task per role per day is the
+     ceiling whatever the cron says. src/ops/hire-closer.mjs actOnPacked is
+     deliberately NOT scheduled alongside it: closer-only, past the resolver, and
+     it posts to a LinkedIn integration with no partner access. It stays behind
+     the button.
+     Was 68 since the partner production floor review (2026-08-31) — the only filter
      on the partner base. The $10,000 entry fee is financeable down to a 405 FICO
      (docs/specs/W0-decisions.md), so entry screens nobody and production is the
      whole quality control: ten funding clients a month, on the ladder in
@@ -99,7 +112,7 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      The count stays pinned as well as derived: registering a function is how a
      job starts running, and Inngest executes functions in production today, so
      it should cost somebody a line in a test. */
-  assert.equal(functions.length, 68, `expected 68, got ${functions.length}`);
+  assert.equal(functions.length, 69, `expected 69, got ${functions.length}`);
   assert.equal(functions.length, expected,
     `${disk.size} workflows on disk, ${Object.keys(DELIBERATELY_UNSERVED).length} deliberately unserved, ` +
     `so ${expected} should be served — but ${functions.length} are`);
