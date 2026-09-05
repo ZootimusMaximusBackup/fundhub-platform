@@ -1,6 +1,25 @@
 // Persist + load funding-stack PDFs: inquiry_removal, personal_info, and the
-// four WeasyPrint analysis reports. Uses the existing documents registry.
+// FIVE analysis deliverables. Uses the existing documents registry.
 // COMPLIANCE REVIEW REQUIRED — bureau / dispute letter adjacent.
+//
+// F46 — WHY THERE ARE FIVE ANALYSIS SUBTYPES AND NOT FOUR.
+// buildLetterPack (src/underwrite/letter-pack.mjs:460) puts five analysis-shaped
+// files in a funding pack, not four. Four come from the black-report printer
+// (credit_analysis, funding_snapshot, lender_match, roadmap). The fifth,
+// `funding_summary`, comes from a different generator entirely —
+// vendor/underwriteiq-full/api/lite/crs/summary-doc-generator.js, reached through
+// generateAllSummaryDocuments — and letter-pack names it
+// Capital-Readiness-Summary.pdf (:85).
+//
+// FUNDING_ANALYSIS_SUBTYPE had four keys, so analysisTypeOf() returned null for
+// that fifth file and the loop below skipped it. It was built, then dropped on
+// the floor, while the delivery email promises it as item 5
+// (src/messaging/templates/u02-funding-delivery.html:40).
+//
+// MEASURED 2026-09-05 on a scratch Postgres, real buildLetterPackForClient over
+// the repo's own `academy` simulated credit file (tier FULL_FUNDING): the pack
+// carried five files, the saver stored four. With funding_summary added it
+// stores five.
 
 import { KINDS, buildDocumentKey } from "../documents/kinds.mjs";
 import { storeAndRegister } from "../documents/register.mjs";
@@ -21,18 +40,30 @@ export const FUNDING_LETTER_SUBTYPE = Object.freeze({
   personal_info: "funding_personal_info"
 });
 
+// Key = the `type` letter-pack stamps on the file. Value = the documents.subtype
+// row. Both halves are strings that already exist elsewhere in the repo; nothing
+// here is invented. `funding_summary` is the vendor generator's own type name
+// (build-documents.js:154, summary-doc-generator.js:7) and is the fifth
+// deliverable — the DELIVERABLE kind is described as "the five UnderwriteIQ
+// deliverables" in src/documents/kinds.mjs. subtype is NOT constrained by the
+// database (kinds.mjs header), so no migration is needed to add one.
 export const FUNDING_ANALYSIS_SUBTYPE = Object.freeze({
   credit_analysis: "credit_analysis_report",
   roadmap: "credit_optimization_roadmap",
   funding_snapshot: "funding_snapshot",
-  lender_match: "bank_lender_match_list"
+  lender_match: "bank_lender_match_list",
+  funding_summary: "funding_summary"
 });
 
 const ANALYSIS_TITLES = Object.freeze({
   credit_analysis: "Credit Analysis Report",
   roadmap: "Credit Optimization Roadmap",
   funding_snapshot: "Funding Snapshot",
-  lender_match: "Bank and Lender Match List"
+  lender_match: "Bank and Lender Match List",
+  // The title the vendor renderer itself uses for this type
+  // (vendor/underwriteiq-full/api/lite/crs/render-pdf.js:955), and the name the
+  // delivery email gives it.
+  funding_summary: "Capital Readiness Summary"
 });
 
 const TYPE_ORDER = ["inquiry_removal", "personal_info"];
@@ -62,11 +93,21 @@ function analysisTypeOf(file) {
   }
   if (fn.includes("funding_snapshot") || fn.includes("funding-snapshot")) return "funding_snapshot";
   if (fn.includes("lender_match") || fn.includes("lender-match") || fn.includes("bank-lender")) return "lender_match";
+  // The fifth deliverable. Two spellings reach here: the vendor generator's raw
+  // `funding_summary.pdf` (summary-doc-generator.js:455) and the pack's nicer
+  // `Capital-Readiness-Summary.pdf` (letter-pack.mjs:85). Neither collides with a
+  // rule above, and the repair pack's Optimization-Plan-Summary.pdf matches none
+  // of these — that one is `repair_plan_summary` and does not belong on the
+  // funding stack.
+  if (fn.includes("funding_summary") || fn.includes("funding-summary")
+    || fn.includes("capital_readiness") || fn.includes("capital-readiness")) {
+    return "funding_summary";
+  }
   return null;
 }
 
 /**
- * Store funding-stack letter PDFs and the four analysis reports.
+ * Store funding-stack letter PDFs and the five analysis deliverables.
  * Letters: one row per client+type+bureau. Analysis: one row per subtype.
  * Skips dispute / Metro 2 round letters even if they are in the pack.
  */

@@ -29,6 +29,41 @@ import { safeError } from "../../src/http/health.mjs";
 
 const GONE = (res) => res.status(404).json({ ok: false, error: "not_found" });
 
+/* ── STORED HTML IS NEVER ALLOWED TO RUN ON THIS ORIGIN ──────────────────────
+   Contracts are stored as text/html (src/contracts/send.mjs:50 CONTRACT_MIME),
+   and this route hands back whatever content type the row carries. So before
+   this guard a stored contract RENDERED as a page on the app's own origin.
+
+   That matters because three things line up:
+     1. src/lib/render-template.mjs:46 is `return String(val);` — merge fields
+        are interpolated into the contract body with no escaping.
+     2. The session token lives in localStorage as `fh_token`
+        (public/app/client-portal.html:2049), readable by any same-origin script.
+     3. Staff open these links too (public/app/documents.html:585).
+   A hostile string typed into a CRM field would therefore turn "open the
+   contract" into session theft.
+
+   Two headers, both needed, neither sufficient alone:
+     Content-Security-Policy: sandbox; default-src 'none'
+       `sandbox` with no allow-list drops the response into a unique opaque
+       origin with scripts off, so even if it is rendered it can read nothing
+       belonging to this site. `default-src 'none'` stops it fetching anything.
+     Content-Disposition: attachment
+       The browser saves the file instead of rendering it, so it never becomes a
+       document on this origin in the first place.
+
+   ONLY for text/html. PDFs and images keep their exact previous behaviour —
+   they still open inline in a new tab, which is what every screen that links
+   here expects. */
+const isHtmlType = (t) => /^text\/html\s*(;|$)/i.test(String(t || "").trim());
+
+function guardHtml(res, mimeType) {
+  if (!isHtmlType(mimeType)) return false;
+  res.setHeader("content-security-policy", "sandbox; default-src 'none'");
+  res.setHeader("content-disposition", "attachment");
+  return true;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "GET" && req.method !== "HEAD") {
     return res.status(405).json({ ok: false, error: "method_not_allowed" });
@@ -63,6 +98,9 @@ export default async function handler(req, res) {
 
     res.setHeader("cache-control", "private, no-store");
     res.setHeader("x-content-type-options", "nosniff");
+    // The registered mime type is what every path below serves, including the
+    // 302 and the HEAD, so the guard goes on before any of them branch.
+    guardHtml(res, target.mime_type);
     if (req.method === "HEAD") {
       res.setHeader("content-type", target.mime_type || "application/octet-stream");
       return res.status(200).end("");
@@ -89,7 +127,11 @@ export default async function handler(req, res) {
     const store = storeFromEnv();
     const object = await store.get(key, { expectedChecksum: target.checksum || null });
     if (!object) return GONE(res);
-    res.setHeader("content-type", target.mime_type || object.contentType || "application/octet-stream");
+    const contentType = target.mime_type || object.contentType || "application/octet-stream";
+    // Again, on the resolved type. A row with a null mime_type whose STORED
+    // object says text/html must not slip past the guard above.
+    guardHtml(res, contentType);
+    res.setHeader("content-type", contentType);
     return res.status(200).end(object.body);
   } catch (err) {
     return res.status(500).json({ ok: false, error: safeError(err) });
