@@ -8,7 +8,13 @@ import { resolveClient } from "./client-lifecycle.mjs";
 import { formatQuestionList } from "../insights/questions.mjs";
 import { isInterviewBooking, meetBookingUrl, RECORDING_NOTE } from "../insights/meet.mjs";
 
-export const ASSIGNEE_ROLE = "funding_advisor";
+/* The CSM owns every conversation after the sale (db/migrations/290_csm_role.sql,
+   owner-set 2026-09-05). This was the funding advisor, which is why the check-in
+   and the interview kept losing to funding work: the advisor's job is to get the
+   file funded, and a "how is it going" call is always the thing that slips.
+   Moving the constant moves both tasks — the mid check-in and the post
+   interview — because both read it. */
+export const ASSIGNEE_ROLE = "csm";
 export const MID_DUE_DAYS = 7;
 
 export const SOURCE_WORKFLOW = "customer-insights-post";
