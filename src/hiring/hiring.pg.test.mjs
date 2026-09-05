@@ -91,9 +91,20 @@ describe("hiring pipeline", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () =
     // is held to.
     const roles = (await db.query(
       `SELECT key, scorecard, comp FROM hiring_roles WHERE org_id = $1 ORDER BY key`, [org])).rows;
-    assert.deepStrictEqual(roles.map((r) => r.key), ["closer", "sales_coordinator", "setter"]);
+    assert.deepStrictEqual(roles.map((r) => r.key),
+      ["closer", "csm", "sales_coordinator", "setter"],
+      "051 seeded three reqs; 294 added csm");
 
-    for (const r of roles) {
+    /* ONLY THE ROLES 052 ACTUALLY FILLED IN ARE CHECKED FOR STRUCTURE.
+       csm was created later by 294 with an empty scorecard, deliberately: 051's
+       rule is that an invented scorecard becomes a performance agreement a real
+       person is held to, and 294 followed it. So an empty scorecard on a newer
+       role is the rule working, not a regression. It is still asserted below —
+       as a reported gap, which is where an unfilled scorecard belongs. */
+    const filled = roles.filter((r) => Object.keys(r.scorecard).length > 0);
+    assert.ok(filled.length >= 3, "052 filled the three roles it knew about");
+
+    for (const r of filled) {
       assert.ok(r.scorecard.outcomes?.length > 0, `${r.key} should have outcomes`);
       assert.ok(r.scorecard.leading_indicators?.length > 0, `${r.key} should have leading indicators`);
       // Every target null — no invented numbers.
@@ -387,7 +398,16 @@ describe("hiring pipeline", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () =
     const n = (await db.query(
       `SELECT count(*)::int AS n FROM tasks
         WHERE source_workflow = 'hiring-bench-monitor' AND body LIKE '%2026-07-30'`)).rows[0].n;
-    assert.ok(n >= 1 && n <= 3, `expected one task per role, got ${n}`);
+    /* The ceiling is DERIVED, not the literal 3 it used to be. That 3 was the
+       number of roles 051 seeded, so adding a fourth (csm, in 294) failed this
+       test without anything being wrong — the assertion was pinned to a fixture
+       count rather than to the rule it is checking, which is "at most one task
+       per role". Counting the roles keeps the rule and survives the next one. */
+    const roles = (await db.query(
+      `SELECT count(*)::int AS n FROM hiring_roles WHERE org_id = $1 AND active`,
+      [org])).rows[0].n;
+    assert.ok(n >= 1 && n <= roles,
+      `expected at most one task per active role (${roles}), got ${n}`);
   });
 
   test("ramp review queues a 60-day trial review, and decides nothing", async () => {
