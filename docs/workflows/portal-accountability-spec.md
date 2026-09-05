@@ -98,6 +98,31 @@ ecosystem becoming spam.
 
 ---
 
+## Rounds 4 and 5 — the regulator complaints
+
+Owner-set 2026-09-05: **it is a simple ping.** Do not over-build this.
+
+Rounds 4 and 5 are the CFPB and state attorney general complaints. We build the form; the client
+signs it under penalty of perjury and files it themselves. So today nothing in the system knows
+whether it was ever filed, and `src/metro2/letters/catalog.mjs:57-65` says so outright.
+
+Three states, one waypoint, one message:
+
+| State | What it means | How it is set |
+|---|---|---|
+| `prepared` | we built the form | the pack was generated |
+| `sent` | it left us on this date | the send path already knows |
+| `filed` | the client says they filed it | **they answer the ping** |
+
+The ping is one message asking whether they filed it, with a reply capturing the answer. If the
+CFPB case number comes back with it, store it — that is real proof and it costs nothing to ask
+for. If they say no or do not answer, the state stays `sent` and the waypoint stays open.
+
+It rides the same ladder and the same exit conditions as every other waypoint. No separate loop.
+
+**The page shows the state it actually knows.** `sent` renders as sent, never as filed. `filed`
+renders as filed only because the client said so, and should say who said so.
+
 ## AI support
 
 `api/chat/*` already reaches a client principal. Two jobs:
