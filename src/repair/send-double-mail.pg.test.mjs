@@ -29,7 +29,7 @@ import { test, before, after, describe } from "node:test";
 import assert from "node:assert";
 import { db, close } from "../db.mjs";
 import { resolveDefaultOrg } from "../auth/org.mjs";
-import { sendRepairLetters, clearStuckSendClaim } from "./send.mjs";
+import { sendRepairLetters, clearStuckSendClaim, listStuckSendClaims } from "./send.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
 const CLIENT_EMAIL_LIKE = "doublemail.pg.test.%@example.com";
@@ -420,6 +420,131 @@ describe("repair send — one press, one mailing", { skip: !HAVE_DB ? "no DATABA
       () => db.query(`UPDATE dispute_letters SET send_claim_cleared_at = now() WHERE id = $1`, [letter.id]),
       /dispute_letters_claim_clear_ck/
     );
+  });
+
+  // -- A 200 with no id is still a mailing -------------------------------------
+  //
+  // THE DEFECT THIS CLOSES, reproduced on this database before the fix:
+  //   press 1  ok:true, providerId null, provider called once
+  //            row: status 'sending' | mailed_at NULL | claim held | id NULL
+  //   listStuckSendClaims offered that row to staff as stuck
+  //   clear    -> ok, status 'ready'
+  //   press 2  provider called a SECOND time
+  // A second envelope to a real person, and a second bill.
+
+  test("a 200 with no provider id is recorded as a mailing, and cannot then be cleared", async () => {
+    const letter = await mkLetter({ bureau: "EQ", round: "R9" });
+    let calls = 0;
+    const press = () => sendRepairLetters(db, {
+      orgId: org, clientId: client, staffId, mail: true, from: FROM,
+      letters: [{ bureau: "EQ", letterId: letter.id, html: "<html>x</html>", caseId }],
+      // PostGrid answering 200 with a body carrying no id. The envelope IS in
+      // the post; src/messaging/providers/mail-letter.mjs returns
+      // { ok: true, providerId: null } for it.
+      mailSender: async () => { calls += 1; return { ok: true, providerId: null, outcome: "sent" }; }
+    });
+
+    const first = await press();
+    assert.equal(first.ok, true);
+    assert.equal(calls, 1);
+    assert.equal(first.results[0].providerId, null, "there really is no id");
+
+    const row = await letterRow(letter.id);
+    assert.equal(row.status, "sent");
+    assert.ok(row.mailed_at, "the mailing is on the row anyway — acceptance is the fact");
+    assert.equal(row.postgrid_letter_id, null, "and the id stays unknown, not invented");
+
+    // The row must NOT be offered to staff as stuck any more.
+    const stuck = await listStuckSendClaims(db, { orgId: org, clientId: client, minAgeMinutes: 0 });
+    assert.equal(
+      stuck.some((r) => r.id === letter.id), false,
+      "a mailed letter is not a stuck claim"
+    );
+
+    // And a staff member who asks anyway is refused.
+    const refused = await clearStuckSendClaim(db, {
+      orgId: org, letterId: letter.id, staffId,
+      reason: "no id came back so I assumed it did not go", minAgeMinutes: 0
+    });
+    assert.equal(refused.ok, false);
+    assert.equal(refused.reason, "already_mailed");
+
+    // The whole point: pressing send again does not reach the provider.
+    const second = await press();
+    assert.equal(calls, 1, "ONE mailing, not two");
+    assert.equal(second.results[0].error, "already_mailed");
+  });
+
+  test("the database refuses a clear on a letter the provider took but no mailing was written for", async () => {
+    // The one shape the code fix cannot cover: the provider accepted the letter
+    // and the write-back could not be made, so only the id landed. 334's second
+    // constraint refuses a clear on it, for every writer.
+    const letter = await mkLetter({ bureau: "EX", round: "R10" });
+    await db.query(
+      `UPDATE dispute_letters SET status='sending', send_claimed_at = now(), postgrid_letter_id = 'ltr_orphan'
+        WHERE id = $1`,
+      [letter.id]
+    );
+    await assert.rejects(
+      () => db.query(
+        `UPDATE dispute_letters
+            SET send_claim_cleared_at = now(), send_claim_cleared_by = $2::uuid,
+                send_claim_cleared_reason = 'I think it did not go'
+          WHERE id = $1`,
+        [letter.id, staffId]
+      ),
+      /dispute_letters_no_clear_after_provider_id_ck/
+    );
+    // The application refuses it too, before the database is even asked.
+    const app = await clearStuckSendClaim(db, {
+      orgId: org, letterId: letter.id, staffId, reason: "same attempt", minAgeMinutes: 0
+    });
+    assert.equal(app.reason, "provider_accepted");
+  });
+
+  test("the database refuses a clear stamped at or after a mailing", async () => {
+    const letter = await mkLetter({ bureau: "TU", round: "R11" });
+    await sendRepairLetters(db, {
+      orgId: org, clientId: client, staffId, mail: true, from: FROM,
+      letters: [{ bureau: "TU", letterId: letter.id, html: "<html>x</html>", caseId }],
+      mailSender: async () => ({ ok: true, providerId: "ltr_r11", outcome: "sent" })
+    });
+    await assert.rejects(
+      () => db.query(
+        `UPDATE dispute_letters
+            SET send_claim_cleared_at = now(), send_claim_cleared_by = $2::uuid,
+                send_claim_cleared_reason = 'undoing a real mailing by hand'
+          WHERE id = $1`,
+        [letter.id, staffId]
+      ),
+      /dispute_letters_no_clear_after_mailing_ck/
+    );
+  });
+
+  test("a clear that came FIRST is still allowed, and the re-send then mails", async () => {
+    // The ordering rule must not ban the legitimate row: cleared at T1, mailed
+    // at T2. If it did, no genuinely stuck letter could ever be sent again.
+    const letter = await mkLetter({ bureau: "EQ", round: "R12" });
+    const press = (sender) => sendRepairLetters(db, {
+      orgId: org, clientId: client, staffId, mail: true, from: FROM,
+      letters: [{ bureau: "EQ", letterId: letter.id, html: "<html>x</html>", caseId }],
+      mailSender: sender
+    });
+
+    await press(async () => ({ ok: false, error: "postgrid_http_502" }));
+    const cleared = await clearStuckSendClaim(db, {
+      orgId: org, letterId: letter.id, staffId,
+      reason: "PostGrid shows no letter", minAgeMinutes: 0
+    });
+    assert.equal(cleared.ok, true);
+
+    let calls = 0;
+    await press(async () => { calls += 1; return { ok: true, providerId: "ltr_r12", outcome: "sent" }; });
+    assert.equal(calls, 1);
+
+    const row = await letterRow(letter.id);
+    assert.ok(row.send_claim_cleared_at && row.mailed_at, "the row legitimately carries both");
+    assert.ok(row.send_claim_cleared_at <= row.mailed_at, "in that order");
   });
 
   test("mail_cost_cents starts NULL and NULL means unknown, not free", async () => {

@@ -4,7 +4,8 @@ What the code **does** today when a staff member presses send on a repair
 dispute letter, and what now stops the same letter going out twice. Traced from
 `src/repair/send.mjs`, `src/repair/analyze.mjs`, `src/metro2/delivery/send.mjs`,
 `src/messaging/providers/mail-letter.mjs`, `src/lib/outbound-fetch.mjs` and
-`db/migrations/332` and `333` on branch `feat/portal-schema` — not from a spec.
+`db/migrations/332`, `333` and `334` on branch `feat/portal-schema` — not from a
+spec.
 
 **A human still presses send.** `src/metro2/delivery/send.mjs:3` and
 `api/repair/send.mjs:3` both forbid mailing from `payment.received`. Nothing in
@@ -38,6 +39,42 @@ that throws if it is ever reached (it never fired):
 `db/migrations/333` is the repair. The rest of this page describes what the code
 does **after** it.
 
+## CORRECTION 2 — what the 333 version of this page got wrong
+
+The version written with `333` said the clear "cannot turn a letter that really
+went out into one that may go out again". **It could**, and this is the mirror
+image of the fault above: 332 could destroy a letter that never sent; 333 could
+mail twice a letter that did.
+
+The guard was the pair of columns `mailed_at` and `postgrid_letter_id`, and both
+stayed empty on a **successful** mailing whenever the provider answered `200`
+with no id in the body. `src/repair/send.mjs` wrote the mailing only
+`if (letterId && providerId ...)`, and
+`src/messaging/providers/mail-letter.mjs:259` returns
+`{ ok: true, providerId: raw.id || null }` — so an empty or non-JSON `200` body
+gave `ok: true` with a null id and the entire write-back was skipped. The same
+`.catch(() => {})` on that write turned any momentary database error into the
+identical state, silently.
+
+Measured on a scratch Postgres on 2026-09-05, before the fix:
+
+| press | what happened | mailer calls |
+|---|---|---|
+| 1 — provider answered 200, no id | `ok: true`, row left `sending`, `mailed_at` **NULL**, claim held | 1 |
+| — | the row was **listed to staff as a stuck claim** | |
+| — | `clearStuckSendClaim` **succeeded**, status back to `ready` | |
+| 2 — same letter | mailed **again** | 2 |
+
+A second envelope to a real person, and a second bill.
+
+**The fix is that transmission is the fact and the id is only metadata.** The
+mailing is recorded whenever the provider **accepted** the letter, id or no id;
+`postgrid_letter_id` stays nullable, because a missing id is *unknown*, not
+"this did not happen". The write-back is retried once and, if it still fails,
+logged and returned instead of swallowed. `db/migrations/334` puts the
+"you cannot un-mail a letter" rule in the database itself. The one case none of
+that can cover is written out below under *Clearing a stuck claim*.
+
 ## The send loop
 
 ```mermaid
@@ -61,11 +98,16 @@ flowchart TD
 
     SEND["mailBureauLetter → sendLetter<br/>POST PostGrid /letters"]
 
-    SEND -->|"ok"| MARK["status = 'sent'<br/>postgrid_letter_id = provider id<br/>mailed_at = now() — stamped HERE, after the answer"]
+    SEND -->|"ACCEPTED — ok:true, id or NO id"| MARK["status = 'sent'<br/>mailed_at = now() — stamped HERE, on acceptance<br/>postgrid_letter_id = the id, or stays NULL = unknown"]
     SEND -->|"NOTHING WAS TRANSMITTED<br/>preTransmission = true from the mailer,<br/>or the error text matches the fallback list"| REL["RELEASE the claim<br/>status back to what it was<br/>send_claimed_at = NULL<br/>mailed_at untouched (and NULL)"]
     SEND -->|"anything else<br/>(HTTP error, timeout, dropped socket)"| STUCK["claim KEPT, status stays 'sending'<br/>we do not know whether it went,<br/>so nothing auto-retries it"]
+    SEND -->|"the mailer answered neither ok nor an error"| STUCK
 
-    MARK --> CLOCK["dispute_cases.response_due_at = now() + 30 days<br/>only when it was NULL"]
+    MARK --> WROTE{"did that write succeed?"}
+    WROTE -->|"yes — the normal case"| CLOCK
+    WROTE -->|"no, twice over"| UNREC["mailingRecorded: false on the result<br/>+ unrecordedMailings on the send<br/>+ console.error DO NOT RE-SEND IT<br/>THE ROW STILL LOOKS CLEARABLE — reconcile by hand"]
+    UNREC --> CLOCK
+    CLOCK["dispute_cases.response_due_at = now() + 30 days<br/>only when it was NULL"]
     CLOCK --> EV[["event: repair.letters.sent"]]
     STUCK --> HUMAN["listStuckSendClaims → a staff member checks<br/>the provider's own record"]
     HUMAN --> CLEAR["clearStuckSendClaim(staffId, reason)<br/>status back to 'ready', claim released,<br/>who / when / why written to the row<br/>and to repair_decision_log"]
@@ -94,20 +136,28 @@ above the `fetch` call.
 message text. Under 332 it read only the text, against a list of eight fixed
 strings, and the fence's wording was not on the list.
 
-**The string list still exists, on purpose.** Two callers drop the flag: the
-`mailSender` closure in `api/repair/send.mjs` rebuilds the mailer's result as
-`{ ok, outcome, error }`, and `mailBureauLetter`'s own address refusals
-(`src/metro2/delivery/send.mjs`) are plain objects that never had one. All of
-those are genuinely pre-transmission and the list is what still catches them.
-Delete the list and they start keeping claims they should release; trust the
-list alone and the 332 bug comes back.
+**The live route now carries the flag.** The `mailSender` closure in
+`api/repair/send.mjs` used to rebuild the mailer's result as
+`{ ok, outcome, error }` and drop everything else, so the one path a staff
+member actually presses decided on the error text alone. It now passes
+`preTransmission` through exactly as the provider gave it, including absent —
+absent stays absent, because defaulting it to `true` would hand back the claim
+on a letter nobody can prove did not go out.
+
+**The string list still exists, on purpose.** `mailBureauLetter`'s own address
+refusals (`src/metro2/delivery/send.mjs:139`, `:158`, `:162`) are plain objects
+that never carried the flag, and `createFakeMailLetterProvider`'s failure return
+(`src/messaging/providers/mail-letter.mjs:342`) does not either. Those are
+genuinely pre-transmission and the list is what still catches them. Delete the
+list and they start keeping claims they should release; trust the list alone and
+the 332 bug comes back.
 
 ## Two facts, two columns, two indexes
 
 | | `send_claimed_at` | `mailed_at` |
 |---|---|---|
 | means | this row is **taken** | this row **was mailed** |
-| stamped | before the provider is called | only after the provider answered with an id |
+| stamped | before the provider is called | after the provider **accepted** the letter — `ok`, with or without an id |
 | released automatically | yes — when nothing was transmitted | **never** |
 | released by a human | yes — `clearStuckSendClaim`, on the record | **never, by anybody** |
 | its unique index | `uq_dispute_letters_one_send_claim` | `uq_dispute_letters_one_mailing` |
@@ -133,15 +183,35 @@ are both required and both stored on the row, and a
 `repair.letter.send_claim_cleared` entry goes to `repair_decision_log`, which
 `src/repair/lens.mjs` renders in plain English.
 
-It clears `send_claimed_at` only. It never touches `mailed_at`, so it cannot
-turn a letter that really went out into one that may go out again — that
-invariant is `uq_dispute_letters_one_mailing` and nothing in the code path can
-release a row from it.
+It clears `send_claimed_at` only. It never touches `mailed_at`.
 
-**It can be wrong in the other direction, and that is accepted.** If the letter
-did reach the provider and only the reply was lost, clearing lets a second one
-go out. That is why it is deliberate, attributed and recorded, and why nothing
-calls it on a timer.
+**The database enforces that, not just the reads above.** Three constraints, and
+a hand-written `UPDATE` hits them exactly as this function would:
+
+* `dispute_letters_mailed_implies_claimed_ck` (333) — `send_claimed_at` cannot
+  go back to NULL while `mailed_at` is set.
+* `dispute_letters_no_clear_after_mailing_ck` (334) — a clear cannot be stamped
+  at or after a mailing time. It is an ordering rule, not a flat ban: cleared at
+  T1, re-sent, mailed at T2 is the legitimate happy path and stays legal.
+* `dispute_letters_no_clear_after_provider_id_ck` (334) — a clear cannot be
+  stamped on a row that carries a provider id with no mailing time behind it.
+
+**THE HOLE THAT IS LEFT, and it is real.** All of that depends on the row saying
+the letter was mailed. If the write-back in `sendRepairLetters` could not be made
+— the database was unreachable for both of its two attempts — nothing in the
+table knows an envelope went, so nothing in the table can refuse a clear, and the
+letter can go out a second time. That case is no longer silent: it is logged as
+`MAILING NOT RECORDED — ... DO NOT RE-SEND IT`, returned on the letter's own
+result as `mailingRecorded: false`, and collected on the send's
+`unrecordedMailings`. A letter named there must be reconciled against the
+provider, never re-sent. **Nothing reads `unrecordedMailings` yet** — it reaches
+the HTTP response body and the function log and stops there.
+
+**A second way it can be wrong, and that one is accepted.** If the letter did
+reach the provider and only the reply was lost — a timeout, a dropped socket —
+`ok` was never `true`, so no mailing is recorded, and clearing lets a second one
+go out. That is why the clear is deliberate, attributed and recorded, and why
+nothing calls it on a timer.
 
 **NOT WIRED TO A SCREEN YET.** Both functions are exported and proved by test,
 and there is no HTTP route and no button. Until one exists a staff member cannot
@@ -179,6 +249,11 @@ before anything is transmitted, and Postgres decides who wins.
   stamps on rows still sitting in `sending`.
 * `dispute_letters.send_claimed_at` **NULL** — free to claim. Says nothing about
   whether anything was mailed; that is `mailed_at`.
+* `dispute_letters.postgrid_letter_id` **NULL** — **UNKNOWN**, never "not
+  mailed". The provider can accept a letter and answer with no id, and a row
+  with `mailed_at` set and this column NULL is exactly that letter. The
+  write-back `COALESCE`s it, so a later null can never wipe an id an earlier
+  write already got.
 * `dispute_letters.mail_cost_cents` **NULL** — UNKNOWN. It is not "free".
   **Nothing writes this column yet**; reading a price off the provider response
   is a later change.

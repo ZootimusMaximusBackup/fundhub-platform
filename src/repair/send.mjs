@@ -36,8 +36,10 @@ export class RepairSendError extends Error {
 // ever have. db/migrations/333 splits them:
 //
 //   send_claimed_at — this row is TAKEN. Stamped before the call. Releasable.
-//   mailed_at       — this row WAS MAILED. Stamped only after the provider
-//                     answered with an id. Never released, by anyone.
+//   mailed_at       — this row WAS MAILED. Stamped after the provider ACCEPTED
+//                     the letter — acceptance, not an id, because PostGrid can
+//                     answer 200 with no id in the body and the envelope is
+//                     still in the post. Never released, by anyone.
 //
 // and keys one partial unique index on each, over
 // (org_id, case_id, bureau, round, target):
@@ -334,6 +336,9 @@ export async function sendRepairLetters(db, {
   }
 
   const results = [];
+  // Letters the provider accepted that the database does not record. Empty is
+  // the normal case; anything in here needs a person, and must never be retried.
+  const unrecordedMailings = [];
   for (const letter of letters) {
     const bureau = String(letter.bureau || "").toUpperCase();
     if (!bureau) {
@@ -435,21 +440,96 @@ export async function sendRepairLetters(db, {
 
     const providerId = sent?.providerId || sent?.id || null;
     const letterId = claimLetterId;
-    if (letterId && providerId && db?.query) {
-      // THIS is where mailed_at is stamped — the provider answered and gave us
-      // an id, so the letter is in its hands. Not at claim time, which is what
-      // 332 did and what let a send that never happened kill the letter.
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // THE PROVIDER TOOK IT. THAT IS THE FACT. THE ID IS ONLY METADATA.
+    //
+    // This used to read `if (letterId && providerId && db?.query)`, and it is
+    // the whole of the last defect. PostGrid answering 200 with a body that
+    // carries no id gives `{ ok: true, providerId: null }`
+    // (src/messaging/providers/mail-letter.mjs), so the letter was posted and
+    // the entire write-back below was skipped. The row stayed
+    // status='sending', mailed_at NULL, postgrid_letter_id NULL — which is
+    // exactly the shape listStuckSendClaims() offers a staff member as "stuck"
+    // and clearStuckSendClaim() then releases. Reproduced end to end on a
+    // scratch database: press 1 mailed it, the row read as stuck, the clear
+    // succeeded, press 2 mailed it again. A second envelope to a real person
+    // and a second bill.
+    //
+    // So the gate is acceptance, not an id. `postgrid_letter_id` stays nullable
+    // and COALESCEd: a missing id is UNKNOWN, not "this did not happen"
+    // (CLAUDE.md §12), and a null must never wipe an id an earlier write got.
+    //
+    // Acceptance means positive evidence: the mailer said ok, or it handed back
+    // an id. A mailer that returns nothing at all said neither, and is handled
+    // below as an unknown outcome rather than silently counted as a mailing —
+    // inventing a mailed_at is the one mistake that kills a letter for ever.
+    const accepted = sent?.ok === true || providerId != null;
+
+    let mailingRecorded = null;   // null = there was no row to record it on
+    let mailingRecordError = null;
+
+    if (!accepted) {
+      // The mailer was called and answered neither yes nor no. Nobody can say
+      // whether an envelope went. Keep the claim (a retry is the one action
+      // that can mail twice) and hand it to a human via clearStuckSendClaim.
+      results.push({
+        bureau,
+        target: routing.target,
+        ok: false,
+        error: "mailer_no_answer",
+        letterId
+      });
+      continue;
+    }
+
+    if (letterId && db?.query) {
+      // THIS is where mailed_at is stamped — the provider accepted the letter,
+      // so it is in its hands. Not at claim time, which is what 332 did and
+      // what let a send that never happened kill the letter.
       // COALESCE so a re-run cannot move the recorded mailing time.
-      await db.query(
+      const recordMailing = () => db.query(
         `UPDATE dispute_letters
             SET status = 'sent',
-                postgrid_letter_id = $2,
+                postgrid_letter_id = COALESCE($2::text, postgrid_letter_id),
                 mailed_at = COALESCE(mailed_at, now()),
                 send_claimed_at = COALESCE(send_claimed_at, now())
           WHERE id = $1::uuid AND org_id = $3::uuid AND client_id = $4::uuid
             AND status <> 'delivered'`,
-        [letterId, String(providerId), orgId, clientId]
-      ).catch(() => {});
+        [letterId, providerId == null ? null : String(providerId), orgId, clientId]
+      );
+
+      // NOT SILENT. This write is the only thing standing between a mailed
+      // letter and a second envelope, and it used to end in `.catch(() => {})`
+      // — a momentary database error produced the same unrecorded mailing as
+      // the null id did, and nobody was told. One retry, then the failure is
+      // logged, carried on the letter's own result, and collected on the return
+      // value so the HTTP caller sees it.
+      try {
+        await recordMailing();
+        mailingRecorded = true;
+      } catch (first) {
+        try {
+          await recordMailing();
+          mailingRecorded = true;
+        } catch (second) {
+          mailingRecorded = false;
+          mailingRecordError = String(second?.message || second || "unknown").slice(0, 240);
+          unrecordedMailings.push({
+            letterId,
+            bureau,
+            target: routing.target,
+            providerId,
+            error: mailingRecordError
+          });
+          console.error(
+            "[repair.send] MAILING NOT RECORDED — the provider accepted this letter and the "
+            + "database does not say so. DO NOT RE-SEND IT. Reconcile against the provider by hand. "
+            + `letterId=${letterId} bureau=${bureau} target=${routing.target} `
+            + `providerId=${providerId ?? "none"} error=${mailingRecordError}`
+          );
+        }
+      }
     }
 
     // Start the bureau's 30-day clock. Nothing wrote response_due_at before this
@@ -501,7 +581,12 @@ export async function sendRepairLetters(db, {
       providerId,
       outcome: sent?.outcome || "sent",
       letterId,
-      ...(filingRecorded === null ? {} : { filingRecorded })
+      ...(filingRecorded === null ? {} : { filingRecorded }),
+      // Only ever present when it is false. A letter that went out and was not
+      // written down is not a detail to be inferred from a missing field.
+      ...(mailingRecorded === false
+        ? { mailingRecorded: false, mailingRecordError }
+        : {})
     });
   }
 
@@ -519,7 +604,14 @@ export async function sendRepairLetters(db, {
     });
   }
 
-  return { ok: anyOk, results };
+  // `unrecordedMailings` is present only when it has something in it, and when
+  // it does the answer is a person and not a retry: the letter IS in the post
+  // and the row that would stop a second one is not there.
+  return {
+    ok: anyOk,
+    results,
+    ...(unrecordedMailings.length ? { unrecordedMailings } : {})
+  };
 }
 
 
@@ -541,17 +633,33 @@ export async function sendRepairLetters(db, {
 // both stored on the row and written to repair_decision_log where
 // src/repair/lens.mjs renders it in plain words on the client's timeline.
 //
-// WHAT THIS CAN AND CANNOT DO.
-//   It clears send_claimed_at. It NEVER touches mailed_at, and it refuses
-//   outright on any row that carries one, or a provider id. So it cannot turn a
-//   letter that really went out into one that may go out again — that invariant
-//   lives in uq_dispute_letters_one_mailing and nothing here can release a row
-//   from it.
+// WHAT THIS CAN AND CANNOT DO. Read the exception; it is the whole risk.
 //
-//   It CAN be wrong in the other direction. If the letter did reach PostGrid and
-//   the reply was simply lost, clearing lets it be sent a second time. That risk
-//   is real, it is why this is deliberate and attributed rather than automatic,
-//   and it is why nothing calls this on a timer.
+//   It clears send_claimed_at. It NEVER touches mailed_at, and it refuses
+//   outright on any row that carries one, or a provider id.
+//
+//   THE DATABASE ENFORCES THAT, not just the four `if`s below. Two constraints,
+//   either of which alone kills the statement:
+//     dispute_letters_mailed_implies_claimed_ck (333) — send_claimed_at cannot
+//       go back to NULL while mailed_at is set, whoever writes the UPDATE.
+//     dispute_letters_no_clear_after_mailing_ck (334) — a clear cannot be
+//       recorded at or after a mailing time.
+//   So a hand-written UPDATE, or a future code path that forgets the reads
+//   above, is rejected by Postgres rather than by this function.
+//
+//   THE EXCEPTION, AND IT IS REAL. All of that is conditional on the row saying
+//   the letter was mailed. If the write-back in sendRepairLetters could not be
+//   made — the database was unreachable for those two attempts — the mailing is
+//   not on the row, and this function will happily clear it. That case is no
+//   longer silent: it is logged, returned on the letter's own result as
+//   mailingRecorded:false, and collected on the send's `unrecordedMailings`.
+//   But nothing in the database knows about it, so nothing in the database can
+//   refuse it. A letter named there must be reconciled, not re-sent.
+//
+//   It CAN also be wrong in the ordinary direction. If the letter did reach
+//   PostGrid and the reply was simply lost, clearing lets it be sent a second
+//   time. That risk is real, it is why this is deliberate and attributed rather
+//   than automatic, and it is why nothing calls this on a timer.
 
 /** How long a claim must have sat before a human may call it stuck. Short
     enough to be usable inside one support conversation, long enough that it

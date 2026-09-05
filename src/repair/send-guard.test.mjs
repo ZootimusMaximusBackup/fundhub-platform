@@ -223,3 +223,117 @@ test("a call that was made keeps the claim", async () => {
     "nobody can say whether the letter went, so nothing is released automatically"
   );
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THE PROVIDER TOOK IT — THAT IS THE MAILING, ID OR NO ID
+//
+// The gate here used to be `if (letterId && providerId)`. PostGrid answering
+// 200 with a body carrying no id returns { ok: true, providerId: null }, so the
+// letter was posted and the whole write-back was skipped: mailed_at NULL,
+// postgrid_letter_id NULL, claim held. That row then reads as "stuck" and a
+// staff member could release it, and it went out again.
+
+test("a mailer that says ok with no provider id still records the mailing", async () => {
+  const statements = [];
+  const params = [];
+  const db = {
+    async query(sql, args) {
+      statements.push(String(sql).replace(/\s+/g, " "));
+      params.push(args);
+      if (isClaim(sql)) return { rows: [{ prior_status: "ready" }] };
+      return { rows: [] };
+    }
+  };
+  const result = await send(db, async () => ({ ok: true, outcome: "sent" }));
+
+  assert.equal(result.ok, true);
+  assert.equal(result.results[0].providerId, null, "there genuinely is no id");
+  const write = statements.findIndex((s) => /mailed_at = COALESCE\(mailed_at, now\(\)\)/.test(s));
+  assert.ok(write >= 0, "the mailing is written down anyway");
+  assert.equal(
+    params[write][1], null,
+    "and the id stays NULL — unknown, not invented (CLAUDE.md §12)"
+  );
+  assert.match(
+    statements[write],
+    /postgrid_letter_id = COALESCE\(\$2::text, postgrid_letter_id\)/,
+    "a NULL id must never wipe an id an earlier write already got"
+  );
+});
+
+test("a mailer that answers neither yes nor no is not counted as a mailing", async () => {
+  const statements = [];
+  const db = {
+    async query(sql) {
+      statements.push(String(sql).replace(/\s+/g, " "));
+      if (isClaim(sql)) return { rows: [{ prior_status: "ready" }] };
+      return { rows: [] };
+    }
+  };
+  // No ok, no id. Inventing a mailed_at here would kill the letter for ever.
+  const result = await send(db, async () => ({ outcome: "who knows" }));
+
+  assert.equal(result.results[0].ok, false);
+  assert.equal(result.results[0].error, "mailer_no_answer");
+  assert.equal(
+    statements.some((s) => /mailed_at = COALESCE\(mailed_at, now\(\)\)/.test(s)), false,
+    "nothing is stamped"
+  );
+  assert.equal(
+    statements.some((s) => /send_claimed_at = NULL/.test(s)), false,
+    "and the claim is kept, because a retry is the one action that can mail twice"
+  );
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THE WRITE THAT PREVENTS THE SECOND ENVELOPE IS NOT ALLOWED TO FAIL QUIETLY
+//
+// It used to end in `.catch(() => {})`. A momentary database error produced the
+// same unrecorded mailing as the missing id did, and nobody was told.
+
+test("a database failure on the mailing write-back is retried, then surfaced", async () => {
+  let writeAttempts = 0;
+  const db = {
+    async query(sql) {
+      if (isClaim(sql)) return { rows: [{ prior_status: "ready" }] };
+      if (/mailed_at = COALESCE\(mailed_at, now\(\)\)/.test(String(sql).replace(/\s+/g, " "))) {
+        writeAttempts += 1;
+        throw new Error("connection terminated unexpectedly");
+      }
+      return { rows: [] };
+    }
+  };
+  const errs = [];
+  const realError = console.error;
+  console.error = (...a) => errs.push(a.join(" "));
+  let result;
+  try {
+    result = await send(db, async () => ({ ok: true, providerId: "ltr_yes", outcome: "sent" }));
+  } finally {
+    console.error = realError;
+  }
+
+  assert.equal(writeAttempts, 2, "tried twice before giving up");
+  assert.equal(result.results[0].ok, true, "the letter DID go out — that is still true");
+  assert.equal(result.results[0].mailingRecorded, false);
+  assert.match(result.results[0].mailingRecordError, /connection terminated/);
+  assert.equal(result.unrecordedMailings.length, 1, "and the send as a whole carries it up");
+  assert.equal(result.unrecordedMailings[0].letterId, IDS.letterId);
+  assert.equal(result.unrecordedMailings[0].providerId, "ltr_yes");
+  assert.ok(
+    errs.some((e) => /MAILING NOT RECORDED/.test(e) && /DO NOT RE-SEND IT/.test(e)),
+    "and it is logged in words a person can act on"
+  );
+});
+
+test("a send whose mailing WAS recorded says nothing about it", async () => {
+  const db = {
+    async query(sql) {
+      if (isClaim(sql)) return { rows: [{ prior_status: "ready" }] };
+      return { rows: [] };
+    }
+  };
+  const result = await send(db, async () => ({ ok: true, providerId: "ltr_ok", outcome: "sent" }));
+  assert.equal("mailingRecorded" in result.results[0], false);
+  assert.equal("unrecordedMailings" in result, false, "the normal case is silent");
+});
