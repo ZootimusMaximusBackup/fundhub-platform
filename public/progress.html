@@ -1003,6 +1003,24 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
         });
         return;
       }
+      /* ACCEPTED, BUT NO LINK YET — and this is NOT a failure, so it must not
+         say one. api/paid-services.mjs answers ok:true with checkout_pending
+         when there is no URL to hand over: either the losing side of a genuine
+         race, where the winning press is minting the link this second and a
+         second link would be a second charge, or a mint that could not complete.
+         The page cannot tell those apart and does not pretend to. What it can
+         say truthfully in both: no card was touched, and the link is not ready.
+         Saying "that did not go through" here would be wrong in the race case —
+         it went through fine and somebody else's press is finishing it. */
+      if (r.ok && !url) {
+        return dialog({
+          title: "Your payment page is not ready yet",
+          sub: "Nothing has been charged and no card has been touched. "
+             + "Give it a moment and press the button again — if it keeps happening, message us and we will set it up for you.",
+          actions: [{ label: "Close", ghost: true }]
+        });
+      }
+
       if (r.status === 404 || r.status === 405) {
         /* Wave 2 owns this endpoint. Until it lands this is the honest answer,
            and it is deliberately not a fake success. */
@@ -1020,9 +1038,16 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
          there and this page's line is the fallback for when it is not. */
       var said = r.body && typeof r.body.message === "string" && r.body.message.trim();
       if (said) {
+        /* THEIR SENTENCE, NOT OURS, and not both. src/paid-services/refusals.mjs
+           already ends most refusals with "Nothing has been charged", so
+           appending it unconditionally printed it twice in one dialog. Added
+           only when their sentence does not already carry the reassurance —
+           which it must, because it is the one thing a person needs to read
+           after pressing a button that was about to take money. */
+        var reassures = /nothing has been charged|no card/i.test(said);
         return dialog({
           title: r.status === 409 ? "We could not start that round" : "That did not go through",
-          sub: esc(said) + " Nothing has been charged.",
+          sub: esc(said) + (reassures ? "" : " Nothing has been charged."),
           actions: [{ label: "Close", ghost: true }]
         });
       }
