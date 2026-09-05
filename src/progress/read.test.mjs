@@ -66,9 +66,18 @@ describe("the paid round offer", () => {
   test("prices come from src/waypoints/pricing.mjs and are integer cents", () => {
     const offer = paidRoundOffer({ repairPath: true });
     const by = Object.fromEntries(offer.components.map((c) => [c.key, c]));
-    assert.equal(by.round_base.priceCents, ROUND_BASE_CENTS);
-    assert.equal(by.creditor_letter.priceCents, CREDITOR_LETTER_CENTS);
-    assert.equal(by.escalation_filings.priceCents, ESCALATION_FILINGS_CENTS);
+    /* THE CONTRACT'S KEYS, not the internal line codes. These were round_base /
+       creditor_letter / escalation_filings — src/waypoints/pricing.mjs's private
+       spelling — while GET /api/paid-services and
+       docs/workflows/portal-progress-contract.md:108-110 both said base /
+       creditor / cfpb_and_ag. Two reads of one product, two sets of keys, and the
+       screen decides which extras to buy from them. The prices are still asserted
+       against the same constants, so this is not a looser test. */
+    assert.equal(by.base.priceCents, ROUND_BASE_CENTS);
+    assert.equal(by.creditor.priceCents, CREDITOR_LETTER_CENTS);
+    assert.equal(by.cfpb_and_ag.priceCents, ESCALATION_FILINGS_CENTS);
+    assert.deepEqual(Object.keys(by), ["base", "creditor", "cfpb_and_ag"],
+      "the keys a screen maps its checkboxes from are the contract's");
     for (const c of offer.components) assert.ok(Number.isInteger(c.priceCents));
   });
 

@@ -67,12 +67,11 @@ import { clientRepairView } from "../repair/portal.mjs";
 import { readRepairStage, REPAIR_PIPELINE } from "../repair/pipeline.mjs";
 import { onRepairPath } from "../repair/on-repair-path.mjs";
 import { listWaypoints } from "../waypoints/store.mjs";
-import { priceDisputeRound, PRICE_CODES } from "../waypoints/pricing.mjs";
 /* The PUBLIC name of the buyable service, imported rather than retyped — see
    publicServiceKey() below for why this file must not emit the stored one.
    netlify/functions/api.mjs imports every handler into one process, so
    round.mjs is already loaded on any request that reaches this file. */
-import { SERVICE_KEY as PAID_ROUND_PUBLIC_KEY } from "../paid-services/round.mjs";
+import { SERVICE_KEY as PAID_ROUND_PUBLIC_KEY, roundPriceList } from "../paid-services/round.mjs";
 import { roundLadderEntry } from "../metro2/letters/catalog.mjs";
 import {
   personalPanels, businessPanels, middleScore, scoreSeries, scoresOfResult, isoOrNull
@@ -438,12 +437,20 @@ export function publicServiceKey(storedKind) {
 }
 
 export function paidRoundOffer({ paidRows = [], repairPath = false } = {}) {
-  const all = priceDisputeRound({ creditorLetter: true, escalationFilings: true });
-  const byCode = new Map(all.components.map((c) => [c.code, c]));
-  const component = (code, required) => {
-    const c = byCode.get(code);
-    return { key: code, label: c.label, priceCents: c.amount_cents, required };
-  };
+  /* THE COMPONENT LIST IS NOT BUILT HERE. It comes from roundPriceList()
+     (src/paid-services/round.mjs), which is the same list GET /api/paid-services
+     serves.
+     THIS FILE USED TO BUILD ITS OWN, KEYED ON PRICE_CODES — round_base,
+     creditor_letter, escalation_filings. Those are the INTERNAL line codes from
+     src/waypoints/pricing.mjs. The contract
+     (docs/workflows/portal-progress-contract.md:108-110) and the buy endpoint
+     both name the same three things base / creditor / cfpb_and_ag, so the two
+     reads of one product handed a screen two different sets of keys. Measured
+     against both live endpoints on one client, 2026-09-05.
+     It is the same fault as the serviceKey above and in the same function: an
+     internal value emitted as a public one. Reusing the public list is also the
+     only way the add-on prices stay derived by subtraction from what is actually
+     charged, which is the property roundPriceList()'s own header exists to keep. */
   const inFlight = (paidRows || []).some(
     (r) => r.service_kind === PAID_ROUND_SERVICE_KIND && IN_FLIGHT_STATUSES.has(r.status)
   );
@@ -454,11 +461,7 @@ export function paidRoundOffer({ paidRows = [], repairPath = false } = {}) {
     // one rule for that and it fails closed, so an unreadable entitlement table
     // hides the button rather than selling a round to a course buyer (F35).
     available: !!repairPath && !inFlight,
-    components: [
-      component(PRICE_CODES.ROUND_BASE, true),
-      component(PRICE_CODES.CREDITOR_LETTER, false),
-      component(PRICE_CODES.ESCALATION_FILINGS, false)
-    ],
+    components: roundPriceList(),
     inFlight
   };
 }

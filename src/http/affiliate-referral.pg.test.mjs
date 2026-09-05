@@ -345,5 +345,30 @@ describe("refer a friend", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () =>
       assert.ok(sellable.includes(key),
         `the progress page offers "${key}" and the buy endpoint does not sell it`);
     }
+
+    /* AND THE COMPONENTS INSIDE IT, for the same reason and the same fault.
+       The progress endpoint used to build its own component list keyed on the
+       INTERNAL line codes (round_base, creditor_letter, escalation_filings)
+       while the buy endpoint and the contract both used base, creditor,
+       cfpb_and_ag. Two reads of one product, two sets of keys — and the screen
+       derives which extras to buy from those keys, so it would have posted
+       both add-ons as false and charged the base rate for a round the client
+       had ticked two boxes on. Neither endpoint's own suite could see it. */
+    const pRound = (progress.paidServices || []).find((x) => x.serviceKey === "paid_round");
+    const sRound = (priceList.services || []).find((x) => (x.serviceKey || x.service_key) === "paid_round");
+    assert.ok(pRound && sRound, "the round is missing from one of the two reads");
+    assert.deepEqual(
+      pRound.components.map((c) => c.key),
+      sRound.components.map((c) => c.key),
+      "the two endpoints describe one product with different component keys"
+    );
+    assert.deepEqual(
+      pRound.components.map((c) => c.priceCents),
+      sRound.components.map((c) => c.priceCents),
+      "the two endpoints quote different prices for one product"
+    );
+    /* And the keys are the contract's, not either endpoint's private spelling. */
+    assert.deepEqual(pRound.components.map((c) => c.key), ["base", "creditor", "cfpb_and_ag"],
+      "portal-progress-contract.md:108-110 names these three");
   });
 });

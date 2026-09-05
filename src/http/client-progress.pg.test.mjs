@@ -480,7 +480,21 @@ describe("/api/read/client-progress", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
     const KNOWN_REGULATOR_STRINGS = new Set([
       "CFPB complaint",
       "State attorney general complaint",
-      "CFPB and state attorney general filings",
+      /* THE ADD-ON'S PRICE LINE, and it got SAFER rather than merely different.
+         It used to read "CFPB and state attorney general filings" — waved through
+         by this allowlist even though it pairs a regulator with a filing word,
+         because it is a price line and not a claim. It now reads without
+         "filings", because the progress endpoint serves roundPriceList()
+         (src/paid-services/round.mjs) instead of building its own list from the
+         internal line codes, and that is the wording
+         docs/workflows/portal-progress-contract.md:110 specifies.
+         The difference is worth the words: a client reading "…filings — $20"
+         could reasonably believe they are buying a filing. Nothing in this
+         system records whether a complaint was ever submitted
+         (src/metro2/letters/catalog.mjs:57-65), so the shorter label is the one
+         that does not imply it. The old string is deliberately NOT kept here —
+         if it comes back on this surface, this test should fail. */
+      "CFPB and state attorney general",
       // escalations[].target — a machine enum the screen switches on, not copy.
       "cfpb",
       "state_ag"

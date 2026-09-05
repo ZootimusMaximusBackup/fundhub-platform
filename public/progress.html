@@ -965,16 +965,17 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
        boolean per optional extra, not a list of component keys — it refuses any
        `service` but "paid_round", and the base is never optional so it is not
        sent. The component keys the read endpoint hands us (round_base,
-       creditor_letter, escalation_filings — src/waypoints/pricing.mjs:26) are
-       what the checkboxes are keyed on, so the two booleans are derived from
-       them rather than from the order the boxes happen to be in. */
+       creditor, cfpb_and_ag — roundPriceList() in src/paid-services/round.mjs,
+       and the same three the contract names at :108-110) are what the checkboxes
+       are keyed on, so the two booleans are derived from them rather than from
+       the order the boxes happen to be in. */
     var wants = function (k) { return comps.indexOf(k) !== -1; };
     api(PAID_REQUEST_PATH, {
       method: "POST",
       body: {
         service: "paid_round",
-        creditor_letter: wants("creditor_letter"),
-        escalation_filings: wants("escalation_filings"),
+        creditor_letter: wants("creditor"),
+        escalation_filings: wants("cfpb_and_ag"),
         /* Ties the purchase to the checklist item it was bought from, when the
            press came from one. Null is fine — the endpoint treats it as absent. */
         waypoint_id: paidWaypointId,
