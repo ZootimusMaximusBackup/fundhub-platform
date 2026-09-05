@@ -53,7 +53,7 @@ flowchart TD
     CANT --> B_repair[repair — 5 blocked]
     CANT --> B_social[social — 1 blocked]
     CANT --> B_staff[staff — 3 blocked]
-    CANT --> B_top_level[Everything else — 34 blocked]
+    CANT --> B_top_level[Everything else — 35 blocked]
     CANT --> B_trials[trials — 2 blocked]
 ```
 
@@ -213,6 +213,7 @@ flowchart TD
 | `/api/messages` | POST | staff |
 | `/api/messages-outbound` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager |
 | `/api/ops/hire-closer` | POST | owner, admin |
+| `/api/paid-services` | GET, POST | staff, client |
 | `/api/partner-addons` | GET, POST | owner, admin |
 | `/api/partner-brand/verify-domain` | POST | owner, admin |
 | `/api/partners/approve` | POST | owner, admin |

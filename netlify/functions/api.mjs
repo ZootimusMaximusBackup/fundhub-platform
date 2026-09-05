@@ -221,6 +221,7 @@ import documentById from "../../api/documents/[id].mjs";
 import documentsUpload from "../../api/documents-upload.mjs";
 import documentsDownload from "../../api/documents-download.mjs";
 import paymentLinks from "../../api/payment-links.mjs";
+import paidServices from "../../api/paid-services.mjs";
 import contracts from "../../api/contracts.mjs";
 import readContracts from "../../api/read/contracts.mjs";
 import readPortalContracts from "../../api/read/portal-contracts.mjs";
@@ -914,6 +915,13 @@ export const ROUTES = {
   // (src/adapters/commas.mjs buildCommasCheckoutUrl), never a live Commas API
   // call. Routed in the same commit as the handler and the migration.
   "payment-links": paymentLinks,
+
+  /* The self-serve paid round (331_paid_service_requests.sql,
+     src/paid-services/). GET the price list, POST to mint a hosted checkout
+     link. Charges nothing — no card is readable from this process. A HYPHEN and
+     no slash on purpose: routes.test.mjs forbids a key under the "documents/"
+     prefix branch, and a flat key is resolved by the exact lookup. */
+  "paid-services": paidServices,
 
   // ── The contract generator (124_contracts.sql, src/contracts/) ─────────────
   //

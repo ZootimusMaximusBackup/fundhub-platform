@@ -25,8 +25,8 @@ flowchart TD
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 1 route]
     CAN --> A_public[public — 8 routes]
-    CAN --> A_read[Reading data — 4 routes]
-    CAN --> A_top_level[Everything else — 7 routes]
+    CAN --> A_read[Reading data — 3 routes]
+    CAN --> A_top_level[Everything else — 8 routes]
     CAN --> A_trials[trials — 1 route]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 183 routes]
@@ -85,6 +85,7 @@ flowchart TD
 | `/api/health` | — | anyone |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
+| `/api/paid-services` | GET, POST | staff, client |
 | `/api/public/affiliate-click` | POST | anyone |
 | `/api/public/education-enroll` | POST | **not a sign-in** — provider signature |
 | `/api/public/funnel-checkout` | GET, POST | **not a sign-in** — provider signature |
@@ -93,7 +94,6 @@ flowchart TD
 | `/api/public/partner-page` | GET | anyone |
 | `/api/public/survey-submit` | POST | **not a sign-in** — provider signature |
 | `/api/public/unsubscribe` | — | anyone |
-| `/api/read/client-progress` | GET | staff, client |
 | `/api/read/entitlements` | GET | employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager<br>plus: client |
 | `/api/read/portal-contracts` | GET | staff, client |
 | `/api/read/portal-summary` | GET | staff, client |
