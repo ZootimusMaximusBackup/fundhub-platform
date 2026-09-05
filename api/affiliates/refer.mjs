@@ -57,17 +57,14 @@ import { safeError } from "../../src/http/health.mjs";
 
 /* The share link a client hands to a friend.
  *
- * public/start.html:34 reads `ref` (or `a1`) off the query string, stores it,
- * records the visit through api/public/affiliate-click.mjs and forwards to the
- * apply funnel with the code attached. So this is the existing front door and
- * not a new one — the only new thing is who is holding the key.
- *
- * The base is resolved exactly as src/messaging/unsubscribe.mjs:234 resolves
- * it: the configured base, then Netlify's own URL, then the live site. */
-export function shareUrlFor(code, env = process.env) {
-  const base = String(env.APP_BASE_URL || env.URL || "https://fundhub.ai").replace(/\/+$/, "");
-  return `${base}/start.html?ref=${encodeURIComponent(code)}`;
-}
+ * MOVED to src/affiliates/share-link.mjs and re-exported here, because
+ * src/progress/read.mjs returns the same link on every page load and a handler
+ * is the wrong thing for a read path to import — see that file's header. It is
+ * re-exported rather than just imported so that the several tests and callers
+ * naming `refer.mjs` do not all have to move in the same commit.
+ */
+export { shareUrlFor } from "../../src/affiliates/share-link.mjs";
+import { shareUrlFor } from "../../src/affiliates/share-link.mjs";
 
 /* The name on the affiliate row. The account's own name first, then the
  * client's, then the email's local part. Never a blank: affiliates.name is NOT

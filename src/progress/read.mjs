@@ -68,6 +68,11 @@ import { readRepairStage, REPAIR_PIPELINE } from "../repair/pipeline.mjs";
 import { onRepairPath } from "../repair/on-repair-path.mjs";
 import { listWaypoints } from "../waypoints/store.mjs";
 import { priceDisputeRound, PRICE_CODES } from "../waypoints/pricing.mjs";
+/* The PUBLIC name of the buyable service, imported rather than retyped — see
+   publicServiceKey() below for why this file must not emit the stored one.
+   netlify/functions/api.mjs imports every handler into one process, so
+   round.mjs is already loaded on any request that reaches this file. */
+import { SERVICE_KEY as PAID_ROUND_PUBLIC_KEY } from "../paid-services/round.mjs";
 import { roundLadderEntry } from "../metro2/letters/catalog.mjs";
 import {
   personalPanels, businessPanels, middleScore, scoreSeries, scoresOfResult, isoOrNull
@@ -77,6 +82,8 @@ import {
   escalationStates, ESCALATION_LETTERS_SQL, ESCALATION_ROUNDS
 } from "./escalations.mjs";
 import { COMPLAINT_TARGET } from "../metro2/rounds/complaint-filing.mjs";
+/* The one share-link builder in this repository. See readReferral() below. */
+import { shareUrlFor } from "../affiliates/share-link.mjs";
 
 /* The deliverable subtype that IS the personal credit report. Written by
    src/underwrite/funding-letter-pdf.mjs's FUNDING_ANALYSIS_SUBTYPE map, which is
@@ -228,7 +235,7 @@ export async function readClientProgress(db, { orgId, clientId, now = new Date()
     ).then((r) => r.rows))
   ]);
 
-  const referral = await readReferral(db, { orgId, customFields });
+  const referral = await readReferral(db, { orgId, clientId, customFields });
 
   const stageKey = await soft("repair_stage", null,
     () => readRepairStage(db, { orgId, clientId }));
@@ -324,10 +331,12 @@ export async function readClientProgress(db, { orgId, clientId, now = new Date()
  * staff tooling describe the same row with different words. The stored value is
  * returned. `overdue` and `paidAlternative` are exactly as specified.
  *
- * DEVIATION (contract: `paidAlternative.serviceKey`). The contract's example is
- * "paid_round"; the stored kinds are dispute_round | credit_pull |
- * funding_application (db/migrations/331) and the store writes those. The stored
- * value is returned, so a screen can post it straight back.
+ * NO LONGER A DEVIATION, and the reason the old one gave was wrong. This used to
+ * return the STORED kind (dispute_round | credit_pull | funding_application,
+ * db/migrations/331) with the note "so a screen can post it straight back". A
+ * screen cannot: api/paid-services.mjs refuses anything but "paid_round" with
+ * `unknown_service`. The contract's "paid_round" is now what is returned, via
+ * publicServiceKey(), and the stored kind stays internal where it belongs.
  *
  * `paidAlternative` is null when there is no paid option. Null means NONE. It
  * must never be rendered as free — and it cannot silently become a zero price,
@@ -345,7 +354,10 @@ function waypointView(row) {
     overdue: !!row.overdue,
     completedAt: isoOrNull(row.completed_at),
     paidAlternative: price == null ? null : {
-      serviceKey: row.paid_alternative_kind || null,
+      // Translated for the same reason paidServices[].serviceKey is — see
+      // publicServiceKey(). A screen posts this value to api/paid-services.mjs,
+      // which refuses the stored kind outright.
+      serviceKey: row.paid_alternative_kind ? publicServiceKey(row.paid_alternative_kind) : null,
       label: row.paid_alternative_label || null,
       priceCents: Number(price)
     }
@@ -391,6 +403,40 @@ export function waitingOn({ stageKey, next }) {
  * A PAID ROUND DOES NOT CONSUME repair_programs.rounds_cap. Nothing in this
  * function reads the cap, and `stage.roundCap` above is a separate counter.
  */
+/* publicServiceKey — the stored kind translated to the name a screen may POST.
+ *
+ * THESE ARE TWO DIFFERENT NAMES AND THE DIFFERENCE IS LOAD-BEARING.
+ *
+ *   paid_service_requests.service_kind is 'dispute_round' | 'credit_pull' |
+ *   'funding_application' — a CHECK-constrained column (331:147-149). It is the
+ *   INTERNAL name of the work.
+ *
+ *   api/paid-services.mjs accepts exactly one service name and refuses every
+ *   other with `unknown_service`: SERVICE_KEY, which is "paid_round"
+ *   (src/paid-services/round.mjs:79). That is the PUBLIC name, and it is the
+ *   name docs/workflows/portal-progress-contract.md:106 specifies.
+ *
+ * This file used to return the stored kind for both `paidServices[].serviceKey`
+ * and `waypoints[].paidAlternative.serviceKey`, with a comment reasoning that a
+ * screen could "post it straight back". IT COULD NOT. Posting `dispute_round`
+ * back to api/paid-services.mjs is a 400 with `unknown_service`, and the front
+ * end selects the round card by matching "paid_round" — so the card did not
+ * render at all and, had it rendered, the button would have failed. Measured on
+ * the merge of this branch with the front end, 2026-09-05.
+ *
+ * So the translation happens here, at the boundary, which is where a public name
+ * and a storage value are supposed to diverge. Rows are still MATCHED on the
+ * stored kind — see inFlight below; nothing about the query changed.
+ *
+ * A kind with no public endpoint yet passes through unchanged rather than being
+ * given an invented public name. The screen has an honest "not switched on yet"
+ * state for a key it does not recognise, which is the correct answer for
+ * credit_pull and funding_application today: nothing sells them.
+ */
+export function publicServiceKey(storedKind) {
+  return storedKind === PAID_ROUND_SERVICE_KIND ? PAID_ROUND_PUBLIC_KEY : storedKind;
+}
+
 export function paidRoundOffer({ paidRows = [], repairPath = false } = {}) {
   const all = priceDisputeRound({ creditorLetter: true, escalationFilings: true });
   const byCode = new Map(all.components.map((c) => [c.code, c]));
@@ -402,7 +448,8 @@ export function paidRoundOffer({ paidRows = [], repairPath = false } = {}) {
     (r) => r.service_kind === PAID_ROUND_SERVICE_KIND && IN_FLIGHT_STATUSES.has(r.status)
   );
   return {
-    serviceKey: PAID_ROUND_SERVICE_KIND,
+    // The PUBLIC name. The stored kind is still what inFlight matches on below.
+    serviceKey: publicServiceKey(PAID_ROUND_SERVICE_KIND),
     // Offered to clients on the optimisation path only. onRepairPath() is the
     // one rule for that and it fails closed, so an unreadable entitlement table
     // hides the button rather than selling a round to a course buyer (F35).
@@ -418,27 +465,49 @@ export function paidRoundOffer({ paidRows = [], repairPath = false } = {}) {
 
 /* ── referral ──────────────────────────────────────────────────────────────
  *
- * DEVIATION (contract: `referral`). There is NO link in this schema from a
- * client to their own affiliate row. `affiliates` has no client_id, `clients`
- * has no affiliate_id, and accounts_email_uniq (044) means one email cannot
- * hold both a client and an affiliate account in the same org. So today this
- * always answers `enrolled: false`, and the field is honest rather than wrong.
+ * NO LONGER A DEVIATION. When this was written there genuinely was no link from
+ * a client to their own affiliate row: accounts_subject_ck (044:65-71) allowed
+ * exactly one subject per account, so a client account could not carry an
+ * affiliate_id, and accounts_email_uniq meant a second account was not available
+ * either. That note was correct on the day it was written.
  *
- * It is read from `clients.custom_fields.referral_affiliate_id` so that it
- * starts answering true the moment the referral lane writes that link, without
- * this file changing. custom_fields is the repository's existing extension
- * point for exactly this — cf_funding_advisor_user_id is the same pattern, read
- * the same way by api/read/portal-summary.mjs.
+ * db/migrations/340_client_light_affiliate.sql relaxed that constraint in one
+ * direction — a client may also hold an affiliate_id — which is the owner
+ * decision in portal-rebuild-plan.md section 4 ("clients become light
+ * affiliates"). So the link exists now, and this reads it.
  *
  * `code` is affiliates.tracking_id, the AFF-nnnnnn a trigger assigns on insert.
- * `shareUrl` stays null: nothing in this repository stores the public base URL
- * a share link would be built from, and guessing an origin from request headers
- * is how you mint a link that 404s. The front end knows its own origin and can
- * build the link from `code`.
+ *
+ * `shareUrl` IS RETURNED NOW, and not built from request headers — the old note
+ * was right that guessing an origin mints a link that 404s. shareUrlFor()
+ * (api/affiliates/refer.mjs) resolves the configured base exactly as
+ * src/messaging/unsubscribe.mjs:234 does, and it is the ONE share-link builder
+ * in this repository. Returning it here means the page and the enrolment reply
+ * cannot disagree about a link the client is about to hand to a friend.
  */
-async function readReferral(db, { orgId, customFields }) {
+async function readReferral(db, { orgId, clientId, customFields }) {
   const none = { enrolled: false, shareUrl: null, code: null };
   return soft("referral", none, async () => {
+    /* THE REAL LINK FIRST. accounts.affiliate_id on the client's own account.
+       A unique index sits under it (044:81) and the CHECK that allows it is
+       explicit (340), so exactly one affiliate row can ever be on one account —
+       which a jsonb field cannot promise. api/affiliates/refer.mjs is what
+       writes it, inside the same transaction that creates the affiliate row. */
+    const linked = await db.query(
+      `SELECT a.tracking_id
+         FROM accounts acc
+         JOIN affiliates a ON a.id = acc.affiliate_id AND a.org_id = acc.org_id
+        WHERE acc.client_id = $1::uuid AND acc.org_id = $2::uuid
+        LIMIT 1`,
+      [clientId, orgId]
+    );
+    const linkedCode = linked.rows[0]?.tracking_id || null;
+    if (linkedCode) return { enrolled: true, shareUrl: shareUrlFor(linkedCode), code: linkedCode };
+
+    /* THE FALLBACK, kept deliberately. custom_fields.referral_affiliate_id was
+       this file's original source and may already hold a link on a file that
+       predates the account column. Reading both means neither lane's assumption
+       silently stops working; the real link simply wins when both exist. */
     const raw = customFields?.referral_affiliate_id;
     const id = raw == null ? "" : String(raw).trim();
     if (!id) return none;
@@ -447,7 +516,7 @@ async function readReferral(db, { orgId, customFields }) {
       [id, orgId]
     );
     const code = a.rows[0]?.tracking_id || null;
-    return code ? { enrolled: true, shareUrl: null, code } : none;
+    return code ? { enrolled: true, shareUrl: shareUrlFor(code), code } : none;
   });
 }
 

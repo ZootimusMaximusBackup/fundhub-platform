@@ -280,4 +280,70 @@ describe("refer a friend", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () =>
   test("an anonymous caller is refused", async () => {
     assert.equal((await call("/api/read/affiliate-portal", null)).status, 401);
   });
+
+  // ── the seam between the two lanes ───────────────────────────────────────
+
+  test("pressing the button makes the PROGRESS endpoint report the referral", async () => {
+    /* THE ONE THING NEITHER LANE COULD TEST ALONE, and it is where they were
+       wired together wrongly. The referral half writes accounts.affiliate_id;
+       the progress page reads `referral` off /api/read/client-progress. Those
+       were built in separate lanes against a written contract, and the read half
+       was originally written to answer `enrolled: false` always — correctly,
+       because when it was written accounts_subject_ck forbade a client account
+       from holding an affiliate_id at all. Migration 340 changed that. Without
+       this test, both halves pass their own suites while the button does
+       nothing a client can see. */
+    const enrol = await json(await post("/api/affiliates/refer", tokA));
+    assert.ok(enrol.code, "enrolment returned no code");
+
+    const progress = await json(await call("/api/read/client-progress", tokA));
+    assert.equal(progress.ok, true, "the progress endpoint refused an enrolled client");
+    assert.ok(progress.referral, "no referral block on the progress response");
+    assert.equal(progress.referral.enrolled, true,
+      "the client enrolled, and the page would still show them the join button");
+    assert.equal(progress.referral.code, enrol.code,
+      "the page and the enrolment reply name two different codes");
+    assert.equal(progress.referral.shareUrl, enrol.shareUrl,
+      "the page and the enrolment reply hand out two different links for one code");
+    assert.match(String(progress.referral.shareUrl), /[?&]ref=/,
+      "the share link carries no referral code");
+  });
+
+  test("a client who has not pressed it is reported as not enrolled, not as an error", async () => {
+    const c = (await db.query(
+      `INSERT INTO clients (org_id, first_name, last_name, email)
+       VALUES ($1,'Refer','Delta',$2) RETURNING id`,
+      [org, `${MARK}.delta@example.com`])).rows[0].id;
+    const a = await createAccount(db, {
+      orgId: org, kind: "client", email: `${MARK}.delta2@example.com`,
+      password: "a-long-enough-password-1", invitedBy: staffId, clientId: c
+    });
+    const tok = (await createAccountSession(db, { accountId: a.id, orgId: org })).token;
+
+    const progress = await json(await call("/api/read/client-progress", tok));
+    assert.equal(progress.ok, true);
+    assert.equal(progress.referral.enrolled, false);
+    assert.equal(progress.referral.code, null, "a code was invented for somebody with none");
+    assert.equal(progress.referral.shareUrl, null, "a share link was built with no code behind it");
+  });
+
+  test("the round the progress page offers is the one the buy endpoint accepts", async () => {
+    /* THE SECOND SEAM, and it was broken the same way. The read endpoint returned
+       the STORED kind 'dispute_round'; api/paid-services.mjs refuses every service
+       but 'paid_round' with `unknown_service`, and the screen selects the round
+       card by matching that same name. So the card did not render, and if it had,
+       the button would have 400'd. Asserted here across BOTH endpoints, because
+       neither one's own suite can see the mismatch. */
+    const progress = await json(await call("/api/read/client-progress", tokA));
+    const offered = (progress.paidServices || []).map((s) => s.serviceKey);
+
+    const priceList = await json(await call("/api/paid-services", tokA));
+    assert.equal(priceList.ok, true, "the price list refused a client");
+    const sellable = (priceList.services || []).map((s) => s.serviceKey || s.service_key);
+
+    for (const key of offered) {
+      assert.ok(sellable.includes(key),
+        `the progress page offers "${key}" and the buy endpoint does not sell it`);
+    }
+  });
 });

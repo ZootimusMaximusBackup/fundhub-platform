@@ -33,6 +33,12 @@ import { createSession } from "../auth/session.mjs";
 import { moveRepairCard } from "../repair/pipeline.mjs";
 import { upsertWaypoint, requestPaidService } from "../waypoints/store.mjs";
 import { priceDisputeRound } from "../waypoints/pricing.mjs";
+/* The one name api/paid-services.mjs will accept on a POST. Asserting against
+   this rather than a literal is the point: the two assertions below used to
+   pin "dispute_round", which is the STORED kind (331:147-149) and is refused by
+   that endpoint with `unknown_service`. So the response satisfied its test and
+   could not be acted on. */
+import { SERVICE_KEY } from "../paid-services/round.mjs";
 import { claimsFiled } from "../progress/timeline.mjs";
 import handler from "../../api/read/client-progress.mjs";
 
@@ -369,7 +375,10 @@ describe("/api/read/client-progress", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
     assert.strictEqual(by["Proof of address"].paidAlternative, null,
       "no paid alternative is null — it is not free and it is not zero");
     assert.equal(by["Run a round now"].paidAlternative.priceCents, 10000);
-    assert.equal(by["Run a round now"].paidAlternative.serviceKey, "dispute_round");
+    assert.equal(by["Run a round now"].paidAlternative.serviceKey, SERVICE_KEY,
+      "the key a screen posts back must be the one api/paid-services.mjs accepts");
+    assert.equal(by["Run a round now"].paidAlternative.serviceKey, "paid_round",
+      "and that is the value docs/workflows/portal-progress-contract.md:87 specifies");
     assert.strictEqual(by["Mail round 2"].overdue, false, "no due date is not overdue");
   });
 
@@ -570,7 +579,10 @@ describe("/api/read/client-progress", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
 
   test("MID: the paid round is offered, priced from pricing.mjs, and not in flight", async () => {
     const b = await load("mid");
-    const offer = b.paidServices.find((s) => s.serviceKey === "dispute_round");
+    const offer = b.paidServices.find((s) => s.serviceKey === SERVICE_KEY);
+    assert.ok(offer, "the round is not offered under the name the write endpoint accepts");
+    assert.equal(offer.serviceKey, "paid_round",
+      "portal-progress-contract.md:106 names this service, and the screen selects on it");
     assert.ok(offer);
     assert.equal(offer.available, true, "MID holds REPAIR_ONLY, so the round is offered");
     assert.equal(offer.inFlight, false);

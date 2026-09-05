@@ -248,7 +248,12 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
      If PROGRESS_PATH answers 404 this page says so plainly instead of showing a
      half-empty screen that looks like an empty file. */
   var PROGRESS_PATH     = "/api/read/client-progress";
-  var PAID_REQUEST_PATH = "/api/paid-services/request";
+  /* NOT "/api/paid-services/request". This page was written against the contract
+     before the endpoint existed and guessed a sub-path; the endpoint that shipped
+     is flat, and netlify/functions/api.mjs explains why — a key with a slash
+     would sit under the "documents/" prefix branch, which src/http/routes.test.mjs
+     forbids. GET lists the price, POST mints the checkout link. */
+  var PAID_REQUEST_PATH = "/api/paid-services";
   var REFERRAL_PATH     = "/api/affiliates/refer";
   var DOWNLOAD_PATH     = "/api/documents-download";
 
@@ -821,6 +826,11 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
 
   var PAID = null;          // paidServices entry for the round, if offered
   var chosen = {};          // component key → boolean
+  /* Which checklist item this purchase came from, or null when it was pressed on
+     the round card itself. Passed to the endpoint so the request is tied to the
+     item it settles — without it a paid round and the waypoint it was bought to
+     satisfy are two rows nothing joins. */
+  var paidWaypointId = null;
 
   function paintPaidServices(paidServices, stage) {
     var el = $("cPaid");
@@ -884,7 +894,10 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
       if (t) t.textContent = money(totalCents()) || "—";
     });
     var go = $("paidGo");
-    if (go) go.addEventListener("click", confirmPaidRound);
+    if (go) go.addEventListener("click", function () {
+      paidWaypointId = null;   // pressed on the card, not on a checklist item
+      confirmPaidRound();
+    });
   }
 
   function selectedComponents() {
@@ -948,21 +961,36 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
       sub: "Setting up your secure payment page…",
       actions: []
     });
+    /* THE BODY THE ENDPOINT ACTUALLY READS. api/paid-services.mjs takes one
+       boolean per optional extra, not a list of component keys — it refuses any
+       `service` but "paid_round", and the base is never optional so it is not
+       sent. The component keys the read endpoint hands us (round_base,
+       creditor_letter, escalation_filings — src/waypoints/pricing.mjs:26) are
+       what the checkboxes are keyed on, so the two booleans are derived from
+       them rather than from the order the boxes happen to be in. */
+    var wants = function (k) { return comps.indexOf(k) !== -1; };
     api(PAID_REQUEST_PATH, {
       method: "POST",
       body: {
-        serviceKey: "paid_round",
-        components: comps,
-        /* The natural idempotency key the plan asks for: one press per client,
-           per service, per selection, per day. A double press lands on the same
-           row rather than buying two rounds. The server owns the real guard —
-           this is the client half of it, not the whole of it. */
-        idempotencyKey: "paid_round:" + comps.slice().sort().join("+") + ":" + new Date().toISOString().slice(0, 10)
+        service: "paid_round",
+        creditor_letter: wants("creditor_letter"),
+        escalation_filings: wants("escalation_filings"),
+        /* Ties the purchase to the checklist item it was bought from, when the
+           press came from one. Null is fine — the endpoint treats it as absent. */
+        waypoint_id: paidWaypointId,
+        /* One press per client, per selection, per day. A double press lands on
+           the same row rather than buying two rounds. The server owns the real
+           guard (events(org_id, idempotency_key) is unique) — this is the client
+           half of it, not the whole of it. */
+        idempotency_key: "paid_round:" + comps.slice().sort().join("+") + ":" + new Date().toISOString().slice(0, 10)
       }
     }).then(function (r) {
       if (r.status === 401) return toLogin();
-      var url = r.body && (r.body.checkoutUrl || r.body.url
-              || (r.body.request && r.body.request.checkoutUrl));
+      /* `checkout_url`, snake case — api/paid-services.mjs:186. The camelCase
+         spellings are kept as a fallback and cost nothing; the snake one is what
+         actually arrives. */
+      var url = r.body && (r.body.checkout_url || r.body.checkoutUrl
+              || (r.body.request && (r.body.request.checkout_url || r.body.request.checkoutUrl)));
       if (r.ok && url) {
         dialog({
           title: "Your payment page is ready",
@@ -983,10 +1011,17 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
           actions: [{ label: "Close", ghost: true }]
         });
       }
-      if (r.status === 409) {
+      /* THE ENDPOINT WRITES ITS OWN REFUSAL SENTENCE, for a client, and it knows
+         things this page does not — a round already staged, the cap reached, no
+         letters to send, not on the optimisation path. src/paid-services/refusals.mjs
+         is where those words live. Showing ours over theirs would replace a
+         specific true reason with a vague one, so theirs wins whenever it is
+         there and this page's line is the fallback for when it is not. */
+      var said = r.body && typeof r.body.message === "string" && r.body.message.trim();
+      if (said) {
         return dialog({
-          title: "You already have one in progress",
-          sub: "We have not charged you again. We are already working on the round you asked for.",
+          title: r.status === 409 ? "We could not start that round" : "That did not go through",
+          sub: esc(said) + " Nothing has been charged.",
           actions: [{ label: "Close", ghost: true }]
         });
       }
@@ -1009,7 +1044,10 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
       service key rather than growing a second flow. */
   function openPaidFlow(wp) {
     var key = wp.paidAlternative && wp.paidAlternative.serviceKey;
-    if (key === "paid_round" && PAID) return confirmPaidRound();
+    if (key === "paid_round" && PAID) {
+      paidWaypointId = wp.id || null;
+      return confirmPaidRound();
+    }
     var price = money(wp.paidAlternative && wp.paidAlternative.priceCents);
     dialog({
       title: "Have us do this for you",
