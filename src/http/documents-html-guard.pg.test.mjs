@@ -24,6 +24,18 @@
 //      tampered id and an unknown id are all still the same 404, and a missing
 //      secret is still 503
 //
+// WHAT IS NOT PROVEN HERE, so the suite name is not read wider than it is.
+// "never rendered" covers the BYTE-STREAMING path, which is the only storage
+// path this repo can reach. It does NOT cover the 302 branch: when storage_key
+// is itself an https URL the route redirects, and headers on a redirect do not
+// travel to the object the browser fetches next — so an HTML document served
+// that way would still render, on the blob host. Only vercelBlobProvider makes
+// an https storage_key and @vercel/blob is not a dependency of this repo
+// (src/documents/store.mjs:207), so there is nothing to test against today.
+// api/documents/[id].mjs says the same thing above guardHtml(), and
+// docs/journeys/deliverables-actual.md §2 records what has to change if that
+// provider is ever installed.
+//
 // LIVES UNDER src/http/, NOT api/. npm test's glob is src/** and scripts/**
 // only, so a test placed beside the handler never runs (CLAUDE.md §12).
 

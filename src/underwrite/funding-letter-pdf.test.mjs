@@ -23,9 +23,16 @@
 // silence. They were built and thrown away.
 //
 // The root cause was the silence, not the missing keys — one unguarded
-// `continue`. Every file is now accounted for: stored, notStored (a deliberate
-// exclusion with a reason) or unrecognised (counted, named, logged, and with
-// `strict: true`, thrown). The three always add up to the files handed in.
+// `continue`. Every file is now accounted for: stored, notStored (with the
+// reason) or unrecognised. The three always add up to the files handed in.
+//
+// A NOT-STORED REASON IS EITHER A DECISION OR A FAULT. Round two of this fix
+// filed both kinds under "deliberate exclusion", which told a reader that a
+// bug was a design choice. Four reasons are decisions and stay quiet — dispute
+// letter, escalation complaint, repair-pack summary, staff-only paperwork.
+// Two are faults and are as loud as an unrecognised file: `empty_file` and
+// `letter_missing_bureau_or_type`. See the "a fault is as loud as an
+// unrecognised file" block at the bottom of this file.
 //
 // These are the cheap in-memory guards. The end-to-end proof — real pack, real
 // Postgres, five rows for an ordinary client and six for an authorized-user-
@@ -36,7 +43,9 @@ import assert from "node:assert/strict";
 import {
   persistFundingLetterFiles,
   FUNDING_ANALYSIS_SUBTYPE,
-  NOT_STORED_REASON
+  NOT_STORED_REASON,
+  NOT_STORED_FAULT,
+  isNotStoredFault
 } from "./funding-letter-pdf.mjs";
 import { memoryProvider, createStore } from "../documents/store.mjs";
 import { makeFakeDb } from "../documents/fake-db.mjs";
@@ -355,7 +364,170 @@ describe("F46 root cause — every file is accounted for", () => {
     assert.equal(res.skipped, "missing_args");
     assert.deepEqual(res.stored, []);
     assert.deepEqual(res.notStored, []);
+    assert.deepEqual(res.faults, []);
     assert.deepEqual(res.unrecognised, []);
     assert.equal(res.filesIn, 0);
+  });
+});
+
+// ── A DECISION AND A FAULT ARE NOT THE SAME THING ───────────────────────────
+// Round two of this fix left two not-stored reasons filed under "deliberate
+// exclusion" when they are actually failures: a deliverable that came through
+// with no bytes, and a real funding letter whose bureau could not be read.
+// Both left with no counter, no log and no throw — the exact silence F46 was
+// about. These guards are the difference.
+describe("F46 — a fault is as loud as an unrecognised file", () => {
+  /** The two faults, each as letter-pack would hand them over. */
+  const EMPTY_SIXTH = {
+    type: "business_prep_summary",
+    filename: "Business-Readiness-Guide.pdf",
+    contentType: "application/pdf"
+  };
+  const UNADDRESSED_LETTER = {
+    type: "personal_info",
+    filename: "personal_info_zz.pdf",
+    contentType: "application/pdf",
+    content: pdf("pi")
+  };
+
+  const warnings = async (files, opts) => {
+    const seen = [];
+    const real = console.warn;
+    console.warn = (...a) => seen.push(a.join(" "));
+    try {
+      const out = await saveAll(files, opts);
+      return { seen, ...out };
+    } finally {
+      console.warn = real;
+    }
+  };
+
+  test("NOT_STORED_FAULT names exactly the two failure reasons", () => {
+    assert.deepEqual([...NOT_STORED_FAULT].sort(), [
+      NOT_STORED_REASON.EMPTY,
+      NOT_STORED_REASON.LETTER_UNADDRESSED
+    ].sort());
+    for (const reason of [NOT_STORED_REASON.DISPUTE, NOT_STORED_REASON.ESCALATION,
+      NOT_STORED_REASON.REPAIR_SUMMARY, NOT_STORED_REASON.INTERNAL]) {
+      assert.equal(isNotStoredFault(reason), false, `${reason} is a decision`);
+    }
+    assert.equal(isNotStoredFault(NOT_STORED_REASON.EMPTY), true);
+    assert.equal(isNotStoredFault(NOT_STORED_REASON.LETTER_UNADDRESSED), true);
+  });
+
+  test("a deliberate exclusion is marked fault:false and stays out of faults", async () => {
+    const { res, seen } = await warnings([
+      { type: "dispute", filename: "ex_round1.pdf", contentType: "application/pdf", content: pdf("d") },
+      { type: "operator_checklist", filename: "operator_checklist.pdf", contentType: "application/pdf", content: pdf("o") }
+    ]);
+    assert.deepEqual(res.notStored.map((n) => n.fault), [false, false]);
+    assert.deepEqual(res.faults, []);
+    assert.deepEqual(seen, [], "a decision is quiet on purpose");
+  });
+
+  test("an empty deliverable is marked fault:true, counted, and logged", async () => {
+    const { res, seen, rows } = await warnings([...PACK_FILES, EMPTY_SIXTH]);
+    assert.equal(rows.length, 5);
+    assert.deepEqual(res.unrecognised, []);
+    assert.equal(res.notStored.length, 1);
+    assert.equal(res.notStored[0].fault, true);
+    assert.deepEqual(res.faults, [{
+      file: "Business-Readiness-Guide.pdf",
+      reason: NOT_STORED_REASON.EMPTY,
+      type: "business_prep_summary"
+    }]);
+    assert.equal(seen.length, 1);
+    assert.match(seen[0], /1 file\(s\) NOT SAVED/);
+    assert.match(seen[0], /Business-Readiness-Guide\.pdf \(empty_file\)/);
+  });
+
+  test("an unaddressable funding letter is marked fault:true, counted, and logged", async () => {
+    const { res, seen, rows } = await warnings([UNADDRESSED_LETTER]);
+    assert.equal(rows.length, 0);
+    assert.deepEqual(res.unrecognised, []);
+    assert.equal(res.notStored[0].fault, true);
+    assert.deepEqual(res.faults.map((f) => f.reason), [
+      NOT_STORED_REASON.LETTER_UNADDRESSED
+    ]);
+    assert.equal(seen.length, 1);
+    assert.match(seen[0], /personal_info_zz\.pdf \(letter_missing_bureau_or_type\)/);
+  });
+
+  test("strict: true throws on an empty deliverable", async () => {
+    await assert.rejects(
+      () => saveAll([...PACK_FILES, EMPTY_SIXTH], { strict: true }),
+      /Business-Readiness-Guide\.pdf .* recognised but could not be stored — empty_file/s
+    );
+  });
+
+  test("strict: true throws on an unaddressable funding letter", async () => {
+    await assert.rejects(
+      () => saveAll([UNADDRESSED_LETTER], { strict: true }),
+      /personal_info_zz\.pdf .* letter_missing_bureau_or_type/s
+    );
+  });
+
+  test("strict: true still walks past a deliberate exclusion without throwing", async () => {
+    const { res } = await saveAll([
+      ...PACK_FILES,
+      { type: "dispute", filename: "ex_round1.pdf", contentType: "application/pdf", content: pdf("d") }
+    ], { strict: true });
+    assert.equal(res.stored.length, 5);
+    assert.equal(res.notStored[0].reason, NOT_STORED_REASON.DISPUTE);
+  });
+
+  test("both faults at once are both named in one log line", async () => {
+    const { res, seen } = await warnings([...PACK_FILES, EMPTY_SIXTH, UNADDRESSED_LETTER]);
+    assert.equal(res.faults.length, 2);
+    assert.equal(seen.length, 1);
+    assert.match(seen[0], /2 file\(s\) NOT SAVED/);
+    assert.match(seen[0], /Business-Readiness-Guide\.pdf/);
+    assert.match(seen[0], /personal_info_zz\.pdf/);
+  });
+
+  test("faults and unrecognised are two separate log lines, not one", async () => {
+    const { seen } = await warnings([
+      EMPTY_SIXTH,
+      { type: "lender_pitch_deck", filename: "Lender-Pitch-Deck.pdf", contentType: "application/pdf", content: pdf("x") }
+    ]);
+    assert.equal(seen.length, 2);
+    assert.ok(seen.some((s) => /does not recognise them/.test(s)));
+    assert.ok(seen.some((s) => /could not store them/.test(s)));
+  });
+
+  test("faults never break the count — they repeat notStored, they do not add to it", async () => {
+    const mixed = [...PACK_FILES, EMPTY_SIXTH, UNADDRESSED_LETTER,
+      { type: "dispute", filename: "ex_round1.pdf", contentType: "application/pdf", content: pdf("d") }];
+    const { res } = await warnings(mixed);
+    assert.equal(res.filesIn, mixed.length);
+    assert.equal(
+      res.stored.length + res.notStored.length + res.unrecognised.length,
+      mixed.length
+    );
+    assert.ok(res.faults.length <= res.notStored.length);
+  });
+
+  test("dropping a whole batch for a missing argument is logged, not silent", async () => {
+    const seen = [];
+    const real = console.warn;
+    let res;
+    try {
+      console.warn = (...a) => seen.push(a.join(" "));
+      res = await persistFundingLetterFiles(null, null, { files: PACK_FILES });
+    } finally {
+      console.warn = real;
+    }
+    assert.equal(res.skipped, "missing_args");
+    assert.equal(res.filesIn, 5);
+    assert.equal(seen.length, 1);
+    assert.match(seen[0], /5 file\(s\) NOT SAVED/);
+    assert.match(seen[0], /called without db, store, orgId, clientId/);
+  });
+
+  test("strict: true throws when a whole batch is dropped for a missing argument", async () => {
+    await assert.rejects(
+      () => persistFundingLetterFiles(null, null, { files: PACK_FILES, strict: true }),
+      /5 file\(s\) NOT SAVED/
+    );
   });
 });

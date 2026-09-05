@@ -31,10 +31,30 @@
 // `continue` swallowed every file the map did not know, so adding a seventh
 // document to the pack tomorrow would vanish it the same way. Every file handed
 // to persistFundingLetterFiles now lands in exactly one of three buckets —
-// `stored`, `notStored` (a deliberate exclusion, with the reason), or
-// `unrecognised`. An unrecognised file is counted, named, and logged with
-// console.warn, and `strict: true` makes it throw instead. The three buckets and
-// `stored` always add up to the number of files in; the tests assert that.
+// `stored`, `notStored` (with the reason), or `unrecognised`. The three buckets
+// always add up to the number of files in; the tests assert that.
+//
+// A NOT-STORED REASON IS EITHER A DECISION OR A FAULT, AND THEY ARE NOT THE SAME
+// THING. Four of the six reasons are decisions — a dispute letter, an escalation
+// complaint, a repair-pack summary and staff-only paperwork do not belong on the
+// funding stack, and walking past them quietly is correct. Two are FAULTS:
+// EMPTY (a deliverable the saver recognised, which arrived with no bytes) and
+// LETTER_UNADDRESSED (a real funding letter whose bureau or type could not be
+// read). Those two are a file the client should have had and did not get.
+// NOT_STORED_FAULT names them, `notStored` entries carry `fault: true`, they are
+// repeated in a `faults` array, they are written to the log with console.warn,
+// and `strict: true` makes them throw — exactly as an unrecognised file does.
+//
+// WHAT IS STILL QUIET, STATED PLAINLY RATHER THAN PAPERED OVER:
+//   * the four DECISION reasons above. Quiet on purpose; they are in `notStored`.
+//   * the only production caller, src/workflows/c-06-crs-results-router.mjs:123,
+//     reads `persisted?.stored?.length` and discards `notStored`, `faults` and
+//     `unrecognised`. So in production today the loud half reaches the Netlify
+//     function log and nothing else. Wiring that into the workflow result is a
+//     handoff, not something this module can do to itself.
+//   * the printer upstream, src/underwrite/black-report-pdf.mjs collectPrinted(),
+//     drops an empty or non-%PDF file with a bare `continue` before the saver
+//     ever sees it. Same failure class, different file, not fixed here.
 //
 // MEASURED 2026-09-05 on a scratch Postgres, real buildLetterPackForClient over
 // the repo's own `academy` simulated credit file (tier FULL_FUNDING):
@@ -95,24 +115,42 @@ const ANALYSIS_TITLES = Object.freeze({
   business_prep_summary: "Business Readiness Guide"
 });
 
-// ── WHAT THE SAVER DELIBERATELY DOES NOT STORE, AND WHY ────────────────────
-// A funding pack carries more than the funding stack. These buckets are the
-// files this function is supposed to walk past. Anything that is neither stored
-// nor in one of these buckets is UNRECOGNISED — reported, never swallowed.
+// ── WHY A FILE DID NOT GET STORED ──────────────────────────────────────────
+// A funding pack carries more than the funding stack. The first four reasons
+// below are DECISIONS — files this function is supposed to walk past, quietly.
+// The last two are FAULTS — see NOT_STORED_FAULT. Anything that is neither
+// stored nor carrying one of these reasons is UNRECOGNISED — never swallowed.
 export const NOT_STORED_REASON = Object.freeze({
-  /** Metro 2 round letter. Never belongs on the funding stack. */
+  /** DECISION. Metro 2 round letter. Never belongs on the funding stack. */
   DISPUTE: "dispute_letter",
-  /** CFPB / state AG complaint and its cover sheet. The client files these. */
+  /** DECISION. CFPB / state AG complaint and cover sheet. The client files these. */
   ESCALATION: "escalation_complaint",
-  /** The repair pack's own summaries, if a repair pack is ever handed here. */
+  /** DECISION. The repair pack's own summaries, if a repair pack is handed here. */
   REPAIR_SUMMARY: "repair_pack_summary",
-  /** Staff-only paperwork the client never sees. */
+  /** DECISION. Staff-only paperwork the client never sees. */
   INTERNAL: "internal_document",
-  /** A funding letter with no bureau or no type — cannot be keyed. */
+  /** FAULT. A real funding letter whose bureau or type could not be read. */
   LETTER_UNADDRESSED: "letter_missing_bureau_or_type",
-  /** Recognised, but arrived with no bytes on it. */
+  /** FAULT. A deliverable the saver recognised, which arrived with no bytes. */
   EMPTY: "empty_file"
 });
+
+/**
+ * The subset of NOT_STORED_REASON that means SOMETHING WENT WRONG rather than
+ * "this file was never ours to store". A file leaving by one of these is a
+ * document the client should have had and did not get, so it is logged and it
+ * throws under `strict: true` — the same treatment an unrecognised file gets.
+ * Every other reason is a deliberate exclusion and stays quiet.
+ */
+export const NOT_STORED_FAULT = Object.freeze(new Set([
+  NOT_STORED_REASON.LETTER_UNADDRESSED,
+  NOT_STORED_REASON.EMPTY
+]));
+
+/** True when this not-stored reason is a fault rather than a deliberate exclusion. */
+export function isNotStoredFault(reason) {
+  return NOT_STORED_FAULT.has(reason);
+}
 
 /** Repair-pack summary types (letter-pack.mjs:30 REPAIR_SUMMARIES). */
 const REPAIR_SUMMARY_TYPES = new Set(["repair_plan_summary", "issue_priority_sheet"]);
@@ -209,13 +247,24 @@ function excludedReason(file) {
  * Skips dispute / Metro 2 round letters even if they are in the pack.
  *
  * EVERY FILE IS ACCOUNTED FOR. `stored` + `notStored` + `unrecognised` always
- * has one entry per file handed in. A file the saver does not recognise is
- * counted, named and logged — with `strict: true` it throws instead. Nothing
- * leaves this function in silence again.
+ * has one entry per file handed in.
  *
- * @param {boolean} [opts.strict] throw on the first unrecognised file
- * @returns {Promise<{stored:Array, notStored:Array, unrecognised:Array,
- *   filesIn:number, skipped:string|null}>}
+ * THREE WAYS A FILE CAN LEAVE WITHOUT A ROW, AND WHAT EACH ONE DOES:
+ *   1. a DECISION — dispute letter, escalation complaint, repair-pack summary,
+ *      staff-only paperwork. Lands in `notStored` with `fault: false`. Quiet,
+ *      because none of these were ever ours to store.
+ *   2. a FAULT — `empty_file` or `letter_missing_bureau_or_type`. Lands in
+ *      `notStored` with `fault: true`, is repeated in `faults`, is written to
+ *      the log with console.warn, and throws under `strict: true`.
+ *   3. UNRECOGNISED — the saver has never heard of it. Lands in `unrecognised`,
+ *      is written to the log, and throws under `strict: true`.
+ * Being called with no db / store / orgId / clientId drops the whole batch; that
+ * also warns, and also throws under `strict: true`, when files were handed in.
+ * So the only silent exit is (1), and (1) is a decision, not a drop.
+ *
+ * @param {boolean} [opts.strict] throw on the first unrecognised file or fault
+ * @returns {Promise<{stored:Array, notStored:Array, faults:Array,
+ *   unrecognised:Array, filesIn:number, skipped:string|null}>}
  */
 export async function persistFundingLetterFiles(db, store, {
   orgId,
@@ -226,15 +275,48 @@ export async function persistFundingLetterFiles(db, store, {
   strict = false
 } = {}) {
   if (!db || !store || !orgId || !clientId) {
+    // Dropping the whole batch used to be as quiet as dropping one file. It is
+    // the same defect at a larger size, so it gets the same treatment.
+    const handedIn = (files || []).length;
+    if (handedIn) {
+      const missing = [
+        !db && "db", !store && "store", !orgId && "orgId", !clientId && "clientId"
+      ].filter(Boolean).join(", ");
+      const msg = `persistFundingLetterFiles: ${handedIn} file(s) NOT SAVED — `
+        + `called without ${missing}.`;
+      if (strict) throw new Error(msg);
+      console.warn(`[funding-letter-pdf] ${msg}`);
+    }
     return {
-      stored: [], notStored: [], unrecognised: [], filesIn: 0, skipped: "missing_args"
+      stored: [],
+      notStored: [],
+      faults: [],
+      unrecognised: [],
+      filesIn: handedIn,
+      skipped: "missing_args"
     };
   }
   const list = files || [];
   const stored = [];
   const notStored = [];
+  const faults = [];
   const unrecognised = [];
-  const skip = (file, reason) => notStored.push({ file: fileLabel(file), reason });
+  // A deliberate exclusion is recorded and left alone. A fault is recorded,
+  // repeated in `faults` for a caller that only wants the bad news, and — under
+  // strict — thrown right here rather than returned.
+  const skip = (file, reason) => {
+    const fault = NOT_STORED_FAULT.has(reason);
+    notStored.push({ file: fileLabel(file), reason, fault });
+    if (!fault) return;
+    faults.push({ file: fileLabel(file), reason, type: file?.type ?? null });
+    if (strict) {
+      throw new Error(
+        `persistFundingLetterFiles: ${fileLabel(file)} `
+        + `(type ${file?.type ?? "none"}) was recognised but could not be stored `
+        + `— ${reason}. This is a document the client should have had.`
+      );
+    }
+  };
 
   for (const file of list) {
     const excluded = excludedReason(file);
@@ -331,7 +413,9 @@ export async function persistFundingLetterFiles(db, store, {
   }
 
   // Loud on purpose. This is the line that would have caught F46 on the day it
-  // shipped, and it is what stops a seventh document vanishing next time.
+  // shipped. It stops a seventh document vanishing INSIDE THIS FUNCTION — it
+  // says nothing about the printer above it or the caller below it, both of
+  // which are still silent. See "WHAT IS STILL QUIET" in the header.
   if (unrecognised.length) {
     console.warn(
       `[funding-letter-pdf] ${unrecognised.length} file(s) NOT SAVED — the saver `
@@ -340,7 +424,20 @@ export async function persistFundingLetterFiles(db, store, {
     );
   }
 
-  return { stored, notStored, unrecognised, filesIn: list.length, skipped: null };
+  // The second half of the same rule. A recognised deliverable that could not be
+  // stored is a missing document, not a decision, so it is as loud as an
+  // unrecognised one. Reached only when strict is false — strict already threw.
+  if (faults.length) {
+    console.warn(
+      `[funding-letter-pdf] ${faults.length} file(s) NOT SAVED — recognised, but `
+      + `the saver could not store them: `
+      + faults.map((f) => `${f.file} (${f.reason})`).join(", ")
+    );
+  }
+
+  return {
+    stored, notStored, faults, unrecognised, filesIn: list.length, skipped: null
+  };
 }
 
 /**
