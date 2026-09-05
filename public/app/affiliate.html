@@ -209,17 +209,59 @@ table.grid tbody tr:hover{background:var(--soft)}
           <div style="display:flex;gap:26px;margin-top:15px;flex-wrap:wrap">
             <div><div class="eyebrow" style="color:#71717A">CODE</div><div class="mono" id="affCode" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">No code yet</div></div>
             <div><div class="eyebrow" style="color:#71717A">CLICKS 30D</div><div class="mono" id="affClicks" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">—</div><div id="affClicksNote" style="font-size:var(--fs-caption);color:var(--gray2);margin-top:3px;max-width:150px;line-height:1.35">not recorded yet</div></div>
-            <div><div class="eyebrow" style="color:#71717A">RATE</div><div class="mono" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">Per agreement</div></div>
-            <div><div class="eyebrow" style="color:#71717A">COOKIE</div><div class="mono" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">60d</div></div>
+            <!-- RATE was the string "Per agreement" and COOKIE was the string "60d".
+                 Neither was ever read from anything.
+
+                 RATE now comes from affiliate_commission_rules through
+                 /api/read/affiliate-portal. Owner-set 2026-08-24: 20% direct,
+                 5% downline. It shows a range when two products pay different
+                 rates and a dash when no live rule governs this affiliate,
+                 because one number would be a guess in both cases.
+
+                 COOKIE IS GONE, and it is not coming back as a different number.
+                 There is no attribution-window column anywhere in db/ — searched
+                 2026-09-05, no cookie, no window, no expiry, on affiliates,
+                 affiliate_referrals or affiliate_link_clicks. Attribution is
+                 FIRST TOUCH and it does not expire: affiliate_referrals.attributed_at
+                 is set once and 033_affiliates.sql:321 calls it first touch.
+                 "60d" told every affiliate their credit ran out after two months,
+                 which was true of nothing in this system. -->
+            <div><div class="eyebrow" style="color:#71717A">RATE</div><div class="mono" id="affRate" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">—</div><div id="affRateNote" style="font-size:var(--fs-caption);color:var(--gray2);margin-top:3px;max-width:170px;line-height:1.35">not loaded yet</div></div>
+            <div><div class="eyebrow" style="color:#71717A">ATTRIBUTION</div><div class="mono" style="font-size:var(--fs-title);font-weight:600;margin-top:6px">First touch</div><div style="font-size:var(--fs-caption);color:var(--gray2);margin-top:3px;max-width:170px;line-height:1.35">credited on the first visit · no expiry is recorded</div></div>
           </div>
         </div>
       </div>
 
+      <!-- TWO GATES SIT BETWEEN AN ACCRUED COMMISSION AND A PAID ONE, and each
+           one now says what it is waiting for and where the paperwork is.
+
+           The licence gate reads affiliates.partner_license_signed_at, and the
+           document link is partner_license_ref. Where there is no ref we hold no
+           pointer to the paperwork, which is a different sentence from "unsigned"
+           and is written as one.
+
+           The tax gate reads affiliates.tax_form_received_at
+           (340_client_light_affiliate.sql). NOTHING WRITES THAT COLUMN YET, so it
+           is null for everybody and this banner says "we have no record of",
+           never "you have not sent us". An affiliate who posted a W-9 last year
+           is in exactly that state and this page cannot tell the difference.
+
+           NEITHER BANNER MOVES MONEY. There is no button here that signs, clears
+           or releases anything — the one that used to pretend to was removed for
+           the reason recorded further down this file. -->
       <div class="banner" id="licenseBanner" style="display:none">
         <span class="bi">▲</span>
         <div style="flex:1;min-width:200px">
           <div class="bt">Payouts are held — your partner license is not signed</div>
           <div class="bd" id="licenseBannerBody">Accrued payouts stay on file until the license is signed.</div>
+        </div>
+      </div>
+
+      <div class="banner" id="taxBanner" style="display:none">
+        <span class="bi">▲</span>
+        <div style="flex:1;min-width:200px">
+          <div class="bt">We have no record of your tax form</div>
+          <div class="bd" id="taxBannerBody">We need a tax form on file before a payout can be sent. If you have already sent one, tell us and we will match it up.</div>
         </div>
       </div>
 
@@ -309,9 +351,14 @@ table.grid tbody tr:hover{background:var(--soft)}
         <div class="tabpane on" id="tab-leads">
           <div class="card-hd">
             <select id="stFilter" style="border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:var(--fs-body);background:#fff">
+              <!-- These are the four statuses affiliate_referrals.status can hold
+                   (033_affiliates.sql:340-343). The six that were here before —
+                   Clicked, Signed up, Assessment paid, Deposit paid, Funded,
+                   Lost — matched nothing in the database, so every one of them
+                   filtered the table down to nothing. -->
               <option value="">All statuses</option>
-              <option>Clicked</option><option>Signed up</option><option>Assessment paid</option>
-              <option>Deposit paid</option><option>Funded</option><option>Lost</option>
+              <option>Referred</option><option>Converted</option>
+              <option>Paid</option><option>Void</option>
             </select>
             <input id="q" placeholder="Filter business…" style="border:1px solid var(--line);border-radius:7px;padding:6px 10px;font-size:var(--fs-body);width:180px">
             <div class="spacer"></div>
@@ -396,8 +443,14 @@ document.querySelectorAll('.tab').forEach(function(t){
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});}
 
 var LEADS=[];
-var ST_CLS={'Clicked':'b-gray','Signed up':'b-info','Assessment paid':'b-butter','Deposit paid':'b-warn','Funded':'b-ok','Lost':'b-alert'};
+/* Keyed on the four statuses affiliate_referrals.status actually holds, mapped
+   to client-readable words in the fetch block at the bottom of this file. An
+   unknown status falls back to b-gray rather than emitting class="undefined",
+   which is what the old map did for every row it did not recognise. */
+var ST_CLS={'Referred':'b-info','Converted':'b-ok','Paid':'b-ok','Void':'b-alert'};
+function stCls(k){return ST_CLS[k]||'b-gray'}
 var PAY_CLS={'Accrued':'b-warn','Paid':'b-ok','—':'b-gray'};
+function payCls(k){return PAY_CLS[k]||'b-gray'}
 
 /* FH-AFFILIATE-COMMISSION-BEGIN */
 /* COMMISSION IS READ FROM THE ROW. IT IS NEVER WORKED OUT IN THE BROWSER.
@@ -475,7 +528,8 @@ if(typeof window!=='undefined'){
 /* Every run reconciles to the lead rows above: your agreement rate on each qualifying basis,
    grouped by the fortnight the payment landed in. */
 var PAYOUTS=[];
-var PST_CLS={Paid:'b-ok',Held:'b-alert',Scheduled:'b-info'};
+var PST_CLS={Paid:'b-ok',Held:'b-alert',Scheduled:'b-info',Processing:'b-info',Void:'b-gray'};
+function pstCls(k){return PST_CLS[k]||'b-gray'}
 
 function renderLeads(){
   var sf=document.getElementById('stFilter').value, q=document.getElementById('q').value.trim().toLowerCase();
@@ -487,11 +541,11 @@ function renderLeads(){
   document.getElementById('leadBody').innerHTML=list.map(function(l){
     return '<tr><td class="mono" style="font-size:var(--fs-body)">'+l.d+'</td>'+
       '<td style="font-weight:500">'+esc(l.biz)+'</td>'+
-      '<td><span class="badge '+ST_CLS[l.st]+'">'+l.st+'</span></td>'+
+      '<td><span class="badge '+stCls(l.st)+'">'+l.st+'</span></td>'+
       '<td style="font-size:var(--fs-body);color:'+(l.prod?'inherit':'var(--gray2)')+'">'+esc(l.prod||'— none yet')+'</td>'+
       '<td class="money">'+(l.basis?money(l.basis):'—')+'</td>'+
       '<td class="money" style="text-align:right">'+commissionText(l)+'</td>'+
-      '<td><span class="badge '+PAY_CLS[l.pay]+'">'+l.pay+'</span></td></tr>';
+      '<td><span class="badge '+payCls(l.pay)+'">'+l.pay+'</span></td></tr>';
   }).join('')||'<tr><td colspan="7" class="empty">'+(LEADS.length?'No referrals match that filter.':'No referrals on file')+'</td></tr>';
   var tot=commissionTotals(list);
   document.getElementById('leadTotal').textContent=tot.text;
@@ -506,9 +560,9 @@ function renderPayouts(){
       '<td class="mono" style="font-size:var(--fs-body)">'+p.n+'</td>'+
       '<td class="mono" style="font-size:var(--fs-body)">'+esc(p.m)+'</td>'+
       '<td class="money" style="text-align:right">'+money(p.amt)+'</td>'+
-      '<td><span class="badge '+PST_CLS[p.st]+'">'+p.st+'</span>'+
-      (p.st==='Held'?' <span style="font-size:var(--fs-caption);color:var(--gray)">license unsigned</span>':'')+'</td></tr>';
-  }).join('')||'<tr><td colspan="6" class="empty">No payout runs shown here — this page is not connected to your payout history yet.</td></tr>';
+      '<td><span class="badge '+pstCls(p.st)+'">'+p.st+'</span>'+
+      (p.st==='Held'?' <span style="font-size:var(--fs-caption);color:var(--gray)">'+esc(p.why||'on hold')+'</span>':'')+'</td></tr>';
+  }).join('')||'<tr><td colspan="6" class="empty">No payout runs on file yet.</td></tr>';
 }
 
 /* REFERRED, CONVERTED, PAID and the AF-03 funnel used to be counted out of the
@@ -936,6 +990,232 @@ renderLeads(); renderPayouts();
       if (status) status.textContent = "Could not download — " + ((e && e.message) || "error");
     }).finally(function () { btn.disabled = false; });
   });
+})();
+</script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE REFERRALS AND PAYOUTS TABLES, FILLED IN AT LAST.
+
+   `var LEADS=[]` (further up this file) and `var PAYOUTS=[]` were declared when
+   this screen was written and assigned by nothing, so both tables have read "No
+   referrals on file" for every affiliate since the day they shipped. No endpoint
+   returned affiliate_referrals or affiliate_payouts rows to the person they
+   belong to — /api/read/affiliates answers STAFF with per-affiliate counts,
+   which is a different question with a different gate.
+
+   /api/read/affiliate-portal is the read those two arrays were waiting for. It
+   returns ONE affiliate's own rows and pins a non-staff caller to themselves.
+
+   IT RUNS FOR TWO KINDS OF PERSON. An affiliate, and a CLIENT who pressed
+   "Refer a friend" in their portal and became a light affiliate — owner-set,
+   docs/workflows/portal-rebuild-plan.md section 4. Both hold an account session
+   token in localStorage, so both are served by the same request.
+
+   IT IS DELIBERATELY SEPARATE FROM THE BLOCK ABOVE. That one reads
+   /api/read/affiliates through FHData for the four KPI tiles and needs a staff
+   session; this one needs the caller's own token and must keep working when
+   that block finds no session at all. Neither depends on the other having run.
+
+   NOTHING HERE COMPUTES MONEY. commissionText() further up already refuses to
+   multiply, and the rule it states holds for this block too: a commission the
+   ledger has not calculated arrives as null and prints as a dash, never $0.00.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function () {
+  "use strict";
+
+  var byId = function (id) { return document.getElementById(id); };
+  var setText = function (id, v) { var el = byId(id); if (el) el.textContent = v; };
+
+  function token() {
+    try { return localStorage.getItem("fh_token") || ""; } catch (e) { return ""; }
+  }
+
+  /* A date for a table cell. Null survives as an empty cell — never today's
+     date, never a dash that looks like a value. */
+  function day(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+  }
+
+  /* affiliate_referrals.status → the word an affiliate reads. Four values, and
+     they are the four the CHECK constraint allows (033_affiliates.sql:340-343),
+     so there is no fifth case to invent a label for.
+       attributed — credited, the person has not paid for anything yet
+       converted  — they paid; commission_due is set if a rule was in force
+       paid       — settled by a payout run
+       void       — disqualified or clawed back */
+  var STATUS_WORD = {
+    attributed: "Referred",
+    converted: "Converted",
+    paid: "Paid",
+    void: "Void"
+  };
+
+  /* Whether THIS row's money has been settled. Deliberately three states and not
+     two: a row that has not converted has no commission to be accrued or paid,
+     and calling that "Accrued" would put a number in a column that has none. */
+  function payState(r) {
+    if (r.status === "paid") return "Paid";
+    if (r.status === "void") return "—";
+    if (r.commissionDue === null || r.commissionDue === undefined) return "—";
+    return "Accrued";
+  }
+
+  /* affiliate_payouts.status → the word on the badge. */
+  var PAYOUT_WORD = {
+    pending: "Scheduled",
+    held: "Held",
+    processing: "Processing",
+    paid: "Paid",
+    void: "Void"
+  };
+
+  function paintRate(rates) {
+    var r = rates && rates.direct;
+    if (!r || !r.rules || !r.rules.length) {
+      setText("affRate", "—");
+      setText("affRateNote", "no live rate is set for your account");
+      return;
+    }
+    /* ONE NUMBER ONLY WHEN THERE IS ONE. The endpoint fills in `percent` only
+       when every live rule for the tier agrees; when two products pay different
+       rates it sends the spread instead and this shows the spread. Picking one
+       of them would be this page inventing a rate, which is the exact thing the
+       old hardcoded "Per agreement" string was replaced to stop. */
+    if (r.percent !== null && r.percent !== undefined) {
+      setText("affRate", r.percent + "%");
+    } else if (r.percentMin !== null && r.percentMax !== null) {
+      setText("affRate", r.percentMin + "–" + r.percentMax + "%");
+    } else {
+      setText("affRate", "—");
+      setText("affRateNote", "your rate is not a single percentage");
+      return;
+    }
+    var down = rates.downline;
+    var note = "on people you refer directly";
+    if (down && down.percent !== null && down.percent !== undefined) {
+      note += " · " + down.percent + "% on their referrals";
+    }
+    setText("affRateNote", note);
+  }
+
+  function paintGates(gates) {
+    if (!gates) return;
+
+    var lic = byId("licenseBanner");
+    var licBody = byId("licenseBannerBody");
+    var chip = byId("affLicenseChip");
+    if (gates.license && gates.license.signed === false) {
+      if (lic) lic.style.display = "";
+      if (chip) chip.style.display = "";
+      if (licBody) {
+        licBody.textContent = gates.license.documentRef
+          ? "Anything you earn stays on file until the license is signed. Your license is on record as "
+            + gates.license.documentRef + " — ask us and we will send it over to sign."
+          : "Anything you earn stays on file until the license is signed. We do not have a copy of your license on record, so ask us and we will send one.";
+      }
+    } else if (lic) {
+      lic.style.display = "none";
+      if (chip) chip.style.display = "none";
+    }
+
+    /* THE TAX GATE SAYS "NO RECORD", NOT "YOU DID NOT SEND IT".
+       affiliates.tax_form_received_at is new and nothing writes it yet, so it is
+       null for everybody today. Somebody who posted a form last year is in that
+       same state, and this page has no way to tell the two apart — so it does
+       not claim to. */
+    var tax = byId("taxBanner");
+    if (gates.tax && gates.tax.onFile === false) {
+      if (tax) tax.style.display = "";
+    } else if (tax) {
+      tax.style.display = "none";
+    }
+  }
+
+  function paintIdentity(aff) {
+    if (!aff) return;
+    if (aff.code) {
+      setText("affCode", aff.code);
+      var link = byId("reflink");
+      /* The link comes from the server, which builds it from the configured base
+         URL. This page does not assemble one from location.origin — a copy of
+         the link taken off a preview deploy would then point at the preview. */
+      if (link && aff.shareUrl) link.value = aff.shareUrl;
+    }
+    var name = String(aff.name || "").trim();
+    var who = byId("affWho");
+    var whoChip = byId("affWhoChip");
+    if (name && who && whoChip) {
+      who.textContent = name;
+      whoChip.style.display = "";
+    }
+  }
+
+  function load() {
+    var t = token();
+    if (!t) return;   // no session: the page keeps its empty states
+
+    fetch("/api/read/affiliate-portal", {
+      headers: { authorization: "Bearer " + t, accept: "application/json" },
+      credentials: "same-origin"
+    }).then(function (r) {
+      return r.ok ? r.json() : null;
+    }).then(function (d) {
+      if (!d || d.ok !== true) return;
+
+      if (d.enrolled === false) {
+        /* Signed in, but holding no affiliate code. A client who has not pressed
+           "Refer a friend" lands here. The tables keep their empty states and the
+           rate tile says why, rather than showing a rate for a programme this
+           person is not in. */
+        setText("affRate", "—");
+        setText("affRateNote", "you are not enrolled as a referrer yet");
+        return;
+      }
+
+      paintIdentity(d.affiliate);
+      paintRate(d.rates);
+      paintGates(d.gates);
+
+      /* THE TWO ASSIGNMENTS THIS WHOLE BLOCK EXISTS FOR. */
+      window.LEADS = (d.referrals || []).map(function (r) {
+        return {
+          d: day(r.attributedAt),
+          biz: r.name || "—",
+          st: STATUS_WORD[r.status] || r.status || "Referred",
+          prod: r.product || "",
+          basis: r.basisAmount,
+          // Passed through untouched. null means the ledger has not worked this
+          // one out, and commissionText() prints a dash for it.
+          commission_due: r.commissionDue,
+          pay: payState(r)
+        };
+      });
+
+      window.PAYOUTS = (d.payouts || []).map(function (p) {
+        return {
+          d: day(p.paidAt || p.periodEnd),
+          per: day(p.periodStart) + " → " + day(p.periodEnd),
+          n: p.lineCount,
+          m: p.method || "—",
+          amt: p.amount,
+          st: PAYOUT_WORD[p.status] || p.status,
+          why: p.holdReason || ""
+        };
+      });
+
+      if (typeof renderLeads === "function") renderLeads();
+      if (typeof renderPayouts === "function") renderPayouts();
+    }).catch(function () { /* the page keeps its empty states */ });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", load);
+  } else {
+    load();
+  }
 })();
 </script>
 
