@@ -220,7 +220,7 @@ to (`:79`), consent refused (`:102`), a pull already outstanding (`:111-115`), a
 failing (`:132`).
 
 The analyser's refusals are all traced, from `src/repair/analyze.mjs`: no signed authorisation
-(`:311`), this round already written (`:313-330`), past the plan's round limit (`:331-343`), no
+(`:311`), this round already written (`:313-330`), past the plan's round limit (`:330-338`), no
 stored report (`:341`), nothing wrong found (`:360`), client record missing (`:363`), no full legal
 name on file (`:364`). Per bureau it also skips a bureau with no rule-backed claims (`:378`) and one
 already written (`:384`).
@@ -234,7 +234,7 @@ round from the plan, and the table honours that — there is no column joining t
 (`db/migrations/331` table comment; `src/waypoints/store.mjs:222-231`).
 
 But the analyser does not know that. `analyzeAndGenerate` reads `repair_programs.rounds_cap` and
-returns `round_cap_exceeded` for any round past it (`src/repair/analyze.mjs:331-343`). A trial client
+returns `round_cap_exceeded` for any round past it (`src/repair/analyze.mjs:330-338`). A trial client
 whose plan covers two rounds, who then buys a third round with their own money, would be refused
 there today.
 

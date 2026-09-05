@@ -177,25 +177,32 @@ flowchart TD
     R5["Rung 5 — state attorney general"]
     R6["Rung 6 — final notice again"]
 
+    ANYRUNG(["An item sitting on ANY rung"])
+    LASTRUNG(["An item on the last rung this plan pays for"])
+
     GONE(["Removed"])
     CHANGED(["Corrected"])
     NOANS(["They did not answer this one"])
-    CAPPED(["No more rounds left on this plan"])
+    CAPPED(["No rungs left — this plan is finished"])
     WAIT{"A person must confirm before rung 4"}
 
     R1 -->|"AUTOMATIC — they said it is correct"| R2
     R2 -->|"AUTOMATIC — they said it is correct"| R3
     R3 -->|"they said it is correct"| WAIT
     WAIT -->|"NEEDS A PERSON — someone confirmed"| R4
-    WAIT -->|"nobody has confirmed — the item waits at rung 3"| R3
+    WAIT -->|"nobody has confirmed — the item stays on rung 3"| R3
     R4 -->|"NEEDS A PERSON"| R5
     R5 -->|"NEEDS A PERSON"| R6
 
-    R1 --> GONE
-    R1 --> CHANGED
-    R1 --> NOANS
-    R3 -->|"plan only paid for 2 or 3 rounds"| CAPPED
+    ANYRUNG --> GONE
+    ANYRUNG --> CHANGED
+    ANYRUNG --> NOANS
+    LASTRUNG -->|"they said it is correct and there is no rung above"| CAPPED
 ```
+
+The three outcomes on the right can happen on **any** rung, and the cap can bite on **any** rung —
+which rung is the last one depends on the plan. A trial plan pays for two rungs, a full plan for six
+(`nextRound`, `src/metro2/rounds/state.mjs:27-33`).
 
 Read from `applyItemOutcome`, `src/metro2/rounds/state.mjs:112-142`:
 
@@ -255,8 +262,10 @@ records it so the diagram is not read as describing something that works.
 | `repair.cancelled` → cancelled | Appears only in `src/events/canonical.mjs:115`, `src/repair/register.mjs:23` and the map (`pipeline.mjs:80`). No emitter anywhere. |
 | anything → on hold | `on_hold` is a listed state (`src/repair/pipeline.mjs:19`) with client copy already written (`src/repair/portal.mjs:15`), and **no event in `EVENT_STAGE` maps to it**. Nothing in the code puts a file there. |
 
-Seven arrows. Six of them are states the client copy is already written for, which is how a screen
-comes to promise something the machinery underneath has never once done.
+Seven arrows, landing on six distinct states — waiting on documents, reading your report, delayed,
+round finished, cancelled, on hold. `CLIENT_STAGE_COPY` (`src/repair/portal.mjs:3-17`) already has
+client wording for all six. That is how a screen comes to promise something the machinery underneath
+has never once done.
 
 ---
 
