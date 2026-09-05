@@ -61,31 +61,58 @@
 -- src/paid-services/round.mjs closes as 'failed', does not lock a client out of
 -- ever trying again. That is tested.
 --
--- SAFETY. Additive; creates one index and touches no row. It CAN fail on a
--- database that already holds two open requests for one client and kind, which
--- is exactly the state this file exists to make impossible — so the duplicates
--- are stood down first, oldest kept, in the same shape 090 used. Nothing is
--- deleted: a duplicate becomes 'cancelled' with a reason on the row.
+-- SAFETY. Creates one index. It CANCELS unpaid duplicate rows (see step 1) and
+-- DELETES NOTHING — a duplicate becomes 'cancelled' with the reason on the row.
+--
+-- WHEN THIS MIGRATION REFUSES TO BUILD, EXACTLY.
+--
+-- After step 1 has run, the index in step 2 fails if and only if one client and
+-- service_kind still hold TWO OR MORE rows carrying money — that is, two or
+-- more at 'paid' or 'staged'. That is a real double charge and a person has to
+-- look at it; a migration must not tidy it away.
+--
+-- An earlier draft of step 1 was narrower than this comment claimed, and the
+-- gap was measured on 2026-09-05: it cancelled a duplicate only when some OTHER
+-- row was strictly older, so one older 'quoted' row sitting beside one newer
+-- 'paid' row cancelled NOTHING (the 'quoted' row was the oldest, and the 'paid'
+-- row was never eligible) and the build failed on a pair that a human did not
+-- need to see. Step 1 below is keyed on what the rows ARE rather than on which
+-- arrived first: any unpaid row yields to a paid sibling, whatever their order,
+-- and unpaid siblings settle among themselves oldest-first as before.
 
 -- ---------------------------------------------------------------------------
--- 1. Stand down any duplicate that already exists. Oldest wins.
+-- 1. Stand down any duplicate that already exists.
 -- ---------------------------------------------------------------------------
--- Only rows that were never paid are touched. A row at 'paid' or 'staged' has
--- money against it and is never cancelled by a migration — if two of those
--- exist for one client the index below will refuse to build, which is the right
--- outcome: that is a real double charge and a person has to look at it.
+-- Only rows that were NEVER PAID are touched. A row at 'paid' or 'staged' has
+-- money against it and is never cancelled by a migration.
+--
+-- Two rules, in this order:
+--   (a) an unpaid row yields to ANY paid sibling, older or newer. Money wins
+--       over a quote regardless of who got there first.
+--   (b) otherwise the oldest unpaid row is kept and its unpaid siblings yield,
+--       which is the shape 090 used.
 UPDATE public.paid_service_requests dup
    SET status       = 'cancelled',
        state_reason = 'closed by migration 345: a second open request for this client and service, created by the non-atomic double-press guard in requestRound()',
        resolved_at  = now(),
        updated_at   = now()
  WHERE dup.status IN ('quoted', 'awaiting_payment')
-   AND EXISTS (
-     SELECT 1 FROM public.paid_service_requests keep
-      WHERE keep.client_id    = dup.client_id
-        AND keep.service_kind = dup.service_kind
-        AND keep.status IN ('quoted', 'awaiting_payment', 'paid', 'staged')
-        AND (keep.requested_at, keep.id) < (dup.requested_at, dup.id)
+   AND (
+     -- (a) a paid sibling exists, in either direction.
+     EXISTS (
+       SELECT 1 FROM public.paid_service_requests paid
+        WHERE paid.client_id    = dup.client_id
+          AND paid.service_kind = dup.service_kind
+          AND paid.status IN ('paid', 'staged')
+     )
+     -- (b) an older UNPAID sibling exists.
+     OR EXISTS (
+       SELECT 1 FROM public.paid_service_requests keep
+        WHERE keep.client_id    = dup.client_id
+          AND keep.service_kind = dup.service_kind
+          AND keep.status IN ('quoted', 'awaiting_payment')
+          AND (keep.requested_at, keep.id) < (dup.requested_at, dup.id)
+     )
    );
 
 -- ---------------------------------------------------------------------------

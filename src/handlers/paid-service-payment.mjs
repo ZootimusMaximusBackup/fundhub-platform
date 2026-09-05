@@ -41,9 +41,15 @@
 // bag back out as `payload.ref`. So the reference is the row id, and a payment
 // for anything else carries a `pl_…` link ref or nothing at all and is skipped.
 //
-// NO AMOUNT MATCHING, DELIBERATELY. Matching a payment to a request by its
-// dollar amount would attach a client's unrelated $100 payment to a round they
-// never asked for. The id or nothing.
+// THE AMOUNT DOES NOT FIND THE ROW, BUT IT IS CHECKED ONCE THE ROW IS FOUND.
+// Two different things, and an earlier version of this comment ran them
+// together. Matching a payment to a request BY its dollar amount would attach a
+// client's unrelated $100 payment to a round they never asked for, so the
+// lookup is the id or nothing. But after the id has found the row,
+// recordPayment() compares the amount the processor stated against the amount
+// the client was billed and REFUSES a short one — `payment_short`, nothing
+// staged, no pull ordered. Before that guard existed a webhook reporting one
+// cent against a $110 round staged the work for real.
 //
 // ORG IS CHECKED, NOT ASSUMED. The reference arrives from outside, so the row
 // is loaded WITH the event's org id. A reference naming another tenant's
@@ -51,6 +57,7 @@
 
 import { on } from "../events/registry.mjs";
 import { recordPayment, stageRound, SERVICE_KIND } from "../paid-services/round.mjs";
+import { REFUSAL } from "../paid-services/refusals.mjs";
 
 export const SKIPPED = "[paid-service] skipped";
 export const STAGED = "[paid-service] round staged, not mailed";
@@ -115,6 +122,25 @@ export async function onPaidServicePaymentReceived(event, db) {
   });
 
   if (!payment.applied) {
+    /* MONEY ARRIVED AND IT WAS SHORT. recordPayment has already closed the
+       request `failed` with both figures on the row. Logged at the same volume
+       as the pull failure below and for the same reason: a sum has left a
+       client's account and no work has started, so nobody should have to go
+       looking for it. Nothing is staged. */
+    if (payment.reason === REFUSAL.PAYMENT_SHORT) {
+      console.warn(
+        `[paid-service] round ${row.id} received ${payment.amountCents} of `
+        + `${payment.pricedCents} cents (short by ${payment.shortfallCents}); `
+        + "request closed failed, nothing staged"
+      );
+      return {
+        done: false,
+        reason: REFUSAL.PAYMENT_SHORT,
+        requestId: row.id,
+        shortfallCents: payment.shortfallCents,
+        mailed: false
+      };
+    }
     /* A replayed webhook, or a request that has already moved on. Not a
        failure. The one case worth continuing on is a row that is already 'paid'
        but never staged — which is exactly what a crash between the two writes

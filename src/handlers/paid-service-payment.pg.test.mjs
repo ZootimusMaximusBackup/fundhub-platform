@@ -202,6 +202,70 @@ describe("payment.received → a paid round is staged, never mailed",
 
   // ── payments that are not for a round ─────────────────────────────────────
 
+  describe("a payment that is short of the price", () => {
+    /* Measured defect, 2026-09-05: a webhook payload of one cent against a
+       full-price round returned done:true with reason "round staged, not
+       mailed" and a real soft_pull_requests row. The end-to-end shape of the
+       fix is checked here, at the handler, not only at recordPayment. */
+
+    test("one cent against a full-price round stages nothing and orders no report", async () => {
+      const req = await openRequest();
+      const out = await onPaidServicePaymentReceived(
+        paymentEvent(req.id, { amountCents: 1 }), db
+      );
+
+      assert.equal(out.done, false, "a one-cent payment reported the round done");
+      assert.equal(out.reason, "payment_short");
+      assert.equal(out.shortfallCents, 9_999);
+      assert.equal(out.mailed, false);
+
+      const row = await rowOf(req.id);
+      assert.equal(row.status, "failed");
+      assert.notEqual(row.status, "staged");
+      assert.equal(Number(row.amount_paid_cents), 1, "the cent that did arrive was lost off the row");
+      assert.ok(row.resolved_at);
+      assert.match(row.state_reason, /payment_short: received 1 of 10000 cents/);
+
+      const pulls = (await db.query(
+        `SELECT id FROM soft_pull_requests WHERE client_id = $1`, [client]
+      )).rows;
+      assert.deepEqual(pulls, [], "a one-cent payment ordered a fresh credit report");
+    });
+
+    test("a zero-amount webhook is refused, and NOTHING WAS MAILED either", async () => {
+      const req = await openRequest();
+      const lettersBefore = (await db.query(
+        `SELECT count(*)::int AS n FROM dispute_letters WHERE client_id = $1`, [client]
+      )).rows[0].n;
+
+      const out = await onPaidServicePaymentReceived(
+        paymentEvent(req.id, { amountCents: 0 }), db
+      );
+      assert.equal(out.done, false);
+      assert.equal(out.reason, "payment_short");
+
+      const lettersAfter = (await db.query(
+        `SELECT count(*)::int AS n FROM dispute_letters WHERE client_id = $1`, [client]
+      )).rows[0].n;
+      assert.equal(lettersAfter, lettersBefore, "a zero-cent payment produced dispute letters");
+      assert.equal((await rowOf(req.id)).status, "failed");
+    });
+
+    test("a webhook with NO amount is still honoured — unknown is not short", async () => {
+      // NULL MEANS UNKNOWN (CLAUDE.md §12). The guard must not turn a webhook
+      // that simply does not state a figure into an accusation of underpayment.
+      const req = await openRequest();
+      const out = await onPaidServicePaymentReceived(
+        paymentEvent(req.id, { amountCents: null, amount: null }), db
+      );
+      assert.equal(out.done, true, JSON.stringify(out));
+      const row = await rowOf(req.id);
+      assert.equal(row.status, "staged");
+      assert.equal(row.produced.payment_amount_source, "quote");
+      assert.equal(Number(row.amount_paid_cents), 10_000);
+    });
+  });
+
   describe("payments this handler must ignore", () => {
     test("a payment with no reference at all", async () => {
       const out = await onPaidServicePaymentReceived(

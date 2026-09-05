@@ -35,6 +35,11 @@ export const REFUSAL = Object.freeze({
   NOTHING_TO_DISPUTE: "nothing_to_dispute",
   /** The checkout link could not be minted, or the processor declined. */
   PAYMENT_FAILED: "payment_failed",
+  /** Money arrived, but less than the round was quoted at. Nothing is staged.
+   *  Fires only when the processor states an amount AND the row carries a
+   *  price to compare it against; an unknown amount is still unknown and
+   *  falls back to the quote (see recordPayment). */
+  PAYMENT_SHORT: "payment_short",
   /** Paid, but the fresh report could not be ordered. */
   PULL_FAILED: "pull_failed"
 });
@@ -50,6 +55,7 @@ const STATUS = Object.freeze({
   [REFUSAL.ALREADY_IN_FLIGHT]: 409,
   [REFUSAL.NOTHING_TO_DISPUTE]: 409,
   [REFUSAL.PAYMENT_FAILED]: 502,
+  [REFUSAL.PAYMENT_SHORT]: 409,
   [REFUSAL.PULL_FAILED]: 502
 });
 
@@ -65,6 +71,9 @@ const MESSAGE = Object.freeze({
     + "If something new appears, this opens again.",
   [REFUSAL.PAYMENT_FAILED]:
     "We could not open the payment page just now. Nothing has been charged. Please try again.",
+  [REFUSAL.PAYMENT_SHORT]:
+    "The payment we received was less than the amount for this round, so we have not started it. "
+    + "Your advisor has been given this to sort out. Nothing further has been charged.",
   [REFUSAL.PULL_FAILED]:
     "Your payment went through, but we could not order a fresh copy of your report. "
     + "Your advisor has been given this to sort out and you will not be charged again."

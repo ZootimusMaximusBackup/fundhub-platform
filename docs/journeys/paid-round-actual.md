@@ -66,7 +66,11 @@ flowchart TD
     MINT -->|link minted| AWAIT[status = awaiting_payment<br/>the link is an INVITATION, not a payment]
 
     AWAIT -->|client never pays| STOP[Nothing happens. No charge, no work.]
-    AWAIT -->|payment.received names this row| PAID[status = paid<br/>paid_at + amount_paid_cents]
+    AWAIT -->|payment.received names this row| AMT{Does the stated amount<br/>cover the price?}
+
+    AMT -->|"short — including 0"| R6[status = failed<br/>state_reason = payment_short: received N of M cents<br/>MONEY THAT DID ARRIVE IS KEPT ON THE ROW<br/>NOTHING STAGED, NO REPORT ORDERED]
+    AMT -->|"amount not stated — UNKNOWN"| PAID
+    AMT -->|"covers it, or more"| PAID[status = paid<br/>paid_at + amount_paid_cents]
 
     PAID --> PULL{Can a fresh report<br/>be ordered?}
     PULL -->|consent missing or revoked| R5[status = failed<br/>state_reason = pull_refused<br/>MONEY STAYS ON THE ROW — a human must fix it]
@@ -148,10 +152,35 @@ correct and both are one row and one charge. The code does not, and cannot, prom
 | `already_in_flight` | 409 | unchanged — the open row is handed back | none taken |
 | `nothing_to_dispute` | 409 | none written | none taken |
 | `payment_failed` | 502 | `failed`, `resolved_at` set, `checkout_url` null | **none taken** — no card was ever touched |
+| `payment_short` | 409 | `failed`, `state_reason = payment_short: received N of M cents…`, **`paid_at`, `amount_paid_cents` and `payment_ref` kept**, `produced.payment_shortfall_cents` set | **partly taken** — a human must refund or chase it |
 | `pull_failed` | 502 | `failed`, `state_reason = pull_refused:…`, **`paid_at` and `amount_paid_cents` kept** | **already taken** — a human must resolve it |
 
 A `failed` row holds no open slot, so a processor outage does not lock a client out of retrying.
 Tested.
+
+### `payment_short`, and the three things it deliberately does not fire on
+
+Measured defect, 2026-09-05: nothing compared the figure a webhook reported against the figure the
+client was billed. `amountCents: 0` was recorded as a payment, and one cent against an $110 round
+reached `staged` with a real `soft_pull_requests` row — a fresh report ordered and the round on a
+human's board, bought for a penny. `recordPayment()` now compares the two and refuses a short one.
+
+It does **not** fire on:
+
+* **An amount the webhook does not state.** NULL means unknown; the quote fallback below is
+  unchanged, and unknown must not become an accusation of underpaying.
+* **An overpayment.** The client is not short, so the work runs and a human handles the difference.
+* **A row with no price on it.** `price_total_cents` NULL is "not priced yet"; there is no
+  shortfall to assert against nothing.
+
+The comparison is strictly `<`, so an exact payment is accepted — stated here because a wrong
+comparator would refuse every ordinary round, and that case has its own test.
+
+**Known gap, written down rather than rounded off:** a *negative* stated amount is not caught by
+this guard. `known` requires `>= 0`, so `amountCents: -50` falls through to the quote fallback and
+is recorded as a full payment. 331's `paid_service_requests_paid_amount_ck` refuses to store a
+negative, so there is nowhere to put the figure, and a completed charge does not arrive negative —
+a refund is its own event.
 
 `pull_failed` is the only refusal that happens after money has been taken. The handler logs it at
 `warn` level with the request id, because it is money taken for work that has not started.

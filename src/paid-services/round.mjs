@@ -73,7 +73,7 @@ import { onRepairPath } from "../repair/on-repair-path.mjs";
 import { negativeKeysFromResult } from "../crs/snapshot-negatives.mjs";
 import { requestSoftPull } from "../finance/soft-pulls.mjs";
 import { mintCheckoutLink } from "./checkout.mjs";
-import { REFUSAL, refuse } from "./refusals.mjs";
+import { REFUSAL, refuse, refusalMessage } from "./refusals.mjs";
 
 export const SERVICE_KIND = "dispute_round";
 export const SERVICE_KEY = "paid_round";
@@ -421,6 +421,63 @@ export async function closeFailed(db, { requestId, reason }) {
   return r.rows[0] || null;
 }
 
+/**
+ * closeShortPaid — money arrived, but not enough. Close the request and KEEP
+ * the figures.
+ *
+ * Status goes to 'failed' rather than to a new 'underpaid' state because
+ * db/migrations/331's paid_service_requests_status_ck is a fixed list and
+ * widening it is a schema change this lane does not own. 'failed' is the honest
+ * member of that list: the request did not happen. `state_reason` carries both
+ * numbers in words so the board shows what to chase without a join.
+ *
+ * WHY paid_at IS STAMPED ON A FAILED ROW. 331's paid_service_requests_paid_ck
+ * binds paid_at and amount_paid_cents together — one cannot be written without
+ * the other — so recording the sum that DID arrive requires the timestamp too.
+ * paid_service_requests_paid_state_ck only compels paid_at for
+ * 'paid'/'staged'/'fulfilled'/'refunded'; it does not forbid it on 'failed'.
+ * So the row reads: money came in, at this time, this much, and it was not
+ * enough. Losing the amount to keep the state tidy would be the worse trade.
+ */
+export async function closeShortPaid(db, {
+  requestId,
+  paymentRef = null,
+  paidAt = null,
+  amountCents,
+  pricedCents,
+  shortfallCents
+}) {
+  const r = await db.query(
+    `UPDATE paid_service_requests
+        SET status = 'failed',
+            state_reason = $2,
+            paid_at = COALESCE($3::timestamptz, now()),
+            amount_paid_cents = $4,
+            payment_ref = COALESCE($5, payment_ref),
+            resolved_at = now(),
+            produced = produced || $6::jsonb
+      WHERE id = $1::uuid
+        AND status = ANY($7::text[])
+        AND paid_at IS NULL
+      RETURNING *`,
+    [
+      requestId,
+      `payment_short: received ${amountCents} of ${pricedCents} cents, short by ${shortfallCents}`,
+      paidAt,
+      amountCents,
+      paymentRef,
+      JSON.stringify({
+        payment_amount_source: "processor",
+        payment_shortfall_cents: shortfallCents,
+        price_total_cents_at_payment: pricedCents,
+        mailed: false
+      }),
+      ["quoted", "awaiting_payment"]
+    ]
+  );
+  return r.rows[0] || null;
+}
+
 /* ── the money lands ─────────────────────────────────────────────────────── */
 
 /**
@@ -437,6 +494,34 @@ export async function closeFailed(db, { requestId, reason }) {
  * webhook does not say what was paid we fall back to what was QUOTED, and
  * `payment_amount_source` in `produced` records that we did, so nobody later
  * reads the quoted figure as a confirmed one.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * A SHORT PAYMENT IS NOT A PAYMENT. MEASURED DEFECT, 2026-09-05.
+ *
+ * Until this guard existed, `amountCents: 0` against an $110 round returned
+ * `applied: true` with the row at 'paid', and `amountCents: 1` went all the way
+ * to 'staged' — a soft pull ordered and the round on a human's board, bought
+ * for one cent. Nothing compared the figure the processor reported against the
+ * figure the client was billed.
+ *
+ * So: when the processor STATES an amount and the row HAS a price, and the
+ * stated amount is short, the request is closed `failed` with the two figures
+ * on it and the refusal is PAYMENT_SHORT. Nothing is staged and no pull is
+ * ordered. Precisely three things are NOT refused, on purpose:
+ *
+ *   * an UNKNOWN amount (null) — that is the quote fallback above, unchanged.
+ *     NULL MEANS UNKNOWN and unknown must not become an accusation.
+ *   * an OVERpayment — the client is not short, so the work runs. A human
+ *     handles the difference; refusing would be a worse answer than doing it.
+ *   * a row with price_total_cents NULL — nothing to compare against, so there
+ *     is no shortfall to assert. 331 refuses a 0 price, so a priced row is
+ *     always > 0 and a real comparison.
+ *
+ * The money is NOT lost by refusing. paid_at, amount_paid_cents and payment_ref
+ * are all written onto the failed row, so the sum that did arrive is on the
+ * record for whoever refunds or chases it. `failed` is a finished state, so it
+ * holds no slot in uq_paid_service_requests_one_open (345) and the client is
+ * not locked out of buying again.
  */
 export async function recordPayment(db, {
   requestId,
@@ -457,6 +542,14 @@ export async function recordPayment(db, {
     return { applied: false, reason: "already_paid", request: current };
   }
 
+  /* A NEGATIVE STATED AMOUNT IS NOT COVERED BY THE SHORT GUARD BELOW, and that
+     is a known gap rather than an oversight. `known` requires >= 0, so an
+     `amountCents: -50` falls through to the quote fallback and is recorded as a
+     full payment. It is left that way because 331's
+     paid_service_requests_paid_amount_ck refuses a negative outright, so the
+     figure cannot be stored to be reasoned about, and because no processor
+     sends one for a completed charge — a refund is its own event. If one ever
+     does arrive it is recorded as a full payment at the quoted price. */
   const known = Number.isInteger(amountCents) && amountCents >= 0;
   const amount = known ? amountCents : current.price_total_cents;
   if (!Number.isInteger(Number(amount))) {
@@ -464,6 +557,35 @@ export async function recordPayment(db, {
     // write a zero — a zero here reads as "they paid nothing", which is a
     // different and false claim.
     return { applied: false, reason: "amount_unknown", request: current };
+  }
+
+  /* THE SHORT-PAYMENT GUARD. See the block comment above for what is and is
+     not refused here. Only a KNOWN amount against a KNOWN price is compared;
+     `priced` is NaN-safe because price_total_cents arrives from pg as a string
+     for a bigint column, and NULL arrives as null which Number() turns into 0 —
+     hence the explicit null test rather than a truthiness check. */
+  const priced = current.price_total_cents == null
+    ? null
+    : Number(current.price_total_cents);
+  if (known && Number.isInteger(priced) && amountCents < priced) {
+    const shortfallCents = priced - amountCents;
+    const failed = await closeShortPaid(db, {
+      requestId,
+      paymentRef,
+      paidAt,
+      amountCents,
+      pricedCents: priced,
+      shortfallCents
+    });
+    return {
+      applied: false,
+      reason: REFUSAL.PAYMENT_SHORT,
+      message: refusalMessage(REFUSAL.PAYMENT_SHORT),
+      request: failed || current,
+      amountCents,
+      pricedCents: priced,
+      shortfallCents
+    };
   }
 
   const r = await db.query(

@@ -150,6 +150,20 @@ describe("the refusal table", () => {
     assert.match(refusalMessage(REFUSAL.ALREADY_IN_FLIGHT), /charge you twice/i);
   });
 
+  test("a short payment gets its own sentence, distinct from the other two money refusals", () => {
+    // The point of a separate code: "we could not open the payment page"
+    // (nothing taken), "your payment went through but the pull failed" (taken,
+    // work owed) and "you paid less than the price" (taken, work NOT started)
+    // are three different situations and a client must not read one for another.
+    const short = refusalMessage(REFUSAL.PAYMENT_SHORT);
+    assert.match(short, /less than the amount/i);
+    assert.notEqual(short, refusalMessage(REFUSAL.PAYMENT_FAILED));
+    assert.notEqual(short, refusalMessage(REFUSAL.PULL_FAILED));
+    // It must not claim the round started, and must not claim more was taken.
+    assert.doesNotMatch(short, /payment went through/i);
+    assert.match(short, /not started it/i);
+  });
+
   test("detail is truncated so a processor error body cannot be pasted at a client", () => {
     const r = refuse(REFUSAL.PAYMENT_FAILED, "x".repeat(5000));
     assert.equal(r.detail.length, 300);

@@ -365,6 +365,95 @@ describe("the self-serve paid round", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
         "the quoted figure was recorded as if the processor had confirmed it");
     });
 
+    /* ── THE SHORT-PAYMENT GUARD ───────────────────────────────────────────
+       Measured defect, 2026-09-05: `amountCents: 0` returned applied:true and
+       the row read 'paid', and one cent against an $110 round reached 'staged'
+       with a real soft pull ordered. Nothing compared the reported figure to
+       the billed figure. These four cases fix the boundary in place. */
+
+    test("a ZERO-amount payment event is refused and the round is not paid", async () => {
+      const out = await ask();
+      const paid = await recordPayment(db, {
+        requestId: out.request.id, paymentRef: "txn_zero", amountCents: 0
+      });
+
+      assert.equal(paid.applied, false, "a zero-cent payment was recorded as a payment");
+      assert.equal(paid.reason, REFUSAL.PAYMENT_SHORT);
+      assert.equal(paid.shortfallCents, 10_000);
+
+      const row = (await rowsFor(client))[0];
+      assert.equal(row.status, "failed");
+      assert.notEqual(row.status, "paid");
+      // The zero IS kept on the row — refusing must not lose the fact that a
+      // webhook arrived claiming nothing was paid.
+      assert.equal(Number(row.amount_paid_cents), 0);
+      assert.equal(row.produced.payment_shortfall_cents, 10_000);
+      assert.match(row.state_reason, /payment_short: received 0 of 10000 cents/);
+    });
+
+    test("ONE CENT against a full-price round stages nothing and orders no report", async () => {
+      const out = await ask({ creditorLetter: true });   // 11_000 cents
+      const paid = await recordPayment(db, {
+        requestId: out.request.id, paymentRef: "txn_penny", amountCents: 1
+      });
+      assert.equal(paid.applied, false);
+      assert.equal(paid.reason, REFUSAL.PAYMENT_SHORT);
+      assert.equal(paid.pricedCents, 11_000);
+      assert.equal(paid.shortfallCents, 10_999);
+
+      // stageRound must refuse it too — the guard is not the only thing
+      // standing between one cent and a staged round.
+      const staged = await stageRound(db, { requestId: out.request.id });
+      assert.equal(staged.ok, false);
+      assert.equal(staged.reason, "status_failed");
+
+      const pulls = (await db.query(
+        `SELECT id FROM soft_pull_requests WHERE client_id = $1`, [client]
+      )).rows;
+      assert.deepEqual(pulls, [], "a one-cent payment ordered a fresh credit report");
+
+      const row = (await rowsFor(client))[0];
+      assert.notEqual(row.status, "staged");
+      assert.equal(row.produced.mailed, false);
+    });
+
+    test("a short payment closes the request, so the client is not locked out of buying again", async () => {
+      const out = await ask();
+      await recordPayment(db, { requestId: out.request.id, amountCents: 500 });
+
+      // 'failed' is a finished state and holds no slot in the one-open index,
+      // so a fresh request must be creatable rather than refused in_flight.
+      assert.equal(await openRoundFor(db, { orgId: org, clientId: client }), null);
+      const retry = await ask();
+      assert.equal(retry.ok, true);
+      assert.equal(retry.created, true);
+      assert.equal(retry.request.round_no, 2);
+    });
+
+    test("an OVERpayment is accepted — the client is not short, so the work runs", async () => {
+      const out = await ask();
+      const paid = await recordPayment(db, {
+        requestId: out.request.id, amountCents: 12_500   // quote is 10_000
+      });
+      assert.equal(paid.applied, true, "a client who paid too much was refused their round");
+      assert.equal(paid.request.status, "paid");
+      assert.equal(Number(paid.request.amount_paid_cents), 12_500);
+      assert.equal(paid.request.produced.payment_amount_source, "processor");
+
+      const staged = await stageRound(db, { requestId: out.request.id });
+      assert.equal(staged.ok, true);
+      assert.equal(staged.request.status, "staged");
+    });
+
+    test("an EXACT payment is still accepted — the guard is > and not >=", async () => {
+      // Guards written with the wrong comparator refuse the ordinary case, and
+      // every other test here pays exactly, so this states it on purpose.
+      const out = await ask({ creditorLetter: true, escalationFilings: true });
+      const paid = await recordPayment(db, { requestId: out.request.id, amountCents: 13_000 });
+      assert.equal(paid.applied, true);
+      assert.equal(paid.request.status, "paid");
+    });
+
     test("a paid round does NOT consume the program's round cap", async () => {
       await db.query(
         `INSERT INTO repair_programs (org_id, client_id, program, rounds_cap, price_total)
