@@ -3919,26 +3919,22 @@ document.addEventListener("DOMContentLoaded", function () {
           var playRow = document.createElement("div");
           playRow.className = "lender-fields";
 
-          /* "PLAY NAME" MEANT NOTHING TO ANYONE — owner-set 2026-09-06.
-             The box records HOW the application was made: card stacking first
-             pull, in-branch visit, online only, docs first. So it is called
-             that. Same input, same id, same datalist, same saved value. */
-          var playWrap = document.createElement("div");
-          playWrap.className = "lender-field approach";
-          var playLab = document.createElement("label");
-          playLab.textContent = "How did you apply?";
-          var play = document.createElement("input");
-          play.type = "text";
-          play.setAttribute("list", "fh-play-names");
-          play.placeholder = "Pick one, or type it";
-          if (m.id) {
-            play.setAttribute("data-lender-id", m.id);
-            play.id = "fh-approach-" + m.id;
-            playLab.setAttribute("for", play.id);
-          }
-          playWrap.appendChild(playLab);
-          playWrap.appendChild(play);
-          playRow.appendChild(playWrap);
+          /* "HOW DID YOU APPLY?" IS GONE — owner-set 2026-09-06.
+             Chris: "the system already knows the way that it should be applied,
+             so that's a useless option."
+
+             He is right twice over. The lender row already carries the apply
+             method from the lender record, so asking a human to re-type it was
+             asking for something we hold. And nothing ever read the answer back:
+             the value landed in application_decisions.play_name, and the only
+             caller of listOutcomesForLaterPlays (src/plays/outcomes.mjs) is a
+             test file. No screen, no report, no workflow. A required-looking box
+             on the busiest row of the busiest screen, feeding nothing.
+
+             The column and its write path stay — play_name is nullable, "Empty
+             is allowed" per 261_application_decision_play.sql, and the read
+             function is there for whenever a screen wants it. This removes the
+             asking, not the ability. */
 
           /* HOW MUCH the bank approved — OPTIONAL, and filled in whenever the
              team learns it. It is the column the Funded move on the Pipeline
@@ -4067,13 +4063,19 @@ document.addEventListener("DOMContentLoaded", function () {
           if (m.id) suggest.setAttribute("data-amount-suggest-lender-id", m.id);
           answer.appendChild(suggest);
 
+          /* The three words, spelled once. The buttons, the saved line and the
+             already-saved line all read from here, so they cannot drift. Keys
+             are the stored values; applications_status_ck allows all three. */
+          var WORD_FOR = { Approved: "Approved", Denied: "Declined", Applied: "Pending" };
+
           function logBank(status) {
             var payload = {
               client_id: clientId,
               lender_id: m.id,
-              status: status,
-              play_name: play.value || ""
+              status: status
             };
+            /* play_name is no longer sent. The column stays nullable and the
+               write path still accepts it; nothing asks a human for it now. */
             /* AN EMPTY BOX IS ALLOWED ON A YES. "Approved, amount unknown" is a
                real state, so a blank box sends no approved_amount at all and the
                column keeps its NULL. Blank is never 0.
@@ -4105,9 +4107,8 @@ document.addEventListener("DOMContentLoaded", function () {
               if (res && res.ok) {
                 var waitingNow = (status === "Approved" && !payload.approved_amount);
                 needChip.hidden = !waitingNow;
-                statusEl.textContent = (status === "Approved" ? "Bank yes" : "Bank no")
+                statusEl.textContent = WORD_FOR[status]
                   + (payload.approved_amount ? (" · $" + payload.approved_amount) : "")
-                  + (play.value ? (" · " + play.value) : "")
                   + " saved."
                   + (waitingNow ? " Add the dollar amount here as soon as the bank tells you." : "");
                 // Re-count what is still waiting across every lender on the file.
@@ -4118,18 +4119,32 @@ document.addEventListener("DOMContentLoaded", function () {
               statusEl.textContent = "Could not save bank yes/no.";
             });
           }
-          var yes = document.createElement("button");
-          yes.type = "button";
-          yes.textContent = "Bank yes";
-          yes.style.cssText = "padding:4px 8px;font-size:var(--fs-caption)";
-          yes.addEventListener("click", function () { logBank("Approved"); });
-          var no = document.createElement("button");
-          no.type = "button";
-          no.textContent = "Bank no";
-          no.style.cssText = "padding:4px 8px;font-size:var(--fs-caption)";
-          no.addEventListener("click", function () { logBank("Denied"); });
-          answer.appendChild(yes);
-          answer.appendChild(no);
+          /* APPROVED / DECLINED / PENDING — owner-set 2026-09-06.
+             Chris: "the words btw are Approved / Declined / Pending right?
+             cause when we apply it goes either to approved / declined or
+             pending."
+
+             The buttons said "Bank yes" and "Bank no", and there was no third
+             one — so an application that had gone in and was waiting on the bank
+             had nowhere to be recorded. It sat looking untouched, which is why
+             the apply door says out loud that applications still out with a bank
+             "are not recorded anywhere".
+
+             The stored values do not change: Approved stays "Approved",
+             Declined writes "Denied" and Pending writes "Applied", all three
+             already allowed by applications_status_ck. The words on screen are
+             now Chris's words, and WORD_FOR is the one place they are spelled,
+             so the buttons and the saved-confirmation line cannot drift apart
+             the way "Bank yes" and "Approved" already had. */
+          [["Approved", "Approved"], ["Declined", "Denied"], ["Pending", "Applied"]]
+            .forEach(function (pair) {
+              var b = document.createElement("button");
+              b.type = "button";
+              b.textContent = pair[0];
+              b.style.cssText = "padding:4px 8px;font-size:var(--fs-caption)";
+              b.addEventListener("click", function () { logBank(pair[1]); });
+              answer.appendChild(b);
+            });
           row.appendChild(playRow);
           listEl.appendChild(row);
         });
@@ -4137,16 +4152,8 @@ document.addEventListener("DOMContentLoaded", function () {
            land. Deliberately NOT awaited: a slow or failed inbox read must not
            hold up the lender list or the saved-amount repaint below. */
         loadBankAmounts();
-        if (!document.getElementById("fh-play-names")) {
-          var dl = document.createElement("datalist");
-          dl.id = "fh-play-names";
-          ["Card stacking first pull", "In-branch visit", "Online only", "Docs first"].forEach(function (name) {
-            var opt = document.createElement("option");
-            opt.value = name;
-            dl.appendChild(opt);
-          });
-          document.body.appendChild(dl);
-        }
+        /* The fh-play-names datalist that fed "How did you apply?" is gone with
+           the field it filled. Nothing else referenced it. */
         return refreshSaved().then(function () {
           return readyCopy || (n + " lenders ready.");
         });
