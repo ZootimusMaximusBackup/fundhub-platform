@@ -99,7 +99,22 @@
   included_files = [
     "assets/ebooks/fundhub-ebook-placeholder.pdf",
     "assets/gifts/message-blaster.dmg",
-    "scripts/black-reports/**"
+    "scripts/black-reports/**",
+    # src/finance/vendor/crs-engine.cjs is a one-line CommonJS shim:
+    #   module.exports = require("../../../vendor/underwriteiq-full/…/engine.js")
+    # esbuild leaves that require() external, so the zip shipped without the
+    # vendor tree and EVERY scheduled function died at load with
+    #   Cannot find module '../../vendor/underwriteiq-full/api/lite/crs/lender-matrix.js'
+    # Measured 2026-09-06: from 17:50 the site had no working cron at all —
+    # commas-inbox-sweeper, staff-message-sweeper, social-publish-sweeper,
+    # hubstaff-poll-sweeper and creative-job-runner all threw on invoke. A
+    # simulated $3,000 receipt sat pending for 20 minutes with nothing to drain
+    # it, and the failure is silent: the queue row just stays `pending`, no
+    # alarm, and the deploy that caused it is green.
+    #
+    # Same class as the two entries in external_node_modules below and as
+    # scripts/black-reports/** above: a runtime path esbuild cannot see.
+    "vendor/underwriteiq-full/**"
   ]
   # letter-generator.js require()s this at load time. esbuild leaves it
   # external, which 502s the whole /api/* function (login included).
