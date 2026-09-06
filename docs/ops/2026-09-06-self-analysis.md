@@ -617,3 +617,70 @@ first, name the ads, then wire the numbers.
 
 **The wider FundHub AI product.** This is being built for Chris's own use first. Nothing
 here should be generalised for other tenants until he has used it for a few weeks.
+
+---
+
+# Correction 2 — the Meta pull is already built, and ads do not need names
+
+Chris pushed back on both halves of the "parked" recommendation. He was right on both,
+and the second one was a repeat of a mistake this repo has a memory note about: reporting
+something as not built without running the code.
+
+## Ads do not need names. The database already says so.
+
+`db/migrations/286_client_ad_attribution.sql` line 79:
+
+> `utm_content` → ad id. Leading digits, **optionally** followed by `-slug` or `_slug`.
+
+The generated column is `fundhub_ad_id(utm_content)`, and its regex is
+`^([0-9]{1,9})(?:[-_][^[:space:]]*)?$`. **The slug is optional.** `utm_content=43` with
+no name at all resolves to ad 43, and `src/http/ad-attribution.pg.test.mjs` line 156
+tests exactly that case and passes.
+
+`scripts/ads/check-registry-titles.mjs` says the same thing in its own header: "An ad
+with no title still tracks correctly, but every report grouped by ad name shows a bare
+digit." So the title was never load-bearing. It makes a report readable. Nothing joins on
+it, nothing breaks without it.
+
+**Owner decision, 2026-09-06: ads are identified by id. Naming is optional and is not a
+prerequisite for anything.** The 30-minute naming job is dropped from the plan.
+
+*One small follow-up, not done this session:* `src/ads/registry.test.mjs` carries an
+`UNTITLED_ALLOW_LIST` of 21 ids so the suite stays green. If names are optional forever,
+that test should be relaxed rather than left with a list that grows with every new ad.
+
+## The Meta pull exists, is routed, and is not connected
+
+Calling it "parked" was wrong. It is built.
+
+- `api/campaigns/sync.mjs` - "pull Meta campaigns / ad sets / ads / insights into local
+  tables for one partner connection." It walks the ad account, reads each ad, and calls
+  `/{ad_id}/insights`, keyed on **Meta's own ad id**, exactly as Chris said it should.
+- `src/adplatforms/meta.mjs` - 241 lines. `fetchInsights` and `normalizeInsight`, plus
+  create, pause, resume and budget calls.
+- Both are routed. `netlify/functions/api.mjs` lines 607-611 map `campaigns/sync`,
+  `campaigns/connections` and `campaigns/meta-agency`.
+- `db/migrations/046_ad_platforms.sql` has the tables, and `ad_platform_connections`
+  stores the access token encrypted at rest, scoped to one partner.
+
+**What is actually missing is one row, not a build.** There is no
+`ad_platform_connections` record, so there is no ad account and no token, and the sync
+returns `credential_missing` rather than inventing one. `META_API_VERSION` is the only
+Meta name in `.env.example`; `META_APP_ID` and `META_APP_SECRET` are optional and only
+needed for token refresh.
+
+**Two things that will fail closed when it is first connected, by design:**
+
+1. `ad_platform_category_map` ships empty on purpose. The spec named
+   `FINANCIAL_PRODUCTS_AND_SERVICES`, which is not a real Meta enum value, and for funding
+   and credit-card offers the right one is probably `CREDIT`. Every Meta **write** refuses
+   until a human sets it. Reads and insights are unaffected.
+2. `src/adplatforms/meta.mjs` carries a "CONFIRM BEFORE THIS RUNS LIVE" marker. The
+   endpoint shapes follow the documented API but have never been run against a real ad
+   account. First connection should be one read call, checked by eye.
+
+## What this changes in the plan
+
+Reading what is running in the ad account, its copy, its spend and its cost per booking is
+a **connection job, not a build job**. It is independent of the script generator and can
+happen in either order.

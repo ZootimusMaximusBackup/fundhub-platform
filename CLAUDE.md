@@ -126,6 +126,8 @@ What actually makes generated scripts good is what the generator is allowed to r
 
 Enforce style and compliance with a checker that runs before Chris sees the output. A regex cannot lie about having run; an agent can. `.claude/workflows/copy.js` is the pattern to copy.
 
+**Ads are identified by id, not by name (owner-set 2026-09-06).** `utm_content` is leading digits with an OPTIONAL `-slug`; `fundhub_ad_id()` in `db/migrations/286_client_ad_attribution.sql` ignores the slug entirely, and `utm_content=43` resolves correctly with no name at all. Meta's own API keys on its ad id too. So never make naming a blocker, never ask Chris to name ads before something else can proceed, and never call an untitled ad a defect. A title makes a report readable and nothing else.
+
 ## 4. Journey documentation
 
 Every flow in this system is documented as a Mermaid flowchart. This is how a non-coder sees what the system actually does. Keeping it accurate is part of the work, not a nice-to-have.
