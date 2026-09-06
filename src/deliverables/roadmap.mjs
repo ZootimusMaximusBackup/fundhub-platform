@@ -6,7 +6,7 @@
 import { esc } from "./escape.mjs";
 import { usd, median, spaced, parseMoney } from "./format.mjs";
 import { rankedRevolving, targetText, paydownAmt, bureauStatus, heroCard, fastestWins,
-  lenderBuckets, utilTotalsKnown, cardsWithNoTarget } from "./derive.mjs";
+  lenderBuckets, utilTotalsKnown, cardsWithNoTarget, openRevolving } from "./derive.mjs";
 import { cover, ctaPage, section, table, PB } from "./chrome.mjs";
 import { svgProjection, svgDisputeFlow } from "./charts.mjs";
 
@@ -118,7 +118,10 @@ export function buildRoadmap(client) {
      one is the one that is easy to miss: some cards report a limit and some do
      not, so the total is real for the cards it covers and says what it cannot
      cover. */
-  if (!utilTotalsKnown(c)) {
+  if (!openRevolving(c).length) {
+    // No open revolving cards at all is not "no limit reported" — there is
+    // simply no paydown plan to describe, so nothing is said about one.
+  } else if (!utilTotalsKnown(c)) {
     h.push("<p><b>No open card on this file reports a credit limit, so there is no 10% total "
       + "to work back to.</b> Keep the balances moving down and we will set a target as soon "
       + "as a limit reports.</p>");

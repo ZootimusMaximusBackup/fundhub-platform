@@ -246,7 +246,7 @@ const BASELINE = Object.freeze({
   engineNoBureaus:        "79f0c7c1d8eb1853e314681051005eeafd3b07550da2855ab9eb6bbffe8a8260",
   blackReportClient:      "d4ead7287903034f5100f0b80ff5e85925e514a34611164beb727bef969599a8",
   emptyBlackReportClient: "21826d2ea2496e6674a8bb909de81d2aef49a277c3470c1f854094950fb2ca79",
-  generatorScript:        "6538c280797b9420cc62cfffdb2df57d0af6e254da4fb87cd37493bef48750f1"
+  generatorScript:        "f9925e8921922e521a108b90be122e8240232529279b0439be73668d50a1c050"
 });
 
 /** The four PDFs the in-process printer produces, and the words inside each. */

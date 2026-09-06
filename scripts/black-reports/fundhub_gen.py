@@ -350,17 +350,15 @@ def util_totals_known(c):
     return c.get("util_total_limit") is not None and c.get("util_target_balance") is not None
 
 
+def open_revolving(c):
+    """Revolving rows that are open and carry a creditor name."""
+    return [row for row in (c.get("revolving") or [])
+            if row and row[0] and not (len(row) > 6 and row[6] == "CLOSED")]
+
+
 def cards_with_no_target(c):
     """Open revolving rows whose 10% target the file cannot produce."""
-    n = 0
-    for row in c.get("revolving") or []:
-        if not row or not row[0]:
-            continue
-        if len(row) > 6 and row[6] == "CLOSED":
-            continue
-        if target_bal(row) is None:
-            n += 1
-    return n
+    return sum(1 for row in open_revolving(c) if target_bal(row) is None)
 
 
 def total_paydown_sentence(c, total_pd, start):
@@ -373,6 +371,10 @@ def total_paydown_sentence(c, total_pd, start):
         cannot cover the rest, so it says so;
       * all do -> the sentence as it always read.
     """
+    # No open revolving cards at all is not "no limit reported" -- there is
+    # simply no paydown plan to describe, so nothing is said about one.
+    if not open_revolving(c):
+        return ""
     if not util_totals_known(c):
         return ("<p><b>No open card on this file reports a credit limit, so there is no 10% "
                 "total to work back to.</b> Keep the balances moving down and we will set a "

@@ -79,6 +79,9 @@ function cardsWithNoTarget(c) {
 }
 
 function totalPaydownSentence(c) {
+  // No open revolving cards at all is not "no limit reported" — there is simply
+  // no paydown plan to describe, so nothing is said about one.
+  if (!openRevolving(c).length) return "";
   if (c.util_target_balance == null || c.util_total_balance == null) {
     return "No open card on this file reports a credit limit, so there is no 10% total to work back to. Keep the balances moving down and we will set a target as soon as a limit reports.";
   }
@@ -985,7 +988,8 @@ function roadmap(c, r) {
       return [row[0], usd(row[2]), usd(row[3]), row[5] || "-", owe];
     })
   );
-  r.callout(totalPaydownSentence(c));
+  const paydownTotal = totalPaydownSentence(c);
+  if (paydownTotal) r.callout(paydownTotal);
   if ((c.negatives || []).length) {
     step("Round 1 dispute letters. One letter per bureau, naming these items:");
     c.negatives.forEach((n) => r.para(`${n.n}. ${n.creditor} - ${n.type} - ${n.bureau}${n.balance ? ` - ${n.balance}` : ""}`));
