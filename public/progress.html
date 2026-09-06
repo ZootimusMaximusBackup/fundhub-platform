@@ -269,6 +269,50 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
     location.href = "/portal-login.html?next=" + encodeURIComponent("/progress.html");
   }
 
+  /* ── WHOSE FILE THIS PAGE IS SHOWING ──────────────────────────────────────
+
+     WHAT WAS BROKEN (walk finding 15, 2026-09-06). This page opened as three
+     lines — the header, the back link, and "We could not load your file just
+     now. Please refresh in a moment." — and refreshing never helped, because
+     nothing about a refresh could.
+
+     The read below is pinned to a CLIENT's session and works for a client. But
+     staff and clients share one localStorage key for their token
+     (public/login.html:230 and public/portal-login.html:147 both write
+     `fh_token`), so a staff member who clicked the link from a client's portal
+     arrived here with a STAFF token and no client named. The endpoint cannot
+     guess, and answers 400 client_id_required. This page then read that as "the
+     read failed" and printed the refresh line, which is the one instruction
+     that could not possibly work.
+
+     TWO HALVES TO THE FIX AND THIS IS THE FIRST. client-portal.html now puts
+     the id it is already showing on the link for a staff viewer, and this page
+     passes it through. THE SERVER STILL DECIDES: it never reads client_id from
+     a client principal — a client is pinned to themself and this parameter is
+     not consulted at all — and it refuses a staff member whose org does not
+     hold that file. Nothing here widens what anybody may see; it names which
+     file a staff member is asking about, which is the question that was
+     missing. The second half is the error copy at the bottom of this file. */
+  function clientIdFromUrl() {
+    try {
+      var q = new URLSearchParams(location.search);
+      return q.get("client_id") || q.get("id") || "";
+    } catch (e) { return ""; }
+  }
+
+  function progressPath() {
+    var id = clientIdFromUrl();
+    return PROGRESS_PATH + (id ? "?client_id=" + encodeURIComponent(id) : "");
+  }
+
+  /* The way back is the way in. A staff member who arrived with a file open
+     should land on that same file's portal, not on an empty one. */
+  function paintBackLink() {
+    var a = document.querySelector("header .back");
+    var id = clientIdFromUrl();
+    if (a && id) a.setAttribute("href", "/app/client-portal.html?id=" + encodeURIComponent(id));
+  }
+
   function api(path, options) {
     var init = options || {};
     init.headers = init.headers || {};
@@ -1356,8 +1400,9 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
 
   function boot() {
     if (!token()) return toLogin();
+    paintBackLink();
 
-    api(PROGRESS_PATH).then(function (r) {
+    api(progressPath()).then(function (r) {
       if (r.status === 401) return toLogin();
       if (r.status === 403) {
         return fatal("This page shows one person’s file and your sign-in does not open it. "
@@ -1370,8 +1415,26 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
                    + "We are switching this on now. Everything on your file is safe — "
                    + "nothing here is missing, it just is not connected yet.");
       }
+      /* THE SECOND HALF OF WALK FINDING 15. A staff sign-in that names no
+         client gets 400 client_id_required, and that is not a broken read — it
+         is a question nobody answered. Telling somebody to refresh cannot
+         supply a client id, so this says what actually reaches the file. It is
+         a staff-only state: a client is pinned to their own file and can never
+         land here. */
+      if (r.status === 400 && r.body && r.body.error === "client_id_required") {
+        return fatal("<b>This page shows one client's file, and no client is named.</b><br>"
+                   + "You are signed in as staff. Open the client in the CRM and use the "
+                   + "“See exactly where your file stands” link on their portal, "
+                   + "which carries their file with it.");
+      }
       if (!r.ok || !r.body || r.body.ok === false) {
-        return fatal("We could not load your file just now. Please refresh in a moment.");
+        /* EVERY OTHER FAILURE. "Refresh in a moment" was the only instruction
+           here and it was wrong for every cause the page could not name, so it
+           now offers the two routes that do reach a person. */
+        return fatal("<b>We could not load your file just now.</b><br>"
+                   + "This page did not load — nothing has changed on your file. "
+                   + "Go back to your portal and try again in a few minutes. "
+                   + "If it still will not open, say so in chat and we will look at it.");
       }
 
       var d = r.body;
