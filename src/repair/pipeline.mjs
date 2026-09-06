@@ -30,6 +30,31 @@ export async function moveRepairCard(db, { orgId, clientId, stageKey }) {
   });
 }
 
+/* readRepairStage — where this client's optimization card is sitting right now.
+ *
+ * RETURNS NULL WHEN IT CANNOT TELL. No card, no org, or a read that failed all
+ * answer null, and null means unknown — never "intake". A caller deciding
+ * whether an upload may advance the file must treat unknown as "do not move",
+ * because the alternative is dragging a round-5 card backwards. */
+export async function readRepairStage(db, { orgId, clientId } = {}) {
+  if (!db?.query || !orgId || !clientId) return null;
+  try {
+    const r = await db.query(
+      `SELECT ps.key AS stage_key
+         FROM cards c
+         JOIN pipeline_stages ps ON ps.id = c.stage_id
+         JOIN pipelines p ON p.id = c.pipeline_id AND p.key = $3
+        WHERE c.org_id = $1::uuid AND c.client_id = $2::uuid
+        LIMIT 1`,
+      [orgId, clientId, REPAIR_PIPELINE]
+    );
+    return r.rows?.[0]?.stage_key ?? null;
+  } catch (err) {
+    console.warn("[repair] stage read failed:", err && err.message);
+    return null;
+  }
+}
+
 export async function stallRepairCard(db, { orgId, clientId, reason }) {
   const moved = await moveRepairCard(db, { orgId, clientId, stageKey: STALLED_STAGE });
   return { ...moved, stalled: true, reason };

@@ -181,7 +181,7 @@ pin the boundary rather than just the happy path.
 ## A screen that was recorded as blocked, and was not
 
 `inquiry-remover` was listed as having no data source, on the grounds that
-`/api/inquiry` returns the external Airtable shape. That was true and beside the
+`/api/inquiry` returns the external spreadsheet shape. That was true and beside the
 point: there is a local `inquiry_log` table whose columns map 1:1 onto the
 screen's Work Queue (bureau, inquiry, status, call_attempts, outcome). The
 earlier note had checked the endpoint and never checked the schema.

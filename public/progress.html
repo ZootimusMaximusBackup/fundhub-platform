@@ -1,0 +1,1271 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Fundhub — Your progress</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!--
+  THE CLIENT PROGRESS PAGE.
+
+  IT LIVES AT THE SITE ROOT AND NOT UNDER /app/, FOR THE REASON public/contract.html
+  GIVES AT ITS OWN :14-24. Every file in public/app/ loads shell.js, and shell.js
+  grants a `client` principal exactly one screen — ROLE_TABS.client is
+  ["client-portal.html"] (public/app/shell.js:356). A second client screen under
+  /app/ would therefore have to widen that list for everybody. It also loads
+  data.js, which attaches a STAFF bearer token to every request. Neither belongs
+  on a page a customer opens.
+
+  ITS CREDENTIAL IS THE CLIENT'S OWN SESSION TOKEN, the `fh_token` that
+  public/portal-login.html:147 writes to localStorage after a magic link. It is
+  sent as an Authorization header, exactly as client-portal.html:2065 does it.
+  No token, or a token the server refuses, and this page sends the visitor to
+  /portal-login.html. It never guesses a client id from the address bar: the
+  server pins a client principal to itself.
+
+  IT HOLDS NO SERVER-RENDERED HTML AND NEVER WILL. Everything below the fold is
+  built here, in the browser, from the JSON facts described in
+  docs/workflows/portal-progress-contract.md. Storing generated markup would put
+  a second copy of the truth on disk and would reopen the stored-HTML hole that
+  api/documents/[id].mjs:33-70 was hardened to close. There is exactly ONE
+  escape function on this page, esc(), and every value that reaches innerHTML
+  goes through it.
+
+  IT ANSWERS THREE QUESTIONS, IN THIS ORDER, EVERY VISIT:
+    1. Where am I?              — the stage card
+    2. What moved?              — the score panels and the movement line
+    3. What is next, and whose  — exactly ONE item, labelled "us" or "you"
+       job is it?
+
+  WHAT IT MUST NEVER SAY, and the guards that hold each one:
+    - A score that was never pulled reads "not pulled yet". Never 0, never a
+      blank a client could mistake for a low number. See scoreText().
+    - A complaint to a federal regulator or a state attorney general is NEVER
+      described as lodged or accepted. Nothing in this system records whether one
+      was actually submitted (src/metro2/letters/catalog.mjs:57-65). See
+      roundNote().
+    - A paid alternative that is null is not free. It is simply absent.
+      See waypointCard().
+    - The banned industry term for this service does not appear anywhere in this
+      file, comments included, so a grep over the shipped page is clean without
+      anyone having to judge what counts as copy. Owner-set: client-facing words
+      are funding-optimisation and capital-readiness language.
+
+  NO NEW DEPENDENCY. No framework, no chart library, no date library. The one
+  chart on this page is a hand-written SVG polyline, which is the same technique
+  scripts/black-reports/fundhub_gen.py already uses for all nine of its charts.
+-->
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--ink:#0A0A0A;--paper:#FCFCFC;--line:#E4E4E7;--gray:#52525B;--gray2:#A1A1AA;
+      --soft:#F4F4F5;--ok:#A8D8B0;--warn:#F5CE8F;--alert:#F2A69B;--info:#A9C6E8;--plum:#C4B3E5;
+      --sans:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.6;
+     -webkit-font-smoothing:antialiased;padding:0 16px 90px}
+.spectrum{height:3px;background:linear-gradient(90deg,#F2A69B,#F5CE8F,#A8D8B0,#A9C6E8,#C4B3E5);margin:0 -16px}
+.wrap{max-width:880px;margin:0 auto}
+header{padding:26px 0 18px;border-bottom:1px solid var(--line);margin-bottom:22px}
+header .brand{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--gray2)}
+header h1{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-top:7px}
+header .sub{color:var(--gray);font-size:13px;margin-top:6px}
+header .back{display:inline-block;margin-top:12px;font-size:12px;color:var(--gray);text-decoration:none;border-bottom:1px solid var(--line)}
+header .back:hover{color:var(--ink)}
+h2.sec{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+     color:var(--gray2);margin:30px 0 12px}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:20px 22px}
+.card + .card{margin-top:12px}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:5px;font-family:var(--mono);
+     font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;border:1px solid transparent}
+.b-ok{background:rgba(168,216,176,.24);border-color:var(--ok);color:#2C5138}
+.b-warn{background:rgba(245,206,143,.26);border-color:var(--warn);color:#6B4A12}
+.b-alert{background:rgba(242,166,155,.26);border-color:var(--alert);color:#6E2A22}
+.b-info{background:rgba(169,198,232,.26);border-color:var(--info);color:#22415F}
+.b-gray{background:var(--soft);border-color:var(--line);color:var(--gray)}
+.stage-h{font-size:19px;font-weight:700;letter-spacing:-.01em;margin:10px 0 4px}
+.stage-l{color:var(--gray);font-size:13px}
+.meter{height:6px;border-radius:3px;background:var(--soft);margin:16px 0 8px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--plum)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 15px;
+     text-align:left;width:100%;cursor:pointer;transition:border-color .12s,box-shadow .12s}
+.panel:hover{border-color:var(--gray2);box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.panel[disabled]{cursor:default;opacity:1}
+.panel[disabled]:hover{border-color:var(--line);box-shadow:none}
+.panel .bu{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray2)}
+.panel .val{font-family:var(--mono);font-size:30px;font-weight:600;letter-spacing:-.02em;margin-top:8px;line-height:1}
+.panel .val.unk{font-size:15px;font-weight:500;color:var(--gray);letter-spacing:0;padding:8px 0 6px}
+.panel .when{font-size:11px;color:var(--gray2);margin-top:8px}
+.panel .open{font-size:11px;color:var(--gray);margin-top:6px}
+.toggle{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.toggle button{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+     padding:5px 10px;border:1px solid var(--line);border-radius:5px;background:#fff;cursor:pointer;color:var(--gray)}
+.toggle button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.moveline{font-size:15px;line-height:1.7}
+.moveline b{font-weight:600}
+.chart{margin-top:16px;border-top:1px solid var(--line);padding-top:16px}
+.chart svg{width:100%;height:120px;display:block;overflow:visible}
+.chart .lg{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:11px;color:var(--gray)}
+.chart .lg i{display:inline-block;width:9px;height:2px;vertical-align:middle;margin-right:5px}
+.next{border-left:3px solid var(--plum)}
+.next .who{margin-bottom:9px}
+.next .t{font-size:17px;font-weight:600}
+.next .d{color:var(--gray);font-size:13px;margin-top:5px}
+.wp{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line)}
+.wp:last-child{border-bottom:0}
+.wp .tick{flex:0 0 18px;height:18px;border-radius:50%;border:1.5px solid var(--line);margin-top:2px;
+     display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--gray2)}
+.wp.done .tick{background:var(--ok);border-color:var(--ok);color:#2C5138}
+.wp .bd{flex:1 1 auto;min-width:0}
+.wp .ti{font-weight:600}
+.wp.done .ti{color:var(--gray);text-decoration:line-through}
+.wp .mt{font-size:12px;color:var(--gray);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.wp .alt{margin-top:9px}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:7px;border:1px solid var(--ink);
+     background:var(--ink);color:#fff;font-size:13px;font-weight:500;cursor:pointer}
+.btn:hover{opacity:.88}
+.btn[disabled]{background:var(--soft);border-color:var(--line);color:var(--gray2);cursor:not-allowed;opacity:1}
+.btn.ghost{background:#fff;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--gray2);opacity:1}
+.btn.sm{padding:6px 11px;font-size:12px}
+.rows{margin-top:4px}
+.row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.row:last-child{border-bottom:0}
+.row .rl{color:var(--gray)}
+.row.total{font-weight:700;border-bottom:0;border-top:1px solid var(--ink);margin-top:4px;padding-top:11px}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+.opt:last-of-type{border-bottom:0}
+.opt input{margin-top:4px;width:15px;height:15px;flex:0 0 15px;accent-color:var(--ink)}
+.opt .ol{flex:1 1 auto}
+.opt .op{font-family:var(--mono);white-space:nowrap}
+.note{background:var(--soft);border-radius:7px;padding:11px 13px;font-size:12px;color:var(--gray);margin-top:14px}
+.note b{color:var(--ink);font-weight:600}
+.tl{position:relative;padding-left:18px}
+.tl::before{content:"";position:absolute;left:4px;top:6px;bottom:6px;width:1px;background:var(--line)}
+.tl .ev{position:relative;padding:8px 0}
+.tl .ev::before{content:"";position:absolute;left:-18px;top:15px;width:9px;height:9px;border-radius:50%;
+     background:#fff;border:1.5px solid var(--gray2)}
+.tl .ev .d{font-family:var(--mono);font-size:11px;color:var(--gray2)}
+.tl .ev .x{font-size:13px;margin-top:2px}
+.docs a{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);
+     color:inherit;text-decoration:none;font-size:13px;cursor:pointer}
+.docs a:last-child{border-bottom:0}
+.docs a:hover .dt{text-decoration:underline}
+.docs .dd{font-family:var(--mono);font-size:11px;color:var(--gray2);white-space:nowrap}
+.share{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.share input{flex:1 1 240px;min-width:0;padding:9px 11px;border:1px solid var(--line);border-radius:7px;
+     font-family:var(--mono);font-size:12px;background:var(--soft)}
+.empty{color:var(--gray);font-size:13px}
+.err{background:rgba(242,166,155,.16);border:1px solid var(--alert);border-radius:8px;padding:13px 15px;font-size:13px}
+.hidden{display:none}
+dialog{border:1px solid var(--line);border-radius:12px;padding:0;max-width:440px;width:calc(100% - 32px);
+     box-shadow:0 12px 40px rgba(0,0,0,.16);color:var(--ink)}
+dialog::backdrop{background:rgba(10,10,10,.4)}
+dialog .dlg{padding:24px}
+dialog h3{font-size:17px;font-weight:700;margin-bottom:6px}
+dialog .ds{color:var(--gray);font-size:13px}
+dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}
+.skel{color:var(--gray2);font-size:13px;padding:22px 0}
+@media (max-width:520px){.panels{grid-template-columns:repeat(2,1fr)}header h1{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="spectrum"></div>
+<div class="wrap">
+
+  <header>
+    <div class="brand">Fundhub</div>
+    <h1 id="hTitle">Your progress</h1>
+    <div class="sub" id="hSub">Loading your file…</div>
+    <a class="back" href="/app/client-portal.html">← Back to your portal</a>
+  </header>
+
+  <div id="fatal" class="err hidden"></div>
+
+  <main id="main" class="hidden">
+
+    <h2 class="sec">Where you are</h2>
+    <section class="card" id="cStage"></section>
+
+    <h2 class="sec">Your scores</h2>
+    <section id="cScores"></section>
+
+    <h2 class="sec">What moved</h2>
+    <section class="card" id="cMove"></section>
+
+    <h2 class="sec">What happens next</h2>
+    <section class="card next" id="cNext"></section>
+
+    <h2 class="sec">Your checklist</h2>
+    <section class="card" id="cWaypoints"></section>
+
+    <section id="cPaid"></section>
+
+    <h2 class="sec">Your documents</h2>
+    <section class="card docs" id="cDocs"></section>
+
+    <h2 class="sec">What has happened so far</h2>
+    <section class="card" id="cTimeline"></section>
+
+    <h2 class="sec">Refer a friend</h2>
+    <section class="card" id="cReferral"></section>
+
+  </main>
+</div>
+
+<dialog id="dlg"><div class="dlg">
+  <h3 id="dlgT"></h3>
+  <div class="ds" id="dlgS"></div>
+  <div id="dlgB"></div>
+  <div class="da" id="dlgA"></div>
+</div></dialog>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ── THE ONE ESCAPE FUNCTION ──────────────────────────────────────────────
+     Every value that reaches innerHTML on this page passes through here. It is
+     the same implementation public/contract.html:182 uses. If a second one ever
+     appears in this file, one of them will be the weaker one. */
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ── WAVE 2'S ENDPOINTS, NAMED IN ONE PLACE ───────────────────────────────
+     The read is built to docs/workflows/portal-progress-contract.md by a
+     separate lane. The paid-round write is built by a third. Both are named
+     here and nowhere else, so if either lane chose a different path this page
+     is a one-line change rather than a search.
+
+     If PROGRESS_PATH answers 404 this page says so plainly instead of showing a
+     half-empty screen that looks like an empty file. */
+  var PROGRESS_PATH     = "/api/read/client-progress";
+  /* NOT "/api/paid-services/request". This page was written against the contract
+     before the endpoint existed and guessed a sub-path; the endpoint that shipped
+     is flat, and netlify/functions/api.mjs explains why — a key with a slash
+     would sit under the "documents/" prefix branch, which src/http/routes.test.mjs
+     forbids. GET lists the price, POST mints the checkout link. */
+  var PAID_REQUEST_PATH = "/api/paid-services";
+  var REFERRAL_PATH     = "/api/affiliates/refer";
+  var DOWNLOAD_PATH     = "/api/documents-download";
+
+  /* ── THE CREDENTIAL ───────────────────────────────────────────────────────
+     public/portal-login.html:147 stores the client's token here after a magic
+     link. Same read as public/app/client-portal.html:2065. A private-mode
+     browser can throw on localStorage, so it is wrapped. */
+  function token() {
+    try { return localStorage.getItem("fh_token") || ""; } catch (e) { return ""; }
+  }
+
+  function toLogin() {
+    location.href = "/portal-login.html?next=" + encodeURIComponent("/progress.html");
+  }
+
+  function api(path, options) {
+    var init = options || {};
+    init.headers = init.headers || {};
+    init.headers["accept"] = "application/json";
+    var t = token();
+    if (t) init.headers["authorization"] = "Bearer " + t;
+    if (init.body !== undefined && typeof init.body !== "string") {
+      init.headers["content-type"] = "application/json";
+      init.body = JSON.stringify(init.body);
+    } else if (init.body !== undefined) {
+      init.headers["content-type"] = "application/json";
+    }
+    init.credentials = "same-origin";
+    return fetch(path, init).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (body) {
+        return { status: r.status, ok: r.ok, body: body || {} };
+      });
+    });
+  }
+
+  /* ── FORMATTERS. Every one of them has to survive null. ───────────────────
+     The contract's first rule is that unknown arrives as null and stays
+     unknown. A formatter that turns null into "0" or "—" without saying why is
+     how a client reads a missing pull as a bad score. */
+
+  var MONTHS = ["January","February","March","April","May","June",
+                "July","August","September","October","November","December"];
+
+  function parseDate(iso) {
+    if (!iso) return null;
+    var d = new Date(iso);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  /** "3 March 2026", or null. Never today's date as a stand-in. */
+  function longDate(iso) {
+    var d = parseDate(iso);
+    if (!d) return null;
+    return d.getUTCDate() + " " + MONTHS[d.getUTCMonth()] + " " + d.getUTCFullYear();
+  }
+
+  /** "March" — used for "up 36 since January". Null-safe. */
+  function monthName(iso) {
+    var d = parseDate(iso);
+    return d ? MONTHS[d.getUTCMonth()] : null;
+  }
+
+  /** Whole days from now until `iso`. Negative means it has passed. */
+  function daysUntil(iso) {
+    var d = parseDate(iso);
+    if (!d) return null;
+    return Math.round((d.getTime() - Date.now()) / 86400000);
+  }
+
+  /** Integer cents to "$100" or "$1,234.50". Money is integer cents
+      (src/commissions/money.mjs) and is never floated through a division that
+      loses a penny on the way to the screen. */
+  function money(cents) {
+    if (cents == null || isNaN(Number(cents))) return null;
+    var n = Math.round(Number(cents));
+    var neg = n < 0;
+    n = Math.abs(n);
+    var whole = String(Math.floor(n / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    var part = n % 100;
+    return (neg ? "-$" : "$") + whole + (part ? "." + (part < 10 ? "0" : "") + part : "");
+  }
+
+  var BUREAU_NAMES = {
+    experian: "Experian",
+    equifax: "Equifax",
+    transunion: "TransUnion",
+    experian_business: "Experian Business",
+    dun_bradstreet: "Dun & Bradstreet",
+    equifax_business: "Equifax Business"
+  };
+  function bureauName(key) {
+    var k = String(key || "").toLowerCase();
+    if (Object.prototype.hasOwnProperty.call(BUREAU_NAMES, k)) return BUREAU_NAMES[k];
+    return k.replace(/_/g, " ") || "Bureau";
+  }
+
+  /* ── THE STAGE COPY ───────────────────────────────────────────────────────
+     Mirrors the keys in src/repair/pipeline.mjs REPAIR_STAGES. The words live
+     here and not on the server, which is the rule api/read/portal-summary.mjs:20
+     already states: the endpoint returns facts, the screen owns the sentence.
+     An unknown key falls back rather than rendering the raw key at a client. */
+  var STAGE_COPY = {
+    intake:            { t: "Your file is being set up",              b: "b-info" },
+    awaiting_documents:{ t: "We need a few documents from you",       b: "b-warn" },
+    analysis:          { t: "We are reviewing your report",           b: "b-info" },
+    letters_generated: { t: "Your next round is being prepared",      b: "b-info" },
+    ready_to_send:     { t: "Your next round is ready to go out",     b: "b-info" },
+    in_transit:        { t: "Your round is on its way",               b: "b-info" },
+    awaiting_response: { t: "Waiting on the bureaus",                 b: "b-info" },
+    response_received: { t: "Responses are coming back",              b: "b-ok" },
+    round_complete:    { t: "This round is complete",                 b: "b-ok" },
+    program_complete:  { t: "Your programme is complete",             b: "b-ok" },
+    stalled:           { t: "We are looking into a delay on your file",b: "b-warn" },
+    on_hold:           { t: "Your file is on hold",                   b: "b-warn" },
+    cancelled:         { t: "This programme was cancelled",           b: "b-gray" }
+  };
+
+  /* ── THE ONE THING THIS PAGE MAY NEVER CLAIM ──────────────────────────────
+     Rounds 4 and 5 escalate to a federal regulator and a state attorney
+     general. src/metro2/letters/catalog.mjs:57-65 records that NOTHING in this
+     system knows whether such a complaint was actually submitted — only that a
+     letter was produced. So this page describes them as prepared and sent by
+     us, and never as lodged, accepted or on record anywhere. */
+  function roundNote(round) {
+    var n = Number(round);
+    if (!(n >= 4)) return null;
+    return "Rounds 4 and above are escalation letters. We prepare them and send them for you. "
+         + "We do not report them as received or accepted by anyone until we hear back.";
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     1. WHERE AM I
+     ═════════════════════════════════════════════════════════════════════ */
+  function paintStage(stage) {
+    var el = $("cStage");
+    if (!stage) {
+      el.innerHTML = '<div class="empty">We do not have a stage on your file yet.</div>';
+      return;
+    }
+    var copy = STAGE_COPY[String(stage.key || "")] || { t: "In progress", b: "b-gray" };
+    var cur = stage.roundCurrent == null ? null : Number(stage.roundCurrent);
+    var cap = stage.roundCap == null ? null : Number(stage.roundCap);
+
+    var bits = [];
+    if (cur != null && cap != null) bits.push("Round " + esc(cur) + " of " + esc(cap) + ".");
+    else if (cur != null)           bits.push("Round " + esc(cur) + ".");
+
+    var entered = longDate(stage.enteredAt);
+    if (entered) bits.push("Started " + esc(entered) + ".");
+
+    var due = longDate(stage.expectedResponseBy);
+    if (due) {
+      var left = daysUntil(stage.expectedResponseBy);
+      if (left != null && left < 0) {
+        bits.push("The bureaus had until " + esc(due) + ".");
+      } else if (left != null) {
+        bits.push("The bureaus have until " + esc(due) + ".");
+      } else {
+        bits.push("Expected by " + esc(due) + ".");
+      }
+    }
+
+    var waiting = stage.waitingOn ? String(stage.waitingOn) : null;
+    var waitLine = waiting
+      ? (waiting === "client" ? "Waiting on you." : "Waiting on " + esc(waiting) + ".")
+      : null;
+
+    var html = '<span class="badge ' + copy.b + '">' + esc(String(stage.key || "in progress").replace(/_/g, " ")) + '</span>'
+             + '<div class="stage-h">' + esc(copy.t) + '</div>'
+             + '<div class="stage-l">' + (bits.length ? bits.join(" ") : "We will update this as your file moves.") + '</div>';
+
+    if (cur != null && cap != null && cap > 0) {
+      var pct = Math.max(0, Math.min(100, Math.round((cur / cap) * 100)));
+      html += '<div class="meter"><i style="width:' + pct + '%"></i></div>'
+            + '<div class="stage-l mono" style="font-size:11px">' + esc(cur) + ' / ' + esc(cap) + ' rounds</div>';
+    }
+    if (waitLine) html += '<div class="stage-l" style="margin-top:10px">' + waitLine + '</div>';
+
+    var note = roundNote(cur);
+    if (note) html += '<div class="note">' + esc(note) + '</div>';
+
+    el.innerHTML = html;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     2A. THE SCORE PANELS
+     Three personal bureaus, then business credit. Owner-set: business is an
+     ARRAY and the panel TOGGLES between businesses, so a blended number is
+     never rendered — there is no code path here that averages them.
+     ═════════════════════════════════════════════════════════════════════ */
+
+  var businessIndex = 0;   // which business the business panel is showing
+
+  /** A score, or the honest absence of one. Never 0 for "no pull". */
+  function scoreCell(score, pulledAt) {
+    if (score == null) {
+      return { html: '<div class="val unk">Not pulled yet</div>', unknown: true };
+    }
+    var when = longDate(pulledAt);
+    return {
+      html: '<div class="val">' + esc(Number(score)) + '</div>'
+          + (when ? '<div class="when">Pulled ' + esc(when) + '</div>' : ''),
+      unknown: false
+    };
+  }
+
+  function panelHtml(label, score, pulledAt, docId, extra) {
+    var cell = scoreCell(score, pulledAt);
+    var openable = !!docId;
+    return '<button class="panel" type="button"'
+         + (openable ? ' data-doc="' + esc(docId) + '"' : ' disabled')
+         + '>'
+         + '<div class="bu">' + esc(label) + '</div>'
+         + cell.html
+         + (extra || "")
+         + '<div class="open">' + (openable
+              ? "Tap to open this report"
+              : (cell.unknown ? "No report on file yet" : "Report not saved yet")) + '</div>'
+         + '</button>';
+  }
+
+  function paintScores(scores) {
+    var el = $("cScores");
+    scores = scores || {};
+    var personal = Array.isArray(scores.personal) ? scores.personal : [];
+    var business = Array.isArray(scores.business) ? scores.business : [];
+
+    var html = "";
+
+    if (personal.length) {
+      html += '<div class="panels">';
+      for (var i = 0; i < personal.length; i++) {
+        var p = personal[i] || {};
+        html += panelHtml(bureauName(p.bureau), p.score, p.pulledAt, p.reportDocumentId, "");
+      }
+      html += '</div>';
+    } else {
+      html += '<div class="card empty">Your personal report has not been pulled yet.</div>';
+    }
+
+    /* THE BUSINESS PANEL. One business at a time, chosen by the toggle. With a
+       single business there is nothing to toggle and the row is left out. With
+       none, the panel says so — an absent business file is not a zero. */
+    html += '<h2 class="sec">Business credit</h2>';
+    if (!business.length) {
+      html += '<div class="card empty">No business file on record yet.</div>';
+    } else {
+      if (business.length > 1) {
+        html += '<div class="toggle" id="bizToggle">';
+        for (var b = 0; b < business.length; b++) {
+          var nm = business[b] && business[b].name ? business[b].name : "Business " + (b + 1);
+          html += '<button type="button" data-biz="' + b + '" aria-pressed="'
+                + (b === businessIndex ? "true" : "false") + '">' + esc(nm) + '</button>';
+        }
+        html += '</div>';
+      }
+      if (businessIndex >= business.length) businessIndex = 0;
+      var bz = business[businessIndex] || {};
+      html += '<div class="panels">'
+            + panelHtml(bureauName(bz.bureau) || "Business credit", bz.score, bz.pulledAt, bz.reportDocumentId,
+                '<div class="when">' + esc(bz.name || "This business") + '</div>')
+            + '</div>';
+    }
+
+    el.innerHTML = html;
+
+    var tog = $("bizToggle");
+    if (tog) {
+      tog.addEventListener("click", function (ev) {
+        var btn = ev.target.closest("button[data-biz]");
+        if (!btn) return;
+        businessIndex = Number(btn.getAttribute("data-biz")) || 0;
+        paintScores(scores);
+      });
+    }
+    /* BOUND ONCE. paintScores() re-runs on every business toggle, so binding
+       here unguarded stacked one more listener per tap and the third press on a
+       panel fired three signed-link requests. */
+    if (!el.dataset.bound) { el.addEventListener("click", onPanelClick); el.dataset.bound = "1"; }
+  }
+
+  /* TAPPING A PANEL OPENS THAT BUREAU'S REPORT — the deliverable already saved
+     as a document. This mints a fresh signed link through the endpoint that
+     exists for exactly this (api/documents-download.mjs), then opens it. It is
+     NOT a second report renderer: nothing here reads or draws report content.
+     A client principal is pinned to their own documents inside that endpoint
+     (api/documents-download.mjs:133-139), so a wrong id gets a 404, not a
+     stranger's credit report. */
+  var panelBusy = false;
+  function onPanelClick(ev) {
+    var btn = ev.target.closest ? ev.target.closest(".panel[data-doc]") : null;
+    if (!btn || panelBusy) return;
+    var id = btn.getAttribute("data-doc");
+    if (!id) return;
+    panelBusy = true;
+    /* Opened synchronously, before the await, or the browser blocks it as a
+       pop-up: a window.open that is not inside the click's own task is not a
+       user gesture any more. */
+    var w = window.open("", "_blank");
+    api(DOWNLOAD_PATH + "?id=" + encodeURIComponent(id)).then(function (r) {
+      panelBusy = false;
+      var d = r.body && r.body.document;
+      var link = d && d.download && (d.download.url || d.download.path);
+      if (r.status === 401) { if (w) w.close(); return toLogin(); }
+      if (!link) {
+        if (w) w.close();
+        return dialog({
+          title: "That report could not be opened",
+          sub: r.status === 404
+            ? "We do not have that report saved on your file yet."
+            : "Something went wrong opening it. Please try again in a moment.",
+          actions: [{ label: "Close", ghost: true }]
+        });
+      }
+      if (w) w.location.href = link; else location.href = link;
+    }, function () {
+      panelBusy = false;
+      if (w) w.close();
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     2B. WHAT MOVED
+     ═════════════════════════════════════════════════════════════════════ */
+  function paintMovement(movement) {
+    var el = $("cMove");
+    var m = movement || {};
+    var lines = [];
+
+    var removed = m.itemsRemoved == null ? null : Number(m.itemsRemoved);
+    var disputed = m.itemsDisputed == null ? null : Number(m.itemsDisputed);
+
+    if (removed != null) {
+      lines.push(removed === 0
+        ? "<b>Nothing has come off yet.</b> That is normal early on."
+        : "<b>" + esc(removed) + (removed === 1 ? " item is gone" : " items are gone") + "</b> from your report.");
+    }
+    if (disputed != null && disputed > 0) {
+      lines.push("We have challenged <b>" + esc(disputed) + (disputed === 1 ? " item" : " items") + "</b> so far.");
+    }
+
+    /* THE MIDDLE SCORE. Only stated as a change when BOTH ends are real
+       numbers. A missing baseline is not treated as zero, which would print a
+       600-point rise on somebody's first month. */
+    var now = m.middleScoreNow == null ? null : Number(m.middleScoreNow);
+    var base = m.middleScoreBaseline == null ? null : Number(m.middleScoreBaseline);
+    if (now != null && base != null) {
+      var delta = now - base;
+      var since = monthName(m.baselineAt);
+      if (delta > 0) {
+        lines.push("Your middle score is <b>up " + esc(delta) + "</b>"
+                 + (since ? " since " + esc(since) : "") + ", now <b>" + esc(now) + "</b>.");
+      } else if (delta < 0) {
+        lines.push("Your middle score is <b>down " + esc(Math.abs(delta)) + "</b>"
+                 + (since ? " since " + esc(since) : "") + ", now <b>" + esc(now) + "</b>.");
+      } else {
+        lines.push("Your middle score is unchanged at <b>" + esc(now) + "</b>"
+                 + (since ? " since " + esc(since) : "") + ".");
+      }
+    } else if (now != null) {
+      lines.push("Your middle score is <b>" + esc(now) + "</b>. We do not have an earlier one to compare it with yet.");
+    }
+
+    var html = lines.length
+      ? '<div class="moveline">' + lines.join("<br>") + '</div>'
+      : '<div class="empty">Nothing has changed on your file yet. We will show movement here as soon as there is some.</div>';
+
+    html += seriesChart(Array.isArray(m.series) ? m.series : []);
+    el.innerHTML = html;
+  }
+
+  /* THE SCORE CHART. A hand-written SVG polyline per bureau, no library.
+     A null in the series is a GAP, not a zero — the line breaks and resumes.
+     src/retention/classes.mjs:147 tombstones stored results after a retention
+     window, so the far end of the series is legitimately allowed to be empty
+     and must not be drawn as a crash to the floor. */
+  var SERIES_BUREAUS = [
+    { key: "experian",   label: "Experian",   colour: "#A9C6E8" },
+    { key: "equifax",    label: "Equifax",    colour: "#A8D8B0" },
+    { key: "transunion", label: "TransUnion", colour: "#C4B3E5" }
+  ];
+
+  function seriesChart(series) {
+    var points = series.filter(function (p) { return p && p.at; })
+      .sort(function (a, b) { return new Date(a.at) - new Date(b.at); });
+    if (points.length < 2) return "";
+
+    var vals = [];
+    points.forEach(function (p) {
+      SERIES_BUREAUS.forEach(function (b) {
+        if (p[b.key] != null && !isNaN(Number(p[b.key]))) vals.push(Number(p[b.key]));
+      });
+    });
+    if (vals.length < 2) return "";
+
+    var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+    if (hi === lo) { hi = lo + 1; }
+    var pad = Math.max(8, Math.round((hi - lo) * 0.15));
+    lo -= pad; hi += pad;
+
+    var W = 100, H = 100;                       // viewBox units, scaled by CSS
+    var x = function (i) { return points.length === 1 ? 0 : (i / (points.length - 1)) * W; };
+    var y = function (v) { return H - ((v - lo) / (hi - lo)) * H; };
+
+    var paths = "";
+    SERIES_BUREAUS.forEach(function (b) {
+      var run = [], segs = [];
+      points.forEach(function (p, i) {
+        var v = p[b.key];
+        if (v == null || isNaN(Number(v))) { if (run.length > 1) segs.push(run); run = []; return; }
+        run.push(x(i).toFixed(2) + "," + y(Number(v)).toFixed(2));
+      });
+      if (run.length > 1) segs.push(run);
+      segs.forEach(function (s) {
+        paths += '<polyline fill="none" stroke="' + b.colour + '" stroke-width="1.6"'
+               + ' stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"'
+               + ' points="' + s.join(" ") + '"></polyline>';
+      });
+      points.forEach(function (p, i) {
+        var v = p[b.key];
+        if (v == null || isNaN(Number(v))) return;
+        paths += '<circle cx="' + x(i).toFixed(2) + '" cy="' + y(Number(v)).toFixed(2)
+               + '" r="1.6" fill="' + b.colour + '" vector-effect="non-scaling-stroke"></circle>';
+      });
+    });
+
+    var legend = SERIES_BUREAUS.map(function (b) {
+      return '<span><i style="background:' + b.colour + '"></i>' + esc(b.label) + '</span>';
+    }).join("");
+
+    var first = longDate(points[0].at), last = longDate(points[points.length - 1].at);
+
+    return '<div class="chart">'
+         + '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img"'
+         + ' aria-label="Your scores over time">' + paths + '</svg>'
+         + '<div class="lg">' + legend
+         + (first && last ? '<span class="mono" style="margin-left:auto">' + esc(first) + ' → ' + esc(last) + '</span>' : '')
+         + '</div></div>';
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     3. WHAT IS NEXT, AND WHOSE JOB IS IT
+     Exactly one item. Never a list — the contract says nextStep names ONE
+     waypoint, and a screen that shows three is a screen that answers nothing.
+     ═════════════════════════════════════════════════════════════════════ */
+  function paintNext(next, waypoints) {
+    var el = $("cNext");
+    if (!next || !next.waypointId) {
+      el.innerHTML = '<div class="who"><span class="badge b-gray">nothing due</span></div>'
+                   + '<div class="t">There is nothing for you to do right now.</div>'
+                   + '<div class="d">We will let you know the moment that changes.</div>';
+      return;
+    }
+    var wp = null;
+    for (var i = 0; i < waypoints.length; i++) {
+      if (String(waypoints[i].id) === String(next.waypointId)) { wp = waypoints[i]; break; }
+    }
+    var mine = String(next.owner || (wp && wp.owner) || "") === "client";
+    var title = wp && wp.title ? wp.title : (mine ? "One thing needs you" : "We are working on your file");
+
+    var d = [];
+    if (wp && wp.dueAt) {
+      var days = daysUntil(wp.dueAt);
+      if (wp.overdue || (days != null && days < 0)) {
+        d.push("This was due " + esc(longDate(wp.dueAt)) + ".");
+      } else if (days === 0) {
+        d.push("Due today.");
+      } else if (days != null) {
+        d.push("Due " + esc(longDate(wp.dueAt)) + " — " + esc(days) + (days === 1 ? " day" : " days") + " from now.");
+      }
+    }
+    if (mine) d.push("This one is yours. Nothing moves until it is done.");
+    else d.push("This one is ours. You do not need to do anything.");
+
+    var html = '<div class="who"><span class="badge ' + (mine ? "b-warn" : "b-info") + '">'
+             + (mine ? "your move" : "our move") + '</span>'
+             + (wp && wp.overdue ? ' <span class="badge b-alert">overdue</span>' : '')
+             + '</div>'
+             + '<div class="t">' + esc(title) + '</div>'
+             + '<div class="d">' + d.join(" ") + '</div>';
+
+    if (wp && wp.paidAlternative && wp.paidAlternative.priceCents != null) {
+      html += '<div class="alt" style="margin-top:14px">' + paidAltButton(wp) + '</div>';
+    }
+    el.innerHTML = html;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     4. THE CHECKLIST AND ITS PAID ALTERNATIVES
+     Each row says whose job it is and, where one exists, what it costs to hand
+     it to us instead. That pairing is the product.
+     ═════════════════════════════════════════════════════════════════════ */
+  function paidAltButton(wp) {
+    var price = money(wp.paidAlternative.priceCents);
+    if (price == null) return "";
+    return '<button class="btn ghost sm" type="button" data-alt="' + esc(wp.id) + '">'
+         + 'Have us do it — ' + esc(price) + '</button>';
+  }
+
+  var OWNER_BADGE = {
+    client: { label: "you", cls: "b-warn" },
+    fundhub: { label: "us", cls: "b-info" },
+    staff:   { label: "us", cls: "b-info" },
+    bureau:  { label: "the bureaus", cls: "b-gray" }
+  };
+
+  function waypointCard(wp) {
+    var done = String(wp.state || "") === "done" || !!wp.completedAt;
+    var ownerKey = String(wp.owner || "").toLowerCase();
+    var badge = OWNER_BADGE[ownerKey] || { label: esc(ownerKey || "us"), cls: "b-gray" };
+
+    var meta = ['<span class="badge ' + badge.cls + '">' + esc(badge.label) + '</span>'];
+    if (done && wp.completedAt) meta.push('<span>Done ' + esc(longDate(wp.completedAt)) + '</span>');
+    else if (wp.overdue && wp.dueAt) meta.push('<span class="badge b-alert">overdue</span><span>was due ' + esc(longDate(wp.dueAt)) + '</span>');
+    else if (wp.dueAt) meta.push('<span>due ' + esc(longDate(wp.dueAt)) + '</span>');
+    if (!done && String(wp.state || "") === "blocked") meta.push('<span class="badge b-gray">waiting on something else</span>');
+
+    /* A null paidAlternative means there is NO paid option for this item. It is
+       left out entirely. It must never render as "free" — that would be this
+       page inventing a price of zero for something we do not sell. */
+    var alt = (!done && wp.paidAlternative && wp.paidAlternative.priceCents != null)
+      ? '<div class="alt">' + paidAltButton(wp) + '</div>' : '';
+
+    return '<div class="wp' + (done ? " done" : "") + '">'
+         + '<div class="tick">' + (done ? "✓" : "") + '</div>'
+         + '<div class="bd"><div class="ti">' + esc(wp.title || "Step " + esc(wp.order)) + '</div>'
+         + '<div class="mt">' + meta.join("") + '</div>' + alt + '</div></div>';
+  }
+
+  function paintWaypoints(waypoints) {
+    var el = $("cWaypoints");
+    if (!waypoints.length) {
+      el.innerHTML = '<div class="empty">Your checklist has not been set up yet. '
+                   + 'It appears here as soon as your file is reviewed.</div>';
+      return;
+    }
+    var sorted = waypoints.slice().sort(function (a, b) {
+      return (Number(a.order) || 0) - (Number(b.order) || 0);
+    });
+    el.innerHTML = sorted.map(waypointCard).join("");
+    el.addEventListener("click", function (ev) {
+      var btn = ev.target.closest ? ev.target.closest("button[data-alt]") : null;
+      if (!btn) return;
+      var id = btn.getAttribute("data-alt");
+      for (var i = 0; i < waypoints.length; i++) {
+        if (String(waypoints[i].id) === String(id)) return openPaidFlow(waypoints[i]);
+      }
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     5. THE ROUND BUTTON
+     Press → the price broken out → a second, explicit confirmation → a HOSTED
+     CHECKOUT LINK.
+
+     TWO INVARIANTS ARE VISIBLE ON THIS SCREEN, NOT JUST HONOURED BY IT:
+
+     NO SILENT CARD CAPTURE. Nothing in this repo can charge a stored card
+     (src/subscriptions/charger.mjs:25, :88). This flow therefore ends at a
+     link the client opens and pays on. There is no code path here that submits
+     a payment, and the confirm copy says so in plain words.
+
+     PAYMENT STAGES THE MAIL. A HUMAN SENDS IT. src/metro2/delivery/send.mjs:3
+     and api/repair/send.mjs:3 both forbid mailing from payment.received, in
+     those words. So the confirm step promises staging, never posting, and the
+     success copy repeats it. A screen that said "your letters are in the post"
+     the second a payment cleared would be describing a thing this system
+     deliberately does not do.
+     ═════════════════════════════════════════════════════════════════════ */
+
+  var PAID = null;          // paidServices entry for the round, if offered
+  var chosen = {};          // component key → boolean
+  /* Which checklist item this purchase came from, or null when it was pressed on
+     the round card itself. Passed to the endpoint so the request is tied to the
+     item it settles — without it a paid round and the waypoint it was bought to
+     satisfy are two rows nothing joins. */
+  var paidWaypointId = null;
+
+  function paintPaidServices(paidServices, stage) {
+    var el = $("cPaid");
+    PAID = null;
+    for (var i = 0; i < paidServices.length; i++) {
+      if (String(paidServices[i].serviceKey || "") === "paid_round") { PAID = paidServices[i]; break; }
+    }
+    if (!PAID) { el.innerHTML = ""; return; }
+
+    var comps = Array.isArray(PAID.components) ? PAID.components : [];
+    comps.forEach(function (c) {
+      if (chosen[c.key] === undefined) chosen[c.key] = !!c.required;
+    });
+
+    var html = '<h2 class="sec">Run a round now</h2><div class="card">';
+
+    if (PAID.inFlight) {
+      html += '<div class="stage-h">You already have one in progress</div>'
+            + '<div class="stage-l">We are working on the round you asked for. '
+            + 'When it is done this button comes back.</div>';
+      el.innerHTML = html + '</div>';
+      return;
+    }
+    if (PAID.available === false) {
+      html += '<div class="stage-h">Not available on your file right now</div>'
+            + '<div class="stage-l">This opens up when your file is ready for the next round.</div>';
+      el.innerHTML = html + '</div>';
+      return;
+    }
+
+    html += '<div class="stage-l">Do not want to wait for the next scheduled round? '
+          + 'You can run one now. Pick what you want included.</div>';
+
+    comps.forEach(function (c) {
+      var price = money(c.priceCents);
+      html += '<div class="opt">'
+            + '<input type="checkbox" id="opt-' + esc(c.key) + '" data-opt="' + esc(c.key) + '"'
+            + (chosen[c.key] ? ' checked' : '') + (c.required ? ' disabled' : '') + '>'
+            + '<label class="ol" for="opt-' + esc(c.key) + '">' + esc(c.label || c.key)
+            + (c.required ? ' <span class="badge b-gray">always included</span>' : '') + '</label>'
+            + '<div class="op">' + esc(price == null ? "price unavailable" : price) + '</div>'
+            + '</div>';
+    });
+
+    html += '<div class="rows"><div class="row total"><span>Total today</span>'
+          + '<span class="mono" id="paidTotal">' + esc(money(totalCents()) || "—") + '</span></div></div>'
+          + '<div style="margin-top:16px"><button class="btn" type="button" id="paidGo">Continue</button></div>'
+          + '<div class="note"><b>This does not use one of your included rounds.</b> '
+          + 'The rounds in your programme stay exactly as they are.</div>'
+          + '<div class="note">We take payment on a secure checkout page. '
+          + '<b>We never store your card and we never charge you without you doing this again.</b></div>'
+          + '</div>';
+
+    el.innerHTML = html;
+
+    el.addEventListener("change", function (ev) {
+      var box = ev.target.closest ? ev.target.closest("input[data-opt]") : null;
+      if (!box) return;
+      chosen[box.getAttribute("data-opt")] = !!box.checked;
+      var t = $("paidTotal");
+      if (t) t.textContent = money(totalCents()) || "—";
+    });
+    var go = $("paidGo");
+    if (go) go.addEventListener("click", function () {
+      paidWaypointId = null;   // pressed on the card, not on a checklist item
+      confirmPaidRound();
+    });
+  }
+
+  function selectedComponents() {
+    if (!PAID) return [];
+    return (PAID.components || []).filter(function (c) { return c.required || chosen[c.key]; });
+  }
+  function totalCents() {
+    return selectedComponents().reduce(function (sum, c) {
+      return sum + (c.priceCents == null ? 0 : Number(c.priceCents));
+    }, 0);
+  }
+
+  /** Step one: the price, broken out, before anything is committed. */
+  function confirmPaidRound() {
+    var comps = selectedComponents();
+    if (!comps.length) return;
+    var rows = comps.map(function (c) {
+      return '<div class="row"><span class="rl">' + esc(c.label || c.key) + '</span>'
+           + '<span class="mono">' + esc(money(c.priceCents) || "—") + '</span></div>';
+    }).join("");
+    rows += '<div class="row total"><span>Total</span><span class="mono">'
+          + esc(money(totalCents()) || "—") + '</span></div>';
+
+    dialog({
+      title: "Here is what you are buying",
+      sub: "Check this over. Nothing is charged on this screen.",
+      body: '<div class="rows" style="margin-top:14px">' + rows + '</div>'
+          + '<div class="note">We pull your credit again first, so the round is built from '
+          + 'today’s report and not an old one.</div>',
+      actions: [
+        { label: "Back", ghost: true },
+        { label: "Yes, continue", onClick: confirmPaidRoundTwice }
+      ]
+    });
+  }
+
+  /** Step two: the double-confirm. Deliberately a separate press with the
+      amount repeated, because the first press is the one people make by
+      accident. */
+  function confirmPaidRoundTwice() {
+    var total = money(totalCents()) || "this amount";
+    dialog({
+      title: "Confirm " + total,
+      sub: "This is the last step before the payment page.",
+      body: '<div class="note"><b>What happens after you pay:</b> we pull your credit, '
+          + 'build your round from what we find, and get it ready to go out. '
+          + '<b>A member of our team sends it — it does not go out automatically.</b></div>'
+          + '<div class="note">This does not use one of the rounds in your programme.</div>',
+      actions: [
+        { label: "Cancel", ghost: true },
+        { label: "Take me to payment", onClick: startPaidRound }
+      ]
+    });
+  }
+
+  /** Step three: ask the server for a hosted checkout link and hand it over. */
+  function startPaidRound() {
+    var comps = selectedComponents().map(function (c) { return c.key; });
+    dialog({
+      title: "One moment",
+      sub: "Setting up your secure payment page…",
+      actions: []
+    });
+    /* THE BODY THE ENDPOINT ACTUALLY READS. api/paid-services.mjs takes one
+       boolean per optional extra, not a list of component keys — it refuses any
+       `service` but "paid_round", and the base is never optional so it is not
+       sent. The component keys the read endpoint hands us (round_base,
+       creditor, cfpb_and_ag — roundPriceList() in src/paid-services/round.mjs,
+       and the same three the contract names at :108-110) are what the checkboxes
+       are keyed on, so the two booleans are derived from them rather than from
+       the order the boxes happen to be in. */
+    var wants = function (k) { return comps.indexOf(k) !== -1; };
+    api(PAID_REQUEST_PATH, {
+      method: "POST",
+      body: {
+        service: "paid_round",
+        creditor_letter: wants("creditor"),
+        escalation_filings: wants("cfpb_and_ag"),
+        /* Ties the purchase to the checklist item it was bought from, when the
+           press came from one. Null is fine — the endpoint treats it as absent. */
+        waypoint_id: paidWaypointId,
+        /* One press per client, per selection, per day. A double press lands on
+           the same row rather than buying two rounds. The server owns the real
+           guard (events(org_id, idempotency_key) is unique) — this is the client
+           half of it, not the whole of it. */
+        idempotency_key: "paid_round:" + comps.slice().sort().join("+") + ":" + new Date().toISOString().slice(0, 10)
+      }
+    }).then(function (r) {
+      if (r.status === 401) return toLogin();
+      /* `checkout_url`, snake case — api/paid-services.mjs:186. The camelCase
+         spellings are kept as a fallback and cost nothing; the snake one is what
+         actually arrives. */
+      var url = r.body && (r.body.checkout_url || r.body.checkoutUrl
+              || (r.body.request && (r.body.request.checkout_url || r.body.request.checkoutUrl)));
+      if (r.ok && url) {
+        dialog({
+          title: "Your payment page is ready",
+          sub: "It opens in a new tab. Nothing is charged until you finish there.",
+          actions: [
+            { label: "Close", ghost: true },
+            { label: "Open payment page", href: String(url) }
+          ]
+        });
+        return;
+      }
+      /* ACCEPTED, BUT NO LINK YET — and this is NOT a failure, so it must not
+         say one. api/paid-services.mjs answers ok:true with checkout_pending
+         when there is no URL to hand over: either the losing side of a genuine
+         race, where the winning press is minting the link this second and a
+         second link would be a second charge, or a mint that could not complete.
+         The page cannot tell those apart and does not pretend to. What it can
+         say truthfully in both: no card was touched, and the link is not ready.
+         Saying "that did not go through" here would be wrong in the race case —
+         it went through fine and somebody else's press is finishing it. */
+      if (r.ok && !url) {
+        return dialog({
+          title: "Your payment page is not ready yet",
+          sub: "Nothing has been charged and no card has been touched. "
+             + "Give it a moment and press the button again — if it keeps happening, message us and we will set it up for you.",
+          actions: [{ label: "Close", ghost: true }]
+        });
+      }
+
+      if (r.status === 404 || r.status === 405) {
+        /* Wave 2 owns this endpoint. Until it lands this is the honest answer,
+           and it is deliberately not a fake success. */
+        return dialog({
+          title: "Not switched on yet",
+          sub: "Buying a round from this page is not live yet. Message us and we will set it up for you.",
+          actions: [{ label: "Close", ghost: true }]
+        });
+      }
+      /* THE ENDPOINT WRITES ITS OWN REFUSAL SENTENCE, for a client, and it knows
+         things this page does not — a round already staged, the cap reached, no
+         letters to send, not on the optimisation path. src/paid-services/refusals.mjs
+         is where those words live. Showing ours over theirs would replace a
+         specific true reason with a vague one, so theirs wins whenever it is
+         there and this page's line is the fallback for when it is not. */
+      var said = r.body && typeof r.body.message === "string" && r.body.message.trim();
+      if (said) {
+        /* THEIR SENTENCE, NOT OURS, and not both. src/paid-services/refusals.mjs
+           already ends most refusals with "Nothing has been charged", so
+           appending it unconditionally printed it twice in one dialog. Added
+           only when their sentence does not already carry the reassurance —
+           which it must, because it is the one thing a person needs to read
+           after pressing a button that was about to take money. */
+        var reassures = /nothing has been charged|no card/i.test(said);
+        return dialog({
+          title: r.status === 409 ? "We could not start that round" : "That did not go through",
+          sub: esc(said) + (reassures ? "" : " Nothing has been charged."),
+          actions: [{ label: "Close", ghost: true }]
+        });
+      }
+      dialog({
+        title: "That did not go through",
+        sub: "Nothing has been charged. Please try again in a moment.",
+        actions: [{ label: "Close", ghost: true }]
+      });
+    }, function () {
+      dialog({
+        title: "That did not go through",
+        sub: "Nothing has been charged. Please check your connection and try again.",
+        actions: [{ label: "Close", ghost: true }]
+      });
+    });
+  }
+
+  /** A waypoint's own paid alternative. The round is the one we price on this
+      page today; anything else routes to the same request endpoint with its own
+      service key rather than growing a second flow. */
+  function openPaidFlow(wp) {
+    var key = wp.paidAlternative && wp.paidAlternative.serviceKey;
+    if (key === "paid_round" && PAID) {
+      paidWaypointId = wp.id || null;
+      return confirmPaidRound();
+    }
+    var price = money(wp.paidAlternative && wp.paidAlternative.priceCents);
+    dialog({
+      title: "Have us do this for you",
+      sub: esc(wp.title || "This step") + (price ? " — " + esc(price) : ""),
+      body: '<div class="note">Message us and we will set this up. '
+          + 'Paying for it from this page is not switched on yet.</div>',
+      actions: [{ label: "Close", ghost: true }]
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     6. DOCUMENTS, TIMELINE, REFERRAL
+     ═════════════════════════════════════════════════════════════════════ */
+  function paintDeliverables(list) {
+    var el = $("cDocs");
+    if (!list.length) {
+      el.innerHTML = '<div class="empty">Your documents appear here once they are ready.</div>';
+      return;
+    }
+    el.innerHTML = list.map(function (d) {
+      var when = longDate(d.generatedAt);
+      return '<a href="#" data-doc="' + esc(d.documentId) + '">'
+           + '<span class="dt">' + esc(d.title || d.subtype || "Document") + '</span>'
+           + '<span class="dd">' + esc(when || "") + '</span></a>';
+    }).join("");
+    el.addEventListener("click", function (ev) {
+      var a = ev.target.closest ? ev.target.closest("a[data-doc]") : null;
+      if (!a) return;
+      ev.preventDefault();
+      onPanelClick({ target: { closest: function (sel) {
+        return sel === ".panel[data-doc]" ? a : null;
+      } } });
+    });
+  }
+
+  function paintTimeline(list) {
+    var el = $("cTimeline");
+    if (!list.length) {
+      el.innerHTML = '<div class="empty">Nothing has happened on your file yet.</div>';
+      return;
+    }
+    /* The text comes from the server, already written for a client by
+       timelineLine() (src/repair/lens.mjs:206). It is escaped here anyway —
+       this page escapes everything it did not write itself, without asking
+       where it came from. */
+    el.innerHTML = '<div class="tl">' + list.map(function (e) {
+      var when = longDate(e.at);
+      return '<div class="ev">' + (when ? '<div class="d">' + esc(when) + '</div>' : '')
+           + '<div class="x">' + esc(e.text || "") + '</div></div>';
+    }).join("") + '</div>';
+  }
+
+  function paintReferral(ref) {
+    var el = $("cReferral");
+    ref = ref || {};
+    if (ref.enrolled && ref.shareUrl) return paintReferralEnrolled(ref);
+
+    el.innerHTML = '<div class="stage-h">Know someone who needs this?</div>'
+      + '<div class="stage-l">Send them your own link. If they sign up, you earn on it — '
+      + 'and you get your own dashboard to watch it.</div>'
+      + '<div style="margin-top:16px"><button class="btn" type="button" id="refGo">Refer a friend</button></div>';
+
+    var go = $("refGo");
+    if (go) go.addEventListener("click", function () {
+      go.disabled = true;
+      go.textContent = "Setting it up…";
+      api(REFERRAL_PATH, { method: "POST", body: {} }).then(function (r) {
+        if (r.status === 401) return toLogin();
+        var b = r.body || {};
+        if (r.ok && (b.shareUrl || b.code)) {
+          return paintReferralEnrolled({ enrolled: true, shareUrl: b.shareUrl, code: b.code });
+        }
+        go.disabled = false;
+        go.textContent = "Refer a friend";
+        dialog({
+          title: "That did not work",
+          sub: "We could not set your link up just now. Please try again in a moment.",
+          actions: [{ label: "Close", ghost: true }]
+        });
+      }, function () {
+        go.disabled = false;
+        go.textContent = "Refer a friend";
+      });
+    });
+  }
+
+  function paintReferralEnrolled(ref) {
+    var el = $("cReferral");
+    var url = ref.shareUrl || "";
+    el.innerHTML = '<div class="stage-h">Your link is ready</div>'
+      + '<div class="stage-l">Anyone who signs up through this link is counted as yours.</div>'
+      + '<div class="share">'
+      + '<input id="refUrl" readonly value="' + esc(url) + '">'
+      + '<button class="btn ghost" type="button" id="refCopy">Copy</button>'
+      + '</div>'
+      + (ref.code ? '<div class="stage-l mono" style="margin-top:10px;font-size:12px">Your code: '
+          + esc(ref.code) + '</div>' : '')
+      + '<div style="margin-top:16px"><a class="btn ghost" href="/app/affiliate.html">Open your referral dashboard</a></div>';
+
+    var copy = $("refCopy");
+    if (copy) copy.addEventListener("click", function () {
+      var input = $("refUrl");
+      try {
+        input.select();
+        input.setSelectionRange(0, 99999);
+        document.execCommand("copy");
+        copy.textContent = "Copied";
+        setTimeout(function () { copy.textContent = "Copy"; }, 1800);
+      } catch (e) { /* selection is enough — the value is on screen either way */ }
+    });
+  }
+
+  /* ── THE DIALOG. One element, reused. ─────────────────────────────────── */
+  function dialog(opts) {
+    var d = $("dlg");
+    $("dlgT").textContent = opts.title || "";
+    $("dlgS").innerHTML = opts.sub || "";
+    $("dlgB").innerHTML = opts.body || "";
+    var acts = $("dlgA");
+    acts.innerHTML = "";
+    (opts.actions || []).forEach(function (a) {
+      var node;
+      if (a.href) {
+        node = document.createElement("a");
+        node.href = a.href;
+        node.target = "_blank";
+        node.rel = "noopener noreferrer";
+      } else {
+        node = document.createElement("button");
+        node.type = "button";
+      }
+      node.className = "btn" + (a.ghost ? " ghost" : "");
+      node.textContent = a.label;
+      node.addEventListener("click", function () {
+        try { d.close(); } catch (e) {}
+        if (a.onClick) a.onClick();
+      });
+      acts.appendChild(node);
+    });
+    if (!d.open) { try { d.showModal(); } catch (e) { d.setAttribute("open", ""); } }
+  }
+
+  /* ── LOAD ─────────────────────────────────────────────────────────────── */
+  function fatal(html) {
+    $("hSub").textContent = "";
+    var f = $("fatal");
+    f.innerHTML = html;
+    f.classList.remove("hidden");
+    $("main").classList.add("hidden");
+  }
+
+  function boot() {
+    if (!token()) return toLogin();
+
+    api(PROGRESS_PATH).then(function (r) {
+      if (r.status === 401) return toLogin();
+      if (r.status === 403) {
+        return fatal("This page shows one person’s file and your sign-in does not open it. "
+                   + "If you are staff, open the client from the CRM instead.");
+      }
+      if (r.status === 404) {
+        /* WAVE 2 OWNS THIS ENDPOINT. Saying so plainly beats an empty page that
+           a client would read as an empty file. */
+        return fatal("<b>Your progress page is nearly ready.</b><br>"
+                   + "We are switching this on now. Everything on your file is safe — "
+                   + "nothing here is missing, it just is not connected yet.");
+      }
+      if (!r.ok || !r.body || r.body.ok === false) {
+        return fatal("We could not load your file just now. Please refresh in a moment.");
+      }
+
+      var d = r.body;
+      var waypoints = Array.isArray(d.waypoints) ? d.waypoints : [];
+
+      $("hSub").textContent = "Everything on your file, as it stands today.";
+      $("main").classList.remove("hidden");
+
+      paintStage(d.stage);
+      paintScores(d.scores);
+      paintMovement(d.movement);
+      paintNext(d.nextStep, waypoints);
+      paintWaypoints(waypoints);
+      paintPaidServices(Array.isArray(d.paidServices) ? d.paidServices : [], d.stage);
+      paintDeliverables(Array.isArray(d.deliverables) ? d.deliverables : []);
+      paintTimeline(Array.isArray(d.timeline) ? d.timeline : []);
+      paintReferral(d.referral);
+    }, function () {
+      fatal("We could not reach the server. Please check your connection and refresh.");
+    });
+  }
+
+  boot();
+})();
+</script>
+</body></html>

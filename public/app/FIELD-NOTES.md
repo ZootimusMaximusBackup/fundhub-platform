@@ -2,7 +2,7 @@
 
 Every change maps a displayed field to the real system (db/schema/001_init.sql,
 020_auth.sql, db/seed/002_pipelines.sql, src/workflows/, fundhub-docs sources,
-inquiry-removal-ai Airtable). Layouts untouched.
+inquiry-removal-ai case tables). Layouts untouched.
 
 ## Changed
 - **affiliate.html** — removed the invented flat "12%" commission everywhere.
@@ -53,5 +53,5 @@ gates.
 3. **Credit Optimization Bundle** shows $1,500–$2,500 variable — matches the
    products table; confirm band.
 4. **Upper offer ladder** (education programs, B2B install workshop) is not in
-   the CRM products screen — those sell through Commas/education rails, not
+   The CRM products screen — those sell through Commas/education rails, not
    client fulfillment. Add if you want them visible here.

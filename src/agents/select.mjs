@@ -13,7 +13,7 @@
 //
 // Eligible = status in (live, shadow), channel covers the inbound channel,
 // agent_class = client_facing, channel is messaging (sms|email|sms_email),
-// runtime !== 'bland' | 'ghl' (Bland = voice vendor; GHL is out — owner 2026-08-15).
+// runtime !== 'bland' | 'ghl' (Bland = voice vendor; the CRM is out — owner 2026-08-15).
 
 const MESSAGING_CHANNELS = new Set(["sms", "email", "sms_email"]);
 const RUNNING = new Set(["live", "shadow"]);

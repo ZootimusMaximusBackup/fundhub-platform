@@ -986,3 +986,144 @@ describe("no identity data leaves this endpoint", () => {
     }
   });
 });
+
+// ── F35 · A CLIENT MAY ONLY AUTHORIZE DISPUTE LETTERS IF THEY BOUGHT THEM ──
+
+describe("the dispute-authorization gate on the POST", () => {
+  /* THE SERVER SIDE OF F35, and until now the untested side. The portal card is
+     hidden by api/read/portal-summary.mjs, but a hidden card is a screen rule:
+     anybody can post this body by hand. The refusal that actually holds is the
+     one below, and these tests are what proves it exists.
+
+     Owner-set 2026-09-03: "It's only for repair and for the funding offer. If
+     they're getting deliverables, meaning e-products and courses, they don't
+     need to sign for shit." */
+
+  const ENT = /v_client_entitlements/i;
+  const TIER = /SELECT outcome_tier FROM clients/i;
+
+  /* A signed-in CLIENT holding the entitlement codes given, and with `tier` on
+     their client row.
+
+     IT DOES NOT USE stubDb(), AND THAT IS THE WHOLE POINT. stubDb answers
+     OWNS — /FROM clients WHERE id/ — before it consults `answers`, and the tier
+     read this test has to reach is `SELECT outcome_tier FROM clients WHERE
+     id = $1 AND org_id = $2`, which that pattern swallows. Routed through
+     stubDb, every tier below came back undefined and the REPAIR_ONLY case
+     passed against the BROKEN gate — a test that proves nothing, written to
+     prove the one thing that had already been shipped wrong twice. So the tier
+     is answered first here, ahead of OWNS.
+
+     THE TIER IS ANSWERED ON PURPOSE. The right behaviour does not need it. It is
+     here so that a gate which went back to reading the tier gets the DANGEROUS
+     answer and these tests catch it, rather than a null that makes every case
+     pass by accident.
+
+     (A client principal never runs the OWNS query at all — ownsClient() compares
+     principal.clientId directly for a client — so nothing else needs it.) */
+  const clientHolding = (codes, tier = null) => {
+    calls = [];
+    db.query = async (text, params) => {
+      calls.push({ text, params });
+      if (/UPDATE account_sessions/i.test(text)) {
+        return { rows: [{ id: "as-1", account_id: "acct-1", org_id: ORG, expires_at: new Date(Date.now() + 3_600_000) }] };
+      }
+      if (/FROM accounts WHERE id/i.test(text)) {
+        return { rows: [{
+          id: "acct-1", org_id: ORG, kind: "client", email: "c@example.com",
+          name: "Dana Client", status: "active",
+          client_id: CLIENT, affiliate_id: null, partner_id: null
+        }] };
+      }
+      if (TIER.test(text)) return { rows: [{ outcome_tier: tier }] };
+      if (OWNS.test(text)) return { rows: [{ "?column?": 1 }] };
+      if (ENT.test(text)) return { rows: codes.includes(params[2]) ? [{ "?column?": 1 }] : [] };
+      if (INSERT.test(text)) {
+        return { rows: [consentRow({ kind: "dispute_authorization", granted_by_kind: "client" })] };
+      }
+      return { rows: [] };
+    };
+  };
+
+  const post = async () => {
+    const res = mkRes();
+    await handler(mkReq({
+      method: "POST",
+      body: { client_id: CLIENT, kind: "dispute_authorization", action: "grant",
+              capture_method: "typed", granted_name: "Dana Client" }
+    }), res);
+    return res;
+  };
+
+  test("a COURSE-ONLY buyer is refused, and nothing is written", async () => {
+    clientHolding(["funding-mastery-course"]);
+    const res = await post();
+    assert.equal(res.statusCode, 403, `the course buyer was allowed to sign: ${JSON.stringify(res.body)}`);
+    assert.equal(res.body.ok, false);
+    assert.equal(res.body.code, "not_on_dispute_path");
+    assert.ok(!calls.some((c) => INSERT.test(c.text)),
+      "a consent row was written for somebody who never bought dispute work");
+  });
+
+  test("a course-only buyer whose PULL graded REPAIR_ONLY is refused too", async () => {
+    /* THE LEAK THIS BLOCK EXISTS FOR. clients.outcome_tier is written by a real
+       credit pull (src/finance/crs-pull.mjs persistOutcomeTier), and the gate
+       used to reach REPAIR_ONLY through onRepairPath() and answer yes — so a
+       course buyer with a weak credit file could sign after all. */
+    clientHolding(["funding-mastery-course"], "REPAIR_ONLY");
+    const res = await post();
+    assert.equal(res.statusCode, 403,
+      `REPAIR_ONLY on a course-only buyer opened the door: ${JSON.stringify(res.body)}`);
+    assert.equal(res.body.code, "not_on_dispute_path");
+    assert.ok(!calls.some((c) => INSERT.test(c.text)));
+  });
+
+  test("a course-only buyer whose PULL graded FULL_FUNDING is refused too", async () => {
+    clientHolding(["funding-mastery-course"], "FULL_FUNDING");
+    const res = await post();
+    assert.equal(res.statusCode, 403, `FULL_FUNDING opened the door: ${JSON.stringify(res.body)}`);
+    assert.equal(res.body.code, "not_on_dispute_path");
+  });
+
+  test("a client who bought nothing at all is refused", async () => {
+    clientHolding([]);
+    const res = await post();
+    assert.equal(res.statusCode, 403);
+    assert.equal(res.body.code, "not_on_dispute_path");
+  });
+
+  for (const [label, code] of [["repair", "metro2-letter-pack"], ["the funding offer", "funding-snapshot"]]) {
+    test(`a ${label} buyer IS allowed, and the row is written`, async () => {
+      /* NOT VACUOUS. If the gate simply refused everybody, the four tests above
+         would still pass and the two real customers would silently lose the
+         ability to authorize their own letters. */
+      clientHolding([code]);
+      const res = await post();
+      assert.equal(res.statusCode, 200, `the ${label} buyer was refused: ${JSON.stringify(res.body)}`);
+      assert.ok(calls.some((c) => INSERT.test(c.text)), "no consent row was written");
+    });
+  }
+
+  test("STAFF are not narrowed — a recorded authorization still goes through", async () => {
+    /* A person on a call, looking at the file, exercising judgment. The same
+       roles already decide whether to order the pull. Only the self-serve path
+       is closed. */
+    stubDb({
+      session: { role: "closer" },
+      answers: [[INSERT, { rows: [consentRow({ kind: "dispute_authorization" })] }], [SELECT, { rows: [] }]]
+    });
+    const res = await post();
+    assert.equal(res.statusCode, 200, `staff were blocked: ${JSON.stringify(res.body)}`);
+    assert.ok(!calls.some((c) => ENT.test(c.text)),
+      "the entitlement gate ran on a staff capture, which is not what it is for");
+  });
+
+  test("the refusal is a sentence a client can read, not a code", async () => {
+    clientHolding(["funding-mastery-course"]);
+    const res = await post();
+    const msg = res.body.error;
+    assert.ok(typeof msg === "string" && msg.length > 30 && /\s/.test(msg), String(msg));
+    assert.ok(!/entitlement|outcome_tier|403/i.test(msg),
+      `the refusal talks about the database instead of the customer: ${msg}`);
+  });
+});

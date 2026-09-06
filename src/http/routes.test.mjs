@@ -228,7 +228,7 @@ test("routes: Galaxy company-activity feed is routed", () => {
 });
 
 test("routes: /api/inquiries and /api/inquiry stay separate routes", () => {
-  // Two different systems: /api/inquiry proxies the external Airtable runtime,
+  // Two different systems: /api/inquiry proxies the external spreadsheet runtime,
   // /api/inquiries writes the local inquiry_log table. They are one letter apart
   // and a caller must never reach one believing it hit the other.
   assert.ok(Object.prototype.hasOwnProperty.call(ROUTES, "inquiry"));

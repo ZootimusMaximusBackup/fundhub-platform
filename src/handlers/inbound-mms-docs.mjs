@@ -1,5 +1,5 @@
 // Inbound MMS photos → the same docs.received path portal uploads use.
-// Spec 4.6: texts with photo attachments must reach GHL-DOC. Does not mint clients.
+// Spec 4.6: texts with photo attachments must reach DOC-CHECK. Does not mint clients.
 
 import { on } from "../events/registry.mjs";
 import { emit } from "../events/bus.mjs";
@@ -7,6 +7,159 @@ import { storeAndRegister } from "../documents/register.mjs";
 import { storeFromEnv } from "../documents/store.mjs";
 import { KINDS } from "../documents/kinds.mjs";
 import { phoneCandidates } from "../mail/suppression.mjs";
+import { byCode } from "../agents/registry.mjs";
+import { callModel } from "../agents/model.mjs";
+import { mediaFromBytes } from "../repair/response-agent.mjs";
+import { AGENT_CODE as DOC_AGENT_CODE, parseAgentJson } from "./doc-check.mjs";
+
+export const FALLBACK_SUBTYPE = "other";
+
+/* WHAT KIND OF PHOTO IS THIS?
+ *
+ * Every inbound MMS image used to be filed as "other", so the document agent
+ * and src/inquiry-ops/doc-gate.mjs could not tell a driver's licence from a gas
+ * bill from a picture of a dog. A client who texted their ID had, as far as
+ * every downstream check was concerned, sent nothing.
+ *
+ * The answer is not guessed. DOC-CHECK — the same seeded agent that already
+ * reads these images (db/migrations/114_ghl_agent_seed.sql) — is asked, and its
+ * own `documents_reviewed` output is mapped onto the client_upload subtypes in
+ * src/documents/kinds.mjs. THE FILENAME IS NEVER READ: an MMS filename is
+ * `mms-<sid>-<n>` and carries no information at all. Neither is the sender, nor
+ * the order the pictures arrived in.
+ *
+ * THE LABEL IS NEVER STRONGER THAN THE EVIDENCE. `id_document` is a leg of the
+ * identity gate that decides whether dispute letters may be mailed in a
+ * client's name (src/inquiry-ops/doc-gate.mjs), so an agent phrase only becomes
+ * a subtype when the agent was plainly naming a document:
+ *   1. the agent must not have rejected, held or complained about the document;
+ *   2. the phrase must carry no negation and no hedge — "no valid ID visible",
+ *      "too blurry to read the ID" and "appears to be a licence" all stay
+ *      "other";
+ *   3. the phrase must be a short name, not a sentence, because the agent was
+ *      asked for the plainest name for the document;
+ *   4. it must match exactly one document pattern, and every phrase in the
+ *      answer must agree on that one.
+ * Anything else is "other". Unknown survives as unknown. */
+const SUBTYPE_PATTERNS = Object.freeze([
+  ["ssn_card", /social security card|\bssn\b|social security number card/i],
+  ["bank_statement", /bank statement|checking statement|savings statement/i],
+  ["tax_return", /tax return|form 1040|\b1040\b/i],
+  ["proof_of_income", /pay ?stub|paycheck stub|w-?2\b|1099\b|proof of income|earnings statement/i],
+  /* No bare `\bid\b`: the word "id" appears in every sentence ABOUT an ID,
+     including the ones saying there isn't one. */
+  ["id_document", /driver'?s? licen[cs]e|state id\b|photo id\b|government id\b|identification card|passport|\bid card\b/i],
+  ["proof_of_address", /utility bill|proof of address|electric(ity)? bill|gas bill|water bill|internet bill|phone bill|lease agreement|mortgage statement/i]
+]);
+
+/* Any of these anywhere in the phrase and the phrase names nothing we can act
+   on — either the agent is denying a document, doubting it, or saying the
+   picture is unusable. */
+const NEGATION_OR_HEDGE = /\b(no|not|non|none|nothing|never|isn'?t|aren'?t|wasn'?t|doesn'?t|don'?t|didn'?t|can'?t|cannot|couldn'?t|won'?t|unable|fails?|failed|missing|absent|lacks?|without|unreadable|illegible|unclear|unknown|unsure|uncertain|unverified|invalid|expired|blurry|blurred|blurred|obscured|cropped|glare|dark|possibly|probably|maybe|might|appears?|appearing|seems?|looks?|likely|perhaps|either|or|another|someone|else|third[- ]party|mismatch(?:ed|es)?|brother|sister|spouse|wife|husband|father|mother|son|daughter|friend|roommate|relative|saying|claiming|handwritten|screenshot|scribbled)\b/i;
+
+/* The agent was asked for "the plainest name" for the document. Anything longer
+   than this is a sentence about the photo, not a name for it, and a sentence is
+   where a wrong guess hides.
+
+   FOUR, NOT SIX. At six a verifier got "driver license of the client's brother"
+   and "handwritten note saying ID card" both filed as a government ID, which
+   opens the identity gate on a document belonging to someone else or on no
+   document at all. Four still clears every real answer: "Arizona driver license",
+   "state issued photo id", "proof of address", "social security card". Raising it
+   again needs a test proving those two phrases still land as "other". */
+const MAX_NAME_WORDS = 4;
+
+function wordCount(text) {
+  return String(text).trim().split(/\s+/).filter(Boolean).length;
+}
+
+/** True when the agent's own reply says it did not accept this document. */
+export function agentRejectedDocument(json) {
+  if (!json || typeof json !== "object") return false;
+  const outcome = typeof json.outcome === "string" ? json.outcome.trim().toLowerCase() : "";
+  if (outcome && outcome !== "accept") return true;
+  if (typeof json.hold_reason === "string" && json.hold_reason.trim()) return true;
+  const raw = Array.isArray(json.issues) ? json.issues : (json.issues == null ? [] : [json.issues]);
+  const issues = raw
+    .map((v) => (typeof v === "string" ? v.trim().toLowerCase() : v))
+    .filter((v) => v !== "" && v !== "none" && v !== "n/a" && v != null && v !== false);
+  return issues.length > 0;
+}
+
+/** One phrase → one subtype, or null when the phrase does not plainly name one. */
+function subtypeOfPhrase(phrase) {
+  const text = String(phrase == null ? "" : phrase).trim();
+  if (!text) return null;
+  if (NEGATION_OR_HEDGE.test(text)) return null;
+  if (wordCount(text) > MAX_NAME_WORDS) return null;
+  const hits = [...new Set(SUBTYPE_PATTERNS.filter(([, re]) => re.test(text)).map(([sub]) => sub))];
+  return hits.length === 1 ? hits[0] : null;
+}
+
+/** documents_reviewed → one client_upload subtype, or "other" when unsure. */
+export function subtypeFromAgentJson(json) {
+  if (agentRejectedDocument(json)) return FALLBACK_SUBTYPE;
+  const reviewed = json && json.documents_reviewed;
+  const phrases = (Array.isArray(reviewed) ? reviewed : [reviewed])
+    .filter((v) => typeof v === "string" && v.trim());
+  if (!phrases.length) return FALLBACK_SUBTYPE;
+  const subs = phrases.map(subtypeOfPhrase);
+  // One phrase we cannot read makes the whole answer unusable.
+  if (subs.some((s) => s === null)) return FALLBACK_SUBTYPE;
+  const unique = [...new Set(subs)];
+  return unique.length === 1 ? unique[0] : FALLBACK_SUBTYPE;
+}
+
+/* classifyMmsImage — one call to the seeded Document Check agent, asking only
+ * what the image IS. It never messages the client and never routes an outcome;
+ * outcome routing stays where it already lives, on docs.received in
+ * src/handlers/doc-check.mjs, which now receives a correctly typed document.
+ *
+ * Runs whatever the agent's status is. That switch exists to stop a retired
+ * agent TEXTING people (see doc-check.mjs); filing an image under the right name
+ * sends nothing to anyone. With no model key configured callModel() returns a
+ * shadow result, parseAgentJson gets nothing, and the subtype stays "other" —
+ * exactly the old behaviour, never a guess. */
+export async function classifyMmsImage(db, {
+  orgId,
+  buffer,
+  mimeType,
+  env = process.env,
+  fetchImpl,
+  callModelImpl = callModel
+} = {}) {
+  if (!db?.query || !orgId || !buffer) return { subtype: FALLBACK_SUBTYPE, reason: "no_input" };
+  let agent = null;
+  try {
+    agent = await byCode(db, { orgId, code: DOC_AGENT_CODE });
+  } catch (err) {
+    console.warn("[inbound-mms] document agent lookup failed:", err && err.message);
+    return { subtype: FALLBACK_SUBTYPE, reason: "agent_lookup_failed" };
+  }
+  if (!agent || !String(agent.prompt || "").trim()) {
+    return { subtype: FALLBACK_SUBTYPE, reason: "agent_unavailable" };
+  }
+  const result = await callModelImpl({
+    system: String(agent.prompt),
+    user: [
+      "A client texted us this photo. Do not review it and do not write to the client.",
+      "Name what the document IS, in documents_reviewed, using the plainest name for it",
+      "(for example: driver's license, passport, utility bill, bank statement,",
+      "social security card, pay stub, tax return). If the photo is not one of those,",
+      "or you cannot tell, put \"unknown\" in documents_reviewed.",
+      "Reply with ONLY a JSON object of the form:",
+      '{"documents_reviewed":["..."]}'
+    ].join("\n"),
+    media: mediaFromBytes(mimeType, buffer),
+    env,
+    fetchImpl,
+    maxTokens: 200
+  }).catch((err) => ({ text: "", error: String(err?.message || err) }));
+
+  const json = parseAgentJson(result?.text);
+  const subtype = subtypeFromAgentJson(json);
+  return { subtype, reason: subtype === FALLBACK_SUBTYPE ? "unclassified" : "classified", mode: result?.mode || null, json };
+}
 
 const PHONE_DIGITS_SQL = `regexp_replace(phone, '[^0-9]', '', 'g')`;
 
@@ -56,17 +209,34 @@ export async function onInboundMmsDocs(event, db, deps = {}) {
   const download = deps.downloadImpl || downloadTwilioMedia;
   const register = deps.registerImpl || storeAndRegister;
   const emitFn = deps.emitImpl || emit;
+  const classify = deps.classifyImpl || classifyMmsImage;
   const registered = [];
+  const subtypes = [];
 
   for (let i = 0; i < media.length; i++) {
     const item = media[i];
     const got = await download(item.url, { env: deps.env || process.env, fetchImpl: deps.fetchImpl });
     if (!got?.buffer) continue;
+    /* Classify BEFORE filing, so the document is registered under its real
+       subtype and docs.received carries it. Filing first and patching after
+       would hand every downstream listener a document typed "other". */
+    const seen = await classify(db, {
+      orgId,
+      buffer: got.buffer,
+      mimeType: item.contentType || got.mimeType,
+      env: deps.env || process.env,
+      fetchImpl: deps.fetchImpl
+    }).catch((err) => ({ subtype: FALLBACK_SUBTYPE, reason: String(err?.message || err) }));
+    const subtype = seen?.subtype || FALLBACK_SUBTYPE;
+    /* Only a real agent answer is stamped as the agent's. A document that fell
+       back to "other" was decided by nobody, and saying DOC-CHECK named it would
+       make an unread photo look agent-verified. */
+    const classifiedBy = seen?.reason === "classified" ? DOC_AGENT_CODE : null;
     const { document, version } = await register(db, store, {
       orgId,
       clientId,
       kind: KINDS.CLIENT_UPLOAD,
-      subtype: "other",
+      subtype,
       discriminator: `${sid}:${i}`,
       body: got.buffer,
       filename: `mms-${sid}-${i}`,
@@ -74,7 +244,14 @@ export async function onInboundMmsDocs(event, db, deps = {}) {
       generatedBy: "inbound-mms",
       reason: "initial",
       sourceEventId: `inbound-mms:${sid}:${i}`,
-      metadata: { uploaded_by: { kind: "client", id: clientId }, original_filename: `mms-${sid}-${i}` }
+      metadata: {
+        uploaded_by: { kind: "client", id: clientId },
+        original_filename: `mms-${sid}-${i}`,
+        // Who decided the subtype, so a wrong one is traceable to the agent
+        // rather than looking like something the client picked.
+        classified_by: classifiedBy,
+        classification: seen?.reason || null
+      }
     });
     await emitFn(db, "docs.received", {
       document_id: document.id,
@@ -90,9 +267,10 @@ export async function onInboundMmsDocs(event, db, deps = {}) {
       original_filename: `mms-${sid}-${i}`
     }, { orgId, clientId, idempotencyKey: `docs.received:inbound-mms:${sid}:${i}` });
     registered.push(document.id);
+    subtypes.push(document.subtype);
   }
 
-  return { done: registered.length > 0, documents: registered };
+  return { done: registered.length > 0, documents: registered, subtypes };
 }
 
 export function register() {

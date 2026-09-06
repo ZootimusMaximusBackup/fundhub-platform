@@ -130,6 +130,91 @@ describe("buildStateAgComplaint", () => {
   });
 });
 
+/*
+ * The heading over the item list is a statement of what our engine found, and
+ * the complaint is signed under penalty of perjury. Derogatory-item claims
+ * (../diy/derogatory.mjs) carry a ruleId and field:null and assert no Metro 2
+ * defect, so they must not be filed under a Metro 2 heading.
+ */
+const derogOnly = [
+  {
+    creditor: "MIDLAND CREDIT MGMT",
+    accountType: "EQ",
+    fieldViolations: [
+      {
+        ruleId: "DEROG-COLLECTION",
+        field: null,
+        reason: "MIDLAND CREDIT MGMT is reported as a collection account."
+      }
+    ]
+  }
+];
+
+const metro2Only = [
+  {
+    creditor: "ACME Bank",
+    fieldViolations: [{ ruleId: "M2-011", field: "20", reason: "Account status code mismatch" }]
+  }
+];
+
+const mixedAccount = [
+  {
+    creditor: "ACME Bank",
+    fieldViolations: [
+      { ruleId: "DEROG-CHARGEOFF", field: null, reason: "Reported as a charge-off." },
+      { ruleId: "M2-011", field: "20", reason: "Account status code mismatch" }
+    ]
+  }
+];
+
+const METRO2_HEADING = /Metro 2 field violations reported on this account:/;
+const PLAIN_HEADING = /Items disputed on this account:/;
+
+describe("the DISPUTED ACCOUNTS heading tells the truth about the claim type", () => {
+  it("derogatory-only account: no Metro 2 heading, and the item line survives", () => {
+    for (const build of [buildCfpbComplaint, buildStateAgComplaint]) {
+      const text = build({ identity: identityTx, accounts: derogOnly });
+      assert.doesNotMatch(text, METRO2_HEADING);
+      assert.match(text, PLAIN_HEADING);
+      assert.match(text, /DEROG-COLLECTION — MIDLAND CREDIT MGMT is reported as a collection account\./);
+    }
+  });
+
+  it("derogatory-only complaint says nothing about Metro 2 anywhere", () => {
+    const text = buildCfpbComplaint({
+      identity: identityTx,
+      accounts: derogOnly,
+      timeline: [{ round: "R1", summary: "Initial dispute via certified mail." }]
+    });
+    assert.equal(/metro\s*2/i.test(text), false);
+  });
+
+  it("an account carrying an M2- rule still gets the Metro 2 heading", () => {
+    for (const build of [buildCfpbComplaint, buildStateAgComplaint]) {
+      const text = build({ identity: identityTx, accounts: metro2Only });
+      assert.match(text, METRO2_HEADING);
+      assert.doesNotMatch(text, PLAIN_HEADING);
+    }
+  });
+
+  it("a mixed account keeps the Metro 2 heading — the Metro 2 claim really is there", () => {
+    const text = buildCfpbComplaint({ identity: identityTx, accounts: mixedAccount });
+    assert.match(text, METRO2_HEADING);
+    assert.doesNotMatch(text, PLAIN_HEADING);
+    assert.match(text, /DEROG-CHARGEOFF/);
+    assert.match(text, /M2-011/);
+  });
+
+  it("headings are decided per account, not per complaint", () => {
+    const text = buildCfpbComplaint({
+      identity: identityTx,
+      accounts: [...derogOnly, ...metro2Only]
+    });
+    assert.match(text, METRO2_HEADING);
+    assert.match(text, PLAIN_HEADING);
+  });
+});
+
 describe("renderComplaintPdf", () => {
   it("returns %PDF", async () => {
     const text = buildCfpbComplaint({ identity: identityTx, accounts: accountsNoField20 });

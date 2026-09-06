@@ -21,6 +21,7 @@ const API_KEYS = [
   "adintel/board",
   "agent-call",
   "agents",
+  "affiliates/refer",
   "ai-bureau-config",
   "applications",
   "auth/admin-reset",
@@ -139,6 +140,12 @@ const API_KEYS = [
      them on a monthly cycle, so an outage here is revenue not asked for. */
   "partner-addons",
   "payment-links",
+  /* The self-serve paid round. A plain GET answers with the price list and
+     whether this client may buy one, so it is a real uptime door: a client
+     seeing "could not load" on a page with a price on it is an outage worth
+     knowing about. The POST half is the one that mints a hosted checkout link,
+     and a GET never touches it. */
+  "paid-services",
   "pii",
   "pipeline-cards",
   "pipeline-clients",
@@ -165,6 +172,12 @@ const API_KEYS = [
   "read/ad-attribution",
   "read/ad-books",
   "read/affiliates",
+  /* One affiliate's own referrals, payouts, rates and payout gates. Separate
+     from read/affiliates above, which answers staff with roster-wide counts.
+     Monitored because an outage here empties both tables on the affiliate
+     screen, whose empty state reads "No referrals on file" — an affiliate would
+     read that as their referrals having vanished, not as a server being down. */
+  "read/affiliate-portal",
   "read/agent-context",
   "read/agent-shadow-log",
   "read/agents",
@@ -172,6 +185,9 @@ const API_KEYS = [
   "read/bank-inbox",
   "read/banking-surface",
   "read/call-outcomes",
+  /* The only read behind the client progress page. An outage here is a client
+     who paid up to $10,000 seeing no scores, no checklist and no next step. */
+  "read/client-progress",
   "read/closer-call",
   "read/closer-deck",
   "read/closer-now",

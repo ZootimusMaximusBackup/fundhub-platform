@@ -304,7 +304,7 @@ Baseline on `main` before this round (`7ba8a6c`): unit 4342 tests / 4339 pass / 
 All four survived on the branch tip and on final `main` — none overwrote another:
 
 1. **Money-chain writers** — `src/handlers/money-chain.mjs` (+ unit/pg tests) PRESENT
-2. **Airtable funding/inquiry schema port** — `138_lenders.sql` / `139_funding_ops.sql` / `140_inquiry_ops.sql` + `src/lenders/*` + `src/inquiry-ops/*` PRESENT
+2. **The spreadsheet funding/inquiry schema port** — `138_lenders.sql` / `139_funding_ops.sql` / `140_inquiry_ops.sql` + `src/lenders/*` + `src/inquiry-ops/*` PRESENT
 3. **Message template load (8b052b6)** — `src/messaging/seed/workflow-keys.mjs` PRESENT; dry-run seeder reports **TOTAL 224 rows**
 4. **Oxylabs proxy door (7925115)** — `src/adapters/oxylabs.mjs` + `extension/` (manifest, background, content, icons) PRESENT
 
@@ -357,9 +357,9 @@ Manifest regenerated with `npm run migrations:manifest` after each renumber.
 
 ### Genuine logic conflict — call made
 
-Bridge shipped `137_inquiry_removal_cases.sql` (CREATE `inquiry_removal_cases` with Airtable-facing text statuses) and `138_inquiry_log_bridge.sql` while money-chain already had `140_inquiry_ops.sql` creating the same table with `inquiry_case_status` / `inquiry_call_state` enums and a richer ops shape.
+Bridge shipped `137_inquiry_removal_cases.sql` (CREATE `inquiry_removal_cases` with spreadsheet-facing text statuses) and `138_inquiry_log_bridge.sql` while money-chain already had `140_inquiry_ops.sql` creating the same table with `inquiry_case_status` / `inquiry_call_state` enums and a richer ops shape.
 
-**Call:** Keep **140 as the canonical table**. Drop the bridge CREATE/ALTER files. Add **`143_inquiry_removal_bridge.sql`** with only the missing Airtable/IRA mirror columns (`external_case_id`, case-level call rollups, `inquiry_log.external_inquiry_id` / `inquiry_name` / `is_open` / `cleared_at`, plus `case_id` synonym of `inquiry_removal_case_id` kept in sync by trigger). Adapt `src/inquiry-removal/cases.mjs` to map IRA status/call-state strings onto the 140 enums on write.
+**Call:** Keep **140 as the canonical table**. Drop the bridge CREATE/ALTER files. Add **`143_inquiry_removal_bridge.sql`** with only the missing spreadsheet/IRA mirror columns (`external_case_id`, case-level call rollups, `inquiry_log.external_inquiry_id` / `inquiry_name` / `is_open` / `cleared_at`, plus `case_id` synonym of `inquiry_removal_case_id` kept in sync by trigger). Adapt `src/inquiry-removal/cases.mjs` to map IRA status/call-state strings onto the 140 enums on write.
 
 ### Handler collision — call made
 
@@ -426,10 +426,10 @@ on both tips; `t138`–`t141` SQL matches main's already-renumbered `138`–`141
 | # | Session | Present? | Evidence |
 |---|---|---|---|
 | 1 | Money chain writers | YES (already on main) | `src/handlers/money-chain.mjs` 717 lines; `money-chain.pg.test.mjs` 401 lines; commits `01a0e87` / `3ecbdf9` ancestors of both tips |
-| 2 | Airtable funding/inquiry schema | YES (already on main as 138–140) | 7 `lender_table` enums; `lender_bureau_observations`; applications expansion; `application_decisions`; `funding_closeout` default `fee_percent=0.10`; `ai_bureau_config` / `inquiry_prep` / `business_tradelines` |
+| 2 | The spreadsheet funding/inquiry schema | YES (already on main as 138–140) | 7 `lender_table` enums; `lender_bureau_observations`; applications expansion; `application_decisions`; `funding_closeout` default `fee_percent=0.10`; `ai_bureau_config` / `inquiry_prep` / `business_tradelines` |
 | 3 | Message template load (`8b052b6`) | YES (already on main) | Ancestor of both tips; seeder + `workflow-keys.mjs`; compliance forced false |
 | 4 | Oxylabs proxy door (`7925115`) | YES (already on main as 141) | `src/adapters/oxylabs.mjs`; `proxy_sessions`; `extension/`; Apply on lender rows |
-| 5 | Integration gaps | YES (incoming) | `00f9ef7` booking lifecycle + CF capture; `c07b9ca` GHL backfill; `766e8bc` Meta/LinkedIn OAuth + LinkedIn publish; calendar meeting URL |
+| 5 | Integration gaps | YES (incoming) | `00f9ef7` booking lifecycle + CF capture; `c07b9ca` The CRM backfill; `766e8bc` Meta/LinkedIn OAuth + LinkedIn publish; calendar meeting URL |
 | 6 | Final usability pass (`edc9330`) | YES (incoming tip) | `docs/FINAL-USABILITY-PASS.md`; live KPIs; `e2e/integration-round.spec.mjs`; calendar roster |
 
 **Call:** proceed with merge. Nothing missing.
@@ -469,7 +469,7 @@ Manifest regenerated with `npm run migrations:manifest` (127 migration entries).
 - `docs/journeys/*-actual.md` + README — regenerated via `npm run journeys`.
 - `docs/diagrams/*` — regenerated via `npm run diagrams`.
 - `docs/journeys/CHANGELOG.md` — **kept both sides**. Agent-runtime entry updated to say migration 144.
-- `docs/STILL-MISSING.md` — **kept both sides**. Combined deliberately-unset table (main) with agent-runtime + social/GHL/CF cutover notes (branch). Credentials stay unset by design.
+- `docs/STILL-MISSING.md` — **kept both sides**. Combined deliberately-unset table (main) with agent-runtime + social/CRM/CF cutover notes (branch). Credentials stay unset by design.
 - `netlify/functions/api.mjs` — auto-merged clean; both staff-monitoring and agent/oauth/kpi routes present.
 - No genuine logic conflict in application code this round — only manifest/doc/changelog collisions plus the migration number collision above.
 

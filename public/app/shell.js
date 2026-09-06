@@ -59,7 +59,7 @@
        staff still send contracts from the client flow; they do not open the
        screen that creates, uploads or changes the wording. */
     "contracts.html",
-    /* lenders.html — funding advisor maintenance surface for the seven Airtable
+    /* lenders.html — funding advisor maintenance surface for the seven spreadsheet
        lender product tables (+ bureau mismatch review). ROLE_SETS.LENDERS at
        the API — owner, admin, funding_advisor — narrowed from ROLE_SETS.STAFF
        by owner decision 2026-08-17: the Lenders list is the funding advisor's
@@ -360,7 +360,21 @@
        brand-studio.html reachable; 'client' and 'affiliate' have no catalog row
        and nothing issues them a session. When the accounts table and its own
        auth land, these three move out of ROLE_TABS and 036 is reverted. */
-    client: ["client-portal.html"],
+    /* A CLIENT MAY NOW OPEN THE AFFILIATE SCREEN, and only because the owner
+       decided it. docs/workflows/portal-rebuild-plan.md section 4 (2026-09-05)
+       says pressing "Refer a friend" in the portal "instantly provisions their
+       access to affiliate.html". Their principal kind stays `client`
+       (db/migrations/340_client_light_affiliate.sql), so without this row the
+       screen they were just given would bounce them straight back out.
+
+       THIS ROW IS NAVIGATION, NOT A GATE, and the difference matters here. The
+       real gate is on the endpoint: /api/read/affiliate-portal returns rows for
+       the caller's OWN affiliate id, taken from their session and never from the
+       address bar. A client who has not pressed the button holds no affiliate
+       id, so they reach the screen and it tells them they are not enrolled —
+       which is the state the screen is written to show. Nothing about what any
+       client can READ changes by adding this line. */
+    client: ["client-portal.html", "affiliate.html"],
     affiliate: ["affiliate.html"],
     /* NO CAMPAIGNS ROW YET, AND THAT IS AN OPEN QUESTION, NOT AN OVERSIGHT.
        A partner cannot reach campaign-manager.html from any screen (proven live

@@ -1,5 +1,5 @@
 // U-05 — UnderwriteIQ Data Health Monitor (CRS-free).
-// Source: GHL-System-Map.md UNDERWRITEIQ WORKFLOWS section.
+// Source: the CRM system map UNDERWRITEIQ WORKFLOWS section.
 // Trigger: analysis.completed. Checks the payload for the critical fields the
 // analyzer is expected to have populated (scores + utilization); missing any of
 // them tags analyzer:data-incomplete + raises a mapping-fix task, otherwise clears

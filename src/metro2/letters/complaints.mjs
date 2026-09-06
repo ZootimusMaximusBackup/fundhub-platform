@@ -2,6 +2,7 @@
 // Fill only facts passed in. Never invent mail dates or Metro 2 fields.
 
 import { LETTER_TYPES } from "./catalog.mjs";
+import { hasMetro2Claim } from "./generate.mjs";
 import { agForState, CFPB_FILING, BUREAU_DISPUTE_ADDRESSES } from "./ag-statutes.mjs";
 import { perjuryDeclaration } from "./sign-block.mjs";
 import { renderLetterPdf } from "./render.mjs";
@@ -87,6 +88,30 @@ function formatViolation(v) {
   return parts.length ? `  - ${parts.join(" — ")}` : null;
 }
 
+/*
+ * A complaint is signed under penalty of perjury. The Metro 2 heading is a
+ * statement that our engine found a Metro 2 field defect on this account, so it
+ * prints only when the account actually carries an M2- rule.
+ *
+ * The derogatory-item claims in ../diy/derogatory.mjs (DEROG-COLLECTION,
+ * DEROG-CHARGEOFF, DEROG-LATE) carry a ruleId and a null field on purpose:
+ * they assert the consumer's right to a reinvestigation, not a format defect.
+ * Under the old unconditional heading a consumer swore to the CFPB or a state
+ * attorney general that Metro 2 field violations were reported, when nothing in
+ * the engine had made that finding.
+ *
+ * hasMetro2Claim is the SAME predicate the dispute letters use in
+ * ./generate.mjs — one implementation, and a mixed account keeps the Metro 2
+ * heading there for the same reason it keeps it here: the Metro 2 claim really
+ * is present. The per-item lines below are unchanged; they were already true.
+ */
+const METRO2_HEADING = "Metro 2 field violations reported on this account:";
+const PLAIN_HEADING = "Items disputed on this account:";
+
+function accountsHeading(violations) {
+  return hasMetro2Claim(violations) ? METRO2_HEADING : PLAIN_HEADING;
+}
+
 function accountsBlock(accounts = []) {
   const list = Array.isArray(accounts) ? accounts : [];
   if (!list.length) {
@@ -100,7 +125,7 @@ function accountsBlock(accounts = []) {
       a.accountType ? `Account type: ${a.accountType}` : null,
       a.amount != null && a.amount !== "" ? `Amount: ${a.amount}` : null,
       a.originalCreditor ? `Original creditor: ${a.originalCreditor}` : null,
-      viols.length ? "Metro 2 field violations reported on this account:" : null,
+      viols.length ? accountsHeading(a.fieldViolations) : null,
       ...viols
     ]
       .filter((l) => l != null)

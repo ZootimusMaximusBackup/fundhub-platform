@@ -1,11 +1,11 @@
 // F-01 — Funding Intake (F1).
-// Source: GHL workflow 2cc2c234-c7ff-4889-9501-b5f75c67b3c9 (ghl-crm-source-of-truth.md).
+// Source: the CRM workflow 2cc2c234-c7ff-4889-9501-b5f75c67b3c9 (the CRM source-of-truth export).
 //
 // Original trigger: "Opportunity Stage changes to Funding Pipeline -> F1 Funding
 // Intake", gated on "Product Path = Funding". round.started is the canonical-spine
 // event that puts a client into the Funding pipeline in the first place, so it's the
 // trigger here; the gate uses src/config/product-path.mjs (Rule 4: route by name,
-// never amount — outcome_tier is the closest existing categorical column to GHL's
+// never amount — outcome_tier is the closest existing categorical column to the CRM's
 // "Product Path" field, logged in workflow-migration-table.md).
 //
 // POD-01B (auto pod/advisor lookup via an external `lookup_pod` webhook) has no

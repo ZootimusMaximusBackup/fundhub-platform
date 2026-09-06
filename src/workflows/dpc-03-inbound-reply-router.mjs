@@ -2,7 +2,7 @@
 // separate "DPC-04 — Reschedule Rebooking" workflow filed under the AS-Series
 // heading in the map — same key, unrelated content: a 2-step SMS + tag reacting to
 // the identical "reschedule" reply this file already parses).
-// Source: GHL-System-Map.md DECISION & PROGRESS CONTROL section.
+// Source: the CRM system map DECISION & PROGRESS CONTROL section.
 // DPC-04 (Decision Finalizer) reacts to the decision status DPC-03 sets, in the same
 // request — no separate trigger event exists for "decision status changed", so it's
 // the second half of this same handler rather than its own file.

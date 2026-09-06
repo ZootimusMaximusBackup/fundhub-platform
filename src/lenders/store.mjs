@@ -4,7 +4,12 @@ import { INLINE_EDIT_FIELDS, LENDER_CSV_COLUMNS, isLenderTable } from "./tables.
 import { isTipRow } from "./tips.mjs";
 import { buildObservation } from "./observations.mjs";
 import { parseLenderCsv, serializeLenderCsv } from "./csv.mjs";
-import { matchLenders, resolveMatchState, resolveCreditProfile } from "./match.mjs";
+import {
+  matchLenders,
+  resolveMatchState,
+  resolveMatchStates,
+  resolveCreditProfile
+} from "./match.mjs";
 import { orgDemoModeEnabled } from "../demo/exclude-demo.mjs";
 import { logoPathOrPlaceholder } from "./resolve-logo.mjs";
 import { triMerge, utilisation } from "../http/client-detail.mjs";
@@ -363,7 +368,33 @@ export async function matchForClient(db, {
       ORDER BY created_at ASC`,
     [orgId, clientId]
   );
-  const clientState = resolveMatchState(cf, bizR.rows);
+  /* THE HOME ADDRESS. The soft-pull consent form asks for the client's own
+     current street address ("Enter your current street address, city, state,
+     and ZIP") and api/soft-pull-approve.mjs stores it on
+     pii_identity.addresses. That is the only place a personal state is held,
+     and without it an Arizona client with a Florida business reads as Florida
+     only. Same direct read src/inquiry-ops/call-scheduler.mjs already does for
+     the dispute return address — the state alone, no SSN and no reveal. */
+  let identityAddresses = [];
+  try {
+    const idR = await db.query(
+      `SELECT addresses
+         FROM pii_identity
+        WHERE org_id = $1::uuid AND client_id = $2::uuid
+        LIMIT 1`,
+      [orgId, clientId]
+    );
+    const raw = idR.rows[0]?.addresses;
+    identityAddresses = Array.isArray(raw)
+      ? raw
+      : (typeof raw === "string" ? JSON.parse(raw || "[]") : []);
+  } catch {
+    /* No identity row, or the column is unreadable. Unknown stays unknown:
+       the home lane is simply empty, and an unknown state blocks nobody. */
+    identityAddresses = [];
+  }
+
+  const { home, business, states } = resolveMatchStates(cf, bizR.rows, identityAddresses);
 
   /* THE CREDIT FILE (funding finding 7). Five rows, not one: triMerge walks
      back past sandbox fixtures and past pulls that carried no score, so
@@ -425,7 +456,9 @@ export async function matchForClient(db, {
 
   return matchLenders({
     lenders,
-    clientState,
+    homeState: home,
+    businessState: business,
+    clientStates: states,
     inquiryLog: inq.rows,
     cases: cases.rows,
     lenderTable,
@@ -447,4 +480,10 @@ function safeResult(v) {
   }
 }
 
-export { matchLenders, resolveMatchState, resolveCreditProfile, publicLender };
+export {
+  matchLenders,
+  resolveMatchState,
+  resolveMatchStates,
+  resolveCreditProfile,
+  publicLender
+};

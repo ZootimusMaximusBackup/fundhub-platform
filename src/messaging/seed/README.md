@@ -34,7 +34,7 @@ SOURCE COPY]` body.
 
 ## Keys
 
-Snippet-library SMS and GHL emails keep their existing IDs verbatim
+Snippet-library SMS and the CRM emails keep their existing IDs verbatim
 (`SMS-F03-01-ROUND-SUBMITTED`, `AR-PP1`). Workflow-inline SMS have no ID of their
 own, so one is derived from the section header and is stable across re-seeds:
 

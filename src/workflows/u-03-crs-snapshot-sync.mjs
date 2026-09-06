@@ -1,5 +1,5 @@
 // U-03 — CRS Snapshot Sync (Soft Pull Complete).
-// Source: GHL-System-Map.md UNDERWRITEIQ WORKFLOWS section.
+// Source: the CRM system map UNDERWRITEIQ WORKFLOWS section.
 // Trigger: analysis.completed, gated on source === "crs" (the CRS adapter always
 // tags its analysis.completed events this way — src/adapters/crs.mjs).
 

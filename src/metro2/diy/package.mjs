@@ -1,6 +1,6 @@
 // DIY dispute package — all rounds upfront, conditional undated R2/R3, batch variance.
 
-import { generateLetter, buildLetterText, ROUND } from "../letters/generate.mjs";
+import { generateLetter, buildLetterText, ROUND, hasMetro2Claim } from "../letters/generate.mjs";
 import { assertBatchVariance } from "../letters/variance.mjs";
 import { renderLetterPdf } from "../letters/render.mjs";
 import { splitViolations, LETTER_TYPES } from "../letters/catalog.mjs";
@@ -78,9 +78,21 @@ function accountsFromPack(violationsByBureau) {
   return accounts;
 }
 
-function blankTimeline() {
+/*
+ * The R1 line is the only sentence in this timeline that names Metro 2, and the
+ * complaint carrying it is signed under penalty of perjury. A pack built only
+ * from derogatory-item claims (../diy/derogatory.mjs) mailed no Metro 2 dispute,
+ * so it gets the plain wording. Same predicate as the letters and the DISPUTED
+ * ACCOUNTS heading — ../letters/generate.mjs#hasMetro2Claim.
+ */
+function blankTimeline({ metro2Backed = true } = {}) {
   return [
-    { round: "R1", summary: "Initial Metro 2 dispute via certified mail." },
+    {
+      round: "R1",
+      summary: metro2Backed
+        ? "Initial Metro 2 dispute via certified mail."
+        : "Initial dispute via certified mail."
+    },
     { round: "R2", summary: "Method of verification / FCRA escalation." },
     { round: "R3", summary: "Final bureau notice." }
   ];
@@ -367,7 +379,9 @@ export async function maybeComplaintFiles({
   if (!accounts.length) return { ok: true, files: [] };
 
   const undated = !datedComplaints;
-  const timeline = blankTimeline();
+  const timeline = blankTimeline({
+    metro2Backed: Object.values(violationsByBureau || {}).some((list) => hasMetro2Claim(list))
+  });
   const files = [
     { path: `${COMPLAINT_FOLDER}/COVER.txt`, text: complaintCover() }
   ];

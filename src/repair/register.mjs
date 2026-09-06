@@ -1,7 +1,7 @@
 // Register repair.* bus handlers. Import once from app boot / workflows index.
 
 import { on } from "../events/registry.mjs";
-import { onRepairEvent } from "./handlers.mjs";
+import { onRepairEvent, onRepairDocsReceived } from "./handlers.mjs";
 
 const REPAIR_EVENTS = [
   "repair.enrolled",
@@ -31,6 +31,12 @@ export function registerRepairHandlers() {
   for (const name of REPAIR_EVENTS) {
     on(name, (event, db) => onRepairEvent(db, event));
   }
+  /* An upload is how awaiting_documents ENDS. Without this the stage had an
+     entrance and no exit: repair.docs.complete was in the pipeline map, in the
+     stage copy and in the email templates, and nothing on any upload path
+     emitted it. Every guard lives in the handler — it refuses anything that is
+     not a repair client sitting on a stage that is actually waiting. */
+  on("docs.received", onRepairDocsReceived);
 }
 
 export { REPAIR_EVENTS };

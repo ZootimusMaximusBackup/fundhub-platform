@@ -1,0 +1,165 @@
+{
+  "14a-course-buyer.png": {
+    "legend": "F35 — a course buyer is not asked",
+    "viewport": {
+      "w": 1280,
+      "h": 1000
+    },
+    "marks": [
+      {
+        "n": "1",
+        "caption": "Capital Academy — all this client bought",
+        "box": {
+          "x": 762,
+          "y": 356,
+          "w": 221,
+          "h": 313
+        }
+      }
+    ]
+  },
+  "14b-funding-buyer.png": {
+    "legend": "F35 AFTER — funding buyer is asked",
+    "viewport": {
+      "w": 1280,
+      "h": 1000
+    },
+    "marks": [
+      {
+        "n": "1",
+        "caption": "Sign to authorize dispute letters — shown",
+        "box": {
+          "x": 274,
+          "y": 407,
+          "w": 732,
+          "h": 478
+        }
+      }
+    ]
+  },
+  "15-stage-after-signing.png": {
+    "legend": "F33 — stage after pull, call, signature",
+    "viewport": {
+      "w": 1280,
+      "h": 1000
+    },
+    "marks": [
+      {
+        "n": "1",
+        "caption": "Greeting: no longer 'Your call is next'",
+        "box": {
+          "x": 274,
+          "y": 106,
+          "w": 732,
+          "h": 24
+        }
+      },
+      {
+        "n": "2",
+        "caption": "Banner: now reads 'After your call'",
+        "box": {
+          "x": 295,
+          "y": 516,
+          "w": 690,
+          "h": 24
+        }
+      },
+      {
+        "n": "3",
+        "caption": "Reports note: 'not run those yet' is gone",
+        "box": {
+          "x": 297,
+          "y": 803,
+          "w": 308,
+          "h": 24
+        }
+      }
+    ]
+  },
+  "16a-advisor-named.png": {
+    "legend": "F34 — the advisor is named",
+    "viewport": {
+      "w": 1280,
+      "h": 1000
+    },
+    "marks": [
+      {
+        "n": "1",
+        "caption": "Your Funding Advisor: the assigned name",
+        "box": {
+          "x": 352,
+          "y": 791,
+          "w": 151,
+          "h": 24
+        }
+      }
+    ]
+  },
+  "16b-advisor-empty.png": {
+    "legend": "F34 — nobody assigned yet",
+    "viewport": {
+      "w": 1280,
+      "h": 1000
+    },
+    "marks": [
+      {
+        "n": "1",
+        "caption": "'Not assigned yet' — never a made-up name",
+        "box": {
+          "x": 352,
+          "y": 791,
+          "w": 151,
+          "h": 24
+        }
+      }
+    ]
+  },
+  "17-owned-offer.png": {
+    "legend": "F37 — an owned offer is not an upsell",
+    "viewport": {
+      "w": 1280,
+      "h": 1000
+    },
+    "marks": [
+      {
+        "n": "1",
+        "caption": "Owned: 'Included — you own this'",
+        "box": {
+          "x": 779,
+          "y": 751,
+          "w": 187,
+          "h": 48
+        }
+      },
+      {
+        "n": "2",
+        "caption": "Not owned: still 'On your call'",
+        "box": {
+          "x": 547,
+          "y": 501,
+          "w": 187,
+          "h": 24
+        }
+      }
+    ]
+  },
+  "18-messages-one-empty.png": {
+    "legend": "F36 — one empty row, not two",
+    "viewport": {
+      "w": 1280,
+      "h": 1000
+    },
+    "marks": [
+      {
+        "n": "1",
+        "caption": "'No messages yet.' appears once",
+        "box": {
+          "x": 295,
+          "y": 791,
+          "w": 690,
+          "h": 118
+        }
+      }
+    ]
+  }
+}

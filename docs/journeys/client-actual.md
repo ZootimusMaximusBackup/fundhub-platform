@@ -16,6 +16,7 @@ flowchart TD
     AUTH -->|Yes| WHO{Recognised as client?}
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| CAN[Can reach]
+    CAN --> A_affiliates[affiliates — 1 route]
     CAN --> A_auth[Signing in and out — 6 routes]
     CAN --> A_chat[chat — 1 route]
     CAN --> A_climate[climate — 2 routes]
@@ -25,8 +26,8 @@ flowchart TD
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 1 route]
     CAN --> A_public[public — 8 routes]
-    CAN --> A_read[Reading data — 3 routes]
-    CAN --> A_top_level[Everything else — 7 routes]
+    CAN --> A_read[Reading data — 5 routes]
+    CAN --> A_top_level[Everything else — 8 routes]
     CAN --> A_trials[trials — 1 route]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 183 routes]
@@ -61,10 +62,11 @@ flowchart TD
 
 ## What they can reach
 
-**34 of 217 routes.**
+**38 of 221 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
+| `/api/affiliates/refer` | POST | client |
 | `/api/auth/login` | GET | anyone |
 | `/api/auth/logout` | — | anyone |
 | `/api/auth/magic-link` | — | anyone |
@@ -85,6 +87,7 @@ flowchart TD
 | `/api/health` | — | anyone |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
+| `/api/paid-services` | GET, POST | staff, client |
 | `/api/public/affiliate-click` | POST | anyone |
 | `/api/public/education-enroll` | POST | **not a sign-in** — provider signature |
 | `/api/public/funnel-checkout` | GET, POST | **not a sign-in** — provider signature |
@@ -93,6 +96,8 @@ flowchart TD
 | `/api/public/partner-page` | GET | anyone |
 | `/api/public/survey-submit` | POST | **not a sign-in** — provider signature |
 | `/api/public/unsubscribe` | — | anyone |
+| `/api/read/affiliate-portal` | GET | staff, affiliate, client |
+| `/api/read/client-progress` | GET | staff, client |
 | `/api/read/entitlements` | GET | employees: owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager<br>plus: client |
 | `/api/read/portal-contracts` | GET | staff, client |
 | `/api/read/portal-summary` | GET | staff, client |
@@ -107,7 +112,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**183 of 217 routes.**
+**183 of 221 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

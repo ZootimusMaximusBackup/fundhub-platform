@@ -3,9 +3,10 @@
 
    Filters:
    1. active lenders only (unless includeInactive)
-   2. eligible_states — when both client state and lender states are known,
-      client state must appear (case-insensitive token match). Empty lender
-      eligible_states = unknown → include (do not invent a restriction).
+   2. eligible_states — the client has TWO states, home and business, and a
+      lender is eligible when it covers EITHER (case-insensitive token match).
+      Empty lender eligible_states = unknown → include (do not invent a
+      restriction). No known client state = unknown → include.
    3. inquiry sensitivity — skip lenders whose bureaus_pulled intersect
       sensitive bureaus (open/recent inquiries on that bureau).
    4. the credit file — skip a lender whose own stated minimum score is above
@@ -37,24 +38,125 @@ export function parseBureaus(raw) {
     .map((t) => BUREAU_ALIASES[t.toLowerCase()] || t.toUpperCase());
 }
 
+/* ─────────────────── TWO STATES, TWO LANES OF LENDERS ───────────────────
+   Owner rule, 2026-09-04: eligibility runs off the client's HOME state AND
+   their BUSINESS state, not one of them. "If they live in Arizona but they
+   also have a business in Florida, that opens up two lanes of opportunity to
+   national banks and then local banks that only do business in those two
+   states."
+
+   The defect this replaces: resolveMatchState() returned a single value, and
+   returned it the moment it found a business state, so the home state was a
+   fallback that never ran once a business existed. An Arizona client with a
+   Florida business was matched as Florida only, and every Arizona-only local
+   bank was dropped — silently, because a lender the state gate never reached
+   is not in `skipped` either.
+
+   Unknown stays unknown. A state we do not hold is not a block and never
+   becomes one: an empty state set means every lender clears the state gate,
+   exactly as an empty single state did before. */
+
+/** Trimmed string, or null. Never "", never a fabricated value. */
+function cleanState(v) {
+  if (v == null) return null;
+  const s = String(v).trim();
+  return s || null;
+}
+
+function pickState(obj, keys) {
+  const o = obj && typeof obj === "object" ? obj : {};
+  for (const k of keys) {
+    const v = cleanState(o[k]);
+    if (v) return v;
+  }
+  return null;
+}
+
 /**
- * Company state first (businesses.entity_data.state), then the old person
- * custom_field keys. Empty stays empty — do not invent a state.
+ * The state the client's BUSINESS operates in.
+ *
+ * businesses.entity_data.state first — that is what the soft-pull intake
+ * writes (api/soft-pull-approve.mjs → replaceSoftPullBusinesses) — then the
+ * older `business_state` person field. The first business row that names a
+ * state wins; which of several businesses counts is not a rule anybody has
+ * written down, and picking one on a guess would be an invention.
  *
  * @param {object} [customFields]
  * @param {object[]} [businesses]
  * @returns {string|null}
  */
-export function resolveMatchState(customFields = {}, businesses = []) {
+export function resolveBusinessState(customFields = {}, businesses = []) {
   for (const biz of Array.isArray(businesses) ? businesses : []) {
     const entity = biz && typeof biz.entity_data === "object" && biz.entity_data
       ? biz.entity_data
       : {};
-    const fromBiz = entity.state != null ? String(entity.state).trim() : "";
+    const fromBiz = pickState(entity, ["state", "business_state", "address_state"]);
     if (fromBiz) return fromBiz;
   }
-  const cf = customFields && typeof customFields === "object" ? customFields : {};
-  return cf.business_state || cf.state || cf.home_state || null;
+  return pickState(customFields, ["business_state"]);
+}
+
+/**
+ * The state the client LIVES in.
+ *
+ * Person custom fields first, then the personal address the soft-pull consent
+ * form collects ("Enter your current street address, city, state, and ZIP"),
+ * which is stored on pii_identity.addresses. Rows are passed in — this module
+ * runs no queries and holds no database shape.
+ *
+ * `state` and `mailing_state` are generic keys with no business meaning, so
+ * they read as home here. They used to sit in the middle of one blended chain,
+ * which is exactly the ambiguity this split removes.
+ *
+ * @param {object} [customFields]
+ * @param {object[]} [identityAddresses]  pii_identity.addresses entries
+ * @returns {string|null}
+ */
+export function resolveHomeState(customFields = {}, identityAddresses = []) {
+  const fromPerson = pickState(customFields, ["home_state", "state", "mailing_state"]);
+  if (fromPerson) return fromPerson;
+  for (const addr of Array.isArray(identityAddresses) ? identityAddresses : []) {
+    const fromAddr = pickState(addr, ["address_state", "state", "addressState"]);
+    if (fromAddr) return fromAddr;
+  }
+  return null;
+}
+
+/**
+ * Both states, as a set. This is the shape the matcher wants.
+ *
+ * @param {object} [customFields]
+ * @param {object[]} [businesses]
+ * @param {object[]} [identityAddresses]
+ * @returns {{ home: string|null, business: string|null, states: string[] }}
+ *   `states` is deduped case-insensitively and is EMPTY when nothing is known.
+ *   Empty means unknown, and unknown blocks nobody.
+ */
+export function resolveMatchStates(customFields = {}, businesses = [], identityAddresses = []) {
+  const home = resolveHomeState(customFields, identityAddresses);
+  const business = resolveBusinessState(customFields, businesses);
+  const states = [];
+  for (const s of [home, business]) {
+    if (!s) continue;
+    if (states.some((t) => t.toUpperCase() === s.toUpperCase())) continue;
+    states.push(s);
+  }
+  return { home, business, states };
+}
+
+/**
+ * Back-compat single state. Business first, then home — the old precedence, so
+ * every existing caller keeps the answer it had. Prefer resolveMatchStates():
+ * this one can only ever name one lane.
+ *
+ * @param {object} [customFields]
+ * @param {object[]} [businesses]
+ * @param {object[]} [identityAddresses]
+ * @returns {string|null}
+ */
+export function resolveMatchState(customFields = {}, businesses = [], identityAddresses = []) {
+  const { home, business } = resolveMatchStates(customFields, businesses, identityAddresses);
+  return business || home || null;
 }
 
 /* ─────────────────────────── THE CREDIT FILE ───────────────────────────
@@ -250,6 +352,68 @@ export function stateEligible(eligibleStates, clientState) {
   return tokens.some((t) => t === state || t.includes(state) || state.includes(t));
 }
 
+/**
+ * How wide this lender's own footprint is, by its own words. Structural — it
+ * reads `eligible_states` and nothing else, and it invents no coverage.
+ *
+ *   "national" — the row says all states.
+ *   "unknown"  — the row says nothing. stateEligible() already includes these
+ *                (an unread footprint may not exclude anybody), so they sit in
+ *                the same top group on the screen, but they are labelled
+ *                separately so nobody reads a blank cell as a promise.
+ *   "states"   — the row names a list.
+ *
+ * @param {string|null|undefined} eligibleStates
+ * @returns {"national"|"unknown"|"states"}
+ */
+export function lenderFootprint(eligibleStates) {
+  const raw = String(eligibleStates || "").trim();
+  if (!raw) return "unknown";
+  if (/^all(\s+states)?$/i.test(raw) || raw === "*") return "national";
+  const tokens = raw.split(/[,;/|\n]+/).map((t) => t.trim()).filter(Boolean);
+  return tokens.length ? "states" : "unknown";
+}
+
+/**
+ * Eligible when the lender covers ANY of the client's known states. This is
+ * the two-lane rule: home OR business, never home-then-stop.
+ *
+ * An empty state set is unknown, and unknown is not a block — the single
+ * unknown state has always passed and it still does.
+ *
+ * @param {string|null|undefined} eligibleStates
+ * @param {string[]|string|null} clientStates
+ * @returns {boolean}
+ */
+export function eligibleForAnyState(eligibleStates, clientStates = []) {
+  const states = (Array.isArray(clientStates) ? clientStates : [clientStates])
+    .map((s) => (s == null ? "" : String(s).trim()))
+    .filter(Boolean);
+  if (!states.length) return stateEligible(eligibleStates, null);
+  return states.some((s) => stateEligible(eligibleStates, s));
+}
+
+/**
+ * Which lane a matched lender belongs in, in the owner's reading order:
+ * national first, then the home-state locals, then the business-state locals.
+ * A lender that covers both states is a home-lane lender and is NOT repeated.
+ *
+ * "unclassified" is only reachable when the lender names a state list and we
+ * hold no state for the client at all — it passed the gate because unknown
+ * does not block, and saying which lane it is in would be a guess.
+ *
+ * @param {string|null|undefined} eligibleStates
+ * @param {{home?: string|null, business?: string|null}} [states]
+ * @returns {"national"|"home"|"business"|"unclassified"}
+ */
+export function laneForLender(eligibleStates, { home = null, business = null } = {}) {
+  const footprint = lenderFootprint(eligibleStates);
+  if (footprint !== "states") return "national";
+  if (home && stateEligible(eligibleStates, home)) return "home";
+  if (business && stateEligible(eligibleStates, business)) return "business";
+  return "unclassified";
+}
+
 const TERMINAL_CASE_STATUSES = new Set([
   "Completed", "Canceled", "Cancelled", "Cleared", "Closed"
 ]);
@@ -311,7 +475,11 @@ function bureauOverlap(lenderBureaus, avoid) {
 /**
  * @param {object} opts
  * @param {object[]} opts.lenders
- * @param {string|null} [opts.clientState]
+ * @param {string|null} [opts.clientState]  legacy single state. Still honoured:
+ *   when no home/business state is given it is the whole state set.
+ * @param {string|null} [opts.homeState]      where the client lives
+ * @param {string|null} [opts.businessState]  where the client's business is
+ * @param {string[]} [opts.clientStates]      explicit set, overrides the above
  * @param {object[]} [opts.inquiryLog]
  * @param {string|null} [opts.lenderTable]
  * @param {boolean} [opts.includeInactive]
@@ -325,6 +493,9 @@ function bureauOverlap(lenderBureaus, avoid) {
 export function matchLenders({
   lenders = [],
   clientState = null,
+  homeState = null,
+  businessState = null,
+  clientStates = null,
   inquiryLog = [],
   cases = [],
   lenderTable = null,
@@ -334,6 +505,31 @@ export function matchLenders({
   credit = null,
   now = new Date()
 } = {}) {
+  /* THE TWO LANES. `home` and `business` name the lanes; `states` is what the
+     gate actually tests. A caller that only knows one state still works — it
+     lands in `states` and nothing else changes for it. Deduped
+     case-insensitively so "AZ" and "az" are one lane, not two. */
+  const home = cleanState(homeState);
+  const business = cleanState(businessState);
+  const legacy = cleanState(clientState);
+  const states = [];
+  const addState = (s) => {
+    const v = cleanState(s);
+    if (!v) return;
+    if (states.some((t) => t.toUpperCase() === v.toUpperCase())) return;
+    states.push(v);
+  };
+  if (Array.isArray(clientStates)) {
+    for (const s of clientStates) addState(s);
+  } else {
+    addState(home);
+    addState(business);
+    if (!states.length) addState(legacy);
+  }
+  // What the screen still calls "the client's state": business first, then
+  // home, then whatever a legacy caller handed in. Unchanged precedence.
+  const primaryState = business || home || legacy || null;
+
   const avoid = sensitiveBureaus(inquiryLog, { recentDays: recentInquiryDays, now, cases });
   const bureauUse = new Map(); // code → count among accepted so far (rotation)
   const matches = [];
@@ -365,8 +561,11 @@ export function matchLenders({
       skipped.push({ id: L.id, name: L.name, reason: "inactive" });
       continue;
     }
-    if (!stateEligible(L.eligible_states, clientState)) {
-      skipped.push({ id: L.id, name: L.name, reason: "state_ineligible" });
+    if (!eligibleForAnyState(L.eligible_states, states)) {
+      skipped.push({
+        id: L.id, name: L.name, reason: "state_ineligible",
+        client_states: [...states]
+      });
       continue;
     }
     const bureaus = parseBureaus(L.bureaus_pulled);
@@ -406,6 +605,9 @@ export function matchLenders({
       bureaus_pulled: L.bureaus_pulled,
       bureaus,
       eligible_states: L.eligible_states,
+      footprint: lenderFootprint(L.eligible_states),
+      lane: laneForLender(L.eligible_states, { home, business }),
+      covers_states: states.filter((s) => stateEligible(L.eligible_states, s)),
       priority_tier: L.priority_tier,
       application_url: L.application_url,
       typical_approval_range: L.typical_approval_range,
@@ -438,15 +640,39 @@ export function matchLenders({
     return String(a.name || "").localeCompare(String(b.name || ""));
   });
 
+  /* THE READING ORDER the owner asked for: national banks, then the local
+     banks in the state he lives in, then the local banks in the state his
+     business is in. Every match appears exactly once — a lender covering both
+     states is a home-lane lender and is not repeated in the business lane.
+     `matches` is untouched and still the flat, tier-ranked list. */
+  const lanes = {
+    national: matches.filter((m) => m.lane === "national"),
+    home: { state: home, lenders: matches.filter((m) => m.lane === "home") },
+    business: { state: business, lenders: matches.filter((m) => m.lane === "business") },
+    /* Named a state list, cleared the gate, but we hold no home or business
+       state to attribute it to. Empty whenever the caller passes both. */
+    unclassified: matches.filter((m) => m.lane === "unclassified")
+  };
+
   return {
     matches,
     skipped,
+    lanes,
     summary: {
       lender_count: list.length,
       match_count: matches.length,
       skipped_count: skipped.length,
       sensitive_bureaus: [...avoid],
-      client_state: clientState || null,
+      client_state: primaryState,
+      client_states: [...states],
+      home_state: home,
+      business_state: business,
+      lane_counts: {
+        national: lanes.national.length,
+        home: lanes.home.lenders.length,
+        business: lanes.business.lenders.length,
+        unclassified: lanes.unclassified.length
+      },
       /* What the credit file actually did to this count. The three counters
          are the honest answer to "does this number mean anything about this
          client" — with today's data lenders_with_stated_minimum is 0, so the

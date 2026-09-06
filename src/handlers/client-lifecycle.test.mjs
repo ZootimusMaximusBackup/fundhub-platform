@@ -405,15 +405,15 @@ test("a broken telemetry write does NOT lose the credit-pull result", async () =
 });
 
 // =============================================================================
-// GHL CONTACT SYNC — resolveClient wires a new client to a GHL contact id when
+// CRM CONTACT SYNC — resolveClient wires a new client to a CRM contact id when
 // (and only when) the org's sms routing is ghl_relay. See
-// src/messaging/ghl-contacts.mjs for find-or-create; ghl-contacts.test.mjs
+// src/messaging/crm-contacts.mjs for find-or-create; crm-contacts.test.mjs
 // covers that module's own behaviour with a fake fetch. These tests cover the
 // wiring: is it called at the right time, with the right guard, and does a
-// GHL failure ever block client creation.
+// CRM failure ever block client creation.
 // =============================================================================
 
-function fakeGhlFetch(responses) {
+function fakeCrmFetch(responses) {
   const calls = [];
   const queue = Array.isArray(responses) ? [...responses] : [responses];
   const impl = async (url, init) => {
@@ -429,31 +429,31 @@ function fakeGhlFetch(responses) {
 
 test("resolveClient: GHL_API_KEY stores the found-or-created contact id", async () => {
   const db = pgFake({ smsRouting: "ghl_relay" });
-  const fetchImpl = fakeGhlFetch({ status: 200, body: { contact: { id: "ghl-abc123" }, new: true } });
+  const fetchImpl = fakeCrmFetch({ status: 200, body: { contact: { id: "crm-abc123" }, new: true } });
   const id = await resolveClient(
     db,
-    ev("entry.captured", { email: "ghl@x.com", name: "Ghl Contact" }),
+    ev("entry.captured", { email: "ghl@x.com", name: "The CRM Contact" }),
     { fetchImpl, env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "test-key" } }
   );
-  assert.equal(db.clients.find((c) => c.id === id).ghl_contact_id, "ghl-abc123");
-  assert.equal(fetchImpl.calls.length, 1, "exactly one GHL call for one new client");
+  assert.equal(db.clients.find((c) => c.id === id).ghl_contact_id, "crm-abc123");
+  assert.equal(fetchImpl.calls.length, 1, "exactly one CRM call for one new client");
 });
 
 test("resolveClient: GHL_API_KEY still syncs when sms is not routed to ghl_relay", async () => {
   const db = pgFake({ smsRouting: "mailgun" });
-  const fetchImpl = fakeGhlFetch({ status: 200, body: { contact: { id: "ghl-any-route" } } });
+  const fetchImpl = fakeCrmFetch({ status: 200, body: { contact: { id: "crm-any-route" } } });
   await resolveClient(
     db,
     ev("entry.captured", { email: "any-route@x.com" }),
     { fetchImpl, env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "test-key" } }
   );
-  assert.equal(db.clients[0].ghl_contact_id, "ghl-any-route");
+  assert.equal(db.clients[0].ghl_contact_id, "crm-any-route");
   assert.equal(fetchImpl.calls.length, 1);
 });
 
 test("resolveClient: dry-run without a key stamps a local placeholder", async () => {
   const db = pgFake();
-  const fetchImpl = fakeGhlFetch({ status: 200, body: { contact: { id: "should-not" } } });
+  const fetchImpl = fakeCrmFetch({ status: 200, body: { contact: { id: "should-not" } } });
   await resolveClient(
     db,
     ev("entry.captured", { email: "dry@x.com" }),
@@ -473,14 +473,14 @@ test("resolveClient: no key and the fence explicitly down leaves null with a war
   const id = await resolveClient(
     db,
     ev("entry.captured", { email: "nokey@x.com" }),
-    { env: { ADAPTERS_DRY_RUN: "0" } } // no GHL key of either name — not invented
+    { env: { ADAPTERS_DRY_RUN: "0" } } // no CRM key of either name — not invented
   );
   assert.ok(id, "the client is still created");
   assert.equal(db.clients[0].ghl_contact_id, null);
   assert.equal(db.clients[0].custom_fields.ghl_link_missing, true);
 });
 
-test("resolveClient: with the fence up, a placeholder is stamped and GHL is never called", async () => {
+test("resolveClient: with the fence up, a placeholder is stamped and the CRM is never called", async () => {
   // The regression this whole change exists for: the placeholder branch used to
   // sit below an early return and could not run in production at all.
   const db = pgFake({ smsRouting: "ghl_relay" });
@@ -495,26 +495,26 @@ test("resolveClient: with the fence up, a placeholder is stamped and GHL is neve
   assert.equal(db.clients[0].custom_fields.ghl_link_dry_run, true);
 });
 
-test("resolveClient: a GHL request failure never blocks or breaks client creation", async () => {
+test("resolveClient: a CRM request failure never blocks or breaks client creation", async () => {
   const db = pgFake({ smsRouting: "ghl_relay" });
   const fetchImpl = async () => { throw new Error("network is down"); };
   const id = await resolveClient(
     db,
-    ev("entry.captured", { email: "ghlfail@x.com" }),
+    ev("entry.captured", { email: "crmfail@x.com" }),
     { fetchImpl, env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "test-key" } }
   );
-  assert.ok(id, "client creation must survive a GHL transport failure");
+  assert.ok(id, "client creation must survive a CRM transport failure");
   assert.equal(db.clients[0].ghl_contact_id, null);
 });
 
-test("resolveClient: existing client with a GHL id is not re-synced", async () => {
+test("resolveClient: existing client with a CRM id is not re-synced", async () => {
   const db = pgFake({ smsRouting: "ghl_relay" });
-  const fetchImpl = fakeGhlFetch({ status: 200, body: { contact: { id: "ghl-once" } } });
+  const fetchImpl = fakeCrmFetch({ status: 200, body: { contact: { id: "crm-once" } } });
   const opts = { fetchImpl, env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "test-key" } };
   const id1 = await resolveClient(db, ev("entry.captured", { email: "repeat@x.com" }), opts);
   const id2 = await resolveClient(db, ev("survey.submitted", { email: "repeat@x.com" }), opts);
   assert.equal(id1, id2);
-  assert.equal(fetchImpl.calls.length, 1, "GHL is only contacted while ghl_contact_id is still null");
+  assert.equal(fetchImpl.calls.length, 1, "The CRM is only contacted while ghl_contact_id is still null");
 });
 
 test("resolveClient: existing client with null ghl_contact_id gets a backfill sync", async () => {
@@ -525,14 +525,14 @@ test("resolveClient: existing client with null ghl_contact_id gets a backfill sy
     first_name: "Pre", last_name: "Existing", custom_fields: {}, outcome_tier: null,
     ghl_contact_id: null
   });
-  const fetchImpl = fakeGhlFetch({ status: 200, body: { contact: { id: "ghl-backfill" } } });
+  const fetchImpl = fakeCrmFetch({ status: 200, body: { contact: { id: "crm-backfill" } } });
   const id = await resolveClient(
     db,
     ev("entry.captured", { email: "pre@x.com", name: "Pre Existing" }),
     { fetchImpl, env: { ADAPTERS_DRY_RUN: "0", GHL_API_KEY: "test-key" } }
   );
   assert.equal(id, "cl-pre");
-  assert.equal(db.clients[0].ghl_contact_id, "ghl-backfill");
+  assert.equal(db.clients[0].ghl_contact_id, "crm-backfill");
   assert.equal(fetchImpl.calls.length, 1);
 });
 
@@ -541,7 +541,7 @@ test("analysis.completed: an anchored event reuses the coordinator result", asyn
   const db = pgFake();
   db.clients.push({
     id: "client-anchor", org_id: "org-1", email: "anchor@example.com",
-    first_name: "Anchor", last_name: "Client", ghl_contact_id: "ghl-anchor",
+    first_name: "Anchor", last_name: "Client", ghl_contact_id: "crm-anchor",
     custom_fields: {}, outcome_tier: null
   });
   db.crs.push({ id: "result-anchor", org_id: "org-1", client_id: "client-anchor" });
@@ -562,7 +562,7 @@ test("analysis.completed: an anchor for another client is refused", async () => 
   const db = pgFake();
   db.clients.push({
     id: "client-anchor", org_id: "org-1", email: "anchor@example.com",
-    first_name: "Anchor", last_name: "Client", ghl_contact_id: "ghl-anchor",
+    first_name: "Anchor", last_name: "Client", ghl_contact_id: "crm-anchor",
     custom_fields: {}, outcome_tier: null
   });
   db.crs.push({ id: "result-anchor", org_id: "org-1", client_id: "different-client" });
