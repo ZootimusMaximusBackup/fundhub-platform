@@ -684,3 +684,33 @@ needed for token refresh.
 Reading what is running in the ad account, its copy, its spend and its cost per booking is
 a **connection job, not a build job**. It is independent of the script generator and can
 happen in either order.
+
+---
+
+# Correction 3 — the 83 scripts are not the seed. The five filmed ads are.
+
+Chris, 2026-09-06: **"we dont want those."**
+
+He is right and the first design had this backwards. The 83 are unfiltered. `TODO.md`
+already says "Filter 83 ads to top 30 = source of truth" and "Cut ad 41". `docs/ads/NEXT.md`
+describes a revision pass in progress. `docs/flywheel/partner/04-copy.md` records 39
+pieces dropped for sanding the concrete numbers off. Seeding a voice file with all 83
+would teach the model the **average** of that set, and the average is what sounds fake.
+
+**The seed is `docs/ads/CONTROLS.md`.** Four ads plus three scripts plus the founder VSL,
+marked LIVE and DO NOT EDIT, filmed and running, booking calls at $32-36. That is the
+only proven copy in the repo, it is already in the exact format, and it is small enough
+that every line in it is there on merit.
+
+**What this changes:**
+
+1. **Nothing is blocked on Chris.** The build can start with what is in the repo today.
+2. `docs/ads/VOICE.md` starts from `CONTROLS.md` and grows only from Chris's own edits.
+   Every pair in it is either proven live or hand-written by him. Nothing average ever
+   enters it.
+3. The 83 stay where they are. If Chris later picks his top 30, those can be added. The
+   unfiltered set never should be.
+
+**The rule underneath, worth keeping:** a voice file is seeded from work that won, not
+from work that exists. Volume is what made the model sound like a robot in the first
+place.
